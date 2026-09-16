@@ -41,6 +41,7 @@ public class CustomerBpmTaskConsumer {
           new BpmContract("creative-production-approval", "customer"),
           new BpmContract("landing-page-generation", "customer"),
           new BpmContract("pde-commercial-homologation-activation", "humanExperienceReview"),
+          new BpmContract("opala-commercial-preparation-v1", "humanExperienceReview"),
           new BpmContract("pde-construction-approval", "humanExperienceReview"),
           new BpmContract("pde-construction-approval", "psiqueAdherent"),
           new BpmContract("pde-construction-approval", "psiqueRecovery"),
@@ -191,6 +192,7 @@ public class CustomerBpmTaskConsumer {
     return List.of(
             "landing-page-generation",
             "pde-commercial-homologation-activation",
+            "opala-commercial-preparation-v1",
             "pde-construction-approval")
         .contains(processCode);
   }
@@ -626,7 +628,8 @@ public class CustomerBpmTaskConsumer {
     }
     if ("pde-construction-approval".equals(processCode(task)) && !isPrivateValidationTask(task)) {
       promptContext.put("versionedExperienceEvidence", pdeExperienceEvidenceLoader.load());
-    } else if ("pde-commercial-homologation-activation".equals(processCode(task))) {
+    } else if (List.of("pde-commercial-homologation-activation", "opala-commercial-preparation-v1")
+        .contains(processCode(task))) {
       promptContext.put(
           "versionedCommercialHomologationEvidence",
           pdeExperienceEvidenceLoader.loadCommercialHomologationEvidence(task.get("taskTarget")));
@@ -649,7 +652,7 @@ public class CustomerBpmTaskConsumer {
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
       case "creative-production-approval" -> "prompts/bpm/v3/creative-customer-review.md";
-      case "pde-commercial-homologation-activation" ->
+      case "pde-commercial-homologation-activation", "opala-commercial-preparation-v1" ->
           "prompts/bpm/v3/pde-commercial-homologation-customer-review.md";
       case "pde-construction-approval" ->
           "prompts/bpm/v4/pde-private-validation-experience-review.md";
@@ -661,7 +664,7 @@ public class CustomerBpmTaskConsumer {
   static String schemaResourceFor(String processCode) {
     return switch (processCode) {
       case "creative-production-approval" -> "prompts/bpm/v3/creative-customer-review-schema.json";
-      case "pde-commercial-homologation-activation" ->
+      case "pde-commercial-homologation-activation", "opala-commercial-preparation-v1" ->
           "prompts/bpm/v3/pde-commercial-homologation-customer-review-schema.json";
       case "pde-construction-approval" ->
           "prompts/bpm/v4/pde-private-validation-experience-review-schema.json";
@@ -1266,6 +1269,10 @@ public class CustomerBpmTaskConsumer {
               .toList());
       evidence.put("visualEvidenceCount", visualEvidence.size());
     }
+    if ("opala-commercial-preparation-v1".equals(processCode(task)))
+      evidence.put(
+          "opalaScope",
+          json.readTree(String.valueOf(task.get("processContextJson"))).path("opalaCommercial"));
     return json.writeValueAsString(evidence);
   }
 

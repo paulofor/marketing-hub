@@ -239,3 +239,31 @@ it("mostra insumos ausentes sem bloquear o aceite disponível no backend", () =>
   ).toBeEnabled();
   expect(mutateAsync).not.toHaveBeenCalled();
 });
+
+it("abre a preparação Opala indicada pelo backend sem perder ciclo e experimento", () => {
+  const cycle = {
+    ...authorizationCycle,
+    commercialPreparation: {
+      readyForReview: false,
+      guidance: "Os agentes prepararão os ativos.",
+      experimentUrl: "/experiments/92",
+      requirements: [],
+      preparationUrl:
+        "/products/4/value-chain-history/processes/99/activities?learningCycleId=2&chainId=15",
+      preparationLabel: "Abrir preparação Opala com os agentes",
+    },
+  };
+  render(
+    <MemoryRouter>
+      <LearningCycleCommandForm
+        cycle={cycle}
+        catalog={catalog}
+        onUpdated={() => {}}
+      />
+    </MemoryRouter>,
+  );
+  expect(
+    screen.getByRole("link", { name: "Abrir preparação Opala com os agentes" }),
+  ).toHaveAttribute("href", cycle.commercialPreparation.preparationUrl);
+  expect(mutateAsync).not.toHaveBeenCalled();
+});

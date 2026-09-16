@@ -10,6 +10,7 @@ class PdeEconomicsBpmRoutingTest {
   @ParameterizedTest
   @ValueSource(
       strings = {
+        "opala",
         "successor",
         "discovery",
         "later-version",

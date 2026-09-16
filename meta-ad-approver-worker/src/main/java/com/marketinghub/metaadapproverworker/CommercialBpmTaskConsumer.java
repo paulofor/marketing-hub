@@ -39,6 +39,7 @@ public class CommercialBpmTaskConsumer {
   private static final List<BpmContract> CONTRACTS =
       List.of(
           new BpmContract("pde-commercial-homologation-activation", "commercialIntegrityReview"),
+          new BpmContract("opala-commercial-preparation-v1", "commercialIntegrityReview"),
           new BpmContract("creative-production-approval", "commercial"),
           new BpmContract("landing-page-generation", "commercial"),
           new BpmContract("pde-construction-approval", "commercialIntegrityReview"));
@@ -426,7 +427,8 @@ public class CommercialBpmTaskConsumer {
     Map<String, Object> promptContext = new HashMap<>(task);
     if ("pde-construction-approval".equals(processCode(task)) && !isPrivateValidationTask(task)) {
       promptContext.put("versionedArtifactEvidence", pdeArtifactLoader.load());
-    } else if ("pde-commercial-homologation-activation".equals(processCode(task))) {
+    } else if (List.of("pde-commercial-homologation-activation", "opala-commercial-preparation-v1")
+        .contains(processCode(task))) {
       promptContext.put(
           "versionedCommercialHomologationEvidence",
           pdeArtifactLoader.loadCommercialHomologationEvidence(task.get("taskTarget")));
@@ -442,7 +444,7 @@ public class CommercialBpmTaskConsumer {
   /** Seleciona o prompt versionado específico do gate avaliado. */
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
-      case "pde-commercial-homologation-activation" ->
+      case "pde-commercial-homologation-activation", "opala-commercial-preparation-v1" ->
           "prompts/bpm/pde-commercial-homologation-independent-review.md";
       case "creative-production-approval" -> "prompts/bpm/creative-commercial-review.md";
       case "pde-construction-approval" -> "prompts/bpm/pde-private-validation-review-v2.md";
@@ -453,7 +455,7 @@ public class CommercialBpmTaskConsumer {
   /** Seleciona o schema versionado específico do gate avaliado. */
   static String schemaResourceFor(String processCode) {
     return switch (processCode) {
-      case "pde-commercial-homologation-activation" ->
+      case "pde-commercial-homologation-activation", "opala-commercial-preparation-v1" ->
           "prompts/bpm/pde-commercial-homologation-independent-review-schema.json";
       case "creative-production-approval" -> "prompts/bpm/creative-commercial-review-schema.json";
       case "pde-construction-approval" ->
@@ -756,7 +758,12 @@ public class CommercialBpmTaskConsumer {
 
   /** Preserva o contexto acessado e comprova que Têmis não realizou efeito externo. */
   private String evidence(Map<String, Object> task) throws IOException {
-    return json.writeValueAsString(evidenceFields("Têmis", model, task));
+    var evidence = new java.util.LinkedHashMap<>(evidenceFields("Têmis", model, task));
+    if ("opala-commercial-preparation-v1".equals(processCode(task)))
+      evidence.put(
+          "opalaScope",
+          json.readTree(String.valueOf(task.get("processContextJson"))).path("opalaCommercial"));
+    return json.writeValueAsString(evidence);
   }
 
   /** Monta os campos mínimos, inclusive a exceção de tier, para reconstruir a mesma tarefa. */

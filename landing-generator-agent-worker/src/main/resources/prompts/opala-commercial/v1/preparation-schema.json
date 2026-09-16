@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "READY",
+        "BLOCKED"
+      ]
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 20
+    },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "string"
+      }
+    },
+    "selectedApproach": {
+      "type": "string",
+      "minLength": 20
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "instruction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "videoAssetId": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "headline": {
+          "type": "string"
+        },
+        "primaryText": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "targetingElementIds": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "videoAssetId",
+        "headline",
+        "primaryText",
+        "description",
+        "targetingElementIds"
+      ]
+    }
+  },
+  "required": [
+    "decision",
+    "rationale",
+    "alternatives",
+    "selectedApproach",
+    "acceptanceCriteria",
+    "instruction"
+  ]
+}

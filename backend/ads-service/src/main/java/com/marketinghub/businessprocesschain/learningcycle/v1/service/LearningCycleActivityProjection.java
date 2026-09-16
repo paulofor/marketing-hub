@@ -281,7 +281,10 @@ public class LearningCycleActivityProjection {
               boolean cycleEntry = "learningCycle".equals(group.activityId());
               boolean measurement = "consolidate".equals(group.activityId());
               boolean actionable = cycleEntry || measurement;
-              boolean executing = List.of("IN_PROGRESS", "BLOCKED").contains(state.state());
+              boolean executing =
+                  List.of("IN_PROGRESS", "BLOCKED").contains(state.state())
+                      || "commercialPreparation".equals(group.activityId())
+                          && "NOT_STARTED".equals(state.state());
               var previous = group.executionControl();
               String url =
                   actionable
@@ -298,7 +301,10 @@ public class LearningCycleActivityProjection {
                         + "/value-chain-history/processes/"
                         + target
                         + "/activities?learningCycleId="
-                        + flow.cycleId();
+                        + flow.cycleId()
+                        + ("commercialPreparation".equals(group.activityId())
+                            ? "&chainId=" + flow.chainDefinitionId()
+                            : "");
               var control =
                   new ProductProcessActivityExecutionControlResponse(
                       "BACKEND",

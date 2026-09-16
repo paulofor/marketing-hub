@@ -58,6 +58,9 @@ public class LearningCycleService {
   @Autowired private LearningCycleCommercialReadiness commercialReadiness;
 
   @Autowired(required = false)
+  private com.marketinghub.opala.commercial.v1.service.OpalaCommercialRouting opalaRouting;
+
+  @Autowired(required = false)
   private LearningCycleVideoBinding videoBinding;
 
   @Autowired(required = false)
@@ -1441,6 +1444,10 @@ public class LearningCycleService {
 
   /** Direciona cada etapa ao BPM responsável sem substituir a seleção do experimento no plano. */
   private String workUrl(LearningSalesCycle cycle) {
+    if (opalaRouting != null) {
+      String preparation = opalaRouting.navigation(cycle);
+      if (preparation != null) return preparation;
+    }
     if (VIDEO_STAGES.contains(cycle.getStage()))
       return "VIDEO_APPROVAL".equals(cycle.getStage())
           ? "/products/" + cycle.getProductId() + "/pde-versions"

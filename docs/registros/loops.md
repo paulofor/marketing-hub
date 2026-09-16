@@ -5564,3 +5564,20 @@ continua visível e bloqueia revisões/ativação, mas não o aceite financeiro 
 Regressão injeta preparação ausente (antes omitida nos testes de autorização), cobre
 produto/ciclo original e outros identificadores, evento único, replay e manutenção de PLANNED.
 Ver `docs/homologacao/orcamento-botao-bloqueado.md`. Não há alteração de mídia em produção.
+
+### Prevenção na preparação Opala — 16/09/2026
+
+A implementação do subprocesso específico fecha a lacuna entre pendências comerciais
+e atividades executáveis nas novas cadeias. Para prevenir
+`LOOP-BPM-CICLO-SEM-CHAMADA-DO-PAI`, a chamada está no grafo versionado, e o teste
+`SalesFlowResolverTest.dispatchesOpalaBeforeWaitingForCommercialPublication` exige
+que o pai não apresente atividade IN_PROGRESS enquanto deve delegar ao filho.
+O teste reproduz localmente a precedência observada em `ProcessRunService`: uma
+atividade IN_PROGRESS faria a execução retornar em espera antes de delegar.
+
+Para prevenir `LOOP-CICLO-AUTORIZACAO-SEM-SUPERFICIE-COMERCIAL`, a preparação
+materializa vínculos por produto/experimento/versão, sem reutilização global da
+última superfície e sem confundir orçamento com prontidão. Os testes Opala cobrem
+escopo, callbacks antigos, insumos incompletos e renovação dos pareceres após mudanças.
+O histórico e o ciclo atual não são reescritos pela migração.
+Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.

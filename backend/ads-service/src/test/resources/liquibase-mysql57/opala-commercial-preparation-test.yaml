@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: opala-commercial-local-baseline
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sqlFile:
+            path: opala-commercial-preparation-baseline.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+  - changeSet:
+      id: opala-commercial-local-marker
+      author: codex
+      changes:
+        - tagDatabase:
+            tag: opala-before-preparation
+  - include:
+      file: db/changelog/changesets/2026-09-15-opala-commercial-preparation-v1.yaml

@@ -47,6 +47,9 @@ public class PdeCommercialActivationHumanActivityHandler
   private final ExperimentReadinessService readinessService;
   private final ExperimentService experimentService;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.opala.commercial.v1.service.OpalaCommercialRouting opalaRouting;
+
   /** Configura as fontes de experimento, teto financeiro, prontidão e mudança de estado. */
   public PdeCommercialActivationHumanActivityHandler(
       ExperimentRepository experimentRepository,
@@ -100,6 +103,20 @@ public class PdeCommercialActivationHumanActivityHandler
             && productionRun.getId() != null
             && productionRun.getRunNumber() != null;
     List<HumanProductProcessActivityRequirement> requirements = new ArrayList<>();
+    if (opalaRouting != null) {
+      learningCycleRepository
+          .findByExperimentId(experiment.getId())
+          .filter(c -> opalaRouting.target(c) != null)
+          .ifPresent(
+              c ->
+                  requirements.add(
+                      new HumanProductProcessActivityRequirement(
+                          "OPALA_PREPARATION_READY",
+                          "Preparação comercial Opala concluída",
+                          opalaRouting.completed(c),
+                          "Conclua as atividades dos agentes no subprocesso Opala desta versão antes de autorizar tráfego.",
+                          "Abra o subprocesso pela atividade do processo de vendas.")));
+    }
     readiness
         .runningGateRequirements()
         .forEach(

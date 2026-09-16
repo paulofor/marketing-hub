@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-projeto-estruturado-editavel-agente",
+  "collection": "video",
+  "title": "Manter o vídeo como projeto estruturado, não apenas MP4",
+  "finding": "Agentes de vídeo podem produzir e preservar uma representação editável com cenas, faixas e parâmetros, permitindo revisões localizadas sem refazer o projeto inteiro.",
+  "mechanism": "Separar vídeo, voz, música, efeitos, legendas e motion graphics em faixas e manter elementos paramétricos permite aplicar patches somente ao componente revisado, preservando partes já aprovadas.",
+  "commercialApplication": "No Marketing Hub, manter um estado estruturado do projeto audiovisual para que revisões de copy, CTA, timing, legenda, cor ou cena gerem alterações localizadas antes de autorizar uma regeneração completa.",
+  "evidenceStrength": "Moderada para a existência da arquitetura: Fotor Agent está ativo e documenta timeline multifaixa e edição paramétrica; baixa para impacto comercial, pois ganhos de custo/velocidade são alegações do fornecedor e não há evidência de conversão.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2026-11-15",
+  "experimentHypothesis": "Com o mesmo briefing, manter um projeto estruturado e aplicar patches localizados reduzirá regenerações completas, custo e tempo até aprovação sem aumentar erros de continuidade ou violações de marca.",
+  "risks": "Estado estruturado incorreto pode propagar inconsistências; patches podem deixar dependências entre faixas dessincronizadas; automação excessiva pode alterar elementos comerciais sem revisão.",
+  "limits": "A evidência vem principalmente de documentação e benchmarks do fornecedor; o fluxo completo do Video Agent não está documentado como API pública e não há prova de efeito em vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-16-projeto-estruturado-editavel-agente.md",
+  "sourceTitle": "Fonte revisada — projeto de vídeo estruturado e editável por agente",
+  "sourceSha256": "b0581fdc18d059cffa60e058fe1976285f72b6cc52a0a74021c00feb1baa77ee"
+}

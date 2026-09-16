@@ -128,6 +128,7 @@ final class RigelCommercialContractPolicy {
                 product.publicProofs(),
                 product.commercialProcess(),
                 product.commercialBinding(),
-                product.commercialCheckout());
+                product.commercialCheckout(),
+                product.commercialAccess());
     }
 }

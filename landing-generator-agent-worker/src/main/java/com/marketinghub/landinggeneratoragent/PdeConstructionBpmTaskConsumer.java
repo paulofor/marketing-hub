@@ -3,6 +3,7 @@ package com.marketinghub.landinggeneratoragent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -543,6 +545,10 @@ public class PdeConstructionBpmTaskConsumer {
   /** Bloqueia antes do modelo quando a construção privada não recebe o contrato PDE completo. */
   static void validateTaskContext(
       Map<String, Object> task, BpmContract contract, ObjectMapper json) {
+    if ("opala-commercial-preparation-v1".equals(contract.processCode())) {
+      validateOpalaTaskContext(task, json);
+      return;
+    }
     if (!"pde-construction-approval".equals(contract.processCode())) return;
     JsonNode target = json.valueToTree(task).path("taskTarget");
     JsonNode context = target.path("pdeContext");
@@ -584,6 +590,87 @@ public class PdeConstructionBpmTaskConsumer {
       throw new IllegalArgumentException(
           "Contrato PDE privado ausente ou incompleto no contexto enviado pelo backend");
     }
+  }
+
+  /**
+   * Recusa antes do modelo qualquer preparação Opala que misture candidata, checkout ou acesso de
+   * versões diferentes.
+   */
+  private static void validateOpalaTaskContext(Map<String, Object> task, ObjectMapper json) {
+    try {
+      JsonNode target = json.valueToTree(task).path("taskTarget");
+      JsonNode context = json.readTree(String.valueOf(task.get("processContextJson")));
+      JsonNode opala = context.path("opalaCommercial");
+      JsonNode cycle = context.path("learningSalesCycle");
+      JsonNode contract = target.path("pdeContext");
+      JsonNode opalaContract = opala.path("productContract");
+      JsonNode binding = contract.path("commercialBinding");
+      JsonNode checkout = contract.path("commercialCheckout");
+      JsonNode access = contract.path("commercialAccess");
+      String version = target.path("experienceVersion").asText("").trim();
+      long productId = target.path("productId").asLong(0);
+      long experimentId = target.path("experimentId").asLong(0);
+      boolean complete =
+          target.isObject()
+              && productId > 0
+              && experimentId > 0
+              && !version.isBlank()
+              && contract.isObject()
+              && version.equals(contract.path("experienceVersion").asText())
+              && opala.isObject()
+              && opala.path("productId").asLong() == productId
+              && opala.path("experimentId").asLong() == experimentId
+              && version.equals(opala.path("productVersion").asText())
+              && Objects.equals(
+                  target.path("publicUrl").asText(), opala.path("destinationUrl").asText())
+              && opalaContract.isObject()
+              && opalaContract.equals(contract)
+              && binding.isObject()
+              && binding.path("experimentId").asLong() == experimentId
+              && "ONE_TIME".equals(binding.path("billingModel").asText())
+              && checkout.isObject()
+              && Objects.equals(
+                  target.path("commercialCheckoutProvider").asText(),
+                  checkout.path("provider").asText())
+              && Objects.equals(
+                  target.path("commercialCheckoutReference").asText(),
+                  checkout.path("offerReference").asText())
+              && Objects.equals(
+                  target.path("commercialCheckoutUrl").asText(),
+                  checkout.path("checkoutUrl").asText())
+              && Objects.equals(
+                  opala.path("checkoutUrl").asText(), checkout.path("checkoutUrl").asText())
+              && sameAmount(target.path("unitPriceBrl"), checkout.path("priceBrl"))
+              && sameAmount(opala.path("priceBrl"), checkout.path("priceBrl"))
+              && sameAmount(binding.path("priceBrl"), checkout.path("priceBrl"))
+              && access.isObject()
+              && version.equals(access.path("experienceVersion").asText())
+              && access.path("accessDays").asInt(0) > 0
+              && !access.path("renewal").asBoolean(true)
+              && "PAYMENT_APPROVED".equals(access.path("activationTrigger").asText())
+              && !access.path("scope").asText().isBlank();
+      if (cycle.isObject()) {
+        complete =
+            complete
+                && cycle.path("productId").asLong() == productId
+                && cycle.path("experimentId").asLong() == experimentId
+                && version.equals(cycle.path("productVersion").asText());
+      }
+      if (!complete) {
+        throw new IllegalArgumentException(
+            "Contrato Opala mistura produto, experimento, versão, checkout ou acesso.");
+      }
+    } catch (IOException ex) {
+      log.error("Contexto Opala ilegível antes da execução de Dédalo. taskId={}", taskId(task), ex);
+      throw new IllegalArgumentException(
+          "Contexto Opala ilegível antes da execução de Dédalo.", ex);
+    }
+  }
+
+  /** Compara valores monetários sem depender da escala decimal serializada. */
+  private static boolean sameAmount(JsonNode first, JsonNode second) {
+    if (!first.isNumber() || !second.isNumber()) return false;
+    return new BigDecimal(first.asText()).compareTo(new BigDecimal(second.asText())) == 0;
   }
 
   /** Vincula a correção ao bloqueio real e exige versão executável antes de declarar prontidão. */

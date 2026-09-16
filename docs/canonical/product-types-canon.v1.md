@@ -113,7 +113,8 @@ negócio agregada pelo backend. Foi escolhida a terceira, por preservar a fonte 
 o risco de divergência como o ocorrido entre a versão selecionada pelo experimento e a publicada.
 
 Para Vega v12, a identidade comercial é única: slot `v8`, experimento #92, preço de R$ 67,
-checkout canônico, ativos `AD` e `LANDING_HERO` aprovados e materiais sob `/materials/musa-v12/`.
+checkout canônico, acesso por 90 dias sem renovação após pagamento aprovado, ativos `AD` e
+`LANDING_HERO` aprovados e materiais sob `/materials/musa-v12/`.
 A migração cria somente a candidata e seu rascunho; não preenche o snapshot publicado, não ativa o
 slot e não altera a v7. O contrato só pode ser publicado depois que a versão alcançar `READY` pelos
 gates, e `ACTIVE` continua dependendo da promoção do mesmo artefato homologado.

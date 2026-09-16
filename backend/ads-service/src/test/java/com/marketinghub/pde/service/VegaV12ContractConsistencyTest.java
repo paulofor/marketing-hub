@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: impedir divergência entre o contrato v12 empacotado e sua semente SQL. */
 class VegaV12ContractConsistencyTest {
 
-  /** Compara semanticamente os dois JSONs para que a candidata não nasça com outro contrato. */
+  /**
+   * Compara a semente histórica e exige que apenas o vínculo incremental de acesso a complemente.
+   */
   @Test
   void keepsMigrationSeedEqualToPackagedV12Contract() throws Exception {
     Path repositoryRoot = repositoryRoot();
@@ -31,7 +33,17 @@ class VegaV12ContractConsistencyTest {
     String seededJson = sql.substring(start + prefix.length(), end).replace("''", "'");
 
     ObjectMapper mapper = new ObjectMapper();
-    assertThat(mapper.readTree(seededJson)).isEqualTo(mapper.readTree(Files.readString(contract)));
+    var packaged =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            mapper.readTree(Files.readString(contract));
+    var access = packaged.remove("commercialAccess");
+
+    assertThat(mapper.readTree(seededJson)).isEqualTo(packaged);
+    assertThat(access.path("experienceVersion").asText())
+        .isEqualTo("musa-pde-entry-v12-primeiro-ajuste-aplicavel");
+    assertThat(access.path("accessDays").asInt()).isEqualTo(90);
+    assertThat(access.path("renewal").asBoolean(true)).isFalse();
+    assertThat(access.path("activationTrigger").asText()).isEqualTo("PAYMENT_APPROVED");
   }
 
   /** Localiza a raiz independentemente de o Maven ser iniciado nela ou no módulo backend. */

@@ -410,6 +410,14 @@ class ProductCatalogServiceTest {
         assertThat(product.commercialBinding().priceBrl()).isEqualByComparingTo("67");
         assertThat(product.commercialCheckout().checkoutUrl())
                 .isEqualTo("https://go.pepper.com.br/owm6x");
+        assertThat(product.commercialAccess()).satisfies(access -> {
+            assertThat(access.experienceVersion())
+                    .isEqualTo("musa-pde-entry-v12-primeiro-ajuste-aplicavel");
+            assertThat(access.accessDays()).isEqualTo(90);
+            assertThat(access.renewal()).isFalse();
+            assertThat(access.activationTrigger()).isEqualTo("PAYMENT_APPROVED");
+            assertThat(access.scope()).isEqualTo("DAYS_2_TO_7_AND_SUPPORT_MATERIALS");
+        });
         assertThat(product.supportMaterials()).hasSize(3);
         assertThat(product.supportMaterials())
                 .allSatisfy(material -> {

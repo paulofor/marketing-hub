@@ -975,6 +975,32 @@ class AccessServiceTest {
                 .isBetween(beforePurchase.plusSeconds(89L * 24 * 3600), beforePurchase.plusSeconds(91L * 24 * 3600));
     }
 
+    /** Confirma que a compra v12 usa seu próprio vínculo de acesso por noventa dias. */
+    @Test
+    void grantsMusaV12PaidAccessFromVersionedContract() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants-v12.json").toString());
+        Instant beforePurchase = Instant.now();
+
+        AccessResponse access = accessService.createInternalQaAccess(
+                "metodo-musa-7-dias",
+                "cliente-v12@sandbox.local",
+                "musa-pde-entry-v12-primeiro-ajuste-aplicavel");
+        WorkspaceResponse workspace = accessService.getWorkspace(access.token());
+
+        assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
+        assertThat(workspace.experienceVersion())
+                .isEqualTo("musa-pde-entry-v12-primeiro-ajuste-aplicavel");
+        assertThat(workspace.product().commercialAccess().experienceVersion())
+                .isEqualTo(workspace.experienceVersion());
+        assertThat(workspace.product().commercialAccess().accessDays()).isEqualTo(90);
+        assertThat(Instant.parse(workspace.accessExpiresAt()))
+                .isBetween(beforePurchase.plusSeconds(89L * 24 * 3600), beforePurchase.plusSeconds(91L * 24 * 3600));
+    }
+
     /** Confirma que uma assinatura aprovada promove acesso criado antes pelo magic link. */
     @Test
     void promotesMagicLinkAccessAfterCheckoutApproval() {

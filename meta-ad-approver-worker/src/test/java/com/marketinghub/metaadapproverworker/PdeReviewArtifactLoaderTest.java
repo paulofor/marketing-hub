@@ -410,11 +410,8 @@ class PdeReviewArtifactLoaderTest {
     assertThat(rigel)
         .extracting(item -> item.get("path"))
         .contains(
-            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v9.json",
-            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v8.json",
-            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v7.json",
-            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v6.json",
-            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v5.json",
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v11.json",
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v10.json",
             "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java")
         .doesNotContain("pde-platform/contracts/kit-whatsapp-tasting-homologation-v4.json")
         .doesNotContain("pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json")

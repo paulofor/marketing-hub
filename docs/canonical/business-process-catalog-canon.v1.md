@@ -73,6 +73,16 @@ Execuções raiz em estado terminal `ERROR` preservam diário, custo e evidênci
 reservam a vez do produto e não voltam à fila de conciliação. Uma nova execução válida
 pode avançar sem apagar nem reclassificar a falha anterior.
 
+**Checkout e acesso da candidata, 16/09/2026:** em toda atividade Opala, `taskTarget`
+deve ser composto pelo mesmo contrato candidato persistido que alimenta
+`processContextJson.opalaCommercial`, nunca pelo contrato predecessor ainda publicado no
+cadastro do produto. A candidata precisa vincular estruturalmente `experienceVersion`,
+experimento, checkout, preço, cobrança e acesso. O acesso declara a mesma versão, prazo,
+escopo, ausência de renovação e ativação somente por pagamento aprovado. Divergência
+bloqueia antes da materialização. Reutilizar checkout existente não cria preferência,
+cobrança ou acesso; o callback aceito apenas persiste o vínculo interno do experimento.
+O contrato predecessor e seus acessos já vendidos permanecem intactos.
+
 Matriz, recuperação e evidências complementares:
 `docs/homologacao/opala-preparacao-comercial-v1.md` e
 `docs/homologacao/opala-processo-77-recuperacao-2026-09-16.md`.

@@ -9,7 +9,6 @@ import com.marketinghub.experiment.dto.SaveExperimentTargetingSelectionsRequest;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotRequestDto;
 import com.marketinghub.experiment.service.ExperimentTargetingSelectionService;
 import com.marketinghub.pde.PdeProductionSlotStatus;
-import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver;
 import com.marketinghub.pde.service.PdeProductionSlotService;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
@@ -20,11 +19,13 @@ import java.net.URI;
 import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /** Responsabilidade: materializar instruções de preparação sem publicar nem aprovar ativos. */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class OpalaCommercialMaterialization {
   private static final Set<PdeProductionSlotStatus> PREPARABLE_SLOT_STATUSES =
       Set.of(
@@ -39,7 +40,7 @@ public class OpalaCommercialMaterialization {
   private final VideoCreativeService creatives;
   private final com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository
       videos;
-  private final PdeCommercialCheckoutContractResolver checkout;
+  private final OpalaCommercialVersionContract versionContract;
   private final ExperimentRepository experiments;
   private final ExperimentTargetingSelectionService selections;
   private final TargetingElementRepository targeting;
@@ -67,14 +68,7 @@ public class OpalaCommercialMaterialization {
               && Objects.equals(
                   snapshot.path("slots").get(0).path("publicUrl").asText(),
                   scope.experiment().getFollowUpActionUrl());
-      case "checkout" ->
-          checkout
-              .resolve(scope.experiment().getProduct())
-              .map(
-                  c ->
-                      Objects.equals(c.checkoutUrl(), scope.experiment().getCommercialCheckoutUrl())
-                          && c.priceBrl().compareTo(scope.experiment().getUnitPrice()) == 0)
-              .orElse(false);
+      case "checkout" -> currentCheckout(scope);
       case "targeting" ->
           !snapshot.path("savedAudience").isEmpty()
               && snapshot.path("approvedAudienceElements").findValues("id").stream()
@@ -229,34 +223,26 @@ public class OpalaCommercialMaterialization {
   /** Vincula apenas o checkout já canônico, com preço e versão conferidos, sem criar cobrança. */
   private void checkout(OpalaCommercialContext.Scope scope) {
     var experiment = scope.experiment();
-    require(
-        scope
-            .cycle()
-            .getProductVersion()
-            .equals(
-                context
-                    .read(experiment.getProduct().getPdeExperienceJson())
-                    .path("experienceVersion")
-                    .asText()),
-        "O checkout precisa pertencer ao contrato da versão do ciclo.");
-    var canonical =
-        checkout
-            .resolve(experiment.getProduct())
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        "O contrato aprovado não possui checkout; prepare a integração pelo fluxo de pagamento."));
-    require(
-        experiment.getUnitPrice() != null
-            && experiment.getUnitPrice().compareTo(canonical.priceBrl()) == 0,
-        "O preço do experimento diverge da oferta aprovada.");
-    require(
-        experiment.getCommercialCheckoutUrl() == null
-            || experiment.getCommercialCheckoutUrl().isBlank()
-            || Objects.equals(experiment.getCommercialCheckoutUrl(), canonical.checkoutUrl()),
-        "Há outro checkout vinculado; revise a divergência sem substituir silenciosamente.");
+    var canonical = versionContract.resolve(scope, context.candidate(scope)).checkout();
     experiment.setCommercialCheckoutUrl(canonical.checkoutUrl());
     experiments.save(experiment);
+  }
+
+  /** Revalida checkout e acesso da candidata antes de reaproveitar uma conclusão anterior. */
+  private boolean currentCheckout(OpalaCommercialContext.Scope scope) {
+    try {
+      var canonical = versionContract.resolve(scope, context.candidate(scope)).checkout();
+      return Objects.equals(canonical.checkoutUrl(), scope.experiment().getCommercialCheckoutUrl())
+          && canonical.priceBrl().compareTo(scope.experiment().getUnitPrice()) == 0;
+    } catch (RuntimeException ex) {
+      log.warn(
+          "Checkout candidato deixou de ser atual. productId={} experimentId={} cycleId={}",
+          scope.cycle().getProductId(),
+          scope.experiment().getId(),
+          scope.cycle().getId(),
+          ex);
+      return false;
+    }
   }
 
   /** Preserva escolhas existentes e aceita somente elementos aprovados do contexto oferecido. */

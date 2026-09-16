@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -65,6 +66,72 @@ class ExperimentAgentTaskTargetContextProviderTest {
         provider, "cycleConstructionContext", cycles);
     assertThat(provider.resolve("experiment:92", "pde-construction-approval")).contains(expected);
     assertThat(product.getPdeExperienceJson()).contains("historical-v7");
+  }
+
+  /** A preparação Opala publica a candidata do ciclo, não o contrato histórico do produto. */
+  @Test
+  void resolvesOpalaTargetFromExactCandidateContract() throws Exception {
+    var experiments = mock(ExperimentRepository.class);
+    var products = mock(ProductRepository.class);
+    var opala = mock(com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext.class);
+    var versionContract =
+        mock(com.marketinghub.opala.commercial.v1.service.OpalaCommercialVersionContract.class);
+    var product =
+        Product.builder()
+            .id(4L)
+            .slug("metodo-musa-7-dias")
+            .name("Método MUSA")
+            .internalName("Vega")
+            .pdeExperienceJson("{\"experienceVersion\":\"musa-v7\"}")
+            .build();
+    var experiment =
+        Experiment.builder().id(92L).product(product).unitPrice(new BigDecimal("67")).build();
+    var cycle = new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+    cycle.setId(2L);
+    cycle.setProductId(4L);
+    cycle.setExperimentId(92L);
+    cycle.setProductVersion("musa-v12");
+    var scope =
+        new com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext.Scope(
+            cycle, experiment);
+    var contract =
+        new ObjectMapper()
+            .readTree(
+                "{\"experienceVersion\":\"musa-v12\",\"commercialAccess\":{\"experienceVersion\":\"musa-v12\",\"accessDays\":90}} ");
+    var candidate =
+        new com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext.Candidate(
+            java.util.List.of(), "https://v12.sandbox.local", "VERSION_SLOT", contract);
+    var checkout =
+        new PdeCommercialCheckoutContractResolver.CanonicalCheckout(
+            "PEPPER",
+            "https://go.pepper.com.br/owm6x",
+            "owm6x",
+            new BigDecimal("67"),
+            "BRL",
+            "ONE_TIME");
+    when(experiments.findById(92L)).thenReturn(Optional.of(experiment));
+    when(opala.scope("experiment:92")).thenReturn(scope);
+    when(opala.candidate(scope)).thenReturn(candidate);
+    when(versionContract.resolve(scope, candidate))
+        .thenReturn(
+            new com.marketinghub.opala.commercial.v1.service.OpalaCommercialVersionContract
+                .Resolved(contract, checkout, 90));
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(experiments, products, new ObjectMapper());
+    org.springframework.test.util.ReflectionTestUtils.setField(provider, "opalaContext", opala);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        provider, "opalaVersionContract", versionContract);
+
+    var target = provider.resolve("experiment:92", "opala-commercial-preparation-v1").orElseThrow();
+
+    assertThat(target.experienceVersion()).isEqualTo("musa-v12");
+    assertThat(target.publicUrl()).isEqualTo("https://v12.sandbox.local");
+    assertThat(target.commercialCheckoutProvider()).isEqualTo("PEPPER");
+    assertThat(target.commercialCheckoutReference()).isEqualTo("owm6x");
+    assertThat(target.unitPriceBrl()).isEqualByComparingTo("67");
+    assertThat(target.pdeContext().path("commercialAccess").path("accessDays").asInt())
+        .isEqualTo(90);
+    assertThat(product.getPdeExperienceJson()).contains("musa-v7");
   }
 
   /** Resolve produto, experimento e versão a partir da referência canônica da tarefa. */

@@ -7,7 +7,7 @@ cd "${repo_root}"
 round="${1:?Informe a identificação da rodada}"
 [[ "${round}" =~ ^[a-zA-Z0-9_-]+$ ]]
 compose_project="${OPALA_RECOVERY_COMPOSE_PROJECT:?Informe o projeto Compose exclusivo}"
-expected_project="aihub-2e475278-27cd-401d-91bc-05f206370c93-a6d34659ff"
+expected_project="aihub-460e3fc8-8d4b-4272-847c-9bb54a8e67c5-4ff41539d3"
 [[ "${compose_project}" == "${expected_project}" ]] || {
   echo "Use o projeto Compose autorizado ${expected_project}." >&2
   exit 2
@@ -44,11 +44,12 @@ run docker-version docker version
 run docker-buildx docker buildx version
 run docker-compose docker compose version
 run backend mvn -B -f backend/ads-service/pom.xml \
-  '-Dtest=OpalaCommercial*Test,ProcessRunRepositoryTest,ProcessRunCommercialContinuationTest,LearningCycleCommercialReadinessTest,PdeProductionSlotServiceTest,PdeVersionOverviewServiceTest' test
+  '-Dtest=OpalaCommercial*Test,ExperimentAgentTaskTargetContextProviderTest,PdeCommercialCheckoutContractResolverTest,VegaV12ContractConsistencyTest,ProcessRunRepositoryTest,ProcessRunCommercialContinuationTest,LearningCycleCommercialReadinessTest,PdeProductionSlotServiceTest,PdeVersionOverviewServiceTest' test
 run landing-generator mvn -B -f landing-generator-agent-worker/pom.xml test
 run plutus mvn -B -f financial-agent-worker/pom.xml test
 run psique mvn -B -f customer-agent-worker/pom.xml test
 run temis mvn -B -f meta-ad-approver-worker/pom.xml test
+run pde-backend mvn -B -f pde-platform/backend/pom.xml test
 run process-worker npm --prefix process-execution-worker test
 run frontend-dependencies npm --prefix frontend ci --include=dev
 run frontend-tests npm --prefix frontend test -- --run \
@@ -59,6 +60,9 @@ run frontend-typecheck npm --prefix frontend run typecheck
 run frontend-build npm --prefix frontend run build
 run opala-mysql env OPALA_COMPOSE_PROJECT="${compose_project}" OPALA_DB_HOST=sandbox-docker \
   bash infra/testing/opala-commercial/run-mysql.sh
+run pde-contract-mysql env PDE_CONTRACT_COMPOSE_PROJECT="${compose_project}" \
+  PDE_CONTRACT_MYSQL_HOST=sandbox-docker \
+  bash infra/testing/pde-version-contract/run-mysql.sh
 run pde-integration env PDE_LOCAL_COMPOSE_PROJECT="${compose_project}" \
   bash pde-platform/scripts/test-musa-local-integration.sh
 run pde-runtime-isolation env PDE_LOCAL_COMPOSE_PROJECT="${compose_project}" \

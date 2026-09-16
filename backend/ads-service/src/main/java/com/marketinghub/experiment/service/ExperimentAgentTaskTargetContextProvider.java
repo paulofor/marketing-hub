@@ -57,6 +57,13 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
           .LearningCycleConstructionContext
       cycleConstructionContext;
 
+  @Autowired(required = false)
+  private com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext opalaContext;
+
+  @Autowired(required = false)
+  private com.marketinghub.opala.commercial.v1.service.OpalaCommercialVersionContract
+      opalaVersionContract;
+
   /** Configura as fontes canônicas de experimento, produto e contrato PDE. */
   @Autowired
   public ExperimentAgentTaskTargetContextProvider(
@@ -186,6 +193,12 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
     if (product == null || product.getId() == null || blank(product.getSlug())) {
       return Optional.empty();
     }
+    if ("opala-commercial-preparation-v1".equals(processCode)
+        && experiment != null
+        && opalaContext != null
+        && opalaVersionContract != null) {
+      return Optional.of(opalaTarget(sourceReference, experiment, product));
+    }
     if (cycleConstructionContext != null) {
       var cycleTarget = cycleConstructionContext.resolve(sourceReference, experiment, processCode);
       if (cycleTarget.isPresent()) return cycleTarget;
@@ -221,6 +234,34 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
                 .orElse(experiment == null ? null : experiment.getCommercialCheckoutUrl()),
             commercialPrice(experiment, product, canonicalCheckout),
             pdeContext(product, processCode)));
+  }
+
+  /**
+   * Monta o alvo Opala a partir da candidata persistida sem herdar o contrato publicado anterior.
+   */
+  private AgentTaskTargetResponse opalaTarget(
+      String sourceReference, Experiment experiment, Product product) {
+    var scope = opalaContext.scope(sourceReference);
+    var candidate = opalaContext.candidate(scope);
+    var versioned = opalaVersionContract.resolve(scope, candidate);
+    if (!Objects.equals(scope.experiment().getId(), experiment.getId())
+        || !Objects.equals(scope.cycle().getProductId(), product.getId())) {
+      throw new IllegalStateException("O alvo Opala pertence a outra ocorrência comercial.");
+    }
+    return new AgentTaskTargetResponse(
+        sourceReference,
+        experiment.getId(),
+        product.getId(),
+        product.getSlug(),
+        product.getName(),
+        product.getInternalName(),
+        scope.cycle().getProductVersion(),
+        candidate.destinationUrl(),
+        versioned.checkout().provider(),
+        versioned.checkout().offerReference(),
+        versioned.checkout().checkoutUrl(),
+        versioned.checkout().priceBrl(),
+        versioned.productContract());
   }
 
   /** Entrega o contrato privado reconciliado com a versão aceita e sua evidência de implantação. */

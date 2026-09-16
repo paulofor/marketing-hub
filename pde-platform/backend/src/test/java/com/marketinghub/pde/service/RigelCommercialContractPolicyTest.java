@@ -83,6 +83,7 @@ class RigelCommercialContractPolicyTest {
                 List.of(),
                 List.of(),
                 null,
+                null,
                 null);
     }
 }

@@ -21,6 +21,13 @@
     "currency": "BRL",
     "billingModel": "ONE_TIME"
   },
+  "commercialAccess": {
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "accessDays": 90,
+    "renewal": false,
+    "activationTrigger": "PAYMENT_APPROVED",
+    "scope": "DAYS_2_TO_7_AND_SUPPORT_MATERIALS"
+  },
   "theme": {
     "primary": "#7a2444",
     "accent": "#d6a75c",

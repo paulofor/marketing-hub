@@ -26,7 +26,8 @@ public record ProductExperienceResponse(
         List<PublicProofDto> publicProofs,
         List<CommercialProcessStepDto> commercialProcess,
         CommercialBindingDto commercialBinding,
-        CommercialCheckoutDto commercialCheckout
+        CommercialCheckoutDto commercialCheckout,
+        CommercialAccessDto commercialAccess
 ) {
 
     /** Mantém compatibilidade com os contratos anteriores à experiência comercial assistida v2. */
@@ -69,6 +70,7 @@ public record ProductExperienceResponse(
                 null,
                 List.of(),
                 List.of(),
+                null,
                 null,
                 null);
     }
@@ -264,5 +266,14 @@ public record ProductExperienceResponse(
             BigDecimal priceBrl,
             String currency,
             String billingModel
+    ) {}
+
+    /** Vincula a concessão paga à versão, ao prazo e ao evento financeiro autorizativo. */
+    public record CommercialAccessDto(
+            String experienceVersion,
+            int accessDays,
+            boolean renewal,
+            String activationTrigger,
+            String scope
     ) {}
 }

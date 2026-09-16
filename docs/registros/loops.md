@@ -1,5 +1,20 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-ACTIONS-PROVA-IMUTAVEL-E-GRAFO-HISTORICO — mudança compartilhada quebra workers e ciclo
+
+- **Data:** 16/09/2026. PR #5209 e merge `a7e8db2a`.
+- **Evidência histórica:** Customer Agent e Meta Ad Approver recusaram o hash antigo de
+  `ProductCatalogServiceTest`; a matriz MySQL 5.7 falhava desde o primeiro run posterior à criação
+  do subprocesso Opala, ao exigir `flowId` em dois eventos de uma versão histórica cujo grafo não
+  possuía IDs.
+- **Causa-raiz:** uma prova imutável compartilhada foi alterada sem nova atestação do Rigel; em
+  paralelo, o teste do ciclo confundia o contrato atual com a representação preservada do grafo
+  antigo. A correção de leitura do PR apenas voltou a acionar falhas já presentes na `main`.
+- **Correção local:** nova atestação Rigel v10 após 179 testes do PDE; o teste do ciclo agora exige
+  exatamente ação, origem e destino históricos, sem fabricar identidade retroativa de aresta.
+- **Prevenção:** empacotadores dos dois workers executados localmente e mensagem diagnóstica do
+  cenário histórico preservada. Evidências em `docs/homologacao/github-actions-pr-5209.md`.
+
 ## LOOP-VEGA-VERSAO-SELECIONADA-SEM-CANDIDATA-COMERCIAL — ciclo aponta v12, slot permanece v7
 
 - **Data:** 16/09/2026. Vega, ciclo #2, experimento #92.

@@ -1,0 +1,73 @@
+{
+  "evidenceVersion": "kit-whatsapp-tasting-homologation-v10",
+  "product": {
+    "id": 9,
+    "slug": "kit-whatsapp-pronto",
+    "experienceVersion": "kit-whatsapp-pronto-pde-v2"
+  },
+  "experimentId": 89,
+  "verifiedAt": "2026-09-16T14:29:00+00:00",
+  "status": "PASSED",
+  "revalidationReason": "O teste compartilhado do catálogo PDE mudou com a inclusão do contrato Vega v12. Os 179 testes do backend PDE foram reexecutados localmente sem falhas antes desta nova atestação.",
+  "scope": "Compatibilidade do Rigel com o catálogo compartilhado atual; preserva contrato, oferta, entrega e política comercial já homologados.",
+  "boundary": "Esta atestação não cria contato, venda, pagamento, gasto, publicação ou autorização comercial.",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-tasting-homologation-v5.json",
+      "sha256": "a33483b8ebd628f1e43fa99adca0180c8a2d450d6cd4eb6e343f3236d5863f25",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Baseline comercial v5 preservada na cadeia histórica imutável do Rigel."
+    },
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-tasting-homologation-v6.json",
+      "sha256": "82bd96f2923115d70ff3e8dd8bb179223e7f36ed0a1a25844ee81f6ff53a8f89",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Delta v6 preservado na cadeia histórica imutável do Rigel."
+    },
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-tasting-homologation-v7.json",
+      "sha256": "404b81a61efc6c9ba972a4029a334e3779f0ee8b0d752bbdec9db32b76a88e53",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Atestação v7 preservada na cadeia histórica imutável do Rigel."
+    },
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-tasting-homologation-v8.json",
+      "sha256": "af6fc2a88055758e37bf7462f87d8ad71a0e92f27d57f1e78e6f7c578117a80a",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Atestação v8 preservada na cadeia histórica imutável do Rigel."
+    },
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-tasting-homologation-v9.json",
+      "sha256": "46c7817c94ad0ea08a89c3daa92c3fc5b8b703e3154724ab4c38ba2159097b68",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Atestação v9 preservada como histórico imutável. A v10 revalida o executável compartilhado modificado sem reescrever a prova anterior."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/dto/ProductExperienceResponse.java",
+      "sha256": "5a74ccbbb24d325b0172858e6b6d65f509eaa441aba491d2562145c25a0b1a84"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+      "sha256": "954016d7e0c346f6e6140abf57cb637da7c9e29739d39eb865566c7a42cf8bfa"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java",
+      "sha256": "b18c3ea018936b4f315a0ba141b884e4cc424b2cab4e6c50ab96c6379119345d"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogServiceTest.java",
+      "sha256": "f53377ecf6aae01b40f732714fa736446bcdfc63b3cfbc96acd5276fa59cf64a"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/RigelCommercialContractPolicyTest.java",
+      "sha256": "58685985b1e4d50ac67f8db017a683d55d6afb5abcf79d0422b2405edfbf6821"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogVersionRejectionTest.java",
+      "sha256": "1bdb62dd16e9e32225714035fc97d55055c08912439c0af4beee5a138e52e940"
+    }
+  ],
+  "validationReport": "docs/homologacao/github-actions-pr-5209.md"
+}

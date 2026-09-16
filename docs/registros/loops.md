@@ -5185,6 +5185,13 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
 - **Prevenção:** `PrivateCommunicationJourneyTest`, replay offline dos contratos exportados, testes dos controles de execução e três cenários HTTP/MySQL para troca de destino, tarefa em curso e ciclo novo, com navegação desktop/mobile. Cânone: `docs/canonical/iris-communication-agent-canon.v1.md`; matriz e resultados: `docs/homologacao/vega-destino-aprovado-ciclo-v1.md`.
 - **Revisão da causa-raiz:** dois testes adicionais reproduziram a perda da conclusão após `ADJUSTED` ou avanço para `MEASUREMENT`: o validador confundia falta de autorização para novo trabalho com prova passada inválida. A consulta agora preserva o registro arquivado e seu destino; a preparação aberta continua revalidando provas. Isso também respeita o histórico do ciclo 1, encerrado com evidências preservadas, e o contrato já protegido pelo conciliador.
 - **Contrato físico de leitura e escrita:** a validação publicada revelou HTTP 500 nos GETs do histórico/contexto: o leitor novo reutilizava uma consulta com `PESSIMISTIC_WRITE` dentro de transação somente leitura. O MySQL 5.7 rejeitou o SQL com erro 1792. `PrivateCommunicationJourneyPersistenceTest` reproduziu as duas falhas com JPA, transações Spring e banco real; consultas passaram a usar um método sem lock, enquanto a conclusão conserva a reserva. O runner integral agora executa esse teste também no MySQL isolado, além da suíte comum, para impedir que mocks escondam novamente o contrato transacional.
+- **Recorrência no Catálogo Vivo em 16/09/2026:** após a adesão Opala do ciclo #2, o GET
+  `learning-cycles/v1/products/4?chainId=14` voltou a falhar com MySQL 1792. A prontidão do
+  experimento e a adesão isolada respondiam HTTP 200, confirmando a falha na projeção do ciclo.
+  `OpalaCommercialRouting.completed` havia reutilizado o mesmo método com `PESSIMISTIC_WRITE`.
+  A leitura passa a usar a consulta sem lock já protegida pelo teste JPA/MySQL; regressão específica
+  do roteamento exige o método de leitura e rejeita a reserva de escrita. O método bloqueante
+  permanece exclusivo dos comandos que criam ou alteram ocorrências.
 
 
 ## LOOP-CICLO-GATE-FONTE-DIVERGENTE — homologação ignora o gate do experimento

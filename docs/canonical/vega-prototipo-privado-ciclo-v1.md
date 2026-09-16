@@ -1,4 +1,10 @@
-# Vega: implementação privada por ciclo — v1
+# Vega: histórico da implementação protegida por ciclo — v1
+
+> **Estado canônico desde 16/09/2026:** este documento preserva a evolução histórica das
+> versões v9–v12 e das evidências emitidas pela rota `/vega-private`. Novas correções não criam
+> outra “versão privada”. A v12 é a candidata única do slot `v8`, atravessando pré-visualização,
+> homologação e publicação com o mesmo contrato, `experienceVersion` e imagem. A rota histórica
+> não é destino comercial nem fonte vigente para promoção.
 
 A correção do ciclo #2 segue o contrato aprovado nas tarefas #362, #366, #369 e #376.
 A versão executável `musa-pde-entry-v9-primeiro-ajuste-aplicavel` sucede a especificação v8;
@@ -40,8 +46,9 @@ Teto de Plutus e aprovação para recrutamento/venda permanecem gates posteriore
 
 ## Publicação e evidência
 
-Imagens são construídas pelos Dockerfiles e Compose versionados neste repositório. A nova
-superfície `/vega-private` deve ser roteada ao container próprio, sem alterar assets ou imagem da v7.
+Imagens são construídas pelos Dockerfiles e Compose versionados neste repositório. A superfície
+histórica `/vega-private` deve permanecer isolada para preservar evidências já emitidas, sem alterar
+assets ou imagem da v7 e sem receber novas promoções comerciais.
 O registro pela tela do ciclo exige URL HTTPS sem parâmetros, versão nova, imagem, relatório,
 data recente e confirmações dos testes. Ele libera a revisão da correção, sem aprovar o próprio
 parecer, a homologação, contatos, campanha, cobrança ou gasto de mídia.

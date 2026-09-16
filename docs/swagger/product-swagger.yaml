@@ -568,6 +568,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PostDeployPdeProductionSlot"
+  /api/products/{id}/pde-production-slots/{slotCode}/prepare-publication:
+    post:
+      tags:
+        - Products
+      summary: Conclui a preparação da Vega v12 sem publicar contrato ou campanha.
+      operationId: prepareProductPdeProductionSlotForPublication
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: slotCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: v8
+      responses:
+        "200":
+          description: Candidata homologada e pronta para publicar o mesmo contrato.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDeployPdeProductionSlot"
+        "409":
+          description: Há divergência entre versão, destino, oferta, vídeos, kit ou homologação.
   /api/products/{id}/pde-production-slots/{slotCode}/validate:
     post:
       tags:
@@ -1783,6 +1811,8 @@ components:
         - publicUrl
         - homologationSummary
         - publishedContract
+        - canPreparePublication
+        - canPublishContract
         - pendingItems
         - lifecycle
       properties:
@@ -1791,7 +1821,7 @@ components:
           format: int64
         slotCode:
           type: string
-          example: v12
+          example: v8
         name:
           type: string
           example: Vega com vídeo de apresentação
@@ -1865,6 +1895,12 @@ components:
           type: string
         publishedContract:
           type: boolean
+        canPreparePublication:
+          type: boolean
+          description: Todos os vínculos estão coerentes e resta concluir a homologação da candidata.
+        canPublishContract:
+          type: boolean
+          description: A versão homologada pode publicar o snapshot exato do contrato.
         pendingItems:
           type: array
           items:

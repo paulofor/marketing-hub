@@ -3,6 +3,7 @@ import { useQueries } from "@tanstack/react-query";
 import axios from "axios";
 import { Link, useParams } from "react-router-dom";
 import {
+  usePrepareProductPdeProductionSlot,
   useProductPdeProductionSlots,
   usePublishProductPdeProductionSlot,
   useSaveProductPdeProductionSlot,
@@ -287,6 +288,7 @@ export default function ProductPdeVersionsPage() {
   const versionsQuery = useProductPdeVersions(productId);
   const saveSlot = useSaveProductPdeProductionSlot(productId);
   const publishSlot = usePublishProductPdeProductionSlot(productId);
+  const preparePublication = usePrepareProductPdeProductionSlot(productId);
   const validateSlot = useValidateProductPdeProductionSlot(productId);
   const product = productQuery.data;
   const slots = slotsQuery.data ?? [];
@@ -346,6 +348,13 @@ export default function ProductPdeVersionsPage() {
   const selectedEditorSlot = useMemo(
     () => slots.find((slot) => slot.slotCode === selectedEditorSlotCode),
     [selectedEditorSlotCode, slots],
+  );
+  const selectedVersion = useMemo(
+    () =>
+      (versionsQuery.data ?? []).find(
+        (version) => version.slotCode === selectedEditorSlotCode,
+      ),
+    [selectedEditorSlotCode, versionsQuery.data],
   );
   const [contractDraft, setContractDraft] = useState("");
   const [publishedBy, setPublishedBy] = useState("Marketing Hub");
@@ -447,6 +456,9 @@ export default function ProductPdeVersionsPage() {
         <VersionOverviewCards
           versions={versionsQuery.data ?? []}
           productId={productId}
+          onPrepare={(slotCode) => preparePublication.mutate(slotCode)}
+          preparingSlotCode={preparePublication.variables}
+          isPreparing={preparePublication.isPending}
         />
       )}
 
@@ -780,7 +792,16 @@ export default function ProductPdeVersionsPage() {
                   type="button"
                   className="btn btn-primary btn-sm"
                   onClick={publishEditorDraft}
-                  disabled={publishSlot.isPending || !selectedEditorSlot}
+                  disabled={
+                    publishSlot.isPending ||
+                    !selectedEditorSlot ||
+                    !selectedVersion?.canPublishContract
+                  }
+                  title={
+                    selectedVersion?.canPublishContract
+                      ? undefined
+                      : "Conclua os vínculos e a homologação desta versão antes de publicar."
+                  }
                 >
                   {publishSlot.isPending ? "Publicando..." : "Publicar no slot"}
                 </button>
@@ -793,6 +814,14 @@ export default function ProductPdeVersionsPage() {
                   Abrir URL pública
                 </a>
               </div>
+              {selectedVersion && !selectedVersion.canPublishContract && (
+                <div className="col-12">
+                  <div className="alert alert-warning py-2 mb-0" role="status">
+                    O contrato só será publicado depois que destino, oferta,
+                    vídeos, kit e homologação pertencerem à mesma versão.
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -804,9 +833,15 @@ export default function ProductPdeVersionsPage() {
 function VersionOverviewCards({
   versions,
   productId,
+  onPrepare,
+  preparingSlotCode,
+  isPreparing,
 }: {
   versions: ProductPdeVersionOverview[];
   productId?: string;
+  onPrepare: (slotCode: string) => void;
+  preparingSlotCode?: string;
+  isPreparing: boolean;
 }) {
   const published = versions.filter(
     (version) => version.lifecycleStage === "PUBLISHED",
@@ -845,9 +880,6 @@ function VersionOverviewCards({
         ) : (
           <div className="row g-3">
             {versions.map((version) => {
-              const readyToPreparePublication =
-                version.pendingItems.length === 0 &&
-                version.lifecycleStage !== "PUBLISHED";
               return (
                 <div className="col-12" key={version.id}>
                   <article
@@ -1016,13 +1048,18 @@ function VersionOverviewCards({
                             ? "Abrir versão publicada"
                             : "Abrir pré-visualização"}
                         </a>
-                        {readyToPreparePublication && (
-                          <a
+                        {version.canPreparePublication && (
+                          <button
+                            type="button"
                             className="btn btn-primary btn-sm"
-                            href="#pde-contract-editor"
+                            onClick={() => onPrepare(version.slotCode)}
+                            disabled={isPreparing}
                           >
-                            Preparar para publicação
-                          </a>
+                            {isPreparing &&
+                            preparingSlotCode === version.slotCode
+                              ? "Preparando..."
+                              : "Preparar para publicação"}
+                          </button>
                         )}
                       </div>
                     </div>

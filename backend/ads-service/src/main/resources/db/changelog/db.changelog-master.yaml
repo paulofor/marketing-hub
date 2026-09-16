@@ -2091,3 +2091,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-16-catalogo-vivo-opala-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-16-vega-v12-commercial-candidate.yaml
+      relativeToChangelogFile: true

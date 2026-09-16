@@ -7,6 +7,12 @@
   "promise": "Entregar gratuitamente um primeiro ajuste claro e aplicável à combinação e à ocasião escolhidas, com continuação opcional de sete dias por R$ 67 em pagamento único.",
   "audience": "Mulheres urbanas que querem elevar presença, cuidado percebido e segurança visual com microações acessíveis.",
   "priceLabel": "R$67",
+  "commercialBinding": {
+    "experimentId": 92,
+    "primaryCta": "Ver meu primeiro ajuste MUSA",
+    "priceBrl": 67,
+    "billingModel": "ONE_TIME"
+  },
   "commercialCheckout": {
     "provider": "PEPPER",
     "checkoutUrl": "https://go.pepper.com.br/owm6x",
@@ -467,19 +473,19 @@
       "title": "Mapa dos 7 Sinais MUSA",
       "type": "HTML",
       "description": "Resumo dos sete sinais com conceito, missão, exemplo e aplicação prática.",
-      "url": "/materials/musa-v7/mapa-dos-7-sinais.html"
+      "url": "/materials/musa-v12/mapa-dos-7-sinais.html"
     },
     {
       "title": "Checklist Antes de Sair",
       "type": "HTML",
       "description": "Checklist acessível para revisar mensagem visual, peça-sinal, estrutura, cor, acabamento e assinatura pessoal.",
-      "url": "/materials/musa-v7/checklist-antes-de-sair.html"
+      "url": "/materials/musa-v12/checklist-antes-de-sair.html"
     },
     {
       "title": "Fórmula MUSA Pessoal",
       "type": "CSV",
       "description": "Template para registrar sinais repetíveis, ocasiões, evidências e regra anti-compra impulsiva.",
-      "url": "/materials/musa-v7/formula-musa-pessoal.csv"
+      "url": "/materials/musa-v12/formula-musa-pessoal.csv"
     }
   ],
   "heroVideos": [

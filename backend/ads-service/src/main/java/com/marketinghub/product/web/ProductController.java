@@ -242,6 +242,15 @@ public class ProductController {
     return pdeProductionSlotService.validateProductionSlot(product.getSlug(), slotCode);
   }
 
+  /** Conclui a preparação da candidata v12 sem publicar contrato, imagem ou campanha. */
+  @PostMapping("/{id}/pde-production-slots/{slotCode}/prepare-publication")
+  public PostDeployPdeProductionSlotDto preparePdeProductionSlotForPublication(
+      @PathVariable Long id, @PathVariable String slotCode) {
+    Product product = service.getProduct(id);
+    return pdeProductionSlotService.prepareProductionSlotForPublication(
+        product.getSlug(), slotCode);
+  }
+
   /** Publica o contrato comercial editável de uma versão produtiva PDE. */
   @PostMapping("/{id}/pde-production-slots/{slotCode}/publish")
   public PostDeployPdeProductionSlotDto publishPdeProductionSlotContract(

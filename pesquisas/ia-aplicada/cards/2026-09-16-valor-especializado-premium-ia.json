@@ -1,0 +1,18 @@
+{
+  "cardKey": "valor-especializado-premium-ia",
+  "collection": "neuromarketing",
+  "title": "IA premium precisa transformar capacidade extra em valor específico",
+  "finding": "O Meta One já acumula mais de 15 milhões de assinaturas e trials na introdução gradual; a Meta relata retenção forte nos planos individuais e diz que, nos testes dos bundles, mais da metade dos assinantes usou recursos de IA e de expressão, com alguns recursos de IA entre os principais motivos para assinar.",
+  "mechanism": "A disposição a pagar pode aumentar quando capacidade adicional de IA aparece dentro de um hábito já estabelecido e está ligada a tarefas concretas, em vez de ser vendida apenas como acesso genérico a IA.",
+  "commercialApplication": "Comparar uma oferta premium centrada em capacidade específica de execução — mais automações, geração multimodal, memória ou acompanhamento — com uma oferta genérica de 'plano com IA', mantendo preço, público e canal constantes.",
+  "evidenceStrength": "Moderada: há tração em grande escala e sinal declarado de retenção e motivação de assinatura, mas os números são auto-reportados, agregam trials e assinaturas e não isolam o efeito causal dos recursos de IA.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2027-01-16",
+  "experimentHypothesis": "Para o mesmo preço e funcionalidade-base, comunicar e entregar capacidade adicional de IA ligada a um resultado específico aumentará checkout, pagamento e retenção em relação a uma proposta premium genérica centrada apenas em 'mais IA'.",
+  "risks": "Confundir trial com cliente pago, atribuir a assinatura somente à IA quando o bundle contém outros benefícios ou criar limites artificiais que prejudiquem a experiência gratuita.",
+  "limits": "A Meta tem distribuição, marca e base instalada incomparáveis às de um produto pequeno; não há taxa pública de retenção, ARPU, conversão de trial ou decomposição do valor por recurso.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-16-valor-especializado-premium-ia.md",
+  "sourceTitle": "Fonte revisada — IA premium embutida em superfícies habituais",
+  "sourceSha256": "163a64c455cb6a58409705370692fc941c61631c777fd5f9143b47ebee4d2cde"
+}

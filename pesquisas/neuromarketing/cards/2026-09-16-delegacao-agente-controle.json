@@ -1,0 +1,18 @@
+{
+  "cardKey": "delegacao-agente-com-controle-humano",
+  "collection": "neuromarketing",
+  "title": "Delegue à IA conforme a tarefa e preserve controle em ações sensíveis",
+  "finding": "Pesquisa com 2.501 consumidores em oito mercados, incluindo 350 no Brasil, encontrou confiança maior em IA para rastreamento (81%) e perguntas pré-compra (74%) do que para mudanças de conta (66%) e pagamento/cobrança (62%). Estudo peer-reviewed separado mostrou que colaboração eficaz, utilidade percebida, confirmação de expectativas e satisfação se associam à continuidade de uso de IA generativa.",
+  "mechanism": "A utilidade da IA parece depender de resolver uma tarefa concreta e confirmar expectativas; à medida que aumenta o risco percebido ou a irreversibilidade da ação, cresce a necessidade de confirmação, transparência, auditabilidade e possibilidade de intervenção humana.",
+  "commercialApplication": "Aplicar uma DelegationPolicy em agentes de Click-to-WhatsApp: autonomia para pesquisa, comparação, perguntas pré-compra e acompanhamento; confirmação explícita e handoff humano fácil para ações financeiras, mudanças de conta ou outras decisões sensíveis.",
+  "evidenceStrength": "Moderada: survey recente multi-país com recorte brasileiro e estudo peer-reviewed complementar, mas ambos são autorrelatados/observacionais e os contextos não medem conversão do Marketing Hub.",
+  "publishedOn": "2026-09-15",
+  "validUntil": "2027-03-15",
+  "experimentHypothesis": "Um agente que executa autonomamente tarefas claras e reversíveis, mas pede confirmação em ações sensíveis, reduzirá esforço e manterá ou elevará confiança e conclusão de conversa versus automação irrestrita ou confirmação em cada microetapa.",
+  "risks": "Generalizar preferências entre países, automatizar ação financeira sem consentimento, esconder o que o agente fará, criar fricção excessiva com confirmações desnecessárias ou interpretar intenção declarada como comportamento real.",
+  "limits": "A Sinch tem interesse comercial no tema; o recorte brasileiro tem 350 respondentes. O estudo da Scientific Reports usa 271 universitários coreanos em contexto educacional. Nenhuma fonte prova efeito causal em CTR, CPL, checkout, pagamento, retenção ou receita.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-16-delegacao-agente-controle.md",
+  "sourceTitle": "Fonte revisada — Delegação de agentes por tipo e risco da tarefa",
+  "sourceSha256": "1c8867a916f8f092bcff9eb165ea829b11742881e381a9dc387a6f801e224def"
+}

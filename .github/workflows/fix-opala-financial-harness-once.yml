@@ -1,0 +1,61 @@
+name: Fix Opala financial harness catalog once
+
+on:
+  push:
+    branches:
+      - fix/opala-harness-catalog-20260915
+
+permissions:
+  contents: write
+
+jobs:
+  patch-harness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Inserir contrato financeiro Opala no catálogo do harness
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json")
+          text = path.read_text(encoding="utf-8")
+
+          opala_path = "financial-agent-worker/src/main/resources/prompts/opala-commercial/v1/economics.md"
+          if opala_path in text:
+              print("Catálogo financeiro já contém o contrato Opala.")
+          else:
+              anchor = '        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema econômico da validação privada PDE", "version": "v5", "path": "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v5/economics-schema.json", "description": "Contrato estruturado do gate econômico privado." },'
+              if anchor not in text:
+                  raise SystemExit("Âncora do catálogo financeiro não encontrada; nenhuma alteração aplicada.")
+
+              insertion = '        { "artifactType": "PROMPT", "name": "Economia da preparação comercial Opala", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/opala-commercial/v1/economics.md", "description": "Reavalia custos, margem e teto autorizado na preparação comercial do produto Opala sem autorizar gasto." },'
+              text = text.replace(anchor, anchor + "\n" + insertion, 1)
+              path.write_text(text, encoding="utf-8")
+
+      - name: Validar JSON e contratos Opala
+        shell: bash
+        run: |
+          python -m json.tool backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json >/dev/null
+          for f in entry.md targeting.md creative.md checkout.md preparation-schema.json; do
+            grep -Fq "landing-generator-agent-worker/src/main/resources/prompts/opala-commercial/v1/$f" backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json
+          done
+          grep -Fq "financial-agent-worker/src/main/resources/prompts/opala-commercial/v1/economics.md" backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json
+
+      - name: Commitar somente a correção final
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -f .github/workflows/fix-opala-financial-harness-once.yml
+          git add backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteração pendente."
+            exit 0
+          fi
+          git commit -m "fix: catalogar contrato financeiro Opala no agent harness"
+          git push origin HEAD:${GITHUB_REF_NAME}

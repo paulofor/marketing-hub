@@ -1,0 +1,18 @@
+{
+  "cardKey": "captura-intencao-no-contexto",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Capture a intenção no contexto em que ela aparece",
+  "finding": "O Daydream reporta mais de 1,5 milhão de shoppers e passou a transformar imagens já salvas no rolo de câmera em resultados compráveis e a aceitar buscas via Siri sem exigir que o usuário abra o app e reconstrua sua intenção.",
+  "mechanism": "Screenshots, fotos, links, voz e mensagens podem funcionar como artefatos de intenção; reutilizar esse contexto reduz o esforço de descrição e aproxima descoberta e próxima ação.",
+  "commercialApplication": "Testar no Marketing Hub uma entrada por artefato de intenção — screenshot, URL, foto, texto encaminhado ou áudio — que gere imediatamente uma próxima ação ou oferta, contra um fluxo tradicional que exige formulário ou nova descrição.",
+  "evidenceStrength": "Moderada-baixa: há adoção relevante do produto e uma implementação concreta do padrão, mas não foram divulgadas métricas de conversão ou experimento causal dos novos atalhos de câmera e Siri.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2027-01-16",
+  "experimentHypothesis": "Para usuários que já possuem um artefato que representa o que desejam, aceitar esse artefato como entrada elevará avanço para CTA, checkout ou conversa qualificada em relação a pedir que descrevam novamente a necessidade.",
+  "risks": "Privacidade de imagens e mensagens, interpretação errada do contexto, recomendações excessivamente específicas e transferência indevida de um padrão forte em moda visual para categorias pouco visuais.",
+  "limits": "As métricas de usuários e catálogo são divulgadas pela empresa; não há GMV, receita, retenção ou taxa de conversão pública. O efeito precisa ser validado por categoria e por evento real do funil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-16-captura-intencao-no-contexto.md",
+  "sourceTitle": "Fonte revisada — Capturar intenção no contexto em que ela aparece",
+  "sourceSha256": "38ee2992559d8af8819e30f4f798afceb330f92847f85ca5c32800557a3be39f"
+}

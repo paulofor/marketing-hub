@@ -21,6 +21,9 @@ import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.PdeProductionSlotService;
+import com.marketinghub.pde.service.versionoverview.PdeVersionLifecycleStepDto;
+import com.marketinghub.pde.service.versionoverview.PdeVersionOverviewService;
+import com.marketinghub.pde.service.versionoverview.ProductPdeVersionOverviewDto;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoAssetDto;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoPanelDto;
 import com.marketinghub.product.Product;
@@ -75,13 +78,19 @@ class ProductControllerTest {
 
   @Mock private PdeProductionSlotService pdeProductionSlotService;
 
+  @Mock private PdeVersionOverviewService pdeVersionOverviewService;
+
   /** Monta o controller isolado para validar o contrato HTTP de produto. */
   @BeforeEach
   void setUp() {
     mockMvc =
         MockMvcBuilders.standaloneSetup(
                 new ProductController(
-                    service, scientificArticleService, mapper, pdeProductionSlotService))
+                    service,
+                    scientificArticleService,
+                    mapper,
+                    pdeProductionSlotService,
+                    pdeVersionOverviewService))
             .build();
   }
 
@@ -849,6 +858,51 @@ class ProductControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].slotCode").value("v2"))
         .andExpect(jsonPath("$[0].experienceVersion").value("musa-pde-entry-v5-estrada-desejo"));
+  }
+
+  /** Deve expor a trajetória consolidada das versões PDE do produto Opala. */
+  @Test
+  void listPdeVersions() throws Exception {
+    Product product = Product.builder().id(1L).slug("metodo-musa-7-dias").build();
+    when(service.getProduct(1L)).thenReturn(product);
+    when(pdeVersionOverviewService.list(product))
+        .thenReturn(
+            List.of(
+                new ProductPdeVersionOverviewDto(
+                    12L,
+                    "v12",
+                    "Vega com vídeo de apresentação",
+                    "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+                    "CANDIDATE",
+                    "Candidata",
+                    PdeProductionSlotStatus.CANDIDATE,
+                    "Vídeo de apresentação aumenta o avanço para o primeiro valor",
+                    "Inclui vídeo de apresentação na entrada",
+                    92L,
+                    "Vega · vídeo de apresentação",
+                    "PLANNED",
+                    2,
+                    2,
+                    new BigDecimal("67.00"),
+                    "Começar agora",
+                    "https://checkout.example/v12",
+                    "https://v12.clubemusa.com.br",
+                    "OK",
+                    "URL produtiva validada",
+                    Instant.parse("2026-09-16T12:00:00Z"),
+                    "Testes técnicos aprovados; homologação comercial ainda pendente.",
+                    false,
+                    List.of("Concluir a homologação comercial."),
+                    List.of(new PdeVersionLifecycleStepDto("CONCEPT", "Conceito", "DONE")),
+                    Instant.parse("2026-09-16T12:00:00Z"))));
+
+    mockMvc
+        .perform(get("/api/products/{id}/pde-versions", 1L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].slotCode").value("v12"))
+        .andExpect(jsonPath("$[0].lifecycleLabel").value("Candidata"))
+        .andExpect(jsonPath("$[0].sourceExperimentId").value(92L))
+        .andExpect(jsonPath("$[0].lifecycle[0].label").value("Conceito"));
   }
 
   /** Deve listar vídeos HLS já resolvidos por versão PDE pelo backend. */

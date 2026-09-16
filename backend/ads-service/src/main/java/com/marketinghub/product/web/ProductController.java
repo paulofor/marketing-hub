@@ -5,6 +5,8 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotRequestDto;
 import com.marketinghub.pde.service.PdeProductionSlotService;
 import com.marketinghub.pde.service.publishslotcontract.PublishPdeProductionSlotContractRequest;
+import com.marketinghub.pde.service.versionoverview.PdeVersionOverviewService;
+import com.marketinghub.pde.service.versionoverview.ProductPdeVersionOverviewDto;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoPanelDto;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.dto.CreateProductRequest;
@@ -43,19 +45,22 @@ public class ProductController {
   private final ProductScientificArticleService scientificArticleService;
   private final ProductMapper mapper;
   private final PdeProductionSlotService pdeProductionSlotService;
+  private final PdeVersionOverviewService pdeVersionOverviewService;
   private final ProductMarketingDefinitionHtmlRenderer htmlRenderer =
       new ProductMarketingDefinitionHtmlRenderer();
 
-  /** Inicializa o controller com serviço de produto e mapper de resposta. */
+  /** Inicializa o controller com os serviços de produto, versões PDE e mapper de resposta. */
   public ProductController(
       ProductService service,
       ProductScientificArticleService scientificArticleService,
       ProductMapper mapper,
-      PdeProductionSlotService pdeProductionSlotService) {
+      PdeProductionSlotService pdeProductionSlotService,
+      PdeVersionOverviewService pdeVersionOverviewService) {
     this.service = service;
     this.scientificArticleService = scientificArticleService;
     this.mapper = mapper;
     this.pdeProductionSlotService = pdeProductionSlotService;
+    this.pdeVersionOverviewService = pdeVersionOverviewService;
   }
 
   /** Cadastra um novo produto comercial no Marketing Hub. */
@@ -205,6 +210,12 @@ public class ProductController {
   public List<PostDeployPdeProductionSlotDto> listPdeProductionSlots(@PathVariable Long id) {
     Product product = service.getProduct(id);
     return pdeProductionSlotService.listProductionSlotsForProduct(product.getSlug());
+  }
+
+  /** Lista a trajetória comercial consolidada das versões PDE de um produto Opala. */
+  @GetMapping("/{id}/pde-versions")
+  public List<ProductPdeVersionOverviewDto> listPdeVersions(@PathVariable Long id) {
+    return pdeVersionOverviewService.list(service.getProduct(id));
   }
 
   /** Lista os vídeos HLS resolvidos pelo backend para cada versão produtiva PDE do produto. */

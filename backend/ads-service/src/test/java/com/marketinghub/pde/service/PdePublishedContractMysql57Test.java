@@ -198,7 +198,10 @@ class PdePublishedContractMysql57Test {
                     products,
                     mock(ProductScientificArticleService.class),
                     mock(ProductMapper.class),
-                    service))
+                    service,
+                    mock(
+                        com.marketinghub.pde.service.versionoverview.PdeVersionOverviewService
+                            .class)))
             .build();
     for (String route :
         new String[] {

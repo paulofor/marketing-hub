@@ -463,6 +463,32 @@ paths:
                   $ref: "#/components/schemas/PdeProductionSlotVideoPanel"
         "404":
           description: Produto não encontrado.
+  /api/products/{id}/pde-versions:
+    get:
+      tags:
+        - Products
+      summary: Lista a trajetória comercial consolidada das versões PDE do produto Opala.
+      operationId: listProductPdeVersions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Versões com conceito, ativos, oferta, homologação, pendências e publicação.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductPdeVersionOverview"
+        "404":
+          description: Produto não encontrado.
+        "409":
+          description: Produto não pertence ao tipo Opala.
   /api/products/{id}/pde-production-slots:
     get:
       tags:
@@ -1722,6 +1748,135 @@ components:
         landingVideoSlotId:
           type: integer
           format: int64
+    PdeVersionLifecycleStep:
+      type: object
+      required:
+        - code
+        - label
+        - status
+      properties:
+        code:
+          type: string
+          example: HOMOLOGATION
+        label:
+          type: string
+          example: Homologação
+        status:
+          type: string
+          enum:
+            - DONE
+            - CURRENT
+            - PENDING
+            - BLOCKED
+    ProductPdeVersionOverview:
+      type: object
+      required:
+        - id
+        - slotCode
+        - name
+        - experienceVersion
+        - lifecycleStage
+        - lifecycleLabel
+        - operationalStatus
+        - videoCount
+        - approvedVideoCount
+        - publicUrl
+        - homologationSummary
+        - publishedContract
+        - pendingItems
+        - lifecycle
+      properties:
+        id:
+          type: integer
+          format: int64
+        slotCode:
+          type: string
+          example: v12
+        name:
+          type: string
+          example: Vega com vídeo de apresentação
+        experienceVersion:
+          type: string
+          example: musa-pde-entry-v12-primeiro-ajuste-aplicavel
+        lifecycleStage:
+          type: string
+          enum:
+            - DRAFT
+            - CANDIDATE
+            - HOMOLOGATED
+            - PUBLISHED
+            - PAUSED
+            - ARCHIVED
+        lifecycleLabel:
+          type: string
+        operationalStatus:
+          type: string
+          enum:
+            - PLANNED
+            - CANDIDATE
+            - READY
+            - ACTIVE
+            - PAUSED
+            - RETIRED
+        hypothesis:
+          type: string
+          nullable: true
+        primaryChange:
+          type: string
+          nullable: true
+        sourceExperimentId:
+          type: integer
+          format: int64
+          nullable: true
+        sourceExperimentName:
+          type: string
+          nullable: true
+        sourceExperimentStatus:
+          type: string
+          nullable: true
+        videoCount:
+          type: integer
+        approvedVideoCount:
+          type: integer
+        priceBrl:
+          type: number
+          nullable: true
+        primaryCta:
+          type: string
+          nullable: true
+        checkoutUrl:
+          type: string
+          format: uri
+          nullable: true
+        publicUrl:
+          type: string
+          format: uri
+        validationStatus:
+          type: string
+          nullable: true
+        validationSummary:
+          type: string
+          nullable: true
+        validationCheckedAt:
+          type: string
+          format: date-time
+          nullable: true
+        homologationSummary:
+          type: string
+        publishedContract:
+          type: boolean
+        pendingItems:
+          type: array
+          items:
+            type: string
+        lifecycle:
+          type: array
+          items:
+            $ref: "#/components/schemas/PdeVersionLifecycleStep"
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
     PostDeployPdeProductionSlot:
       type: object
       properties:
@@ -1752,6 +1907,7 @@ components:
           type: string
           enum:
             - PLANNED
+            - CANDIDATE
             - READY
             - ACTIVE
             - PAUSED

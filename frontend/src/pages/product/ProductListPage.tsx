@@ -115,6 +115,16 @@ function isPdeProduct(product: {
   );
 }
 
+function isOpalaProduct(product: {
+  productTypeCode?: string;
+  productTypeInternalName?: string;
+}) {
+  return (
+    normalizeProductStatus(product.productTypeCode) === "PDE" ||
+    normalizeProductStatus(product.productTypeInternalName) === "OPALA"
+  );
+}
+
 function cleanJourneyItem(value: string) {
   return value.replace(/^- /, "").replace(/\*\*/g, "");
 }
@@ -328,6 +338,7 @@ export default function ProductListPage() {
             product.pdeExperienceJson,
           );
           const showPdeJourneyAction = isPdeProduct(product);
+          const showPdeVersionsAction = isOpalaProduct(product);
           const persuasiveJourneySteps = persuasiveJourney?.steps ?? [];
           const isApplyingJourney =
             applyDefaultJourney.isPending &&
@@ -627,7 +638,7 @@ export default function ProductListPage() {
                         <GitCompare size={16} aria-hidden="true" />
                         Comparar experimentos
                       </Link>
-                      {showPdeJourneyAction && (
+                      {showPdeVersionsAction && (
                         <Link
                           className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
                           to={`/products/${product.id}/pde-versions`}

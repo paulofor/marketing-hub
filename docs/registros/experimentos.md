@@ -7270,3 +7270,11 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
   liberação da campanha permanecem decisões humanas; medição e aprendizado dependem de tráfego e
   resultados reais.
 - Matriz, rodadas e evidências: `docs/homologacao/vega-ciclo2-ativacao-comercial-v12.md`.
+
+# 2026-09-16 — Gestão de versões PDE no produto Opala
+
+- decisão: a versão candidata e a publicada são a mesma identidade promovida após homologação; a pré-visualização protegida não cria uma “versão privada” paralela;
+- o card do produto passou a reservar **Versões PDE** ao tipo oficial `PDE`/Opala;
+- a visão consolidada apresenta hipótese, mudança principal, vídeos, oferta, checkout, experimento, homologação, pendências e trajetória até publicação, usando dados agregados pelo backend;
+- o cadastro técnico de slots, a validação de URL, o editor de contrato e as métricas por versão foram preservados;
+- publicação, ativação de campanha e gasto continuam fora desta tela e sujeitos aos gates próprios.

@@ -4,14 +4,17 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.PdeProductionSlotService;
+import com.marketinghub.pde.service.promotion.PdeV12PublicationPolicy;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoPanelDto;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -43,6 +46,7 @@ public class PdeVersionOverviewService {
 
   private final PdeProductionSlotRepository slotRepository;
   private final ExperimentRepository experimentRepository;
+  private final ExperimentVideoAssetRepository videoAssetRepository;
   private final PdeProductionSlotService slotService;
   private final ObjectMapper objectMapper;
 
@@ -50,10 +54,12 @@ public class PdeVersionOverviewService {
   public PdeVersionOverviewService(
       PdeProductionSlotRepository slotRepository,
       ExperimentRepository experimentRepository,
+      ExperimentVideoAssetRepository videoAssetRepository,
       PdeProductionSlotService slotService,
       ObjectMapper objectMapper) {
     this.slotRepository = slotRepository;
     this.experimentRepository = experimentRepository;
+    this.videoAssetRepository = videoAssetRepository;
     this.slotService = slotService;
     this.objectMapper = objectMapper;
   }
@@ -149,7 +155,25 @@ public class PdeVersionOverviewService {
             text(contract.path("commercialBinding"), "changeSummary"));
     String lifecycleStage = lifecycleStage(slot.getStatus());
     List<String> pendingItems =
-        pendingItems(slot, experiment, hypothesis, videoCount, approvedVideoCount);
+        pendingItems(
+            slot,
+            experiment,
+            hypothesis,
+            videoCount,
+            approvedVideoCount,
+            contract,
+            slot.getSourceExperimentId() == null
+                ? List.of()
+                : videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(
+                    slot.getSourceExperimentId()));
+    boolean canPreparePublication =
+        PdeV12PublicationPolicy.appliesTo(slot)
+            && slot.getStatus() == PdeProductionSlotStatus.CANDIDATE
+            && pendingItems.stream().allMatch("Concluir a homologação comercial da v12."::equals);
+    boolean canPublishContract =
+        pendingItems.isEmpty()
+            && (slot.getStatus() == PdeProductionSlotStatus.READY
+                || slot.getStatus() == PdeProductionSlotStatus.ACTIVE);
     return new ProductPdeVersionOverviewDto(
         slot.getId(),
         slot.getSlotCode(),
@@ -174,6 +198,8 @@ public class PdeVersionOverviewService {
         slot.getValidationCheckedAt(),
         homologationSummary(slot),
         StringUtils.hasText(slot.getPublishedExperienceJson()),
+        canPreparePublication,
+        canPublishContract,
         pendingItems,
         lifecycle(slot, hypothesis, approvedVideoCount, experiment),
         slot.getUpdatedAt());
@@ -207,13 +233,31 @@ public class PdeVersionOverviewService {
       Experiment experiment,
       String hypothesis,
       int videoCount,
-      int approvedVideoCount) {
+      int approvedVideoCount,
+      JsonNode contract,
+      List<ExperimentVideoAsset> experimentVideos) {
     List<String> pending = new ArrayList<>();
     if (!StringUtils.hasText(hypothesis)) pending.add("Definir a hipótese da versão.");
     if (!StringUtils.hasText(slot.getDraftExperienceJson())
         && !StringUtils.hasText(slot.getPublishedExperienceJson())) {
       pending.add("Construir o contrato da experiência.");
     }
+    if (PdeV12PublicationPolicy.appliesTo(slot)) {
+      pending.addAll(
+          PdeV12PublicationPolicy.blockers(slot, experiment, experimentVideos, contract, true));
+    } else {
+      addGenericCommercialPendingItems(pending, slot, experiment, videoCount, approvedVideoCount);
+    }
+    return List.copyOf(pending);
+  }
+
+  /** Preserva a leitura das versões históricas que ainda não usam o contrato de promoção v12. */
+  private void addGenericCommercialPendingItems(
+      List<String> pending,
+      PdeProductionSlot slot,
+      Experiment experiment,
+      int videoCount,
+      int approvedVideoCount) {
     if (videoCount == 0) {
       pending.add("Vincular o vídeo de apresentação.");
     } else if (approvedVideoCount == 0) {
@@ -237,7 +281,6 @@ public class PdeVersionOverviewService {
         && slot.getStatus() != PdeProductionSlotStatus.ACTIVE) {
       pending.add("Concluir a homologação comercial.");
     }
-    return List.copyOf(pending);
   }
 
   /** Monta a trajetória ordenada e destaca a primeira etapa ainda não comprovada. */

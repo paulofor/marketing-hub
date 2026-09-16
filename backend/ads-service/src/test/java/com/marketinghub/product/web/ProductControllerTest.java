@@ -870,7 +870,7 @@ class ProductControllerTest {
             List.of(
                 new ProductPdeVersionOverviewDto(
                     12L,
-                    "v12",
+                    "v8",
                     "Vega com vídeo de apresentação",
                     "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
                     "CANDIDATE",
@@ -886,23 +886,74 @@ class ProductControllerTest {
                     new BigDecimal("67.00"),
                     "Começar agora",
                     "https://checkout.example/v12",
-                    "https://v12.clubemusa.com.br",
+                    "https://v8.clubemusa.com.br",
                     "OK",
                     "URL produtiva validada",
                     Instant.parse("2026-09-16T12:00:00Z"),
                     "Testes técnicos aprovados; homologação comercial ainda pendente.",
                     false,
-                    List.of("Concluir a homologação comercial."),
+                    true,
+                    false,
+                    List.of("Concluir a homologação comercial da v12."),
                     List.of(new PdeVersionLifecycleStepDto("CONCEPT", "Conceito", "DONE")),
                     Instant.parse("2026-09-16T12:00:00Z"))));
 
     mockMvc
         .perform(get("/api/products/{id}/pde-versions", 1L))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].slotCode").value("v12"))
+        .andExpect(jsonPath("$[0].slotCode").value("v8"))
         .andExpect(jsonPath("$[0].lifecycleLabel").value("Candidata"))
+        .andExpect(jsonPath("$[0].canPreparePublication").value(true))
         .andExpect(jsonPath("$[0].sourceExperimentId").value(92L))
         .andExpect(jsonPath("$[0].lifecycle[0].label").value("Conceito"));
+  }
+
+  /** Deve expor o comando que conclui a preparação sem publicar ou ativar a v12. */
+  @Test
+  void preparePdeVersionForPublication() throws Exception {
+    Product product = Product.builder().id(1L).slug("metodo-musa-7-dias").build();
+    when(service.getProduct(1L)).thenReturn(product);
+    PostDeployPdeProductionSlotDto response =
+        new PostDeployPdeProductionSlotDto(
+            8L,
+            "v8",
+            "metodo-musa-7-dias",
+            "v8.clubemusa.com.br",
+            "https://v8.clubemusa.com.br",
+            null,
+            "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+            "espelho-antes-de-sair",
+            "production-v8",
+            PdeProductionSlotStatus.READY,
+            92L,
+            null,
+            "{}",
+            null,
+            null,
+            null,
+            "OK",
+            Instant.parse("2026-09-16T12:00:00Z"),
+            200,
+            "URL validada",
+            null,
+            "metodo-musa-7-dias",
+            "/health",
+            "https://v8.clubemusa.com.br",
+            Instant.parse("2026-09-16T10:00:00Z"),
+            Instant.parse("2026-09-16T12:00:00Z"));
+    when(pdeProductionSlotService.prepareProductionSlotForPublication("metodo-musa-7-dias", "v8"))
+        .thenReturn(response);
+
+    mockMvc
+        .perform(
+            post(
+                "/api/products/{id}/pde-production-slots/{slotCode}/prepare-publication", 1L, "v8"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("READY"))
+        .andExpect(jsonPath("$.publishedExperienceJson").doesNotExist());
+
+    verify(pdeProductionSlotService)
+        .prepareProductionSlotForPublication("metodo-musa-7-dias", "v8");
   }
 
   /** Deve listar vídeos HLS já resolvidos por versão PDE pelo backend. */

@@ -20,6 +20,7 @@ on:
       - "backend/ads-service/src/test/java/com/marketinghub/financialplan/**"
       - "backend/ads-service/src/test/resources/financial-plan/**"
       - "backend/ads-service/src/test/java/com/marketinghub/pde/service/PdePublishedContractMysql57Test.java"
+      - "backend/ads-service/src/test/java/com/marketinghub/pde/service/VegaV12CandidateMysql57Test.java"
       - "backend/ads-service/Dockerfile.liquibase-mysql57"
       - "backend/ads-service/Dockerfile.mysql57-product-process"
       - "backend/ads-service/Dockerfile.mysql57-activity-instances"

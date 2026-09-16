@@ -102,14 +102,21 @@ versão candidata; não constituem uma segunda “versão privada”.
 A lista deve apresentar somente verdades entregues pelo backend: nome e identidade da versão,
 hipótese, mudança principal, vídeos vinculados e aprovados, oferta, preço, checkout, URL, experimento,
 resultado da homologação, pendências e trajetória `conceito → construção → ativos → testes →
-homologação → preparação comercial → publicação`. A ação **Preparar para publicação** só aparece
-quando não houver pendência comprovada. A publicação e a liberação de tráfego continuam sujeitas aos
+homologação → preparação comercial → publicação`. A ação **Preparar para publicação** aparece quando
+todos os vínculos da candidata estiverem coerentes e restar somente registrar sua homologação; o
+backend revalida destino, oferta, vídeos e kit antes de aceitar o comando. A publicação e a liberação de tráfego continuam sujeitas aos
 gates humanos, financeiros e comerciais; a tela de versões não publica nem ativa campanha sozinha.
 
 Alternativas avaliadas: criar uma tela paralela (duplicaria slots e contratos), apenas renomear a
 tabela técnica existente (não explicaria a jornada) ou evoluir o cadastro atual com uma visão de
 negócio agregada pelo backend. Foi escolhida a terceira, por preservar a fonte de verdade e reduzir
 o risco de divergência como o ocorrido entre a versão selecionada pelo experimento e a publicada.
+
+Para Vega v12, a identidade comercial é única: slot `v8`, experimento #92, preço de R$ 67,
+checkout canônico, ativos `AD` e `LANDING_HERO` aprovados e materiais sob `/materials/musa-v12/`.
+A migração cria somente a candidata e seu rascunho; não preenche o snapshot publicado, não ativa o
+slot e não altera a v7. O contrato só pode ser publicado depois que a versão alcançar `READY` pelos
+gates, e `ACTIVE` continua dependendo da promoção do mesmo artefato homologado.
 
 ## Catálogo extensível e apelidos
 

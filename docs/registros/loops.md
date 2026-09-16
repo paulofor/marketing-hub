@@ -1,5 +1,20 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-VEGA-VERSAO-SELECIONADA-SEM-CANDIDATA-COMERCIAL — ciclo aponta v12, slot permanece v7
+
+- **Data:** 16/09/2026. Vega, ciclo #2, experimento #92.
+- **Evidência histórica:** banco e tela confirmaram experimento em `PLANNED`, ativos #41 `AD` e
+  #42 `LANDING_HERO` aprovados, mas nenhum slot v8 persistido; o contrato v12 reutilizava caminhos
+  de materiais `musa-v7` e o checkout não estava vinculado ao experimento #92.
+- **Causa-raiz:** construção/homologação protegida e catálogo produtivo tinham identidades
+  independentes. O editor também permitia publicar o snapshot sem revalidar destino, experimento,
+  oferta, dois vídeos e kit como um conjunto.
+- **Correção local:** candidata única v12 no slot v8, contrato e kit próprios, checkout vinculado,
+  gate backend que lista todas as divergências e comando separado para concluir a preparação sem
+  publicar ou ativar. A v7 publicada permanece intocada.
+- **Prevenção:** política de promoção v12, regressões Java/frontend/PDE, migração idempotente no
+  MySQL 5.7 e matriz `docs/homologacao/vega-v12-candidata-comercial-v1.md`.
+
 ## LOOP-HOMOLOGACAO-CICLOS-RESET-CONCORRENTE — limpeza disputa dados com agente simulado
 
 - Confirmado em 12/09/2026: run `34709785328` falha entre cenários de ciclos; a mesma

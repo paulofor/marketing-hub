@@ -8,7 +8,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
+import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
@@ -18,6 +20,7 @@ import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoPanelDto
 import com.marketinghub.product.Product;
 import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -36,6 +39,8 @@ class PdeVersionOverviewServiceTest {
 
   @Mock private ExperimentRepository experimentRepository;
 
+  @Mock private ExperimentVideoAssetRepository videoAssetRepository;
+
   @Mock private PdeProductionSlotService slotService;
 
   /** Deve consolidar candidata, experimento, oferta, vídeo e trajetória sem criar outra versão. */
@@ -46,10 +51,10 @@ class PdeVersionOverviewServiceTest {
     PdeProductionSlot slot =
         PdeProductionSlot.builder()
             .id(12L)
-            .slotCode("v12")
+            .slotCode("v8")
             .productSlug(product.getSlug())
-            .domain("v12.clubemusa.com.br")
-            .publicUrl("https://v12.clubemusa.com.br")
+            .domain("v8.clubemusa.com.br")
+            .publicUrl("https://v8.clubemusa.com.br")
             .experienceVersion("musa-pde-entry-v12-primeiro-ajuste-aplicavel")
             .layoutKey("video-explicativo")
             .targetEnvironment("production-v12")
@@ -57,7 +62,17 @@ class PdeVersionOverviewServiceTest {
             .sourceExperimentId(92L)
             .notes("Inclui vídeo de apresentação na entrada")
             .draftExperienceJson(
-                "{\"name\":\"Vega com vídeo de apresentação\",\"slug\":\"metodo-musa-7-dias\"}")
+                """
+                {
+                  "name":"Vega com vídeo de apresentação",
+                  "slug":"metodo-musa-7-dias",
+                  "experienceVersion":"musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+                  "commercialBinding":{"experimentId":92,"primaryCta":"Começar agora","priceBrl":67,"billingModel":"ONE_TIME"},
+                  "commercialCheckout":{"provider":"PEPPER","checkoutUrl":"https://checkout.example/v12","priceBrl":67,"currency":"BRL","billingModel":"ONE_TIME"},
+                  "supportMaterials":[{"url":"/materials/musa-v12/mapa-dos-7-sinais.html"}],
+                  "heroVideos":[{"experimentVideoAssetId":42,"experienceVersion":"musa-pde-entry-v12-primeiro-ajuste-aplicavel","status":"READY","reviewStatus":"APPROVED","hlsPlaybackUrl":"/assets/hls/v12/index.m3u8"}]
+                }
+                """)
             .validationStatus("OK")
             .validationSummary("URL produtiva validada")
             .validationCheckedAt(updatedAt)
@@ -66,6 +81,7 @@ class PdeVersionOverviewServiceTest {
     Experiment experiment =
         Experiment.builder()
             .id(92L)
+            .product(product)
             .name("Vega · vídeo de apresentação")
             .status(ExperimentStatus.PLANNED)
             .hypothesis("Vídeo de apresentação aumenta o avanço para o primeiro valor")
@@ -96,6 +112,11 @@ class PdeVersionOverviewServiceTest {
     when(slotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
         .thenReturn(List.of(slot));
     when(experimentRepository.findAllById(List.of(92L))).thenReturn(List.of(experiment));
+    when(videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(92L))
+        .thenReturn(
+            List.of(
+                videoAsset(41L, ExperimentVideoSlot.AD),
+                videoAsset(42L, ExperimentVideoSlot.LANDING_HERO)));
     when(slotService.listProductionSlotVideosForProduct(product.getSlug()))
         .thenReturn(
             List.of(new PdeProductionSlotVideoPanelDto(slotDto, List.of(video), List.of())));
@@ -107,7 +128,9 @@ class PdeVersionOverviewServiceTest {
     assertThat(result.hypothesis()).contains("primeiro valor");
     assertThat(result.approvedVideoCount()).isEqualTo(1);
     assertThat(result.priceBrl()).isEqualByComparingTo("67.00");
-    assertThat(result.pendingItems()).containsExactly("Concluir a homologação comercial.");
+    assertThat(result.pendingItems()).containsExactly("Concluir a homologação comercial da v12.");
+    assertThat(result.canPreparePublication()).isTrue();
+    assertThat(result.canPublishContract()).isFalse();
     assertThat(result.lifecycle())
         .extracting(PdeVersionLifecycleStepDto::status)
         .containsExactly("DONE", "DONE", "DONE", "DONE", "CURRENT", "DONE", "PENDING");
@@ -149,7 +172,22 @@ class PdeVersionOverviewServiceTest {
   /** Cria o serviço com dependências isoladas para cada cenário. */
   private PdeVersionOverviewService service() {
     return new PdeVersionOverviewService(
-        slotRepository, experimentRepository, slotService, new ObjectMapper());
+        slotRepository,
+        experimentRepository,
+        videoAssetRepository,
+        slotService,
+        new ObjectMapper());
+  }
+
+  /** Monta um vídeo comercial pronto e aprovado para a candidata testada. */
+  private ExperimentVideoAsset videoAsset(Long id, ExperimentVideoSlot slot) {
+    return ExperimentVideoAsset.builder()
+        .id(id)
+        .slot(slot)
+        .status(ExperimentVideoStatus.READY)
+        .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+        .hlsPlaybackUrl("/assets/hls/v12/index.m3u8")
+        .build();
   }
 
   /** Monta um produto classificado pelo código canônico que representa Opala. */

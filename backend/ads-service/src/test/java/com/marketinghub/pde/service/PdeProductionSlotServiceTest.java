@@ -1,6 +1,7 @@
 package com.marketinghub.pde.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +14,7 @@ import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.publishslotcontract.PublishPdeProductionSlotContractRequest;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.net.http.HttpClient;
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: validar regras de cadastro de versões produtivas PDE por produto. */
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +36,8 @@ class PdeProductionSlotServiceTest {
   @Mock private PdeProductionSlotRepository repository;
 
   @Mock private ExperimentVideoAssetRepository videoAssetRepository;
+
+  @Mock private ExperimentRepository experimentRepository;
 
   @Mock private HttpClient httpClient;
 
@@ -152,6 +157,203 @@ class PdeProductionSlotServiceTest {
     assertThat(response.layoutKey()).isEqualTo("layout-custom-v6");
     assertThat(published.get("experienceVersion").asText()).isEqualTo("musa-v6-teste-publicado");
     assertThat(published.get("layoutKey").asText()).isEqualTo("layout-custom-v6");
+  }
+
+  /** Deve bloquear publicação da v12 enquanto ela for candidata ou usar vínculos incompletos. */
+  @Test
+  void blocksV12PublicationBeforeHomologation() {
+    PdeProductionSlot slot = v12Slot(PdeProductionSlotStatus.CANDIDATE);
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, experimentRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("metodo-musa-7-dias", "v8"))
+        .thenReturn(Optional.of(slot));
+    when(experimentRepository.findById(92L)).thenReturn(Optional.of(v12Experiment()));
+    when(videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(92L)).thenReturn(v12Videos());
+
+    assertThatThrownBy(
+            () ->
+                service.publishProductionSlotContract(
+                    "metodo-musa-7-dias",
+                    "v8",
+                    new PublishPdeProductionSlotContractRequest(v12Contract(), "Marketing Hub")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Concluir a homologação comercial da v12");
+  }
+
+  /** Deve publicar somente o snapshot v12 que coincide com oferta, vídeos, kit e destino. */
+  @Test
+  void publishesHomologatedV12WithExactCommercialBindings() {
+    PdeProductionSlot slot = v12Slot(PdeProductionSlotStatus.READY);
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, experimentRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("metodo-musa-7-dias", "v8"))
+        .thenReturn(Optional.of(slot));
+    when(experimentRepository.findById(92L)).thenReturn(Optional.of(v12Experiment()));
+    when(videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(92L)).thenReturn(v12Videos());
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var result =
+        service.publishProductionSlotContract(
+            "metodo-musa-7-dias",
+            "v8",
+            new PublishPdeProductionSlotContractRequest(v12Contract(), "Marketing Hub"));
+
+    assertThat(result.publishedExperienceJson()).contains("/materials/musa-v12/");
+    assertThat(result.publishedExperienceJson()).doesNotContain("/materials/musa-v7/");
+    assertThat(result.publishedBy()).isEqualTo("Marketing Hub");
+  }
+
+  /** Deve concluir a preparação sem publicar o contrato ou ativar a campanha. */
+  @Test
+  void preparesAlignedV12ForPublicationWithoutActivatingIt() {
+    PdeProductionSlot slot = v12Slot(PdeProductionSlotStatus.CANDIDATE);
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, experimentRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("metodo-musa-7-dias", "v8"))
+        .thenReturn(Optional.of(slot));
+    when(experimentRepository.findById(92L)).thenReturn(Optional.of(v12Experiment()));
+    when(videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(92L)).thenReturn(v12Videos());
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var result = service.prepareProductionSlotForPublication("metodo-musa-7-dias", "v8");
+
+    assertThat(result.status()).isEqualTo(PdeProductionSlotStatus.READY);
+    assertThat(result.publishedExperienceJson()).isNull();
+    assertThat(slot.getStatus()).isEqualTo(PdeProductionSlotStatus.READY);
+  }
+
+  /** Deve exigir nova homologação quando o rascunho validado da v12 for alterado. */
+  @Test
+  void clearsV12ValidationEvidenceWhenCandidateArtifactChanges() {
+    PdeProductionSlot slot = v12Slot(PdeProductionSlotStatus.CANDIDATE);
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, experimentRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("metodo-musa-7-dias", "v8"))
+        .thenReturn(Optional.of(slot));
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    String changedContract = v12Contract().replace("primeiro ajuste MUSA", "ajuste MUSA");
+    var result =
+        service.saveProductionSlot(
+            "metodo-musa-7-dias",
+            92L,
+            new PostDeployPdeProductionSlotRequestDto(
+                "v8",
+                null,
+                "v8.clubemusa.com.br",
+                "https://v8.clubemusa.com.br",
+                null,
+                "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+                "espelho-antes-de-sair",
+                "production-v8",
+                PdeProductionSlotStatus.CANDIDATE,
+                92L,
+                slot.getNotes(),
+                changedContract,
+                null));
+
+    assertThat(result.validationStatus()).isNull();
+    assertThat(result.validationCheckedAt()).isNull();
+    assertThat(result.validationSummary()).isNull();
+  }
+
+  /** Deve rejeitar um vídeo aprovado quando ele não for o ativo #41 escolhido para o teste. */
+  @Test
+  void blocksV12PreparationWithAnotherApprovedAdVideo() {
+    PdeProductionSlot slot = v12Slot(PdeProductionSlotStatus.CANDIDATE);
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, experimentRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("metodo-musa-7-dias", "v8"))
+        .thenReturn(Optional.of(slot));
+    when(experimentRepository.findById(92L)).thenReturn(Optional.of(v12Experiment()));
+    when(videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(92L))
+        .thenReturn(
+            List.of(
+                ExperimentVideoAsset.builder()
+                    .id(99L)
+                    .slot(ExperimentVideoSlot.AD)
+                    .status(ExperimentVideoStatus.READY)
+                    .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+                    .hlsPlaybackUrl("https://cdn.example/outro-anuncio.m3u8")
+                    .build(),
+                v12Videos().get(1)));
+
+    assertThatThrownBy(() -> service.prepareProductionSlotForPublication("metodo-musa-7-dias", "v8"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("vídeo de anúncio #41");
+  }
+
+  /** Monta o slot canônico da v12 sem reutilizar a identidade publicada da v7. */
+  private PdeProductionSlot v12Slot(PdeProductionSlotStatus status) {
+    return PdeProductionSlot.builder()
+        .id(8L)
+        .slotCode("v8")
+        .productSlug("metodo-musa-7-dias")
+        .domain("v8.clubemusa.com.br")
+        .publicUrl("https://v8.clubemusa.com.br")
+        .experienceVersion("musa-pde-entry-v12-primeiro-ajuste-aplicavel")
+        .layoutKey("espelho-antes-de-sair")
+        .targetEnvironment("production-v8")
+        .status(status)
+        .sourceExperimentId(92L)
+        .draftExperienceJson(v12Contract())
+        .validationStatus("OK")
+        .createdAt(Instant.parse("2026-09-16T00:00:00Z"))
+        .updatedAt(Instant.parse("2026-09-16T00:00:00Z"))
+        .build();
+  }
+
+  /** Monta a oferta persistida que deve coincidir com o contrato candidato. */
+  private Experiment v12Experiment() {
+    return Experiment.builder()
+        .id(92L)
+        .product(com.marketinghub.product.Product.builder().slug("metodo-musa-7-dias").build())
+        .unitPrice(new java.math.BigDecimal("67"))
+        .primaryCta("Ver meu primeiro ajuste MUSA")
+        .commercialCheckoutUrl("https://go.pepper.com.br/owm6x")
+        .build();
+  }
+
+  /** Monta os dois vídeos obrigatórios já aprovados para o mesmo experimento. */
+  private List<ExperimentVideoAsset> v12Videos() {
+    return List.of(
+        ExperimentVideoAsset.builder()
+            .id(41L)
+            .slot(ExperimentVideoSlot.AD)
+            .status(ExperimentVideoStatus.READY)
+            .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+            .hlsPlaybackUrl("https://cdn.example/ad-v12.m3u8")
+            .build(),
+        ExperimentVideoAsset.builder()
+            .id(42L)
+            .slot(ExperimentVideoSlot.LANDING_HERO)
+            .status(ExperimentVideoStatus.READY)
+            .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+            .hlsPlaybackUrl("https://cdn.example/hero-v12.m3u8")
+            .build());
+  }
+
+  /** Declara o contrato mínimo completo usado no gate comercial da v12. */
+  private String v12Contract() {
+    return """
+        {
+          "slug":"metodo-musa-7-dias",
+          "experienceVersion":"musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+          "layoutKey":"espelho-antes-de-sair",
+          "commercialBinding":{"experimentId":92,"primaryCta":"Ver meu primeiro ajuste MUSA","priceBrl":67,"billingModel":"ONE_TIME"},
+          "commercialCheckout":{"provider":"PEPPER","checkoutUrl":"https://go.pepper.com.br/owm6x","priceBrl":67,"currency":"BRL","billingModel":"ONE_TIME"},
+          "supportMaterials":[{"url":"/materials/musa-v12/mapa-dos-7-sinais.html"}],
+          "heroVideos":[{"experimentVideoAssetId":42,"experienceVersion":"musa-pde-entry-v12-primeiro-ajuste-aplicavel","status":"READY","reviewStatus":"APPROVED","hlsPlaybackUrl":"https://cdn.example/hero-v12.m3u8"}]
+        }
+        """;
   }
 
   /** Deve resolver vídeo HLS pelo token de versão antes do experimento de origem. */

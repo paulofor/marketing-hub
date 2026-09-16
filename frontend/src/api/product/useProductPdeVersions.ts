@@ -36,6 +36,8 @@ export interface ProductPdeVersionOverview {
   validationCheckedAt?: string | null;
   homologationSummary: string;
   publishedContract: boolean;
+  canPreparePublication: boolean;
+  canPublishContract: boolean;
   pendingItems: string[];
   lifecycle: PdeVersionLifecycleStep[];
   updatedAt?: string | null;

@@ -782,6 +782,35 @@ export const musaV7FallbackProduct: ProductExperience = {
 export const musaV12FallbackProduct: ProductExperience = {
   ...musaV7FallbackProduct,
   experienceVersion: MUSA_V12_EXPERIENCE_VERSION,
+  commercialBinding: {
+    experimentId: 92,
+    primaryCta: "Ver meu primeiro ajuste MUSA",
+    priceBrl: 67,
+    billingModel: "ONE_TIME",
+  },
+  supportMaterials: [
+    {
+      title: "Mapa dos 7 Sinais MUSA",
+      type: "HTML",
+      description:
+        "Resumo dos sete sinais com conceito, missão, exemplo e aplicação prática.",
+      url: "/materials/musa-v12/mapa-dos-7-sinais.html",
+    },
+    {
+      title: "Checklist Antes de Sair",
+      type: "HTML",
+      description:
+        "Checklist acessível para revisar mensagem visual, peça-sinal, estrutura, cor, acabamento e assinatura pessoal.",
+      url: "/materials/musa-v12/checklist-antes-de-sair.html",
+    },
+    {
+      title: "Fórmula MUSA Pessoal",
+      type: "CSV",
+      description:
+        "Template para registrar sinais repetíveis, ocasiões, evidências e regra anti-compra impulsiva.",
+      url: "/materials/musa-v12/formula-musa-pessoal.csv",
+    },
+  ],
   publicDiagnosticQuestions: musaV12PublicDiagnosticQuestions,
   heroVideos: [
     {

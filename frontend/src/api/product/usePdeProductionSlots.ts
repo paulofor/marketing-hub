@@ -56,6 +56,9 @@ export function useSaveProductPdeProductionSlot(productId?: string | number) {
       queryClient.invalidateQueries({
         queryKey: ["products", productId, "pde-production-slots"],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["products", productId, "pde-versions"],
+      });
     },
     onError: () => {
       toast.error("Não foi possível salvar a versão PDE do produto agora.");
@@ -83,6 +86,9 @@ export function useValidateProductPdeProductionSlot(
       }
       queryClient.invalidateQueries({
         queryKey: ["products", productId, "pde-production-slots"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["products", productId, "pde-versions"],
       });
     },
     onError: () => {
@@ -116,9 +122,42 @@ export function usePublishProductPdeProductionSlot(
       queryClient.invalidateQueries({
         queryKey: ["products", productId, "pde-production-slots"],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["products", productId, "pde-versions"],
+      });
     },
     onError: () => {
       toast.error("Não foi possível publicar o contrato PDE agora.");
+    },
+  });
+}
+
+export function usePrepareProductPdeProductionSlot(
+  productId?: string | number,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (slotCode: string) => {
+      const { data } = await axios.post<PostDeployPdeProductionSlot>(
+        `/api/products/${productId}/pde-production-slots/${slotCode}/prepare-publication`,
+      );
+      return data;
+    },
+    onSuccess: (slot) => {
+      toast.success(
+        `Versão PDE ${slot.slotCode} homologada e pronta para publicar o contrato.`,
+      );
+      queryClient.invalidateQueries({
+        queryKey: ["products", productId, "pde-production-slots"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["products", productId, "pde-versions"],
+      });
+    },
+    onError: () => {
+      toast.error(
+        "A versão ainda possui divergências e não pode ser preparada para publicação.",
+      );
     },
   });
 }

@@ -11,9 +11,11 @@ import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.promotion.PdeV12PublicationPolicy;
 import com.marketinghub.pde.service.publishslotcontract.PublishPdeProductionSlotContractRequest;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoAssetDto;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoPanelDto;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.io.IOException;
@@ -33,6 +35,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -65,19 +68,32 @@ public class PdeProductionSlotService {
 
   private final PdeProductionSlotRepository repository;
   private final ExperimentVideoAssetRepository videoAssetRepository;
+  private final ExperimentRepository experimentRepository;
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
 
   /** Inicializa o serviço com o repositório canônico de slots PDE. */
+  @Autowired
+  public PdeProductionSlotService(
+      PdeProductionSlotRepository repository,
+      ExperimentVideoAssetRepository videoAssetRepository,
+      ExperimentRepository experimentRepository,
+      HttpClient httpClient,
+      ObjectMapper objectMapper) {
+    this.repository = repository;
+    this.videoAssetRepository = videoAssetRepository;
+    this.experimentRepository = experimentRepository;
+    this.httpClient = httpClient;
+    this.objectMapper = objectMapper;
+  }
+
+  /** Mantém os testes legados isolados quando eles não exercitam a promoção comercial da v12. */
   public PdeProductionSlotService(
       PdeProductionSlotRepository repository,
       ExperimentVideoAssetRepository videoAssetRepository,
       HttpClient httpClient,
       ObjectMapper objectMapper) {
-    this.repository = repository;
-    this.videoAssetRepository = videoAssetRepository;
-    this.httpClient = httpClient;
-    this.objectMapper = objectMapper;
+    this(repository, videoAssetRepository, null, httpClient, objectMapper);
   }
 
   /** Resolve o produto PDE padrão quando a tela não informa um slug específico. */
@@ -120,6 +136,7 @@ public class PdeProductionSlotService {
         repository
             .findByProductSlugAndSlotCode(resolvedProductSlug, slotCode)
             .orElseGet(PdeProductionSlot::new);
+    V12ValidationFingerprint previousFingerprint = V12ValidationFingerprint.from(slot);
     slot.setSlotCode(slotCode);
     slot.setProductSlug(resolvedProductSlug);
     slot.setDomain(domain);
@@ -141,6 +158,12 @@ public class PdeProductionSlotService {
             : defaultSourceExperimentId);
     slot.setNotes(StringUtils.hasText(request.notes()) ? request.notes().trim() : null);
     slot.setDraftExperienceJson(normalizeOptionalJson(request.draftExperienceJson()));
+    if (slot.getId() != null
+        && PdeV12PublicationPolicy.appliesTo(slot)
+        && !previousFingerprint.equals(V12ValidationFingerprint.from(slot))) {
+      clearValidationEvidence(slot);
+    }
+    validateV12StatusTransition(slot);
     return toProductionSlotDto(repository.save(slot));
   }
 
@@ -166,12 +189,113 @@ public class PdeProductionSlotService {
             slot.getExperienceVersion(),
             slot.getLayoutKey());
     validatePublishedContractIdentity(slot, normalizedContract);
+    validateV12Publication(slot, normalizedContract);
     slot.setDraftExperienceJson(normalizedContract);
     slot.setPublishedExperienceJson(normalizedContract);
     slot.setPublishedBy(
         StringUtils.hasText(request.publishedBy()) ? request.publishedBy().trim() : null);
     slot.setPublishedAt(Instant.now());
     return toProductionSlotDto(repository.save(slot));
+  }
+
+  /** Promove a candidata v12 a homologada somente quando todos os vínculos já foram comprovados. */
+  public PostDeployPdeProductionSlotDto prepareProductionSlotForPublication(
+      String productSlug, String slotCode) {
+    String resolvedProductSlug = resolveProductSlug(productSlug);
+    String normalizedSlotCode =
+        normalizeRequired(slotCode, "Código do slot PDE obrigatório").toLowerCase(Locale.ROOT);
+    PdeProductionSlot slot =
+        repository
+            .findByProductSlugAndSlotCode(resolvedProductSlug, normalizedSlotCode)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Slot PDE não encontrado"));
+    if (!PdeV12PublicationPolicy.appliesTo(slot)) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A preparação automática está disponível somente para a Vega v12");
+    }
+    if (slot.getStatus() == PdeProductionSlotStatus.ACTIVE
+        || slot.getStatus() == PdeProductionSlotStatus.READY) {
+      return toProductionSlotDto(slot);
+    }
+    if (slot.getStatus() != PdeProductionSlotStatus.CANDIDATE) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Somente a candidata v12 pode concluir a preparação comercial");
+    }
+    rejectV12Blockers(
+        v12Blockers(slot, readPublicationContract(slot, slot.getDraftExperienceJson()), false));
+    slot.setStatus(PdeProductionSlotStatus.READY);
+    return toProductionSlotDto(repository.save(slot));
+  }
+
+  /** Bloqueia a homologação ou ativação da v12 enquanto algum vínculo comercial divergir. */
+  private void validateV12StatusTransition(PdeProductionSlot slot) {
+    if (!PdeV12PublicationPolicy.appliesTo(slot)
+        || (slot.getStatus() != PdeProductionSlotStatus.READY
+            && slot.getStatus() != PdeProductionSlotStatus.ACTIVE)) {
+      return;
+    }
+    JsonNode contract = readPublicationContract(slot, slot.getDraftExperienceJson());
+    List<String> blockers = v12Blockers(slot, contract, false);
+    if (slot.getStatus() == PdeProductionSlotStatus.ACTIVE
+        && !StringUtils.hasText(slot.getPublishedExperienceJson())) {
+      blockers = new java.util.ArrayList<>(blockers);
+      blockers.add("Publicar o contrato homologado da própria v12 antes de ativar o slot.");
+    }
+    rejectV12Blockers(blockers);
+  }
+
+  /** Impede publicar um snapshot v12 antes da homologação e da coerência ponta a ponta. */
+  private void validateV12Publication(PdeProductionSlot slot, String contractJson) {
+    if (!PdeV12PublicationPolicy.appliesTo(slot)) return;
+    rejectV12Blockers(v12Blockers(slot, readPublicationContract(slot, contractJson), true));
+  }
+
+  /** Reúne experimento e mídias persistidos para avaliar a mesma candidata. */
+  private List<String> v12Blockers(
+      PdeProductionSlot slot, JsonNode contract, boolean requireHomologation) {
+    if (experimentRepository == null || slot.getSourceExperimentId() == null) {
+      return List.of("Vincular contrato, slot e oferta ao mesmo experimento.");
+    }
+    var experiment = experimentRepository.findById(slot.getSourceExperimentId()).orElse(null);
+    List<ExperimentVideoAsset> videos =
+        videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(slot.getSourceExperimentId());
+    return PdeV12PublicationPolicy.blockers(
+        slot, experiment, videos, contract, requireHomologation);
+  }
+
+  /** Lê o contrato candidato e falha fechado quando o JSON não representa um objeto. */
+  private JsonNode readPublicationContract(PdeProductionSlot slot, String contractJson) {
+    if (!StringUtils.hasText(contractJson)) return objectMapper.createObjectNode();
+    try {
+      return objectMapper.readTree(contractJson);
+    } catch (IOException ex) {
+      log.error(
+          "Falha ao validar contrato candidato da Vega v12: productSlug={}, slotCode={}, experienceVersion={}",
+          slot.getProductSlug(),
+          slot.getSlotCode(),
+          slot.getExperienceVersion(),
+          ex);
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Contrato da v12 inválido", ex);
+    }
+  }
+
+  /** Retorna todas as causas de bloqueio sem promover parcialmente a versão. */
+  private void rejectV12Blockers(List<String> blockers) {
+    if (blockers.isEmpty()) return;
+    throw new ResponseStatusException(
+        HttpStatus.CONFLICT, "A v12 ainda não pode ser publicada: " + String.join(" ", blockers));
+  }
+
+  /** Invalida a homologação quando URL, versão, artefato ou vínculo comercial da v12 muda. */
+  private void clearValidationEvidence(PdeProductionSlot slot) {
+    slot.setValidationStatus(null);
+    slot.setValidationCheckedAt(null);
+    slot.setValidationHttpStatus(null);
+    slot.setValidationSummary(null);
+    slot.setValidationDetail(null);
+    slot.setValidationContractSlug(null);
+    slot.setValidationContractHealthPath(null);
+    slot.setValidationResolvedUrl(null);
   }
 
   /** Resolve a versão publicada e bloqueia fallback global quando um seletor foi informado. */
@@ -1154,6 +1278,31 @@ public class PdeProductionSlotService {
     /** Cria resultado de ativo inválido. */
     private static AssetValidationResult failed(Integer httpStatus, String detail) {
       return new AssetValidationResult(false, httpStatus, detail);
+    }
+  }
+
+  /** Captura os campos que precisam continuar idênticos à evidência de homologação da v12. */
+  private record V12ValidationFingerprint(
+      String domain,
+      String publicUrl,
+      String backendUrl,
+      String experienceVersion,
+      String layoutKey,
+      String targetEnvironment,
+      Long sourceExperimentId,
+      String draftExperienceJson) {
+
+    /** Cria a impressão comparável sem depender da identidade JPA da entidade. */
+    private static V12ValidationFingerprint from(PdeProductionSlot slot) {
+      return new V12ValidationFingerprint(
+          slot.getDomain(),
+          slot.getPublicUrl(),
+          slot.getBackendUrl(),
+          slot.getExperienceVersion(),
+          slot.getLayoutKey(),
+          slot.getTargetEnvironment(),
+          slot.getSourceExperimentId(),
+          slot.getDraftExperienceJson());
     }
   }
 }

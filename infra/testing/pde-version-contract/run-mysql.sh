@@ -13,4 +13,4 @@ docker compose version >/dev/null
 bash "${root}/scripts/docker-pull-with-transient-retry.sh" mysql:5.7
 "${compose[@]}" up -d --wait --wait-timeout 180
 PDE_CONTRACT_MYSQL=local mvn -B -f "${root}/backend/ads-service/pom.xml" \
-  -Dtest=PdePublishedContractMysql57Test test
+  -Dtest=PdePublishedContractMysql57Test,VegaV12CandidateMysql57Test,VegaV12ContractConsistencyTest test

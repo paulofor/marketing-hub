@@ -405,6 +405,17 @@ class ProductCatalogServiceTest {
         assertThat(product.publicFirstFold().headline()).contains("qual ajuste fazer primeiro");
         assertThat(product.publicFirstFold().supportingText()).contains("gratuito", "aplicável");
         assertThat(product.publicFirstFold().videoSupportingText()).contains("R$ 67", "pagamento único");
+        assertThat(product.commercialBinding()).isNotNull();
+        assertThat(product.commercialBinding().experimentId()).isEqualTo(92L);
+        assertThat(product.commercialBinding().priceBrl()).isEqualByComparingTo("67");
+        assertThat(product.commercialCheckout().checkoutUrl())
+                .isEqualTo("https://go.pepper.com.br/owm6x");
+        assertThat(product.supportMaterials()).hasSize(3);
+        assertThat(product.supportMaterials())
+                .allSatisfy(material -> {
+                    assertThat(material.url()).startsWith("/materials/musa-v12/");
+                    assertThat(material.url()).doesNotContain("musa-v7");
+                });
         assertThat(product.publicDiagnosticQuestions())
                 .extracting(ProductExperienceResponse.PublicDiagnosticQuestionDto::key)
                 .containsExactly("existingSelection", "occasion", "desiredSignal", "adjustmentResource");

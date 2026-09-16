@@ -69,7 +69,7 @@ homologação técnica de sua versão real:
 - segredos e configuração específicos disponíveis somente ao runtime que deles necessita.
 
 É proibido entregar a entrada ou rota ativa de um produto por imagem/container identificado como
-outro produto, ainda que o acesso seja privado. Código-fonte e componentes neutros podem ser
+outro produto, ainda que o acesso seja protegido. Código-fonte e componentes neutros podem ser
 reutilizados, mas cada artefato gerado deve ter nome, tag, identidade e configuração próprios e expor
 somente o produto selecionado; assets exclusivos não podem ser servidos pela superfície de outro.
 Uma publicação de Mira não pode exigir reinício, troca ou rollback do container do Vega/Método
@@ -82,7 +82,7 @@ todo dado por identidade canônica do produto e preservarem segregação de esta
 métricas. Essa exceção não permite chamar uma imagem de produto de “plataforma” para contornar o
 isolamento.
 
-Uma superfície privada histórica pode manter temporariamente sua URL externa para preservar links
+Uma superfície protegida histórica pode manter temporariamente sua URL externa para preservar links
 já emitidos, mas o proxy deve encaminhá-la ao container próprio do produto. Antes de tráfego humano,
 campanha ou publicação comercial, o produto também deve receber domínio corporativo próprio; um
 domínio de marca de outro produto nunca pode ser seu destino comercial.
@@ -124,7 +124,7 @@ Complemento canônico de 15/09/2026: oferta, contrato de integração, imagem p�
 experiência entregue devem pertencer à mesma versão comercial. O hostname versionado encaminha
 `slotCode`/`experienceVersion`; o Marketing Hub confere produto e experimento do snapshot exato.
 É proibido escolher o slot somente por data de atualização ou usar um snapshot de outro produto
-como fallback. Evidência de jornada privada comprova somente construção e homologação; prontidão
+como fallback. Evidência da pré-visualização protegida comprova somente construção e homologação; prontidão
 comercial exige uma evidência posterior com `journeyMode=COMMERCIAL`, URL pública e correlação sem
 token bruto. A correlação persistida usa apenas `accessReferenceHash`.
 

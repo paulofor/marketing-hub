@@ -1,4 +1,11 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import axios from "axios";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -61,7 +68,7 @@ describe("ProductPdeVersionsPage", () => {
           data: [
             {
               id: 12,
-              slotCode: "v12",
+              slotCode: "v8",
               name: "Vega com vídeo de apresentação",
               experienceVersion: "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
               lifecycleStage: "CANDIDATE",
@@ -78,13 +85,15 @@ describe("ProductPdeVersionsPage", () => {
               priceBrl: 67,
               primaryCta: "Começar agora",
               checkoutUrl: "https://checkout.example/v12",
-              publicUrl: "https://v12.clubemusa.com.br",
+              publicUrl: "https://v8.clubemusa.com.br",
               validationStatus: "OK",
               validationSummary: "URL produtiva validada",
               homologationSummary:
                 "Testes técnicos aprovados; homologação comercial ainda pendente.",
               publishedContract: false,
-              pendingItems: ["Concluir a homologação comercial."],
+              canPreparePublication: true,
+              canPublishContract: false,
+              pendingItems: ["Concluir a homologação comercial da v12."],
               lifecycle: [
                 { code: "CONCEPT", label: "Conceito", status: "DONE" },
                 {
@@ -105,6 +114,9 @@ describe("ProductPdeVersionsPage", () => {
       }
       return Promise.reject(new Error(`Unexpected GET ${url}`));
     });
+    (axios.post as any).mockResolvedValue({
+      data: { slotCode: "v8", status: "READY" },
+    });
 
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -123,7 +135,7 @@ describe("ProductPdeVersionsPage", () => {
     );
 
     const version = await screen.findByRole("article", {
-      name: "Versão PDE v12",
+      name: "Versão PDE v8",
     });
     expect(within(version).getByText("Candidata")).toBeTruthy();
     expect(
@@ -132,13 +144,18 @@ describe("ProductPdeVersionsPage", () => {
     expect(within(version).getByText("R$ 67,00")).toBeTruthy();
     expect(within(version).getAllByText("Homologação")).toHaveLength(2);
     expect(
-      within(version).getByText("Concluir a homologação comercial."),
+      within(version).getByText("Concluir a homologação comercial da v12."),
     ).toBeTruthy();
-    expect(
-      within(version).queryByRole("link", {
+    fireEvent.click(
+      within(version).getByRole("button", {
         name: "Preparar para publicação",
       }),
-    ).toBeNull();
+    );
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/products/4/pde-production-slots/v8/prepare-publication",
+      ),
+    );
     expect(
       within(version).getByRole("link", { name: "Abrir pré-visualização" }),
     ).toHaveAttribute("target", "_blank");

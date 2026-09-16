@@ -30,6 +30,8 @@ public record ProductPdeVersionOverviewDto(
     Instant validationCheckedAt,
     String homologationSummary,
     boolean publishedContract,
+    boolean canPreparePublication,
+    boolean canPublishContract,
     List<String> pendingItems,
     List<PdeVersionLifecycleStepDto> lifecycle,
     Instant updatedAt) {}

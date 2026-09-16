@@ -8,14 +8,15 @@ LANDING_HERO do próprio ciclo, sem pedir outra aprovação, ids ou transcriçã
 evidências. A conciliação do backend recupera também aprovações anteriores à
 correção. Leituras de tela não executam trabalho.
 
-A integração deve respeitar o destino: uma experiência privada aceita recebe os
-vídeos no seu contrato privado; não exige slot publicado nem URL comercial do
-experimento. Uma versão de catálogo mantém seu contrato em rascunho. Não copiar
-destino, campanha ou aprovações de outro experimento.
+A integração deve respeitar a candidata única da versão. Os vídeos entram no rascunho
+do próprio slot e `experienceVersion`; a pré-visualização protegida não cria contrato,
+versão ou destino comercial paralelo. Não copiar destino, campanha ou aprovações de
+outro experimento.
 
-Um destino só participa da integração automática quando o frontend e o executor
-implementam o mesmo contrato. O primeiro adaptador é a experiência `/vega-private`;
-a presença de uma URL privada, sozinha, não habilita outros produtos automaticamente.
+Um destino só participa da integração automática quando frontend e executor implementam
+o mesmo contrato. Para Vega v12, a candidata usa o slot `v8`, com analytics de QA e cobrança
+desativados antes da promoção. A rota histórica `/vega-private` preserva somente evidência
+anterior e não pode orientar novas versões ou receber tráfego comercial.
 
 Integrar não comprova homologação. O conjunto integrado deve voltar automaticamente
 à homologação técnica e aos pareceres independentes afetados, pela fila canônica,
@@ -118,8 +119,8 @@ predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.
   oferta e aquisição permanecem iguais, versão nova, homologação e publicação posterior à nova
   autorização. Preserva o experimento e suas métricas cumulativas. Alteração comercial usa sucessor.
 - O link para executar uma atividade transporta `learningCycleId`. O backend valida produto,
-  composição da cadeia e ciclo aberto antes de fixar `experiment:<id>`; a construção mantém sua
-  referência privada canônica. A tarefa recebe hipótese, memória anterior e decisões do ciclo.
+  composição da cadeia e ciclo aberto antes de fixar `experiment:<id>`; a construção mantém a
+  referência canônica da mesma candidata. A tarefa recebe hipótese, memória anterior e decisões do ciclo.
 - A homologação multiagente não é evidência humana. Observações consentidas, se realizadas,
   podem ser anexadas; exigências adicionais pertencem ao plano específico do produto. Uma nova
   reprovação invalida a aprovação anterior também antes da publicação ou expansão.
@@ -135,7 +136,7 @@ predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.
 - Depois da confirmação do teto, tanto `AUTHORIZATION` quanto `PUBLICATION` orientam o operador ao
   Processo 5 canônico. O ciclo não pode abandonar a passagem no detalhe genérico do experimento nem
   exigir que o usuário descubra manualmente onde concluir integração, preflight e liberação.
-- Homologação privada não comprova destino comercial. Antes da autorização, o experimento precisa
+- Pré-visualização protegida não comprova destino comercial. Antes da autorização, o experimento precisa
   ter oferta, versão pública, checkout, medição e jornada comercial da versão atual. Em Facebook,
   também exige criativo aprovado e segmentação próprios do experimento; ativos do predecessor não
   podem ser herdados silenciosamente. A liberação de mídia continua uma decisão humana explícita.
@@ -354,7 +355,7 @@ contrato e o BPM; não cria experimentos, campanhas, aprovações, vendas nem ta
 ## Continuidade e identidade da homologação — correção de 12/09/2026
 
 A leitura das aprovações e o comando de homologação devem usar a mesma referência canônica
-que a execução da construção. Produtos com contrato privado explícito preservam a fonte
+que a execução da construção. Produtos com contrato protegido explícito preservam a fonte
 `product:<id>@agent-validation-v1`; produtos cujo trabalho pertence ao ciclo usam
 `experiment:<id>`. A consulta nunca procura aprovação de outro experimento ou utiliza uma
 fonte legada como fallback. Provas contextuais precisam declarar a mesma fonte no JSON,
@@ -367,7 +368,7 @@ mas não manda refazer uma atividade já concluída. Ausência de contexto ou de
 não equivale a preparação concluída. A consulta não avança etapas nem autoriza gastos.
 
 As etapas de vídeo e suas autorizações continuam obrigatórias nas versões que as incluem;
-provas de preparação privada, checkout simulado e aprovação sintética não substituem vídeo,
+provas de pré-visualização protegida, checkout simulado e aprovação sintética não substituem vídeo,
 publicação comercial, venda, entrega ou observação humana.
 
 O catálogo aceita `cycleId` para conservar o BPM e o retorno da ocorrência selecionada.

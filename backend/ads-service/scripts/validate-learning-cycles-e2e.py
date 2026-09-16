@@ -414,7 +414,14 @@ assert position['subprocessPosition']['salesFlow']['chainDefinitionId']==91001
 assert 'chainId=91001' in current['salesFlow']['navigationUrl']
 assert current['currentExecutionReference']=='experiment:91001'
 assert [a['state'] for a in current['salesFlow']['activities']]==['HISTORICAL','NOT_APPLICABLE','COMPLETED','IN_PROGRESS']
-assert all(t['flowId'] for t in current['salesFlow']['transitions'])
+legacy_transitions = [
+    (t['action'], t['flowId'], t['from'], t['to'])
+    for t in current['salesFlow']['transitions']
+]
+assert legacy_transitions == [
+    ('ADOPT_BASELINE', None, 'MEASUREMENT', 'MEASUREMENT'),
+    ('MEASURE', None, 'MEASUREMENT', 'DECISION'),
+], f'Transicoes da versao historica foram reinterpretadas: {legacy_transitions}'
 legacy=command(legacy,'ADJUST',dict(return_to,learning='Memória da versão anterior preservada',nextHypothesis='Entrega mais aplicável'))
 successor=http(f'{API}/products/91001',brief(91002,legacy['id']))
 assert successor['chainDefinitionId']==91002 and successor['previousCycleId']==legacy['id']

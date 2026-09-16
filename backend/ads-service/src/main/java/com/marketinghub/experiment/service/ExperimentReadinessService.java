@@ -117,7 +117,9 @@ public class ExperimentReadinessService {
     this.integratedPdeJourneyEvidenceService = integratedPdeJourneyEvidenceService;
   }
 
-  /** Resume a prontidão com dados canônicos e orientações compatíveis com o funil do experimento. */
+  /**
+   * Resume a prontidão com dados canônicos e orientações compatíveis com o funil do experimento.
+   */
   @Transactional(readOnly = true)
   public ExperimentReadinessSummaryDto summarize(Long experimentId) {
     Experiment experiment = experimentService.get(experimentId);
@@ -388,8 +390,8 @@ public class ExperimentReadinessService {
                                 ? "A experiência PDE está homologada para receber visitantes do anúncio."
                                 : "A entrada do PDE ainda precisa concluir a homologação e a aprovação necessárias."
                             : landingReady
-                            ? "A página e seu pipeline canônico estão concluídos."
-                            : "A página ainda não concluiu o pipeline ou a aprovação necessária.",
+                                ? "A página e seu pipeline canônico estão concluídos."
+                                : "A página ainda não concluiu o pipeline ou a aprovação necessária.",
                 pdeMembershipFunnel
                     ? "Conclua a homologação e a aprovação da entrada do próprio PDE, destino do anúncio."
                     : "Conclua a geração, a revisão de qualidade e a publicação auditada da página."),

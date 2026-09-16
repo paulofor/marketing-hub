@@ -286,7 +286,8 @@ class PdeProductionSlotServiceTest {
                     .build(),
                 v12Videos().get(1)));
 
-    assertThatThrownBy(() -> service.prepareProductionSlotForPublication("metodo-musa-7-dias", "v8"))
+    assertThatThrownBy(
+            () -> service.prepareProductionSlotForPublication("metodo-musa-7-dias", "v8"))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("vídeo de anúncio #41");
   }

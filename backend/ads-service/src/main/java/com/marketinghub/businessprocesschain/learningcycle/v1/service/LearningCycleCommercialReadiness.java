@@ -31,6 +31,9 @@ public class LearningCycleCommercialReadiness {
   private final ExperimentReadinessService readiness;
   private final PdeProductionSlotRepository slots;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.opala.commercial.v1.service.OpalaCommercialRouting opalaRouting;
+
   /** Resolve o gate sob demanda para preservar a composição dos validadores de tarefas. */
   public LearningCycleCommercialReadiness(
       ExperimentRepository experiments,
@@ -125,6 +128,11 @@ public class LearningCycleCommercialReadiness {
                     .collect(java.util.stream.Collectors.joining(", "))
                 + ".";
     return new LearningCycleCommercialPreparation(
-        ready, guidance, "/experiments/" + cycle.getExperimentId(), List.copyOf(requirements));
+        ready,
+        guidance,
+        "/experiments/" + cycle.getExperimentId(),
+        List.copyOf(requirements),
+        opalaRouting == null ? null : opalaRouting.navigation(cycle),
+        "Abrir preparação Opala com os agentes");
   }
 }

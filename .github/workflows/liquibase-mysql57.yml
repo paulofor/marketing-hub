@@ -7,6 +7,8 @@ on:
       - "backend/ads-service/src/test/resources/liquibase-mysql57/**"
       - "infra/testing/pde-version-contract/**"
       - "infra/testing/product-financial-plan/**"
+      - "infra/testing/opala-commercial/**"
+      - "backend/ads-service/src/test/java/com/marketinghub/opala/**"
       - "backend/ads-service/src/main/java/com/marketinghub/financialplan/**"
       - "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/financialplan/**"
       - "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/producttype/ProductTypeDefinitionRepository.java"
@@ -86,6 +88,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-opala-commercial-preparation:
+    name: Validar preparação comercial Opala
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Validar migração, idempotência e rollback no MySQL 5.7
+        env:
+          OPALA_COMPOSE_PROJECT: aihub-opala-${{ github.run_id }}-${{ github.run_attempt }}
+        run: bash infra/testing/opala-commercial/run-mysql.sh
+
   validate-product-financial-plan:
     name: Plano financeiro com MySQL 5.7 e concorrência
     runs-on: ubuntu-latest

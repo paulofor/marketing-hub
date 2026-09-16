@@ -80,6 +80,8 @@ export type LearningCycle = {
     explanation: string;
   } | null;
   commercialPreparation?: {
+    preparationUrl?: string | null;
+    preparationLabel?: string | null;
     readyForReview: boolean;
     guidance: string;
     experimentUrl: string;
@@ -93,7 +95,8 @@ export type LearningCycle = {
   } | null;
   automaticContinuation?: boolean;
   videoBudget?:
-    import("../financial/useVideoBudget").VideoBudgetAuthorization | null;
+    | import("../financial/useVideoBudget").VideoBudgetAuthorization
+    | null;
   id: number;
   productId: number;
   experimentId: number;

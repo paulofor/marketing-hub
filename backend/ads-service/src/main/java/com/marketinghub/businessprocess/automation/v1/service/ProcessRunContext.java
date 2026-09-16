@@ -148,8 +148,8 @@ public class ProcessRunContext {
         && Objects.equals("experiment:" + cycle.getExperimentId(), waiting.getSourceReference())
         && "pde-sales-delivery-learning"
             .equals(process(waiting.getProcessDefinitionId()).getProcessCode())
-        && "pde-commercial-homologation-activation"
-            .equals(process(candidate.getProcessDefinitionId()).getProcessCode());
+        && Set.of("pde-commercial-homologation-activation", "opala-commercial-preparation-v1")
+            .contains(process(candidate.getProcessDefinitionId()).getProcessCode());
   }
 
   /** Reconstrói somente os identificadores imutáveis da solicitação original. */

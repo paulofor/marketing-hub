@@ -40,7 +40,8 @@ public final class PdeEconomicsImageSmoke {
 
   /** Percorre PLAY, pending, prompt, schema, validação e callback com correlação isolada. */
   static void runScenario(String scenario, Path resources) throws Exception {
-    boolean legacy = "legacy".equals(scenario);
+    boolean opala = "opala".equals(scenario);
+    boolean legacy = "legacy".equals(scenario) || opala;
     boolean beforeModel = List.of("drift", "missing").contains(scenario);
     boolean invalid = List.of("timestamp", "contribution", "budget").contains(scenario);
     boolean stopped = "stop".equals(scenario);
@@ -82,10 +83,19 @@ public final class PdeEconomicsImageSmoke {
           .putObject("result")
           .set("marketStrategicContract", contract);
     }
+    if (opala)
+      context
+          .putObject("opalaCommercial")
+          .put("productId", 900004)
+          .put("experimentId", 900092)
+          .put("cycleId", 900002)
+          .put("productVersion", "fixture-v12");
     String source =
         "discovery".equals(scenario) ? "product-discovery-cycle:900064" : "experiment:900092";
     Map<String, Object> task =
         Map.of(
+            "processCode",
+            opala ? "opala-commercial-preparation-v1" : "pde-commercial-plan-offer",
             "taskId",
             900360,
             "processVersion",
@@ -113,7 +123,15 @@ public final class PdeEconomicsImageSmoke {
                 exchange.getRequestURI().getQuery().contains("activityId=economics"),
                 "Fila não canônica");
             status = 200;
-            output = json.writeValueAsBytes(List.of(task));
+            output =
+                json.writeValueAsBytes(
+                    opala
+                            && !exchange
+                                .getRequestURI()
+                                .getQuery()
+                                .contains("processCode=opala-commercial-preparation-v1")
+                        ? List.of()
+                        : List.of(task));
           } else if (List.of("result", "failure").contains(operation)) {
             require(
                 path.contains("financial-agent/stage-executions/900360/"),
@@ -144,15 +162,21 @@ public final class PdeEconomicsImageSmoke {
       }
       require(
           operations.equals(
-              List.of(
-                  "automatic-execution", "pending", beforeModel || invalid ? "failure" : "result")),
+              opala
+                  ? List.of("automatic-execution", "pending", "pending", "result")
+                  : List.of(
+                      "automatic-execution",
+                      "pending",
+                      beforeModel || invalid ? "failure" : "result")),
           "Sequência divergente: " + operations);
       require(callbacks.size() == 1, "Callback ausente ou duplicado");
       JsonNode callback = callbacks.getFirst();
       JsonNode evidence = json.readTree(callback.path("evidenceJson").asText());
       require(source.equals(evidence.path("sourceReference").asText()), "Origem contaminada");
       require(
-          (legacy ? "pde-commercial-plan-v4" : "pde-commercial-plan-v5")
+          (opala
+                  ? "opala-commercial-preparation-v1"
+                  : legacy ? "pde-commercial-plan-v4" : "pde-commercial-plan-v5")
               .equals(evidence.path("promptVersion").asText()),
           "Versão indevida para a origem da tarefa");
       if (beforeModel) {
@@ -173,6 +197,12 @@ public final class PdeEconomicsImageSmoke {
           "Prompt auditado difere do executado");
       require(
           callback.path("modelUsages").get(0).path("inputTokens").asInt() == 7, "Consumo perdido");
+      if (opala) {
+        require(prompt.contains("preparação comercial Opala v1"), "Prompt Opala ausente");
+        require(
+            evidence.path("opalaScope").equals(context.path("opalaCommercial")),
+            "Identidade Opala perdida no callback");
+      }
       if (!legacy) {
         require(
             prompt.contains("YYYY-MM-DD") && prompt.contains("checkout **simulado**"),

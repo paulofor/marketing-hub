@@ -97,6 +97,10 @@ class PdeConstructionBpmTaskConsumerTest {
     assertThat(PdeConstructionBpmTaskConsumer.contractKeysInPollingOrder())
         .startsWith("venda-entrega-satisfacao-cliente/materialization")
         .containsExactlyInAnyOrder(
+            "opala-commercial-preparation-v1/entry",
+            "opala-commercial-preparation-v1/creative",
+            "opala-commercial-preparation-v1/checkout",
+            "opala-commercial-preparation-v1/targeting",
             "venda-entrega-satisfacao-cliente/materialization",
             "pde-construction-approval/prototypeCorrection",
             "pde-construction-approval/journey",

@@ -1,0 +1,255 @@
+package com.marketinghub.opala.commercial.v1.service;
+
+import static com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext.require;
+
+import com.marketinghub.agenttask.*;
+import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
+import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocess.execution.service.agentactivity.*;
+import com.marketinghub.businessprocess.execution.service.backendactivity.*;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleCommercialReadiness;
+import com.marketinghub.product.Product;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/** Responsabilidade: governar resultados, bloqueios e conclusão da preparação comercial Opala. */
+@Service
+@Slf4j
+public class OpalaCommercialService
+    implements AgentTaskCompletionHook, AgentProductProcessActivityReadinessProvider {
+  private static final Set<String> PREPARATION =
+      Set.of("entry", "creative", "checkout", "targeting");
+  private static final List<String> REVIEWS =
+      List.of("economics", "humanExperienceReview", "commercialIntegrityReview");
+  private final OpalaCommercialContext context;
+  private final OpalaCommercialMaterialization materialization;
+  private final LearningCycleCommercialReadiness commercialReadiness;
+  private final AgentTaskRepository tasks;
+  private final OpalaCommercialRouting routing;
+
+  /**
+   * Resolve integrações sob demanda para preservar a composição dos validadores e callbacks BPM.
+   */
+  public OpalaCommercialService(
+      OpalaCommercialContext context,
+      @Lazy OpalaCommercialMaterialization materialization,
+      @Lazy LearningCycleCommercialReadiness commercialReadiness,
+      AgentTaskRepository tasks,
+      OpalaCommercialRouting routing) {
+    this.context = context;
+    this.materialization = materialization;
+    this.commercialReadiness = commercialReadiness;
+    this.tasks = tasks;
+    this.routing = routing;
+  }
+
+  /** Reconhece apenas tarefas pertencentes ao subprocesso versionado. */
+  @Override
+  public boolean supports(AgentTask task) {
+    return task != null
+        && task.getProcessDefinition() != null
+        && OpalaCommercialContext.CODE.equals(task.getProcessDefinition().getProcessCode());
+  }
+
+  /** Aplica o contrato às atividades de agentes e ao gate final deste subprocesso. */
+  @Override
+  public boolean supports(
+      BusinessProcessDefinition process, BusinessProcessActivityDefinition activity) {
+    return process != null
+        && activity != null
+        && OpalaCommercialContext.CODE.equals(process.getProcessCode());
+  }
+
+  /** Verifica identidade e insumos antes de iniciar revisões que consumam modelo. */
+  @Override
+  public AgentProductProcessActivityReadiness readiness(
+      BusinessProcessDefinition process,
+      BusinessProcessActivityDefinition activity,
+      Product product,
+      String source) {
+    try {
+      var scope = context.scope(source);
+      require(
+          product != null && Objects.equals(product.getId(), scope.cycle().getProductId()),
+          "O subprocesso pertence a outro produto.");
+      if (Set.of("humanExperienceReview", "commercialIntegrityReview")
+          .contains(activity.getActivityId())) {
+        var preparation = commercialReadiness.inspect(scope.cycle());
+        require(
+            preparation != null && preparation.readyForReview(),
+            preparation == null
+                ? "Canal ainda não suportado nesta homologação."
+                : preparation.guidance());
+      }
+      return new AgentProductProcessActivityReadiness(
+          true,
+          "Executar somente a preparação desta versão; publicação e gasto exigem seus controles próprios.");
+    } catch (RuntimeException ex) {
+      log.warn(
+          "Preparação Opala bloqueada. productId={} source={} activity={}",
+          product == null ? null : product.getId(),
+          source,
+          activity.getActivityId(),
+          ex);
+      return new AgentProductProcessActivityReadiness(false, ex.getMessage());
+    }
+  }
+
+  /** Aplica instruções ou registra parecer, recusando callbacks de outra versão ou identidade. */
+  @Override
+  @Transactional
+  public CompletionDisposition apply(AgentTask task, CompleteAgentTaskRequest request) {
+    var scope = context.scope(task.getSourceReference());
+    var evidence = context.read(request.evidenceJson());
+    var identity = evidence.path("opalaScope");
+    require(
+        identity.path("cycleId").asLong() == scope.cycle().getId()
+            && identity.path("productId").asLong() == scope.cycle().getProductId()
+            && identity.path("experimentId").asLong() == scope.cycle().getExperimentId()
+            && scope.cycle().getProductVersion().equals(identity.path("productVersion").asText()),
+        "Resposta pertence a outra ocorrência ou versão do Opala.");
+    require(
+        task.getCreatedAt() != null
+            && (scope.cycle().getVersionChangedAt() == null
+                || !task.getCreatedAt().isBefore(scope.cycle().getVersionChangedAt())),
+        "A tarefa foi criada antes da versão vigente.");
+    var result = context.read(request.resultJson());
+    String activity = task.getProcessActivityId();
+    if (PREPARATION.contains(activity)) {
+      require(
+          "READY".equals(result.path("decision").asText()),
+          "Preparação ainda não concluída pelo agente.");
+      materialization.apply(activity, scope, result.path("instruction"));
+    } else {
+      require(
+          REVIEWS.contains(activity)
+              && ("economics".equals(activity) ? "APPROVE" : "APPROVED")
+                  .equals(result.path("decision").asText()),
+          "Parecer não aprovou esta preparação.");
+      if ("economics".equals(activity)) {
+        var economics = result.path("economics");
+        require(
+            economics.path("offerPriceBrl").isNumber()
+                && economics.path("variableCostPerSaleBrl").isNumber()
+                && economics.path("contributionPerSaleBrl").isNumber()
+                && scope.experiment().getUnitPrice() != null,
+            "Plutus precisa informar preço, custo e contribuição reais.");
+        var price = economics.path("offerPriceBrl").decimalValue();
+        var cost = economics.path("variableCostPerSaleBrl").decimalValue();
+        var contribution = economics.path("contributionPerSaleBrl").decimalValue();
+        require(
+            price.compareTo(scope.experiment().getUnitPrice()) == 0
+                && cost.signum() >= 0
+                && contribution.signum() > 0
+                && price
+                        .subtract(cost)
+                        .subtract(contribution)
+                        .abs()
+                        .compareTo(new BigDecimal("0.01"))
+                    <= 0,
+            "A economia aprovada não reconcilia com preço, custo e margem do experimento.");
+        require(
+            economics.path("maxBudgetBrl").isNumber()
+                && economics.path("maxBudgetBrl").decimalValue().signum() > 0
+                && scope.cycle().getBudgetLimitBrl() != null
+                && economics
+                        .path("maxBudgetBrl")
+                        .decimalValue()
+                        .compareTo(scope.cycle().getBudgetLimitBrl())
+                    <= 0,
+            "O parecer precisa respeitar o teto de mídia do ciclo.");
+        require(
+            result.path("scenarios").size() == 3
+                && scope.cycle().getBudgetLimitBrl() != null
+                && scope.cycle().getBudgetLimitBrl().signum() > 0,
+            "Informe três cenários e um teto de mídia válido.");
+        require(
+            !java.time.LocalDate.parse(economics.path("deadline").asText())
+                .isBefore(java.time.LocalDate.now(java.time.ZoneOffset.UTC)),
+            "O parecer financeiro expirou.");
+      } else {
+        require(
+            identity.equals(context.snapshot(task.getSourceReference())),
+            "Os ativos avaliados mudaram; refaça a revisão da mesma ocorrência.");
+        var preparation = commercialReadiness.inspect(scope.cycle());
+        require(
+            preparation != null && preparation.readyForReview(),
+            "As condições comerciais mudaram durante a revisão; revalide os insumos.");
+        require(
+            result.path("gateChecks").isArray()
+                && result.path("gateChecks").size()
+                    >= ("humanExperienceReview".equals(activity) ? 8 : 10)
+                && result.path("evidence").isArray()
+                && !result.path("evidence").isEmpty()
+                && result.path("requiredChanges").isArray()
+                && result.path("requiredChanges").isEmpty(),
+            "O parecer não comprovou todos os critérios comerciais.");
+        for (var check : result.path("gateChecks"))
+          require(
+              "PASS".equals(check.path("status").asText()),
+              "O parecer aprovou com critério pendente.");
+      }
+    }
+    return CompletionDisposition.COMPLETE;
+  }
+
+  /** Invalida a conclusão quando o ciclo muda de versão, preservando a tentativa histórica. */
+  @Override
+  public boolean requiresFreshExecution(
+      BusinessProcessDefinition process,
+      BusinessProcessActivityDefinition activity,
+      Product product,
+      String source) {
+    OpalaCommercialContext.Scope scope;
+    try {
+      scope = context.scope(source);
+    } catch (RuntimeException ex) {
+      log.debug("Consulta histórica Opala sem nova execução. source={}", source, ex);
+      return false;
+    }
+    if ("ready".equals(activity.getActivityId())) return !routing.completed(scope.cycle());
+    return tasks
+        .findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            process.getId(), source)
+        .stream()
+        .filter(
+            t ->
+                source.equals(t.getSourceReference())
+                    && activity.getActivityId().equals(t.getProcessActivityId())
+                    && "COMPLETED".equals(t.getStatus()))
+        .reduce((a, b) -> b)
+        .map(
+            t -> {
+              var snapshot = context.read(t.getEvidenceJson()).path("opalaScope");
+              if (!scope
+                  .cycle()
+                  .getProductVersion()
+                  .equals(snapshot.path("productVersion").asText())) return true;
+              String step = activity.getActivityId();
+              if (PREPARATION.contains(step))
+                return !materialization.current(
+                    step, scope, context.read(t.getResultJson()).path("instruction"));
+              var current = context.snapshot(source);
+              if ("economics".equals(step))
+                return !snapshot.path("priceBrl").equals(current.path("priceBrl"))
+                    || !snapshot.path("budgetLimitBrl").equals(current.path("budgetLimitBrl"))
+                    || !snapshot.path("productContract").equals(current.path("productContract"))
+                    || java.time.LocalDate.parse(
+                            context
+                                .read(t.getResultJson())
+                                .path("economics")
+                                .path("deadline")
+                                .asText())
+                        .isBefore(java.time.LocalDate.now(java.time.ZoneOffset.UTC));
+              return !snapshot.equals(current);
+            })
+        .orElse(false);
+  }
+}

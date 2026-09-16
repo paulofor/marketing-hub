@@ -41,7 +41,10 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
   private static final Pattern EXPERIMENT_SEGMENT =
       Pattern.compile("(?:^|:)experiment-([1-9][0-9]*)(?:$|:)");
   private static final List<String> VERSIONED_PDE_VISUAL_PROCESSES =
-      List.of("pde-commercial-homologation-activation", "pde-construction-approval");
+      List.of(
+          "pde-commercial-homologation-activation",
+          "opala-commercial-preparation-v1",
+          "pde-construction-approval");
   private final ExperimentRepository experiments;
   private final ProductRepository products;
   private final PdeProductionSlotRepository productionSlots;
@@ -300,6 +303,20 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
       Experiment experiment, Product product, String experienceVersion, String processCode) {
     if (isPrivateValidation(product, processCode)) {
       return privatePrototypeUrl(product);
+    }
+    if ("opala-commercial-preparation-v1".equals(processCode)) {
+      if (productionSlots == null || experiment == null) return null;
+      return productionSlots
+          .findFirstBySourceExperimentIdOrderByUpdatedAtDesc(experiment.getId())
+          .filter(
+              slot ->
+                  Objects.equals(slot.getProductSlug(), product.getSlug())
+                      && Objects.equals(slot.getExperienceVersion(), experienceVersion)
+                      && List.of(PdeProductionSlotStatus.READY, PdeProductionSlotStatus.ACTIVE)
+                          .contains(slot.getStatus())
+                      && "OK".equals(slot.getValidationStatus()))
+          .map(slot -> slot.getPublicUrl())
+          .orElse(null);
     }
     if (processCode != null && VERSIONED_PDE_VISUAL_PROCESSES.contains(processCode)) {
       if (productionSlots == null) return null;

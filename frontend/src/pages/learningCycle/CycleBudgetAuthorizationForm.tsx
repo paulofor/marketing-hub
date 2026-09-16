@@ -24,11 +24,13 @@ export default function CycleBudgetAuthorizationForm({
     const data = new FormData(event.currentTarget);
     const dailyBudgetBrl = Number(data.get("dailyBudgetBrl"));
     const budgetLimitBrl = Number(data.get("budgetLimitBrl"));
-    if (!(
-      dailyBudgetBrl > 0 &&
-      budgetLimitBrl > 0 &&
-      dailyBudgetBrl <= budgetLimitBrl
-    )) {
+    if (
+      !(
+        dailyBudgetBrl > 0 &&
+        budgetLimitBrl > 0 &&
+        dailyBudgetBrl <= budgetLimitBrl
+      )
+    ) {
       setError(
         "Informe valores positivos. O diário não pode ultrapassar o total.",
       );
@@ -99,8 +101,16 @@ export default function CycleBudgetAuthorizationForm({
             {command?.available && "O orçamento pode ser aprovado agora. "}Para
             ativar a campanha, ainda é necessário concluir a preparação
             comercial. {cycle.commercialPreparation.guidance}{" "}
-            <Link to={cycle.commercialPreparation.experimentUrl}>
-              Ver preparação do experimento
+            <Link
+              to={
+                cycle.commercialPreparation.preparationUrl ??
+                cycle.commercialPreparation.experimentUrl
+              }
+            >
+              {cycle.commercialPreparation.preparationLabel &&
+              cycle.commercialPreparation.preparationUrl
+                ? cycle.commercialPreparation.preparationLabel
+                : "Ver preparação do experimento"}
             </Link>
           </p>
         )}

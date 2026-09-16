@@ -2,6 +2,37 @@
 
 ## Decisão
 
+### Preparação comercial por tipo Opala — decisão de 15/09/2026
+
+A cadeia `pde-value-creation-delivery` v15 inclui o processo de venda, entrega e
+aprendizado v7, com chamada explícita para `opala-commercial-preparation-v1` v1.
+O subprocesso atende ao tipo oficial `PDE` (Opala), em ciclos abertos nas fases
+AUTHORIZATION/PUBLICATION, com identidade exata de produto, experimento e versão.
+Cadeias anteriores mantêm seu histórico e seu percurso; não há migração automática
+do ciclo 2/experimento 92 nem aprovação retroativa.
+
+Dédalo prepara entrada do PDE, integração do vídeo aprovado, checkout canônico e
+público aprovado por Atena. Plutus revalida a economia. Psique e Têmis homologam a
+experiência e a integridade comercial. O backend consolida a prontidão e devolve o
+controle ao pai. A entrada é a própria experiência com IA personalizada; preparação
+não é publicação, autorização de gasto, venda comprovada ou entrega ao comprador.
+
+Usam-se as filas e callbacks BPM existentes, com `processCode` e `activityId`:
+`/api/internal/agent-tasks/{agent}/stage-executions/pending` e os callbacks
+`/{taskId}/result` ou `/{taskId}/failure` sob o mesmo prefixo. O backend fornece
+`processContextJson.opalaCommercial`; o callback preserva `evidenceJson.opalaScope`.
+O resultado materializa apenas vínculos internos compatíveis com fontes aprovadas;
+se faltarem contrato, mídia, checkout ou aprovação, o motivo deve ficar explícito.
+A superfície pública e seus controles existentes continuam obrigatórios.
+
+Mudança de versão invalida as conclusões afetadas; mudança de ativos invalida as
+revisões, mesmo na mesma versão. A prova final é idempotente e declara que não
+comprova vendas. A chamada pendente ao subprocesso aparece como trabalho a iniciar,
+sem marcar o processo pai como atividade já em execução. O link de preparação no
+ciclo é retornado pelo backend com produto, ciclo e cadeia preservados.
+
+Matriz, escopo de simulação e evidências: `docs/homologacao/opala-preparacao-comercial-v1.md`.
+
 ### Execução automática por processo — decisão de 12/09/2026
 
 O usuário inicia o **processo**, pelo cabeçalho da tela de atividades do produto. O backend

@@ -37,6 +37,9 @@ public class SalesFlowResolver {
   private final BusinessProcessChainDefinitionRepository chains;
   private final LearningCycleJson json;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.opala.commercial.v1.service.OpalaCommercialRouting opalaRouting;
+
   /**
    * Resolve a execução do contexto solicitado, preservando a versão original do ciclo histórico.
    */
@@ -70,6 +73,10 @@ public class SalesFlowResolver {
         processes
             .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(PARENT_CODE, "PUBLISHED")
             .orElse(parent);
+    if (opalaRouting != null
+        && opalaRouting.target(cycle) == null
+        && model.getVersionNumber() != null
+        && model.getVersionNumber() >= 7) model = parent;
     return describe(cycle, model, events.findByCycleIdOrderByRevisionAsc(cycle.getId()));
   }
 
@@ -175,10 +182,41 @@ public class SalesFlowResolver {
             ? "delivery"
             : finished && !awaitingSuccessor ? null : measuring ? "consolidate" : "learningCycle";
     var states = new ArrayList<Activity>();
+    boolean callsPreparation = false;
+    boolean awaitingOpala = false;
+    for (var node : diagram.path("nodes"))
+      if ("commercialPreparation".equals(node.path("id").asText())) callsPreparation = true;
+    if (callsPreparation) {
+      boolean applicable =
+          opalaRouting != null && opalaRouting.target(cycle) != null && !cycle.isBaseline();
+      boolean preparing =
+          applicable
+              && !finished
+              && java.util.Set.of("AUTHORIZATION", "PUBLICATION").contains(cycle.getStage());
+      boolean prepared = applicable && opalaRouting.completed(cycle);
+      awaitingOpala = preparing && !prepared;
+      if (awaitingOpala) current = "commercialPreparation";
+      states.add(
+          activity(
+              "commercialPreparation",
+              1,
+              "Preparar operação comercial Opala",
+              !applicable
+                  ? "NOT_APPLICABLE"
+                  : prepared ? "COMPLETED" : preparing ? "NOT_STARTED" : "NOT_APPLICABLE",
+              prepared,
+              !applicable
+                  ? "Esta passagem conserva o percurso do seu tipo ou sua referência histórica."
+                  : prepared
+                      ? "Preparação comprovada; ativação e resultados comerciais mantêm seus gates."
+                      : "Os agentes preparam entrada do PDE, criativo, checkout, público, economia e homologação.",
+              null));
+    }
+    int preparationOffset = callsPreparation ? 1 : 0;
     states.add(
         activity(
             "optimization",
-            1,
+            1 + preparationOffset,
             "Operar e otimizar o experimento",
             adoption != null
                 ? "HISTORICAL"
@@ -193,7 +231,7 @@ public class SalesFlowResolver {
     states.add(
         activity(
             "delivery",
-            2,
+            2 + preparationOffset,
             "Entregar cada venda e acompanhar satisfação",
             noSales
                 ? "NOT_APPLICABLE"
@@ -216,7 +254,7 @@ public class SalesFlowResolver {
     states.add(
         activity(
             "consolidate",
-            3,
+            3 + preparationOffset,
             "Consolidar resultado comercial",
             measuring ? blocked ? "BLOCKED" : "IN_PROGRESS" : measured ? "COMPLETED" : "WAITING",
             !measuring && measured,
@@ -231,11 +269,11 @@ public class SalesFlowResolver {
     states.add(
         activity(
             "learningCycle",
-            4,
+            4 + preparationOffset,
             "Conduzir o ciclo de aprendizado e vendas",
             finished
                 ? awaitingSuccessor ? "IN_PROGRESS" : "COMPLETED"
-                : measuring || deliveryPending ? "WAITING" : "IN_PROGRESS",
+                : measuring || deliveryPending || awaitingOpala ? "WAITING" : "IN_PROGRESS",
             finished && !awaitingSuccessor,
             "Ciclo #"
                 + cycle.getId()
@@ -251,9 +289,10 @@ public class SalesFlowResolver {
                     : LearningCycleRules.label(cycle.getStage()))
                 + targetDescription(cycle),
             latest));
+    String selectedActivity = current;
     var active =
         states.stream()
-            .filter(item -> Objects.equals(current, item.activityId()))
+            .filter(item -> Objects.equals(selectedActivity, item.activityId()))
             .findFirst()
             .orElse(null);
     String workspace =

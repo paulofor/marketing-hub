@@ -183,6 +183,36 @@ class SalesFlowResolverTest {
     assertThat(flow.transitions().getLast().flowId()).isEqualTo("close-cycle");
   }
 
+  /** Encaminha ao filho sem marcar o pai como execução ativa e provocar espera sem trabalho. */
+  @Test
+  void dispatchesOpalaBeforeWaitingForCommercialPublication() throws Exception {
+    var routing = mock(com.marketinghub.opala.commercial.v1.service.OpalaCommercialRouting.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(resolver, "opalaRouting", routing);
+    var cycle = cycle();
+    cycle.setStage("PUBLICATION");
+    cycle.setBaseline(false);
+    var model = model();
+    var diagram =
+        (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(model.getDiagramJson());
+    ((com.fasterxml.jackson.databind.node.ArrayNode) diagram.path("nodes"))
+        .addObject()
+        .put("id", "commercialPreparation")
+        .put("type", "TASK");
+    model.setDiagramJson(diagram.toString());
+    when(routing.target(cycle)).thenReturn(new BusinessProcessDefinition());
+    var waiting = resolver.describe(cycle, model, List.of());
+    assertThat(waiting.currentActivityId()).isEqualTo("commercialPreparation");
+    assertThat(waiting.activities().getFirst().state()).isEqualTo("NOT_STARTED");
+    assertThat(waiting.activities()).noneMatch(a -> "IN_PROGRESS".equals(a.state()));
+    when(routing.completed(cycle)).thenReturn(true);
+    var ready = resolver.describe(cycle, model, List.of());
+    assertThat(ready.currentActivityId()).isEqualTo("learningCycle");
+    assertThat(ready.activities().getFirst().objectiveAchieved()).isTrue();
+    when(routing.target(cycle)).thenReturn(null);
+    var legacy = resolver.describe(cycle, model, List.of());
+    assertThat(legacy.activities().getFirst().state()).isEqualTo("NOT_APPLICABLE");
+  }
+
   /** Gera o ciclo histórico mínimo com identidade explícita, independente de datas de tarefa. */
   private LearningSalesCycle cycle() {
     var cycle = new LearningSalesCycle();

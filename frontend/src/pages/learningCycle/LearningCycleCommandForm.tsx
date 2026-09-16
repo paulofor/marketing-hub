@@ -255,10 +255,21 @@ export default function LearningCycleCommandForm({
               </li>
             ))}
           </ul>
+          {cycle.commercialPreparation.preparationUrl &&
+            cycle.commercialPreparation.preparationLabel && (
+              <p>
+                <Link
+                  className="btn btn-primary"
+                  to={cycle.commercialPreparation.preparationUrl}
+                >
+                  {cycle.commercialPreparation.preparationLabel}
+                </Link>
+              </p>
+            )}
           <Link to={cycle.commercialPreparation.experimentUrl}>
             Ver preparação do experimento
           </Link>
-          {cycle.workUrl && (
+          {cycle.workUrl && !cycle.commercialPreparation.preparationUrl && (
             <>
               {" "}
               · <Link to={cycle.workUrl}>Abrir homologação comercial</Link>

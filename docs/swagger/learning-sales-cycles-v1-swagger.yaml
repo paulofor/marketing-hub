@@ -467,6 +467,8 @@ components:
             readyForReview: {type: boolean}
             guidance: {type: string}
             experimentUrl: {type: string}
+            preparationUrl: {type: string, nullable: true, description: Link canônico para o subprocesso Opala da cadeia original com produto e ciclo preservados}
+            preparationLabel: {type: string, nullable: true, description: Rótulo da ação de preparação pelos agentes}
             requirements:
               type: array
               items:

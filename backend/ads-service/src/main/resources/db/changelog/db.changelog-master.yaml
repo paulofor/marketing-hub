@@ -2084,3 +2084,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-15-product-financial-plan-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-15-opala-commercial-preparation-v1.yaml
+      relativeToChangelogFile: true

@@ -63,6 +63,29 @@ O modelo compartilhado do botão **Prompt para AIHUB** deve incluir esta orienta
 todos os produtos e processos, mantendo as definições do tipo como referência ao longo do
 trabalho. A instrução no prompt não comprova implementação automática desses controles.
 
+## Preparação comercial Opala — decisão de 15/09/2026
+
+O tipo `PDE` (Opala) possui o subprocesso versionado **Preparar operação comercial
+Opala**, integrado ao processo de venda, entrega e aprendizado. Ele reúne preparação
+da entrada do próprio PDE, criativo, checkout e acesso, público, parecer financeiro
+de Plutus e homologação da jornada completa. A IA é a capacidade geradora; o valor
+vendido é a experiência útil, personalizada e acessível no cotidiano.
+
+As regras gerais vêm do tipo; oferta, preço, público, versão, canal e orçamento vêm
+do contrato aprovado de cada produto e experimento. Para o funil de entrada no PDE,
+não exigir uma landing separada. Reutilizar atividades e evidências válidas do mesmo
+contexto, sem duplicar produção nem copiar aprovações de outro experimento.
+
+O backend coordena o avanço, registra responsáveis, entregas, bloqueios e evidências.
+A conclusão comprova preparação comercial, nunca publicação, gasto, venda ou entrega
+real. Preservar decisões humanas, validade dos limites e histórico dos ciclos abertos;
+a nova definição não migra silenciosamente o ciclo 2/experimento 92 do Vega.
+
+Alternativas avaliadas: processo independente (mais autonomia, mas duplica controles
+e fragmenta a operação); atividades genéricas (menor esforço, mas mistura contratos
+de tipos); subprocesso especializado (reutiliza o motor e mantém regras explícitas).
+Escolhida a terceira por aderência ao tipo e menor risco de duplicação.
+
 ## Catálogo extensível e apelidos
 
 O percurso operacional é definido pela ficha versionada em

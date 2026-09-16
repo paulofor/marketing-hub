@@ -125,6 +125,10 @@ public class AgentTaskService {
   @Autowired(required = false)
   private List<AgentTaskCompletionHook> completionHooks = List.of();
 
+  @Autowired(required = false)
+  private com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext
+      opalaCommercialContext;
+
   /** Configura persistência, catálogo e relógio operacional. */
   @Autowired
   public AgentTaskService(
@@ -1881,6 +1885,11 @@ public class AgentTaskService {
       List<Map<String, Object>> completedHumanActivities = completedHumanActivities(task);
       Map<String, Object> context = new java.util.LinkedHashMap<>();
       context.put("completedActivities", completedActivities);
+      if (opalaCommercialContext != null
+          && com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext.CODE.equals(
+              task.getProcessDefinition().getProcessCode())) {
+        context.put("opalaCommercial", opalaCommercialContext.snapshot(task.getSourceReference()));
+      }
       context.put("completedHumanActivities", completedHumanActivities);
       context.put("blockedActivities", blockedActivities);
       if (executionProfileContext != null) {

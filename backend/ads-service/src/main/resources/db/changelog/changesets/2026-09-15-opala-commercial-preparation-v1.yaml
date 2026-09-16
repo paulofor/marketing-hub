@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-15-opala-commercial-preparation-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=14
+      changes:
+        - sqlFile:
+            path: 2026-09-15-opala-commercial-preparation-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_chain_definition SET status='RETIRED' WHERE chain_code='pde-value-creation-delivery' AND version_number=15;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-sales-delivery-learning' AND version_number=7;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='opala-commercial-preparation-v1' AND version_number=1;

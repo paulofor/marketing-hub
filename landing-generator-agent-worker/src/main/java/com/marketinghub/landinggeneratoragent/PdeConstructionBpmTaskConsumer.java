@@ -41,6 +41,34 @@ public class PdeConstructionBpmTaskConsumer {
               "pde-delivery-v1",
               "READY"),
           new BpmContract(
+              "opala-commercial-preparation-v1",
+              "entry",
+              "prompts/opala-commercial/v1/entry.md",
+              "prompts/opala-commercial/v1/preparation-schema.json",
+              "opala-commercial-v1",
+              "READY"),
+          new BpmContract(
+              "opala-commercial-preparation-v1",
+              "creative",
+              "prompts/opala-commercial/v1/creative.md",
+              "prompts/opala-commercial/v1/preparation-schema.json",
+              "opala-commercial-v1",
+              "READY"),
+          new BpmContract(
+              "opala-commercial-preparation-v1",
+              "checkout",
+              "prompts/opala-commercial/v1/checkout.md",
+              "prompts/opala-commercial/v1/preparation-schema.json",
+              "opala-commercial-v1",
+              "READY"),
+          new BpmContract(
+              "opala-commercial-preparation-v1",
+              "targeting",
+              "prompts/opala-commercial/v1/targeting.md",
+              "prompts/opala-commercial/v1/preparation-schema.json",
+              "opala-commercial-v1",
+              "READY"),
+          new BpmContract(
               "pde-construction-approval",
               "prototypeCorrection",
               "prompts/pde-construction/v3/prototype-correction.md",
@@ -382,6 +410,16 @@ public class PdeConstructionBpmTaskConsumer {
 
   /** Declara o contexto acessado e comprova ausência de publicação ou gasto. */
   private String evidence(Map<String, Object> task) throws IOException {
+    var result = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(baseEvidence(task));
+    if ("opala-commercial-preparation-v1".equals(processCode(task)))
+      result.set(
+          "opalaScope",
+          json.readTree(String.valueOf(task.get("processContextJson"))).path("opalaCommercial"));
+    return result.toString();
+  }
+
+  /** Preserva a auditoria comum de Dédalo e a versão do prompt executado. */
+  private String baseEvidence(Map<String, Object> task) throws IOException {
     return json.writeValueAsString(
         Map.of(
             "agent",

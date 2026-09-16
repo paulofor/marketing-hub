@@ -10,6 +10,16 @@ Executar `scripts/validate-liquibase-mysql57.sh` para verificar includes relativ
 
 A etapa estática não inicia MySQL nem executa `liquibase:update`. Os jobs físicos usam bancos descartáveis e credenciais sintéticas, sem dados de produção, para conferir as migrações cobertas por suas fixtures antes da publicação.
 
+## Preparação comercial Opala — v1
+
+O job `validate-opala-commercial-preparation` executa
+`infra/testing/opala-commercial/run-mysql.sh`, com `OPALA_COMPOSE_PROJECT` exclusivo.
+A fixture MySQL 5.7 cobre o novo subprocesso, a chamada no processo de venda v7,
+a cadeia v15, reaplicação e rollback sem reescrever versões anteriores. As tabelas
+mínimas e credenciais são sintéticas. `OPALA_DB_HOST=sandbox-docker` atende à engine
+remota da sandbox; no runner efêmero o host padrão é `127.0.0.1`.
+O script remove a topologia e os volumes do projeto no encerramento.
+
 ## Planos financeiros por produto — v1
 
 O job `validate-product-financial-plan` executa a fixture física com MySQL 5.7, JPA em

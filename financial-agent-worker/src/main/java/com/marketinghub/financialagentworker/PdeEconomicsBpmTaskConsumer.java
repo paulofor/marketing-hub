@@ -87,17 +87,20 @@ public class PdeEconomicsBpmTaskConsumer {
 
   /** Reserva somente a atividade oficial de economia após a conclusão de Atena. */
   private Map<String, Object> claim() {
-    List<Map<String, Object>> pending =
-        backend
-            .get()
-            .uri(
-                "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={process}&activityId={activity}",
-                AGENT_KEY,
-                PROCESS_CODE,
-                ACTIVITY_ID)
-            .retrieve()
-            .body(new ParameterizedTypeReference<>() {});
-    return pending == null || pending.isEmpty() ? null : pending.getFirst();
+    for (String process : List.of(PROCESS_CODE, "opala-commercial-preparation-v1")) {
+      List<Map<String, Object>> pending =
+          backend
+              .get()
+              .uri(
+                  "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={process}&activityId={activity}",
+                  AGENT_KEY,
+                  process,
+                  ACTIVITY_ID)
+              .retrieve()
+              .body(new ParameterizedTypeReference<>() {});
+      if (pending != null && !pending.isEmpty()) return pending.getFirst();
+    }
+    return null;
   }
 
   /** Executa o prompt financeiro em leitura somente e preserva a resposta bruta. */
@@ -181,6 +184,8 @@ public class PdeEconomicsBpmTaskConsumer {
 
   /** Seleciona a atividade econômica compatível com a versão imutável do processo. */
   private String promptResource(Map<String, Object> task) {
+    if ("opala-commercial-preparation-v1".equals(task.get("processCode")))
+      return "prompts/opala-commercial/v1/economics.md";
     return isPrivateValidationTask(task) ? PRIVATE_VALIDATION_PROMPT : LEGACY_PROMPT;
   }
 
@@ -290,6 +295,22 @@ public class PdeEconomicsBpmTaskConsumer {
 
   /** Preserva a origem e confirma ausência de movimentação financeira ou publicação. */
   private String evidence(Map<String, Object> task) throws IOException {
+    var result =
+        (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(baseEvidence(task));
+    if ("opala-commercial-preparation-v1".equals(task.get("processCode"))) {
+      result.put("processCode", "opala-commercial-preparation-v1");
+      result.put("promptVersion", "opala-commercial-preparation-v1");
+      result.set(
+          "opalaScope",
+          objectMapper
+              .readTree(String.valueOf(task.get("processContextJson")))
+              .path("opalaCommercial"));
+    }
+    return result.toString();
+  }
+
+  /** Preserva as evidências dos contratos financeiros anteriores. */
+  private String baseEvidence(Map<String, Object> task) throws IOException {
     return objectMapper.writeValueAsString(
         Map.of(
             "agent",
@@ -437,7 +458,10 @@ public class PdeEconomicsBpmTaskConsumer {
   /** Aplica o contrato privado pela versão do BPM, inclusive aos experimentos sucessores. */
   private static boolean isPrivateValidationTask(Map<String, Object> task) {
     Object version = task == null ? null : task.get("processVersion");
-    return version instanceof Number number && number.intValue() >= 6;
+    return task != null
+        && !"opala-commercial-preparation-v1".equals(task.get("processCode"))
+        && version instanceof Number number
+        && number.intValue() >= 6;
   }
 
   /** Distingue incompatibilidade entre etapas de uma falha técnica genérica do executor. */

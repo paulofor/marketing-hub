@@ -1,0 +1,49 @@
+{
+  "evidenceVersion": "kit-whatsapp-tasting-homologation-v11",
+  "product": {
+    "id": 9,
+    "slug": "kit-whatsapp-pronto",
+    "experienceVersion": "kit-whatsapp-pronto-pde-v2"
+  },
+  "experimentId": 89,
+  "verifiedAt": "2026-09-16T20:26:00+00:00",
+  "status": "PASSED",
+  "revalidationReason": "O contrato compartilhado do catálogo PDE passou a expor o acesso comercial versionado da Vega v12. Os 180 testes do backend PDE foram reexecutados localmente sem falhas antes desta atestação.",
+  "scope": "Compatibilidade do Rigel com o catálogo compartilhado após a inclusão do acesso versionado da Vega v12; preserva o contrato, a oferta, a entrega e a política comercial já homologados.",
+  "boundary": "Esta atestação não cria contato, venda, pagamento, gasto, publicação ou autorização comercial.",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-tasting-homologation-v10.json",
+      "sha256": "e303ab9a182ec3a40744cb685057809097daf10cc7a8ac039b260e8826f48af6",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Atestação v10 preservada como histórico imutável; a v11 revalida somente o executável compartilhado alterado."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/dto/ProductExperienceResponse.java",
+      "sha256": "9c375fa54816a3c9cafa24e9f272b7cfb2f47c4a99259b97503e9c5854ab68e4"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+      "sha256": "d3182ea4b12fdc929211159d41a01bac72813634e03e437572ea589de96c895a"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java",
+      "sha256": "1831fd1d7a44be8aaaeb2eb788095ae9e2385fae28a8f098bbfd141f638f0159"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogServiceTest.java",
+      "sha256": "404165c91b4959c928782b7771d2eebf08ec9a4d4489e7d894f40dc831461a44"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/RigelCommercialContractPolicyTest.java",
+      "sha256": "1150583e927fd8686a99e3173db70e89d738e873883a910a0ba2ef666e801770"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogVersionRejectionTest.java",
+      "sha256": "1bdb62dd16e9e32225714035fc97d55055c08912439c0af4beee5a138e52e940"
+    }
+  ],
+  "validationReport": "docs/homologacao/opala-checkout-v12-task-target-2026-09-16.md"
+}

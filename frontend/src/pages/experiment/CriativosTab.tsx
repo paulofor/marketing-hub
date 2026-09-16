@@ -42,6 +42,23 @@ interface Props {
 }
 
 const ICON_SIZE = 16;
+const PUBLICATION_COPY_LIMITS = {
+  headline: 40,
+  primaryText: 125,
+  description: 25,
+} as const;
+
+/** Conta caracteres como o gate do backend, inclusive fora do plano BMP. */
+const publicationCopyLength = (value?: string | null) =>
+  Array.from(value ?? "").length;
+
+/** Impede salvar uma revisão que o gate de publicação rejeitaria. */
+const hasPublicationCopyViolation = (creative: Creative) =>
+  publicationCopyLength(creative.headline) > PUBLICATION_COPY_LIMITS.headline ||
+  publicationCopyLength(creative.primaryText) >
+    PUBLICATION_COPY_LIMITS.primaryText ||
+  publicationCopyLength(creative.description) >
+    PUBLICATION_COPY_LIMITS.description;
 
 type FeedbackVariant = "success" | "warning" | "error";
 
@@ -1585,8 +1602,8 @@ export default function CriativosTab({
                     }
                   />
                   <small className="text-muted">
-                    {Array.from(versioning.headline || "").length}/40 caracteres
-                    para publicação.
+                    {publicationCopyLength(versioning.headline)}/
+                    {PUBLICATION_COPY_LIMITS.headline} caracteres para publicação.
                   </small>
                 </label>
                 <label className="form-label">
@@ -1604,9 +1621,28 @@ export default function CriativosTab({
                     }
                   />
                   <small className="text-muted">
-                    {Array.from(versioning.primaryText || "").length}/125
-                    caracteres para publicação. O texto completo fica preservado
-                    no histórico.
+                    {publicationCopyLength(versioning.primaryText)}/
+                    {PUBLICATION_COPY_LIMITS.primaryText} caracteres para
+                    publicação. O texto completo fica preservado no histórico.
+                  </small>
+                </label>
+                <label className="form-label">
+                  Descrição
+                  <input
+                    className="form-control"
+                    value={versioning.description || ""}
+                    aria-label="Descrição"
+                    onChange={(e) =>
+                      setVersioning({
+                        ...versioning,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                  <small className="text-muted">
+                    {publicationCopyLength(versioning.description)}/
+                    {PUBLICATION_COPY_LIMITS.description} caracteres para
+                    publicação.
                   </small>
                 </label>
                 <label className="form-label">
@@ -1659,7 +1695,8 @@ export default function CriativosTab({
                   disabled={
                     createVersion.isPending ||
                     !versioning.imageUrl.trim() ||
-                    !versioning.destinationUrl?.trim()
+                    !versioning.destinationUrl?.trim() ||
+                    hasPublicationCopyViolation(versioning)
                   }
                 >
                   {createVersion.isPending

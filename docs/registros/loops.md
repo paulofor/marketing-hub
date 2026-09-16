@@ -5171,6 +5171,29 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
   tela em desktop, iPhone e Android antes de qualquer retentativa paga.
 - **Evidências:** `docs/homologacao/opala-processo-77-recuperacao-2026-09-16.md`.
 
+## LOOP-OPALA-TASKTARGET-HERDA-CHECKOUT-DO-PREDECESSOR — correção em 16/09/2026
+
+- **Sintoma confirmado:** depois de concluir `entry` e `creative`, as tarefas #431 e #432 de
+  `checkout` bloquearam. `opalaCommercial` e `learningSalesCycle` apontavam para produto 4,
+  ciclo 2, experimento 92 e Vega v12; `taskTarget` continuava na v7, embora ambos reutilizassem
+  Pepper `owm6x`, R$ 67 e 90 dias.
+- **Histórico e causa-raiz:** banco e contrato do slot v8 confirmaram a candidata v12; o cadastro
+  global do produto permaneceu corretamente na v7 publicada. O resolvedor genérico montava
+  `taskTarget` pelo cadastro global e a materialização do checkout repetia essa leitura, perdendo
+  a identidade da candidata. O prazo de acesso existia apenas em texto e comportamento, sem vínculo
+  estruturado no contrato v12.
+- **Correção sistêmica:** tarefas Opala passam a montar `taskTarget` pelo contrato candidato exato
+  de produto + experimento + versão. Checkout, preço, cobrança e acesso são validados em conjunto;
+  o contrato v12 declara 90 dias, sem renovação, ativados somente por pagamento aprovado. O PDE
+  consome o mesmo vínculo para acesso v12. A v7 permanece inalterada.
+- **Prevenção:** testes cobrem o caso #92, outros IDs/versões, predecessor com o mesmo checkout,
+  divergência de experimento/preço/URL/acesso, reaplicação MySQL 5.7 e concessão QA v12. Nenhuma
+  preferência, cobrança, acesso real, mídia ou publicação participa da homologação.
+- **Integridade compartilhada:** a alteração do DTO comum invalidou corretamente o hash da
+  atestação Rigel v10. Após 180 testes do backend PDE sem falhas, a v11 foi criada como nova
+  atestação imutável; a v10 e todo o histórico anterior foram preservados.
+- **Evidências:** `docs/homologacao/opala-checkout-v12-task-target-2026-09-16.md`.
+
 ## LOOP-IRIS-PREPARACAO-EXIGE-PUBLICACAO — investigação de 12/09/2026
 
 - Evidência: Vega, ciclo 2, experimento 92, tarefas 400/401; MCP e callbacks de Íris

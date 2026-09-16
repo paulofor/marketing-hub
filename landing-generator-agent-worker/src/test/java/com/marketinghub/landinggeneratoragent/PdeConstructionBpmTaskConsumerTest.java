@@ -205,6 +205,99 @@ class PdeConstructionBpmTaskConsumerTest {
         .hasMessageContaining("Contrato PDE privado");
   }
 
+  /** Aceita a candidata Opala quando alvo, ciclo, checkout e acesso apontam à mesma versão. */
+  @Test
+  void acceptsExactOpalaCandidateBeforeModel() throws Exception {
+    Map<String, Object> task = opalaTask(407L, 922L, "pde-v18", "checkout-futuro");
+
+    PdeConstructionBpmTaskConsumer.validateTaskContext(
+        task,
+        new PdeConstructionBpmTaskConsumer.BpmContract(
+            "opala-commercial-preparation-v1", "checkout", "prompt", "schema", "v1", "READY"),
+        json);
+  }
+
+  /** Recusa a predecessora mesmo quando ela reutiliza o mesmo checkout da candidata. */
+  @Test
+  void rejectsPredecessorOpalaTargetBeforeModel() throws Exception {
+    Map<String, Object> task = opalaTask(4L, 92L, "musa-v12", "owm6x");
+    @SuppressWarnings("unchecked")
+    Map<String, Object> target = (Map<String, Object>) task.get("taskTarget");
+    target.put("experienceVersion", "musa-v7");
+
+    assertThatThrownBy(
+            () ->
+                PdeConstructionBpmTaskConsumer.validateTaskContext(
+                    task,
+                    new PdeConstructionBpmTaskConsumer.BpmContract(
+                        "opala-commercial-preparation-v1",
+                        "checkout",
+                        "prompt",
+                        "schema",
+                        "v1",
+                        "READY"),
+                    json))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Contrato Opala mistura");
+  }
+
+  /** Monta uma tarefa sintética sem efeitos externos para exercitar identidades futuras. */
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> opalaTask(
+      long productId, long experimentId, String version, String checkoutReference)
+      throws Exception {
+    String checkoutUrl = "https://go.pepper.com.br/" + checkoutReference;
+    String contract =
+        """
+        {"experienceVersion":"%s",
+         "commercialBinding":{"experimentId":%d,"priceBrl":67,"billingModel":"ONE_TIME"},
+         "commercialCheckout":{"provider":"PEPPER","checkoutUrl":"%s",
+           "offerReference":"%s","priceBrl":67,"currency":"BRL","billingModel":"ONE_TIME"},
+         "commercialAccess":{"experienceVersion":"%s","accessDays":90,"renewal":false,
+           "activationTrigger":"PAYMENT_APPROVED","scope":"PAID_CONTENT"}}
+        """
+            .formatted(version, experimentId, checkoutUrl, checkoutReference, version);
+    String value =
+        """
+        {"taskTarget":{"experimentId":%d,"productId":%d,"experienceVersion":"%s",
+          "publicUrl":"https://candidate.example/%s","commercialCheckoutProvider":"PEPPER",
+          "commercialCheckoutReference":"%s","commercialCheckoutUrl":"%s","unitPriceBrl":67,
+          "pdeContext":%s},
+         "processContextJson":""}
+        """
+            .formatted(
+                experimentId,
+                productId,
+                version,
+                version,
+                checkoutReference,
+                checkoutUrl,
+                contract);
+    Map<String, Object> task = json.readValue(value, Map.class);
+    Map<String, Object> process =
+        json.readValue(
+            """
+            {"opalaCommercial":{"productId":%d,"experimentId":%d,"cycleId":71,
+              "productVersion":"%s","destinationUrl":"https://candidate.example/%s",
+              "priceBrl":67,"checkoutUrl":"%s","productContract":%s},
+             "learningSalesCycle":{"cycleId":71,"productId":%d,"experimentId":%d,
+              "productVersion":"%s"}}
+            """
+                .formatted(
+                    productId,
+                    experimentId,
+                    version,
+                    version,
+                    checkoutUrl,
+                    contract,
+                    productId,
+                    experimentId,
+                    version),
+            Map.class);
+    task.put("processContextJson", json.writeValueAsString(process));
+    return task;
+  }
+
   /** Mantém as três atividades privadas presas ao contrato e sem prova humana antecipada. */
   @Test
   void keepsEveryPrivateConstructionPromptBoundToCanonicalContext() throws Exception {

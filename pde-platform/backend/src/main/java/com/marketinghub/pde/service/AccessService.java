@@ -1725,13 +1725,36 @@ public class AccessService {
         }
     }
 
-    /** Registra noventa dias de acesso para novas compras do MUSA sem afetar produtos permanentes. */
+    /** Registra o prazo versionado do MUSA sem afetar produtos permanentes ou contratos legados. */
     private void activatePaidTermIfApplicable(AccessGrant grant) {
         if (!MUSA_PRODUCT_SLUG.equals(grant.getProductSlug())) {
             return;
         }
+        long accessDays = paidAccessDays(grant);
         Instant paidAt = Instant.now();
-        grant.activatePaidAccess(paidAt, paidAt.plusSeconds(MUSA_PAID_ACCESS_DAYS * 24L * 60L * 60L));
+        grant.activatePaidAccess(paidAt, paidAt.plusSeconds(accessDays * 24L * 60L * 60L));
+    }
+
+    /** Exige que candidatas novas vinculem a concessão ao mesmo contrato resolvido pela compra. */
+    private long paidAccessDays(AccessGrant grant) {
+        String experienceVersion = nullToBlank(grant.getExperienceVersion());
+        ProductExperienceResponse product = resolveProduct(grant.getProductSlug(), experienceVersion);
+        var access = product.commercialAccess();
+        if (access == null) {
+            if (MUSA_V12_EXPERIENCE_VERSION.equals(experienceVersion)) {
+                throw new IllegalStateException("A versão v12 não possui contrato comercial de acesso");
+            }
+            return MUSA_PAID_ACCESS_DAYS;
+        }
+        if (!experienceVersion.equals(access.experienceVersion())
+                || access.accessDays() <= 0
+                || access.renewal()
+                || !"PAYMENT_APPROVED".equals(access.activationTrigger())
+                || access.scope() == null
+                || access.scope().isBlank()) {
+            throw new IllegalStateException("O contrato comercial de acesso diverge da versão comprada");
+        }
+        return access.accessDays();
     }
 
     /** Identifica as origens que comprovam acesso comprado. */

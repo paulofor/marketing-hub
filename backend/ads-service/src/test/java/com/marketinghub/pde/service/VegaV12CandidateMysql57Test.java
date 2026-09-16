@@ -19,6 +19,8 @@ class VegaV12CandidateMysql57Test {
   private static final String CANDIDATE_CHANGELOG = "2026-09-16-vega-v12-commercial-candidate.yaml";
   private static final String STATUS_REPAIR_CHANGELOG =
       "2026-09-16-pde-production-slot-status-repair.yaml";
+  private static final String ACCESS_BINDING_CHANGELOG =
+      "2026-09-16-vega-v12-commercial-access-binding.yaml";
 
   /** Valida criação, idempotência, isolamento da v7 e preservação de uma candidata já promovida. */
   @Test
@@ -31,8 +33,25 @@ class VegaV12CandidateMysql57Test {
           .isEmpty();
     }
     migrate(STATUS_REPAIR_CHANGELOG, false);
+    migrate(ACCESS_BINDING_CHANGELOG, false);
     assertCandidate();
     migrate(STATUS_REPAIR_CHANGELOG, false);
+    migrate(ACCESS_BINDING_CHANGELOG, false);
+    assertCandidate();
+    migrate(ACCESS_BINDING_CHANGELOG, true);
+    try (var connection = connection()) {
+      assertThat(
+              value(
+                  connection,
+                  "SELECT JSON_EXTRACT(draft_experience_json,'$.commercialAccess') IS NULL FROM pde_production_slot WHERE slot_code='v8'"))
+          .isEqualTo("1");
+      assertThat(
+              value(
+                  connection,
+                  "SELECT published_experience_json FROM pde_production_slot WHERE slot_code='v7'"))
+          .isEqualTo("v7-publicado");
+    }
+    migrate(ACCESS_BINDING_CHANGELOG, false);
     assertCandidate();
 
     try (var connection = connection();
@@ -44,6 +63,7 @@ class VegaV12CandidateMysql57Test {
     }
     migrate(CANDIDATE_CHANGELOG, false);
     migrate(STATUS_REPAIR_CHANGELOG, false);
+    migrate(ACCESS_BINDING_CHANGELOG, false);
     try (var connection = connection()) {
       assertThat(value(connection, "SELECT status FROM pde_production_slot WHERE slot_code='v8'"))
           .isEqualTo("READY");
@@ -108,6 +128,11 @@ class VegaV12CandidateMysql57Test {
                   connection,
                   "SELECT JSON_UNQUOTE(JSON_EXTRACT(draft_experience_json,'$.supportMaterials[0].url')) FROM pde_production_slot WHERE slot_code='v8'"))
           .startsWith("/materials/musa-v12/");
+      assertThat(
+              value(
+                  connection,
+                  "SELECT CONCAT(JSON_UNQUOTE(JSON_EXTRACT(draft_experience_json,'$.commercialAccess.experienceVersion')),':',JSON_UNQUOTE(JSON_EXTRACT(draft_experience_json,'$.commercialAccess.accessDays')),':',JSON_UNQUOTE(JSON_EXTRACT(draft_experience_json,'$.commercialAccess.activationTrigger'))) FROM pde_production_slot WHERE slot_code='v8'"))
+          .isEqualTo("musa-pde-entry-v12-primeiro-ajuste-aplicavel:90:PAYMENT_APPROVED");
       assertThat(
               value(
                   connection,

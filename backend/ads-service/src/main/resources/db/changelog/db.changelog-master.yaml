@@ -2097,3 +2097,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-16-pde-production-slot-status-repair.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-16-vega-v12-commercial-access-binding.yaml
+      relativeToChangelogFile: true

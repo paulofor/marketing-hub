@@ -32,32 +32,7 @@ public class PdeCommercialCheckoutContractResolver {
     }
     try {
       JsonNode root = objectMapper.readTree(product.getPdeExperienceJson());
-      if (root == null || !root.isObject()) {
-        throw invalid(product, "contrato PDE precisa ser um objeto JSON");
-      }
-      JsonNode checkout = root.path("commercialCheckout");
-      if (checkout.isMissingNode() || checkout.isNull()) return Optional.empty();
-      if (!checkout.isObject()) {
-        throw invalid(product, "commercialCheckout precisa ser um objeto");
-      }
-      String provider = requiredText(product, checkout, "provider");
-      String checkoutUrl = requiredText(product, checkout, "checkoutUrl");
-      String offerReference = requiredText(product, checkout, "offerReference");
-      String currency = requiredText(product, checkout, "currency");
-      String billingModel = requiredText(product, checkout, "billingModel");
-      if (!checkout.path("priceBrl").isNumber()) {
-        throw invalid(product, "priceBrl precisa ser numérico");
-      }
-      BigDecimal priceBrl = checkout.path("priceBrl").decimalValue();
-      if (!isSecurePublicUrl(checkoutUrl)) {
-        throw invalid(product, "checkoutUrl precisa usar HTTPS");
-      }
-      if (!"BRL".equals(currency) || !"ONE_TIME".equals(billingModel) || priceBrl.signum() <= 0) {
-        throw invalid(product, "moeda, cobrança ou preço do checkout são inválidos");
-      }
-      return Optional.of(
-          new CanonicalCheckout(
-              provider, checkoutUrl, offerReference, priceBrl, currency, billingModel));
+      return resolve(product, root);
     } catch (JsonProcessingException ex) {
       log.error(
           "Falha ao ler checkout do contrato PDE. productId={} productSlug={}",
@@ -66,6 +41,36 @@ public class PdeCommercialCheckoutContractResolver {
           ex);
       throw invalid(product, "JSON do contrato PDE é inválido", ex);
     }
+  }
+
+  /** Valida o checkout de um contrato candidato sem substituir o contrato publicado do produto. */
+  public Optional<CanonicalCheckout> resolve(Product product, JsonNode root) {
+    if (root == null || !root.isObject()) {
+      throw invalid(product, "contrato PDE precisa ser um objeto JSON");
+    }
+    JsonNode checkout = root.path("commercialCheckout");
+    if (checkout.isMissingNode() || checkout.isNull()) return Optional.empty();
+    if (!checkout.isObject()) {
+      throw invalid(product, "commercialCheckout precisa ser um objeto");
+    }
+    String provider = requiredText(product, checkout, "provider");
+    String checkoutUrl = requiredText(product, checkout, "checkoutUrl");
+    String offerReference = requiredText(product, checkout, "offerReference");
+    String currency = requiredText(product, checkout, "currency");
+    String billingModel = requiredText(product, checkout, "billingModel");
+    if (!checkout.path("priceBrl").isNumber()) {
+      throw invalid(product, "priceBrl precisa ser numérico");
+    }
+    BigDecimal priceBrl = checkout.path("priceBrl").decimalValue();
+    if (!isSecurePublicUrl(checkoutUrl)) {
+      throw invalid(product, "checkoutUrl precisa usar HTTPS");
+    }
+    if (!"BRL".equals(currency) || !"ONE_TIME".equals(billingModel) || priceBrl.signum() <= 0) {
+      throw invalid(product, "moeda, cobrança ou preço do checkout são inválidos");
+    }
+    return Optional.of(
+        new CanonicalCheckout(
+            provider, checkoutUrl, offerReference, priceBrl, currency, billingModel));
   }
 
   /** Confirma protocolo HTTPS e host explícito antes de publicar o destino de pagamento. */

@@ -35,6 +35,28 @@ class PdeCommercialCheckoutContractResolverTest {
     assertThat(checkout.billingModel()).isEqualTo("ONE_TIME");
   }
 
+  /** Lê uma candidata sem substituir o contrato histórico persistido no cadastro do produto. */
+  @Test
+  void resolvesCandidateContractWithoutMutatingPublishedProduct() throws Exception {
+    Product product =
+        Product.builder()
+            .id(4L)
+            .slug("metodo-musa-7-dias")
+            .pdeExperienceJson("{\"experienceVersion\":\"musa-v7\"}")
+            .build();
+    var candidate =
+        new ObjectMapper()
+            .readTree(
+                """
+                {"experienceVersion":"musa-v12","commercialCheckout":{"provider":"PEPPER","checkoutUrl":"https://go.pepper.com.br/owm6x","offerReference":"owm6x","priceBrl":67,"currency":"BRL","billingModel":"ONE_TIME"}}
+                """);
+
+    var checkout = resolver.resolve(product, candidate).orElseThrow();
+
+    assertThat(checkout.offerReference()).isEqualTo("owm6x");
+    assertThat(product.getPdeExperienceJson()).contains("musa-v7");
+  }
+
   /** Mantém produtos sem vínculo versionado no fallback comercial já existente. */
   @Test
   void returnsEmptyWhenContractDoesNotDeclareCheckout() {

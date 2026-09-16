@@ -536,6 +536,76 @@ describe("CriativosTab", () => {
     );
   });
 
+  it("exige ajustar também a descrição antes de criar uma versão publicável", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
+        return Promise.resolve({
+          data: [
+            {
+              id: 528,
+              headline: "H".repeat(41),
+              primaryText: "P".repeat(126),
+              description: "D".repeat(26),
+              imageUrl: "produto-real.jpg",
+              destinationUrl: "https://v8.example.test",
+              status: "DRAFT",
+            },
+          ],
+        });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({ data: { creativesToGenerate: 0 } });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    (axios.post as any).mockResolvedValue({
+      data: { id: 529, sourceCreativeId: 528, status: "DRAFT" },
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Editar" }),
+    );
+    expect(screen.getByText("26/25 caracteres para publicação.")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Salvar nova versão" }),
+    ).toBeDisabled();
+
+    await userEvent.clear(screen.getByLabelText("Headline"));
+    await userEvent.type(screen.getByLabelText("Headline"), "Ajuste de estilo agora");
+    await userEvent.clear(screen.getByLabelText("Texto principal"));
+    await userEvent.type(
+      screen.getByLabelText("Texto principal"),
+      "Receba um primeiro ajuste gratuito usando o que você já tem.",
+    );
+    expect(
+      screen.getByRole("button", { name: "Salvar nova versão" }),
+    ).toBeDisabled();
+
+    await userEvent.clear(screen.getByLabelText("Descrição"));
+    await userEvent.type(screen.getByLabelText("Descrição"), "7 dias por R$ 67");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Salvar nova versão" }),
+    );
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/creatives/528/versions",
+        expect.objectContaining({
+          headline: "Ajuste de estilo agora",
+          primaryText: "Receba um primeiro ajuste gratuito usando o que você já tem.",
+          description: "7 dias por R$ 67",
+          status: "DRAFT",
+        }),
+      ),
+    );
+  });
+
   it("shows image prompt below ad card when toggled", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/products/experiments/1/ads-in-use")) {

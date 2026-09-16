@@ -35,8 +35,8 @@ class OpalaCommercialMaterializationTest {
   private final PdeProductionSlotRepository slots = mock(PdeProductionSlotRepository.class);
   private final PdeProductionSlotService slotService = mock(PdeProductionSlotService.class);
   private final VideoCreativeService creatives = mock(VideoCreativeService.class);
-  private final PdeCommercialCheckoutContractResolver checkout =
-      mock(PdeCommercialCheckoutContractResolver.class);
+  private final OpalaCommercialVersionContract versionContract =
+      mock(OpalaCommercialVersionContract.class);
   private final ExperimentRepository experiments = mock(ExperimentRepository.class);
   private final ExperimentTargetingSelectionService selections =
       mock(ExperimentTargetingSelectionService.class);
@@ -48,7 +48,7 @@ class OpalaCommercialMaterializationTest {
           slotService,
           creatives,
           videos,
-          checkout,
+          versionContract,
           experiments,
           selections,
           mock(TargetingElementRepository.class));
@@ -175,16 +175,17 @@ class OpalaCommercialMaterializationTest {
   /** Checkout existente e aprovado é vinculado sem criar uma preferência de pagamento. */
   @Test
   void bindsCanonicalCheckout() {
-    when(checkout.resolve(product))
+    var canonical =
+        new PdeCommercialCheckoutContractResolver.CanonicalCheckout(
+            "TEST",
+            "https://checkout.sandbox.local/offer",
+            "fixture-offer",
+            new BigDecimal("67"),
+            "BRL",
+            "ONE_TIME");
+    when(versionContract.resolve(eq(scope), any()))
         .thenReturn(
-            Optional.of(
-                new PdeCommercialCheckoutContractResolver.CanonicalCheckout(
-                    "TEST",
-                    "https://checkout.sandbox.local/offer",
-                    "fixture-offer",
-                    new BigDecimal("67"),
-                    "BRL",
-                    "ONE_TIME")));
+            new OpalaCommercialVersionContract.Resolved(json.createObjectNode(), canonical, 90));
     materialization.apply("checkout", scope, json.createObjectNode());
     assertThat(experiment.getCommercialCheckoutUrl())
         .isEqualTo("https://checkout.sandbox.local/offer");
@@ -194,16 +195,8 @@ class OpalaCommercialMaterializationTest {
   /** Não corrige divergência de preço alterando silenciosamente a oferta aprovada. */
   @Test
   void rejectsPriceMismatch() {
-    when(checkout.resolve(product))
-        .thenReturn(
-            Optional.of(
-                new PdeCommercialCheckoutContractResolver.CanonicalCheckout(
-                    "TEST",
-                    "https://checkout.sandbox.local/offer",
-                    "fixture-offer",
-                    new BigDecimal("99"),
-                    "BRL",
-                    "ONE_TIME")));
+    when(versionContract.resolve(eq(scope), any()))
+        .thenThrow(new IllegalStateException("O preço do checkout candidato diverge"));
     assertThatThrownBy(() -> materialization.apply("checkout", scope, json.createObjectNode()))
         .hasMessageContaining("preço");
     verifyNoInteractions(experiments);

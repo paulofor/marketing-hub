@@ -1,0 +1,42 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-09-16-vega-v12-commercial-access-binding.yaml
+  - changeSet:
+      id: 2026-09-16-vega-v12-commercial-access-binding-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_production_slot
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: draft_experience_json
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: published_experience_json
+      changes:
+        - sqlFile:
+            path: 2026-09-16-vega-v12-commercial-access-binding.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pde_production_slot
+              SET draft_experience_json = JSON_REMOVE(draft_experience_json, '$.commercialAccess'),
+                  updated_at = UTC_TIMESTAMP(6)
+              WHERE product_slug = 'metodo-musa-7-dias'
+                AND slot_code = 'v8'
+                AND source_experiment_id = 92
+                AND experience_version = 'musa-pde-entry-v12-primeiro-ajuste-aplicavel'
+                AND status = 'CANDIDATE'
+                AND published_experience_json IS NULL
+                AND JSON_UNQUOTE(JSON_EXTRACT(
+                      draft_experience_json,
+                      '$.commercialAccess.experienceVersion'
+                    )) = 'musa-pde-entry-v12-primeiro-ajuste-aplicavel';

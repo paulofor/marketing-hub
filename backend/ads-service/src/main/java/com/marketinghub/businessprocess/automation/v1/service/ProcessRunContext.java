@@ -33,6 +33,9 @@ public class ProcessRunContext {
   private com.marketinghub.product.executionprofile.v1.service.ExecutionProfileContext
       executionProfileContext;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.repository.jdbc.catalogovivo.OpalaAdoptionRepository catalogAdoptions;
+
   /** Reconhece a versão publicada ou congelada previamente por esta execução do produto. */
   public boolean executableVersion(
       Long productId, Long processId, ProcessRunCommand command, String status) {
@@ -49,7 +52,10 @@ public class ProcessRunContext {
         && executionProfileContext.bound(productId, reference).isPresent();
   }
 
-  /** Valida identidade, ficha e BPM; permite navegação sem referência, mas nunca execução. */
+  /**
+   * Valida identidade, ficha, BPM e adesão explícita; navegação sem referência não permite
+   * execução.
+   */
   public ProductProcessActivityExecutionHistoryResponse read(
       Long productId, Long processId, ProcessRunCommand command, boolean execution) {
     if (command == null
@@ -72,7 +78,16 @@ public class ProcessRunContext {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cadeia não encontrada."));
     Set<Long> memberIds = new HashSet<>();
     chain.getItems().forEach(item -> memberIds.add(item.getProcessDefinition().getId()));
-    if (!belongs(process, memberIds, new HashSet<>()))
+    boolean explicitlyAdopted =
+        catalogAdoptions != null
+            && command.learningCycleId() != null
+            && catalogAdoptions.permits(
+                command.learningCycleId(),
+                productId,
+                command.chainId(),
+                processId,
+                command.sourceReference());
+    if (!explicitlyAdopted && !belongs(process, memberIds, new HashSet<>()))
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "A versão do processo não pertence à cadeia informada.");
     if (command.learningCycleId() != null) {

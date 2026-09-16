@@ -11,7 +11,26 @@ public record LearningCycleCommercialPreparation(
     String experimentUrl,
     List<Requirement> requirements,
     String preparationUrl,
-    String preparationLabel) {
+    String preparationLabel,
+    boolean catalogoVivoApplicable) {
+  /** Preserva consumidores anteriores ao comando de adesão explícita ao catálogo. */
+  public LearningCycleCommercialPreparation(
+      boolean readyForReview,
+      String guidance,
+      String experimentUrl,
+      List<Requirement> requirements,
+      String preparationUrl,
+      String preparationLabel) {
+    this(
+        readyForReview,
+        guidance,
+        experimentUrl,
+        requirements,
+        preparationUrl,
+        preparationLabel,
+        false);
+  }
+
   /** Mantém compatibilidade dos ciclos anteriores sem subprocesso Opala. */
   public LearningCycleCommercialPreparation(
       boolean readyForReview,

@@ -3,6 +3,11 @@ name: Validação Liquibase MySQL 5.7
 on:
   pull_request:
     paths:
+      - "infra/testing/catalogo-vivo/**"
+      - "backend/ads-service/src/main/java/com/marketinghub/catalogovivo/**"
+      - "backend/ads-service/src/main/java/com/marketinghub/repository/jdbc/catalogovivo/**"
+      - "backend/ads-service/src/test/java/com/marketinghub/catalogovivo/**"
+      - "backend/ads-service/src/test/resources/catalogo-vivo/**"
       - "backend/ads-service/src/main/resources/db/changelog/**"
       - "backend/ads-service/src/test/resources/liquibase-mysql57/**"
       - "infra/testing/pde-version-contract/**"
@@ -88,6 +93,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-catalogo-vivo-opala:
+    name: Catálogo Vivo Opala com MySQL 5.7
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Validar integridade, concorrência, versões e adesão histórica
+        env:
+          CATALOGO_VIVO_COMPOSE_PROJECT: aihub-catalogo-vivo-${{ github.run_id }}-${{ github.run_attempt }}
+          CATALOGO_VIVO_DB_HOST: 127.0.0.1
+        run: python3 infra/testing/catalogo-vivo/run-local.py --persistence-only
+
   validate-opala-commercial-preparation:
     name: Validar preparação comercial Opala
     runs-on: ubuntu-latest

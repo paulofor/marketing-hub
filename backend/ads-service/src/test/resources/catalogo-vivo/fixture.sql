@@ -1,0 +1,11 @@
+CREATE TABLE agent (id BIGINT PRIMARY KEY,agent_key VARCHAR(100) NOT NULL UNIQUE,nickname VARCHAR(60) NOT NULL);
+INSERT INTO agent VALUES(900001,'landing-generator','Dédalo'),(900002,'financial-agent','Plutus'),(900003,'customer-agent','Psique'),(900004,'meta-ad-approver','Têmis');
+CREATE TABLE product_type_definition (id BIGINT PRIMARY KEY,code VARCHAR(64) NOT NULL UNIQUE);
+INSERT INTO product_type_definition VALUES(900001,'PDE'),(900002,'OTHER');
+CREATE TABLE product (id BIGINT PRIMARY KEY);
+INSERT INTO product VALUES(900004),(900005);
+CREATE TABLE experiment (id BIGINT PRIMARY KEY,product_id BIGINT NOT NULL,status VARCHAR(32) NOT NULL);
+INSERT INTO experiment VALUES(900092,900004,'PLANNED'),(900093,900005,'PLANNED');
+CREATE TABLE learning_sales_cycle_v1 (id BIGINT PRIMARY KEY,product_id BIGINT NOT NULL,experiment_id BIGINT NOT NULL,chain_definition_id BIGINT NOT NULL,product_version VARCHAR(160) NOT NULL,status VARCHAR(32) NOT NULL,stage VARCHAR(32) NOT NULL,revision BIGINT NOT NULL,budget_limit_brl DECIMAL(12,2) NOT NULL,window_end DATETIME(6) NOT NULL);
+INSERT INTO learning_sales_cycle_v1 SELECT 900002,900004,900092,id,'fixture-v12','OPEN','PUBLICATION',14,100,'2099-09-17 02:59:00' FROM business_process_chain_definition WHERE version_number=14;
+CREATE TABLE agent_task (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,assigned_agent_id BIGINT NOT NULL,process_definition_id BIGINT NOT NULL,process_activity_id VARCHAR(100) NOT NULL,source_reference VARCHAR(200) NOT NULL,activity_instance_id BIGINT NULL,status VARCHAR(32) NOT NULL,blocker_action TEXT NULL);

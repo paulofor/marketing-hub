@@ -113,6 +113,16 @@ vi.mock("../../api/agent/useAgentDetail", () => ({
         behaviorFiles: [
           {
             behaviorType: "PROMPT",
+            name: "Instrução de atividade no catálogo",
+            version: "v2",
+            path: "/catalogo-vivo/opala#binding-7",
+            description: "Texto ativo do banco com versão imutável.",
+            mediaType: "text/markdown",
+            sha256: "fixture-hash",
+            content: "Instrução local revisada.",
+          },
+          {
+            behaviorType: "PROMPT",
             name: "Sistema do planejador",
             version: "productdiscovery.v1",
             path: "product-discovery-worker/prompts/productdiscovery.v1/plan/system.md",
@@ -193,19 +203,24 @@ describe("AgentDetailPage", () => {
     ).toHaveLength(1);
     expect(
       screen.getByRole("heading", {
-        name: "Arquivos que definem o comportamento",
+        name: "Fontes que definem o comportamento",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Prompt ou instrução")).toBeInTheDocument();
+    expect(screen.getAllByText("Prompt ou instrução")).toHaveLength(2);
     expect(screen.getAllByText("Schema de saída")).toHaveLength(2);
-    expect(screen.getAllByText("Abrir arquivo")).toHaveLength(2);
+    expect(screen.getAllByText("Abrir conteúdo")).toHaveLength(3);
+    fireEvent.click(screen.getByText("Instrução de atividade no catálogo"));
+    expect(
+      screen.getByRole("link", { name: "Abrir no Catálogo Vivo" }),
+    ).toHaveAttribute("href", "/catalogo-vivo/opala#binding-7");
+    fireEvent.click(screen.getByText("Instrução de atividade no catálogo"));
     const promptSummary = screen
       .getAllByText("Sistema do planejador")
       .map((element) => element.closest("summary"))
       .find(Boolean);
     expect(promptSummary).not.toBeNull();
     fireEvent.click(promptSummary!);
-    expect(screen.getByText("Fechar arquivo")).toBeInTheDocument();
+    expect(screen.getByText("Fechar conteúdo")).toBeInTheDocument();
     expect(
       screen.getAllByText(
         "product-discovery-worker/prompts/productdiscovery.v1/plan/system.md",

@@ -1,3 +1,4 @@
+import OpalaAdoptionPanel from "../catalogoVivo/OpalaAdoptionPanel";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useProducts } from "../../api/product/useProducts";
@@ -331,6 +332,13 @@ export default function LearningCyclesPage() {
       ) : null}
       {cycle ? (
         <>
+          {cycle.commercialPreparation?.catalogoVivoApplicable && (
+            <OpalaAdoptionPanel
+              productId={cycle.productId}
+              cycleId={cycle.id}
+              revision={cycle.revision}
+            />
+          )}
           <section className="card card-body mb-3">
             <h2 className="h4">
               Ciclo #{cycle.id} · experimento #{cycle.experimentId}

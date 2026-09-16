@@ -26,6 +26,9 @@ public class AgentDetailService {
   private final BusinessProcessExecutionResourceRepository executionResourceRepository;
   private final AgentHarnessCatalog harnessCatalog;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.catalogovivo.v1.service.CatalogoVivoService catalogoVivo;
+
   /** Configura as fontes de verdade do cadastro, versão, recursos e harness do agente. */
   public AgentDetailService(
       AgentRepository agentRepository,
@@ -81,10 +84,54 @@ public class AgentDetailService {
         mapOutputs(agent.getOutputs()),
         mapInternalFunctions(agent.getInternalFunctions()),
         resources,
-        harnessCatalog.getByAgentKey(agent.getAgentKey()),
+        harness(agent.getAgentKey()),
         agent.getCreatedAt(),
         agent.getUpdatedAt(),
         lastContractChangeAt);
+  }
+
+  /** Acrescenta textos e hashes do banco ao harness preservando os recursos ainda em arquivo. */
+  private com.marketinghub.agentdetail.service.getDetail.AgentHarnessResponse harness(
+      String agentKey) {
+    var base = harnessCatalog.getByAgentKey(agentKey);
+    if (catalogoVivo == null) return base;
+    var files = new java.util.ArrayList<>(base.behaviorFiles());
+    var artifacts = new java.util.ArrayList<>(base.artifacts());
+    for (var item : catalogoVivo.harness(agentKey)) {
+      if (!agentKey.equals(item.binding().agentKey())) continue;
+      var version =
+          item.versions().stream()
+              .filter(v -> java.util.Objects.equals(v.id(), item.binding().activeVersionId()))
+              .findFirst();
+      if (version.isEmpty()) continue;
+      var v = version.get();
+      String path = "/catalogo-vivo/opala#binding-" + item.binding().id();
+      String description =
+          "Origem: banco de dados. Texto da atividade "
+              + item.binding().activityName()
+              + ". Versão fixada por tarefa; revisão e ativação auditáveis.";
+      files.add(
+          new com.marketinghub.agentdetail.service.getDetail.AgentBehaviorFileResponse(
+              "PROMPT",
+              item.binding().activityName(),
+              "v" + v.versionNumber(),
+              path,
+              description,
+              "text/markdown",
+              v.sha256(),
+              v.text()));
+      artifacts.add(
+          new com.marketinghub.agentdetail.service.getDetail.AgentHarnessArtifactResponse(
+              "PROMPT", item.binding().activityName(), "v" + v.versionNumber(), path, description));
+    }
+    return new com.marketinghub.agentdetail.service.getDetail.AgentHarnessResponse(
+        base.status(),
+        base.contractVersion(),
+        base.sourceReference(),
+        base.sensitiveValuesPolicy(),
+        base.sections(),
+        artifacts,
+        files);
   }
 
   /** Recupera a data imutável da versão que governa o contrato atual. */

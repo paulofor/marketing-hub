@@ -43,28 +43,28 @@ public class PdeConstructionBpmTaskConsumer {
           new BpmContract(
               "opala-commercial-preparation-v1",
               "entry",
-              "prompts/opala-commercial/v1/entry.md",
+              "catalogo-vivo:opala/entry",
               "prompts/opala-commercial/v1/preparation-schema.json",
               "opala-commercial-v1",
               "READY"),
           new BpmContract(
               "opala-commercial-preparation-v1",
               "creative",
-              "prompts/opala-commercial/v1/creative.md",
+              "catalogo-vivo:opala/creative",
               "prompts/opala-commercial/v1/preparation-schema.json",
               "opala-commercial-v1",
               "READY"),
           new BpmContract(
               "opala-commercial-preparation-v1",
               "checkout",
-              "prompts/opala-commercial/v1/checkout.md",
+              "catalogo-vivo:opala/checkout",
               "prompts/opala-commercial/v1/preparation-schema.json",
               "opala-commercial-v1",
               "READY"),
           new BpmContract(
               "opala-commercial-preparation-v1",
               "targeting",
-              "prompts/opala-commercial/v1/targeting.md",
+              "catalogo-vivo:opala/targeting",
               "prompts/opala-commercial/v1/preparation-schema.json",
               "opala-commercial-v1",
               "READY"),
@@ -271,12 +271,17 @@ public class PdeConstructionBpmTaskConsumer {
     return promptComposition(task).fullPrompt();
   }
 
-  /** Compõe o núcleo estável de Dédalo com a missão resolvida da atividade. */
+  /**
+   * Compõe o núcleo de Dédalo com texto fixado pelo catálogo no Opala e arquivo nos demais fluxos.
+   */
   private PromptComposition promptComposition(Map<String, Object> task) throws IOException {
     BpmContract contract = contractFor(task);
     String agentPromptPart = read("prompts/pde-construction/v1/agent-core.md");
     String activityPromptPart =
-        read(contract.promptResource()).replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
+        (CatalogPromptInput.migrated(task)
+                ? CatalogPromptInput.text(task, contract.schemaResource())
+                : read(contract.promptResource()))
+            .replace("{{TASK_CONTEXT}}", json.writeValueAsString(CatalogPromptInput.context(task)));
     return new PromptComposition(
         agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
   }

@@ -86,26 +86,34 @@ class AgentHarnessCatalogTest {
         });
   }
 
-  /** Impede que qualquer prompt, schema ou biblioteca de comportamento fique fora do harness. */
+  /**
+   * Lista todas as divergências de prompts, schemas e bibliotecas de todos os agentes antes de
+   * falhar.
+   */
   @Test
   void catalogsEveryBehaviorFileFromEveryAgentModule() throws IOException {
     JsonNode document = readManifest();
     Path repositoryRoot = repositoryRoot();
     Map<String, Set<String>> declaredByAgent = declaredBehaviorFiles(document);
 
+    var softly = new org.assertj.core.api.SoftAssertions();
     BEHAVIOR_SOURCE_ROOTS.forEach(
         (agentKey, sourceRoots) -> {
           try {
             Set<String> expected = repositoryBehaviorFiles(repositoryRoot, sourceRoots);
             expected.removeAll(FILES_OWNED_BY_ANOTHER_AGENT.getOrDefault(agentKey, Set.of()));
-            assertThat(declaredByAgent.get(agentKey))
+            softly
+                .assertThat(declaredByAgent.get(agentKey))
                 .as("Cobertura comportamental do agente %s", agentKey)
                 .containsExactlyInAnyOrderElementsOf(expected);
           } catch (IOException ex) {
-            throw new IllegalStateException(
+            org.slf4j.LoggerFactory.getLogger(AgentHarnessCatalogTest.class)
+                .error("Falha na cobertura do harness agentKey={}", agentKey, ex);
+            softly.fail(
                 "Não foi possível inspecionar as fontes comportamentais de " + agentKey + ".", ex);
           }
         });
+    softly.assertAll();
   }
 
   /** Confirma versão, unicidade, conteúdo e hash exatos dos prompts de Psique e Apolo na API. */

@@ -133,6 +133,8 @@ public class LearningCycleCommercialReadiness {
         "/experiments/" + cycle.getExperimentId(),
         List.copyOf(requirements),
         opalaRouting == null ? null : opalaRouting.navigation(cycle),
-        "Abrir preparação Opala com os agentes");
+        "Abrir preparação Opala com os agentes",
+        experiment.getProduct().getProductTypeDefinition() != null
+            && "PDE".equals(experiment.getProduct().getProductTypeDefinition().getCode()));
   }
 }

@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - include:
+      file: ../liquibase-mysql57/opala-commercial-preparation-test.yaml
+      relativeToChangelogFile: true
+  - changeSet:
+      id: catalogo-vivo-local-fixture
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sqlFile:
+            path: fixture.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+  - include:
+      file: ../db/changelog/changesets/2026-09-16-catalogo-vivo-opala-v1.yaml
+      relativeToChangelogFile: true

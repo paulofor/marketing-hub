@@ -7,7 +7,11 @@
 > versão e hash, em lugar do caminho de arquivo. Essa regra prevalece sobre a
 > exigência de texto em arquivo neste documento somente nesses vínculos. Schemas
 > mantêm sua governança vigente; fluxos não migrados preservam as regras atuais.
-> O plano documentado não significa que a migração já foi executada.
+> O piloto `opala-commercial-preparation-v1` foi implementado e homologado localmente
+> em 16/09/2026: seus sete textos são entregues pelo backend no `catalogPrompt` do
+> `pending`, com versão fixada por tarefa e referência na auditoria. Schemas e
+> núcleos estáveis permanecem nos executores. A migração de produção depende do
+> fluxo de publicação do usuário; demais vínculos seguem as regras anteriores.
 
 ## 1. Objetivo do modelo de dados
 

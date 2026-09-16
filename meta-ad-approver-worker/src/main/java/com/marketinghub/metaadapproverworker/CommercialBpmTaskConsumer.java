@@ -422,7 +422,7 @@ public class CommercialBpmTaskConsumer {
     return promptComposition(task).fullPrompt();
   }
 
-  /** Compõe o núcleo independente de Têmis com o gate e o contexto avaliados. */
+  /** Compõe o núcleo de Têmis com texto fixado pelo catálogo no Opala e contexto do gate. */
   private PromptComposition promptComposition(Map<String, Object> task) throws IOException {
     Map<String, Object> promptContext = new HashMap<>(task);
     if ("pde-construction-approval".equals(processCode(task)) && !isPrivateValidationTask(task)) {
@@ -435,8 +435,12 @@ public class CommercialBpmTaskConsumer {
     }
     String agentPromptPart = read("prompts/temis/v1/agent-core.md");
     String activityPromptPart =
-        read(promptResourceFor(task))
-            .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));
+        (CatalogPromptInput.migrated(task)
+                ? CatalogPromptInput.text(task, schemaResourceFor(task))
+                : read(promptResourceFor(task)))
+            .replace(
+                "{{TASK_CONTEXT}}",
+                json.writeValueAsString(CatalogPromptInput.context(promptContext)));
     return new PromptComposition(
         agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
   }

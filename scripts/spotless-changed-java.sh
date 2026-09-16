@@ -86,7 +86,13 @@ if [[ ${#java_files[@]} -eq 0 ]]; then
   exit 0
 fi
 
-spotless_files="$(IFS=,; echo "${java_files[*]}")"
+# Spotless recebe uma única expressão regular, não uma lista separada por vírgulas.
+spotless_files="$(python3 - "${java_files[@]}" <<'PY'
+import re
+import sys
+print(r'.*(?:' + '|'.join(re.escape(path) for path in sys.argv[1:]) + r')$')
+PY
+)"
 
 echo "Executando Spotless ${MODE} em ${#java_files[@]} arquivo(s) Java alterado(s):"
 printf ' - %s\n' "${java_files[@]}"

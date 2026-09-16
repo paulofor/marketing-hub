@@ -117,6 +117,24 @@ deve atualizar no mesmo conjunto o manifesto e preservar conteúdo, autoria e ha
 
 Recorrência de 13/09/2026 e evidências: `docs/homologacao/actions-vega-catalogo-apolo-2026-09-13.md`.
 
+### Catálogo Vivo — Piloto Opala (16/09/2026)
+
+Para `opala-commercial-preparation-v1`, entrada, criativo, checkout, público, economia,
+revisão de experiência e revisão comercial usam textos do catálogo no banco.
+O harness agrega essas fontes por agente, exibindo origem, versão, hash e link da
+atividade no catálogo. Não duplicar esses textos no manifesto de caminhos.
+Os cinco arquivos exclusivos substituídos foram retirados; as duas revisões
+compartilhadas permanecem para os fluxos não migrados. Schemas e núcleos estáveis
+continuam em arquivos com cobertura de recursos e verificação no JAR.
+
+O `pending` entrega a versão fixada na criação da tarefa; retries da mesma ocorrência
+conservam essa versão.
+O executor valida identidade, hash e schema, e envia contexto e referência para auditoria.
+O backend rejeita conclusão sem a instrução fixada e seu contexto correlacionado.
+Falha de resolução gera bloqueio persistido, nunca fallback em arquivo.
+`AgentHarnessCatalogTest` acumula as divergências de todos os agentes antes de falhar.
+Matriz e limites: [Piloto Opala](../homologacao/catalogo-vivo-opala-v1.md).
+
 ### Controle operacional PLAY/STOP
 
 Por decisão de 2026-08-20, cada agente possui na tela `Gestão de agentes` um controle operacional

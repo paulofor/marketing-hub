@@ -1,0 +1,119 @@
+openapi: 3.0.3
+info:
+  title: Catálogo Vivo — Piloto Opala
+  version: v1
+  description: >-
+    Gestão administrativa de sete instruções textuais. Contratos de saída e núcleos
+    dos agentes permanecem nos workers. Edição cria novo rascunho; revisão confirma
+    o hash e ativação troca o conjunto em transação. Não concede autoridade comercial.
+paths:
+  /api/catalogo-vivo/v1/opala:
+    get:
+      summary: Consultar cobertura, versões, auditoria e métricas operacionais
+      responses:
+        '200':
+          description: project, processId, origin DATABASE, ready, issues[], items[{binding, versions, events, usages}], pinnedTasks e resolutionFailures
+        '409':
+          description: Subprocesso v1 indisponível
+  /api/catalogo-vivo/v1/opala/bindings/{bindingId}/drafts:
+    parameters:
+      - {name: bindingId, in: path, required: true, schema: {type: integer, format: int64}}
+    post:
+      summary: Criar nova versão textual imutável em estado DRAFT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text, operatorName, reason]
+              properties:
+                text: {type: string, maxLength: 100000, description: 'Exatamente uma ocorrência de {{TASK_CONTEXT}}; nenhum outro placeholder.'}
+                operatorName: {type: string, maxLength: 160}
+                reason: {type: string, maxLength: 1000}
+      responses:
+        '200': {description: 'Versão com id, bindingId, versionNumber, text, sha256, status, createdBy, createdAt, reviewedBy, reviewedAt, reviewNote'}
+        '400': {description: 'Campos obrigatórios ausentes'}
+        '409': {description: 'Texto ou vínculo incompatível'}
+  /api/catalogo-vivo/v1/opala/versions/{versionId}/review:
+    parameters:
+      - {name: versionId, in: path, required: true, schema: {type: integer, format: int64}}
+    post:
+      summary: Revisar o conteúdo exato antes da ativação
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operatorName, reason, expectedSha256]
+              properties:
+                operatorName: {type: string, maxLength: 160}
+                reason: {type: string, maxLength: 1000}
+                expectedSha256: {type: string}
+      responses:
+        '200': {description: 'Versão REVIEWED sem modificar texto ou hash'}
+        '409': {description: 'Hash, schema ou vínculo divergente'}
+  /api/catalogo-vivo/v1/opala/activation:
+    post:
+      summary: Ativar conjunto completo ou recuperar versões anteriores revisadas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [versions, expectedActiveVersions, operatorName, reason]
+              properties:
+                versions: {type: object, additionalProperties: {type: integer, format: int64}, description: Mapa bindingId para versionId de todas as atividades}
+                expectedActiveVersions: {type: object, additionalProperties: {type: integer, format: int64, nullable: true}, description: Snapshot de versões ativas exibido ao operador}
+                operatorName: {type: string, maxLength: 160}
+                reason: {type: string, maxLength: 1000}
+      responses:
+        '200': {description: 'Catálogo atualizado; tarefas já criadas mantêm suas versões'}
+        '409': {description: 'Ativação concorrente, conjunto incompleto, versão não revisada ou incompatível; nenhuma seleção alterada'}
+  /api/catalogo-vivo/v1/opala/products/{productId}/cycles/{cycleId}/adoption:
+    parameters:
+      - {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
+      - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+    get:
+      summary: Consultar adesão e impedimento sem iniciar trabalho
+      responses:
+        '200': {description: 'productId, cycleId, experimentId, adopted, canAdopt, reason, processDefinitionId, preparationUrl, catalogUrl, operatorName, adoptedAt'}
+        '404': {description: 'Ciclo não pertence ao produto'}
+    post:
+      summary: Integrar explicitamente e iniciar preparação, preservando cadeia e orçamento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision, operatorName, reason]
+              properties:
+                expectedRevision: {type: integer, format: int64}
+                operatorName: {type: string, maxLength: 160}
+                reason: {type: string, maxLength: 1000}
+      responses:
+        '200': {description: 'Adesão única e preparação iniciada no motor BPM; reenvio devolve o registro existente'}
+        '404': {description: 'Ciclo não pertence ao produto'}
+        '409': {description: 'Revisão desatualizada, produto em STOP, catálogo incompleto, ciclo encerrado ou experimento liberado'}
+components:
+  schemas:
+    CatalogPrompt:
+      type: object
+      description: Campo catalogPrompt dos contratos pending existentes de agent-tasks; somente backend acessa o banco.
+      required: [origin, bindingId, versionId, versionNumber, text, sha256, schemaId, schemaSha256, agentKey, activityId, processVersion, executorModule]
+      properties:
+        origin: {type: string, enum: [DATABASE]}
+        bindingId: {type: integer, format: int64}
+        versionId: {type: integer, format: int64}
+        versionNumber: {type: integer}
+        text: {type: string}
+        sha256: {type: string}
+        schemaId: {type: string}
+        schemaSha256: {type: string}
+        agentKey: {type: string}
+        activityId: {type: string}
+        processVersion: {type: integer}
+        executorModule: {type: string}

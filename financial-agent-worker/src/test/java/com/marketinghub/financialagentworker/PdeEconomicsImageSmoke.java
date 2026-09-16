@@ -104,6 +104,14 @@ public final class PdeEconomicsImageSmoke {
             source,
             "processContextJson",
             context.toString());
+    if (opala) {
+      task = new java.util.HashMap<>(task);
+      task.put("agentKey", "financial-agent");
+      task.put("activityId", "economics");
+      task.put("processVersion", 1);
+      task.put("catalogPrompt", opalaPrompt());
+    }
+    final Map<String, Object> pendingTask = task;
     List<String> operations = new ArrayList<>();
     List<JsonNode> callbacks = new ArrayList<>();
     var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -131,7 +139,7 @@ public final class PdeEconomicsImageSmoke {
                                 .getQuery()
                                 .contains("processCode=opala-commercial-preparation-v1")
                         ? List.of()
-                        : List.of(task));
+                        : List.of(pendingTask));
           } else if (List.of("result", "failure").contains(operation)) {
             require(
                 path.contains("financial-agent/stage-executions/900360/"),
@@ -233,6 +241,30 @@ public final class PdeEconomicsImageSmoke {
       }
       Files.delete(directory);
     }
+  }
+
+  /** Fornece texto sintético e hash do schema real sem exigir bibliotecas de teste na imagem. */
+  private static Map<String, Object> opalaPrompt() throws Exception {
+    String text = "Fixture: preparação comercial Opala v1. Contexto: {{TASK_CONTEXT}}";
+    String schema = "prompts/pde-commercial-plan/v4/economics-schema.json";
+    var result = new java.util.HashMap<String, Object>();
+    result.put("origin", "DATABASE");
+    result.put("bindingId", 900001);
+    result.put("versionId", 900007);
+    result.put("versionNumber", 7);
+    result.put("processVersion", 1);
+    result.put("agentKey", "financial-agent");
+    result.put("activityId", "economics");
+    result.put("executorModule", "financial-agent-worker");
+    result.put("text", text);
+    result.put("sha256", CatalogPromptInput.sha256(text));
+    result.put("schemaId", schema);
+    result.put(
+        "schemaSha256",
+        CatalogPromptInput.sha256(
+            new org.springframework.core.io.ClassPathResource(schema)
+                .getContentAsString(java.nio.charset.StandardCharsets.UTF_8)));
+    return result;
   }
 
   /** Interrompe a homologação quando o contrato observado divergir do esperado. */

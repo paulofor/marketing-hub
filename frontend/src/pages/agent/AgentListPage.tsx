@@ -94,6 +94,9 @@ export default function AgentListPage() {
   return (
     <div>
       <PageTitle>Gestão de agentes</PageTitle>
+      <Link className="btn btn-outline-primary mb-3" to="/catalogo-vivo/opala">
+        Catálogo Vivo — Piloto Opala
+      </Link>
       <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
         <p className="mb-0 text-body-secondary">
           Defina responsabilidades, contexto, análises, entregáveis e regras de

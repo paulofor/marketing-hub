@@ -1,0 +1,18 @@
+{
+  "cardKey": "orcamento-complexidade-conversacional-ai",
+  "collection": "neuromarketing",
+  "title": "Gerencie a complexidade da resposta como orçamento conjunto",
+  "finding": "Em mais de 84 mil conversas reais com ChatGPT e Gemini, comprimento, legibilidade e diversidade lexical não tiveram relações fixas e independentes com dificuldade conversacional; os efeitos dependeram de como essas características se combinavam.",
+  "mechanism": "A demanda cognitiva parece emergir da combinação entre dimensões da resposta. Aumentar complexidade em uma dimensão pode reduzir a margem disponível em outras, tornando regras isoladas como 'sempre responder mais curto' insuficientes.",
+  "commercialApplication": "No customer-agent, ajustar conjuntamente profundidade, comprimento, vocabulário, número de conceitos e opções. Usar repetição, reformulação e pedidos de esclarecimento como sinais para reduzir ou redistribuir a complexidade da próxima resposta.",
+  "evidenceStrength": "Evidência observacional ampla, porém ainda em preprint: mais de 84 mil conversas em finanças e saúde, com padrões replicados entre os dois domínios. Os indicadores de dificuldade são proxies comportamentais, não medidas diretas de carga cognitiva.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2026-10-31",
+  "experimentHypothesis": "Uma política que adapta conjuntamente comprimento, profundidade e vocabulário após sinais de dificuldade reduzirá pedidos de esclarecimento e retrabalho sem reduzir avanço para CTA.",
+  "risks": "Não interpretar repetição ou reformulação como incapacidade do usuário. Evitar simplificação excessiva que retire informação essencial ou manipule decisões por omissão.",
+  "limits": "O estudo não mediu conversão, satisfação ou vendas e analisou finanças e saúde. A transferência para atendimento e funis do Marketing Hub exige A/B test próprio.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-16-orcamento-complexidade-conversacional-ai.md",
+  "sourceTitle": "Fonte revisada — Orçamento de complexidade conversacional em IA",
+  "sourceSha256": "fdeb57b4ecfaad96c71dfb35ef3e6afd388a0d960b2a343314370a977c9576ec"
+}

@@ -5,13 +5,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.pde.PdeProductionSlot;
+import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import com.marketinghub.targeting.TargetingElementStatus;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -33,6 +37,13 @@ public class OpalaCommercialContext {
 
   /** Mantém o ciclo e o experimento como uma única identidade de preparação. */
   public record Scope(LearningSalesCycle cycle, Experiment experiment) {}
+
+  /** Expõe somente a candidata exata e a origem determinística de seu destino e contrato. */
+  public record Candidate(
+      List<PdeProductionSlot> slots,
+      String destinationUrl,
+      String destinationSource,
+      JsonNode productContract) {}
 
   /** Recusa fonte genérica, outro tipo, ciclo encerrado e experimento já liberado. */
   public Scope scope(String source) {
@@ -79,25 +90,23 @@ public class OpalaCommercialContext {
     var cycle = scope.cycle();
     var experiment = scope.experiment();
     var product = experiment.getProduct();
+    var candidate = candidate(scope);
     var result = json.createObjectNode();
     result.put("contractVersion", "OPALA_COMMERCIAL_PREPARATION_V1");
     result.put("productId", product.getId());
     result.put("experimentId", experiment.getId());
     result.put("cycleId", cycle.getId());
     result.put("productVersion", cycle.getProductVersion());
-    result.put("destinationUrl", experiment.getFollowUpActionUrl());
+    result.put("destinationUrl", candidate.destinationUrl());
+    result.put("destinationSource", candidate.destinationSource());
     result.put("priceBrl", experiment.getUnitPrice());
     result.put("checkoutUrl", experiment.getCommercialCheckoutUrl());
     result.set("savedAudience", json.valueToTree(selections.list(experiment.getId())));
     result.put("budgetLimitBrl", cycle.getBudgetLimitBrl());
     result.put("windowEnd", Objects.toString(cycle.getWindowEnd(), ""));
-    result.set("productContract", read(product.getPdeExperienceJson()));
+    result.set("productContract", candidate.productContract());
     var allowedSlots = result.putArray("slots");
-    slots.findByProductSlugOrderBySlotCodeAsc(product.getSlug()).stream()
-        .filter(
-            s ->
-                Objects.equals(s.getSourceExperimentId(), experiment.getId())
-                    && Objects.equals(s.getExperienceVersion(), cycle.getProductVersion()))
+    candidate.slots().stream()
         .forEach(
             s ->
                 allowedSlots
@@ -158,6 +167,61 @@ public class OpalaCommercialContext {
     result.put("publicationAuthorized", false);
     result.put("mediaSpendAuthorized", false);
     return result;
+  }
+
+  /**
+   * Resolve a candidata pela identidade completa; nunca escolhe a versão mais recente nem herda o
+   * destino de outro experimento.
+   */
+  public Candidate candidate(Scope scope) {
+    var cycle = scope.cycle();
+    var experiment = scope.experiment();
+    var product = experiment.getProduct();
+    var matches =
+        slots.findByProductSlugOrderBySlotCodeAsc(product.getSlug()).stream()
+            .filter(
+                s ->
+                    Objects.equals(s.getSourceExperimentId(), experiment.getId())
+                        && Objects.equals(s.getExperienceVersion(), cycle.getProductVersion()))
+            .toList();
+    String explicit = text(experiment.getFollowUpActionUrl());
+    String inferred =
+        matches.size() == 1 && bindable(matches.getFirst())
+            ? text(matches.getFirst().getPublicUrl())
+            : null;
+    String destination = explicit != null ? explicit : inferred;
+    String source =
+        explicit != null
+            ? "EXPERIMENT"
+            : inferred != null
+                ? "VERSION_SLOT"
+                : matches.size() > 1
+                    ? "AMBIGUOUS"
+                    : matches.size() == 1 ? "INELIGIBLE_SLOT" : "MISSING";
+    String candidateContract = null;
+    if (matches.size() == 1) {
+      candidateContract = text(matches.getFirst().getDraftExperienceJson());
+      if (candidateContract == null)
+        candidateContract = text(matches.getFirst().getPublishedExperienceJson());
+    }
+    if (candidateContract == null) candidateContract = product.getPdeExperienceJson();
+    return new Candidate(List.copyOf(matches), destination, source, read(candidateContract));
+  }
+
+  /** Aceita somente versões ainda preparáveis ou já publicadas, nunca pausadas ou retiradas. */
+  private boolean bindable(PdeProductionSlot slot) {
+    return slot.getStatus() != null
+        && Set.of(
+                PdeProductionSlotStatus.PLANNED,
+                PdeProductionSlotStatus.CANDIDATE,
+                PdeProductionSlotStatus.READY,
+                PdeProductionSlotStatus.ACTIVE)
+            .contains(slot.getStatus());
+  }
+
+  /** Normaliza texto opcional sem converter ausência em valor utilizável. */
+  private String text(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
   }
 
   /** Lê contratos persistidos sem transformar corrupção em ausência silenciosa. */

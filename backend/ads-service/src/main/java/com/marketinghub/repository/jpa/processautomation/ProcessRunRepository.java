@@ -31,7 +31,7 @@ public interface ProcessRunRepository extends JpaRepository<ProcessRun, Long> {
 
   /** Ordena processos ativos sem deixar um ciclo encerrado reservar o produto indefinidamente. */
   @Query(
-      "select r from ProcessRun r where r.productId = :productId and r.parentRunId is null and r.status not in ('PAUSED', 'COMPLETED', 'CLOSED') order by r.id")
+      "select r from ProcessRun r where r.productId = :productId and r.parentRunId is null and r.status not in ('PAUSED', 'COMPLETED', 'ERROR', 'CLOSED') order by r.id")
   List<ProcessRun> activeRoots(@Param("productId") Long productId);
 
   /** Localiza delegações para aguardar trabalho em curso antes de liberar outro processo. */

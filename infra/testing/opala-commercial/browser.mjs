@@ -44,12 +44,12 @@ const { history } = fixture(
   "history",
 );
 const child =
-  "/products/4/value-chain-history/processes/99/activities?learningCycleId=2&chainId=15";
+  "/products/4/value-chain-history/processes/77/activities?learningCycleId=2&chainId=14";
 const parent =
-  "/products/4/value-chain-history/processes/77/activities?learningCycleId=2&chainId=15";
+  "/products/4/value-chain-history/processes/75/activities?learningCycleId=2&chainId=14";
 Object.assign(cycle, {
   experimentId: 92,
-  chainDefinitionId: 15,
+  chainDefinitionId: 14,
   stage: "PUBLICATION",
   stageLabel: "Preparação comercial",
   commands: [
@@ -71,8 +71,8 @@ Object.assign(cycle, {
   },
 });
 Object.assign(catalog.entry, {
-  chainDefinitionId: 15,
-  parentProcessDefinitionId: 77,
+  chainDefinitionId: 14,
+  parentProcessDefinitionId: 75,
   parentUrl: parent,
 });
 const steps = [
@@ -89,7 +89,7 @@ Object.assign(history, {
   productId: 4,
   productInternalName: "Opala de teste",
   productName: "Experiência local",
-  selectedProcessDefinitionId: 99,
+  selectedProcessDefinitionId: 77,
   processCode: "opala-commercial-preparation-v1",
   processName: "Preparar operação comercial Opala",
   selectedProcessVersionNumber: 1,
@@ -145,8 +145,8 @@ history.activities = steps.map((name, i) => ({
 const automation = {
   id: null,
   productId: 4,
-  processDefinitionId: 99,
-  chainId: 15,
+  processDefinitionId: 77,
+  chainId: 14,
   learningCycleId: 2,
   sourceReference: "experiment:92",
   status: "NOT_STARTED",
@@ -169,7 +169,7 @@ const automation = {
   revision: 0,
   parentProcesses: [
     {
-      processDefinitionId: 77,
+      processDefinitionId: 75,
       processName: "Venda, entrega e aprendizado",
       processVersion: 7,
       activityId: "commercialPreparation",
@@ -179,6 +179,41 @@ const automation = {
   ],
   subprocesses: [],
 };
+const completedHistory = structuredClone(history);
+Object.assign(completedHistory, {
+  operationalState: "COMPLETED",
+  completedActivityCount: 8,
+  remainingActivityCount: 0,
+  blockedActivityCount: 0,
+  currentActivityId: "ready",
+  currentActivityName: steps[7],
+  currentActivityState: "COMPLETED",
+  currentActivityStateReason: "Objetivo local comprovado sem publicação ou gasto",
+});
+completedHistory.activities = completedHistory.activities.map((activity) => ({
+  ...activity,
+  operationalState: "COMPLETED",
+  stateReason: "Objetivo local comprovado por dependências simuladas",
+  objectiveAchieved: true,
+  stateEvidence: "LOCAL_SIMULATION",
+}));
+const completedAutomation = structuredClone(automation);
+Object.assign(completedAutomation, {
+  id: 8,
+  status: "COMPLETED",
+  reason: "Preparação comercial local comprovada; publicação e mídia não autorizadas",
+  currentActivityId: "ready",
+  currentActivityName: steps[7],
+  currentOwnerName: "Backend",
+  currentSequence: 8,
+  completedActivities: 8,
+  remainingActivities: 0,
+  completionPercentage: 100,
+  canStart: false,
+  canPause: false,
+  canResume: false,
+  revision: 8,
+});
 const output = new URL("artifacts/opala-commercial/browser/", root);
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({
@@ -195,6 +230,7 @@ try {
     const page = await context.newPage();
     const errors = [];
     let mutations = 0;
+    let completed = false;
     page.on("pageerror", (e) => errors.push(e.message));
     await page.route("**/*", async (route) => {
       const url = new URL(route.request().url());
@@ -215,10 +251,12 @@ try {
       )
         body = [cycle];
       else if (url.pathname.endsWith("/process-context")) body = null;
-      else if (url.pathname.endsWith("/activity-executions")) body = history;
-      else if (url.pathname.endsWith("/automation/v1")) body = automation;
+      else if (url.pathname.endsWith("/activity-executions"))
+        body = completed ? completedHistory : history;
+      else if (url.pathname.endsWith("/automation/v1"))
+        body = completed ? completedAutomation : automation;
       else if (url.pathname.endsWith("/value-chain-position"))
-        body = { productId: 4, chainDefinitionId: 15, processMeasurements: [] };
+        body = { productId: 4, chainDefinitionId: 14, processMeasurements: [] };
       else if (url.pathname === "/api/products")
         body = [
           { id: 4, name: "Experiência local", internalName: "Opala de teste" },
@@ -226,17 +264,17 @@ try {
       else if (url.pathname === "/api/business-process-chains")
         body = [
           {
-            id: 15,
+            id: 14,
             name: "Cadeia de teste",
             status: "PUBLISHED",
-            versionNumber: 15,
+            versionNumber: 14,
             items: [],
           },
         ];
       return route.fulfill({ json: body });
     });
     await page.goto(
-      "http://127.0.0.1:15173/business-process-chains/learning-cycles?productId=4&chainId=15&cycleId=2",
+      "http://127.0.0.1:15173/business-process-chains/learning-cycles?productId=4&chainId=14&cycleId=2",
     );
     await page.waitForLoadState("networkidle");
     await page
@@ -247,6 +285,12 @@ try {
       page.getByText(steps[4], { exact: true }).first(),
     ).toBeVisible();
     await expect(page.getByText(/Responsável: Plutus/).first()).toBeVisible();
+    await expect(page.getByText("0 de 8 atividades concluídas")).toBeVisible();
+    completed = true;
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText("8 de 8 atividades concluídas")).toBeVisible();
+    await expect(page.getByText(/8 concluídas/).first()).toBeVisible();
     await page.screenshot({
       path: new URL(name + ".png", output).pathname,
       fullPage: true,

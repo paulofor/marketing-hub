@@ -30,9 +30,22 @@ curl_v7() {
     "https://v7.clubemusa.com.br$1"
 }
 
+curl_v8() {
+  compose exec -T proxy curl --fail --silent --show-error --insecure \
+    --resolve "v8.clubemusa.com.br:443:127.0.0.1" \
+    "https://v8.clubemusa.com.br$1"
+}
+
 vega_diagnostics="$(curl_v7 /version-diagnostics.json)"
 grep -q '"productSlug": "metodo-musa-7-dias"' <<<"${vega_diagnostics}"
 grep -q '"imageVersionId": "v7"' <<<"${vega_diagnostics}"
+
+vega_v12_diagnostics="$(curl_v8 /version-diagnostics.json)"
+grep -q '"productSlug": "metodo-musa-7-dias"' <<<"${vega_v12_diagnostics}"
+grep -q '"imageVersionId": "v8"' <<<"${vega_v12_diagnostics}"
+grep -q '"experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"' \
+  <<<"${vega_v12_diagnostics}"
+grep -q '"publicUrl": "https://v8.clubemusa.com.br"' <<<"${vega_v12_diagnostics}"
 
 mira_html="$(curl_v7 /mira-private)"
 grep -q 'Sua rotina, organizada com calma' <<<"${mira_html}"
@@ -61,13 +74,18 @@ if compose exec -T pde-platform-frontend-v7 \
 fi
 
 vega_container_id_before="$(compose ps -q pde-platform-frontend-v7)"
+vega_v12_container_id_before="$(compose ps -q pde-platform-frontend-v8)"
 mira_container_id_before="$(compose ps -q pde-platform-frontend-mira)"
 compose up -d --force-recreate --no-deps --wait pde-platform-frontend-mira
 vega_container_id_after="$(compose ps -q pde-platform-frontend-v7)"
+vega_v12_container_id_after="$(compose ps -q pde-platform-frontend-v8)"
 mira_container_id_after="$(compose ps -q pde-platform-frontend-mira)"
 
 test "${vega_container_id_before}" = "${vega_container_id_after}"
+test "${vega_v12_container_id_before}" = "${vega_v12_container_id_after}"
 test "${mira_container_id_before}" != "${mira_container_id_after}"
 curl_v7 /mira-private/version-diagnostics.json | grep -q '"productId": 10'
+curl_v8 /version-diagnostics.json \
+  | grep -q '"experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"'
 
-echo 'Roteamento e ciclo de vida isolados de Mira e Vega validados localmente.'
+echo 'Roteamento e ciclo de vida isolados de Mira, Vega v7 e Vega v12 validados localmente.'

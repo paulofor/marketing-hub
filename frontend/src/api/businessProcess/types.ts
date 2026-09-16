@@ -503,6 +503,11 @@ export type ProductProcessActivityExecutionRequest = {
 };
 
 export type ProductProcessActivityExecutionHistory = {
+  chainPosition?: {
+    sequenceLabel: string;
+    parentProcessCode: string;
+    parentProcessName: string;
+  } | null;
   salesFlow?: SalesFlow | null;
   productId: number;
   productName?: string;

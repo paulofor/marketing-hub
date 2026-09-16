@@ -11,14 +11,19 @@
 
 ## Decisão
 
-### Preparação comercial por tipo Opala — decisão de 15/09/2026
+### Preparação comercial por tipo Opala — decisão de 15/09/2026, corrigida em 16/09/2026
 
-A cadeia `pde-value-creation-delivery` v15 inclui o processo de venda, entrega e
-aprendizado v7, com chamada explícita para `opala-commercial-preparation-v1` v1.
-O subprocesso atende ao tipo oficial `PDE` (Opala), em ciclos abertos nas fases
-AUTHORIZATION/PUBLICATION, com identidade exata de produto, experimento e versão.
-Cadeias anteriores mantêm seu histórico e seu percurso; não há migração automática
-do ciclo 2/experimento 92 nem aprovação retroativa.
+A preparação comercial Opala pertence ao **Processo 5 — Homologar e ativar**, na
+posição **5.2**; sua primeira atividade é, portanto, **5.2.1**. Ela prepara o
+destino, o criativo, o checkout, o público e as provas da mesma versão antes da
+decisão humana, e não opera vendas no Processo 6.
+
+A chamada publicada anteriormente no processo de venda e aprendizado v7 é legado
+de composição. As cadeias e execuções históricas não são reescritas: quando um
+ciclo antigo adota Opala explicitamente, o backend declara a posição 5.2 a partir
+da própria adesão, sem confundi-la com a posição global do produto já publicado.
+Isso preserva o histórico da v7 enquanto torna a preparação da candidata visível
+no ponto correto da jornada comercial.
 
 **Piloto Catálogo Vivo, 16/09/2026:** ciclos anteriores podem incorporar explicitamente
 esse subprocesso pelo comando **Integrar e iniciar preparação**, na tela do ciclo.

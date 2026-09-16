@@ -1,0 +1,18 @@
+{
+  "cardKey": "monitoramento-metacognitivo-calibra-confianca-ai",
+  "collection": "neuromarketing",
+  "title": "Calibre confiança com sinais específicos da tarefa",
+  "finding": "Em experimento com 917 participantes, cartões de confiabilidade por tarefa e respostas contrastantes reduziram erro de estimação e overconfidence e melhoraram discriminação agregada de confiança em comparação com um assistente LLM baseline.",
+  "mechanism": "Avisos genéricos deixam o monitoramento quase todo a cargo do usuário. Cues específicos sobre confiabilidade ou uma alternativa contrastante tornam mais fácil revisar a própria certeza e a do sistema, embora isso não garanta melhor desempenho objetivo.",
+  "commercialApplication": "Antes de recomendações de maior consequência no Marketing Hub, testar um cartão curto de confiabilidade/evidência ou uma alternativa contrastante para ajudar o usuário ou revisor a calibrar a confiança na recomendação.",
+  "evidenceStrength": "Evidência experimental forte para calibração metacognitiva, ainda em preprint: N=917, 12 problemas e comparação entre quatro intervenções e baseline. Não houve melhoria estabelecida no desempenho da tarefa.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2026-10-31",
+  "experimentHypothesis": "Adicionar um cue de confiabilidade específico ou uma alternativa contrastante antes de decisões relevantes reduzirá aceitação acrítica e correções posteriores sem aumentar abandono de forma relevante.",
+  "risks": "Um indicador de confiabilidade pode criar falsa precisão ou virar selo de autoridade. A interface deve deixar claro que calibração de confiança não prova que a resposta está correta.",
+  "limits": "O estudo usou tarefas de planejamento e organização, não funis comerciais. Não demonstrou ganho de desempenho, conversão ou vendas; o efeito deve ser validado no contexto do Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-16-monitoramento-metacognitivo-calibra-confianca-ai.md",
+  "sourceTitle": "Fonte revisada — Intervenções metacognitivas para calibrar confiança em IA",
+  "sourceSha256": "bc14b05de59a8100381fb707ccf917832c0067060cad8d57d8fa65a6cc572c0d"
+}

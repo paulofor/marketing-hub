@@ -36,6 +36,7 @@ public record ProductProcessActivityExecutionHistoryResponse(
     BigDecimal knownEstimatedCostUsd,
     String costCoverage,
     List<ProductProcessActivityExecutionGroupResponse> activities,
+    ProductProcessChainPositionResponse chainPosition,
     SalesFlowResponse salesFlow) {
   /** Mantém compatibilidade com processos sem contrato de fluxo comercial. */
   public ProductProcessActivityExecutionHistoryResponse(
@@ -94,6 +95,7 @@ public record ProductProcessActivityExecutionHistoryResponse(
         knownEstimatedCostUsd,
         costCoverage,
         activities,
+        null,
         null);
   }
 }

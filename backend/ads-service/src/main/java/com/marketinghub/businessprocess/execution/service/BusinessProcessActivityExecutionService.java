@@ -114,6 +114,10 @@ public class BusinessProcessActivityExecutionService {
   private com.marketinghub.product.executionprofile.v1.service.ExecutionProfileActivityPolicy
       executionProfilePolicy;
 
+  @Autowired(required = false)
+  private com.marketinghub.catalogovivo.v1.service.OpalaAdoptionChainPositionResolver
+      opalaAdoptionChainPositionResolver;
+
   /** Configura as fontes canônicas do processo, das tarefas, da cobertura e do produto. */
   @Autowired
   public BusinessProcessActivityExecutionService(
@@ -470,6 +474,17 @@ public class BusinessProcessActivityExecutionService {
     }
     BigDecimal knownCost = knownEstimatedCost(tasks);
     CommercialPlan commercialPlan = currentCommercialPlan(productPlans, currentExecutionReference);
+    var chainPosition =
+        opalaAdoptionChainPositionResolver == null
+            ? null
+            : opalaAdoptionChainPositionResolver
+                .resolve(
+                    productId,
+                    selectedProcess.getId(),
+                    selectedProcess.getProcessCode(),
+                    learningCycleId,
+                    chainId)
+                .orElse(null);
     return new ProductProcessActivityExecutionHistoryResponse(
         product.getId(),
         product.getName(),
@@ -498,6 +513,7 @@ public class BusinessProcessActivityExecutionService {
         knownCost,
         costCoverage(tasks),
         activities,
+        chainPosition,
         salesFlow);
   }
 

@@ -146,6 +146,9 @@ class SalesFlowResolverTest {
     when(processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
             SalesFlowResolver.PARENT_CODE, "PUBLISHED"))
         .thenReturn(Optional.of(model));
+    var originalChain = chain(model);
+    originalChain.setId(13L);
+    when(chains.findById(13L)).thenReturn(Optional.of(originalChain));
     when(events.findByCycleIdOrderByRevisionAsc(1L))
         .thenReturn(List.of(event(0, "ADOPT_BASELINE", "{}"), measure(0, true)));
     var flow = resolver.resolve(4L, model, null, null);
@@ -159,6 +162,70 @@ class SalesFlowResolverTest {
         .contains("não corresponde");
     assertThat(resolver.resolve(5L, model, null, null)).isNull();
     verify(cycles, never()).save(any());
+  }
+
+  /** Reproduz o ciclo antigo consultado pela cadeia atual sem misturar processo e cadeia. */
+  @Test
+  void publishedUpgradeKeepsOriginalProcessAndExecutableContext() throws Exception {
+    var original = model();
+    original.setId(75L);
+    original.setVersionNumber(6);
+    var latest = model();
+    latest.setId(78L);
+    latest.setVersionNumber(7);
+    var originalChain = chain(original);
+    originalChain.setId(14L);
+    var latestChain = chain(latest);
+    latestChain.setId(15L);
+    var cycle = cycle();
+    cycle.setId(2L);
+    cycle.setExperimentId(92L);
+    cycle.setChainDefinitionId(14L);
+    cycle.setStage("PUBLICATION");
+    cycle.setBaseline(false);
+    when(chains.findById(14L)).thenReturn(Optional.of(originalChain));
+    when(chains.findById(15L)).thenReturn(Optional.of(latestChain));
+    when(cycles.findById(2L)).thenReturn(Optional.of(cycle));
+    when(cycles.findByProductIdAndChainCodeOrderByIdDesc(4L, SalesFlowResolver.CHAIN_CODE))
+        .thenReturn(List.of(cycle));
+    when(processes.findById(75L)).thenReturn(Optional.of(original));
+    var product = new com.marketinghub.product.Product();
+    product.setId(4L);
+    var execution =
+        new LearningCycleExecutionContext(cycles, chains, processes, new LearningCycleJson(mapper));
+    for (Long explicitCycle : java.util.Arrays.asList(null, 2L)) {
+      var flow = resolver.resolve(4L, latest, 15L, explicitCycle);
+      assertThat(flow.modelProcessDefinitionId()).isEqualTo(75L);
+      assertThat(flow.chainDefinitionId()).isEqualTo(14L);
+      assertThat(flow.currentActivitySequenceNumber()).isEqualTo(4);
+      assertThat(
+              execution.source(
+                  flow.cycleId(),
+                  product,
+                  processes.findById(flow.modelProcessDefinitionId()).orElseThrow(),
+                  false))
+          .isEqualTo("experiment:92");
+    }
+    assertThat(resolver.resolve(4L, original, 14L, 2L).modelProcessDefinitionId()).isEqualTo(75L);
+    assertThatThrownBy(() -> execution.source(2L, product, latest, false))
+        .hasMessageContaining("não pertence à versão");
+    verify(cycles, never()).save(any());
+  }
+
+  /** Mantém o modelo novo quando ele pertence de fato à cadeia persistida no ciclo. */
+  @Test
+  void newCycleUsesItsOwnPublishedModel() throws Exception {
+    var latest = model();
+    latest.setId(78L);
+    latest.setVersionNumber(7);
+    var chain = chain(latest);
+    var cycle = cycle();
+    cycle.setChainDefinitionId(chain.getId());
+    when(chains.findById(chain.getId())).thenReturn(Optional.of(chain));
+    when(cycles.findById(cycle.getId())).thenReturn(Optional.of(cycle));
+    assertThat(
+            resolver.resolve(4L, latest, chain.getId(), cycle.getId()).modelProcessDefinitionId())
+        .isEqualTo(78L);
   }
 
   /** Recusa contexto explícito de outro produto antes de usar qualquer evidência. */

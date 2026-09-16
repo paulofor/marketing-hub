@@ -5581,3 +5581,18 @@ materializa vínculos por produto/experimento/versão, sem reutilização global
 escopo, callbacks antigos, insumos incompletos e renovação dos pareceres após mudanças.
 O histórico e o ciclo atual não são reescritos pela migração.
 Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
+
+## LOOP-CICLO-MODELO-ATUAL-CADEIA-ANTIGA — 16/09/2026
+
+- Tela de produtos enviava processo 78 e cadeia 14 para o ciclo 2/experimento 92.
+  HTTP 409 confirmado por navegador, logs MCP e banco; a cadeia 14 contém processo
+  75. O mesmo GET com 75 funciona. Orçamento já aprovado não explica o erro.
+- Causa: `SalesFlowResolver` selecionava última versão publicada; o fallback Opala
+  conservava o processo recebido da cadeia atual, não o membro da cadeia do ciclo.
+- Correção: obter o processo pai exclusivamente dos itens da cadeia persistida.
+  Não flexibilizar `LearningCycleExecutionContext`, migrar ciclo, renovar autorização
+  ou iniciar mídia como efeito de leitura.
+- Prevenção: `SalesFlowResolverTest` passa a validar o contexto devolvido com o
+  resolvedor real de pertencimento, para ciclo implícito/expresso, cadeias antigas
+  e novas; referências estrangeiras continuam recusadas.
+- Evidências e limites: `docs/homologacao/experimento-92-contexto-cadeia.md`.

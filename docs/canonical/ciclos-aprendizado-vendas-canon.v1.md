@@ -439,3 +439,12 @@ Mantêm-se homologação vigente, idempotência e revisão concorrente. A pronti
 não bloqueia o aceite inicial dos dois valores: ela bloqueia revisões comerciais pagas e
 ativação. O aceite materializa os limites e avança para PUBLICATION, sem criar campanha
 nem tornar o experimento RUNNING. A tela mantém as pendências e o link de preparação.
+
+### Integridade da projeção entre versões — esclarecimento de 16/09/2026
+
+O `modelProcessDefinitionId` do fluxo comercial deve identificar o processo pai
+pertencente à `chainDefinitionId` persistida no ciclo. Consultar o produto pela
+cadeia publicada mais recente não troca o grafo de uma passagem anterior. Essa
+regra vale para ciclo explícito e para retomada automática do ciclo existente.
+As consultas de contexto e os links devem respeitar o mesmo par processo/cadeia.
+Publicar subprocesso novo não migra ciclos anteriores nem concede novas aprovações.

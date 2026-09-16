@@ -74,6 +74,36 @@ describe("ProductListPage", () => {
     expect(screen.getByText("PDE - Produto Digital Experiencial")).toBeTruthy();
     expect(screen.getByText("PDE")).toBeTruthy();
     expect(screen.getByText("Família interna: Opala")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Versões PDE" })).toHaveAttribute(
+      "href",
+      "/products/1/pde-versions",
+    );
+  });
+
+  it("does not show PDE versions for a product outside the Opala type", async () => {
+    (axios.get as any).mockResolvedValue({
+      data: [
+        {
+          id: 2,
+          slug: "kit-digital-pde-preview",
+          name: "Kit digital",
+          productTypeCode: "LOW_TICKET_DIGITAL_PRODUCT",
+          productTypeInternalName: "Quartzo",
+          pdeExperienceJson: "{}",
+        },
+      ],
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <BrowserRouter>
+          <ProductListPage />
+        </BrowserRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Kit digital")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Versões PDE" })).toBeNull();
   });
 
   it("stops the selected product returned by the PLAY view", async () => {

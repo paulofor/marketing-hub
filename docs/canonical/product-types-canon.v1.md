@@ -86,6 +86,31 @@ e fragmenta a operação); atividades genéricas (menor esforço, mas mistura co
 de tipos); subprocesso especializado (reutiliza o motor e mantém regras explícitas).
 Escolhida a terceira por aderência ao tipo e menor risco de duplicação.
 
+## Gestão das versões PDE Opala — decisão de 16/09/2026
+
+Todo produto oficialmente vinculado ao tipo `PDE` (nome interno Opala) deve oferecer no card do
+produto o acesso **Versões PDE**. A visão consolida a evolução da experiência no contexto do produto,
+sem deslocar a identidade da versão para o experimento e sem exibir esse comando em outros tipos que
+apenas utilizem uma experiência digital auxiliar.
+
+Uma versão nasce em `Rascunho`, pode ser marcada como `Candidata`, torna-se `Homologada` quando os
+gates aplicáveis forem comprovados e passa a `Publicada` somente pela promoção do mesmo artefato,
+contrato e `experienceVersion`. `Pausada` preserva a possibilidade de retomada e `Arquivada` encerra
+o uso futuro sem apagar histórico. Pré-visualização protegida e dados de QA são ambientes da mesma
+versão candidata; não constituem uma segunda “versão privada”.
+
+A lista deve apresentar somente verdades entregues pelo backend: nome e identidade da versão,
+hipótese, mudança principal, vídeos vinculados e aprovados, oferta, preço, checkout, URL, experimento,
+resultado da homologação, pendências e trajetória `conceito → construção → ativos → testes →
+homologação → preparação comercial → publicação`. A ação **Preparar para publicação** só aparece
+quando não houver pendência comprovada. A publicação e a liberação de tráfego continuam sujeitas aos
+gates humanos, financeiros e comerciais; a tela de versões não publica nem ativa campanha sozinha.
+
+Alternativas avaliadas: criar uma tela paralela (duplicaria slots e contratos), apenas renomear a
+tabela técnica existente (não explicaria a jornada) ou evoluir o cadastro atual com uma visão de
+negócio agregada pelo backend. Foi escolhida a terceira, por preservar a fonte de verdade e reduzir
+o risco de divergência como o ocorrido entre a versão selecionada pelo experimento e a publicada.
+
 ## Catálogo extensível e apelidos
 
 O percurso operacional é definido pela ficha versionada em

@@ -29,10 +29,7 @@ export interface PostDeployPdeSummary {
   status: string;
   errorMessage?: string | null;
   measurementMode:
-    | "CAMPAIGN_PERFORMANCE"
-    | "PRE_LAUNCH_VALIDATION"
-    | "UNAVAILABLE"
-    | string;
+    "CAMPAIGN_PERFORMANCE" | "PRE_LAUNCH_VALIDATION" | "UNAVAILABLE" | string;
   measurementLabel: string;
   measurementRecommendation: string;
   currentExperienceVersion?: string | null;
@@ -178,11 +175,7 @@ export interface PostDeployPdeSessionJourney {
 }
 
 export type PdeProductionSlotStatus =
-  | "PLANNED"
-  | "READY"
-  | "ACTIVE"
-  | "PAUSED"
-  | "RETIRED";
+  "PLANNED" | "CANDIDATE" | "READY" | "ACTIVE" | "PAUSED" | "RETIRED";
 
 export interface PostDeployPdeProductionSlot {
   id: number;

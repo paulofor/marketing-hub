@@ -8,6 +8,10 @@ import {
   useSaveProductPdeProductionSlot,
   useValidateProductPdeProductionSlot,
 } from "../../api/product/usePdeProductionSlots";
+import {
+  useProductPdeVersions,
+  type ProductPdeVersionOverview,
+} from "../../api/product/useProductPdeVersions";
 import { useProduct } from "../../api/product/useProduct";
 import type {
   PdeProductionSlotStatus,
@@ -18,12 +22,18 @@ import type {
 import PageTitle from "../../components/PageTitle";
 
 const statusLabels: Record<PdeProductionSlotStatus, string> = {
-  PLANNED: "Planejado",
-  READY: "Pronto",
-  ACTIVE: "Ativo",
-  PAUSED: "Pausado",
-  RETIRED: "Encerrado",
+  PLANNED: "Rascunho",
+  CANDIDATE: "Candidata",
+  READY: "Homologada",
+  ACTIVE: "Publicada",
+  PAUSED: "Pausada",
+  RETIRED: "Arquivada",
 };
+
+const money = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 
 const layoutOptions = [
   {
@@ -253,10 +263,28 @@ function validationLabel(status?: string | null) {
   return "Não testada";
 }
 
+function lifecycleBadgeClass(
+  stage: ProductPdeVersionOverview["lifecycleStage"],
+) {
+  if (stage === "PUBLISHED") return "text-bg-success";
+  if (stage === "HOMOLOGATED") return "text-bg-primary";
+  if (stage === "CANDIDATE") return "text-bg-info";
+  if (stage === "PAUSED" || stage === "ARCHIVED") return "text-bg-secondary";
+  return "text-bg-light";
+}
+
+function lifecycleStepClass(status: string) {
+  if (status === "DONE") return "text-bg-success";
+  if (status === "CURRENT") return "text-bg-primary";
+  if (status === "BLOCKED") return "text-bg-danger";
+  return "text-bg-light";
+}
+
 export default function ProductPdeVersionsPage() {
   const { productId } = useParams();
   const productQuery = useProduct(productId);
   const slotsQuery = useProductPdeProductionSlots(productId);
+  const versionsQuery = useProductPdeVersions(productId);
   const saveSlot = useSaveProductPdeProductionSlot(productId);
   const publishSlot = usePublishProductPdeProductionSlot(productId);
   const validateSlot = useValidateProductPdeProductionSlot(productId);
@@ -376,7 +404,11 @@ export default function ProductPdeVersionsPage() {
     });
   };
 
-  if (productQuery.isLoading || slotsQuery.isLoading) {
+  if (
+    productQuery.isLoading ||
+    slotsQuery.isLoading ||
+    versionsQuery.isLoading
+  ) {
     return <p className="text-muted">Carregando versões PDE...</p>;
   }
 
@@ -406,6 +438,17 @@ export default function ProductPdeVersionsPage() {
           </Link>
         </div>
       </div>
+
+      {versionsQuery.isError ? (
+        <div className="alert alert-danger" role="alert">
+          Não foi possível carregar a trajetória das versões PDE deste produto.
+        </div>
+      ) : (
+        <VersionOverviewCards
+          versions={versionsQuery.data ?? []}
+          productId={productId}
+        />
+      )}
 
       <div className="card mb-3">
         <div className="card-body">
@@ -631,7 +674,7 @@ export default function ProductPdeVersionsPage() {
         </div>
       </div>
 
-      <div className="card mt-3">
+      <div className="card mt-3" id="pde-contract-editor">
         <div className="card-body">
           <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
             <div>
@@ -755,6 +798,242 @@ export default function ProductPdeVersionsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function VersionOverviewCards({
+  versions,
+  productId,
+}: {
+  versions: ProductPdeVersionOverview[];
+  productId?: string;
+}) {
+  const published = versions.filter(
+    (version) => version.lifecycleStage === "PUBLISHED",
+  ).length;
+  const candidates = versions.filter(
+    (version) => version.lifecycleStage === "CANDIDATE",
+  ).length;
+
+  return (
+    <section className="card mb-3" aria-labelledby="pde-version-map-title">
+      <div className="card-body">
+        <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+          <div>
+            <h2 className="h5 mb-1" id="pde-version-map-title">
+              Evolução das versões
+            </h2>
+            <p className="text-muted small mb-0">
+              A mesma versão avança de rascunho até publicação; a homologação
+              não cria uma versão privada paralela.
+            </p>
+          </div>
+          <div className="d-flex gap-2">
+            <span className="badge text-bg-success">
+              {published} publicada{published === 1 ? "" : "s"}
+            </span>
+            <span className="badge text-bg-info">
+              {candidates} candidata{candidates === 1 ? "" : "s"}
+            </span>
+          </div>
+        </div>
+
+        {versions.length === 0 ? (
+          <div className="alert alert-light border mb-0">
+            Este produto ainda não possui versões PDE cadastradas.
+          </div>
+        ) : (
+          <div className="row g-3">
+            {versions.map((version) => {
+              const readyToPreparePublication =
+                version.pendingItems.length === 0 &&
+                version.lifecycleStage !== "PUBLISHED";
+              return (
+                <div className="col-12" key={version.id}>
+                  <article
+                    className={`card h-100 ${
+                      version.lifecycleStage === "PUBLISHED"
+                        ? "border-success"
+                        : ""
+                    }`}
+                    aria-label={`Versão PDE ${version.slotCode}`}
+                  >
+                    <div className="card-body">
+                      <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+                        <div>
+                          <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
+                            <h3 className="h5 mb-0">{version.slotCode}</h3>
+                            <span
+                              className={`badge ${lifecycleBadgeClass(
+                                version.lifecycleStage,
+                              )}`}
+                            >
+                              {version.lifecycleLabel}
+                            </span>
+                          </div>
+                          <div className="fw-semibold">{version.name}</div>
+                          <div className="font-monospace small text-muted">
+                            {version.experienceVersion}
+                          </div>
+                        </div>
+                        <div className="text-md-end small">
+                          <div>
+                            Atualizada em {formatDate(version.updatedAt)}
+                          </div>
+                          <div className="text-muted">
+                            Contrato{" "}
+                            {version.publishedContract
+                              ? "publicado"
+                              : "em rascunho"}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="row g-3 mb-3">
+                        <div className="col-12 col-lg-6">
+                          <div className="small text-muted">Hipótese</div>
+                          <div>
+                            {version.hypothesis || "Ainda não definida"}
+                          </div>
+                        </div>
+                        <div className="col-12 col-lg-6">
+                          <div className="small text-muted">
+                            Mudança principal
+                          </div>
+                          <div>
+                            {version.primaryChange || "Ainda não registrada"}
+                          </div>
+                        </div>
+                        <div className="col-12 col-md-6 col-xl-3">
+                          <div className="small text-muted">
+                            Vídeos vinculados
+                          </div>
+                          <div>
+                            {version.approvedVideoCount} aprovado
+                            {version.approvedVideoCount === 1
+                              ? ""
+                              : "s"} de {version.videoCount}
+                          </div>
+                          <Link
+                            className="small"
+                            to={`/products/${productId}/pde-videos`}
+                          >
+                            Ver vídeos
+                          </Link>
+                        </div>
+                        <div className="col-12 col-md-6 col-xl-3">
+                          <div className="small text-muted">Oferta</div>
+                          <div>
+                            {version.priceBrl != null
+                              ? money.format(version.priceBrl)
+                              : "Preço pendente"}
+                          </div>
+                          <div className="small text-muted">
+                            {version.primaryCta || "CTA pendente"}
+                          </div>
+                        </div>
+                        <div className="col-12 col-md-6 col-xl-3">
+                          <div className="small text-muted">Checkout</div>
+                          {version.checkoutUrl ? (
+                            <a
+                              href={version.checkoutUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Abrir checkout
+                            </a>
+                          ) : (
+                            <div>Pendente</div>
+                          )}
+                        </div>
+                        <div className="col-12 col-md-6 col-xl-3">
+                          <div className="small text-muted">Experimento</div>
+                          {version.sourceExperimentId ? (
+                            <Link
+                              to={`/experiments/${version.sourceExperimentId}`}
+                            >
+                              #{version.sourceExperimentId}
+                              {version.sourceExperimentName
+                                ? ` · ${version.sourceExperimentName}`
+                                : ""}
+                            </Link>
+                          ) : (
+                            <div>Não vinculado</div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mb-3">
+                        <div className="small text-muted mb-2">Trajetória</div>
+                        <div className="d-flex flex-wrap gap-2">
+                          {version.lifecycle.map((step) => (
+                            <span
+                              className={`badge ${lifecycleStepClass(step.status)}`}
+                              key={step.code}
+                            >
+                              {step.label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="row g-3 align-items-start">
+                        <div className="col-12 col-lg-7">
+                          <div className="small text-muted">Homologação</div>
+                          <div>{version.homologationSummary}</div>
+                          {version.validationSummary && (
+                            <div className="small text-muted mt-1">
+                              {version.validationSummary}
+                            </div>
+                          )}
+                        </div>
+                        <div className="col-12 col-lg-5">
+                          <div className="small text-muted">
+                            Próximas pendências
+                          </div>
+                          {version.pendingItems.length > 0 ? (
+                            <ul className="small mb-0 ps-3">
+                              {version.pendingItems.map((item) => (
+                                <li key={item}>{item}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <div className="text-success">
+                              Requisitos concluídos.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="d-flex flex-wrap gap-2 mt-3">
+                        <a
+                          className="btn btn-outline-secondary btn-sm"
+                          href={version.publicUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {version.lifecycleStage === "PUBLISHED"
+                            ? "Abrir versão publicada"
+                            : "Abrir pré-visualização"}
+                        </a>
+                        {readyToPreparePublication && (
+                          <a
+                            className="btn btn-primary btn-sm"
+                            href="#pde-contract-editor"
+                          >
+                            Preparar para publicação
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 

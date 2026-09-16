@@ -183,6 +183,19 @@ Um PDE so pode liberar experimento/campanha para `RUNNING` quando todos os ponto
 
 Se o PDE depender de video caro, avatar, HLS ou render externo, a geracao de custo alto deve ocorrer somente depois da validacao da experiencia sem o ativo caro, salvo decisao comercial explicita registrada.
 
+### Artefato único entre candidatura e publicação
+
+A homologação usa uma pré-visualização protegida da própria versão candidata. É proibido criar uma
+identidade comercial paralela apenas para chamá-la de “versão privada” e depois reconstruir o PDE
+para produção. A promoção deve preservar o mesmo contrato, `experienceVersion`, imagem/container e
+evidências validados. Acesso restrito, analytics de QA e cobrança desativada são modos do ambiente de
+pré-publicação, não outra versão do produto.
+
+Para produtos Opala, a tela **Versões PDE** no card do produto é a fonte administrativa da trajetória
+da versão. O experimento apenas referencia a versão escolhida. Divergência entre versão escolhida,
+homologada e publicada deve permanecer visível e bloqueadora até a reconciliação baseada em
+evidências; selecionar silenciosamente a versão mais nova ou a já publicada é proibido.
+
 Para PDE em canal `DIRECT_ONE_TO_ONE`, o material comercial não precisa fingir ser um criativo de
 mídia paga. O run produtivo mais recente em `READY_TO_PUBLISH`, com todos os gates da experiência,
 checkout, entrega, distribuição individual e dados aprovados, é a autoridade para a ativação. O

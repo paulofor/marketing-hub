@@ -69,14 +69,21 @@ public class SalesFlowResolver {
               .orElse(null);
     }
     if (cycle == null) return null;
+    // A versão publicada atual pode pertencer a outra cadeia; o ciclo fixa seu próprio grafo.
+    var originalChain =
+        Objects.equals(chain.getId(), cycle.getChainDefinitionId())
+            ? chain
+            : chains
+                .findById(cycle.getChainDefinitionId())
+                .orElseThrow(() -> conflict("Cadeia original do ciclo não encontrada."));
     var model =
-        processes
-            .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(PARENT_CODE, "PUBLISHED")
-            .orElse(parent);
-    if (opalaRouting != null
-        && opalaRouting.target(cycle) == null
-        && model.getVersionNumber() != null
-        && model.getVersionNumber() >= 7) model = parent;
+        originalChain.getItems().stream()
+            .map(
+                com.marketinghub.businessprocesschain.BusinessProcessChainItem
+                    ::getProcessDefinition)
+            .filter(process -> PARENT_CODE.equals(process.getProcessCode()))
+            .findFirst()
+            .orElseThrow(() -> conflict("Processo de vendas ausente da cadeia original do ciclo."));
     return describe(cycle, model, events.findByCycleIdOrderByRevisionAsc(cycle.getId()));
   }
 

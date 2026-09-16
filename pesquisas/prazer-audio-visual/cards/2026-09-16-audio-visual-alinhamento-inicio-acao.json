@@ -1,0 +1,18 @@
+{
+  "cardKey": "audio-visual-alinhamento-inicio-acao",
+  "collection": "prazer-audio-visual",
+  "title": "Co-localizar som e alvo visual para reforçar precisão espacial",
+  "finding": "Evidências convergentes de EEG mostram que estímulos audiovisuais espacial e temporalmente congruentes melhoram localização em relação a pistas unissensoriais e produzem integração neural multivariada superaditiva por volta de 160–220 ms; um estudo de setembro de 2026 mostra que vieses cruzados espaciais surgem depois de cerca de 200 ms, com influência visual sobre a representação auditiva aparecendo antes da influência inversa.",
+  "mechanism": "A integração espacial parece combinar estimativas inicialmente específicas de cada modalidade por processos recorrentes posteriores. Pistas congruentes podem formar uma representação espacial compartilhada mais precisa; as latências neurais observadas não são uma regra de atraso para edição.",
+  "commercialApplication": "Em interfaces espaciais, vídeo interativo, jogos ou realidade aumentada, comparar pista sonora co-localizada com o alvo visual contra som espacialmente deslocado e condição sem pista sonora, medindo localização, início da ação, erros e conforto.",
+  "evidenceStrength": "Média-alta para integração audiovisual espacial: comportamento e EEG convergentes em estudos experimentais, incluindo análise multivariada e nova evidência temporal; aplicação a UX comercial ainda exige validação.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2027-03-16",
+  "experimentHypothesis": "Uma pista sonora espacialmente congruente com o alvo visual reduzirá erros de localização e/ou tempo para iniciar a ação em comparação com som deslocado ou ausência de pista, sem aumentar desconforto.",
+  "risks": "Spatial audio mal calibrado pode piorar localização; som adicional pode distrair ou incomodar; fones, alto-falantes e dispositivos diferentes podem alterar a percepção espacial.",
+  "limits": "Os estudos usam cliques, flashes e tarefas laboratoriais de localização, não anúncios ou interfaces comerciais; precisão espacial não prova prazer, retenção, CTA ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-16-audio-visual-alinhamento-inicio-acao.md",
+  "sourceTitle": "Fonte revisada — alinhamento audiovisual e integração espacial",
+  "sourceSha256": "7b86cc679c3519243d251abb9700481a55b21d45ef601cc0fee3ceb49b4bc7c8"
+}

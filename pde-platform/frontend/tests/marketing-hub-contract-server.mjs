@@ -272,6 +272,20 @@ const server = http.createServer(async (request, response) => {
   if (request.method === "POST" && pepperControlMatch) {
     const transactionHash = decodeURIComponent(pepperControlMatch[1]);
     const body = await readJsonBody(request);
+    const existingTransaction = pepperTransactions.get(transactionHash);
+    const experienceVersion =
+      body.experienceVersion ??
+      existingTransaction?.experienceVersion ??
+      v7ExperienceVersion;
+    if (
+      ![v7ExperienceVersion, v12ExperienceVersion].includes(experienceVersion)
+    ) {
+      response.writeHead(400, {
+        "Content-Type": "application/json; charset=utf-8",
+      });
+      response.end(JSON.stringify({ error: "unsupported experience version" }));
+      return;
+    }
     const transaction = {
       hash: transactionHash,
       payment_status: body.status ?? "paid",
@@ -279,8 +293,9 @@ const server = http.createServer(async (request, response) => {
       currency: "BRL",
       utm_source: "sandbox",
       utm_medium: "qa",
-      utm_campaign: "musa-v7-commercial-homologation",
-      utm_content: `local-e2e__pde_version__${v7ExperienceVersion}`,
+      utm_campaign: "musa-commercial-homologation",
+      utm_content: `local-e2e__pde_version__${experienceVersion}`,
+      experienceVersion,
       offer: { hash: "owm6x", title: "Método MUSA em 7 dias" },
       customer: { email: body.email },
     };

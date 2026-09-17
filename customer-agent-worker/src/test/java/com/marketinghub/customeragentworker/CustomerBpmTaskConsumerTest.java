@@ -518,6 +518,43 @@ class CustomerBpmTaskConsumerTest {
         .isFalse();
   }
 
+  /** Inclui a instrução auditável quando a tarefa entrega inteligência de pesquisa. */
+  @Test
+  void addsResearchUsageInstructionWhenTaskIncludesResearchIntelligence() throws Exception {
+    CustomerBpmTaskConsumer consumer =
+        new CustomerBpmTaskConsumer(
+            "http://backend:8000", "codex", "gpt-5.6-sol", "max", "/workspace", "", json);
+    Map<String, Object> task =
+        Map.of(
+            "taskId",
+            901L,
+            "processCode",
+            "landing-page-generation",
+            "activityId",
+            "customer",
+            "sourceReference",
+            "experiment:92",
+            "researchIntelligence",
+            Map.of(
+                "routes",
+                List.of(
+                    Map.of(
+                        "agentKey",
+                        "customer-agent",
+                        "cards",
+                        List.of(
+                            Map.of("id", "RI1-AAAAAAAAAAAA"),
+                            Map.of("id", "RI1-BBBBBBBBBBBB"))))));
+
+    String prompt = consumer.prompt(task, List.of());
+
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains("Uso auditável da inteligência de pesquisa de Psique v1")
+        .contains("cada coleção entregue")
+        .contains("RI1-AAAAAAAAAAAA")
+        .contains("RI1-BBBBBBBBBBBB");
+  }
+
   /** Mantém o prompt real da Vega com margem e comprova manifesto vigente e baseline. */
   @Test
   void composesBoundedVegaCommercialPromptFromReadOnlyEvidenceWorkspace() throws Exception {

@@ -468,6 +468,29 @@ textarea {
   max-width: 620px;
 }
 
+.public-first-fold-conversion {
+  display: grid;
+  gap: 10px;
+  width: min(680px, 100%);
+  margin: 0 auto;
+}
+
+.public-first-fold-cta {
+  width: fit-content;
+}
+
+.public-first-fold-conversion p {
+  margin: 0;
+  color: #5a4a42;
+  font-size: 0.94rem;
+  font-weight: 680;
+  line-height: 1.5;
+}
+
+.public-first-fold-conversion strong {
+  color: #442b35;
+}
+
 .public-video-hero {
   background: #fff;
   border: 1px solid rgba(122, 36, 68, 0.14);
@@ -4413,6 +4436,21 @@ h3 {
 .musa-privacy-notice a {
   color: #7a2444;
   font-weight: 800;
+}
+
+.musa-privacy-details {
+  margin-top: 12px;
+}
+
+.musa-privacy-details summary {
+  width: fit-content;
+  color: #7a2444;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.musa-privacy-details[open] summary {
+  margin-bottom: 10px;
 }
 
 .musa-local-rules-note {

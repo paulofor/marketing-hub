@@ -1,0 +1,18 @@
+{
+  "cardKey": "ia-gatekeeper-de-compra",
+  "collection": "neuromarketing",
+  "title": "Prepare a oferta para a compra mediada por IA",
+  "finding": "No Brasil, mais da metade dos compradores online pesquisados usou IA na jornada de compra mais recente, enquanto somente 15% dos comerciantes tinham informações estruturadas de produto legíveis por agentes e 21% conseguiam identificar vendas originadas em plataformas de IA.",
+  "mechanism": "Quando a pesquisa começa em um agente, catálogo, preço, disponibilidade, condições e evidências precisam ser recuperáveis e coerentes para que a oferta seja corretamente representada e comparada; dados ausentes ou ambíguos podem reduzir a capacidade do agente de considerar a oferta, mas o efeito em recomendação não foi demonstrado causalmente.",
+  "commercialApplication": "Adicionar um AgentReadableOfferAudit para conferir se landing pages e ofertas expõem produto, preço, disponibilidade, entrega, políticas, meios de pagamento e limites das alegações de forma explícita, consistente e legível por máquina, sem fabricar sinais de reputação nem tentar manipular agentes.",
+  "evidenceStrength": "Moderada-baixa: sinal brasileiro recente baseado em pesquisa de jornada real e entrevista setorial, mas produzido em colaboração com a Visa e sem experimento causal sobre recomendação, tráfego ou vendas.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2026-12-16",
+  "experimentHypothesis": "Aumentar a completude e consistência dos dados da oferta reduzirá campos ausentes ou incorretos em auditorias padronizadas feitas por agentes de compra; qualquer efeito em visita, lead, checkout e venda deve ser medido separadamente.",
+  "risks": "Confundir legibilidade com garantia de ranking, praticar GEO manipulativo, estruturar informação falsa, deixar preço ou disponibilidade desatualizados ou otimizar para agentes em detrimento da clareza para humanos.",
+  "limits": "A fonte não prova que marcação estruturada aumenta recomendação em ChatGPT, Gemini ou outros agentes, nem mede CTR, CPL, checkout, pagamento ou receita do Marketing Hub. Os percentuais são descritivos e podem mudar rapidamente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-17-ia-gatekeeper-brasil.md",
+  "sourceTitle": "Fonte revisada — IA como porta de entrada da compra no Brasil",
+  "sourceSha256": "7456a249a368eb5a1ca662585c1f8be21a2f1ecb6fa6d23d25fcb5ff9b65f2b9"
+}

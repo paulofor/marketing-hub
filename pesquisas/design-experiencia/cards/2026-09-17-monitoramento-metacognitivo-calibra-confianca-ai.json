@@ -1,0 +1,18 @@
+{
+  "cardKey": "monitoramento-metacognitivo-calibra-confianca-ai",
+  "collection": "neuromarketing",
+  "title": "Calibre deferência, não apenas confiança",
+  "finding": "Em estudo com 535 participantes, a assistência por LLM capturou apenas parte do ganho complementar disponível; a deferência foi alta inclusive quando o conselho estava errado, e a confiança pós-conselho distinguiu menos respostas corretas de incorretas do que no grupo sem assistência.",
+  "mechanism": "A forma fluente da resposta e uma confiança global no assistente não informam bem onde ele é confiável. Deferência seletiva exige sinais granulares da tarefa ou item e uma rota preservada para revisão independente.",
+  "commercialApplication": "Em decisões relevantes do Marketing Hub, combinar evidência específica da tarefa, confiabilidade quando disponível, alternativa contrastante e opção explícita de revisar antes de aceitar uma recomendação.",
+  "evidenceStrength": "Evidência experimental moderada a forte, ainda em preprint: N=535 e 40 itens, com quatro LLMs e medição item a item de conselho, correção e adoção. Atualiza evidência anterior de N=917 sobre intervenções metacognitivas.",
+  "publishedOn": "2026-09-17",
+  "validUntil": "2026-11-01",
+  "experimentHypothesis": "Uma camada de calibração específica da tarefa reduzirá adoção de recomendações erradas sem eliminar o ganho de recomendações corretas, preservando melhor o raciocínio independente do usuário ou revisor.",
+  "risks": "Sinais de confiabilidade podem criar falsa precisão ou induzir confiança por autoridade visual. A interface não deve apresentar probabilidade ou selo sem base verificável.",
+  "limits": "Os estudos usam tarefas experimentais e não funis comerciais. A métrica de synergy capture não generaliza automaticamente; não há evidência de impacto em conversão, retenção ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-17-monitoramento-metacognitivo-calibra-confianca-ai.md",
+  "sourceTitle": "Fonte revisada — Deferência seletiva e calibração de confiança em assistência por IA",
+  "sourceSha256": "d68d988e0ba10ede32c0f7154d6ffe927ac5568b38a681dc5265fe72a46cdf55"
+}

@@ -738,7 +738,7 @@ public class LearningCycleService {
     Instant previousEnd = cycle.getWindowEnd();
     cycle.setWindowStart(start);
     cycle.setWindowEnd(end);
-    commercialAuthorization.apply(cycle, experiment, now, experiment.getDailyBudget());
+    commercialAuthorization.apply(cycle, experiment, now);
     cycle.setRevision(cycle.getRevision() + 1);
     cycle.setUpdatedAt(now);
     cycles.saveAndFlush(cycle);

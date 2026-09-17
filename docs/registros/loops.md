@@ -2420,6 +2420,26 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Correção sistêmica:** o schema exige ao menos uma tarefa para `ADJUST`/`REJECTED` e nenhuma para `APPROVED`; o executor repete a validação deterministicamente antes do callback, com testes de contrato contra recorrência.
 - **Prevenção:** o teste de defaults exige o mesmo endpoint nos descritores local e de deploy; a homologação operacional deve confirmar HTTP 200 tanto no health quanto no logfile.
 
+### LOOP-META-AD-APPROVER-LANDING-SEM-PLANO-EXATO
+
+- **Sintoma confirmado em 17/09/2026:** os criativos #528 e #529 do Vega, experimento #92,
+  concluíram a execução de Têmis, mas o callback respondeu HTTP 500 e o fallback gravou apenas
+  `FAILED`, descartando o parecer bruto que já havia sido produzido.
+- **Histórico e causa-raiz:** o sucessor #92 usa a Vega v12, enquanto o único plano comercial
+  cadastrado continua corretamente ligado ao predecessor #91/v7. Ao receber correção `LANDING`, o
+  coordenador de convergência persistia e distribuía a tarefa na mesma transação e exigia um plano
+  do próprio experimento; a ausência lançava exceção e revertia o parecer inteiro. Reutilizar o plano
+  v7 misturaria versões e não resolveria a entrada v12.
+- **Alternativas avaliadas:** herdar o plano v7 reduziria esforço mas romperia a identidade da
+  versão; ignorar Têmis abriria risco comercial; preservar parecer e tarefa, sem delegação cruzada,
+  mantém o gate e a causa auditável. Foi escolhida a terceira.
+- **Correção sistêmica:** o backend sempre persiste a revisão e a tarefa verificável; só cria a
+  delegação automática de landing quando existe plano exato e subprocesso aplicável. O worker, se o
+  callback ainda falhar, devolve `FAILED` preservando modelo, request e response brutos, sem tratar o
+  conteúdo recusado como resultado funcional.
+- **Prevenção:** regressões reproduzem sucessor sem plano próprio, impedem uso do plano predecessor,
+  exigem tarefa `LANDING` preservada e comprovam auditoria do payload após falha do callback.
+
 ### LOOP-META-AD-APPROVER-STRICT-SCHEMA-CONDITIONAL
 
 - **Sintoma:** o Aprovador encerra três revisões com `invalid_json_schema` antes de inspecionar mídia e landing, embora o JSON Schema seja válido pelo padrão 2020-12.
@@ -2980,6 +3000,26 @@ Use este checklist quando o problema estiver em algum loop acima:
   tabela-alvo; a homologação física no MySQL 5.7 verifica nome, versão, sete missões, interação e
   paridade entre produto, rascunho e publicação.
 
+## LOOP-PDE-CANDIDATA-EXIGE-SNAPSHOT-PUBLICADO — preflight fica circular
+
+- **Data:** 2026-09-17.
+- **Sintoma:** a imagem v8 entregava corretamente a Vega v12, mas oferta e integração públicas
+  respondiam 503/409. O Marketing Hub exigia essas respostas para homologar o slot, enquanto o PDE
+  só conseguia produzi-las depois que o mesmo slot recebesse um snapshot publicado.
+- **Causa-raiz:** catálogo e oferta do backend PDE possuíam apenas a leitura pública de snapshots
+  já promovidos. Os testes isolados simulavam resposta 200 e não reproduziam a candidata sem
+  `publishedExperienceJson`, deixando uma dependência circular entre validar e publicar.
+- **Correção sistêmica:** o Marketing Hub expõe ao backend PDE um preflight interno autenticado da
+  identidade exata, aceitando somente `CANDIDATE`, `READY` ou `ACTIVE`. O PDE tenta esse canal apenas
+  para versão explícita quando a rota pública ainda recusa; nenhum fallback local é permitido.
+- **Prevenção:** testes cobrem candidata v12, segredo obrigatório, versão pausada, oferta do mesmo
+  experimento e fallback autenticado após 409/412. A leitura não altera estado nem cria snapshot,
+  cobrança, acesso, publicação ou campanha.
+- **Fechamento da matriz em 17/09/2026:** o teste ponta a ponta agora inclui explicitamente a v8
+  candidata em desktop, iPhone 15 Pro e Pixel 7. O simulador recusa o contrato público da candidata,
+  exige token no preflight interno, confirma a oferta da mesma versão e mantém 404/409 fechados,
+  sem gerar acesso, custo de IA ou métrica humana.
+
 ## LOOP-AGENTE-NOTA-SEM-ESCALA — parecer aprova nota numericamente incompatível
 
 - **Data:** 2026-08-24.
@@ -3284,6 +3324,13 @@ Use este checklist quando o problema estiver em algum loop acima:
   arquivo ausente e comprovam que não há mistura. Testes adicionais bloqueiam alvo ausente ou
   ambíguo, corrupção posterior ao build e ausência do índice na imagem implantada. Os workflows de
   ambos os revisores são acionados quando contratos ou provas versionadas mudam.
+- **Recorrência fechada em 17/09/2026:** ao coexistirem Vega v7 e v12, os carregadores Java já
+  selecionavam o alvo tipado, mas o empacotador Node ainda elegia a maior revisão apenas por produto
+  e o smoke do container permanecia fixo no manifesto Rigel v9. Assim, uma versão paralela podia não
+  ter suas provas atuais validadas e uma atestação histórica era comparada ao código novo. O
+  empacotador agora agrupa por `productSlug + experienceVersion`, ignora manifesto legado quando há
+  identidade versionada e valida cada candidata vigente. Psique e Têmis possuem regressões com v7 e
+  v12 simultâneas; o smoke empacotado acompanha a atestação Rigel v12 sem reescrever o histórico.
 - **Recorrência fechada localmente em 2026-08-30:** a tarefa #275 recebeu 1.125.976 caracteres
   porque o executor duplicava no prompt o conteúdo integral das provas já congeladas na imagem,
   ultrapassando o teto de 1.048.576 antes do primeiro turno. A alternativa de reler o pacote por

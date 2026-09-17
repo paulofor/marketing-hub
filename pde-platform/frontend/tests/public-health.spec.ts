@@ -36,6 +36,8 @@ type PublicProductContract = {
 };
 
 type PublicCommercialOffer = {
+  productSlug?: string;
+  experienceVersion?: string;
   primaryCta?: string;
   priceBrl?: number;
   checkoutUrl?: string;
@@ -334,12 +336,22 @@ test("health publico renderiza app, javascript e texto comercial", async ({
     ).toContainText(text);
   }
   if (commercialOffer) {
-    const offerCard = page.getByTestId("commercial-offer");
-    await expect(offerCard).toContainText(commercialOffer.primaryCta!);
-    await expect(offerCard).toContainText(formatBrl(commercialOffer.priceBrl!));
-    await expect(
-      offerCard.locator(".assisted-pde-checkout-cta"),
-    ).toHaveAttribute("href", commercialOffer.checkoutUrl!);
+    expect(commercialOffer.productSlug).toBe(contract.slug);
+    expect(commercialOffer.experienceVersion).toBe(
+      diagnostics.experienceVersion,
+    );
+    if (contract.slug === "metodo-musa-7-dias") {
+      await expect(page.getByTestId("commercial-offer")).toHaveCount(0);
+    } else {
+      const offerCard = page.getByTestId("commercial-offer");
+      await expect(offerCard).toContainText(commercialOffer.primaryCta!);
+      await expect(offerCard).toContainText(
+        formatBrl(commercialOffer.priceBrl!),
+      );
+      await expect(
+        offerCard.locator(".assisted-pde-checkout-cta"),
+      ).toHaveAttribute("href", commercialOffer.checkoutUrl!);
+    }
     if (contract.slug === "kit-whatsapp-pronto") {
       const tasting = page.getByTestId("assisted-tasting");
       await expect(tasting).toContainText(

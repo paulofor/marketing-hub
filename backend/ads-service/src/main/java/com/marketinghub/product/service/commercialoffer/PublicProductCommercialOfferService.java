@@ -72,12 +72,26 @@ public class PublicProductCommercialOfferService {
   @Transactional(readOnly = true)
   public PublicProductCommercialOfferResponse getOffer(
       String productSlug, String slotCode, String experienceVersion) {
+    return buildOffer(productSlug, findSaleableSlot(productSlug, slotCode, experienceVersion));
+  }
+
+  /**
+   * Monta a oferta da versão exata para o preflight autenticado, inclusive quando ainda candidata.
+   */
+  @Transactional(readOnly = true)
+  public PublicProductCommercialOfferResponse getValidationOffer(
+      String productSlug, String slotCode, String experienceVersion) {
+    return buildOffer(productSlug, findValidationSlot(productSlug, slotCode, experienceVersion));
+  }
+
+  /** Monta a resposta comercial depois que o seletor de slot já foi validado. */
+  private PublicProductCommercialOfferResponse buildOffer(
+      String productSlug, PdeProductionSlot slot) {
     Product product =
         productRepository
             .findBySlug(normalizeRequired(productSlug, "Produto obrigatório"))
             .orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado."));
-    PdeProductionSlot slot = findSaleableSlot(product, slotCode, experienceVersion);
     Experiment experiment =
         experimentRepository
             .findById(slot.getSourceExperimentId())
@@ -129,6 +143,62 @@ public class PublicProductCommercialOfferService {
         salesPageUrl + "/terms",
         salesPageUrl + "/privacy",
         salesPageUrl + "/refund-policy");
+  }
+
+  /**
+   * Resolve primeiro o produto para manter a seleção pública compatível com o contrato existente.
+   */
+  private PdeProductionSlot findSaleableSlot(
+      String productSlug, String requestedSlotCode, String requestedExperienceVersion) {
+    Product product =
+        productRepository
+            .findBySlug(normalizeRequired(productSlug, "Produto obrigatório"))
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado."));
+    return findSaleableSlot(product, requestedSlotCode, requestedExperienceVersion);
+  }
+
+  /**
+   * Seleciona somente candidata, pronta ou ativa por identidade explícita para impedir mistura no
+   * preflight.
+   */
+  private PdeProductionSlot findValidationSlot(
+      String productSlug, String requestedSlotCode, String requestedExperienceVersion) {
+    Product product =
+        productRepository
+            .findBySlug(normalizeRequired(productSlug, "Produto obrigatório"))
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado."));
+    String slotCode = normalizeOptional(requestedSlotCode);
+    String experienceVersion = normalizeOptional(requestedExperienceVersion);
+    if (!StringUtils.hasText(slotCode) && !StringUtils.hasText(experienceVersion)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Preflight PDE exige slot ou versão explícitos.");
+    }
+    var candidates =
+        slotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()).stream()
+            .filter(slot -> slot.getSourceExperimentId() != null)
+            .filter(
+                slot ->
+                    slot.getStatus() == PdeProductionSlotStatus.CANDIDATE
+                        || slot.getStatus() == PdeProductionSlotStatus.READY
+                        || slot.getStatus() == PdeProductionSlotStatus.ACTIVE)
+            .filter(
+                slot ->
+                    !StringUtils.hasText(slotCode) || slotCode.equalsIgnoreCase(slot.getSlotCode()))
+            .filter(
+                slot ->
+                    !StringUtils.hasText(experienceVersion)
+                        || experienceVersion.equals(slot.getExperienceVersion()))
+            .toList();
+    if (candidates.size() != 1) {
+      throw new ResponseStatusException(
+          candidates.isEmpty() ? HttpStatus.NOT_FOUND : HttpStatus.CONFLICT,
+          candidates.isEmpty()
+              ? "Versão PDE solicitada não encontrada."
+              : "Seletores de versão PDE não identificam uma única candidata.");
+    }
+    return candidates.get(0);
   }
 
   /**

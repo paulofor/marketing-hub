@@ -560,13 +560,13 @@ class CustomerBpmTaskConsumerTest {
 
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
+            "musa-v7-commercial-homologation-v6.json",
             "musa-v7-commercial-homologation-v5.json",
-            "musa-v7-commercial-homologation-v4.json",
             "ATTESTED_REFERENCE",
             "reviewSummary",
-            "pde-platform/backend/src/main/resources/contracts/musa-v7-product-v1.json",
+            "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
             "https://go.pepper.com.br/owm6x")
-        .doesNotContain("musa-v7-commercial-homologation-v3.json");
+        .doesNotContain("musa-v7-commercial-homologation-v4.json");
     org.assertj.core.api.Assertions.assertThat(prompt.length())
         .isLessThan(850_000)
         .isLessThan(CustomerBpmTaskConsumer.promptCharacterLimit());

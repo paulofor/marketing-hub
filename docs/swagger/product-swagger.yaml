@@ -51,6 +51,69 @@ paths:
           description: Produto ou versão solicitada inexistente.
         "409":
           description: Contrato da versão não publicado, inválido ou divergente.
+  /api/internal/pde-validation-contract/v1/products/{productSlug}/experience:
+    get:
+      tags:
+        - Products
+      summary: Retorna o contrato exato da candidata para preflight autenticado.
+      operationId: getPdeValidationExperienceContract
+      parameters:
+        - name: X-PDE-Internal-Token
+          in: header
+          required: true
+          schema: { type: string }
+        - name: productSlug
+          in: path
+          required: true
+          schema: { type: string }
+        - name: slotCode
+          in: query
+          schema: { type: string }
+        - name: experienceVersion
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Rascunho candidato ou snapshot publicado da identidade solicitada.
+          content:
+            application/json:
+              schema: { type: object }
+        "401":
+          description: Credencial interna ausente ou inválida.
+        "409":
+          description: Identidade divergente, contrato ausente ou estado inelegível ao preflight.
+  /api/internal/pde-validation-contract/v1/products/{productSlug}/commercial-offer:
+    get:
+      tags:
+        - Products
+      summary: Retorna a oferta da candidata exata para preflight autenticado.
+      operationId: getPdeValidationCommercialOffer
+      parameters:
+        - name: X-PDE-Internal-Token
+          in: header
+          required: true
+          schema: { type: string }
+        - name: productSlug
+          in: path
+          required: true
+          schema: { type: string }
+        - name: slotCode
+          in: query
+          schema: { type: string }
+        - name: experienceVersion
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Oferta canônica vinculada à candidata solicitada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicProductCommercialOffer"
+        "401":
+          description: Credencial interna ausente ou inválida.
+        "409":
+          description: Identidade divergente ou estado inelegível ao preflight.
   /api/products/value-chain-positions:
     get:
       tags:

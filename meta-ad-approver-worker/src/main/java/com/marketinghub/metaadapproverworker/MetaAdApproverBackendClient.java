@@ -1,5 +1,6 @@
 package com.marketinghub.metaadapproverworker;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -44,8 +45,29 @@ public class MetaAdApproverBackendClient {
 
   /** Registra falha técnica mantendo o gate fechado. */
   public void fail(Long creativeId, RuntimeException ex) {
+    fail(creativeId, Map.of(), ex);
+  }
+
+  /** Registra falha do callback sem descartar o request e a resposta bruta já produzidos. */
+  public void fail(Long creativeId, Map<String, Object> result, RuntimeException ex) {
     log.error("Falha no Aprovador Meta. creativeId={}", creativeId, ex);
-    report(creativeId, Map.of("decision", "FAILED", "error", rootMessage(ex)));
+    Map<String, Object> failure = new LinkedHashMap<>();
+    failure.put("decision", "FAILED");
+    failure.put("error", rootMessage(ex));
+    copyAudit(result, failure, "model");
+    copyAudit(result, failure, "requestJson");
+    copyAudit(result, failure, "responseJson");
+    copyAudit(result, failure, "inputTokens");
+    copyAudit(result, failure, "outputTokens");
+    copyAudit(result, failure, "costUsd");
+    report(creativeId, failure);
+  }
+
+  /**
+   * Copia somente campos de auditoria, sem transformar uma decisão recusada em resultado funcional.
+   */
+  private void copyAudit(Map<String, Object> source, Map<String, Object> target, String field) {
+    if (source != null && source.containsKey(field)) target.put(field, source.get(field));
   }
 
   /** Extrai a causa específica preservada no log com stack trace. */

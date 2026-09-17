@@ -185,8 +185,12 @@ O backend é o coordenador exclusivo da convergência anúncio → landing. Cada
 Aprovador deve declarar um código estável, requisito, critério de aceite e exatamente um responsável:
 `CREATIVE_COPY`, `CREATIVE_MEDIA` ou `LANDING`. O backend persiste ciclo, versão, score, custo,
 evidência e tarefa. Quando o alvo for `LANDING`, o backend cria de forma idempotente uma delegação
-Têmis → Íris, envia o mesmo briefing à fila autônoma oficial de Íris e sincroniza o estado da
-tarefa com o callback do executor. Íris escolhe a reconstrução causal por etapas canônicas; não
+Têmis → Íris somente quando existir plano comercial do mesmo experimento e o subprocesso de landing
+for aplicável, envia o mesmo briefing à fila autônoma oficial de Íris e sincroniza o estado da tarefa
+com o callback do executor. Sucessor sem plano próprio nunca pode herdar silenciosamente o plano da
+versão predecessora: o backend preserva parecer e tarefa, mantém o gate fechado e devolve a correção
+ao processo responsável pela experiência. Falha ao distribuir a correção não pode apagar request,
+response ou decisão já produzidos. Íris escolhe a reconstrução causal por etapas canônicas; não
 recebe autoridade para alterar oferta, preço, checkout, tracking ou publicar. Nenhum executor chama
 outro executor nem decide a próxima etapa.
 

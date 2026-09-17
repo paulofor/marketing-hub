@@ -3,10 +3,13 @@ package com.marketinghub.pde.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
@@ -70,6 +73,33 @@ class CommercialOfferServiceTest {
         CommercialOfferService service = new CommercialOfferService(builder, "http://marketing-hub");
         server.expect(requestTo(
                         "http://marketing-hub/api/products/public/metodo-musa-7-dias/commercial-offer?slotCode=v8"))
+                .andRespond(withSuccess(
+                        """
+                        {"productSlug":"metodo-musa-7-dias","experienceVersion":"musa-pde-entry-v12-primeiro-ajuste-aplicavel","layoutKey":"espelho-antes-de-sair","experimentId":92,"experimentStatus":"PLANNED","acquisitionChannel":"FACEBOOK","pain":"Dúvida no primeiro ajuste","proof":"Primeiro ajuste aplicável","promise":"Seu primeiro ajuste pronto para aplicar","primaryCta":"Ver meu primeiro ajuste MUSA","priceBrl":67,"checkoutUrl":"https://go.pepper.com.br/owm6x","salesPageUrl":"https://v8.clubemusa.com.br","supplierDisplayName":"Digicom Digital","supplierRegistrationNumber":"00.000.000/0001-00","supportEmail":"teste@sandbox.local","termsUrl":"https://v8.clubemusa.com.br/terms","privacyUrl":"https://v8.clubemusa.com.br/privacy","refundPolicyUrl":"https://v8.clubemusa.com.br/refund-policy"}
+                        """,
+                        MediaType.APPLICATION_JSON));
+
+        var offer = service.getOffer("metodo-musa-7-dias", "v8.clubemusa.com.br");
+
+        assertThat(offer.experimentId()).isEqualTo(92L);
+        assertThat(offer.experienceVersion())
+                .isEqualTo("musa-pde-entry-v12-primeiro-ajuste-aplicavel");
+        server.verify();
+    }
+
+    /** Usa o canal autenticado somente quando a candidata ainda não possui oferta pública. */
+    @Test
+    void loadsCandidateOfferThroughAuthenticatedPreflight() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        CommercialOfferService service =
+                new CommercialOfferService(builder, "http://marketing-hub", "internal-test-token");
+        server.expect(requestTo(
+                        "http://marketing-hub/api/products/public/metodo-musa-7-dias/commercial-offer?slotCode=v8"))
+                .andRespond(withStatus(HttpStatusCode.valueOf(412)));
+        server.expect(requestTo(
+                        "http://marketing-hub/api/internal/pde-validation-contract/v1/products/metodo-musa-7-dias/commercial-offer?slotCode=v8"))
+                .andExpect(header("X-PDE-Internal-Token", "internal-test-token"))
                 .andRespond(withSuccess(
                         """
                         {"productSlug":"metodo-musa-7-dias","experienceVersion":"musa-pde-entry-v12-primeiro-ajuste-aplicavel","layoutKey":"espelho-antes-de-sair","experimentId":92,"experimentStatus":"PLANNED","acquisitionChannel":"FACEBOOK","pain":"Dúvida no primeiro ajuste","proof":"Primeiro ajuste aplicável","promise":"Seu primeiro ajuste pronto para aplicar","primaryCta":"Ver meu primeiro ajuste MUSA","priceBrl":67,"checkoutUrl":"https://go.pepper.com.br/owm6x","salesPageUrl":"https://v8.clubemusa.com.br","supplierDisplayName":"Digicom Digital","supplierRegistrationNumber":"00.000.000/0001-00","supportEmail":"teste@sandbox.local","termsUrl":"https://v8.clubemusa.com.br/terms","privacyUrl":"https://v8.clubemusa.com.br/privacy","refundPolicyUrl":"https://v8.clubemusa.com.br/refund-policy"}

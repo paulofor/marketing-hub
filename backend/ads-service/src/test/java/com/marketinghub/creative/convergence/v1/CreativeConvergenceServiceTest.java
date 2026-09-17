@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,6 +32,62 @@ import org.mockito.ArgumentCaptor;
 
 /** Responsabilidade: validar a delegação causal entre Têmis, Íris e a fila BPM de landing. */
 class CreativeConvergenceServiceTest {
+
+  /**
+   * Preserva a decisão e a correção verificável quando um sucessor ainda não possui plano próprio.
+   */
+  @Test
+  void preservesLandingCorrectionWithoutCrossingToPredecessorPlan() {
+    CreativeConvergenceCycleRepository cycles = mock(CreativeConvergenceCycleRepository.class);
+    CreativeConvergenceTaskRepository tasks = mock(CreativeConvergenceTaskRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    CommercialPlanRepository plans = mock(CommercialPlanRepository.class);
+    CommercialPlanVersionService versions = mock(CommercialPlanVersionService.class);
+    when(cycles.findFirstByRootCreativeIdAndStatusOrderByIdDesc(
+            529L, ConvergenceCycleStatus.ACTIVE))
+        .thenReturn(Optional.empty());
+    when(cycles.save(any(CreativeConvergenceCycle.class)))
+        .thenAnswer(
+            invocation -> {
+              CreativeConvergenceCycle cycle = invocation.getArgument(0);
+              if (cycle.getId() == null) cycle.setId(88L);
+              return cycle;
+            });
+    when(tasks.findByCycleIdOrderByIdAsc(88L)).thenReturn(List.of());
+    when(tasks.existsByCycleIdAndFingerprint(eq(88L), any())).thenReturn(false);
+    when(plans.findByExperimentReference(92L)).thenReturn(List.of());
+
+    Experiment experiment = new Experiment();
+    experiment.setId(92L);
+    Creative creative = new Creative();
+    creative.setId(529L);
+    creative.setExperiment(experiment);
+    CreativeAgentReviewResultRequest review = mock(CreativeAgentReviewResultRequest.class);
+    when(review.decision()).thenReturn(CreativeAgentReviewStatus.ADJUST);
+    when(review.costUsd()).thenReturn(BigDecimal.ZERO);
+    when(review.correctionTargets())
+        .thenReturn(
+            List.of(
+                new CreativeAgentReviewResultRequest.ConvergenceCorrectionTarget(
+                    "LANDING",
+                    "DESTINATION_UNAVAILABLE",
+                    "Disponibilizar a experiência comercial exata do experimento.",
+                    "A URL pública responde com oferta, checkout e versão correspondentes.")));
+
+    new CreativeConvergenceService(cycles, tasks, agentTasks, processes, plans, versions)
+        .registerReview(creative, review);
+
+    ArgumentCaptor<CreativeConvergenceTask> task =
+        ArgumentCaptor.forClass(CreativeConvergenceTask.class);
+    verify(tasks).save(task.capture());
+    assertThat(task.getValue().getCreativeId()).isEqualTo(529L);
+    assertThat(task.getValue().getTarget()).isEqualTo(ConvergenceTaskTarget.LANDING);
+    assertThat(task.getValue().getIssueCode()).isEqualTo("DESTINATION_UNAVAILABLE");
+    verify(agentTasks, never()).createOperationalDelegationIfAbsent(any());
+    verify(processes, never())
+        .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(any(), any());
+  }
 
   /** Uma falha da landing deve abrir as etapas regulares de Íris na mesma execução. */
   @Test

@@ -23,6 +23,8 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -31,6 +33,7 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 public class CreativeConvergenceService {
+  private static final Logger log = LoggerFactory.getLogger(CreativeConvergenceService.class);
   private static final int MAX_ITERATIONS = 8;
   private static final int MAX_REPEATED_ISSUES = 2;
   private static final BigDecimal MAX_CYCLE_COST_USD = new BigDecimal("5.00");
@@ -130,7 +133,10 @@ public class CreativeConvergenceService {
     cycleRepository.save(cycle);
   }
 
-  /** Delega a causa da landing para as etapas canônicas de Íris sem permitir publicação. */
+  /**
+   * Delega a causa da landing para as etapas canônicas de Íris quando há plano exato, sem perder o
+   * parecer quando o sucessor ainda não possui plano comercial próprio.
+   */
   private void dispatchLandingCorrection(
       Creative creative,
       CreativeConvergenceCycle cycle,
@@ -139,19 +145,32 @@ public class CreativeConvergenceService {
     CommercialPlan plan =
         commercialPlanRepository.findByExperimentReference(experimentId).stream()
             .findFirst()
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        "Correção de comunicação exige plano comercial vinculado ao experimento."));
+            .orElse(null);
+    if (plan == null) {
+      log.warn(
+          "Parecer de Têmis preservado sem delegação automática de landing; plano comercial exato ausente. experimentId={} creativeId={} convergenceCycleId={} issueCode={}",
+          experimentId,
+          creative.getId(),
+          cycle.getId(),
+          target.issueCode());
+      return;
+    }
     int planVersion = commercialPlanVersionService.current(plan.getId()).versionNumber();
     BusinessProcessDefinition process =
         processRepository
             .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
                 LANDING_PROCESS_CODE, "PUBLISHED")
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        "O subprocesso publicado de landing não está disponível para Íris."));
+            .orElse(null);
+    if (process == null) {
+      log.warn(
+          "Parecer de Têmis preservado sem delegação automática de landing; subprocesso publicado ausente. experimentId={} creativeId={} convergenceCycleId={} commercialPlanId={} issueCode={}",
+          experimentId,
+          creative.getId(),
+          cycle.getId(),
+          plan.getId(),
+          target.issueCode());
+      return;
+    }
     String sourceReference =
         "commercial-plan:" + plan.getId() + "@v" + planVersion + ":convergence:" + cycle.getId();
     String brief = correctionBrief(target);

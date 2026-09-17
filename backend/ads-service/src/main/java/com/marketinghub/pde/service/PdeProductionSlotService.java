@@ -338,6 +338,53 @@ public class PdeProductionSlotService {
     return Optional.of(json.trim());
   }
 
+  /**
+   * Retorna ao preflight autenticado o contrato exato da candidata sem antecipar sua publicação.
+   */
+  public String findValidationExperienceJson(
+      String productSlug, String slotCode, String experienceVersion) {
+    String resolvedProductSlug = resolveProductSlug(productSlug);
+    if (!StringUtils.hasText(slotCode) && !StringUtils.hasText(experienceVersion)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Preflight PDE exige slot ou versão explícitos");
+    }
+    Optional<PdeProductionSlot> selected;
+    if (StringUtils.hasText(slotCode)) {
+      selected =
+          repository.findByProductSlugAndSlotCode(
+              resolvedProductSlug, slotCode.trim().toLowerCase(Locale.ROOT));
+    } else {
+      selected =
+          repository.findFirstByProductSlugAndExperienceVersionOrderByPublishedAtDesc(
+              resolvedProductSlug, experienceVersion.trim());
+    }
+    PdeProductionSlot slot =
+        selected.orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Versão PDE solicitada não encontrada"));
+    if (StringUtils.hasText(experienceVersion)
+        && !experienceVersion.trim().equals(slot.getExperienceVersion())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Seletores de versão PDE divergentes");
+    }
+    if (slot.getStatus() != PdeProductionSlotStatus.CANDIDATE
+        && slot.getStatus() != PdeProductionSlotStatus.READY
+        && slot.getStatus() != PdeProductionSlotStatus.ACTIVE) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Versão PDE não está disponível para preflight");
+    }
+    String json =
+        StringUtils.hasText(slot.getPublishedExperienceJson())
+            ? slot.getPublishedExperienceJson()
+            : slot.getDraftExperienceJson();
+    if (!StringUtils.hasText(json)) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Contrato da versão PDE não está disponível para preflight");
+    }
+    validatePublishedContractIdentity(slot, json);
+    return json.trim();
+  }
+
   /** Confere a identidade do snapshot persistido sem reescrever conteúdo comercial. */
   private void validatePublishedContractIdentity(PdeProductionSlot slot, String json) {
     JsonNode contract;

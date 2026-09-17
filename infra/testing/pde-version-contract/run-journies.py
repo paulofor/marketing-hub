@@ -25,7 +25,9 @@ VERSIONS = {
     "v5": "musa-pde-entry-v5-video-explicativo",
     "v6": "musa-pde-entry-v6-video-motivacional",
     "v7": "musa-pde-entry-v7-espelho-antes-de-sair",
+    "v8": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
 }
+VALIDATION_TOKEN = "local-pde-candidate-validation-token"
 
 
 def wait_ready(url, process):
@@ -136,6 +138,27 @@ def main():
             if not local_version:
                 code = query.get("slotCode", [None])[0]
                 experience = query.get("experienceVersion", [None])[0]
+                internal_experience = parsed.path == (
+                    f"/api/internal/pde-validation-contract/v1/products/{SLUG}/experience")
+                internal_offer = parsed.path == (
+                    f"/api/internal/pde-validation-contract/v1/products/{SLUG}/commercial-offer")
+                if internal_experience or internal_offer:
+                    if self.headers.get("X-PDE-Internal-Token") != VALIDATION_TOKEN:
+                        self.send(403, b'{"error":"token invalido"}')
+                        return
+                    if code != "v8" or (experience and experience != VERSIONS["v8"]):
+                        self.send(404, b'{"error":"candidata inexistente"}')
+                        return
+                    public_path = (f"/api/products/public/{SLUG}/commercial-offer"
+                                   if internal_offer else f"/api/products/public/{SLUG}/pde-experience")
+                    self.forward_fixture(f"{public_path}?slotCode=v8")
+                    return
+                public_experience = parsed.path == f"/api/products/public/{SLUG}/pde-experience"
+                public_offer = parsed.path == f"/api/products/public/{SLUG}/commercial-offer"
+                backend_alias = parsed.path == f"/api/pde/products/{SLUG}"
+                if not public_experience and not public_offer and not backend_alias:
+                    self.send(404, b'{"error":"rota inexistente"}')
+                    return
                 if code == "unpublished-qa":
                     self.send(409, b'{"error":"Contrato da versao PDE nao publicado"}')
                     return
@@ -143,12 +166,15 @@ def main():
                 if code not in VERSIONS:
                     self.send(404, b'{"error":"Versao inexistente"}')
                     return
-                if code == "v5":
+                if code == "v8":
+                    self.send(409, b'{"error":"Candidata ainda nao promovida"}')
+                    return
+                if code == "v5" and (public_experience or backend_alias):
                     self.send(200, json.dumps(snapshot, ensure_ascii=False).encode())
                     return
-                fixture_url = f"http://127.0.0.1:58181/api/products/public/{SLUG}/pde-experience?slotCode={code}"
-                with urllib.request.urlopen(fixture_url, timeout=5) as reply:
-                    self.send(200, reply.read())
+                public_path = (f"/api/products/public/{SLUG}/commercial-offer"
+                               if public_offer else f"/api/products/public/{SLUG}/pde-experience")
+                self.forward_fixture(f"{public_path}?slotCode={code}")
                 return
             if parsed.path == "/healthz":
                 self.send(200, b'{"status":"UP"}')
@@ -164,6 +190,11 @@ def main():
                 return
             self.send(200, file.read_bytes(), mimetypes.guess_type(file)[0] or "application/octet-stream")
 
+        def forward_fixture(self, path):
+            """Encaminha contratos determinísticos ao servidor-fixture compartilhado."""
+            with urllib.request.urlopen(f"http://127.0.0.1:58181{path}", timeout=5) as reply:
+                self.send(reply.status, reply.read(), reply.getheader("Content-Type", "application/json"))
+
         def send(self, status, data, content_type="application/json; charset=utf-8"):
             self.send_response(status)
             self.send_header("Content-Type", content_type)
@@ -175,7 +206,7 @@ def main():
     with contextlib.ExitStack() as stack:
         fixture = stack.enter_context(process(["node", str(FRONTEND / "tests/marketing-hub-contract-server.mjs")], env, evidence / "hub-fixture.log"))
         wait_ready(f"http://127.0.0.1:58181/api/products/public/{SLUG}/pde-experience", fixture)
-        for port, version in [(58182, None), (58205, "v5"), (58206, "v6"), (58207, "v7")]:
+        for port, version in [(58182, None), (58205, "v5"), (58206, "v6"), (58207, "v7"), (58208, "v8")]:
             server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
             server.version = version
             servers.append(server)
@@ -187,6 +218,7 @@ def main():
             "PDE_ACCESS_STORAGE_PATH": str(evidence / "access.json"),
             "PDE_AI_STORAGE_PATH": str(evidence / "ai.json"),
             "PDE_MIRA_PRIVATE_STORAGE_PATH": str(evidence / "mira.json"),
+            "PDE_INTERNAL_API_TOKEN": VALIDATION_TOKEN,
             "LOGGING_FILE_NAME": str(evidence / "pde.log"),
             "PDE_PEPPER_API_TOKEN": "", "PDE_PEPPER_API_BASE_URL": "http://127.0.0.1:58182",
             "PDE_SMTP_HOST": "sandbox-mail", "PDE_SMTP_PORT": "1025",
@@ -201,9 +233,21 @@ def main():
             options = {"PDE_PUBLIC_HEALTH_URL": base_url, "PDE_EXPECTED_EXPERIENCE_VERSION": experience}
             run(f"health-{version}", ["npm", "run", "test:public-health", "--", "--workers=1"], options, FRONTEND)
             run(f"diagnostic-{version}", ["npm", "run", "test:public-diagnostic-smoke", "--", "--workers=1"], options, FRONTEND)
-            run(f"consistency-{version}", ["bash", "scripts/check-musa-pde-public-consistency.sh"], {
-                "BACKEND_PUBLIC_BASE_URL": "http://127.0.0.1:58182", "PDE_PUBLIC_BASE_URL": base_url,
-                "EXPECTED_SLOT_CODE": version, "EXPECTED_EXPERIENCE_VERSION": experience})
+            if version != "v8":
+                run(f"consistency-{version}", ["bash", "scripts/check-musa-pde-public-consistency.sh"], {
+                    "BACKEND_PUBLIC_BASE_URL": "http://127.0.0.1:58182", "PDE_PUBLIC_BASE_URL": base_url,
+                    "EXPECTED_SLOT_CODE": version, "EXPECTED_EXPERIENCE_VERSION": experience})
+        with urllib.request.urlopen(
+                f"http://127.0.0.1:58096/api/pde/products/{SLUG}?slotCode=v8", timeout=5) as reply:
+            candidate = json.loads(reply.read())
+            assert candidate["experienceVersion"] == VERSIONS["v8"]
+        with urllib.request.urlopen(
+                f"http://127.0.0.1:58208/api/pde/products/{SLUG}/commercial-offer",
+                timeout=5) as reply:
+            offer = json.loads(reply.read())
+            assert offer["experienceVersion"] == VERSIONS["v8"]
+            assert offer["primaryCta"] and offer["priceBrl"] == 67
+        print("OK candidata v8 usa preflight autenticado sem snapshot publico", flush=True)
         for code, status in [("unknown-qa", 404), ("unpublished-qa", 409)]:
             try:
                 urllib.request.urlopen(f"http://127.0.0.1:58096/api/pde/products/{SLUG}?slotCode={code}", timeout=5)
@@ -213,7 +257,7 @@ def main():
                 raise AssertionError(f"A recusa {code} virou sucesso")
         print("OK recusas HTTP 404/409 preservadas; nenhuma IA paga executada", flush=True)
         records = json.loads((evidence / "ai.json").read_text())
-        assert len(records) == 3
+        assert len(records) == 4
         assert all(record["productSlug"] == SLUG for record in records.values())
         assert all(not record.get("costUsd") for record in records.values())
         assert not (evidence / "access.json").exists(), "O smoke criou acesso comercial"

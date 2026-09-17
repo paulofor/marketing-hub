@@ -196,6 +196,14 @@ test("v5, v6, v7 e v12 usam backend PDE local real sem misturar contratos versio
   ).toBeVisible();
   await expect(
     page.getByText(
+      /Usamos apenas os dados necessários para entregar, retomar e apoiar seu ajuste/,
+    ),
+  ).toBeVisible();
+  const privacyDetails = page.locator(".musa-privacy-details");
+  await expect(privacyDetails).toHaveCount(1);
+  await privacyDetails.locator("summary").click();
+  await expect(
+    page.getByText(
       /As sete missões não pedem foto nem texto livre e não enviam suas respostas/,
     ),
   ).toBeVisible();
@@ -299,6 +307,44 @@ test("v12 entrega o primeiro ajuste gratuito sem IA antes do checkout", async ({
     { headers: internalHeaders },
   );
   expect(await pendingResponse.json()).toEqual([]);
+});
+
+test("v12 mostra CTA, condições e jornada opcional antes do vídeo", async ({
+  page,
+}) => {
+  await page.goto(
+    versionedFrontendUrl(
+      v12ExperienceVersion,
+      "/?utm_source=local&utm_campaign=v12_first_fold_conversion",
+    ),
+  );
+
+  const cta = page.getByRole("button", {
+    name: "Começar meu ajuste gratuito",
+  });
+  await expect(cta).toBeVisible();
+  await expect(
+    page.getByText("4 escolhas rápidas, sem compra de roupa."),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Acesso por 90 dias, sem assinatura ou renovação/i),
+  ).toBeVisible();
+  const ctaBox = await cta.boundingBox();
+  expect(ctaBox).not.toBeNull();
+  if (!ctaBox) {
+    throw new Error(
+      "O CTA inicial da Vega v12 precisa ocupar a primeira dobra.",
+    );
+  }
+  expect(ctaBox.y + ctaBox.height).toBeLessThanOrEqual(
+    await page.evaluate(() => window.innerHeight),
+  );
+
+  await cta.click();
+  await expect(
+    page.getByRole("region", { name: "Primeiro ajuste MUSA" }),
+  ).toBeInViewport();
+  await expect(page.locator(".musa-privacy-details")).toHaveCount(1);
 });
 
 test("v7 entrega degustação local e acesso único de 90 dias sem fila de IA", async ({
@@ -794,6 +840,153 @@ test("v7 reconcilia compra e reembolso Pepper sem duplicar venda líquida", asyn
   expect(summary.deliveryCompleted).toBe(0);
   expect(summary.refundsConfirmed).toBe(0);
   expect(summary.netSalesApproved).toBe(0);
+  expect(summary.humanSessions).toBe(0);
+  expect(summary.trafficQualityBreakdown).toEqual([
+    expect.objectContaining({
+      trafficQuality: "INTERNAL_QA",
+      events: summary.rawTotalEvents,
+    }),
+  ]);
+});
+
+test("v12 reconcilia acesso de 90 dias, entrega e reembolso sem contaminar métricas humanas", async ({
+  request,
+}, testInfo) => {
+  const transactionId = `tx-musa-v12-${testInfo.project.name}-${Date.now()}`;
+  const email = `teste+pepper-v12-${projectEmailKey(testInfo.project.name)}-${Date.now()}@sandbox.local`;
+  const configurePaid = await request.post(
+    `${contractServerBaseUrl}/test/pepper/transactions/${transactionId}`,
+    {
+      data: {
+        status: "paid",
+        email,
+        experienceVersion: v12ExperienceVersion,
+      },
+    },
+  );
+  expect(configurePaid.ok()).toBeTruthy();
+  expect((await configurePaid.json()).utm_content).toContain(
+    v12ExperienceVersion,
+  );
+
+  const paidWebhook = await request.post(
+    `${backendBaseUrl}/api/pde/access/pepper/webhook`,
+    { data: { productSlug, transactionId, status: "paid" } },
+  );
+  expect(paidWebhook.status()).toBe(201);
+  const paidAccess = await paidWebhook.json();
+  expect(paidAccess.source).toBe("PEPPER");
+
+  const activeWorkspaceResponse = await request.get(
+    `${backendBaseUrl}/api/pde/access/workspace`,
+    { headers: accessHeaders(paidAccess.token) },
+  );
+  expect(activeWorkspaceResponse.ok()).toBeTruthy();
+  const activeWorkspace = await activeWorkspaceResponse.json();
+  expect(activeWorkspace.subscriptionStatus).toBe("ACTIVE");
+  expect(activeWorkspace.experienceVersion).toBe(v12ExperienceVersion);
+  expect(activeWorkspace.product.missions).toHaveLength(7);
+  expect(activeWorkspace.product.supportMaterials).toHaveLength(3);
+  const remainingDays =
+    (Date.parse(activeWorkspace.accessExpiresAt) - Date.now()) / 86_400_000;
+  expect(remainingDays).toBeGreaterThan(89);
+  expect(remainingDays).toBeLessThanOrEqual(90);
+
+  const paidRetry = await request.post(
+    `${backendBaseUrl}/api/pde/access/pepper/webhook`,
+    { data: { productSlug, transactionId, status: "paid" } },
+  );
+  expect(paidRetry.status()).toBe(201);
+  expect((await paidRetry.json()).token).toBe(paidAccess.token);
+
+  for (const material of activeWorkspace.product.supportMaterials) {
+    const unauthenticated = await request.get(
+      `${frontendBaseUrl}${material.url}`,
+    );
+    expect(unauthenticated.status()).toBe(403);
+    const authenticated = await request.get(
+      `${frontendBaseUrl}${material.url}`,
+      {
+        headers: accessHeaders(paidAccess.token),
+      },
+    );
+    expect(authenticated.ok()).toBeTruthy();
+  }
+
+  for (const mission of activeWorkspace.product.missions) {
+    const answers = Object.fromEntries(
+      mission.interaction.fields.map((field: { key: string }) => [
+        field.key,
+        "Manter como está por enquanto",
+      ]),
+    );
+    const guidance = await request.post(
+      `${backendBaseUrl}/api/pde/access/missions/${mission.id}/ai-guidance`,
+      {
+        headers: accessHeaders(paidAccess.token),
+        data: {
+          guidanceType: mission.interaction.guidanceType,
+          answers,
+          experienceVersion: v12ExperienceVersion,
+        },
+      },
+    );
+    expect(guidance.ok()).toBeTruthy();
+    expect((await guidance.json()).status).toBe("COMPLETED");
+    const completed = await request.post(
+      `${backendBaseUrl}/api/pde/access/missions/${mission.id}/complete`,
+      { headers: accessHeaders(paidAccess.token) },
+    );
+    expect(completed.ok()).toBeTruthy();
+  }
+
+  const resumedWorkspaceResponse = await request.get(
+    `${backendBaseUrl}/api/pde/access/workspace`,
+    { headers: accessHeaders(paidAccess.token) },
+  );
+  expect(resumedWorkspaceResponse.ok()).toBeTruthy();
+  const resumedWorkspace = await resumedWorkspaceResponse.json();
+  expect(resumedWorkspace.completedMissions).toBe(7);
+  expect(resumedWorkspace.totalMissions).toBe(7);
+  expect(resumedWorkspace.progressPercent).toBe(100);
+  expect(resumedWorkspace.completedMissionIds).toHaveLength(7);
+
+  const configureRefund = await request.post(
+    `${contractServerBaseUrl}/test/pepper/transactions/${transactionId}`,
+    { data: { status: "refunded", email } },
+  );
+  expect(configureRefund.ok()).toBeTruthy();
+  const refund = await request.post(
+    `${backendBaseUrl}/api/pde/access/pepper/webhook`,
+    { data: { productSlug, transactionId, status: "refunded" } },
+  );
+  expect(refund.status()).toBe(201);
+  expect(await refund.json()).toMatchObject({
+    newlyRecorded: true,
+    accessRevoked: true,
+  });
+  const refundRetry = await request.post(
+    `${backendBaseUrl}/api/pde/access/pepper/webhook`,
+    { data: { productSlug, transactionId, status: "refunded" } },
+  );
+  expect(await refundRetry.json()).toMatchObject({
+    newlyRecorded: false,
+    accessRevoked: false,
+  });
+  const revokedMaterial = await request.get(
+    `${backendBaseUrl}/api/pde/access/materials/authorize`,
+    { headers: accessHeaders(paidAccess.token) },
+  );
+  expect(revokedMaterial.status()).toBe(403);
+
+  const summaryResponse = await request.get(
+    `${backendBaseUrl}/api/pde/access/analytics/${productSlug}/summary?includeNonHumanTraffic=true&experienceVersion=${encodeURIComponent(v12ExperienceVersion)}`,
+    { headers: internalHeaders },
+  );
+  expect(summaryResponse.ok()).toBeTruthy();
+  const summary = await summaryResponse.json();
+  expect(summary.totalEvents).toBe(0);
+  expect(summary.rawTotalEvents).toBeGreaterThan(0);
   expect(summary.humanSessions).toBe(0);
   expect(summary.trafficQualityBreakdown).toEqual([
     expect.objectContaining({

@@ -553,7 +553,13 @@ function resolveDeviceType() {
   return "desktop";
 }
 
-function MusaV7PrivacyNotice({ compact = false }: { compact?: boolean }) {
+function MusaV7PrivacyNotice({
+  compact = false,
+  collapsible = false,
+}: {
+  compact?: boolean;
+  collapsible?: boolean;
+}) {
   return (
     <section
       className={`musa-privacy-notice${compact ? " compact" : ""}`}
@@ -562,14 +568,34 @@ function MusaV7PrivacyNotice({ compact = false }: { compact?: boolean }) {
       <div>
         <p className="section-kicker">Privacidade e autonomia</p>
         <h2>Você controla os dados da sua jornada.</h2>
-        <p>
-          Usamos seu e-mail, escolhas categoriais, progresso, estado do acesso e
-          eventos técnicos somente para entregar, retomar, apoiar e medir o
-          Método MUSA. As sete missões não pedem foto nem texto livre e não
-          enviam suas respostas para OpenAI ou gerador de vídeo. Se você
-          procurar suporte, poderá escrever voluntariamente uma mensagem breve,
-          usada somente para atender seu pedido.
-        </p>
+        {collapsible ? (
+          <>
+            <p>
+              Usamos apenas os dados necessários para entregar, retomar e apoiar
+              seu ajuste. As missões não pedem foto, voz ou texto livre.
+            </p>
+            <details className="musa-privacy-details">
+              <summary>Ver detalhes sobre os dados e seus direitos</summary>
+              <p>
+                Usamos seu e-mail, escolhas categoriais, progresso, estado do
+                acesso e eventos técnicos somente para entregar, retomar, apoiar
+                e medir o Método MUSA. As sete missões não pedem foto nem texto
+                livre e não enviam suas respostas para OpenAI ou gerador de
+                vídeo. Se você procurar suporte, poderá escrever voluntariamente
+                uma mensagem breve, usada somente para atender seu pedido.
+              </p>
+            </details>
+          </>
+        ) : (
+          <p>
+            Usamos seu e-mail, escolhas categoriais, progresso, estado do acesso
+            e eventos técnicos somente para entregar, retomar, apoiar e medir o
+            Método MUSA. As sete missões não pedem foto nem texto livre e não
+            enviam suas respostas para OpenAI ou gerador de vídeo. Se você
+            procurar suporte, poderá escrever voluntariamente uma mensagem
+            breve, usada somente para atender seu pedido.
+          </p>
+        )}
       </div>
       <ul>
         <li>
@@ -589,6 +615,8 @@ function MusaV7PrivacyNotice({ compact = false }: { compact?: boolean }) {
       </ul>
       <a
         href={`mailto:${MUSA_PRIVACY_CONTACT_EMAIL}?subject=Direitos%20de%20dados%20MUSA`}
+        target="_blank"
+        rel="noreferrer"
       >
         Solicitar acesso, correção ou exclusão
       </a>
@@ -2696,6 +2724,32 @@ function App() {
             )}
           </div>
 
+          {isMusaV7 && (
+            <section
+              className="public-first-fold-conversion"
+              aria-label="Como começar gratuitamente"
+            >
+              <button
+                className="primary-button public-first-fold-cta"
+                type="button"
+                onClick={() =>
+                  document
+                    .querySelector(".public-diagnostic-form")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                }
+              >
+                <Sparkles size={18} aria-hidden="true" />
+                Começar meu ajuste gratuito
+              </button>
+              <p>
+                <strong>4 escolhas rápidas, sem compra de roupa.</strong>{" "}
+                Primeiro ajuste grátis. Continuação de 7 dias por R$ 67,
+                pagamento único. Acesso por 90 dias, sem assinatura ou
+                renovação.
+              </p>
+            </section>
+          )}
+
           {showPublicDiagnosticVideoHero && (
             <section
               className={`public-video-hero ${showMotivationalTimelineVideo ? "public-video-timeline" : ""}`}
@@ -3159,7 +3213,7 @@ function App() {
             </section>
           )}
         </section>
-        {isMusaV7 && <MusaV7PrivacyNotice />}
+        {isMusaV7 && <MusaV7PrivacyNotice collapsible />}
       </main>
     );
   }

@@ -636,7 +636,7 @@ public class CustomerBpmTaskConsumer {
           "versionedCommercialHomologationEvidence",
           pdeExperienceEvidenceLoader.loadCommercialHomologationEvidence(task.get("taskTarget")));
     }
-    String agentPromptPart = behavioralCoreV4();
+    String agentPromptPart = behavioralCore(task);
     String activityPromptPart =
         (CatalogPromptInput.migrated(task)
                 ? CatalogPromptInput.text(task, schemaResourceFor(task))
@@ -652,6 +652,17 @@ public class CustomerBpmTaskConsumer {
   /** Lê a constituição comportamental, sensorial e estética das atividades atuais de Psique. */
   private String behavioralCoreV4() throws IOException {
     return read("prompts/psique/behavioral-core-v4.md");
+  }
+
+  /** Acrescenta o contrato auditável quando a tarefa entrega cartões de pesquisa para Psique. */
+  private String behavioralCore(Map<String, Object> task) throws IOException {
+    String core = behavioralCoreV4();
+    if (task.get("researchIntelligence") == null) {
+      return core;
+    }
+    return core
+        + "\n\n"
+        + read("prompts/psique/research-intelligence-usage-v1.md");
   }
 
   /** Seleciona o prompt versionado específico da entidade avaliada. */

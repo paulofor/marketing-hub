@@ -9,6 +9,7 @@ disk_lock_file="${AGENT_VPS_DISK_LOCK_FILE:-/var/lock/marketinghub-agent-vps-dis
 disk_rollback_versions="${AGENT_VPS_DISK_ROLLBACK_VERSIONS:-2}"
 disk_min_rollback_versions="${AGENT_VPS_DISK_MIN_ROLLBACK_VERSIONS:-1}"
 disk_protected_tag="${AGENT_VPS_DISK_PROTECTED_TAG:-}"
+disk_legacy_intervention_min_age_seconds="${AGENT_VPS_DISK_LEGACY_INTERVENTION_MIN_AGE_SECONDS:-86400}"
 
 if [[ "$#" -gt 1 || ! "$disk_mode" =~ ^(check|reclaim|retention)$ ]]; then
   echo "Uso: $0 [check|reclaim|retention]" >&2
@@ -20,6 +21,10 @@ for disk_number in "$disk_min_free_mb" "$disk_timeout_seconds"; do
     exit 2
   fi
 done
+if ! [[ "$disk_legacy_intervention_min_age_seconds" =~ ^[0-9]{1,10}$ ]]; then
+  echo "A idade mínima de imagens legadas deve ser um inteiro não negativo de até dez dígitos." >&2
+  exit 2
+fi
 if ! [[ "$disk_rollback_versions" =~ ^[1-9][0-9]?$ ]] \
   || ! [[ "$disk_min_rollback_versions" =~ ^[1-9][0-9]?$ ]] \
   || ((10#$disk_min_rollback_versions > 10#$disk_rollback_versions)); then
@@ -102,6 +107,24 @@ is_managed_repository() {
       return 1
       ;;
   esac
+}
+
+# Reconhece somente referências criadas por intervenções/homologações antigas no host compartilhado.
+is_legacy_intervention_reference() {
+  local image_repository="$1" image_tag="$2"
+  case "$image_repository" in
+    aihubsbx/* | marketinghub-intervention-* | sandbox-docker:*/*)
+      return 0
+      ;;
+  esac
+  if is_managed_repository "$image_repository"; then
+    case "$image_tag" in
+      vega* | mira* | task[0-9]* | rollback-task[0-9]*)
+        return 0
+        ;;
+    esac
+  fi
+  return 1
 }
 
 # Normaliza um instante em segundos e nanos para ordenar imagens sem perder precisão.
@@ -287,6 +310,155 @@ reclaim_managed_history() {
   fi
 }
 
+# Migra somente referências temporárias legadas, preservando ativo e rollback oficial por SHA.
+reclaim_legacy_interventions() {
+  local image_listing container_listing container_id active_image_id image_row
+  local image_repository image_tag image_id image_reference image_recency image_recency_normalized
+  local image_recency_epoch image_recency_nanos image_declared_created image_last_tag_time image_created
+  local current_epoch cutoff_epoch candidate canonical_repository
+  local removal_failures=0
+  local -a image_rows=() container_ids=() active_image_ids=() candidates=() sorted_candidates=()
+  local -A repository_active_sha=() repository_rollback_sha_ids=()
+
+  if ! image_listing="$(timeout --foreground --kill-after=5s "${disk_timeout_seconds}s" \
+    docker image ls --all --no-trunc --format '{{.Repository}}|{{.Tag}}|{{.ID}}')"; then
+    echo "Disco do VPS: não foi possível inventariar intervenções legadas; deploy bloqueado." >&2
+    return 1
+  fi
+  if ! container_listing="$(timeout --foreground --kill-after=5s "${disk_timeout_seconds}s" \
+    docker container ls --all --no-trunc --quiet)"; then
+    echo "Disco do VPS: não foi possível inventariar containers para intervenções legadas; deploy bloqueado." >&2
+    return 1
+  fi
+  if [[ -n "$image_listing" ]]; then
+    mapfile -t image_rows <<<"$image_listing"
+  fi
+  if [[ -n "$container_listing" ]]; then
+    mapfile -t container_ids <<<"$container_listing"
+  fi
+  for container_id in "${container_ids[@]}"; do
+    if ! [[ "$container_id" =~ ^[0-9a-f]{12,64}$ ]] \
+      || ! active_image_id="$(timeout --foreground --kill-after=5s "${disk_timeout_seconds}s" \
+        docker container inspect --format '{{.Image}}' "$container_id")" \
+      || ! [[ "$active_image_id" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+      echo "Disco do VPS: identidade de container inválida ao revisar intervenções; deploy bloqueado." >&2
+      return 1
+    fi
+    active_image_ids+=("$active_image_id")
+  done
+
+  # Um alias legado no repositório oficial só é elegível quando ativo e rollback SHA já existem.
+  for image_row in "${image_rows[@]}"; do
+    IFS='|' read -r image_repository image_tag image_id <<<"$image_row"
+    if ! is_managed_repository "$image_repository" \
+      || ! [[ "$image_tag" =~ ^[0-9a-f]{40}$ && "$image_id" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+      continue
+    fi
+    active_image_id=""
+    for candidate in "${active_image_ids[@]}"; do
+      if [[ "$candidate" = "$image_id" ]]; then
+        active_image_id="$candidate"
+        break
+      fi
+    done
+    if [[ -n "$active_image_id" ]]; then
+      repository_active_sha["$image_repository"]=true
+    else
+      repository_rollback_sha_ids["${image_repository}|${image_id}"]=true
+    fi
+  done
+
+  current_epoch="$(date +%s)"
+  cutoff_epoch=$((current_epoch - disk_legacy_intervention_min_age_seconds))
+  for image_row in "${image_rows[@]}"; do
+    IFS='|' read -r image_repository image_tag image_id <<<"$image_row"
+    if ! [[ "$image_id" =~ ^sha256:[0-9a-f]{64}$ ]] \
+      || ! is_legacy_intervention_reference "$image_repository" "$image_tag"; then
+      continue
+    fi
+    for candidate in "${active_image_ids[@]}"; do
+      if [[ "$candidate" = "$image_id" ]]; then
+        printf 'Disco do VPS: preservando intervenção ainda referenciada por container %s:%s.\n' \
+          "$image_repository" "$image_tag"
+        continue 2
+      fi
+    done
+    if is_managed_repository "$image_repository"; then
+      if [[ "${repository_active_sha["$image_repository"]:-}" != true ]]; then
+        printf 'Disco do VPS: preservando legado %s:%s sem publicação SHA ativa.\n' \
+          "$image_repository" "$image_tag"
+        continue
+      fi
+      canonical_repository=false
+      for candidate in "${!repository_rollback_sha_ids[@]}"; do
+        if [[ "$candidate" = "${image_repository}|"* ]]; then
+          canonical_repository=true
+          break
+        fi
+      done
+      if [[ "$canonical_repository" != true ]]; then
+        printf 'Disco do VPS: preservando legado %s:%s sem rollback SHA oficial.\n' \
+          "$image_repository" "$image_tag"
+        continue
+      fi
+    fi
+    image_reference="${image_repository}:${image_tag}"
+    # Para aliases de intervenção, a chegada da tag ao host é mais segura que a criação da imagem.
+    image_last_tag_time="$(timeout --foreground --kill-after=5s "${disk_timeout_seconds}s" \
+      docker image inspect --format '{{.Metadata.LastTagTime}}' "$image_reference" 2>/dev/null || true)"
+    image_recency_normalized="$(normalize_image_recency "$image_last_tag_time" || true)"
+    if [[ -z "$image_recency_normalized" ]]; then
+      image_declared_created="$(timeout --foreground --kill-after=5s "${disk_timeout_seconds}s" \
+        docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.created" }}' \
+        "$image_reference" 2>/dev/null || true)"
+      image_recency="$image_declared_created"
+      image_recency_normalized="$(normalize_image_recency "$image_recency" || true)"
+    fi
+    if [[ -z "$image_recency_normalized" ]]; then
+      image_created="$(timeout --foreground --kill-after=5s "${disk_timeout_seconds}s" \
+        docker image inspect --format '{{.Created}}' "$image_reference" 2>/dev/null || true)"
+      image_recency_normalized="$(normalize_image_recency "$image_created" || true)"
+    fi
+    if [[ -z "$image_recency_normalized" ]]; then
+      printf 'Disco do VPS: data inválida para intervenção %s; referência preservada.\n' \
+        "$image_reference" >&2
+      continue
+    fi
+    IFS='|' read -r image_recency_epoch image_recency_nanos <<<"$image_recency_normalized"
+    if ((image_recency_epoch > cutoff_epoch)); then
+      printf 'Disco do VPS: preservando intervenção recente %s.\n' "$image_reference"
+      continue
+    fi
+    candidates+=("${image_recency_nanos}|${image_reference}")
+  done
+  if ((${#candidates[@]} == 0)); then
+    echo "Disco do VPS: nenhuma intervenção legada inativa e elegível para coleta."
+    return 0
+  fi
+  mapfile -t sorted_candidates < <(
+    printf '%s\n' "${candidates[@]}" | LC_ALL=C sort -t '|' -k1,1n -k2,2
+  )
+  for image_row in "${sorted_candidates[@]}"; do
+    image_reference="${image_row#*|}"
+    printf 'Disco do VPS: removendo referência legada inativa %s.\n' "$image_reference"
+    if ! timeout --foreground --kill-after=5s "${disk_timeout_seconds}s" \
+      docker image rm "$image_reference"; then
+      printf 'Disco do VPS: não foi possível remover legado %s sem força; referência preservada.\n' \
+        "$image_reference" >&2
+      removal_failures=$((removal_failures + 1))
+      continue
+    fi
+    read_disk_capacity
+    if [[ "$disk_ready" = true ]]; then
+      echo "Disco do VPS: READY após coleta de intervenções legadas inativas."
+      return 0
+    fi
+  done
+  if ((removal_failures > 0)); then
+    return 1
+  fi
+}
+
 read_disk_capacity
 if [[ "$disk_mode" = retention ]]; then
   if ! reclaim_managed_history "política preventiva" 0 "$disk_rollback_versions" true; then
@@ -362,6 +534,12 @@ if ((10#$disk_min_rollback_versions < 10#$disk_rollback_versions)); then
   if [[ "$disk_ready" = true ]]; then
     exit 0
   fi
+fi
+if ! reclaim_legacy_interventions; then
+  exit 1
+fi
+if [[ "$disk_ready" = true ]]; then
+  exit 0
 fi
 echo "Disco do VPS: BLOCKED após coleta controlada; preservar serviços e revisar capacidade do host." >&2
 exit 1

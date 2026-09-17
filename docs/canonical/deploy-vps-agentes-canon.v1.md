@@ -77,6 +77,16 @@ central de Actions e sua matriz local; os gatilhos de push e PR acompanham o tes
   mais antiga para a mais recente e interromper assim que a reserva for recomposta. A imagem ativa e
   uma versão de retorno permanecem obrigatórias. Tags `latest`, `local`, `buildcache`, imagens de
   outros repositórios e identidades inválidas nunca são elegíveis.
+- Se a retenção imutável chegar ao piso e a reserva continuar insuficiente, considerar referências
+  legadas de intervenções/homologações somente nos namespaces temporários conhecidos
+  (`aihubsbx/*`, `marketinghub-intervention-*`, `sandbox-docker:*/*`) ou nas tags históricas
+  `vega*`, `mira*`, `taskN*` e `rollback-taskN*` dos repositórios oficiais dos agentes. Exigir idade
+  mínima de 24 horas e ausência de qualquer container. Para remover uma tag legada do repositório
+  oficial, comprovar primeiro que esse mesmo repositório possui publicação ativa por SHA e outro
+  SHA distinto de rollback. Remover apenas a referência exata, sem força, da mais antiga para a mais
+  recente e parar assim que a reserva for recomposta. Referência recente, ativa, fora desses padrões
+  ou sem rollback oficial permanece protegida. Essa faixa migra o legado de intervenções anteriores;
+  novas homologações continuam obrigadas ao namespace e à limpeza canônica da sandbox.
 - Não usar `--all`, prune de sistema/volumes, remoção de containers, apagamento direto de diretórios
   Docker ou alteração do limite do health para obter um resultado verde.
 - Proteger a coleta por lock local e limite de 120 segundos por faixa; falha de Docker, medição,

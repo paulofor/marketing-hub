@@ -4660,6 +4660,24 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   rodadas locais de 32 controles passaram; evidências e estado operacional em
   `docs/homologacao/actions-capacidade-agentes-vega-2026-09-10.md`.
 
+- **Recorrência confirmada em 17/09/2026:** o Meta Ad Approver `35241990516` aprovou a revisão e os
+  dois pacotes testados, mas o pacote do revisor exigia 10.756 MiB e o host possuía 10.599 MiB. A
+  retenção chegou ao piso de um rollback SHA por agente e recuperou 0 B. O inventário mostrou 39
+  imagens para 10 containers, incluindo referências antigas `vega*`, `mira*`, `task*`,
+  `marketinghub-intervention-*` e `aihubsbx/*` geradas por intervenções anteriores. Elas estavam
+  inativas, porém não eram elegíveis porque a política reconhecia somente tags SHA oficiais.
+- **Alternativas avaliadas:** ampliar o disco preservaria o crescimento sem ciclo de vida; reduzir a
+  reserva por 157 MiB enfraqueceria a proteção de extração; migrar somente referências legadas,
+  antigas e inativas fecharia o acúmulo sem tocar serviço ou rollback. Foi escolhida a terceira.
+- **Correção sistêmica:** sob pressão e somente depois da retenção SHA mínima, a sonda reconhece os
+  namespaces/padrões temporários legados, exige 24 horas e ausência de container e remove referências
+  exatas sem força. Uma tag legada no repositório oficial só é elegível quando já existem publicação
+  ativa por SHA e rollback SHA distinto. Referências recentes, `latest`, repositórios alheios e o
+  último retorno permanecem protegidos.
+- **Prevenção ampliada:** o contrato reproduz o caso com aliases da mesma imagem, ausência de rollback,
+  imagem ativa e referências fora do escopo. Matriz e evidências em
+  `docs/homologacao/actions-meta-ad-capacidade-legado-2026-09-17.md`.
+
 ## LOOP-ACTIONS-CONTAINERD-CARGA-INCOMPLETA — camada íntegra não materializa no image store
 
 - **Data:** 2026-09-07.

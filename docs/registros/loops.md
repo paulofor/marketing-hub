@@ -1,5 +1,18 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-TEMIS-MIDIA-SINTETICA-TRATADA-COMO-PESSOA-REAL — consentimento inexistente bloqueia criativo IA
+
+- **Data:** 2026-09-17. Vega, experimento #92, criativo #529.
+- **Evidência histórica:** Têmis rejeitou o criativo integralmente sintético por ausência de direitos
+  da apresentadora e da voz, embora a produção por prompt não use nem represente pessoa real.
+- **Causa-raiz:** o prompt citava consentimento aplicável antes de estabelecer a premissa sintética;
+  o modelo podia aplicar a regra de referência humana a `PROMPT_ONLY_SYNTHETIC`.
+- **Correção sistêmica:** o contrato declara que imagem, personagem, apresentadora e voz produzidos
+  somente por prompt são IA, e proíbe reprovar sua ausência de consentimento humano. Consentimento
+  permanece obrigatório para referência explícita, clonagem, digital twin ou semelhança real.
+- **Prevenção:** teste de contrato fixa a distinção; Têmis continua exigindo linhagem, hash do
+  arquivo final, provider, licença comercial, disclosure sintético e aprovação humana.
+
 ## LOOP-OPALA-CONTRIBUICAO-CAC-DUPLA-SEMANTICA — parecer correto bloqueado após chamada paga
 
 - **Data:** 2026-09-17. Vega, ciclo 2, experimento 92, tarefa 437.

@@ -20,6 +20,8 @@ public final class PdeEconomicsImageSmoke {
           "discovery",
           "later-version",
           "legacy",
+          "opala",
+          "opala-timestamp",
           "drift",
           "missing",
           "timestamp",
@@ -40,10 +42,11 @@ public final class PdeEconomicsImageSmoke {
 
   /** Percorre PLAY, pending, prompt, schema, validação e callback com correlação isolada. */
   static void runScenario(String scenario, Path resources) throws Exception {
-    boolean opala = "opala".equals(scenario);
+    boolean opala = scenario.startsWith("opala");
     boolean legacy = "legacy".equals(scenario) || opala;
     boolean beforeModel = List.of("drift", "missing").contains(scenario);
-    boolean invalid = List.of("timestamp", "contribution", "budget").contains(scenario);
+    boolean invalid =
+        List.of("timestamp", "opala-timestamp", "contribution", "budget").contains(scenario);
     boolean stopped = "stop".equals(scenario);
     var json = new ObjectMapper();
     Path directory = Files.createTempDirectory("plutus-economics-smoke-");
@@ -55,7 +58,7 @@ public final class PdeEconomicsImageSmoke {
       response.remove("contractVersion");
       response.remove("mode");
     }
-    if ("timestamp".equals(scenario)) economics.put("deadline", "2026-09-17T02:59:00Z");
+    if (scenario.endsWith("timestamp")) economics.put("deadline", "2026-09-17T02:59:00Z");
     if ("contribution".equals(scenario)) economics.put("contributionPerSaleBrl", 26.95);
     if ("budget".equals(scenario)) economics.put("maxBudgetBrl", 100);
     Files.writeString(directory.resolve("response.json"), response.toString());
@@ -171,7 +174,8 @@ public final class PdeEconomicsImageSmoke {
       require(
           operations.equals(
               opala
-                  ? List.of("automatic-execution", "pending", "pending", "result")
+                  ? List.of(
+                      "automatic-execution", "pending", "pending", invalid ? "failure" : "result")
                   : List.of(
                       "automatic-execution",
                       "pending",
@@ -210,6 +214,14 @@ public final class PdeEconomicsImageSmoke {
         require(
             evidence.path("opalaScope").equals(context.path("opalaCommercial")),
             "Identidade Opala perdida no callback");
+        require(
+            schema
+                .path("properties")
+                .path("economics")
+                .path("properties")
+                .path("deadline")
+                .has("pattern"),
+            "Schema Opala perdeu prazo ISO date-only");
       }
       if (!legacy) {
         require(
@@ -246,7 +258,7 @@ public final class PdeEconomicsImageSmoke {
   /** Fornece texto sintético e hash do schema real sem exigir bibliotecas de teste na imagem. */
   private static Map<String, Object> opalaPrompt() throws Exception {
     String text = "Fixture: preparação comercial Opala v1. Contexto: {{TASK_CONTEXT}}";
-    String schema = "prompts/pde-commercial-plan/v4/economics-schema.json";
+    String schema = "prompts/opala-commercial-preparation/v1/economics-schema.json";
     var result = new java.util.HashMap<String, Object>();
     result.put("origin", "DATABASE");
     result.put("bindingId", 900001);

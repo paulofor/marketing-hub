@@ -35,6 +35,8 @@ public class PdeEconomicsBpmTaskConsumer {
       "prompts/pde-commercial-plan/v5/economics.md";
   private static final String PRIVATE_VALIDATION_SCHEMA =
       "prompts/pde-commercial-plan/v5/economics-schema.json";
+  private static final String OPALA_SCHEMA =
+      "prompts/opala-commercial-preparation/v1/economics-schema.json";
   private static final List<String> PRIVATE_VALIDATION_SIGNALS =
       List.of(
           "EXPERIENCE_STARTED",
@@ -197,6 +199,7 @@ public class PdeEconomicsBpmTaskConsumer {
 
   /** Seleciona o schema econômico compatível com a versão imutável do processo. */
   private String schemaResource(Map<String, Object> task) {
+    if ("opala-commercial-preparation-v1".equals(task.get("processCode"))) return OPALA_SCHEMA;
     return isPrivateValidationTask(task) ? PRIVATE_VALIDATION_SCHEMA : LEGACY_SCHEMA;
   }
 

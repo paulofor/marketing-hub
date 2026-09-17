@@ -37,6 +37,11 @@ de IA: deve cobrir a entrega contratada, inclusive o uso posterior, e os custos 
   `variableCostPerSaleBrl` já contém taxas e provisão de reembolso, preservar a identidade
   `contributionPerSaleBrl = offerPriceBrl - variableCostPerSaleBrl` e abrir a composição nas
   premissas; não subtrair essas mesmas deduções novamente.
+- No parecer Opala, `variableCostPerSaleBrl` exclui CAC e `contributionPerSaleBrl` representa a
+  contribuição antes da aquisição, calculada pelo cenário-base determinístico. `maxCacBrl`
+  permanece um limite separado; contribuição e margem após CAC ficam no cenário do plano. É
+  proibido incorporar o mesmo CAC ao custo variável e também registrá-lo como limite, pois isso
+  mascara a ponte econômica e favorece dupla contagem.
 - Medir custo de IA/receita líquida somente com denominador positivo e fontes compatíveis;
   ausência de vendas ou receita igual a zero não produz índice zero. Custo ausente nunca vira
   zero. Apresentar a cobertura e as lacunas, sem declarar margem ou lucro confiáveis com dados
@@ -111,6 +116,19 @@ com referência e SHA-256 do snapshot e da resposta bruta, modelo, esforço, pro
 solicitado e efetivo, justificativa de exceção ao Flex, tokens e custo quando realmente informados.
 Ausência de telemetria histórica deve permanecer `NOT_REPORTED`; é proibido convertê-la em zero. Uma
 falha deve bloquear a tarefa com causa e evidência da execução, sem registrar entrega ou sucesso.
+
+Cada tarefa Opala congela de forma imutável a versão de prompt usada naquela tentativa. Quando
+uma nova tentativa for criada, inclusive na mesma ocorrência de atividade, ela deve fixar a versão
+ativa e revisada naquele momento. Ativar uma correção não altera tarefas históricas, mas também não
+pode obrigar retries futuros a repetir uma instrução já substituída. A referência e o hash do prompt
+devem permanecer no contexto auditado de cada tarefa.
+
+A validade de um parecer Opala usa a identidade imutável do plano financeiro (`id` e `revision`),
+além de preço, orçamento, janela, contrato do produto e prazo do próprio parecer. Valores monetários
+persistidos devem ser comparados pelo valor decimal, e não pelo tipo ou escala do nó JSON: `67`,
+`67.0` e `67.00` são o mesmo valor. Uma nova revisão, mudança material ou vencimento exige nova
+análise; uma diferença apenas de serialização não pode reabrir uma atividade já comprovada nem gerar
+outra chamada paga.
 
 O snapshot expõe separadamente o custo conhecido do Estúdio em USD e a razão de tentativas com custo conhecido, sem conversão cambial implícita.
 

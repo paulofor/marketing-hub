@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.*;
+import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleCommercialReadiness;
@@ -38,9 +39,11 @@ class OpalaCommercialServiceTest {
   private final String identity =
       """
       {"productId":4,"experimentId":92,"cycleId":2,"productVersion":"fixture-v12",
-       "financialPlan":{"status":"READY","assumptions":{"validUntil":"2099-10-31",
+       "priceBrl":67,"budgetLimitBrl":100,"windowEnd":"2099-10-31T23:59:59Z",
+       "productContract":{},
+       "financialPlan":{"id":1,"revision":1,"status":"READY","assumptions":{"validUntil":"2099-10-31",
          "priceBrl":67,"maximumCacBrl":15,"costs":{"refundPercent":12}},
-         "deterministicEvaluation":{"scenarios":[{"code":"BASE","contributionAfterCacBrl":25}]}}}
+         "deterministicEvaluation":{"scenarios":[{"code":"BASE","contributionBeforeCacBrl":25,"contributionAfterCacBrl":10}]}}}
       """;
 
   /** Monta uma ocorrência sintética com a mesma correlação exigida no callback real. */
@@ -108,6 +111,86 @@ class OpalaCommercialServiceTest {
                         "{\"decision\":\"APPROVE\",\"economics\":{\"offerPriceBrl\":67,\"variableCostPerSaleBrl\":70,\"contributionPerSaleBrl\":-3}}")))
         .hasMessageContaining("economia aprovada");
     verifyNoInteractions(materialization);
+  }
+
+  /** Aceita o parecer arredondado que separa contribuição unitária e CAC máximo. */
+  @Test
+  void acceptsRoundedContributionBeforeCac() {
+    task.setProcessActivityId("economics");
+    var result =
+        """
+        {"decision":"APPROVE","scenarios":[{},{},{}],"economics":{
+          "offerPriceBrl":67,"variableCostPerSaleBrl":42,"contributionPerSaleBrl":25,
+          "contributionMarginPercent":37.31,"maxCacBrl":15,"maxBudgetBrl":100,
+          "expectedRefundPercent":12,"deadline":"2099-10-31"}}
+        """;
+
+    assertThat(service.apply(task, request(result)))
+        .isEqualTo(AgentTaskCompletionHook.CompletionDisposition.COMPLETE);
+  }
+
+  /** Rejeita parecer que converte CAC em custo variável e ainda o mantém como limite separado. */
+  @Test
+  void rejectsContributionAfterCacAsUnitContribution() {
+    task.setProcessActivityId("economics");
+    var result =
+        """
+        {"decision":"APPROVE","scenarios":[{},{},{}],"economics":{
+          "offerPriceBrl":67,"variableCostPerSaleBrl":57,"contributionPerSaleBrl":10,
+          "contributionMarginPercent":14.93,"maxCacBrl":15,"maxBudgetBrl":100,
+          "expectedRefundPercent":12,"deadline":"2099-10-31"}}
+        """;
+
+    assertThatThrownBy(() -> service.apply(task, request(result))).hasMessageContaining("diverge");
+  }
+
+  /** Mantém a conclusão quando a mesma revisão volta do banco com escala numérica diferente. */
+  @Test
+  void keepsCompletedEconomicsForSameImmutableFinancialPlanRevision() throws Exception {
+    task.setProcessActivityId("economics");
+    task.setStatus("COMPLETED");
+    task.setEvidenceJson("{\"opalaScope\":" + identity + "}");
+    task.setResultJson("{\"economics\":{\"deadline\":\"2099-10-31\"}}");
+    when(tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            100L, "experiment:92"))
+        .thenReturn(List.of(task));
+    var current =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            json.readTree(
+                identity
+                    .replace("\"priceBrl\":67", "\"priceBrl\":67.0")
+                    .replace("\"budgetLimitBrl\":100", "\"budgetLimitBrl\":100.00"));
+    when(context.snapshot("experiment:92")).thenReturn(current);
+    var activity = new BusinessProcessActivityDefinition();
+    activity.setActivityId("economics");
+
+    assertThat(
+            service.requiresFreshExecution(
+                task.getProcessDefinition(), activity, null, "experiment:92"))
+        .isFalse();
+  }
+
+  /** Exige nova análise quando outra revisão financeira imutável substitui a já aprovada. */
+  @Test
+  void requiresFreshEconomicsForAnotherFinancialPlanRevision() throws Exception {
+    task.setProcessActivityId("economics");
+    task.setStatus("COMPLETED");
+    task.setEvidenceJson("{\"opalaScope\":" + identity + "}");
+    task.setResultJson("{\"economics\":{\"deadline\":\"2099-10-31\"}}");
+    when(tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            100L, "experiment:92"))
+        .thenReturn(List.of(task));
+    var current =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            json.readTree(identity.replace("\"revision\":1", "\"revision\":2"));
+    when(context.snapshot("experiment:92")).thenReturn(current);
+    var activity = new BusinessProcessActivityDefinition();
+    activity.setActivityId("economics");
+
+    assertThat(
+            service.requiresFreshExecution(
+                task.getProcessDefinition(), activity, null, "experiment:92"))
+        .isTrue();
   }
 
   /** Revisão aprovada pelo modelo continua bloqueada quando faltam ativos reais. */

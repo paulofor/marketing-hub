@@ -248,18 +248,6 @@ public class CatalogoVivoRepository {
         taskId);
   }
 
-  /** Encontra a primeira versão usada na mesma ocorrência para manter o contrato no retry. */
-  public Optional<Long> previousVersion(long instanceId, long bindingId) {
-    return jdbc
-        .query(
-            "SELECT s.version_id FROM catalogo_vivo_task_prompt_v1 s JOIN agent_task t ON t.id=s.task_id WHERE t.activity_instance_id=? AND s.binding_id=? ORDER BY t.id LIMIT 1 FOR UPDATE",
-            (r, n) -> r.getLong(1),
-            instanceId,
-            bindingId)
-        .stream()
-        .findFirst();
-  }
-
   /**
    * Lista utilizações recentes da atividade com versão fixada e referência rastreável da tarefa.
    */

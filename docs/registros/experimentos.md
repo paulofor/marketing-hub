@@ -1,3 +1,15 @@
+## 2026-09-17 — Deploy PDE não duplica copy editável do Marketing Hub
+
+- A execução `35229024349` publicou os artefatos e aprovou os checks operacionais, mas o smoke da
+  v6 comparou a headline vigente com uma frase antiga gravada no script de deploy.
+- Banco, endpoint canônico e proxy público confirmaram que a copy publicada em 01/08/2026 está
+  consistente; restaurar a frase antiga alteraria a oferta sem decisão comercial.
+- O smoke passa a manter fixa a identidade da versão e a validar a copy vigente do contrato no
+  navegador. A v8 candidata continua no preflight autenticado e não é consultada como publicação;
+  o HTTP 409 público permanece correto até sua promoção. O teste cobre os dois estados.
+- Impacto esperado: permitir ajustes comerciais auditáveis pela tela sem falso bloqueio de deploy,
+  preservando a proteção contra versão errada, proxy divergente ou primeira dobra não renderizada.
+
 ## 2026-09-11 — Cards com acesso direto à atividade de cada produto
 
 - Início e catálogo passam a destacar número, nome, responsável e link da atividade

@@ -43,12 +43,10 @@ run_mira_private() {
 run_musa_consistency() {
   local public_url="$1"
   local experience_version="$2"
-  local first_fold_headline="${3:-}"
 
   PRODUCT_SLUG=metodo-musa-7-dias \
     PDE_PUBLIC_BASE_URL="${public_url}" \
     EXPECTED_EXPERIENCE_VERSION="${experience_version}" \
-    EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE="${first_fold_headline}" \
     bash "${consistency_script}"
 }
 
@@ -69,8 +67,7 @@ validate_v6() {
     musa-pde-entry-v6-video-motivacional
   run_musa_consistency \
     https://v6.clubemusa.com.br \
-    musa-pde-entry-v6-video-motivacional \
-    "Se o look parece certo, por que você ainda sente que falta presença?"
+    musa-pde-entry-v6-video-motivacional
 }
 
 validate_v7() {
@@ -88,10 +85,6 @@ validate_v8() {
   run_public_diagnostic \
     https://v8.clubemusa.com.br \
     musa-pde-entry-v12-primeiro-ajuste-aplicavel
-  run_musa_consistency \
-    https://v8.clubemusa.com.br \
-    musa-pde-entry-v12-primeiro-ajuste-aplicavel \
-    "Você já escolheu a roupa. Falta saber qual ajuste fazer primeiro."
 }
 
 validate_mira() {

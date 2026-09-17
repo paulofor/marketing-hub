@@ -705,6 +705,16 @@ Regras obrigatórias:
 - a validação pós-deploy deve cobrir cada subdomínio versionado com health público, renderização, endpoint PDE, diagnóstico público, versão esperada e asset crítico esperado;
 - eventos de funil devem persistir `experienceVersion`, permitindo comparar v5 e v6 sem misturar tráfego, criativo ou jornada.
 
+A copy comercial mutável de uma versão deve ser validada contra o contrato canônico vigente do
+Marketing Hub e contra o texto efetivamente renderizado no navegador. Workflows e scripts de deploy
+não podem duplicar headline, texto de apoio ou CTA como literais fixos quando esses campos podem ser
+publicados pelo editor do slot; isso criaria uma segunda fonte de verdade e bloquearia uma copy
+válida. A identidade estrutural da versão (`slotCode`, `experienceVersion`, domínio, artefato e
+assets críticos) continua fixa e obrigatória no smoke. Para uma candidata ainda sem snapshot
+publicado, o smoke não deve consultar o endpoint exclusivo de versões publicadas: deve validar a
+resolução autenticada do preflight pelo backend PDE, sua identidade e a renderização em desktop e
+mobile, preservando o HTTP 409 da rota pública até a promoção autorizada.
+
 Para o Clube MUSA, a regra operacional atual é:
 
 - `v5.clubemusa.com.br` deve servir `musa-pde-entry-v5-video-explicativo` sem vídeo de slides gerado artificialmente;

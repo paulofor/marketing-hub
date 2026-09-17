@@ -110,6 +110,9 @@ class CreativeMediaGovernanceEvidenceServiceTest {
     SalesVideoProviderModel provider = new SalesVideoProviderModel();
     provider.setCode("runway-product-ugc-2026-06");
     provider.setProviderName("RUNWAY_PRODUCT_UGC");
+    provider.setLifecycleStatus("ACTIVE");
+    provider.setAdapterVerified(true);
+    provider.setQualityGateVerified(true);
     provider.setCommercialLicenseVerified(true);
     provider.setUpdatedAt(Instant.parse("2026-09-04T00:00:00Z"));
     when(videoAssets.findFirstByExperimentIdAndAssetUrlOrderByIdDesc(91L, FINAL_URL))
@@ -131,9 +134,79 @@ class CreativeMediaGovernanceEvidenceServiceTest {
     assertThat(evidence.presenterReference().generationReference()).isEqualTo("image-job-1");
     assertThat(evidence.presenterConsentEvidence()).contains("nenhuma pessoa real");
     assertThat(evidence.referenceRightsEvidence()).contains("script versionado");
+    assertThat(evidence.presenterReferenceMode()).isEqualTo("EXPLICIT_REFERENCE");
+    assertThat(evidence.syntheticMediaDisclosureVerified()).isFalse();
     assertThat(evidence.providerLicense().commercialLicenseVerified()).isTrue();
     assertThat(evidence.providerLicense().evidenceUrl())
         .isEqualTo(CreativeMediaGovernanceEvidenceService.RUNWAY_COMMERCIAL_USE_POLICY_URL);
+  }
+
+  /** Aprova vídeo sintético por texto sem inventar consentimento ou referência inexistente. */
+  @Test
+  void resolvesPromptOnlySyntheticVideoWithDisclosureAndProviderLicense() throws Exception {
+    PromptOnlyScenario scenario = promptOnlyScenario(true, true, false, "gen4.5");
+
+    var evidence = service.resolve(scenario.creative());
+
+    assertThat(evidence.contractVersion()).isEqualTo("CREATIVE_MEDIA_GOVERNANCE_V2");
+    assertThat(evidence.verificationStatus()).isEqualTo("VERIFIED");
+    assertThat(evidence.presenterIsSynthetic()).isTrue();
+    assertThat(evidence.presenterReferenceMode()).isEqualTo("PROMPT_ONLY_SYNTHETIC");
+    assertThat(evidence.presenterReference()).isNull();
+    assertThat(evidence.presenterConsentEvidence()).isNull();
+    assertThat(evidence.referenceRightsEvidence()).isNull();
+    assertThat(evidence.syntheticMediaDisclosureVerified()).isTrue();
+    assertThat(evidence.generatedSourceArtifact().provider()).isEqualTo("RUNWAY");
+    assertThat(evidence.providerLicense().catalogCode()).isEqualTo("runway-gen-4-5");
+  }
+
+  /**
+   * Bloqueia rota sintética por texto quando o disclosure não está incorporado ao arquivo final.
+   */
+  @Test
+  void keepsPromptOnlySyntheticVideoIncompleteWithoutDisclosure() throws Exception {
+    PromptOnlyScenario scenario = promptOnlyScenario(false, true, false, "gen4.5");
+
+    var evidence = service.resolve(scenario.creative());
+
+    assertThat(evidence.presenterReferenceMode()).isEqualTo("PROMPT_ONLY_SYNTHETIC");
+    assertThat(evidence.syntheticMediaDisclosureVerified()).isFalse();
+    assertThat(evidence.verificationStatus()).isEqualTo("INCOMPLETE");
+  }
+
+  /**
+   * Recusa declarar geração por texto quando o request contém entrada de referência não governada.
+   */
+  @Test
+  void keepsUnknownReferenceInputIncomplete() throws Exception {
+    PromptOnlyScenario scenario = promptOnlyScenario(true, true, true, "gen4.5");
+
+    var evidence = service.resolve(scenario.creative());
+
+    assertThat(evidence.presenterReferenceMode()).isEqualTo("UNRESOLVED");
+    assertThat(evidence.verificationStatus()).isEqualTo("INCOMPLETE");
+  }
+
+  /** Impede que a licença de um modelo conhecido seja atribuída a outro escolhido pelo Router. */
+  @Test
+  void keepsUnknownRouterModelIncomplete() throws Exception {
+    PromptOnlyScenario scenario = promptOnlyScenario(true, true, false, "modelo-nao-homologado");
+
+    var evidence = service.resolve(scenario.creative());
+
+    assertThat(evidence.providerLicense()).isNull();
+    assertThat(evidence.verificationStatus()).isEqualTo("INCOMPLETE");
+  }
+
+  /** Mantém a peça bloqueada quando o arquivo final não preserva a tarefa que o produziu. */
+  @Test
+  void keepsPromptOnlySyntheticVideoIncompleteWithoutFinalProviderTask() throws Exception {
+    PromptOnlyScenario scenario = promptOnlyScenario(true, false, false, "gen4.5");
+
+    var evidence = service.resolve(scenario.creative());
+
+    assertThat(evidence.finalArtifact().providerTaskId()).isNull();
+    assertThat(evidence.verificationStatus()).isEqualTo("INCOMPLETE");
   }
 
   /** Mantém mídia de imagem fora do contrato específico de linhagem audiovisual. */
@@ -194,6 +267,137 @@ class CreativeMediaGovernanceEvidenceServiceTest {
         .payload(payload)
         .build();
   }
+
+  /** Reproduz a linhagem real de Vega sem realizar chamadas externas nem reutilizar uma pessoa. */
+  private PromptOnlyScenario promptOnlyScenario(
+      boolean disclosure, boolean finalProviderTask, boolean unknownReference, String sourceModel)
+      throws Exception {
+    Experiment experiment = Experiment.builder().id(92L).build();
+    Creative creative =
+        Creative.builder()
+            .id(529L)
+            .experiment(experiment)
+            .format("VIDEO")
+            .videoUrl(FINAL_URL)
+            .build();
+    Asset finalAsset =
+        asset(
+            2804L,
+            FINAL_URL,
+            MediaProvider.VIDEO_MODULE,
+            promptOnlyFinalPayload(disclosure, finalProviderTask));
+    Asset sourceAsset =
+        asset(
+            2794L,
+            "https://cdn.test/runway-montage.mp4",
+            MediaProvider.VIDEO_MODULE,
+            promptOnlySourcePayload(sourceModel));
+    SalesVideoJob job = new SalesVideoJob();
+    job.setId(21239L);
+    ExperimentVideoAsset video =
+        ExperimentVideoAsset.builder()
+            .id(41L)
+            .experiment(experiment)
+            .slot(ExperimentVideoSlot.AD)
+            .provider("MUSA_POST_PRODUCTION")
+            .status(ExperimentVideoStatus.READY)
+            .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+            .assetUrl(FINAL_URL)
+            .asset(finalAsset)
+            .salesVideoJob(job)
+            .requestJson(promptOnlyRequestJson(unknownReference))
+            .reviewedBy("Marketing Hub")
+            .reviewedAt(Instant.parse("2026-09-14T22:46:04Z"))
+            .build();
+    VideoProject project =
+        VideoProject.builder()
+            .id(4L)
+            .experimentId(92L)
+            .referencePerformanceUri("internal://pde-proof/vega-v12")
+            .build();
+    SalesVideoProviderModel provider = new SalesVideoProviderModel();
+    provider.setCode("runway-gen-4-5");
+    provider.setProviderName("RUNWAY");
+    provider.setExternalModelId("gen4.5");
+    provider.setLifecycleStatus("ACTIVE");
+    provider.setAdapterVerified(true);
+    provider.setQualityGateVerified(true);
+    provider.setCommercialLicenseVerified(true);
+    provider.setUpdatedAt(Instant.parse("2026-09-04T18:06:48Z"));
+    when(videoAssets.findFirstByExperimentIdAndAssetUrlOrderByIdDesc(92L, FINAL_URL))
+        .thenReturn(Optional.of(video));
+    when(videoProjects.findById(4L)).thenReturn(Optional.of(project));
+    when(assets.findById(2794L)).thenReturn(Optional.of(sourceAsset));
+    when(providerModels.findByProviderName("RUNWAY")).thenReturn(Optional.of(provider));
+    return new PromptOnlyScenario(creative);
+  }
+
+  /** Serializa o vídeo bruto com o modelo efetivamente escolhido pelo Router. */
+  private String promptOnlySourcePayload(String sourceModel) throws Exception {
+    var providerMetadata = java.util.Map.of("provider", "RUNWAY", "model", sourceModel);
+    var metadata = new java.util.LinkedHashMap<String, Object>();
+    metadata.put("provider_job_id", "runway-task-1,runway-task-2");
+    metadata.put("sha256", "b".repeat(64));
+    metadata.put("provider_metadata", providerMetadata);
+    return new ObjectMapper().writeValueAsString(java.util.Map.of("metadata", metadata));
+  }
+
+  /** Serializa a peça final com ou sem o disclosure sintético inseparável. */
+  private String promptOnlyFinalPayload(boolean disclosure, boolean finalProviderTask)
+      throws Exception {
+    var providerMetadata = new java.util.LinkedHashMap<String, Object>();
+    providerMetadata.put("provider", "MUSA_POST_PRODUCTION");
+    if (disclosure) {
+      providerMetadata.put(
+          "synthetic_media_disclosure",
+          java.util.Map.of(
+              "presenter_synthetic", true,
+              "required", true,
+              "text", "Apresentadora e voz geradas por IA"));
+    }
+    var metadata = new java.util.LinkedHashMap<String, Object>();
+    if (finalProviderTask) {
+      metadata.put("provider_job_id", "post-production-21239");
+    }
+    metadata.put("sha256", "a".repeat(64));
+    metadata.put("provider_metadata", providerMetadata);
+    return new ObjectMapper().writeValueAsString(java.util.Map.of("metadata", metadata));
+  }
+
+  /** Serializa o contrato de geração por texto e permite inserir uma referência adversarial. */
+  private String promptOnlyRequestJson(boolean unknownReference) throws Exception {
+    var input = new java.util.LinkedHashMap<String, Object>();
+    input.put("promptText", "Participante adulta fictícia e sintética em cenário neutro.");
+    input.put("duration", 10);
+    input.put("aspectRatio", "9:16");
+    input.put("resolution", "720p");
+    input.put("audio", false);
+    if (unknownReference) {
+      input.put("promptImage", "https://external.test/person.png");
+    }
+    String requests =
+        new ObjectMapper()
+            .writeValueAsString(
+                java.util.List.of(
+                    java.util.Map.of(
+                        "configId", "marketing-hub-campaign-final-v1", "input", input)));
+    var metadata = new java.util.LinkedHashMap<String, Object>();
+    metadata.put("videoProjectId", 4);
+    metadata.put("generation_strategy", "PROVIDER_CLIPS_WITH_POST_PRODUCTION_CUTS");
+    metadata.put("sourceAssetId", 2794);
+    metadata.put("sourceProviderName", "RUNWAY_ROUTER");
+    metadata.put("runwayRouterRequestsJson", requests);
+    metadata.put(
+        "referenceGovernance",
+        java.util.Map.of("presenterIsSynthetic", true, "productIsDigitalExperience", true));
+    return new ObjectMapper()
+        .writeValueAsString(
+            java.util.Map.of(
+                "postProductionMetadataJson", new ObjectMapper().writeValueAsString(metadata)));
+  }
+
+  /** Agrupa o criativo preparado para os cenários de geração sintética por texto. */
+  private record PromptOnlyScenario(Creative creative) {}
 
   /** Serializa os metadados imutáveis armazenados junto ao arquivo. */
   private String payload(String provider, String providerTaskId, String sha256, Long sourceAssetId)

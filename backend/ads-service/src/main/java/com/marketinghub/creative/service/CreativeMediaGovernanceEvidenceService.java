@@ -20,6 +20,7 @@ import com.marketinghub.salesvideo.SalesVideoProviderModel;
 import com.marketinghub.salesvideo.VideoProject;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,12 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 @Slf4j
 public class CreativeMediaGovernanceEvidenceService {
-  static final String CONTRACT_VERSION = "CREATIVE_MEDIA_GOVERNANCE_V1";
+  static final String CONTRACT_VERSION = "CREATIVE_MEDIA_GOVERNANCE_V2";
+  static final String EXPLICIT_REFERENCE = "EXPLICIT_REFERENCE";
+  static final String PROMPT_ONLY_SYNTHETIC = "PROMPT_ONLY_SYNTHETIC";
+  static final String UNRESOLVED_REFERENCE = "UNRESOLVED";
+  private static final Set<String> PROMPT_ONLY_INPUT_FIELDS =
+      Set.of("promptText", "duration", "aspectRatio", "resolution", "audio");
   static final String RUNWAY_COMMERCIAL_USE_POLICY_URL =
       "https://help.runwayml.com/hc/en-us/articles/21668707517587-Can-I-use-the-content-I-made-in-Runway-for-commercial-purposes";
 
@@ -89,11 +95,12 @@ public class CreativeMediaGovernanceEvidenceService {
     Asset sourceAsset = sourceAssetId == null ? null : assets.findById(sourceAssetId).orElse(null);
     Asset presenterAsset =
         projectMatches ? findAssetByUrl(project.getCharacterPerformanceUri()) : null;
-    String sourceProvider = text(lineage, "sourceProviderName");
+    JsonNode sourceMetadata = assetMetadata(sourceAsset);
+    JsonNode sourceProviderMetadata = sourceMetadata.path("provider_metadata");
+    String sourceProviderFromAsset = text(sourceProviderMetadata, "provider");
+    String sourceProvider = firstText(sourceProviderFromAsset, text(lineage, "sourceProviderName"));
     SalesVideoProviderModel providerModel =
-        sourceProvider == null
-            ? null
-            : providerModels.findByProviderName(sourceProvider).orElse(null);
+        resolveProviderModel(sourceProvider, sourceProviderFromAsset, sourceProviderMetadata);
     MediaArtifact finalArtifact = artifact(finalAsset, mediaUrl, video.getProvider(), null);
     MediaArtifact generatedSource = artifact(sourceAsset, null, sourceProvider, sourceAssetId);
     MediaReference presenterReference =
@@ -101,19 +108,31 @@ public class CreativeMediaGovernanceEvidenceService {
     ProviderLicense providerLicense = providerLicense(providerModel, sourceProvider);
     String consentEvidence = text(governance, "presenterConsentEvidence");
     String rightsEvidence = text(governance, "referenceRightsEvidence");
+    boolean presenterIsSynthetic = governance.path("presenterIsSynthetic").asBoolean(false);
+    String presenterReferenceMode =
+        presenterReference != null
+            ? EXPLICIT_REFERENCE
+            : promptOnlySynthetic(lineage, presenterIsSynthetic)
+                ? PROMPT_ONLY_SYNTHETIC
+                : UNRESOLVED_REFERENCE;
+    boolean syntheticMediaDisclosureVerified = syntheticDisclosureVerified(finalAsset);
+    boolean referenceEvidenceVerified =
+        EXPLICIT_REFERENCE.equals(presenterReferenceMode)
+            ? completePresenterReference(presenterReference)
+                && StringUtils.hasText(consentEvidence)
+                && StringUtils.hasText(rightsEvidence)
+            : PROMPT_ONLY_SYNTHETIC.equals(presenterReferenceMode)
+                && syntheticMediaDisclosureVerified;
     boolean verified =
         video.getStatus() == ExperimentVideoStatus.READY
             && video.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED
             && projectMatches
             && hasSha256(finalArtifact)
             && hasSha256(generatedSource)
-            && presenterReference != null
-            && StringUtils.hasText(presenterReference.generationReference())
-            && StringUtils.hasText(presenterReference.generationPrompt())
-            && StringUtils.hasText(consentEvidence)
-            && StringUtils.hasText(rightsEvidence)
-            && providerLicense != null
-            && providerLicense.commercialLicenseVerified();
+            && StringUtils.hasText(finalArtifact.providerTaskId())
+            && StringUtils.hasText(generatedSource.providerTaskId())
+            && referenceEvidenceVerified
+            && providerCommerciallyApproved(providerModel);
     return new CreativeMediaGovernanceEvidenceDto(
         CONTRACT_VERSION,
         verified ? "VERIFIED" : "INCOMPLETE",
@@ -126,6 +145,9 @@ public class CreativeMediaGovernanceEvidenceService {
         projectMatches ? trimToNull(project.getReferencePerformanceUri()) : null,
         consentEvidence,
         rightsEvidence,
+        presenterIsSynthetic,
+        presenterReferenceMode,
+        syntheticMediaDisclosureVerified,
         governance.path("productIsDigitalExperience").asBoolean(false),
         providerLicense,
         trimToNull(video.getReviewedBy()),
@@ -140,12 +162,14 @@ public class CreativeMediaGovernanceEvidenceService {
       return new MediaArtifact(
           fallbackSourceAssetId, fallbackUrl, null, fallbackProvider, null, null);
     }
-    JsonNode metadata = readObject(asset.getPayload()).path("metadata");
+    JsonNode metadata = assetMetadata(asset);
+    JsonNode providerMetadata = metadata.path("provider_metadata");
     return new MediaArtifact(
         asset.getId(),
         firstText(asset.getUrl(), fallbackUrl),
         text(metadata, "sha256"),
         firstText(
+            text(providerMetadata, "provider"),
             text(metadata, "provider"),
             asset.getProvider() == null ? null : asset.getProvider().name(),
             fallbackProvider),
@@ -184,6 +208,89 @@ public class CreativeMediaGovernanceEvidenceService {
         providerModel.isCommercialLicenseVerified(),
         evidenceUrl,
         providerModel.getUpdatedAt());
+  }
+
+  /** Resolve o modelo exato escolhido pelo Router sem atribuir licença a um modelo diferente. */
+  private SalesVideoProviderModel resolveProviderModel(
+      String sourceProvider, String sourceProviderFromAsset, JsonNode sourceProviderMetadata) {
+    if (sourceProvider == null) {
+      return null;
+    }
+    SalesVideoProviderModel model = providerModels.findByProviderName(sourceProvider).orElse(null);
+    if (model == null || sourceProviderFromAsset == null) {
+      return model;
+    }
+    String externalModel = text(sourceProviderMetadata, "model");
+    return StringUtils.hasText(externalModel)
+            && externalModel.equalsIgnoreCase(model.getExternalModelId())
+        ? model
+        : null;
+  }
+
+  /** Confirma que a curadoria vigente libera tecnicamente o provedor para uso comercial. */
+  private boolean providerCommerciallyApproved(SalesVideoProviderModel providerModel) {
+    return providerModel != null
+        && "ACTIVE".equalsIgnoreCase(providerModel.getLifecycleStatus())
+        && providerModel.isAdapterVerified()
+        && providerModel.isQualityGateVerified()
+        && providerModel.isCommercialLicenseVerified();
+  }
+
+  /** Confirma a cadeia completa quando uma imagem ou performance externa guiou o vídeo. */
+  private boolean completePresenterReference(MediaReference presenterReference) {
+    return presenterReference != null
+        && StringUtils.hasText(presenterReference.generationReference())
+        && StringUtils.hasText(presenterReference.generationPrompt());
+  }
+
+  /**
+   * Reconhece geração sintética por texto somente quando nenhuma entrada aceita referência externa.
+   */
+  private boolean promptOnlySynthetic(JsonNode lineage, boolean presenterIsSynthetic)
+      throws JsonProcessingException {
+    if (!presenterIsSynthetic
+        || !"PROVIDER_CLIPS_WITH_POST_PRODUCTION_CUTS"
+            .equals(text(lineage, "generation_strategy"))) {
+      return false;
+    }
+    JsonNode requests = embeddedJson(lineage.path("runwayRouterRequestsJson"));
+    if (!requests.isArray() || requests.isEmpty()) {
+      return false;
+    }
+    for (JsonNode request : requests) {
+      JsonNode input = request.path("input");
+      if (!input.isObject() || !StringUtils.hasText(text(input, "promptText"))) {
+        return false;
+      }
+      var fields = input.fieldNames();
+      while (fields.hasNext()) {
+        if (!PROMPT_ONLY_INPUT_FIELDS.contains(fields.next())) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  /** Exige disclosure inseparável da peça quando não existe pessoa ou imagem de referência. */
+  private boolean syntheticDisclosureVerified(Asset finalAsset) throws JsonProcessingException {
+    JsonNode disclosure =
+        assetMetadata(finalAsset).path("provider_metadata").path("synthetic_media_disclosure");
+    return disclosure.path("presenter_synthetic").asBoolean(false)
+        && disclosure.path("required").asBoolean(false)
+        && StringUtils.hasText(text(disclosure, "text"));
+  }
+
+  /** Lê o objeto metadata do ativo sem confundir ausência com evidência vazia. */
+  private JsonNode assetMetadata(Asset asset) throws JsonProcessingException {
+    return asset == null
+        ? objectMapper.createObjectNode()
+        : readObject(asset.getPayload()).path("metadata");
+  }
+
+  /** Interpreta JSON já estruturado ou serializado como texto no snapshot auditável. */
+  private JsonNode embeddedJson(JsonNode value) throws JsonProcessingException {
+    return value.isTextual() ? objectMapper.readTree(value.asText()) : value;
   }
 
   /** Localiza uma referência pela URL canônica sem buscar todos os assets em memória. */
@@ -260,6 +367,9 @@ public class CreativeMediaGovernanceEvidenceService {
         null,
         null,
         null,
+        false,
+        UNRESOLVED_REFERENCE,
+        false,
         false,
         null,
         null,

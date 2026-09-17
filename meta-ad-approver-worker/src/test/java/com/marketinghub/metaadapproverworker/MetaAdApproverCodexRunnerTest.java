@@ -210,8 +210,12 @@ class MetaAdApproverCodexRunnerTest {
             "mediaGovernanceEvidence",
             "status precisa ser `VERIFIED`",
             "URL e o SHA-256",
-            "referência sintética",
+            "`EXPLICIT_REFERENCE`",
+            "`PROMPT_ONLY_SYNTHETIC`",
+            "não invente uma referência ou consentimento",
+            "syntheticMediaDisclosureVerified",
             "licença comercial do provedor",
+            "`UNRESOLVED`",
             "ligada a outra mídia mantém o gate fechado");
   }
 

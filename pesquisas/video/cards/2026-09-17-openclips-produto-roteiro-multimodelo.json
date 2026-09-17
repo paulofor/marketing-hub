@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-produto-como-fonte-roteiro-multimodelo",
+  "collection": "video",
+  "title": "Usar a fonte canônica do produto para planejar e rotear cenas",
+  "finding": "A OpenClips passou a transformar uma URL de produto em roteiro, storyboard e vídeo final, usando o conteúdo da página como contexto e roteando tomadas entre diferentes modelos.",
+  "mechanism": "Uma fonte canônica reduz a ambiguidade do prompt em branco e mantém assets, atributos e posicionamento próximos do contexto aprovado; o roteamento por cena permite escolher o renderer conforme requisitos de cada tomada.",
+  "commercialApplication": "Apolo pode partir da página ou ficha aprovada do produto/oferta, extrair um plano estruturado de cenas e escolher o modelo de vídeo por tomada, preservando preço, claims, CTA e identidade visual vindos da fonte autorizada.",
+  "evidenceStrength": "Evidência forte de que a capacidade existe no produto e no MCP da OpenClips; evidência ainda insuficiente de que essa arquitetura melhora qualidade, custo total ou conversão frente a um workflow bem operado por briefing humano.",
+  "publishedOn": "2026-09-17",
+  "validUntil": "2026-11-01",
+  "experimentHypothesis": "Com o mesmo briefing comercial, um fluxo ancorado na fonte canônica do produto e com roteamento por cena reduzirá erros factuais, regenerações e tempo até a versão aprovada em comparação com um fluxo iniciado por prompt livre.",
+  "risks": "A fonte pode estar desatualizada ou incompleta; o agente pode inferir claims não autorizados; o roteamento entre modelos pode introduzir inconsistência visual; serviços externos podem ampliar exposição de assets comerciais.",
+  "limits": "Não há benchmark independente que demonstre superioridade do fluxo nem evidência de aumento de vendas. A OpenClips é proprietária e os modelos subjacentes possuem licenças e limitações próprias que continuam relevantes.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-17-openclips-produto-roteiro-multimodelo.md",
+  "sourceTitle": "Fonte revisada — OpenClips: produto como fonte canônica para roteiro e roteamento multimodelo",
+  "sourceSha256": "def632659732d4801965047a73bf644b7a68d71171d7d6f3ee9988bee573f607"
+}

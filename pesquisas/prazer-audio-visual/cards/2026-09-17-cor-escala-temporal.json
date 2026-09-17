@@ -1,0 +1,18 @@
+{
+  "cardKey": "cor-escala-temporal-detalhe-visual",
+  "collection": "prazer-audio-visual",
+  "title": "Calibrar detalhe cromático à velocidade visual",
+  "finding": "Em um estudo de Science Advances, a seletividade espacial da cor mudou sistematicamente com a frequência temporal: em observadores humanos, frequências temporais mais altas favoreceram um perfil espacial passa-baixas e frequências mais baixas um perfil passa-faixa; registros em V1 de macacos e redes neurais de visão exibiram transição análoga.",
+  "mechanism": "A codificação cromática combina espaço e tempo de forma dinâmica; a resolução espacial efetivamente representada pela cor não é fixa e muda conforme a velocidade temporal do estímulo.",
+  "commercialApplication": "Em vídeos e interfaces dinâmicas, comparar sinais cromáticos maiores e mais simples com detalhes cromáticos finos em trechos de mudança rápida, preservando versões mais detalhadas em trechos lentos e medindo detecção, compreensão e conforto.",
+  "evidenceStrength": "Média-alta para o mecanismo visual básico: há convergência entre EEG humano, registros em V1 de macacos e redes neurais artificiais; a aplicação a UX ou vídeo é uma extrapolação que requer teste próprio.",
+  "publishedOn": "2026-09-11",
+  "validUntil": "2027-03-17",
+  "experimentHypothesis": "Em segmentos visuais de mudança rápida, sinais cromáticos maiores e espacialmente simples serão detectados e compreendidos melhor que detalhes cromáticos finos, sem reduzir conforto; em segmentos lentos, a vantagem deve diminuir.",
+  "risks": "Simplificar demais a cor pode empobrecer estética ou hierarquia visual; não transformar o achado em regra universal nem assumir efeito em prazer ou conversão.",
+  "limits": "O estudo mede codificação visual básica, não estética, memória, retenção ou vendas. Parte da evidência vem de primatas não humanos e redes artificiais, e não há demonstração direta de benefício comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-17-cor-escala-temporal.md",
+  "sourceTitle": "Fonte revisada — cor, detalhe espacial e escala temporal",
+  "sourceSha256": "f43c66689171d70da71c043fdf8c30092799caa514febc0a94c87f3c57305ac4"
+}

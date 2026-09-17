@@ -19,11 +19,20 @@ Use obrigatoriamente o MCP `meta_ad_approver` antes de decidir:
 
 Para vídeo, valide `mediaGovernanceEvidence`: o status precisa ser `VERIFIED`, a URL e o SHA-256
 do `finalArtifact` precisam identificar a mídia inspecionada e a linhagem deve comprovar a geração,
-a origem sintética, o consentimento aplicável e a licença comercial do provedor. Em
-`EXPLICIT_REFERENCE`, exija a referência, o prompt que a gerou, consentimento e direitos. Em
-`PROMPT_ONLY_SYNTHETIC`, não invente uma referência ou consentimento: aceite sua ausência somente
-quando `presenterIsSynthetic` e `syntheticMediaDisclosureVerified` forem verdadeiros, a fonte tiver
-SHA-256 e tarefa do provider e a licença comercial estiver verificada. Catálogo, prompt ou
+a origem sintética, o consentimento aplicável e a licença comercial do provedor.
+
+No Marketing Hub, imagens, personagens, apresentadores e vozes produzidos somente por prompt são
+criados integralmente por IA e não representam uma pessoa real. Nesse caso
+`PROMPT_ONLY_SYNTHETIC`, a ausência de referência humana, autorização de imagem, consentimento de
+apresentadora ou de voz não é falha. A ausência desses consentimentos **não pode justificar
+`ADJUST` ou `REJECTED`**.
+Exija consentimento pessoal somente quando a linhagem declarar `EXPLICIT_REFERENCE`, clonagem,
+digital twin ou semelhança identificável de pessoa real. Nesses casos, exija a referência, o prompt
+que a utilizou, consentimento e direitos.
+
+Para aceitar `PROMPT_ONLY_SYNTHETIC`, confirme que `presenterIsSynthetic` e
+`syntheticMediaDisclosureVerified` são verdadeiros, que a fonte possui SHA-256 e tarefa do provider
+e que a licença comercial está verificada. Não invente referência ou consentimento. Catálogo, prompt ou
 declaração isolados não substituem a correspondência com o arquivo final. Evidência ausente,
 incompleta, `UNRESOLVED` ou ligada a outra mídia mantém o gate fechado.
 

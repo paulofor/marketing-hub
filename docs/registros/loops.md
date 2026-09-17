@@ -1,5 +1,18 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-TEMIS-MIDIA-SINTETICA-TRATADA-COMO-PESSOA-REAL — consentimento inexistente bloqueia criativo IA
+
+- **Data:** 2026-09-17. Vega, experimento #92, criativo #529.
+- **Evidência histórica:** Têmis rejeitou o criativo integralmente sintético por ausência de direitos
+  da apresentadora e da voz, embora a produção por prompt não use nem represente pessoa real.
+- **Causa-raiz:** o prompt citava consentimento aplicável antes de estabelecer a premissa sintética;
+  o modelo podia aplicar a regra de referência humana a `PROMPT_ONLY_SYNTHETIC`.
+- **Correção sistêmica:** o contrato declara que imagem, personagem, apresentadora e voz produzidos
+  somente por prompt são IA, e proíbe reprovar sua ausência de consentimento humano. Consentimento
+  permanece obrigatório para referência explícita, clonagem, digital twin ou semelhança real.
+- **Prevenção:** teste de contrato fixa a distinção; Têmis continua exigindo linhagem, hash do
+  arquivo final, provider, licença comercial, disclosure sintético e aprovação humana.
+
 ## LOOP-OPALA-CONTRIBUICAO-CAC-DUPLA-SEMANTICA — parecer correto bloqueado após chamada paga
 
 - **Data:** 2026-09-17. Vega, ciclo 2, experimento 92, tarefa 437.
@@ -5850,3 +5863,20 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   publica, não aprova criativo e não autoriza mídia.
 - **Prevenção:** testes cobrem candidata sem snapshot publicado, versão/produto/experimento
   divergentes, duplicidade, contrato ausente, estado inválido, validação ausente e URL obsoleta.
+
+## LOOP-PDE-SMOKE-COPY-FIXA-DIVERGE-DO-CONTRATO — 17/09/2026
+
+- **Sintoma confirmado:** o deploy do PDE concluiu build, publicação, health, diagnóstico e testes
+  públicos, mas falhou ao validar a v6 porque o script esperava uma headline antiga.
+- **Histórico e fonte de verdade:** o slot v6 foi publicado em 01/08/2026 pelo fluxo oficial com a
+  headline `Descubra em 2 minutos o detalhe que está apagando sua presença hoje`; endpoint canônico,
+  proxy PDE e banco retornam a mesma copy. O literal do workflow ainda era anterior à publicação.
+- **Alternativas avaliadas:** restaurar a copy antiga regrediria a oferta; atualizar o literal
+  resolveria somente esta revisão; validar contrato canônico, proxy e renderização remove a fonte
+  duplicada sem enfraquecer o gate. A terceira foi adotada.
+- **Correção sistêmica:** o smoke direcionado mantém domínio e `experienceVersion` fixos, compara o
+  endpoint canônico ao proxy e usa Playwright para exigir a copy vigente renderizada, sem fixar
+  headline comercial editável no repositório. Para a candidata v8, o roteador usa o preflight
+  autenticado já consumido pelo backend PDE e preserva o 409 do endpoint público até a promoção.
+- **Prevenção:** o teste do roteador cobre v6 publicada e v8 candidata; falha se a v6 voltar a fixar
+  copy mutável ou se a candidata for enviada ao verificador exclusivo de snapshots publicados.

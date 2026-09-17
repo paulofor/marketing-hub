@@ -212,11 +212,28 @@ class MetaAdApproverCodexRunnerTest {
             "URL e o SHA-256",
             "`EXPLICIT_REFERENCE`",
             "`PROMPT_ONLY_SYNTHETIC`",
-            "não invente uma referência ou consentimento",
+            "Não invente referência ou consentimento",
             "syntheticMediaDisclosureVerified",
             "licença comercial do provedor",
             "`UNRESOLVED`",
             "ligada a outra mídia mantém o gate fechado");
+  }
+
+  /** Impede que Têmis exija consentimento humano para pessoa e voz criadas somente por IA. */
+  @Test
+  void doesNotRequireHumanConsentForPromptOnlySyntheticMedia() throws Exception {
+    String prompt = resource("prompts/meta-ad-approver/v2/review.md");
+
+    assertThat(prompt)
+        .contains(
+            "criados integralmente por IA e não representam uma pessoa real",
+            "apresentadora ou de voz não é falha",
+            "A ausência desses consentimentos **não pode justificar",
+            "`ADJUST` ou `REJECTED`**",
+            "Exija consentimento pessoal somente quando a linhagem declarar `EXPLICIT_REFERENCE`",
+            "clonagem",
+            "digital twin",
+            "semelhança identificável de pessoa real");
   }
 
   /** Garante que Têmis devolva critérios sem criar a alternativa que será revisada. */

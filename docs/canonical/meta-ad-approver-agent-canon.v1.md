@@ -128,6 +128,14 @@ cancela a ferramenta, invalida as evidências e fecha o gate.
   licença comercial do provedor e aprovação humana do vídeo. Declaração solta, prompt, catálogo ou
   evidência de outro arquivo não comprovam os direitos da mídia inspecionada.
 
+Imagens, personagens, apresentadores e vozes produzidos somente por prompt no Marketing Hub são
+integralmente sintéticos e não representam pessoa real. Nessa modalidade, a ausência de referência
+humana ou consentimento pessoal não é bloqueio. Consentimento e direitos pessoais são obrigatórios
+somente quando houver referência explícita, clonagem, digital twin ou semelhança identificável de
+pessoa real. A dispensa de consentimento pessoal não dispensa SHA-256 e linhagem do arquivo final,
+tarefa e modelo do provedor, licença comercial, declaração da natureza sintética nem aprovação
+humana antes da publicação.
+
 Sem qualquer evidência obrigatória, o gate permanece fechado.
 
 ### Compatibilidade das atestações com o código compartilhado

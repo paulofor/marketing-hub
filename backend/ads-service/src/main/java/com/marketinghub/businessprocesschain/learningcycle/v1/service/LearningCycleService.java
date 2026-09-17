@@ -8,6 +8,7 @@ import com.marketinghub.businessprocesschain.BusinessProcessChainDefinition;
 import com.marketinghub.businessprocesschain.learningcycle.v1.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand.Action;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.RevalidateCycleWindowRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.reconcileMeasurement.ReconcileLearningCycleMeasurementRequest;
@@ -685,6 +686,99 @@ public class LearningCycleService {
                 + request.budgetLimitBrl(),
             "internal://learning-cycles/" + cycleId + "/budget-authorization",
             data));
+  }
+
+  /** Renova uma janela expirada antes da ativação, sem mudar produto, versão, hipótese ou teto. */
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+  public LearningCycleResponse revalidateWindow(
+      Long productId, Long cycleId, RevalidateCycleWindowRequest request, String operatorName) {
+    requireProduct(productId, true);
+    var cycle =
+        cycles
+            .findLocked(productId, cycleId)
+            .orElseThrow(() -> notFound("Ciclo não encontrado neste produto."));
+    var requestJson = com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+    requestJson.put("requestKey", request.requestKey().toString());
+    requestJson.put("expectedRevision", request.expectedRevision());
+    requestJson.put("startDate", request.startDate().toString());
+    requestJson.put("endDate", request.endDate().toString());
+    requestJson.put("reason", request.reason());
+    String input = json.write(requestJson);
+    var replay = events.findByCycleIdAndRequestKey(cycleId, request.requestKey().toString());
+    if (replay.isPresent()) {
+      require(
+          json.read(input).equals(json.read(replay.orElseThrow().getRequestJson())),
+          "A chave desta revalidação já foi usada com conteúdo diferente.");
+      return response(cycle);
+    }
+    require(
+        cycle.getRevision() == request.expectedRevision(),
+        "O ciclo mudou. Atualize a tela antes de revalidar a janela.");
+    require("OPEN".equals(cycle.getStatus()), "Somente ciclo aberto pode renovar a janela.");
+    require(
+        java.util.Set.of("AUTHORIZATION", "PUBLICATION").contains(cycle.getStage()),
+        "A janela só pode ser renovada antes da operação comercial.");
+    var experiment = requiredExperiment(productId, cycle.getExperimentId());
+    require(
+        experiment.getStatus() == com.marketinghub.experiment.ExperimentStatus.PLANNED
+            && experiment.getFacebookReleaseRequestedAt() == null,
+        "O experimento já iniciou liberação e não pode ter a janela reescrita.");
+    require(
+        !request.endDate().isBefore(request.startDate()),
+        "O fim da janela deve ser igual ou posterior ao início.");
+    require(
+        java.time.temporal.ChronoUnit.DAYS.between(request.startDate(), request.endDate()) < 31,
+        "A revalidação deve manter uma janela limitada a 31 dias.");
+    var zone = java.time.ZoneId.of("America/Sao_Paulo");
+    Instant start = request.startDate().atStartOfDay(zone).toInstant();
+    Instant end = request.endDate().plusDays(1).atStartOfDay(zone).toInstant();
+    Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+    require(end.isAfter(now) && end.isAfter(start), "A nova janela precisa possuir tempo futuro.");
+    Instant previousStart = cycle.getWindowStart();
+    Instant previousEnd = cycle.getWindowEnd();
+    cycle.setWindowStart(start);
+    cycle.setWindowEnd(end);
+    commercialAuthorization.apply(cycle, experiment, now, experiment.getDailyBudget());
+    cycle.setRevision(cycle.getRevision() + 1);
+    cycle.setUpdatedAt(now);
+    cycles.saveAndFlush(cycle);
+
+    var evidenceJson = new com.fasterxml.jackson.databind.ObjectMapper().createObjectNode();
+    evidenceJson.put("contractVersion", "LEARNING_CYCLE_WINDOW_REVALIDATION_V1");
+    evidenceJson.put("productId", productId);
+    evidenceJson.put("experimentId", cycle.getExperimentId());
+    evidenceJson.put("productVersion", cycle.getProductVersion());
+    evidenceJson.put("previousWindowStart", previousStart.toString());
+    evidenceJson.put("previousWindowEnd", previousEnd.toString());
+    evidenceJson.put("windowStart", start.toString());
+    evidenceJson.put("windowEnd", end.toString());
+    evidenceJson.put("budgetLimitBrl", cycle.getBudgetLimitBrl());
+    evidenceJson.put("externalSpendAuthorized", false);
+    evidenceJson.put("reason", request.reason().trim());
+    var event = new LearningSalesCycleEvent();
+    event.setCycleId(cycleId);
+    event.setRequestKey(request.requestKey().toString());
+    event.setRequestJson(input);
+    event.setRevision(cycle.getRevision());
+    event.setFromStage(cycle.getStage());
+    event.setToStage(cycle.getStage());
+    event.setAction("REVALIDATE_WINDOW");
+    event.setOperatorName(operatorName.trim());
+    event.setSummary(
+        "Janela revalidada sem alterar o teto financeiro e sem liberar campanha ou gasto.");
+    event.setEvidenceReference("internal://learning-cycles/" + cycleId + "/window-revalidation");
+    event.setEvidenceJson(json.write(evidenceJson));
+    event.setCreatedAt(now);
+    events.saveAndFlush(event);
+    log.info(
+        "Ciclos: janela revalidada productId={} cycleId={} experimentId={} revision={} start={} end={}",
+        productId,
+        cycleId,
+        cycle.getExperimentId(),
+        cycle.getRevision(),
+        start,
+        end);
+    return response(cycle);
   }
 
   /** Conclui somente a homologação conferida pelo coordenador e registra a origem automática. */

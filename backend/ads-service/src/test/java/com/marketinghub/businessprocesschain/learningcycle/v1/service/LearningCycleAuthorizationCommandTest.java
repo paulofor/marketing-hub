@@ -381,6 +381,69 @@ class LearningCycleAuthorizationCommandTest {
     assertThat(saved).hasSize(1);
   }
 
+  /** Renova um ciclo ainda planejado, preservando teto, versão e ausência de liberação externa. */
+  @Test
+  void revalidatesExpiredWindowBeforePublicationWithoutChangingBudget() {
+    cycle.setStage("PUBLICATION");
+    cycle.setWindowStart(Instant.parse("2026-09-10T03:00:00Z"));
+    cycle.setWindowEnd(Instant.parse("2026-09-17T03:00:00Z"));
+    experiment.setProduct(Product.builder().id(4L).build());
+    experiment.setPlatform(com.marketinghub.experiment.ExperimentPlatform.FACEBOOK);
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    experiment.setDailyBudget(new BigDecimal("20"));
+    when(products.findLockedById(4L)).thenReturn(Optional.of(experiment.getProduct()));
+    when(cycles.findLocked(4L, 2L)).thenReturn(Optional.of(cycle));
+    when(events.findByCycleIdAndRequestKey(
+            org.mockito.ArgumentMatchers.eq(2L), org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(Optional.empty());
+    ReflectionTestUtils.setField(
+        service, "commercialAuthorization", new LearningCycleCommercialAuthorization(experiments));
+    var request =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+            .RevalidateCycleWindowRequest(
+            java.util.UUID.randomUUID(),
+            13,
+            java.time.LocalDate.now(),
+            java.time.LocalDate.now().plusDays(6),
+            "Janela venceu durante a preparação, sem mudança comercial.");
+
+    var response = service.revalidateWindow(4L, 2L, request, "Operador sintético");
+
+    assertThat(response.stage()).isEqualTo("PUBLICATION");
+    assertThat(response.revision()).isEqualTo(14);
+    assertThat(response.budgetLimitBrl()).isEqualByComparingTo("100");
+    assertThat(experiment.getStatus())
+        .isEqualTo(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    var eventCaptor = org.mockito.ArgumentCaptor.forClass(LearningSalesCycleEvent.class);
+    org.mockito.Mockito.verify(events).saveAndFlush(eventCaptor.capture());
+    assertThat(eventCaptor.getValue().getAction()).isEqualTo("REVALIDATE_WINDOW");
+    assertThat(eventCaptor.getValue().getEvidenceJson())
+        .contains("\"externalSpendAuthorized\":false");
+  }
+
+  /** Recusa renovar depois que a liberação externa começou. */
+  @Test
+  void rejectsWindowRewriteAfterFacebookReleaseStarted() {
+    cycle.setStage("PUBLICATION");
+    experiment.setProduct(Product.builder().id(4L).build());
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    experiment.setFacebookReleaseRequestedAt(Instant.now());
+    when(products.findLockedById(4L)).thenReturn(Optional.of(experiment.getProduct()));
+    when(cycles.findLocked(4L, 2L)).thenReturn(Optional.of(cycle));
+    var request =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+            .RevalidateCycleWindowRequest(
+            java.util.UUID.randomUUID(),
+            13,
+            java.time.LocalDate.now(),
+            java.time.LocalDate.now().plusDays(6),
+            "Tentativa tardia.");
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> service.revalidateWindow(4L, 2L, request, "Operador sintético"))
+        .hasMessageContaining("já iniciou liberação");
+  }
+
   /** Obtém a opção exibida pela API para concluir a etapa de autorização. */
   private LearningCycleResponse.CommandOption authorizationCommand() {
     return service.list(4L).getFirst().commands().stream()

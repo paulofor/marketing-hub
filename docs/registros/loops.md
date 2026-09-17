@@ -4118,6 +4118,13 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   inferência, e adiciona os cenários Opala válido e Opala com timestamp à matriz real do worker.
   Novas tarefas recebem o contrato alinhado; respostas brutas e custos das tentativas anteriores
   permanecem imutáveis.
+- **Recorrência confirmada em 17/09/2026 na tarefa #436:** o módulo de plano financeiro já
+  persistia fontes e cenários por produto/versão, mas o contexto Opala não o consumia nem exigia
+  janela vigente antes de reservar Plutus. O agente recebeu apenas valores comerciais parciais,
+  estimou custos sem fontes e bloqueou depois de consumir USD 0,406908. A correção integra a
+  revisão `LIVE` exata ao contexto, valida versão, vigência, preço e viabilidade antes da
+  inferência, e confere o callback contra o cenário-base determinístico. O prompt v3 orienta
+  Plutus a revisar em vez de reconstruir números; a tarefa #436 e seu custo permanecem históricos.
 
 ## LOOP-SCHEMA-CODEX-UNIQUEITEMS-INCOMPATIVEL — atividade termina antes da inferência
 

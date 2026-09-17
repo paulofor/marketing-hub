@@ -72,6 +72,7 @@ public class PdeEconomicsBpmTaskConsumer {
       validateTaskContract(task);
       execution = execute(task);
       validate(execution.result(), isPrivateValidationTask(task));
+      if (isOpalaTask(task)) validateOpalaResultAgainstPlan(execution.result(), taskContext(task));
       if ("APPROVE".equals(execution.result().path("decision").asText())) {
         complete(task, execution);
       } else {
@@ -415,13 +416,100 @@ public class PdeEconomicsBpmTaskConsumer {
 
   /** Exige estratégia v3 antes de consumir tokens no processo de validação privada. */
   private void validateTaskContract(Map<String, Object> task) throws IOException {
-    if (!isPrivateValidationTask(task)) return;
+    JsonNode context = taskContext(task);
+    if (isOpalaTask(task)) validateOpalaPlanContract(context);
+    if (isPrivateValidationTask(task)) validatePrivateStrategyContract(context);
+  }
+
+  /** Converte o contexto estruturado sem perder o contrato persistido pelo backend. */
+  private JsonNode taskContext(Map<String, Object> task) throws IOException {
     Object rawContext = task.get("processContextJson");
-    JsonNode context =
-        rawContext instanceof String text
-            ? objectMapper.readTree(text)
-            : objectMapper.valueToTree(rawContext);
-    validatePrivateStrategyContract(context);
+    return rawContext instanceof String text
+        ? objectMapper.readTree(text)
+        : objectMapper.valueToTree(rawContext);
+  }
+
+  /** Bloqueia antes da inferência quando plano, versão, fontes ou janela não estão prontos. */
+  static void validateOpalaPlanContract(JsonNode context) {
+    JsonNode opala = context.path("opalaCommercial");
+    JsonNode plan = opala.path("financialPlan");
+    JsonNode assumptions = plan.path("assumptions");
+    JsonNode evaluation = plan.path("deterministicEvaluation");
+    boolean baseFound = false;
+    for (JsonNode scenario : evaluation.path("scenarios"))
+      if ("BASE".equals(scenario.path("code").asText()) && scenario.path("viable").asBoolean())
+        baseFound = true;
+    boolean validWindow;
+    try {
+      validWindow =
+          java.time.Instant.parse(opala.path("windowEnd").asText())
+              .isAfter(java.time.Instant.now());
+    } catch (java.time.format.DateTimeParseException ex) {
+      validWindow = false;
+    }
+    boolean validUntil;
+    try {
+      validUntil =
+          !LocalDate.parse(assumptions.path("validUntil").asText())
+              .isBefore(LocalDate.now(java.time.ZoneOffset.UTC));
+    } catch (java.time.format.DateTimeParseException ex) {
+      validUntil = false;
+    }
+    if (!"READY".equals(plan.path("status").asText())
+        || !"PROJECTED_VIABLE".equals(evaluation.path("status").asText())
+        || !baseFound
+        || !validWindow
+        || !validUntil
+        || !opala
+            .path("productVersion")
+            .asText()
+            .equals(assumptions.path("productVersion").asText())
+        || opala
+                .path("priceBrl")
+                .decimalValue()
+                .compareTo(assumptions.path("priceBrl").decimalValue())
+            != 0
+        || assumptions.path("evidence").asText().isBlank())
+      throw new IllegalArgumentException(
+          "Opala exige plano financeiro LIVE, vigente, viável e da mesma versão antes de Plutus.");
+  }
+
+  /** Recusa aprovação que reconstrua ou altere os números determinísticos da revisão financeira. */
+  static void validateOpalaResultAgainstPlan(JsonNode result, JsonNode context) {
+    if (!"APPROVE".equals(result.path("decision").asText())) return;
+    JsonNode opala = context.path("opalaCommercial");
+    JsonNode plan = opala.path("financialPlan");
+    JsonNode assumptions = plan.path("assumptions");
+    JsonNode base = null;
+    for (JsonNode scenario : plan.path("deterministicEvaluation").path("scenarios"))
+      if ("BASE".equals(scenario.path("code").asText())) base = scenario;
+    if (base == null)
+      throw new IllegalArgumentException("Plano financeiro Opala sem cenário-base.");
+    JsonNode economics = result.path("economics");
+    BigDecimal price = assumptions.path("priceBrl").decimalValue();
+    BigDecimal contribution = base.path("contributionAfterCacBrl").decimalValue();
+    BigDecimal variable = price.subtract(contribution);
+    if (!same(economics.path("offerPriceBrl").decimalValue(), price)
+        || !same(economics.path("variableCostPerSaleBrl").decimalValue(), variable)
+        || !same(economics.path("contributionPerSaleBrl").decimalValue(), contribution)
+        || !same(
+            economics.path("maxCacBrl").decimalValue(),
+            assumptions.path("maximumCacBrl").decimalValue())
+        || !same(
+            economics.path("expectedRefundPercent").decimalValue(),
+            assumptions.path("costs").path("refundPercent").decimalValue()))
+      throw new IllegalArgumentException(
+          "Parecer Opala diverge do plano financeiro determinístico versionado.");
+  }
+
+  /** Compara valores financeiros até a precisão comercial de um centavo. */
+  private static boolean same(BigDecimal left, BigDecimal right) {
+    return left.subtract(right).abs().compareTo(new BigDecimal("0.01")) <= 0;
+  }
+
+  /** Identifica o subprocesso Opala sem inferir pelo produto ou pelo nome da atividade. */
+  private static boolean isOpalaTask(Map<String, Object> task) {
+    return "opala-commercial-preparation-v1".equals(task.get("processCode"));
   }
 
   /** Valida o contrato predecessor isoladamente para impedir regressão entre Atena e Plutus. */

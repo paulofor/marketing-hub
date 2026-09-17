@@ -271,6 +271,33 @@ export function useMeasurementReconciliation(
     },
   });
 }
+export function useWindowRevalidation(productId?: number, cycleId?: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      requestKey: string;
+      expectedRevision: number;
+      startDate: string;
+      endDate: string;
+      reason: string;
+    }) =>
+      (
+        await axios.post<LearningCycle>(
+          `${cycleApi}/products/${productId}/${cycleId}/window-revalidation`,
+          body,
+        )
+      ).data,
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["learning-cycles"] }),
+        client.invalidateQueries({ queryKey: ["learning-cycle-catalog"] }),
+        client.invalidateQueries({
+          queryKey: ["products", productId, "business-processes"],
+        }),
+      ]);
+    },
+  });
+}
 export function cycleError(error: unknown) {
   if (axios.isAxiosError(error))
     return (

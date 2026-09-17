@@ -11,6 +11,9 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCy
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -79,6 +82,18 @@ public class OpalaCommercialService
       require(
           product != null && Objects.equals(product.getId(), scope.cycle().getProductId()),
           "O subprocesso pertence a outro produto.");
+      if ("economics".equals(activity.getActivityId())) {
+        var financialPlan = context.snapshot(source).path("financialPlan");
+        require(
+            "READY".equals(financialPlan.path("status").asText()),
+            financialPlan
+                .path("reason")
+                .asText("Plano financeiro da versão ainda não está pronto."));
+        require(
+            scope.cycle().getWindowEnd() != null
+                && scope.cycle().getWindowEnd().isAfter(Instant.now()),
+            "A janela comercial venceu; revalide o período antes de solicitar novo parecer de Plutus.");
+      }
       if (Set.of("humanExperienceReview", "commercialIntegrityReview")
           .contains(activity.getActivityId())) {
         var preparation = commercialReadiness.inspect(scope.cycle());
@@ -135,6 +150,12 @@ public class OpalaCommercialService
           "Parecer não aprovou esta preparação.");
       if ("economics".equals(activity)) {
         var economics = result.path("economics");
+        var financialPlan = context.snapshot(task.getSourceReference()).path("financialPlan");
+        require(
+            "READY".equals(financialPlan.path("status").asText()),
+            "O plano financeiro mudou ou deixou de estar vigente durante a avaliação.");
+        var assumptions = financialPlan.path("assumptions");
+        var baseScenario = baseScenario(financialPlan);
         require(
             economics.path("offerPriceBrl").isNumber()
                 && economics.path("variableCostPerSaleBrl").isNumber()
@@ -155,6 +176,18 @@ public class OpalaCommercialService
                         .compareTo(new BigDecimal("0.01"))
                     <= 0,
             "A economia aprovada não reconcilia com preço, custo e margem do experimento.");
+        var projectedContribution = baseScenario.path("contributionAfterCacBrl").decimalValue();
+        var projectedCost = price.subtract(projectedContribution);
+        require(
+            close(cost, projectedCost)
+                && close(contribution, projectedContribution)
+                && close(
+                    economics.path("maxCacBrl").decimalValue(),
+                    assumptions.path("maximumCacBrl").decimalValue())
+                && close(
+                    economics.path("expectedRefundPercent").decimalValue(),
+                    assumptions.path("costs").path("refundPercent").decimalValue()),
+            "O parecer de Plutus diverge da projeção financeira versionada.");
         require(
             economics.path("maxBudgetBrl").isNumber()
                 && economics.path("maxBudgetBrl").decimalValue().signum() > 0
@@ -171,8 +204,7 @@ public class OpalaCommercialService
                 && scope.cycle().getBudgetLimitBrl().signum() > 0,
             "Informe três cenários e um teto de mídia válido.");
         require(
-            !java.time.LocalDate.parse(economics.path("deadline").asText())
-                .isBefore(java.time.LocalDate.now(java.time.ZoneOffset.UTC)),
+            validDeadline(scope, financialPlan, economics.path("deadline").asText()),
             "O parecer financeiro expirou.");
       } else {
         require(
@@ -240,6 +272,8 @@ public class OpalaCommercialService
               if ("economics".equals(step))
                 return !snapshot.path("priceBrl").equals(current.path("priceBrl"))
                     || !snapshot.path("budgetLimitBrl").equals(current.path("budgetLimitBrl"))
+                    || !snapshot.path("windowEnd").equals(current.path("windowEnd"))
+                    || !snapshot.path("financialPlan").equals(current.path("financialPlan"))
                     || !snapshot.path("productContract").equals(current.path("productContract"))
                     || java.time.LocalDate.parse(
                             context
@@ -251,5 +285,37 @@ public class OpalaCommercialService
               return !snapshot.equals(current);
             })
         .orElse(false);
+  }
+
+  /**
+   * Localiza o cenário-base calculado pelo backend, sem aceitar números reconstruídos pelo modelo.
+   */
+  private static com.fasterxml.jackson.databind.JsonNode baseScenario(
+      com.fasterxml.jackson.databind.JsonNode financialPlan) {
+    for (var scenario : financialPlan.path("deterministicEvaluation").path("scenarios"))
+      if ("BASE".equals(scenario.path("code").asText())) return scenario;
+    throw new IllegalStateException("Plano financeiro sem cenário-base determinístico.");
+  }
+
+  /** Compara valores financeiros na precisão comercial de um centavo. */
+  private static boolean close(BigDecimal left, BigDecimal right) {
+    return left != null
+        && right != null
+        && left.subtract(right).abs().compareTo(new BigDecimal("0.01")) <= 0;
+  }
+
+  /** Limita o parecer à menor validade entre plano financeiro e janela comercial. */
+  private static boolean validDeadline(
+      OpalaCommercialContext.Scope scope,
+      com.fasterxml.jackson.databind.JsonNode financialPlan,
+      String rawDeadline) {
+    LocalDate deadline = LocalDate.parse(rawDeadline);
+    LocalDate today = LocalDate.now(ZoneOffset.UTC);
+    LocalDate planLimit =
+        LocalDate.parse(financialPlan.path("assumptions").path("validUntil").asText());
+    LocalDate windowLimit = scope.cycle().getWindowEnd().atZone(ZoneOffset.UTC).toLocalDate();
+    return !deadline.isBefore(today)
+        && !deadline.isAfter(planLimit)
+        && !deadline.isAfter(windowLimit);
   }
 }

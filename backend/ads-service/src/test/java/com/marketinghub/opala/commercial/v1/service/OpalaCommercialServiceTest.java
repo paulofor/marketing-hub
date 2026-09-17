@@ -36,7 +36,12 @@ class OpalaCommercialServiceTest {
       Experiment.builder().id(92L).unitPrice(new BigDecimal("67")).build();
   private final AgentTask task = new AgentTask();
   private final String identity =
-      "{\"productId\":4,\"experimentId\":92,\"cycleId\":2,\"productVersion\":\"fixture-v12\"}";
+      """
+      {"productId":4,"experimentId":92,"cycleId":2,"productVersion":"fixture-v12",
+       "financialPlan":{"status":"READY","assumptions":{"validUntil":"2099-10-31",
+         "priceBrl":67,"maximumCacBrl":15,"costs":{"refundPercent":12}},
+         "deterministicEvaluation":{"scenarios":[{"code":"BASE","contributionAfterCacBrl":25}]}}}
+      """;
 
   /** Monta uma ocorrência sintética com a mesma correlação exigida no callback real. */
   @BeforeEach
@@ -47,6 +52,7 @@ class OpalaCommercialServiceTest {
     cycle.setProductVersion("fixture-v12");
     cycle.setVersionChangedAt(Instant.now().minusSeconds(60));
     cycle.setBudgetLimitBrl(new BigDecimal("100"));
+    cycle.setWindowEnd(Instant.parse("2099-10-31T23:59:59Z"));
     var process = new BusinessProcessDefinition();
     process.setId(100L);
     process.setProcessCode(OpalaCommercialContext.CODE);

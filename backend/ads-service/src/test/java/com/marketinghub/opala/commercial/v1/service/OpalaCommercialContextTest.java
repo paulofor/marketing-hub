@@ -42,7 +42,8 @@ class OpalaCommercialContextTest {
           mock(TargetingElementRepository.class),
           new ObjectMapper(),
           mock(CreativeRepository.class),
-          mock(ExperimentTargetingSelectionService.class));
+          mock(ExperimentTargetingSelectionService.class),
+          mock(OpalaCommercialFinancialPlan.class));
   private final Product product =
       Product.builder()
           .id(4L)

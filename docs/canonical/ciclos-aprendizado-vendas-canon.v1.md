@@ -151,6 +151,13 @@ predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.
   ou expirada e versão/aprovação divergentes bloqueiam tanto a disponibilidade quanto o comando.
   Orçamento operacional ainda vazio não exige redigitação: continua materializado atomicamente
   pelo comando confirmado. Os gates financeiros, técnicos e comerciais finais são preservados.
+- Quando uma janela vencer durante a preparação e o experimento ainda estiver `PLANNED`, sem
+  solicitação de liberação, a tela pode revalidar somente as datas do mesmo ciclo. O comando exige
+  revisão esperada, chave idempotente, justificativa e período futuro de no máximo 31 dias; preserva
+  produto, experimento, versão, hipótese e teto total, não autoriza gasto nem publica campanha. A
+  alteração invalida pareceres econômicos dependentes do prazo e fica registrada como evento
+  imutável. Experimento em operação ou com liberação solicitada exige novo ciclo/decisão, nunca
+  reescrita da janela histórica.
 - O resumo da autorização final deve explicar o efeito do canal: em Facebook, o aceite libera
   a publicação da campanha e o gasto de mídia dentro dos limites aprovados. Não pode prometer
   "sem criar campanha paga" quando o comando envia a campanha à Meta. O canal direto mantém

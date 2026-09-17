@@ -18,4 +18,8 @@ databaseChangeLog:
         - tagDatabase:
             tag: opala-before-preparation
   - include:
-      file: db/changelog/changesets/2026-09-15-opala-commercial-preparation-v1.yaml
+      file: ../db/changelog/changesets/2026-09-15-opala-commercial-preparation-v1.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: ../db/changelog/changesets/2026-09-16-pde-processo5-preparacao-por-tipo-v1.yaml
+      relativeToChangelogFile: true

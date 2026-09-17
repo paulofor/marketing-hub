@@ -833,6 +833,62 @@ describe("ProductProcessActivityExecutionsPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows Opala at 5.1 in the type-routed chain without changing historical numbering", async () => {
+    vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (url === "/api/products/value-chain-positions/4") {
+        return {
+          data: {
+            productId: 4,
+            resolutionStatus: "IDENTIFIED",
+            processDefinitionId: 56,
+            sequenceNumber: 5,
+            processMeasurements: [],
+            subprocessPosition: null,
+          },
+        };
+      }
+      return {
+        data: {
+          ...history,
+          productId: 4,
+          productName: "Método MUSA - Presença Elegante em 7 Dias",
+          productInternalName: "Vega",
+          selectedProcessDefinitionId: 77,
+          processCode: "opala-commercial-preparation-v1",
+          processName: "Preparar operação comercial Opala",
+          selectedProcessVersionNumber: 1,
+          chainPosition: {
+            sequenceLabel: "5.1",
+            parentProcessCode: "pde-commercial-homologation-activation",
+            parentProcessName: "Homologação e ativação comercial do PDE",
+          },
+          activities: [
+            {
+              ...history.activities[0],
+              activityId: "entry",
+              sequenceNumber: 1,
+              activityName: "Preparar entrada do próprio PDE",
+            },
+          ],
+        },
+      };
+    });
+
+    renderPage(
+      "/products/4/value-chain-history/processes/77/activities?chainId=16#activity-entry",
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Vega · Processo 5.1 — Preparar operação comercial Opala",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Atividade 5.1.1")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Copiar contexto da atividade 5.1.1" }),
+    ).toBeInTheDocument();
+  });
+
   it("makes a process with every objective achieved explicitly complete", async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {

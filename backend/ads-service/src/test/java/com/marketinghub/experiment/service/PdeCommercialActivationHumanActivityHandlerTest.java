@@ -168,6 +168,42 @@ class PdeCommercialActivationHumanActivityHandlerTest {
     verify(experimentService, never()).updateStatus(89L, ExperimentStatus.RUNNING);
   }
 
+  /** Bloqueia a autorização quando a preparação específica do tipo perdeu vigência. */
+  @Test
+  void blocksAuthorizationWhenOpalaPreparationIsNotCurrent() {
+    Product product = Product.builder().id(9L).build();
+    Experiment experiment = experiment(product, ExperimentStatus.PLANNED);
+    experiment.setMediaSpendLimit(new BigDecimal("100.00"));
+    LearningSalesCycle cycle = new LearningSalesCycle();
+    cycle.setProductId(9L);
+    cycle.setStatus("OPEN");
+    cycle.setBudgetLimitBrl(new BigDecimal("100.00"));
+    var routing = mock(com.marketinghub.opala.commercial.v1.service.OpalaCommercialRouting.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(handler, "opalaRouting", routing);
+    when(experiments.findById(89L)).thenReturn(java.util.Optional.of(experiment));
+    when(cycles.findByExperimentId(89L)).thenReturn(java.util.Optional.of(cycle));
+    when(routing.target(cycle)).thenReturn(new BusinessProcessDefinition());
+    when(routing.completed(cycle)).thenReturn(false);
+    when(readinessService.summarize(89L)).thenReturn(readiness(true));
+    when(plans.findByExperimentReference(89L))
+        .thenReturn(
+            List.of(CommercialPlan.builder().id(4L).maxBudget(new BigDecimal("100.00")).build()));
+    when(runs.findTopByExperimentIdAndModeOrderByRunNumberDesc(89L, ExperimentRunMode.PRODUCTION))
+        .thenReturn(java.util.Optional.of(ExperimentRun.builder().id(9L).runNumber(2).build()));
+
+    HumanProductProcessActivityReadiness result =
+        handler.readiness(process(), activity(), product, "experiment:89");
+
+    assertThat(result.ready()).isFalse();
+    assertThat(result.reason()).contains("Abra o subprocesso");
+    assertThat(result.requirements())
+        .anySatisfy(
+            requirement -> {
+              assertThat(requirement.code()).isEqualTo("OPALA_PREPARATION_READY");
+              assertThat(requirement.satisfied()).isFalse();
+            });
+  }
+
   /** Libera o Facebook pelo contrato canônico sem antecipar RUNNING à campanha. */
   @Test
   void releasesFacebookExperimentThroughCanonicalService() {

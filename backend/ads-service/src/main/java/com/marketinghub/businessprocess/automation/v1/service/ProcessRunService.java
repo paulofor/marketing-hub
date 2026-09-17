@@ -482,7 +482,7 @@ public class ProcessRunService {
               .filter(relation -> activity.activityId().equals(relation.activityId()))
               .map(ProcessRunRelationResponse::navigationUrl)
               .findFirst()
-              .orElse(null));
+              .orElse(control.navigationUrl()));
       if ("COMPLETED".equals(child.getStatus()) && completedObjectives(childReadiness)) {
         if (child.getParentRunId() == null) child.setParentRunId(run.getId());
         subprocesses.complete(run, activity, child, childReadiness);

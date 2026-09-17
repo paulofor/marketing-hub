@@ -143,9 +143,16 @@ public class ExecutionProfileService {
         || !new HashSet<>(chainCodes).equals(new HashSet<>(ExecutionProfileRules.PHASES)))
       throw conflict("A ficha exige a cadeia comum de seis processos PDE.");
     LinkedHashMap<String, ProcessReference> composition = new LinkedHashMap<>();
+    String productTypeCode =
+        product.getProductTypeDefinition() == null
+            ? null
+            : product.getProductTypeDefinition().getCode();
     chain
         .getItems()
-        .forEach(item -> collect(item.getProcessDefinition(), composition, new HashSet<>()));
+        .forEach(
+            item ->
+                collect(
+                    item.getProcessDefinition(), productTypeCode, composition, new HashSet<>()));
     var profile = new ExecutionProfile();
     profile.setProductId(productId);
     var previous = profiles.findByProductIdOrderByRevisionNumberDesc(productId);
@@ -480,6 +487,7 @@ public class ExecutionProfileService {
   /** Percorre chamadas explícitas e congela a versão publicada de cada subprocesso alcançável. */
   private void collect(
       BusinessProcessDefinition process,
+      String productTypeCode,
       Map<String, ProcessReference> result,
       Set<String> visiting) {
     if (!"PUBLISHED".equals(process.getStatus()))
@@ -506,8 +514,30 @@ public class ExecutionProfileService {
               processes
                   .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(childCode, "PUBLISHED")
                   .orElseThrow(() -> conflict("Subprocesso sem versão publicada: " + childCode)),
+              productTypeCode,
               result,
               visiting);
+        for (var route : node.path("subprocessRoutes")) {
+          if (!Objects.equals(productTypeCode, route.path("productTypeCode").asText())) continue;
+          String routedCode = route.path("subprocessCode").asText("");
+          int routedVersion = route.path("subprocessVersion").asInt(-1);
+          if (routedCode.isBlank() || routedVersion < 1)
+            throw conflict("Percurso comercial do tipo sem processo e versão exatos.");
+          collect(
+              processes
+                  .findByProcessCodeAndVersionNumber(routedCode, routedVersion)
+                  .filter(candidate -> "PUBLISHED".equals(candidate.getStatus()))
+                  .orElseThrow(
+                      () ->
+                          conflict(
+                              "Subprocesso sem versão publicada: "
+                                  + routedCode
+                                  + " v"
+                                  + routedVersion)),
+              productTypeCode,
+              result,
+              visiting);
+        }
       }
     } catch (ResponseStatusException ex) {
       log.warn("Composição bloqueou ficha. processId={}", process.getId(), ex);

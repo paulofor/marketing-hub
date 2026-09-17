@@ -1,5 +1,6 @@
 package com.marketinghub.businessprocess.automation.v1.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.automation.v1.ProcessRun;
@@ -87,7 +88,7 @@ public class ProcessRunContext {
                 command.chainId(),
                 processId,
                 command.sourceReference());
-    if (!explicitlyAdopted && !belongs(process, memberIds, new HashSet<>()))
+    if (!explicitlyAdopted && !belongs(process, memberIds, productTypeCode(productId)))
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "A versão do processo não pertence à cadeia informada.");
     if (command.learningCycleId() != null) {
@@ -204,27 +205,61 @@ public class ProcessRunContext {
   }
 
   /** Confere vínculo por chamada explícita, sem aceitar apenas parentesco por nome. */
-  private boolean belongs(BusinessProcessDefinition process, Set<Long> members, Set<Long> visited) {
+  private boolean belongs(
+      BusinessProcessDefinition process, Set<Long> members, String productTypeCode) {
     if (members.contains(process.getId())) return true;
-    if (process.getParentProcessCode() == null || !visited.add(process.getId())) return false;
-    for (var parent :
-        processes.findAllByProcessCodeOrderByVersionNumberDesc(process.getParentProcessCode())) {
-      try {
-        boolean called = false;
-        for (var node : json.readTree(parent.getDiagramJson()).path("nodes"))
-          if ("TASK".equals(node.path("type").asText())
-              && process.getProcessCode().equals(node.path("subprocessCode").asText()))
-            called = true;
-        if (called && belongs(parent, members, visited)) return true;
-      } catch (Exception ex) {
-        log.error(
-            "Falha ao validar chamada do subprocesso. processDefinitionId={} parentId={}",
-            process.getId(),
-            parent.getId(),
-            ex);
-        throw new IllegalStateException("A chamada do subprocesso possui contrato inválido.", ex);
-      }
-    }
+    for (Long memberId : members)
+      if (calls(
+          processes.findById(memberId).orElseThrow(), process, productTypeCode, new HashSet<>()))
+        return true;
     return false;
+  }
+
+  /** Percorre o grafo real da cadeia e respeita versões exatas declaradas nas rotas por tipo. */
+  private boolean calls(
+      BusinessProcessDefinition parent,
+      BusinessProcessDefinition target,
+      String productTypeCode,
+      Set<Long> visited) {
+    if (!visited.add(parent.getId())) return false;
+    try {
+      for (var node : json.readTree(parent.getDiagramJson()).path("nodes")) {
+        if (!"TASK".equals(node.path("type").asText())) continue;
+        String directCode = node.path("subprocessCode").asText();
+        if (!directCode.isBlank()) {
+          if (directCode.equals(target.getProcessCode())) return true;
+          for (var child : processes.findAllByProcessCodeOrderByVersionNumberDesc(directCode))
+            if (calls(child, target, productTypeCode, visited)) return true;
+        }
+        for (JsonNode route : node.path("subprocessRoutes")) {
+          if (!Objects.equals(productTypeCode, route.path("productTypeCode").asText())) continue;
+          String code = route.path("subprocessCode").asText();
+          int version = route.path("subprocessVersion").asInt(-1);
+          if (code.isBlank() || version < 1)
+            throw new IllegalStateException("A rota do tipo não possui processo e versão exatos.");
+          if (code.equals(target.getProcessCode()) && version == target.getVersionNumber())
+            return true;
+          var child = processes.findByProcessCodeAndVersionNumber(code, version).orElse(null);
+          if (child != null && calls(child, target, productTypeCode, visited)) return true;
+        }
+      }
+      return false;
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao validar chamada do subprocesso. processDefinitionId={} parentId={}",
+          target.getId(),
+          parent.getId(),
+          ex);
+      throw new IllegalStateException("A chamada do subprocesso possui contrato inválido.", ex);
+    }
+  }
+
+  /** Obtém o tipo cadastrado usado para impedir que outra família consuma a rota Opala. */
+  private String productTypeCode(Long productId) {
+    return products
+        .findById(productId)
+        .map(product -> product.getProductTypeDefinition())
+        .map(type -> type.getCode())
+        .orElse(null);
   }
 }

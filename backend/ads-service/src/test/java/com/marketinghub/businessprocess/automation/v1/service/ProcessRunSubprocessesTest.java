@@ -98,6 +98,22 @@ class ProcessRunSubprocessesTest {
     verifyNoInteractions(instances);
   }
 
+  /** Aceita a conclusão somente quando código e versão correspondem à rota tipada persistida. */
+  @Test
+  void completesTypedSubprocessCallWithExactVersion() {
+    definition.setSubprocessCode(null);
+    definition.setDefinitionJson(
+        "{\"subprocessRoutes\":[{\"productTypeCode\":\"PDE\",\"subprocessCode\":\"creative-production-approval\",\"subprocessVersion\":1}]}");
+    when(proof.selectedProcessVersionNumber()).thenReturn(1);
+
+    service.complete(parent, activity, child, proof);
+
+    verify(instances).saveAndFlush(any(BusinessProcessActivityInstance.class));
+    when(proof.selectedProcessVersionNumber()).thenReturn(2);
+    assertThatThrownBy(() -> service.complete(parent, activity, child, proof))
+        .hasMessageContaining("não pertence");
+  }
+
   /** Cria uma execução de teste sem acessar dados produtivos. */
   private ProcessRun run(Long id, Long process) {
     var r = new ProcessRun();

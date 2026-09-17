@@ -44,6 +44,25 @@ class ProductStageMeasurementResolverTest {
           new ObjectMapper(),
           Clock.fixed(Instant.parse("2026-08-25T12:00:00Z"), ZoneOffset.UTC));
 
+  /** Preserva 5.4 quando o segundo subprocesso é chamado pela quarta atividade do processo pai. */
+  @Test
+  void usesDelegatingActivitySequenceInsteadOfSubprocessOrdinal() {
+    BusinessProcessDefinition preparation = process(77L, "opala", "homologation");
+    BusinessProcessDefinition technical = process(88L, "technical", "homologation");
+
+    var result =
+        resolver.resolveSubprocessMeasurements(
+            new ProductStageMeasurementContext(List.of(), List.of(), List.of()),
+            List.of(preparation, technical),
+            technical,
+            5,
+            true,
+            List.of(1, 4));
+
+    assertThat(result).singleElement();
+    assertThat(result.getFirst().sequenceLabel()).isEqualTo("5.4");
+  }
+
   /** Soma custos conhecidos, preserva lacunas e corrige o backfill pela primeira execução. */
   @Test
   void measuresCurrentProcessWithExplicitCostCoverage() {

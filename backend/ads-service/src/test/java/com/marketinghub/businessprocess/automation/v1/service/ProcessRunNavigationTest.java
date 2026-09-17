@@ -7,9 +7,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.automation.v1.ProcessRun;
 import com.marketinghub.businessprocesschain.*;
+import com.marketinghub.product.Product;
+import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
 import com.marketinghub.repository.jpa.processautomation.ProcessRunRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -20,8 +23,9 @@ class ProcessRunNavigationTest {
   private final BusinessProcessChainDefinitionRepository chains =
       mock(BusinessProcessChainDefinitionRepository.class);
   private final ProcessRunRepository runs = mock(ProcessRunRepository.class);
+  private final ProductRepository products = mock(ProductRepository.class);
   private final ProcessRunNavigation navigation =
-      new ProcessRunNavigation(processes, chains, runs, new ObjectMapper());
+      new ProcessRunNavigation(processes, chains, runs, products, new ObjectMapper());
 
   /** Mantém links após conclusão e preserva cadeia e ciclo sem carregar outro contexto. */
   @Test
@@ -96,6 +100,44 @@ class ProcessRunNavigationTest {
         .extracting(r -> r.activityId())
         .containsExactly("a", "b");
     assertThat(navigation.parents(run(3L, 90L))).isEmpty();
+  }
+
+  /** Navega somente pela rota correspondente ao tipo oficial e à versão declarada no BPM. */
+  @Test
+  void followsTypedSubprocessRoute() {
+    var parent =
+        definition(
+            56L,
+            "pde-commercial-homologation-activation",
+            "{\"nodes\":[{\"id\":\"commercialPreparation\",\"type\":\"TASK\",\"subprocessRoutes\":[{\"productTypeCode\":\"PDE\",\"subprocessCode\":\"opala-commercial-preparation-v1\",\"subprocessVersion\":1},{\"productTypeCode\":\"QUARTZ\",\"subprocessCode\":\"quartzo-preparation\",\"subprocessVersion\":2}]}]}");
+    var opala = definition(77L, "opala-commercial-preparation-v1", "{\"nodes\":[]}");
+    opala.setVersionNumber(1);
+    when(processes.findByProcessCodeAndVersionNumber("opala-commercial-preparation-v1", 1))
+        .thenReturn(Optional.of(opala));
+    when(products.findById(4L))
+        .thenReturn(
+            Optional.of(
+                Product.builder()
+                    .id(4L)
+                    .productTypeDefinition(ProductTypeDefinition.builder().code("PDE").build())
+                    .build()));
+    var chain = new BusinessProcessChainDefinition();
+    var item = new BusinessProcessChainItem();
+    item.setProcessDefinition(parent);
+    chain.getItems().add(item);
+    when(chains.findById(14L)).thenReturn(Optional.of(chain));
+
+    assertThat(navigation.children(run(1L, 56L)))
+        .singleElement()
+        .satisfies(
+            relation -> {
+              assertThat(relation.processDefinitionId()).isEqualTo(77L);
+              assertThat(relation.activityId()).isEqualTo("commercialPreparation");
+            });
+    assertThat(navigation.parents(run(2L, 77L)))
+        .singleElement()
+        .satisfies(relation -> assertThat(relation.processDefinitionId()).isEqualTo(56L));
+    verify(processes, never()).findByProcessCodeAndVersionNumber("quartzo-preparation", 2);
   }
 
   /** Prepara uma definição versionada mínima do catálogo. */

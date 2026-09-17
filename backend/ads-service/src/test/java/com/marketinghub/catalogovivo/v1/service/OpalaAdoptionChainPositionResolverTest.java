@@ -8,6 +8,7 @@ import com.marketinghub.businessprocesschain.BusinessProcessChainDefinition;
 import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
 import com.marketinghub.catalogovivo.v1.service.adoption.OpalaAdoption;
 import com.marketinghub.repository.jdbc.catalogovivo.OpalaAdoptionRepository;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -81,5 +82,72 @@ class OpalaAdoptionChainPositionResolverTest {
                     Instant.parse("2026-09-16T00:00:00Z"))));
 
     assertThat(resolver.resolve(4L, 78L, "opala-commercial-preparation-v1", 2L, 14L)).isEmpty();
+  }
+
+  /** Expõe 5.1 quando a cadeia nova chama a versão Opala pela rota tipada do Processo 5. */
+  @Test
+  void resolvesProcessFivePointOneFromTypedRoute() {
+    var adoptions = Mockito.mock(OpalaAdoptionRepository.class);
+    var chains = Mockito.mock(BusinessProcessChainDefinitionRepository.class);
+    var processes = Mockito.mock(BusinessProcessDefinitionRepository.class);
+    var resolver =
+        new OpalaAdoptionChainPositionResolver(
+            adoptions, chains, processes, new com.fasterxml.jackson.databind.ObjectMapper());
+    var child = new BusinessProcessDefinition();
+    child.setId(77L);
+    child.setProcessCode("opala-commercial-preparation-v1");
+    child.setVersionNumber(1);
+    when(processes.findById(77L)).thenReturn(Optional.of(child));
+    var parent = new BusinessProcessDefinition();
+    parent.setId(56L);
+    parent.setProcessCode("pde-commercial-homologation-activation");
+    parent.setName("Homologação e ativação comercial");
+    parent.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\"},{\"id\":\"commercialPreparation\",\"type\":\"TASK\",\"subprocessRoutes\":[{\"productTypeCode\":\"PDE\",\"subprocessCode\":\"opala-commercial-preparation-v1\",\"subprocessVersion\":1}]},{\"id\":\"review\",\"type\":\"TASK\"}],\"flows\":[]}");
+    var item = new BusinessProcessChainItem();
+    item.setSequenceNumber(5);
+    item.setProcessDefinition(parent);
+    var chain = new BusinessProcessChainDefinition();
+    chain.setItems(List.of(item));
+    when(chains.findById(16L)).thenReturn(Optional.of(chain));
+
+    assertThat(resolver.resolve(4L, 77L, "opala-commercial-preparation-v1", 3L, 16L))
+        .hasValueSatisfying(
+            position -> {
+              assertThat(position.sequenceLabel()).isEqualTo("5.1");
+              assertThat(position.parentProcessCode())
+                  .isEqualTo("pde-commercial-homologation-activation");
+            });
+  }
+
+  /** Numera a homologação técnica como 5.4 pela atividade real, não como segundo subprocesso. */
+  @Test
+  void resolvesTechnicalHomologationAtProcessFivePointFour() {
+    var adoptions = Mockito.mock(OpalaAdoptionRepository.class);
+    var chains = Mockito.mock(BusinessProcessChainDefinitionRepository.class);
+    var processes = Mockito.mock(BusinessProcessDefinitionRepository.class);
+    var resolver =
+        new OpalaAdoptionChainPositionResolver(
+            adoptions, chains, processes, new com.fasterxml.jackson.databind.ObjectMapper());
+    var child = new BusinessProcessDefinition();
+    child.setId(88L);
+    child.setProcessCode("experiment-homologation-activation");
+    child.setVersionNumber(5);
+    when(processes.findById(88L)).thenReturn(Optional.of(child));
+    var parent = new BusinessProcessDefinition();
+    parent.setId(56L);
+    parent.setProcessCode("pde-commercial-homologation-activation");
+    parent.setName("Homologação e ativação comercial");
+    parent.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\"},{\"id\":\"commercialPreparation\",\"type\":\"TASK\"},{\"id\":\"humanExperienceReview\",\"type\":\"TASK\"},{\"id\":\"commercialIntegrityReview\",\"type\":\"TASK\"},{\"id\":\"preflight\",\"type\":\"TASK\",\"subprocessCode\":\"experiment-homologation-activation\"}],\"flows\":[]}");
+    var item = new BusinessProcessChainItem();
+    item.setSequenceNumber(5);
+    item.setProcessDefinition(parent);
+    var chain = new BusinessProcessChainDefinition();
+    chain.setItems(List.of(item));
+    when(chains.findById(16L)).thenReturn(Optional.of(chain));
+
+    assertThat(resolver.resolve(4L, 88L, "experiment-homologation-activation", 3L, 16L))
+        .hasValueSatisfying(position -> assertThat(position.sequenceLabel()).isEqualTo("5.4"));
   }
 }

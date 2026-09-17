@@ -53,25 +53,34 @@ public class OpalaCommercialRouting {
       }
     }
     var chain = chains.findById(cycle.getChainDefinitionId()).orElseThrow();
-    boolean called =
-        chain.getItems().stream()
-            .map(i -> i.getProcessDefinition())
-            .filter(p -> "pde-sales-delivery-learning".equals(p.getProcessCode()))
-            .anyMatch(p -> hasCall(p));
-    return called
-        ? processes
-            .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
-                OpalaCommercialContext.CODE, "PUBLISHED")
-            .orElse(null)
-        : null;
+    return chain.getItems().stream()
+        .map(item -> calledTarget(item.getProcessDefinition()))
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
   }
 
-  /** Confere a chamada no grafo publicado, sem aceitar apenas parentesco cadastral. */
-  private boolean hasCall(BusinessProcessDefinition process) {
-    for (var node : context.read(process.getDiagramJson()).path("nodes"))
-      if ("TASK".equals(node.path("type").asText())
-          && OpalaCommercialContext.CODE.equals(node.path("subprocessCode").asText())) return true;
-    return false;
+  /** Resolve a chamada no grafo e preserva a versão exata declarada na rota do tipo. */
+  private BusinessProcessDefinition calledTarget(BusinessProcessDefinition process) {
+    for (var node : context.read(process.getDiagramJson()).path("nodes")) {
+      if (!"TASK".equals(node.path("type").asText())) continue;
+      if (OpalaCommercialContext.CODE.equals(node.path("subprocessCode").asText()))
+        return processes
+            .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+                OpalaCommercialContext.CODE, "PUBLISHED")
+            .orElse(null);
+      for (var route : node.path("subprocessRoutes"))
+        if ("PDE".equals(route.path("productTypeCode").asText())
+            && OpalaCommercialContext.CODE.equals(route.path("subprocessCode").asText())) {
+          int version = route.path("subprocessVersion").asInt(-1);
+          if (version < 1) throw new IllegalStateException("A rota Opala não possui versão exata.");
+          return processes
+              .findByProcessCodeAndVersionNumber(OpalaCommercialContext.CODE, version)
+              .filter(candidate -> "PUBLISHED".equals(candidate.getStatus()))
+              .orElse(null);
+        }
+    }
+    return null;
   }
 
   /** Reconhece a prova final da versão atual sem tratar ausência de prova como sucesso. */

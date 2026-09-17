@@ -162,6 +162,14 @@ os subprocessos visualmente agrupados sob o respectivo processo pai e explicar q
 especializadas publicadas aparecerão nessa composição. Versões anteriores permanecem preservadas
 como histórico, mas somente uma versão publicada de cada código participa da operação atual.
 
+Exceção versionada para percurso por tipo: uma atividade roteadora pode declarar
+`subprocessRoutes`, contendo `productTypeCode`, `subprocessCode` e `subprocessVersion` exatos. O
+executor backend dessa atividade apenas seleciona a rota pelo tipo efetivamente cadastrado e delega
+ao subprocesso; ele não executa nem conclui o trabalho especializado. Tipo sem rota publicada fica
+bloqueado de forma explícita. A ficha de execução congela somente a rota aplicável ao produto, e
+navegação, pertencimento e retorno usam o mesmo contrato. É proibido inferir a rota por nome,
+codinome mineral, formato ou tecnologia do produto.
+
 ## Cadeia principal
 
 ```text
@@ -492,10 +500,39 @@ for recorrente.
 
 ## 5. Homologação e ativação comercial
 
-**Objetivo final:** comprovar ponta a ponta que a versão correta pode receber tráfego, vender, liberar
-acesso, entregar valor e medir o funil sem contaminar dados nem orçamento.
+**Objetivo final:** comprovar que a versão está pronta para vender, entregar o prometido e operar
+dentro dos limites financeiros, registrando a autorização humana sem antecipar operação ou
+`RUNNING`.
 
 **Entrada mínima:** produto e kit comercial aprovados.
+
+**Composição canônica a partir da cadeia v16:**
+
+| Número | Atividade | Responsabilidade e objetivo |
+|---|---|---|
+| **5.1** | Preparar operação comercial conforme o tipo | Backend seleciona pelo tipo cadastrado e pela ficha o subprocesso aplicável. Opala (`PDE`) chama `opala-commercial-preparation-v1`; tipos sem percurso configurado não passam por Opala. |
+| **5.2** | Validar experiência e valor para o cliente | Psique comprova compreensão, uso e valor. Pode reutilizar o parecer vigente de 5.1.6 no mesmo escopo, sem nova chamada paga. |
+| **5.3** | Validar integridade comercial | Têmis comprova coerência entre anúncio, promessa, preço, condições, checkout e entrega. Pode reutilizar 5.1.7 no mesmo escopo. |
+| **5.4** | Executar homologação técnica do experimento | Backend usa `experiment-homologation-activation` e as evidências técnicas vigentes para validar superfícies, compra simulada, acesso, entrega, falhas, eventos, segregação e controles de consumo. |
+| **5.5** | Autorizar ativação, orçamento e janela | Decisão humana aprova a versão exata, canais, teto, período e condições de parada; nenhum parecer técnico autoriza gasto. |
+
+Para o tipo Opala, **5.1** contém:
+
+| Número | Atividade | Responsável |
+|---|---|---|
+| **5.1.1** | Preparar entrada do próprio PDE | Dédalo |
+| **5.1.2** | Vincular e preparar criativo aprovado | Dédalo, com ativos de Íris e Apolo |
+| **5.1.3** | Configurar checkout e acesso | Dédalo |
+| **5.1.4** | Preparar público aprovado | Dédalo, conforme Atena |
+| **5.1.5** | Validar custos, limites e margem | Plutus |
+| **5.1.6** | Homologar experiência comercial | Psique |
+| **5.1.7** | Revisar integridade da jornada | Têmis |
+| **5.1.8** | Consolidar preparação e retornar ao Processo 5 | Backend |
+
+O reaproveitamento de 5.1.6 em 5.2 e de 5.1.7 em 5.3 registra a tarefa e a consolidação originais,
+impressão da evidência e custo incremental zero. Só é válido para o mesmo produto, cadeia, ciclo,
+experimento, versão e configuração comercial. Mudança material invalida o snapshot e exige renovar
+somente o parecer afetado; os custos permanecem contabilizados no subprocesso original.
 
 **Trabalho essencial:**
 
@@ -512,16 +549,24 @@ acesso, entregar valor e medir o funil sem contaminar dados nem orçamento.
 - validar observabilidade, atribuição, orçamento e regras de parada;
 - persistir evidências de todos os gates.
 
-**Saída final:** preflight aprovado e experimento apto a `RUNNING`, ou bloqueio com causa-raiz e ação
-corretiva explícitas.
+**Saída final:** ativação explicitamente autorizada para a versão comprovada, ou bloqueio com
+causa-raiz e retorno à atividade responsável. O Processo 6 executa a operação; campanha Meta só
+coloca o experimento em `RUNNING` após confirmação externa válida.
 
 **Gate para avançar:** todos os gates técnicos, comerciais, de entrega, mensuração e orçamento devem
-estar verdes. Mídia paga, gasto ou publicação externa continuam exigindo autorização humana quando
-aplicável.
+estar verdes. Antes de 5.5, o backend exige preparação do tipo concluída, pareceres vigentes de
+Psique e Têmis, homologação técnica válida e parecer vigente de Plutus com preço, custo, margem,
+limites e janela coerentes. Mídia paga, gasto ou publicação externa continuam exigindo autorização
+humana quando aplicável. Reprovação preserva histórico e retorna à causa, sem enfraquecer o gate.
+
+A cadeia v16 aplica essa composição apenas a novas execuções. Cadeias anteriores e o ciclo #2 do
+Vega mantêm suas definições e numeração históricas; não há migração retroativa de tarefas,
+evidências, custos ou aprovações. O Processo 6 da cadeia v16 não repete a preparação Opala.
 
 ## 6. Venda, entrega, aprendizado e decisão de escala
 
-O fluxo do Processo 6 possui entrada normal e entrada histórica explícitas. Na normal, **6.1
+O fluxo do Processo 6 começa após a ativação autorizada e possui entrada normal e entrada histórica
+explícitas. Na normal, **6.1
 opera o experimento e 6.2 entrega cada venda durante a operação**, por ramos modelados no BPM.
 Ausência comprovada de vendas dispensa entrega apenas naquele recorte; ausência de fonte bloqueia.
 **6.3 concilia automaticamente resultados e situação das entregas; 6.4 conduz o ciclo e registra

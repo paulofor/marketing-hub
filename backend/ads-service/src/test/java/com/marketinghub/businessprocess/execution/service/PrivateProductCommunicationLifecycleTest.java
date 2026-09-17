@@ -169,7 +169,7 @@ class PrivateProductCommunicationLifecycleTest {
             events,
             products,
             runContext,
-            new ProcessRunNavigation(processes, chains, runs, json),
+            new ProcessRunNavigation(processes, chains, runs, products, json),
             new ProcessRunSubprocesses(definitions, instances, json),
             mock(ProcessRunGuidance.class),
             service,

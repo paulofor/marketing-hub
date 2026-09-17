@@ -76,6 +76,7 @@ test_command_path="$test_dir/bin:$PATH"
 # Limite sintético impossível: executa a coleta real e exige bloqueio se o disco não atender.
 test_status=0
 PATH="$test_command_path" AGENT_VPS_DISK_MIN_FREE_MB=99999999 AGENT_VPS_DISK_TIMEOUT_SECONDS=30 \
+  AGENT_VPS_DISK_LEGACY_INTERVENTION_MIN_AGE_SECONDS=9999999999 \
   AGENT_VPS_DISK_LOCK_FILE="$test_dir/disk.lock" \
   bash "$test_root/scripts/ensure-agent-vps-disk-space.sh" >"$test_dir/result.log" 2>&1 \
   || test_status="$?"

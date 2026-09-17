@@ -34,7 +34,23 @@ case "$*" in
     ;;
   'image ls --all --no-trunc --format {{.Repository}}|{{.Tag}}|{{.ID}}')
     [[ "$DISK_TEST_MODE" != image-list-failure ]] || exit 1
-    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|recover-managed-pressure|managed-rm-failure|retention-ready)$ ]]; then
+    if [[ "$DISK_TEST_MODE" =~ ^recover-legacy(-no-rollback|-recent)?$ ]]; then
+      printf '%s\n' \
+        'marketing-hub/meta-ad-approver-worker|ffffffffffffffffffffffffffffffffffffffff|sha256:1111111111111111111111111111111111111111111111111111111111111111' \
+        'marketing-hub/meta-ad-approver-worker|vega-active|sha256:1111111111111111111111111111111111111111111111111111111111111111'
+      if [[ "$DISK_TEST_MODE" != recover-legacy-no-rollback ]]; then
+        printf '%s\n' 'marketing-hub/meta-ad-approver-worker|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee|sha256:2222222222222222222222222222222222222222222222222222222222222222'
+      fi
+      if [[ ! -f "$DISK_TEST_DIR/legacy-canonical-removed" ]]; then
+        printf '%s\n' 'marketing-hub/meta-ad-approver-worker|vega-processos-old|sha256:8888888888888888888888888888888888888888888888888888888888888888'
+      fi
+      if [[ ! -f "$DISK_TEST_DIR/legacy-alias-removed" ]]; then
+        printf '%s\n' 'marketinghub-intervention-temis|before-vega-processos-old|sha256:8888888888888888888888888888888888888888888888888888888888888888'
+      fi
+      printf '%s\n' \
+        'marketing-hub/meta-ad-approver-worker|latest|sha256:9999999999999999999999999999999999999999999999999999999999999999' \
+        'unrelated/system|vega-old|sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    elif [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|recover-managed-pressure|managed-rm-failure|retention-ready)$ ]]; then
       printf '%s\n' \
         'marketing-hub/meta-ad-approver-worker|ffffffffffffffffffffffffffffffffffffffff|sha256:1111111111111111111111111111111111111111111111111111111111111111' \
         'marketing-hub/meta-ad-approver-worker|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee|sha256:2222222222222222222222222222222222222222222222222222222222222222' \
@@ -64,7 +80,7 @@ case "$*" in
     ;;
   'container ls --all --no-trunc --quiet')
     [[ "$DISK_TEST_MODE" != container-list-failure ]] || exit 1
-    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|recover-managed-pressure|managed-rm-failure|retention-ready|retention-pde|retention-pde-tie|retention-pde-subsecond|retention-pde-legacy-tie)$ ]]; then
+    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|recover-managed-pressure|managed-rm-failure|recover-legacy|recover-legacy-no-rollback|recover-legacy-recent|retention-ready|retention-pde|retention-pde-tie|retention-pde-subsecond|retention-pde-legacy-tie)$ ]]; then
       printf '%s\n' '9999999999999999999999999999999999999999999999999999999999999999'
     fi
     ;;
@@ -126,6 +142,14 @@ case "$*" in
         fi
         ;;
       *:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) printf '%s\n' '2026-09-05T12:00:00Z' ;;
+      *:vega-processos-old|*:before-vega-processos-old)
+        if [[ "$DISK_TEST_MODE" = recover-legacy-recent ]]; then
+          printf '%s\n' '2999-09-17T12:00:00Z'
+        else
+          printf '%s\n' '2026-09-01T12:00:00Z'
+        fi
+        ;;
+      *:vega-active) printf '%s\n' '2026-09-01T11:00:00Z' ;;
       *) exit 71 ;;
     esac
     ;;
@@ -150,6 +174,8 @@ case "$*" in
         fi
         ;;
       *:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) printf '%s\n' '2026-09-05T12:00:00Z' ;;
+      *:vega-processos-old|*:before-vega-processos-old) printf '%s\n' '2026-09-01T12:00:00Z' ;;
+      *:vega-active) printf '%s\n' '2026-09-01T11:00:00Z' ;;
       *) exit 71 ;;
     esac
     ;;
@@ -165,6 +191,12 @@ case "$*" in
     ;;
   image\ rm\ ghcr.io/paulofor/pde-platform-backend:cccccccccccccccccccccccccccccccccccccccc)
     touch "$DISK_TEST_DIR/managed-removed"
+    ;;
+  image\ rm\ marketing-hub/meta-ad-approver-worker:vega-processos-old)
+    touch "$DISK_TEST_DIR/legacy-canonical-removed"
+    ;;
+  image\ rm\ marketinghub-intervention-temis:before-vega-processos-old)
+    touch "$DISK_TEST_DIR/legacy-alias-removed"
     ;;
   *) echo "Operação Docker não permitida: $*" >&2; exit 70 ;;
 esac
@@ -187,7 +219,8 @@ if [[ "$DISK_TEST_MODE" = ready || "$DISK_TEST_MODE" = inode-full \
   || ( "$DISK_TEST_MODE" = recover-dangling && -f "$DISK_TEST_DIR/image-pruned" ) \
   || ( "$DISK_TEST_MODE" = recover-managed && -f "$DISK_TEST_DIR/managed-removed" ) \
   || ( "$DISK_TEST_MODE" = recover-managed-pressure && -f "$DISK_TEST_DIR/second-rollback-removed" ) \
-  || ( "$DISK_TEST_MODE" = recover-managed-alias && -f "$DISK_TEST_DIR/managed-removed" && -f "$DISK_TEST_DIR/alias-removed" ) ]]; then
+  || ( "$DISK_TEST_MODE" = recover-managed-alias && -f "$DISK_TEST_DIR/managed-removed" && -f "$DISK_TEST_DIR/alias-removed" ) \
+  || ( "$DISK_TEST_MODE" = recover-legacy && -f "$DISK_TEST_DIR/legacy-canonical-removed" && -f "$DISK_TEST_DIR/legacy-alias-removed" ) ]]; then
   disk_test_available=8388608
 fi
 if [[ "$1" = -Pi ]]; then
@@ -205,7 +238,8 @@ run_case() {
   shift 5
   rm -f "$test_dir/pruned" "$test_dir/recent-pruned" "$test_dir/image-pruned" \
     "$test_dir/managed-removed" "$test_dir/fresh-pruned" "$test_dir/alias-removed" \
-    "$test_dir/second-rollback-removed"
+    "$test_dir/second-rollback-removed" "$test_dir/legacy-canonical-removed" \
+    "$test_dir/legacy-alias-removed"
   : >"$test_dir/calls"
   local case_status=0
   PATH="$test_dir/bin:$PATH" DISK_TEST_DIR="$test_dir" DISK_TEST_MODE="$case_mode" \
@@ -256,6 +290,22 @@ if grep -Eq '^image rm .*(ffffffff|eeeeeeee|abababab|latest|unrelated|product-di
   echo "A pressão de capacidade tentou remover imagem ativa, rollback mínimo ou referência fora do escopo." >&2
   exit 1
 fi
+run_case recover-legacy 0 3 2 2
+grep -q 'READY após coleta de intervenções legadas inativas' "$test_dir/output"
+grep -Fxq 'image rm marketing-hub/meta-ad-approver-worker:vega-processos-old' "$test_dir/calls"
+grep -Fxq 'image rm marketinghub-intervention-temis:before-vega-processos-old' "$test_dir/calls"
+if grep -Eq '^image rm .*(vega-active|latest|unrelated)' "$test_dir/calls"; then
+  echo "A coleta legada tentou remover imagem ativa ou referência fora do escopo." >&2
+  exit 1
+fi
+run_case recover-legacy-no-rollback 1 3 2 1
+grep -q 'sem rollback SHA oficial' "$test_dir/output"
+if grep -Fxq 'image rm marketing-hub/meta-ad-approver-worker:vega-processos-old' "$test_dir/calls"; then
+  echo "A coleta legada removeu a única referência de retorno sem rollback SHA oficial." >&2
+  exit 1
+fi
+run_case recover-legacy-recent 1 3 2 0
+grep -q 'preservando intervenção recente' "$test_dir/output"
 AGENT_VPS_DISK_MIN_ROLLBACK_VERSIONS=2 run_case managed-rm-failure 1 3 2 2
 grep -q 'referência preservada' "$test_dir/output"
 run_case recent-failure 1 2 0 0
@@ -293,6 +343,7 @@ AGENT_VPS_DISK_ROLLBACK_VERSIONS=0 run_case ready 2 0 0 0
 AGENT_VPS_DISK_MIN_ROLLBACK_VERSIONS=0 run_case ready 2 0 0 0
 AGENT_VPS_DISK_MIN_ROLLBACK_VERSIONS=3 run_case ready 2 0 0 0
 AGENT_VPS_DISK_PROTECTED_TAG=latest run_case ready 2 0 0 0
+AGENT_VPS_DISK_LEGACY_INTERVENTION_MIN_AGE_SECONDS=invalid run_case ready 2 0 0 0
 
 exec 8>"$test_dir/disk.lock"
 flock -n 8
@@ -300,4 +351,4 @@ run_case full 1 0 0 0
 grep -q 'outra verificação' "$test_dir/output"
 flock -u 8
 
-echo "36 cenários de disco, retenção preventiva/adaptativa, falhas e concorrência aprovados."
+echo "40 cenários de disco, retenção preventiva/adaptativa, legado, falhas e concorrência aprovados."

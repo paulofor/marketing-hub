@@ -4109,6 +4109,15 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   origens, versões, predecessor ausente/obsoleto, prazo, contribuição, gasto e STOP.
   Os mesmos cenários são executados na imagem final sem rede externa. Ver
   [homologação e recuperação do Vega](../homologacao/actions-capacidade-agentes-vega-2026-09-10.md).
+- **Recorrência confirmada em 17/09/2026 na preparação Opala:** a tarefa #435 recebeu no contexto
+  `windowEnd=2026-09-17T02:59:00Z`; o prompt do Catálogo Vivo pedia apenas prazo vigente e o schema
+  legado v4 aceitava qualquer string. Plutus devolveu um parecer funcional `ADJUST`, mas copiou o
+  instante completo para `economics.deadline`; somente o validador posterior à chamada paga exigiu
+  `YYYY-MM-DD` e converteu o parecer em falha técnica. A correção mantém prompt e parecer históricos,
+  ativa uma versão textual v2 e um schema próprio do Opala que exige data *date-only* antes da
+  inferência, e adiciona os cenários Opala válido e Opala com timestamp à matriz real do worker.
+  Novas tarefas recebem o contrato alinhado; respostas brutas e custos das tentativas anteriores
+  permanecem imutáveis.
 
 ## LOOP-SCHEMA-CODEX-UNIQUEITEMS-INCOMPATIVEL — atividade termina antes da inferência
 

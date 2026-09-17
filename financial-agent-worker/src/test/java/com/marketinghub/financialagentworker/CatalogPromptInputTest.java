@@ -10,7 +10,8 @@ import org.springframework.core.io.ClassPathResource;
  * Responsabilidade: impedir fallback de texto e execução de contrato incompatível no piloto Opala.
  */
 class CatalogPromptInputTest {
-  private static final String SCHEMA = "prompts/pde-commercial-plan/v4/economics-schema.json";
+  private static final String SCHEMA =
+      "prompts/opala-commercial-preparation/v1/economics-schema.json";
 
   /** Monta a resposta do backend com texto próprio de teste e schema real do executor. */
   static Map<String, Object> fixture(String activity, String agent, String schema)

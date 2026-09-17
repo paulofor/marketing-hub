@@ -71,11 +71,18 @@ class CatalogoVivoIntegrationTest {
                     .toBodilessEntity())
         .hasMessageContaining("400");
     assertThat(result.items())
-        .allSatisfy(
-            i -> {
-              assertThat(i.versions()).hasSize(1);
-              assertThat(i.versions().getFirst().status()).isEqualTo("REVIEWED");
-            });
+        .allSatisfy(i -> assertThat(i.versions().getFirst().status()).isEqualTo("REVIEWED"));
+    var economics =
+        result.items().stream()
+            .filter(i -> "economics".equals(i.binding().activityId()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(economics.versions()).hasSize(2);
+    assertThat(economics.binding().activeVersionId())
+        .isEqualTo(economics.versions().getFirst().id());
+    assertThat(economics.binding().schemaId())
+        .isEqualTo("prompts/opala-commercial-preparation/v1/economics-schema.json");
+    assertThat(economics.versions().getFirst().text()).contains("YYYY-MM-DD", "data UTC inicial");
   }
 
   /** Confere FKs e unicidade com comandos reais, sem depender de CHECK no MySQL 5.7. */

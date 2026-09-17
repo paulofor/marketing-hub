@@ -159,6 +159,11 @@ limitada no teste; acesso indevido ou falha persistente continuam reprovando a h
 
 O CI do próprio catálogo valida também a integridade do pacote comercial após seus testes,
 para detectar evidências compartilhadas desatualizadas antes de empacotar os revisores.
+Quando um manifesto comercial vigente declarar sinais visuais ao vivo, Psique deve confrontá-los
+com a superfície capturada antes de iniciar a revisão paga. A verificação deve incluir, no mínimo,
+as ações obrigatórias da primeira dobra e a copy comercial material que distingue a candidata de
+uma revisão anterior. Sinal ausente bloqueia como divergência técnica entre atestação e deploy;
+nunca deve consumir o modelo nem virar um parecer funcional sobre pixels sabidamente antigos.
 As sondas HTTP da homologação do proxy mantêm um prazo ativo até consumir a resposta completa,
 inclusive em conexões reutilizadas, e recusam conexão abortada ou corpo incompleto com diagnóstico.
 O isolamento de produtos deve reutilizar o contrato central de fila do host público:

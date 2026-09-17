@@ -543,8 +543,7 @@ class CustomerBpmTaskConsumerTest {
                         "customer-agent",
                         "cards",
                         List.of(
-                            Map.of("id", "RI1-AAAAAAAAAAAA"),
-                            Map.of("id", "RI1-BBBBBBBBBBBB"))))));
+                            Map.of("id", "RI1-AAAAAAAAAAAA"), Map.of("id", "RI1-BBBBBBBBBBBB"))))));
 
     String prompt = consumer.prompt(task, List.of());
 

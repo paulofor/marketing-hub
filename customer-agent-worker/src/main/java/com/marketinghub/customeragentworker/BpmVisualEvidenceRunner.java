@@ -57,6 +57,15 @@ public class BpmVisualEvidenceRunner {
 
   /** Abre a URL pública em iPhone 15 Pro e valida a cobertura contínua das dobras. */
   VisualEvidenceBundle capture(String sourceUrl, Path workDirectory) throws Exception {
+    return capture(sourceUrl, workDirectory, PdeExperienceEvidenceLoader.LiveVisualContract.none());
+  }
+
+  /** Captura a tela e recusa uma superfície que não corresponde à atestação comercial vigente. */
+  VisualEvidenceBundle capture(
+      String sourceUrl,
+      Path workDirectory,
+      PdeExperienceEvidenceLoader.LiveVisualContract liveVisualContract)
+      throws Exception {
     validatePublicUrl(sourceUrl);
     Files.createDirectories(workDirectory);
     Path input = workDirectory.resolve("visual-input.json");
@@ -89,13 +98,17 @@ public class BpmVisualEvidenceRunner {
                   workDirectory.resolve("visual-browser.log"), StandardCharsets.UTF_8));
     }
     CaptureOutput capture = json.readValue(output.toFile(), CaptureOutput.class);
-    validateCapture(captureSessionId, evidenceDirectory, capture);
+    validateCapture(captureSessionId, evidenceDirectory, capture, liveVisualContract);
     return new VisualEvidenceBundle(capture, workDirectory);
   }
 
-  /** Confirma sessão, full-page, sequência de dobras e arquivos dentro do diretório autorizado. */
+  /** Confirma sessão, dobras, arquivos e aderência da tela à copy comercial atestada. */
   private void validateCapture(
-      String expectedSession, Path evidenceDirectory, CaptureOutput capture) throws Exception {
+      String expectedSession,
+      Path evidenceDirectory,
+      CaptureOutput capture,
+      PdeExperienceEvidenceLoader.LiveVisualContract liveVisualContract)
+      throws Exception {
     if (capture == null
         || !expectedSession.equals(capture.captureSessionId())
         || !"IPHONE_15_PRO".equals(capture.deviceProfile())
@@ -117,6 +130,7 @@ public class BpmVisualEvidenceRunner {
     if (fullPages.size() != 1 || folds.isEmpty()) {
       throw new VisualEvidenceException("Captura exige full-page e ao menos uma dobra mobile.");
     }
+    validateLiveVisualContract(capture.pages().getFirst(), liveVisualContract);
     VisualArtifact fullPage = fullPages.getFirst();
     if (fullPage.pageNumber() == null
         || fullPage.pageNumber() != 1
@@ -172,6 +186,39 @@ public class BpmVisualEvidenceRunner {
         throw new VisualEvidenceException("Arquivo visual ausente ou fora da sessão autorizada.");
       }
     }
+  }
+
+  /** Impede que Psique consuma uma revisão paga sobre pixels anteriores à candidata atestada. */
+  private void validateLiveVisualContract(
+      PageFacts page, PdeExperienceEvidenceLoader.LiveVisualContract contract) {
+    if (contract == null || !contract.required()) return;
+    List<String> firstFoldCtas = normalizedValues(page.firstFoldCtas());
+    String visibleText = normalize(page.visibleText());
+    for (String required : contract.requiredFirstFoldCtas()) {
+      if (!firstFoldCtas.contains(normalize(required))) {
+        throw new VisualEvidenceException(
+            "A superfície visual está desatualizada: CTA obrigatório ausente na primeira dobra: "
+                + required);
+      }
+    }
+    for (String required : contract.requiredVisibleTexts()) {
+      if (!visibleText.contains(normalize(required))) {
+        throw new VisualEvidenceException(
+            "A superfície visual está desatualizada: condição comercial atestada ausente: "
+                + required);
+      }
+    }
+  }
+
+  /** Normaliza listas de texto do navegador para comparação estável de copy e espaços. */
+  private List<String> normalizedValues(List<String> values) {
+    if (values == null) return List.of();
+    return values.stream().map(this::normalize).toList();
+  }
+
+  /** Remove diferenças irrelevantes de espaços e caixa sem flexibilizar o conteúdo exigido. */
+  private String normalize(String value) {
+    return value == null ? "" : value.replaceAll("\\s+", " ").trim().toLowerCase(Locale.ROOT);
   }
 
   /** Confirma a assinatura PNG sem carregar o snapshot inteiro na memória do worker. */
@@ -235,7 +282,9 @@ public class BpmVisualEvidenceRunner {
       String title,
       java.util.Map<String, Object> viewport,
       List<String> headings,
-      List<String> visibleCtas) {}
+      List<String> visibleCtas,
+      List<String> firstFoldCtas,
+      String visibleText) {}
 
   /** Descreve um arquivo local e todos os metadados que serão persistidos no backend. */
   record VisualArtifact(

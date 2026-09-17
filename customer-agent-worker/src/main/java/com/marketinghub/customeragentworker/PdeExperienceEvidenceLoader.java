@@ -151,6 +151,37 @@ final class PdeExperienceEvidenceLoader {
     return new ArrayList<>(evidence.values());
   }
 
+  /** Lê os sinais visuais mínimos que a superfície publicada deve exibir antes da revisão paga. */
+  LiveVisualContract loadLiveVisualContract(Object targetValue) throws IOException {
+    List<Map<String, Object>> evidence = loadCommercialHomologationEvidence(targetValue);
+    if (evidence.isEmpty()) return LiveVisualContract.none();
+    JsonNode manifest = JSON.readTree(evidence.getFirst().get("content").toString());
+    JsonNode contract = manifest.path("liveVisualContract");
+    if (contract.isMissingNode() || contract.isNull()) return LiveVisualContract.none();
+    if (!contract.isObject()) {
+      throw new IOException("Contrato visual ao vivo inválido no manifesto comercial");
+    }
+    return new LiveVisualContract(
+        requiredTextValues(contract, "requiredFirstFoldCtas"),
+        requiredTextValues(contract, "requiredVisibleTexts"));
+  }
+
+  /** Valida uma lista de sinais obrigatórios sem aceitar valores vazios ou estrutura ambígua. */
+  private List<String> requiredTextValues(JsonNode contract, String field) throws IOException {
+    JsonNode values = contract.path(field);
+    if (values.isMissingNode()) return List.of();
+    if (!values.isArray()) {
+      throw new IOException("Campo visual ao vivo inválido: " + field);
+    }
+    List<String> result = new ArrayList<>();
+    for (JsonNode value : values) {
+      String text = value.asText("").trim();
+      if (text.isBlank()) throw new IOException("Sinal visual ao vivo vazio: " + field);
+      result.add(text);
+    }
+    return List.copyOf(result);
+  }
+
   /** Confirma se o JSON representa um manifesto que declara provas de homologação. */
   private boolean declaresCommercialEvidence(JsonNode contract) {
     return COMMERCIAL_EVIDENCE_COLLECTIONS.stream()
@@ -258,6 +289,19 @@ final class PdeExperienceEvidenceLoader {
   /** Representa o manifesto elegível e sua revisão versionada. */
   private record ManifestCandidate(
       String path, Map<String, Object> evidence, JsonNode contract, int revision) {}
+
+  /** Congela a copy mínima que distingue a candidata homologada de uma superfície anterior. */
+  record LiveVisualContract(List<String> requiredFirstFoldCtas, List<String> requiredVisibleTexts) {
+    /** Representa manifestos históricos que ainda não declaravam sinais visuais ao vivo. */
+    static LiveVisualContract none() {
+      return new LiveVisualContract(List.of(), List.of());
+    }
+
+    /** Informa se existe alguma condição visual que precisa ser confrontada com o navegador. */
+    boolean required() {
+      return !requiredFirstFoldCtas.isEmpty() || !requiredVisibleTexts.isEmpty();
+    }
+  }
 
   /** Define como uma prova atestada entra no prompt sem truncamento silencioso. */
   private record PromptEvidenceDirective(String mode, String reviewSummary) {

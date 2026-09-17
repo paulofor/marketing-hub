@@ -18,6 +18,7 @@ class PdeEconomicsBpmRoutingTest {
         "drift",
         "missing",
         "timestamp",
+        "opala-timestamp",
         "contribution",
         "budget",
         "stop"

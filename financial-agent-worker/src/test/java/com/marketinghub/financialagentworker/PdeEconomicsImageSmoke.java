@@ -86,13 +86,7 @@ public final class PdeEconomicsImageSmoke {
           .putObject("result")
           .set("marketStrategicContract", contract);
     }
-    if (opala)
-      context
-          .putObject("opalaCommercial")
-          .put("productId", 900004)
-          .put("experimentId", 900092)
-          .put("cycleId", 900002)
-          .put("productVersion", "fixture-v12");
+    if (opala) addViableOpalaFinancialPlan(context);
     String source =
         "discovery".equals(scenario) ? "product-discovery-cycle:900064" : "experiment:900092";
     Map<String, Object> task =
@@ -277,6 +271,35 @@ public final class PdeEconomicsImageSmoke {
             new org.springframework.core.io.ClassPathResource(schema)
                 .getContentAsString(java.nio.charset.StandardCharsets.UTF_8)));
     return result;
+  }
+
+  /** Monta o plano LIVE mínimo que a jornada Opala aprovada precisa receber antes do modelo. */
+  private static void addViableOpalaFinancialPlan(ObjectNode context) {
+    ObjectNode opala =
+        context
+            .putObject("opalaCommercial")
+            .put("productId", 900004)
+            .put("experimentId", 900092)
+            .put("cycleId", 900002)
+            .put("productVersion", "fixture-v12")
+            .put("priceBrl", 67)
+            .put("windowEnd", "2099-10-31T23:59:59Z");
+    ObjectNode plan = opala.putObject("financialPlan").put("status", "READY");
+    plan.putObject("assumptions")
+        .put("productVersion", "fixture-v12")
+        .put("validUntil", "2099-10-31")
+        .put("evidence", "Fontes de taxas, entrega, suporte e limites auditadas.")
+        .put("priceBrl", 67)
+        .put("maximumCacBrl", 0)
+        .putObject("costs")
+        .put("refundPercent", 10);
+    plan.putObject("deterministicEvaluation")
+        .put("status", "PROJECTED_VIABLE")
+        .putArray("scenarios")
+        .addObject()
+        .put("code", "BASE")
+        .put("viable", true)
+        .put("contributionAfterCacBrl", 55);
   }
 
   /** Interrompe a homologação quando o contrato observado divergir do esperado. */

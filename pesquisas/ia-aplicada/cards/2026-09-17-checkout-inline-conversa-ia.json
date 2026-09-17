@@ -1,0 +1,18 @@
+{
+  "cardKey": "checkout-inline-conversa-ia",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Preservar o contexto até o checkout em jornadas de alta intenção",
+  "finding": "Coach e Kate Spade passaram a permitir compra de item único diretamente no Gemini e no Google Search/AI Mode, via Google Pay e sem redirecionamento obrigatório para o site da marca. A implementação demonstra que descoberta e pagamento já podem ocorrer na mesma superfície de IA, mas não há métricas públicas de conversão incremental.",
+  "mechanism": "Reduzir trocas de contexto entre descoberta, decisão e pagamento pode diminuir esforço, reentrada de dados e oportunidades de abandono. Esse mecanismo é plausível, porém a evidência observada demonstra disponibilidade do fluxo, não causalidade sobre vendas.",
+  "commercialApplication": "No Marketing Hub, testar jornadas de alta intenção com continuidade máxima entre recomendação, oferta e checkout. Onde checkout inline não existir, aproximar o princípio com CTA direto, continuidade de mensagem e pré-preenchimento permitido, comparando contra uma jornada com mais etapas.",
+  "evidenceStrength": "Moderada para existência e adoção operacional do formato por marcas globais; baixa para efeito causal em conversão, ticket ou receita por ausência de resultados experimentais públicos.",
+  "publishedOn": "2026-09-17",
+  "validUntil": "2026-12-16",
+  "experimentHypothesis": "Para usuários que já demonstraram intenção de compra, reduzir uma mudança de contexto antes do pagamento aumentará a taxa de início e conclusão de checkout sem elevar cancelamento ou reembolso.",
+  "risks": "Checkout rápido pode aumentar compra impulsiva, erro de seleção ou arrependimento; preservar aprovação explícita, clareza de preço, entrega, cancelamento e reembolso; não usar redução de atrito para ocultar condições.",
+  "limits": "A implementação citada está nos Estados Unidos, em parceiros específicos e para compra de item único. Não há dados públicos de conversão incremental, abandono, margem, recompra ou satisfação atribuíveis ao fluxo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-17-checkout-inline-conversa-ia.md",
+  "sourceTitle": "Fonte revisada — checkout inline em superfícies de IA",
+  "sourceSha256": "eabea10396311b1bfd53bff2a9db5151ea7be6e68c8ae5f5f9e10fcaa285b25f"
+}

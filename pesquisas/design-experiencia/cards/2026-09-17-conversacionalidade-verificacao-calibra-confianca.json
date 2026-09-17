@@ -1,0 +1,18 @@
+{
+  "cardKey": "conversacionalidade-verificacao-calibra-confianca",
+  "collection": "neuromarketing",
+  "title": "Conversa natural precisa de verificação acionável",
+  "finding": "Em experimento pré-registrado com 477 participantes, sinais mais conversacionais aumentaram confiança em um assistente mesmo quando ele fornecia informação incorreta; um cue passivo de verificação não bastou, enquanto executar a verificação reduziu a credibilidade percebida e a confiança excessiva.",
+  "mechanism": "Conversacionalidade atua como sinal social e reduz a percepção de que a máquina é mecanicista, favorecendo julgamento heurístico. Uma ação concreta de verificar pode deslocar o usuário para processamento mais sistemático.",
+  "commercialApplication": "Para respostas factuais ou recomendações de maior consequência no Marketing Hub, testar uma affordance acionável para abrir evidências, comparar fonte ou solicitar segunda checagem, em vez de depender apenas de um aviso textual.",
+  "evidenceStrength": "Evidência peer-reviewed e pré-registrada: experimento online 2 × 4 com N=477. O estudo mede confiança e credibilidade sob desinformação controlada, não comportamento comercial de longo prazo.",
+  "publishedOn": "2026-09-17",
+  "validUntil": "2026-11-01",
+  "experimentHypothesis": "Em recomendações factuais relevantes, uma ação explícita de verificação reduzirá aceitação de informação incorreta mais do que um aviso passivo, com atrito aceitável no fluxo.",
+  "risks": "Verificação pode aumentar fricção e abandono; também pode transferir confiança indevida para a fonte de checagem. Não deve ser usada para simular certeza inexistente.",
+  "limits": "O experimento usou um assistente de saúde em cenário controlado. Não demonstra ganho de conversão ou vendas e não implica que toda experiência conversacional deva ser menos humana ou exigir verificação obrigatória.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-17-conversacionalidade-verificacao-calibra-confianca.md",
+  "sourceTitle": "Fonte revisada — Conversacionalidade, confiança e verificação ativa em IA",
+  "sourceSha256": "07fe4ebe23c4dd6e6a3242a4fd34633823bb9123cae4c17413c85dfd212ec68f"
+}

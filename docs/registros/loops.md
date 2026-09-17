@@ -1,5 +1,38 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-OPALA-CONTRIBUICAO-CAC-DUPLA-SEMANTICA — parecer correto bloqueado após chamada paga
+
+- **Data:** 2026-09-17. Vega, ciclo 2, experimento 92, tarefa 437.
+- **Evidência histórica:** as tarefas 435 e 436 falharam respectivamente por prazo com horário e
+  fontes financeiras incompletas. Depois dessas correções, a 437 retornou `APPROVE`, preço de
+  R$ 67, custo variável de R$ 42,82, contribuição antes de aquisição de R$ 24,18 e CAC máximo
+  separado de R$ 15. O worker bloqueou com `Parecer Opala diverge` porque comparava a contribuição
+  unitária ao campo determinístico pós-CAC de R$ 9,1767 e transformava a diferença em custo.
+- **Causa-raiz:** prompt e validadores misturavam duas posições diferentes da ponte financeira.
+  O schema canônico preservava `preço - custo variável = contribuição` e informava CAC à parte,
+  enquanto o gate Opala exigia contribuição após CAC, o que duplicava semanticamente a aquisição.
+- **Correção sistêmica:** prompt Opala v4, worker e callback do backend passam a usar
+  `BASE.contributionBeforeCacBrl` para contribuição unitária, calculam custo variável como preço
+  menos essa contribuição e mantêm `maxCacBrl` separado. Contribuição e margem pós-CAC continuam
+  auditáveis no plano determinístico e não são reconstruídas pelo modelo.
+- **Prevenção:** testes reproduzem os decimais exatos da 437, aceitam arredondamento de centavos,
+  rejeitam a dupla contagem pós-CAC, validam as duas fronteiras Java e aplicam a versão v4 no
+  MySQL 5.7 preservando v1–v3.
+- **Segunda recorrência confirmada:** a tarefa 438 foi criada depois da ativação do prompt v4, mas
+  recebeu novamente o prompt v1 e a referência anterior porque o Catálogo Vivo herdava a primeira
+  versão fixada na mesma ocorrência. O parecer copiou outra vez a margem pós-CAC e foi bloqueado.
+- **Fechamento sistêmico adicional:** cada tarefa histórica continua imutável, enquanto toda nova
+  tentativa fixa a versão ativa e revisada no instante de sua criação, mesmo quando reutiliza a
+  mesma ocorrência BPM. O teste MySQL 5.7 agora comprova simultaneamente a preservação da tentativa
+  anterior e a adoção da correção pela tentativa seguinte.
+- **Terceira recorrência confirmada:** a tarefa 439 concluiu corretamente com o prompt v4 e a
+  instância 296 ficou `COMPLETED`, mas a tela continuou em 4/8. O validador de vigência comparava
+  nós JSON completos e tratava `67`, `67.0` e `67.00` como mudanças de preço, orçamento e plano.
+- **Fechamento da projeção:** valores financeiros são comparados por valor decimal e o plano por
+  `id + revision`, sua identidade imutável. Uma revisão nova continua exigindo Plutus; escala ou
+  tipo numérico do JSON não apagam mais a conclusão nem criam outra chamada paga. Testes cobrem
+  a equivalência de escala e a invalidação por revisão diferente.
+
 ## LOOP-OPALA-PREPARACAO-TARDIA-E-REVISAO-DUPLICADA — Processo 6 descobre pré-requisitos de venda
 
 - **Data:** 16/09/2026. Cadeia v15, Processo 6 v7 e preparação do experimento #92.

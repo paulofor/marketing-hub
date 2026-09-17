@@ -215,6 +215,7 @@ class PdeEconomicsBpmTaskConsumerTest {
     var context = objectMapper.readTree(opalaContext("READY", "fixture-v12", "2099-10-31"));
     var approved = objectMapper.readTree(result("APPROVE", 67, 42, 25, "2099-10-31"));
     ((com.fasterxml.jackson.databind.node.ObjectNode) approved.path("economics"))
+        .put("contributionMarginPercent", 37.31)
         .put("maxCacBrl", 15)
         .put("expectedRefundPercent", 12);
     var divergent = approved.deepCopy();
@@ -226,6 +227,40 @@ class PdeEconomicsBpmTaskConsumerTest {
         .doesNotThrowAnyException();
     assertThatThrownBy(
             () -> PdeEconomicsBpmTaskConsumer.validateOpalaResultAgainstPlan(divergent, context))
+        .hasMessageContaining("diverge");
+  }
+
+  /** Aceita o arredondamento comercial real da tarefa 437 sem incorporar CAC ao custo variável. */
+  @Test
+  void acceptsRoundedOpalaContributionBeforeCacFromTask437() throws Exception {
+    var context = objectMapper.readTree(realisticOpalaContext());
+    var approved = objectMapper.readTree(result("APPROVE", 67, 42, 24, "2099-10-31"));
+    ((com.fasterxml.jackson.databind.node.ObjectNode) approved.path("economics"))
+        .put("variableCostPerSaleBrl", 42.82)
+        .put("contributionPerSaleBrl", 24.18)
+        .put("contributionMarginPercent", 36.08)
+        .put("maxCacBrl", 15)
+        .put("expectedRefundPercent", 12);
+
+    assertThatCode(
+            () -> PdeEconomicsBpmTaskConsumer.validateOpalaResultAgainstPlan(approved, context))
+        .doesNotThrowAnyException();
+  }
+
+  /** Rejeita a dupla contagem que incorpora CAC ao custo e ainda o informa como limite separado. */
+  @Test
+  void rejectsOpalaContributionAfterCacAsUnitContribution() throws Exception {
+    var context = objectMapper.readTree(realisticOpalaContext());
+    var afterCac = objectMapper.readTree(result("APPROVE", 67, 57, 9, "2099-10-31"));
+    ((com.fasterxml.jackson.databind.node.ObjectNode) afterCac.path("economics"))
+        .put("variableCostPerSaleBrl", 57.82)
+        .put("contributionPerSaleBrl", 9.18)
+        .put("contributionMarginPercent", 13.70)
+        .put("maxCacBrl", 15)
+        .put("expectedRefundPercent", 12);
+
+    assertThatThrownBy(
+            () -> PdeEconomicsBpmTaskConsumer.validateOpalaResultAgainstPlan(afterCac, context))
         .hasMessageContaining("diverge");
   }
 
@@ -309,12 +344,45 @@ class PdeEconomicsBpmTaskConsumerTest {
               },
               "deterministicEvaluation":{
                 "status":"PROJECTED_VIABLE",
-                "scenarios":[{"code":"BASE","viable":true,"contributionAfterCacBrl":25}]
+                "scenarios":[{"code":"BASE","viable":true,"contributionBeforeCacBrl":25,"contributionAfterCacBrl":10}]
               }
             }
           }
         }
         """
         .formatted(status, planVersion, validUntil);
+  }
+
+  /** Reproduz a precisão determinística do plano financeiro recebido pela tarefa 437. */
+  private String realisticOpalaContext() {
+    return """
+        {
+          "opalaCommercial": {
+            "productVersion":"fixture-v12",
+            "priceBrl":67,
+            "windowEnd":"2099-10-31T23:59:59Z",
+            "financialPlan":{
+              "status":"READY",
+              "assumptions":{
+                "productVersion":"fixture-v12",
+                "validUntil":"2099-10-31",
+                "evidence":"Fontes auditadas.",
+                "priceBrl":67,
+                "maximumCacBrl":15,
+                "costs":{"refundPercent":12}
+              },
+              "deterministicEvaluation":{
+                "status":"PROJECTED_VIABLE",
+                "scenarios":[{
+                  "code":"BASE",
+                  "viable":true,
+                  "contributionBeforeCacBrl":24.1767,
+                  "contributionAfterCacBrl":9.1767
+                }]
+              }
+            }
+          }
+        }
+        """;
   }
 }

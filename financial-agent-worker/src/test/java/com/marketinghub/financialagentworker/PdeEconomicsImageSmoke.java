@@ -299,6 +299,7 @@ public final class PdeEconomicsImageSmoke {
         .addObject()
         .put("code", "BASE")
         .put("viable", true)
+        .put("contributionBeforeCacBrl", 55)
         .put("contributionAfterCacBrl", 55);
   }
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -474,7 +475,7 @@ public class PdeEconomicsBpmTaskConsumer {
           "Opala exige plano financeiro LIVE, vigente, viável e da mesma versão antes de Plutus.");
   }
 
-  /** Recusa aprovação que reconstrua ou altere os números determinísticos da revisão financeira. */
+  /** Recusa aprovação que altere custo, contribuição antes de CAC ou limites determinísticos. */
   static void validateOpalaResultAgainstPlan(JsonNode result, JsonNode context) {
     if (!"APPROVE".equals(result.path("decision").asText())) return;
     JsonNode opala = context.path("opalaCommercial");
@@ -487,11 +488,14 @@ public class PdeEconomicsBpmTaskConsumer {
       throw new IllegalArgumentException("Plano financeiro Opala sem cenário-base.");
     JsonNode economics = result.path("economics");
     BigDecimal price = assumptions.path("priceBrl").decimalValue();
-    BigDecimal contribution = base.path("contributionAfterCacBrl").decimalValue();
+    BigDecimal contribution = base.path("contributionBeforeCacBrl").decimalValue();
     BigDecimal variable = price.subtract(contribution);
+    BigDecimal margin =
+        contribution.multiply(new BigDecimal("100")).divide(price, 6, RoundingMode.HALF_UP);
     if (!same(economics.path("offerPriceBrl").decimalValue(), price)
         || !same(economics.path("variableCostPerSaleBrl").decimalValue(), variable)
         || !same(economics.path("contributionPerSaleBrl").decimalValue(), contribution)
+        || !same(economics.path("contributionMarginPercent").decimalValue(), margin)
         || !same(
             economics.path("maxCacBrl").decimalValue(),
             assumptions.path("maximumCacBrl").decimalValue())

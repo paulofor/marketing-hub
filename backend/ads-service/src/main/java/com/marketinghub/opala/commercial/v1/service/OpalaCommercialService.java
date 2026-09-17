@@ -11,6 +11,7 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCy
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -176,11 +177,17 @@ public class OpalaCommercialService
                         .compareTo(new BigDecimal("0.01"))
                     <= 0,
             "A economia aprovada não reconcilia com preço, custo e margem do experimento.");
-        var projectedContribution = baseScenario.path("contributionAfterCacBrl").decimalValue();
+        var projectedContribution = baseScenario.path("contributionBeforeCacBrl").decimalValue();
         var projectedCost = price.subtract(projectedContribution);
+        var projectedMargin =
+            projectedContribution
+                .multiply(new BigDecimal("100"))
+                .divide(price, 6, RoundingMode.HALF_UP);
         require(
             close(cost, projectedCost)
                 && close(contribution, projectedContribution)
+                && close(
+                    economics.path("contributionMarginPercent").decimalValue(), projectedMargin)
                 && close(
                     economics.path("maxCacBrl").decimalValue(),
                     assumptions.path("maximumCacBrl").decimalValue())
@@ -270,10 +277,11 @@ public class OpalaCommercialService
                     step, scope, context.read(t.getResultJson()).path("instruction"));
               var current = context.snapshot(source);
               if ("economics".equals(step))
-                return !snapshot.path("priceBrl").equals(current.path("priceBrl"))
-                    || !snapshot.path("budgetLimitBrl").equals(current.path("budgetLimitBrl"))
+                return !sameDecimal(snapshot.path("priceBrl"), current.path("priceBrl"))
+                    || !sameDecimal(snapshot.path("budgetLimitBrl"), current.path("budgetLimitBrl"))
                     || !snapshot.path("windowEnd").equals(current.path("windowEnd"))
-                    || !snapshot.path("financialPlan").equals(current.path("financialPlan"))
+                    || !sameFinancialPlanRevision(
+                        snapshot.path("financialPlan"), current.path("financialPlan"))
                     || !snapshot.path("productContract").equals(current.path("productContract"))
                     || java.time.LocalDate.parse(
                             context
@@ -285,6 +293,29 @@ public class OpalaCommercialService
               return !snapshot.equals(current);
             })
         .orElse(false);
+  }
+
+  /**
+   * Compara a identidade imutável do plano sem invalidar números JSON equivalentes após leitura.
+   */
+  private static boolean sameFinancialPlanRevision(
+      com.fasterxml.jackson.databind.JsonNode previous,
+      com.fasterxml.jackson.databind.JsonNode current) {
+    return previous.path("id").isIntegralNumber()
+        && current.path("id").isIntegralNumber()
+        && previous.path("revision").isIntegralNumber()
+        && current.path("revision").isIntegralNumber()
+        && previous.path("id").longValue() == current.path("id").longValue()
+        && previous.path("revision").intValue() == current.path("revision").intValue();
+  }
+
+  /** Compara valores financeiros pelo valor decimal, sem depender do tipo numérico do JSON. */
+  private static boolean sameDecimal(
+      com.fasterxml.jackson.databind.JsonNode previous,
+      com.fasterxml.jackson.databind.JsonNode current) {
+    return previous.isNumber()
+        && current.isNumber()
+        && previous.decimalValue().compareTo(current.decimalValue()) == 0;
   }
 
   /**

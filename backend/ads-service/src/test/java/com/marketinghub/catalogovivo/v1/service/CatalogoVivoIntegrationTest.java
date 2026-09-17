@@ -77,13 +77,13 @@ class CatalogoVivoIntegrationTest {
             .filter(i -> "economics".equals(i.binding().activityId()))
             .findFirst()
             .orElseThrow();
-    assertThat(economics.versions()).hasSize(3);
+    assertThat(economics.versions()).hasSize(4);
     assertThat(economics.binding().activeVersionId())
         .isEqualTo(economics.versions().getFirst().id());
     assertThat(economics.binding().schemaId())
         .isEqualTo("prompts/opala-commercial-preparation/v1/economics-schema.json");
     assertThat(economics.versions().getFirst().text())
-        .contains("financialPlan", "cenário BASE", "YYYY-MM-DD");
+        .contains("financialPlan", "cenário BASE", "contributionBeforeCacBrl", "YYYY-MM-DD");
   }
 
   /** Confere FKs e unicidade com comandos reais, sem depender de CHECK no MySQL 5.7. */
@@ -115,12 +115,11 @@ class CatalogoVivoIntegrationTest {
   }
 
   /**
-   * Cria e revisa outra versão, prova fixação por tarefa e rollback operacional sem apagar
-   * histórico.
+   * Cria e revisa outra versão, preserva tarefas antigas e aplica a versão ativa à nova tentativa.
    */
   @Test
   @Order(3)
-  void pinsVersionsAtCreationAndPreservesRetriesAfterActivation() {
+  void pinsVersionsAtCreationAndAdvancesRetriesAfterActivation() {
     var original = service.catalog();
     var binding = original.items().getFirst().binding();
     var task = task(binding, 900101L, 900201L, "experiment:900092");
@@ -141,7 +140,8 @@ class CatalogoVivoIntegrationTest {
     assertThat(service.prompt(task)).isEqualTo(before);
     var retry = task(binding, 900102L, 900201L, "experiment:900092");
     pin(retry);
-    assertThat(service.prompt(retry).versionId()).isEqualTo(before.versionId());
+    assertThat(service.prompt(retry).versionId()).isEqualTo(draft.id());
+    assertThat(service.prompt(task)).isEqualTo(before);
     var next = task(binding, 900103L, 900202L, "experiment:900092");
     pin(next);
     assertThat(service.prompt(next).versionId()).isEqualTo(draft.id());

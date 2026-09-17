@@ -88,7 +88,8 @@ public class OpalaCommercialFinancialPlan {
     if (assumptions.validUntil().isBefore(LocalDate.now(ZoneOffset.UTC))) return true;
     return commercialPlanVersions
         .findTopByPlanIdOrderByVersionNumberDesc(plan.getCommercialPlanId())
-        .map(version -> !Objects.equals(version.getVersionNumber(), plan.getCommercialPlanVersion()))
+        .map(
+            version -> !Objects.equals(version.getVersionNumber(), plan.getCommercialPlanVersion()))
         .orElse(true);
   }
 
@@ -102,7 +103,9 @@ public class OpalaCommercialFinancialPlan {
     return read(plan, plan.getEvaluationJson(), PlanEvaluation.class);
   }
 
-  /** Desserializa um contrato financeiro sem introduzir dependência circular no contexto de tarefa. */
+  /**
+   * Desserializa um contrato financeiro sem introduzir dependência circular no contexto de tarefa.
+   */
   private <T> T read(FinancialPlanRevision plan, String value, Class<T> type) {
     try {
       return json.readValue(value, type);

@@ -256,12 +256,7 @@ public class CatalogoVivoService {
           || !Objects.equals(
               experiment.getProduct().getProductTypeDefinition().getId(), binding.productTypeId()))
         throw conflict("O experimento não pertence ao tipo deste prompt.");
-      Long versionId =
-          task.getActivityInstance() == null
-              ? binding.activeVersionId()
-              : repository
-                  .previousVersion(task.getActivityInstance().getId(), binding.id())
-                  .orElse(binding.activeVersionId());
+      Long versionId = binding.activeVersionId();
       validateVersion(binding, repository.currentVersion(versionId).orElseThrow(), true);
       repository.pin(task.getId(), binding.id(), versionId, task.getSourceReference());
     } catch (ResponseStatusException | IllegalStateException ex) {

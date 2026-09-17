@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-trilha-condicionada-por-video",
+  "collection": "video",
+  "title": "Usar o vídeo como contexto para orquestrar trilha, voz e efeitos",
+  "finding": "O Aunio, em beta, analisa cenas, movimentos, pacing e mudanças emocionais do vídeo e coordena voz, música, efeitos sonoros e processamento de áudio no mesmo fluxo, com skills reutilizáveis.",
+  "mechanism": "O rough cut carrega ritmo, transições, emoção e estrutura narrativa que podem condicionar diretamente decisões de música e sound design, enquanto skills encapsulam preferências e rotinas recorrentes de produção sonora.",
+  "commercialApplication": "Apolo pode usar o rough cut como contexto para criar um plano de áudio por cena, aplicando skills de marca para voz, música, efeitos e ambientes, e revisar hook, demonstração e CTA antes do mix final.",
+  "evidenceStrength": "Evidência forte de que o produto oferece análise de vídeo, produção sonora integrada e skills; evidência limitada por o produto ainda estar em beta e não haver benchmark independente sobre precisão temporal ou impacto comercial.",
+  "publishedOn": "2026-09-17",
+  "validUntil": "2026-11-01",
+  "experimentHypothesis": "Um fluxo de áudio condicionado diretamente pelo rough cut exigirá menos iterações de briefing e produzirá maior aderência percebida entre voz, música, efeitos e eventos visuais do que um fluxo baseado apenas em descrição textual.",
+  "risks": "A associação automática entre emoção e música pode conflitar com a marca; vozes exigem consentimento e governança; licenças variam conforme plano e modelo; automação excessiva pode mascarar erros de mix ou sincronização.",
+  "limits": "Não há evidência de sincronização frame a frame, ganho de conversão ou redução comprovada de custo. Não foi localizada API pública específica do Aunio nesta revisão, e o produto permanece em beta.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-17-aunio-trilha-condicionada-video.md",
+  "sourceTitle": "Fonte revisada — Aunio: áudio condicionado por vídeo com agentes e skills reutilizáveis",
+  "sourceSha256": "b03cf9047343ed8869f9514c2aaea5329e1d5efa8c2c5a3698befe40d77e153e"
+}

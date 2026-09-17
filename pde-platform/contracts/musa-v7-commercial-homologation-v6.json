@@ -1,0 +1,49 @@
+{
+  "contractVersion": "musa-v7-commercial-homologation.v6",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 5,
+  "activityId": "pdeGate",
+  "sourceReference": "product:4@musa-pde-entry-v7-espelho-antes-de-sair",
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+    "commercialPlanId": 3,
+    "publicUrl": "https://v7.clubemusa.com.br/"
+  },
+  "offer": {
+    "priceBrl": 67,
+    "currency": "BRL",
+    "billingModel": "ONE_TIME",
+    "accessDays": 90,
+    "renewal": false,
+    "checkoutUrl": "https://go.pepper.com.br/owm6x",
+    "checkoutProvider": "PEPPER",
+    "checkoutReference": "owm6x"
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "revalidationReason": "Reatestar a v7 após a inclusão do preflight autenticado da candidata v12 no catálogo compartilhado, sem alterar sua oferta, checkout ou experiência publicada.",
+  "boundary": "Esta atestação preserva a v7 e não promove a v12, não cria venda, pagamento, gasto ou autorização comercial.",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/contracts/musa-v7-commercial-homologation-v5.json",
+      "sha256": "4bd2bad78e5466c5311865e861f33abf23d2e53025f41c9399d2ef6b552fc7ab",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "A v5 permanece como baseline comercial imutável; a v6 revalida somente o catálogo compartilhado alterado."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+      "sha256": "0e00c39294c1f1e702423590cec3b4f8192474c1edc6b5f4b8eca82039d2a840"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogServiceTest.java",
+      "sha256": "404165c91b4959c928782b7771d2eebf08ec9a4d4489e7d894f40dc831461a44"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogVersionRejectionTest.java",
+      "sha256": "318e5dc1f27a5c2b04d8f92449f4b62fc5bfaab64d1dfcb6e9b8dea186ecfc72"
+    }
+  ]
+}

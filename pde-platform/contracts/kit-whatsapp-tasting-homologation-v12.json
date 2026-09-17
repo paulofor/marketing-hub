@@ -1,0 +1,41 @@
+{
+  "evidenceVersion": "kit-whatsapp-tasting-homologation-v12",
+  "product": {
+    "id": 9,
+    "slug": "kit-whatsapp-pronto",
+    "experienceVersion": "kit-whatsapp-pronto-pde-v2"
+  },
+  "experimentId": 89,
+  "verifiedAt": "2026-09-17T08:30:00+00:00",
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "revalidationReason": "Revalidar o Rigel após o catálogo compartilhado passar a consultar candidatas por preflight autenticado e exato.",
+  "scope": "Compatibilidade do Rigel com a evolução compartilhada necessária à Vega v12; preserva sua oferta, entrega e política comercial.",
+  "boundary": "Esta atestação não cria contato, venda, pagamento, gasto, publicação ou autorização comercial.",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-tasting-homologation-v11.json",
+      "sha256": "3d8adab7341ffb96c7f7b0b8bad4b663ce83ad9edfa0ed9e46078e7d1e597a3c",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "A v11 permanece como baseline imutável; a v12 revalida somente o executável compartilhado alterado."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+      "sha256": "0e00c39294c1f1e702423590cec3b4f8192474c1edc6b5f4b8eca82039d2a840"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java",
+      "sha256": "1831fd1d7a44be8aaaeb2eb788095ae9e2385fae28a8f098bbfd141f638f0159"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogVersionRejectionTest.java",
+      "sha256": "318e5dc1f27a5c2b04d8f92449f4b62fc5bfaab64d1dfcb6e9b8dea186ecfc72"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/RigelCommercialContractPolicyTest.java",
+      "sha256": "1150583e927fd8686a99e3173db70e89d738e873883a910a0ba2ef666e801770"
+    }
+  ],
+  "validationReport": "docs/homologacao/vega-92-jornada-comercial-2026-09-17.md"
+}

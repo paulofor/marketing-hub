@@ -86,15 +86,37 @@ function manifestRevision(contract) {
   return 1;
 }
 
-// Revalida provas vigentes antes de substituir um pacote, preservando atestações históricas.
+function manifestExperienceVersion(contract) {
+  const nested = contract.product?.experienceVersion;
+  if (typeof nested === "string" && nested.trim()) return nested.trim();
+  const root = contract.experienceVersion;
+  return typeof root === "string" && root.trim() ? root.trim() : null;
+}
+
+// Revalida provas vigentes por produto e versão antes de substituir um pacote.
 async function validateCurrentManifestEvidence(sourceRoot, manifests) {
-  const byProduct = new Map();
+  const byProductVersion = new Map();
+  const productsWithVersionedManifest = new Set();
   for (const manifest of manifests) {
-    const candidates = byProduct.get(manifest.productSlug) ?? [];
+    const experienceVersion = manifestExperienceVersion(manifest.contract);
+    if (experienceVersion) {
+      productsWithVersionedManifest.add(manifest.productSlug);
+    }
+    const identity = `${manifest.productSlug}@${experienceVersion ?? "legacy"}`;
+    const candidates = byProductVersion.get(identity) ?? [];
     candidates.push(manifest);
-    byProduct.set(manifest.productSlug, candidates);
+    byProductVersion.set(identity, candidates);
   }
-  for (const [productSlug, candidates] of byProduct) {
+  for (const [identity, candidates] of byProductVersion) {
+    const separator = identity.indexOf("@");
+    const productSlug = identity.slice(0, separator);
+    const experienceVersion = identity.slice(separator + 1);
+    if (
+      experienceVersion === "legacy" &&
+      productsWithVersionedManifest.has(productSlug)
+    ) {
+      continue;
+    }
     const latestRevision = Math.max(
       ...candidates.map(({ contract }) => manifestRevision(contract)),
     );
@@ -103,7 +125,7 @@ async function validateCurrentManifestEvidence(sourceRoot, manifests) {
     );
     if (latest.length !== 1) {
       throw new Error(
-        `Mais de um manifesto vigente corresponde ao produto ${productSlug}`,
+        `Mais de um manifesto vigente corresponde ao produto e versão ${identity}`,
       );
     }
     const { relativePath: manifestPath, contract } = latest[0];
@@ -117,7 +139,7 @@ async function validateCurrentManifestEvidence(sourceRoot, manifests) {
         if (actualHash !== evidence.sha256) {
           throw new Error(
             `SHA-256 divergente para a prova de homologação: ${relativePath}; ` +
-              `produto=${productSlug}; manifesto=${manifestPath}. ` +
+              `produto=${productSlug}; versão=${experienceVersion}; manifesto=${manifestPath}. ` +
               "Revalide o produto e crie nova atestação; preserve o histórico.",
           );
         }

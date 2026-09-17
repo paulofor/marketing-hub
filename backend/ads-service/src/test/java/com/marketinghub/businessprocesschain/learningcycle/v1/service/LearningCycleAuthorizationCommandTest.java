@@ -381,7 +381,10 @@ class LearningCycleAuthorizationCommandTest {
     assertThat(saved).hasSize(1);
   }
 
-  /** Renova um ciclo ainda planejado, preservando teto, versão e ausência de liberação externa. */
+  /**
+   * Renova um ciclo ainda planejado, redistribuindo o teto pela janela sem ampliar verba nem
+   * liberar mídia.
+   */
   @Test
   void revalidatesExpiredWindowBeforePublicationWithoutChangingBudget() {
     cycle.setStage("PUBLICATION");
@@ -414,6 +417,10 @@ class LearningCycleAuthorizationCommandTest {
     assertThat(response.budgetLimitBrl()).isEqualByComparingTo("100");
     assertThat(experiment.getStatus())
         .isEqualTo(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    assertThat(experiment.getDailyBudget()).isEqualByComparingTo("14.28");
+    assertThat(experiment.getMediaSpendLimit()).isEqualByComparingTo("100");
+    assertThat(experiment.getStartDate()).isEqualTo(java.time.LocalDate.now());
+    assertThat(experiment.getEndDate()).isEqualTo(java.time.LocalDate.now().plusDays(6));
     var eventCaptor = org.mockito.ArgumentCaptor.forClass(LearningSalesCycleEvent.class);
     org.mockito.Mockito.verify(events).saveAndFlush(eventCaptor.capture());
     assertThat(eventCaptor.getValue().getAction()).isEqualTo("REVALIDATE_WINDOW");

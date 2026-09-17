@@ -2,6 +2,7 @@ package com.marketinghub.metaadapproverworker;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,8 +77,10 @@ public class MetaAdApproverScheduler {
         "Revisão iniciada pelo Aprovador Meta. experimentId={} creativeId={}",
         job.experimentId(),
         job.creativeId());
+    Map<String, Object> result = null;
     try {
-      backend.report(job.creativeId(), runner.run(job));
+      result = runner.run(job);
+      backend.report(job.creativeId(), result);
       log.info(
           "Revisão concluída pelo Aprovador Meta. experimentId={} creativeId={}",
           job.experimentId(),
@@ -96,7 +99,8 @@ public class MetaAdApproverScheduler {
           job.experimentId(),
           job.creativeId(),
           ex);
-      backend.fail(job.creativeId(), new IllegalStateException("Falha ao revisar anúncio", ex));
+      backend.fail(
+          job.creativeId(), result, new IllegalStateException("Falha ao revisar anúncio", ex));
     }
   }
 }

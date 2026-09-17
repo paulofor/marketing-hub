@@ -338,7 +338,7 @@ class PdeExperienceEvidenceLoaderTest {
         "productId", 9L, "productSlug", "produto-teste", "experienceVersion", "produto-teste-v1");
   }
 
-  /** Confirma identidade e isolamento de Rigel e Vega sem fixar revisões históricas de evidência. */
+  /** Confirma identidade e isolamento de Rigel, Vega v7 e Vega v12 em paralelo. */
   @Test
   void segregatesCurrentRepositoryEvidenceByProduct() throws Exception {
     Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
@@ -370,6 +370,17 @@ class PdeExperienceEvidenceLoaderTest {
                 "metodo-musa-7-dias",
                 "experienceVersion",
                 "musa-pde-entry-v7-espelho-antes-de-sair"));
+    var vegaV12 =
+        loader.loadCommercialHomologationEvidence(
+            Map.of(
+                "experimentId",
+                92L,
+                "productId",
+                4L,
+                "productSlug",
+                "metodo-musa-7-dias",
+                "experienceVersion",
+                "musa-pde-entry-v12-primeiro-ajuste-aplicavel"));
 
     assertThat(rigel)
         .extracting(item -> item.get("path"))
@@ -378,7 +389,15 @@ class PdeExperienceEvidenceLoaderTest {
         .allSatisfy(path -> assertThat(path.toString()).doesNotContain("musa-v7-", "mira-"));
     assertThat(vega)
         .extracting(item -> item.get("path"))
-        .contains("pde-platform/frontend/src/musaExperiences.ts")
+        .contains(
+            "pde-platform/contracts/musa-v7-commercial-homologation-v6.json",
+            "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java")
+        .allSatisfy(path -> assertThat(path.toString()).doesNotContain("kit-whatsapp-", "mira-"));
+    assertThat(vegaV12)
+        .extracting(item -> item.get("path"))
+        .contains(
+            "pde-platform/contracts/musa-v12-commercial-homologation-v1.json",
+            "pde-platform/frontend/src/musaExperiences.ts")
         .allSatisfy(path -> assertThat(path.toString()).doesNotContain("kit-whatsapp-", "mira-"));
     var json = new ObjectMapper();
     var rigelProduct = json.readTree(rigel.getFirst().get("content").toString()).path("product");
@@ -391,5 +410,11 @@ class PdeExperienceEvidenceLoaderTest {
     assertThat(vegaProduct.path("slug").asText()).isEqualTo("metodo-musa-7-dias");
     assertThat(vegaProduct.path("experienceVersion").asText())
         .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
+    var vegaV12Product =
+        json.readTree(vegaV12.getFirst().get("content").toString()).path("product");
+    assertThat(vegaV12Product.path("id").asLong()).isEqualTo(4L);
+    assertThat(vegaV12Product.path("slug").asText()).isEqualTo("metodo-musa-7-dias");
+    assertThat(vegaV12Product.path("experienceVersion").asText())
+        .isEqualTo("musa-pde-entry-v12-primeiro-ajuste-aplicavel");
   }
 }

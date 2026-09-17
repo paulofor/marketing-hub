@@ -120,6 +120,15 @@ PDE preserva a recusa HTTP do Hub, sem convertê-la em conteúdo local. A leitur
 contrato global. Reparos de snapshots legados usam fontes históricas versionadas, preservam
 rascunhos e publicações existentes e não equivalem a aprovação comercial ou ativação de campanha.
 
+Complemento canônico de 17/09/2026: a homologação da própria candidata não pode depender de um
+snapshot que só passa a existir depois da publicação. Durante o preflight, o backend PDE pode
+consultar o rascunho exato por um endpoint interno autenticado, sempre com produto e `slotCode` ou
+`experienceVersion` explícitos e somente nos estados `CANDIDATE`, `READY` ou `ACTIVE`. O Marketing
+Hub continua como fonte de verdade; é proibido substituir uma recusa por catálogo local, ler versão
+por data de atualização ou expor esse endpoint interno sem o segredo compartilhado. Essa leitura não
+altera status, não cria snapshot publicado e não autoriza tráfego, campanha, cobrança ou acesso. Após
+a promoção, as rotas públicas continuam consumindo exclusivamente o snapshot publicado.
+
 Complemento canônico de 15/09/2026: oferta, contrato de integração, imagem pública e
 experiência entregue devem pertencer à mesma versão comercial. O hostname versionado encaminha
 `slotCode`/`experienceVersion`; o Marketing Hub confere produto e experimento do snapshot exato.

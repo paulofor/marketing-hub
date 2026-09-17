@@ -188,6 +188,41 @@ function resolveSlot(url) {
   );
 }
 
+function buildMusaOffer(url) {
+  const slotCode = resolveSlot(url);
+  const product = { ...baseProduct, ...slots[slotCode] };
+  const binding = product.commercialBinding ?? {};
+  const checkout = product.commercialCheckout ?? {};
+  return {
+    productSlug,
+    experienceVersion: product.experienceVersion,
+    layoutKey: product.layoutKey,
+    experimentId: binding.experimentId ?? (slotCode === "v8" ? 92 : 91),
+    experimentStatus: "PLANNED",
+    acquisitionChannel: "FACEBOOK",
+    pain: "Dúvida sobre como transformar o look com o que já possui.",
+    proof: "Primeiro ajuste concreto e aplicável antes da oferta paga.",
+    promise: product.promise,
+    primaryCta:
+      binding.primaryCta ??
+      product.publicFirstFold?.videoCtaLabel ??
+      "Ver meu primeiro ajuste MUSA",
+    priceBrl: binding.priceBrl ?? checkout.priceBrl ?? 67,
+    checkoutUrl: checkout.checkoutUrl ?? "https://go.pepper.com.br/owm6x",
+    salesPageUrl: `https://${slotCode}.clubemusa.com.br`,
+    targetAudience: product.audience,
+    productFormat: "EXPERIENCIA_GUIADA",
+    deliveryMode: "DIGITAL_AUTOGUIADA",
+    valueUnit: "Primeiro ajuste e continuidade guiada de sete dias",
+    supplierDisplayName: "Digicom Digital",
+    supplierRegistrationNumber: "25.215.414/0001-69",
+    supportEmail: "contato@digicomdigital.com.br",
+    termsUrl: `https://${slotCode}.clubemusa.com.br/terms`,
+    privacyUrl: `https://${slotCode}.clubemusa.com.br/privacy`,
+    refundPolicyUrl: `https://${slotCode}.clubemusa.com.br/refund-policy`,
+  };
+}
+
 async function readJsonBody(request) {
   const chunks = [];
   for await (const chunk of request) chunks.push(chunk);
@@ -218,6 +253,17 @@ const server = http.createServer(async (request, response) => {
       "Cache-Control": "no-store",
     });
     response.end(JSON.stringify(kitWhatsAppOffer));
+    return;
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === `/api/products/public/${productSlug}/commercial-offer`
+  ) {
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    });
+    response.end(JSON.stringify(buildMusaOffer(url)));
     return;
   }
   const pepperControlMatch = url.pathname.match(

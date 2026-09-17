@@ -54,21 +54,32 @@ public class ProductCatalogService {
     private final RestClient.Builder restClientBuilder;
     private final List<String> marketingHubBaseUrls;
     private final String experienceVersionOverride;
+    private final String internalToken;
 
     /** Cria o catálogo com integração opcional ao Marketing Hub como fonte de verdade comercial. */
     @Autowired
     public ProductCatalogService(
             RestClient.Builder restClientBuilder,
             @Value("${pde.catalog.marketing-hub-base-url:}") String marketingHubBaseUrl,
-            @Value("${pde.catalog.experience-version-override:}") String experienceVersionOverride) {
+            @Value("${pde.catalog.experience-version-override:}") String experienceVersionOverride,
+            @Value("${pde.internal-api.token:}") String internalToken) {
         this.restClientBuilder = restClientBuilder;
         this.marketingHubBaseUrls = parseMarketingHubBaseUrls(marketingHubBaseUrl);
         this.experienceVersionOverride = experienceVersionOverride;
+        this.internalToken = internalToken == null ? "" : internalToken;
+    }
+
+    /** Mantém chamadas de teste sem segredo quando elas exercitam somente snapshots publicados. */
+    ProductCatalogService(
+            RestClient.Builder restClientBuilder,
+            String marketingHubBaseUrl,
+            String experienceVersionOverride) {
+        this(restClientBuilder, marketingHubBaseUrl, experienceVersionOverride, "");
     }
 
     /** Cria o catálogo em testes unitários sem dependência do Marketing Hub. */
     ProductCatalogService() {
-        this(RestClient.builder(), "", "");
+        this(RestClient.builder(), "", "", "");
     }
 
     /** Retorna a experiência configurada para o produto informado. */
@@ -281,17 +292,72 @@ public class ProductCatalogService {
                 log.warn("Contrato PDE recusado pelo Marketing Hub; slug={}, slotCode={}, experienceVersion={}, baseUrl={}, status={}",
                         slug, slotCode, experienceVersion, baseUrl, ex.getStatusCode(), ex);
                 if (StringUtils.hasText(slotCode) || StringUtils.hasText(experienceVersion)) {
+                    Optional<ProductExperienceResponse> candidate = loadValidationContract(
+                            baseUrl, slug, slotCode, experienceVersion);
+                    if (candidate.isPresent()) {
+                        return candidate;
+                    }
                     throw new ResponseStatusException(ex.getStatusCode(),
                             "Contrato PDE indisponível para a versão solicitada", ex);
                 }
             } catch (RuntimeException ex) {
                 log.warn("Falha ao carregar experiência PDE do Marketing Hub; tentando fallback: slug={}, baseUrl={}",
                         slug, baseUrl, ex);
+                Optional<ProductExperienceResponse> candidate = loadValidationContract(
+                        baseUrl, slug, slotCode, experienceVersion);
+                if (candidate.isPresent()) {
+                    return candidate;
+                }
             }
         }
         log.warn("Experiência PDE do Marketing Hub indisponível em todas as bases configuradas; usando catálogo local: slug={}",
                 slug);
         return Optional.empty();
+    }
+
+    /**
+     * Consulta o contrato candidato por canal autenticado sem aceitar fallback local para versão
+     * explícita.
+     */
+    private Optional<ProductExperienceResponse> loadValidationContract(
+            String baseUrl,
+            String slug,
+            String slotCode,
+            String experienceVersion) {
+        if (!StringUtils.hasText(internalToken)
+                || (!StringUtils.hasText(slotCode) && !StringUtils.hasText(experienceVersion))) {
+            return Optional.empty();
+        }
+        try {
+            ProductExperienceResponse product = restClientBuilder.clone()
+                    .baseUrl(baseUrl)
+                    .build()
+                    .get()
+                    .uri(uriBuilder -> {
+                        var builder = uriBuilder
+                                .path("/api/internal/pde-validation-contract/v1/products/{slug}/experience");
+                        if (StringUtils.hasText(slotCode)) {
+                            builder.queryParam("slotCode", slotCode);
+                        }
+                        if (StringUtils.hasText(experienceVersion)) {
+                            builder.queryParam("experienceVersion", experienceVersion);
+                        }
+                        return builder.build(slug);
+                    })
+                    .header("X-PDE-Internal-Token", internalToken)
+                    .retrieve()
+                    .body(ProductExperienceResponse.class);
+            return Optional.ofNullable(product);
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "Falha ao carregar contrato candidato pelo preflight autenticado: slug={}, slotCode={}, experienceVersion={}, baseUrl={}",
+                    slug,
+                    slotCode,
+                    experienceVersion,
+                    baseUrl,
+                    ex);
+            return Optional.empty();
+        }
     }
 
     /** Extrai o código do slot produtivo a partir do hostname público versionado. */

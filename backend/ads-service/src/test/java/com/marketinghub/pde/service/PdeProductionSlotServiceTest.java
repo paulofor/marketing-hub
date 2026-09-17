@@ -292,6 +292,43 @@ class PdeProductionSlotServiceTest {
         .hasMessageContaining("vídeo de anúncio #41");
   }
 
+  /** Deve entregar o rascunho da candidata exata ao preflight sem publicá-lo. */
+  @Test
+  void returnsCandidateDraftForAuthenticatedPreflightService() {
+    PdeProductionSlot slot = v12Slot(PdeProductionSlotStatus.CANDIDATE);
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("metodo-musa-7-dias", "v8"))
+        .thenReturn(Optional.of(slot));
+
+    String contract =
+        service.findValidationExperienceJson(
+            "metodo-musa-7-dias", "v8", "musa-pde-entry-v12-primeiro-ajuste-aplicavel");
+
+    assertThat(contract).contains("musa-pde-entry-v12-primeiro-ajuste-aplicavel");
+    assertThat(slot.getPublishedExperienceJson()).isNull();
+    assertThat(slot.getStatus()).isEqualTo(PdeProductionSlotStatus.CANDIDATE);
+  }
+
+  /** Deve recusar preflight de versão pausada mesmo quando ela ainda possui rascunho. */
+  @Test
+  void rejectsPausedCandidateDraftForPreflight() {
+    PdeProductionSlot slot = v12Slot(PdeProductionSlotStatus.PAUSED);
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("metodo-musa-7-dias", "v8"))
+        .thenReturn(Optional.of(slot));
+
+    assertThatThrownBy(
+            () ->
+                service.findValidationExperienceJson(
+                    "metodo-musa-7-dias", "v8", "musa-pde-entry-v12-primeiro-ajuste-aplicavel"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("não está disponível para preflight");
+  }
+
   /** Monta o slot canônico da v12 sem reutilizar a identidade publicada da v7. */
   private PdeProductionSlot v12Slot(PdeProductionSlotStatus status) {
     return PdeProductionSlot.builder()

@@ -3,6 +3,7 @@ package com.marketinghub.metaadapproverworker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -69,7 +70,7 @@ class MetaAdApproverSchedulerTest {
 
     scheduler(backend, runner, properties).processPending();
 
-    verify(backend).fail(any(Long.class), any(IllegalStateException.class));
+    verify(backend).fail(eq(339L), eq(approved), any(IllegalStateException.class));
     verify(backend).report(342L, approved);
   }
 

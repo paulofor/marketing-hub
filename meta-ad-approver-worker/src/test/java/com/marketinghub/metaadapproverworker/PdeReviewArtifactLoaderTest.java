@@ -155,6 +155,39 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/produto-homologation-v2.json");
   }
 
+  /** Mantém versões comerciais paralelas do mesmo produto sem colisão entre revisões. */
+  @Test
+  void validatesLatestManifestForEachProductVersion() throws Exception {
+    Path contracts = tempDir.resolve("pde-platform/contracts");
+    Path proof = tempDir.resolve("pde-platform/frontend/src/AssistedServiceApp.tsx");
+    Files.createDirectories(contracts);
+    Files.createDirectories(proof.getParent());
+    Files.writeString(proof, "prova compartilhada das duas versões");
+    String currentHash =
+        HexFormat.of()
+            .formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(proof)));
+    Files.writeString(
+        contracts.resolve("produto-a-v6.json"),
+        manifestForVersion("produto-v7", "produto-a-v6", currentHash));
+    Files.writeString(
+        contracts.resolve("produto-b-v1.json"),
+        manifestForVersion("produto-v12", "produto-b-v1", currentHash));
+    for (String relativePath : PdeReviewArtifactLoader.communicationImplementationEvidencePaths()) {
+      Path artifact = tempDir.resolve(relativePath);
+      Files.createDirectories(artifact.getParent());
+      if (!Files.exists(artifact)) {
+        Files.writeString(artifact, "prova executável de " + relativePath);
+      }
+    }
+
+    var evidence = new PdeReviewArtifactLoader(tempDir.toString()).loadCommunicationContracts();
+
+    assertThat(evidence)
+        .extracting(item -> item.get("path"))
+        .contains(
+            "pde-platform/contracts/produto-a-v6.json", "pde-platform/contracts/produto-b-v1.json");
+  }
+
   /** Confirma o histórico e a revalidação do Rigel após a inclusão do MUSA v12 no catálogo. */
   @Test
   void validatesCurrentRepositoryHomologationManifest() throws Exception {
@@ -173,7 +206,9 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v8.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v9.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v6.json",
-            "pde-platform/contracts/musa-v7-commercial-homologation-v5.json");
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v12.json",
+            "pde-platform/contracts/musa-v7-commercial-homologation-v6.json",
+            "pde-platform/contracts/musa-v12-commercial-homologation-v1.json");
   }
 
   /** Entrega à revisão independente somente a prova comercial declarada e íntegra. */
@@ -406,12 +441,23 @@ class PdeReviewArtifactLoaderTest {
                 "metodo-musa-7-dias",
                 "experienceVersion",
                 "musa-pde-entry-v7-espelho-antes-de-sair"));
+    var vegaV12 =
+        loader.loadCommercialHomologationEvidence(
+            Map.of(
+                "experimentId",
+                92L,
+                "productId",
+                4L,
+                "productSlug",
+                "metodo-musa-7-dias",
+                "experienceVersion",
+                "musa-pde-entry-v12-primeiro-ajuste-aplicavel"));
 
     assertThat(rigel)
         .extracting(item -> item.get("path"))
         .contains(
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v12.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v11.json",
-            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v10.json",
             "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java")
         .doesNotContain("pde-platform/contracts/kit-whatsapp-tasting-homologation-v4.json")
         .doesNotContain("pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json")
@@ -420,9 +466,9 @@ class PdeReviewArtifactLoaderTest {
     assertThat(vega)
         .extracting(item -> item.get("path"))
         .contains(
+            "pde-platform/contracts/musa-v7-commercial-homologation-v6.json",
             "pde-platform/contracts/musa-v7-commercial-homologation-v5.json",
-            "pde-platform/contracts/musa-v7-commercial-homologation-v4.json",
-            "pde-platform/frontend/src/musaExperiences.ts")
+            "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java")
         .doesNotContain(
             "pde-platform/contracts/musa-v7-commercial-homologation-v1.json",
             "pde-platform/contracts/musa-v7-commercial-homologation-v2.json",
@@ -430,6 +476,15 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v1.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v2.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json");
+    assertThat(vegaV12)
+        .extracting(item -> item.get("path"))
+        .contains(
+            "pde-platform/contracts/musa-v12-commercial-homologation-v1.json",
+            "pde-platform/backend/src/main/resources/contracts/musa-v12-product-v1.json",
+            "pde-platform/backend/src/main/java/com/marketinghub/pde/service/CommercialOfferService.java")
+        .doesNotContain(
+            "pde-platform/contracts/musa-v7-commercial-homologation-v6.json",
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v12.json");
   }
 
   /**
@@ -444,5 +499,17 @@ class PdeReviewArtifactLoaderTest {
     return moduleDirectory.getFileName().toString().equals("meta-ad-approver-worker")
         ? moduleDirectory.getParent()
         : moduleDirectory;
+  }
+
+  /** Monta manifesto mínimo de uma versão para provar o isolamento da seleção vigente. */
+  private String manifestForVersion(String experienceVersion, String evidenceVersion, String hash) {
+    return """
+        {
+          "evidenceVersion":"%s",
+          "product":{"slug":"produto-a","experienceVersion":"%s"},
+          "implementationEvidence":[{"path":"pde-platform/frontend/src/AssistedServiceApp.tsx","sha256":"%s"}]
+        }
+        """
+        .formatted(evidenceVersion, experienceVersion, hash);
   }
 }

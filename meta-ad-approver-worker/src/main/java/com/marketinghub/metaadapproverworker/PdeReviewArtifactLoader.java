@@ -137,9 +137,13 @@ final class PdeReviewArtifactLoader {
     return evidence;
   }
 
-  /** Seleciona por produto somente o manifesto atual que deve coincidir com o código candidato. */
+  /**
+   * Seleciona por produto e versão somente o manifesto atual que deve coincidir com o código
+   * candidato.
+   */
   private Set<Path> currentManifestPaths(List<Path> artifacts) throws IOException {
-    Map<String, List<CommunicationManifestCandidate>> candidatesByProduct = new HashMap<>();
+    Map<String, List<CommunicationManifestCandidate>> candidatesByProductVersion = new HashMap<>();
+    Set<String> productsWithVersionedManifest = new HashSet<>();
     for (Path artifact : artifacts) {
       JsonNode contract = JSON_MAPPER.readTree(Files.readString(artifact, StandardCharsets.UTF_8));
       if (!declaresCommercialEvidence(contract)) continue;
@@ -149,13 +153,21 @@ final class PdeReviewArtifactLoader {
         throw new IOException(
             "Manifesto comercial sem produto: " + repositoryRoot.relativize(artifact));
       }
-      candidatesByProduct
-          .computeIfAbsent(productSlug, ignored -> new ArrayList<>())
+      String experienceVersion = manifestExperienceVersion(contract);
+      if (experienceVersion != null) productsWithVersionedManifest.add(productSlug);
+      String identity = productSlug + "@" + Optional.ofNullable(experienceVersion).orElse("legacy");
+      candidatesByProductVersion
+          .computeIfAbsent(identity, ignored -> new ArrayList<>())
           .add(new CommunicationManifestCandidate(artifact, manifestRevision(contract)));
     }
     Set<Path> current = new HashSet<>();
     for (Map.Entry<String, List<CommunicationManifestCandidate>> entry :
-        candidatesByProduct.entrySet()) {
+        candidatesByProductVersion.entrySet()) {
+      if (entry.getKey().endsWith("@legacy")
+          && productsWithVersionedManifest.contains(
+              entry.getKey().substring(0, entry.getKey().length() - "@legacy".length()))) {
+        continue;
+      }
       int latestRevision =
           entry.getValue().stream()
               .mapToInt(CommunicationManifestCandidate::revision)
@@ -167,11 +179,19 @@ final class PdeReviewArtifactLoader {
               .toList();
       if (latest.size() != 1) {
         throw new IOException(
-            "Mais de um manifesto vigente corresponde ao produto " + entry.getKey());
+            "Mais de um manifesto vigente corresponde ao produto e versão " + entry.getKey());
       }
       current.add(latest.getFirst().path());
     }
     return Set.copyOf(current);
+  }
+
+  /** Lê a versão funcional declarada sem confundi-la com a revisão da atestação. */
+  private String manifestExperienceVersion(JsonNode contract) {
+    String nested = contract.path("product").path("experienceVersion").asText("");
+    if (!nested.isBlank()) return nested.trim();
+    String root = contract.path("experienceVersion").asText("");
+    return root.isBlank() ? null : root.trim();
   }
 
   /** Seleciona o manifesto do alvo e entrega a candidata atual sem misturar produtos. */

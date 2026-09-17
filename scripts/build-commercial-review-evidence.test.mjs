@@ -152,6 +152,37 @@ test("seleciona revisão numérica por produto e verifica todos os produtos", as
   await assert.rejects(buildBundle(root, destination), /produto=vega/);
 });
 
+test("valida em paralelo as versões atuais do mesmo produto", async (t) => {
+  const { root, destination } = await fixture(t);
+  await manifest(
+    root,
+    10,
+    { product: { id: 9, slug: "rigel", experienceVersion: "rigel-v1" } },
+    "rigel-v1-revisao-10.json",
+  );
+  await manifest(
+    root,
+    1,
+    { product: { id: 9, slug: "rigel", experienceVersion: "rigel-v2" } },
+    "rigel-v2-revisao-1.json",
+  );
+  await buildBundle(root, destination);
+  await manifest(
+    root,
+    1,
+    {
+      product: { id: 9, slug: "rigel", experienceVersion: "rigel-v2" },
+      implementationEvidence: [{ path: proofPath, sha256: "0".repeat(64) }],
+    },
+    "rigel-v2-revisao-1.json",
+  );
+
+  await assert.rejects(
+    buildBundle(root, destination),
+    /produto=rigel; versão=rigel-v2/,
+  );
+});
+
 test("recusa dois manifestos vigentes da mesma revisão e produto", async (t) => {
   const { root, destination } = await fixture(t);
   await manifest(root, 7);

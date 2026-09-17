@@ -199,6 +199,25 @@ class PublicProductCommercialOfferServiceTest {
         .hasMessageContaining("diverge da oferta comercial canônica");
   }
 
+  /** Permite ao preflight autenticado conferir a oferta da candidata exata sem publicá-la. */
+  @Test
+  void returnsCandidateOfferOnlyThroughValidationContract() {
+    Product product = product();
+    PdeProductionSlot candidate = slot();
+    candidate.setStatus(PdeProductionSlotStatus.CANDIDATE);
+    when(productRepository.findBySlug("kit-whatsapp-pronto")).thenReturn(Optional.of(product));
+    when(slotRepository.findByProductSlugOrderBySlotCodeAsc("kit-whatsapp-pronto"))
+        .thenReturn(List.of(candidate));
+    when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment(product)));
+
+    var offer =
+        service().getValidationOffer("kit-whatsapp-pronto", "v2", "kit-whatsapp-pronto-pde-v2");
+
+    assertThat(offer.experimentId()).isEqualTo(89L);
+    assertThat(offer.experienceVersion()).isEqualTo("kit-whatsapp-pronto-pde-v2");
+    assertThat(candidate.getStatus()).isEqualTo(PdeProductionSlotStatus.CANDIDATE);
+  }
+
   /** Cria o serviço isolado usado pelos cenários de contrato. */
   private PublicProductCommercialOfferService service() {
     return new PublicProductCommercialOfferService(

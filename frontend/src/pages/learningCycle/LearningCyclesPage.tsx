@@ -13,6 +13,7 @@ import PageTitle from "../../components/PageTitle";
 import LearningCycleCreateForm from "./LearningCycleCreateForm";
 import LearningCycleDecisionPanel from "./LearningCycleDecisionPanel";
 import LearningCycleCommandForm from "./LearningCycleCommandForm";
+import CycleWindowRevalidationForm from "./CycleWindowRevalidationForm";
 import LearningCycleAutomaticMeasurement from "./LearningCycleAutomaticMeasurement";
 import LearningCycleDiagram from "./LearningCycleDiagram";
 import "./LearningCyclesPage.css";
@@ -405,6 +406,10 @@ export default function LearningCyclesPage() {
               ) : null}
             </div>
           </section>
+          {cycle.status === "OPEN" &&
+          new Date(cycle.windowEnd).getTime() <= Date.now() ? (
+            <CycleWindowRevalidationForm cycle={cycle} onUpdated={updated} />
+          ) : null}
           {cycle.inheritedLearning.cycleId ? (
             <section className="card card-body mb-3">
               <h3 className="h5">

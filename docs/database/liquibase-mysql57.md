@@ -19,10 +19,12 @@ projeto autorizado da sessão; `CATALOGO_VIVO_DB_HOST=sandbox-docker` na sandbox
 `127.0.0.1` no runner. A topologia é removida no encerramento.
 
 A fixture aplica as migrações incrementais `2026-09-16-catalogo-vivo-opala-v1.yaml` e
-`2026-09-17-opala-economics-date-contract-v2.yaml`
+`2026-09-17-opala-economics-date-contract-v2.yaml` e
+`2026-09-17-opala-financial-plan-v3.yaml`
 e confere API, FKs compostas, unicidade, versões fixadas, concorrência e adesão
-explícita de uma cadeia antiga. Também comprova que a atividade econômica ativa o prompt v2 e o
-schema Opala com `deadline` no formato `YYYY-MM-DD`, preservando a versão v1 já usada. Usa somente
+explícita de uma cadeia antiga. Também comprova que a atividade econômica ativa o prompt v3,
+consome o plano financeiro versionado e mantém o schema Opala com `deadline` no formato
+`YYYY-MM-DD`, preservando as versões v1 e v2 já usadas. Usa somente
 identidades e credenciais sintéticas.
 Changelogs históricos permanecem intactos. Rollback operacional é a seleção de
 versões textuais já revisadas; o rollback destrutivo Liquibase é recusado explicitamente

@@ -34,6 +34,7 @@ public class OpalaCommercialContext {
   private final ObjectMapper json;
   private final com.marketinghub.repository.jpa.creative.CreativeRepository creatives;
   private final com.marketinghub.experiment.service.ExperimentTargetingSelectionService selections;
+  private final OpalaCommercialFinancialPlan financialPlan;
 
   /** Mantém o ciclo e o experimento como uma única identidade de preparação. */
   public record Scope(LearningSalesCycle cycle, Experiment experiment) {}
@@ -105,6 +106,7 @@ public class OpalaCommercialContext {
     result.put("budgetLimitBrl", cycle.getBudgetLimitBrl());
     result.put("windowEnd", Objects.toString(cycle.getWindowEnd(), ""));
     result.set("productContract", candidate.productContract());
+    result.set("financialPlan", financialPlan.snapshot(scope));
     var allowedSlots = result.putArray("slots");
     candidate.slots().stream()
         .forEach(

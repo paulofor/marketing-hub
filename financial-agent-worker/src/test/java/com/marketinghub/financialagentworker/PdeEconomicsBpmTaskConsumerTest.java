@@ -185,6 +185,50 @@ class PdeEconomicsBpmTaskConsumerTest {
         .isEqualTo(2);
   }
 
+  /** Aceita antes da inferência um plano LIVE completo, vigente e da mesma versão Opala. */
+  @Test
+  void acceptsVersionedOpalaFinancialPlanBeforePaidCall() throws Exception {
+    var context = objectMapper.readTree(opalaContext("READY", "fixture-v12", "2099-10-31"));
+
+    assertThatCode(() -> PdeEconomicsBpmTaskConsumer.validateOpalaPlanContract(context))
+        .doesNotThrowAnyException();
+  }
+
+  /** Bloqueia antes da inferência plano ausente, versão divergente ou janela vencida. */
+  @Test
+  void rejectsUnreadyOpalaFinancialPlanBeforePaidCall() throws Exception {
+    var missing = objectMapper.readTree(opalaContext("MISSING", "fixture-v12", "2099-10-31"));
+    var wrongVersion = objectMapper.readTree(opalaContext("READY", "fixture-v11", "2099-10-31"));
+    var expired = objectMapper.readTree(opalaContext("READY", "fixture-v12", "2026-09-16"));
+
+    assertThatThrownBy(() -> PdeEconomicsBpmTaskConsumer.validateOpalaPlanContract(missing))
+        .hasMessageContaining("plano financeiro LIVE");
+    assertThatThrownBy(() -> PdeEconomicsBpmTaskConsumer.validateOpalaPlanContract(wrongVersion))
+        .hasMessageContaining("plano financeiro LIVE");
+    assertThatThrownBy(() -> PdeEconomicsBpmTaskConsumer.validateOpalaPlanContract(expired))
+        .hasMessageContaining("plano financeiro LIVE");
+  }
+
+  /** Impede que o modelo altere custos, contribuição, CAC ou reembolso calculados pelo backend. */
+  @Test
+  void rejectsOpalaApprovalDivergentFromDeterministicPlan() throws Exception {
+    var context = objectMapper.readTree(opalaContext("READY", "fixture-v12", "2099-10-31"));
+    var approved = objectMapper.readTree(result("APPROVE", 67, 42, 25, "2099-10-31"));
+    ((com.fasterxml.jackson.databind.node.ObjectNode) approved.path("economics"))
+        .put("maxCacBrl", 15)
+        .put("expectedRefundPercent", 12);
+    var divergent = approved.deepCopy();
+    ((com.fasterxml.jackson.databind.node.ObjectNode) divergent.path("economics"))
+        .put("contributionPerSaleBrl", 24);
+
+    assertThatCode(
+            () -> PdeEconomicsBpmTaskConsumer.validateOpalaResultAgainstPlan(approved, context))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(
+            () -> PdeEconomicsBpmTaskConsumer.validateOpalaResultAgainstPlan(divergent, context))
+        .hasMessageContaining("diverge");
+  }
+
   /** Monta o parecer financeiro mínimo usado nos testes de contrato. */
   private String result(
       String decision, int price, int variableCost, int contribution, String deadline) {
@@ -243,5 +287,34 @@ class PdeEconomicsBpmTaskConsumerTest {
         }
         """
         .formatted(maxBudget, commercialSpendAuthorized, readings);
+  }
+
+  /** Monta o contrato financeiro Opala usado para validar identidade e vigência. */
+  private String opalaContext(String status, String planVersion, String validUntil) {
+    return """
+        {
+          "opalaCommercial": {
+            "productVersion":"fixture-v12",
+            "priceBrl":67,
+            "windowEnd":"2099-10-31T23:59:59Z",
+            "financialPlan":{
+              "status":"%s",
+              "assumptions":{
+                "productVersion":"%s",
+                "validUntil":"%s",
+                "evidence":"Taxas, tributos, entrega e uso local comprovados.",
+                "priceBrl":67,
+                "maximumCacBrl":15,
+                "costs":{"refundPercent":12}
+              },
+              "deterministicEvaluation":{
+                "status":"PROJECTED_VIABLE",
+                "scenarios":[{"code":"BASE","viable":true,"contributionAfterCacBrl":25}]
+              }
+            }
+          }
+        }
+        """
+        .formatted(status, planVersion, validUntil);
   }
 }

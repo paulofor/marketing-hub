@@ -2106,3 +2106,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-17-opala-economics-date-contract-v2.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-17-opala-financial-plan-v3.yaml
+      relativeToChangelogFile: true

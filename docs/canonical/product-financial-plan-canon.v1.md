@@ -95,6 +95,21 @@ atômicas, aprovação humana, autorização de mídia ou publicação. Não rev
 curso nem dar tarefas como concluídas por criar um plano. Antes da adoção operacional, conferir
 os limites na ficha exata. A v1 não cria uma trava universal de vendas em todos os executores.
 
+### Adoção no subprocesso Opala
+
+Decisão de 17/09/2026: a atividade econômica do subprocesso
+`opala-commercial-preparation-v1` só pode reservar Plutus depois que o backend localizar uma
+revisão `LIVE` do mesmo produto, plano comercial e versão do ciclo. A revisão precisa estar
+vigente e classificada como `PROJECTED_VIABLE`; preço, fontes e os cenários determinísticos
+seguem no contexto auditável. Janela vencida bloqueia antes da inferência.
+
+Plutus revisa a recomendação, mas não recria os números: o parecer copia preço, CAC máximo,
+provisão de reembolso e contribuição do cenário-base calculado pelo backend. Divergência no
+callback é recusada, preservando a resposta bruta e o custo. Revisão nova ou alteração material
+invalida somente o parecer econômico afetado. O histórico anterior, inclusive parecer bloqueado,
+nunca é sobrescrito. Essa integração é específica do Opala; outros percursos adotam o plano por
+seus próprios contratos e gates.
+
 Fontes primárias: [agente financeiro](financial-agent-canon.v1.md),
 [tipos de produto](product-types-canon.v1.md) e
 [fichas e checkpoints](product-execution-profiles-canon.v1.md).

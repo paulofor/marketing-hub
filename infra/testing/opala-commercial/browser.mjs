@@ -226,6 +226,7 @@ try {
     ["iphone", devices["iPhone 15 Pro"]],
     ["pixel", devices["Pixel 7"]],
   ]) {
+    const responsiveCycle = structuredClone(cycle);
     const context = await browser.newContext(options);
     const page = await context.newPage();
     const errors = [];
@@ -236,6 +237,21 @@ try {
       const url = new URL(route.request().url());
       if (url.hostname !== "127.0.0.1") return route.abort();
       if (!url.pathname.startsWith("/api/")) return route.continue();
+      if (
+        route.request().method() === "POST" &&
+        url.pathname.endsWith("/window-revalidation")
+      ) {
+        const request = route.request().postDataJSON();
+        expect(request).not.toHaveProperty("budgetLimitBrl");
+        expect(request.reason).toContain("sem alterar hipótese");
+        mutations++;
+        Object.assign(responsiveCycle, {
+          revision: responsiveCycle.revision + 1,
+          windowStart: request.startDate + "T00:00:00Z",
+          windowEnd: request.endDate + "T23:59:59Z",
+        });
+        return route.fulfill({ json: responsiveCycle });
+      }
       if (route.request().method() !== "GET") {
         mutations++;
         return route.fulfill({
@@ -249,7 +265,7 @@ try {
         url.pathname.includes("/learning-cycles/v1/products/4") &&
         !url.pathname.includes("process-context")
       )
-        body = [cycle];
+        body = [responsiveCycle];
       else if (url.pathname.endsWith("/process-context")) body = null;
       else if (url.pathname.endsWith("/activity-executions"))
         body = completed ? completedHistory : history;
@@ -277,6 +293,15 @@ try {
       "http://127.0.0.1:15173/business-process-chains/learning-cycles?productId=4&chainId=14&cycleId=2",
     );
     await page.waitForLoadState("networkidle");
+    const windowForm = page.getByRole("form", {
+      name: "Revalidar janela comercial",
+    });
+    await expect(windowForm).toBeVisible();
+    await expect(windowForm.getByText(/não publica campanha nem autoriza gasto externo/i))
+      .toBeVisible();
+    await expect(windowForm.locator('[name="budgetLimitBrl"]')).toHaveCount(0);
+    await windowForm.getByRole("button", { name: "Revalidar janela" }).click();
+    await expect(windowForm).not.toBeVisible();
     await page
       .getByRole("link", { name: "Abrir preparação Opala com os agentes" })
       .click();
@@ -298,8 +323,12 @@ try {
     await page.getByRole("link", { name: /Voltar ao processo pai/ }).click();
     await expect(page).toHaveURL("http://127.0.0.1:15173" + parent);
     expect(errors).toEqual([]);
-    expect(mutations).toBe(0);
-    console.log("PASS", name, "navegação, atividades, retorno e zero escritas");
+    expect(mutations).toBe(1);
+    console.log(
+      "PASS",
+      name,
+      "janela sem orçamento, navegação, atividades e retorno",
+    );
     await context.close();
   }
 } finally {

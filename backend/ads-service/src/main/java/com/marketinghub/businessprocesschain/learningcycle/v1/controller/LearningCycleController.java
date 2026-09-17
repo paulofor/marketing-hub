@@ -2,6 +2,7 @@ package com.marketinghub.businessprocesschain.learningcycle.v1.controller;
 
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleService;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.RevalidateCycleWindowRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.reconcileMeasurement.ReconcileLearningCycleMeasurementRequest;
@@ -92,6 +93,24 @@ public class LearningCycleController {
         cycleId,
         request,
         principal == null ? "Operador administrativo · aceite pela tela" : principal.getName());
+  }
+
+  /** Renova pela tela a janela ainda não utilizada, preservando versão e teto do ciclo. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Revalidar a janela de um ciclo planejado sem ampliar orçamento")
+  @PostMapping("/products/{productId}/{cycleId}/window-revalidation")
+  public LearningCycleResponse revalidateWindow(
+      @PathVariable Long productId,
+      @PathVariable Long cycleId,
+      @Valid @RequestBody RevalidateCycleWindowRequest request,
+      java.security.Principal principal) {
+    return service.revalidateWindow(
+        productId,
+        cycleId,
+        request,
+        principal == null
+            ? "Operador administrativo · revalidação pela tela"
+            : principal.getName());
   }
 
   /** Solicita nova leitura das fontes oficiais sem receber métricas digitadas pela tela. */

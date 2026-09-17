@@ -1,0 +1,18 @@
+{
+  "cardKey": "sequenciamento-musical-estado-atual-estado-alvo",
+  "collection": "prazer-audio-visual",
+  "title": "Sequenciar música do estado atual ao estado-alvo",
+  "finding": "Em um estudo com fMRI e HRV de 30 mulheres após evocação de término amoroso, uma sequência triste-calma-feliz foi associada a maior atividade parassimpática durante a escuta, menor arousal autonômico posterior e conectividade auditivo-límbica inicial seguida por engajamento prefrontal. Um experimento pré-registrado com 193 participantes saudáveis, porém, não mostrou superioridade do princípio Iso sobre uma sequência compensatória direta, embora condições guiadas tenham aumentado mais a calma que escuta não guiada em análises exploratórias.",
+  "mechanism": "A congruência inicial com o estado afetivo pode facilitar ressonância auditivo-límbica antes de uma transição sustentada por redes regulatórias prefrontais; a evidência mais ampla indica que o benefício pode vir do sequenciamento guiado e do estado final desejado, não necessariamente da superioridade universal do princípio Iso.",
+  "commercialApplication": "Em experiências digitais de bem-estar ou autorregulação nas quais a própria pessoa escolhe o estado inicial e o estado desejado, comparar uma sequência que parte do estado atual e migra ao estado-alvo com uma sequência que vai diretamente ao estado-alvo e com um controle neutro ou não guiado.",
+  "evidenceStrength": "Média: há evidência experimental humana com fMRI, HRV e um estudo pré-registrado maior, mas o estudo mecanístico recente é pequeno e restrito a mulheres em contexto de término; o estudo maior não encontrou superioridade Iso versus compensatório na análise principal.",
+  "publishedOn": "2026-09-14",
+  "validUntil": "2027-03-17",
+  "experimentHypothesis": "Quando a própria pessoa declara um estado emocional desagradável e escolhe um estado-alvo, uma trajetória musical que primeiro reconheça o estado atual e depois migre gradualmente ao desejado melhorará conforto e conclusão da experiência em relação a uma mudança emocional abrupta, sem aumentar ruminação ou rejeição.",
+  "risks": "Não inferir silenciosamente estado emocional nem usar o mecanismo para explorar vulnerabilidade. Uma sequência inadequada pode irritar ou reforçar ruminação; não alegar efeitos clínicos, psicológicos ou comerciais não testados.",
+  "limits": "Os estudos são de regulação emocional, não de marketing; um deles tem N=30 e apenas mulheres. Não houve medição direta de dopamina, vendas, CTA ou receita, e o princípio Iso não foi superior ao compensatório no experimento pré-registrado maior.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-17-sequenciamento-musical-estado-alvo.md",
+  "sourceTitle": "Fonte revisada — sequenciamento musical do estado atual ao estado-alvo",
+  "sourceSha256": "b901115d33dd60c1ec64d1941ec85c6c05ad688052e7a4eb72a00ba4f19acedd"
+}

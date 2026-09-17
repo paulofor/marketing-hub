@@ -11,11 +11,13 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /** Responsabilidade: registrar no pai o resultado funcional comprovado de sua chamada ao filho. */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ProcessRunSubprocesses {
   private final BusinessProcessActivityDefinitionRepository definitions;
   private final BusinessProcessActivityInstanceRepository instances;
@@ -51,7 +53,7 @@ public class ProcessRunSubprocesses {
             .findByProcessDefinitionIdAndActivityId(
                 parent.getProcessDefinitionId(), activity.activityId())
             .orElseThrow();
-    if (!Objects.equals(definition.getSubprocessCode(), proof.processCode()))
+    if (!calls(definition, proof))
       throw new IllegalStateException(
           "O resultado não pertence ao subprocesso chamado pela atividade.");
     var latest =
@@ -98,5 +100,26 @@ public class ProcessRunSubprocesses {
             });
     instance.setObjectiveEvidenceJson(evidence.toString());
     instances.saveAndFlush(instance);
+  }
+
+  /** Aceita chamada direta ou rota tipada somente quando código e versão persistidos coincidem. */
+  private boolean calls(
+      com.marketinghub.businessprocess.BusinessProcessActivityDefinition definition,
+      ProductProcessActivityExecutionHistoryResponse proof) {
+    if (Objects.equals(definition.getSubprocessCode(), proof.processCode())) return true;
+    try {
+      for (var route : json.readTree(definition.getDefinitionJson()).path("subprocessRoutes"))
+        if (proof.processCode().equals(route.path("subprocessCode").asText())
+            && proof.selectedProcessVersionNumber() == route.path("subprocessVersion").asInt(-1))
+          return true;
+      return false;
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao validar chamada tipada de subprocesso. activityDefinitionId={} processCode={}",
+          definition.getId(),
+          proof.processCode(),
+          ex);
+      throw new IllegalStateException("A chamada tipada do subprocesso está inválida.", ex);
+    }
   }
 }

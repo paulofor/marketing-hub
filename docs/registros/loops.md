@@ -1,5 +1,22 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-OPALA-PREPARACAO-TARDIA-E-REVISAO-DUPLICADA — Processo 6 descobre pré-requisitos de venda
+
+- **Data:** 16/09/2026. Cadeia v15, Processo 6 v7 e preparação do experimento #92.
+- **Evidência histórica:** a preparação Opala era chamada somente na entrada do Processo 6, depois
+  da homologação/autorização; o ciclo #2 acumulou bloqueios de destino, versão e checkout. Mover
+  apenas a numeração para o Processo 5 manteria a chamada antiga e repetiria Psique, Têmis e custo.
+- **Causa-raiz:** a composição comum não possuía roteamento de preparação por tipo no ponto em que a
+  prontidão comercial deveria ser comprovada. A operação misturava pré-lançamento com venda e não
+  possuía contrato para reaproveitar pareceres vigentes do subprocesso.
+- **Correção local:** cadeia v16 imutável, Processo 5 v7 com rota tipada em 5.1, reutilização
+  auditável em 5.2/5.3, homologação em 5.4 e autorização humana em 5.5; Processo 6 v8 começa após a
+  autorização e não chama Opala novamente. Cadeias e ciclo #2 históricos permanecem intactos.
+- **Prevenção:** tipo sem rota bloqueia; ficha congela código e versão exatos; a conclusão do filho
+  precisa pertencer ao contrato tipado; mudança material invalida o parecer; o gate humano considera
+  todos os requisitos, inclusive preparação. Migração MySQL 5.7 e testes de navegação, pertencimento,
+  custo incremental zero, histórico e ausência da segunda chamada cobrem recorrência.
+
 ## LOOP-ACTIONS-PROVA-IMUTAVEL-E-GRAFO-HISTORICO — mudança compartilhada quebra workers e ciclo
 
 - **Data:** 16/09/2026. PR #5209 e merge `a7e8db2a`.

@@ -130,6 +130,58 @@ class OpalaAdoptionRoutingTest {
             anyLong(), anyString());
   }
 
+  /** Encontra Opala na atividade tipada do Processo 5 sem depender do Processo 6 legado. */
+  @Test
+  void resolvesTypedRouteFromProcessFive() throws Exception {
+    var processes = mock(BusinessProcessDefinitionRepository.class);
+    var chains = mock(BusinessProcessChainDefinitionRepository.class);
+    var products = mock(ProductRepository.class);
+    var context = mock(OpalaCommercialContext.class);
+    var routing =
+        new OpalaCommercialRouting(
+            processes,
+            chains,
+            mock(BusinessProcessActivityDefinitionRepository.class),
+            mock(
+                com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository
+                    .class),
+            products,
+            context);
+    var product = new Product();
+    product.setId(4L);
+    product.setProductTypeDefinition(ProductTypeDefinition.builder().code("PDE").build());
+    when(products.findById(4L)).thenReturn(Optional.of(product));
+    var cycle = new LearningSalesCycle();
+    cycle.setProductId(4L);
+    cycle.setChainDefinitionId(16L);
+    var processFive = new BusinessProcessDefinition();
+    processFive.setId(56L);
+    processFive.setProcessCode("pde-commercial-homologation-activation");
+    processFive.setDiagramJson("process-five-v7");
+    var chain = new BusinessProcessChainDefinition();
+    var item = new BusinessProcessChainItem();
+    item.setProcessDefinition(processFive);
+    chain.getItems().add(item);
+    when(chains.findById(16L)).thenReturn(Optional.of(chain));
+    when(context.read("process-five-v7"))
+        .thenReturn(
+            new ObjectMapper()
+                .readTree(
+                    "{\"nodes\":[{\"id\":\"commercialPreparation\",\"type\":\"TASK\",\"subprocessRoutes\":[{\"productTypeCode\":\"PDE\",\"subprocessCode\":\"opala-commercial-preparation-v1\",\"subprocessVersion\":1}]}]}"));
+    var target = new BusinessProcessDefinition();
+    target.setId(77L);
+    target.setProcessCode("opala-commercial-preparation-v1");
+    target.setVersionNumber(1);
+    target.setStatus("PUBLISHED");
+    when(processes.findByProcessCodeAndVersionNumber("opala-commercial-preparation-v1", 1))
+        .thenReturn(Optional.of(target));
+
+    assertThat(routing.target(cycle)).isSameAs(target);
+    verify(processes, never())
+        .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+            "opala-commercial-preparation-v1", "PUBLISHED");
+  }
+
   /** O motor real recusa a cadeia antiga sem adesão e aceita a passagem exata após o registro. */
   @Test
   void permitsExecutionOnlyAfterExplicitAdoptionAndRejectsAnotherSource() {
@@ -178,5 +230,58 @@ class OpalaAdoptionRoutingTest {
     cycle.setStatus("CLOSED");
     assertThatThrownBy(() -> context.read(4L, 77L, command, true))
         .hasMessageContaining("encerrado");
+  }
+
+  /** Reconhece o subprocesso tipado como membro real da cadeia nova sem adesão excepcional. */
+  @Test
+  void permitsTypedSubprocessDeclaredByChainGraph() {
+    var activities = mock(BusinessProcessActivityExecutionService.class);
+    var processes = mock(BusinessProcessDefinitionRepository.class);
+    var chains = mock(BusinessProcessChainDefinitionRepository.class);
+    var cycles = mock(LearningSalesCycleRepository.class);
+    var products = mock(ProductRepository.class);
+    var context =
+        new ProcessRunContext(activities, processes, chains, cycles, products, new ObjectMapper());
+    var product = new Product();
+    product.setId(4L);
+    product.setProductTypeDefinition(ProductTypeDefinition.builder().code("PDE").build());
+    when(products.findById(4L)).thenReturn(Optional.of(product));
+    var target = new BusinessProcessDefinition();
+    target.setId(77L);
+    target.setProcessCode("opala-commercial-preparation-v1");
+    target.setVersionNumber(1);
+    target.setExecutionScope("PRODUCT");
+    target.setDiagramJson("{\"nodes\":[{\"id\":\"start\",\"type\":\"START\"}],\"flows\":[]}");
+    var parent = new BusinessProcessDefinition();
+    parent.setId(56L);
+    parent.setProcessCode("pde-commercial-homologation-activation");
+    parent.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"commercialPreparation\",\"type\":\"TASK\",\"subprocessRoutes\":[{\"productTypeCode\":\"PDE\",\"subprocessCode\":\"opala-commercial-preparation-v1\",\"subprocessVersion\":1}]}],\"flows\":[]}");
+    when(processes.findById(77L)).thenReturn(Optional.of(target));
+    when(processes.findById(56L)).thenReturn(Optional.of(parent));
+    var chain = new BusinessProcessChainDefinition();
+    chain.setId(16L);
+    var item = new BusinessProcessChainItem();
+    item.setProcessDefinition(parent);
+    chain.getItems().add(item);
+    when(chains.findById(16L)).thenReturn(Optional.of(chain));
+    var cycle = new LearningSalesCycle();
+    cycle.setId(3L);
+    cycle.setProductId(4L);
+    cycle.setChainDefinitionId(16L);
+    cycle.setStatus("OPEN");
+    when(cycles.findById(3L)).thenReturn(Optional.of(cycle));
+    var history = mock(ProductProcessActivityExecutionHistoryResponse.class);
+    when(history.currentExecutionReference()).thenReturn("experiment:93");
+    when(history.activities()).thenReturn(List.of());
+    when(activities.productProcessExecutions(77L, 4L, 3L, 16L, false)).thenReturn(history);
+
+    assertThat(context.read(4L, 77L, new ProcessRunCommand(16L, 3L, "experiment:93"), true))
+        .isSameAs(history);
+
+    product.setProductTypeDefinition(ProductTypeDefinition.builder().code("OUTRO").build());
+    assertThatThrownBy(
+            () -> context.read(4L, 77L, new ProcessRunCommand(16L, 3L, "experiment:93"), true))
+        .hasMessageContaining("não pertence");
   }
 }

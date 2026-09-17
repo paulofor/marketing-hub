@@ -36,10 +36,30 @@ class OpalaCommercialMigrationTest {
           connection,
           "SELECT COUNT(*) FROM business_process_definition WHERE version_number=6 AND diagram_json='{\"nodes\":[],\"flows\":[]}' AND status='PUBLISHED'",
           1);
+      check(
+          connection,
+          "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='pde-commercial-homologation-activation' AND p.version_number=7",
+          5);
+      check(
+          connection,
+          "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='pde-commercial-homologation-activation' AND p.version_number=7 AND a.activity_id='commercialPreparation' AND JSON_UNQUOTE(JSON_EXTRACT(a.definition_json,'$.subprocessRoutes[0].productTypeCode'))='PDE'",
+          1);
+      check(
+          connection,
+          "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='pde-sales-delivery-learning' AND p.version_number=8 AND a.activity_id='commercialPreparation'",
+          0);
+      check(
+          connection,
+          "SELECT COUNT(*) FROM business_process_chain_item i JOIN business_process_chain_definition c ON c.id=i.chain_definition_id JOIN business_process_definition p ON p.id=i.process_definition_id WHERE c.chain_code='pde-value-creation-delivery' AND c.version_number=16 AND ((p.process_code='pde-commercial-homologation-activation' AND p.version_number=7) OR (p.process_code='pde-sales-delivery-learning' AND p.version_number=8))",
+          2);
       migrate(url, false);
       check(
           connection,
           "SELECT COUNT(*) FROM business_process_chain_definition WHERE version_number=15",
+          1);
+      check(
+          connection,
+          "SELECT COUNT(*) FROM business_process_chain_definition WHERE version_number=16 AND status='PUBLISHED'",
           1);
       migrate(url, true);
       check(
@@ -50,10 +70,26 @@ class OpalaCommercialMigrationTest {
           connection,
           "SELECT COUNT(*) FROM business_process_definition WHERE process_code='opala-commercial-preparation-v1' AND status='RETIRED'",
           1);
+      check(
+          connection,
+          "SELECT COUNT(*) FROM business_process_chain_definition WHERE version_number=16 AND status='RETIRED'",
+          1);
+      check(
+          connection,
+          "SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=7 AND status='RETIRED'",
+          1);
+      check(
+          connection,
+          "SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-sales-delivery-learning' AND version_number=8 AND status='RETIRED'",
+          1);
       migrate(url, false);
       check(
           connection,
           "SELECT COUNT(*) FROM business_process_definition WHERE process_code='opala-commercial-preparation-v1' AND status='PUBLISHED'",
+          1);
+      check(
+          connection,
+          "SELECT COUNT(*) FROM business_process_chain_definition WHERE version_number=16 AND status='PUBLISHED'",
           1);
     }
   }

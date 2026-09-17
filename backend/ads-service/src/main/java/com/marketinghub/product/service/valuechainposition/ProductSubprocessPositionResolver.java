@@ -88,11 +88,12 @@ public class ProductSubprocessPositionResolver {
       BusinessProcessDefinition parentProcess,
       Integer parentSequenceNumber,
       ProductStageMeasurementContext context) {
-    List<BusinessProcessDefinition> subprocesses = orderedSubprocesses(parentProcess);
+    List<BusinessProcessDefinition> subprocesses = orderedSubprocesses(product, parentProcess);
     if (salesFlowResolver != null) {
       var flow = salesFlowResolver.resolve(product.getId(), parentProcess, null, null);
       if (flow != null)
-        return salesPosition(product, subprocesses, parentSequenceNumber, context, flow);
+        return salesPosition(
+            product, parentProcess, subprocesses, parentSequenceNumber, context, flow);
     }
     if (subprocesses.isEmpty()) {
       return new ProductSubprocessPositionResponse(
@@ -139,13 +140,14 @@ public class ProductSubprocessPositionResolver {
         currentAwaitingFirstExecution = true;
         status = "PLANNED";
       } else {
-        activityName = nextParentActivityName(parentProcess, lastRecorded.getProcessCode());
+        activityName =
+            nextParentActivityName(product, parentProcess, lastRecorded.getProcessCode());
         status = "COMPLETED";
       }
     }
 
     if (current == null && lastRecorded == null) {
-      ParentProgress parentProgress = parentProgress(tasks, parentProcess);
+      ParentProgress parentProgress = parentProgress(product, tasks, parentProcess);
       activityName = parentProgress.activityName();
       current = childByCode(parentProgress.currentSubprocessCode(), subprocesses);
       next =
@@ -161,6 +163,7 @@ public class ProductSubprocessPositionResolver {
         activityName,
         current,
         next,
+        parentProcess,
         parentSequenceNumber,
         currentAwaitingFirstExecution,
         context);
@@ -171,6 +174,7 @@ public class ProductSubprocessPositionResolver {
    */
   private ProductSubprocessPositionResponse salesPosition(
       Product product,
+      BusinessProcessDefinition parentProcess,
       List<BusinessProcessDefinition> subprocesses,
       Integer parentSequence,
       ProductStageMeasurementContext context,
@@ -198,7 +202,8 @@ public class ProductSubprocessPositionResolver {
                 subprocesses,
                 current,
                 parentSequence,
-                false);
+                false,
+                subprocessActivitySequences(product, parentProcess, subprocesses));
     var measurements = new ArrayList<ProductStageMeasurementResponse>();
     for (var activity : flow.activities()) {
       var child = childByCode(calls.get(activity.activityId()), subprocesses);
@@ -272,11 +277,11 @@ public class ProductSubprocessPositionResolver {
 
   /** Localiza a primeira atividade do processo pai depois do subprocesso concluído. */
   private String nextParentActivityName(
-      BusinessProcessDefinition parentProcess, String completedSubprocessCode) {
+      Product product, BusinessProcessDefinition parentProcess, String completedSubprocessCode) {
     List<JsonNode> nodes = orderedNodes(parentProcess);
     boolean completedFound = false;
     for (JsonNode node : nodes) {
-      if (completedSubprocessCode.equals(node.path("subprocessCode").asText(null))) {
+      if (completedSubprocessCode.equals(subprocessCode(node, product))) {
         completedFound = true;
         continue;
       }
@@ -291,7 +296,7 @@ public class ProductSubprocessPositionResolver {
 
   /** Ordena subprocessos pela posição em que são delegados no diagrama do processo pai. */
   private List<BusinessProcessDefinition> orderedSubprocesses(
-      BusinessProcessDefinition parentProcess) {
+      Product product, BusinessProcessDefinition parentProcess) {
     Map<String, BusinessProcessDefinition> byCode =
         processRepository
             .findAllByParentProcessCodeAndStatusOrderByNameAscVersionNumberDesc(
@@ -303,12 +308,48 @@ public class ProductSubprocessPositionResolver {
                     process -> process,
                     (first, ignored) -> first,
                     LinkedHashMap::new));
-    return orderedNodes(parentProcess).stream()
-        .map(node -> node.path("subprocessCode").asText(null))
-        .filter(byCode::containsKey)
-        .map(byCode::get)
-        .distinct()
-        .toList();
+    List<BusinessProcessDefinition> result = new ArrayList<>();
+    for (JsonNode node : orderedNodes(parentProcess)) {
+      String directCode = node.path("subprocessCode").asText(null);
+      BusinessProcessDefinition child = directCode == null ? null : byCode.get(directCode);
+      if (child == null) {
+        JsonNode route = selectedRoute(node, product);
+        if (route != null) {
+          String code = route.path("subprocessCode").asText();
+          int version = route.path("subprocessVersion").asInt(-1);
+          child =
+              processRepository
+                  .findByProcessCodeAndVersionNumber(code, version)
+                  .filter(candidate -> PUBLISHED_STATUS.equals(candidate.getStatus()))
+                  .orElseThrow(
+                      () ->
+                          new IllegalStateException(
+                              "Subprocesso tipado não publicado: " + code + " v" + version));
+        }
+      }
+      if (child != null && !result.contains(child)) result.add(child);
+    }
+    return List.copyOf(result);
+  }
+
+  /** Seleciona a rota somente pelo tipo cadastrado, sem inferir nome, formato ou tecnologia. */
+  private JsonNode selectedRoute(JsonNode node, Product product) {
+    String type =
+        product.getProductTypeDefinition() == null
+            ? null
+            : product.getProductTypeDefinition().getCode();
+    if (type == null) return null;
+    for (JsonNode route : node.path("subprocessRoutes"))
+      if (type.equals(route.path("productTypeCode").asText())) return route;
+    return null;
+  }
+
+  /** Resolve o código direto ou tipado que se aplica ao produto consultado. */
+  private String subprocessCode(JsonNode node, Product product) {
+    String direct = node.path("subprocessCode").asText(null);
+    if (direct != null) return direct;
+    JsonNode route = selectedRoute(node, product);
+    return route == null ? null : route.path("subprocessCode").asText(null);
   }
 
   /** Localiza tarefas pré-experimento pelo produto e por seus planos comerciais auditáveis. */
@@ -402,7 +443,9 @@ public class ProductSubprocessPositionResolver {
 
   /** Calcula a posição interna do processo pai a partir da última tarefa auditada. */
   private ParentProgress parentProgress(
-      List<AgentTaskMeasurementSnapshot> tasks, BusinessProcessDefinition parentProcess) {
+      Product product,
+      List<AgentTaskMeasurementSnapshot> tasks,
+      BusinessProcessDefinition parentProcess) {
     List<JsonNode> nodes = orderedNodes(parentProcess);
     AgentTaskMeasurementSnapshot latestParentTask =
         tasks.stream()
@@ -421,9 +464,8 @@ public class ProductSubprocessPositionResolver {
     }
     JsonNode currentNode =
         currentIndex >= 0 && currentIndex < nodes.size() ? nodes.get(currentIndex) : null;
-    String currentCode =
-        currentNode == null ? null : currentNode.path("subprocessCode").asText(null);
-    String nextCode = nextSubprocessCode(nodes, currentIndex, currentCode != null);
+    String currentCode = currentNode == null ? null : subprocessCode(currentNode, product);
+    String nextCode = nextSubprocessCode(nodes, currentIndex, currentCode != null, product);
     return new ParentProgress(
         currentNode == null ? null : currentNode.path("label").asText(null), currentCode, nextCode);
   }
@@ -503,10 +545,10 @@ public class ProductSubprocessPositionResolver {
 
   /** Encontra a próxima delegação especializada depois da posição atual. */
   private String nextSubprocessCode(
-      List<JsonNode> nodes, int currentIndex, boolean skipCurrentSubprocess) {
+      List<JsonNode> nodes, int currentIndex, boolean skipCurrentSubprocess, Product product) {
     int start = Math.max(0, currentIndex + (skipCurrentSubprocess ? 1 : 0));
     for (int index = start; index < nodes.size(); index++) {
-      String code = nodes.get(index).path("subprocessCode").asText(null);
+      String code = subprocessCode(nodes.get(index), product);
       if (code != null) return code;
     }
     return null;
@@ -554,11 +596,16 @@ public class ProductSubprocessPositionResolver {
       String activityName,
       BusinessProcessDefinition current,
       BusinessProcessDefinition next,
+      BusinessProcessDefinition parentProcess,
       Integer parentSequenceNumber,
       boolean currentAwaitingFirstExecution,
       ProductStageMeasurementContext context) {
-    Integer currentSequenceNumber = current == null ? null : subprocesses.indexOf(current) + 1;
-    Integer nextSequenceNumber = next == null ? null : subprocesses.indexOf(next) + 1;
+    List<Integer> activitySequences =
+        subprocessActivitySequences(product, parentProcess, subprocesses);
+    Integer currentSequenceNumber =
+        current == null ? null : activitySequences.get(subprocesses.indexOf(current));
+    Integer nextSequenceNumber =
+        next == null ? null : activitySequences.get(subprocesses.indexOf(next));
     return new ProductSubprocessPositionResponse(
         status,
         subprocesses.size(),
@@ -586,7 +633,27 @@ public class ProductSubprocessPositionResolver {
                     subprocesses,
                     current,
                     parentSequenceNumber,
-                    currentAwaitingFirstExecution));
+                    currentAwaitingFirstExecution,
+                    activitySequences));
+  }
+
+  /** Relaciona cada filho à ordem real da tarefa delegadora dentro do processo pai. */
+  private List<Integer> subprocessActivitySequences(
+      Product product,
+      BusinessProcessDefinition parentProcess,
+      List<BusinessProcessDefinition> subprocesses) {
+    Map<String, Integer> positions = new LinkedHashMap<>();
+    int sequence = 0;
+    for (JsonNode node : orderedNodes(parentProcess)) {
+      if (!"TASK".equals(node.path("type").asText())) continue;
+      sequence++;
+      String code = subprocessCode(node, product);
+      if (code != null) positions.putIfAbsent(code, sequence);
+    }
+    List<Integer> result = new ArrayList<>();
+    for (int index = 0; index < subprocesses.size(); index++)
+      result.add(positions.getOrDefault(subprocesses.get(index).getProcessCode(), index + 1));
+    return List.copyOf(result);
   }
 
   /** Representa a posição calculada dentro do processo pai. */

@@ -185,11 +185,32 @@ public class ProductStageMeasurementResolver {
       BusinessProcessDefinition currentSubprocess,
       Integer parentSequenceNumber,
       boolean currentSubprocessAwaitingFirstExecution) {
+    return resolveSubprocessMeasurements(
+        context,
+        subprocesses,
+        currentSubprocess,
+        parentSequenceNumber,
+        currentSubprocessAwaitingFirstExecution,
+        null);
+  }
+
+  /** Usa as posições reais das atividades delegadoras quando há intervalos entre subprocessos. */
+  List<ProductStageMeasurementResponse> resolveSubprocessMeasurements(
+      ProductStageMeasurementContext context,
+      List<BusinessProcessDefinition> subprocesses,
+      BusinessProcessDefinition currentSubprocess,
+      Integer parentSequenceNumber,
+      boolean currentSubprocessAwaitingFirstExecution,
+      List<Integer> activitySequences) {
     List<ProductStageMeasurementResponse> measurements = new ArrayList<>();
     for (int index = 0; index < subprocesses.size(); index++) {
       BusinessProcessDefinition subprocess = subprocesses.get(index);
+      int activitySequence =
+          activitySequences != null && activitySequences.size() == subprocesses.size()
+              ? activitySequences.get(index)
+              : index + 1;
       String sequenceLabel =
-          parentSequenceNumber == null ? null : parentSequenceNumber + "." + (index + 1);
+          parentSequenceNumber == null ? null : parentSequenceNumber + "." + activitySequence;
       List<AgentTaskMeasurementSnapshot> matchingTasks =
           subprocessTasks(context.tasks(), subprocess);
       if (matchingTasks.isEmpty()) {

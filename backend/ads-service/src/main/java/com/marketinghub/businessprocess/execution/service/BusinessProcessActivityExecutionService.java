@@ -1245,7 +1245,10 @@ public class BusinessProcessActivityExecutionService {
             null,
             null,
             backendReadiness.targetProcessDefinitionId(),
-            backendReadiness.requirements());
+            backendReadiness.requirements(),
+            "DETAILED",
+            null,
+            backendReadiness.navigationUrl());
       }
       return new ProductProcessActivityExecutionControlResponse(
           "BACKEND",

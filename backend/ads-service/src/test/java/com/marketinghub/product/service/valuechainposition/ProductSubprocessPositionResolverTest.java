@@ -10,6 +10,7 @@ import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
+import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
@@ -80,7 +81,7 @@ class ProductSubprocessPositionResolverTest {
     assertThat(result.nextSubprocessName()).isEqualTo("Geração de landing page");
   }
 
-  /** Expõe o próximo subprocesso como atual somente depois do objetivo anterior comprovado. */
+  /** Expõe o próximo subprocesso na posição real da tarefa após comprovar o objetivo anterior. */
   @Test
   void exposesReadySubprocessWithoutFabricatingItsFirstExecution() {
     Product product = Product.builder().id(9L).build();
@@ -110,7 +111,7 @@ class ProductSubprocessPositionResolverTest {
     var result = readyResolver.resolve(product, parent);
 
     assertThat(result.trackingStatus()).isEqualTo("PLANNED");
-    assertThat(result.currentSubprocessSequenceNumber()).isEqualTo(2);
+    assertThat(result.currentSubprocessSequenceNumber()).isEqualTo(3);
     assertThat(result.currentSubprocessName()).isEqualTo("Geração de landing page");
     assertThat(result.currentActivityName()).isNull();
     assertThat(result.nextSubprocessDefinitionId()).isNull();
@@ -307,6 +308,49 @@ class ProductSubprocessPositionResolverTest {
 
     assertThat(result.trackingStatus()).isEqualTo("NOT_APPLICABLE");
     assertThat(result.subprocessCount()).isZero();
+  }
+
+  /** Posiciona Opala em 5.1 usando a rota do tipo, apesar do parentesco legado no cadastro. */
+  @Test
+  void resolvesTypedPreparationAsFirstSubprocessOfProcessFive() {
+    Product product =
+        Product.builder()
+            .id(4L)
+            .productTypeDefinition(ProductTypeDefinition.builder().code("PDE").build())
+            .build();
+    BusinessProcessDefinition parent = new BusinessProcessDefinition();
+    parent.setId(56L);
+    parent.setProcessCode("pde-commercial-homologation-activation");
+    parent.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\"},{\"id\":\"commercialPreparation\",\"type\":\"TASK\",\"label\":\"Preparar operação comercial conforme o tipo\",\"subprocessRoutes\":[{\"productTypeCode\":\"PDE\",\"subprocessCode\":\"opala-commercial-preparation-v1\",\"subprocessVersion\":1}]},{\"id\":\"humanExperienceReview\",\"type\":\"TASK\",\"label\":\"Validar experiência\"},{\"id\":\"commercialIntegrityReview\",\"type\":\"TASK\",\"label\":\"Validar integridade\"},{\"id\":\"preflight\",\"type\":\"TASK\",\"label\":\"Homologar tecnicamente\",\"subprocessCode\":\"experiment-homologation-activation\"}],\"flows\":[{\"from\":\"start\",\"to\":\"commercialPreparation\"},{\"from\":\"commercialPreparation\",\"to\":\"humanExperienceReview\"},{\"from\":\"humanExperienceReview\",\"to\":\"commercialIntegrityReview\"},{\"from\":\"commercialIntegrityReview\",\"to\":\"preflight\"}]}");
+    BusinessProcessDefinition opala =
+        child(
+            77L,
+            "opala-commercial-preparation-v1",
+            "Preparar operação comercial Opala",
+            "Preparação comercial comprovada.");
+    opala.setVersionNumber(1);
+    opala.setStatus("PUBLISHED");
+    BusinessProcessDefinition technical =
+        child(
+            88L,
+            "experiment-homologation-activation",
+            "Homologação técnica",
+            "Preflight comprovado.");
+    when(processRepository.findAllByParentProcessCodeAndStatusOrderByNameAscVersionNumberDesc(
+            parent.getProcessCode(), "PUBLISHED"))
+        .thenReturn(List.of(technical));
+    when(processRepository.findByProcessCodeAndVersionNumber("opala-commercial-preparation-v1", 1))
+        .thenReturn(java.util.Optional.of(opala));
+    when(planRepository.findByProductId(4L)).thenReturn(List.of());
+
+    var result = resolver.resolve(product, parent, 5);
+
+    assertThat(result.subprocessCount()).isEqualTo(2);
+    assertThat(result.currentSubprocessSequenceNumber()).isEqualTo(1);
+    assertThat(result.currentSubprocessCode()).isEqualTo("opala-commercial-preparation-v1");
+    assertThat(result.nextSubprocessSequenceNumber()).isEqualTo(4);
+    assertThat(result.nextSubprocessCode()).isEqualTo("experiment-homologation-activation");
   }
 
   /** Cria a definição pai com duas delegações em sequência. */

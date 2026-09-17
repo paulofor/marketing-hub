@@ -164,7 +164,7 @@ public class PdeCommercialActivationHumanActivityHandler
                 ? "A tela registrará essas referências sem exigir digitação."
                 : "Reconcilie o run produtivo e o plano comercial antes da decisão."));
     boolean ready =
-        readiness.eligibleForRunning() && budgetDefined && budgetAligned && auditContextReady;
+        requirements.stream().allMatch(HumanProductProcessActivityRequirement::satisfied);
     String reason =
         ready
             ? "Preflight, requisitos comerciais e teto financeiro estão prontos para decisão."

@@ -8,6 +8,7 @@ import com.marketinghub.businessprocess.automation.v1.service.status.ProcessRunR
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
 import com.marketinghub.repository.jpa.processautomation.ProcessRunRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -23,6 +24,7 @@ public class ProcessRunNavigation {
   private final BusinessProcessDefinitionRepository processes;
   private final BusinessProcessChainDefinitionRepository chains;
   private final ProcessRunRepository runs;
+  private final ProductRepository products;
   private final ObjectMapper json;
 
   /** Preserva a versão do pai gravado e, sem delegação, enumera chamadas da cadeia selecionada. */
@@ -39,7 +41,7 @@ public class ProcessRunNavigation {
         .findById(run.getChainDefinitionId())
         .orElseThrow()
         .getItems()
-        .forEach(item -> collect(item.getProcessDefinition(), members));
+        .forEach(item -> collect(item.getProcessDefinition(), run.getProductId(), members));
     return members.values().stream()
         .flatMap(parent -> callsTo(run, parent, selected).stream())
         .toList();
@@ -50,7 +52,7 @@ public class ProcessRunNavigation {
     var selected = processes.findById(run.getProcessDefinitionId()).orElseThrow();
     List<ProcessRunRelationResponse> result = new ArrayList<>();
     for (var node : nodes(selected)) {
-      var child = recordedChild(run, node).or(() -> child(node));
+      var child = recordedChild(run, node).or(() -> child(node, run.getProductId()));
       if (child.isEmpty()) continue;
       var target = child.get();
       result.add(relation(run, target, node, null));
@@ -62,7 +64,8 @@ public class ProcessRunNavigation {
   private Optional<BusinessProcessDefinition> recordedChild(ProcessRun run, JsonNode node) {
     if (run.getId() == null
         || !"TASK".equals(node.path("type").asText())
-        || node.path("subprocessCode").asText().isBlank()) return Optional.empty();
+        || subprocessCodes(node, run.getProductId()).isEmpty()) return Optional.empty();
+    Set<String> expectedCodes = subprocessCodes(node, run.getProductId());
     return runs.findAllByParentRunId(run.getId()).stream()
         .sorted(Comparator.comparing(ProcessRun::getId).reversed())
         .map(
@@ -70,8 +73,7 @@ public class ProcessRunNavigation {
               requireSameContext(run, childRun);
               return processes.findById(childRun.getProcessDefinitionId()).orElseThrow();
             })
-        .filter(
-            definition -> definition.getProcessCode().equals(node.path("subprocessCode").asText()))
+        .filter(definition -> expectedCodes.contains(definition.getProcessCode()))
         .findFirst();
   }
 
@@ -82,9 +84,12 @@ public class ProcessRunNavigation {
 
   /** Percorre composições aninhadas, impedindo ciclos e duplicação na coleta do catálogo. */
   private void collect(
-      BusinessProcessDefinition process, Map<Long, BusinessProcessDefinition> members) {
+      BusinessProcessDefinition process,
+      Long productId,
+      Map<Long, BusinessProcessDefinition> members) {
     if (members.putIfAbsent(process.getId(), process) != null) return;
-    for (var node : nodes(process)) child(node).ifPresent(value -> collect(value, members));
+    for (var node : nodes(process))
+      child(node, productId).ifPresent(value -> collect(value, productId, members));
   }
 
   /** Reconhece a relação pela chamada explícita do BPM e não apenas pelo campo de parentesco. */
@@ -93,7 +98,7 @@ public class ProcessRunNavigation {
     List<ProcessRunRelationResponse> result = new ArrayList<>();
     for (var node : nodes(parent)) {
       if ("TASK".equals(node.path("type").asText())
-          && selected.getProcessCode().equals(node.path("subprocessCode").asText()))
+          && subprocessCodes(node, run.getProductId()).contains(selected.getProcessCode()))
         result.add(relation(run, parent, node, node.path("id").asText()));
     }
     return List.copyOf(result);
@@ -112,11 +117,40 @@ public class ProcessRunNavigation {
   }
 
   /** Resolve somente subprocessos explicitamente chamados e publicados. */
-  private Optional<BusinessProcessDefinition> child(JsonNode node) {
+  private Optional<BusinessProcessDefinition> child(JsonNode node, Long productId) {
     String code = node.path("subprocessCode").asText();
-    return !"TASK".equals(node.path("type").asText()) || code.isBlank()
-        ? Optional.empty()
-        : processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(code, "PUBLISHED");
+    if (!"TASK".equals(node.path("type").asText())) return Optional.empty();
+    if (!code.isBlank())
+      return processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(code, "PUBLISHED");
+    JsonNode route = route(node, productId);
+    if (route == null) return Optional.empty();
+    return processes
+        .findByProcessCodeAndVersionNumber(
+            route.path("subprocessCode").asText(), route.path("subprocessVersion").asInt(-1))
+        .filter(candidate -> "PUBLISHED".equals(candidate.getStatus()));
+  }
+
+  /** Seleciona somente a rota cujo tipo corresponde ao cadastro oficial do produto. */
+  private JsonNode route(JsonNode node, Long productId) {
+    var product = products.findById(productId).orElseThrow();
+    String type =
+        product.getProductTypeDefinition() == null
+            ? null
+            : product.getProductTypeDefinition().getCode();
+    if (type == null) return null;
+    for (var candidate : node.path("subprocessRoutes"))
+      if (type.equals(candidate.path("productTypeCode").asText())) return candidate;
+    return null;
+  }
+
+  /** Expõe os códigos elegíveis da chamada sem misturar rotas de outros tipos de produto. */
+  private Set<String> subprocessCodes(JsonNode node, Long productId) {
+    String direct = node.path("subprocessCode").asText();
+    if (!direct.isBlank()) return Set.of(direct);
+    JsonNode selected = route(node, productId);
+    return selected == null || selected.path("subprocessCode").asText().isBlank()
+        ? Set.of()
+        : Set.of(selected.path("subprocessCode").asText());
   }
 
   /** Lê a estrutura versionada e mantém falhas diagnosticáveis com o processo de origem. */

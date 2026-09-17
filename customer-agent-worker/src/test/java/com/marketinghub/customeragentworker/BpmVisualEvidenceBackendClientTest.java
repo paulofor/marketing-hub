@@ -91,7 +91,9 @@ class BpmVisualEvidenceBackendClientTest {
                     "Rigel",
                     Map.of("width", 393, "height", 852),
                     List.of("Agenda Cheia"),
-                    List.of("Quero começar"))),
+                    List.of("Quero começar"),
+                    List.of("Quero começar"),
+                    "Agenda Cheia Quero começar")),
             List.of(artifact));
 
     try {

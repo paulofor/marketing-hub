@@ -277,6 +277,9 @@ try {
     });
   }
 
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.waitForTimeout(150);
+
   await fs.writeFile(
     outputPath,
     JSON.stringify({
@@ -298,6 +301,20 @@ try {
               .filter(Boolean)
               .slice(0, 40),
           ),
+          firstFoldCtas: await page
+            .locator("a, button")
+            .evaluateAll((elements) =>
+              elements
+                .filter((element) => {
+                  if (!element.checkVisibility()) return false;
+                  const bounds = element.getBoundingClientRect();
+                  return bounds.top >= 0 && bounds.bottom <= innerHeight;
+                })
+                .map((element) => element.textContent?.trim())
+                .filter(Boolean)
+                .slice(0, 20),
+            ),
+          visibleText: await page.locator("body").innerText(),
         },
       ],
       artifacts,

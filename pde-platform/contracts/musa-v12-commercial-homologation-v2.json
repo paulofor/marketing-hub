@@ -1,0 +1,194 @@
+{
+  "contractVersion": "musa-v12-commercial-homologation.v2",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 5,
+  "activityId": "pdeGate",
+  "sourceReference": "product:4@musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  "experimentId": 92,
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "commercialPlanId": 3,
+    "publicUrl": "https://v8.clubemusa.com.br/"
+  },
+  "offer": {
+    "priceBrl": 67,
+    "currency": "BRL",
+    "billingModel": "ONE_TIME",
+    "accessDays": 90,
+    "renewal": false,
+    "checkoutUrl": "https://go.pepper.com.br/owm6x",
+    "checkoutProvider": "PEPPER",
+    "checkoutReference": "owm6x",
+    "promise": "Entregar gratuitamente um primeiro ajuste claro e aplicável com itens que a cliente já possui e liberar, após a compra, a continuidade guiada de sete dias."
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "scope": "Candidata comercial exata do experimento 92, com CTA e condições antes do vídeo, compra simulada, entrega e reembolso da própria v12.",
+  "boundary": "Este manifesto prepara a revisão independente. Não aprova o criativo, não promove o slot, não libera campanha e não comprova venda.",
+  "liveVisualContract": {
+    "deviceProfile": "IPHONE_15_PRO",
+    "requiredFirstFoldCtas": [
+      "Começar meu ajuste gratuito"
+    ],
+    "requiredVisibleTexts": [
+      "4 escolhas rápidas, sem compra de roupa.",
+      "Continuação de 7 dias por R$ 67, pagamento único.",
+      "Acesso por 90 dias, sem assinatura ou renovação."
+    ]
+  },
+  "homologationMatrix": {
+    "environment": "LOCAL_ISOLATED",
+    "executedAt": "2026-09-17",
+    "devices": [
+      "DESKTOP_CHROMIUM",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "passedJourneys": 36,
+    "verifiedStates": [
+      "FIRST_FOLD_CTA_AND_TERMS",
+      "FREE_FIRST_ADJUSTMENT",
+      "PEPPER_PAYMENT_APPROVED",
+      "V12_ACCESS_90_DAYS",
+      "SEVEN_MISSIONS",
+      "THREE_PROTECTED_MATERIALS",
+      "RESUME_AND_COMPLETION",
+      "IDEMPOTENT_REFUND",
+      "INTERNAL_QA_METRIC_SEGREGATION"
+    ],
+    "evidenceBoundary": "A matriz usa pagamento e tráfego internos simulados. A captura pública da candidata deve ser renovada depois do deploy e antes do parecer de Psique."
+  },
+  "measurementContract": {
+    "authoritativeSaleEvent": "PURCHASE_COMPLETED",
+    "authoritativeDeliveryEvent": "DELIVERY_COMPLETED",
+    "humanMetricsExcludeTestTraffic": true,
+    "deduplicationRequired": true,
+    "testTrafficClass": "INTERNAL_QA"
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v1.json",
+      "sha256": "2422425698133a9f6ad8f6a9b7658ee42c5880e63fbd81cfd275ee5e071dedf4"
+    },
+    {
+      "path": "docs/homologacao/vega-442-evidencias-comerciais-v12-2026-09-17.md",
+      "sha256": "5ea8272dbe5b47bbc05cc594ecf0b68b68baca324f2e7bbc8a55e12f0b016a7a"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/backend/src/main/resources/contracts/musa-v12-product-v1.json",
+      "sha256": "5614ed07f4af682a88f236ea5a4252a52ab8a107708852612441fc8c2ffe1b71"
+    },
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "bcc88acbf2ebf978e53b16845cc8b7ca83f20340b42d59d6c7eb91ed77efcac2"
+    },
+    {
+      "path": "pde-platform/frontend/src/styles.css",
+      "sha256": "74086c47b74fd80694fa3a74bca6553fe1547c7fe5c197f743fda1591becba74"
+    },
+    {
+      "path": "pde-platform/frontend/src/musaExperiences.ts",
+      "sha256": "87f766cdbdfa20c2d572460572cf8624f47818bb55299645cbabb28dca528287"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+      "sha256": "0e00c39294c1f1e702423590cec3b4f8192474c1edc6b5f4b8eca82039d2a840"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/CommercialOfferService.java",
+      "sha256": "98006414ed9594bd376f0701d1372f46ffc6a47d01e4170a86d47a6537f2f138"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/service/PdeProductionSlotService.java",
+      "sha256": "0787f60fd41237530463f02daa6cf3c200a0a2ba8ba5bc804c01db2a3c9cccf6"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/commercialoffer/PublicProductCommercialOfferService.java",
+      "sha256": "975340e8afcb498df55b66192b731207583ff44eff3069cc465a8f4c2bc304c9"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/validationcontract/v1/service/PdeValidationContractService.java",
+      "sha256": "5580f8e4fd2c9a3115a50c39d27548824a8063ed3c6e4c5b012330e69a95bf18"
+    },
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeExperienceEvidenceLoader.java",
+      "sha256": "ae0a0d9afad6db9c0395e8c3ff1141b6a912dd8d48069e3e0932070c4059eb34"
+    },
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/BpmVisualEvidenceRunner.java",
+      "sha256": "f417677073cb9c14b1722e03d658eb6f58a21e86e7312fc865434a2730d0e22f"
+    },
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerBpmTaskConsumer.java",
+      "sha256": "674874f6c911f4851cf5551d958ca1d7d98dfcd08066c4507badab817004b9e7"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/bpm-visual-evidence.mjs",
+      "sha256": "81056a6d7f14abfdfbef6f9908c9e2fba9b81ad286b27aea8f3d090b3ae38e4e"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogVersionRejectionTest.java",
+      "sha256": "318e5dc1f27a5c2b04d8f92449f4b62fc5bfaab64d1dfcb6e9b8dea186ecfc72"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/CommercialOfferServiceTest.java",
+      "sha256": "5a9063a3dc3554704eb5f48a1dfbce01d5ae9552965bb51b16c107f3aa148617"
+    },
+    {
+      "path": "pde-platform/frontend/tests/marketing-hub-contract-server.mjs",
+      "sha256": "260c034537fb0b53de6c27134a1227f17eb7dd6c2e3e85c0a00cd1aa363efa36"
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-local-integration.spec.ts",
+      "sha256": "2413c4a78693756ddb6407fa65353a822764a3ae72295969e2345c8fbf782a0b"
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-entry.visual.spec.ts",
+      "sha256": "3e3197a48f189ebe8d2e9230c787d9ca46347bfc91d7228cd3c0386a87d8fab7"
+    },
+    {
+      "path": "pde-platform/frontend/playwright.local-integration.config.ts",
+      "sha256": "c0dd3ac079e6d52f493a8955b4a0596937fd1922abb3ab0f39dd6cc3865f19b7"
+    },
+    {
+      "path": "pde-platform/docker-compose.local-validation.yml",
+      "sha256": "8c6b62c7d78b4cd9ab0b275ad5e1c997b47de5f544e00077cb9237c59314b06c"
+    },
+    {
+      "path": "pde-platform/scripts/test-musa-local-integration.sh",
+      "sha256": "f810ff27739c72545c5a3eb31d7b5b16d602771894d0c65531b562f71010664f"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/service/PdeProductionSlotServiceTest.java",
+      "sha256": "7be8cc01822deb6bb464d696458c8bd7a2bbf1839de7a193f95e3260129c5d7f"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/commercialoffer/PublicProductCommercialOfferServiceTest.java",
+      "sha256": "ac967799ed58bdbda53938652cd48afbc946bb0335140fe17754d905ae0089a3"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/validationcontract/v1/service/PdeValidationContractServiceTest.java",
+      "sha256": "3677c2dd87fea13b94c2a21152fabd6cb0b6a72c1dab205b3f3621df8873cfd5"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeExperienceEvidenceLoaderTest.java",
+      "sha256": "e08e342d27227b7cbcd12b0f09aad71f3c80a59ebb2850620b1fef93ad94877a"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/BpmVisualEvidenceRunnerTest.java",
+      "sha256": "d49085f59cf603337d111591dbfcfb37357599c792f454e56567f7447f6304cf"
+    },
+    {
+      "path": "customer-agent-worker/src/test/js/bpm-visual-evidence.test.mjs",
+      "sha256": "89d2ffe8710f0d207e813ddfcad95fa18e4e5ac54617e5af19ce54cc99f3eb9d"
+    }
+  ],
+  "validationReport": "docs/homologacao/vega-442-evidencias-comerciais-v12-2026-09-17.md"
+}

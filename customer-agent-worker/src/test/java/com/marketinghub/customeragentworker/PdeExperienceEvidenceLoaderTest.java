@@ -102,6 +102,51 @@ class PdeExperienceEvidenceLoaderTest {
         .containsEntry("content", "prova comercial íntegra");
   }
 
+  /** Carrega a copy mínima usada para impedir revisão paga sobre uma superfície anterior. */
+  @Test
+  void loadsLiveVisualContractFromCurrentManifest() throws Exception {
+    Path proof = tempDir.resolve("pde-platform/frontend/src/App.tsx");
+    Files.createDirectories(proof.getParent());
+    Files.writeString(proof, "candidata atual");
+    String hash =
+        HexFormat.of()
+            .formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(proof)));
+    Path manifest =
+        tempDir.resolve("pde-platform/contracts/product-commercial-homologation-v2.json");
+    Files.createDirectories(manifest.getParent());
+    Files.writeString(
+        manifest,
+        """
+        {
+          "contractVersion":"product-commercial-homologation.v2",
+          "product":{"id":9,"slug":"produto-a","experienceVersion":"produto-a-v2"},
+          "liveVisualContract":{
+            "requiredFirstFoldCtas":["Começar gratuitamente"],
+            "requiredVisibleTexts":["Acesso por 90 dias"]
+          },
+          "implementationEvidence":[{"path":"pde-platform/frontend/src/App.tsx","sha256":"%s"}]
+        }
+        """
+            .formatted(hash));
+
+    var contract =
+        new PdeExperienceEvidenceLoader(tempDir.toString())
+            .loadLiveVisualContract(
+                Map.of(
+                    "experimentId",
+                    92L,
+                    "productId",
+                    9L,
+                    "productSlug",
+                    "produto-a",
+                    "experienceVersion",
+                    "produto-a-v2"));
+
+    assertThat(contract.requiredFirstFoldCtas()).containsExactly("Começar gratuitamente");
+    assertThat(contract.requiredVisibleTexts()).containsExactly("Acesso por 90 dias");
+    assertThat(contract.required()).isTrue();
+  }
+
   /** Mantém o arquivo completo atestado sem duplicá-lo quando o manifesto fornece resumo. */
   @Test
   void loadsAttestedReferenceWithoutDuplicatingContent() throws Exception {
@@ -396,7 +441,9 @@ class PdeExperienceEvidenceLoaderTest {
     assertThat(vegaV12)
         .extracting(item -> item.get("path"))
         .contains(
+            "pde-platform/contracts/musa-v12-commercial-homologation-v2.json",
             "pde-platform/contracts/musa-v12-commercial-homologation-v1.json",
+            "pde-platform/frontend/src/App.tsx",
             "pde-platform/frontend/src/musaExperiences.ts")
         .allSatisfy(path -> assertThat(path.toString()).doesNotContain("kit-whatsapp-", "mira-"));
     var json = new ObjectMapper();

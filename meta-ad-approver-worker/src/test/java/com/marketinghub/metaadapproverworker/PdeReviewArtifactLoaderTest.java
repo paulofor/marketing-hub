@@ -208,6 +208,7 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v6.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v12.json",
             "pde-platform/contracts/musa-v7-commercial-homologation-v6.json",
+            "pde-platform/contracts/musa-v12-commercial-homologation-v2.json",
             "pde-platform/contracts/musa-v12-commercial-homologation-v1.json");
   }
 
@@ -479,7 +480,9 @@ class PdeReviewArtifactLoaderTest {
     assertThat(vegaV12)
         .extracting(item -> item.get("path"))
         .contains(
+            "pde-platform/contracts/musa-v12-commercial-homologation-v2.json",
             "pde-platform/contracts/musa-v12-commercial-homologation-v1.json",
+            "pde-platform/frontend/src/App.tsx",
             "pde-platform/backend/src/main/resources/contracts/musa-v12-product-v1.json",
             "pde-platform/backend/src/main/java/com/marketinghub/pde/service/CommercialOfferService.java")
         .doesNotContain(

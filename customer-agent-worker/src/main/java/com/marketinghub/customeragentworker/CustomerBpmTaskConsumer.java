@@ -197,7 +197,7 @@ public class CustomerBpmTaskConsumer {
         .contains(processCode);
   }
 
-  /** Obtém a peça criativa real ou captura a página conforme o contrato da atividade. */
+  /** Obtém a peça real ou captura a tela somente quando ela coincide com a atestação vigente. */
   private PreparedVisualEvidence prepareVisualEvidence(Map<String, Object> task) throws Exception {
     if ("creative-production-approval".equals(processCode(task))) {
       Path directory = Files.createTempDirectory("psique-creative-" + taskId(task) + "-");
@@ -226,8 +226,13 @@ public class CustomerBpmTaskConsumer {
     }
     Path workDirectory = Files.createTempDirectory("psique-bpm-visual-task-" + taskId(task) + "-");
     try {
+      PdeExperienceEvidenceLoader.LiveVisualContract liveVisualContract =
+          List.of("pde-commercial-homologation-activation", "opala-commercial-preparation-v1")
+                  .contains(processCode(task))
+              ? pdeExperienceEvidenceLoader.loadLiveVisualContract(task.get("taskTarget"))
+              : PdeExperienceEvidenceLoader.LiveVisualContract.none();
       BpmVisualEvidenceRunner.VisualEvidenceBundle bundle =
-          visualEvidenceRunner.capture(publicUrl, workDirectory);
+          visualEvidenceRunner.capture(publicUrl, workDirectory, liveVisualContract);
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded =
           visualEvidenceBackendClient.upload(taskId(task), bundle);
       if (uploaded.isEmpty()) {
@@ -660,9 +665,7 @@ public class CustomerBpmTaskConsumer {
     if (task.get("researchIntelligence") == null) {
       return core;
     }
-    return core
-        + "\n\n"
-        + read("prompts/psique/research-intelligence-usage-v1.md");
+    return core + "\n\n" + read("prompts/psique/research-intelligence-usage-v1.md");
   }
 
   /** Seleciona o prompt versionado específico da entidade avaliada. */

@@ -48,7 +48,11 @@ test("captura página completa e todas as dobras mobile com pixels reais", async
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     const sections = Array.from(
       { length: 12 },
-      (_, index) => `<section><h2>Dobra ${index + 1}</h2><p>Prova visual contínua da jornada.</p></section>`,
+      (_, index) => `<section><h2>Dobra ${index + 1}</h2><p>Prova visual contínua da jornada.</p>${
+        index === 0
+          ? "<button>Começar meu ajuste gratuito</button><p>Acesso por 90 dias, sem assinatura ou renovação.</p>"
+          : ""
+      }</section>`,
     ).join("");
     response.end(`<!doctype html>
       <html lang="pt-BR"><head><title>Jornada de homologação</title>
@@ -84,6 +88,13 @@ test("captura página completa e todas as dobras mobile com pixels reais", async
       pageHeight: 10224,
       scrollWidth: 393,
     });
+    assert.deepEqual(capture.pages[0].firstFoldCtas, [
+      "Começar meu ajuste gratuito",
+    ]);
+    assert.match(
+      capture.pages[0].visibleText,
+      /Acesso por 90 dias, sem assinatura ou renovação\./,
+    );
     const fullPages = capture.artifacts.filter(
       (artifact) => artifact.evidenceType === "FULL_PAGE",
     );

@@ -3344,6 +3344,14 @@ Use este checklist quando o problema estiver em algum loop acima:
   empacotador agora agrupa por `productSlug + experienceVersion`, ignora manifesto legado quando há
   identidade versionada e valida cada candidata vigente. Psique e Têmis possuem regressões com v7 e
   v12 simultâneas; o smoke empacotado acompanha a atestação Rigel v12 sem reescrever o histórico.
+- **Recorrência da tarefa Vega #442 fechada localmente em 17/09/2026:** a mudança comercial da v12
+  alterou a prova executável sem criar nova atestação. Os checks do PR e o push da `main` falharam
+  corretamente, portanto PDE e Psique não foram publicados; mesmo assim, uma nova tarefa consumiu
+  exatamente os pixels antigos da #441 e devolveu `ADJUST`. A atestação v12 v2 preserva a v1,
+  vincula a jornada paga da própria v12 e declara os sinais mínimos da candidata. Antes de abrir o
+  modelo, Psique compara CTA da primeira dobra e condições comerciais com a captura ao vivo; deploy
+  antigo vira falha técnica sem custo de revisão. A matriz e os limites estão em
+  `docs/homologacao/vega-442-evidencias-comerciais-v12-2026-09-17.md`.
 - **Recorrência fechada localmente em 2026-08-30:** a tarefa #275 recebeu 1.125.976 caracteres
   porque o executor duplicava no prompt o conteúdo integral das provas já congeladas na imagem,
   ultrapassando o teto de 1.048.576 antes do primeiro turno. A alternativa de reler o pacote por

@@ -1,0 +1,18 @@
+{
+  "cardKey": "delegacao-agente-com-controle-humano",
+  "collection": "neuromarketing",
+  "title": "Use IA para reduzir esforço antes de retirar controle da compra",
+  "finding": "No Brasil, 61% dos consumidores aceitariam que agentes pesquisassem e comparassem produtos, mas só 11% concederiam acesso total. Em pesquisa YouGov com 3.328 adultos no Reino Unido e Estados Unidos, alertas e comparação de preços foram mais valorizados que personalização, 53% ficaram desconfortáveis com compras feitas por IA e apenas 7% aceitariam compras autônomas sob condições definidas.",
+  "mechanism": "A utilidade do agente tende a aparecer primeiro em tarefas que economizam busca, comparação e monitoramento; quando a ação envolve dinheiro, credenciais ou compromisso, a necessidade de confirmação, limites, transparência e reversibilidade aumenta.",
+  "commercialApplication": "Aplicar DelegationPolicy em agentes de Click-to-WhatsApp: autonomia para pesquisa, comparação, resumo e acompanhamento; recomendação explicada; confirmação explícita antes de pagamento ou assinatura; limites configuráveis para automações recorrentes; cancelamento, reversão e handoff humano fáceis.",
+  "evidenceStrength": "Moderada: duas pesquisas recentes convergem, uma com evidência específica do Brasil e outra com 3.328 respondentes ponderados no Reino Unido e Estados Unidos; ambas são autorrelatadas e não medem conversão do Marketing Hub.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2027-03-16",
+  "experimentHypothesis": "Um agente que automatiza pesquisa e comparação, mas mantém aprovação explícita para compromissos financeiros, reduzirá esforço e abandono sem piorar confiança versus automação ampla ou confirmação em cada microetapa.",
+  "risks": "Automatizar pagamento sem consentimento, esconder o que o agente fará, usar limites pouco claros, gerar excesso de confirmações, confundir preferência declarada com comportamento real ou generalizar resultados entre categorias e países.",
+  "limits": "A pesquisa ACI/YouGov se concentra em moda e sportswear no Reino Unido e Estados Unidos; a evidência brasileira foi divulgada por PYMNTS em colaboração com a Visa Acceptance Solutions. Nenhuma fonte prova efeito causal em CTR, CPL, checkout, pagamento, retenção ou receita.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-17-delegacao-agente-compra.md",
+  "sourceTitle": "Fonte revisada — Delegação de agentes para pesquisa e compra",
+  "sourceSha256": "b2f9d2fb525961e10bfe87565ff1fefd2d5b0a68cb18d35b664659d5cc308e4a"
+}

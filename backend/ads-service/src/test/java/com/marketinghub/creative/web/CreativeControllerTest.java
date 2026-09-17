@@ -210,7 +210,11 @@ class CreativeControllerTest {
             get("/api/internal/creatives/" + creativeId + "/agent-review/context")
                 .param("experimentId", expId.toString()))
         .andExpect(status().isOk())
+        .andExpect(
+            jsonPath("$.mediaGovernanceEvidence.contractVersion")
+                .value("CREATIVE_MEDIA_GOVERNANCE_V2"))
         .andExpect(jsonPath("$.mediaGovernanceEvidence.verificationStatus").value("INCOMPLETE"))
+        .andExpect(jsonPath("$.mediaGovernanceEvidence.presenterReferenceMode").value("UNRESOLVED"))
         .andExpect(jsonPath("$.mediaGovernanceEvidence.experimentVideoAssetId").isNumber())
         .andExpect(jsonPath("$.mediaGovernanceEvidence.finalArtifact.url").value(videoUrl));
   }

@@ -128,6 +128,11 @@ Hub continua como fonte de verdade; é proibido substituir uma recusa por catál
 por data de atualização ou expor esse endpoint interno sem o segredo compartilhado. Essa leitura não
 altera status, não cria snapshot publicado e não autoriza tráfego, campanha, cobrança ou acesso. Após
 a promoção, as rotas públicas continuam consumindo exclusivamente o snapshot publicado.
+Os gates que apenas iniciam Psique ou Têmis devem reconhecer esse preflight exato como entrada
+disponível para revisão e não podem exigir `publishedAt` ou snapshot público antes dos pareceres.
+Eles continuam exigindo identidade única de produto, experimento e versão, estado preparável,
+validação HTTP vigente e contrato candidato auditável. Publicação e `RUNNING` permanecem gates
+posteriores e independentes.
 
 Complemento canônico de 15/09/2026: oferta, contrato de integração, imagem pública e
 experiência entregue devem pertencer à mesma versão comercial. O hostname versionado encaminha

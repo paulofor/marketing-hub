@@ -101,6 +101,16 @@ tarifa pública serve como referência, nunca como confirmação de débito. Voz
 devem ser identificados claramente ao público no próprio vídeo ou em disclosure inseparável da peça;
 informar apenas a voz não basta quando a pessoa visível também foi gerada por IA.
 
+O gate de direitos deve distinguir uma performance ou imagem externa usada como referência de uma
+geração sintética feita somente por texto. A primeira exige referência imutável, origem, prompt,
+consentimento e direitos. A segunda não pode fabricar esses documentos: só pode ser considerada
+completa quando o request auditado comprovar ausência de entrada visual/performance, a personagem
+estiver marcada como sintética, o arquivo final contiver disclosure inseparável, a fonte e o arquivo
+final tiverem SHA-256 e tarefa do provider, e o modelo exato estiver `ACTIVE` com adapter, licença
+comercial e quality gate verificados. Campo desconhecido no request mantém o modo de referência
+indeterminado e bloqueia a peça. Essa distinção não se aplica à rota Product UGC, que continua
+exigindo suas referências, consentimento e direitos próprios.
+
 Na revisão independente, o arquivo remoto deve ser baixado integralmente e ter tamanho e SHA-256
 calculados pelo próprio inspetor. O hash calculado precisa coincidir com a governança do artefato
 final. A landing deve ser observada em desktop e celular com tráfego de QA segregado e, quando seu

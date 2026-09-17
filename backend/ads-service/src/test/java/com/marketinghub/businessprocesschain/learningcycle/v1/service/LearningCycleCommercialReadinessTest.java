@@ -68,10 +68,15 @@ class LearningCycleCommercialReadinessTest {
     slot.setExperienceVersion(cycle.getProductVersion());
     slot.setStatus(com.marketinghub.pde.PdeProductionSlotStatus.READY);
     slot.setValidationStatus("OK");
+    slot.setValidationCheckedAt(java.time.Instant.now());
+    slot.setValidationHttpStatus(200);
+    slot.setValidationContractSlug(product.getSlug());
+    slot.setPublicUrl("https://fixture.test");
+    slot.setValidationResolvedUrl("https://fixture.test/");
+    slot.setDraftExperienceJson("{\"fixture\":true}");
     slot.setPublishedAt(java.time.Instant.now());
     slot.setPublishedExperienceJson("{\"fixture\":true}");
-    when(slots.findFirstBySourceExperimentIdOrderByUpdatedAtDesc(92L))
-        .thenReturn(Optional.of(slot));
+    when(slots.findByProductSlugOrderBySlotCodeAsc(product.getSlug())).thenReturn(List.of(slot));
     process.setProcessCode("pde-commercial-homologation-activation");
     activity.setActivityId("humanExperienceReview");
     when(experiments.findById(92L)).thenReturn(Optional.of(experiment));
@@ -107,13 +112,7 @@ class LearningCycleCommercialReadinessTest {
   /** Cada entrada ausente bloqueia os revisores com a mesma causa apresentada na tela. */
   @ParameterizedTest
   @ValueSource(
-      strings = {
-        "LANDING_APPROVED",
-        "CREATIVE_APPROVED",
-        "CHECKOUT_READY",
-        "INSTRUMENTATION_READY",
-        "TARGETING_READY"
-      })
+      strings = {"CREATIVE_APPROVED", "CHECKOUT_READY", "INSTRUMENTATION_READY", "TARGETING_READY"})
   void missingInputBlocksReviewWithoutQueuingWork(String missing) {
     requirements(codes.stream().map(code -> item(code, !code.equals(missing))).toList());
     var result = readiness.inspect(cycle);
@@ -125,6 +124,36 @@ class LearningCycleCommercialReadinessTest {
         .isEqualTo(result.guidance());
     verify(experiments, never()).save(any());
     verify(cycles, never()).save(any());
+  }
+
+  /**
+   * Permite que Psique revise a candidata validada antes de existir snapshot público ou
+   * autorização.
+   */
+  @Test
+  void validatedCandidateStartsReviewWithoutPublishedSnapshot() {
+    slot.setStatus(com.marketinghub.pde.PdeProductionSlotStatus.CANDIDATE);
+    slot.setPublishedAt(null);
+    slot.setPublishedExperienceJson(null);
+    requirements(codes.stream().map(code -> item(code, !"LANDING_APPROVED".equals(code))).toList());
+
+    var result = readiness.inspect(cycle);
+
+    assertThat(result.readyForReview()).isTrue();
+    assertThat(result.requirements())
+        .anySatisfy(
+            requirement -> {
+              assertThat(requirement.code()).isEqualTo("CURRENT_VERSION_READY");
+              assertThat(requirement.ready()).isTrue();
+              assertThat(requirement.detail()).contains("preflight");
+            })
+        .anySatisfy(
+            requirement -> {
+              assertThat(requirement.code()).isEqualTo("LANDING_APPROVED");
+              assertThat(requirement.ready()).isTrue();
+              assertThat(requirement.detail()).contains("sem antecipar a publicação");
+            });
+    assertThat(slot.getPublishedAt()).isNull();
   }
 
   /** Insumos prontos não exigem orçamento já materializado nem substituem o preflight posterior. */
@@ -212,18 +241,40 @@ class LearningCycleCommercialReadinessTest {
   /** Superfície de outro produto, versão ou experimento nunca satisfaz o ciclo sucessor. */
   @ParameterizedTest
   @ValueSource(
-      strings = {"version", "product", "experiment", "unpublished", "unvalidated", "missing"})
+      strings = {
+        "version",
+        "product",
+        "experiment",
+        "contract",
+        "status",
+        "unvalidated",
+        "stale-url",
+        "ambiguous",
+        "missing"
+      })
   void rejectsWrongCommercialSurface(String mismatch) {
     requirements(codes.stream().map(code -> item(code, true)).toList());
     switch (mismatch) {
       case "version" -> slot.setExperienceVersion("fixture-v7");
       case "product" -> slot.setProductSlug("another-product");
       case "experiment" -> slot.setSourceExperimentId(91L);
-      case "unpublished" -> slot.setPublishedAt(null);
+      case "contract" -> {
+        slot.setDraftExperienceJson(null);
+        slot.setPublishedExperienceJson(null);
+      }
+      case "status" -> slot.setStatus(com.marketinghub.pde.PdeProductionSlotStatus.PLANNED);
       case "unvalidated" -> slot.setValidationStatus("ERROR");
+      case "stale-url" -> slot.setValidationResolvedUrl("https://another.test");
+      case "ambiguous" -> {
+        var duplicate = new com.marketinghub.pde.PdeProductionSlot();
+        duplicate.setProductSlug(product.getSlug());
+        duplicate.setSourceExperimentId(92L);
+        duplicate.setExperienceVersion(cycle.getProductVersion());
+        when(slots.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
+            .thenReturn(List.of(slot, duplicate));
+      }
       case "missing" ->
-          when(slots.findFirstBySourceExperimentIdOrderByUpdatedAtDesc(92L))
-              .thenReturn(Optional.empty());
+          when(slots.findByProductSlugOrderBySlotCodeAsc(product.getSlug())).thenReturn(List.of());
       default -> throw new AssertionError(mismatch);
     }
     assertThat(readiness.inspect(cycle).readyForReview()).isFalse();

@@ -10,9 +10,11 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 /**
  * Responsabilidade: reutilizar o gate canônico para evitar revisão comercial sem insumos no ciclo
@@ -56,32 +58,23 @@ public class LearningCycleCommercialReadiness {
     if (experiment.getPlatform() != ExperimentPlatform.FACEBOOK) return null;
     var summary = readiness.summarize(experiment.getId());
     var requirements = new java.util.ArrayList<Requirement>();
+    boolean exactCandidateReadyForReview = false;
     if (experiment.getExperimentType()
         == com.marketinghub.experiment.ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL) {
-      var slot =
-          slots.findFirstBySourceExperimentIdOrderByUpdatedAtDesc(experiment.getId()).orElse(null);
-      boolean versionReady =
-          slot != null
-              && Objects.equals(experiment.getProduct().getSlug(), slot.getProductSlug())
-              && Objects.equals(cycle.getExperimentId(), slot.getSourceExperimentId())
-              && Objects.equals(cycle.getProductVersion(), slot.getExperienceVersion())
-              && (slot.getStatus() == PdeProductionSlotStatus.READY
-                  || slot.getStatus() == PdeProductionSlotStatus.ACTIVE)
-              && "OK".equals(slot.getValidationStatus())
-              && slot.getPublishedAt() != null
-              && slot.getPublishedExperienceJson() != null
-              && !slot.getPublishedExperienceJson().isBlank();
+      var exactSlots = exactVersionSlots(cycle, experiment);
+      var slot = exactSlots.size() == 1 ? exactSlots.getFirst() : null;
+      exactCandidateReadyForReview = reviewCandidateReady(experiment, slot);
       requirements.add(
           new Requirement(
               "CURRENT_VERSION_READY",
               "Versão comercial do ciclo",
-              versionReady,
-              versionReady
+              exactCandidateReadyForReview,
+              exactCandidateReadyForReview
                   ? "A versão "
                       + cycle.getProductVersion()
-                      + " está vinculada ao experimento correto."
-                  : "Não existe uma versão comercial publicada e validada do próprio produto, ciclo e experimento.",
-              "Conclua a publicação pelo fluxo versionado e valide o vínculo desta versão; a homologação privada não a substitui."));
+                      + " está vinculada e validada no preflight do experimento correto."
+                  : "Não existe uma candidata única e validada do próprio produto, ciclo e experimento.",
+              "Valide a URL da candidata exata antes da revisão; a publicação continua posterior à homologação."));
     }
     if (cycle.getBudgetLimitBrl() == null || cycle.getBudgetLimitBrl().signum() <= 0)
       requirements.add(
@@ -91,6 +84,7 @@ public class LearningCycleCommercialReadiness {
               false,
               "O ciclo Meta precisa de um teto positivo antes da autorização.",
               "Defina um limite defensável no planejamento; custo ausente não equivale a zero."));
+    boolean candidateReady = exactCandidateReadyForReview;
     requirements.addAll(
         INPUTS.stream()
             .map(
@@ -107,6 +101,13 @@ public class LearningCycleCommercialReadiness {
                         "O gate não retornou um requisito único: " + code + ".",
                         "Corrija a fonte de prontidão antes de iniciar avaliações.");
                   var item = matches.getFirst();
+                  if ("LANDING_APPROVED".equals(code) && candidateReady)
+                    return new Requirement(
+                        item.code(),
+                        item.title(),
+                        true,
+                        "A entrada da versão exata respondeu ao preflight comercial e está disponível para revisão sem antecipar a publicação.",
+                        "Execute as revisões de Psique e Têmis sobre a candidata; publique somente depois dos gates e da autorização humana.");
                   return new Requirement(
                       item.code(),
                       item.title(),
@@ -136,5 +137,57 @@ public class LearningCycleCommercialReadiness {
         "Abrir preparação Opala com os agentes",
         experiment.getProduct().getProductTypeDefinition() != null
             && "PDE".equals(experiment.getProduct().getProductTypeDefinition().getCode()));
+  }
+
+  /** Seleciona por identidade completa sem inferir a versão pela atualização mais recente. */
+  private List<com.marketinghub.pde.PdeProductionSlot> exactVersionSlots(
+      LearningSalesCycle cycle, com.marketinghub.experiment.Experiment experiment) {
+    String productSlug = experiment.getProduct().getSlug();
+    if (!StringUtils.hasText(productSlug)) return List.of();
+    return slots.findByProductSlugOrderBySlotCodeAsc(productSlug).stream()
+        .filter(slot -> Objects.equals(productSlug, slot.getProductSlug()))
+        .filter(slot -> Objects.equals(cycle.getExperimentId(), slot.getSourceExperimentId()))
+        .filter(slot -> Objects.equals(cycle.getProductVersion(), slot.getExperienceVersion()))
+        .toList();
+  }
+
+  /**
+   * Aceita a própria candidata no preflight, preservando publicação e autorização como gates
+   * posteriores.
+   */
+  private boolean reviewCandidateReady(
+      com.marketinghub.experiment.Experiment experiment,
+      com.marketinghub.pde.PdeProductionSlot slot) {
+    if (slot == null
+        || !Set.of(
+                PdeProductionSlotStatus.CANDIDATE,
+                PdeProductionSlotStatus.READY,
+                PdeProductionSlotStatus.ACTIVE)
+            .contains(slot.getStatus())) return false;
+    String reviewContract =
+        StringUtils.hasText(slot.getDraftExperienceJson())
+            ? slot.getDraftExperienceJson()
+            : slot.getPublishedExperienceJson();
+    return "OK".equals(slot.getValidationStatus())
+        && slot.getValidationCheckedAt() != null
+        && Objects.equals(200, slot.getValidationHttpStatus())
+        && Objects.equals(experiment.getProduct().getSlug(), slot.getValidationContractSlug())
+        && sameUrl(slot.getPublicUrl(), slot.getValidationResolvedUrl())
+        && StringUtils.hasText(reviewContract);
+  }
+
+  /** Compara a URL validada sem transformar uma barra final em outra identidade comercial. */
+  private boolean sameUrl(String expected, String observed) {
+    return StringUtils.hasText(expected)
+        && StringUtils.hasText(observed)
+        && trimTrailingSlash(expected).equals(trimTrailingSlash(observed));
+  }
+
+  /** Remove somente barras finais usadas como variação de transporte da mesma URL. */
+  private String trimTrailingSlash(String value) {
+    String normalized = value.trim();
+    while (normalized.endsWith("/") && normalized.length() > 1)
+      normalized = normalized.substring(0, normalized.length() - 1);
+    return normalized;
   }
 }

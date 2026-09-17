@@ -5813,3 +5813,40 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   resolvedor real de pertencimento, para ciclo implícito/expresso, cadeias antigas
   e novas; referências estrangeiras continuam recusadas.
 - Evidências e limites: `docs/homologacao/experimento-92-contexto-cadeia.md`.
+
+## LOOP-VIDEO-GOVERNANCA-EXIGE-REFERENCIA-INEXISTENTE — 17/09/2026
+
+- **Sintoma confirmado:** o criativo #529 do Vega, experimento #92, foi reprovado mesmo com vídeo
+  aprovado, hashes, tarefas do provider, geração Runway Gen-4.5 por texto e disclosure de
+  apresentadora e voz sintéticas. O contrato retornava `INCOMPLETE` e não resolvia a licença.
+- **Causa-raiz:** o resolvedor tratava toda mídia como Product UGC. Exigia imagem de apresentadora,
+  prompt, consentimento e direitos também na rota `PROVIDER_CLIPS_WITH_POST_PRODUCTION_CUTS`, que
+  não recebeu pessoa, performance ou imagem externa. Além disso, procurava a licença pelo agregador
+  `RUNWAY_ROUTER`, ignorando o provider e o modelo exatos persistidos no asset bruto.
+- **Alternativas:** preencher evidências fictícias seria rápido, mas quebraria a linhagem; retirar
+  os gates para toda mídia sintética ampliaria risco jurídico; distinguir deterministicamente as
+  duas rotas preserva segurança e generaliza para novas execuções. A terceira foi adotada.
+- **Correção sistêmica:** o contrato v2 reconhece `EXPLICIT_REFERENCE` e
+  `PROMPT_ONLY_SYNTHETIC`. O segundo só passa quando todos os inputs pertencem à lista segura de
+  geração por texto, o disclosure está no arquivo final e o modelo efetivo do asset possui curadoria
+  comercial completa. Campo desconhecido resulta em `UNRESOLVED` e mantém o bloqueio.
+- **Prevenção:** regressões cobrem Product UGC, Vega por texto, disclosure ausente e referência
+  adversarial. Têmis recebe a distinção e continua exigindo arquivo exato, licença e aprovação
+  humana; nenhum teste autoriza campanha ou substitui a inspeção do destino.
+
+## LOOP-OPALA-REVISAO-EXIGE-PUBLICACAO-ANTECIPADA — 17/09/2026
+
+- **Sintoma confirmado:** mesmo após a v8 entregar a Vega v12, sua oferta e o contrato de integração
+  com HTTP 200, Psique permanecia bloqueada por “Versão comercial” e “Entrada do PDE”.
+- **Causa-raiz:** a prontidão para iniciar revisões exigia `publishedAt` e contrato público. Isso
+  criava um ciclo impossível: publicar antes de Psique e Têmis para conseguir executar Psique e
+  Têmis, contrariando o preflight protegido já definido no cânone.
+- **Alternativas:** publicar antecipadamente eliminaria o gate; criar exceção para o experimento 92
+  repetiria a falha nas próximas versões; reconhecer a candidata exata e validada como entrada de
+  revisão preserva a separação entre homologação e publicação. A terceira foi adotada.
+- **Correção sistêmica:** a prontidão seleciona uma única superfície por produto, experimento e
+  versão e aceita `CANDIDATE`, `READY` ou `ACTIVE` somente com validação HTTP 200 vigente, slug e URL
+  coincidentes e contrato candidato auditável. Esse preflight satisfaz a entrada de Psique, mas não
+  publica, não aprova criativo e não autoriza mídia.
+- **Prevenção:** testes cobrem candidata sem snapshot publicado, versão/produto/experimento
+  divergentes, duplicidade, contrato ausente, estado inválido, validação ausente e URL obsoleta.

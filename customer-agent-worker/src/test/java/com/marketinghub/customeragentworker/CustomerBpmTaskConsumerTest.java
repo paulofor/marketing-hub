@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -603,6 +604,69 @@ class CustomerBpmTaskConsumerTest {
             "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
             "https://go.pepper.com.br/owm6x")
         .doesNotContain("musa-v7-commercial-homologation-v4.json");
+    org.assertj.core.api.Assertions.assertThat(prompt.length())
+        .isLessThan(850_000)
+        .isLessThan(CustomerBpmTaskConsumer.promptCharacterLimit());
+  }
+
+  /** Mantém a candidata Vega v12 abaixo do teto sem remover contratos e provas comerciais. */
+  @Test
+  void composesBoundedVegaV12CommercialPromptFromAttestedEvidence() throws Exception {
+    Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
+    Path repository =
+        moduleDirectory.getFileName().toString().equals("customer-agent-worker")
+            ? moduleDirectory.getParent()
+            : moduleDirectory;
+    CustomerBpmTaskConsumer consumer =
+        new CustomerBpmTaskConsumer(
+            "http://backend:8000",
+            "codex",
+            "gpt-5.6-sol",
+            "max",
+            repository.toString(),
+            repository.toString(),
+            json);
+    Map<String, Object> task =
+        new HashMap<>(
+            Map.of(
+                "taskId",
+                444L,
+                "sourceReference",
+                "experiment:92",
+                "processCode",
+                "opala-commercial-preparation-v1",
+                "activityId",
+                "humanExperienceReview",
+                "taskTarget",
+                Map.of(
+                    "experimentId",
+                    92L,
+                    "productId",
+                    4L,
+                    "productSlug",
+                    "metodo-musa-7-dias",
+                    "experienceVersion",
+                    "musa-pde-entry-v12-primeiro-ajuste-aplicavel")));
+    task.put("processVersion", 1);
+    task.put("agentKey", "customer-agent");
+    task.put(
+        "catalogPrompt",
+        CatalogPromptInputTest.fixture(
+            "humanExperienceReview",
+            "customer-agent",
+            CustomerBpmTaskConsumer.schemaResourceFor("opala-commercial-preparation-v1")));
+
+    String prompt = consumer.prompt(task, List.of());
+
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains(
+            "musa-v12-commercial-homologation-v3.json",
+            "musa-v12-commercial-homologation-v2.json",
+            "ATTESTED_REFERENCE",
+            "36 jornadas locais da Vega v12",
+            "Começar meu ajuste gratuito",
+            "Acesso por 90 dias, sem assinatura ou renovação.")
+        .doesNotContain("musa-v12-commercial-homologation-v1.json");
     org.assertj.core.api.Assertions.assertThat(prompt.length())
         .isLessThan(850_000)
         .isLessThan(CustomerBpmTaskConsumer.promptCharacterLimit());

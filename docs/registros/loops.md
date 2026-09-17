@@ -3352,6 +3352,15 @@ Use este checklist quando o problema estiver em algum loop acima:
   modelo, Psique compara CTA da primeira dobra e condições comerciais com a captura ao vivo; deploy
   antigo vira falha técnica sem custo de revisão. A matriz e os limites estão em
   `docs/homologacao/vega-442-evidencias-comerciais-v12-2026-09-17.md`.
+- **Recorrência da tarefa Vega #444 fechada localmente em 17/09/2026:** depois que a superfície
+  pública correta passou pelo preflight, Psique recebeu 1.157.676 caracteres e foi bloqueada antes
+  do modelo pelo teto preventivo de 900.000. O manifesto v2 da Vega v12 repetia integralmente
+  arquivos gerais já congelados por hash e provas visuais entregues como anexos. O manifesto v3
+  preserva a v2 como baseline imutável, mantém integrais o contrato do produto e os testes
+  comerciais específicos e transporta frontend/estilos amplos por `ATTESTED_REFERENCE` com resumo,
+  tamanho e SHA-256. Um teste agora monta o prompt real do experimento 92 e exige margem abaixo de
+  850.000 caracteres; os carregadores de Psique e Têmis comprovam a mesma revisão v3 sem reabrir a
+  v1 histórica.
 - **Recorrência fechada localmente em 2026-08-30:** a tarefa #275 recebeu 1.125.976 caracteres
   porque o executor duplicava no prompt o conteúdo integral das provas já congeladas na imagem,
   ultrapassando o teto de 1.048.576 antes do primeiro turno. A alternativa de reler o pacote por

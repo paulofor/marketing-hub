@@ -59,6 +59,9 @@ public class CustomerBpmTaskConsumer {
   private final CodexProcessSupervisor processSupervisor;
   @Autowired private AutomaticExecutionControl automaticExecution;
 
+  @Autowired(required = false)
+  private CodexTelemetryReporter telemetryReporter;
+
   /** Configura a fila canônica, o modelo, o raciocínio máximo e a sandbox de Psique. */
   @Autowired
   public CustomerBpmTaskConsumer(
@@ -396,58 +399,61 @@ public class CustomerBpmTaskConsumer {
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
-      process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
-      process.getOutputStream().close();
-      CodexProcessSupervisor.WaitOutcome waitOutcome =
-          processSupervisor.awaitCompletion(process, processLog);
-      if (waitOutcome != CodexProcessSupervisor.WaitOutcome.COMPLETED) {
-        throw new BpmExecutionException(
-            timeoutMessage(waitOutcome),
-            readTokenUsage(json, processLog),
-            prompt.fullPrompt(),
-            prompt.agentPromptPart(),
-            prompt.activityPromptPart(),
-            mergeAccessedUrls(visualAccesses, readAccessedUrls(json, processLog)),
-            visualEvidence);
-      }
-      TokenUsage usage = readTokenUsage(json, processLog);
-      if (process.exitValue() != 0) {
-        throw new BpmExecutionException(
-            "Codex encerrou com falha: " + Files.readString(processLog),
-            usage,
-            prompt.fullPrompt(),
-            prompt.agentPromptPart(),
-            prompt.activityPromptPart(),
-            mergeAccessedUrls(visualAccesses, readAccessedUrls(json, processLog)),
-            visualEvidence);
-      }
-      try {
-        String rawResponse = Files.readString(output);
-        JsonNode result = json.readTree(rawResponse);
-        return new BpmExecution(
-            result,
-            usage,
-            prompt.fullPrompt(),
-            prompt.agentPromptPart(),
-            prompt.activityPromptPart(),
-            mergeAccessedUrls(visualAccesses, readAccessedUrls(json, processLog)),
-            visualEvidence,
-            rawResponse);
-      } catch (IOException ex) {
-        log.error(
-            "Resposta inválida na atividade BPM de Psique. taskId={} output={}",
-            taskId(task),
-            output,
-            ex);
-        throw new BpmExecutionException(
-            "Resposta de Psique não contém JSON válido.",
-            usage,
-            prompt.fullPrompt(),
-            prompt.agentPromptPart(),
-            prompt.activityPromptPart(),
-            mergeAccessedUrls(visualAccesses, readAccessedUrls(json, processLog)),
-            visualEvidence,
-            ex);
+      try (CodexTelemetryReporter.Session telemetry = monitorExecution(task, process, processLog)) {
+        process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
+        process.getOutputStream().close();
+        CodexProcessSupervisor.WaitOutcome waitOutcome =
+            processSupervisor.awaitCompletion(process, processLog);
+        if (waitOutcome != CodexProcessSupervisor.WaitOutcome.COMPLETED) {
+          throw new BpmExecutionException(
+              timeoutMessage(waitOutcome),
+              readTokenUsage(json, processLog),
+              prompt.fullPrompt(),
+              prompt.agentPromptPart(),
+              prompt.activityPromptPart(),
+              mergeAccessedUrls(visualAccesses, readAccessedUrls(json, processLog)),
+              visualEvidence);
+        }
+        TokenUsage usage = readTokenUsage(json, processLog);
+        if (process.exitValue() != 0) {
+          throw new BpmExecutionException(
+              "Codex encerrou com falha: " + Files.readString(processLog),
+              usage,
+              prompt.fullPrompt(),
+              prompt.agentPromptPart(),
+              prompt.activityPromptPart(),
+              mergeAccessedUrls(visualAccesses, readAccessedUrls(json, processLog)),
+              visualEvidence);
+        }
+        try {
+          String rawResponse = Files.readString(output);
+          JsonNode result = json.readTree(rawResponse);
+          if (telemetry != null) telemetry.success();
+          return new BpmExecution(
+              result,
+              usage,
+              prompt.fullPrompt(),
+              prompt.agentPromptPart(),
+              prompt.activityPromptPart(),
+              mergeAccessedUrls(visualAccesses, readAccessedUrls(json, processLog)),
+              visualEvidence,
+              rawResponse);
+        } catch (IOException ex) {
+          log.error(
+              "Resposta inválida na atividade BPM de Psique. taskId={} output={}",
+              taskId(task),
+              output,
+              ex);
+          throw new BpmExecutionException(
+              "Resposta de Psique não contém JSON válido.",
+              usage,
+              prompt.fullPrompt(),
+              prompt.agentPromptPart(),
+              prompt.activityPromptPart(),
+              mergeAccessedUrls(visualAccesses, readAccessedUrls(json, processLog)),
+              visualEvidence,
+              ex);
+        }
       }
     } finally {
       if (process != null && process.isAlive()) processSupervisor.terminateTree(process);
@@ -455,6 +461,14 @@ public class CustomerBpmTaskConsumer {
       Files.deleteIfExists(processLog);
       Files.deleteIfExists(schema);
     }
+  }
+
+  /** Inicia a telemetria da tarefa BPM depois que o processo Codex já possui um PID real. */
+  private CodexTelemetryReporter.Session monitorExecution(
+      Map<String, Object> task, Process process, Path processLog) {
+    return telemetryReporter == null
+        ? null
+        : telemetryReporter.monitor(taskId(task), process, processLog);
   }
 
   /** Monta o comando e entrega cada snapshot como anexo multimodal do próprio turno. */

@@ -14,6 +14,7 @@ import com.marketinghub.agent.Agent;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocessresource.BusinessProcessExecutionResource;
+import com.marketinghub.codextelemetry.CodexAgentExecutionTelemetryService;
 import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
@@ -34,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: comprovar autoria, segregação e ciclo de vida das tarefas dos agentes. */
@@ -1677,6 +1679,73 @@ class AgentTaskServiceTest {
     assertThat(replay.taskId()).isEqualTo(447L);
     assertThat(replay.retryResultJson()).isEqualTo(orphan.getResultJson());
     assertThat(replay.retryEvidenceJson()).isEqualTo(orphan.getEvidenceJson());
+    verify(repository, never()).save(any());
+  }
+
+  /** Recupera uma única reserva sem processo, saída ou consumo após o reinício da Psique. */
+  @Test
+  void recoversStaleCustomerAgentLeaseWithoutTelemetryBeforeNewWork() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(8L, "customer-agent", "Psique");
+    Instant now = Instant.parse("2026-09-18T02:00:00Z");
+    AgentTask orphan =
+        processTask(
+            448L, psique, process("PUBLISHED", "Psique"), "humanExperienceReview", "IN_PROGRESS");
+    orphan.setReceivedAt(now.minusSeconds(300));
+    orphan.setUpdatedAt(now.minusSeconds(300));
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(orphan));
+    when(repository.save(orphan)).thenReturn(orphan);
+
+    AgentTaskPendingResponse recovered =
+        service(repository, agents, Clock.fixed(now, ZoneOffset.UTC))
+            .claimEligibleProcessTask("customer-agent")
+            .orElseThrow();
+
+    assertThat(recovered.taskId()).isEqualTo(448L);
+    assertThat(orphan.getStatus()).isEqualTo("IN_PROGRESS");
+    assertThat(orphan.getExecutionError()).startsWith("ORPHANED_LEASE_RECOVERY_ONCE|");
+    verify(repository).save(orphan);
+  }
+
+  /** Preserva uma análise de Psique cujo heartbeat ainda comprova processo ativo. */
+  @Test
+  void doesNotRecoverCustomerAgentLeaseWithRecentHeartbeat() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(8L, "customer-agent", "Psique");
+    AgentTask active =
+        processTask(
+            448L, psique, process("PUBLISHED", "Psique"), "humanExperienceReview", "IN_PROGRESS");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(active));
+    CodexAgentExecutionTelemetryService telemetry = mock(CodexAgentExecutionTelemetryService.class);
+    when(telemetry.get("CUSTOMER_AGENT", 448L))
+        .thenReturn(
+            new CodexAgentExecutionTelemetryService.Response(
+                "CUSTOMER_AGENT",
+                448L,
+                "RUNNING",
+                99L,
+                true,
+                0L,
+                0L,
+                null,
+                null,
+                "HEARTBEAT",
+                Instant.parse("2026-09-18T01:59:45Z"),
+                Instant.parse("2026-09-18T01:59:00Z"),
+                null,
+                false));
+    AgentTaskService service = service(repository, agents, Clock.systemUTC());
+    ReflectionTestUtils.setField(service, "codexTelemetry", telemetry);
+
+    assertThat(service.claimEligibleProcessTask("customer-agent")).isEmpty();
     verify(repository, never()).save(any());
   }
 

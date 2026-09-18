@@ -1012,6 +1012,14 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
   resultado, evidência e consumo ao convertê-los em bloqueio funcional, sem nova inferência. Testes
   impedem reentrada infinita, perda da prova e cobrança repetida.
 
+- Fechamento complementar em Psique/Vega #448 (2026-09-18): a atividade foi reservada, gravou o
+  prompt e perdeu o worker no reinício antes de haver resposta, tokens ou custo. O consumidor BPM
+  não acionava a telemetria já canônica; como o `pending` somente seleciona `PENDING`, a lease sem
+  sinal ativo ficou invisível. Psique passa a enviar heartbeat desde o PID real do Codex e o backend
+  recupera uma única lease da Psique sem eventos, bytes, saída ou consumo depois de dois minutos.
+  Heartbeat recente, saída observada, custo/token ou uma segunda expiração impedem retomada e
+  preservam a tarefa para bloqueio auditável, sem duplicar revisão paga.
+
 - Recorrência Atena/Vega #358 em 09/09/2026: a inferência terminou, mas duas tentativas de callback
   falharam durante indisponibilidade do backend. Arquivos temporários já tinham sido apagados e a
   tarefa permaneceu `IN_PROGRESS`, sem parecer ou erro. A correção local conserva reserva, auditoria,

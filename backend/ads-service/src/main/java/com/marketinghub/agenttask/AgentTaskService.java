@@ -6,6 +6,7 @@ import com.marketinghub.agent.Agent;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocessresource.BusinessProcessExecutionResource;
+import com.marketinghub.codextelemetry.CodexAgentExecutionTelemetryService;
 import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
@@ -19,6 +20,7 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -92,6 +94,10 @@ public class AgentTaskService {
           "token");
   private static final String ACCESSED_URL_LINK = "ACCESSED_URL";
   private static final String BLOCKER_HELP_LINK = "BLOCKER_HELP";
+  private static final String CUSTOMER_AGENT_KEY = "customer-agent";
+  private static final String CUSTOMER_AGENT_TELEMETRY_TYPE = "CUSTOMER_AGENT";
+  private static final String ORPHANED_LEASE_RECOVERY_PREFIX = "ORPHANED_LEASE_RECOVERY_ONCE|";
+  private static final Duration ORPHANED_LEASE_GRACE = Duration.ofMinutes(2);
   private static final Pattern PROMPT_PHASE_HEADER =
       Pattern.compile("(?m)^--- ([^\\r\\n]+) ---\\r?$");
 
@@ -131,6 +137,9 @@ public class AgentTaskService {
 
   @Autowired(required = false)
   private com.marketinghub.catalogovivo.v1.service.CatalogoVivoService catalogoVivo;
+
+  @Autowired(required = false)
+  private CodexAgentExecutionTelemetryService codexTelemetry;
 
   /** Configura persistência, catálogo e relógio operacional. */
   @Autowired
@@ -1549,6 +1558,9 @@ public class AgentTaskService {
     Optional<AgentTask> replayable =
         replayInterruptedCallback(agentKey, processCode, activityId, executionResourceCode);
     if (replayable.isPresent()) return Optional.of(pendingResponse(replayable.get()));
+    Optional<AgentTask> orphaned =
+        recoverOrphanedCustomerAgentLease(agentKey, processCode, activityId, executionResourceCode);
+    if (orphaned.isPresent()) return Optional.of(pendingResponse(orphaned.get()));
     Optional<AgentTask> recovered =
         recoverInterruptedCallbackOnce(agentKey, processCode, activityId, executionResourceCode);
     if (recovered.isPresent()) return Optional.of(pendingResponse(recovered.get()));
@@ -1580,6 +1592,57 @@ public class AgentTaskService {
         .filter(
             task -> matchesExecutionContract(task, processCode, activityId, executionResourceCode))
         .findFirst();
+  }
+
+  /**
+   * Reentrega uma única lease da Psique que perdeu o worker antes de produzir qualquer saída do
+   * modelo. Heartbeat recente protege uma revisão ainda ativa; tarefas legadas sem telemetria só
+   * podem voltar após a mesma janela de atraso prevista no cânone.
+   */
+  private Optional<AgentTask> recoverOrphanedCustomerAgentLease(
+      String agentKey, String processCode, String activityId, String executionResourceCode) {
+    if (!CUSTOMER_AGENT_KEY.equals(agentKey.trim())) return Optional.empty();
+    Instant now = Instant.now(clock);
+    List<AgentTask> inProgress =
+        repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            CUSTOMER_AGENT_KEY, "WORK", "IN_PROGRESS");
+    if (inProgress == null) return Optional.empty();
+    return inProgress.stream()
+        .filter(task -> task.getProcessDefinition() != null)
+        .filter(
+            task -> matchesExecutionContract(task, processCode, activityId, executionResourceCode))
+        .filter(task -> canRecoverOrphanedCustomerAgentLease(task, now))
+        .findFirst()
+        .map(
+            task -> {
+              task.setExecutionError(
+                  ORPHANED_LEASE_RECOVERY_PREFIX
+                      + "A reserva não registrou processo ativo nem saída do modelo antes da interrupção.");
+              task.setUpdatedAt(now);
+              AgentTask saved = repository.save(task);
+              synchronizeActivityInstance(saved, now);
+              return saved;
+            });
+  }
+
+  /** Confirma que a retomada não concorre com processo ativo, saída ou consumo já auditados. */
+  private boolean canRecoverOrphanedCustomerAgentLease(AgentTask task, Instant now) {
+    if (task.getExecutionError() != null
+        && task.getExecutionError().startsWith(ORPHANED_LEASE_RECOVERY_PREFIX)) return false;
+    if (trimToNull(task.getResultJson()) != null
+        || trimToNull(task.getEvidenceJson()) != null
+        || task.getInputTokens() != null
+        || task.getCachedInputTokens() != null
+        || task.getOutputTokens() != null) return false;
+    CodexAgentExecutionTelemetryService.Response telemetry =
+        codexTelemetry == null
+            ? null
+            : codexTelemetry.get(CUSTOMER_AGENT_TELEMETRY_TYPE, task.getId());
+    if (telemetry != null) {
+      return telemetry.stale() && telemetry.eventCount() == 0L && telemetry.outputBytes() == 0L;
+    }
+    Instant lastProgress = task.getUpdatedAt() == null ? task.getReceivedAt() : task.getUpdatedAt();
+    return lastProgress != null && lastProgress.plus(ORPHANED_LEASE_GRACE).isBefore(now);
   }
 
   /** Reserva idempotentemente a tarefa exata já correlacionada por outro contrato do backend. */

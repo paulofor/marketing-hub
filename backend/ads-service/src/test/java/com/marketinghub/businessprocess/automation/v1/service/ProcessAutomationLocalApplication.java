@@ -28,6 +28,7 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.*;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.orm.jpa.*;
 import org.springframework.orm.jpa.persistenceunit.PersistenceManagedTypes;
@@ -35,6 +36,7 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: homologar o coordenador real com MySQL e contratos de agentes simulados. */
 @TestConfiguration
@@ -345,7 +347,12 @@ public class ProcessAutomationLocalApplication {
             eq(false),
             nullable(String.class)))
         .thenAnswer(
-            inv -> snapshot(jdbc, inv.getArgument(1), inv.getArgument(0), inv.getArgument(5)));
+            inv -> {
+              Long product = inv.getArgument(1);
+              String sourceReference = inv.getArgument(5);
+              requireSourceReference(product, sourceReference);
+              return snapshot(jdbc, product, inv.getArgument(0), sourceReference);
+            });
     when(activities.requestProductActivityExecution(
             anyLong(), anyLong(), anyString(), isNull(), nullable(Long.class)))
         .thenAnswer(
@@ -377,6 +384,7 @@ public class ProcessAutomationLocalApplication {
   /** Registra a tentativa local sem substituir a referência operacional congelada. */
   static ProductProcessActivityExecutionRequestResponse request(
       JdbcTemplate jdbc, Long process, Long product, String activity, String sourceReference) {
+    requireSourceReference(product, sourceReference);
     var previous = latest(jdbc, product, process, activity);
     if (previous != null && Set.of("PENDING", "IN_PROGRESS").contains(previous.get("status")))
       throw new IllegalStateException("Duplicação de tarefa ativa.");
@@ -402,6 +410,13 @@ public class ProcessAutomationLocalApplication {
         gate ? "COMPLETED" : "PENDING",
         gate,
         "Contrato local executado");
+  }
+
+  /** Reproduz a validação de propriedade da referência antes de expor ou criar uma atividade. */
+  static void requireSourceReference(Long product, String sourceReference) {
+    if (!Objects.equals("experiment:" + product, sourceReference))
+      throw new ResponseStatusException(
+          HttpStatus.NOT_FOUND, "Referência não encontrada neste produto.");
   }
 
   /** Consulta a última tentativa sem apagar o histórico anterior. */

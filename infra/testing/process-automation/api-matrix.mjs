@@ -132,7 +132,7 @@ await scenario(
     await request(
       root(92002),
       { ...command(92002), sourceReference: "experiment:92001" },
-      409,
+      404,
     );
     await request(root(92002), { ...command(92002), chainId: 1 }, 404);
     await request(root(92002), {}, 400);

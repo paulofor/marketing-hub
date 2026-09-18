@@ -3,7 +3,10 @@ import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { resolveDeployTarget } from "./resolve-pde-frontend-deploy-target.mjs";
+import {
+  resolveDeploymentPlan,
+  resolveDeployTarget,
+} from "./resolve-pde-frontend-deploy-target.mjs";
 
 async function fixture(t, contracts) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "pde-deploy-target-"));
@@ -30,6 +33,13 @@ function contract(target = "v8", hash = "a".repeat(64)) {
     liveVisualContract: {
       runtimeIdentity: { frontendSourceSha256: hash },
     },
+  };
+}
+
+function versionedContract(revision, target = "v8") {
+  return {
+    ...contract(target),
+    contractVersion: `commercial-homologation.v${revision}`,
   };
 }
 
@@ -94,6 +104,128 @@ test("recusa manifesto que não representa a fonte frontend atual", async (t) =>
   );
 });
 
+test("separa backend e workers do deploy de frontend", async (t) => {
+  const root = await fixture(t, { "vega-v5.json": contract() });
+  const plan = await resolveDeploymentPlan(
+    root,
+    [
+      "pde-platform/contracts/vega-v5.json",
+      "pde-platform/backend/src/main/java/Backend.java",
+      "pde-platform/pde-ai-worker/src/worker.js",
+    ],
+    { fingerprintResolver: async () => "a".repeat(64) },
+  );
+  assert.equal(plan.frontend.target, "v8");
+  assert.equal(plan.backend, true);
+  assert.equal(plan.aiWorker, true);
+  assert.equal(plan.retentionWorker, false);
+  assert.equal(plan.fullCompatibility, true);
+  assert.equal(plan.hasDeployment, true);
+});
+
+test("mudança operacional não reinicia nenhum runtime por efeito colateral", async (t) => {
+  const root = await fixture(t, { "vega-v5.json": contract() });
+  const plan = await resolveDeploymentPlan(root, [
+    ".github/workflows/pde-platform-metodo-musa-ci.yml",
+    "pde-platform/scripts/deploy-versioned-frontend.sh",
+  ]);
+  assert.equal(plan.frontend.target, "none");
+  assert.equal(plan.backend, false);
+  assert.equal(plan.aiWorker, false);
+  assert.equal(plan.retentionWorker, false);
+  assert.equal(plan.hasDeployment, false);
+});
+
+test("dispatch de frontend exige manifesto imutável da superfície", async (t) => {
+  const root = await fixture(t, { "vega-v5.json": contract() });
+  await assert.rejects(
+    resolveDeploymentPlan(root, [], {
+      manualFrontend: "v7",
+      fingerprintResolver: async () => "a".repeat(64),
+    }),
+    /não possui manifesto imutável/,
+  );
+  const plan = await resolveDeploymentPlan(root, [], {
+    manualFrontend: "v8",
+    fingerprintResolver: async () => "a".repeat(64),
+  });
+  assert.equal(plan.frontend.target, "v8");
+  assert.equal(plan.frontend.contractSha256.length, 64);
+});
+
+test("dispatch seleciona a maior revisão numérica, inclusive depois da v9", async (t) => {
+  const root = await fixture(t, {
+    "vega-v9.json": versionedContract(9),
+    "vega-v10.json": versionedContract(10),
+  });
+  const plan = await resolveDeploymentPlan(root, [], {
+    manualFrontend: "v8",
+    fingerprintResolver: async () => "a".repeat(64),
+  });
+  assert.equal(plan.frontend.relativePath, "pde-platform/contracts/vega-v10.json");
+});
+
+test("dispatch recusa duas atestações vigentes com a mesma revisão", async (t) => {
+  const root = await fixture(t, {
+    "vega-a-v10.json": versionedContract(10),
+    "vega-b-v10.json": versionedContract(10),
+  });
+  await assert.rejects(
+    resolveDeploymentPlan(root, [], {
+      manualFrontend: "v8",
+      fingerprintResolver: async () => "a".repeat(64),
+    }),
+    /mais de um manifesto vigente/,
+  );
+});
+
+test("dispatch manual preserva superfícies não MUSA pelo inventário suportado", async (t) => {
+  const root = await fixture(t, {
+    "product-runtime-isolation-v1.json": {
+      products: [
+        {
+          productId: 10,
+          productSlug: "pde-planejado-36",
+          surfaces: [{ deployTarget: "mira", lifecycleStatus: "SUPPORTED" }],
+        },
+      ],
+    },
+  });
+  const plan = await resolveDeploymentPlan(root, [], {
+    manualFrontend: "mira",
+    fingerprintResolver: async () => "f".repeat(64),
+  });
+  assert.equal(plan.frontend.target, "mira");
+  assert.equal(
+    plan.frontend.relativePath,
+    "pde-platform/contracts/product-runtime-isolation-v1.json",
+  );
+  assert.equal(plan.frontend.sourceSha256, "f".repeat(64));
+});
+
+test("dispatch de componente compartilhado nunca seleciona frontend", async (t) => {
+  const root = await fixture(t, { "vega-v5.json": contract() });
+  const plan = await resolveDeploymentPlan(root, [], {
+    manualFrontend: "none",
+    manualSharedComponent: "backend",
+  });
+  assert.equal(plan.frontend.target, "none");
+  assert.equal(plan.backend, true);
+  assert.equal(plan.aiWorker, false);
+  assert.equal(plan.retentionWorker, false);
+});
+
+test("dispatch recusa publicar todos os componentes compartilhados em lote", async (t) => {
+  const root = await fixture(t, { "vega-v5.json": contract() });
+  await assert.rejects(
+    resolveDeploymentPlan(root, [], {
+      manualFrontend: "none",
+      manualSharedComponent: "all",
+    }),
+    /Componente compartilhado PDE inválido/,
+  );
+});
+
 test("workflow usa o alvo resolvido sem fallback fixo para v7", async () => {
   const workflow = await fs.readFile(
     new URL(
@@ -114,4 +246,12 @@ test("workflow usa o alvo resolvido sem fallback fixo para v7", async () => {
     ).length - 1,
     2,
   );
+  assert.match(workflow, /PDE_DEPLOY_BACKEND:/);
+  assert.match(workflow, /shared_component/);
+  assert.match(
+    workflow,
+    /REMOTE_FRONTEND_CONTRACT_PATH="\$\{PDE_FRONTEND_CONTRACT_PATH#pde-platform\/\}"/,
+  );
+  assert.match(workflow, /PDE_RUNTIME_INVENTORY=/);
+  assert.match(workflow, /PDE_DEPLOY_COMPOSE_FILE_PATH=/);
 });

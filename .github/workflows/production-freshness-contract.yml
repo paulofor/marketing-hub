@@ -12,6 +12,7 @@ on:
       - 'scripts/detect-deployment-changes.sh'
       - 'scripts/read-frontend-build-revision.sh'
       - 'scripts/configure-vps-ssh-fallback.sh'
+      - 'pde-platform/contracts/product-runtime-isolation-v1.json'
   pull_request:
     paths:
       - '.github/workflows/production-freshness-watchdog.yml'
@@ -22,6 +23,7 @@ on:
       - 'scripts/detect-deployment-changes.sh'
       - 'scripts/read-frontend-build-revision.sh'
       - 'scripts/configure-vps-ssh-fallback.sh'
+      - 'pde-platform/contracts/product-runtime-isolation-v1.json'
   workflow_dispatch:
 
 permissions:

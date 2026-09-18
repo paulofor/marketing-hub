@@ -13,7 +13,14 @@
     "productSurfaceOwnDeployTarget": true,
     "ordinaryPushDoesNotSelectProduct": true,
     "legacyProxyBootstrapMustBeExplicit": true,
-    "sharedInfrastructureMustBeProductNeutral": true
+    "sharedInfrastructureMustBeProductNeutral": true,
+    "frontendDeployDoesNotRestartSharedInfrastructure": true,
+    "candidateValidatedBeforeCutover": true,
+    "publicIdentityValidatedAfterCutover": true,
+    "rollbackImageRetained": true,
+    "backendDeployIsIndependent": true,
+    "backendCompatibilityCoversSupportedSurfaces": true,
+    "watchdogCoversEverySupportedSurface": true
   },
   "products": [
     {
@@ -22,44 +29,67 @@
       "productSlug": "metodo-musa-7-dias",
       "surfaces": [
         {
+          "deployTarget": "v5",
           "versionId": "v5",
+          "experienceVersion": "musa-pde-entry-v5-video-explicativo",
+          "lifecycleStatus": "SUPPORTED",
+          "watchdogRequired": true,
+          "legacyMinimumRevision": "a7da0394543c6d5074db3b39e2f14761e3bd7e03",
           "serviceName": "pde-platform-frontend-v5",
           "containerName": "pde-platform-frontend-v5",
           "imageName": "pde-platform-frontend-v5",
           "imageVariable": "PDE_PLATFORM_FRONTEND_V5_IMAGE",
           "portVariable": "PDE_PLATFORM_FRONTEND_V5_PORT",
           "hostPort": 5176,
-          "publicUrl": "https://v5.clubemusa.com.br"
+          "publicUrl": "https://v5.clubemusa.com.br",
+          "backendProbePath": "/api/pde/products/metodo-musa-7-dias"
         },
         {
+          "deployTarget": "v6",
           "versionId": "v6",
+          "experienceVersion": "musa-pde-entry-v6-video-motivacional",
+          "lifecycleStatus": "SUPPORTED",
+          "watchdogRequired": true,
+          "legacyMinimumRevision": "a7da0394543c6d5074db3b39e2f14761e3bd7e03",
           "serviceName": "pde-platform-frontend-v6",
           "containerName": "pde-platform-frontend-v6",
           "imageName": "pde-platform-frontend-v6",
           "imageVariable": "PDE_PLATFORM_FRONTEND_V6_IMAGE",
           "portVariable": "PDE_PLATFORM_FRONTEND_V6_PORT",
           "hostPort": 5177,
-          "publicUrl": "https://v6.clubemusa.com.br"
+          "publicUrl": "https://v6.clubemusa.com.br",
+          "backendProbePath": "/api/pde/products/metodo-musa-7-dias"
         },
         {
+          "deployTarget": "v7",
           "versionId": "v7",
+          "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+          "lifecycleStatus": "SUPPORTED",
+          "watchdogRequired": true,
+          "legacyMinimumRevision": "a7da0394543c6d5074db3b39e2f14761e3bd7e03",
           "serviceName": "pde-platform-frontend-v7",
           "containerName": "pde-platform-frontend-v7",
           "imageName": "pde-platform-frontend-v7",
           "imageVariable": "PDE_PLATFORM_FRONTEND_V7_IMAGE",
           "portVariable": "PDE_PLATFORM_FRONTEND_V7_PORT",
           "hostPort": 5178,
-          "publicUrl": "https://v7.clubemusa.com.br"
+          "publicUrl": "https://v7.clubemusa.com.br",
+          "backendProbePath": "/api/pde/products/metodo-musa-7-dias"
         },
         {
+          "deployTarget": "v8",
           "versionId": "v8",
+          "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+          "lifecycleStatus": "SUPPORTED",
+          "watchdogRequired": true,
           "serviceName": "pde-platform-frontend-v8",
           "containerName": "pde-platform-frontend-v8",
           "imageName": "pde-platform-frontend-v8",
           "imageVariable": "PDE_PLATFORM_FRONTEND_V8_IMAGE",
           "portVariable": "PDE_PLATFORM_FRONTEND_V8_PORT",
           "hostPort": 5181,
-          "publicUrl": "https://v8.clubemusa.com.br"
+          "publicUrl": "https://v8.clubemusa.com.br",
+          "backendProbePath": "/api/pde/products/metodo-musa-7-dias"
         }
       ]
     },
@@ -69,14 +99,19 @@
       "productSlug": "kit-whatsapp-pronto",
       "surfaces": [
         {
+          "deployTarget": "kit-whatsapp",
           "versionId": "kit-whatsapp-v2",
+          "experienceVersion": "kit-whatsapp-pronto-pde-v2",
+          "lifecycleStatus": "SUPPORTED",
+          "watchdogRequired": false,
           "serviceName": "pde-platform-frontend-kit-whatsapp",
           "containerName": "pde-platform-frontend-kit-whatsapp",
           "imageName": "pde-platform-frontend-kit-whatsapp",
           "imageVariable": "PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_IMAGE",
           "portVariable": "PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT",
           "hostPort": 5179,
-          "publicUrl": "https://kit-whatsapp-pronto.digicomdigital.com.br"
+          "publicUrl": "https://kit-whatsapp-pronto.digicomdigital.com.br",
+          "backendProbePath": "/api/pde/products/kit-whatsapp-pronto"
         }
       ]
     },
@@ -86,7 +121,11 @@
       "productSlug": "pde-planejado-36",
       "surfaces": [
         {
+          "deployTarget": "mira",
           "versionId": "mira-private-v3",
+          "experienceVersion": "mira-private-v3",
+          "lifecycleStatus": "SUPPORTED",
+          "watchdogRequired": false,
           "serviceName": "pde-platform-frontend-mira",
           "containerName": "pde-platform-frontend-mira",
           "imageName": "pde-platform-frontend-mira",
@@ -94,6 +133,7 @@
           "portVariable": "PDE_PLATFORM_FRONTEND_MIRA_PORT",
           "hostPort": 5180,
           "publicUrl": "https://v7.clubemusa.com.br/mira-private",
+          "backendProbePath": "/api/pde/mira/private/v1/contract",
           "historicalPrivateRoute": true
         }
       ]

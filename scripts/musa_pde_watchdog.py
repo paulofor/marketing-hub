@@ -9,7 +9,6 @@ import json
 from pathlib import Path
 import re
 import subprocess
-import sys
 from typing import Any, Callable
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
@@ -45,6 +44,19 @@ class MusaPublication:
             self.public_url.rstrip("/"),
             self.source_sha256,
         )
+
+
+@dataclass(frozen=True)
+class MusaSurfaceExpectation:
+    """Representa uma versão MUSA suportada que o Watchdog precisa comprovar."""
+
+    target: str
+    version_id: str
+    experience_version: str
+    public_url: str
+    source_sha256: str | None
+    minimum_revision: str | None
+    release_contract: str | None
 
 
 def _version_numbers(value: str) -> tuple[int, ...]:
@@ -127,6 +139,115 @@ def select_current_publication(documents: dict[str, dict[str, Any]]) -> MusaPubl
     return max(candidates, key=order)
 
 
+def _publications_for_frontend(
+    documents: dict[str, dict[str, Any]], frontend_version: str
+) -> list[MusaPublication]:
+    """Lista manifestos imutáveis de uma única superfície pública."""
+
+    return [
+        candidate
+        for path, document in documents.items()
+        if (candidate := _candidate(path, document)) is not None
+        and candidate.frontend_version == frontend_version
+    ]
+
+
+def select_frontend_publication(
+    documents: dict[str, dict[str, Any]], frontend_version: str
+) -> MusaPublication | None:
+    """Seleciona o manifesto mais recente da superfície, quando ela já é moderna."""
+
+    candidates = _publications_for_frontend(documents, frontend_version)
+    if not candidates:
+        return None
+    return max(
+        candidates,
+        key=lambda publication: (
+            _version_numbers(publication.experience_version),
+            publication.process_version,
+            _version_numbers(publication.contract_version),
+            publication.path,
+        ),
+    )
+
+
+def select_supported_surfaces(
+    documents: dict[str, dict[str, Any]],
+) -> list[MusaSurfaceExpectation]:
+    """Resolve todas as versões MUSA suportadas sem eleger apenas a mais nova."""
+
+    inventory_path = "pde-platform/contracts/product-runtime-isolation-v1.json"
+    inventory = documents.get(inventory_path)
+    if not isinstance(inventory, dict):
+        raise ValueError("Inventário operacional das superfícies PDE não foi encontrado")
+    products = [
+        product
+        for product in inventory.get("products", [])
+        if product.get("productId") == MUSA_PRODUCT_ID
+        and product.get("productSlug") == MUSA_PRODUCT_SLUG
+    ]
+    if len(products) != 1:
+        raise ValueError("Inventário deve conter exatamente um produto Método MUSA")
+
+    expectations: list[MusaSurfaceExpectation] = []
+    for surface in products[0].get("surfaces", []):
+        if (
+            surface.get("lifecycleStatus") != "SUPPORTED"
+            or surface.get("watchdogRequired") is not True
+        ):
+            continue
+        target = surface.get("deployTarget")
+        version_id = surface.get("versionId")
+        experience_version = surface.get("experienceVersion")
+        public_url = surface.get("publicUrl")
+        if not all(
+            isinstance(value, str) and value.strip()
+            for value in (target, version_id, experience_version, public_url)
+        ):
+            raise ValueError("Superfície MUSA suportada possui identidade incompleta")
+
+        publication = select_frontend_publication(documents, target)
+        source_sha256 = None
+        release_contract = None
+        minimum_revision = surface.get("legacyMinimumRevision")
+        if publication is not None:
+            if (
+                publication.experience_version != experience_version
+                or publication.public_url.rstrip("/") != public_url.rstrip("/")
+            ):
+                raise ValueError(
+                    f"Manifesto e inventário divergem para a superfície {target}"
+                )
+            source_sha256 = publication.source_sha256
+            release_contract = publication.path
+            minimum_revision = None
+        elif not isinstance(minimum_revision, str) or not SHA40.fullmatch(
+            minimum_revision
+        ):
+            raise ValueError(
+                f"Superfície legada {target} não possui revisão mínima verificável"
+            )
+
+        expectations.append(
+            MusaSurfaceExpectation(
+                target=target,
+                version_id=version_id,
+                experience_version=experience_version,
+                public_url=public_url.rstrip("/"),
+                source_sha256=source_sha256,
+                minimum_revision=minimum_revision,
+                release_contract=release_contract,
+            )
+        )
+
+    if not expectations:
+        raise ValueError("Nenhuma superfície suportada do Método MUSA foi encontrada")
+    targets = [expectation.target for expectation in expectations]
+    if len(targets) != len(set(targets)):
+        raise ValueError("Inventário MUSA contém target de Watchdog duplicado")
+    return sorted(expectations, key=lambda expectation: _version_numbers(expectation.target))
+
+
 def documents_at(repository_root: Path, ref: str) -> dict[str, dict[str, Any]]:
     """Le os contratos PDE exatamente na revisao Git informada."""
 
@@ -177,6 +298,71 @@ def publication_changed(repository_root: Path, base: str, head: str) -> bool:
     return previous is None or previous.identity != current.identity
 
 
+def publication_changed_for_frontend(
+    repository_root: Path, base: str, head: str, frontend_version: str
+) -> bool:
+    """Detecta promoção pendente somente para a versão pública informada."""
+
+    previous = select_frontend_publication(
+        documents_at(repository_root, base), frontend_version
+    )
+    current = select_frontend_publication(
+        documents_at(repository_root, head), frontend_version
+    )
+    if previous is None and current is None:
+        return False
+    if previous is None or current is None:
+        return True
+    return previous.identity != current.identity
+
+
+def supported_surfaces_at(
+    repository_root: Path, ref: str
+) -> list[MusaSurfaceExpectation]:
+    """Resolve o conjunto completo de superfícies MUSA suportadas em uma revisão Git."""
+
+    return select_supported_surfaces(documents_at(repository_root, ref))
+
+
+def validate_surface_diagnostics(
+    expectation: MusaSurfaceExpectation,
+    health: dict[str, Any],
+    diagnostics: dict[str, Any],
+) -> str:
+    """Confere a identidade pública de uma superfície moderna ou legada suportada."""
+
+    if health.get("status") != "UP":
+        raise ValueError(
+            f"Health público da superfície MUSA {expectation.target} não está UP"
+        )
+    expected: dict[str, Any] = {
+        "status": "UP",
+        "surface": "pde-platform-frontend",
+        "version": expectation.version_id,
+        "imageVersionId": expectation.version_id,
+        "publicUrl": expectation.public_url,
+        "experienceVersion": expectation.experience_version,
+        "productSlug": MUSA_PRODUCT_SLUG,
+    }
+    if expectation.source_sha256 is not None:
+        expected["frontendSourceSha256"] = expectation.source_sha256
+    for field, expected_value in expected.items():
+        observed = diagnostics.get(field)
+        if field == "publicUrl" and isinstance(observed, str):
+            observed = observed.rstrip("/")
+        if observed != expected_value:
+            raise ValueError(
+                f"Diagnóstico MUSA {expectation.target} diverge em {field}: "
+                f"esperado={expected_value!r}, observado={observed!r}"
+            )
+    revision = diagnostics.get("commitSha")
+    if not isinstance(revision, str) or not SHA40.fullmatch(revision):
+        raise ValueError(
+            f"Commit público da superfície MUSA {expectation.target} está ausente ou inválido"
+        )
+    return revision
+
+
 def validate_public_diagnostics(
     publication: MusaPublication,
     health: dict[str, Any],
@@ -184,31 +370,19 @@ def validate_public_diagnostics(
 ) -> str:
     """Confere saude, produto, versao, fonte e commit observados no dominio publico."""
 
-    if health.get("status") != "UP":
-        raise ValueError("Health publico do PDE Metodo MUSA nao esta UP")
-    expected = {
-        "status": "UP",
-        "surface": "pde-platform-frontend",
-        "version": publication.frontend_version,
-        "imageVersionId": publication.frontend_version,
-        "publicUrl": publication.public_url,
-        "experienceVersion": publication.experience_version,
-        "productSlug": MUSA_PRODUCT_SLUG,
-        "frontendSourceSha256": publication.source_sha256,
-    }
-    for field, expected_value in expected.items():
-        observed = diagnostics.get(field)
-        if field == "publicUrl" and isinstance(observed, str):
-            observed = observed.rstrip("/")
-        if observed != expected_value:
-            raise ValueError(
-                f"Diagnostico publico MUSA diverge em {field}: "
-                f"esperado={expected_value!r}, observado={observed!r}"
-            )
-    revision = diagnostics.get("commitSha")
-    if not isinstance(revision, str) or not SHA40.fullmatch(revision):
-        raise ValueError("Commit publico do PDE Metodo MUSA esta ausente ou invalido")
-    return revision
+    return validate_surface_diagnostics(
+        MusaSurfaceExpectation(
+            target=publication.frontend_version,
+            version_id=publication.frontend_version,
+            experience_version=publication.experience_version,
+            public_url=publication.public_url,
+            source_sha256=publication.source_sha256,
+            minimum_revision=None,
+            release_contract=publication.path,
+        ),
+        health,
+        diagnostics,
+    )
 
 
 def _read_json(url: str, timeout: float = 15.0) -> dict[str, Any]:
@@ -235,38 +409,106 @@ def probe_publication(
     return validate_public_diagnostics(publication, health, diagnostics)
 
 
+def probe_surface(
+    expectation: MusaSurfaceExpectation,
+    reader: Callable[[str], dict[str, Any]] = _read_json,
+) -> str:
+    """Consulta uma superfície suportada e devolve a revisão realmente observada."""
+
+    health = reader(urljoin(expectation.public_url + "/", "healthz"))
+    diagnostics = reader(
+        urljoin(expectation.public_url + "/", "version-diagnostics.json")
+    )
+    return validate_surface_diagnostics(expectation, health, diagnostics)
+
+
+def revision_satisfies_minimum(
+    repository_root: Path, minimum_revision: str, observed_revision: str
+) -> bool:
+    """Comprova que uma superfície legada não regrediu abaixo da revisão conhecida."""
+
+    for revision in (minimum_revision, observed_revision):
+        exists = subprocess.run(
+            ["git", "cat-file", "-e", f"{revision}^{{commit}}"],
+            cwd=repository_root,
+            capture_output=True,
+            check=False,
+        )
+        if exists.returncode != 0:
+            return False
+    return (
+        subprocess.run(
+            ["git", "merge-base", "--is-ancestor", minimum_revision, observed_revision],
+            cwd=repository_root,
+            capture_output=True,
+            check=False,
+        ).returncode
+        == 0
+    )
+
+
+def probe_supported_surfaces(
+    expectations: list[MusaSurfaceExpectation],
+    repository_root: Path,
+    reader: Callable[[str], dict[str, Any]] = _read_json,
+    minimum_validator: Callable[[Path, str, str], bool] = revision_satisfies_minimum,
+) -> list[dict[str, Any]]:
+    """Sonda todas as versões atendidas e preserva um diagnóstico por superfície."""
+
+    results: list[dict[str, Any]] = []
+    for expectation in expectations:
+        result: dict[str, Any] = {
+            "target": expectation.target,
+            "versionId": expectation.version_id,
+            "experienceVersion": expectation.experience_version,
+            "publicUrl": expectation.public_url,
+            "releaseContract": expectation.release_contract,
+            "minimumRevision": expectation.minimum_revision,
+            "expectedSourceSha256": expectation.source_sha256,
+        }
+        try:
+            revision = probe_surface(expectation, reader)
+            if expectation.minimum_revision is not None and not minimum_validator(
+                repository_root, expectation.minimum_revision, revision
+            ):
+                raise ValueError(
+                    f"Revisão {revision} de {expectation.target} é anterior ou "
+                    f"incompatível com o mínimo {expectation.minimum_revision}"
+                )
+            result.update(status="UP", revision=revision)
+        except Exception as error:  # cada versão deve continuar aparecendo no relatório
+            result.update(status="ERROR", revision="MISSING", error=str(error))
+        results.append(result)
+    return results
+
+
 def main() -> int:
-    """Executa a sonda publica e grava a revisao para o GitHub Actions."""
+    """Executa a sonda de todas as versões MUSA atendidas e grava o relatório."""
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repository-root", default=".")
     parser.add_argument("--ref", default="HEAD")
     parser.add_argument("--output")
+    parser.add_argument("--report")
     args = parser.parse_args()
 
-    revision = "MISSING"
-    exit_code = 0
+    repository_root = Path(args.repository_root).resolve()
     try:
-        publication = publication_at(Path(args.repository_root).resolve(), args.ref)
-        revision = probe_publication(publication)
-        print(
-            json.dumps(
-                {
-                    "status": "UP",
-                    "revision": revision,
-                    "manifest": publication.path,
-                    "publicUrl": publication.public_url,
-                    "frontendVersion": publication.frontend_version,
-                    "experienceVersion": publication.experience_version,
-                },
-                ensure_ascii=False,
-            )
+        results = probe_supported_surfaces(
+            supported_surfaces_at(repository_root, args.ref), repository_root
         )
-    except Exception as error:  # a falha deve chegar ao avaliador como revisao nao comprovada
-        print(f"Falha ao comprovar PDE Metodo MUSA: {error}", file=sys.stderr)
+        status = "UP" if all(item["status"] == "UP" for item in results) else "ERROR"
+        document = {"status": status, "surfaces": results}
+        exit_code = 0 if status == "UP" else 1
+    except Exception as error:  # erro de contrato também precisa produzir evidência auditável
+        document = {"status": "ERROR", "surfaces": [], "error": str(error)}
         exit_code = 1
 
-    line = f"revision={revision}\n"
+    rendered = json.dumps(document, ensure_ascii=False, indent=2)
+    print(rendered)
+    if args.report:
+        Path(args.report).write_text(rendered + "\n", encoding="utf-8")
+    line = f"status={document['status']}\n"
     if args.output:
         with Path(args.output).open("a", encoding="utf-8") as stream:
             stream.write(line)

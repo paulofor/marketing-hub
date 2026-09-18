@@ -30,11 +30,33 @@ curl_v7() {
     "https://v7.clubemusa.com.br$1"
 }
 
+curl_v5() {
+  compose exec -T proxy curl --fail --silent --show-error --insecure \
+    --resolve "v5.clubemusa.com.br:443:127.0.0.1" \
+    "https://v5.clubemusa.com.br$1"
+}
+
+curl_v6() {
+  compose exec -T proxy curl --fail --silent --show-error --insecure \
+    --resolve "v6.clubemusa.com.br:443:127.0.0.1" \
+    "https://v6.clubemusa.com.br$1"
+}
+
 curl_v8() {
   compose exec -T proxy curl --fail --silent --show-error --insecure \
     --resolve "v8.clubemusa.com.br:443:127.0.0.1" \
     "https://v8.clubemusa.com.br$1"
 }
+
+vega_v5_diagnostics="$(curl_v5 /version-diagnostics.json)"
+grep -q '"imageVersionId": "v5"' <<<"${vega_v5_diagnostics}"
+grep -q '"experienceVersion": "musa-pde-entry-v5-video-explicativo"' \
+  <<<"${vega_v5_diagnostics}"
+
+vega_v6_diagnostics="$(curl_v6 /version-diagnostics.json)"
+grep -q '"imageVersionId": "v6"' <<<"${vega_v6_diagnostics}"
+grep -q '"experienceVersion": "musa-pde-entry-v6-video-motivacional"' \
+  <<<"${vega_v6_diagnostics}"
 
 vega_diagnostics="$(curl_v7 /version-diagnostics.json)"
 grep -q '"productSlug": "metodo-musa-7-dias"' <<<"${vega_diagnostics}"
@@ -53,6 +75,7 @@ mira_diagnostics="$(curl_v7 /mira-private/version-diagnostics.json)"
 grep -q '"surface": "pde-platform-frontend-mira"' <<<"${mira_diagnostics}"
 grep -q '"productId": 10' <<<"${mira_diagnostics}"
 grep -q '"productSlug": "pde-planejado-36"' <<<"${mira_diagnostics}"
+grep -Eq '"frontendSourceSha256": "[0-9a-f]{64}"' <<<"${mira_diagnostics}"
 
 mira_asset="$(sed -n 's/.*src="\([^"]*\.js\)".*/\1/p' <<<"${mira_html}")"
 test -n "${mira_asset}"
@@ -73,14 +96,20 @@ if compose exec -T pde-platform-frontend-v7 \
   exit 1
 fi
 
+vega_v5_container_id_before="$(compose ps -q pde-platform-frontend-v5)"
+vega_v6_container_id_before="$(compose ps -q pde-platform-frontend-v6)"
 vega_container_id_before="$(compose ps -q pde-platform-frontend-v7)"
 vega_v12_container_id_before="$(compose ps -q pde-platform-frontend-v8)"
 mira_container_id_before="$(compose ps -q pde-platform-frontend-mira)"
 compose up -d --force-recreate --no-deps --wait pde-platform-frontend-mira
+vega_v5_container_id_after="$(compose ps -q pde-platform-frontend-v5)"
+vega_v6_container_id_after="$(compose ps -q pde-platform-frontend-v6)"
 vega_container_id_after="$(compose ps -q pde-platform-frontend-v7)"
 vega_v12_container_id_after="$(compose ps -q pde-platform-frontend-v8)"
 mira_container_id_after="$(compose ps -q pde-platform-frontend-mira)"
 
+test "${vega_v5_container_id_before}" = "${vega_v5_container_id_after}"
+test "${vega_v6_container_id_before}" = "${vega_v6_container_id_after}"
 test "${vega_container_id_before}" = "${vega_container_id_after}"
 test "${vega_v12_container_id_before}" = "${vega_v12_container_id_after}"
 test "${mira_container_id_before}" != "${mira_container_id_after}"
@@ -88,4 +117,4 @@ curl_v7 /mira-private/version-diagnostics.json | grep -q '"productId": 10'
 curl_v8 /version-diagnostics.json \
   | grep -q '"experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"'
 
-echo 'Roteamento e ciclo de vida isolados de Mira, Vega v7 e Vega v12 validados localmente.'
+echo 'Roteamento e ciclo de vida isolados de Mira e Vega v5–v8 validados localmente.'

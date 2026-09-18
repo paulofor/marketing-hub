@@ -1,0 +1,8 @@
+FROM nginx:1.27-alpine
+
+ARG FRONTEND_SOURCE_SHA256
+RUN printf '%s\n' "${FRONTEND_SOURCE_SHA256}" > /usr/share/nginx/html/frontend-source.sha256
+
+COPY frontend-nginx.conf /etc/nginx/conf.d/default.conf
+COPY frontend-entrypoint.sh /docker-entrypoint.d/10-fixture-runtime.sh
+RUN chmod +x /docker-entrypoint.d/10-fixture-runtime.sh

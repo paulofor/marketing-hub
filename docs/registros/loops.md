@@ -6017,3 +6017,28 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   fingerprint divergente, dois alvos no mesmo merge e futuras revisões sem nomes fixos. Duas rodadas
   locais completas aprovaram 36 jornadas cada em desktop, iPhone 15 Pro e Pixel 7. Evidências e
   limites estão em `docs/homologacao/vega-449-paridade-artefato-v1.md`.
+
+## LOOP-PDE-DEPLOY-DE-VERSAO-REINICIA-RUNTIMES-COMPARTILHADOS — 18/09/2026
+
+- **Sintoma confirmado:** publicar uma única versão do Método MUSA mantinha imagens separadas para
+  v5–v8, mas o workflow removia e recriava backend e workers compartilhados. A própria versão alvo
+  era removida antes de sua candidata ser comprovada, ampliando indisponibilidade e risco de bloquear
+  outras jornadas enquanto o produto evoluía.
+- **Histórico e causa-raiz:** a separação existia no Compose, porém o publicador ainda tratava toda a
+  PDE Platform como uma única unidade de ciclo de vida. O Watchdog elegia somente o manifesto mais
+  novo, portanto uma versão anterior atendendo clientes podia ficar invisível ao monitoramento.
+- **Alternativas avaliadas:** apenas `up --no-deps` reduziria o impacto, mas manteria troca sem
+  preflight; um ambiente completo por versão isolaria tudo com custo e complexidade altos; candidata
+  efêmera, promoção por serviço e rollback exato preservam o motor compartilhado com menor risco. A
+  terceira foi adotada.
+- **Correção sistêmica:** o inventário declara todas as superfícies suportadas; frontend, backend e
+  cada worker possuem seleção independente; a candidata frontend é validada antes do cutover; somente
+  o alvo é trocado; a URL pública comprova a identidade promovida e a restaurada; falha restaura a
+  identidade anterior; backend exige compatibilidade ampla e
+  recarrega os proxies sem recriá-los; suas referências auditáveis preservam as imagens realmente em
+  execução nos frontends e workers; recibos preservam a transação.
+- **Prevenção:** regressões Docker comprovam candidata inválida sem impacto, promoção exclusiva da
+  v8, rollback frontend/backend e troca de worker sem recriar v5–v7 ou componentes vizinhos. O
+  Watchdog verifica cada versão `SUPPORTED`, e contratos rejeitam o target `all`, reinício acoplado e
+  inventário ambíguo. Evidência em
+  `docs/homologacao/pde-publicacao-independente-versoes-v1.md`.

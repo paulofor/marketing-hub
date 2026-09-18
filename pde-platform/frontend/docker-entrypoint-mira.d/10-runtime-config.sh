@@ -12,7 +12,25 @@ FRONTEND_IMAGE_VERSION_ID="${PDE_FRONTEND_VERSION_ID:-mira-private-v3}"
 DEPLOY_COMMIT_SHA="${PDE_DEPLOY_COMMIT_SHA:-unknown}"
 DEPLOY_IMAGE_TAG="${PDE_DEPLOY_IMAGE_TAG:-unknown}"
 DEPLOYED_AT="${PDE_DEPLOY_DEPLOYED_AT:-}"
-CONTAINER_HOSTNAME="${HOSTNAME:-unknown}"
+CONTAINER_HOSTNAME="${PDE_CONTAINER_HOSTNAME:-$(hostname)}"
+SOURCE_FINGERPRINT_FILE="${PDE_FRONTEND_SOURCE_FINGERPRINT_FILE:-${ROOT}/frontend-source.sha256}"
+FRONTEND_SOURCE_SHA256=""
+
+if [ -s "${SOURCE_FINGERPRINT_FILE}" ]; then
+  FRONTEND_SOURCE_SHA256="$(tr -d '\r\n' < "${SOURCE_FINGERPRINT_FILE}")"
+fi
+
+case "${FRONTEND_SOURCE_SHA256}" in
+  *[!0-9a-f]*|'')
+    echo 'Fingerprint SHA-256 da fonte frontend de Mira ausente ou inválido.' >&2
+    exit 1
+    ;;
+esac
+
+if [ "${#FRONTEND_SOURCE_SHA256}" -ne 64 ]; then
+  echo 'Fingerprint SHA-256 da fonte frontend de Mira deve possuir 64 caracteres.' >&2
+  exit 1
+fi
 
 json_escape() {
   printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
@@ -46,6 +64,7 @@ cat > "${ROOT}/version-diagnostics.json" <<EOF
   "imageVersionId": "$(json_escape "${FRONTEND_IMAGE_VERSION_ID}")",
   "imageTag": "$(json_escape "${DEPLOY_IMAGE_TAG}")",
   "commitSha": "$(json_escape "${DEPLOY_COMMIT_SHA}")",
+  "frontendSourceSha256": "$(json_escape "${FRONTEND_SOURCE_SHA256}")",
   "deployedAt": "$(json_escape "${DEPLOYED_AT}")",
   "containerHostname": "$(json_escape "${CONTAINER_HOSTNAME}")"
 }

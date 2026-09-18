@@ -34,11 +34,17 @@ for required_contract in \
   'Resolve frontend deployment scope' \
   'resolve-pde-frontend-deploy-target.mjs' \
   'PDE_DEPLOY_FRONTEND_VERSION: ${{ needs.deployment_scope.outputs.frontend-version }}' \
-  "v8) FRONTEND_SERVICES='pde-platform-frontend-v8'" \
+  'PDE_DEPLOY_BACKEND: ${{ needs.deployment_scope.outputs.deploy-backend }}' \
+  "needs.deployment_scope.outputs.has-deployment == 'true'" \
+  'scripts/deploy-versioned-frontend.sh' \
+  'scripts/deploy-shared-component.sh' \
+  'frontend-contract-sha256' \
+  'frontend-source-sha256' \
+  'pde-deployment-receipts-' \
+  'Validate backend compatibility with every supported PDE version' \
   'PDE_PLATFORM_FRONTEND_V8_IMAGE=' \
   'PDE_PLATFORM_FRONTEND_V8_PORT=' \
   'FRONTEND_V8_IMAGE_NAME' \
-  "mira) FRONTEND_SERVICES='pde-platform-frontend-mira'" \
   'PDE_PLATFORM_FRONTEND_MIRA_IMAGE=' \
   'PDE_PLATFORM_FRONTEND_MIRA_PORT=' \
   'bootstrap-legacy-route' \
@@ -46,6 +52,17 @@ for required_contract in \
   'run-targeted-production-smokes.sh "${TARGETED_FRONTEND_VERSION}"'; do
   if ! grep -Fq "${required_contract}" "${workflow}"; then
     echo "[ARQUITETURA] O deploy PDE perdeu o contrato de integração segura com o proxy existente: ${required_contract}" >&2
+    exit 1
+  fi
+done
+
+for forbidden_contract in \
+  'FRONTEND_SERVICES=' \
+  'cleanup_published_port' \
+  'docker rm -f pde-platform-backend pde-ai-worker pde-retention-worker' \
+  "frontend_version=all"; do
+  if grep -Fq "${forbidden_contract}" "${workflow}"; then
+    echo "[ARQUITETURA] O deploy PDE ainda contém operação acoplada: ${forbidden_contract}" >&2
     exit 1
   fi
 done
@@ -78,8 +95,8 @@ if ! grep -Fq "if: \${{ always() && steps.pde_ssh.outcome == 'success' }}" "${wo
   exit 1
 fi
 
-if [ "$(grep -Fc "if: env.PDE_DEPLOY_FRONTEND_VERSION != 'none'" "${workflow}")" -ne 2 ]; then
-  echo '[ARQUITETURA] O deploy PDE deve executar o smoke da superfície selecionada pelo manifesto.' >&2
+if [ "$(grep -Fc "if: env.PDE_DEPLOY_FRONTEND_VERSION != 'none' || env.PDE_DEPLOY_BACKEND == 'true'" "${workflow}")" -ne 2 ]; then
+  echo '[ARQUITETURA] O deploy PDE deve validar a superfície selecionada ou todas após backend.' >&2
   exit 1
 fi
 
@@ -104,6 +121,16 @@ fi
 bash "${script_dir}/test-targeted-production-smokes.sh"
 bash "${script_dir}/test-public-health-commercial-source.sh"
 node --test "${script_dir}/test-product-runtime-isolation-contract.mjs"
+python3 "${script_dir}/test_pde_release_contract.py"
+
+if [[ "${PDE_SKIP_DOCKER_DEPLOY_REGRESSION:-false}" != "true" ]]; then
+  bash "${script_dir}/test-independent-version-deploy.sh"
+fi
+
+if ! grep -Fq 'pde-platform-frontend-v8' "${script_dir}/reload-published-frontend-proxies.sh"; then
+  echo '[ARQUITETURA] A troca do backend deve reconectar também o proxy interno da v8.' >&2
+  exit 1
+fi
 
 if ! grep -Fq 'PDE_MIRA_PRIVATE_QA_TOKEN: ${{ secrets.PDE_MIRA_PRIVATE_QA_TOKEN }}' "${workflow}" \
   || ! grep -Fq "export PDE_MIRA_PRIVATE_QA_TOKEN='" "${workflow}" \

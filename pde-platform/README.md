@@ -102,12 +102,25 @@ teste e inspecionar os dados gravados. Sem essa opção, o runner remove
 containers, rede e volumes ao final, inclusive quando alguma jornada falha.
 
 O deploy produtivo do Método MUSA também valida os subdomínios versionados. Em
-`main`, o workflow publica apenas a infraestrutura neutra, confirma a saúde das versões ativas e
-executa o smoke de Vega v7 sem escolher implicitamente outro produto.
-O frontend público de cada versão é publicado por `frontend_version`
-explícita no `workflow_dispatch`, usando imagem e container próprios para cada
-versão, para impedir que uma alteração da v6 atualize/reinicie a v5 enquanto
-existir cliente ou campanha usando a versão anterior.
+`main`, o workflow resolve pelo diff somente os componentes realmente alterados. Uma superfície
+frontend só é elegível quando um manifesto imutável pronto declara aquela versão e o fingerprint da
+fonte atual. Mudanças apenas em workflow ou scripts não reiniciam runtimes.
+
+O frontend público é promovido como uma única candidata: a imagem passa por health, diagnóstico,
+identidade e API antes da troca; somente o serviço alvo é recriado; a URL pública comprova a mesma
+identidade depois da troca; uma falha pós-troca restaura e revalida publicamente a imagem anterior.
+Backend, worker de IA e worker de retenção usam targets independentes e nunca são
+reiniciados por uma publicação de frontend. O backend só é elegível depois da matriz de
+compatibilidade de todas as versões suportadas.
+
+Homologação transacional local:
+
+```bash
+bash pde-platform/scripts/test-independent-version-deploy.sh
+```
+
+Esse teste usa o projeto Compose exclusivo da sandbox, injeta candidata inválida e falha pós-troca,
+comprova rollback exato e confirma que versões e componentes fora do alvo mantêm seus containers.
 
 Deploy de produção:
 
@@ -124,10 +137,10 @@ Deploy de produção:
   `mira_proxy_mode=bootstrap-legacy-route`; depois publique o proxy pelo workflow proprietário e
   repita Mira com o modo padrão `isolated`. O bootstrap somente aceita a rota antiga quando ela
   continua saudável no Vega v7 e o novo container já passou na porta exclusiva.
-- Use `workflow_dispatch` com `frontend_version=v5`, `v6`, `v7` ou `v8` para publicar somente a superfície escolhida, `frontend_version=all` apenas quando a mudança for comprovadamente comum e aprovada para todas, e `frontend_version=none` quando quiser publicar só backend/worker.
+- Use `workflow_dispatch` com uma única `frontend_version` para publicar somente a superfície escolhida. Versões MUSA exigem manifesto imutável vigente; Mira e Kit WhatsApp preservam transitoriamente o inventário suportado como contrato manual. Não existe publicação `all`. Use `frontend_version=none` e escolha exatamente um `shared_component` para backend ou worker.
 - O acesso privado histórico usa `https://v7.clubemusa.com.br/mira-private#access=<token-url-encoded>`; o fragmento é removido antes da primeira chamada HTTP e nunca deve ser substituído por token em path ou query string. A URL é preservada por compatibilidade, mas o proxy a entrega pelo container exclusivo de Mira. Esse contrato v6 permanece somente para preservar evidências antigas e não participa do gate multiagente v7.
 - O processo v7 usa sessões frescas protegidas por `PDE_INTERNAL_API_TOKEN`, executadas pelo harness em desktop, iPhone 15 Pro e Pixel 7 com `trafficClass=AGENT_VALIDATION` e `mh_internal_test`. Convite humano e token de QA não podem ser usados como fallback; nenhuma execução sintética alimenta leitura, preferência, checkout, venda ou satisfação humana.
-- O container legado `pde-platform-frontend` não deve ser usado como destino público de versão. Ele é removido automaticamente quando o deploy incluir `frontend_version=v5` ou `frontend_version=all`, para liberar a porta histórica `5176` para `pde-platform-frontend-v5`.
+- O container legado `pde-platform-frontend` não deve ser usado como destino público de versão. Ele é removido automaticamente somente na promoção direcionada de `frontend_version=v5`, para liberar a porta histórica `5176` para `pde-platform-frontend-v5`.
 - Para ambientes de preview ou rollback, sobrescreva `PDE_EXPERIENCE_VERSION_OVERRIDE`, `VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE`, `PDE_DEPLOY_FRONTEND_URL` e `PDE_APP_BASE_URL` apenas fora dos subdomínios versionados produtivos.
 - Defina `PDE_PEPPER_API_TOKEN` em produção para reconciliar compras pagas quando o postback da Pepper não for entregue.
 - Mantenha `PDE_PEPPER_OFFER_HASHES=owm6x,c8mnn` durante a transição: `owm6x` é a oferta atual e `c8mnn` cobre compras reais antigas.

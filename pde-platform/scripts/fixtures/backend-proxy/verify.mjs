@@ -194,14 +194,33 @@ const workflow = await readFile(
   ".github/workflows/pde-platform-metodo-musa-ci.yml",
   "utf8",
 );
+const sharedPublisher = await readFile(
+  "pde-platform/scripts/deploy-shared-component.sh",
+  "utf8",
+);
 assert.ok(
   workflow.includes(
-    "< pde-platform/scripts/reload-published-frontend-proxies.sh",
+    "--include 'scripts/reload-published-frontend-proxies.sh'",
   ),
 );
 assert.ok(
-  workflow.indexOf("Reconnect published frontend proxies") <
+  workflow.indexOf("Publish PDE Platform production") <
     workflow.indexOf("Validate targeted production public contracts"),
+);
+assert.ok(
+  workflow.includes("bash scripts/deploy-shared-component.sh backend"),
+);
+assert.ok(
+  sharedPublisher.includes(
+    'proxy_reload_script="${script_dir}/reload-published-frontend-proxies.sh"',
+  ),
+);
+assert.ok(
+  sharedPublisher.lastIndexOf("validate_component") <
+    sharedPublisher.lastIndexOf("reload_backend_consumers"),
+);
+assert.ok(
+  sharedPublisher.match(/restore_previous\(\)[\s\S]*reload_backend_consumers/),
 );
 assert.ok(
   workflow.includes("bash pde-platform/scripts/test-backend-proxy-recovery.sh"),

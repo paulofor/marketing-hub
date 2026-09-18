@@ -58,6 +58,15 @@ test("o Compose materializa cada identidade declarada", async () => {
 
   for (const product of definition.products) {
     for (const surface of product.surfaces) {
+      assert.equal(
+        surface.lifecycleStatus,
+        "SUPPORTED",
+        `[ARQUITETURA] Superfície sem ciclo de vida suportado: ${surface.deployTarget}`,
+      );
+      assert.ok(
+        surface.experienceVersion,
+        `[ARQUITETURA] Superfície sem experienceVersion: ${surface.deployTarget}`,
+      );
       assert.match(
         compose,
         new RegExp(`^  ${surface.serviceName}:$`, "m"),
@@ -88,6 +97,7 @@ test("Mira não volta ao bundle nem ao nginx do Vega", async () => {
     miraStyles,
     miraNginx,
     miraDockerfile,
+    miraEntrypoint,
     miraVite,
     dockerIgnore,
   ] =
@@ -99,6 +109,7 @@ test("Mira não volta ao bundle nem ao nginx do Vega", async () => {
       source("pde-platform/frontend/src/mira.css"),
       source("pde-platform/frontend/nginx.mira.conf"),
       source("pde-platform/frontend/Dockerfile.mira"),
+      source("pde-platform/frontend/docker-entrypoint-mira.d/10-runtime-config.sh"),
       source("pde-platform/frontend/vite.mira.config.ts"),
       source("pde-platform/frontend/.dockerignore"),
     ]);
@@ -126,6 +137,10 @@ test("Mira não volta ao bundle nem ao nginx do Vega", async () => {
   assert.match(miraNginx, /mira-private-assets/);
   assert.match(miraDockerfile, /vite\.mira\.config\.ts|build:mira/);
   assert.match(miraDockerfile, /nginx\.mira\.conf/);
+  assert.match(miraDockerfile, /source-fingerprint\.mjs/);
+  assert.match(miraDockerfile, /frontend-source\.sha256/);
+  assert.match(miraEntrypoint, /FRONTEND_SOURCE_SHA256/);
+  assert.match(miraEntrypoint, /"frontendSourceSha256"/);
   assert.match(miraVite, /publicDir:\s*false/);
   assert.match(dockerIgnore, /^dist-mira$/m);
 });
@@ -146,8 +161,11 @@ test("workflow, proxy e smoke publicam Mira sem operar Vega", async () => {
     "Build isolated Mira surface",
     "Validate product-exclusive build artifacts",
     "PDE_FRONTEND_VERSION_ID=mira-private-v3",
-    "mira) FRONTEND_SERVICES='pde-platform-frontend-mira'",
     "PDE_DEPLOY_FRONTEND_VERSION: ${{ needs.deployment_scope.outputs.frontend-version }}",
+    "scripts/deploy-versioned-frontend.sh",
+    "scripts/deploy-shared-component.sh",
+    "frontend-contract-sha256",
+    "PDE_DEPLOY_BACKEND",
     "bootstrap-legacy-route",
     "PDE_MIRA_PROXY_MODE",
     "bootstrap-legacy-route é permitido somente no primeiro deploy direcionado de Mira",
@@ -158,11 +176,18 @@ test("workflow, proxy e smoke publicam Mira sem operar Vega", async () => {
   ]) {
     assert.ok(workflow.includes(marker), `[ARQUITETURA] Workflow sem ${marker}`);
   }
+  assert.doesNotMatch(workflow, /FRONTEND_SERVICES=/);
+  assert.doesNotMatch(
+    workflow,
+    /docker rm -f pde-platform-backend pde-ai-worker pde-retention-worker/,
+  );
   assert.match(proxy, /location = \/mira-private/);
   assert.match(proxy, /pde-platform-frontend-mira:80/);
   assert.match(proxy, /location \^~ \/mira-private-assets\//);
   assert.match(smoke, /validate_mira/);
   assert.match(smokeTest, /run_target mira/);
+  assert.match(proxyValidation, /vega_v5_container_id_before/);
+  assert.match(proxyValidation, /vega_v6_container_id_before/);
   assert.match(proxyValidation, /vega_container_id_before/);
   assert.match(proxyValidation, /force-recreate --no-deps --wait pde-platform-frontend-mira/);
 });

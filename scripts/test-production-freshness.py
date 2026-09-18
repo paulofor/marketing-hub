@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import unittest
 import sys
+from unittest import mock
 
 import musa_pde_watchdog
 
@@ -166,7 +167,71 @@ class FreshnessTest(unittest.TestCase):
         runs = freshness.live_deploys(
             payload, NOW, 75, freshness.MUSA_PDE_DEPLOY_WORKFLOW)
         self.assertEqual([run.id for run in runs], [3])
-        self.assertEqual(self.evaluate(target="musa_pde", deploys=runs)["status"], "DEPLOYING")
+        self.assertEqual(
+            self.evaluate(target="musa_pde:v8", deploys=runs)["status"],
+            "DEPLOYING",
+        )
+
+    def test_detector_scopes_musa_change_to_one_frontend_version(self):
+        detector = freshness.DeploymentDetector(ROOT)
+        with mock.patch.object(
+            freshness,
+            "publication_changed_for_frontend",
+            return_value=True,
+        ) as changed:
+            self.assertTrue(detector.changed(BASE, HEAD, "musa_pde:v7"))
+        changed.assert_called_once_with(ROOT, BASE, HEAD, "v7")
+
+    def test_musa_report_must_cover_every_supported_surface(self):
+        expectations = [
+            musa_pde_watchdog.MusaSurfaceExpectation(
+                target=target,
+                version_id=target,
+                experience_version=f"experience-{target}",
+                public_url=f"https://{target}.example.com",
+                source_sha256=None,
+                minimum_revision=BASE,
+                release_contract=None,
+            )
+            for target in ("v5", "v6", "v7", "v8")
+        ]
+        report = {
+            "surfaces": [
+                {"target": item.target, "status": "UP", "revision": BASE}
+                for item in expectations
+            ]
+        }
+        with mock.patch.object(
+            freshness, "supported_surfaces_at", return_value=expectations
+        ):
+            targets = freshness.musa_surface_targets(report, ROOT, "main")
+            self.assertEqual(
+                [item["target"] for item in targets],
+                ["musa_pde:v5", "musa_pde:v6", "musa_pde:v7", "musa_pde:v8"],
+            )
+            with self.assertRaisesRegex(ValueError, "não cobre exatamente"):
+                freshness.musa_surface_targets(
+                    {"surfaces": report["surfaces"][:-1]}, ROOT, "main"
+                )
+
+    def test_failed_surface_probe_is_not_hidden_by_another_live_deploy(self):
+        evaluated = {
+            "target": "musa_pde:v5",
+            "status": "DEPLOYING",
+            "reason": "há deploy em andamento",
+        }
+        result = freshness.attach_musa_probe(
+            evaluated,
+            {
+                "surface": "v5",
+                "public_url": "https://v5.example.com",
+                "probe_status": "ERROR",
+                "probe_error": "health indisponível",
+            },
+        )
+        self.assertEqual(result["status"], "STALE")
+        self.assertIn("v5", result["reason"])
+        self.assertIn("health indisponível", result["reason"])
 
 
 class MusaPdeWatchdogTest(unittest.TestCase):
@@ -199,6 +264,35 @@ class MusaPdeWatchdogTest(unittest.TestCase):
                 "publicUrl": f"https://{frontend}.clubemusa.com.br/",
                 "requiredFrontendSourceSha256": "d" * 64,
             },
+        }
+
+    def inventory(self):
+        return {
+            "products": [
+                {
+                    "productId": 4,
+                    "productSlug": "metodo-musa-7-dias",
+                    "surfaces": [
+                        {
+                            "deployTarget": "v7",
+                            "versionId": "v7",
+                            "experienceVersion": "musa-pde-entry-v7",
+                            "publicUrl": "https://v7.example.com",
+                            "lifecycleStatus": "SUPPORTED",
+                            "watchdogRequired": True,
+                            "legacyMinimumRevision": BASE,
+                        },
+                        {
+                            "deployTarget": "v8",
+                            "versionId": "v8",
+                            "experienceVersion": "musa-pde-entry-v12",
+                            "publicUrl": "https://v8.clubemusa.com.br",
+                            "lifecycleStatus": "SUPPORTED",
+                            "watchdogRequired": True,
+                        },
+                    ],
+                }
+            ]
         }
 
     def test_selects_current_manifest_without_fixing_v8(self):
@@ -261,8 +355,67 @@ class MusaPdeWatchdogTest(unittest.TestCase):
                 },
             )
 
-    def test_repository_current_manifest_is_the_musa_v12_v5_candidate(self):
+    def test_selects_every_supported_surface_including_legacy(self):
+        selected = musa_pde_watchdog.select_supported_surfaces(
+            {
+                "pde-platform/contracts/product-runtime-isolation-v1.json": self.inventory(),
+                "pde-platform/contracts/musa-v12-v5.json": self.contract(),
+            }
+        )
+        self.assertEqual([surface.target for surface in selected], ["v7", "v8"])
+        self.assertEqual(selected[0].minimum_revision, BASE)
+        self.assertIsNone(selected[0].source_sha256)
+        self.assertEqual(selected[1].source_sha256, "d" * 64)
+
+    def test_probe_reports_each_surface_and_does_not_hide_one_failure(self):
+        expectations = musa_pde_watchdog.select_supported_surfaces(
+            {
+                "pde-platform/contracts/product-runtime-isolation-v1.json": self.inventory(),
+                "pde-platform/contracts/musa-v12-v5.json": self.contract(),
+            }
+        )
+        documents = {
+            "https://v7.example.com/healthz": {"status": "UP"},
+            "https://v7.example.com/version-diagnostics.json": {
+                "status": "UP",
+                "surface": "pde-platform-frontend",
+                "version": "v7",
+                "imageVersionId": "v7",
+                "publicUrl": "https://v7.example.com",
+                "experienceVersion": "musa-pde-entry-v7",
+                "productSlug": "metodo-musa-7-dias",
+                "commitSha": BASE,
+            },
+            "https://v8.clubemusa.com.br/healthz": {"status": "UP"},
+            "https://v8.clubemusa.com.br/version-diagnostics.json": {
+                "status": "UP",
+                "surface": "pde-platform-frontend",
+                "version": "v8",
+                "imageVersionId": "v8",
+                "publicUrl": "https://v8.clubemusa.com.br",
+                "experienceVersion": "musa-pde-entry-v12",
+                "productSlug": "metodo-musa-7-dias",
+                "frontendSourceSha256": "e" * 64,
+                "commitSha": HEAD,
+            },
+        }
+        result = musa_pde_watchdog.probe_supported_surfaces(
+            expectations,
+            ROOT,
+            reader=documents.__getitem__,
+            minimum_validator=lambda _root, minimum, observed: minimum == observed,
+        )
+        self.assertEqual(result[0]["status"], "UP")
+        self.assertEqual(result[0]["revision"], BASE)
+        self.assertEqual(result[1]["status"], "ERROR")
+        self.assertIn("frontendSourceSha256", result[1]["error"])
+
+    def test_repository_current_manifest_preserves_the_musa_v12_surface(self):
         selected = musa_pde_watchdog.publication_at(ROOT, "HEAD")
+        self.assertRegex(
+            selected.path,
+            r"^pde-platform/contracts/musa-v12-commercial-homologation-v[1-9][0-9]*\.json$",
+        )
         self.assertEqual(selected.frontend_version, "v8")
         self.assertEqual(selected.experience_version, "musa-pde-entry-v12-primeiro-ajuste-aplicavel")
 
@@ -345,8 +498,9 @@ class WorkflowContractTest(unittest.TestCase):
             "--psique-revision",
             "--psique-runs-json",
             "musa_pde_watchdog.py",
-            "--musa-pde-revision",
+            "--musa-pde-report-json",
             "--musa-pde-runs-json",
+            "--report /tmp/musa-pde-watchdog.json",
         ):
             self.assertIn(required, source)
         self.assertIn("FRESHNESS_GRACE_MINUTES: '30'", source)
@@ -361,6 +515,7 @@ class WorkflowContractTest(unittest.TestCase):
             "scripts/detect-deployment-changes.sh",
             "scripts/read-frontend-build-revision.sh",
             "scripts/configure-vps-ssh-fallback.sh",
+            "pde-platform/contracts/product-runtime-isolation-v1.json",
         ):
             self.assertGreaterEqual(source.count(path), 2)
         self.assertIn("python3 scripts/test-production-freshness.py", source)

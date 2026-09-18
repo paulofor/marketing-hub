@@ -112,6 +112,46 @@ class CustomerBpmTaskOutboxTest {
     }
   }
 
+  /** Recupera uma falha persistida por versão anterior sem repetir a inferência já concluída. */
+  @Test
+  void normalizesLegacyFailureCallbackBeforeRetryingIt() throws Exception {
+    AtomicInteger attempts = new AtomicInteger();
+    AtomicReference<String> received = new AtomicReference<>();
+    HttpServer server = failureGuidanceValidatingServer(attempts, received);
+    Path state = directory.resolve("legacy-failure-callback");
+    Map<String, Object> legacyBody =
+        Map.of(
+            "error",
+            "CALLBACK_RESULT_REJECTED_AFTER_RETRIES",
+            "resultJson",
+            "{\"decision\":\"APPROVED\"}",
+            "evidenceJson",
+            "{\"proof\":true}",
+            "blockerGuidance",
+            Map.of("category", "TECHNICAL_FAILURE", "action", "Chave legada."));
+    CustomerBpmTaskOutbox outbox = new CustomerBpmTaskOutbox(state, json);
+    outbox.save(
+        new CustomerBpmTaskOutbox.Pending(
+            task(450L), audit(), List.of(), true, "failure", legacyBody, 122));
+    try {
+      consumer(server, state).processOne();
+
+      JsonNode failure = json.readTree(received.get());
+      assertThat(attempts).hasValue(1);
+      assertThat(failure.path("error").asText()).isEqualTo(legacyBody.get("error"));
+      assertThat(failure.path("resultJson").asText()).isEqualTo(legacyBody.get("resultJson"));
+      assertThat(failure.path("evidenceJson").asText()).isEqualTo(legacyBody.get("evidenceJson"));
+      assertThat(failure.path("blockerGuidance").path("category").asText())
+          .isEqualTo("TECHNICAL_FAILURE");
+      assertThat(failure.path("blockerGuidance").path("recommendedAction").asText())
+          .contains("corrija a integração");
+      assertThat(failure.path("blockerGuidance").path("helpLinks")).isNotEmpty();
+      assertThat(outbox.read()).isNull();
+    } finally {
+      server.stop(0);
+    }
+  }
+
   /** Bloqueia execução interrompida sem saída e preserva os tokens já informados. */
   @Test
   void blocksInterruptedModelWithoutStartingAnotherInference() throws Exception {
@@ -213,6 +253,36 @@ class CustomerBpmTaskOutboxTest {
             received.set(body);
             exchange.sendResponseHeaders(204, -1);
           }
+          exchange.close();
+        });
+    server.start();
+    return server;
+  }
+
+  /** Reproduz a validação do backend que recusava a estrutura legada da falha. */
+  private HttpServer failureGuidanceValidatingServer(
+      AtomicInteger attempts, AtomicReference<String> received) throws Exception {
+    HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext(
+        "/api/internal/agent-tasks/",
+        exchange -> {
+          attempts.incrementAndGet();
+          String body =
+              new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+          received.set(body);
+          JsonNode guidance = json.readTree(body).path("blockerGuidance");
+          boolean valid =
+              !guidance.path("category").asText().isBlank()
+                  && !guidance.path("recommendedAction").asText().isBlank()
+                  && guidance.path("helpLinks").isArray()
+                  && !guidance.path("helpLinks").isEmpty();
+          for (JsonNode helpLink : guidance.path("helpLinks")) {
+            valid =
+                valid
+                    && !helpLink.path("label").asText().isBlank()
+                    && !helpLink.path("url").asText().isBlank();
+          }
+          exchange.sendResponseHeaders(valid ? 204 : 400, -1);
           exchange.close();
         });
     server.start();

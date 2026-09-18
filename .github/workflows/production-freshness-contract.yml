@@ -10,6 +10,7 @@ on:
       - 'scripts/test-production-freshness.py'
       - 'scripts/detect-deployment-changes.sh'
       - 'scripts/read-frontend-build-revision.sh'
+      - 'scripts/configure-vps-ssh-fallback.sh'
   pull_request:
     paths:
       - '.github/workflows/production-freshness-watchdog.yml'
@@ -18,6 +19,7 @@ on:
       - 'scripts/test-production-freshness.py'
       - 'scripts/detect-deployment-changes.sh'
       - 'scripts/read-frontend-build-revision.sh'
+      - 'scripts/configure-vps-ssh-fallback.sh'
   workflow_dispatch:
 
 permissions:

@@ -140,6 +140,18 @@ class FreshnessTest(unittest.TestCase):
         self.assertEqual(freshness.overall([{"status": "CURRENT"}, {"status": "GRACE"}]), "PENDING")
         self.assertEqual(freshness.overall([{"status": "DEPLOYING"}, {"status": "STALE"}]), "STALE")
 
+    def test_psique_uses_its_own_deploy_workflow_and_change_key(self):
+        self.assertEqual(freshness.TARGET_KEYS["psique"], "customer_agent")
+        payload = {"workflow_runs": [{
+            "id": 2, "name": freshness.CUSTOMER_AGENT_DEPLOY_WORKFLOW,
+            "head_branch": "main", "head_sha": HEAD, "status": "in_progress",
+            "created_at": (NOW - timedelta(minutes=5)).isoformat(), "html_url": "x"
+        }]}
+        runs = freshness.live_deploys(
+            payload, NOW, 75, freshness.CUSTOMER_AGENT_DEPLOY_WORKFLOW)
+        self.assertEqual([run.id for run in runs], [2])
+        self.assertEqual(self.evaluate(target="psique", deploys=runs)["status"], "DEPLOYING")
+
 
 class WorkflowContractTest(unittest.TestCase):
     def test_watchdog_workflow_contract(self):
@@ -155,6 +167,12 @@ class WorkflowContractTest(unittest.TestCase):
             "[Watchdog] Produção desatualizada",
             "fetch-depth: 0",
             "deploy-control-known-hosts",
+            "PSIQUE_VPS_IP",
+            "Configure Psique VPS SSH",
+            "Customer Agent Worker CI/CD",
+            "customer-agent-worker-ci.yml/runs",
+            "--psique-revision",
+            "--psique-runs-json",
         ):
             self.assertIn(required, source)
         self.assertIn("FRESHNESS_GRACE_MINUTES: '30'", source)
@@ -167,6 +185,7 @@ class WorkflowContractTest(unittest.TestCase):
             "scripts/test-production-freshness.py",
             "scripts/detect-deployment-changes.sh",
             "scripts/read-frontend-build-revision.sh",
+            "scripts/configure-vps-ssh-fallback.sh",
         ):
             self.assertGreaterEqual(source.count(path), 2)
         self.assertIn("python3 scripts/test-production-freshness.py", source)

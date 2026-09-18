@@ -13,7 +13,8 @@ import tempfile
 from typing import Any
 
 DEPLOY_WORKFLOW = "Build & Deploy containers"
-TARGET_KEYS = {"app": "app_deploy", "frontend": "frontend"}
+CUSTOMER_AGENT_DEPLOY_WORKFLOW = "Customer Agent Worker CI/CD"
+TARGET_KEYS = {"app": "app_deploy", "frontend": "frontend", "psique": "customer_agent"}
 
 
 def parse_time(value: str | None) -> datetime | None:
@@ -103,10 +104,12 @@ class LiveDeploy:
     url: str
 
 
-def live_deploys(payload: dict[str, Any], now: datetime, max_minutes: int) -> list[LiveDeploy]:
+def live_deploys(
+    payload: dict[str, Any], now: datetime, max_minutes: int, workflow: str = DEPLOY_WORKFLOW
+) -> list[LiveDeploy]:
     result: list[LiveDeploy] = []
     for run in payload.get("workflow_runs", []):
-        if run.get("name") != DEPLOY_WORKFLOW or run.get("head_branch") != "main":
+        if run.get("name") != workflow or run.get("head_branch") != "main":
             continue
         if run.get("status") == "completed":
             continue
@@ -264,7 +267,9 @@ def main() -> int:
     parser.add_argument("--head", default="HEAD")
     parser.add_argument("--app-revision", required=True)
     parser.add_argument("--frontend-revision", required=True)
+    parser.add_argument("--psique-revision", required=True)
     parser.add_argument("--runs-json", required=True)
+    parser.add_argument("--psique-runs-json", required=True)
     parser.add_argument("--grace-minutes", type=int, default=30)
     parser.add_argument("--max-deploy-minutes", type=int, default=75)
     parser.add_argument("--now", help="ISO-8601; usado por testes e auditoria")
@@ -284,6 +289,10 @@ def main() -> int:
         head = repo.resolve(args.head)
         payload = json.loads(Path(args.runs_json).read_text())
         deploys = live_deploys(payload, now, args.max_deploy_minutes)
+        psique_payload = json.loads(Path(args.psique_runs_json).read_text())
+        psique_deploys = live_deploys(
+            psique_payload, now, args.max_deploy_minutes, CUSTOMER_AGENT_DEPLOY_WORKFLOW
+        )
         targets = [
             evaluate_target(
                 target="app",
@@ -305,6 +314,16 @@ def main() -> int:
                 now=now,
                 grace_minutes=args.grace_minutes,
             ),
+            evaluate_target(
+                target="psique",
+                observed_revision=args.psique_revision,
+                head=head,
+                repo=repo,
+                detector=detector,
+                deploys=psique_deploys,
+                now=now,
+                grace_minutes=args.grace_minutes,
+            ),
         ]
         document = {
             "checked_at": now.isoformat(),
@@ -322,6 +341,16 @@ def main() -> int:
                     "url": run.url,
                 }
                 for run in deploys
+            ],
+            "live_psique_deploys": [
+                {
+                    "id": run.id,
+                    "sha": run.sha,
+                    "status": run.status,
+                    "created_at": run.created_at.isoformat(),
+                    "url": run.url,
+                }
+                for run in psique_deploys
             ],
         }
         exit_code = 1 if document["overall_status"] == "STALE" else 0

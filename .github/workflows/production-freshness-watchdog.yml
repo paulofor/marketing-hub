@@ -9,6 +9,7 @@ on:
   workflow_run:
     workflows:
       - Build & Deploy containers
+      - Customer Agent Worker CI/CD
       - Reconcile automatic publishers
     types: [completed]
     branches: [main]
@@ -24,6 +25,7 @@ concurrency:
 
 env:
   APP_VPS_IP: 191.252.181.168
+  PSIQUE_VPS_IP: 163.245.202.80
   VPS_USER: root
   DEPLOY_DIR: /opt/marketinghub/containers
   FRESHNESS_GRACE_MINUTES: '30'
@@ -53,6 +55,15 @@ jobs:
           install -m 700 -d "$HOME/.ssh"
           install -m 600 scripts/deploy-control-known-hosts "$HOME/.ssh/known_hosts"
 
+      - name: Configure Psique VPS SSH
+        env:
+          VPS_SSH_KEY_PRIMARY: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_1: ${{ secrets.VPS_SSH_CHAVE }}
+          VPS_SSH_KEY_FALLBACK_2: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_3: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          bash scripts/configure-vps-ssh-fallback.sh "$PSIQUE_VPS_IP" "$VPS_USER" "$GITHUB_ENV"
+
       - id: production
         name: Read deployed app and frontend revisions
         env:
@@ -72,6 +83,23 @@ jobs:
           printf 'app_revision=%s\n' "${app_revision}" >> "$GITHUB_OUTPUT"
           printf 'frontend_revision=%s\n' "${frontend_revision}" >> "$GITHUB_OUTPUT"
 
+      - id: psique
+        name: Read deployed Psique revision and health
+        run: |
+          set -euo pipefail
+
+          psique_ssh_config="${SSH_COMMON_ARGS#-F }"
+          # shellcheck disable=SC2016 # O script é enviado literalmente ao VPS por stdin.
+          psique_probe='
+            status=$(docker inspect --format "{{.State.Status}}" customer-agent-worker-customer-agent-worker-1 2>/dev/null || true)
+            health=$(curl --fail-with-body --silent --show-error --connect-timeout 5 --max-time 10 http://127.0.0.1:8099/ops-customer-agent-observability-v1/health 2>/dev/null || true)
+            image=$(docker inspect --format "{{.Config.Image}}" customer-agent-worker-customer-agent-worker-1 2>/dev/null || true)
+            if [ "$status" = running ] && printf "%s" "$health" | grep -Eq "status.*UP"; then printf "%s" "$image"; else printf MISSING; fi
+          '
+          psique_revision="$(printf '%s\n' "$psique_probe" | ssh -F "$psique_ssh_config" "${VPS_USER}@${PSIQUE_VPS_IP}" sh -s 2>/dev/null || printf MISSING)"
+          psique_revision="$(printf '%s' "$psique_revision" | sed -nE 's#^marketing-hub/customer-agent-worker:([0-9a-f]{40})$#\1#p')"
+          printf 'psique_revision=%s\n' "${psique_revision:-MISSING}" >> "$GITHUB_OUTPUT"
+
       - name: Read active deployment runs
         env:
           GH_TOKEN: ${{ github.token }}
@@ -80,6 +108,10 @@ jobs:
             -H 'Accept: application/vnd.github+json' \
             "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-containers.yml/runs?branch=main&per_page=100" \
             > /tmp/deploy-runs.json
+          gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/customer-agent-worker-ci.yml/runs?branch=main&per_page=100" \
+            > /tmp/psique-deploy-runs.json
 
       - id: freshness
         name: Evaluate production freshness
@@ -89,7 +121,9 @@ jobs:
             --head main \
             --app-revision '${{ steps.production.outputs.app_revision }}' \
             --frontend-revision '${{ steps.production.outputs.frontend_revision }}' \
+            --psique-revision '${{ steps.psique.outputs.psique_revision }}' \
             --runs-json /tmp/deploy-runs.json \
+            --psique-runs-json /tmp/psique-deploy-runs.json \
             --grace-minutes "${FRESHNESS_GRACE_MINUTES}" \
             --max-deploy-minutes "${MAX_DEPLOY_RUNTIME_MINUTES}" \
             --output /tmp/production-freshness.json

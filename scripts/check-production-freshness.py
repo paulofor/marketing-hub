@@ -12,8 +12,11 @@ import subprocess
 import tempfile
 from typing import Any
 
+from musa_pde_watchdog import publication_changed
+
 DEPLOY_WORKFLOW = "Build & Deploy containers"
 CUSTOMER_AGENT_DEPLOY_WORKFLOW = "Customer Agent Worker CI/CD"
+MUSA_PDE_DEPLOY_WORKFLOW = "CI - PDE Platform Metodo MUSA"
 TARGET_KEYS = {"app": "app_deploy", "frontend": "frontend", "psique": "customer_agent"}
 
 
@@ -65,6 +68,8 @@ class DeploymentDetector:
         self.script = root / "scripts" / "detect-deployment-changes.sh"
 
     def changed(self, base: str, head: str, target: str) -> bool:
+        if target == "musa_pde":
+            return publication_changed(self.root, base, head)
         if target not in TARGET_KEYS:
             raise ValueError(f"Target desconhecido: {target}")
         with tempfile.NamedTemporaryFile(prefix="freshness-", delete=False) as stream:
@@ -268,8 +273,10 @@ def main() -> int:
     parser.add_argument("--app-revision", required=True)
     parser.add_argument("--frontend-revision", required=True)
     parser.add_argument("--psique-revision", required=True)
+    parser.add_argument("--musa-pde-revision", required=True)
     parser.add_argument("--runs-json", required=True)
     parser.add_argument("--psique-runs-json", required=True)
+    parser.add_argument("--musa-pde-runs-json", required=True)
     parser.add_argument("--grace-minutes", type=int, default=30)
     parser.add_argument("--max-deploy-minutes", type=int, default=75)
     parser.add_argument("--now", help="ISO-8601; usado por testes e auditoria")
@@ -292,6 +299,10 @@ def main() -> int:
         psique_payload = json.loads(Path(args.psique_runs_json).read_text())
         psique_deploys = live_deploys(
             psique_payload, now, args.max_deploy_minutes, CUSTOMER_AGENT_DEPLOY_WORKFLOW
+        )
+        musa_pde_payload = json.loads(Path(args.musa_pde_runs_json).read_text())
+        musa_pde_deploys = live_deploys(
+            musa_pde_payload, now, args.max_deploy_minutes, MUSA_PDE_DEPLOY_WORKFLOW
         )
         targets = [
             evaluate_target(
@@ -324,6 +335,16 @@ def main() -> int:
                 now=now,
                 grace_minutes=args.grace_minutes,
             ),
+            evaluate_target(
+                target="musa_pde",
+                observed_revision=args.musa_pde_revision,
+                head=head,
+                repo=repo,
+                detector=detector,
+                deploys=musa_pde_deploys,
+                now=now,
+                grace_minutes=args.grace_minutes,
+            ),
         ]
         document = {
             "checked_at": now.isoformat(),
@@ -351,6 +372,16 @@ def main() -> int:
                     "url": run.url,
                 }
                 for run in psique_deploys
+            ],
+            "live_musa_pde_deploys": [
+                {
+                    "id": run.id,
+                    "sha": run.sha,
+                    "status": run.status,
+                    "created_at": run.created_at.isoformat(),
+                    "url": run.url,
+                }
+                for run in musa_pde_deploys
             ],
         }
         exit_code = 1 if document["overall_status"] == "STALE" else 0

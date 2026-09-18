@@ -1674,6 +1674,12 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   e responda `403` sem credencial, comprova a saúde da v7 e executa nela o smoke Playwright segregado
   mesmo quando o `push` não publica frontend. O teste de contrato impede remover o gatilho, a prova
   da rota ou o smoke de compatibilidade que detecta a ausência de `agent-validation-mode`.
+- **Prevenção complementar em 2026-09-18 — PDE Método MUSA:** o histórico das tarefas #443–#449
+  mostrou que correção integrada e workflow saudável não comprovavam que a superfície analisada por
+  Psique executava o mesmo build do manifesto. O Watchdog passa a resolver dinamicamente a candidata
+  MUSA publicável, conferir no domínio público saúde, versão, experiência, fingerprint e commit e
+  correlacionar atraso ao workflow próprio da PDE Platform. Testes cobrem evolução para versão futura,
+  isolamento de outros produtos e recusa de fingerprint antigo, sem congelar o monitor em `v8`.
 
 ---
 

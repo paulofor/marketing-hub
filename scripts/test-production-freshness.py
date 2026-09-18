@@ -2,8 +2,13 @@
 import importlib.util
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import json
+import subprocess
+import tempfile
 import unittest
 import sys
+
+import musa_pde_watchdog
 
 ROOT = Path(__file__).resolve().parent.parent
 spec = importlib.util.spec_from_file_location("freshness", ROOT / "scripts" / "check-production-freshness.py")
@@ -152,6 +157,170 @@ class FreshnessTest(unittest.TestCase):
         self.assertEqual([run.id for run in runs], [2])
         self.assertEqual(self.evaluate(target="psique", deploys=runs)["status"], "DEPLOYING")
 
+    def test_musa_pde_uses_its_own_deploy_workflow(self):
+        payload = {"workflow_runs": [{
+            "id": 3, "name": freshness.MUSA_PDE_DEPLOY_WORKFLOW,
+            "head_branch": "main", "head_sha": HEAD, "status": "in_progress",
+            "created_at": (NOW - timedelta(minutes=5)).isoformat(), "html_url": "x"
+        }]}
+        runs = freshness.live_deploys(
+            payload, NOW, 75, freshness.MUSA_PDE_DEPLOY_WORKFLOW)
+        self.assertEqual([run.id for run in runs], [3])
+        self.assertEqual(self.evaluate(target="musa_pde", deploys=runs)["status"], "DEPLOYING")
+
+
+class MusaPdeWatchdogTest(unittest.TestCase):
+    def publication(self, **overrides):
+        values = {
+            "path": "pde-platform/contracts/musa-v12-v5.json",
+            "contract_version": "musa-v12.v5",
+            "process_version": 5,
+            "experience_version": "musa-pde-entry-v12",
+            "frontend_version": "v8",
+            "public_url": "https://v8.example.com",
+            "source_sha256": "d" * 64,
+        }
+        values.update(overrides)
+        return musa_pde_watchdog.MusaPublication(**values)
+
+    def contract(self, *, experience="musa-pde-entry-v12", revision=5, frontend="v8"):
+        return {
+            "contractVersion": f"musa-v12-commercial.v{revision}",
+            "processVersion": revision,
+            "status": "READY_FOR_INDEPENDENT_REVIEW",
+            "product": {
+                "id": 4,
+                "slug": "metodo-musa-7-dias",
+                "experienceVersion": experience,
+            },
+            "publicationContract": {
+                "automaticDeployOnMerge": True,
+                "frontendVersion": frontend,
+                "publicUrl": f"https://{frontend}.clubemusa.com.br/",
+                "requiredFrontendSourceSha256": "d" * 64,
+            },
+        }
+
+    def test_selects_current_manifest_without_fixing_v8(self):
+        current = self.contract(experience="musa-pde-entry-v13", revision=1, frontend="v9")
+        selected = musa_pde_watchdog.select_current_publication({
+            "pde-platform/contracts/musa-v12-v5.json": self.contract(),
+            "pde-platform/contracts/musa-v13-v1.json": current,
+        })
+        self.assertEqual(selected.frontend_version, "v9")
+        self.assertEqual(selected.experience_version, "musa-pde-entry-v13")
+
+    def test_ignores_other_products_and_non_publicable_contracts(self):
+        other = self.contract()
+        other["product"]["id"] = 10
+        draft = self.contract(revision=6)
+        draft["publicationContract"]["automaticDeployOnMerge"] = False
+        selected = musa_pde_watchdog.select_current_publication({
+            "other.json": other,
+            "draft.json": draft,
+            "current.json": self.contract(),
+        })
+        self.assertEqual(selected.path, "current.json")
+
+    def test_public_probe_validates_build_and_pixels_identity(self):
+        publication = self.publication()
+        documents = {
+            "https://v8.example.com/healthz": {"status": "UP"},
+            "https://v8.example.com/version-diagnostics.json": {
+                "status": "UP",
+                "surface": "pde-platform-frontend",
+                "version": "v8",
+                "imageVersionId": "v8",
+                "publicUrl": "https://v8.example.com/",
+                "experienceVersion": "musa-pde-entry-v12",
+                "productSlug": "metodo-musa-7-dias",
+                "frontendSourceSha256": "d" * 64,
+                "commitSha": BASE,
+            },
+        }
+        revision = musa_pde_watchdog.probe_publication(
+            publication, reader=documents.__getitem__)
+        self.assertEqual(revision, BASE)
+
+    def test_public_probe_rejects_stale_source_fingerprint(self):
+        publication = self.publication()
+        with self.assertRaisesRegex(ValueError, "frontendSourceSha256"):
+            musa_pde_watchdog.validate_public_diagnostics(
+                publication,
+                {"status": "UP"},
+                {
+                    "status": "UP",
+                    "surface": "pde-platform-frontend",
+                    "version": "v8",
+                    "imageVersionId": "v8",
+                    "publicUrl": "https://v8.example.com",
+                    "experienceVersion": "musa-pde-entry-v12",
+                    "productSlug": "metodo-musa-7-dias",
+                    "frontendSourceSha256": "e" * 64,
+                    "commitSha": BASE,
+                },
+            )
+
+    def test_repository_current_manifest_is_the_musa_v12_v5_candidate(self):
+        selected = musa_pde_watchdog.publication_at(ROOT, "HEAD")
+        self.assertEqual(selected.frontend_version, "v8")
+        self.assertEqual(selected.experience_version, "musa-pde-entry-v12-primeiro-ajuste-aplicavel")
+
+    def test_only_a_new_publication_contract_makes_musa_pde_pending(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(
+                ["git", "config", "user.email", "watchdog@sandbox.local"],
+                cwd=root,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Watchdog Test"], cwd=root, check=True
+            )
+            contracts = root / "pde-platform" / "contracts"
+            contracts.mkdir(parents=True)
+            (contracts / "musa-v12-v5.json").write_text(json.dumps(self.contract()))
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-qm", "base"], cwd=root, check=True)
+            base = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=root,
+                text=True,
+                capture_output=True,
+                check=True,
+            ).stdout.strip()
+
+            (root / "README.md").write_text("mudanca sem promocao\n")
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-qm", "docs"], cwd=root, check=True)
+            unrelated = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=root,
+                text=True,
+                capture_output=True,
+                check=True,
+            ).stdout.strip()
+            self.assertFalse(musa_pde_watchdog.publication_changed(root, base, unrelated))
+
+            (contracts / "musa-v13-v1.json").write_text(
+                json.dumps(
+                    self.contract(
+                        experience="musa-pde-entry-v13", revision=1, frontend="v9"
+                    )
+                )
+            )
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-qm", "promove v13"], cwd=root, check=True)
+            promoted = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=root,
+                text=True,
+                capture_output=True,
+                check=True,
+            ).stdout.strip()
+            self.assertTrue(musa_pde_watchdog.publication_changed(root, unrelated, promoted))
+
 
 class WorkflowContractTest(unittest.TestCase):
     def test_watchdog_workflow_contract(self):
@@ -170,9 +339,14 @@ class WorkflowContractTest(unittest.TestCase):
             "PSIQUE_VPS_IP",
             "Configure Psique VPS SSH",
             "Customer Agent Worker CI/CD",
+            "CI - PDE Platform Metodo MUSA",
             "customer-agent-worker-ci.yml/runs",
+            "pde-platform-metodo-musa-ci.yml/runs",
             "--psique-revision",
             "--psique-runs-json",
+            "musa_pde_watchdog.py",
+            "--musa-pde-revision",
+            "--musa-pde-runs-json",
         ):
             self.assertIn(required, source)
         self.assertIn("FRESHNESS_GRACE_MINUTES: '30'", source)
@@ -183,6 +357,7 @@ class WorkflowContractTest(unittest.TestCase):
         for path in (
             "scripts/check-production-freshness.py",
             "scripts/test-production-freshness.py",
+            "scripts/musa_pde_watchdog.py",
             "scripts/detect-deployment-changes.sh",
             "scripts/read-frontend-build-revision.sh",
             "scripts/configure-vps-ssh-fallback.sh",

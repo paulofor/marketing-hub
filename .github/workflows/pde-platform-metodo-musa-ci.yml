@@ -150,6 +150,8 @@ jobs:
         run: python3 scripts/validate-publisher-recovery.py
 
       - name: Validate isolated deploy contract
+        env:
+          PDE_LOCAL_COMPOSE_PROJECT: pde-isolation-${{ github.run_id }}-${{ github.run_attempt }}
         run: bash ../scripts/test-deploy-isolation-contract.sh
       - name: Set up Java
         uses: actions/setup-java@v6
@@ -166,7 +168,7 @@ jobs:
         if: needs.deployment_scope.outputs.full-compatibility == 'true'
         working-directory: ${{ github.workspace }}
         env:
-          PDE_LOCAL_COMPOSE_PROJECT: aihub-190ea341-7c8a-4809-8c31-0b0e57914752-cc0ee64122
+          PDE_LOCAL_COMPOSE_PROJECT: pde-compatibility-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           bash pde-platform/scripts/test-musa-local-integration.sh
           bash pde-platform/scripts/test-product-runtime-proxy-local.sh

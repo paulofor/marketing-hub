@@ -7,6 +7,29 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "${script_dir}/../.." && pwd)"
 workflow="${repository_root}/.github/workflows/pde-platform-metodo-musa-ci.yml"
 disk_script="${repository_root}/scripts/ensure-agent-vps-disk-space.sh"
+independent_deploy_script="${script_dir}/test-independent-version-deploy.sh"
+
+if ! grep -Fq 'PDE_LOCAL_COMPOSE_PROJECT:?PDE_LOCAL_COMPOSE_PROJECT obrigatório' \
+  "${independent_deploy_script}" \
+  || grep -Fq 'project="aihub-' "${independent_deploy_script}"; then
+  echo '[ARQUITETURA] A homologação Docker deve exigir um namespace Compose exclusivo, sem ID de sandbox fixo.' >&2
+  exit 1
+fi
+
+if grep -Fq 'musa-v12-commercial-homologation-v6.json' "${independent_deploy_script}" \
+  || ! grep -Fq 'musa-v12-commercial-homologation-v*.json' "${independent_deploy_script}"; then
+  echo '[ARQUITETURA] A homologação Docker deve selecionar dinamicamente a atestação MUSA v12 vigente.' >&2
+  exit 1
+fi
+
+for project_contract in \
+  'PDE_LOCAL_COMPOSE_PROJECT: pde-isolation-${{ github.run_id }}-${{ github.run_attempt }}' \
+  'PDE_LOCAL_COMPOSE_PROJECT: pde-compatibility-${{ github.run_id }}-${{ github.run_attempt }}'; do
+  if ! grep -Fq "${project_contract}" "${workflow}"; then
+    echo "[ARQUITETURA] O workflow PDE deve definir um namespace Compose único: ${project_contract}" >&2
+    exit 1
+  fi
+done
 
 if grep -q 'LEAD_PORTAL_PAYMENTS_REMOTE_PATH' "${workflow}"; then
   echo '[ARQUITETURA] O deploy PDE não pode operar o diretório remoto do serviço de pagamentos.' >&2

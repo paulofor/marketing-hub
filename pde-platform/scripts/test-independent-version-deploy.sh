@@ -6,7 +6,8 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "${script_dir}/../.." && pwd)"
 fixture_dir="${script_dir}/fixtures/independent-version-deploy"
 compose_file="${fixture_dir}/docker-compose.yml"
-project="aihub-190ea341-7c8a-4809-8c31-0b0e57914752-cc0ee64122"
+: "${PDE_LOCAL_COMPOSE_PROJECT:?PDE_LOCAL_COMPOSE_PROJECT obrigatório para isolar a homologação Docker}"
+project="${PDE_LOCAL_COMPOSE_PROJECT}"
 temporary_dir="$(mktemp -d)"
 network_name="${project}-pde-net"
 
@@ -164,7 +165,38 @@ edge_old_id="$(container_id pde-test-edge-proxy)"
 docker exec pde-test-edge-proxy wget -qO- \
   http://127.0.0.1/version-diagnostics.json | grep -Fq "${old_commit}"
 
-contract="${repository_root}/pde-platform/contracts/musa-v12-commercial-homologation-v6.json"
+contract="$(python3 - "${repository_root}/pde-platform/contracts" <<'PY'
+import json
+from pathlib import Path
+import re
+import sys
+
+directory = Path(sys.argv[1])
+candidates = []
+for path in directory.glob("musa-v12-commercial-homologation-v*.json"):
+    document = json.loads(path.read_text(encoding="utf-8"))
+    version = document.get("contractVersion", "")
+    match = re.search(r"(?:^|[.-])v([1-9][0-9]*)$", version)
+    product = document.get("product", {})
+    if (
+        match
+        and document.get("status") == "READY_FOR_INDEPENDENT_REVIEW"
+        and product.get("slug") == "metodo-musa-7-dias"
+        and product.get("experienceVersion") == "musa-pde-entry-v12-primeiro-ajuste-aplicavel"
+    ):
+        candidates.append((int(match.group(1)), path))
+
+if not candidates:
+    raise SystemExit("Nenhum manifesto MUSA v12 pronto para a homologação transacional")
+latest_revision = max(revision for revision, _ in candidates)
+latest = [path for revision, path in candidates if revision == latest_revision]
+if len(latest) != 1:
+    raise SystemExit(
+        f"Mais de um manifesto MUSA v12 vigente na revisão v{latest_revision}"
+    )
+print(latest[0])
+PY
+)"
 contract_sha256="$(sha256sum "${contract}" | awk '{print $1}')"
 
 export PDE_PLATFORM_FRONTEND_V8_IMAGE="${new_frontend_image}"

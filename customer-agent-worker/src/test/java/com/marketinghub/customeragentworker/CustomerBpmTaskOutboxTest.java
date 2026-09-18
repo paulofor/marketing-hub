@@ -55,7 +55,10 @@ class CustomerBpmTaskOutboxTest {
     }
   }
 
-  /** Converte resultado rejeitado repetidamente em bloqueio sem perder parecer nem consumo. */
+  /**
+   * Converte resultado rejeitado repetidamente em bloqueio contratualmente válido sem nova
+   * inferência.
+   */
   @Test
   void blocksPersistentlyRejectedResultWithoutStartingAnotherModel() throws Exception {
     AtomicInteger attempts = new AtomicInteger();
@@ -97,6 +100,12 @@ class CustomerBpmTaskOutboxTest {
           .contains("CALLBACK_RESULT_REJECTED_AFTER_RETRIES", "sem nova inferência");
       assertThat(failure.path("resultJson").asText()).isEqualTo(body.get("resultJson"));
       assertThat(failure.path("modelUsages").path(0).path("inputTokens").asLong()).isEqualTo(1000L);
+      assertThat(failure.path("blockerGuidance").path("category").asText())
+          .isEqualTo("TECHNICAL_FAILURE");
+      assertThat(failure.path("blockerGuidance").path("recommendedAction").asText())
+          .contains("corrija a integração");
+      assertThat(failure.path("blockerGuidance").path("helpLinks").isArray()).isTrue();
+      assertThat(failure.path("blockerGuidance").path("helpLinks")).isNotEmpty();
       assertThat(new CustomerBpmTaskOutbox(state, json).read()).isNull();
     } finally {
       server.stop(0);

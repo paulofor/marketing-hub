@@ -1,5 +1,19 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-PSIQUE-CALLBACK-DE-FALHA-INVALIDO-REPETIDO — retry técnico nunca termina
+
+- **Data:** 2026-09-18. Vega, experimento #92, tarefa #450.
+- **Evidência histórica:** após três rejeições do callback de resultado, Psique converteu a tentativa
+  preservada em callback de falha. O backend rejeitou cada reenvio com HTTP 400 porque
+  `blockerGuidance` não continha `recommendedAction` nem `helpLinks`; o worker então repetiu o
+  mesmo envelope a cada minuto.
+- **Causa-raiz:** o caminho excepcional de conversão usava a chave não canônica `action` e não
+  construía os links obrigatórios, divergindo do contrato de falha válido usado nas demais rotas.
+- **Correção sistêmica:** a conversão reutiliza a orientação técnica canônica, com categoria,
+  ação recomendada e links de ajuda da tarefa. O backend continua exigindo a orientação completa.
+- **Prevenção:** o teste de outbox agora confirma a estrutura integral do `blockerGuidance` depois
+  das rejeições, além de preservar parecer, consumo e ausência de nova inferência.
+
 ## LOOP-PDE-CANDIDATA-409-TRATADO-COMO-FALHA — proteção de publicação derruba a homologação
 
 - **Data:** 2026-09-18. Método MUSA, candidata v8, workflow

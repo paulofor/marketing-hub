@@ -1,0 +1,18 @@
+{
+  "cardKey": "rotacao-criativa-repeticao-percebida",
+  "collection": "neuromarketing",
+  "title": "Reduza repetição percebida com diversidade funcional entre criativos",
+  "finding": "Pesquisas recentes indicam aumento de evasão de anúncios digitais e forte rejeição à repetição: 52% disseram ignorar, pular ou bloquear mais anúncios do que um ano antes, 48% encontram frequentemente o mesmo anúncio em várias plataformas e 72% dizem querer publicidade menos repetitiva.",
+  "mechanism": "Reexposição a peças muito semelhantes pode aumentar a sensação de saturação e reduzir atenção. Pequenas mudanças cosméticas podem não ser percebidas como novidade; variar função, cena, prova, benefício, história ou formato tende a criar diversidade percebida maior.",
+  "commercialApplication": "No Marketing Hub, organizar creative variants em famílias funcionalmente distintas e acompanhar frequência por público junto com sinais de desgaste. Evitar escalar muitas peças quase idênticas só porque foram geradas automaticamente.",
+  "evidenceStrength": "Moderada-baixa: convergência entre pesquisa da Net Conversion com 1.500 adultos dos EUA e pesquisa da COOL Company com mais de 500 consumidores, mas com medidas auto-relatadas e sem experimento causal de Meta Ads.",
+  "publishedOn": "2026-09-17",
+  "validUntil": "2027-03-17",
+  "experimentHypothesis": "Rotacionar conceitos criativos funcionalmente distintos manterá CTR e custo por CTA/lead mais estáveis ao longo das exposições do que rotacionar apenas variações superficiais do mesmo conceito, mantendo oferta, público e investimento equivalentes.",
+  "risks": "Diversidade excessiva pode diluir posicionamento, alterar a promessa ou introduzir variáveis demais no teste. Não inferir um limite universal de frequência nem pausar peça apenas por um único indicador isolado.",
+  "limits": "As fontes não definem uma frequência causal de fadiga, são baseadas em auto-relato e não medem diretamente performance comercial ou comportamento específico em Meta Ads.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-18-repeticao-fadiga-criativa.md",
+  "sourceTitle": "Fonte revisada — Repetição percebida e fadiga criativa",
+  "sourceSha256": "31b3f81120e76da59ed93d1d9c66f6a1a3d692ee8ba46e6c8354dd455611d791"
+}

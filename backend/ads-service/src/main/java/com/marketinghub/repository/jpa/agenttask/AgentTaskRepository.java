@@ -4,6 +4,7 @@ import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.agenttask.AgentTaskIndependentExecutionSummarySnapshot;
 import com.marketinghub.agenttask.AgentTaskMeasurementSnapshot;
+import com.marketinghub.agenttask.AgentTaskProcessExecutionListSnapshot;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse;
 import com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot;
 import jakarta.persistence.LockModeType;
@@ -63,6 +64,28 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
   List<AgentTask>
       findBySourceReferenceStartingWithAndProcessDefinitionProcessCodeOrderByUpdatedAtDescIdDesc(
           String sourceReferencePrefix, String processCode);
+
+  /** Lista o resumo de uma referência e processo sem trazer prompts, resultados ou evidências. */
+  @Query(
+      """
+      select new com.marketinghub.agenttask.AgentTaskProcessExecutionListSnapshot(
+        task.id, process.id, process.processCode, process.versionNumber,
+        task.title, task.status, task.sourceReference,
+        agent.agentKey, agent.nickname,
+        task.processActivityId, task.processActivityName, task.executionError,
+        task.inputTokens, task.cachedInputTokens, task.outputTokens,
+        task.estimatedCostUsd, task.costEstimationStatus,
+        task.createdAt, task.receivedAt, task.deliveredAt, task.updatedAt,
+        task.executionModelCode, task.executionMode, task.executionReasoningEffort,
+        task.blockerCategory, task.blockerAction)
+      from AgentTask task
+      join task.processDefinition process
+      join task.assignedAgent agent
+      where task.sourceReference = :sourceReference and process.processCode = :processCode
+      order by task.createdAt desc, task.id desc
+      """)
+  List<AgentTaskProcessExecutionListSnapshot> findProcessExecutionListSnapshots(
+      @Param("sourceReference") String sourceReference, @Param("processCode") String processCode);
 
   /**
    * Consulta o retrabalho da origem e processo exatos sem carregar prompts ou entidades completas.

@@ -2,9 +2,12 @@ package com.marketinghub.businessprocess.execution.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskActivityCoverage;
 import com.marketinghub.agenttask.AgentTaskAuditView;
+import com.marketinghub.agenttask.AgentTaskBlockerGuidanceResponse;
+import com.marketinghub.agenttask.AgentTaskProcessExecutionListSnapshot;
 import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskResultView;
 import com.marketinghub.agenttask.AgentTaskService;
@@ -338,8 +341,10 @@ public class BusinessProcessActivityExecutionService {
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
     List<Experiment> productExperiments = productExperiments(productId);
     List<AgentTask> tasks =
-        productProcessTasks(
-            productPlans, productExperiments, productId, selectedProcess.getProcessCode());
+        explicitReference != null && !includePromptAudit
+            ? compactProductProcessTasks(explicitReference, selectedProcess.getProcessCode())
+            : productProcessTasks(
+                productPlans, productExperiments, productId, selectedProcess.getProcessCode());
     List<BusinessProcessActivityInstance> instances =
         productProcessActivityInstances(
             productPlans, productExperiments, productId, selectedProcess.getProcessCode());
@@ -587,6 +592,33 @@ public class BusinessProcessActivityExecutionService {
             landingExecution(task).map(GeraLandingStageExecution::getPrompt).orElse(null)),
         task.getExecutionAgentPrompt(),
         task.getExecutionActivityPrompt());
+  }
+
+  /**
+   * Lê a auditoria integral de uma tarefa, mantendo a lista do processo restrita ao resumo leve.
+   */
+  @Transactional(readOnly = true)
+  public BusinessProcessActivityExecutionResponse taskAudit(
+      Long processDefinitionId, Long productId, Long taskId, String sourceReference) {
+    Product product = requiredProduct(productId);
+    if (!progressReferenceBelongsToProduct(productId, sourceReference)) {
+      throw new ResponseStatusException(
+          HttpStatus.NOT_FOUND, "Auditoria não encontrada neste produto.");
+    }
+    AgentTask task =
+        taskRepository
+            .findById(taskId)
+            .filter(
+                value ->
+                    value.getProcessDefinition() != null
+                        && Objects.equals(processDefinitionId, value.getProcessDefinition().getId())
+                        && Objects.equals(sourceReference, value.getSourceReference()))
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Auditoria não encontrada neste processo e referência."));
+    return response(task, product.getInternalName(), true);
   }
 
   /** Valida a propriedade da referência exata sem ler auditorias de tarefas ou outro produto. */
@@ -1482,6 +1514,49 @@ public class BusinessProcessActivityExecutionService {
         .toList();
   }
 
+  /** Converte a projeção SQL em tarefas resumidas para não hidratar LOBs na lista da atividade. */
+  private List<AgentTask> compactProductProcessTasks(String sourceReference, String processCode) {
+    return taskRepository.findProcessExecutionListSnapshots(sourceReference, processCode).stream()
+        .map(this::compactTask)
+        .toList();
+  }
+
+  /** Reconstrói somente os campos de leitura da tarefa, preservando estado, custo e bloqueio. */
+  private AgentTask compactTask(AgentTaskProcessExecutionListSnapshot snapshot) {
+    BusinessProcessDefinition process = new BusinessProcessDefinition();
+    process.setId(snapshot.processDefinitionId());
+    process.setProcessCode(snapshot.processCode());
+    process.setVersionNumber(snapshot.processVersionNumber());
+    Agent agent = new Agent();
+    agent.setAgentKey(snapshot.assignedAgentKey());
+    agent.setNickname(snapshot.assignedAgentNickname());
+    AgentTask task = new AgentTask();
+    task.setId(snapshot.taskId());
+    task.setProcessDefinition(process);
+    task.setTitle(snapshot.title());
+    task.setStatus(snapshot.status());
+    task.setSourceReference(snapshot.sourceReference());
+    task.setAssignedAgent(agent);
+    task.setProcessActivityId(snapshot.processActivityId());
+    task.setProcessActivityName(snapshot.processActivityName());
+    task.setExecutionError(snapshot.executionError());
+    task.setInputTokens(snapshot.inputTokens());
+    task.setCachedInputTokens(snapshot.cachedInputTokens());
+    task.setOutputTokens(snapshot.outputTokens());
+    task.setEstimatedCostUsd(snapshot.estimatedCostUsd());
+    task.setCostEstimationStatus(snapshot.costEstimationStatus());
+    task.setCreatedAt(snapshot.createdAt());
+    task.setReceivedAt(snapshot.receivedAt());
+    task.setDeliveredAt(snapshot.deliveredAt());
+    task.setUpdatedAt(snapshot.updatedAt());
+    task.setExecutionModelCode(snapshot.executionModelCode());
+    task.setExecutionMode(snapshot.executionMode());
+    task.setExecutionReasoningEffort(snapshot.executionReasoningEffort());
+    task.setBlockerCategory(snapshot.blockerCategory());
+    task.setBlockerAction(snapshot.blockerAction());
+    return task;
+  }
+
   /** Busca ocorrências BPM do produto, dos planos e experimentos, inclusive sem tarefa. */
   private List<BusinessProcessActivityInstance> productProcessActivityInstances(
       List<CommercialPlan> productPlans,
@@ -2138,7 +2213,8 @@ public class BusinessProcessActivityExecutionService {
   private BusinessProcessActivityExecutionResponse response(
       AgentTask task, String knownProductInternalName, boolean includePromptAudit) {
     BusinessProcessDefinition process = task.getProcessDefinition();
-    Optional<GeraLandingStageExecution> technicalExecution = landingExecution(task);
+    Optional<GeraLandingStageExecution> technicalExecution =
+        includePromptAudit ? landingExecution(task) : Optional.empty();
     return new BusinessProcessActivityExecutionResponse(
         task.getId(),
         process.getId(),
@@ -2148,11 +2224,13 @@ public class BusinessProcessActivityExecutionService {
         task.getSourceReference(),
         task.getAssignedAgent().getAgentKey(),
         task.getAssignedAgent().getNickname(),
-        technicalExecution
-            .map(GeraLandingStageExecution::getModelResponse)
-            .filter(value -> !value.isBlank())
-            .orElse(task.getResultJson()),
-        task.getEvidenceJson(),
+        includePromptAudit
+            ? technicalExecution
+                .map(GeraLandingStageExecution::getModelResponse)
+                .filter(value -> !value.isBlank())
+                .orElse(task.getResultJson())
+            : null,
+        includePromptAudit ? task.getEvidenceJson() : null,
         task.getExecutionError(),
         task.getInputTokens(),
         task.getCachedInputTokens(),
@@ -2177,11 +2255,20 @@ public class BusinessProcessActivityExecutionService {
             : null,
         includePromptAudit ? task.getExecutionAgentPrompt() : null,
         includePromptAudit ? task.getExecutionActivityPrompt() : null,
-        AgentTaskAuditView.blockerGuidance(task),
-        AgentTaskAuditView.accessedUrls(task),
-        AgentTaskAuditView.visualEvidence(task),
-        AgentTaskResultView.section(task, "visualAudit"),
-        AgentTaskResultView.section(task, "purchaseEmotion"));
+        includePromptAudit
+            ? AgentTaskAuditView.blockerGuidance(task)
+            : compactBlockerGuidance(task),
+        includePromptAudit ? AgentTaskAuditView.accessedUrls(task) : List.of(),
+        includePromptAudit ? AgentTaskAuditView.visualEvidence(task) : List.of(),
+        includePromptAudit ? AgentTaskResultView.section(task, "visualAudit") : null,
+        includePromptAudit ? AgentTaskResultView.section(task, "purchaseEmotion") : null);
+  }
+
+  /** Mantém a ação de desbloqueio visível na lista sem carregar links ou provas extensas. */
+  private AgentTaskBlockerGuidanceResponse compactBlockerGuidance(AgentTask task) {
+    if (task.getBlockerCategory() == null || task.getBlockerAction() == null) return null;
+    return new AgentTaskBlockerGuidanceResponse(
+        task.getBlockerCategory(), task.getBlockerAction(), List.of());
   }
 
   /** Recupera a chamada real de Dédalo correlacionada à tarefa composta, quando existente. */

@@ -6,9 +6,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.execution.controller.BusinessProcessActivityExecutionController;
+import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -74,6 +76,43 @@ class BusinessProcessTaskPromptAuditTest {
         .isEqualTo("Aprendizado e contexto íntegros. ".repeat(40000));
     verify(tasks).findById(396L);
     verifyNoMoreInteractions(tasks);
+  }
+
+  /** A tela recupera resultado e evidências completos somente da tarefa aberta no histórico. */
+  @Test
+  void readsFullTaskAuditOnlyFromTheSelectedTask() throws Exception {
+    var auditedService = service();
+    var product = new Product();
+    product.setId(4L);
+    product.setInternalName("Vega");
+    when(products.findById(4L)).thenReturn(Optional.of(product));
+    var process = new BusinessProcessDefinition();
+    process.setId(70L);
+    process.setVersionNumber(1);
+    var agent = new Agent();
+    agent.setAgentKey("customer-agent");
+    agent.setNickname("Psique");
+    var task = new AgentTask();
+    task.setId(396L);
+    task.setProcessDefinition(process);
+    task.setAssignedAgent(agent);
+    task.setSourceReference("experiment:92");
+    task.setTitle("Avaliar experiência humana");
+    task.setStatus("COMPLETED");
+    task.setCostEstimationStatus("NOT_REPORTED");
+    task.setResultJson("{\"summary\":\"Parecer integral de Psique.\"}");
+    task.setEvidenceJson("{\"decision\":\"APPROVE\"}");
+    when(tasks.findById(396L)).thenReturn(Optional.of(task));
+
+    MockMvcBuilders.standaloneSetup(new BusinessProcessActivityExecutionController(auditedService))
+        .build()
+        .perform(
+            get("/api/business-processes/70/products/4/tasks/396/audit")
+                .param("sourceReference", "experiment:92"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.productInternalName").value("Vega"))
+        .andExpect(jsonPath("$.comments").value("{\"summary\":\"Parecer integral de Psique.\"}"))
+        .andExpect(jsonPath("$.evidenceJson").value("{\"decision\":\"APPROVE\"}"));
   }
 
   /** Produto, processo, ciclo e tarefa diferentes nunca recebem o prompt de outra execução. */

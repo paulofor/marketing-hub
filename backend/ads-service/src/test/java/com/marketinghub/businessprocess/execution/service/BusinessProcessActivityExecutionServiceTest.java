@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskActivityCoverage;
+import com.marketinghub.agenttask.AgentTaskProcessExecutionListSnapshot;
 import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.AgentTaskVisualEvidence;
@@ -254,7 +255,7 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(execution.finishedAt()).isEqualTo("2026-08-27T03:35:14Z");
   }
 
-  /** Preserva tarefas, custos e referência histórica explícita; a leitura leve omite os prompts. */
+  /** Preserva tarefas, custos e referência histórica explícita; a lista leve omite LOBs. */
   @Test
   void returnsProductActivitiesAndUniqueTasksWithoutCrossProcessLeakage() {
     BusinessProcessActivityDefinitionRepository activityDefinitions =
@@ -419,20 +420,54 @@ class BusinessProcessActivityExecutionServiceTest {
         .isEqualTo("Rigel");
     assertThat(result.activities()).allMatch(activity -> activity.executionControl() != null);
     var compact = productService.productProcessExecutions(18L, 9L, null, null, false);
-    assertThat(compact)
-        .usingRecursiveComparison()
-        .ignoringFieldsMatchingRegexes(".*promptSent", ".*agentPromptPart", ".*activityPromptPart")
-        .isEqualTo(result);
     assertThat(compact.activities().stream().flatMap(item -> item.tasks().stream()))
         .allSatisfy(
             task -> {
+              assertThat(task.comments()).isNull();
+              assertThat(task.evidenceJson()).isNull();
               assertThat(task.promptSent()).isNull();
               assertThat(task.agentPromptPart()).isNull();
               assertThat(task.activityPromptPart()).isNull();
+              assertThat(task.accessedUrls()).isEmpty();
+              assertThat(task.visualEvidence()).isEmpty();
+              assertThat(task.visualAudit()).isNull();
+              assertThat(task.purchaseEmotion()).isNull();
             });
     assertThat(result.activities().getFirst().tasks().getFirst().promptSent())
         .hasSizeGreaterThan(4_000_000);
     when(commercialPlans.findIdsByProductId(9L)).thenReturn(List.of(4L, 5L));
+    when(tasks.findProcessExecutionListSnapshots(
+            "commercial-plan:4@v2:journey", "landing-page-generation"))
+        .thenReturn(
+            List.of(
+                new AgentTaskProcessExecutionListSnapshot(
+                    242L,
+                    18L,
+                    "landing-page-generation",
+                    4,
+                    oldTechnicalReview.getTitle(),
+                    oldTechnicalReview.getStatus(),
+                    oldTechnicalReview.getSourceReference(),
+                    oldTechnicalReview.getAssignedAgent().getAgentKey(),
+                    oldTechnicalReview.getAssignedAgent().getNickname(),
+                    oldTechnicalReview.getProcessActivityId(),
+                    oldTechnicalReview.getProcessActivityName(),
+                    oldTechnicalReview.getExecutionError(),
+                    oldTechnicalReview.getInputTokens(),
+                    oldTechnicalReview.getCachedInputTokens(),
+                    oldTechnicalReview.getOutputTokens(),
+                    oldTechnicalReview.getEstimatedCostUsd(),
+                    oldTechnicalReview.getCostEstimationStatus(),
+                    oldTechnicalReview.getCreatedAt(),
+                    oldTechnicalReview.getReceivedAt(),
+                    oldTechnicalReview.getDeliveredAt(),
+                    oldTechnicalReview.getUpdatedAt(),
+                    oldTechnicalReview.getExecutionModelCode(),
+                    oldTechnicalReview.getExecutionMode(),
+                    oldTechnicalReview.getExecutionReasoningEffort(),
+                    oldTechnicalReview.getBlockerCategory(),
+                    oldTechnicalReview.getBlockerAction())));
+    when(coverages.findAllByAgentTaskIdIn(List.of(242L))).thenReturn(List.of());
     var historical =
         productService.productProcessExecutions(
             18L, 9L, null, null, false, "commercial-plan:4@v2:journey");
@@ -440,6 +475,9 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(
             historical.activities().stream().flatMap(a -> a.tasks().stream()).map(t -> t.taskId()))
         .containsExactly(242L);
+    verify(tasks)
+        .findProcessExecutionListSnapshots(
+            "commercial-plan:4@v2:journey", "landing-page-generation");
     assertThatThrownBy(
             () ->
                 productService.productProcessExecutions(

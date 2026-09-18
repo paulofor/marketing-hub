@@ -1,0 +1,18 @@
+{
+  "cardKey": "hesitacao-nao-deve-disparar-pressao-agente",
+  "collection": "neuromarketing",
+  "title": "Hesitação não deve virar pressão repetida do agente",
+  "finding": "Uma auditoria de 17.930 turnos ligados a um ensaio randomizado de reflexão sobre carreira encontrou que o agente repetia pedidos de decisão quando participantes hesitavam; participantes mais pressionados terminaram mais duvidosos, enquanto o grupo com agente como um todo terminou menos comprometido com seus planos e mais duvidoso do que o grupo com questionário estático.",
+  "mechanism": "Hipótese interpretativa: hesitação pode sinalizar incerteza, necessidade de informação ou necessidade de tempo. Repetir a mesma solicitação transforma adaptação conversacional em pressão social, podendo reduzir sensação de autonomia em vez de esclarecer a decisão.",
+  "commercialApplication": "Em fluxos de decisão do customer-agent, tratar hesitação como estado explícito: limitar repetições do mesmo CTA ou pergunta, oferecer clarificação, comparação, pausa ou saída e registrar quando o agente tenta reabrir a mesma decisão.",
+  "evidenceStrength": "Preprint que audita 17.930 turnos de duas etapas associadas a um ensaio randomizado. A comparação agente versus questionário é experimental, mas a quantidade de pressão repetida não foi isoladamente randomizada; sua associação com maior dúvida não deve ser tratada como causalidade independente.",
+  "publishedOn": "2026-09-17",
+  "validUntil": "2026-11-01",
+  "experimentHypothesis": "Depois de sinais de hesitação, limitar a repetição do CTA e oferecer clarificação ou adiamento reduzirá abandono, arrependimento e correções posteriores sem reduzir desnecessariamente o avanço de usuários já decididos.",
+  "risks": "Desescalar cedo demais pode interromper uma venda legítima ou deixar dúvida sem resposta; insistir demais pode virar pressão indevida. O sistema precisa distinguir pedido de esclarecimento, objeção, hesitação e recusa explícita.",
+  "limits": "O contexto foi reflexão sobre carreira, não compra. O estudo não demonstra aumento ou queda de conversão, e a relação entre número de pressões e dúvida final é associativa dentro das conversas auditadas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-18-hesitacao-nao-deve-disparar-pressao-agente.md",
+  "sourceTitle": "Fonte revisada — Hesitação não deve virar pressão repetida do agente",
+  "sourceSha256": "9735bbaff9c7640917695cad5eca2c74bc0c6d68e18c837e9a422a6cf9ff4f39"
+}

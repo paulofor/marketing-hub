@@ -1,0 +1,18 @@
+{
+  "cardKey": "distancia-cromatica-saliencia-alvo",
+  "collection": "prazer-audio-visual",
+  "title": "Destacar alvos pela distância cromática local",
+  "finding": "Em uma tarefa de busca visual, aumentar a diferença perceptual de cor entre alvo e fundo reduziu o tempo de localização em um contexto cromático, mas não produziu benefício global em outro eixo; a distância alvo-fundo em CIELAB explicou melhor o padrão do que uma regra simples de aumentar contraste.",
+  "mechanism": "A saliência cromática depende da separação perceptual entre o elemento e sua vizinhança e da direção cromática do contexto. Aumentar saturação ou contraste sem considerar o fundo local pode não melhorar a detecção.",
+  "commercialApplication": "Para CTAs, rótulos, legendas ou objetos prioritários em interfaces e vídeo, testar variantes que aumentem a distância cromática perceptual alvo-fundo local, medindo tempo de localização, erros, compreensão e conforto antes de avaliar métricas comerciais.",
+  "evidenceStrength": "Média para saliência visual: experimento controlado e muitas observações por participante, porém apenas 10 observadores e efeito dependente do contexto cromático; não há evidência de estética, prazer ou venda.",
+  "publishedOn": "2026-06-22",
+  "validUntil": "2027-03-18",
+  "experimentHypothesis": "Variantes com maior distância cromática perceptual entre o elemento prioritário e o fundo local reduzirão o tempo de localização e os erros sem prejudicar compreensão ou conforto, em comparação com variantes de menor separação cromática.",
+  "risks": "Contraste cromático excessivo pode piorar estética, fadiga ou acessibilidade; não confundir saliência com preferência e não substituir verificações de contraste de luminância e acessibilidade.",
+  "limits": "Amostra pequena, tarefa de busca controlada, filtro espectral específico e ausência de desfechos de prazer, memória ou conversão. Um coautor é Chief Science Officer da EnChroma, empresa ligada ao filtro avaliado.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-18-distancia-cromatica-saliencia.md",
+  "sourceTitle": "Fonte revisada — distância cromática e saliência visual",
+  "sourceSha256": "7099049758450ece0113a592493f5ae4e7d44e2987d81e407ce2a2729521056e"
+}

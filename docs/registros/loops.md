@@ -78,6 +78,24 @@
 - **Prevenção:** empacotadores dos dois workers executados localmente e mensagem diagnóstica do
   cenário histórico preservada. Evidências em `docs/homologacao/github-actions-pr-5209.md`.
 
+### Recorrência eliminada — contrato de deploy preso ao frontend v7
+
+- **Data e evidência:** em 18/09/2026, o run
+  [35305792591](https://github.com/paulofor/marketing-hub/actions/runs/35305792591) aprovou o
+  resolvedor do frontend declarado pelo manifesto, mas o job Backend parou em
+  `Validate isolated deploy contract`, antes dos testes Java e da publicação.
+- **Causa-raiz:** o workflow passou a selecionar dinamicamente a superfície imutável a publicar,
+  enquanto dois contratos de regressão continuaram exigindo literalmente o fallback transitório
+  `TARGETED_FRONTEND_VERSION=v7`. Fixtures encadeadas também não acompanharam a verificação de
+  consistência da v8 nem o fingerprint obrigatório no diagnóstico de runtime. Os testes antigos
+  contradiziam a arquitetura nova já validada.
+- **Correção e prevenção:** os contratos agora exigem a saída do job
+  `deployment_scope`, o resolvedor versionado e o smoke da superfície efetivamente selecionada;
+  também recusam a reintrodução do fallback fixo. O smoke da v8 comprova a consistência do
+  artefato depois da publicação, como as demais superfícies MUSA, e a fixture do runtime comprova
+  o fingerprint presente e a recusa de sua ausência. Casos de candidata v8, ausência de candidata,
+  fingerprint divergente e duas candidatas permanecem cobertos pelo teste unitário do resolvedor.
+
 ### Recorrência eliminada — 18/09/2026
 
 - **Evidência:** o run [35301515322](https://github.com/paulofor/marketing-hub/actions/runs/35301515322)

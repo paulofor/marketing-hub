@@ -87,10 +87,7 @@ fi
 run_target v8
 grep -Fqx $'npm\thttps://v8.clubemusa.com.br\t/?mh_preview=qa&pde_analytics=off\t\trun test:public-health' "${invocation_log}"
 grep -Fqx $'npm\thttps://v8.clubemusa.com.br\t\tmusa-pde-entry-v12-primeiro-ajuste-aplicavel\trun test:public-diagnostic-smoke' "${invocation_log}"
-if grep -q '^consistency' "${invocation_log}"; then
-  echo '[ARQUITETURA] O smoke da candidata v8 consultou o endpoint exclusivo de versões publicadas.' >&2
-  exit 1
-fi
+grep -Fqx $'consistency\thttps://v8.clubemusa.com.br\tmusa-pde-entry-v12-primeiro-ajuste-aplicavel\t' "${invocation_log}"
 if grep -Fq 'v7.clubemusa.com.br' "${invocation_log}" || grep -Fq 'kit-whatsapp-pronto' "${invocation_log}"; then
   echo '[ARQUITETURA] O deploy direcionado ao v8 validou uma superfície não publicada.' >&2
   exit 1
@@ -127,7 +124,7 @@ for expected_diagnostic in \
   $'https://v8.clubemusa.com.br\t\tmusa-pde-entry-v12-primeiro-ajuste-aplicavel'; do
   grep -Fq $'npm\t'"${expected_diagnostic}"$'\trun test:public-diagnostic-smoke' "${invocation_log}"
 done
-test "$(grep -c '^consistency' "${invocation_log}")" -eq 3
+test "$(grep -c '^consistency' "${invocation_log}")" -eq 4
 test "$(grep -c '^rigel-consistency' "${invocation_log}")" -eq 1
 
 if PDE_SMOKE_NPM_COMMAND="${fake_npm}" \

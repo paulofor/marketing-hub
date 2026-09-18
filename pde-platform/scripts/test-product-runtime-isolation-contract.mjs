@@ -147,7 +147,7 @@ test("workflow, proxy e smoke publicam Mira sem operar Vega", async () => {
     "Validate product-exclusive build artifacts",
     "PDE_FRONTEND_VERSION_ID=mira-private-v3",
     "mira) FRONTEND_SERVICES='pde-platform-frontend-mira'",
-    "TARGETED_FRONTEND_VERSION=v7",
+    "PDE_DEPLOY_FRONTEND_VERSION: ${{ needs.deployment_scope.outputs.frontend-version }}",
     "bootstrap-legacy-route",
     "PDE_MIRA_PROXY_MODE",
     "bootstrap-legacy-route é permitido somente no primeiro deploy direcionado de Mira",

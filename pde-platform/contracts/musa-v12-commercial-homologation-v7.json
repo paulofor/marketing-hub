@@ -1,0 +1,167 @@
+{
+  "contractVersion": "musa-v12-commercial-homologation.v7",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 6,
+  "activityId": "pdeGate",
+  "sourceReference": "product:4@musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  "experimentId": 92,
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "commercialPlanId": 3,
+    "publicUrl": "https://v8.clubemusa.com.br/"
+  },
+  "offer": {
+    "priceBrl": 67,
+    "currency": "BRL",
+    "billingModel": "ONE_TIME",
+    "accessDays": 90,
+    "renewal": false,
+    "checkoutUrl": "https://go.pepper.com.br/owm6x",
+    "checkoutProvider": "PEPPER",
+    "checkoutReference": "owm6x",
+    "promise": "Entregar gratuitamente um primeiro ajuste claro e aplicável com itens que a cliente já possui e liberar, após a compra, a continuidade guiada de sete dias."
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "scope": "Candidata do experimento 92 preservada, agora publicada por uma transação exclusiva da superfície v8 com preflight, comprovação pública e rollback exato.",
+  "boundary": "Prepara nova revisão independente sem autorizar campanha, gasto, cobrança ou publicação comercial.",
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/musa-v12-commercial-homologation-v6.json",
+    "reason": "Validar a candidata PDE pelo canal autenticado correto e proteger todos os checkouts do publicador sem antecipar publicação comercial.",
+    "includedChanges": [
+      "Smoke diferencia contrato publicado de contrato candidato",
+      "Candidata usa somente o preflight interno autenticado do backend",
+      "Contrato, proxy, runtime e fingerprint permanecem comparados ponta a ponta",
+      "Todo checkout do workflow valida recuperação antes de etapas subsequentes"
+    ],
+    "excludedChanges": [
+      "Preço, checkout, promessa, público e condições comerciais",
+      "Promoção da candidata, campanha, tráfego, gasto, cobrança e acesso real"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br/",
+    "requiredFrontendSourceSha256": "09e282435e2496f1a4fc96c1fbd90dbb8c368a3b87114a9b3af8899c3f10ef42"
+  },
+  "liveVisualContract": {
+    "deviceProfile": "IPHONE_15_PRO",
+    "requiredFirstFoldCtas": [
+      "Começar meu ajuste gratuito"
+    ],
+    "requiredVisibleTexts": [
+      "4 escolhas rápidas, sem compra de roupa.",
+      "Continuação de 7 dias por R$ 67, pagamento único.",
+      "Acesso por 90 dias, sem assinatura ou renovação."
+    ],
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "09e282435e2496f1a4fc96c1fbd90dbb8c368a3b87114a9b3af8899c3f10ef42"
+    }
+  },
+  "homologationMatrix": {
+    "environment": "LOCAL_ISOLATED",
+    "executedAt": "2026-09-18",
+    "devices": [
+      "DESKTOP_CHROMIUM",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "verifiedStates": [
+      "INVALID_CANDIDATE_REJECTED_BEFORE_CUTOVER",
+      "TARGET_ONLY_PROMOTION",
+      "PUBLIC_ARTIFACT_IDENTITY",
+      "FRONTEND_EXACT_ROLLBACK",
+      "BACKEND_COMPATIBILITY_AND_EXACT_ROLLBACK",
+      "OTHER_VERSIONS_AND_WORKERS_UNCHANGED",
+      "PRIVACY_DETAILS_COLLAPSED_EXPANDABLE_AND_REVERSIBLE",
+      "FIRST_FOLD_CTA_AND_TERMS",
+      "FREE_FIRST_ADJUSTMENT",
+      "PEPPER_PAYMENT_APPROVED",
+      "V12_ACCESS_90_DAYS",
+      "RESUME_AND_COMPLETION",
+      "IDEMPOTENT_REFUND",
+      "INTERNAL_QA_METRIC_SEGREGATION"
+    ],
+    "evidenceBoundary": "Publicação, pagamento, e-mail e tráfego são simulados localmente. Vendas e receita continuam não comprovadas."
+  },
+  "measurementContract": {
+    "authoritativeSaleEvent": "PURCHASE_COMPLETED",
+    "authoritativeDeliveryEvent": "DELIVERY_COMPLETED",
+    "humanMetricsExcludeTestTraffic": true,
+    "deduplicationRequired": true,
+    "testTrafficClass": "INTERNAL_QA"
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v6.json",
+      "sha256": "46768f60f6343de83d2c199af88d267759aaa5ce4a040dabe97fec41f42e5881",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "A v6 preserva oferta, experiência, isolamento, promoção e rollback; a v7 corrige apenas o canal de validação e a proteção operacional."
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "78f5d14b213c5d342868f441cf458150987515cfdf64f57c954d26c8b862a211",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Experiência v12 preservada, incluindo privacidade recolhida e primeiro ajuste aplicável."
+    },
+    {
+      "path": "pde-platform/frontend/src/styles.css",
+      "sha256": "67ec3ef79d7bfa6b3093b92ad204f97d864879ffe6cc96c186703d20f9c12942",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Estilos comerciais da experiência v12 preservados sem alteração de oferta."
+    },
+    {
+      "path": ".github/workflows/pde-platform-metodo-musa-ci.yml",
+      "sha256": "8a841adc886a59ab2714c234913913ec20d016be4e1ed3cda25efba779d744d7",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Workflow protege todos os checkouts e fornece o segredo apenas ao smoke de produção."
+    },
+    {
+      "path": "scripts/check-musa-pde-public-consistency.sh",
+      "sha256": "70c21a90b15dd40a3b7ff6bc9385e1c425e40a3b75c6c07e8c9d5a989f621517",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Validador separa canal publicado e candidato, exige autenticação e compara identidades sem expor o token."
+    },
+    {
+      "path": "pde-platform/scripts/run-targeted-production-smokes.sh",
+      "sha256": "520bda035ebe40a57c8d3d8c61a160c643dcb589c65d8448c2d15baa19a9514e",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Roteador mantém v5 a v7 no canal publicado e encaminha somente a v8 candidata ao preflight autenticado."
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "scripts/test-musa-pde-public-consistency.py",
+      "sha256": "a6bbf481ab3112e814ec3a068aab3a99728061b71309bf25c7d2247200de081a",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Teste HTTP comprova autenticação, rota candidata e recusas sem token ou com modo inválido."
+    },
+    {
+      "path": "pde-platform/scripts/test-targeted-production-smokes.sh",
+      "sha256": "4b0823b7fed7f0b02fa54c3bf7472295f4bf4891f156bd543c29323f961f284f",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Teste comprova canal publicado para versões ativas e canal candidato somente para v8."
+    },
+    {
+      "path": "pde-platform/scripts/test-deploy-isolation-contract.sh",
+      "sha256": "f6ae5d06da0983da1a486fc5327b8aabfb9a24d0e8b370d0cd72ba45e9b30745",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Contrato arquitetural exige que o modo de acesso acompanhe o smoke direcionado."
+    },
+    {
+      "path": "scripts/test-publisher-recovery.py",
+      "sha256": "a3af6e1cb4bff7be2fe699f5ae5e63e7c9b5cc175ac12434587a8464f1393f38",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Teste exige proteção de recuperação para todos os checkouts dos publicadores."
+    }
+  ],
+  "validationReport": "docs/homologacao/pde-candidate-validation-channel-v1.md"
+}

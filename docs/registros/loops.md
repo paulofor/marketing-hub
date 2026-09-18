@@ -5997,6 +5997,15 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   autenticado já consumido pelo backend PDE e preserva o 409 do endpoint público até a promoção.
 - **Prevenção:** o teste do roteador cobre v6 publicada e v8 candidata; falha se a v6 voltar a fixar
   copy mutável ou se a candidata for enviada ao verificador exclusivo de snapshots publicados.
+- **Recorrência confirmada em 18/09/2026:** a execução `35350586057` publicou a v8 e o smoke final
+  consultou diretamente o endpoint público, que respondeu 409 corretamente porque a v8 continuava
+  candidata. O roteador do backend PDE já usava o preflight autenticado, mas o script de consistência
+  não carregava essa distinção até a chamada HTTP real.
+- **Correção complementar:** o smoke agora declara explicitamente `published` ou `candidate`; o modo
+  candidato exige token, consulta o endpoint interno de validação e continua comparando o mesmo
+  contrato com o proxy, runtime e fingerprint públicos. Testes HTTP comprovam rota, autenticação,
+  recusa sem token e recusa de modo desconhecido. O checkout adicional do workflow também valida a
+  autorização de recuperação antes de qualquer etapa subsequente.
 
 ## LOOP-PSIQUE-MANIFESTO-NOVO-COM-PIXELS-ANTIGOS — 18/09/2026
 

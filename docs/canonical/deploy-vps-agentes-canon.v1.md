@@ -197,6 +197,15 @@ workflow mantém o estado `DEPLOYING`, e divergência além da tolerância abre 
 produção desatualizada. Assim, uma correção integrada de Psique não fica invisível por o backend e
 o frontend já estarem atualizados.
 
+O mesmo Watchdog acompanha a experiência pública vigente do **PDE Platform Método MUSA**. Ele
+seleciona no repositório o manifesto publicável mais recente do produto 4, sem fixar o monitor em
+uma versão como `v8`, e consulta o `healthz` e o `version-diagnostics.json` do domínio declarado.
+Saúde, produto, versão da experiência, superfície, fingerprint da fonte e commit publicado devem
+coincidir com o manifesto antes de a revisão ser aceita. Somente a mudança de uma declaração de
+publicação MUSA torna essa superfície pendente; mudanças internas sem promoção explícita não geram
+alarme falso. Uma execução corrente do workflow `CI - PDE Platform Metodo MUSA` mantém o estado
+`DEPLOYING`; ausência, divergência ou atraso além da tolerância abre o incidente compartilhado.
+
 Para a transição do legado, quando as faixas de cache de 24 h e 1 h não bastarem, uma terceira faixa
 permite `docker builder prune --force --filter until=0s --keep-storage 1GB`. Ela alcança somente
 cache descartável dos builds recém-concluídos, sob o lock e timeout existentes. Não usa `--all`,

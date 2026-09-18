@@ -12,8 +12,11 @@ import subprocess
 import tempfile
 from typing import Any
 
+from musa_pde_watchdog import publication_changed_for_frontend, supported_surfaces_at
+
 DEPLOY_WORKFLOW = "Build & Deploy containers"
 CUSTOMER_AGENT_DEPLOY_WORKFLOW = "Customer Agent Worker CI/CD"
+MUSA_PDE_DEPLOY_WORKFLOW = "CI - PDE Platform Metodo MUSA"
 TARGET_KEYS = {"app": "app_deploy", "frontend": "frontend", "psique": "customer_agent"}
 
 
@@ -65,6 +68,11 @@ class DeploymentDetector:
         self.script = root / "scripts" / "detect-deployment-changes.sh"
 
     def changed(self, base: str, head: str, target: str) -> bool:
+        if target.startswith("musa_pde:"):
+            frontend_version = target.split(":", 1)[1]
+            return publication_changed_for_frontend(
+                self.root, base, head, frontend_version
+            )
         if target not in TARGET_KEYS:
             raise ValueError(f"Target desconhecido: {target}")
         with tempfile.NamedTemporaryFile(prefix="freshness-", delete=False) as stream:
@@ -262,14 +270,75 @@ def overall(targets: list[dict[str, Any]]) -> str:
     return "FRESH"
 
 
+def musa_surface_targets(
+    report: dict[str, Any], repository_root: Path, head: str
+) -> list[dict[str, str]]:
+    """Valida o relatório público contra todas as versões suportadas no inventário."""
+
+    expected = supported_surfaces_at(repository_root, head)
+    reported = report.get("surfaces")
+    if not isinstance(reported, list):
+        raise ValueError("Relatório MUSA não contém a lista de superfícies")
+    by_target: dict[str, dict[str, Any]] = {}
+    for item in reported:
+        if not isinstance(item, dict) or not isinstance(item.get("target"), str):
+            raise ValueError("Relatório MUSA contém superfície inválida")
+        if item["target"] in by_target:
+            raise ValueError(f"Relatório MUSA duplicou a superfície {item['target']}")
+        by_target[item["target"]] = item
+    expected_targets = {item.target for item in expected}
+    if set(by_target) != expected_targets:
+        raise ValueError(
+            "Relatório MUSA não cobre exatamente as superfícies suportadas: "
+            f"esperadas={sorted(expected_targets)}, observadas={sorted(by_target)}"
+        )
+    return [
+        {
+            "target": f"musa_pde:{expectation.target}",
+            "surface": expectation.target,
+            "observed_revision": (
+                str(by_target[expectation.target].get("revision", "MISSING"))
+                if by_target[expectation.target].get("status") == "UP"
+                else "MISSING"
+            ),
+            "probe_status": str(by_target[expectation.target].get("status", "ERROR")),
+            "probe_error": str(by_target[expectation.target].get("error", "")),
+            "public_url": expectation.public_url,
+        }
+        for expectation in expected
+    ]
+
+
+def attach_musa_probe(
+    evaluated: dict[str, Any], surface: dict[str, str]
+) -> dict[str, Any]:
+    """Impede que um deploy de outra versão esconda uma sonda pública com falha."""
+
+    evaluated.update(
+        surface=surface["surface"],
+        public_url=surface["public_url"],
+        probe_status=surface["probe_status"],
+    )
+    if surface["probe_status"] != "UP":
+        evaluated["status"] = "STALE"
+        evaluated["probe_error"] = surface["probe_error"]
+        evaluated["reason"] = (
+            f"sonda pública da superfície {surface['surface']} falhou: "
+            f"{surface['probe_error'] or 'motivo não informado'}"
+        )
+    return evaluated
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--head", default="HEAD")
     parser.add_argument("--app-revision", required=True)
     parser.add_argument("--frontend-revision", required=True)
     parser.add_argument("--psique-revision", required=True)
+    parser.add_argument("--musa-pde-report-json", required=True)
     parser.add_argument("--runs-json", required=True)
     parser.add_argument("--psique-runs-json", required=True)
+    parser.add_argument("--musa-pde-runs-json", required=True)
     parser.add_argument("--grace-minutes", type=int, default=30)
     parser.add_argument("--max-deploy-minutes", type=int, default=75)
     parser.add_argument("--now", help="ISO-8601; usado por testes e auditoria")
@@ -292,6 +361,10 @@ def main() -> int:
         psique_payload = json.loads(Path(args.psique_runs_json).read_text())
         psique_deploys = live_deploys(
             psique_payload, now, args.max_deploy_minutes, CUSTOMER_AGENT_DEPLOY_WORKFLOW
+        )
+        musa_pde_payload = json.loads(Path(args.musa_pde_runs_json).read_text())
+        musa_pde_deploys = live_deploys(
+            musa_pde_payload, now, args.max_deploy_minutes, MUSA_PDE_DEPLOY_WORKFLOW
         )
         targets = [
             evaluate_target(
@@ -325,6 +398,19 @@ def main() -> int:
                 grace_minutes=args.grace_minutes,
             ),
         ]
+        musa_report = json.loads(Path(args.musa_pde_report_json).read_text())
+        for surface in musa_surface_targets(musa_report, root, args.head):
+            evaluated = evaluate_target(
+                target=surface["target"],
+                observed_revision=surface["observed_revision"],
+                head=head,
+                repo=repo,
+                detector=detector,
+                deploys=musa_pde_deploys,
+                now=now,
+                grace_minutes=args.grace_minutes,
+            )
+            targets.append(attach_musa_probe(evaluated, surface))
         document = {
             "checked_at": now.isoformat(),
             "head": head,
@@ -351,6 +437,16 @@ def main() -> int:
                     "url": run.url,
                 }
                 for run in psique_deploys
+            ],
+            "live_musa_pde_deploys": [
+                {
+                    "id": run.id,
+                    "sha": run.sha,
+                    "status": run.status,
+                    "created_at": run.created_at.isoformat(),
+                    "url": run.url,
+                }
+                for run in musa_pde_deploys
             ],
         }
         exit_code = 1 if document["overall_status"] == "STALE" else 0

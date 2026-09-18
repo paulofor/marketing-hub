@@ -1,0 +1,119 @@
+services:
+  pde-platform-backend:
+    image: ${PDE_PLATFORM_BACKEND_IMAGE:?required}
+    container_name: pde-platform-backend
+    environment: &deploy_environment
+      PDE_DEPLOY_COMMIT_SHA: ${PDE_DEPLOY_COMMIT_SHA:?required}
+      PDE_DEPLOY_IMAGE_TAG: ${PDE_DEPLOY_IMAGE_TAG:?required}
+      PDE_DEPLOY_DEPLOYED_AT: ${PDE_DEPLOY_DEPLOYED_AT:?required}
+      PDE_PLATFORM_FRONTEND_V5_IMAGE: ${PDE_PLATFORM_FRONTEND_V5_IMAGE:?required}
+      PDE_PLATFORM_FRONTEND_V6_IMAGE: ${PDE_PLATFORM_FRONTEND_V6_IMAGE:?required}
+      PDE_PLATFORM_FRONTEND_V7_IMAGE: ${PDE_PLATFORM_FRONTEND_V7_IMAGE:?required}
+      PDE_PLATFORM_FRONTEND_V8_IMAGE: ${PDE_PLATFORM_FRONTEND_V8_IMAGE:?required}
+      PDE_AI_WORKER_IMAGE: ${PDE_AI_WORKER_IMAGE:?required}
+      PDE_RETENTION_WORKER_IMAGE: ${PDE_RETENTION_WORKER_IMAGE:?required}
+    networks: [pde-platform-net]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8096/actuator/health | grep -q UP"]
+      interval: 1s
+      timeout: 1s
+      retries: 20
+
+  pde-platform-frontend-v5:
+    image: ${PDE_PLATFORM_FRONTEND_V5_IMAGE:?required}
+    container_name: pde-platform-frontend-v5
+    environment:
+      <<: *deploy_environment
+      PDE_FRONTEND_VERSION: v5
+      PDE_FRONTEND_VERSION_ID: v5
+      PDE_FRONTEND_PUBLIC_URL: https://v5.clubemusa.com.br
+      PDE_FRONTEND_IMAGE: ${PDE_PLATFORM_FRONTEND_V5_IMAGE:?required}
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v5-video-explicativo
+    ports: ["${PDE_PLATFORM_FRONTEND_V5_PORT:?required}:80"]
+    networks: [pde-platform-net]
+    healthcheck: &frontend_health
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz | grep -q UP"]
+      interval: 1s
+      timeout: 1s
+      retries: 20
+
+  pde-platform-frontend-v6:
+    image: ${PDE_PLATFORM_FRONTEND_V6_IMAGE:?required}
+    container_name: pde-platform-frontend-v6
+    environment:
+      <<: *deploy_environment
+      PDE_FRONTEND_VERSION: v6
+      PDE_FRONTEND_VERSION_ID: v6
+      PDE_FRONTEND_PUBLIC_URL: https://v6.clubemusa.com.br
+      PDE_FRONTEND_IMAGE: ${PDE_PLATFORM_FRONTEND_V6_IMAGE:?required}
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v6-video-motivacional
+    ports: ["${PDE_PLATFORM_FRONTEND_V6_PORT:?required}:80"]
+    networks: [pde-platform-net]
+    healthcheck: *frontend_health
+
+  pde-platform-frontend-v7:
+    image: ${PDE_PLATFORM_FRONTEND_V7_IMAGE:?required}
+    container_name: pde-platform-frontend-v7
+    environment:
+      <<: *deploy_environment
+      PDE_FRONTEND_VERSION: v7
+      PDE_FRONTEND_VERSION_ID: v7
+      PDE_FRONTEND_PUBLIC_URL: https://v7.clubemusa.com.br
+      PDE_FRONTEND_IMAGE: ${PDE_PLATFORM_FRONTEND_V7_IMAGE:?required}
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v7-espelho-antes-de-sair
+    ports: ["${PDE_PLATFORM_FRONTEND_V7_PORT:?required}:80"]
+    networks: [pde-platform-net]
+    healthcheck: *frontend_health
+
+  pde-platform-frontend-v8:
+    image: ${PDE_PLATFORM_FRONTEND_V8_IMAGE:?required}
+    container_name: pde-platform-frontend-v8
+    environment:
+      <<: *deploy_environment
+      PDE_FRONTEND_VERSION: v8
+      PDE_FRONTEND_VERSION_ID: v8
+      PDE_FRONTEND_PUBLIC_URL: https://v8.clubemusa.com.br
+      PDE_FRONTEND_IMAGE: ${PDE_PLATFORM_FRONTEND_V8_IMAGE:?required}
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v12-primeiro-ajuste-aplicavel
+    ports: ["${PDE_PLATFORM_FRONTEND_V8_PORT:?required}:80"]
+    networks: [pde-platform-net]
+    healthcheck: *frontend_health
+
+  pde-ai-worker:
+    image: ${PDE_AI_WORKER_IMAGE:?required}
+    container_name: pde-ai-worker
+    environment: *deploy_environment
+    networks: [pde-platform-net]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8096/actuator/health | grep -q UP"]
+      interval: 1s
+      timeout: 1s
+      retries: 20
+
+  pde-retention-worker:
+    image: ${PDE_RETENTION_WORKER_IMAGE:?required}
+    container_name: pde-retention-worker
+    environment: *deploy_environment
+    networks: [pde-platform-net]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8096/actuator/health | grep -q UP"]
+      interval: 1s
+      timeout: 1s
+      retries: 20
+
+  pde-test-edge-proxy:
+    image: ${PDE_TEST_EDGE_IMAGE:?required}
+    container_name: pde-test-edge-proxy
+    networks: [pde-platform-net]
+    depends_on:
+      pde-platform-frontend-v8:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz | grep -q UP"]
+      interval: 1s
+      timeout: 1s
+      retries: 20
+
+networks:
+  pde-platform-net:
+    name: ${PDE_TEST_NETWORK:?required}

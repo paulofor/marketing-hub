@@ -8,18 +8,22 @@ on:
       - '.github/workflows/production-freshness-contract.yml'
       - 'scripts/check-production-freshness.py'
       - 'scripts/test-production-freshness.py'
+      - 'scripts/musa_pde_watchdog.py'
       - 'scripts/detect-deployment-changes.sh'
       - 'scripts/read-frontend-build-revision.sh'
       - 'scripts/configure-vps-ssh-fallback.sh'
+      - 'pde-platform/contracts/product-runtime-isolation-v1.json'
   pull_request:
     paths:
       - '.github/workflows/production-freshness-watchdog.yml'
       - '.github/workflows/production-freshness-contract.yml'
       - 'scripts/check-production-freshness.py'
       - 'scripts/test-production-freshness.py'
+      - 'scripts/musa_pde_watchdog.py'
       - 'scripts/detect-deployment-changes.sh'
       - 'scripts/read-frontend-build-revision.sh'
       - 'scripts/configure-vps-ssh-fallback.sh'
+      - 'pde-platform/contracts/product-runtime-isolation-v1.json'
   workflow_dispatch:
 
 permissions:

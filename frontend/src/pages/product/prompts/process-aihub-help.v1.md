@@ -43,6 +43,24 @@ não comprovam vendas; diferencie hipótese comercial de resultado medido.
 
 ## 3. Aprimore os agentes envolvidos
 
+### Confira a versão antes de liberar uma revisão paga
+
+- Identifique na execução as versões esperadas do produto, das evidências e dos agentes.
+  Comprove sua compatibilidade; componentes não precisam ter o mesmo commit. Watchdog e
+  Catálogo Vivo ajudam, mas não substituem a verificação integrada da entrega publicada.
+- Antes de chamar o modelo, confira a identidade do build servido e os comportamentos
+  essenciais da experiência. Vincule manifesto, artefato imutável e capturas por evidências
+  verificáveis, como SHA-256; texto declarado, health e deploy concluído não comprovam sozinhos
+  que os pixels pertencem à versão esperada nem que a experiência funciona.
+- Se faltar publicação ou houver divergência, registre pelo contrato do backend um bloqueio
+  técnico como “aguardando atualização da página”, com versão esperada/observada, responsável
+  e ação necessária. Não transforme esse impedimento em reprovação comercial paga.
+- Após comprovar a entrega correta, deixe o backend liberar a continuação, respeitando
+  orçamento e aprovações, reutilizando resultados ainda válidos e impedindo tarefas duplicadas.
+  Se depender de publicação, aguarde o fluxo autorizado; o prompt não autoriza deploy ou gasto.
+
+### Melhore a camada responsável
+
 - Atribua a causa à camada comprovada: contexto, prompt, schema, ferramenta, integração,
   persistência ou verificação. Implemente a menor melhoria reutilizável que resolva o problema;
   não amplie a tarefa para todos os agentes nem crie serviços sem necessidade.
@@ -71,6 +89,9 @@ no backend quando pertinentes; parecer de IA não substitui esses controles nem 
   original e novas execuções com outros identificadores e entradas válidas. Quando pertinentes,
   cubra reinício do worker, tarefa abandonada, falha no retorno, retomada, concorrência e
   prevenção de execução ou cobrança duplicada. Valide desktop e celular quando houver tela.
+- Valide como um único fluxo a construção, o empacotamento, a entrega e a captura usada pelo
+  agente, com dependências locais quando necessário. Inclua divergência de versões, bloqueio
+  antes da chamada paga e retomada após compatibilidade comprovada; testes isolados não bastam.
 - **Revise os testes unitários de todos os módulos alterados.** Atualize os testes afetados
   por mudanças legítimas de contrato e acrescente regressões para as causas corrigidas.
   Confira fixtures, mocks e expectativas; não fixe produtos, versões ou casos particulares
@@ -101,6 +122,9 @@ comparação com o comportamento anterior, situação atual do processo e limita
 registre essa pendência sem declarar o processo concluído. Só atribua próxima ação ao usuário
 quando ela realmente depender dele. Sugira oportunidades comerciais fora do escopo separadamente,
 com impacto esperado, esforço e métrica de validação, sem apresentar hipóteses como vendas medidas.
+Quando o impedimento envolver builds, acompanhe divergências de versão, intervenções manuais,
+custo por homologação concluída e tempo de preparação, declarando dados ausentes. Vendas líquidas
+e margem medem o resultado comercial; redução de bloqueios é um ganho operacional.
 
 ## Contexto oficial para diagnóstico
 

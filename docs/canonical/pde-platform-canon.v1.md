@@ -167,7 +167,8 @@ nunca deve consumir o modelo nem virar um parecer funcional sobre pixels sabidam
 As sondas HTTP da homologação do proxy mantêm um prazo ativo até consumir a resposta completa,
 inclusive em conexões reutilizadas, e recusam conexão abortada ou corpo incompleto com diagnóstico.
 O isolamento de produtos deve reutilizar o contrato central de fila do host público:
-`queue: max` e `cancel-in-progress: false`, sem impor regras locais contraditórias.
+o mesmo `concurrency.group`, `queue: max` e `cancel-in-progress: false`, sem impor regras locais
+contraditórias.
 
 Decisão canônica de 2026-07-31: o modelo operacional de “slot” compartilhado para PDE público fica substituído por **versão pública isolada por imagem e container Docker**.
 
@@ -192,6 +193,44 @@ Regra obrigatória:
 - toda análise operacional de métricas PDE via MCP deve validar primeiro a tool `pde_db_health` e conferir `datasourceTarget.host`, `datasourceTarget.port` e `datasourceTarget.schema` contra o banco usado pelo PDE Platform Backend produtivo da URL analisada. Se o MCP consultar base diferente, réplica defasada ou alvo não comprovado, os dados do MCP não podem ser usados como prova comercial até o deploy do MCP ser realinhado. O deploy versionado do MCP deve herdar o datasource canônico `PDE_ACCESS_JDBC_*` do PDE quando `MCP_PDE_DATASOURCE_*` não for informado explicitamente.
 
 Benefício comercial esperado: impedir que campanha com tráfego pago seja julgada por métricas de outra versão, reduzir risco de publicar criativo/oferta em URL errada e preservar aprendizado limpo para decisão de escala.
+
+### Promoção transacional e componentes compartilhados — decisão de 18/09/2026
+
+O motor continua compartilhado no código-fonte, mas a unidade de publicação do frontend é sempre
+uma única superfície versionada. O inventário `product-runtime-isolation-v1.json` declara target,
+imagem, serviço, container, porta, URL, `experienceVersion`, estado de ciclo de vida e obrigação de
+Watchdog. É proibido um comando `all` atualizar várias superfícies públicas ou usar mudança de
+workflow como motivo implícito para reiniciar qualquer runtime.
+
+Para cada publicação de frontend, o pipeline deve:
+
+1. resolver exatamente um manifesto imutável apto, pela maior revisão numérica quando a seleção for
+   manual, conferir seu SHA-256 e comprovar que produto, target, URL, experiência e fingerprint da
+   fonte coincidem com o inventário; empate de revisão deve bloquear a publicação;
+2. subir a mesma imagem candidata sem porta pública e sem iniciar dependências;
+3. comprovar health, diagnóstico, produto, versão, imagem, commit, fingerprint e acesso ao backend;
+4. manter a versão atual ativa até o preflight terminar;
+5. trocar somente o serviço alvo com `--no-deps`;
+6. repetir as provas no container e na URL pública após recarregar o proxy, antes de emitir recibo
+   imutável;
+7. diante de falha posterior à troca, restaurar a imagem e a identidade exatas observadas antes dela,
+   validar o rollback também pela URL pública e manter as demais superfícies e componentes intactos.
+
+Backend, worker de IA e worker de retenção são componentes compartilhados, porém possuem targets de
+publicação separados. Publicar frontend não os recria. Publicar um deles não recria os demais nem os
+frontends. Mudança de backend exige antes uma matriz local de compatibilidade com todas as superfícies
+`SUPPORTED`; depois da troca, os proxies dos frontends são recarregados e precisam comprovar a API em
+três leituras consecutivas antes dos smokes públicos. Uma troca do backend pode ter rollback isolado,
+mas não autoriza reverter ou atualizar um frontend. A identidade do backend deve preservar as
+referências das imagens que estão efetivamente em execução em cada superfície e worker; é proibido
+atribuir a eles a tag do novo backend quando esses artefatos não foram publicados.
+
+O Watchdog consulta individualmente toda superfície `SUPPORTED` com `watchdogRequired=true`. Versões
+modernas comprovam também o fingerprint do manifesto; versões legadas usam a revisão mínima conhecida
+até receberem contrato imutável próprio. Falha em uma URL identifica somente aquela superfície e não
+transforma a versão mais recente em representante das anteriores. O recibo do deploy deve preservar
+target/componente, contrato, imagem anterior e nova, IDs, commit, fingerprint quando aplicável,
+horário e resultado de promoção ou rollback.
 
 ## Responsabilidades
 
@@ -703,7 +742,7 @@ Regras obrigatórias:
 - cada versão pública deve ter subdomínio próprio, slot próprio no Marketing Hub e `experienceVersion` própria;
 - duas versões comerciais diferentes de PDE nunca podem compartilhar a mesma URL pública primária;
 - se a URL pública for igual, a versão comercial deve ser considerada a mesma para fins de campanha, analytics e decisão de escala;
-- o deploy produtivo do backend/worker do PDE pode rodar automaticamente em `main`, mas o frontend público de uma versão com tráfego ou cliente em uso só pode ser atualizado por slot explícito (`v5`, `v6`, `all` ou equivalente), nunca como efeito colateral de outra versão;
+- o deploy produtivo de backend ou worker usa seu target próprio, mas o frontend público de uma versão com tráfego ou cliente em uso só pode ser atualizado por uma única versão explícita (`v5`, `v6`, `v7`, `v8` ou equivalente), nunca em lote nem como efeito colateral de outra versão;
 - o mesmo motor pode atender múltiplos subdomínios, mas cada frontend público em campanha deve ter container/porta/proxy próprios para permitir deploy e rollback independente por versão;
 - nenhum deploy pode ser considerado pronto se `v5` e `v6` entregarem o mesmo `experienceVersion` por engano;
 - quando a versão depender de vídeo, o smoke test deve validar que o stream HLS público esperado retorna manifesto e segmentos reais, nunca HTML fallback;
@@ -761,7 +800,7 @@ Cada versão pública deve rodar em imagem e container próprios, com `experienc
 
 O workflow oficial de publicação do `pde-platform` deve validar cada versão produtiva ativa ou pronta, no mínimo `https://v5.clubemusa.com.br` e `https://v6.clubemusa.com.br` enquanto ambas existirem. A validação pós-deploy precisa provar health público, renderização da entrada, contrato público, jornada diagnóstica e `version-diagnostics.json` em cada subdomínio, porque um único smoke test no domínio raiz não comprova teste simultâneo de versões.
 
-Como os subdomínios versionados do Clube MUSA são superfície direta de campanha, o workflow oficial do `pde-platform` também deve garantir que o proxy HTTPS público esteja ativo antes de aprovar a publicação. Se o proxy do `lead-portal-payments-service` estiver disponível no host, o workflow deve recriá-lo/recarregá-lo pelo Compose versionado e reconectá-lo à network pública usada pelo PDE. Se nenhum container publicar a porta 443 ou nenhum proxy puder ser encontrado, a publicação deve falhar com diagnóstico operacional claro; nunca considerar a v5/v6 pronta apenas porque as portas diretas `5176`/`5177` respondem.
+Como os subdomínios versionados do Clube MUSA são superfície direta de campanha, o workflow oficial do `pde-platform` também deve garantir que o proxy HTTPS público esteja ativo antes de aprovar a publicação. Se o proxy proprietário do `lead-portal-payments-service` estiver disponível no host, o workflow pode iniciá-lo, conectá-lo à rede pública e recarregá-lo, mas não recriá-lo pelo Compose do PDE. Se nenhum container publicar a porta 443 ou nenhum proxy puder ser encontrado, a publicação deve falhar com diagnóstico operacional claro; nunca considerar a v5/v6 pronta apenas porque as portas diretas `5176`/`5177` respondem.
 
 O DNS público dos subdomínios versionados do Clube MUSA deve apontar para o mesmo host oficial usado pelo workflow de deploy do PDE e pelo proxy HTTPS do `lead-portal-payments-service`. A validação produtiva deve falhar explicitamente quando `v5.clubemusa.com.br`, `v6.clubemusa.com.br`, `v7.clubemusa.com.br` ou versão futura resolverem para IP diferente do host de deploy, porque isso envia tráfego pago para infraestrutura fora do caminho publicado e contamina a leitura comercial do experimento.
 

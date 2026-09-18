@@ -10,6 +10,7 @@ on:
     workflows:
       - Build & Deploy containers
       - Customer Agent Worker CI/CD
+      - CI - PDE Platform Metodo MUSA
       - Reconcile automatic publishers
     types: [completed]
     branches: [main]
@@ -70,12 +71,15 @@ jobs:
           SSH_OPTS: -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=3
         run: |
           set -euo pipefail
+          read -r -a ssh_options <<< "${SSH_OPTS}"
+          ssh_target="${VPS_USER}@${APP_VPS_IP}"
 
-          app_revision="$(ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
+          # shellcheck disable=SC2029 # DEPLOY_DIR deve ser resolvido localmente antes da sonda remota.
+          app_revision="$(ssh "${ssh_options[@]}" "${ssh_target}" \
             "if test -f '${DEPLOY_DIR}/.deployed-app-revision'; then tr -d '\\r\\n' < '${DEPLOY_DIR}/.deployed-app-revision'; else printf MISSING; fi" \
             2>/dev/null || printf MISSING)"
 
-          frontend_health="$(ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
+          frontend_health="$(ssh "${ssh_options[@]}" "${ssh_target}" \
             "curl -fsS --max-time 10 http://localhost:5173/healthz" 2>/dev/null || true)"
           frontend_revision="$(printf '%s\n' "${frontend_health}" \
             | bash scripts/read-frontend-build-revision.sh 2>/dev/null || printf MISSING)"
@@ -100,6 +104,21 @@ jobs:
           psique_revision="$(printf '%s' "$psique_revision" | sed -nE 's#^marketing-hub/customer-agent-worker:([0-9a-f]{40})$#\1#p')"
           printf 'psique_revision=%s\n' "${psique_revision:-MISSING}" >> "$GITHUB_OUTPUT"
 
+      - id: musa_pde
+        name: Read every supported Metodo MUSA PDE revision and health
+        run: |
+          set +e
+          python3 scripts/musa_pde_watchdog.py \
+            --repository-root . \
+            --ref main \
+            --report /tmp/musa-pde-watchdog.json \
+            --output "$GITHUB_OUTPUT"
+          probe_exit=$?
+          set -e
+          if [[ "${probe_exit}" -ne 0 ]]; then
+            echo 'Uma ou mais superfícies públicas suportadas do Método MUSA não puderam ser comprovadas.' >&2
+          fi
+
       - name: Read active deployment runs
         env:
           GH_TOKEN: ${{ github.token }}
@@ -112,6 +131,10 @@ jobs:
             -H 'Accept: application/vnd.github+json' \
             "repos/${GITHUB_REPOSITORY}/actions/workflows/customer-agent-worker-ci.yml/runs?branch=main&per_page=100" \
             > /tmp/psique-deploy-runs.json
+          gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/pde-platform-metodo-musa-ci.yml/runs?branch=main&per_page=100" \
+            > /tmp/musa-pde-deploy-runs.json
 
       - id: freshness
         name: Evaluate production freshness
@@ -122,8 +145,10 @@ jobs:
             --app-revision '${{ steps.production.outputs.app_revision }}' \
             --frontend-revision '${{ steps.production.outputs.frontend_revision }}' \
             --psique-revision '${{ steps.psique.outputs.psique_revision }}' \
+            --musa-pde-report-json /tmp/musa-pde-watchdog.json \
             --runs-json /tmp/deploy-runs.json \
             --psique-runs-json /tmp/psique-deploy-runs.json \
+            --musa-pde-runs-json /tmp/musa-pde-deploy-runs.json \
             --grace-minutes "${FRESHNESS_GRACE_MINUTES}" \
             --max-deploy-minutes "${MAX_DEPLOY_RUNTIME_MINUTES}" \
             --output /tmp/production-freshness.json

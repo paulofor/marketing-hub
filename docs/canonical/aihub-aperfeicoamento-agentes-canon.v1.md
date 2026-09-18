@@ -37,7 +37,30 @@ autoridade do backend, gates e consentimento para ações externas.
 A síntese conceitual abaixo serve como referência seletiva. O template não precisa enumerar
 os conceitos para continuar aplicando o ciclo diagnóstico, candidata, avaliação e aprendizado.
 
+## Compatibilidade da entrega antes da revisão paga — decisão de 18/09/2026
+
+O prompt compartilhado deve exigir versões esperadas e observadas do produto, evidências e
+agentes na execução, com compatibilidade comprovada, sem exigir o mesmo commit entre módulos.
+Comparadas as alternativas de apenas reforçar Watchdog, apenas centralizar instruções no
+Catálogo Vivo ou verificar a entrega integrada, adota-se a terceira: maior esforço de integração,
+mas cobre a divergência entre instruções, artefato e experiência; as duas primeiras são apoio.
+Evitar falsos bloqueios por commits diferentes usando os contratos compatíveis como critério.
+
+Antes de inferência paga, verificar identidade do build, vínculo entre manifesto, artefato
+imutável e capturas, e comportamento essencial. Hash, health ou sucesso do deploy isolados
+não comprovam funcionamento. Divergência deve gerar bloqueio técnico persistido no backend,
+com versões, responsável e ação, sem reprovação comercial paga. O backend libera a continuação
+após comprovação, preservando resultados válidos, orçamento, aprovações e idempotência.
+
+Homologar localmente construção, empacotamento, entrega e captura como fluxo integrado,
+incluindo divergência, bloqueio pré-inferência e recuperação. Revisar testes unitários, mocks,
+fixtures e regressões dos módulos afetados sem fixar versões particulares. Medir divergências,
+intervenções, custo por homologação e tempo de preparação sem confundir com vendas e margem.
+Estas instruções orientam futuras correções; a edição do prompt não implementa esses controles
+nem autoriza publicação, gasto ou retomada produtiva sem as condições do processo.
+
 ## Prioridade comercial e diversidade de implementação
+
 
 Decisão de 14/09/2026: o prompt deve explicitar como objetivo principal **gerar VENDAS e
 receitas com produtos incríveis e comunicação eficaz**, sustentados por valor real para

@@ -17,6 +17,21 @@ async function expectParticipantLanguage(page: Page) {
 test.describe("protótipo privado de Mira", () => {
   test.skip(!token, "Exige token interno segregado da rodada local.");
 
+  test("imagem publicada expõe fingerprint imutável da fonte", async ({
+    request,
+  }) => {
+    test.skip(
+      !process.env.PDE_TEST_MIRA_FRONTEND_URL,
+      "Contrato disponível somente na imagem Docker integrada.",
+    );
+    const response = await request.get("/version-diagnostics.json");
+    expect(response.ok()).toBeTruthy();
+    const diagnostics = (await response.json()) as {
+      frontendSourceSha256?: string;
+    };
+    expect(diagnostics.frontendSourceSha256).toMatch(/^[0-9a-f]{64}$/);
+  });
+
   for (const readingFinished of [undefined, false, true]) {
     test(`retoma simulação preservada com término ${String(readingFinished)}`, async ({
       page,

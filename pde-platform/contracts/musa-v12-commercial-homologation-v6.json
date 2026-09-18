@@ -1,0 +1,241 @@
+{
+  "contractVersion": "musa-v12-commercial-homologation.v6",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 6,
+  "activityId": "pdeGate",
+  "sourceReference": "product:4@musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  "experimentId": 92,
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "commercialPlanId": 3,
+    "publicUrl": "https://v8.clubemusa.com.br/"
+  },
+  "offer": {
+    "priceBrl": 67,
+    "currency": "BRL",
+    "billingModel": "ONE_TIME",
+    "accessDays": 90,
+    "renewal": false,
+    "checkoutUrl": "https://go.pepper.com.br/owm6x",
+    "checkoutProvider": "PEPPER",
+    "checkoutReference": "owm6x",
+    "promise": "Entregar gratuitamente um primeiro ajuste claro e aplicável com itens que a cliente já possui e liberar, após a compra, a continuidade guiada de sete dias."
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "scope": "Candidata do experimento 92 preservada, agora publicada por uma transação exclusiva da superfície v8 com preflight, comprovação pública e rollback exato.",
+  "boundary": "Prepara nova revisão independente sem autorizar campanha, gasto, cobrança ou publicação comercial.",
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/musa-v12-commercial-homologation-v5.json",
+    "reason": "Impedir que a evolução de uma versão PDE reinicie outras versões, backend ou workers e garantir que o artefato público possa ser restaurado com segurança.",
+    "includedChanges": [
+      "Publicação de exatamente uma superfície frontend declarada pelo manifesto",
+      "Candidata efêmera validada antes da troca de tráfego",
+      "Comprovação da mesma identidade no container e na URL pública após a troca",
+      "Rollback automático e revalidado da imagem anterior em falhas pós-cutover",
+      "Publicação separada de backend, worker de IA e worker de retenção",
+      "Watchdog individual para todas as versões Método MUSA ainda suportadas"
+    ],
+    "excludedChanges": [
+      "Preço, checkout, promessa, público e condições comerciais",
+      "Campanha, tráfego, gasto, cobrança e acesso real"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br/",
+    "requiredFrontendSourceSha256": "09e282435e2496f1a4fc96c1fbd90dbb8c368a3b87114a9b3af8899c3f10ef42"
+  },
+  "liveVisualContract": {
+    "deviceProfile": "IPHONE_15_PRO",
+    "requiredFirstFoldCtas": [
+      "Começar meu ajuste gratuito"
+    ],
+    "requiredVisibleTexts": [
+      "4 escolhas rápidas, sem compra de roupa.",
+      "Continuação de 7 dias por R$ 67, pagamento único.",
+      "Acesso por 90 dias, sem assinatura ou renovação."
+    ],
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "09e282435e2496f1a4fc96c1fbd90dbb8c368a3b87114a9b3af8899c3f10ef42"
+    }
+  },
+  "homologationMatrix": {
+    "environment": "LOCAL_ISOLATED",
+    "executedAt": "2026-09-18",
+    "devices": [
+      "DESKTOP_CHROMIUM",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "verifiedStates": [
+      "INVALID_CANDIDATE_REJECTED_BEFORE_CUTOVER",
+      "TARGET_ONLY_PROMOTION",
+      "PUBLIC_ARTIFACT_IDENTITY",
+      "FRONTEND_EXACT_ROLLBACK",
+      "BACKEND_COMPATIBILITY_AND_EXACT_ROLLBACK",
+      "OTHER_VERSIONS_AND_WORKERS_UNCHANGED",
+      "PRIVACY_DETAILS_COLLAPSED_EXPANDABLE_AND_REVERSIBLE",
+      "FIRST_FOLD_CTA_AND_TERMS",
+      "FREE_FIRST_ADJUSTMENT",
+      "PEPPER_PAYMENT_APPROVED",
+      "V12_ACCESS_90_DAYS",
+      "RESUME_AND_COMPLETION",
+      "IDEMPOTENT_REFUND",
+      "INTERNAL_QA_METRIC_SEGREGATION"
+    ],
+    "evidenceBoundary": "Publicação, pagamento, e-mail e tráfego são simulados localmente. Vendas e receita continuam não comprovadas."
+  },
+  "measurementContract": {
+    "authoritativeSaleEvent": "PURCHASE_COMPLETED",
+    "authoritativeDeliveryEvent": "DELIVERY_COMPLETED",
+    "humanMetricsExcludeTestTraffic": true,
+    "deduplicationRequired": true,
+    "testTrafficClass": "INTERNAL_QA"
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v5.json",
+      "sha256": "1b1e8a7f885069d44a7d44087dd8403abc9002d73382430a04e5f3f88a7982be",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "A v5 preserva a oferta e vincula fonte, imagem publicada e pixels por fingerprint; a v6 acrescenta promoção e rollback independentes sem alterar a experiência comercial."
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "78f5d14b213c5d342868f441cf458150987515cfdf64f57c954d26c8b862a211",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Experiência v12 preservada, incluindo privacidade recolhida e primeiro ajuste aplicável."
+    },
+    {
+      "path": "pde-platform/frontend/src/styles.css",
+      "sha256": "67ec3ef79d7bfa6b3093b92ad204f97d864879ffe6cc96c186703d20f9c12942",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Estilos comerciais da experiência v12 preservados sem alteração de oferta."
+    },
+    {
+      "path": "pde-platform/frontend/Dockerfile",
+      "sha256": "1bfb3f1f366389719d624870a978d5bfed69f7bb6f6dbb49d6807568333dc3ab",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Imagem versionada incorpora o fingerprint determinístico da fonte."
+    },
+    {
+      "path": "pde-platform/frontend/docker-entrypoint.d/10-runtime-config.sh",
+      "sha256": "5a378e9624496f93cb602aeb5548cbfcb24885a89292985f03325deb277dd107",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Diagnóstico público expõe identidade de versão, imagem, commit e fonte."
+    },
+    {
+      "path": "pde-platform/frontend/scripts/source-fingerprint.mjs",
+      "sha256": "e652e9ba1c6f643881a3b668b160034d819ddc873f2c1c6eef1cf8339eb8f24b",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Fingerprint reproduzível representa a fonte frontend homologada."
+    },
+    {
+      "path": "pde-platform/contracts/product-runtime-isolation-v1.json",
+      "sha256": "2dcfb99d3b03a281a956fd5c9e1b495f0aacec1cf4947871b23cf482d1589d09",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Inventário declara target, imagem, container, URL, experiência e ciclo de vida exclusivos por superfície."
+    },
+    {
+      "path": ".github/workflows/pde-platform-metodo-musa-ci.yml",
+      "sha256": "57e2fcc3ed951727a4697789059483a4b0b18033682080775db3cd847e034a01",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Workflow separa frontend, backend e workers, constrói apenas o alvo e preserva recibos."
+    },
+    {
+      "path": "scripts/resolve-pde-frontend-deploy-target.mjs",
+      "sha256": "3a85cb546f2b114d83556f68b6e521f617ad3afda36a2a985c8419fce2721b8a",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Resolvedor seleciona uma única superfície e componentes compartilhados independentes."
+    },
+    {
+      "path": "pde-platform/scripts/deploy-versioned-frontend.sh",
+      "sha256": "510c0b7605778ea952c12a356933cbec92b5102c299bb2056e02eb354fdf5aa7",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Publicador valida candidata, promove somente o alvo, comprova a URL pública e executa rollback exato."
+    },
+    {
+      "path": "pde-platform/scripts/deploy-shared-component.sh",
+      "sha256": "d04a1cee64a7c6d05f1c9fb1344c0379a64b25e824835f161b42252ad4f71993",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Publicador de backend e workers preserva todas as superfícies e referências de imagens ativas."
+    },
+    {
+      "path": "pde-platform/scripts/reload-published-frontend-proxies.sh",
+      "sha256": "c7d8669f21e59e32ab84ef581c0e7ea661c66ea7ee5828cc0faa419e287694e1",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Recarrega proxies sem recriá-los e exige três respostas consecutivas do backend."
+    },
+    {
+      "path": "pde-platform/scripts/pde_release_contract.py",
+      "sha256": "571290692e44874ef3983c197e80a0e9112cfb7366ca478dc1a9ef6609d05913",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Validador liga inventário, manifesto, diagnóstico, artefato e rollback."
+    },
+    {
+      "path": "scripts/musa_pde_watchdog.py",
+      "sha256": "6d7c234a26a2743062d0f0a9324601d391c87210f5bc45406a8f36e29e794815",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Watchdog verifica individualmente todas as versões MUSA suportadas."
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "scripts/resolve-pde-frontend-deploy-target.test.mjs",
+      "sha256": "5e0d706d9597f3fb659b69d94e812867f7f5fae29d986bf82a5aab20656c25d6",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Testes recusam lote, ambiguidade, fingerprint divergente e seleção lexicográfica incorreta após v9."
+    },
+    {
+      "path": "pde-platform/scripts/test_pde_release_contract.py",
+      "sha256": "0f2c1e20bf4d1a743a27cc03243c08494e1df88d2f6f1cca46c7832a681199db",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Testes vinculam produto, target, fonte e identidade de rollback."
+    },
+    {
+      "path": "pde-platform/scripts/test-independent-version-deploy.sh",
+      "sha256": "553bf5212e2eb0ce4ff9dddf8af1436131bf0313d295b771b4fb944760576c05",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Homologação Docker injeta falhas e comprova preflight, promoção, identidade pública, rollback e isolamento."
+    },
+    {
+      "path": "pde-platform/scripts/test-deploy-isolation-contract.sh",
+      "sha256": "4b82b7fb560826be554a1d66c2257f36cd3c1e42c84d2414f9626be69c01c621",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Contrato rejeita operações acopladas e executa a regressão transacional."
+    },
+    {
+      "path": "pde-platform/scripts/test-product-runtime-isolation-contract.mjs",
+      "sha256": "37518a647f422fdc1babb40071a2322a275ad9a2b94e0bdce002ec68eda41c98",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Testes exigem identidades operacionais únicas e materialização no Compose."
+    },
+    {
+      "path": "pde-platform/scripts/test-product-runtime-proxy-local.sh",
+      "sha256": "575f72cca924f181d4268d6f2edb00cf818c2afe669f1ac3acc7c23f9de39f6b",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Topologia real comprova continuidade simultânea de Vega v5 a v8 e Mira."
+    },
+    {
+      "path": "scripts/test-production-freshness.py",
+      "sha256": "a3e281d75a8979a500ccfa418dfca9c39b3cb731d24ea2a8c452cc8cf3658498",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Testes impedem que uma versão saudável ou um deploy em curso escondam falha de outra superfície."
+    },
+    {
+      "path": "pde-platform/scripts/fixtures/backend-proxy/verify.mjs",
+      "sha256": "6cfb64ec400004d41a7e174bb27941094dd3f2ec9cdaf041393305f2ed0c15a2",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Topologia real comprova troca e rollback do backend sem reiniciar os frontends."
+    }
+  ],
+  "validationReport": "docs/homologacao/pde-publicacao-independente-versoes-v1.md"
+}

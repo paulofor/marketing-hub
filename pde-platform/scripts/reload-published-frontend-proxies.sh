@@ -5,6 +5,7 @@ set -euo pipefail
 network="${PDE_PLATFORM_NETWORK:?Informe a rede canônica dos frontends PDE}"
 reloaded=0
 for service in pde-platform-frontend-v5 pde-platform-frontend-v6 pde-platform-frontend-v7 \
+  pde-platform-frontend-v8 \
   pde-platform-frontend-mira pde-platform-frontend-kit-whatsapp; do
   containers=$(docker ps --filter "network=$network" \
     --filter "label=com.docker.compose.service=$service" --format '{{.ID}}')
@@ -15,7 +16,8 @@ for service in pde-platform-frontend-v5 pde-platform-frontend-v6 pde-platform-fr
     docker exec "$container" nginx -s reload
     # A API precisa atravessar o proxy; saúde de HTML estático não comprova conexão com o backend.
     healthy=false
-    for attempt in {1..15}; do
+    stable_successes=0
+    for _attempt in {1..30}; do
       if [[ "$service" == pde-platform-frontend-mira ]]; then
         probe=/api/pde/mira/private/v1/contract
       elif [[ "$service" == pde-platform-frontend-kit-whatsapp ]]; then
@@ -24,8 +26,13 @@ for service in pde-platform-frontend-v5 pde-platform-frontend-v6 pde-platform-fr
         probe=/api/pde/products/metodo-musa-7-dias
       fi
       if docker exec "$container" wget --quiet --output-document=/dev/null "http://127.0.0.1$probe"; then
-        healthy=true
-        break
+        stable_successes=$((stable_successes + 1))
+        if ((stable_successes >= 3)); then
+          healthy=true
+          break
+        fi
+      else
+        stable_successes=0
       fi
       sleep 1
     done

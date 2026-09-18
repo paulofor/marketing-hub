@@ -78,6 +78,24 @@
 - **Prevenção:** empacotadores dos dois workers executados localmente e mensagem diagnóstica do
   cenário histórico preservada. Evidências em `docs/homologacao/github-actions-pr-5209.md`.
 
+### Recorrência eliminada — contrato de deploy preso ao frontend v7
+
+- **Data e evidência:** em 18/09/2026, o run
+  [35305792591](https://github.com/paulofor/marketing-hub/actions/runs/35305792591) aprovou o
+  resolvedor do frontend declarado pelo manifesto, mas o job Backend parou em
+  `Validate isolated deploy contract`, antes dos testes Java e da publicação.
+- **Causa-raiz:** o workflow passou a selecionar dinamicamente a superfície imutável a publicar,
+  enquanto dois contratos de regressão continuaram exigindo literalmente o fallback transitório
+  `TARGETED_FRONTEND_VERSION=v7`. Fixtures encadeadas também não acompanharam a verificação de
+  consistência da v8 nem o fingerprint obrigatório no diagnóstico de runtime. Os testes antigos
+  contradiziam a arquitetura nova já validada.
+- **Correção e prevenção:** os contratos agora exigem a saída do job
+  `deployment_scope`, o resolvedor versionado e o smoke da superfície efetivamente selecionada;
+  também recusam a reintrodução do fallback fixo. O smoke da v8 comprova a consistência do
+  artefato depois da publicação, como as demais superfícies MUSA, e a fixture do runtime comprova
+  o fingerprint presente e a recusa de sua ausência. Casos de candidata v8, ausência de candidata,
+  fingerprint divergente e duas candidatas permanecem cobertos pelo teste unitário do resolvedor.
+
 ### Recorrência eliminada — 18/09/2026
 
 - **Evidência:** o run [35301515322](https://github.com/paulofor/marketing-hub/actions/runs/35301515322)
@@ -1656,6 +1674,12 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   e responda `403` sem credencial, comprova a saúde da v7 e executa nela o smoke Playwright segregado
   mesmo quando o `push` não publica frontend. O teste de contrato impede remover o gatilho, a prova
   da rota ou o smoke de compatibilidade que detecta a ausência de `agent-validation-mode`.
+- **Prevenção complementar em 2026-09-18 — PDE Método MUSA:** o histórico das tarefas #443–#449
+  mostrou que correção integrada e workflow saudável não comprovavam que a superfície analisada por
+  Psique executava o mesmo build do manifesto. O Watchdog passa a resolver dinamicamente a candidata
+  MUSA publicável, conferir no domínio público saúde, versão, experiência, fingerprint e commit e
+  correlacionar atraso ao workflow próprio da PDE Platform. Testes cobrem evolução para versão futura,
+  isolamento de outros produtos e recusa de fingerprint antigo, sem congelar o monitor em `v8`.
 
 ---
 
@@ -5993,3 +6017,28 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   fingerprint divergente, dois alvos no mesmo merge e futuras revisões sem nomes fixos. Duas rodadas
   locais completas aprovaram 36 jornadas cada em desktop, iPhone 15 Pro e Pixel 7. Evidências e
   limites estão em `docs/homologacao/vega-449-paridade-artefato-v1.md`.
+
+## LOOP-PDE-DEPLOY-DE-VERSAO-REINICIA-RUNTIMES-COMPARTILHADOS — 18/09/2026
+
+- **Sintoma confirmado:** publicar uma única versão do Método MUSA mantinha imagens separadas para
+  v5–v8, mas o workflow removia e recriava backend e workers compartilhados. A própria versão alvo
+  era removida antes de sua candidata ser comprovada, ampliando indisponibilidade e risco de bloquear
+  outras jornadas enquanto o produto evoluía.
+- **Histórico e causa-raiz:** a separação existia no Compose, porém o publicador ainda tratava toda a
+  PDE Platform como uma única unidade de ciclo de vida. O Watchdog elegia somente o manifesto mais
+  novo, portanto uma versão anterior atendendo clientes podia ficar invisível ao monitoramento.
+- **Alternativas avaliadas:** apenas `up --no-deps` reduziria o impacto, mas manteria troca sem
+  preflight; um ambiente completo por versão isolaria tudo com custo e complexidade altos; candidata
+  efêmera, promoção por serviço e rollback exato preservam o motor compartilhado com menor risco. A
+  terceira foi adotada.
+- **Correção sistêmica:** o inventário declara todas as superfícies suportadas; frontend, backend e
+  cada worker possuem seleção independente; a candidata frontend é validada antes do cutover; somente
+  o alvo é trocado; a URL pública comprova a identidade promovida e a restaurada; falha restaura a
+  identidade anterior; backend exige compatibilidade ampla e
+  recarrega os proxies sem recriá-los; suas referências auditáveis preservam as imagens realmente em
+  execução nos frontends e workers; recibos preservam a transação.
+- **Prevenção:** regressões Docker comprovam candidata inválida sem impacto, promoção exclusiva da
+  v8, rollback frontend/backend e troca de worker sem recriar v5–v7 ou componentes vizinhos. O
+  Watchdog verifica cada versão `SUPPORTED`, e contratos rejeitam o target `all`, reinício acoplado e
+  inventário ambíguo. Evidência em
+  `docs/homologacao/pde-publicacao-independente-versoes-v1.md`.

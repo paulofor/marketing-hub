@@ -50,7 +50,16 @@ on:
           - v8
           - mira
           - kit-whatsapp
-          - all
+      shared_component:
+        description: "Componente compartilhado a publicar separadamente"
+        required: true
+        default: "none"
+        type: choice
+        options:
+          - none
+          - backend
+          - ai-worker
+          - retention-worker
       mira_proxy_mode:
         description: "Contrato do proxy de Mira"
         required: true
@@ -79,6 +88,14 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       frontend-version: ${{ steps.resolve.outputs.frontend-version }}
+      frontend-contract-path: ${{ steps.resolve.outputs.frontend-contract-path }}
+      frontend-contract-sha256: ${{ steps.resolve.outputs.frontend-contract-sha256 }}
+      frontend-source-sha256: ${{ steps.resolve.outputs.frontend-source-sha256 }}
+      deploy-backend: ${{ steps.resolve.outputs.deploy-backend }}
+      deploy-ai-worker: ${{ steps.resolve.outputs.deploy-ai-worker }}
+      deploy-retention-worker: ${{ steps.resolve.outputs.deploy-retention-worker }}
+      full-compatibility: ${{ steps.resolve.outputs.full-compatibility }}
+      has-deployment: ${{ steps.resolve.outputs.has-deployment }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -93,12 +110,9 @@ jobs:
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           MANUAL_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.frontend_version || '' }}
+          MANUAL_SHARED_COMPONENT: ${{ github.event_name == 'workflow_dispatch' && inputs.shared_component || '' }}
         run: |
           set -euo pipefail
-          if [ -n "${MANUAL_TARGET}" ]; then
-            echo "frontend-version=${MANUAL_TARGET}" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
           if [ -z "${BASE_SHA}" ] || [ "${BASE_SHA}" = "0000000000000000000000000000000000000000" ]; then
             git diff-tree --root --no-commit-id --name-only -r "${GITHUB_SHA}" > /tmp/pde-changed-paths.txt
           else
@@ -107,11 +121,14 @@ jobs:
           node scripts/resolve-pde-frontend-deploy-target.mjs \
             --repository-root . \
             --changed-paths-file /tmp/pde-changed-paths.txt \
+            --manual-frontend "${MANUAL_TARGET}" \
+            --manual-shared-component "${MANUAL_SHARED_COMPONENT}" \
             --output "$GITHUB_OUTPUT"
 
   backend:
     name: Backend
     runs-on: ubuntu-latest
+    needs: deployment_scope
     defaults:
       run:
         working-directory: pde-platform/backend
@@ -137,6 +154,15 @@ jobs:
         run: bash scripts/test-maven-build-with-transient-retry.sh
       - name: Run tests
         run: mvn -B test
+
+      - name: Validate backend compatibility with every supported PDE version
+        if: needs.deployment_scope.outputs.full-compatibility == 'true'
+        working-directory: ${{ github.workspace }}
+        env:
+          PDE_LOCAL_COMPOSE_PROJECT: aihub-190ea341-7c8a-4809-8c31-0b0e57914752-cc0ee64122
+        run: |
+          bash pde-platform/scripts/test-musa-local-integration.sh
+          bash pde-platform/scripts/test-product-runtime-proxy-local.sh
 
       - name: Set up Node for shared commercial evidence
         uses: actions/setup-node@v7
@@ -221,6 +247,29 @@ jobs:
       - name: Validate executor
         run: npm test && npm run check
 
+  ai_worker:
+    name: AI worker
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pde-platform/pde-ai-worker
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+      - name: Validate executor
+        run: npm test && npm run check
+
   docker:
     name: Build and Push Images
     runs-on: ubuntu-latest
@@ -228,6 +277,7 @@ jobs:
       - deployment_scope
       - backend
       - frontend
+      - ai_worker
       - retention_worker
     if: github.event_name != 'pull_request'
     permissions:
@@ -300,6 +350,7 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
       - name: Build and push backend image
+        if: needs.deployment_scope.outputs.deploy-backend == 'true'
         uses: docker/build-push-action@v6
         with:
           context: pde-platform/backend
@@ -310,6 +361,7 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push frontend v5 image
+        if: needs.deployment_scope.outputs.frontend-version == 'v5'
         uses: docker/build-push-action@v6
         with:
           context: pde-platform/frontend
@@ -325,6 +377,7 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V5_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V5_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push frontend v6 image
+        if: needs.deployment_scope.outputs.frontend-version == 'v6'
         uses: docker/build-push-action@v6
         with:
           context: pde-platform/frontend
@@ -340,6 +393,7 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V6_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V6_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push frontend v7 image
+        if: needs.deployment_scope.outputs.frontend-version == 'v7'
         uses: docker/build-push-action@v6
         with:
           context: pde-platform/frontend
@@ -355,6 +409,7 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V7_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V7_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push frontend v8 image
+        if: needs.deployment_scope.outputs.frontend-version == 'v8'
         uses: docker/build-push-action@v6
         with:
           context: pde-platform/frontend
@@ -370,6 +425,7 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V8_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V8_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push Mira frontend image
+        if: needs.deployment_scope.outputs.frontend-version == 'mira'
         uses: docker/build-push-action@v6
         with:
           context: pde-platform/frontend
@@ -385,6 +441,7 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_MIRA_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_MIRA_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push Kit WhatsApp frontend image
+        if: needs.deployment_scope.outputs.frontend-version == 'kit-whatsapp'
         uses: docker/build-push-action@v6
         with:
           context: pde-platform/frontend
@@ -400,6 +457,7 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_KIT_WHATSAPP_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_KIT_WHATSAPP_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push PDE AI worker image
+        if: needs.deployment_scope.outputs.deploy-ai-worker == 'true'
         uses: docker/build-push-action@v6
         with:
           context: pde-platform/pde-ai-worker
@@ -410,6 +468,7 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.AI_WORKER_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.AI_WORKER_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push PDE retention worker image
+        if: needs.deployment_scope.outputs.deploy-retention-worker == 'true'
         uses: docker/build-push-action@v6
         with:
           context: pde-platform/pde-retention-worker
@@ -430,10 +489,12 @@ jobs:
       - deployment_scope
       - backend
       - frontend
+      - ai_worker
       - retention_worker
       - docker
     if: >-
       github.ref == 'refs/heads/main' &&
+      needs.deployment_scope.outputs.has-deployment == 'true' &&
       (github.event_name == 'push' ||
         (github.event_name == 'workflow_dispatch' && inputs.target_environment == 'production'))
     permissions:
@@ -452,6 +513,12 @@ jobs:
       GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
       PDE_PLATFORM_NETWORK: ${{ secrets.PDE_PLATFORM_NETWORK != '' && secrets.PDE_PLATFORM_NETWORK || 'public-net' }}
       PDE_DEPLOY_FRONTEND_VERSION: ${{ needs.deployment_scope.outputs.frontend-version }}
+      PDE_FRONTEND_CONTRACT_PATH: ${{ needs.deployment_scope.outputs.frontend-contract-path }}
+      PDE_FRONTEND_CONTRACT_SHA256: ${{ needs.deployment_scope.outputs.frontend-contract-sha256 }}
+      PDE_FRONTEND_SOURCE_SHA256: ${{ needs.deployment_scope.outputs.frontend-source-sha256 }}
+      PDE_DEPLOY_BACKEND: ${{ needs.deployment_scope.outputs.deploy-backend }}
+      PDE_DEPLOY_AI_WORKER: ${{ needs.deployment_scope.outputs.deploy-ai-worker }}
+      PDE_DEPLOY_RETENTION_WORKER: ${{ needs.deployment_scope.outputs.deploy-retention-worker }}
       PDE_MIRA_PROXY_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mira_proxy_mode || 'isolated' }}
       PDE_PLATFORM_FRONTEND_V5_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V5_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V5_PORT || secrets.PDE_PLATFORM_FRONTEND_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_PORT || '5176' }}
       PDE_PLATFORM_FRONTEND_V6_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V6_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V6_PORT || '5177' }}
@@ -502,15 +569,21 @@ jobs:
           printf '%s\n' "SSH_COMMON_ARGS=-i $HOME/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes -o ConnectTimeout=60" >> "$GITHUB_ENV"
       - name: Ensure Docker runtime on VPS
         run: |
+          # shellcheck disable=SC2086
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s' <<'REMOTE_DOCKER_BOOTSTRAP'
           set -euo pipefail
-          if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+          if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1 \
+            && command -v curl >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
             systemctl enable --now docker >/dev/null 2>&1 || true
             exit 0
           fi
           export DEBIAN_FRONTEND=noninteractive
           apt-get update
-          apt-get install -y ca-certificates curl gnupg lsb-release
+          apt-get install -y ca-certificates curl gnupg lsb-release python3
+          if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+            systemctl enable --now docker >/dev/null 2>&1 || true
+            exit 0
+          fi
           install -m 0755 -d /etc/apt/keyrings
           if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
             curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
@@ -528,18 +601,28 @@ jobs:
         timeout-minutes: 5
         run: |
           set -euo pipefail
+          # shellcheck disable=SC2029,SC2086
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
             "AGENT_VPS_DISK_LOCK_FILE=/var/lock/marketinghub-pde-vps-disk.lock AGENT_VPS_DISK_PROTECTED_TAG='${IMAGE_TAG}' bash -s -- retention" \
             < scripts/ensure-agent-vps-disk-space.sh
       - name: Sync compose file
         run: |
+          # shellcheck disable=SC2029,SC2086
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p ${REMOTE_PATH}"
           rsync -az --delete \
             -e "ssh ${SSH_COMMON_ARGS}" \
             --include 'docker-compose.deploy.yml' \
+            --include 'contracts/' \
+            --include 'contracts/***' \
+            --include 'scripts/' \
+            --include 'scripts/deploy-versioned-frontend.sh' \
+            --include 'scripts/deploy-shared-component.sh' \
+            --include 'scripts/reload-published-frontend-proxies.sh' \
+            --include 'scripts/pde_release_contract.py' \
             --exclude '*' \
             pde-platform/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
       - name: Publish PDE Platform production
+        id: publish
         run: |
           if [ -z "${PDE_INTERNAL_API_TOKEN}" ]; then
             echo "Erro: configure PDE_INTERNAL_API_TOKEN para proteger analytics e operações internas do PDE." >&2
@@ -551,6 +634,19 @@ jobs:
             exit 1
           fi
           DEPLOYED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          SELECTED_FRONTEND_IMAGE=''
+          case "${PDE_DEPLOY_FRONTEND_VERSION}" in
+            v5) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_V5_IMAGE_NAME}:${IMAGE_TAG}" ;;
+            v6) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_V6_IMAGE_NAME}:${IMAGE_TAG}" ;;
+            v7) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_V7_IMAGE_NAME}:${IMAGE_TAG}" ;;
+            v8) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_V8_IMAGE_NAME}:${IMAGE_TAG}" ;;
+            mira) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_MIRA_IMAGE_NAME}:${IMAGE_TAG}" ;;
+            kit-whatsapp) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_KIT_WHATSAPP_IMAGE_NAME}:${IMAGE_TAG}" ;;
+            none) ;;
+            *) echo "Target frontend inválido: ${PDE_DEPLOY_FRONTEND_VERSION}" >&2; exit 1 ;;
+          esac
+          REMOTE_FRONTEND_CONTRACT_PATH="${PDE_FRONTEND_CONTRACT_PATH#pde-platform/}"
+          # shellcheck disable=SC2029,SC2086
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
             && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
@@ -574,6 +670,9 @@ jobs:
             && export PDE_PLATFORM_BACKEND_PORT='${PDE_PLATFORM_BACKEND_PORT}' \
             && export PDE_DEPLOY_ENVIRONMENT=production \
             && export PDE_DEPLOY_COMPOSE_FILE=docker-compose.deploy.yml \
+            && export PDE_DEPLOY_COMPOSE_FILE_PATH=\"\$PWD/docker-compose.deploy.yml\" \
+            && export PDE_RUNTIME_INVENTORY=\"\$PWD/contracts/product-runtime-isolation-v1.json\" \
+            && export PDE_DEPLOY_EDGE_RELOAD_REQUIRED=true \
             && export PDE_DEPLOY_COMMIT_SHA='${GITHUB_SHA}' \
             && export PDE_DEPLOY_GIT_BRANCH='${GITHUB_REF_NAME}' \
             && export PDE_DEPLOY_IMAGE_TAG='${IMAGE_TAG}' \
@@ -598,40 +697,26 @@ jobs:
             && if [ ! -s \"${OPENAI_API_KEY_HOST_FILE}\" ] && [ -n \"${OPENAI_API_KEY}\" ]; then install -m 700 -d \"\$(dirname \"${OPENAI_API_KEY_HOST_FILE}\")\" && printf '%s' \"${OPENAI_API_KEY}\" > \"${OPENAI_API_KEY_HOST_FILE}\" && chmod 600 \"${OPENAI_API_KEY_HOST_FILE}\"; fi \
             && test -s \"${OPENAI_API_KEY_HOST_FILE}\" \
             && export COMPOSE_PROJECT_NAME=metodo-musa-pde-platform \
-            && FRONTEND_SERVICES='' \
-            && case '${PDE_DEPLOY_FRONTEND_VERSION}' in \
-              v5) FRONTEND_SERVICES='pde-platform-frontend-v5' ;; \
-              v6) FRONTEND_SERVICES='pde-platform-frontend-v6' ;; \
-              v7) FRONTEND_SERVICES='pde-platform-frontend-v7' ;; \
-              v8) FRONTEND_SERVICES='pde-platform-frontend-v8' ;; \
-              mira) FRONTEND_SERVICES='pde-platform-frontend-mira' ;; \
-              kit-whatsapp) FRONTEND_SERVICES='pde-platform-frontend-kit-whatsapp' ;; \
-              all) FRONTEND_SERVICES='pde-platform-frontend-v5 pde-platform-frontend-v6 pde-platform-frontend-v7 pde-platform-frontend-v8 pde-platform-frontend-mira pde-platform-frontend-kit-whatsapp' ;; \
-              none) FRONTEND_SERVICES='' ;; \
-              *) echo 'Versao frontend PDE invalida: ${PDE_DEPLOY_FRONTEND_VERSION}' >&2; exit 1 ;; \
-            esac \
-            && docker compose -f docker-compose.deploy.yml pull pde-platform-backend pde-ai-worker pde-retention-worker \${FRONTEND_SERVICES} \
-            && cleanup_published_port() { port=\"\$1\"; containers=\"\$(docker ps --filter \"publish=\${port}\" --format '{{.Names}}' || true)\"; if [ -n \"\${containers}\" ]; then echo \"Removendo containers que publicam porta \${port}: \${containers}\"; docker rm -f \${containers} >/dev/null 2>&1 || true; fi; } \
-            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V5_PORT}'; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v6' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V6_PORT}'; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v7' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V7_PORT}'; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v8' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V8_PORT}'; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'mira' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_MIRA_PORT}'; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'kit-whatsapp' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}'; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend pde-platform-frontend-v5 >/dev/null 2>&1 || true; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v6' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend-v6 >/dev/null 2>&1 || true; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v7' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend-v7 >/dev/null 2>&1 || true; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v8' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend-v8 >/dev/null 2>&1 || true; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'mira' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend-mira >/dev/null 2>&1 || true; fi \
-            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'kit-whatsapp' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend-kit-whatsapp >/dev/null 2>&1 || true; fi \
-            && (docker rm -f pde-platform-backend pde-ai-worker pde-retention-worker >/dev/null 2>&1 || true) \
-            && (docker compose -f docker-compose.deploy.yml up -d pde-platform-backend pde-ai-worker pde-retention-worker \${FRONTEND_SERVICES} || ( \
-              echo 'Falha ao publicar PDE Platform. Coletando diagnostico dos containers.' >&2; \
-              docker compose -f docker-compose.deploy.yml ps >&2 || true; \
-              docker compose -f docker-compose.deploy.yml logs --tail=200 pde-platform-backend >&2 || true; \
-              docker inspect pde-platform-backend --format '{{json .State}}' >&2 || true; \
-              exit 1 \
-            )) \
+            && install -d receipts \
+            && if [ '${PDE_DEPLOY_BACKEND}' = 'true' ]; then \
+              bash scripts/deploy-shared-component.sh backend '${IMAGE_NAMESPACE}/${BACKEND_IMAGE_NAME}:${IMAGE_TAG}' '${GITHUB_SHA}' 'receipts/${IMAGE_TAG}-backend.json'; \
+            fi \
+            && if [ '${PDE_DEPLOY_AI_WORKER}' = 'true' ]; then \
+              bash scripts/deploy-shared-component.sh ai-worker '${IMAGE_NAMESPACE}/${AI_WORKER_IMAGE_NAME}:${IMAGE_TAG}' '${GITHUB_SHA}' 'receipts/${IMAGE_TAG}-ai-worker.json'; \
+            fi \
+            && if [ '${PDE_DEPLOY_RETENTION_WORKER}' = 'true' ]; then \
+              bash scripts/deploy-shared-component.sh retention-worker '${IMAGE_NAMESPACE}/${RETENTION_WORKER_IMAGE_NAME}:${IMAGE_TAG}' '${GITHUB_SHA}' 'receipts/${IMAGE_TAG}-retention-worker.json'; \
+            fi \
+            && if [ -n '${SELECTED_FRONTEND_IMAGE}' ]; then \
+              bash scripts/deploy-versioned-frontend.sh \
+                '${PDE_DEPLOY_FRONTEND_VERSION}' \
+                '${SELECTED_FRONTEND_IMAGE}' \
+                '${GITHUB_SHA}' \
+                '${PDE_FRONTEND_SOURCE_SHA256}' \
+                '${REMOTE_FRONTEND_CONTRACT_PATH}' \
+                '${PDE_FRONTEND_CONTRACT_SHA256}' \
+                'receipts/${IMAGE_TAG}-${PDE_DEPLOY_FRONTEND_VERSION}.json'; \
+            fi \
             && PROXY_CONTAINERS=\"lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 lead-portal-payments-proxy-1 lead-portal-payments_proxy_1 proxy \$(docker ps --filter publish=443 --format '{{.Names}}' || true)\" \
             && for proxy_container in \${PROXY_CONTAINERS}; do \
               if docker inspect \"\${proxy_container}\" >/dev/null 2>&1; then \
@@ -642,6 +727,7 @@ jobs:
             done"
       - name: Connect existing public proxy
         run: |
+          # shellcheck disable=SC2029,SC2086
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && (docker network inspect ${PDE_PLATFORM_NETWORK} >/dev/null 2>&1 || docker network create ${PDE_PLATFORM_NETWORK}) \
             && PROXY_CONTAINERS=\"lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 lead-portal-payments-proxy-1 lead-portal-payments_proxy_1 proxy \$(docker ps --filter publish=443 --format '{{.Names}}' || true)\" \
@@ -666,31 +752,31 @@ jobs:
             fi"
       - name: Validate production public container ports
         run: |
-          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v5" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v5" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V5_PORT}/" > /dev/null
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V5_PORT}/healthz"
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V5_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "v5"'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V5_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v5-video-explicativo"'
           fi
-          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v6" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v6" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V6_PORT}/" > /dev/null
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V6_PORT}/healthz"
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V6_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "v6"'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V6_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v6-video-motivacional"'
           fi
-          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v7" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v7" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/" > /dev/null
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/healthz"
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "v7"'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"'
           fi
-          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v8" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v8" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V8_PORT}/" > /dev/null
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V8_PORT}/healthz"
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V8_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "v8"'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V8_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"'
           fi
-          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "mira" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "mira" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_PORT}/mira-private" > /dev/null
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_PORT}/healthz" | grep -q '"productId":10'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_PORT}/version-diagnostics.json" | grep -q '"surface": "pde-platform-frontend-mira"'
@@ -698,7 +784,7 @@ jobs:
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "mira-private-v3"'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_PORT}/version-diagnostics.json" | grep -q 'pde-platform-frontend-mira'
           fi
-          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "kit-whatsapp" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "kit-whatsapp" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}/" > /dev/null
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}/healthz"
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}/pde-health-contract.json" | grep -q '"slug": "kit-whatsapp-pronto"'
@@ -706,6 +792,7 @@ jobs:
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "kit-whatsapp-v2"'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "kit-whatsapp-pronto-pde-v2"'
           fi
+          # shellcheck disable=SC2029,SC2086
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
             && export COMPOSE_PROJECT_NAME=metodo-musa-pde-platform \
@@ -770,25 +857,27 @@ jobs:
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused --output /dev/null "${url}/"
           }
 
-          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v5" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v5" ] || [ "${PDE_DEPLOY_BACKEND}" = "true" ]; then
             validate_public_version v5
           else
             validate_public_health v5
           fi
-          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v6" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v6" ] || [ "${PDE_DEPLOY_BACKEND}" = "true" ]; then
             validate_public_version v6
           else
             validate_public_health v6
           fi
-          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v7" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v7" ] || [ "${PDE_DEPLOY_BACKEND}" = "true" ]; then
             validate_public_version v7
           else
             validate_public_health v7
           fi
-          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v8" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v8" ] || [ "${PDE_DEPLOY_BACKEND}" = "true" ]; then
             validate_public_version v8
+          else
+            validate_public_health v8
           fi
-          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "mira" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "mira" ] || [ "${PDE_DEPLOY_BACKEND}" = "true" ]; then
             validate_dns_points_to_deploy_host v7.clubemusa.com.br
             if curl --fail --show-error --silent --retry 3 --retry-delay 5 --retry-connrefused https://v7.clubemusa.com.br/mira-private/version-diagnostics.json > /tmp/pde-mira-version-diagnostics.json; then
               if grep -q '"surface": "pde-platform-frontend-mira"' /tmp/pde-mira-version-diagnostics.json; then
@@ -816,42 +905,61 @@ jobs:
               exit 1
             fi
           fi
-          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "kit-whatsapp" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "kit-whatsapp" ] || [ "${PDE_DEPLOY_BACKEND}" = "true" ]; then
             validate_dns_points_to_deploy_host kit-whatsapp-pronto.digicomdigital.com.br
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://kit-whatsapp-pronto.digicomdigital.com.br/healthz | grep -q '"status":"UP"'
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://kit-whatsapp-pronto.digicomdigital.com.br/pde-health-contract.json | grep -q '"slug": "kit-whatsapp-pronto"'
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://kit-whatsapp-pronto.digicomdigital.com.br/version-diagnostics.json | grep -q '"experienceVersion": "kit-whatsapp-pronto-pde-v2"'
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused --output /dev/null https://kit-whatsapp-pronto.digicomdigital.com.br/
           fi
-      - name: Reconnect published frontend proxies to the healthy backend
-        run: |
-          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "PDE_PLATFORM_NETWORK='${PDE_PLATFORM_NETWORK}' bash -s" \
-            < pde-platform/scripts/reload-published-frontend-proxies.sh
       - name: Set up Node for production rendering smoke
-        if: env.PDE_DEPLOY_FRONTEND_VERSION != 'none'
+        if: env.PDE_DEPLOY_FRONTEND_VERSION != 'none' || env.PDE_DEPLOY_BACKEND == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: pde-platform/frontend/package-lock.json
       - name: Validate targeted production public contracts
-        if: env.PDE_DEPLOY_FRONTEND_VERSION != 'none'
+        if: env.PDE_DEPLOY_FRONTEND_VERSION != 'none' || env.PDE_DEPLOY_BACKEND == 'true'
         working-directory: pde-platform/frontend
         run: |
           npm ci --include=dev
           npx playwright install --with-deps chromium
           TARGETED_FRONTEND_VERSION="${PDE_DEPLOY_FRONTEND_VERSION}"
+          if [ "${PDE_DEPLOY_BACKEND}" = "true" ]; then
+            TARGETED_FRONTEND_VERSION=all
+          fi
           if [ "${TARGETED_FRONTEND_VERSION}" = "mira" ] \
             && [ "${PDE_MIRA_PROXY_MODE}" = "bootstrap-legacy-route" ]; then
             export MIRA_PUBLIC_BASE_URL="http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_PORT}"
           fi
           bash ../scripts/run-targeted-production-smokes.sh "${TARGETED_FRONTEND_VERSION}"
+      - name: Collect immutable PDE deployment receipts
+        id: collect_receipts
+        if: ${{ always() && steps.pde_ssh.outcome == 'success' }}
+        continue-on-error: true
+        run: |
+          install -d /tmp/pde-deployment-receipts
+          rsync -az \
+            -e "ssh ${SSH_COMMON_ARGS}" \
+            --include "${IMAGE_TAG}-*.json" \
+            --exclude '*' \
+            "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}/receipts/" \
+            /tmp/pde-deployment-receipts/
+      - name: Preserve PDE deployment receipts
+        if: ${{ always() && steps.collect_receipts.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pde-deployment-receipts-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/pde-deployment-receipts/*.json
+          if-no-files-found: warn
+          retention-days: 30
       - name: Retain active PDE images and two rollback versions
         if: ${{ always() && steps.pde_ssh.outcome == 'success' }}
         timeout-minutes: 5
         run: |
           set -euo pipefail
+          # shellcheck disable=SC2029,SC2086
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
             "AGENT_VPS_DISK_LOCK_FILE=/var/lock/marketinghub-pde-vps-disk.lock AGENT_VPS_DISK_PROTECTED_TAG='${IMAGE_TAG}' bash -s -- retention" \
             < scripts/ensure-agent-vps-disk-space.sh

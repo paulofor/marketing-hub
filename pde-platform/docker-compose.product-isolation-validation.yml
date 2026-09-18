@@ -7,6 +7,54 @@ services:
       timeout: 2s
       retries: 20
 
+  pde-platform-frontend-v5:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        PDE_FRONTEND_VERSION_ID: v5
+    environment:
+      VITE_PDE_PRODUCT_SLUG: metodo-musa-7-dias
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v5-video-explicativo
+      PDE_FRONTEND_VERSION: v5
+      PDE_FRONTEND_PUBLIC_URL: https://v5.clubemusa.com.br
+      PDE_FRONTEND_IMAGE: pde-platform-frontend-v5:validation
+      PDE_FRONTEND_VERSION_ID: v5
+      PDE_DEPLOY_IMAGE_TAG: local-product-isolation
+      PDE_BACKEND_UPSTREAM: pde-platform-backend:80
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    healthcheck: &musa_frontend_health
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1/version-diagnostics.json | grep -q 'metodo-musa-7-dias'",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  pde-platform-frontend-v6:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        PDE_FRONTEND_VERSION_ID: v6
+    environment:
+      VITE_PDE_PRODUCT_SLUG: metodo-musa-7-dias
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v6-video-motivacional
+      PDE_FRONTEND_VERSION: v6
+      PDE_FRONTEND_PUBLIC_URL: https://v6.clubemusa.com.br
+      PDE_FRONTEND_IMAGE: pde-platform-frontend-v6:validation
+      PDE_FRONTEND_VERSION_ID: v6
+      PDE_DEPLOY_IMAGE_TAG: local-product-isolation
+      PDE_BACKEND_UPSTREAM: pde-platform-backend:80
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    healthcheck: *musa_frontend_health
+
   pde-platform-frontend-v7:
     build:
       context: ./frontend
@@ -25,15 +73,7 @@ services:
     depends_on:
       pde-platform-backend:
         condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget -qO- http://127.0.0.1/version-diagnostics.json | grep -q 'metodo-musa-7-dias'",
-        ]
-      interval: 2s
-      timeout: 2s
-      retries: 20
+    healthcheck: *musa_frontend_health
 
   pde-platform-frontend-v8:
     build:
@@ -106,6 +146,10 @@ services:
       dockerfile: docker/proxy/Dockerfile.product-isolation-validation
     depends_on:
       lead-portal-payments-service:
+        condition: service_healthy
+      pde-platform-frontend-v5:
+        condition: service_healthy
+      pde-platform-frontend-v6:
         condition: service_healthy
       pde-platform-frontend-v7:
         condition: service_healthy

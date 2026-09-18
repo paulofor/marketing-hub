@@ -85,7 +85,8 @@ class BpmVisualEvidenceRunnerTest {
     var contract =
         new PdeExperienceEvidenceLoader.LiveVisualContract(
             java.util.List.of("Começar meu ajuste gratuito"),
-            java.util.List.of("Acesso por 90 dias"));
+            java.util.List.of("Acesso por 90 dias"),
+            PdeExperienceEvidenceLoader.RuntimeIdentity.none());
 
     assertThatThrownBy(
             () ->
@@ -105,13 +106,39 @@ class BpmVisualEvidenceRunnerTest {
             new ObjectMapper().findAndRegisterModules(), "/bin/sh", script.toString());
     var contract =
         new PdeExperienceEvidenceLoader.LiveVisualContract(
-            java.util.List.of("CTA anterior"), java.util.List.of("Condição anterior"));
+            java.util.List.of("CTA anterior"),
+            java.util.List.of("Condição anterior"),
+            new PdeExperienceEvidenceLoader.RuntimeIdentity("v8", "musa-v12", "a".repeat(64)));
 
     var bundle =
         runner.capture(
             "https://example.com/jornada", temporaryDirectory.resolve("current"), contract);
 
     assertThat(bundle.capture().pages().getFirst().firstFoldCtas()).containsExactly("CTA anterior");
+  }
+
+  /** Recusa a reprodução da tarefa 449 mesmo quando a copy antiga parece cumprir o manifesto. */
+  @Test
+  void rejectsMatchingCopyFromPreviousPublicArtifact() throws Exception {
+    Path script = visualScript(1);
+    BpmVisualEvidenceRunner runner =
+        new BpmVisualEvidenceRunner(
+            new ObjectMapper().findAndRegisterModules(), "/bin/sh", script.toString());
+    var contract =
+        new PdeExperienceEvidenceLoader.LiveVisualContract(
+            java.util.List.of("CTA anterior"),
+            java.util.List.of("Condição anterior"),
+            new PdeExperienceEvidenceLoader.RuntimeIdentity("v8", "musa-v12", "b".repeat(64)));
+
+    assertThatThrownBy(
+            () ->
+                runner.capture(
+                    "https://example.com/jornada",
+                    temporaryDirectory.resolve("old-artifact"),
+                    contract))
+        .isInstanceOf(BpmVisualEvidenceRunner.VisualEvidenceException.class)
+        .hasMessageContaining("artefato público não corresponde")
+        .hasMessageContaining("b".repeat(64));
   }
 
   /** Cria um capturador determinístico que imita o contrato JSON e os PNGs do Playwright. */
@@ -128,7 +155,7 @@ class BpmVisualEvidenceRunnerTest {
         session=$(sed -n 's/.*"captureSessionId":"\\([^"]*\\)".*/\\1/p' "$input")
         printf '\\211PNG\\r\\n\\032\\n' > "$evidence/full.png"
         printf '\\211PNG\\r\\n\\032\\n' > "$evidence/fold.png"
-        printf '{"captureSessionId":"%s","deviceProfile":"IPHONE_15_PRO","pages":[{"pageNumber":1,"requestedUrl":"https://example.com/jornada","finalUrl":"https://example.com/jornada","status":200,"title":"Jornada","viewport":{},"headings":[],"visibleCtas":["CTA anterior"],"firstFoldCtas":["CTA anterior"],"visibleText":"Condição anterior"}],"artifacts":[{"captureSessionId":"%s","evidenceKey":"full","evidenceType":"FULL_PAGE","deviceProfile":"IPHONE_15_PRO","pageNumber":1,"foldNumber":null,"viewportWidth":393,"viewportHeight":852,"pageHeightPx":852,"scrollY":0,"sourceUrl":"https://example.com/jornada","finalUrl":"https://example.com/jornada","capturedAt":"2026-08-29T10:00:00Z","localPath":"%s/full.png"},{"captureSessionId":"%s","evidenceKey":"fold-%s","evidenceType":"FOLD","deviceProfile":"IPHONE_15_PRO","pageNumber":1,"foldNumber":%s,"viewportWidth":393,"viewportHeight":852,"pageHeightPx":852,"scrollY":0,"sourceUrl":"https://example.com/jornada","finalUrl":"https://example.com/jornada","capturedAt":"2026-08-29T10:00:01Z","localPath":"%s/fold.png"}]}' "$session" "$session" "$evidence" "$session" "FOLD_NUMBER" "FOLD_NUMBER" "$evidence" > "$output"
+        printf '{"captureSessionId":"%s","deviceProfile":"IPHONE_15_PRO","pages":[{"pageNumber":1,"requestedUrl":"https://example.com/jornada","finalUrl":"https://example.com/jornada","status":200,"title":"Jornada","viewport":{},"headings":[],"visibleCtas":["CTA anterior"],"firstFoldCtas":["CTA anterior"],"visibleText":"Condição anterior","runtimeIdentity":{"version":"v8","experienceVersion":"musa-v12","frontendSourceSha256":"%s","imageTag":"test","commitSha":"test"}}],"artifacts":[{"captureSessionId":"%s","evidenceKey":"full","evidenceType":"FULL_PAGE","deviceProfile":"IPHONE_15_PRO","pageNumber":1,"foldNumber":null,"viewportWidth":393,"viewportHeight":852,"pageHeightPx":852,"scrollY":0,"sourceUrl":"https://example.com/jornada","finalUrl":"https://example.com/jornada","capturedAt":"2026-08-29T10:00:00Z","localPath":"%s/full.png"},{"captureSessionId":"%s","evidenceKey":"fold-%s","evidenceType":"FOLD","deviceProfile":"IPHONE_15_PRO","pageNumber":1,"foldNumber":%s,"viewportWidth":393,"viewportHeight":852,"pageHeightPx":852,"scrollY":0,"sourceUrl":"https://example.com/jornada","finalUrl":"https://example.com/jornada","capturedAt":"2026-08-29T10:00:01Z","localPath":"%s/fold.png"}]}' "$session" "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" "$session" "$evidence" "$session" "FOLD_NUMBER" "FOLD_NUMBER" "$evidence" > "$output"
         """
             .replace("FOLD_NUMBER", Integer.toString(foldNumber)));
     return script;

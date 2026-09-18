@@ -188,6 +188,22 @@ try {
   }, maxFolds);
   await page.waitForTimeout(300);
 
+  const runtimeIdentity = await page.evaluate(async () => {
+    const endpoint = new URL("/version-diagnostics.json", location.href);
+    const response = await fetch(endpoint, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Diagnóstico público retornou HTTP ${response.status}.`);
+    }
+    const value = await response.json();
+    return {
+      version: value.version ?? null,
+      experienceVersion: value.experienceVersion ?? null,
+      frontendSourceSha256: value.frontendSourceSha256 ?? null,
+      imageTag: value.imageTag ?? null,
+      commitSha: value.commitSha ?? null,
+    };
+  });
+
   const pageMetrics = await page.evaluate(() => ({
     width: innerWidth,
     height: innerHeight,
@@ -315,6 +331,7 @@ try {
                 .slice(0, 20),
             ),
           visibleText: await page.locator("body").innerText(),
+          runtimeIdentity,
         },
       ],
       artifacts,

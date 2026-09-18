@@ -5957,3 +5957,23 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   autenticado já consumido pelo backend PDE e preserva o 409 do endpoint público até a promoção.
 - **Prevenção:** o teste do roteador cobre v6 publicada e v8 candidata; falha se a v6 voltar a fixar
   copy mutável ou se a candidata for enviada ao verificador exclusivo de snapshots publicados.
+
+## LOOP-PSIQUE-MANIFESTO-NOVO-COM-PIXELS-ANTIGOS — 18/09/2026
+
+- **Sintoma confirmado:** as tarefas #448 e #449 capturaram exatamente os mesmos pixels no domínio
+  v8, embora a #449 recebesse o manifesto v4 que declarava a privacidade recolhida. A #449 consumiu
+  nova revisão paga e bloqueou pelo conflito entre pacote e tela pública.
+- **Histórico e causa-raiz:** o código corrigido estava na `main`, mas o workflow de `push` mantinha
+  `PDE_DEPLOY_FRONTEND_VERSION=none` e forçava somente o smoke da v7. O pacote de Psique comprovava
+  seus próprios arquivos, não a imagem servida pelo domínio v8. Comparar apenas CTA e copy não
+  distinguia builds diferentes que preservavam os mesmos textos principais.
+- **Alternativas:** reexecutar repetiria custo; publicar todas as superfícies aumentaria o risco de
+  trocar outros produtos; declarar uma superfície única, publicar somente esse alvo e conferir o
+  fingerprint público antes do modelo fecha a cadeia com menor blast radius. A terceira foi adotada.
+- **Correção sistêmica:** o manifesto v5 vincula fonte, imagem e revisão visual por SHA-256; o merge
+  seleciona somente a superfície declarada; o diagnóstico e o smoke comprovam o mesmo fingerprint;
+  Psique bloqueia versão, experiência ou fonte divergente antes de upload e consumo do modelo.
+- **Prevenção:** regressões cobrem a reprodução da #449, candidata correta, manifesto ausente,
+  fingerprint divergente, dois alvos no mesmo merge e futuras revisões sem nomes fixos. Duas rodadas
+  locais completas aprovaram 36 jornadas cada em desktop, iPhone 15 Pro e Pixel 7. Evidências e
+  limites estão em `docs/homologacao/vega-449-paridade-artefato-v1.md`.

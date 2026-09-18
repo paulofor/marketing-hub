@@ -10,6 +10,7 @@
     "generate:musa-diagnostic-assets": "node scripts/generate-musa-diagnostic-assets.mjs",
     "generate:musa-product-ugc-reference": "node scripts/generate-musa-product-ugc-reference.mjs",
     "check:no-musa-slide-videos": "node scripts/validate-no-musa-slide-videos.mjs",
+    "test:source-fingerprint": "node --test scripts/source-fingerprint.test.mjs",
     "prebuild": "npm run generate:musa-product-ugc-reference && npm run check:no-musa-slide-videos",
     "build": "tsc --noEmit && vite build",
     "build:mira": "tsc --noEmit && vite build --config vite.mira.config.ts",

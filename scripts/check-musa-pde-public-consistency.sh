@@ -8,6 +8,7 @@ EXPECTED_EXPERIENCE_VERSION=${EXPECTED_EXPERIENCE_VERSION:-}
 EXPECTED_SLOT_CODE=${EXPECTED_SLOT_CODE:-}
 EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE=${EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE:-}
 EXPECTED_HERO_VIDEO_PATH=${EXPECTED_HERO_VIDEO_PATH:-}
+EXPECTED_FRONTEND_SOURCE_SHA256=${EXPECTED_FRONTEND_SOURCE_SHA256:-}
 TIMEOUT_SECONDS=${TIMEOUT_SECONDS:-30}
 TMP_DIR=""
 
@@ -82,7 +83,7 @@ PY
       "${video_url}" >"${TMP_DIR}/hero-video-content-type.txt"
   fi
 
-  python3 - "${PRODUCT_SLUG}" "${TMP_DIR}" "${PDE_PUBLIC_BASE_URL}" "${EXPECTED_EXPERIENCE_VERSION}" "${EXPECTED_HERO_VIDEO_PATH}" "${EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE}" "${slot_code}" <<'PY'
+  python3 - "${PRODUCT_SLUG}" "${TMP_DIR}" "${PDE_PUBLIC_BASE_URL}" "${EXPECTED_EXPERIENCE_VERSION}" "${EXPECTED_HERO_VIDEO_PATH}" "${EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE}" "${slot_code}" "${EXPECTED_FRONTEND_SOURCE_SHA256}" <<'PY'
 import json
 import pathlib
 import sys
@@ -93,6 +94,7 @@ pde_public_base_url = sys.argv[3]
 expected_experience_version = sys.argv[4].strip()
 expected_hero_video_path = sys.argv[5].strip()
 expected_public_version = sys.argv[7].strip()
+expected_frontend_source_sha256 = sys.argv[8].strip()
 
 def load_json(name):
     path = base / name
@@ -194,8 +196,17 @@ if "UP" not in health.upper():
 if field(version_diagnostics, "status").upper() != "UP":
     raise SystemExit("Diagnóstico público da versão PDE não contém status UP")
 
-for key in ["version", "productSlug", "experienceVersion", "image", "imageTag", "commitSha"]:
+for key in ["version", "productSlug", "experienceVersion", "image", "imageTag", "commitSha", "frontendSourceSha256"]:
     field(version_diagnostics, key)
+
+if expected_frontend_source_sha256:
+    actual_frontend_source_sha256 = field(version_diagnostics, "frontendSourceSha256")
+    if actual_frontend_source_sha256 != expected_frontend_source_sha256:
+        raise SystemExit(
+            "Fonte frontend pública diverge do artefato homologado: "
+            f"esperado={expected_frontend_source_sha256} "
+            f"retornado={actual_frontend_source_sha256}"
+        )
 
 diagnostic_identity = {
     "productSlug": canonical_slug,

@@ -93,7 +93,9 @@ class BpmVisualEvidenceBackendClientTest {
                     List.of("Agenda Cheia"),
                     List.of("Quero começar"),
                     List.of("Quero começar"),
-                    "Agenda Cheia Quero começar")),
+                    "Agenda Cheia Quero começar",
+                    new BpmVisualEvidenceRunner.RuntimeIdentity(
+                        "v8", "musa-v12", "a".repeat(64), "tag", "commit"))),
             List.of(artifact));
 
     try {

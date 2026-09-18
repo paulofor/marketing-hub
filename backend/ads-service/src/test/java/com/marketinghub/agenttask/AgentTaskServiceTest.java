@@ -1661,6 +1661,8 @@ class AgentTaskServiceTest {
     Agent dedalo = agent(7L, "landing-generator", "Dédalo");
     AgentTask blocked = processTask(30L, dedalo, process("PUBLISHED", "Dédalo"), "html", "BLOCKED");
     blocked.setExecutionError("500 : Internal Server Error");
+    blocked.setResultJson("{\"decision\":\"APPROVED\"}");
+    blocked.setEvidenceJson("{\"proof\":true}");
     when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
     when(repository.findRetryableCallbackCandidates("landing-generator"))
         .thenReturn(List.of(blocked));
@@ -1674,6 +1676,8 @@ class AgentTaskServiceTest {
     assertThat(recovered.taskId()).isEqualTo(30L);
     assertThat(blocked.getStatus()).isEqualTo("IN_PROGRESS");
     assertThat(blocked.getExecutionError()).startsWith("AUTO_RETRY_ONCE|");
+    assertThat(recovered.retryResultJson()).isEqualTo(blocked.getResultJson());
+    assertThat(recovered.retryEvidenceJson()).isEqualTo(blocked.getEvidenceJson());
   }
 
   /** Retoma uma vez a candidata bloqueada pelo contrato de checkout corrigido no backend. */

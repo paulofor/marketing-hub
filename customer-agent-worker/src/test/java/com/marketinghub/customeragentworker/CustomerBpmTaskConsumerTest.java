@@ -1,5 +1,6 @@
 package com.marketinghub.customeragentworker;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +24,15 @@ class CustomerBpmTaskConsumerTest {
                 new CustomerBpmTaskConsumer(
                     "http://backend:8000", "codex", "gpt-5.6-sol", " ", "/workspace", "", json))
         .hasMessageContaining("deve ser max em toda execução de Psique");
+  }
+
+  /** Identifica a retomada que deve reutilizar a resposta aprovada sem nova chamada ao modelo. */
+  @Test
+  void recognizesStoredApprovedCallbackForRetry() throws Exception {
+    assertThat(
+            CustomerBpmTaskConsumer.hasApprovedRetryPayload(
+                json, "{\"decision\":\"APPROVED\"}", "{\"proof\":true}"))
+        .isTrue();
   }
 
   /** Bloqueia qualquer redução do esforço máximo antes de consumir uma tentativa do modelo. */

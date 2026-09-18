@@ -1789,7 +1789,27 @@ public class AgentTaskService {
                 task.getSourceReference(),
                 processContextJson,
                 String.valueOf(taskTarget)),
-        catalogoVivo == null ? null : catalogoVivo.prompt(task));
+        catalogoVivo == null ? null : catalogoVivo.prompt(task),
+        retryResultJson(task),
+        retryEvidenceJson(task));
+  }
+
+  /** Reentrega somente a saída já auditada após falha transitória no callback terminal. */
+  private String retryResultJson(AgentTask task) {
+    return retryCallbackPayloadAvailable(task) ? task.getResultJson() : null;
+  }
+
+  /** Reentrega a evidência correspondente à saída, sem permitir nova inferência do agente. */
+  private String retryEvidenceJson(AgentTask task) {
+    return retryCallbackPayloadAvailable(task) ? task.getEvidenceJson() : null;
+  }
+
+  /** Confirma que a retomada automática preserva um parecer e sua prova completos. */
+  private boolean retryCallbackPayloadAvailable(AgentTask task) {
+    return task.getExecutionError() != null
+        && task.getExecutionError().startsWith("AUTO_RETRY_ONCE|")
+        && trimToNull(task.getResultJson()) != null
+        && trimToNull(task.getEvidenceJson()) != null;
   }
 
   /** Resolve o recurso exigido pela atividade e entrega instruções oficiais ao executor correto. */

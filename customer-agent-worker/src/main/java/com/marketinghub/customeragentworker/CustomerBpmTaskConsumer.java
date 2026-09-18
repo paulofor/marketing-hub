@@ -124,6 +124,7 @@ public class CustomerBpmTaskConsumer {
     try {
       task = claimNext();
       if (task == null) return;
+      if (replayApprovedCallback(task)) return;
       visualEvidence = prepareVisualEvidence(task);
       execution = execute(task, visualEvidence.uploaded());
       JsonNode result = execution.result();
@@ -174,6 +175,41 @@ public class CustomerBpmTaskConsumer {
       if (pending != null && !pending.isEmpty()) return pending.get(0);
     }
     return null;
+  }
+
+  /** Reenvia uma aprovação já auditada após erro transitório, sem cobrar nova análise de Psique. */
+  private boolean replayApprovedCallback(Map<String, Object> task) throws IOException {
+    String resultJson = text(task.get("retryResultJson"));
+    String evidenceJson = text(task.get("retryEvidenceJson"));
+    if (!hasApprovedRetryPayload(json, resultJson, evidenceJson)) return false;
+    log.info(
+        "Reenviando callback aprovado de Psique sem nova chamada ao modelo. taskId={}",
+        taskId(task));
+    backend
+        .post()
+        .uri(
+            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/result",
+            AGENT_KEY,
+            taskId(task))
+        .body(Map.of("resultJson", resultJson, "evidenceJson", evidenceJson))
+        .retrieve()
+        .toBodilessEntity();
+    return true;
+  }
+
+  /** Confirma que o callback preservado é uma aprovação com evidência antes de reutilizá-lo. */
+  static boolean hasApprovedRetryPayload(ObjectMapper json, String resultJson, String evidenceJson)
+      throws IOException {
+    return resultJson != null
+        && evidenceJson != null
+        && "APPROVED".equals(json.readTree(resultJson).path("decision").asText());
+  }
+
+  /** Normaliza um campo opcional vindo do contrato interno sem transformar ausência em texto. */
+  private static String text(Object value) {
+    if (value == null) return null;
+    String normalized = String.valueOf(value).trim();
+    return normalized.isEmpty() ? null : normalized;
   }
 
   /**

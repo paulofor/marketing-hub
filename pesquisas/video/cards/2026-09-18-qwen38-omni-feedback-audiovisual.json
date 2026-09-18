@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-feedback-visual-agente-autocorrecao",
+  "collection": "video",
+  "title": "Fechar o loop do videomaker com revisão audiovisual e tool-calling",
+  "finding": "O Qwen3.8-Omni-Flash combina compreensão de texto, imagem, áudio e vídeo em contexto de 1M tokens com reasoning e function calling, reduzindo fortemente o custo declarado de ingestão audiovisual em relação à geração anterior.",
+  "mechanism": "Um modelo multimodal pode revisar o rough cut ou vídeo final junto do briefing, detectar problemas visuais e sonoros e transformar a análise em ações por ferramenta, como regenerar uma tomada, corrigir legenda, trocar voice-over, ajustar timing ou abrir um gate humano.",
+  "commercialApplication": "Usar um avaliador omnimodal separado do renderer no videomaker do Marketing Hub, revisando vídeo completo, áudio, claims, CTA, legendas e continuidade antes da publicação e disparando correções localizadas quando necessário.",
+  "evidenceStrength": "Forte para disponibilidade e capacidades de API, confirmadas na documentação oficial; moderada para economia e qualidade relativa, porque as reduções de custo e benchmarks são divulgados pelo fornecedor e ainda precisam ser validados no workload real.",
+  "publishedOn": "2026-09-18",
+  "validUntil": "2026-12-17",
+  "experimentHypothesis": "Em peças equivalentes, uma revisão audiovisual automatizada antes do gate humano reduzirá defeitos tardios e retrabalho sem elevar de forma desproporcional custo, falsos positivos e tempo até aprovação.",
+  "risks": "O avaliador pode aprovar falhas ou inventar problemas; tool-calling incorreto pode alterar partes não autorizadas; analisar vídeo completo adiciona custo e latência; claims e regras legais não devem depender apenas do julgamento probabilístico do modelo.",
+  "limits": "Qwen3.8-Omni-Flash produz texto, não mídia final, e é serviço hospedado/API sem pesos públicos anunciados para essa variante. Não há evidência de impacto em conversão ou vendas; o valor deve ser medido por defeitos detectados, falsos positivos, regenerações, custo e tempo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-18-qwen38-omni-avaliacao-audiovisual-agente.md",
+  "sourceTitle": "Fonte revisada — Qwen3.8-Omni-Flash: revisão audiovisual agêntica de baixo custo",
+  "sourceSha256": "99b551754ae1653db72f73d60bb096655a67176bf121bb922f67697f3737016d"
+}

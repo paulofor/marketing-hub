@@ -1,0 +1,175 @@
+{
+  "contractVersion": "musa-v12-commercial-homologation.v8",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 6,
+  "activityId": "pdeGate",
+  "sourceReference": "product:4@musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  "experimentId": 92,
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "commercialPlanId": 3,
+    "publicUrl": "https://v8.clubemusa.com.br/"
+  },
+  "offer": {
+    "priceBrl": 67,
+    "currency": "BRL",
+    "billingModel": "ONE_TIME",
+    "accessDays": 90,
+    "renewal": false,
+    "checkoutUrl": "https://go.pepper.com.br/owm6x",
+    "checkoutProvider": "PEPPER",
+    "checkoutReference": "owm6x",
+    "promise": "Entregar gratuitamente um primeiro ajuste claro e aplicável com itens que a cliente já possui e liberar, após a compra, a continuidade guiada de sete dias."
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "scope": "Candidata do experimento 92 preservada, com homologação que distingue corretamente o gate de publicação da paridade entre contrato, tela e artefato.",
+  "boundary": "Prepara nova revisão independente sem autorizar campanha, gasto, cobrança ou publicação comercial.",
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/musa-v12-commercial-homologation-v7.json",
+    "reason": "Aceitar somente a candidata protegida pelo gate 409, manter a paridade da tela pelo canal autorizado e isolar cada homologação Docker e atestação vigente.",
+    "includedChanges": [
+      "Smoke candidato exige 409 estruturado nas rotas públicas centrais e compara a tela ao contrato interno autenticado",
+      "Smoke recusa vazamento do contrato candidato e divergência entre contrato interno e PDE pública",
+      "Homologação Docker exige namespace Compose exclusivo por execução",
+      "Regressão transacional seleciona dinamicamente a atestação MUSA v12 vigente"
+    ],
+    "excludedChanges": [
+      "Preço, checkout, promessa, público e condições comerciais",
+      "Promoção da candidata, campanha, tráfego, gasto, cobrança e acesso real"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br/",
+    "requiredFrontendSourceSha256": "09e282435e2496f1a4fc96c1fbd90dbb8c368a3b87114a9b3af8899c3f10ef42"
+  },
+  "liveVisualContract": {
+    "deviceProfile": "IPHONE_15_PRO",
+    "requiredFirstFoldCtas": [
+      "Começar meu ajuste gratuito"
+    ],
+    "requiredVisibleTexts": [
+      "4 escolhas rápidas, sem compra de roupa.",
+      "Continuação de 7 dias por R$ 67, pagamento único.",
+      "Acesso por 90 dias, sem assinatura ou renovação."
+    ],
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "09e282435e2496f1a4fc96c1fbd90dbb8c368a3b87114a9b3af8899c3f10ef42"
+    }
+  },
+  "homologationMatrix": {
+    "environment": "LOCAL_ISOLATED",
+    "executedAt": "2026-09-18",
+    "devices": [
+      "DESKTOP_CHROMIUM",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "verifiedStates": [
+      "CANDIDATE_GATE_409_PROTECTED",
+      "CANDIDATE_INTERNAL_TO_PUBLIC_PDE_PARITY",
+      "CANDIDATE_LEAK_REJECTED",
+      "TARGET_ONLY_PROMOTION",
+      "PUBLIC_ARTIFACT_IDENTITY",
+      "FRONTEND_EXACT_ROLLBACK",
+      "BACKEND_COMPATIBILITY_AND_EXACT_ROLLBACK",
+      "OTHER_VERSIONS_AND_WORKERS_UNCHANGED",
+      "PRIVACY_DETAILS_COLLAPSED_EXPANDABLE_AND_REVERSIBLE",
+      "FIRST_FOLD_CTA_AND_TERMS",
+      "FREE_FIRST_ADJUSTMENT",
+      "PEPPER_PAYMENT_APPROVED",
+      "V12_ACCESS_90_DAYS",
+      "RESUME_AND_COMPLETION",
+      "IDEMPOTENT_REFUND",
+      "INTERNAL_QA_METRIC_SEGREGATION"
+    ],
+    "evidenceBoundary": "Publicação, pagamento, e-mail e tráfego são simulados localmente. Vendas e receita continuam não comprovadas."
+  },
+  "measurementContract": {
+    "authoritativeSaleEvent": "PURCHASE_COMPLETED",
+    "authoritativeDeliveryEvent": "DELIVERY_COMPLETED",
+    "humanMetricsExcludeTestTraffic": true,
+    "deduplicationRequired": true,
+    "testTrafficClass": "INTERNAL_QA"
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v7.json",
+      "sha256": "2b36b955cfc732f19b4806ab9bcbe58c229a3aa705d71bc3420c171e03dd9735",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "A v7 preserva oferta, experiência, isolamento e canal autenticado; a v8 corrige o tratamento do gate 409 e remove dependências de nomes estáticos de sandbox ou atestação."
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "78f5d14b213c5d342868f441cf458150987515cfdf64f57c954d26c8b862a211",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Experiência v12 preservada, incluindo privacidade recolhida e primeiro ajuste aplicável."
+    },
+    {
+      "path": "pde-platform/frontend/src/styles.css",
+      "sha256": "67ec3ef79d7bfa6b3093b92ad204f97d864879ffe6cc96c186703d20f9c12942",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Estilos comerciais da experiência v12 preservados sem alteração de oferta."
+    },
+    {
+      "path": ".github/workflows/pde-platform-metodo-musa-ci.yml",
+      "sha256": "6e5f9886823da6ad570a283bf0b3142405f424f17679af5f71a12d52eed87b8a",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Workflow atribui namespace Docker único por execução e preserva a publicação independente da v8."
+    },
+    {
+      "path": "scripts/check-musa-pde-public-consistency.sh",
+      "sha256": "f0bfc704e0bacf8d8d16583ccc738c70b10f83ea597fb129239a4902d2f14985",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Validador exige o gate 409 no backend público da candidata e compara o contrato interno autorizado com a PDE pública."
+    },
+    {
+      "path": "pde-platform/scripts/run-targeted-production-smokes.sh",
+      "sha256": "520bda035ebe40a57c8d3d8c61a160c643dcb589c65d8448c2d15baa19a9514e",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Roteador mantém v5 a v7 no canal publicado e encaminha somente a v8 candidata ao preflight autenticado."
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "scripts/test-musa-pde-public-consistency.py",
+      "sha256": "4c54371de7444e5440de0674db9ed6a0cd3bd5d9f4ce4a9b619aa11ba55458be",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Teste HTTP cobre candidata protegida, vazamento indevido, divergência de proxy e os controles anteriores."
+    },
+    {
+      "path": "pde-platform/scripts/test-targeted-production-smokes.sh",
+      "sha256": "4b0823b7fed7f0b02fa54c3bf7472295f4bf4891f156bd543c29323f961f284f",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Teste comprova canal publicado para versões ativas e canal candidato somente para v8."
+    },
+    {
+      "path": "pde-platform/scripts/test-deploy-isolation-contract.sh",
+      "sha256": "e0425211e41d0fd9f84a5c52e1e1ace151e6addc1fa44eef24e8b937b43f898e",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Contrato arquitetural exige namespace único e seleção dinâmica da atestação vigente."
+    },
+    {
+      "path": "pde-platform/scripts/test-independent-version-deploy.sh",
+      "sha256": "247a19360fd4ff207d4c65b9413fbc8dc68e6e36f78718a946d478386e2b9406",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Homologação Docker usa namespace injetado e testa a candidata com o manifesto MUSA v12 mais recente."
+    },
+    {
+      "path": "scripts/test-publisher-recovery.py",
+      "sha256": "a3af6e1cb4bff7be2fe699f5ae5e63e7c9b5cc175ac12434587a8464f1393f38",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Teste exige proteção de recuperação para todos os checkouts dos publicadores."
+    }
+  ],
+  "validationReport": "docs/homologacao/pde-candidata-409-e-isolamento-v1.md"
+}

@@ -1,5 +1,23 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-PDE-CANDIDATA-409-TRATADO-COMO-FALHA — proteção de publicação derruba a homologação
+
+- **Data:** 2026-09-18. Método MUSA, candidata v8, workflow
+  [35354613361](https://github.com/paulofor/marketing-hub/actions/runs/35354613361).
+- **Evidência histórica:** a v8 passou saúde, diagnóstico e captura pública, mas o último smoke
+  recebeu `409 Contrato da versão PDE não publicado` ao consultar a rota central pública. O `409`
+  é o gate correto enquanto a candidata não foi promovida.
+- **Causa-raiz:** o smoke buscava o contrato candidato pela rota interna autenticada, mas em seguida
+  ainda exigia sucesso nas duas rotas públicas do backend. Ele confundia a proteção de publicação
+  com indisponibilidade e falhava depois de a superfície candidata já estar disponível.
+- **Correção sistêmica:** no modo `candidate`, o smoke usa a rota interna somente para o contrato
+  canônico, exige `409` estruturado nas rotas públicas centrais e compara a resposta pública da PDE
+  com esse contrato interno. No modo `published`, continua exigindo paridade entre todas as rotas
+  públicas.
+- **Prevenção:** a fixture local cobre candidata protegida, vazamento indevido pelo backend e
+  divergência entre o contrato interno e o que a tela recebe. Assim, uma candidata não é promovida
+  por acidente nem reprovada por manter o gate correto.
+
 ## LOOP-TEMIS-MIDIA-SINTETICA-TRATADA-COMO-PESSOA-REAL — consentimento inexistente bloqueia criativo IA
 
 - **Data:** 2026-09-17. Vega, experimento #92, criativo #529.

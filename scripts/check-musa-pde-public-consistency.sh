@@ -50,6 +50,42 @@ fetch_validation_contract() {
     "${url}" >"${output_file}"
 }
 
+assert_candidate_contract_withheld() {
+  local url="$1"
+  local output_file="$2"
+  local status=""
+
+  log "Confirmando que a candidata não está exposta no contrato público: ${url}"
+  if ! status="$(curl --silent --show-error --location --max-time "${TIMEOUT_SECONDS}" \
+    --header 'Accept: application/json' \
+    --output "${output_file}" \
+    --write-out '%{http_code}' \
+    "${url}")"; then
+    fail "Não foi possível comprovar que o contrato candidato permanece protegido: ${url}"
+  fi
+
+  [[ "${status}" == "409" ]] || fail \
+    "Contrato candidato exposto ou indisponível de forma inesperada: url=${url} status=${status} esperado=409"
+
+  python3 - "${output_file}" <<'PY'
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+try:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+except json.JSONDecodeError as exc:
+    raise SystemExit(f"Resposta 409 do contrato candidato não retornou JSON válido: {exc}") from exc
+
+if payload.get("status") != 409:
+    raise SystemExit(
+        "Resposta do contrato candidato não confirma o gate de publicação: "
+        f"status={payload.get('status')!r} esperado=409"
+    )
+PY
+}
+
 main() {
   require_command curl
   require_command python3
@@ -74,7 +110,8 @@ PY
   elif [[ -n "${EXPECTED_EXPERIENCE_VERSION}" ]]; then
     contract_query="?experienceVersion=${EXPECTED_EXPERIENCE_VERSION}"
   fi
-  local canonical_url="${BACKEND_PUBLIC_BASE_URL%/}/api/products/public/${PRODUCT_SLUG}/pde-experience${contract_query}"
+  local public_canonical_url="${BACKEND_PUBLIC_BASE_URL%/}/api/products/public/${PRODUCT_SLUG}/pde-experience${contract_query}"
+  local canonical_url="${public_canonical_url}"
   if [[ "${PDE_CONTRACT_ACCESS_MODE}" == "candidate" ]]; then
     canonical_url="${BACKEND_PUBLIC_BASE_URL%/}/api/internal/pde-validation-contract/v1/products/${PRODUCT_SLUG}/experience${contract_query}"
   elif [[ "${PDE_CONTRACT_ACCESS_MODE}" != "published" ]]; then
@@ -89,10 +126,12 @@ PY
 
   if [[ "${PDE_CONTRACT_ACCESS_MODE}" == "candidate" ]]; then
     fetch_validation_contract "${canonical_url}" "${TMP_DIR}/canonical.json"
+    assert_candidate_contract_withheld "${public_canonical_url}" "${TMP_DIR}/public-canonical-withheld.json"
+    assert_candidate_contract_withheld "${backend_alias_url}" "${TMP_DIR}/backend-alias-withheld.json"
   else
     fetch_url "${canonical_url}" "${TMP_DIR}/canonical.json"
+    fetch_url "${backend_alias_url}" "${TMP_DIR}/backend-alias.json"
   fi
-  fetch_url "${backend_alias_url}" "${TMP_DIR}/backend-alias.json"
   fetch_url "${pde_alias_url}" "${TMP_DIR}/pde-alias.json"
   fetch_url "${pde_health_url}" "${TMP_DIR}/pde-health.txt"
   fetch_url "${pde_version_diagnostics_url}" "${TMP_DIR}/version-diagnostics.json"
@@ -107,7 +146,7 @@ PY
       "${video_url}" >"${TMP_DIR}/hero-video-content-type.txt"
   fi
 
-  python3 - "${PRODUCT_SLUG}" "${TMP_DIR}" "${PDE_PUBLIC_BASE_URL}" "${EXPECTED_EXPERIENCE_VERSION}" "${EXPECTED_HERO_VIDEO_PATH}" "${EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE}" "${slot_code}" "${EXPECTED_FRONTEND_SOURCE_SHA256}" <<'PY'
+  python3 - "${PRODUCT_SLUG}" "${TMP_DIR}" "${PDE_PUBLIC_BASE_URL}" "${EXPECTED_EXPERIENCE_VERSION}" "${EXPECTED_HERO_VIDEO_PATH}" "${EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE}" "${slot_code}" "${EXPECTED_FRONTEND_SOURCE_SHA256}" "${PDE_CONTRACT_ACCESS_MODE}" <<'PY'
 import json
 import pathlib
 import sys
@@ -119,6 +158,7 @@ expected_experience_version = sys.argv[4].strip()
 expected_hero_video_path = sys.argv[5].strip()
 expected_public_version = sys.argv[7].strip()
 expected_frontend_source_sha256 = sys.argv[8].strip()
+contract_access_mode = sys.argv[9].strip()
 
 def load_json(name):
     path = base / name
@@ -141,7 +181,6 @@ def without_nulls(value):
     return value
 
 canonical = load_json("canonical.json")
-backend_alias = load_json("backend-alias.json")
 pde_alias = load_json("pde-alias.json")
 version_diagnostics = load_json("version-diagnostics.json")
 
@@ -150,13 +189,17 @@ if canonical_slug != product_slug:
     raise SystemExit(f"Slug canônico divergente: esperado={product_slug} retornado={canonical_slug}")
 
 comparison_fields = ["slug", "experienceVersion", "funnelVersion"]
-for key in comparison_fields:
-    expected = field(canonical, key)
-    actual = field(backend_alias, key)
-    if actual != expected:
-        raise SystemExit(
-            f"backend-alias divergente no campo {key}: esperado={expected} retornado={actual}"
-        )
+if contract_access_mode == "published":
+    backend_alias = load_json("backend-alias.json")
+    for key in comparison_fields:
+        expected = field(canonical, key)
+        actual = field(backend_alias, key)
+        if actual != expected:
+            raise SystemExit(
+                f"backend-alias divergente no campo {key}: esperado={expected} retornado={actual}"
+            )
+elif contract_access_mode != "candidate":
+    raise SystemExit(f"Modo de acesso ao contrato desconhecido: {contract_access_mode}")
 
 pde_comparison_fields = comparison_fields
 for key in pde_comparison_fields:

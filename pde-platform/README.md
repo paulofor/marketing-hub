@@ -116,10 +116,11 @@ compatibilidade de todas as versões suportadas.
 Homologação transacional local:
 
 ```bash
-bash pde-platform/scripts/test-independent-version-deploy.sh
+PDE_LOCAL_COMPOSE_PROJECT=<namespace-exclusivo> \
+  bash pde-platform/scripts/test-independent-version-deploy.sh
 ```
 
-Esse teste usa o projeto Compose exclusivo da sandbox, injeta candidata inválida e falha pós-troca,
+Esse teste exige um projeto Compose exclusivo, injeta candidata inválida e falha pós-troca,
 comprova rollback exato e confirma que versões e componentes fora do alvo mantêm seus containers.
 
 Deploy de produção:

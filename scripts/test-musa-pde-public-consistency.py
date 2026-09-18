@@ -72,6 +72,7 @@ class PublicConsistencyTest(unittest.TestCase):
             "/frontend/": b'<html><div id="root"></div><script src="/assets/app.js"></script></html>',
             "/frontend/runtime-config.js": generated["MUSA_RUNTIME_CONFIG_FILE"].read_bytes(),
         }
+        self.response_statuses = {}
         self.requests = []
         self.request_headers = []
         fixture = self
@@ -81,7 +82,8 @@ class PublicConsistencyTest(unittest.TestCase):
                 fixture.requests.append(self.path)
                 fixture.request_headers.append(dict(self.headers.items()))
                 value = fixture.responses.get(self.path)
-                self.send_response(200 if value is not None else 404)
+                status = fixture.response_statuses.get(self.path, 200 if value is not None else 404)
+                self.send_response(status)
                 self.end_headers()
                 if value is not None:
                     self.wfile.write(json.dumps(value).encode() if isinstance(value, dict) else value)
@@ -135,18 +137,41 @@ class PublicConsistencyTest(unittest.TestCase):
     def test_candidate_uses_authenticated_validation_contract(self):
         self.env["PDE_CONTRACT_ACCESS_MODE"] = "candidate"
         self.env["PDE_INTERNAL_API_TOKEN"] = "test-only-token"
-        self.responses.pop(self.canonical_path)
+        withheld = {"status": 409, "message": "Contrato da versão PDE não publicado"}
+        self.responses[self.canonical_path] = withheld
+        self.responses[self.alias_path] = withheld
+        self.response_statuses[self.canonical_path] = 409
+        self.response_statuses[self.alias_path] = 409
 
         result = self.run_smoke()
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn(self.validation_path, self.requests)
-        self.assertNotIn(self.canonical_path, self.requests)
+        self.assertIn(self.canonical_path, self.requests)
+        self.assertIn(self.alias_path, self.requests)
+        self.assertIn(self.public_path, self.requests)
         validation_index = self.requests.index(self.validation_path)
         self.assertEqual(
             self.request_headers[validation_index].get("X-PDE-Internal-Token"),
             "test-only-token",
         )
+
+    def test_candidate_rejects_contract_that_became_public(self):
+        self.env["PDE_CONTRACT_ACCESS_MODE"] = "candidate"
+        self.env["PDE_INTERNAL_API_TOKEN"] = "test-only-token"
+        self.assert_blocked("Contrato candidato exposto")
+
+    def test_candidate_rejects_divergent_public_pde_contract(self):
+        self.env["PDE_CONTRACT_ACCESS_MODE"] = "candidate"
+        self.env["PDE_INTERNAL_API_TOKEN"] = "test-only-token"
+        withheld = {"status": 409, "message": "Contrato da versão PDE não publicado"}
+        self.responses[self.canonical_path] = withheld
+        self.responses[self.alias_path] = withheld
+        self.response_statuses[self.canonical_path] = 409
+        self.response_statuses[self.alias_path] = 409
+        self.responses[self.public_path]["experienceVersion"] = "versao-incorreta"
+
+        self.assert_blocked("pde-alias divergente no campo experienceVersion")
 
     def test_candidate_rejects_missing_internal_token(self):
         self.env["PDE_CONTRACT_ACCESS_MODE"] = "candidate"

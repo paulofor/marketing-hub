@@ -10,9 +10,13 @@
 - **Causa-raiz:** o caminho excepcional de conversão usava a chave não canônica `action` e não
   construía os links obrigatórios, divergindo do contrato de falha válido usado nas demais rotas.
 - **Correção sistêmica:** a conversão reutiliza a orientação técnica canônica, com categoria,
-  ação recomendada e links de ajuda da tarefa. O backend continua exigindo a orientação completa.
+  ação recomendada e links de ajuda da tarefa. Antes de reentregar uma falha já preservada, o
+  worker normaliza somente envelopes legados cuja orientação não atende ao contrato; conserva
+  parecer, evidências, auditoria e consumo, sem nova inferência. O backend continua exigindo a
+  orientação completa.
 - **Prevenção:** o teste de outbox agora confirma a estrutura integral do `blockerGuidance` depois
-  das rejeições, além de preservar parecer, consumo e ausência de nova inferência.
+  das rejeições e reproduz a recuperação de um envelope legado que o backend recusaria, além de
+  preservar parecer, consumo e ausência de nova inferência.
 
 ## LOOP-PDE-CANDIDATA-409-TRATADO-COMO-FALHA — proteção de publicação derruba a homologação
 

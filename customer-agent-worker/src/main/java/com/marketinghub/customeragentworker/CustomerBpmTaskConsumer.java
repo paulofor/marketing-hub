@@ -839,6 +839,7 @@ public class CustomerBpmTaskConsumer {
 
   /** Reenvia exatamente o mesmo callback e só então remove sua cópia persistente. */
   private void deliver(CustomerBpmTaskOutbox.Pending pending) throws IOException {
+    pending = normalizeLegacyFailureCallback(pending);
     log.info(
         "Psique enviando callback preservado. taskId={} operation={}",
         taskId(pending.task()),
@@ -870,6 +871,55 @@ public class CustomerBpmTaskConsumer {
         taskId(pending.task()),
         pending.operation());
     outbox.acknowledge();
+  }
+
+  /**
+   * Recupera apenas falhas legadas cuja orientação não satisfaz o contrato obrigatório do backend.
+   */
+  private CustomerBpmTaskOutbox.Pending normalizeLegacyFailureCallback(
+      CustomerBpmTaskOutbox.Pending pending) throws IOException {
+    if (!"failure".equals(pending.operation()) || hasValidBlockerGuidance(pending.callback())) {
+      return pending;
+    }
+    Map<String, Object> callback =
+        pending.callback() == null ? new HashMap<>() : new HashMap<>(pending.callback());
+    callback.put("blockerGuidance", technicalGuidance(pending.task()));
+    CustomerBpmTaskOutbox.Pending normalized =
+        new CustomerBpmTaskOutbox.Pending(
+            pending.task(),
+            pending.audit(),
+            pending.visualEvidence(),
+            pending.modelStarted(),
+            pending.operation(),
+            callback,
+            pending.deliveryAttempts());
+    outbox.save(normalized);
+    log.warn(
+        "Psique normalizou callback legado de falha antes do reenvio. taskId={}",
+        taskId(pending.task()));
+    return normalized;
+  }
+
+  /** Confirma todos os campos exigidos para que a orientação de bloqueio seja acionável. */
+  private boolean hasValidBlockerGuidance(Map<String, Object> callback) {
+    if (callback == null || !(callback.get("blockerGuidance") instanceof Map<?, ?> guidance)) {
+      return false;
+    }
+    if (!hasText(guidance.get("category")) || !hasText(guidance.get("recommendedAction"))) {
+      return false;
+    }
+    if (!(guidance.get("helpLinks") instanceof List<?> links) || links.isEmpty()) return false;
+    return links.stream()
+        .allMatch(
+            link ->
+                link instanceof Map<?, ?> helpLink
+                    && hasText(helpLink.get("label"))
+                    && hasText(helpLink.get("url")));
+  }
+
+  /** Distingue valor textual preenchido de chave ausente ou string em branco. */
+  private boolean hasText(Object value) {
+    return value instanceof String text && !text.isBlank();
   }
 
   /**

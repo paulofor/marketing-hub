@@ -88,10 +88,12 @@
 - **Causa-raiz:** o teste de isolamento da candidata usava uma lista manual de versões transitórias.
   Cada nova atestação comercial legítima exigia que essa lista fosse lembrada e atualizada, o que já
   havia causado a mesma classe de falha no histórico de Psique/PDE.
-- **Correção e prevenção:** o teste passou a identificar de forma independente a maior revisão do
-  manifesto canônico da Vega v12 e a exigir que ela seja a primeira evidência entregue, mantendo as
-  verificações de isolamento entre produtos. Uma futura v5 ou posterior não bloqueia o worker apenas
-  por evoluir a atestação; divergência de seleção, produto ou versão continua bloqueante.
+- **Correção e prevenção:** o teste identifica de forma independente a maior revisão do manifesto
+  canônico da Vega v12 e exige exatamente as provas por ela declaradas, mantendo as verificações de
+  isolamento entre produtos. A implementação anterior selecionava a revisão dinamicamente, mas ainda
+  exigia duas provas diretas da v4; a v5 referenciava a v4 como atestação e deliberadamente declarava
+  outro conjunto de provas. Uma futura v5 ou posterior não bloqueia o worker apenas por evoluir a
+  atestação; ausência de prova declarada, divergência de seleção, produto ou versão continua bloqueante.
 
 ## LOOP-VEGA-VERSAO-SELECIONADA-SEM-CANDIDATA-COMERCIAL — ciclo aponta v12, slot permanece v7
 
@@ -360,6 +362,20 @@
 - **Prevenção:** o próprio script roda no CI contra HTTP local e o JSON gerado pelo entrypoint
   real, com casos negativos. Gatilhos incluem o verificador e seu teste. Não há fallback silencioso
   para legado, remoção do smoke ou troca da imagem pública para contornar o erro.
+
+### Recorrência eliminada — 18/09/2026
+
+- **Evidência:** a execução [35305792623](https://github.com/paulofor/marketing-hub/actions/runs/35305792623),
+  que bloqueou o deploy dependente [35305846147](https://github.com/paulofor/marketing-hub/actions/runs/35305846147),
+  falhou na captura visual de Psique com `Unexpected token '<'` ao interpretar o diagnóstico como JSON.
+- **Causa-raiz:** a captura passou corretamente a exigir `version-diagnostics.json` para vincular
+  pixels e artefato imutável, mas a página HTTP simulada pelo teste respondia HTML para toda rota,
+  inclusive a de diagnóstico. Assim, o contrato novo não era exercitado pelo teste que deveria
+  protegê-lo.
+- **Correção e prevenção:** a fixture agora publica o JSON canônico de diagnóstico e o teste
+  confirma todos os campos de identidade retornados na captura. Isso mantém bloqueante qualquer
+  divergência entre pixels e build, sem deixar uma mudança legítima no verificador interromper o
+  pipeline por uma simulação incompleta.
 
 ### Contrato ausente em versão legada — 15/09/2026
 

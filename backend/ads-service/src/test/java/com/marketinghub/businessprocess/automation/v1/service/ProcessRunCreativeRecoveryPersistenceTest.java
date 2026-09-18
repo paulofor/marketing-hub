@@ -70,7 +70,6 @@ class ProcessRunCreativeRecoveryPersistenceTest {
     when(products.findById(94110L)).thenReturn(Optional.of(product));
     when(products.findLockedById(94110L)).thenReturn(Optional.of(product));
     var context = mock(ProcessRunContext.class);
-    when(context.usesExecutionProfile(94110L, reference)).thenReturn(true);
     String diagram =
         """
         {"nodes":[{"id":"route","type":"TASK"},{"id":"nonAudiovisual","type":"TASK"},

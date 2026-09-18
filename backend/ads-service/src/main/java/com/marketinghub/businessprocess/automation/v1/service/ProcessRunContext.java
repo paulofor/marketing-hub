@@ -47,15 +47,9 @@ public class ProcessRunContext {
         && executionProfileContext.pins(command.sourceReference(), processId);
   }
 
-  /** Identifica a adoção da ficha para transportar sua referência exata aos comandos canônicos. */
-  public boolean usesExecutionProfile(Long productId, String reference) {
-    return executionProfileContext != null
-        && executionProfileContext.bound(productId, reference).isPresent();
-  }
-
   /**
-   * Valida identidade, ficha, BPM e adesão explícita; navegação sem referência não permite
-   * execução.
+   * Valida identidade, ficha, BPM e adesão explícita, preservando a referência congelada em toda
+   * leitura; navegação sem referência não permite execução.
    */
   public ProductProcessActivityExecutionHistoryResponse read(
       Long productId, Long processId, ProcessRunCommand command, boolean execution) {
@@ -106,7 +100,7 @@ public class ProcessRunContext {
             HttpStatus.CONFLICT, "O ciclo está encerrado; o histórico foi preservado.");
     }
     var result =
-        usesExecutionProfile(productId, command.sourceReference())
+        command.sourceReference() != null && !command.sourceReference().isBlank()
             ? activities.productProcessExecutions(
                 processId,
                 productId,

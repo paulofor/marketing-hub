@@ -222,7 +222,8 @@ class OpalaAdoptionRoutingTest {
     var history = mock(ProductProcessActivityExecutionHistoryResponse.class);
     when(history.currentExecutionReference()).thenReturn("experiment:92");
     when(history.activities()).thenReturn(List.of());
-    when(activities.productProcessExecutions(77L, 4L, 2L, 14L, false)).thenReturn(history);
+    when(activities.productProcessExecutions(77L, 4L, 2L, 14L, false, "experiment:92"))
+        .thenReturn(history);
     assertThat(context.read(4L, 77L, command, true)).isSameAs(history);
     assertThatThrownBy(
             () -> context.read(4L, 77L, new ProcessRunCommand(14L, 2L, "experiment:93"), true))
@@ -274,7 +275,8 @@ class OpalaAdoptionRoutingTest {
     var history = mock(ProductProcessActivityExecutionHistoryResponse.class);
     when(history.currentExecutionReference()).thenReturn("experiment:93");
     when(history.activities()).thenReturn(List.of());
-    when(activities.productProcessExecutions(77L, 4L, 3L, 16L, false)).thenReturn(history);
+    when(activities.productProcessExecutions(77L, 4L, 3L, 16L, false, "experiment:93"))
+        .thenReturn(history);
 
     assertThat(context.read(4L, 77L, new ProcessRunCommand(16L, 3L, "experiment:93"), true))
         .isSameAs(history);

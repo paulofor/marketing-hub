@@ -20,6 +20,7 @@ run_check() {
   fi
 }
 # A homologação deve usar a mesma versão principal do CI e da imagem do executor.
+# shellcheck disable=SC2016 # A interpolação pertence ao código JavaScript executado pelo Node.
 run_check runtime.log node --input-type=module -e '
   console.log(`Node ${process.version}`);
   if (Number(process.versions.node.split(".")[0]) !== 22) {
@@ -40,7 +41,7 @@ start_backend() {
   java -cp "backend/ads-service/target/test-classes:backend/ads-service/target/classes:$(cat backend/ads-service/target/process-test.classpath)" \
     com.marketinghub.businessprocess.automation.v1.service.ProcessAutomationLocalApplication >> "$output/backend.log" 2>&1 &
   backend_pid=$!
-  for attempt in $(seq 1 50); do
+  for _ in {1..50}; do
     if curl -fsS -H 'X-Process-Worker-Token: process-fixture-only' http://127.0.0.1:18092/api/internal/business-processes/automation/v1/stage-executions/pending > /dev/null; then return; fi
     if ! kill -0 "$backend_pid" 2>/dev/null; then tail -60 "$output/backend.log"; return 1; fi
     sleep 1

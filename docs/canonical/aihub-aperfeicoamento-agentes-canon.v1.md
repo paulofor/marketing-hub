@@ -19,6 +19,24 @@ validada localmente só pode ser publicada pelo fluxo de PR executado pelo usuá
 imagem produzida pelos arquivos versionados do repositório. Não publicar por SSH nem
 usar publicação como teste. Esta regra substitui a exceção antiga no prompt de ajuda.
 
+## Foco no produto e no processo correntes — decisão de 18/09/2026
+
+O template compartilhado deve ser direto e independente de um caso: produto, tipo, formato,
+identificadores, versões, tarefas e impedimento concreto vêm do contexto oficial, cuja
+atualidade deve ser confirmada. Retirar exemplos obrigatórios de um tipo e listas extensas
+de conceitos do texto copiado; os detalhes permanecem nos cânones para consulta pertinente.
+Não cortar o contexto oficial nem inferir estado de negócio na interface.
+
+O pedido autoriza investigação, implementação e ajustes locais causalmente relacionados,
+sem reconfirmar a cada defeito. Resolver o fluxo atual e prevenir a mesma causa nas fontes
+compartilhadas, melhorando os agentes envolvidos quando houver evidência e avaliação.
+Melhorias fora do escopo ficam como sugestões; não exigir nova arquitetura ou envolver
+todos os agentes em toda recuperação. Preservar rentabilidade, tipo/ficha aprovados,
+autoridade do backend, gates e consentimento para ações externas.
+
+A síntese conceitual abaixo serve como referência seletiva. O template não precisa enumerar
+os conceitos para continuar aplicando o ciclo diagnóstico, candidata, avaliação e aprendizado.
+
 ## Prioridade comercial e diversidade de implementação
 
 Decisão de 14/09/2026: o prompt deve explicitar como objetivo principal **gerar VENDAS e
@@ -28,9 +46,9 @@ aprovação técnica como ganho comercial medido.
 
 PDE, como experiência de produto digital (**Product Digital Experience**), não exige um
 webapp com IA. A implementação depende do tipo, do problema e do resultado comprado;
-o prompt deve incluir o exemplo de geração de imagens personalizadas em **Quartzo**.
+o prompt deve orientar a consulta ao contrato atual, sem exigir exemplos de um tipo específico.
 Seguir `product-types-canon.v1.md` para distinguir experiência, formato e classificação;
-o exemplo não altera códigos nem reclassifica produtos. Quando houver decisão de formato,
+a recuperação não altera códigos nem reclassifica produtos. Quando houver decisão de formato,
 comparar alternativas por valor, esforço do cliente, custo, margem e escala, e adaptar
 a homologação ao resultado e à entrega realmente prometidos. Preservar contratos,
 aprovações e versões vigentes durante a recuperação.
@@ -41,7 +59,7 @@ Decisão de 14/09/2026: o prompt compartilhado deve exigir participação de Plu
 construção, produção, homologação e operação, especialmente quando o uso continuado gera custo
 de IA. Aplicar `financial-agent-canon.v1.md`: custo por resultado útil e cliente/período, cenário
 conservador e uso intenso, margem mínima proposta/aprovada, CAC, quotas, retries, reembolsos,
-conciliação e gatilhos de reavaliação. Quartzo exige economia do pacote completo de imagens.
+conciliação e gatilhos de reavaliação. O detalhamento por tipo permanece no cânone financeiro.
 Não inventar percentuais, fonte ou receita; preservar experimentação privada limitada e
 obrigações de clientes já pagos. Evitar chamadas de IA repetidas sem mudança de evidência.
 O modelo deve verificar as travas realmente implementadas no backend e declarar lacunas;
@@ -117,11 +135,19 @@ garante que o modelo tenha ferramentas para ler arquivos; isso depende do harnes
 
 ## Critérios de conclusão
 
-Antes dos testes, definir matriz com sucesso, falhas, integrações, observabilidade,
-métricas, segregação e dispositivos pertinentes. Uma rodada completa sem defeitos basta.
-Quando uma rodada revelar defeito e houver correção, exigir duas rodadas completas e
-consecutivas sem falhas após a última correção. Nova falha reinicia a contagem.
-Manter a avaliação protegida contra alteração oportunista dos critérios para aprovar.
+Antes dos testes, definir matriz proporcional ao fluxo afetado, com sucesso, falhas,
+integrações, observabilidade, métricas, segregação e dispositivos pertinentes. Revisar os
+testes unitários de todos os módulos alterados: contratos, fixtures, mocks e expectativas.
+Atualizar testes para mudanças legítimas e acrescentar regressões das causas corrigidas,
+sem fixar versões transitórias ou produtos particulares em contratos genéricos e sem
+remover proteções para aprovar a candidata. Executar as suítes unitárias desses módulos,
+além dos testes de integração/contrato, build e verificações pertinentes.
+
+Decisão de 18/09/2026: executar uma rodada dos testes relevantes; havendo defeito, corrigir
+a causa e repetir as validações necessárias para confirmar a correção e prevenir regressões
+relacionadas. Substitui, neste prompt, a exigência anterior de duas rodadas completas após
+qualquer correção. Não repetir toda a matriz apenas para atingir quantidade mínima nem
+alterar critérios oportunisticamente para aprovar.
 
 Encerrar ao cumprir o escopo e comprovar os critérios locais; evidenciar limitações reais.
 Não transformar aperfeiçoamento em pesquisa ilimitada ou refatoração de todos os agentes.

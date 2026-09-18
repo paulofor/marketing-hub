@@ -119,10 +119,19 @@ O modelo do prompt fica em Markdown versionado no frontend; não há chamada de 
 colocar como objetivo principal gerar VENDAS e receitas com produtos incríveis e comunicação
 eficaz que entreguem valor real ao cliente. PDE significa experiência de produto digital
 (Product Digital Experience); sua implementação depende do tipo e do resultado comprado,
-podendo ser um gerador de imagens personalizadas como no exemplo Quartzo, sem obrigatoriedade
-de webapp com IA. Seguir `product-types-canon.v1.md`, preservando classificações, contratos
+sem obrigatoriedade de webapp com IA ou de um formato específico no template compartilhado.
+Seguir `product-types-canon.v1.md`, preservando classificações, contratos
 e aprovações existentes. A homologação deve corresponder à entrega do formato escolhido;
 sucesso técnico não comprova vendas ou receita.
+
+**Foco do pedido de ajuda — decisão de 18/09/2026:** o template deve orientar a solução do
+processo corrente para o produto corrente, com melhoria dos agentes envolvidos baseada na
+causa comprovada. Dados e particularidades vêm do contexto oficial, sem exemplos obrigatórios
+de um tipo ou caso. Os cânones pertinentes detalham as regras, mantendo gates, contratos,
+rentabilidade e autorizações. Exigir revisão e execução local dos testes unitários de todos
+os módulos alterados, atualização de fixtures/mocks e regressões das causas corrigidas,
+sem enfraquecer proteções. Repetir testes conforme defeitos e risco, sem quantidade mínima
+artificial de rodadas. Seguir `aihub-aperfeicoamento-agentes-canon.v1.md`.
 
 **Compatibilidade com o tipo de produto — decisão de 15/09/2026:** todo pedido gerado por
 **Prompt para AIHUB** deve exigir consulta às definições macro do tipo efetivamente vinculado

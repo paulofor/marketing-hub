@@ -248,21 +248,30 @@ async function paste(page) {
         const copied = await paste(page);
         if (aihub) {
           for (const part of [
-            "Não estou conseguindo executar esse processo da tela.",
-            "O objetivo principal e mais importante é gerar VENDAS e receitas.",
+            "processo corrente para o produto corrente",
             "Product Digital Experience",
-            "Não presuma que todo PDE deva ser um webapp com IA.",
-            "Exemplo: no tipo Quartzo",
-            "não autoriza reclassificar produtos",
             "ambiente local da sandbox",
-            "Pull Request executado pelo usuário",
-            "Nunca use SSH",
-            "aguarde `ACTIVE`",
-            "Melhoria dos agentes",
-            "A solicitação pode demorar",
-            "vendas, receitas e lucros",
+            "Revise os testes unitários de todos os módulos alterados",
+            "fixtures, mocks e expectativas",
+            "regressões para as causas corrigidas",
+            "Aprimore os agentes envolvidos",
+            "confirmado em produção",
           ])
             assert(copied.includes(part), part);
+          const instructions = copied.split(
+            "CONTEXTO DO PROCESSO — MARKETING HUB",
+          )[0];
+          assert(
+            !/Vega|MUSA|Quartzo|Opala|experiment:\d+|Tarefa #\d+/.test(
+              instructions,
+            ),
+          );
+          assert.equal(
+            (copied.match(/CONTEXTO DO PROCESSO — MARKETING HUB/g) || [])
+              .length,
+            1,
+            "O prompt acrescenta o contexto oficial uma única vez.",
+          );
         }
 
         for (const part of [

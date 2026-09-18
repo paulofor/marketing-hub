@@ -1,0 +1,18 @@
+{
+  "cardKey": "autenticidade-criativo-ia",
+  "collection": "neuromarketing",
+  "title": "Criativos com IA devem priorizar autenticidade percebida e utilidade",
+  "finding": "Três levantamentos recentes convergem: anúncios ou imagens que parecem sintéticos podem reduzir confiança, embora consumidores frequentemente não identifiquem corretamente a origem e valorizem mais relevância, informação e utilidade do que a autoria humana ou por IA.",
+  "mechanism": "A rejeição parece estar menos ligada à existência abstrata de IA e mais a sinais percebidos de artificialidade, genericidade, baixa fidelidade ao produto ou comunicação pouco útil. Ao mesmo tempo, relevância e informação concreta podem compensar parte dessa resistência.",
+  "commercialApplication": "Em creative variants, usar IA para acelerar produção sem sacrificar representação fiel do produto, prova verificável, informação concreta e diversidade real de composição. Avaliar autenticidade percebida junto com CTR, CTA, lead, checkout e pagamento, em vez de aprovar peça apenas por aparência polida.",
+  "evidenceStrength": "Moderada: convergência entre um estudo global da VML com 28 mil consumidores, uma pesquisa da Net Conversion com 1.500 adultos dos EUA e uma pesquisa da COOL Company com mais de 500 consumidores; todos são majoritariamente auto-relatados e não demonstram causalidade sobre vendas.",
+  "publishedOn": "2026-09-17",
+  "validUntil": "2027-03-17",
+  "experimentHypothesis": "Uma variante gerada majoritariamente por IA, mas com produto/prova reais e informação concreta, preservará mais confiança e desempenho de funil do que uma variante sintética genérica, mantendo oferta, público e investimento equivalentes.",
+  "risks": "Não usar o achado para ocultar deliberadamente a origem sintética, fabricar prova humana, criar depoimento falso ou representar produto, resultado ou cenário inexistente. Respeitar disclosures e políticas aplicáveis.",
+  "limits": "Os estudos não medem causalmente CTR, CPL ou vendas; mercados e amostras diferem; a capacidade de reconhecer conteúdo sintético muda rapidamente com os modelos geradores.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-18-autenticidade-criativos-ia.md",
+  "sourceTitle": "Fonte revisada — Autenticidade e utilidade em criativos com IA",
+  "sourceSha256": "0e6d01a2359b8418ccb04a9b0ab7d4d41e7b6161e3ea129fd4e6dc24932c67e3"
+}

@@ -897,13 +897,7 @@ public class CustomerBpmTaskConsumer {
         "CALLBACK_RESULT_REJECTED_AFTER_RETRIES|O backend não confirmou o parecer preservado após "
             + attempts
             + " tentativas; a tarefa foi bloqueada sem nova inferência.");
-    failure.put(
-        "blockerGuidance",
-        Map.of(
-            "category",
-            "TECHNICAL_FAILURE",
-            "action",
-            "Corrija a rejeição registrada pelo backend e retome o processo sem repetir a inferência de Psique."));
+    failure.put("blockerGuidance", technicalGuidance(pending.task()));
     return new CustomerBpmTaskOutbox.Pending(
         pending.task(), pending.audit(), pending.visualEvidence(), true, "failure", failure, 0);
   }

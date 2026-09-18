@@ -1546,6 +1546,9 @@ public class AgentTaskService {
   public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(
       String agentKey, String processCode, String activityId, String executionResourceCode) {
     agent(agentKey);
+    Optional<AgentTask> replayable =
+        replayInterruptedCallback(agentKey, processCode, activityId, executionResourceCode);
+    if (replayable.isPresent()) return Optional.of(pendingResponse(replayable.get()));
     Optional<AgentTask> recovered =
         recoverInterruptedCallbackOnce(agentKey, processCode, activityId, executionResourceCode);
     if (recovered.isPresent()) return Optional.of(pendingResponse(recovered.get()));
@@ -1564,6 +1567,19 @@ public class AgentTaskService {
       return Optional.of(pendingResponse(task));
     }
     return Optional.empty();
+  }
+
+  /**
+   * Reentrega o callback já preservado cuja retomada ficou sem executor, sem repetir inferência,
+   * captura visual ou consumo.
+   */
+  private Optional<AgentTask> replayInterruptedCallback(
+      String agentKey, String processCode, String activityId, String executionResourceCode) {
+    return repository.findReplayableClaimedCallbackCandidates(agentKey.trim()).stream()
+        .filter(task -> task.getProcessDefinition() != null)
+        .filter(
+            task -> matchesExecutionContract(task, processCode, activityId, executionResourceCode))
+        .findFirst();
   }
 
   /** Reserva idempotentemente a tarefa exata já correlacionada por outro contrato do backend. */
@@ -2114,6 +2130,7 @@ public class AgentTaskService {
   public void completeClaimedProcessTask(
       String agentKey, Long taskId, CompleteAgentTaskRequest request) {
     AgentTask task = lockedForCallback(agentKey, taskId);
+    if (completedCallbackReplay(task, request)) return;
     if (terminalCallbackRecorded(
         task,
         "COMPLETED",
@@ -2141,6 +2158,13 @@ public class AgentTaskService {
     task.setUpdatedAt(now);
     AgentTask saved = repository.save(task);
     synchronizeActivityInstance(saved, now);
+  }
+
+  /** Reconhece o reenvio exato de uma conclusão já confirmada sem exigir auditoria duplicada. */
+  private boolean completedCallbackReplay(AgentTask task, CompleteAgentTaskRequest request) {
+    return "COMPLETED".equals(task.getStatus())
+        && Objects.equals(task.getResultJson(), request.resultJson())
+        && Objects.equals(task.getEvidenceJson(), request.evidenceJson());
   }
 
   /** Executa no máximo um efeito especializado antes da mudança final de status. */

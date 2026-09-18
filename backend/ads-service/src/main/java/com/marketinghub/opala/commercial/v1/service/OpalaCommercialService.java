@@ -20,8 +20,10 @@ import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: governar resultados, bloqueios e conclusão da preparação comercial Opala. */
 @Service
@@ -214,13 +216,17 @@ public class OpalaCommercialService
             validDeadline(scope, financialPlan, economics.path("deadline").asText()),
             "O parecer financeiro expirou.");
       } else {
-        require(
-            identity.equals(context.snapshot(task.getSourceReference())),
-            "Os ativos avaliados mudaram; refaça a revisão da mesma ocorrência.");
+        if (!identity.equals(context.snapshot(task.getSourceReference()))) {
+          throw new ResponseStatusException(
+              HttpStatus.CONFLICT,
+              "Os ativos avaliados mudaram; refaça a revisão da mesma ocorrência.");
+        }
         var preparation = commercialReadiness.inspect(scope.cycle());
-        require(
-            preparation != null && preparation.readyForReview(),
-            "As condições comerciais mudaram durante a revisão; revalide os insumos.");
+        if (preparation == null || !preparation.readyForReview()) {
+          throw new ResponseStatusException(
+              HttpStatus.CONFLICT,
+              "As condições comerciais mudaram durante a revisão; revalide os insumos.");
+        }
         require(
             result.path("gateChecks").isArray()
                 && result.path("gateChecks").size()

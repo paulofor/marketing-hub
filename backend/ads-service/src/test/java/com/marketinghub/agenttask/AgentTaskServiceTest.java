@@ -1653,6 +1653,33 @@ class AgentTaskServiceTest {
     verify(repository, never()).save(any());
   }
 
+  /** Reexpõe o callback preservado que perdeu o worker sem executar o modelo novamente. */
+  @Test
+  void replaysOrphanedClaimedCallbackBeforeNewWork() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(8L, "customer-agent", "Psique");
+    AgentTask orphan =
+        processTask(
+            447L, psique, process("PUBLISHED", "Psique"), "humanExperienceReview", "IN_PROGRESS");
+    orphan.setExecutionError("AUTO_RETRY_ONCE|500 Internal Server Error");
+    orphan.setResultJson("{\"decision\":\"APPROVED\"}");
+    orphan.setEvidenceJson("{\"opalaScope\":{}}");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findReplayableClaimedCallbackCandidates("customer-agent"))
+        .thenReturn(List.of(orphan));
+
+    AgentTaskPendingResponse replay =
+        service(repository, agents, Clock.systemUTC())
+            .claimEligibleProcessTask("customer-agent")
+            .orElseThrow();
+
+    assertThat(replay.taskId()).isEqualTo(447L);
+    assertThat(replay.retryResultJson()).isEqualTo(orphan.getResultJson());
+    assertThat(replay.retryEvidenceJson()).isEqualTo(orphan.getEvidenceJson());
+    verify(repository, never()).save(any());
+  }
+
   /** Retoma uma vez o trabalho bloqueado quando o callback falhou por indisponibilidade HTTP. */
   @Test
   void retriesTransientCallbackFailureOnlyOnce() {

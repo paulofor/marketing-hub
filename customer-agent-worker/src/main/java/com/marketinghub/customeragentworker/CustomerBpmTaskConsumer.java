@@ -603,7 +603,15 @@ public class CustomerBpmTaskConsumer {
               activityPromptPart,
               urls,
               visualEvidence);
-      if (execution != null) failure.put("resultJson", execution.rawResponse());
+      if (execution != null) {
+        failure.put("resultJson", execution.rawResponse());
+      } else {
+        if (preserveRetryPayload(task, failure)) {
+          if (staleCallbackConflict(ex)) {
+            failure.put("blockerGuidance", staleEvidenceGuidance(task));
+          }
+        }
+      }
       backend
           .post()
           .uri(
@@ -616,6 +624,17 @@ public class CustomerBpmTaskConsumer {
     } catch (Exception callbackEx) {
       log.error("Falha ao registrar bloqueio BPM de Psique. taskId={}", taskId(task), callbackEx);
     }
+  }
+
+  /** Preserva a mesma aprovação e prova quando apenas o callback recuperado foi recusado. */
+  static boolean preserveRetryPayload(
+      Map<String, Object> task, Map<String, Object> failureCallback) {
+    String preservedResult = text(task.get("retryResultJson"));
+    String preservedEvidence = text(task.get("retryEvidenceJson"));
+    if (preservedResult == null || preservedEvidence == null) return false;
+    failureCallback.put("resultJson", preservedResult);
+    failureCallback.put("evidenceJson", preservedEvidence);
+    return true;
   }
 
   /** Preserva o parecer funcional e impede avanço quando a cliente exige ajuste. */
@@ -1228,6 +1247,28 @@ public class CustomerBpmTaskConsumer {
       current = current.getCause();
     }
     return false;
+  }
+
+  /** Distingue a recusa funcional do backend de uma indisponibilidade que pode ser repetida. */
+  static boolean staleCallbackConflict(Throwable error) {
+    Throwable current = error;
+    while (current != null) {
+      if (current instanceof org.springframework.web.client.HttpClientErrorException.Conflict)
+        return true;
+      current = current.getCause();
+    }
+    return false;
+  }
+
+  /** Orienta nova inspeção quando a evidência aprovada pertence a ativos já substituídos. */
+  private Map<String, Object> staleEvidenceGuidance(Map<String, Object> task) {
+    return Map.of(
+        "category",
+        "MISSING_EVIDENCE",
+        "recommendedAction",
+        "Os ativos comerciais mudaram após a captura. Preserve esta tentativa e execute a próxima tarefa sobre a versão atual, sem reutilizar o parecer anterior.",
+        "helpLinks",
+        helpLinks(task));
   }
 
   /** Monta a auditoria completa e segregada da chamada efetivamente enviada ao Codex. */

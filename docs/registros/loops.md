@@ -88,10 +88,12 @@
 - **Causa-raiz:** o teste de isolamento da candidata usava uma lista manual de versões transitórias.
   Cada nova atestação comercial legítima exigia que essa lista fosse lembrada e atualizada, o que já
   havia causado a mesma classe de falha no histórico de Psique/PDE.
-- **Correção e prevenção:** o teste passou a identificar de forma independente a maior revisão do
-  manifesto canônico da Vega v12 e a exigir que ela seja a primeira evidência entregue, mantendo as
-  verificações de isolamento entre produtos. Uma futura v5 ou posterior não bloqueia o worker apenas
-  por evoluir a atestação; divergência de seleção, produto ou versão continua bloqueante.
+- **Correção e prevenção:** o teste identifica de forma independente a maior revisão do manifesto
+  canônico da Vega v12 e exige exatamente as provas por ela declaradas, mantendo as verificações de
+  isolamento entre produtos. A implementação anterior selecionava a revisão dinamicamente, mas ainda
+  exigia duas provas diretas da v4; a v5 referenciava a v4 como atestação e deliberadamente declarava
+  outro conjunto de provas. Uma futura v5 ou posterior não bloqueia o worker apenas por evoluir a
+  atestação; ausência de prova declarada, divergência de seleção, produto ou versão continua bloqueante.
 
 ## LOOP-VEGA-VERSAO-SELECIONADA-SEM-CANDIDATA-COMERCIAL — ciclo aponta v12, slot permanece v7
 

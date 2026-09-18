@@ -3,6 +3,8 @@ package com.marketinghub.metaadapproverworker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -19,6 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /** Responsabilidade: validar o carregamento auditável dos artefatos entregues ao gate de Têmis. */
 class PdeReviewArtifactLoaderTest {
+  private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final Pattern VEGA_V12_MANIFEST_REVISION =
       Pattern.compile("musa-v12-commercial-homologation-v([1-9][0-9]*)\\.json");
 
@@ -488,14 +491,28 @@ class PdeReviewArtifactLoaderTest {
     assertThat(vegaV12)
         .extracting(item -> item.get("path"))
         .startsWith(latestVegaV12ManifestPath(repository))
-        .contains(
-            "pde-platform/frontend/src/App.tsx",
-            "pde-platform/backend/src/main/resources/contracts/musa-v12-product-v1.json",
-            "pde-platform/backend/src/main/java/com/marketinghub/pde/service/CommercialOfferService.java")
+        .containsAll(declaredVegaV12EvidencePaths(repository))
         .doesNotContain(
             "pde-platform/contracts/musa-v12-commercial-homologation-v1.json",
             "pde-platform/contracts/musa-v7-commercial-homologation-v6.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v12.json");
+  }
+
+  /** Obtém as provas que o manifesto comercial vigente autoriza para a candidata Vega v12. */
+  private java.util.List<String> declaredVegaV12EvidencePaths(Path repository) throws IOException {
+    JsonNode manifest =
+        JSON_MAPPER.readTree(
+            Files.readString(repository.resolve(latestVegaV12ManifestPath(repository))));
+    java.util.List<String> paths = new java.util.ArrayList<>();
+    paths.add(latestVegaV12ManifestPath(repository));
+    for (String collection :
+        java.util.List.of("homologationEvidence", "implementationEvidence", "executableEvidence")) {
+      for (JsonNode evidence : manifest.path(collection)) {
+        String path = evidence.path("path").asText();
+        if (!path.isBlank()) paths.add(path);
+      }
+    }
+    return paths;
   }
 
   /** Localiza independentemente a revisão comercial vigente da candidata Vega v12. */

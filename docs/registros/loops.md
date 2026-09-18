@@ -78,6 +78,21 @@
 - **Prevenção:** empacotadores dos dois workers executados localmente e mensagem diagnóstica do
   cenário histórico preservada. Evidências em `docs/homologacao/github-actions-pr-5209.md`.
 
+### Recorrência eliminada — 18/09/2026
+
+- **Evidência:** o run [35301515322](https://github.com/paulofor/marketing-hub/actions/runs/35301515322)
+  interrompeu o deploy do Meta Ad Approver Worker porque
+  `PdeReviewArtifactLoaderTest.segregatesCurrentRepositoryEvidenceByProduct` exigia a atestação
+  Vega v12 `v2`, embora o carregador tenha selecionado corretamente a candidata vigente `v4` e sua
+  referência direta `v3`.
+- **Causa-raiz:** o teste de isolamento da candidata usava uma lista manual de versões transitórias.
+  Cada nova atestação comercial legítima exigia que essa lista fosse lembrada e atualizada, o que já
+  havia causado a mesma classe de falha no histórico de Psique/PDE.
+- **Correção e prevenção:** o teste passou a identificar de forma independente a maior revisão do
+  manifesto canônico da Vega v12 e a exigir que ela seja a primeira evidência entregue, mantendo as
+  verificações de isolamento entre produtos. Uma futura v5 ou posterior não bloqueia o worker apenas
+  por evoluir a atestação; divergência de seleção, produto ou versão continua bloqueante.
+
 ## LOOP-VEGA-VERSAO-SELECIONADA-SEM-CANDIDATA-COMERCIAL — ciclo aponta v12, slot permanece v7
 
 - **Data:** 16/09/2026. Vega, ciclo #2, experimento #92.

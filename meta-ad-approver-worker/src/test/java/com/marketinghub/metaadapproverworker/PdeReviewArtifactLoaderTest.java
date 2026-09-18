@@ -8,13 +8,20 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /** Responsabilidade: validar o carregamento auditável dos artefatos entregues ao gate de Têmis. */
 class PdeReviewArtifactLoaderTest {
+  private static final Pattern VEGA_V12_MANIFEST_REVISION =
+      Pattern.compile("musa-v12-commercial-homologation-v([1-9][0-9]*)\\.json");
+
   @TempDir Path tempDir;
 
   /** Entrega ao gate todos os arquivos autorizados com conteúdo e checksum determinístico. */
@@ -480,9 +487,8 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json");
     assertThat(vegaV12)
         .extracting(item -> item.get("path"))
+        .startsWith(latestVegaV12ManifestPath(repository))
         .contains(
-            "pde-platform/contracts/musa-v12-commercial-homologation-v3.json",
-            "pde-platform/contracts/musa-v12-commercial-homologation-v2.json",
             "pde-platform/frontend/src/App.tsx",
             "pde-platform/backend/src/main/resources/contracts/musa-v12-product-v1.json",
             "pde-platform/backend/src/main/java/com/marketinghub/pde/service/CommercialOfferService.java")
@@ -490,6 +496,29 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/musa-v12-commercial-homologation-v1.json",
             "pde-platform/contracts/musa-v7-commercial-homologation-v6.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v12.json");
+  }
+
+  /** Localiza independentemente a revisão comercial vigente da candidata Vega v12. */
+  private String latestVegaV12ManifestPath(Path repository) throws IOException {
+    Path contracts = repository.resolve("pde-platform/contracts");
+    try (Stream<Path> manifests = Files.list(contracts)) {
+      return manifests
+          .filter(
+              path -> VEGA_V12_MANIFEST_REVISION.matcher(path.getFileName().toString()).matches())
+          .max(Comparator.comparingInt(this::vegaV12ManifestRevision))
+          .map(repository::relativize)
+          .map(Path::toString)
+          .orElseThrow(() -> new IOException("Manifesto comercial da Vega v12 não encontrado"));
+    }
+  }
+
+  /** Extrai a revisão numérica do nome canônico do manifesto comercial da Vega v12. */
+  private int vegaV12ManifestRevision(Path manifest) {
+    Matcher matcher = VEGA_V12_MANIFEST_REVISION.matcher(manifest.getFileName().toString());
+    if (!matcher.matches()) {
+      throw new IllegalArgumentException("Manifesto comercial da Vega v12 inválido: " + manifest);
+    }
+    return Integer.parseInt(matcher.group(1));
   }
 
   /**

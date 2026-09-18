@@ -330,43 +330,78 @@ public class ProcessAutomationLocalApplication {
     var activities = mock(BusinessProcessActivityExecutionService.class);
     when(activities.productProcessExecutions(
             anyLong(), anyLong(), nullable(Long.class), nullable(Long.class), eq(false)))
-        .thenAnswer(inv -> snapshot(jdbc, inv.getArgument(1), inv.getArgument(0)));
+        .thenAnswer(
+            inv ->
+                snapshot(
+                    jdbc,
+                    inv.getArgument(1),
+                    inv.getArgument(0),
+                    "experiment:" + inv.<Long>getArgument(1)));
+    when(activities.productProcessExecutions(
+            anyLong(),
+            anyLong(),
+            nullable(Long.class),
+            nullable(Long.class),
+            eq(false),
+            nullable(String.class)))
+        .thenAnswer(
+            inv -> snapshot(jdbc, inv.getArgument(1), inv.getArgument(0), inv.getArgument(5)));
     when(activities.requestProductActivityExecution(
             anyLong(), anyLong(), anyString(), isNull(), nullable(Long.class)))
         .thenAnswer(
-            inv -> {
-              Long process = inv.getArgument(0), product = inv.getArgument(1);
-              String activity = inv.getArgument(2);
-              var previous = latest(jdbc, product, process, activity);
-              if (previous != null
-                  && Set.of("PENDING", "IN_PROGRESS").contains(previous.get("status")))
-                throw new IllegalStateException("Duplicação de tarefa ativa.");
-              boolean gate =
-                  "gate".equals(activity)
-                      || (process == 92004
-                          && "a".equals(activity)
-                          && privateDestination(jdbc, product));
-              jdbc.update(
-                  "INSERT INTO fixture_task(product_id,process_id,activity_id,status,achieved,reason) VALUES (?,?,?,?,?,?)",
-                  product,
-                  process,
-                  activity,
-                  gate ? "COMPLETED" : "PENDING",
-                  gate,
-                  gate ? "Gate aprovado" : "Aguardando agente local");
-              if (process == 92030)
-                throw new IllegalStateException("Falha após escrita para testar rollback");
-              return new ProductProcessActivityExecutionRequestResponse(
-                  process,
-                  product,
-                  activity,
-                  "experiment:" + product,
-                  List.of(),
-                  gate ? "COMPLETED" : "PENDING",
-                  gate,
-                  "Contrato local executado");
-            });
+            inv ->
+                request(
+                    jdbc,
+                    inv.getArgument(0),
+                    inv.getArgument(1),
+                    inv.getArgument(2),
+                    "experiment:" + inv.<Long>getArgument(1)));
+    when(activities.requestProductActivityExecution(
+            anyLong(),
+            anyLong(),
+            anyString(),
+            isNull(),
+            nullable(Long.class),
+            nullable(String.class)))
+        .thenAnswer(
+            inv ->
+                request(
+                    jdbc,
+                    inv.getArgument(0),
+                    inv.getArgument(1),
+                    inv.getArgument(2),
+                    inv.getArgument(5)));
     return activities;
+  }
+
+  /** Registra a tentativa local sem substituir a referência operacional congelada. */
+  static ProductProcessActivityExecutionRequestResponse request(
+      JdbcTemplate jdbc, Long process, Long product, String activity, String sourceReference) {
+    var previous = latest(jdbc, product, process, activity);
+    if (previous != null && Set.of("PENDING", "IN_PROGRESS").contains(previous.get("status")))
+      throw new IllegalStateException("Duplicação de tarefa ativa.");
+    boolean gate =
+        "gate".equals(activity)
+            || (process == 92004 && "a".equals(activity) && privateDestination(jdbc, product));
+    jdbc.update(
+        "INSERT INTO fixture_task(product_id,process_id,activity_id,status,achieved,reason) VALUES (?,?,?,?,?,?)",
+        product,
+        process,
+        activity,
+        gate ? "COMPLETED" : "PENDING",
+        gate,
+        gate ? "Gate aprovado" : "Aguardando agente local");
+    if (process == 92030)
+      throw new IllegalStateException("Falha após escrita para testar rollback");
+    return new ProductProcessActivityExecutionRequestResponse(
+        process,
+        product,
+        activity,
+        sourceReference,
+        List.of(),
+        gate ? "COMPLETED" : "PENDING",
+        gate,
+        "Contrato local executado");
   }
 
   /** Consulta a última tentativa sem apagar o histórico anterior. */
@@ -383,7 +418,7 @@ public class ProcessAutomationLocalApplication {
 
   /** Projeta prontidão, escolha de destino e objetivo, sem decidir a ordem pelo executor. */
   static ProductProcessActivityExecutionHistoryResponse snapshot(
-      JdbcTemplate jdbc, Long product, Long process) {
+      JdbcTemplate jdbc, Long product, Long process, String sourceReference) {
     List<ProductProcessActivityExecutionGroupResponse> groups = new ArrayList<>();
     boolean needsFix =
         process == 92003
@@ -475,7 +510,7 @@ public class ProcessAutomationLocalApplication {
         definition(process).getName(),
         1,
         "PUBLISHED",
-        "experiment:" + product,
+        sourceReference,
         completed == total ? "COMPLETED" : "IN_PROGRESS",
         completed == total,
         total,
@@ -515,7 +550,7 @@ public class ProcessAutomationLocalApplication {
     /** Projeta o histórico que a tela real utiliza para os cards. */
     @GetMapping("/api/business-processes/{process}/products/{product}/activity-executions")
     Object history(@PathVariable Long product, @PathVariable Long process) {
-      return snapshot(jdbc, product, process);
+      return snapshot(jdbc, product, process, "experiment:" + product);
     }
 
     /** Lista pendências do agente simulado sem consumir dados reais. */

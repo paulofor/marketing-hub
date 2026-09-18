@@ -97,6 +97,8 @@ public class AgentTaskService {
   private static final String CUSTOMER_AGENT_KEY = "customer-agent";
   private static final String CUSTOMER_AGENT_TELEMETRY_TYPE = "CUSTOMER_AGENT";
   private static final String ORPHANED_LEASE_RECOVERY_PREFIX = "ORPHANED_LEASE_RECOVERY_ONCE|";
+  private static final String ORPHANED_LEASE_EXHAUSTED_PREFIX =
+      "ORPHANED_LEASE_RECOVERY_EXHAUSTED|";
   private static final Duration ORPHANED_LEASE_GRACE = Duration.ofMinutes(2);
   private static final Pattern PROMPT_PHASE_HEADER =
       Pattern.compile("(?m)^--- ([^\\r\\n]+) ---\\r?$");
@@ -1607,28 +1609,30 @@ public class AgentTaskService {
         repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
             CUSTOMER_AGENT_KEY, "WORK", "IN_PROGRESS");
     if (inProgress == null) return Optional.empty();
-    return inProgress.stream()
-        .filter(task -> task.getProcessDefinition() != null)
-        .filter(
-            task -> matchesExecutionContract(task, processCode, activityId, executionResourceCode))
-        .filter(task -> canRecoverOrphanedCustomerAgentLease(task, now))
-        .findFirst()
-        .map(
-            task -> {
-              task.setExecutionError(
-                  ORPHANED_LEASE_RECOVERY_PREFIX
-                      + "A reserva não registrou processo ativo nem saída do modelo antes da interrupção.");
-              task.setUpdatedAt(now);
-              AgentTask saved = repository.save(task);
-              synchronizeActivityInstance(saved, now);
-              return saved;
-            });
+    for (AgentTask task : inProgress) {
+      if (task.getProcessDefinition() == null
+          || !matchesExecutionContract(task, processCode, activityId, executionResourceCode))
+        continue;
+      if (isRecoveredOrphan(task)) {
+        if (orphanedCustomerAgentLeaseIsStale(task, now)) {
+          blockExhaustedCustomerAgentLease(task, now);
+        }
+        continue;
+      }
+      if (!canRecoverOrphanedCustomerAgentLease(task, now)) continue;
+      task.setExecutionError(
+          ORPHANED_LEASE_RECOVERY_PREFIX
+              + "A reserva não registrou processo ativo nem saída do modelo antes da interrupção.");
+      task.setUpdatedAt(now);
+      AgentTask saved = repository.save(task);
+      synchronizeActivityInstance(saved, now);
+      return Optional.of(saved);
+    }
+    return Optional.empty();
   }
 
   /** Confirma que a retomada não concorre com processo ativo, saída ou consumo já auditados. */
   private boolean canRecoverOrphanedCustomerAgentLease(AgentTask task, Instant now) {
-    if (task.getExecutionError() != null
-        && task.getExecutionError().startsWith(ORPHANED_LEASE_RECOVERY_PREFIX)) return false;
     if (trimToNull(task.getResultJson()) != null
         || trimToNull(task.getEvidenceJson()) != null
         || task.getInputTokens() != null
@@ -1643,6 +1647,38 @@ public class AgentTaskService {
     }
     Instant lastProgress = task.getUpdatedAt() == null ? task.getReceivedAt() : task.getUpdatedAt();
     return lastProgress != null && lastProgress.plus(ORPHANED_LEASE_GRACE).isBefore(now);
+  }
+
+  /** Reconhece a tentativa automática já consumida por esta mesma tarefa. */
+  private boolean isRecoveredOrphan(AgentTask task) {
+    return task.getExecutionError() != null
+        && task.getExecutionError().startsWith(ORPHANED_LEASE_RECOVERY_PREFIX);
+  }
+
+  /** Mede a segunda interrupção pela telemetria ou, em tarefa legada, pelo último progresso. */
+  private boolean orphanedCustomerAgentLeaseIsStale(AgentTask task, Instant now) {
+    CodexAgentExecutionTelemetryService.Response telemetry =
+        codexTelemetry == null
+            ? null
+            : codexTelemetry.get(CUSTOMER_AGENT_TELEMETRY_TYPE, task.getId());
+    if (telemetry != null) return telemetry.stale();
+    Instant lastProgress = task.getUpdatedAt() == null ? task.getReceivedAt() : task.getUpdatedAt();
+    return lastProgress != null && lastProgress.plus(ORPHANED_LEASE_GRACE).isBefore(now);
+  }
+
+  /** Encerra a segunda lease órfã com orientação auditável e sem uma terceira inferência. */
+  private void blockExhaustedCustomerAgentLease(AgentTask task, Instant now) {
+    String error =
+        ORPHANED_LEASE_EXHAUSTED_PREFIX
+            + "Psique foi interrompida novamente depois da única retomada automática; nenhuma nova inferência foi iniciada para evitar cobrança duplicada.";
+    task.setExecutionError(error);
+    ensurePreModelFailureAudit(task, null, null);
+    applyBlockerGuidance(task, null, error, null);
+    requireTerminalExecutionAudit(task, false);
+    task.setStatus("BLOCKED");
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
   }
 
   /** Reserva idempotentemente a tarefa exata já correlacionada por outro contrato do backend. */

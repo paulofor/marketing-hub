@@ -4453,6 +4453,18 @@ h3 {
   margin-bottom: 10px;
 }
 
+.musa-privacy-summary-open {
+  display: none;
+}
+
+.musa-privacy-details[open] .musa-privacy-summary-closed {
+  display: none;
+}
+
+.musa-privacy-details[open] .musa-privacy-summary-open {
+  display: inline;
+}
+
 .musa-local-rules-note {
   padding: 10px 12px;
   border-radius: 10px;

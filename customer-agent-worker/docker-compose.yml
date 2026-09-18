@@ -15,6 +15,7 @@ services:
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
       CUSTOMER_AGENT_MCP_URL: ${CUSTOMER_AGENT_MCP_URL:-http://host.docker.internal}
       CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH: /app/commercial-evidence
+      CUSTOMER_AGENT_BPM_STATE_DIRECTORY: /var/lib/psique/bpm
       PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:?Defina o token interno do PDE para a homologacao multiagente}
       LOG_FILE_NAME: /tmp/customer-agent-worker.log
       AGENT_HEALTH_KEY: customer-agent
@@ -27,6 +28,7 @@ services:
     volumes:
       - ${CUSTOMER_AGENT_CODEX_HOME:?Defina a sessão Codex individual da Psique}:/home/operator/.codex
       - ${MARKETING_HUB_REPOSITORY:-..}:/workspace:ro
+      - psique-bpm-state:/var/lib/psique
     extra_hosts:
       - "host.docker.internal:host-gateway"
     read_only: true
@@ -40,3 +42,6 @@ services:
       timeout: 20s
       retries: 2
       start_period: 30s
+
+volumes:
+  psique-bpm-state:

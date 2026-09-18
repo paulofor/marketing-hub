@@ -200,8 +200,19 @@ test("v5, v6, v7 e v12 usam backend PDE local real sem misturar contratos versio
     ),
   ).toBeVisible();
   const privacyDetails = page.locator(".musa-privacy-details");
+  const privacyRetention = page.getByText(
+    /Escolhas, progresso e eventos técnicos ficam durante o acesso/,
+  );
   await expect(privacyDetails).toHaveCount(1);
+  await expect(
+    page.getByText("Ver detalhes sobre os dados e seus direitos"),
+  ).toBeVisible();
+  await expect(privacyRetention).toBeHidden();
   await privacyDetails.locator("summary").click();
+  await expect(
+    page.getByText("Ocultar detalhes sobre os dados e seus direitos"),
+  ).toBeVisible();
+  await expect(privacyRetention).toBeVisible();
   await expect(
     page.getByText(
       /As sete missões não pedem foto nem texto livre e não enviam suas respostas/,
@@ -211,6 +222,11 @@ test("v5, v6, v7 e v12 usam backend PDE local real sem misturar contratos versio
     page.getByText(
       /suporte, poderá escrever voluntariamente uma mensagem breve/,
     ),
+  ).toBeVisible();
+  await privacyDetails.locator("summary").click();
+  await expect(privacyRetention).toBeHidden();
+  await expect(
+    page.getByRole("link", { name: "Solicitar acesso, correção ou exclusão" }),
   ).toBeVisible();
 
   await expect

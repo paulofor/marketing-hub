@@ -1749,6 +1749,80 @@ class AgentTaskServiceTest {
     verify(repository, never()).save(any());
   }
 
+  /** Encerra a segunda interrupção de Psique em vez de deixar a tarefa invisível para sempre. */
+  @Test
+  void blocksCustomerAgentLeaseAfterTheSingleAutomaticRecoveryExpires() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(8L, "customer-agent", "Psique");
+    Instant now = Instant.parse("2026-09-18T03:00:00Z");
+    AgentTask exhausted =
+        processTask(
+            448L, psique, process("PUBLISHED", "Psique"), "humanExperienceReview", "IN_PROGRESS");
+    exhausted.setReceivedAt(now.minusSeconds(600));
+    exhausted.setUpdatedAt(now.minusSeconds(300));
+    exhausted.setExecutionError("ORPHANED_LEASE_RECOVERY_ONCE|A reserva perdeu o primeiro worker.");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(exhausted));
+    when(repository.save(exhausted)).thenReturn(exhausted);
+
+    assertThat(
+            service(repository, agents, Clock.fixed(now, ZoneOffset.UTC))
+                .claimEligibleProcessTask("customer-agent"))
+        .isEmpty();
+
+    assertThat(exhausted.getStatus()).isEqualTo("BLOCKED");
+    assertThat(exhausted.getExecutionError())
+        .startsWith("ORPHANED_LEASE_RECOVERY_EXHAUSTED|")
+        .contains("cobrança duplicada");
+    assertThat(exhausted.getBlockerCategory()).isEqualTo("TECHNICAL_FAILURE");
+    assertThat(exhausted.getBlockerAction()).contains("Corrija a causa registrada");
+    assertThat(exhausted.getExecutionMode()).isEqualTo("NOT_STARTED");
+    verify(repository).save(exhausted);
+  }
+
+  /** Mantém protegida a segunda tentativa enquanto o heartbeat ainda comprova atividade. */
+  @Test
+  void preservesRecoveredCustomerAgentLeaseWhileItsHeartbeatIsRecent() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(8L, "customer-agent", "Psique");
+    AgentTask active =
+        processTask(
+            448L, psique, process("PUBLISHED", "Psique"), "humanExperienceReview", "IN_PROGRESS");
+    active.setExecutionError("ORPHANED_LEASE_RECOVERY_ONCE|Primeira retomada em andamento.");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(active));
+    CodexAgentExecutionTelemetryService telemetry = mock(CodexAgentExecutionTelemetryService.class);
+    when(telemetry.get("CUSTOMER_AGENT", 448L))
+        .thenReturn(
+            new CodexAgentExecutionTelemetryService.Response(
+                "CUSTOMER_AGENT",
+                448L,
+                "RUNNING",
+                100L,
+                true,
+                5L,
+                2048L,
+                null,
+                null,
+                "OUTPUT",
+                Instant.parse("2026-09-18T02:59:55Z"),
+                Instant.parse("2026-09-18T02:55:00Z"),
+                null,
+                false));
+    AgentTaskService service = service(repository, agents, Clock.systemUTC());
+    ReflectionTestUtils.setField(service, "codexTelemetry", telemetry);
+
+    assertThat(service.claimEligibleProcessTask("customer-agent")).isEmpty();
+    assertThat(active.getStatus()).isEqualTo("IN_PROGRESS");
+    verify(repository, never()).save(any());
+  }
+
   /** Retoma uma vez o trabalho bloqueado quando o callback falhou por indisponibilidade HTTP. */
   @Test
   void retriesTransientCallbackFailureOnlyOnce() {

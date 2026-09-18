@@ -560,6 +560,24 @@ function MusaV7PrivacyNotice({
   compact?: boolean;
   collapsible?: boolean;
 }) {
+  const dataRights = (
+    <ul>
+      <li>
+        Escolhas, progresso e eventos técnicos ficam durante o acesso e por até
+        180 dias após a expiração para recuperação, suporte, prevenção de abuso
+        e auditoria.
+      </li>
+      <li>
+        Registros de pagamento são mantidos somente pelos prazos legais e
+        contábeis aplicáveis; depois, os demais dados devem ser excluídos ou
+        anonimizados.
+      </li>
+      <li>
+        Você pode pedir confirmação, acesso, correção ou exclusão aplicável,
+        informando o e-mail usado no produto.
+      </li>
+    </ul>
+  );
   return (
     <section
       className={`musa-privacy-notice${compact ? " compact" : ""}`}
@@ -575,7 +593,14 @@ function MusaV7PrivacyNotice({
               seu ajuste. As missões não pedem foto, voz ou texto livre.
             </p>
             <details className="musa-privacy-details">
-              <summary>Ver detalhes sobre os dados e seus direitos</summary>
+              <summary>
+                <span className="musa-privacy-summary-closed">
+                  Ver detalhes sobre os dados e seus direitos
+                </span>
+                <span className="musa-privacy-summary-open">
+                  Ocultar detalhes sobre os dados e seus direitos
+                </span>
+              </summary>
               <p>
                 Usamos seu e-mail, escolhas categoriais, progresso, estado do
                 acesso e eventos técnicos somente para entregar, retomar, apoiar
@@ -584,35 +609,23 @@ function MusaV7PrivacyNotice({
                 vídeo. Se você procurar suporte, poderá escrever voluntariamente
                 uma mensagem breve, usada somente para atender seu pedido.
               </p>
+              {dataRights}
             </details>
           </>
         ) : (
-          <p>
-            Usamos seu e-mail, escolhas categoriais, progresso, estado do acesso
-            e eventos técnicos somente para entregar, retomar, apoiar e medir o
-            Método MUSA. As sete missões não pedem foto nem texto livre e não
-            enviam suas respostas para OpenAI ou gerador de vídeo. Se você
-            procurar suporte, poderá escrever voluntariamente uma mensagem
-            breve, usada somente para atender seu pedido.
-          </p>
+          <>
+            <p>
+              Usamos seu e-mail, escolhas categoriais, progresso, estado do
+              acesso e eventos técnicos somente para entregar, retomar, apoiar e
+              medir o Método MUSA. As sete missões não pedem foto nem texto
+              livre e não enviam suas respostas para OpenAI ou gerador de vídeo.
+              Se você procurar suporte, poderá escrever voluntariamente uma
+              mensagem breve, usada somente para atender seu pedido.
+            </p>
+            {dataRights}
+          </>
         )}
       </div>
-      <ul>
-        <li>
-          Escolhas, progresso e eventos técnicos ficam durante o acesso e por
-          até 180 dias após a expiração para recuperação, suporte, prevenção de
-          abuso e auditoria.
-        </li>
-        <li>
-          Registros de pagamento são mantidos somente pelos prazos legais e
-          contábeis aplicáveis; depois, os demais dados devem ser excluídos ou
-          anonimizados.
-        </li>
-        <li>
-          Você pode pedir confirmação, acesso, correção ou exclusão aplicável,
-          informando o e-mail usado no produto.
-        </li>
-      </ul>
       <a
         href={`mailto:${MUSA_PRIVACY_CONTACT_EMAIL}?subject=Direitos%20de%20dados%20MUSA`}
         target="_blank"

@@ -1,0 +1,155 @@
+{
+  "contractVersion": "musa-v12-commercial-homologation.v4",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 5,
+  "activityId": "pdeGate",
+  "sourceReference": "product:4@musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  "experimentId": 92,
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "commercialPlanId": 3,
+    "publicUrl": "https://v8.clubemusa.com.br/"
+  },
+  "offer": {
+    "priceBrl": 67,
+    "currency": "BRL",
+    "billingModel": "ONE_TIME",
+    "accessDays": 90,
+    "renewal": false,
+    "checkoutUrl": "https://go.pepper.com.br/owm6x",
+    "checkoutProvider": "PEPPER",
+    "checkoutReference": "owm6x",
+    "promise": "Entregar gratuitamente um primeiro ajuste claro e aplicável com itens que a cliente já possui e liberar, após a compra, a continuidade guiada de sete dias."
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "scope": "Candidata comercial exata do experimento 92 após o ajuste de privacidade solicitado no parecer da tarefa 448.",
+  "boundary": "Este manifesto prepara nova revisão independente. Não aprova o criativo, não promove o slot, não libera campanha e não comprova venda.",
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/musa-v12-commercial-homologation-v3.json",
+    "reason": "Corrigir o recolhimento dos detalhes de privacidade apontado pela tarefa 448 e reatestar a candidata sem alterar oferta, preço ou promessa.",
+    "includedChanges": [
+      "Itens de privacidade ocultos até a ativação do controle Ver detalhes",
+      "Alternância coerente entre Ver detalhes e Ocultar detalhes",
+      "Link de exercício de direitos permanentemente visível",
+      "Regressão DOM e visual em desktop, iPhone 15 Pro e Pixel 7"
+    ],
+    "excludedChanges": [
+      "Preço, checkout, promessa e condições comerciais",
+      "Campanha, publicação, tráfego e gasto externo"
+    ]
+  },
+  "liveVisualContract": {
+    "deviceProfile": "IPHONE_15_PRO",
+    "requiredFirstFoldCtas": [
+      "Começar meu ajuste gratuito"
+    ],
+    "requiredVisibleTexts": [
+      "4 escolhas rápidas, sem compra de roupa.",
+      "Continuação de 7 dias por R$ 67, pagamento único.",
+      "Acesso por 90 dias, sem assinatura ou renovação."
+    ]
+  },
+  "homologationMatrix": {
+    "environment": "LOCAL_ISOLATED",
+    "executedAt": "2026-09-18",
+    "devices": [
+      "DESKTOP_CHROMIUM",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "passedJourneys": 36,
+    "verifiedStates": [
+      "FIRST_FOLD_CTA_AND_TERMS",
+      "FREE_FIRST_ADJUSTMENT",
+      "PEPPER_PAYMENT_APPROVED",
+      "V12_ACCESS_90_DAYS",
+      "SEVEN_MISSIONS",
+      "THREE_PROTECTED_MATERIALS",
+      "RESUME_AND_COMPLETION",
+      "IDEMPOTENT_REFUND",
+      "PRIVACY_DETAILS_COLLAPSED_EXPANDABLE_AND_REVERSIBLE",
+      "INTERNAL_QA_METRIC_SEGREGATION"
+    ],
+    "evidenceBoundary": "A matriz usa pagamento e tráfego internos simulados. A captura pública da candidata deve ser renovada depois do deploy e antes do novo parecer de Psique."
+  },
+  "measurementContract": {
+    "authoritativeSaleEvent": "PURCHASE_COMPLETED",
+    "authoritativeDeliveryEvent": "DELIVERY_COMPLETED",
+    "humanMetricsExcludeTestTraffic": true,
+    "deduplicationRequired": true,
+    "testTrafficClass": "INTERNAL_QA"
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v3.json",
+      "sha256": "a398b937e98cb9c1890c8056d775a4e356b956b3560cac318755f1ce2df19d93",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "A v3 preserva a oferta e a homologação comercial anterior. A v4 corrige o recolhimento dos detalhes de privacidade apontado pela tarefa 448 e mantém preço, checkout e promessa."
+    },
+    {
+      "path": "docs/homologacao/vega-448-recuperacao-resiliente-v2.md",
+      "sha256": "7b67184a4003a284df78b1dbd089efdf98d9af56598142b17d84ea891dbbc44c"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/backend/src/main/resources/contracts/musa-v12-product-v1.json",
+      "sha256": "5614ed07f4af682a88f236ea5a4252a52ab8a107708852612441fc8c2ffe1b71"
+    },
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "78f5d14b213c5d342868f441cf458150987515cfdf64f57c954d26c8b862a211",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Implementação ampla reatestada após mover os itens de privacidade para dentro do controle expansível, preservando o link de direitos sempre visível."
+    },
+    {
+      "path": "pde-platform/frontend/src/styles.css",
+      "sha256": "67ec3ef79d7bfa6b3093b92ad204f97d864879ffe6cc96c186703d20f9c12942",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Estilos reatestados com alternância de Ver detalhes e Ocultar detalhes conforme o estado aberto ou fechado do componente."
+    },
+    {
+      "path": "pde-platform/frontend/src/musaExperiences.ts",
+      "sha256": "87f766cdbdfa20c2d572460572cf8624f47818bb55299645cbabb28dca528287"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/CommercialOfferService.java",
+      "sha256": "98006414ed9594bd376f0701d1372f46ffc6a47d01e4170a86d47a6537f2f138"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/validationcontract/v1/service/PdeValidationContractService.java",
+      "sha256": "5580f8e4fd2c9a3115a50c39d27548824a8063ed3c6e4c5b012330e69a95bf18"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/CommercialOfferServiceTest.java",
+      "sha256": "5a9063a3dc3554704eb5f48a1dfbce01d5ae9552965bb51b16c107f3aa148617"
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-local-integration.spec.ts",
+      "sha256": "a6f1e20c50f86cbabc0df12fe9426a196f4df3ffb566b1aad910049dc3388bbc"
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-entry.visual.spec.ts",
+      "sha256": "3e3197a48f189ebe8d2e9230c787d9ca46347bfc91d7228cd3c0386a87d8fab7"
+    },
+    {
+      "path": "pde-platform/frontend/playwright.local-integration.config.ts",
+      "sha256": "c0dd3ac079e6d52f493a8955b4a0596937fd1922abb3ab0f39dd6cc3865f19b7"
+    },
+    {
+      "path": "pde-platform/scripts/test-musa-local-integration.sh",
+      "sha256": "f810ff27739c72545c5a3eb31d7b5b16d602771894d0c65531b562f71010664f"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/validationcontract/v1/service/PdeValidationContractServiceTest.java",
+      "sha256": "3677c2dd87fea13b94c2a21152fabd6cb0b6a72c1dab205b3f3621df8873cfd5"
+    }
+  ],
+  "validationReport": "docs/homologacao/vega-448-recuperacao-resiliente-v2.md"
+}

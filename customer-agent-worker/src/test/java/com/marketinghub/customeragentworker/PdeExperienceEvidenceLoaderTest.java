@@ -441,11 +441,11 @@ class PdeExperienceEvidenceLoaderTest {
     assertThat(vegaV12)
         .extracting(item -> item.get("path"))
         .contains(
+            "pde-platform/contracts/musa-v12-commercial-homologation-v4.json",
             "pde-platform/contracts/musa-v12-commercial-homologation-v3.json",
-            "pde-platform/contracts/musa-v12-commercial-homologation-v2.json",
             "pde-platform/frontend/src/App.tsx",
             "pde-platform/frontend/src/musaExperiences.ts")
-        .doesNotContain("pde-platform/contracts/musa-v12-commercial-homologation-v1.json")
+        .doesNotContain("pde-platform/contracts/musa-v12-commercial-homologation-v2.json")
         .allSatisfy(path -> assertThat(path.toString()).doesNotContain("kit-whatsapp-", "mira-"));
     var json = new ObjectMapper();
     var rigelProduct = json.readTree(rigel.getFirst().get("content").toString()).path("product");

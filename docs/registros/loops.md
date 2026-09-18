@@ -1017,8 +1017,18 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
   não acionava a telemetria já canônica; como o `pending` somente seleciona `PENDING`, a lease sem
   sinal ativo ficou invisível. Psique passa a enviar heartbeat desde o PID real do Codex e o backend
   recupera uma única lease da Psique sem eventos, bytes, saída ou consumo depois de dois minutos.
-  Heartbeat recente, saída observada, custo/token ou uma segunda expiração impedem retomada e
-  preservam a tarefa para bloqueio auditável, sem duplicar revisão paga.
+  Heartbeat recente, saída observada ou custo/token impedem retomada concorrente. Em 02:22:49 UTC,
+  o backend publicado reexpôs a #448 ao worker anterior, que concluiu a revisão e a deixou `BLOCKED`
+  por ajuste funcional de privacidade, com resultado, evidências e consumo persistidos. A ausência
+  de telemetria dessa tentativa confirma que ela terminou antes da publicação do worker corrigido.
+  Como prevenção complementar, Psique conserva reserva, prompt, evidências, eventos, saída e callback
+  em volume próprio: callback 5xx é reenviado sem nova inferência, saída concluída sobrevive ao
+  reinício e execução interrompida sem saída termina com bloqueio auditável. Se a única retomada do
+  backend também perder o worker, a segunda expiração fecha a tarefa como `BLOCKED`, sem terceira
+  tentativa ou espera infinita. Um resultado que o backend recusar três vezes é convertido em
+  callback de falha preservando parecer, evidência, auditoria e consumo; assim, uma rejeição
+  determinística não mantém a outbox nem a tarefa em espera eterna. Evidências:
+  `docs/homologacao/vega-448-recuperacao-resiliente-v2.md`.
 
 - Recorrência Atena/Vega #358 em 09/09/2026: a inferência terminou, mas duas tentativas de callback
   falharam durante indisponibilidade do backend. Arquivos temporários já tinham sido apagados e a

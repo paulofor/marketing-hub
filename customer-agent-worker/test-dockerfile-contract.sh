@@ -19,6 +19,7 @@ if grep -Eq 'apt-get|playwright-core install|chmod -R.*ms-playwright' "${dockerf
 fi
 grep -Fq 'COPY --from=build /build/src/main/resources/browser /app/browser' "${dockerfile}"
 grep -Fq 'COPY review-evidence /app/commercial-evidence' "${dockerfile}"
+grep -Fq 'install -d -o 10001 -g 10001 /var/lib/psique' "${dockerfile}"
 
 visual_capture="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/src/main/resources/browser/bpm-visual-evidence.mjs"
 test -s "${visual_capture}"
@@ -37,6 +38,8 @@ grep -Fq 'AGENT_VALIDATION' "${agent_harness}"
 compose="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/docker-compose.yml"
 grep -Fq 'PLAYWRIGHT_BROWSERS_PATH: /ms-playwright' "${compose}"
 grep -Fq 'CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH: /app/commercial-evidence' "${compose}"
+grep -Fq 'CUSTOMER_AGENT_BPM_STATE_DIRECTORY: /var/lib/psique/bpm' "${compose}"
+grep -Fq 'psique-bpm-state:/var/lib/psique' "${compose}"
 grep -Fq 'CUSTOMER_AGENT_REASONING_EFFORT: ${CUSTOMER_AGENT_REASONING_EFFORT:-max}' "${compose}"
 grep -Fq 'AGENT_HEALTH_VERSION: "6"' "${compose}"
 grep -Fq 'PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:?' "${compose}"

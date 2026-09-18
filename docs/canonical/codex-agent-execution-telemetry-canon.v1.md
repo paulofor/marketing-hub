@@ -13,7 +13,8 @@ Distinguir um job apenas reservado de um processo Codex efetivamente ativo, sem 
 - Tokens de entrada e saída só podem ser persistidos quando forem informados de forma estruturada pelo Codex. É proibido estimar ou converter ausência em zero.
 - Falha na telemetria não transforma uma execução funcional em falha, mas deve ser registrada no log do worker.
 - O timeout configurado representa o limite de inatividade observável, não a duração total de um trabalho que continua produzindo saída. Uma execução ativa pode avançar até três janelas operacionais, quando então o teto absoluto encerra o processo.
-- Dédalo e Atena preservam a lease após timeout por inatividade para uma única retomada automática com a mesma entrada congelada. Nova expiração encerra a execução como falha; é proibido repetir indefinidamente.
+- Dédalo, Atena e Psique preservam a lease após timeout por inatividade para uma única retomada automática com a mesma entrada congelada. Nova expiração encerra a execução como falha; é proibido repetir indefinidamente.
+- Psique grava reserva, auditoria, evidências, eventos, saída bruta e callback em volume próprio antes da entrega. Reinício ou HTTP 5xx deve reenviar o mesmo callback sem nova inferência; saída concluída pode ser validada e entregue, enquanto inferência interrompida sem saída termina bloqueada com consumo já observado e causa acionável. Um resultado recusado três vezes pelo backend deve ser convertido em callback de falha com o mesmo parecer, evidência e consumo, encerrando a tarefa como bloqueio técnico sem esperar indefinidamente.
 - Falha em uma fila auxiliar de um agente não pode impedir o consumo das demais filas independentes. Em especial, indisponibilidade da fila de vídeo não bloqueia a fila financeira de Plutus.
 
 ## Visualização

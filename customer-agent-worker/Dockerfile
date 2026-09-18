@@ -34,7 +34,8 @@ RUN test -s /etc/ssl/certs/ca-certificates.crt \
     && npm ci --omit=dev \
     && npm cache clean --force \
     && (getent group operator >/dev/null || groupadd --gid 10001 operator) \
-    && (id --user operator >/dev/null 2>&1 || useradd --create-home --uid 10001 --gid operator operator)
+    && (id --user operator >/dev/null 2>&1 || useradd --create-home --uid 10001 --gid operator operator) \
+    && install -d -o 10001 -g 10001 /var/lib/psique
 COPY --from=build /build/target/app.jar /app/app.jar
 COPY agent-health-report.mjs /app/agent-health-report.mjs
 COPY --from=build /build/src/main/resources/prompts /app/prompts

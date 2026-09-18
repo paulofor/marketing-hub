@@ -31,6 +31,7 @@ import org.springframework.web.client.RestClient;
 public class CustomerBpmTaskConsumer {
   private static final Logger log = LoggerFactory.getLogger(CustomerBpmTaskConsumer.class);
   private static final String AGENT_KEY = "customer-agent";
+  private static final int RESULT_CALLBACK_ATTEMPT_LIMIT = 3;
   private static final String REQUESTED_SERVICE_TIER = "flex";
   private static final String EFFECTIVE_SERVICE_TIER = "STANDARD";
   private static final String SERVICE_TIER_EXCEPTION =
@@ -57,6 +58,7 @@ public class CustomerBpmTaskConsumer {
   private final BpmVisualEvidenceBackendClient visualEvidenceBackendClient;
   private final PdeAgentValidationHarnessRunner pdeAgentValidationHarnessRunner;
   private final CodexProcessSupervisor processSupervisor;
+  private final CustomerBpmTaskOutbox outbox;
   @Autowired private AutomaticExecutionControl automaticExecution;
 
   @Autowired(required = false)
@@ -71,6 +73,7 @@ public class CustomerBpmTaskConsumer {
       @Value("${CUSTOMER_AGENT_REASONING_EFFORT:max}") String reasoningEffort,
       @Value("${CUSTOMER_AGENT_REPOSITORY_PATH:/workspace}") String repositoryPath,
       @Value("${CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH:}") String commercialEvidencePath,
+      @Value("${customer-agent.bpm-state-directory}") String bpmStateDirectory,
       ObjectMapper json,
       BpmVisualEvidenceRunner visualEvidenceRunner,
       BpmVisualEvidenceBackendClient visualEvidenceBackendClient,
@@ -91,6 +94,38 @@ public class CustomerBpmTaskConsumer {
     this.visualEvidenceBackendClient = visualEvidenceBackendClient;
     this.pdeAgentValidationHarnessRunner = pdeAgentValidationHarnessRunner;
     this.processSupervisor = processSupervisor;
+    this.outbox = new CustomerBpmTaskOutbox(Path.of(bpmStateDirectory), json);
+  }
+
+  /** Mantém consumidores locais existentes com um diretório persistente exclusivo por instância. */
+  CustomerBpmTaskConsumer(
+      String backendUrl,
+      String codex,
+      String model,
+      String reasoningEffort,
+      String repositoryPath,
+      String commercialEvidencePath,
+      ObjectMapper json,
+      BpmVisualEvidenceRunner visualEvidenceRunner,
+      BpmVisualEvidenceBackendClient visualEvidenceBackendClient,
+      PdeAgentValidationHarnessRunner pdeAgentValidationHarnessRunner,
+      CodexProcessSupervisor processSupervisor) {
+    this(
+        backendUrl,
+        codex,
+        model,
+        reasoningEffort,
+        repositoryPath,
+        commercialEvidencePath,
+        Path.of(
+                System.getProperty("java.io.tmpdir"),
+                "customer-agent-bpm-test-" + java.util.UUID.randomUUID())
+            .toString(),
+        json,
+        visualEvidenceRunner,
+        visualEvidenceBackendClient,
+        pdeAgentValidationHarnessRunner,
+        processSupervisor);
   }
 
   /** Mantém testes de configuração isolados sem iniciar integrações de browser ou backend. */
@@ -109,6 +144,10 @@ public class CustomerBpmTaskConsumer {
         reasoningEffort,
         repositoryPath,
         commercialEvidencePath,
+        Path.of(
+                System.getProperty("java.io.tmpdir"),
+                "customer-agent-bpm-test-" + java.util.UUID.randomUUID())
+            .toString(),
         json,
         null,
         null,
@@ -119,40 +158,70 @@ public class CustomerBpmTaskConsumer {
 
   /** Reserva em PLAY e avalia a atividade com evidência visual e pesquisa rastreável. */
   @Scheduled(fixedDelay = 60000)
-  public void processOne() {
-    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
+  public synchronized void processOne() {
     Map<String, Object> task = null;
     BpmExecution execution = null;
     PreparedVisualEvidence visualEvidence = null;
-    try {
-      task = claimNext();
+    try (var lock = outbox.lock()) {
+      if (lock == null) return;
+      CustomerBpmTaskOutbox.Pending pending = outbox.read();
+      if (pending != null) task = pending.task();
+      if (pending != null && pending.callback() != null) {
+        deliver(pending);
+        return;
+      }
+      if (pending != null && pending.modelStarted()) {
+        recoverInterruptedModel(pending);
+        return;
+      }
+      if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
+      task = pending == null ? claimNext() : task;
       if (task == null) return;
+      if (pending == null) {
+        outbox.save(new CustomerBpmTaskOutbox.Pending(task, null, List.of(), false, null, null));
+      }
       if (replayApprovedCallback(task)) return;
       visualEvidence = prepareVisualEvidence(task);
       execution = execute(task, visualEvidence.uploaded());
-      JsonNode result = execution.result();
-      if (isAgentValidationTask(task)) {
-        validateAgentScenario(result, task);
-        validateAgentVisualAudit(result, visualEvidence.uploaded());
-      } else {
-        validate(result, processCode(task));
-        ResearchIntelligenceUsageValidator.validate(
-            task,
-            AGENT_KEY,
-            jsonTextValues(result.path("evidence")),
-            !"BLOCKED".equals(result.path("decision").asText()));
-        if ("creative-production-approval".equals(processCode(task)))
-          validateCreativeAudit(result, visualEvidence.uploaded());
-        else validateVisualAudit(result, visualEvidence.uploaded());
-      }
-      if ("APPROVED".equals(result.path("decision").asText())) report(task, execution);
-      else block(task, execution);
+      validateExecution(task, execution);
+      enqueueDecision(task, execution);
     } catch (Exception ex) {
       log.error("Falha na atividade BPM de Psique. taskId={}", taskId(task), ex);
-      fail(task, ex, execution, visualEvidence);
+      if (!callbackPreserved(taskId(task))) fail(task, ex, execution, visualEvidence);
     } finally {
       deleteVisualWorkDirectory(visualEvidence, taskId(task));
     }
+  }
+
+  /** Confirma que uma falha de transporte não deve substituir o callback já preservado. */
+  private boolean callbackPreserved(long taskId) {
+    if (taskId < 1) return false;
+    try {
+      CustomerBpmTaskOutbox.Pending pending = outbox.read();
+      return pending != null && pending.callback() != null && taskId(pending.task()) == taskId;
+    } catch (Exception ex) {
+      log.error("Falha ao conferir callback preservado de Psique. taskId={}", taskId, ex);
+      return false;
+    }
+  }
+
+  /** Valida o parecer recuperado ou recém-produzido com os mesmos gates funcionais. */
+  private void validateExecution(Map<String, Object> task, BpmExecution execution) {
+    JsonNode result = execution.result();
+    if (isAgentValidationTask(task)) {
+      validateAgentScenario(result, task);
+      validateAgentVisualAudit(result, execution.visualEvidence());
+      return;
+    }
+    validate(result, processCode(task));
+    ResearchIntelligenceUsageValidator.validate(
+        task,
+        AGENT_KEY,
+        jsonTextValues(result.path("evidence")),
+        !"BLOCKED".equals(result.path("decision").asText()));
+    if ("creative-production-approval".equals(processCode(task)))
+      validateCreativeAudit(result, execution.visualEvidence());
+    else validateVisualAudit(result, execution.visualEvidence());
   }
 
   /** Converte um array JSON textual em evidências usadas pelo gate determinístico. */
@@ -188,15 +257,12 @@ public class CustomerBpmTaskConsumer {
     log.info(
         "Reenviando callback aprovado de Psique sem nova chamada ao modelo. taskId={}",
         taskId(task));
-    backend
-        .post()
-        .uri(
-            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/result",
-            AGENT_KEY,
-            taskId(task))
-        .body(Map.of("resultJson", resultJson, "evidenceJson", evidenceJson))
-        .retrieve()
-        .toBodilessEntity();
+    enqueue(
+        task,
+        null,
+        List.of(),
+        "result",
+        Map.of("resultJson", resultJson, "evidenceJson", evidenceJson));
     return true;
   }
 
@@ -387,13 +453,24 @@ public class CustomerBpmTaskConsumer {
       throws IOException, InterruptedException {
     PromptComposition prompt = promptComposition(task, visualEvidence);
     validatePromptSize(prompt.fullPrompt());
-    Path output = Files.createTempFile("psique-bpm-result-", ".json");
-    Path processLog = Files.createTempFile("psique-bpm-process-", ".log");
+    Path output = outbox.output();
+    Path processLog = outbox.events();
     Path schema = materialize(schemaResourceFor(task), ".json");
     List<Map<String, Object>> visualAccesses = visualAccessedUrls(visualEvidence);
+    Map<String, Object> audit =
+        executionAudit(
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart(),
+            visualAccesses);
     Process process = null;
     try {
-      recordExecutionAudit(task, prompt, visualAccesses);
+      Files.deleteIfExists(output);
+      Files.deleteIfExists(processLog);
+      outbox.save(
+          new CustomerBpmTaskOutbox.Pending(task, audit, visualEvidence, false, null, null));
+      recordExecutionAudit(task, audit);
+      outbox.save(new CustomerBpmTaskOutbox.Pending(task, audit, visualEvidence, true, null, null));
       process =
           new ProcessBuilder(command(output, schema, visualEvidence))
               .redirectErrorStream(true)
@@ -457,10 +534,78 @@ public class CustomerBpmTaskConsumer {
       }
     } finally {
       if (process != null && process.isAlive()) processSupervisor.terminateTree(process);
-      Files.deleteIfExists(output);
-      Files.deleteIfExists(processLog);
       Files.deleteIfExists(schema);
     }
+  }
+
+  /**
+   * Recupera uma saída já concluída ou bloqueia uma inferência interrompida, sempre sem iniciar uma
+   * segunda chamada paga.
+   */
+  private void recoverInterruptedModel(CustomerBpmTaskOutbox.Pending pending) {
+    Map<String, Object> task = pending.task();
+    BpmExecution execution = null;
+    PreparedVisualEvidence visualEvidence =
+        new PreparedVisualEvidence(null, pending.visualEvidence(), null);
+    try {
+      if (!Files.isRegularFile(outbox.output()) || Files.size(outbox.output()) == 0L) {
+        throw new IllegalStateException(
+            "A execução de Psique foi interrompida depois de iniciar o modelo e antes de preservar uma resposta; a tarefa foi bloqueada sem nova inferência para evitar cobrança duplicada.");
+      }
+      String rawResponse = Files.readString(outbox.output());
+      JsonNode result = json.readTree(rawResponse);
+      Map<String, Object> audit = pending.audit() == null ? Map.of() : pending.audit();
+      List<Map<String, Object>> accessedUrls =
+          mergeAccessedUrls(auditAccessedUrls(audit), readAccessedUrls(json, outbox.events()));
+      execution =
+          new BpmExecution(
+              result,
+              readTokenUsage(json, outbox.events()),
+              text(audit.get("promptSent")),
+              text(audit.get("agentPromptPart")),
+              text(audit.get("activityPromptPart")),
+              accessedUrls,
+              pending.visualEvidence(),
+              rawResponse);
+      validateExecution(task, execution);
+      log.info(
+          "Psique recuperou a resposta persistida sem nova inferência. taskId={}", taskId(task));
+      enqueueDecision(task, execution);
+    } catch (Exception ex) {
+      log.error(
+          "Psique encerrou uma inferência interrompida sem repetir consumo. taskId={}",
+          taskId(task),
+          ex);
+      Map<String, Object> audit = pending.audit() == null ? Map.of() : pending.audit();
+      Exception preservedFailure =
+          execution != null
+              ? ex
+              : new BpmExecutionException(
+                  ex.toString(),
+                  readTokenUsage(json, outbox.events()),
+                  text(audit.get("promptSent")),
+                  text(audit.get("agentPromptPart")),
+                  text(audit.get("activityPromptPart")),
+                  mergeAccessedUrls(
+                      auditAccessedUrls(audit), readAccessedUrls(json, outbox.events())),
+                  pending.visualEvidence(),
+                  ex);
+      if (!callbackPreserved(taskId(task))) fail(task, preservedFailure, execution, visualEvidence);
+    }
+  }
+
+  /** Lê os acessos já persistidos no envelope sem confiar em coerções fora do contrato. */
+  private List<Map<String, Object>> auditAccessedUrls(Map<String, Object> audit) {
+    Object value = audit.get("accessedUrls");
+    if (!(value instanceof List<?> list)) return List.of();
+    List<Map<String, Object>> result = new ArrayList<>();
+    for (Object item : list) {
+      if (!(item instanceof Map<?, ?> raw)) continue;
+      Map<String, Object> access = new LinkedHashMap<>();
+      raw.forEach((key, field) -> access.put(String.valueOf(key), field));
+      result.add(access);
+    }
+    return List.copyOf(result);
   }
 
   /** Inicia a telemetria da tarefa BPM depois que o processo Codex já possui um PID real. */
@@ -553,28 +698,30 @@ public class CustomerBpmTaskConsumer {
         + " minutos.";
   }
 
-  /** Persiste o parecer e as evidências na própria atividade BPM. */
+  /** Encaminha aprovação ou bloqueio funcional sem alterar o parecer produzido. */
+  private void enqueueDecision(Map<String, Object> task, BpmExecution execution)
+      throws IOException {
+    if ("APPROVED".equals(execution.result().path("decision").asText())) {
+      report(task, execution);
+    } else {
+      block(task, execution);
+    }
+  }
+
+  /** Preserva e entrega o parecer aprovado na própria atividade BPM. */
   private void report(Map<String, Object> task, BpmExecution execution) throws IOException {
     Map<String, Object> body = new HashMap<>();
     body.put("resultJson", execution.rawResponse());
     body.put("evidenceJson", evidence(task, execution.visualEvidence()));
     putModelUsage(body, execution.usage());
-    body.put(
-        "executionAudit",
+    Map<String, Object> audit =
         executionAudit(
             execution.promptSent(),
             execution.agentPromptPart(),
             execution.activityPromptPart(),
-            execution.accessedUrls()));
-    backend
-        .post()
-        .uri(
-            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/result",
-            AGENT_KEY,
-            taskId(task))
-        .body(body)
-        .retrieve()
-        .toBodilessEntity();
+            execution.accessedUrls());
+    body.put("executionAudit", audit);
+    enqueue(task, audit, execution.visualEvidence(), "result", body);
   }
 
   /** Mantém o gate fechado quando o parecer não pôde ser produzido ou persistido. */
@@ -626,17 +773,17 @@ public class CustomerBpmTaskConsumer {
           }
         }
       }
-      backend
-          .post()
-          .uri(
-              "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
-              AGENT_KEY,
-              taskId(task))
-          .body(failure)
-          .retrieve()
-          .toBodilessEntity();
+      @SuppressWarnings("unchecked")
+      Map<String, Object> audit =
+          failure.get("executionAudit") instanceof Map<?, ?> value
+              ? (Map<String, Object>) value
+              : null;
+      enqueue(task, audit, visualEvidence, "failure", failure);
     } catch (Exception callbackEx) {
-      log.error("Falha ao registrar bloqueio BPM de Psique. taskId={}", taskId(task), callbackEx);
+      log.error(
+          "Falha ao preservar ou registrar bloqueio BPM de Psique. taskId={}",
+          taskId(task),
+          callbackEx);
     }
   }
 
@@ -664,23 +811,107 @@ public class CustomerBpmTaskConsumer {
     body.put("resultJson", resultJson);
     body.put("evidenceJson", evidence(task, execution.visualEvidence()));
     putModelUsage(body, execution.usage());
-    body.put(
-        "executionAudit",
+    Map<String, Object> audit =
         executionAudit(
             execution.promptSent(),
             execution.agentPromptPart(),
             execution.activityPromptPart(),
-            execution.accessedUrls()));
+            execution.accessedUrls());
+    body.put("executionAudit", audit);
     body.put("blockerGuidance", functionalGuidance(task, result));
-    backend
-        .post()
-        .uri(
-            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
-            AGENT_KEY,
-            taskId(task))
-        .body(body)
-        .retrieve()
-        .toBodilessEntity();
+    enqueue(task, audit, execution.visualEvidence(), "failure", body);
+  }
+
+  /** Grava o callback completo antes da primeira tentativa de entrega ao backend. */
+  private void enqueue(
+      Map<String, Object> task,
+      Map<String, Object> audit,
+      List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence,
+      String operation,
+      Map<String, Object> body)
+      throws IOException {
+    CustomerBpmTaskOutbox.Pending pending =
+        new CustomerBpmTaskOutbox.Pending(
+            task, audit, visualEvidence, audit != null, operation, body);
+    outbox.save(pending);
+    deliver(pending);
+  }
+
+  /** Reenvia exatamente o mesmo callback e só então remove sua cópia persistente. */
+  private void deliver(CustomerBpmTaskOutbox.Pending pending) throws IOException {
+    log.info(
+        "Psique enviando callback preservado. taskId={} operation={}",
+        taskId(pending.task()),
+        pending.operation());
+    try {
+      backend
+          .post()
+          .uri(
+              "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/{operation}",
+              AGENT_KEY,
+              taskId(pending.task()),
+              pending.operation())
+          .body(pending.callback())
+          .retrieve()
+          .toBodilessEntity();
+    } catch (RuntimeException ex) {
+      CustomerBpmTaskOutbox.Pending retry = callbackRetry(pending);
+      outbox.save(retry);
+      log.error(
+          "Backend não confirmou callback de Psique; envelope preservado. taskId={} operation={} attempts={}",
+          taskId(pending.task()),
+          retry.operation(),
+          retry.deliveryAttempts(),
+          ex);
+      throw ex;
+    }
+    log.info(
+        "Psique recebeu confirmação do callback. taskId={} operation={}",
+        taskId(pending.task()),
+        pending.operation());
+    outbox.acknowledge();
+  }
+
+  /**
+   * Limita rejeições de resultado e converte o parecer preservado em bloqueio técnico auditável.
+   */
+  private CustomerBpmTaskOutbox.Pending callbackRetry(CustomerBpmTaskOutbox.Pending pending) {
+    int attempts = pending.deliveryAttempts() + 1;
+    if (!"result".equals(pending.operation()) || attempts < RESULT_CALLBACK_ATTEMPT_LIMIT) {
+      return new CustomerBpmTaskOutbox.Pending(
+          pending.task(),
+          pending.audit(),
+          pending.visualEvidence(),
+          pending.modelStarted(),
+          pending.operation(),
+          pending.callback(),
+          attempts);
+    }
+    Map<String, Object> failure = new HashMap<>();
+    copyCallbackField(pending.callback(), failure, "resultJson");
+    copyCallbackField(pending.callback(), failure, "evidenceJson");
+    copyCallbackField(pending.callback(), failure, "modelUsages");
+    copyCallbackField(pending.callback(), failure, "executionAudit");
+    failure.put(
+        "error",
+        "CALLBACK_RESULT_REJECTED_AFTER_RETRIES|O backend não confirmou o parecer preservado após "
+            + attempts
+            + " tentativas; a tarefa foi bloqueada sem nova inferência.");
+    failure.put(
+        "blockerGuidance",
+        Map.of(
+            "category",
+            "TECHNICAL_FAILURE",
+            "action",
+            "Corrija a rejeição registrada pelo backend e retome o processo sem repetir a inferência de Psique."));
+    return new CustomerBpmTaskOutbox.Pending(
+        pending.task(), pending.audit(), pending.visualEvidence(), true, "failure", failure, 0);
+  }
+
+  /** Copia um campo original somente quando ele pertence ao contrato do callback. */
+  private void copyCallbackField(
+      Map<String, Object> source, Map<String, Object> destination, String field) {
+    if (source != null && source.containsKey(field)) destination.put(field, source.get(field));
   }
 
   /** Resolve o contexto e injeta evidência versionada sem depender da sandbox interna do modelo. */
@@ -1160,21 +1391,15 @@ public class CustomerBpmTaskConsumer {
             "accessMethod", "WEB_SEARCH"));
   }
 
-  /** Registra prompt, modelo, raciocínio e acessos Playwright antes de iniciar o processo Codex. */
-  private void recordExecutionAudit(
-      Map<String, Object> task, PromptComposition prompt, List<Map<String, Object>> accessedUrls) {
+  /** Registra a auditoria já preservada localmente antes de iniciar o processo Codex. */
+  private void recordExecutionAudit(Map<String, Object> task, Map<String, Object> audit) {
     backend
         .put()
         .uri(
             "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/execution-audit",
             AGENT_KEY,
             taskId(task))
-        .body(
-            executionAudit(
-                prompt.fullPrompt(),
-                prompt.agentPromptPart(),
-                prompt.activityPromptPart(),
-                accessedUrls))
+        .body(audit)
         .retrieve()
         .toBodilessEntity();
   }

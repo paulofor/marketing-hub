@@ -699,13 +699,13 @@ class CustomerBpmTaskConsumerTest {
 
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
+            "musa-v12-commercial-homologation-v4.json",
             "musa-v12-commercial-homologation-v3.json",
-            "musa-v12-commercial-homologation-v2.json",
             "ATTESTED_REFERENCE",
-            "36 jornadas locais da Vega v12",
+            "corrige o recolhimento dos detalhes de privacidade",
             "Começar meu ajuste gratuito",
             "Acesso por 90 dias, sem assinatura ou renovação.")
-        .doesNotContain("musa-v12-commercial-homologation-v1.json");
+        .doesNotContain("musa-v12-commercial-homologation-v2.json");
     org.assertj.core.api.Assertions.assertThat(prompt.length())
         .isLessThan(850_000)
         .isLessThan(CustomerBpmTaskConsumer.promptCharacterLimit());

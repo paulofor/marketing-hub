@@ -1,0 +1,18 @@
+{
+  "cardKey": "prova-humana-em-recomendacao-ia",
+  "collection": "neuromarketing",
+  "title": "Recomendações de IA ganham confiança com prova humana verificável",
+  "finding": "Pesquisa com usuários ativos de IA e uma análise ampla de citações em mecanismos de IA convergem para a relevância de reviews autênticos: consumidores dizem confiar mais quando recomendações são sustentadas por avaliações reais, enquanto páginas citadas por IA frequentemente apresentam volume, nota e resumo de reviews.",
+  "mechanism": "Quando a IA reduz muitas opções a poucas recomendações, prova humana rastreável pode reduzir incerteza para o consumidor e fornecer sinais externos que o agente consegue citar. O efeito pode depender da credibilidade, contexto e legibilidade da evidência, não apenas da quantidade de avaliações.",
+  "commercialApplication": "Testar em páginas e ativos públicos uma camada de reviews reais, contextualizados e legíveis por agentes, com resumo fiel, nota agregada, exemplos concretos e transparência sobre relação comercial. Medir presença em respostas de IA e, principalmente, avanço no funil e pagamento contra controle.",
+  "evidenceStrength": "Moderada: combina survey internacional com mais de 1.700 usuários ativos de IA e análise observacional de 237.804 instâncias de citação em 23.592 URLs, mas sem experimento causal de conversão ou evidência específica do Brasil.",
+  "publishedOn": "2026-09-18",
+  "validUntil": "2027-03-18",
+  "experimentHypothesis": "Uma camada de prova humana verificável e estruturada aumentará confiança percebida e a probabilidade de a oferta ser considerada por assistentes de IA, elevando CTA, checkout ou pagamento em relação a uma versão equivalente sem essa evidência.",
+  "risks": "Fabricar ou selecionar reviews de forma enganosa, ocultar incentivos ou patrocínio, confundir correlação com causalidade e otimizar para citação da IA sem preservar utilidade e honestidade para o consumidor.",
+  "limits": "Os dados de confiança são autorrelatados e a análise de citações é correlacional; autoridade do domínio, marca, SEO, categoria e disponibilidade de dados podem explicar parte dos resultados. Somente testes controlados e pagamentos reconciliados podem demonstrar impacto comercial no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-18-prova-humana-recomendacao-ia.md",
+  "sourceTitle": "Fonte revisada — Prova humana em recomendações de IA",
+  "sourceSha256": "cafb999c920f90c990a6a50c32f26b4c6c364b538f9e42a18083be48b7f9f771"
+}

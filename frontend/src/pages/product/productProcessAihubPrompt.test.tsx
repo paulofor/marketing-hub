@@ -62,6 +62,24 @@ describe("Contrato do template compartilhado de ajuda", () => {
     expect(instruction).not.toContain("duas rodadas completas e consecutivas");
   });
 
+  it("exige paridade da entrega antes de revisão paga e retomada coordenada", () => {
+    for (const part of [
+      "componentes não precisam ter o mesmo commit",
+      "Antes de chamar o modelo, confira a identidade do build servido",
+      "manifesto, artefato imutável e capturas",
+      "comportamentos essenciais da experiência",
+      "versão esperada/observada, responsável e ação necessária",
+      "Não transforme esse impedimento em reprovação comercial paga",
+      "deixe o backend liberar a continuação",
+      "reutilizando resultados ainda válidos e impedindo tarefas duplicadas",
+      "Valide como um único fluxo",
+      "bloqueio antes da chamada paga e retomada após compatibilidade comprovada",
+      "custo por homologação concluída e tempo de preparação",
+      "o prompt não autoriza deploy ou gasto",
+    ])
+      expect(instruction).toContain(part);
+  });
+
   it("preserva melhoria comprovada, rentabilidade e limites de autonomia e publicação", () => {
     for (const part of [
       "menor melhoria reutilizável",

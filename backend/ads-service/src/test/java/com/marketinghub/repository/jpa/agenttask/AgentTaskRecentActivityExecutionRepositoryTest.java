@@ -8,6 +8,7 @@ import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskActivityCoverage;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import java.math.BigDecimal;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -142,6 +143,63 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
     assertThat(result.getFirst().status()).isEqualTo("IN_PROGRESS");
     assertThat(sessionFactory.getStatistics().getEntityLoadCount()).isZero();
     sessionFactory.getStatistics().setStatisticsEnabled(false);
+  }
+
+  /**
+   * A lista de tarefas do processo projeta estado sem hidratar prompts, resultados ou evidências.
+   */
+  @Test
+  void readsProcessExecutionListSnapshotsWithoutHydratingAudit() {
+    var agent = agent();
+    var process = process("opala-commercial-preparation-v1", 1);
+    var current = task(agent, process, "humanExperienceReview", 450, "2026-09-18T22:00:00Z");
+    current.setSourceReference("experiment:92");
+    current.setStatus("BLOCKED");
+    current.setExecutionError("Aguardando nova tentativa auditável.");
+    current.setInputTokens(1280L);
+    current.setCachedInputTokens(640L);
+    current.setOutputTokens(320L);
+    current.setEstimatedCostUsd(new BigDecimal("0.01250000"));
+    current.setCostEstimationStatus("ESTIMATED");
+    current.setExecutionModelCode("gpt-5.6");
+    current.setExecutionMode("MODEL");
+    current.setExecutionReasoningEffort("medium");
+    current.setBlockerCategory("FUNCTIONAL_ADJUSTMENT");
+    current.setBlockerAction("Retomar a revisão com a referência preservada.");
+    current.setExecutionPrompt("Prompt extenso que não participa da lista. ".repeat(100000));
+    current.setResultJson("{\"decision\":\"APPROVE\"}");
+    current.setEvidenceJson("{\"visualEvidence\":true}");
+    var older = task(agent, process, "humanExperienceReview", 449, "2026-09-18T21:00:00Z");
+    older.setSourceReference("experiment:92");
+    task(agent, process, "humanExperienceReview", 448, "2026-09-18T20:00:00Z")
+        .setSourceReference("experiment:91");
+    entityManager.flush();
+    entityManager.clear();
+    var statistics =
+        entityManager
+            .getEntityManager()
+            .getEntityManagerFactory()
+            .unwrap(org.hibernate.SessionFactory.class)
+            .getStatistics();
+    statistics.setStatisticsEnabled(true);
+    statistics.clear();
+
+    var rows =
+        repository.findProcessExecutionListSnapshots(
+            "experiment:92", "opala-commercial-preparation-v1");
+
+    assertThat(rows)
+        .extracting(row -> row.taskId())
+        .containsExactly(current.getId(), older.getId());
+    assertThat(rows.getFirst().processVersionNumber()).isEqualTo(1);
+    assertThat(rows.getFirst().assignedAgentKey()).isEqualTo(agent.getAgentKey());
+    assertThat(rows.getFirst().executionError()).isEqualTo("Aguardando nova tentativa auditável.");
+    assertThat(rows.getFirst().estimatedCostUsd()).isEqualByComparingTo("0.01250000");
+    assertThat(rows.getFirst().blockerAction())
+        .isEqualTo("Retomar a revisão com a referência preservada.");
+    assertThat(statistics.getEntityLoadCount()).isZero();
+    assertThat(statistics.getPrepareStatementCount()).isEqualTo(1);
+    statistics.setStatisticsEnabled(false);
   }
 
   /** Consulta versões do mesmo processo sem misturar outra atividade ou outro processo. */

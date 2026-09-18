@@ -49,6 +49,22 @@ class BusinessProcessActivityExecutionControllerTest {
     verify(service).requestProductActivityExecution(37L, 9L, "evidence", null, null, reference);
   }
 
+  /** Encaminha a leitura detalhada para uma tarefa e referência exatas da lista resumida. */
+  @Test
+  void getsTaskAuditOnDemand() throws Exception {
+    var service = mock(BusinessProcessActivityExecutionService.class);
+    var http =
+        MockMvcBuilders.standaloneSetup(new BusinessProcessActivityExecutionController(service))
+            .build();
+
+    http.perform(
+            get("/api/business-processes/37/products/9/tasks/243/audit")
+                .param("sourceReference", "experiment:92"))
+        .andExpect(status().isOk());
+
+    verify(service).taskAudit(37L, 9L, 243L, "experiment:92");
+  }
+
   /** Expõe processo, atividade e auditoria da tarefa mais recente em contrato estruturado. */
   @Test
   void getsRecentBusinessProcessActivityExecutions() throws Exception {

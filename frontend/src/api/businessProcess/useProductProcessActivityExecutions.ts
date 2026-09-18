@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect, useRef } from "react";
 import type {
+  BusinessProcessActivityExecution,
   ProductProcessActivityExecutionHistory,
   ProductProcessActivityHumanDecision,
   ProductProcessActivityExecutionRequest,
@@ -43,6 +44,23 @@ export function useProductProcessActivityHistory(
           `/api/business-processes/${processDefinitionId}/products/${productId}/activity-executions${queryString ? `?${queryString}` : ""}`,
           { signal, timeout: 45000, params: { includePromptAudit: false } },
         )
+      ).data,
+  });
+}
+
+/** Lê a auditoria extensa apenas quando a pessoa abre uma tarefa da lista resumida. */
+export function useProductProcessTaskAudit(url?: string, enabled = false) {
+  return useQuery({
+    queryKey: ["product-process-task-audit", url],
+    enabled: Boolean(url && enabled),
+    retry: 1,
+    staleTime: 30_000,
+    queryFn: async ({ signal }) =>
+      (
+        await axios.get<BusinessProcessActivityExecution>(url!, {
+          signal,
+          timeout: 45_000,
+        })
       ).data,
   });
 }

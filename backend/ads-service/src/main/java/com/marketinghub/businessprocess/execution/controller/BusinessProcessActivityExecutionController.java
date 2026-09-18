@@ -4,6 +4,7 @@ import com.marketinghub.businessprocess.execution.service.BusinessProcessActivit
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
+import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessTaskPromptAuditResponse;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
@@ -82,6 +83,17 @@ public class BusinessProcessActivityExecutionController {
       @PathVariable Long taskId,
       @RequestParam String sourceReference) {
     return service.taskPromptAudit(processDefinitionId, productId, taskId, sourceReference);
+  }
+
+  /** Entrega a prova integral somente quando a pessoa abre uma tarefa do histórico resumido. */
+  @Operation(summary = "Lê a auditoria completa de uma tarefa do produto e processo exatos")
+  @GetMapping("/{processDefinitionId}/products/{productId}/tasks/{taskId}/audit")
+  public BusinessProcessActivityExecutionResponse taskAudit(
+      @PathVariable Long processDefinitionId,
+      @PathVariable Long productId,
+      @PathVariable Long taskId,
+      @RequestParam String sourceReference) {
+    return service.taskAudit(processDefinitionId, productId, taskId, sourceReference);
   }
 
   /** Entrega somente revisões de tarefas para acompanhar mudanças sem retransmitir auditorias. */

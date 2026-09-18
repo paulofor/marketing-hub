@@ -1,0 +1,18 @@
+{
+  "cardKey": "personalizacao-memoria-vs-intake-regret",
+  "collection": "neuromarketing",
+  "title": "Personalização por memória e intake não são equivalentes",
+  "finding": "Em estudo longitudinal com 992 participantes durante cinco dias de aconselhamento por LLM, a personalização baseada em histórico conversacional esteve associada a maior autorrevelação e menor percepção de estranheza, enquanto a personalização baseada em questionário de entrada esteve associada a maior arrependimento por informações pessoais compartilhadas; várias mudanças ao longo do tempo foram explicadas principalmente pela exposição repetida.",
+  "mechanism": "Hipótese interpretativa: a origem e o momento da personalização podem alterar a sensação de intrusão. Personalização construída no contexto da interação pode parecer mais situada do que um intake amplo, embora também possa facilitar autorrevelação sem que isso equivalha a consentimento informado.",
+  "commercialApplication": "No customer-agent do Marketing Hub, comparar onboarding com questionário de perfil contra personalização progressiva baseada apenas em sinais necessários, com controles visíveis para revisar, corrigir e limitar o que é retido.",
+  "evidenceStrength": "Preprint longitudinal comparativo com N=992 e interações diárias por cinco dias. Evidência relevante sobre atitudes e comportamento de compartilhamento, mas não demonstra efeito comercial nem estabelece o mecanismo psicológico proposto.",
+  "publishedOn": "2026-09-18",
+  "validUntil": "2026-11-02",
+  "experimentHypothesis": "Personalização progressiva com controles explícitos de memória reduzirá arrependimento e abandono em relação a um questionário amplo de entrada, sem piorar relevância percebida, necessidade de repetir contexto ou avanço para CTA.",
+  "risks": "Memória progressiva pode incentivar autorrevelação excessiva ou acumular inferências invisíveis. Não usar menor percepção de estranheza como proxy de consentimento e não reter informação que não seja necessária à tarefa.",
+  "limits": "O estudo ocorreu em aconselhamento por cinco dias, não em uma jornada comercial. Maior autorrevelação não é benefício por si só, e os resultados não autorizam inferir que memória implícita é superior a consentimento explícito.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-18-personalizacao-memoria-vs-intake-regret.md",
+  "sourceTitle": "Fonte revisada — Personalização por memória vs. intake explícito",
+  "sourceSha256": "3700eb0324ef6df4daaf7f448faab5209320fb0bbfd873f907a93313cd83a25c"
+}

@@ -3,6 +3,19 @@ set -euo pipefail
 
 QUEUE_TEST_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 QUEUE_TEST_GROUP="group: deploy-vps-191-252-120-96"
+
+contains_workflow() {
+  local expected="$1"
+  shift
+  local candidate
+  for candidate in "$@"; do
+    if [[ "${candidate}" == "${expected}" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 QUEUE_TEST_WORKFLOWS=(
   ".github/workflows/email-service-ci.yml"
   ".github/workflows/feo-ci.yml"
@@ -65,7 +78,7 @@ done
 
 while IFS= read -r workflow; do
   relative_workflow="${workflow#"${QUEUE_TEST_ROOT}/"}"
-  if [[ ! " ${QUEUE_TEST_WORKFLOWS[*]} " =~ " ${relative_workflow} " ]]; then
+  if ! contains_workflow "${relative_workflow}" "${QUEUE_TEST_WORKFLOWS[@]}"; then
     echo "Novo workflow no host compartilhado sem registro no contrato: ${relative_workflow}" >&2
     exit 1
   fi
@@ -116,7 +129,7 @@ done
 
 while IFS= read -r workflow; do
   relative_workflow="${workflow#"${QUEUE_TEST_ROOT}/"}"
-  if [[ ! " ${AGENT_QUEUE_WORKFLOWS[*]} " =~ " ${relative_workflow} " ]]; then
+  if ! contains_workflow "${relative_workflow}" "${AGENT_QUEUE_WORKFLOWS[@]}"; then
     echo "Novo workflow na fila do VPS de agentes sem registro no contrato: ${relative_workflow}" >&2
     exit 1
   fi
@@ -154,7 +167,7 @@ done
 
 while IFS= read -r workflow; do
   relative_workflow="${workflow#"${QUEUE_TEST_ROOT}/"}"
-  if [[ ! " ${PUBLIC_HOST_QUEUE_WORKFLOWS[*]} " =~ " ${relative_workflow} " ]]; then
+  if ! contains_workflow "${relative_workflow}" "${PUBLIC_HOST_QUEUE_WORKFLOWS[@]}"; then
     echo "Novo workflow na fila do VPS público sem registro no contrato: ${relative_workflow}" >&2
     exit 1
   fi

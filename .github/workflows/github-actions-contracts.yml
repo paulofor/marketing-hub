@@ -317,6 +317,8 @@ jobs:
         run: bash scripts/test-wait-for-shared-vps-docker-capacity.sh
 
       - name: Validar fila do host compartilhado
+        env:
+          PDE_LOCAL_COMPOSE_PROJECT: pde-contracts-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           bash scripts/test-shared-vps-deploy-queue.sh
           bash pde-platform/scripts/test-deploy-isolation-contract.sh

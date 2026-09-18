@@ -293,7 +293,7 @@ public class ProcessRunService {
         });
   }
 
-  /** Observa provas e decisões humanas e dispara o comando no contexto congelado da execução. */
+  /** Observa provas e decisões humanas e dispara o comando na referência congelada da execução. */
   private ProcessRunResponse advance(ProcessRun run) {
     if (Set.of("PAUSED", "COMPLETED", "ERROR", "CLOSED").contains(run.getStatus()))
       return response(run);
@@ -519,20 +519,13 @@ public class ProcessRunService {
       return response(run);
     }
     var result =
-        context.usesExecutionProfile(run.getProductId(), run.getSourceReference())
-            ? activities.requestProductActivityExecution(
-                run.getProcessDefinitionId(),
-                run.getProductId(),
-                activity.activityId(),
-                null,
-                run.getLearningCycleId(),
-                run.getSourceReference())
-            : activities.requestProductActivityExecution(
-                run.getProcessDefinitionId(),
-                run.getProductId(),
-                activity.activityId(),
-                null,
-                run.getLearningCycleId());
+        activities.requestProductActivityExecution(
+            run.getProcessDefinitionId(),
+            run.getProductId(),
+            activity.activityId(),
+            null,
+            run.getLearningCycleId(),
+            run.getSourceReference());
     if (!Objects.equals(run.getSourceReference(), result.sourceReference()))
       throw new IllegalStateException("O comando tentou executar em outra referência operacional.");
     transition(

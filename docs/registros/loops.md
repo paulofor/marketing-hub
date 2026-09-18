@@ -779,6 +779,12 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
   terminal e abrisse outra. A elegibilidade passa a ser única na leitura e no comando, com
   **Reiniciar tarefa**, gates atuais e nova ocorrência no mesmo contexto. Testes protegem
   cancelamento, bloqueio, preservação da ocorrência, idempotência e recusa de trabalho ativo/concluído.
+- **Recorrência em 18/09/2026 — Vega #450:** o conciliador de processos transmitia a referência
+  congelada somente quando o produto tinha ficha de execução. Como Vega não usa essa ficha, a leitura
+  e o comando selecionavam outra referência do produto, impedindo a retentativa auditável após a
+  falha técnica do callback. Leitura e criação de tarefa agora encaminham sempre a referência já
+  persistida na execução; testes de contrato cobrem a cadeia adotada e o despacho sem ficha, evitando
+  mistura entre ciclos ou a repetição do mesmo bloqueio.
 
 ## LOOP-EXPERIMENTO-LISTA-PROXY-FORA-SESSAO — campanha existente derruba o cadastro
 

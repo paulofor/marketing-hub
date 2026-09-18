@@ -189,6 +189,14 @@ são preferidas por repositório e uma permanece obrigatória sob pressão de ca
 todas as tags da identidade retida; tags adicionais de uma imagem antiga fora da retenção não podem
 transformá-la acidentalmente em rollback protegido.
 
+O Watchdog de atualização produtiva também acompanha Psique. A cada verificação, ele confirma no
+VPS do agente que o container está em execução, que o health está `UP` e que sua imagem usa uma
+referência SHA de 40 caracteres. A referência é comparada à `main` usando exclusivamente as
+mudanças que acionam o publicador `Customer Agent Worker CI/CD`; publicação em andamento desse
+workflow mantém o estado `DEPLOYING`, e divergência além da tolerância abre o mesmo incidente de
+produção desatualizada. Assim, uma correção integrada de Psique não fica invisível por o backend e
+o frontend já estarem atualizados.
+
 Para a transição do legado, quando as faixas de cache de 24 h e 1 h não bastarem, uma terceira faixa
 permite `docker builder prune --force --filter until=0s --keep-storage 1GB`. Ela alcança somente
 cache descartável dos builds recém-concluídos, sob o lock e timeout existentes. Não usa `--all`,

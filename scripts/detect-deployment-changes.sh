@@ -51,6 +51,7 @@ fi
 backend=false
 frontend=false
 video=false
+customer_agent=false
 app_deploy_descriptor=false
 app_deploy_sync=false
 video_deploy_descriptor=false
@@ -58,6 +59,8 @@ video_deploy_descriptor=false
 while IFS= read -r file; do
   [[ -z "${file}" ]] && continue
   case "${file}" in
+    backend/ads-service/src/main/resources/db/changelog/*) backend=true; customer_agent=true ;;
+    backend/ads-service/src/test/java/com/marketinghub/pde/*) backend=true; customer_agent=true ;;
     .github/workflows/deploy-containers.yml) backend=true; frontend=true; app_deploy_descriptor=true ;;
     .dockerignore) backend=true; frontend=true ;;
     backend/settings.xml) backend=true ;;
@@ -69,6 +72,14 @@ while IFS= read -r file; do
     deploy/bin/*) app_deploy_sync=true ;;
     deploy/docker-compose.yml) app_deploy_descriptor=true ;;
     deploy/nginx/*) app_deploy_descriptor=true ;;
+    customer-agent-worker/*) customer_agent=true ;;
+    meta-ad-approver-worker/src/*) customer_agent=true ;;
+    pde-platform/*) customer_agent=true ;;
+    docs/homologacao/*|docs/registros/*) customer_agent=true ;;
+    scripts/build-commercial-review-evidence.mjs|scripts/build-commercial-review-evidence.test.mjs) customer_agent=true ;;
+    scripts/generate-musa-v7-canonical-contract-changelog.mjs) customer_agent=true ;;
+    scripts/test-isolated-agent-codex-auth.sh|scripts/codex-app-server-device-login.mjs) customer_agent=true ;;
+    scripts/coordinate-agent-deployment.mjs|scripts/coordinate-agent-deployment.test.mjs) customer_agent=true ;;
   esac
 done <<< "${changed_files}"
 
@@ -119,6 +130,7 @@ result="$(printf '%s\n' \
   "backend=${backend}" \
   "frontend=${frontend}" \
   "video=${video}" \
+  "customer_agent=${customer_agent}" \
   "app_image=${app_image}" \
   "app_deploy=${app_deploy}" \
   "app_deploy_sync=${app_deploy_sync}" \

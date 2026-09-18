@@ -5,6 +5,7 @@ target_frontend="${1:-}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "${script_dir}/../.." && pwd)"
 frontend_dir="${repository_root}/pde-platform/frontend"
+frontend_source_sha256="$(node "${frontend_dir}/scripts/source-fingerprint.mjs" "${frontend_dir}")"
 npm_command="${PDE_SMOKE_NPM_COMMAND:-npm}"
 consistency_script="${PDE_SMOKE_CONSISTENCY_SCRIPT:-${repository_root}/scripts/check-musa-pde-public-consistency.sh}"
 rigel_consistency_script="${PDE_SMOKE_RIGEL_CONSISTENCY_SCRIPT:-${script_dir}/check-rigel-pde-public-consistency.sh}"
@@ -47,6 +48,7 @@ run_musa_consistency() {
   PRODUCT_SLUG=metodo-musa-7-dias \
     PDE_PUBLIC_BASE_URL="${public_url}" \
     EXPECTED_EXPERIENCE_VERSION="${experience_version}" \
+    EXPECTED_FRONTEND_SOURCE_SHA256="${frontend_source_sha256}" \
     bash "${consistency_script}"
 }
 
@@ -83,6 +85,9 @@ validate_v7() {
 validate_v8() {
   run_public_health https://v8.clubemusa.com.br
   run_public_diagnostic \
+    https://v8.clubemusa.com.br \
+    musa-pde-entry-v12-primeiro-ajuste-aplicavel
+  run_musa_consistency \
     https://v8.clubemusa.com.br \
     musa-pde-entry-v12-primeiro-ajuste-aplicavel
 }

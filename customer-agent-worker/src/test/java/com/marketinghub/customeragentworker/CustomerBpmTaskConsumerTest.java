@@ -696,15 +696,22 @@ class CustomerBpmTaskConsumerTest {
             CustomerBpmTaskConsumer.schemaResourceFor("opala-commercial-preparation-v1")));
 
     String prompt = consumer.prompt(task, List.of());
+    var currentEvidence =
+        new PdeExperienceEvidenceLoader(repository.toString())
+            .loadCommercialHomologationEvidence(task.get("taskTarget"));
+    String currentManifest = currentEvidence.getFirst().get("path").toString();
+    var currentContract = json.readTree(currentEvidence.getFirst().get("content").toString());
+    String baseManifest = currentContract.path("changeScope").path("baseManifest").asText();
 
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
-            "musa-v12-commercial-homologation-v4.json",
-            "musa-v12-commercial-homologation-v3.json",
+            currentManifest,
+            baseManifest,
             "ATTESTED_REFERENCE",
-            "corrige o recolhimento dos detalhes de privacidade",
             "Começar meu ajuste gratuito",
-            "Acesso por 90 dias, sem assinatura ou renovação.")
+            "Acesso por 90 dias, sem assinatura ou renovação.",
+            "frontendSourceSha256",
+            "requiredFrontendSourceSha256")
         .doesNotContain("musa-v12-commercial-homologation-v2.json");
     org.assertj.core.api.Assertions.assertThat(prompt.length())
         .isLessThan(850_000)

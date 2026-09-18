@@ -122,12 +122,17 @@ class PdeExperienceEvidenceLoaderTest {
           "product":{"id":9,"slug":"produto-a","experienceVersion":"produto-a-v2"},
           "liveVisualContract":{
             "requiredFirstFoldCtas":["Começar gratuitamente"],
-            "requiredVisibleTexts":["Acesso por 90 dias"]
+            "requiredVisibleTexts":["Acesso por 90 dias"],
+            "runtimeIdentity":{
+              "version":"v8",
+              "experienceVersion":"produto-a-v2",
+              "frontendSourceSha256":"%s"
+            }
           },
           "implementationEvidence":[{"path":"pde-platform/frontend/src/App.tsx","sha256":"%s"}]
         }
         """
-            .formatted(hash));
+            .formatted("a".repeat(64), hash));
 
     var contract =
         new PdeExperienceEvidenceLoader(tempDir.toString())
@@ -144,6 +149,9 @@ class PdeExperienceEvidenceLoaderTest {
 
     assertThat(contract.requiredFirstFoldCtas()).containsExactly("Começar gratuitamente");
     assertThat(contract.requiredVisibleTexts()).containsExactly("Acesso por 90 dias");
+    assertThat(contract.runtimeIdentity().version()).isEqualTo("v8");
+    assertThat(contract.runtimeIdentity().experienceVersion()).isEqualTo("produto-a-v2");
+    assertThat(contract.runtimeIdentity().frontendSourceSha256()).isEqualTo("a".repeat(64));
     assertThat(contract.required()).isTrue();
   }
 
@@ -440,11 +448,7 @@ class PdeExperienceEvidenceLoaderTest {
         .allSatisfy(path -> assertThat(path.toString()).doesNotContain("kit-whatsapp-", "mira-"));
     assertThat(vegaV12)
         .extracting(item -> item.get("path"))
-        .contains(
-            "pde-platform/contracts/musa-v12-commercial-homologation-v4.json",
-            "pde-platform/contracts/musa-v12-commercial-homologation-v3.json",
-            "pde-platform/frontend/src/App.tsx",
-            "pde-platform/frontend/src/musaExperiences.ts")
+        .contains("pde-platform/frontend/src/App.tsx")
         .doesNotContain("pde-platform/contracts/musa-v12-commercial-homologation-v2.json")
         .allSatisfy(path -> assertThat(path.toString()).doesNotContain("kit-whatsapp-", "mira-"));
     var json = new ObjectMapper();
@@ -460,6 +464,14 @@ class PdeExperienceEvidenceLoaderTest {
         .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
     var vegaV12Product =
         json.readTree(vegaV12.getFirst().get("content").toString()).path("product");
+    var vegaV12Manifest = json.readTree(vegaV12.getFirst().get("content").toString());
+    assertThat(vegaV12.getFirst().get("path").toString())
+        .matches("pde-platform/contracts/musa-v12-commercial-homologation-v[1-9][0-9]*\\.json");
+    assertThat(vegaV12)
+        .extracting(item -> item.get("path"))
+        .contains(vegaV12Manifest.path("changeScope").path("baseManifest").asText());
+    assertThat(vegaV12Manifest.path("liveVisualContract").path("runtimeIdentity").isObject())
+        .isTrue();
     assertThat(vegaV12Product.path("id").asLong()).isEqualTo(4L);
     assertThat(vegaV12Product.path("slug").asText()).isEqualTo("metodo-musa-7-dias");
     assertThat(vegaV12Product.path("experienceVersion").asText())

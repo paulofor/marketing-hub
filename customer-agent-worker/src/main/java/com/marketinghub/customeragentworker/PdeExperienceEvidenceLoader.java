@@ -31,6 +31,7 @@ final class PdeExperienceEvidenceLoader {
   private static final List<String> COMMERCIAL_EVIDENCE_COLLECTIONS =
       List.of("homologationEvidence", "implementationEvidence", "executableEvidence");
   private static final Pattern MANIFEST_REVISION = Pattern.compile("(?:^|[.-])v([1-9][0-9]*)$");
+  private static final Pattern SHA256 = Pattern.compile("^[a-f0-9]{64}$");
   private static final List<String> EVIDENCE_PATHS =
       List.of(
           "pde-platform/contracts/kit-whatsapp-pronto-v1.json",
@@ -163,7 +164,26 @@ final class PdeExperienceEvidenceLoader {
     }
     return new LiveVisualContract(
         requiredTextValues(contract, "requiredFirstFoldCtas"),
-        requiredTextValues(contract, "requiredVisibleTexts"));
+        requiredTextValues(contract, "requiredVisibleTexts"),
+        runtimeIdentity(contract));
+  }
+
+  /** Lê a identidade imutável que deve estar exposta pelo artefato público antes da revisão. */
+  private RuntimeIdentity runtimeIdentity(JsonNode contract) throws IOException {
+    JsonNode identity = contract.path("runtimeIdentity");
+    if (identity.isMissingNode() || identity.isNull()) return RuntimeIdentity.none();
+    if (!identity.isObject()) {
+      throw new IOException("Identidade de runtime inválida no contrato visual ao vivo");
+    }
+    String version = identity.path("version").asText("").trim();
+    String experienceVersion = identity.path("experienceVersion").asText("").trim();
+    String frontendSourceSha256 = identity.path("frontendSourceSha256").asText("").trim();
+    if (version.isBlank()
+        || experienceVersion.isBlank()
+        || !SHA256.matcher(frontendSourceSha256).matches()) {
+      throw new IOException("Identidade de runtime incompleta no contrato visual ao vivo");
+    }
+    return new RuntimeIdentity(version, experienceVersion, frontendSourceSha256);
   }
 
   /** Valida uma lista de sinais obrigatórios sem aceitar valores vazios ou estrutura ambígua. */
@@ -291,15 +311,33 @@ final class PdeExperienceEvidenceLoader {
       String path, Map<String, Object> evidence, JsonNode contract, int revision) {}
 
   /** Congela a copy mínima que distingue a candidata homologada de uma superfície anterior. */
-  record LiveVisualContract(List<String> requiredFirstFoldCtas, List<String> requiredVisibleTexts) {
+  record LiveVisualContract(
+      List<String> requiredFirstFoldCtas,
+      List<String> requiredVisibleTexts,
+      RuntimeIdentity runtimeIdentity) {
     /** Representa manifestos históricos que ainda não declaravam sinais visuais ao vivo. */
     static LiveVisualContract none() {
-      return new LiveVisualContract(List.of(), List.of());
+      return new LiveVisualContract(List.of(), List.of(), RuntimeIdentity.none());
     }
 
     /** Informa se existe alguma condição visual que precisa ser confrontada com o navegador. */
     boolean required() {
-      return !requiredFirstFoldCtas.isEmpty() || !requiredVisibleTexts.isEmpty();
+      return !requiredFirstFoldCtas.isEmpty()
+          || !requiredVisibleTexts.isEmpty()
+          || runtimeIdentity.required();
+    }
+  }
+
+  /** Identifica exatamente o código-fonte do frontend que a superfície pública deve servir. */
+  record RuntimeIdentity(String version, String experienceVersion, String frontendSourceSha256) {
+    /** Representa manifestos históricos sem identidade pública declarada. */
+    static RuntimeIdentity none() {
+      return new RuntimeIdentity("", "", "");
+    }
+
+    /** Informa se a revisão exige correspondência exata com o diagnóstico público. */
+    boolean required() {
+      return !frontendSourceSha256.isBlank();
     }
   }
 

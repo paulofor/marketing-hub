@@ -192,6 +192,7 @@ public class BpmVisualEvidenceRunner {
   private void validateLiveVisualContract(
       PageFacts page, PdeExperienceEvidenceLoader.LiveVisualContract contract) {
     if (contract == null || !contract.required()) return;
+    validateRuntimeIdentity(page.runtimeIdentity(), contract.runtimeIdentity());
     List<String> firstFoldCtas = normalizedValues(page.firstFoldCtas());
     String visibleText = normalize(page.visibleText());
     for (String required : contract.requiredFirstFoldCtas()) {
@@ -207,6 +208,23 @@ public class BpmVisualEvidenceRunner {
             "A superfície visual está desatualizada: condição comercial atestada ausente: "
                 + required);
       }
+    }
+  }
+
+  /** Recusa pixels de outro build antes de upload, prompt ou consumo pago do modelo. */
+  private void validateRuntimeIdentity(
+      RuntimeIdentity actual, PdeExperienceEvidenceLoader.RuntimeIdentity expected) {
+    if (expected == null || !expected.required()) return;
+    if (actual == null
+        || !Objects.equals(expected.version(), actual.version())
+        || !Objects.equals(expected.experienceVersion(), actual.experienceVersion())
+        || !Objects.equals(expected.frontendSourceSha256(), actual.frontendSourceSha256())) {
+      throw new VisualEvidenceException(
+          "A superfície visual está desatualizada: o artefato público não corresponde ao "
+              + "manifesto vigente. esperado="
+              + expected.frontendSourceSha256()
+              + "; recebido="
+              + (actual == null ? "ausente" : actual.frontendSourceSha256()));
     }
   }
 
@@ -284,7 +302,16 @@ public class BpmVisualEvidenceRunner {
       List<String> headings,
       List<String> visibleCtas,
       List<String> firstFoldCtas,
-      String visibleText) {}
+      String visibleText,
+      RuntimeIdentity runtimeIdentity) {}
+
+  /** Registra a identidade imutável lida no mesmo domínio dos pixels capturados. */
+  record RuntimeIdentity(
+      String version,
+      String experienceVersion,
+      String frontendSourceSha256,
+      String imageTag,
+      String commitSha) {}
 
   /** Descreve um arquivo local e todos os metadados que serão persistidos no backend. */
   record VisualArtifact(

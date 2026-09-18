@@ -6,11 +6,13 @@ COPY package.json package-lock.json* ./
 RUN npm ci --include=dev --no-audit --no-fund
 RUN apk add --no-cache ffmpeg font-dejavu rsvg-convert
 COPY . .
-RUN npm run build
+RUN node scripts/source-fingerprint.mjs > /app/frontend-source.sha256 \
+    && npm run build
 
 FROM nginx:1.27-alpine
 ARG PDE_FRONTEND_VERSION_ID=unknown
 COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/frontend-source.sha256 /usr/share/nginx/html/frontend-source.sha256
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY docker-entrypoint.d/ /docker-entrypoint.d/
 ENV PDE_BACKEND_UPSTREAM=pde-platform-backend:8096

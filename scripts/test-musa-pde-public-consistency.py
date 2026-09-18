@@ -39,7 +39,9 @@ class PublicConsistencyTest(unittest.TestCase):
             "MUSA_VERSION_DIAGNOSTICS_FILE": directory / "version-diagnostics.json",
             "MUSA_SLOT_DIAGNOSTICS_FILE": directory / "slot-diagnostics.json",
             "PDE_HEALTH_CONTRACT_FILE": directory / "pde-health-contract.json",
+            "PDE_FRONTEND_SOURCE_FINGERPRINT_FILE": directory / "frontend-source.sha256",
         }
+        generated["PDE_FRONTEND_SOURCE_FINGERPRINT_FILE"].write_text("b" * 64 + "\n")
         env = {
             **os.environ,
             **{key: str(value) for key, value in generated.items()},
@@ -94,6 +96,7 @@ class PublicConsistencyTest(unittest.TestCase):
             "EXPECTED_EXPERIENCE_VERSION": EXPERIENCE,
             "EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE": "",
             "EXPECTED_HERO_VIDEO_PATH": "",
+            "EXPECTED_FRONTEND_SOURCE_SHA256": "b" * 64,
             "TIMEOUT_SECONDS": "3",
             "NO_PROXY": "127.0.0.1,localhost",
         }
@@ -140,11 +143,15 @@ class PublicConsistencyTest(unittest.TestCase):
         self.assert_blocked("experienceVersion")
 
     def test_rejects_missing_image_identity(self):
-        for field in ["image", "imageTag", "commitSha"]:
+        for field in ["image", "imageTag", "commitSha", "frontendSourceSha256"]:
             with self.subTest(field=field):
                 value = self.diagnostic.pop(field)
                 self.assert_blocked(field)
                 self.diagnostic[field] = value
+
+    def test_rejects_other_frontend_source(self):
+        self.diagnostic["frontendSourceSha256"] = "c" * 64
+        self.assert_blocked("Fonte frontend pública diverge")
 
     def test_rejects_down_diagnostic(self):
         self.diagnostic["status"] = "DOWN"

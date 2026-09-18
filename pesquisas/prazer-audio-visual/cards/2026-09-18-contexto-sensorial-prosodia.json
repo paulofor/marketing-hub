@@ -1,0 +1,18 @@
+{
+  "cardKey": "contexto-sensorial-prosodia-previsao-linguagem",
+  "collection": "prazer-audio-visual",
+  "title": "Usar prosódia e contexto sensorial para reduzir ambiguidade",
+  "finding": "Em um estudo PNAS com narrativas, participantes humanos previram palavras futuras com maior acurácia e maior consenso quando recebiam linguagem em áudio ou audiovisual do que em texto; a prosódia explicou parte da vantagem observada.",
+  "mechanism": "Pistas auditivas e audiovisuais adicionam informação temporal e contextual à linguagem; a prosódia sinaliza estrutura, ênfase e expectativa e pode restringir as hipóteses sobre o que virá a seguir.",
+  "commercialApplication": "Em vídeos, tutoriais e interfaces com fala, comparar narração com prosódia informativa e contexto audiovisual coerente contra texto isolado ou fala prosodicamente achatada, medindo compreensão, memória, abandono e conclusão da tarefa antes de avaliar CTA.",
+  "evidenceStrength": "Média-alta para previsão linguística: estudo revisado por pares em PNAS, com grande amostra e comparação entre modalidades; não há demonstração de aumento de prazer ou resultado comercial.",
+  "publishedOn": "2026-08-26",
+  "validUntil": "2027-03-18",
+  "experimentHypothesis": "Narração com prosódia informativa e contexto audiovisual coerente aumentará compreensão e lembrança do conteúdo em relação a texto isolado ou fala prosodicamente achatada, sem elevar distração ou abandono.",
+  "risks": "Excesso de pistas, prosódia artificial ou incongruência entre áudio e imagem podem aumentar carga cognitiva; não usar o achado como prova de persuasão, prazer ou venda.",
+  "limits": "O desfecho principal foi previsão de palavras em narrativas. A aplicação a UX, marketing e vídeo comercial é uma extrapolação e precisa ser validada no público, conteúdo e tarefa específicos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-18-contexto-sensorial-prosodia.md",
+  "sourceTitle": "Fonte revisada — contexto sensorial, prosódia e previsão linguística",
+  "sourceSha256": "fbc7996695c95deeba8c35309645e06458d21629afa8b2a6068ad142f2dcc159"
+}

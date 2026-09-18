@@ -1,5 +1,6 @@
 package com.marketinghub.customeragentworker;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.HttpClientErrorException;
 
 /** Responsabilidade: proteger o contrato funcional da revisão BPM de Psique. */
 class CustomerBpmTaskConsumerTest {
@@ -23,6 +25,43 @@ class CustomerBpmTaskConsumerTest {
                 new CustomerBpmTaskConsumer(
                     "http://backend:8000", "codex", "gpt-5.6-sol", " ", "/workspace", "", json))
         .hasMessageContaining("deve ser max em toda execução de Psique");
+  }
+
+  /** Identifica a retomada que deve reutilizar a resposta aprovada sem nova chamada ao modelo. */
+  @Test
+  void recognizesStoredApprovedCallbackForRetry() throws Exception {
+    assertThat(
+            CustomerBpmTaskConsumer.hasApprovedRetryPayload(
+                json, "{\"decision\":\"APPROVED\"}", "{\"proof\":true}"))
+        .isTrue();
+  }
+
+  /** Preserva o parecer e distingue conflito de evidência sem repetir a inferência paga. */
+  @Test
+  void preservesStoredCallbackWhenCurrentAssetsRejectIt() {
+    Map<String, Object> callback = new HashMap<>();
+
+    assertThat(
+            CustomerBpmTaskConsumer.preserveRetryPayload(
+                Map.of(
+                    "retryResultJson",
+                    "{\"decision\":\"APPROVED\"}",
+                    "retryEvidenceJson",
+                    "{\"proof\":true}"),
+                callback))
+        .isTrue();
+    assertThat(callback)
+        .containsEntry("resultJson", "{\"decision\":\"APPROVED\"}")
+        .containsEntry("evidenceJson", "{\"proof\":true}");
+    assertThat(
+            CustomerBpmTaskConsumer.staleCallbackConflict(
+                HttpClientErrorException.create(
+                    org.springframework.http.HttpStatus.CONFLICT,
+                    "Conflict",
+                    org.springframework.http.HttpHeaders.EMPTY,
+                    new byte[0],
+                    null)))
+        .isTrue();
   }
 
   /** Bloqueia qualquer redução do esforço máximo antes de consumir uma tentativa do modelo. */

@@ -1003,6 +1003,15 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
 
 ## LOOP-AGENT-RUNNING-WITHOUT-PROGRESS — Agentes Codex
 
+- Fechamento complementar em Psique/Vega #447 (2026-09-18): o callback inicialmente encontrou
+  contenção de banco e depois foi recusado porque os ativos comerciais haviam mudado. A recusa
+  funcional saía como HTTP 500, era classificada novamente como transitória e o marcador de retry
+  único era sobrescrito pelo callback de falha; Psique repetiu o mesmo parecer antigo e a tarefa
+  ficou `IN_PROGRESS` sem reserva enquanto a #448 aguardava. O contrato Opala agora responde 409
+  para evidência vencida, o backend reexpõe callbacks `AUTO_RETRY_ONCE` órfãos e o worker preserva
+  resultado, evidência e consumo ao convertê-los em bloqueio funcional, sem nova inferência. Testes
+  impedem reentrada infinita, perda da prova e cobrança repetida.
+
 - Recorrência Atena/Vega #358 em 09/09/2026: a inferência terminou, mas duas tentativas de callback
   falharam durante indisponibilidade do backend. Arquivos temporários já tinham sido apagados e a
   tarefa permaneceu `IN_PROGRESS`, sem parecer ou erro. A correção local conserva reserva, auditoria,

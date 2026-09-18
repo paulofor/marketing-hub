@@ -229,6 +229,20 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
       """)
   List<AgentTask> findRetryableCallbackCandidates(@Param("agentKey") String agentKey);
 
+  /** Reexpõe callbacks preservados que já entraram na retomada e perderam o executor original. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      """
+      select task from AgentTask task
+      where task.assignedAgent.agentKey = :agentKey
+        and task.taskKind = 'WORK' and task.status = 'IN_PROGRESS'
+        and task.executionError like 'AUTO_RETRY_ONCE|%'
+        and task.resultJson is not null and task.resultJson <> ''
+        and task.evidenceJson is not null and task.evidenceJson <> ''
+      order by task.createdAt asc, task.id asc
+      """)
+  List<AgentTask> findReplayableClaimedCallbackCandidates(@Param("agentKey") String agentKey);
+
   /** Lista as tarefas da mesma execução de processo para validar predecessoras e gates. */
   List<AgentTask> findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
       Long processDefinitionId, String sourceReference);

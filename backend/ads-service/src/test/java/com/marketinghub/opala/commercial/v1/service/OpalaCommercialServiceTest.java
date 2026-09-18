@@ -19,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: provar materialização governada e recusa de callbacks inconsistentes. */
 class OpalaCommercialServiceTest {
@@ -204,6 +206,25 @@ class OpalaCommercialServiceTest {
                 false, "Falta publicar a versão", "/experiments/92", List.of()));
     assertThatThrownBy(() -> service.apply(task, request("{\"decision\":\"APPROVED\"}")))
         .hasMessageContaining("condições comerciais mudaram");
+  }
+
+  /** Classifica ativos substituídos como conflito funcional, nunca como erro transitório 500. */
+  @Test
+  void reportsChangedAssetsAsConflict() throws Exception {
+    task.setProcessActivityId("humanExperienceReview");
+    when(context.snapshot("experiment:92"))
+        .thenReturn(
+            (com.fasterxml.jackson.databind.node.ObjectNode)
+                json.readTree(
+                    identity.replace(
+                        "\"productVersion\":\"fixture-v12\"",
+                        "\"productVersion\":\"fixture-v13\"")));
+
+    assertThatThrownBy(() -> service.apply(task, request("{\"decision\":\"APPROVED\"}")))
+        .isInstanceOfSatisfying(
+            ResponseStatusException.class,
+            error -> assertThat(error.getStatusCode()).isEqualTo(HttpStatus.CONFLICT))
+        .hasMessageContaining("ativos avaliados mudaram");
   }
 
   /** Constrói o envelope de callback usando a identidade conhecida antes da execução. */

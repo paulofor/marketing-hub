@@ -19,7 +19,9 @@ public record AgentTaskPendingResponse(
     AgentTaskTargetResponse taskTarget,
     String processContextJson,
     ResearchIntelligenceSelectionResponse researchIntelligence,
-    com.marketinghub.catalogovivo.v1.service.pending.CatalogPromptResponse catalogPrompt) {
+    com.marketinghub.catalogovivo.v1.service.pending.CatalogPromptResponse catalogPrompt,
+    String retryResultJson,
+    String retryEvidenceJson) {
 
   /** Preserva contratos anteriores ao catálogo textual, que não executam atividades migradas. */
   public AgentTaskPendingResponse(
@@ -52,6 +54,8 @@ public record AgentTaskPendingResponse(
         taskTarget,
         processContextJson,
         researchIntelligence,
+        null,
+        null,
         null);
   }
 
@@ -82,6 +86,9 @@ public record AgentTaskPendingResponse(
         null,
         null,
         processContextJson,
+        null,
+        null,
+        null,
         null);
   }
 }

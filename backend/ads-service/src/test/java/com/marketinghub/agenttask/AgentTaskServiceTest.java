@@ -1653,6 +1653,33 @@ class AgentTaskServiceTest {
     verify(repository, never()).save(any());
   }
 
+  /** Reexpõe o callback preservado que perdeu o worker sem executar o modelo novamente. */
+  @Test
+  void replaysOrphanedClaimedCallbackBeforeNewWork() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(8L, "customer-agent", "Psique");
+    AgentTask orphan =
+        processTask(
+            447L, psique, process("PUBLISHED", "Psique"), "humanExperienceReview", "IN_PROGRESS");
+    orphan.setExecutionError("AUTO_RETRY_ONCE|500 Internal Server Error");
+    orphan.setResultJson("{\"decision\":\"APPROVED\"}");
+    orphan.setEvidenceJson("{\"opalaScope\":{}}");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findReplayableClaimedCallbackCandidates("customer-agent"))
+        .thenReturn(List.of(orphan));
+
+    AgentTaskPendingResponse replay =
+        service(repository, agents, Clock.systemUTC())
+            .claimEligibleProcessTask("customer-agent")
+            .orElseThrow();
+
+    assertThat(replay.taskId()).isEqualTo(447L);
+    assertThat(replay.retryResultJson()).isEqualTo(orphan.getResultJson());
+    assertThat(replay.retryEvidenceJson()).isEqualTo(orphan.getEvidenceJson());
+    verify(repository, never()).save(any());
+  }
+
   /** Retoma uma vez o trabalho bloqueado quando o callback falhou por indisponibilidade HTTP. */
   @Test
   void retriesTransientCallbackFailureOnlyOnce() {
@@ -1661,6 +1688,8 @@ class AgentTaskServiceTest {
     Agent dedalo = agent(7L, "landing-generator", "Dédalo");
     AgentTask blocked = processTask(30L, dedalo, process("PUBLISHED", "Dédalo"), "html", "BLOCKED");
     blocked.setExecutionError("500 : Internal Server Error");
+    blocked.setResultJson("{\"decision\":\"APPROVED\"}");
+    blocked.setEvidenceJson("{\"proof\":true}");
     when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
     when(repository.findRetryableCallbackCandidates("landing-generator"))
         .thenReturn(List.of(blocked));
@@ -1674,6 +1703,8 @@ class AgentTaskServiceTest {
     assertThat(recovered.taskId()).isEqualTo(30L);
     assertThat(blocked.getStatus()).isEqualTo("IN_PROGRESS");
     assertThat(blocked.getExecutionError()).startsWith("AUTO_RETRY_ONCE|");
+    assertThat(recovered.retryResultJson()).isEqualTo(blocked.getResultJson());
+    assertThat(recovered.retryEvidenceJson()).isEqualTo(blocked.getEvidenceJson());
   }
 
   /** Retoma uma vez a candidata bloqueada pelo contrato de checkout corrigido no backend. */

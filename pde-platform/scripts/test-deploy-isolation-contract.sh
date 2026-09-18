@@ -6,6 +6,7 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "${script_dir}/../.." && pwd)"
 workflow="${repository_root}/.github/workflows/pde-platform-metodo-musa-ci.yml"
+contracts_workflow="${repository_root}/.github/workflows/github-actions-contracts.yml"
 disk_script="${repository_root}/scripts/ensure-agent-vps-disk-space.sh"
 independent_deploy_script="${script_dir}/test-independent-version-deploy.sh"
 
@@ -30,6 +31,13 @@ for project_contract in \
     exit 1
   fi
 done
+
+if ! grep -Fq \
+  'PDE_LOCAL_COMPOSE_PROJECT: pde-contracts-${{ github.run_id }}-${{ github.run_attempt }}' \
+  "${contracts_workflow}"; then
+  echo '[ARQUITETURA] O workflow de contratos deve isolar a homologação Docker por execução.' >&2
+  exit 1
+fi
 
 if grep -q 'LEAD_PORTAL_PAYMENTS_REMOTE_PATH' "${workflow}"; then
   echo '[ARQUITETURA] O deploy PDE não pode operar o diretório remoto do serviço de pagamentos.' >&2

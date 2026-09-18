@@ -6069,3 +6069,20 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   Watchdog verifica cada versão `SUPPORTED`, e contratos rejeitam o target `all`, reinício acoplado e
   inventário ambíguo. Evidência em
   `docs/homologacao/pde-publicacao-independente-versoes-v1.md`.
+
+## LOOP-PDE-HOMOLOGACAO-DOCKER-SEM-NAMESPACE-NO-CONTRATO — 18/09/2026
+
+- **Sintoma confirmado:** o workflow `GitHub Actions Contracts` da `main`, execução `35366605273`,
+  aprovou os contratos leves e falhou ao iniciar a regressão transacional PDE porque
+  `PDE_LOCAL_COMPOSE_PROJECT` não estava definido.
+- **Histórico e causa-raiz:** o teste passou a exigir corretamente um namespace Compose exclusivo e
+  o workflow próprio da PDE já fornecia a identidade por execução. O workflow central de contratos,
+  que também chama a mesma homologação Docker, não acompanhou o novo pré-requisito. A falha já havia
+  aparecido no check do PR #5243, mas o merge ocorreu com esse controle vermelho.
+- **Alternativas avaliadas:** criar um valor padrão no script permitiria colisões; pular a regressão
+  Docker removeria a prova de continuidade e rollback; derivar o namespace do `run_id` e
+  `run_attempt` preserva isolamento e cobertura. A terceira foi adotada.
+- **Correção sistêmica:** o workflow central fornece um projeto Compose exclusivo à regressão, e o
+  contrato passa a verificar que essa identidade continua presente.
+- **Prevenção:** a validação local executa o mesmo caminho com o projeto exclusivo da sandbox;
+  `bash -n`, ShellCheck e Actionlint validam as fontes antes do PR.

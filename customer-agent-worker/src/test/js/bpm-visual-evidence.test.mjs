@@ -42,9 +42,22 @@ async function runCapture(input, output, evidence, environment = {}) {
   return { code, log };
 }
 
-test("captura página completa e todas as dobras mobile com pixels reais", async () => {
+test("captura página completa, dobras mobile e identidade pública com pixels reais", async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "psique-visual-"));
-  const server = http.createServer((_request, response) => {
+  const server = http.createServer((request, response) => {
+    if (request.url === "/version-diagnostics.json") {
+      response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      response.end(
+        JSON.stringify({
+          version: "v8",
+          experienceVersion: "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+          frontendSourceSha256: "a".repeat(64),
+          imageTag: "pde-platform-frontend-v8:test",
+          commitSha: "test-commit",
+        }),
+      );
+      return;
+    }
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     const sections = Array.from(
       { length: 12 },
@@ -82,6 +95,13 @@ test("captura página completa e todas as dobras mobile com pixels reais", async
     assert.equal(capture.captureSessionId, "capture-session-test");
     assert.equal(capture.deviceProfile, "IPHONE_15_PRO");
     assert.equal(capture.pages[0].finalUrl, sourceUrl);
+    assert.deepEqual(capture.pages[0].runtimeIdentity, {
+      version: "v8",
+      experienceVersion: "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      frontendSourceSha256: "a".repeat(64),
+      imageTag: "pde-platform-frontend-v8:test",
+      commitSha: "test-commit",
+    });
     assert.deepEqual(capture.pages[0].viewport, {
       width: 393,
       height: 852,

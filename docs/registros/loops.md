@@ -361,6 +361,20 @@
   real, com casos negativos. Gatilhos incluem o verificador e seu teste. Não há fallback silencioso
   para legado, remoção do smoke ou troca da imagem pública para contornar o erro.
 
+### Recorrência eliminada — 18/09/2026
+
+- **Evidência:** a execução [35305792623](https://github.com/paulofor/marketing-hub/actions/runs/35305792623),
+  que bloqueou o deploy dependente [35305846147](https://github.com/paulofor/marketing-hub/actions/runs/35305846147),
+  falhou na captura visual de Psique com `Unexpected token '<'` ao interpretar o diagnóstico como JSON.
+- **Causa-raiz:** a captura passou corretamente a exigir `version-diagnostics.json` para vincular
+  pixels e artefato imutável, mas a página HTTP simulada pelo teste respondia HTML para toda rota,
+  inclusive a de diagnóstico. Assim, o contrato novo não era exercitado pelo teste que deveria
+  protegê-lo.
+- **Correção e prevenção:** a fixture agora publica o JSON canônico de diagnóstico e o teste
+  confirma todos os campos de identidade retornados na captura. Isso mantém bloqueante qualquer
+  divergência entre pixels e build, sem deixar uma mudança legítima no verificador interromper o
+  pipeline por uma simulação incompleta.
+
 ### Contrato ausente em versão legada — 15/09/2026
 
 O run `34916516103`, com alvo `all`, revelou v5 ACTIVE sem snapshot desde a criação das

@@ -27,7 +27,7 @@ set -euo pipefail
 printf 'consistency\t%s\t%s\t%s\n' \
   "${PDE_PUBLIC_BASE_URL:-}" \
   "${EXPECTED_EXPERIENCE_VERSION:-}" \
-  "${EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE:-}" >>"${PDE_SMOKE_INVOCATION_LOG}"
+  "${PDE_CONTRACT_ACCESS_MODE:-published}" >>"${PDE_SMOKE_INVOCATION_LOG}"
 FAKE_CONSISTENCY
 
 cat >"${fake_rigel_consistency}" <<'FAKE_RIGEL_CONSISTENCY'
@@ -45,6 +45,7 @@ run_target() {
     PDE_SMOKE_CONSISTENCY_SCRIPT="${fake_consistency}" \
     PDE_SMOKE_RIGEL_CONSISTENCY_SCRIPT="${fake_rigel_consistency}" \
     PDE_SMOKE_INVOCATION_LOG="${invocation_log}" \
+    PDE_INTERNAL_API_TOKEN="test-only-token" \
     MIRA_PRIVATE_E2E_TOKEN="mira-qa-test-only" \
     bash "${runner}" "${target}"
 }
@@ -60,7 +61,7 @@ fi
 run_target v5
 grep -Fqx $'npm\thttps://v5.clubemusa.com.br\t/?mh_preview=qa&pde_analytics=off\t\trun test:public-health' "${invocation_log}"
 grep -Fqx $'npm\thttps://v5.clubemusa.com.br\t\tmusa-pde-entry-v5-video-explicativo\trun test:public-diagnostic-smoke' "${invocation_log}"
-grep -Fqx $'consistency\thttps://v5.clubemusa.com.br\tmusa-pde-entry-v5-video-explicativo\t' "${invocation_log}"
+grep -Fqx $'consistency\thttps://v5.clubemusa.com.br\tmusa-pde-entry-v5-video-explicativo\tpublished' "${invocation_log}"
 if grep -Fq 'v6.clubemusa.com.br' "${invocation_log}" || grep -Fq 'kit-whatsapp-pronto' "${invocation_log}"; then
   echo '[ARQUITETURA] O deploy direcionado ao v5 validou um produto nao publicado.' >&2
   exit 1
@@ -69,7 +70,7 @@ fi
 run_target v6
 grep -Fqx $'npm\thttps://v6.clubemusa.com.br\t/?mh_preview=qa&pde_analytics=off\t\trun test:public-health' "${invocation_log}"
 grep -Fqx $'npm\thttps://v6.clubemusa.com.br\t\tmusa-pde-entry-v6-video-motivacional\trun test:public-diagnostic-smoke' "${invocation_log}"
-grep -Fqx $'consistency\thttps://v6.clubemusa.com.br\tmusa-pde-entry-v6-video-motivacional\t' "${invocation_log}"
+grep -Fqx $'consistency\thttps://v6.clubemusa.com.br\tmusa-pde-entry-v6-video-motivacional\tpublished' "${invocation_log}"
 if grep -Fq 'Se o look parece certo' "${invocation_log}"; then
   echo '[ARQUITETURA] O smoke da v6 fixou uma copy mutável fora do contrato publicado.' >&2
   exit 1
@@ -78,7 +79,7 @@ fi
 run_target v7
 grep -Fqx $'npm\thttps://v7.clubemusa.com.br\t/?mh_preview=qa&pde_analytics=off\t\trun test:public-health' "${invocation_log}"
 grep -Fqx $'npm\thttps://v7.clubemusa.com.br\t\tmusa-pde-entry-v7-espelho-antes-de-sair\trun test:public-diagnostic-smoke' "${invocation_log}"
-grep -Fqx $'consistency\thttps://v7.clubemusa.com.br\tmusa-pde-entry-v7-espelho-antes-de-sair\t' "${invocation_log}"
+grep -Fqx $'consistency\thttps://v7.clubemusa.com.br\tmusa-pde-entry-v7-espelho-antes-de-sair\tpublished' "${invocation_log}"
 if grep -Fq 'test:mira-private:public' "${invocation_log}"; then
   echo '[ARQUITETURA] O deploy direcionado ao Vega v7 executou a superfície de Mira.' >&2
   exit 1
@@ -87,7 +88,7 @@ fi
 run_target v8
 grep -Fqx $'npm\thttps://v8.clubemusa.com.br\t/?mh_preview=qa&pde_analytics=off\t\trun test:public-health' "${invocation_log}"
 grep -Fqx $'npm\thttps://v8.clubemusa.com.br\t\tmusa-pde-entry-v12-primeiro-ajuste-aplicavel\trun test:public-diagnostic-smoke' "${invocation_log}"
-grep -Fqx $'consistency\thttps://v8.clubemusa.com.br\tmusa-pde-entry-v12-primeiro-ajuste-aplicavel\t' "${invocation_log}"
+grep -Fqx $'consistency\thttps://v8.clubemusa.com.br\tmusa-pde-entry-v12-primeiro-ajuste-aplicavel\tcandidate' "${invocation_log}"
 if grep -Fq 'v7.clubemusa.com.br' "${invocation_log}" || grep -Fq 'kit-whatsapp-pronto' "${invocation_log}"; then
   echo '[ARQUITETURA] O deploy direcionado ao v8 validou uma superfície não publicada.' >&2
   exit 1

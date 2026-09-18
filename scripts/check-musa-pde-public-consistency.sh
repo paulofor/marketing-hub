@@ -9,6 +9,8 @@ EXPECTED_SLOT_CODE=${EXPECTED_SLOT_CODE:-}
 EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE=${EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE:-}
 EXPECTED_HERO_VIDEO_PATH=${EXPECTED_HERO_VIDEO_PATH:-}
 EXPECTED_FRONTEND_SOURCE_SHA256=${EXPECTED_FRONTEND_SOURCE_SHA256:-}
+PDE_CONTRACT_ACCESS_MODE=${PDE_CONTRACT_ACCESS_MODE:-published}
+PDE_INTERNAL_API_TOKEN=${PDE_INTERNAL_API_TOKEN:-}
 TIMEOUT_SECONDS=${TIMEOUT_SECONDS:-30}
 TMP_DIR=""
 
@@ -32,6 +34,19 @@ fetch_url() {
   log "Validando ${url}"
   curl --fail --silent --show-error --location --max-time "${TIMEOUT_SECONDS}" \
     --header 'Accept: application/json,text/html,*/*' \
+    "${url}" >"${output_file}"
+}
+
+fetch_validation_contract() {
+  local url="$1"
+  local output_file="$2"
+
+  [[ -n "${PDE_INTERNAL_API_TOKEN}" ]] \
+    || fail "PDE_INTERNAL_API_TOKEN obrigatório para homologar contrato candidato"
+  log "Validando contrato candidato autenticado"
+  curl --fail --silent --show-error --location --max-time "${TIMEOUT_SECONDS}" \
+    --header 'Accept: application/json' \
+    --header "X-PDE-Internal-Token: ${PDE_INTERNAL_API_TOKEN}" \
     "${url}" >"${output_file}"
 }
 
@@ -60,6 +75,11 @@ PY
     contract_query="?experienceVersion=${EXPECTED_EXPERIENCE_VERSION}"
   fi
   local canonical_url="${BACKEND_PUBLIC_BASE_URL%/}/api/products/public/${PRODUCT_SLUG}/pde-experience${contract_query}"
+  if [[ "${PDE_CONTRACT_ACCESS_MODE}" == "candidate" ]]; then
+    canonical_url="${BACKEND_PUBLIC_BASE_URL%/}/api/internal/pde-validation-contract/v1/products/${PRODUCT_SLUG}/experience${contract_query}"
+  elif [[ "${PDE_CONTRACT_ACCESS_MODE}" != "published" ]]; then
+    fail "PDE_CONTRACT_ACCESS_MODE inválido: ${PDE_CONTRACT_ACCESS_MODE}"
+  fi
   local backend_alias_url="${BACKEND_PUBLIC_BASE_URL%/}/api/pde/products/${PRODUCT_SLUG}${contract_query}"
   local pde_alias_url="${PDE_PUBLIC_BASE_URL%/}/api/pde/products/${PRODUCT_SLUG}${contract_query}"
   local pde_health_url="${PDE_PUBLIC_BASE_URL%/}/healthz"
@@ -67,7 +87,11 @@ PY
   local pde_page_url="${PDE_PUBLIC_BASE_URL%/}/"
   local runtime_config_url="${PDE_PUBLIC_BASE_URL%/}/runtime-config.js"
 
-  fetch_url "${canonical_url}" "${TMP_DIR}/canonical.json"
+  if [[ "${PDE_CONTRACT_ACCESS_MODE}" == "candidate" ]]; then
+    fetch_validation_contract "${canonical_url}" "${TMP_DIR}/canonical.json"
+  else
+    fetch_url "${canonical_url}" "${TMP_DIR}/canonical.json"
+  fi
   fetch_url "${backend_alias_url}" "${TMP_DIR}/backend-alias.json"
   fetch_url "${pde_alias_url}" "${TMP_DIR}/pde-alias.json"
   fetch_url "${pde_health_url}" "${TMP_DIR}/pde-health.txt"

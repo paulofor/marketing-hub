@@ -56,6 +56,12 @@ for required_contract in \
   fi
 done
 
+if ! grep -Fq 'PDE_CONTRACT_ACCESS_MODE="${contract_access_mode}"' \
+  "${script_dir}/run-targeted-production-smokes.sh"; then
+  echo '[ARQUITETURA] O smoke direcionado deve declarar se valida contrato publicado ou candidato.' >&2
+  exit 1
+fi
+
 for forbidden_contract in \
   'FRONTEND_SERVICES=' \
   'cleanup_published_port' \

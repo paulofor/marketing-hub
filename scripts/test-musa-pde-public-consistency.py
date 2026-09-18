@@ -55,11 +55,16 @@ class PublicConsistencyTest(unittest.TestCase):
         subprocess.run(["sh", str(ENTRYPOINT)], env=env, check=True, capture_output=True)
         self.diagnostic = json.loads(generated["MUSA_VERSION_DIAGNOSTICS_FILE"].read_text())
         self.canonical_path = f"/backend/api/products/public/{SLUG}/pde-experience?slotCode=v7"
+        self.validation_path = (
+            f"/backend/api/internal/pde-validation-contract/v1/products/"
+            f"{SLUG}/experience?slotCode=v7"
+        )
         self.alias_path = f"/backend/api/pde/products/{SLUG}?slotCode=v7"
         self.public_path = f"/frontend/api/pde/products/{SLUG}?slotCode=v7"
         self.diagnostic_path = "/frontend/version-diagnostics.json"
         self.responses = {
             self.canonical_path: copy.deepcopy(CONTRACT),
+            self.validation_path: copy.deepcopy(CONTRACT),
             self.alias_path: copy.deepcopy(CONTRACT),
             self.public_path: copy.deepcopy(CONTRACT),
             self.diagnostic_path: self.diagnostic,
@@ -68,11 +73,13 @@ class PublicConsistencyTest(unittest.TestCase):
             "/frontend/runtime-config.js": generated["MUSA_RUNTIME_CONFIG_FILE"].read_bytes(),
         }
         self.requests = []
+        self.request_headers = []
         fixture = self
 
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self):
                 fixture.requests.append(self.path)
+                fixture.request_headers.append(dict(self.headers.items()))
                 value = fixture.responses.get(self.path)
                 self.send_response(200 if value is not None else 404)
                 self.end_headers()
@@ -124,6 +131,30 @@ class PublicConsistencyTest(unittest.TestCase):
         self.assertIn(self.diagnostic_path, self.requests)
         self.assertNotIn("/frontend/slot-diagnostics.json", self.requests)
         self.assertEqual(len(self.requests), 7)
+
+    def test_candidate_uses_authenticated_validation_contract(self):
+        self.env["PDE_CONTRACT_ACCESS_MODE"] = "candidate"
+        self.env["PDE_INTERNAL_API_TOKEN"] = "test-only-token"
+        self.responses.pop(self.canonical_path)
+
+        result = self.run_smoke()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn(self.validation_path, self.requests)
+        self.assertNotIn(self.canonical_path, self.requests)
+        validation_index = self.requests.index(self.validation_path)
+        self.assertEqual(
+            self.request_headers[validation_index].get("X-PDE-Internal-Token"),
+            "test-only-token",
+        )
+
+    def test_candidate_rejects_missing_internal_token(self):
+        self.env["PDE_CONTRACT_ACCESS_MODE"] = "candidate"
+        self.assert_blocked("PDE_INTERNAL_API_TOKEN obrigatório")
+
+    def test_rejects_unknown_contract_access_mode(self):
+        self.env["PDE_CONTRACT_ACCESS_MODE"] = "legacy"
+        self.assert_blocked("PDE_CONTRACT_ACCESS_MODE inválido")
 
     def test_rejects_legacy_slot_without_version(self):
         self.diagnostic["slot"] = self.diagnostic.pop("version")

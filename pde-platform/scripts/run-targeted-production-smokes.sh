@@ -44,11 +44,13 @@ run_mira_private() {
 run_musa_consistency() {
   local public_url="$1"
   local experience_version="$2"
+  local contract_access_mode="${3:-published}"
 
   PRODUCT_SLUG=metodo-musa-7-dias \
     PDE_PUBLIC_BASE_URL="${public_url}" \
     EXPECTED_EXPERIENCE_VERSION="${experience_version}" \
     EXPECTED_FRONTEND_SOURCE_SHA256="${frontend_source_sha256}" \
+    PDE_CONTRACT_ACCESS_MODE="${contract_access_mode}" \
     bash "${consistency_script}"
 }
 
@@ -89,7 +91,8 @@ validate_v8() {
     musa-pde-entry-v12-primeiro-ajuste-aplicavel
   run_musa_consistency \
     https://v8.clubemusa.com.br \
-    musa-pde-entry-v12-primeiro-ajuste-aplicavel
+    musa-pde-entry-v12-primeiro-ajuste-aplicavel \
+    candidate
 }
 
 validate_mira() {

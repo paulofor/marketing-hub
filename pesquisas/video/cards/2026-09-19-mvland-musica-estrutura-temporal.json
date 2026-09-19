@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-musica-como-estrutura-temporal",
+  "collection": "video",
+  "title": "Usar a trilha como esqueleto temporal do storyboard",
+  "finding": "O MVLAND 2.0 Studio Mode transforma a música em contexto de planejamento: analisa ritmo, clima, gênero e estrutura para orientar história, storyboard e tomadas, mantendo controle por cena e edição multifaixa depois da geração.",
+  "mechanism": "Extrair uma timeline de batidas, seções, drops, silêncios e mudanças emocionais antes de gerar o vídeo permite usar o áudio como restrição temporal para duração de cenas, cortes, energia de câmera e posicionamento de mensagens; cenas problemáticas podem ser regeneradas isoladamente.",
+  "commercialApplication": "Em criativos do Marketing Hub em que a trilha é relevante, Apolo pode gerar um audio_timeline e mapear hook, problema, demonstração, prova e CTA para pontos musicais antes de rotear cada cena ao renderer, preservando o projeto editável para ajustes localizados.",
+  "evidenceStrength": "Forte para disponibilidade e capacidades declaradas do Studio Mode, confirmadas pelo anúncio da Meitu e páginas oficiais do produto; moderada para qualidade, consistência e precisão de sincronização, pois ainda faltam benchmarks independentes específicos.",
+  "publishedOn": "2026-09-18",
+  "validUntil": "2026-12-17",
+  "experimentHypothesis": "Para peças equivalentes com trilha relevante, estruturar storyboard e timing a partir de uma análise temporal do áudio reduzirá ajustes manuais de ritmo, regenerações e tempo até aprovação sem elevar de forma desproporcional custo ou erros de mensagem.",
+  "risks": "A música pode dominar decisões que deveriam ser comerciais; alinhamento excessivo ao beat pode deixar a peça artificial; análise incorreta de seções pode gerar cortes ruins; a plataforma pode introduzir inconsistências entre cenas; regras de claims, preço e CTA precisam continuar fora do controle puramente estético.",
+  "limits": "O MVLAND 2.0 é proprietário, não há API pública documentada do Studio Mode nem pesos abertos. As alegações de qualidade são do fornecedor. Há ambiguidade entre uma página comercial que promete full commercial rights e Termos de Serviço que, salvo autorização expressa, limitam o uso a fins pessoais e não comerciais; uso publicitário exige confirmação do plano/fluxo aplicável.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-19-mvland-musica-estrutura-temporal.md",
+  "sourceTitle": "Fonte revisada — MVLAND 2.0: música como estrutura temporal do storyboard",
+  "sourceSha256": "34d80a71d112e887ea944d42fde208f4e3fe71fcf10d3f06f858dab7ddd64491"
+}

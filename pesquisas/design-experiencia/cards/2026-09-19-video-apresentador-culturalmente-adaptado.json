@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-apresentador-culturalmente-adaptado",
+  "collection": "video",
+  "title": "Apresentador culturalmente adaptado pode aumentar a eficácia de mensagens socialmente enraizadas",
+  "finding": "Em experimento de campo com 434 mulheres de baixa alfabetização na Índia, vídeo gerado por IA com apresentador culturalmente adaptado reduziu a crença em desinformação de saúde em 30%, quase o dobro da redução do apresentador neutro versus ausência de intervenção; o ganho persistiu por três semanas e foi maior para crenças reforçadas pela comunidade.",
+  "mechanism": "Hipótese interpretativa: familiaridade e congruência cultural percebidas podem aumentar relevância social, reconhecimento e receptividade quando a mensagem enfrenta crenças sustentadas por normas do grupo.",
+  "commercialApplication": "Em vídeos do Marketing Hub, comparar apresentador neutro com apresentador sintético culturalmente congruente mantendo roteiro, oferta, duração e edição constantes; usar sinais culturais legítimos e validados e medir retenção, compreensão, confiança, CTA e qualidade pós-clique.",
+  "evidenceStrength": "Moderada a forte para o contexto estudado: experimento de campo com N=434 e persistência por três semanas, porém preprint, população e tema específicos e sem desfechos comerciais.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2027-03-19",
+  "experimentHypothesis": "Para mensagens cuja barreira principal é uma norma ou crença socialmente reforçada, um apresentador culturalmente congruente elevará compreensão, confiança e CTA em relação a um apresentador neutro, sem aumentar rejeição ou percepção de estereótipo.",
+  "risks": "Adaptação cultural pode virar caricatura, estereótipo ou manipulação identitária. Não inferir atributos sensíveis sem base legítima nem usar semelhança sintética para simular endosso de pessoas ou comunidades reais.",
+  "limits": "O efeito observado foi sobre crença em desinformação de saúde, não compra ou conversão. A vantagem foi pequena ou ausente para lacunas de conhecimento médico, portanto não deve ser generalizada para qualquer mensagem ou público.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-19-video-apresentador-culturalmente-adaptado.md",
+  "sourceTitle": "Fonte revisada — Vídeo com apresentador culturalmente adaptado",
+  "sourceSha256": "34ec2cca71199c56fa077cf1e60fd0f9711ed73249036e67425821a5250bec09"
+}

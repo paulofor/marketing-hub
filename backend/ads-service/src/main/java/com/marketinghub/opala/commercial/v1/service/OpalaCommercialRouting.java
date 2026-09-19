@@ -105,7 +105,8 @@ public class OpalaCommercialRouting {
                 return true;
               var saved = ((com.fasterxml.jackson.databind.node.ObjectNode) proof).deepCopy();
               saved.remove(List.of("evidenceType", "salesProven"));
-              return saved.equals(context.snapshot("experiment:" + cycle.getExperimentId()));
+              return OpalaCommercialAssetComparator.sameReviewableAssets(
+                  saved, context.snapshot("experiment:" + cycle.getExperimentId()));
             })
         .orElse(false);
   }

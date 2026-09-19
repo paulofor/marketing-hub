@@ -88,6 +88,7 @@ public class OpalaCommercialGate implements BackendProductProcessActivityExecuto
       tasks
           .findProcessExecutionEvidenceSnapshots(evidenceByTaskId.keySet())
           .forEach(task -> evidenceByTaskId.put(task.taskId(), task));
+      var currentSnapshot = context.snapshot(source);
       for (String step :
           List.of(
               "entry",
@@ -125,10 +126,8 @@ public class OpalaCommercialGate implements BackendProductProcessActivityExecuto
         }
         if (java.util.Set.of("humanExperienceReview", "commercialIntegrityReview").contains(step))
           require(
-              context
-                  .read(evidence.evidenceJson())
-                  .path("opalaScope")
-                  .equals(context.snapshot(source)),
+              OpalaCommercialService.sameReviewableAssets(
+                  context.read(evidence.evidenceJson()).path("opalaScope"), currentSnapshot),
               "Os ativos mudaram após a revisão; renove os pareceres afetados.");
       }
       return new BackendProductProcessActivityReadiness(

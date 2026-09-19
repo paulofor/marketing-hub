@@ -66,6 +66,8 @@ class OpalaCommercialGateTest {
             .put("productVersion", "fixture-v12")
             .put("cycleId", 2)
             .put("experimentId", 92);
+    snapshot.putObject("financialPlan").put("id", 1).put("revision", 1).put("status", "READY");
+    snapshot.put("checkoutUrl", "https://checkout.sandbox.local/original");
     when(context.scope("experiment:92"))
         .thenReturn(
             new OpalaCommercialContext.Scope(
@@ -128,6 +130,18 @@ class OpalaCommercialGateTest {
     gate.execute(process, activity, product, "experiment:92");
     verify(instances, times(2)).saveAndFlush(saved.capture());
     assertThat(saved.getValue().getOccurrenceNumber()).isEqualTo(2);
+  }
+
+  /** Ignora somente ordem e representação numérica sem perder a identidade dos ativos revisados. */
+  @Test
+  void acceptsSemanticallyEqualReviewAssetsWithDifferentJsonOrdering() throws Exception {
+    snapshot.set(
+        "creatives", json.readTree("[{\"id\":529,\"score\":67.0},{\"id\":530,\"score\":100.00}]"));
+    evidence.replaceAll((taskId, ignored) -> evidence(taskId));
+    snapshot.set(
+        "creatives", json.readTree("[{\"score\":100,\"id\":530},{\"score\":67,\"id\":529}]"));
+
+    assertThat(gate.readiness(process, activity, product, "experiment:92").ready()).isTrue();
   }
 
   /** Uma tarefa ausente ou uma janela expirada não fabrica conclusão. */

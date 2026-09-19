@@ -846,7 +846,7 @@ public class CustomerBpmTaskConsumer {
 
   /** Reenvia exatamente o mesmo callback e só então remove sua cópia persistente. */
   private void deliver(CustomerBpmTaskOutbox.Pending pending) throws IOException {
-    pending = normalizeLegacyFailureCallback(pending);
+    pending = normalizePreservedCallback(pending);
     log.info(
         "Psique enviando callback preservado. taskId={} operation={}",
         taskId(pending.task()),
@@ -880,17 +880,22 @@ public class CustomerBpmTaskConsumer {
     outbox.acknowledge();
   }
 
-  /**
-   * Recupera apenas falhas legadas cuja orientação não satisfaz o contrato obrigatório do backend.
-   */
-  private CustomerBpmTaskOutbox.Pending normalizeLegacyFailureCallback(
+  /** Recupera campos legados do callback sem alterar um parecer já preservado corretamente. */
+  private CustomerBpmTaskOutbox.Pending normalizePreservedCallback(
       CustomerBpmTaskOutbox.Pending pending) throws IOException {
-    if (!"failure".equals(pending.operation()) || hasValidBlockerGuidance(pending.callback())) {
-      return pending;
-    }
     Map<String, Object> callback =
         pending.callback() == null ? new HashMap<>() : new HashMap<>(pending.callback());
-    callback.put("blockerGuidance", technicalGuidance(pending.task()));
+    boolean changed = false;
+    if ("failure".equals(pending.operation()) && !hasValidBlockerGuidance(callback)) {
+      callback.put("blockerGuidance", technicalGuidance(pending.task()));
+      changed = true;
+    }
+    Map<String, Object> restoredAudit = restoreCatalogAuditDelimiter(pending.task(), callback);
+    if (restoredAudit != null) {
+      callback.put("executionAudit", restoredAudit);
+      changed = true;
+    }
+    if (!changed) return pending;
     CustomerBpmTaskOutbox.Pending normalized =
         new CustomerBpmTaskOutbox.Pending(
             pending.task(),
@@ -902,9 +907,51 @@ public class CustomerBpmTaskConsumer {
             pending.deliveryAttempts());
     outbox.save(normalized);
     log.warn(
-        "Psique normalizou callback legado de falha antes do reenvio. taskId={}",
+        "Psique normalizou callback preservado antes do reenvio. taskId={}",
         taskId(pending.task()));
     return normalized;
+  }
+
+  /**
+   * Restaura o delimitador do Catálogo Vivo que versões antigas removeram ao recuperar o outbox.
+   */
+  private Map<String, Object> restoreCatalogAuditDelimiter(
+      Map<String, Object> task, Map<String, Object> callback) throws IOException {
+    if (!CatalogPromptInput.migrated(task)
+        || !(task.get("catalogPrompt") instanceof Map<?, ?>)
+        || !(callback.get("executionAudit") instanceof Map<?, ?> rawAudit)) return null;
+    Map<String, Object> audit = new LinkedHashMap<>();
+    rawAudit.forEach((key, value) -> audit.put(String.valueOf(key), value));
+    String activityPrompt = auditText(audit.get("activityPromptPart"));
+    String promptSent = auditText(audit.get("promptSent"));
+    if (activityPrompt == null || promptSent == null || !promptSent.endsWith(activityPrompt)) {
+      return null;
+    }
+    String catalogText = CatalogPromptInput.text(task, schemaResourceFor(task));
+    String marker = "{{TASK_CONTEXT}}";
+    int contextAt = catalogText.indexOf(marker);
+    String prefix = catalogText.substring(0, contextAt);
+    String suffix = catalogText.substring(contextAt + marker.length());
+    if (suffix.isEmpty() || !activityPrompt.startsWith(prefix) || activityPrompt.endsWith(suffix)) {
+      return null;
+    }
+    String context = activityPrompt.substring(prefix.length());
+    try {
+      if (!json.readTree(context).isObject()) return null;
+    } catch (IOException ex) {
+      log.warn(
+          "Psique não restaurou contexto legado inválido do Catálogo Vivo. taskId={}",
+          taskId(task),
+          ex);
+      return null;
+    }
+    String restoredActivityPrompt = prefix + context + suffix;
+    audit.put("activityPromptPart", restoredActivityPrompt);
+    audit.put(
+        "promptSent",
+        promptSent.substring(0, promptSent.length() - activityPrompt.length())
+            + restoredActivityPrompt);
+    return audit;
   }
 
   /** Confirma todos os campos exigidos para que a orientação de bloqueio seja acionável. */

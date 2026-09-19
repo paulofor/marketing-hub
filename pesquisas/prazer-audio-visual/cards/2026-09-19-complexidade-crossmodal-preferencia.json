@@ -1,0 +1,18 @@
+{
+  "cardKey": "complexidade-crossmodal-preferencia-individual",
+  "collection": "prazer-audio-visual",
+  "title": "Personalizar a complexidade entre som e imagem",
+  "finding": "Em 11 experimentos com N=1.500, a complexidade mostrou transferência entre modalidades e domínios, e diferenças individuais de preferência estética foram parcialmente estáveis: pessoas que preferiam formas mais simples também tendiam a preferir melodias mais simples.",
+  "mechanism": "O sistema cognitivo parece representar parte da densidade/complexidade da informação em uma escala parcialmente supramodal, permitindo que aprendizado, interferência e preferência generalizem entre estímulos visuais, auditivos, simbólicos e táteis.",
+  "commercialApplication": "Em geração audiovisual adaptativa, estimar preferência de complexidade do usuário e testar versões simples versus complexas em música e visual, avaliando se personalização crossmodal melhora prazer, compreensão ou retenção antes de usar o sinal para decisões comerciais.",
+  "evidenceStrength": "Média-alta para representação crossmodal de complexidade: artigo revisado por pares em Nature Human Behaviour, 11 experimentos e N=1.500; aplicação a vídeos comerciais e personalização ainda é extrapolação.",
+  "publishedOn": "2026-09-15",
+  "validUntil": "2027-03-19",
+  "experimentHypothesis": "Usuários cuja preferência por complexidade for estimada em uma modalidade avaliarão melhor e/ou reterão mais uma experiência audiovisual cuja complexidade de música e visual seja calibrada ao mesmo perfil do que uma versão não personalizada.",
+  "risks": "Transformar uma tendência média em perfil fixo pode reduzir variedade, criar monotonia ou reforçar inferências incorretas; não usar preferência estética como prova de maior conversão ou valor comercial.",
+  "limits": "Os estímulos experimentais eram controlados e mais simples que vídeos completos; preferência depende de contexto, familiaridade e tarefa, e o estudo não mediu retenção publicitária, CTA ou compra.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-19-complexidade-crossmodal-preferencia.md",
+  "sourceTitle": "Fonte revisada — complexidade como dimensão crossmodal",
+  "sourceSha256": "6f5e5c286a9b25b2950e1df18eb151e7ba7f41d11eca289a86e3e7f58c0f1675"
+}

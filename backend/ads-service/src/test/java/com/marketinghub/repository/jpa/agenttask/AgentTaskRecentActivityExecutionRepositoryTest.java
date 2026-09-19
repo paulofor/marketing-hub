@@ -202,6 +202,44 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
     statistics.setStatisticsEnabled(false);
   }
 
+  /** A validação final lê provas somente das últimas aprovações escolhidas no resumo. */
+  @Test
+  void readsSelectedProcessEvidenceWithoutHydratingTasksOrPrompts() {
+    var agent = agent();
+    var process = process("opala-commercial-preparation-v1", 1);
+    var selected = task(agent, process, "economics", 440, "2026-09-18T22:00:00Z");
+    selected.setSourceReference("experiment:92");
+    selected.setExecutionPrompt("Prompt que não participa do gate. ".repeat(100000));
+    selected.setExecutionAgentPrompt(selected.getExecutionPrompt());
+    selected.setExecutionActivityPrompt(selected.getExecutionPrompt());
+    selected.setEvidenceJson("{\"opalaScope\":{\"productVersion\":\"v12\"}}");
+    selected.setResultJson("{\"economics\":{\"offerPriceBrl\":67}}");
+    var unselected = task(agent, process, "economics", 439, "2026-09-18T21:00:00Z");
+    unselected.setSourceReference("experiment:92");
+    unselected.setEvidenceJson("{\"opalaScope\":{\"productVersion\":\"v11\"}}");
+    entityManager.flush();
+    entityManager.clear();
+    var statistics =
+        entityManager
+            .getEntityManager()
+            .getEntityManagerFactory()
+            .unwrap(org.hibernate.SessionFactory.class)
+            .getStatistics();
+    statistics.setStatisticsEnabled(true);
+    statistics.clear();
+
+    var rows =
+        repository.findProcessExecutionEvidenceSnapshots(java.util.List.of(selected.getId()));
+
+    assertThat(rows).hasSize(1);
+    assertThat(rows.getFirst().taskId()).isEqualTo(selected.getId());
+    assertThat(rows.getFirst().evidenceJson()).contains("v12");
+    assertThat(rows.getFirst().resultJson()).contains("offerPriceBrl");
+    assertThat(statistics.getEntityLoadCount()).isZero();
+    assertThat(statistics.getPrepareStatementCount()).isEqualTo(1);
+    statistics.setStatisticsEnabled(false);
+  }
+
   /** Consulta versões do mesmo processo sem misturar outra atividade ou outro processo. */
   @Test
   void findsRecentActivityExecutionsAcrossVersionsWithoutCrossProcessLeakage() {

@@ -4,6 +4,7 @@ import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.agenttask.AgentTaskIndependentExecutionSummarySnapshot;
 import com.marketinghub.agenttask.AgentTaskMeasurementSnapshot;
+import com.marketinghub.agenttask.AgentTaskProcessExecutionEvidenceSnapshot;
 import com.marketinghub.agenttask.AgentTaskProcessExecutionListSnapshot;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse;
 import com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot;
@@ -86,6 +87,17 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
       """)
   List<AgentTaskProcessExecutionListSnapshot> findProcessExecutionListSnapshots(
       @Param("sourceReference") String sourceReference, @Param("processCode") String processCode);
+
+  /** Lê somente as provas das últimas tarefas já aprovadas para validar o gate comercial. */
+  @Query(
+      """
+      select new com.marketinghub.agenttask.AgentTaskProcessExecutionEvidenceSnapshot(
+        task.id, task.evidenceJson, task.resultJson)
+      from AgentTask task
+      where task.id in :taskIds
+      """)
+  List<AgentTaskProcessExecutionEvidenceSnapshot> findProcessExecutionEvidenceSnapshots(
+      @Param("taskIds") java.util.Collection<Long> taskIds);
 
   /**
    * Consulta o retrabalho da origem e processo exatos sem carregar prompts ou entidades completas.

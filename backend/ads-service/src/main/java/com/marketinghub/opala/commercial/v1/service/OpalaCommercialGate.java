@@ -12,7 +12,9 @@ import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,9 +61,13 @@ public class OpalaCommercialGate implements BackendProductProcessActivityExecuto
           scope.cycle().getWindowEnd() != null
               && scope.cycle().getWindowEnd().isAfter(Instant.now()),
           "A janela comercial expirou; solicite nova decisão de orçamento.");
-      var history =
-          tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
-              process.getId(), source);
+      Map<String, com.marketinghub.agenttask.AgentTaskProcessExecutionListSnapshot> latestByStep =
+          new LinkedHashMap<>();
+      tasks
+          .findProcessExecutionListSnapshots(source, process.getProcessCode())
+          .forEach(task -> latestByStep.putIfAbsent(task.processActivityId(), task));
+      Map<Long, com.marketinghub.agenttask.AgentTaskProcessExecutionEvidenceSnapshot>
+          evidenceByTaskId = new LinkedHashMap<>();
       for (String step :
           List.of(
               "entry",
@@ -72,24 +78,41 @@ public class OpalaCommercialGate implements BackendProductProcessActivityExecuto
               "humanExperienceReview",
               "commercialIntegrityReview")) {
         var last =
-            history.stream()
-                .filter(t -> step.equals(t.getProcessActivityId()))
-                .reduce((a, b) -> b)
+            java.util.Optional.ofNullable(latestByStep.get(step))
                 .orElseThrow(() -> new IllegalStateException("Falta executar " + step + "."));
         require(
-            "COMPLETED".equals(last.getStatus())
+            "COMPLETED".equals(last.status()),
+            "A atividade " + step + " não comprovou a versão atual.");
+        evidenceByTaskId.put(last.taskId(), null);
+      }
+      tasks
+          .findProcessExecutionEvidenceSnapshots(evidenceByTaskId.keySet())
+          .forEach(task -> evidenceByTaskId.put(task.taskId(), task));
+      for (String step :
+          List.of(
+              "entry",
+              "creative",
+              "checkout",
+              "targeting",
+              "economics",
+              "humanExperienceReview",
+              "commercialIntegrityReview")) {
+        var last = latestByStep.get(step);
+        var evidence = evidenceByTaskId.get(last.taskId());
+        require(
+            evidence != null
                 && scope
                     .cycle()
                     .getProductVersion()
                     .equals(
                         context
-                            .read(last.getEvidenceJson())
+                            .read(evidence.evidenceJson())
                             .path("opalaScope")
                             .path("productVersion")
                             .asText()),
             "A atividade " + step + " não comprovou a versão atual.");
         if ("economics".equals(step)) {
-          var economics = context.read(last.getResultJson()).path("economics");
+          var economics = context.read(evidence.resultJson()).path("economics");
           require(
               !java.time.LocalDate.parse(economics.path("deadline").asText())
                       .isBefore(java.time.LocalDate.now(java.time.ZoneOffset.UTC))
@@ -103,7 +126,7 @@ public class OpalaCommercialGate implements BackendProductProcessActivityExecuto
         if (java.util.Set.of("humanExperienceReview", "commercialIntegrityReview").contains(step))
           require(
               context
-                  .read(last.getEvidenceJson())
+                  .read(evidence.evidenceJson())
                   .path("opalaScope")
                   .equals(context.snapshot(source)),
               "Os ativos mudaram após a revisão; renove os pareceres afetados.");

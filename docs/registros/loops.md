@@ -18,6 +18,21 @@
   das rejeições e reproduz a recuperação de um envelope legado que o backend recusaria, além de
   preservar parecer, consumo e ausência de nova inferência.
 
+### Recorrência de leitura — 2026-09-19
+
+- **Evidência:** depois da tarefa #450 do Vega, o histórico da atividade ficou indisponível e uma
+  reconciliação manteve o lock do produto enquanto lia auditorias extensas. A projeção inicial da
+  lista eliminou prompts, resultados e evidências, mas o gate final Opala ainda relia todo o
+  histórico completo para checar a última aprovação de cada etapa.
+- **Causa-raiz:** a consulta de estado e a validação de gate compartilhavam uma leitura de entidade
+  completa, inclusive para tentativas antigas que não podiam decidir a próxima ação.
+- **Correção sistêmica:** o gate agora lê primeiro o resumo ordenado de cada atividade, interrompe
+  imediatamente diante da última tarefa não concluída e busca somente as provas das últimas
+  aprovações necessárias. Assim, a tela preserva o gate comercial e a auditoria sob demanda sem
+  retransmitir o histórico completo nem reter o lock do produto.
+- **Prevenção:** testes de repositório garantem projeção sem hidratar tarefas ou prompts; o teste do
+  gate prova que uma revisão bloqueada não lê nenhuma evidência histórica.
+
 ## LOOP-PDE-CANDIDATA-409-TRATADO-COMO-FALHA — proteção de publicação derruba a homologação
 
 - **Data:** 2026-09-18. Método MUSA, candidata v8, workflow

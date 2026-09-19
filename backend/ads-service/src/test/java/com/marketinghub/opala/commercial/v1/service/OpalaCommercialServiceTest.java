@@ -153,9 +153,15 @@ class OpalaCommercialServiceTest {
     task.setStatus("COMPLETED");
     task.setEvidenceJson("{\"opalaScope\":" + identity + "}");
     task.setResultJson("{\"economics\":{\"deadline\":\"2099-10-31\"}}");
-    when(tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
-            100L, "experiment:92"))
-        .thenReturn(List.of(task));
+    when(tasks.findCompletedActivitySnapshots(
+            eq(100L),
+            eq("experiment:92"),
+            eq("economics"),
+            any(org.springframework.data.domain.Pageable.class)))
+        .thenReturn(
+            List.of(
+                new AgentTaskActivityCompletionSnapshot(
+                    task.getId(), task.getEvidenceJson(), task.getResultJson())));
     var current =
         (com.fasterxml.jackson.databind.node.ObjectNode)
             json.readTree(
@@ -170,6 +176,9 @@ class OpalaCommercialServiceTest {
             service.requiresFreshExecution(
                 task.getProcessDefinition(), activity, null, "experiment:92"))
         .isFalse();
+    verify(tasks, never())
+        .findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            anyLong(), anyString());
   }
 
   /** Exige nova análise quando outra revisão financeira imutável substitui a já aprovada. */
@@ -179,9 +188,15 @@ class OpalaCommercialServiceTest {
     task.setStatus("COMPLETED");
     task.setEvidenceJson("{\"opalaScope\":" + identity + "}");
     task.setResultJson("{\"economics\":{\"deadline\":\"2099-10-31\"}}");
-    when(tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
-            100L, "experiment:92"))
-        .thenReturn(List.of(task));
+    when(tasks.findCompletedActivitySnapshots(
+            eq(100L),
+            eq("experiment:92"),
+            eq("economics"),
+            any(org.springframework.data.domain.Pageable.class)))
+        .thenReturn(
+            List.of(
+                new AgentTaskActivityCompletionSnapshot(
+                    task.getId(), task.getEvidenceJson(), task.getResultJson())));
     var current =
         (com.fasterxml.jackson.databind.node.ObjectNode)
             json.readTree(identity.replace("\"revision\":1", "\"revision\":2"));
@@ -193,6 +208,9 @@ class OpalaCommercialServiceTest {
             service.requiresFreshExecution(
                 task.getProcessDefinition(), activity, null, "experiment:92"))
         .isTrue();
+    verify(tasks, never())
+        .findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            anyLong(), anyString());
   }
 
   /** Revisão aprovada pelo modelo continua bloqueada quando faltam ativos reais. */

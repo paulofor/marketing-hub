@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -265,18 +266,13 @@ public class OpalaCommercialService
     }
     if ("ready".equals(activity.getActivityId())) return !routing.completed(scope.cycle());
     return tasks
-        .findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
-            process.getId(), source)
+        .findCompletedActivitySnapshots(
+            process.getId(), source, activity.getActivityId(), PageRequest.of(0, 1))
         .stream()
-        .filter(
-            t ->
-                source.equals(t.getSourceReference())
-                    && activity.getActivityId().equals(t.getProcessActivityId())
-                    && "COMPLETED".equals(t.getStatus()))
-        .reduce((a, b) -> b)
+        .findFirst()
         .map(
             t -> {
-              var snapshot = context.read(t.getEvidenceJson()).path("opalaScope");
+              var snapshot = context.read(t.evidenceJson()).path("opalaScope");
               if (!scope
                   .cycle()
                   .getProductVersion()
@@ -284,7 +280,7 @@ public class OpalaCommercialService
               String step = activity.getActivityId();
               if (PREPARATION.contains(step))
                 return !materialization.current(
-                    step, scope, context.read(t.getResultJson()).path("instruction"));
+                    step, scope, context.read(t.resultJson()).path("instruction"));
               var current = context.snapshot(source);
               if ("economics".equals(step))
                 return !sameDecimal(snapshot.path("priceBrl"), current.path("priceBrl"))
@@ -295,7 +291,7 @@ public class OpalaCommercialService
                     || !snapshot.path("productContract").equals(current.path("productContract"))
                     || java.time.LocalDate.parse(
                             context
-                                .read(t.getResultJson())
+                                .read(t.resultJson())
                                 .path("economics")
                                 .path("deadline")
                                 .asText())

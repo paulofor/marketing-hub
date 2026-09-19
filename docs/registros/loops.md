@@ -1,5 +1,21 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-VEGA-RUN-PUBLICADO-PERDE-PRONTIDAO — cockpit regride após publicar
+
+- **Data:** 2026-09-19. Vega, experimento #92, run produtivo #2.
+- **Evidência histórica:** antes da publicação, o run `READY_TO_PUBLISH` sustentava a prontidão da
+  v8. Depois de a campanha, o conjunto e os anúncios ficarem ativos, o run passou corretamente para
+  `PUBLISHED_AWAITING_EXPOSURE`, mas o cockpit voltou a bloquear a leitura com uma falsa ausência de
+  arquivos aprovados. Banco e Meta confirmaram gates `PASS`, slot v8 `ACTIVE`/`OK`, mesma versão e
+  ausência legítima de impressões.
+- **Causa-raiz:** a prova de preflight publicado reconhecia apenas `READY_TO_PUBLISH` e `RUNNING`,
+  embora o ciclo canônico mantenha o run em `PUBLISHED_AWAITING_EXPOSURE` até a primeira impressão
+  oficial para excluir tráfego de preview.
+- **Correção sistêmica:** o estado pós-publicação e pré-exposição passa a preservar a prova do
+  preflight da mesma versão, sem liberar estados pendentes, falhos, pausados ou sem gates auditáveis.
+- **Prevenção:** teste de contrato reproduz a transição para `PUBLISHED_AWAITING_EXPOSURE` e exige
+  que a prontidão continue válida até a primeira impressão promover o run para `RUNNING`.
+
 ## LOOP-VEGA-PUBLICACAO-PRIVADA-NAO-AVANCA-MEDICAO — campanha ativa fica presa no ciclo
 
 - **Data:** 2026-09-19. Vega, ciclo #2, experimento #92.

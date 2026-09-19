@@ -102,12 +102,13 @@ public class PublishedPdePreflightEvidenceService {
             normalizeUrl(slot.getPublicUrl()), normalizeUrl(experiment.getFollowUpActionUrl()));
   }
 
-  /** Aceita somente o run produtivo atual concluído com dados válidos. */
+  /** Aceita somente o run produtivo atual com preflight válido antes ou depois da exposição. */
   private boolean isApprovedRun(ExperimentRun run) {
     return run != null
         && run.getId() != null
         && run.getDataQualityStatus() == ExperimentRunDataQualityStatus.VALID
         && (run.getStatus() == ExperimentRunStatus.READY_TO_PUBLISH
+            || run.getStatus() == ExperimentRunStatus.PUBLISHED_AWAITING_EXPOSURE
             || run.getStatus() == ExperimentRunStatus.RUNNING);
   }
 

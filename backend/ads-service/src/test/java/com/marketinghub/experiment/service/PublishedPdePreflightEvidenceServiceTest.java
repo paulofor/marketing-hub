@@ -86,6 +86,14 @@ class PublishedPdePreflightEvidenceServiceTest {
     assertThat(service.isReady(experiment)).isTrue();
   }
 
+  /** Preserva a prontidão publicada enquanto a Meta ainda não confirmou a primeira impressão. */
+  @Test
+  void recognizesPublishedVersionAwaitingFirstExposure() {
+    run.setStatus(ExperimentRunStatus.PUBLISHED_AWAITING_EXPOSURE);
+
+    assertThat(service.isReady(experiment)).isTrue();
+  }
+
   /** Impede que uma candidata apenas homologada seja tratada como publicação comercial. */
   @Test
   void rejectsReadySlotWithoutPublication() {

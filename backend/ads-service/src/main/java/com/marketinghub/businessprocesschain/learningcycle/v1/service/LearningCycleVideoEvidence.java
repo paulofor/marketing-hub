@@ -8,6 +8,7 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.LearningCycleResponse.ApprovalOption;
 import com.marketinghub.creative.*;
 import com.marketinghub.experiment.video.*;
+import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository;
@@ -102,10 +103,8 @@ public class LearningCycleVideoEvidence {
    */
   public void current(LearningSalesCycle cycle, boolean published) {
     if (automaticBinding != null && automaticBinding.receipt(cycle).isPresent()) {
-      require(
-          !published,
-          "O conjunto foi integrado à experiência privada. A publicação comercial exige seu contrato e autorização próprios.");
-      automaticBinding.current(cycle);
+      JsonNode privateProof = automaticBinding.current(cycle);
+      if (published) publishedPrivateIntegration(cycle, privateProof);
       return;
     }
     JsonNode proof = completed(cycle, "VIDEO_APPROVAL");
@@ -115,6 +114,68 @@ public class LearningCycleVideoEvidence {
             .asText()
             .equals(integrationFingerprint(cycle, proof, published)),
         "Vídeo, criativo ou contrato mudou após a revisão. Devolva para correção e homologue a versão atual.");
+  }
+
+  /**
+   * Confere que a promoção comercial preservou as duas mídias privadas aprovadas e materializou o
+   * contrato público exato, sem transformar a integração privada em autorização de publicação.
+   */
+  private void publishedPrivateIntegration(LearningSalesCycle cycle, JsonNode privateProof) {
+    var ad = approved(cycle, ExperimentVideoSlot.AD);
+    var hero = approved(cycle, ExperimentVideoSlot.LANDING_HERO);
+    require(
+        sameMedia(privateProof.path("campaignVideo"), ad)
+            && sameMedia(privateProof.path("heroVideo"), hero),
+        "A publicação precisa preservar os mesmos vídeos aprovados na integração privada.");
+    var experiment = ad.getExperiment();
+    String productSlug =
+        experiment == null || experiment.getProduct() == null
+            ? null
+            : experiment.getProduct().getSlug();
+    var matchingSlots =
+        productSlug == null
+            ? List.<com.marketinghub.pde.PdeProductionSlot>of()
+            : slots.findByProductSlugOrderBySlotCodeAsc(productSlug).stream()
+                .filter(
+                    slot -> Objects.equals(cycle.getExperimentId(), slot.getSourceExperimentId()))
+                .filter(
+                    slot -> Objects.equals(cycle.getProductVersion(), slot.getExperienceVersion()))
+                .toList();
+    require(
+        matchingSlots.size() == 1,
+        "A publicação exige uma única versão PDE do produto, experimento e ciclo atuais.");
+    var slot = matchingSlots.getFirst();
+    require(
+        slot.getStatus() == PdeProductionSlotStatus.ACTIVE
+            && slot.getPublishedAt() != null
+            && https(slot.getPublicUrl())
+            && Objects.equals(slot.getPublicUrl(), experiment.getFollowUpActionUrl()),
+        "Ative pelo fluxo oficial a versão PDE publicada no destino deste experimento.");
+    require(
+        slot.getPublishedExperienceJson() != null && !slot.getPublishedExperienceJson().isBlank(),
+        "O contrato público da versão PDE ainda não foi materializado.");
+    JsonNode contract = effectiveContract(slot.getPublishedExperienceJson(), slot);
+    require(
+        containsReviewedHero(contract, hero),
+        "O contrato publicado ainda não contém o vídeo de entrada aprovado.");
+    boolean approvedCampaignVideo =
+        creatives.findByExperimentIdAndVideoUrl(cycle.getExperimentId(), ad.getAssetUrl()).stream()
+            .anyMatch(
+                creative ->
+                    creative.getStatus() == CreativeStatus.READY
+                        && creative.getAgentReviewStatus() == CreativeAgentReviewStatus.APPROVED
+                        && Objects.equals(slot.getPublicUrl(), creative.getDestinationUrl()));
+    require(
+        approvedCampaignVideo,
+        "O vídeo de campanha publicado precisa permanecer em um criativo aprovado com o destino atual.");
+  }
+
+  /** Compara a identidade funcional da mídia registrada no recibo privado com o ativo vigente. */
+  private boolean sameMedia(JsonNode proof, ExperimentVideoAsset asset) {
+    return proof.path("assetId").asLong(-1) == asset.getId()
+        && Objects.equals(proof.path("assetUrl").asText(), asset.getAssetUrl())
+        && Objects.equals(proof.path("hlsPlaybackUrl").asText(), asset.getHlsPlaybackUrl())
+        && "APPROVED".equals(proof.path("reviewStatus").asText());
   }
 
   /** Expõe a causa concreta do bloqueio sem executar rede, geração ou aprovação. */
@@ -229,12 +290,7 @@ public class LearningCycleVideoEvidence {
             + (published ? "publicado" : "em rascunho")
             + " da versão PDE selecionada.");
     JsonNode contract = effectiveContract(contractText, slot);
-    boolean linked = false;
-    for (JsonNode item : contract.path("heroVideos"))
-      if (item.path("experimentVideoAssetId").asLong(-1) == hero.getId()
-          && hero.getHlsPlaybackUrl().equals(item.path("hlsPlaybackUrl").asText())
-          && "READY".equals(item.path("status").asText())
-          && "APPROVED".equals(item.path("reviewStatus").asText())) linked = true;
+    boolean linked = containsReviewedHero(contract, hero);
     require(
         linked,
         published
@@ -256,6 +312,16 @@ public class LearningCycleVideoEvidence {
                 slot.getPublicUrl(),
                 slot.getExperienceVersion(),
                 canonical(contract))));
+  }
+
+  /** Localiza o vídeo de entrada aprovado no contrato PDE sem aceitar alias ou mídia divergente. */
+  private boolean containsReviewedHero(JsonNode contract, ExperimentVideoAsset hero) {
+    for (JsonNode item : contract.path("heroVideos"))
+      if (item.path("experimentVideoAssetId").asLong(-1) == hero.getId()
+          && hero.getHlsPlaybackUrl().equals(item.path("hlsPlaybackUrl").asText())
+          && "READY".equals(item.path("status").asText())
+          && "APPROVED".equals(item.path("reviewStatus").asText())) return true;
+    return false;
   }
 
   /**

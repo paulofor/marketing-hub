@@ -8,8 +8,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.businessprocesschain.learningcycle.v1.*;
+import com.marketinghub.creative.Creative;
+import com.marketinghub.creative.CreativeAgentReviewStatus;
+import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.video.*;
+import com.marketinghub.pde.PdeProductionSlot;
+import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
@@ -41,6 +46,7 @@ class LearningCycleVideoBindingTest {
   final List<LearningSalesCycleEvent> history = new ArrayList<>();
   final LearningSalesCycle cycle = new LearningSalesCycle();
   final Instant now = Instant.parse("2026-09-14T22:46:04Z");
+  Experiment experiment;
   ExperimentVideoAsset ad, hero;
 
   /** Instala duas mídias e destino privados em um experimento sem slot ou URL comercial. */
@@ -60,7 +66,7 @@ class LearningCycleVideoBindingTest {
     var product = new Product();
     product.setId(cycle.getProductId());
     product.setSlug("fixture");
-    var experiment = new Experiment();
+    experiment = new Experiment();
     experiment.setId(cycle.getExperimentId());
     experiment.setProduct(product);
     ad = media(91041L, experiment, ExperimentVideoSlot.AD, "a");
@@ -145,6 +151,51 @@ class LearningCycleVideoBindingTest {
     event("VIDEO_APPROVAL", "COMPLETE", proof);
     assertEquals(proof, binding.current(cycle));
     evidence.current(cycle, false);
+    assertThrows(RuntimeException.class, () -> evidence.current(cycle, true));
+  }
+
+  /**
+   * Aceita a promoção somente quando o contrato público ativo preserva as mídias aprovadas e o
+   * criativo aponta para o destino comercial exato.
+   */
+  @Test
+  void acceptsPublishedPromotionOfPrivateIntegration() {
+    event("VIDEO_APPROVAL", "COMPLETE", binding.prepare(cycle));
+    experiment.setFollowUpActionUrl("https://fixture.invalid/v8");
+    var slot = new PdeProductionSlot();
+    slot.setId(91008L);
+    slot.setProductSlug(experiment.getProduct().getSlug());
+    slot.setSourceExperimentId(cycle.getExperimentId());
+    slot.setExperienceVersion(cycle.getProductVersion());
+    slot.setStatus(PdeProductionSlotStatus.ACTIVE);
+    slot.setPublicUrl(experiment.getFollowUpActionUrl());
+    slot.setPublishedAt(now.plusSeconds(20));
+    slot.setPublishedExperienceJson(
+        json.createObjectNode()
+            .set(
+                "heroVideos",
+                json.createArrayNode()
+                    .add(
+                        json.createObjectNode()
+                            .put("experimentVideoAssetId", hero.getId())
+                            .put("hlsPlaybackUrl", hero.getHlsPlaybackUrl())
+                            .put("status", "READY")
+                            .put("reviewStatus", "APPROVED")))
+            .toString());
+    when(slots.findByProductSlugOrderBySlotCodeAsc(experiment.getProduct().getSlug()))
+        .thenReturn(List.of(slot));
+    var creative = new Creative();
+    creative.setExperiment(experiment);
+    creative.setStatus(CreativeStatus.READY);
+    creative.setAgentReviewStatus(CreativeAgentReviewStatus.APPROVED);
+    creative.setVideoUrl(ad.getAssetUrl());
+    creative.setDestinationUrl(slot.getPublicUrl());
+    when(creatives.findByExperimentIdAndVideoUrl(cycle.getExperimentId(), ad.getAssetUrl()))
+        .thenReturn(List.of(creative));
+
+    assertDoesNotThrow(() -> evidence.current(cycle, true));
+
+    slot.setPublishedExperienceJson("{\"heroVideos\":[]}");
     assertThrows(RuntimeException.class, () -> evidence.current(cycle, true));
   }
 

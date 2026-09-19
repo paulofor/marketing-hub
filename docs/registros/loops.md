@@ -1,5 +1,21 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-VEGA-PUBLICACAO-PRIVADA-NAO-AVANCA-MEDICAO — campanha ativa fica presa no ciclo
+
+- **Data:** 2026-09-19. Vega, ciclo #2, experimento #92.
+- **Evidência histórica:** o experimento, o run produtivo, a candidata v8 e a campanha Meta já
+  estavam publicados, mas a etapa `PUBLICATION` continuava bloqueada com a mensagem de que o
+  conjunto pertencia à experiência privada.
+- **Causa-raiz:** o gate audiovisual reconhecia o recibo da integração privada e, por construção,
+  recusava qualquer conferência em modo publicado. Ele não possuía a ponte que comparasse as mídias
+  privadas aprovadas com o slot público promovido pelo fluxo comercial.
+- **Correção sistêmica:** a conferência publicada mantém o recibo privado como origem imutável,
+  exige slot único e ativo da mesma versão e experimento, valida o `LANDING_HERO` no contrato
+  publicado e comprova um criativo aprovado do vídeo AD apontando para o destino oficial.
+- **Prevenção:** teste de contrato cobre promoção válida da mesma integração, ausência de publicação
+  e divergência posterior do vídeo público, sem transformar a integração privada em autorização de
+  campanha ou gasto.
+
 ## LOOP-TEMIS-VERSOES-DE-CRIATIVO-SEM-CANDIDATA-E-PROVAS — pacote válido parece contraditório
 
 - **Data:** 2026-09-19. Vega, experimento #92, tarefa #458.

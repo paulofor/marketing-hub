@@ -43,6 +43,19 @@ class ResearchIntelligenceUsageValidatorTest {
         .hasMessageContaining("não entregue");
   }
 
+  /** Reproduz a tarefa 457 e recusa aprovação sem os identificadores auditáveis recebidos. */
+  @Test
+  void shouldRejectCompletedReviewWithoutDeclaredCards() throws Exception {
+    assertThatThrownBy(
+            () ->
+                ResearchIntelligenceUsageValidator.validate(
+                    task(),
+                    "meta-ad-approver",
+                    List.of("Os cartões de pesquisa foram usados como critérios auxiliares."),
+                    true))
+        .hasMessageContaining("não declarou os cartões de pesquisa aplicados");
+  }
+
   /** Monta a seleção tipada entregue pelo backend no contrato da tarefa. */
   private Map<String, Object> task() throws Exception {
     Map<String, Object> task = new java.util.HashMap<>();

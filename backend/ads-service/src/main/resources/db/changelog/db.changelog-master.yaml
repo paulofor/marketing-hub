@@ -2112,3 +2112,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-17-opala-contribution-before-cac-v4.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-19-opala-commercial-integrity-research-cards-v2.yaml
+      relativeToChangelogFile: true

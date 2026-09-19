@@ -84,6 +84,22 @@ class CatalogoVivoIntegrationTest {
         .isEqualTo("prompts/opala-commercial-preparation/v1/economics-schema.json");
     assertThat(economics.versions().getFirst().text())
         .contains("financialPlan", "cenário BASE", "contributionBeforeCacBrl", "YYYY-MM-DD");
+    var commercialIntegrity =
+        result.items().stream()
+            .filter(i -> "commercialIntegrityReview".equals(i.binding().activityId()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(commercialIntegrity.versions()).hasSize(2);
+    assertThat(commercialIntegrity.binding().activeVersionId())
+        .isEqualTo(commercialIntegrity.versions().getFirst().id());
+    assertThat(commercialIntegrity.versions().getFirst().versionNumber()).isEqualTo(2);
+    assertThat(commercialIntegrity.versions().getFirst().text())
+        .contains(
+            "researchIntelligence",
+            "rota `meta-ad-approver`",
+            "cite os `cardId`",
+            "array `evidence`",
+            "cada coleção entregue");
   }
 
   /** Confere FKs e unicidade com comandos reais, sem depender de CHECK no MySQL 5.7. */

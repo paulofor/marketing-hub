@@ -1,0 +1,18 @@
+{
+  "cardKey": "linguagem-musica-complexidade-momentos-criticos",
+  "collection": "prazer-audio-visual",
+  "title": "Separar picos de complexidade da fala e da música",
+  "finding": "Em uma dupla tarefa de linguagem e música, a interferência foi bidirecional porém assimétrica e ficou mais forte quando palavras sintaticamente críticas e pontos tonalmente críticos coincidiam no tempo; a complexidade estrutural explicou melhor o efeito que uma medida simples de memória de trabalho.",
+  "mechanism": "Linguagem e música parecem compartilhar parte dos recursos de integração estrutural; quando dois eventos de alta demanda estrutural precisam ser integrados ao mesmo tempo, eles podem competir pelo processamento disponível.",
+  "commercialApplication": "Em vídeos com narração ou copy verbal importante, testar deslocar o ponto harmônico mais complexo para depois da frase crítica ou simplificar temporariamente a música, medindo compreensão, lembrança, abandono e estética.",
+  "evidenceStrength": "Média: estudo revisado por pares em Cognitive Science com N=50 e manipulação controlada de complexidade; o efeito é mecanisticamente informativo, mas a generalização para fala natural, música popular e marketing precisa de teste.",
+  "publishedOn": "2026-09-11",
+  "validUntil": "2027-03-19",
+  "experimentHypothesis": "Evitar coincidência temporal entre o trecho verbal estruturalmente mais exigente e a mudança harmônica mais crítica aumentará compreensão e lembrança da mensagem sem reduzir prazer estético em comparação com uma versão em que ambos coincidem.",
+  "risks": "Simplificar demais a trilha pode reduzir emoção ou identidade; o efeito não justifica remover música de conteúdos verbais e não deve ser tratado como prova de persuasão ou venda.",
+  "limits": "Amostra pequena, sentenças e progressões harmônicas controladas, medidas de compreensão e fechamento musical; o estudo não mediu prazer, retenção publicitária ou conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-19-linguagem-musica-complexidade.md",
+  "sourceTitle": "Fonte revisada — competição estrutural entre linguagem e música",
+  "sourceSha256": "8ca81f8c0a8d1f82322fb100c1a1184c11834820a5f42b18b389e2a966ae69d1"
+}

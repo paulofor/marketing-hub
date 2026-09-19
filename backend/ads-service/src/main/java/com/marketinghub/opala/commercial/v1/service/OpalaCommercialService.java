@@ -305,7 +305,7 @@ public class OpalaCommercialService
    * Compara os ativos efetivamente revisados sem confundir ordenação técnica de coleções com uma
    * mudança comercial.
    */
-  private static boolean sameReviewableAssets(JsonNode previous, JsonNode current) {
+  static boolean sameReviewableAssets(JsonNode previous, JsonNode current) {
     return sameRequiredNumber(previous, current, "productId")
         && sameRequiredNumber(previous, current, "experimentId")
         && sameRequiredNumber(previous, current, "cycleId")

@@ -6218,3 +6218,21 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Correção e prevenção:** o repositório projeta somente id, evidência e resultado da última
   tarefa concluída da atividade. Os testes exigem que a revalidação de economia use essa projeção e
   nunca a consulta completa. Prompt integral continua exclusivo do detalhe auditável da tarefa.
+
+## LOOP-OPALA-GATE-FINAL-COMPARA-JSON-LITERAL — 19/09/2026
+
+- **Sintoma confirmado:** Vega avançou pelas tarefas #460 de Psique e #461 de Têmis, ambas
+  `COMPLETED` e `APPROVED`, mas a atividade final `ready` parou em `WAITING_INPUT` afirmando que os
+  ativos haviam mudado. Os dois pareceres persistiram o mesmo escopo de 35.070 caracteres e o mesmo
+  SHA-256 `696ef290e2beaeb69237f4baf87ff9c9ae7e36884f1d90700a40d1dab96fe52b`.
+- **Causa-raiz:** o callback e a revalidação de vigência já comparavam coleções sem ordem semântica,
+  chaves de objeto canônicas e números pelo valor decimal. O gate final ignorava esse contrato e
+  usava `JsonNode.equals` sobre uma nova leitura do banco, tornando ordem técnica ou representação
+  numérica equivalente uma falsa mudança comercial.
+- **Alternativas avaliadas:** repetir a atividade poderia passar por acaso e manter custo de modelo;
+  ordenar todas as consultas ampliaria o diff e ainda não resolveria números ou estruturas
+  equivalentes; reutilizar no gate o comparador semântico já aplicado aos callbacks preserva mudanças
+  reais com o menor risco. A terceira alternativa foi adotada.
+- **Correção e prevenção:** o gate final captura um único snapshot atual e usa o mesmo comparador
+  semântico das revisões. A regressão inverte a ordem de criativos, de chaves e de escalas decimais e
+  exige prontidão, enquanto o teste de mudança real de checkout continua exigindo novos pareceres.

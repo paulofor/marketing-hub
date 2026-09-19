@@ -4,6 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.creative.Creative;
+import com.marketinghub.creative.CreativeAgentReviewStatus;
+import com.marketinghub.creative.CreativeStatus;
+import com.marketinghub.creative.service.CreativeMediaGovernanceEvidenceService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
@@ -35,6 +39,7 @@ public class OpalaCommercialContext {
   private final com.marketinghub.repository.jpa.creative.CreativeRepository creatives;
   private final com.marketinghub.experiment.service.ExperimentTargetingSelectionService selections;
   private final OpalaCommercialFinancialPlan financialPlan;
+  private final CreativeMediaGovernanceEvidenceService mediaGovernanceEvidence;
 
   /** Mantém o ciclo e o experimento como uma única identidade de preparação. */
   public record Scope(LearningSalesCycle cycle, Experiment experiment) {}
@@ -119,21 +124,26 @@ public class OpalaCommercialContext {
                     .put("status", s.getStatus().name())
                     .put("validationStatus", s.getValidationStatus())
                     .put("publishedContract", s.getPublishedExperienceJson()));
+    var experimentCreatives =
+        creatives.findByExperimentId(experiment.getId()).stream()
+            .sorted(java.util.Comparator.comparing(Creative::getId))
+            .toList();
+    var supersededCreativeIds =
+        experimentCreatives.stream()
+            .map(Creative::getSourceCreative)
+            .filter(Objects::nonNull)
+            .map(Creative::getId)
+            .filter(Objects::nonNull)
+            .collect(java.util.stream.Collectors.toSet());
     var announcements = result.putArray("creatives");
-    creatives.findByExperimentId(experiment.getId()).stream()
-        .sorted(java.util.Comparator.comparing(com.marketinghub.creative.Creative::getId))
-        .forEach(
-            c ->
-                announcements
-                    .addObject()
-                    .put("id", c.getId())
-                    .put("version", c.getVersionNumber())
-                    .put("status", Objects.toString(c.getStatus(), ""))
-                    .put("headline", c.getHeadline())
-                    .put("primaryText", c.getPrimaryText())
-                    .put("description", c.getDescription())
-                    .put("videoUrl", c.getVideoUrl())
-                    .put("destinationUrl", c.getDestinationUrl()));
+    experimentCreatives.forEach(
+        creative -> {
+          boolean finalCandidate =
+              creative.getStatus() == CreativeStatus.READY
+                  && creative.getAgentReviewStatus() == CreativeAgentReviewStatus.APPROVED
+                  && !supersededCreativeIds.contains(creative.getId());
+          announcements.add(creativeSnapshot(creative, finalCandidate));
+        });
     var media = result.putArray("approvedVideos");
     videos.findByExperimentIdOrderByCreatedAtDesc(experiment.getId()).stream()
         .filter(
@@ -169,6 +179,35 @@ public class OpalaCommercialContext {
     result.put("publicationAuthorized", false);
     result.put("mediaSpendAuthorized", false);
     return result;
+  }
+
+  /**
+   * Expõe linhagem, parecer e direitos somente do candidato final, sem promover um rascunho nem
+   * esconder versões anteriores.
+   */
+  private ObjectNode creativeSnapshot(Creative creative, boolean finalCandidate) {
+    var snapshot = json.createObjectNode();
+    snapshot.put("id", creative.getId());
+    if (creative.getSourceCreative() == null) snapshot.putNull("sourceCreativeId");
+    else snapshot.put("sourceCreativeId", creative.getSourceCreative().getId());
+    snapshot.put("version", creative.getVersionNumber());
+    snapshot.put("finalCandidate", finalCandidate);
+    snapshot.put("status", Objects.toString(creative.getStatus(), ""));
+    snapshot.put("format", creative.getFormat());
+    snapshot.put("headline", creative.getHeadline());
+    snapshot.put("primaryText", creative.getPrimaryText());
+    snapshot.put("description", creative.getDescription());
+    snapshot.put("cta", creative.getCta());
+    snapshot.put("videoUrl", creative.getVideoUrl());
+    snapshot.put("destinationUrl", creative.getDestinationUrl());
+    snapshot.put("agentReviewStatus", Objects.toString(creative.getAgentReviewStatus(), ""));
+    if (creative.getAgentReviewJson() != null && !creative.getAgentReviewJson().isBlank())
+      snapshot.set("agentReview", read(creative.getAgentReviewJson()));
+    if (finalCandidate) {
+      var governance = mediaGovernanceEvidence.resolve(creative);
+      if (governance != null) snapshot.set("mediaGovernanceEvidence", json.valueToTree(governance));
+    }
+    return snapshot;
   }
 
   /**

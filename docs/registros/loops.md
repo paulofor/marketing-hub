@@ -1,5 +1,25 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-TEMIS-VERSOES-DE-CRIATIVO-SEM-CANDIDATA-E-PROVAS — pacote válido parece contraditório
+
+- **Data:** 2026-09-19. Vega, experimento #92, tarefa #458.
+- **Evidência histórica:** depois de a tarefa #457 aprovar o conteúdo sem citar cartões, a #458 já
+  aplicou e citou as três coleções entregues, mas bloqueou porque recebeu o rascunho #528 e o
+  descendente #529 sem indicação de qual era efetivo. O contexto não trazia a governança de mídia
+  já verificada do criativo nem o contrato de suporte já implementado no PDE.
+- **Causa-raiz:** a projeção Opala tratava versões históricas como uma lista plana e o manifesto
+  comercial não declarava suporte e direitos existentes. Além disso, a versão #529 havia condensado
+  a copy para os limites Meta omitindo termos materiais, embora o produto e o checkout estivessem
+  corretos. Nova inferência sobre o mesmo pacote não eliminaria a ambiguidade.
+- **Correção sistêmica:** a versão #530 foi criada e aprovada pela tela dentro dos limites do canal,
+  preservando pagamento único, acesso de 90 dias e ausência de renovação. O backend identifica o
+  único descendente final `READY` + `APPROVED`, expõe linhagem, parecer e governança da mídia exata;
+  o manifesto v10 declara o suporte funcional; o prompt comercial v3 interpreta essas provas sem
+  promover rascunhos ou omitir gates.
+- **Prevenção:** testes cobrem a linhagem 528 → 529 → 530, direitos apenas na candidata final,
+  persistência e falha do suporte, hashes do pacote e migração incremental no MySQL 5.7. A retomada
+  ocorre pela tela somente depois da publicação versionada, sem gasto nem ativação de campanha.
+
 ## LOOP-TEMIS-CARTOES-ENTREGUES-SEM-CITACAO — parecer aprovado bloqueado após inferência
 
 - **Data:** 2026-09-19. Vega, experimento #92, tarefa #457.

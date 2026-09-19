@@ -65,6 +65,21 @@ e registrar o `cardId` em `evidence`. O validador não é flexibilizado: identif
 não entregue ou coleção sem cobertura continua sendo erro. Versões e tarefas anteriores permanecem
 imutáveis. Evidências: [recuperação da tarefa #457](../homologacao/vega-tarefa-457-cartoes-pesquisa-v1.md).
 
+### Evolução do contrato — revisão comercial Opala v3
+
+Em 19/09/2026, a retomada Vega #458 citou corretamente os cartões de pesquisa, mas revelou que o
+contexto comercial ainda entregava todas as versões de criativo sem distinguir a candidata efetiva
+nem anexar os direitos da mídia exata. O pacote versionado também possuía suporte funcional, porém
+não declarava esse contrato como evidência. Repetir a inferência manteria as mesmas lacunas.
+
+Para novas tarefas de `commercialIntegrityReview`, a versão 3 considera efetivo somente o único
+criativo folha com estado `READY` e parecer `APPROVED`, preservando `sourceCreativeId` nas versões
+anteriores para auditoria. O backend anexa a essa candidata a prova canônica de governança da mídia;
+o manifesto vigente declara rota autenticada, persistência, retomada e fallback do suporte. A
+revisão compara os termos materiais da candidata efetiva com landing e checkout, sem transformar
+uma versão supersedida em contradição nem dispensar preço, cobrança, acesso, direitos ou suporte.
+Versões históricas continuam imutáveis. Evidências: [recuperação da tarefa #458](../homologacao/vega-tarefa-458-candidata-final-suporte-direitos-v1.md).
+
 ## Catálogos e responsabilidades
 
 | Elemento | Responsabilidade | Exemplo |

@@ -5,6 +5,11 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.creative.Creative;
+import com.marketinghub.creative.CreativeAgentReviewStatus;
+import com.marketinghub.creative.CreativeStatus;
+import com.marketinghub.creative.dto.CreativeMediaGovernanceEvidenceDto;
+import com.marketinghub.creative.service.CreativeMediaGovernanceEvidenceService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.service.ExperimentTargetingSelectionService;
@@ -33,6 +38,9 @@ class OpalaCommercialContextTest {
   private final LearningSalesCycleRepository cycles = mock(LearningSalesCycleRepository.class);
   private final ExperimentRepository experiments = mock(ExperimentRepository.class);
   private final PdeProductionSlotRepository slots = mock(PdeProductionSlotRepository.class);
+  private final CreativeRepository creatives = mock(CreativeRepository.class);
+  private final CreativeMediaGovernanceEvidenceService mediaGovernanceEvidence =
+      mock(CreativeMediaGovernanceEvidenceService.class);
   private final OpalaCommercialContext context =
       new OpalaCommercialContext(
           cycles,
@@ -41,9 +49,10 @@ class OpalaCommercialContextTest {
           mock(ExperimentVideoAssetRepository.class),
           mock(TargetingElementRepository.class),
           new ObjectMapper(),
-          mock(CreativeRepository.class),
+          creatives,
           mock(ExperimentTargetingSelectionService.class),
-          mock(OpalaCommercialFinancialPlan.class));
+          mock(OpalaCommercialFinancialPlan.class),
+          mediaGovernanceEvidence);
   private final Product product =
       Product.builder()
           .id(4L)
@@ -168,6 +177,78 @@ class OpalaCommercialContextTest {
     assertThat(context.snapshot("experiment:92").path("cycleId").asLong()).isEqualTo(2L);
     assertThatThrownBy(() -> context.scope("experiment:92"))
         .hasMessageContaining("preparação comercial");
+  }
+
+  /** Entrega à revisão somente a linhagem final com o parecer e os direitos da mídia exata. */
+  @Test
+  void exposesFinalCreativeLineageAndVerifiedMediaGovernance() {
+    var original =
+        Creative.builder()
+            .id(528L)
+            .experiment(experiment)
+            .versionNumber(1)
+            .status(CreativeStatus.DRAFT)
+            .format("VIDEO")
+            .headline("Rascunho original")
+            .build();
+    var approved =
+        Creative.builder()
+            .id(529L)
+            .sourceCreative(original)
+            .experiment(experiment)
+            .versionNumber(2)
+            .status(CreativeStatus.READY)
+            .format("VIDEO")
+            .headline("Seu ajuste começa com o que você já tem")
+            .agentReviewStatus(CreativeAgentReviewStatus.APPROVED)
+            .build();
+    var finalApproved =
+        Creative.builder()
+            .id(530L)
+            .sourceCreative(approved)
+            .experiment(experiment)
+            .versionNumber(3)
+            .status(CreativeStatus.READY)
+            .format("VIDEO")
+            .headline("Seu ajuste grátis com o que já tem")
+            .primaryText(
+                "Receba grátis seu 1º ajuste. Continue 7 dias por R$ 67, pagamento único, acesso por 90 dias, sem assinatura ou renovação.")
+            .description("1º ajuste grátis")
+            .agentReviewStatus(CreativeAgentReviewStatus.APPROVED)
+            .agentReviewJson(
+                "{\"decision\":\"APPROVED\",\"summary\":\"Mídia e oferta coerentes.\"}")
+            .build();
+    var pendingLeaf =
+        Creative.builder()
+            .id(531L)
+            .sourceCreative(original)
+            .experiment(experiment)
+            .versionNumber(4)
+            .status(CreativeStatus.READY)
+            .format("VIDEO")
+            .headline("Versão ainda sem parecer")
+            .agentReviewStatus(CreativeAgentReviewStatus.PENDING)
+            .build();
+    var governance = mock(CreativeMediaGovernanceEvidenceDto.class);
+    when(creatives.findByExperimentId(92L))
+        .thenReturn(List.of(original, approved, finalApproved, pendingLeaf));
+    when(mediaGovernanceEvidence.resolve(finalApproved)).thenReturn(governance);
+
+    var snapshot = context.snapshot("experiment:92");
+
+    assertThat(snapshot.path("creatives").get(0).path("finalCandidate").asBoolean()).isFalse();
+    assertThat(snapshot.path("creatives").get(1).path("finalCandidate").asBoolean()).isFalse();
+    var finalCandidate = snapshot.path("creatives").get(2);
+    assertThat(finalCandidate.path("id").asLong()).isEqualTo(530L);
+    assertThat(finalCandidate.path("sourceCreativeId").asLong()).isEqualTo(529L);
+    assertThat(finalCandidate.path("finalCandidate").asBoolean()).isTrue();
+    assertThat(finalCandidate.path("agentReview").path("decision").asText()).isEqualTo("APPROVED");
+    assertThat(finalCandidate.has("mediaGovernanceEvidence")).isTrue();
+    assertThat(snapshot.path("creatives").get(3).path("finalCandidate").asBoolean()).isFalse();
+    verify(mediaGovernanceEvidence).resolve(finalApproved);
+    verify(mediaGovernanceEvidence, never()).resolve(original);
+    verify(mediaGovernanceEvidence, never()).resolve(approved);
+    verify(mediaGovernanceEvidence, never()).resolve(pendingLeaf);
   }
 
   /** Cria um slot sintético com contrato candidato segregado, sem implantação real. */

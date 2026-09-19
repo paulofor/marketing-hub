@@ -119,6 +119,16 @@ A migração cria somente a candidata e seu rascunho; não preenche o snapshot p
 slot e não altera a v7. O contrato só pode ser publicado depois que a versão alcançar `READY` pelos
 gates, e `ACTIVE` continua dependendo da promoção do mesmo artefato homologado.
 
+Na preparação comercial Opala, versões de um mesmo criativo formam uma linhagem auditável. Somente
+o descendente final sem sucessor, em estado `READY` e com parecer independente `APPROVED`, representa
+o anúncio efetivo; rascunhos e versões supersedidas não podem ser comparados como se fossem anúncios
+simultâneos. A candidata efetiva deve respeitar os limites do canal e manter promessa, preço total,
+cobrança única, duração do acesso, ausência de renovação e destino coerentes com landing e checkout.
+Se usar vídeo, a mesma candidata deve carregar a governança verificável do arquivo exato, incluindo
+linhagem, hashes, tarefa do provedor e licença comercial. O pacote da versão declara ainda o suporte
+real disponível à cliente, com rota, persistência, retomada e fallback, sem exigir que o anúncio
+publique detalhes operacionais de atendimento.
+
 ## Catálogo extensível e apelidos
 
 O percurso operacional é definido pela ficha versionada em

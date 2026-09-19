@@ -67,6 +67,7 @@ class ExperimentReadinessServiceTest {
   @Mock private CommercialPlanLandingAssetService landingAssetService;
   @Mock private ExperimentDirectPdeActivationService directPdeActivationService;
   @Mock private IntegratedPdeJourneyEvidenceService integratedPdeJourneyEvidenceService;
+  @Mock private PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService;
 
   private ExperimentReadinessService service;
 
@@ -122,7 +123,8 @@ class ExperimentReadinessServiceTest {
             salesPageTypeSelectionRepository,
             landingAssetService,
             directPdeActivationService,
-            integratedPdeJourneyEvidenceService);
+            integratedPdeJourneyEvidenceService,
+            publishedPdePreflightEvidenceService);
     lenient()
         .when(
             landingAssetService.hasRequiredApprovedAssetReferences(
@@ -929,6 +931,39 @@ class ExperimentReadinessServiceTest {
         .extracting(ExperimentReadinessIssueDto::type)
         .contains(ExperimentReadinessIssueType.CREATIVE);
     assertThat(service.computeMissingConfiguration(experiment)).contains("creativeApproval");
+  }
+
+  /** Libera Vega somente quando a publicação atual possui preflight produtivo auditado. */
+  @Test
+  void shouldUsePublishedProductionPreflightForFacebookPdeReadiness() {
+    Long experimentId = 92L;
+    Experiment experiment = buildExperiment(experimentId, 79L);
+    experiment.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
+    experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    experiment.setFollowUpActionUrl("https://v8.clubemusa.com.br");
+    experiment.setProduct(Product.builder().id(4L).slug("metodo-musa-7-dias").build());
+    completeCommercialContract(experiment);
+
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(1L);
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(true);
+    when(publishedPdePreflightEvidenceService.isReady(experiment)).thenReturn(true);
+    mockPublishableSelection(
+        experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.issues()).isEmpty();
+    assertThat(summary.eligibleForRunning()).isTrue();
+    assertThat(summary.runningGateRequirements())
+        .filteredOn(requirement -> requirement.code().equals("LANDING_APPROVED"))
+        .singleElement()
+        .satisfies(requirement -> assertThat(requirement.ready()).isTrue());
+    assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
   }
 
   /** Libera o formulário do Rigel quando o run produtivo já auditou a jornada completa. */

@@ -199,11 +199,24 @@ class PublicConsistencyTest(unittest.TestCase):
         self.assert_blocked("experienceVersion")
 
     def test_rejects_missing_image_identity(self):
-        for field in ["image", "imageTag", "commitSha", "frontendSourceSha256"]:
+        for field in ["image", "imageTag", "commitSha"]:
             with self.subTest(field=field):
                 value = self.diagnostic.pop(field)
                 self.assert_blocked(field)
                 self.diagnostic[field] = value
+
+    def test_accepts_legacy_diagnostic_without_unrequested_source_fingerprint(self):
+        self.env["EXPECTED_FRONTEND_SOURCE_SHA256"] = ""
+        self.diagnostic.pop("frontendSourceSha256")
+
+        result = self.run_smoke()
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("OK: contratos PDE consistentes", result.stdout)
+
+    def test_rejects_missing_requested_source_fingerprint(self):
+        self.diagnostic.pop("frontendSourceSha256")
+        self.assert_blocked("frontendSourceSha256")
 
     def test_rejects_other_frontend_source(self):
         self.diagnostic["frontendSourceSha256"] = "c" * 64

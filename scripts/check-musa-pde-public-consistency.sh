@@ -263,7 +263,7 @@ if "UP" not in health.upper():
 if field(version_diagnostics, "status").upper() != "UP":
     raise SystemExit("Diagnóstico público da versão PDE não contém status UP")
 
-for key in ["version", "productSlug", "experienceVersion", "image", "imageTag", "commitSha", "frontendSourceSha256"]:
+for key in ["version", "productSlug", "experienceVersion", "image", "imageTag", "commitSha"]:
     field(version_diagnostics, key)
 
 if expected_frontend_source_sha256:

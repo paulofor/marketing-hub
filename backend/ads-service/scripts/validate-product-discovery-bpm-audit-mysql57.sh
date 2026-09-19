@@ -30,12 +30,14 @@ audit_assert_equal() {
   fi
 }
 
+# shellcheck disable=SC2016 # O comando abaixo é expandido deliberadamente pelo shell do container.
 audit_liquibase_command() {
   local command="$1"
   audit_compose run --rm liquibase-product-discovery-bpm-audit sh -lc \
     'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
 }
 
+# shellcheck disable=SC2016 # O comando abaixo é expandido deliberadamente pelo shell do container.
 audit_master_command() {
   local command="$1"
   audit_compose run --rm \
@@ -50,6 +52,7 @@ audit_argos_market_update() {
     liquibase-product-discovery-bpm-audit
 }
 
+# shellcheck disable=SC2016 # O comando abaixo é expandido deliberadamente pelo shell do container.
 audit_argos_market_command() {
   local command="$1"
   audit_compose run --rm \
@@ -64,6 +67,7 @@ audit_argos_meta_browser_update() {
     liquibase-product-discovery-bpm-audit
 }
 
+# shellcheck disable=SC2016 # O comando abaixo é expandido deliberadamente pelo shell do container.
 audit_argos_meta_browser_command() {
   local command="$1"
   audit_compose run --rm \
@@ -78,6 +82,7 @@ audit_argos_meta_attempt_update() {
     liquibase-product-discovery-bpm-audit
 }
 
+# shellcheck disable=SC2016 # O comando abaixo é expandido deliberadamente pelo shell do container.
 audit_argos_meta_attempt_command() {
   local command="$1"
   audit_compose run --rm \
@@ -92,6 +97,7 @@ audit_autonomous_handoff_update() {
     liquibase-product-discovery-bpm-audit
 }
 
+# shellcheck disable=SC2016 # O comando abaixo é expandido deliberadamente pelo shell do container.
 audit_autonomous_handoff_command() {
   local command="$1"
   audit_compose run --rm \
@@ -106,6 +112,7 @@ audit_private_validation_update() {
     liquibase-product-discovery-bpm-audit
 }
 
+# shellcheck disable=SC2016 # O comando abaixo é expandido deliberadamente pelo shell do container.
 audit_private_validation_command() {
   local command="$1"
   audit_compose run --rm \
@@ -120,6 +127,7 @@ audit_agent_validation_update() {
     liquibase-product-discovery-bpm-audit
 }
 
+# shellcheck disable=SC2016 # O comando abaixo é expandido deliberadamente pelo shell do container.
 audit_agent_validation_command() {
   local command="$1"
   audit_compose run --rm \
@@ -134,6 +142,7 @@ audit_functional_rework_update() {
     liquibase-product-discovery-bpm-audit
 }
 
+# shellcheck disable=SC2016 # O comando abaixo é expandido deliberadamente pelo shell do container.
 audit_functional_rework_command() {
   local command="$1"
   audit_compose run --rm \

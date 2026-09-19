@@ -21,6 +21,7 @@
 ### Recorrência de leitura — 2026-09-19
 
 - Na retomada de Vega, o despacho carregava o histórico completo apesar da referência operacional explícita. A conciliação preserva sua transação e lock canônicos para manter relações auditáveis válidas; o despacho agora usa a projeção leve, sem prompts, respostas nem evidências históricas.
+- Na tarefa #453 de Psique, a revisão visual foi produzida, mas o callback foi recusado porque a igualdade estrutural comparava a ordenação técnica de coleções como se fosse mudança de ativo. O contrato agora compara semanticamente identidade, versão, oferta, página, preço, checkout, orçamento, validade, contrato, plano financeiro, criativos, vídeos, público e autorizações; apenas a ordenação semântica inexistente é normalizada. Regressão cobre o callback com a mesma audiência em outra ordem e mantém conflito para mudança real de ativo.
 
 - **Evidência:** depois da tarefa #450 do Vega, o histórico da atividade ficou indisponível e uma
   reconciliação manteve o lock do produto enquanto lia auditorias extensas. A projeção inicial da

@@ -227,8 +227,82 @@ class OpalaCommercialServiceTest {
         .hasMessageContaining("ativos avaliados mudaram");
   }
 
+  /** Aceita o callback que preserva os mesmos ativos quando o banco apenas reordena uma coleção. */
+  @Test
+  void acceptsHumanReviewWhenEquivalentAssetsReturnInAnotherOrder() throws Exception {
+    task.setProcessActivityId("humanExperienceReview");
+    var initial = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(identity);
+    initial.put("contractVersion", "OPALA_COMMERCIAL_PREPARATION_V1");
+    initial.put("destinationSource", "EXPERIMENT");
+    var initialAudience = initial.putArray("approvedAudienceElements");
+    initialAudience.addObject().put("id", 214).put("term", "Fragrances");
+    initialAudience.addObject().put("id", 235).put("term", "Personal stylist");
+    initial.put("publicationAuthorized", false);
+    initial.put("mediaSpendAuthorized", false);
+    var current = initial.deepCopy();
+    var currentAudience = current.putArray("approvedAudienceElements");
+    currentAudience.addObject().put("id", 235).put("term", "Personal stylist");
+    currentAudience.addObject().put("id", 214).put("term", "Fragrances");
+    when(context.snapshot("experiment:92")).thenReturn(current);
+    when(readiness.inspect(cycle))
+        .thenReturn(
+            new LearningCycleCommercialPreparation(true, "Pronto", "/experiments/92", List.of()));
+
+    assertThat(
+            service.apply(
+                task,
+                request(
+                    """
+                    {"decision":"APPROVED","gateChecks":[
+                      {"status":"PASS"},{"status":"PASS"},{"status":"PASS"},{"status":"PASS"},
+                      {"status":"PASS"},{"status":"PASS"},{"status":"PASS"},{"status":"PASS"}],
+                     "evidence":["captura:453"],"requiredChanges":[]}
+                    """,
+                    initial.toString())))
+        .isEqualTo(AgentTaskCompletionHook.CompletionDisposition.COMPLETE);
+  }
+
+  /** Mantém o conflito quando um elemento de público realmente muda após a revisão. */
+  @Test
+  void rejectsHumanReviewWhenReviewedAudienceChanges() throws Exception {
+    task.setProcessActivityId("humanExperienceReview");
+    var initial = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(identity);
+    initial.put("contractVersion", "OPALA_COMMERCIAL_PREPARATION_V1");
+    initial.put("destinationSource", "EXPERIMENT");
+    initial
+        .putArray("approvedAudienceElements")
+        .addObject()
+        .put("id", 214)
+        .put("term", "Fragrances");
+    initial.put("publicationAuthorized", false);
+    initial.put("mediaSpendAuthorized", false);
+    var current = initial.deepCopy();
+    ((com.fasterxml.jackson.databind.node.ObjectNode)
+            current.path("approvedAudienceElements").get(0))
+        .put("term", "Luxury fragrances");
+    when(context.snapshot("experiment:92")).thenReturn(current);
+    when(readiness.inspect(cycle))
+        .thenReturn(
+            new LearningCycleCommercialPreparation(true, "Pronto", "/experiments/92", List.of()));
+
+    assertThatThrownBy(
+            () ->
+                service.apply(
+                    task,
+                    request(
+                        "{\"decision\":\"APPROVED\",\"gateChecks\":[],\"evidence\":[],\"requiredChanges\":[]}",
+                        initial.toString())))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("ativos avaliados mudaram");
+  }
+
   /** Constrói o envelope de callback usando a identidade conhecida antes da execução. */
   private CompleteAgentTaskRequest request(String result) {
-    return new CompleteAgentTaskRequest(result, "{\"opalaScope\":" + identity + "}");
+    return request(result, identity);
+  }
+
+  /** Constrói o envelope de callback com a identidade exata recebida pelo agente. */
+  private CompleteAgentTaskRequest request(String result, String opalaScope) {
+    return new CompleteAgentTaskRequest(result, "{\"opalaScope\":" + opalaScope + "}");
   }
 }

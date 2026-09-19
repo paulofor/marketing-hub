@@ -126,7 +126,7 @@ public class OpalaCommercialGate implements BackendProductProcessActivityExecuto
         }
         if (java.util.Set.of("humanExperienceReview", "commercialIntegrityReview").contains(step))
           require(
-              OpalaCommercialService.sameReviewableAssets(
+              OpalaCommercialAssetComparator.sameReviewableAssets(
                   context.read(evidence.evidenceJson()).path("opalaScope"), currentSnapshot),
               "Os ativos mudaram após a revisão; renove os pareceres afetados.");
       }

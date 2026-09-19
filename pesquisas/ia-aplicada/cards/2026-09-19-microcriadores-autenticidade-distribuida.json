@@ -1,0 +1,18 @@
+{
+  "cardKey": "microcriadores-autenticidade-distribuida",
+  "collection": "neuromarketing",
+  "title": "Microcriadores distribuídos merecem teste contra concentração em um único grande creator",
+  "finding": "Na pesquisa #Publi 2026 com 1.512 brasileiros que acompanham creators, 65% disseram acompanhar comunidades menores e 72% preferir marcas que trabalham com vários criadores menores em vez de concentrar o investimento em uma única figura famosa. No mesmo estudo, 72% disseram que publis bem feitas despertam interesse e 71% que ajudam a descobrir novas marcas.",
+  "mechanism": "Criadores menores podem aumentar proximidade percebida e adequação contextual, enquanto uma carteira distribuída amplia a variedade de cenas e mensagens testadas. O feed algorítmico também pode expor conteúdo para pessoas que não seguem o creator. Esses mecanismos são hipóteses interpretativas e não prova de causalidade em vendas.",
+  "commercialApplication": "No Marketing Hub, comparar uma carteira de vários microcriadores com mensagens adaptadas a cada contexto contra uma peça centralizada em um único creator ou criativo de marca, mantendo oferta, período, CTA e atribuição comparáveis e medindo retenção, clique, lead, checkout, pagamento reconciliado, CAC e dispersão de performance por creator.",
+  "evidenceStrength": "Moderada para preferência declarada, percepção de autenticidade e descoberta; baixa para afirmar ganho de conversão, CAC ou ROAS, pois o estudo não é um experimento de vendas.",
+  "publishedOn": "2026-09-19",
+  "validUntil": "2026-12-18",
+  "experimentHypothesis": "Para a mesma oferta e audiência elegível, uma carteira de microcriadores com forte aderência contextual produzirá maior taxa de CTA e poderá reduzir CAC e aumentar pagamentos reconciliados em relação à concentração da mensagem em um único grande creator, sem perda relevante de confiança.",
+  "risks": "Escalar muitos creators pode aumentar custo operacional, inconsistência de mensagem e risco de brand safety; seguidores falsos, excesso de publis e matching ruim podem anular a vantagem percebida. Não tratar tamanho de audiência como causa de autenticidade.",
+  "limits": "A amostra inclui pessoas que já acompanham creators; preferência declarada não equivale a comportamento de compra. As fontes não publicam uplift causal, vendas incrementais, CAC ou ROAS por porte de creator, e a definição de criador menor pode variar por plataforma e categoria.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-19-microcriadores-autenticidade-distribuida.md",
+  "sourceTitle": "Fonte revisada — Microcriadores, autenticidade e descoberta distribuída",
+  "sourceSha256": "1609cd35dc30c1c399f3c17dd4b59caee6ed4cee6ff718fde745d43f3612657c"
+}

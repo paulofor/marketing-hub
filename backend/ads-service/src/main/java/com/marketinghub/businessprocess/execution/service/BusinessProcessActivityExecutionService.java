@@ -742,7 +742,10 @@ public class BusinessProcessActivityExecutionService {
     List<Experiment> productExperiments = productExperiments(productId);
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
     List<AgentTask> processTasks =
-        productProcessTasks(productPlans, productExperiments, productId, process.getProcessCode());
+        explicitReference == null
+            ? productProcessTasks(
+                productPlans, productExperiments, productId, process.getProcessCode())
+            : compactProductProcessTasks(explicitReference, process.getProcessCode());
     List<BusinessProcessActivityInstance> processInstances =
         productProcessActivityInstances(
             productPlans, productExperiments, productId, process.getProcessCode());

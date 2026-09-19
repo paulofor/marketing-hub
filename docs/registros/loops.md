@@ -20,6 +20,8 @@
 
 ### Recorrência de leitura — 2026-09-19
 
+- Na retomada de Vega, o despacho carregava o histórico completo apesar da referência operacional explícita. A conciliação preserva sua transação e lock canônicos para manter relações auditáveis válidas; o despacho agora usa a projeção leve, sem prompts, respostas nem evidências históricas.
+
 - **Evidência:** depois da tarefa #450 do Vega, o histórico da atividade ficou indisponível e uma
   reconciliação manteve o lock do produto enquanto lia auditorias extensas. A projeção inicial da
   lista eliminou prompts, resultados e evidências, mas o gate final Opala ainda relia todo o

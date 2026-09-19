@@ -281,6 +281,13 @@ public class CustomerBpmTaskConsumer {
     return normalized.isEmpty() ? null : normalized;
   }
 
+  /** Preserva cada caractere do prompt auditado, inclusive a quebra final exigida pelo catálogo. */
+  private static String auditText(Object value) {
+    if (value == null) return null;
+    String raw = String.valueOf(value);
+    return raw.isBlank() ? null : raw;
+  }
+
   /**
    * Confirma que o polling conhece apenas as atividades publicadas de responsabilidade de Psique.
    */
@@ -561,9 +568,9 @@ public class CustomerBpmTaskConsumer {
           new BpmExecution(
               result,
               readTokenUsage(json, outbox.events()),
-              text(audit.get("promptSent")),
-              text(audit.get("agentPromptPart")),
-              text(audit.get("activityPromptPart")),
+              auditText(audit.get("promptSent")),
+              auditText(audit.get("agentPromptPart")),
+              auditText(audit.get("activityPromptPart")),
               accessedUrls,
               pending.visualEvidence(),
               rawResponse);
@@ -583,9 +590,9 @@ public class CustomerBpmTaskConsumer {
               : new BpmExecutionException(
                   ex.toString(),
                   readTokenUsage(json, outbox.events()),
-                  text(audit.get("promptSent")),
-                  text(audit.get("agentPromptPart")),
-                  text(audit.get("activityPromptPart")),
+                  auditText(audit.get("promptSent")),
+                  auditText(audit.get("agentPromptPart")),
+                  auditText(audit.get("activityPromptPart")),
                   mergeAccessedUrls(
                       auditAccessedUrls(audit), readAccessedUrls(json, outbox.events())),
                   pending.visualEvidence(),

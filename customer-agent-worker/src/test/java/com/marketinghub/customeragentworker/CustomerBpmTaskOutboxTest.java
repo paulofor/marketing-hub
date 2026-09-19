@@ -160,8 +160,8 @@ class CustomerBpmTaskOutboxTest {
     HttpServer server = callbackServer(attempts, received, false);
     Path state = directory.resolve("interrupted-model");
     CustomerBpmTaskOutbox outbox = new CustomerBpmTaskOutbox(state, json);
-    outbox.save(
-        new CustomerBpmTaskOutbox.Pending(task(448L), audit(), List.of(), true, null, null));
+    Map<String, Object> audit = auditWithFinalNewline();
+    outbox.save(new CustomerBpmTaskOutbox.Pending(task(448L), audit, List.of(), true, null, null));
     Files.writeString(
         outbox.events(),
         "{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":1200,\"cached_input_tokens\":200,\"output_tokens\":30}}\n");
@@ -174,7 +174,9 @@ class CustomerBpmTaskOutboxTest {
           .contains("sem nova inferência", "cobrança duplicada");
       assertThat(failure.path("modelUsages").path(0).path("inputTokens").asLong()).isEqualTo(1200L);
       assertThat(failure.path("executionAudit").path("promptSent").asText())
-          .isEqualTo("núcleo\n\natividade");
+          .isEqualTo(audit.get("promptSent"));
+      assertThat(failure.path("executionAudit").path("activityPromptPart").asText())
+          .isEqualTo(audit.get("activityPromptPart"));
       assertThat(outbox.read()).isNull();
     } finally {
       server.stop(0);
@@ -353,6 +355,25 @@ class CustomerBpmTaskOutboxTest {
         "núcleo",
         "activityPromptPart",
         "atividade",
+        "accessedUrls",
+        List.of());
+  }
+
+  /** Simula o delimitador final do catálogo que deve sobreviver à recuperação do outbox. */
+  private Map<String, Object> auditWithFinalNewline() {
+    return Map.of(
+        "executionMode",
+        "MODEL",
+        "modelCode",
+        "gpt-5.6-sol",
+        "reasoningEffort",
+        "max",
+        "promptSent",
+        "núcleo\n\natividade\n",
+        "agentPromptPart",
+        "núcleo",
+        "activityPromptPart",
+        "atividade\n",
         "accessedUrls",
         List.of());
   }

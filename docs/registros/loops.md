@@ -6128,3 +6128,19 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   contrato passa a verificar que essa identidade continua presente.
 - **Prevenção:** a validação local executa o mesmo caminho com o projeto exclusivo da sandbox;
   `bash -n`, ShellCheck e Actionlint validam as fontes antes do PR.
+
+## LOOP-PSIQUE-OUTBOX-PERDE-DELIMITADOR-DO-CATALOGO — 19/09/2026
+
+- **Sintoma confirmado:** na atividade #454 de Psique para Vega/experimento 92, o backend aceitou
+  a auditoria antes da inferência, mas recusou o callback de falha recuperado com HTTP 409 e a
+  tarefa ficou em `IN_PROGRESS`.
+- **Causa-raiz:** a recuperação do outbox reutilizava o normalizador genérico `text`, que removia a
+  quebra de linha final do prompt. O Catálogo Vivo exige o texto fixado byte a byte, portanto o
+  callback deixou de terminar no delimitador auditado mesmo sem nova inferência.
+- **Alternativas avaliadas:** liberar callback sem auditar o prompt enfraqueceria o gate; repetir o
+  modelo aumentaria custo e risco de duplicidade; preservar o texto do audit literalmente mantém
+  rastreabilidade e permite registrar a falha técnica. A terceira foi adotada.
+- **Correção e prevenção:** a recuperação usa normalização própria que só trata valor ausente como
+  nulo e conserva todos os caracteres do prompt. O teste de outbox reproduz interrupção com quebra
+  final e exige que o callback preserve o prompt integral e a parte da atividade sem nova chamada
+  ao modelo.

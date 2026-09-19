@@ -6145,3 +6145,21 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   reparados deterministamente com o texto fixado no próprio Catálogo Vivo, antes do reenvio e sem
   nova chamada ao modelo. Os testes de outbox reproduzem interrupção e envelope legado com quebra
   final, exigindo prompt integral e parte da atividade idênticos ao contrato.
+
+## LOOP-OPALA-HISTORICO-RECARREGA-PROMPTS-POR-ATIVIDADE — 19/09/2026
+
+- **Sintoma confirmado:** a tela de atividades do Vega, ciclo #2/experimento #92, permaneceu em
+  carregamento e o `GET` compacto encerrou por timeout antes de responder. O histórico tinha 27
+  tarefas e 7,88 milhões de caracteres de prompts, embora a resposta visual não solicitasse
+  auditoria de prompt.
+- **Causa-raiz confirmada:** a lista já projetava cards compactos, mas a revalidação de vigência do
+  Opala reabria a entidade completa de todas as tarefas da execução para cada atividade. Isso
+  hidratava repetidamente `LONGTEXT` de prompt, resultado e evidência antes de selecionar a última
+  conclusão relevante.
+- **Alternativas avaliadas:** remover a revalidação aceitaria conclusão de versão obsoleta; cache
+  global reduziria leituras ao custo de decidir com gate desatualizado; consultar somente a última
+  conclusão da atividade mantém a checagem da versão e elimina a hidratação dos prompts. A terceira
+  foi adotada.
+- **Correção e prevenção:** o repositório projeta somente id, evidência e resultado da última
+  tarefa concluída da atividade. Os testes exigem que a revalidação de economia use essa projeção e
+  nunca a consulta completa. Prompt integral continua exclusivo do detalhe auditável da tarefa.

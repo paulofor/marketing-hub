@@ -202,6 +202,52 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
     statistics.setStatisticsEnabled(false);
   }
 
+  /** A vigência Opala lê apenas a última conclusão da etapa sem carregar o prompt da tarefa. */
+  @Test
+  void readsLatestCompletedActivitySnapshotWithoutHydratingPromptAudit() {
+    var agent = agent();
+    var process = process("opala-commercial-preparation-v1", 1);
+    var older = task(agent, process, "economics", 439, "2026-09-18T21:00:00Z");
+    older.setSourceReference("experiment:92");
+    older.setStatus("COMPLETED");
+    older.setEvidenceJson("{\"opalaScope\":{\"productVersion\":\"v11\"}}");
+    older.setResultJson("{\"economics\":{\"deadline\":\"2026-09-19\"}}");
+    var current = task(agent, process, "economics", 440, "2026-09-18T22:00:00Z");
+    current.setSourceReference("experiment:92");
+    current.setStatus("COMPLETED");
+    current.setExecutionPrompt("Prompt extenso que não participa da vigência. ".repeat(100000));
+    current.setEvidenceJson("{\"opalaScope\":{\"productVersion\":\"v12\"}}");
+    current.setResultJson("{\"economics\":{\"deadline\":\"2026-09-20\"}}");
+    var blocked = task(agent, process, "economics", 441, "2026-09-18T23:00:00Z");
+    blocked.setSourceReference("experiment:92");
+    blocked.setStatus("BLOCKED");
+    blocked.setExecutionPrompt("Prompt bloqueado que não participa da consulta. ".repeat(100000));
+    task(agent, process, "economics", 442, "2026-09-18T23:01:00Z")
+        .setSourceReference("experiment:91");
+    entityManager.flush();
+    entityManager.clear();
+    var statistics =
+        entityManager
+            .getEntityManager()
+            .getEntityManagerFactory()
+            .unwrap(org.hibernate.SessionFactory.class)
+            .getStatistics();
+    statistics.setStatisticsEnabled(true);
+    statistics.clear();
+
+    var rows =
+        repository.findCompletedActivitySnapshots(
+            process.getId(), "experiment:92", "economics", PageRequest.of(0, 1));
+
+    assertThat(rows).hasSize(1);
+    assertThat(rows.getFirst().taskId()).isEqualTo(current.getId());
+    assertThat(rows.getFirst().evidenceJson()).contains("v12");
+    assertThat(rows.getFirst().resultJson()).contains("2026-09-20");
+    assertThat(statistics.getEntityLoadCount()).isZero();
+    assertThat(statistics.getPrepareStatementCount()).isEqualTo(1);
+    statistics.setStatisticsEnabled(false);
+  }
+
   /** A validação final lê provas somente das últimas aprovações escolhidas no resumo. */
   @Test
   void readsSelectedProcessEvidenceWithoutHydratingTasksOrPrompts() {

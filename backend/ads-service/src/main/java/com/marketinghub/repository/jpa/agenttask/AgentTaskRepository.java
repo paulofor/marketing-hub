@@ -1,6 +1,7 @@
 package com.marketinghub.repository.jpa.agenttask;
 
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskActivityCompletionSnapshot;
 import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.agenttask.AgentTaskIndependentExecutionSummarySnapshot;
 import com.marketinghub.agenttask.AgentTaskMeasurementSnapshot;
@@ -87,6 +88,24 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
       """)
   List<AgentTaskProcessExecutionListSnapshot> findProcessExecutionListSnapshots(
       @Param("sourceReference") String sourceReference, @Param("processCode") String processCode);
+
+  /** Lê somente a última conclusão da atividade para revalidar a versão sem hidratar prompts. */
+  @Query(
+      """
+      select new com.marketinghub.agenttask.AgentTaskActivityCompletionSnapshot(
+        task.id, task.evidenceJson, task.resultJson)
+      from AgentTask task
+      where task.processDefinition.id = :processId
+        and task.sourceReference = :sourceReference
+        and task.processActivityId = :activityId
+        and task.status = 'COMPLETED'
+      order by task.createdAt desc, task.id desc
+      """)
+  List<AgentTaskActivityCompletionSnapshot> findCompletedActivitySnapshots(
+      @Param("processId") Long processId,
+      @Param("sourceReference") String sourceReference,
+      @Param("activityId") String activityId,
+      Pageable pageable);
 
   /** Lê somente as provas das últimas tarefas já aprovadas para validar o gate comercial. */
   @Query(

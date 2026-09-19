@@ -1,0 +1,246 @@
+{
+  "contractVersion": "musa-v12-commercial-homologation.v10",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 6,
+  "activityId": "pdeGate",
+  "sourceReference": "product:4@musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  "experimentId": 92,
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "commercialPlanId": 3,
+    "publicUrl": "https://v8.clubemusa.com.br/"
+  },
+  "offer": {
+    "priceBrl": 67,
+    "currency": "BRL",
+    "billingModel": "ONE_TIME",
+    "accessDays": 90,
+    "renewal": false,
+    "checkoutUrl": "https://go.pepper.com.br/owm6x",
+    "checkoutProvider": "PEPPER",
+    "checkoutReference": "owm6x",
+    "promise": "Entregar gratuitamente um primeiro ajuste claro e aplicável com itens que a cliente já possui e liberar, após a compra, a continuidade guiada de sete dias."
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "scope": "Preserva a candidata Vega v12 homologada e acrescenta a identidade do anúncio efetivo, a governança da mídia exata e o contrato de suporte já implementado.",
+  "boundary": "Não autoriza campanha, gasto, cobrança, contato, publicação comercial nem promoção da versão candidata.",
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/musa-v12-commercial-homologation-v9.json",
+    "reason": "Eliminar a ambiguidade da tarefa 458 entre versões históricas do criativo e tornar auditáveis os direitos da mídia e o suporte funcional já existentes.",
+    "includedChanges": [
+      "Criativo 530 como único descendente final READY e APPROVED da linhagem 528-529-530",
+      "Termos materiais completos dentro dos limites do canal Meta",
+      "Governança verificável do arquivo de vídeo exato",
+      "Rota autenticada, persistência, retomada e fallback do suporte ao cliente"
+    ],
+    "excludedChanges": [
+      "Produto, experiência, preço, checkout, promessa, público e condições comerciais",
+      "Promoção da candidata, campanha, tráfego, gasto, cobrança e acesso real",
+      "SLA ou resposta humana de suporte, vendas, receita e satisfação de clientes"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br/",
+    "requiredFrontendSourceSha256": "09e282435e2496f1a4fc96c1fbd90dbb8c368a3b87114a9b3af8899c3f10ef42"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_CHROMIUM",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "requiredFirstFoldCtas": [
+      "Começar meu ajuste gratuito"
+    ],
+    "requiredVisibleTexts": [
+      "4 escolhas rápidas, sem compra de roupa.",
+      "Continuação de 7 dias por R$ 67, pagamento único.",
+      "Acesso por 90 dias, sem assinatura ou renovação."
+    ],
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "09e282435e2496f1a4fc96c1fbd90dbb8c368a3b87114a9b3af8899c3f10ef42"
+    }
+  },
+  "effectiveCreativeContract": {
+    "creativeId": 530,
+    "experimentId": 92,
+    "versionNumber": 3,
+    "sourceCreativeId": 529,
+    "lineage": [
+      528,
+      529,
+      530
+    ],
+    "selectionRule": "UNIQUE_LEAF_READY_AND_AGENT_APPROVED",
+    "status": "READY",
+    "agentReviewStatus": "APPROVED",
+    "format": "VIDEO",
+    "headline": "Seu ajuste grátis com o que já tem",
+    "primaryText": "Receba grátis seu 1º ajuste. Continue 7 dias por R$ 67, pagamento único, acesso por 90 dias, sem assinatura ou renovação.",
+    "description": "1º ajuste grátis",
+    "callToAction": "LEARN_MORE",
+    "videoUrl": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/09/14/misc/39bea4b4af81-sales-video-21239-final.mp4",
+    "destinationUrl": "https://v8.clubemusa.com.br",
+    "channelLimits": {
+      "headlineMaximumCharacters": 40,
+      "primaryTextMaximumCharacters": 125,
+      "descriptionMaximumCharacters": 25,
+      "observedHeadlineCharacters": 34,
+      "observedPrimaryTextCharacters": 121,
+      "observedDescriptionCharacters": 16
+    }
+  },
+  "mediaGovernanceContract": {
+    "runtimeSource": "opalaCommercial.creatives[finalCandidate=true].mediaGovernanceEvidence",
+    "requiredVerificationStatus": "VERIFIED",
+    "requiredFinalArtifactUrl": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/09/14/misc/39bea4b4af81-sales-video-21239-final.mp4",
+    "requiredFinalArtifactSha256": "29fbb7ce12675bb323f32219e613f2f56beb07f11d825ae216ebe663ca6dfcb2",
+    "requiredGeneratedSourceSha256": "edc830e722cb8ea8e4af5ab8027c71fe5e50ff20560059bedaa03bee99e5c554",
+    "requiredProviderTaskIds": true,
+    "requiredCommercialLicenseVerified": true,
+    "presenterReferenceMode": "PROMPT_ONLY_SYNTHETIC",
+    "presenterIsSynthetic": true,
+    "syntheticMediaDisclosureVerified": true,
+    "realPersonConsentApplicable": false
+  },
+  "customerSupportContract": {
+    "contractVersion": "MUSA_V12_CUSTOMER_SUPPORT_V1",
+    "authenticatedEndpoint": "POST /api/pde/access/support-requests",
+    "accessTokenHeader": "X-PDE-Access-Token",
+    "requestBody": {
+      "message": "1 a 2000 caracteres após normalização"
+    },
+    "acceptedStatus": "OPEN",
+    "workspaceProjection": "supportStatus",
+    "persistenceRequired": true,
+    "recoveryAfterServiceRestartRequired": true,
+    "funnelEvent": "SUPPORT_REQUESTED",
+    "fallbackEmail": "contato@digicomdigital.com.br",
+    "privacyEndpoint": "POST /api/pde/access/privacy-requests",
+    "evidenceBoundary": "Comprova registro, persistência, retomada e fallback; não comprova SLA nem resposta humana concluída."
+  },
+  "homologationMatrix": {
+    "environment": "LOCAL_ISOLATED",
+    "definedBeforeExecutionAt": "2026-09-19",
+    "status": "LOCAL_VALIDATION_PASSED",
+    "requiredStates": [
+      "UNIQUE_FINAL_CREATIVE_530",
+      "SUPERSEDED_CREATIVES_AUDIT_ONLY",
+      "UNAPPROVED_READY_CREATIVE_NOT_FINAL",
+      "VERIFIED_MEDIA_GOVERNANCE_ON_FINAL_ONLY",
+      "SUPPORT_REQUEST_PERSISTED_AFTER_RESTART",
+      "EMPTY_SUPPORT_REQUEST_REJECTED",
+      "CATALOG_PROMPT_V3_ACTIVE_WITH_HISTORY_PRESERVED",
+      "COMMERCIAL_EVIDENCE_BUNDLE_HASH_VERIFIED",
+      "INTERNAL_QA_METRIC_SEGREGATION"
+    ],
+    "verifiedStates": [
+      "UNIQUE_FINAL_CREATIVE_530",
+      "SUPERSEDED_CREATIVES_AUDIT_ONLY",
+      "UNAPPROVED_READY_CREATIVE_NOT_FINAL",
+      "VERIFIED_MEDIA_GOVERNANCE_ON_FINAL_ONLY",
+      "SUPPORT_REQUEST_PERSISTED_AFTER_RESTART",
+      "EMPTY_SUPPORT_REQUEST_REJECTED",
+      "CATALOG_PROMPT_V3_ACTIVE_WITH_HISTORY_PRESERVED",
+      "COMMERCIAL_EVIDENCE_BUNDLE_HASH_VERIFIED",
+      "INTERNAL_QA_METRIC_SEGREGATION"
+    ],
+    "executionResults": {
+      "backend": "3236 testes; 0 falhas; 0 erros; 17 ignorados",
+      "pdeBackend": "184 testes; 0 falhas; 0 erros; 0 ignorados",
+      "metaReviewWorker": "102 testes; 0 falhas; 0 erros; 1 ignorado",
+      "catalogoVivoMysql57": "20 testes; prompt v3 ativo; histórico preservado",
+      "commercialEvidenceBundle": "13 testes; 184 arquivos; 28 manifestos; hashes válidos"
+    },
+    "postDeploymentVerification": [
+      "RUNTIME_PROMPT_V3_ACTIVE",
+      "RUNTIME_MANIFEST_V10_SELECTED",
+      "COMMERCIAL_INTEGRITY_CALLBACK_PERSISTED",
+      "COMMERCIAL_INTEGRITY_ACTIVITY_COMPLETED"
+    ],
+    "evidenceBoundary": "Publicação, pagamento, e-mail e tráfego são simulados localmente. Vendas e receita continuam não comprovadas."
+  },
+  "measurementContract": {
+    "authoritativeSaleEvent": "PURCHASE_COMPLETED",
+    "authoritativeDeliveryEvent": "DELIVERY_COMPLETED",
+    "humanMetricsExcludeTestTraffic": true,
+    "deduplicationRequired": true,
+    "testTrafficClass": "INTERNAL_QA",
+    "testEmailDomain": "sandbox.local"
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v9.json",
+      "sha256": "8ebba64e3908c4353a2e6b2a6ee448b18e9fc1b854aff040377652377f4992e5",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "A v9 preserva produto, oferta, publicação isolada, jornada transacional e matriz anterior; a v10 acrescenta somente criativo efetivo, direitos e suporte."
+    },
+    {
+      "path": "docs/homologacao/vega-tarefa-458-candidata-final-suporte-direitos-v1.md",
+      "sha256": "0484bef367a292477b681cb7544d444c9fad3b2dcce3f2da30640a9ec2ac8866",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialContext.java",
+      "sha256": "67da5e6efcc04c29f846f14c6a50a62fdc56a580c9802ccf2675ca53c95eb4ad",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/creative/service/CreativeMediaGovernanceEvidenceService.java",
+      "sha256": "fbc821a0e7af9825c4bd7383a0e7a1a6a41f3127f0688b1f9eb8fb9c5488b56f",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Resolve a mídia do criativo pela URL exata e só marca VERIFIED com asset aprovado, hashes, tarefas do provedor, origem sintética ou referência autorizada e licença comercial vigente."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/controller/AccessController.java",
+      "sha256": "4863d97ab4c374ab23aebee094e187ed2d8c0e2afe95824b5af5599f584948f3",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Expõe POST /support-requests sem bearer na URL e delega o registro autenticado ao serviço de acesso."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
+      "sha256": "ab97b31a9f6cfda17aad2b5edccf348de31e22271b7015abb4c397bf46ffd4b6",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Valida a mensagem, persiste o pedido OPEN no mesmo acesso, registra SUPPORT_REQUESTED e restaura o estado no workspace."
+    },
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "78f5d14b213c5d342868f441cf458150987515cfdf64f57c954d26c8b862a211",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "A experiência v12 envia suporte com header protegido, confirma o registro e oferece contato@digicomdigital.com.br como fallback recuperável."
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialContextTest.java",
+      "sha256": "688a6dc85ff2705256bbcddd8af949af499254931defddbdeed4b7ef34d7e9c8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/creative/service/CreativeMediaGovernanceEvidenceServiceTest.java",
+      "sha256": "883fb3a0565be3fc68ef1ce61f2eda12cf0888f61e0cc311775fa37e8d3324b4",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/controller/AccessControllerPublicSurfaceTest.java",
+      "sha256": "05cfff7b78d3b50590ab702a714b6fbc749e221b1636a7a52cb3b26db0710caa",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/MusaV12SupportContractTest.java",
+      "sha256": "f2e7593aff2f7089b3e219be364da6ef7698af97d5fe4d0770106bf3108ba6a4",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/vega-tarefa-458-candidata-final-suporte-direitos-v1.md"
+}

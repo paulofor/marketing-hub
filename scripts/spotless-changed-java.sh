@@ -77,7 +77,7 @@ mapfile -t changed_files < <(
 java_files=()
 for file in "${changed_files[@]}"; do
   if [[ "$file" == "${MODULE_DIR}/"*".java" && -f "${REPO_ROOT}/${file}" ]]; then
-    java_files+=("${file#${MODULE_DIR}/}")
+    java_files+=("${file#"${MODULE_DIR}"/}")
   fi
 done
 

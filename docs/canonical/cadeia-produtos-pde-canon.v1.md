@@ -534,6 +534,14 @@ impressão da evidência e custo incremental zero. Só é válido para o mesmo p
 experimento, versão e configuração comercial. Mudança material invalida o snapshot e exige renovar
 somente o parecer afetado; os custos permanecem contabilizados no subprocesso original.
 
+Na revisão 5.1.7, a linhagem de criativos permanece visível, mas somente o descendente final
+`READY` e `APPROVED` é a comunicação efetiva. A revisão deve exigir exatamente uma candidata final,
+comparar nela os termos materiais com página e checkout e consumir a governança da mídia vinculada
+ao próprio artefato. Para suporte, aceita-se o contrato operacional versionado da experiência — rota
+autenticada, persistência, retomada e fallback — sem obrigar a copy limitada do canal a reproduzir
+essa implementação. Versão supersedida só bloqueia quando a linhagem estiver rompida ou a candidata
+final alterar promessa, oferta, preço, cobrança, acesso ou destino.
+
 **Trabalho essencial:**
 
 - executar a jornada em desktop e mobile;

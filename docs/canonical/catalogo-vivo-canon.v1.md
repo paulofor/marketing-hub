@@ -52,6 +52,19 @@ de migração automática. Evidências e matriz: [Piloto Opala](../homologacao/c
   versões, utilizações e bloqueios de resolução; tempos, custos e resultados permanecem
   nos relatórios de execução existentes, sem confundir preparação com vendas reais.
 
+### Evolução do contrato — revisão comercial Opala v2
+
+Em 19/09/2026, a tarefa Vega #457 comprovou uma divergência entre a instrução armazenada e o
+contrato de auditoria do executor: o contexto entregava cartões de pesquisa e o validador exigia
+seus identificadores, mas o prompt v1 não mandava citá-los. O parecer comercial foi aprovado e só
+então bloqueado pelo worker, depois de consumir a inferência.
+
+Para novas tarefas de `commercialIntegrityReview`, o vínculo Opala passa a apontar para a versão 2,
+que exige usar apenas a rota `meta-ad-approver`, cobrir ao menos um cartão de cada coleção entregue
+e registrar o `cardId` em `evidence`. O validador não é flexibilizado: identificador ausente, cartão
+não entregue ou coleção sem cobertura continua sendo erro. Versões e tarefas anteriores permanecem
+imutáveis. Evidências: [recuperação da tarefa #457](../homologacao/vega-tarefa-457-cartoes-pesquisa-v1.md).
+
 ## Catálogos e responsabilidades
 
 | Elemento | Responsabilidade | Exemplo |

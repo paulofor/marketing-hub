@@ -1,4 +1,4 @@
-# Têmis — revisão independente da homologação comercial do PDE v1
+SET @opala_commercial_integrity_prompt_v2 = '# Têmis — revisão independente da homologação comercial do PDE v1
 
 Você é Têmis e executa a revisão independente do gate `pdeGate` no processo
 `pde-commercial-homologation-activation`. Avalie somente a versão, oferta e canal congelados no
@@ -53,3 +53,35 @@ na candidata local ou quando o contrato permitir ativação sem confirmar a vers
 ```json
 {{TASK_CONTEXT}}
 ```
+';
+
+INSERT INTO catalogo_vivo_prompt_version_v1(
+  binding_id,version_number,text_content,sha256,status,created_by,created_at,
+  reviewed_by,reviewed_at,review_note)
+SELECT b.id,2,@opala_commercial_integrity_prompt_v2,
+  SHA2(@opala_commercial_integrity_prompt_v2,256),'REVIEWED',
+  'Correção sistêmica da tarefa 457',UTC_TIMESTAMP(6),'Revisão comercial Opala',
+  UTC_TIMESTAMP(6),
+  'Alinha o prompt ao gate auditável de pesquisa e exige os cardId realmente aplicados.'
+FROM catalogo_vivo_binding_v1 b
+JOIN business_process_activity_definition a ON a.id=b.activity_definition_id
+JOIN business_process_definition p ON p.id=a.process_definition_id
+WHERE p.process_code='opala-commercial-preparation-v1' AND p.version_number=1
+  AND a.activity_id='commercialIntegrityReview';
+
+UPDATE catalogo_vivo_binding_v1 b
+JOIN business_process_activity_definition a ON a.id=b.activity_definition_id
+JOIN business_process_definition p ON p.id=a.process_definition_id
+JOIN catalogo_vivo_prompt_version_v1 v ON v.binding_id=b.id AND v.version_number=2
+SET b.active_version_id=v.id
+WHERE p.process_code='opala-commercial-preparation-v1' AND p.version_number=1
+  AND a.activity_id='commercialIntegrityReview';
+
+INSERT INTO catalogo_vivo_audit_v1(binding_id,version_id,action,operator_name,note,created_at)
+SELECT b.id,b.active_version_id,'BUGFIX_ACTIVATED','Correção sistêmica da tarefa 457',
+  'Ativa o prompt Opala v2 com rastreabilidade explícita dos cartões de pesquisa.',UTC_TIMESTAMP(6)
+FROM catalogo_vivo_binding_v1 b
+JOIN business_process_activity_definition a ON a.id=b.activity_definition_id
+JOIN business_process_definition p ON p.id=a.process_definition_id
+WHERE p.process_code='opala-commercial-preparation-v1' AND p.version_number=1
+  AND a.activity_id='commercialIntegrityReview';

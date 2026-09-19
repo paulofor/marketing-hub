@@ -1,5 +1,23 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-TEMIS-CARTOES-ENTREGUES-SEM-CITACAO — parecer aprovado bloqueado após inferência
+
+- **Data:** 2026-09-19. Vega, experimento #92, tarefa #457.
+- **Evidência histórica:** Têmis concluiu a revisão de integridade comercial com decisão
+  `APPROVED`, clareza 95/100, doze gates aprovados e nenhuma mudança obrigatória. Depois da
+  inferência, o worker bloqueou a tarefa porque nenhuma evidência declarava o `cardId` dos três
+  cartões de pesquisa entregues na rota `meta-ad-approver`.
+- **Causa-raiz:** o validador exigia ao menos um cartão de cada coleção utilizada, mas a versão 1
+  do prompt `commercialIntegrityReview`, já migrada para o Catálogo Vivo, não instruía o modelo a
+  citar os identificadores. Repetir a mesma tarefa preservaria a contradição e geraria novo custo.
+- **Correção sistêmica:** a versão 2 do prompt explicita rota, seleção por coleção e citação do
+  `cardId` em `evidence`; o gate permanece obrigatório e continua recusando cartões não entregues.
+  A tarefa #457 e sua versão fixada seguem imutáveis, enquanto a próxima tentativa recebe o novo
+  vínculo ativo.
+- **Prevenção:** testes do worker reproduzem a resposta genérica da #457 e fixam as instruções do
+  prompt; a integração MySQL 5.7 comprova versão incremental, vínculo ativo e preservação do
+  histórico. A retomada só ocorre pela tela depois da publicação versionada.
+
 ## LOOP-PSIQUE-CALLBACK-DE-FALHA-INVALIDO-REPETIDO — retry técnico nunca termina
 
 - **Data:** 2026-09-18. Vega, experimento #92, tarefa #450.

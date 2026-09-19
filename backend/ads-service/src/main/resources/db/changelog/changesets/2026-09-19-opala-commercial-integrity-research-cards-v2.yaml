@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-19-opala-commercial-integrity-research-cards-v2
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: "1"
+            sql: >-
+              SELECT COUNT(*) FROM catalogo_vivo_binding_v1 b
+              JOIN business_process_activity_definition a ON a.id=b.activity_definition_id
+              JOIN business_process_definition p ON p.id=a.process_definition_id
+              JOIN catalogo_vivo_prompt_version_v1 v ON v.id=b.active_version_id
+              WHERE p.process_code='opala-commercial-preparation-v1' AND p.version_number=1
+              AND a.activity_id='commercialIntegrityReview' AND v.version_number=1
+              AND v.sha256='ee366ce3dc05e7fe5ce8ac17e90ff326bc83407b9524c9942c9a55ae8a5c262a'
+      changes:
+        - sqlFile:
+            path: 2026-09-19-opala-commercial-integrity-research-cards-v2.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: >-
+              SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A versão Opala v2 fecha a rastreabilidade de pesquisa da tarefa 457; rollback operacional exige nova versão revisada pelo Catálogo Vivo.';

@@ -1,0 +1,18 @@
+{
+  "cardKey": "continuidade-contextual-agente",
+  "collection": "neuromarketing",
+  "title": "Não faça o usuário reconstruir o contexto da conversa",
+  "finding": "Em survey global com 7.652 consumidores em 18 mercados, 74% relataram ter de repetir informações para assistentes de IA, 76% disseram que o humano recebia pouco ou nenhum contexto após handoff e 71% afirmaram que podem abandonar cedo uma conversa se o agente não os reconhecer.",
+  "mechanism": "Perda de contexto transforma automação em retrabalho: o usuário precisa reconstruir intenção, histórico e decisões já tomadas. Continuidade suficiente pode reduzir esforço percebido, mas o survey não prova causalidade nem efeito comercial.",
+  "commercialApplication": "No Click-to-WhatsApp e agentes do Marketing Hub, carregar entre turnos e handoffs um resumo mínimo com intenção atual, fatos fornecidos pelo usuário, oferta em discussão, dúvidas já resolvidas e permissões; exibir ao humano no escalonamento e evitar pedir novamente o que já está confirmado.",
+  "evidenceStrength": "Moderada: survey recente com 7.652 consumidores em 18 mercados, incluindo Brasil, e 660 líderes; forte como sinal de fricção percebida, mas autorrelatado e sem experimento causal de conversão.",
+  "publishedOn": "2026-09-19",
+  "validUntil": "2027-03-19",
+  "experimentHypothesis": "Preservar e transferir um resumo mínimo de contexto reduzirá repetição de perguntas, abandono de conversa e necessidade de intervenção humana sem aumentar reclamações de privacidade, em comparação com fluxos que reiniciam contexto.",
+  "risks": "Transformar continuidade em vigilância; carregar dados irrelevantes ou sensíveis; inferir preferências não declaradas; usar memória sem transparência; esconder opção de corrigir ou apagar contexto; violar LGPD ou políticas do canal.",
+  "limits": "Os percentuais são globais e autorrelatados, a pesquisa é de fornecedor e não mede Meta Ads, WhatsApp nem receita. O Marketing Hub deve validar localmente com eventos de repetição, abandono, handoff, CTA e satisfação, mantendo minimização de dados.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-19-continuidade-contextual-agente.md",
+  "sourceTitle": "Fonte revisada — Continuidade de contexto em agentes conversacionais",
+  "sourceSha256": "7abce04891e65e2fcc0da787997a261728e19718d5c1b01c528122e9e2b80efa"
+}

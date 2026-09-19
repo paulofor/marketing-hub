@@ -90,6 +90,7 @@ public class ExperimentReadinessService {
   private final CommercialPlanLandingAssetService landingAssetService;
   private final ExperimentDirectPdeActivationService directPdeActivationService;
   private final IntegratedPdeJourneyEvidenceService integratedPdeJourneyEvidenceService;
+  private final PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService;
 
   /** Cria o serviço com as fontes canônicas de prontidão do experimento. */
   public ExperimentReadinessService(
@@ -103,7 +104,8 @@ public class ExperimentReadinessService {
       ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository,
       CommercialPlanLandingAssetService landingAssetService,
       ExperimentDirectPdeActivationService directPdeActivationService,
-      IntegratedPdeJourneyEvidenceService integratedPdeJourneyEvidenceService) {
+      IntegratedPdeJourneyEvidenceService integratedPdeJourneyEvidenceService,
+      PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService) {
     this.experimentService = experimentService;
     this.creativeRepository = creativeRepository;
     this.targetingSelectionRepository = targetingSelectionRepository;
@@ -115,6 +117,7 @@ public class ExperimentReadinessService {
     this.landingAssetService = landingAssetService;
     this.directPdeActivationService = directPdeActivationService;
     this.integratedPdeJourneyEvidenceService = integratedPdeJourneyEvidenceService;
+    this.publishedPdePreflightEvidenceService = publishedPdePreflightEvidenceService;
   }
 
   /**
@@ -166,7 +169,9 @@ public class ExperimentReadinessService {
     int requiredApprovedLandingAssets = landingAssetService.requiredReferenceCount(experimentId);
     boolean directPdeReady = directPdeActivationService.isReadyForActivation(experiment);
     boolean integratedPdeReady = integratedPdeJourneyEvidenceService.isReady(experiment);
-    boolean pdeOperationalEvidenceReady = directPdeReady || integratedPdeReady;
+    boolean publishedPdePreflightReady = publishedPdePreflightEvidenceService.isReady(experiment);
+    boolean pdeOperationalEvidenceReady =
+        directPdeReady || integratedPdeReady || publishedPdePreflightReady;
     boolean reusablePdeSuccessorDestinationReady =
         hasReusablePdeSuccessorDestinationEvidence(experiment);
     boolean mediaBudgetReady = hasReadyMediaBudget(experiment);
@@ -606,7 +611,9 @@ public class ExperimentReadinessService {
     }
     boolean directPdeReady = directPdeActivationService.isReadyForActivation(experiment);
     boolean integratedPdeReady = integratedPdeJourneyEvidenceService.isReady(experiment);
-    boolean pdeOperationalEvidenceReady = directPdeReady || integratedPdeReady;
+    boolean publishedPdePreflightReady = publishedPdePreflightEvidenceService.isReady(experiment);
+    boolean pdeOperationalEvidenceReady =
+        directPdeReady || integratedPdeReady || publishedPdePreflightReady;
     boolean reusablePdeSuccessorDestinationReady =
         hasReusablePdeSuccessorDestinationEvidence(experiment);
     if ((!pdeOperationalEvidenceReady || requiresMetaTargeting(experiment))

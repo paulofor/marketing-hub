@@ -6027,6 +6027,23 @@ escopo, callbacks antigos, insumos incompletos e renovação dos pareceres após
 O histórico e o ciclo atual não são reescritos pela migração.
 Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 
+### Recorrência na autorização da Vega após preflight — 19/09/2026
+
+- **Confirmação pelo histórico:** o processo 79, execução 10, concluiu o Opala com os pareceres
+  #460 e #461 da própria v12; o run produtivo 11 ficou `READY_TO_PUBLISH`, com dados válidos e
+  11/11 gates aprovados. Mesmo assim, a autorização continuou sem ação e o requisito
+  `LANDING_APPROVED` permaneceu reprovado. A evidência legada disponível era privada e, portanto,
+  corretamente insuficiente para mídia paga.
+- **Causa-raiz:** a prontidão Facebook reconhecia somente a integração comercial legada ou a
+  abordagem direta. Ela não reconhecia o caminho atual Opala + publicação do slot + preflight,
+  embora esse caminho já persistisse as provas comerciais canônicas do mesmo experimento.
+- **Correção:** reconhecer como evidência operacional apenas o slot do próprio experimento que
+  esteja `ACTIVE`, validado e publicado, junto do run produtivo mais recente válido e de todos os
+  gates aprovados. A prova visual precisa citar exatamente a URL pública e a versão publicada.
+- **Prevenção:** testes bloqueiam slot não publicado, evidência de outra versão, run atual falho e
+  ausência de gate auditável; a prontidão consolidada comprova que esse caminho libera a landing
+  sem dispensar criativo, segmentação, orçamento ou qualquer gate de Meta.
+
 ## LOOP-CICLO-MODELO-ATUAL-CADEIA-ANTIGA — 16/09/2026
 
 - Tela de produtos enviava processo 78 e cadeia 14 para o ciclo 2/experimento 92.

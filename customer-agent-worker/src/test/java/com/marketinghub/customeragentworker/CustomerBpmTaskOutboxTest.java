@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.core.io.ClassPathResource;
 
 /** Responsabilidade: comprovar retomada de Psique sem perder parecer nem repetir inferência. */
 class CustomerBpmTaskOutboxTest {
@@ -146,6 +147,65 @@ class CustomerBpmTaskOutboxTest {
       assertThat(failure.path("blockerGuidance").path("recommendedAction").asText())
           .contains("corrija a integração");
       assertThat(failure.path("blockerGuidance").path("helpLinks")).isNotEmpty();
+      assertThat(outbox.read()).isNull();
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  /** Restaura o delimitador do catálogo removido por uma versão anterior antes de reenviar. */
+  @Test
+  void restoresCatalogDelimiterInLegacyCallbackBeforeRetryingIt() throws Exception {
+    AtomicInteger attempts = new AtomicInteger();
+    AtomicReference<String> received = new AtomicReference<>();
+    HttpServer server = callbackServer(attempts, received, false);
+    Path state = directory.resolve("legacy-catalog-delimiter");
+    String template = "Instrução fixada de Psique.\n{{TASK_CONTEXT}}\n";
+    Map<String, Object> task = catalogTask(451L, template);
+    String expectedActivity = template.replace("{{TASK_CONTEXT}}", "{\"taskId\":451}");
+    String legacyActivity = expectedActivity.stripTrailing();
+    Map<String, Object> audit =
+        Map.of(
+            "executionMode",
+            "MODEL",
+            "modelCode",
+            "gpt-5.6-sol",
+            "reasoningEffort",
+            "max",
+            "promptSent",
+            "núcleo\n\n" + legacyActivity,
+            "agentPromptPart",
+            "núcleo",
+            "activityPromptPart",
+            legacyActivity,
+            "accessedUrls",
+            List.of());
+    Map<String, Object> callback =
+        Map.of(
+            "error",
+            "Inferência interrompida sem nova tentativa.",
+            "executionAudit",
+            audit,
+            "blockerGuidance",
+            Map.of(
+                "category",
+                "TECHNICAL_FAILURE",
+                "recommendedAction",
+                "Revisar a interrupção.",
+                "helpLinks",
+                List.of(Map.of("label", "Abrir tarefa", "url", "/agent-tasks"))));
+    CustomerBpmTaskOutbox outbox = new CustomerBpmTaskOutbox(state, json);
+    outbox.save(
+        new CustomerBpmTaskOutbox.Pending(task, audit, List.of(), true, "failure", callback));
+    try {
+      consumer(server, state).processOne();
+
+      JsonNode delivered = json.readTree(received.get());
+      assertThat(attempts).hasValue(1);
+      assertThat(delivered.path("executionAudit").path("activityPromptPart").asText())
+          .isEqualTo(expectedActivity);
+      assertThat(delivered.path("executionAudit").path("promptSent").asText())
+          .isEqualTo("núcleo\n\n" + expectedActivity);
       assertThat(outbox.read()).isNull();
     } finally {
       server.stop(0);
@@ -322,6 +382,42 @@ class CustomerBpmTaskOutboxTest {
         "experiment:92",
         "processContextJson",
         "{}");
+  }
+
+  /** Monta uma tarefa Opala com versão textual fixada para testar recuperação auditável. */
+  private Map<String, Object> catalogTask(long id, String template) throws Exception {
+    String schemaResource =
+        "prompts/bpm/v3/pde-commercial-homologation-customer-review-schema.json";
+    String schema =
+        new ClassPathResource(schemaResource).getContentAsString(StandardCharsets.UTF_8);
+    Map<String, Object> catalogPrompt =
+        Map.ofEntries(
+            Map.entry("origin", "DATABASE"),
+            Map.entry("executorModule", "customer-agent-worker"),
+            Map.entry("agentKey", "customer-agent"),
+            Map.entry("activityId", "humanExperienceReview"),
+            Map.entry("processVersion", 1),
+            Map.entry("versionId", 6L),
+            Map.entry("versionNumber", 1),
+            Map.entry("schemaId", schemaResource),
+            Map.entry("schemaSha256", CatalogPromptInput.sha256(schema)),
+            Map.entry("text", template),
+            Map.entry("sha256", CatalogPromptInput.sha256(template)));
+    return Map.of(
+        "taskId",
+        id,
+        "agentKey",
+        "customer-agent",
+        "processCode",
+        "opala-commercial-preparation-v1",
+        "processVersion",
+        1,
+        "activityId",
+        "humanExperienceReview",
+        "sourceReference",
+        "experiment:92",
+        "catalogPrompt",
+        catalogPrompt);
   }
 
   /** Monta a tarefa sintética cujo resultado possui validação determinística autocontida. */

@@ -6141,6 +6141,7 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   modelo aumentaria custo e risco de duplicidade; preservar o texto do audit literalmente mantém
   rastreabilidade e permite registrar a falha técnica. A terceira foi adotada.
 - **Correção e prevenção:** a recuperação usa normalização própria que só trata valor ausente como
-  nulo e conserva todos os caracteres do prompt. O teste de outbox reproduz interrupção com quebra
-  final e exige que o callback preserve o prompt integral e a parte da atividade sem nova chamada
-  ao modelo.
+  nulo e conserva todos os caracteres do prompt. Envelopes preservados pela versão anterior são
+  reparados deterministamente com o texto fixado no próprio Catálogo Vivo, antes do reenvio e sem
+  nova chamada ao modelo. Os testes de outbox reproduzem interrupção e envelope legado com quebra
+  final, exigindo prompt integral e parte da atividade idênticos ao contrato.

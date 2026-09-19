@@ -1,0 +1,18 @@
+{
+  "cardKey": "feedback-metacognitivo-reduz-offloading-ai",
+  "collection": "neuromarketing",
+  "title": "Feedback metacognitivo pode reduzir a delegação completa para IA",
+  "finding": "Em experimento pré-registrado com 704 participantes, feedback que explicitava as consequências de pedir a resposta completa a um LLM reduziu as chances de offloading da resposta (OR=0,47) e aumentou as chances de acerto em teste posterior sem IA (OR=1,51); recompensa por usar menos ajuda não apresentou efeito estabelecido.",
+  "mechanism": "Hipótese interpretativa: tornar visível o custo de delegar todo o trabalho cognitivo pode ativar autorregulação metacognitiva e favorecer pedidos de ajuda mais graduais, preservando oportunidades de prática.",
+  "commercialApplication": "Para experiências do Marketing Hub que auxiliem raciocínio, revisão ou aprendizagem, testar orientação primeiro e um aviso metacognitivo curto antes de entregar a tarefa completa quando houver delegação repetida, sem bloquear a ajuda integral.",
+  "evidenceStrength": "Moderada: experimento online pré-registrado com N=704 e desfecho posterior sem IA, mas em aritmética de frações; transferência para tarefas profissionais e comerciais ainda precisa ser testada.",
+  "publishedOn": "2026-09-17",
+  "validUntil": "2027-03-19",
+  "experimentHypothesis": "Uma interface que oferece orientação gradual e torna visível o custo de delegação completa reduzirá pedidos de solução integral e preservará melhor desempenho independente posterior, sem piorar satisfação ou conclusão da tarefa.",
+  "risks": "Avisos frequentes podem soar moralizantes, aumentar fricção ou impedir ajuda legítima. Não usar a intervenção para culpar o usuário nem para bloquear assistência necessária.",
+  "limits": "O estudo não mediu vendas, CTA, retenção comercial ou produtividade no Marketing Hub e avaliou uma tarefa educacional específica. O mecanismo psicológico proposto não foi isolado diretamente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-19-feedback-metacognitivo-reduz-offloading-ai.md",
+  "sourceTitle": "Fonte revisada — Feedback metacognitivo e offloading para LLM",
+  "sourceSha256": "c201bacc3895ecdca9b1144d56a66a6dcac300ed3993bae235abf20414848c44"
+}

@@ -6125,6 +6125,23 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   locais completas aprovaram 36 jornadas cada em desktop, iPhone 15 Pro e Pixel 7. Evidências e
   limites estão em `docs/homologacao/vega-449-paridade-artefato-v1.md`.
 
+### Recorrência no smoke `all` — 19/09/2026
+
+- **Evidência:** a execução `35442254059` publicou corretamente o frontend v8 e o backend PDE, mas
+  terminou vermelha ao exigir `frontendSourceSha256` primeiro da v5. Os diagnósticos públicos de
+  v5–v7 preservavam suas imagens `a7da0394` sem esse campo; o v8 novo expunha o fingerprint exato.
+- **Causa-raiz:** quando uma alteração de backend convertia o alvo do smoke em `all`, o roteador
+  aplicava o fingerprint do código-fonte atual a todas as versões. Isso confundia compatibilidade
+  funcional das superfícies intocadas com identidade imutável da única superfície publicada.
+- **Alternativas avaliadas:** republicar v5–v7 ampliaria o risco sem valor comercial; remover o gate
+  aceitaria novamente pixels antigos; vincular o fingerprint apenas ao frontend efetivamente
+  publicado preserva o gate forte e a compatibilidade das versões legadas. A terceira foi adotada.
+- **Correção e prevenção:** o workflow continua testando saúde, renderização, contrato e identidade
+  básica de todas as versões quando o backend muda, mas exige `frontendSourceSha256` somente do alvo
+  declarado em `PDE_DEPLOY_FRONTEND_VERSION`. Testes reproduzem `all` com v8 como alvo, aceitam
+  diagnóstico legado sem fingerprint quando ele não foi solicitado e continuam recusando ausência
+  ou divergência no alvo publicado.
+
 ## LOOP-PDE-DEPLOY-DE-VERSAO-REINICIA-RUNTIMES-COMPARTILHADOS — 18/09/2026
 
 - **Sintoma confirmado:** publicar uma única versão do Método MUSA mantinha imagens separadas para

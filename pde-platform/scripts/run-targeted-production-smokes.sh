@@ -6,6 +6,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "${script_dir}/../.." && pwd)"
 frontend_dir="${repository_root}/pde-platform/frontend"
 frontend_source_sha256="$(node "${frontend_dir}/scripts/source-fingerprint.mjs" "${frontend_dir}")"
+source_target_frontend="${PDE_DEPLOY_FRONTEND_VERSION:-${target_frontend}}"
 npm_command="${PDE_SMOKE_NPM_COMMAND:-npm}"
 consistency_script="${PDE_SMOKE_CONSISTENCY_SCRIPT:-${repository_root}/scripts/check-musa-pde-public-consistency.sh}"
 rigel_consistency_script="${PDE_SMOKE_RIGEL_CONSISTENCY_SCRIPT:-${script_dir}/check-rigel-pde-public-consistency.sh}"
@@ -45,11 +46,17 @@ run_musa_consistency() {
   local public_url="$1"
   local experience_version="$2"
   local contract_access_mode="${3:-published}"
+  local frontend_version="$4"
+  local expected_frontend_source_sha256=""
+
+  if [[ "${frontend_version}" == "${source_target_frontend}" ]]; then
+    expected_frontend_source_sha256="${frontend_source_sha256}"
+  fi
 
   PRODUCT_SLUG=metodo-musa-7-dias \
     PDE_PUBLIC_BASE_URL="${public_url}" \
     EXPECTED_EXPERIENCE_VERSION="${experience_version}" \
-    EXPECTED_FRONTEND_SOURCE_SHA256="${frontend_source_sha256}" \
+    EXPECTED_FRONTEND_SOURCE_SHA256="${expected_frontend_source_sha256}" \
     PDE_CONTRACT_ACCESS_MODE="${contract_access_mode}" \
     bash "${consistency_script}"
 }
@@ -61,7 +68,9 @@ validate_v5() {
     musa-pde-entry-v5-video-explicativo
   run_musa_consistency \
     https://v5.clubemusa.com.br \
-    musa-pde-entry-v5-video-explicativo
+    musa-pde-entry-v5-video-explicativo \
+    published \
+    v5
 }
 
 validate_v6() {
@@ -71,7 +80,9 @@ validate_v6() {
     musa-pde-entry-v6-video-motivacional
   run_musa_consistency \
     https://v6.clubemusa.com.br \
-    musa-pde-entry-v6-video-motivacional
+    musa-pde-entry-v6-video-motivacional \
+    published \
+    v6
 }
 
 validate_v7() {
@@ -81,7 +92,9 @@ validate_v7() {
     musa-pde-entry-v7-espelho-antes-de-sair
   run_musa_consistency \
     https://v7.clubemusa.com.br \
-    musa-pde-entry-v7-espelho-antes-de-sair
+    musa-pde-entry-v7-espelho-antes-de-sair \
+    published \
+    v7
 }
 
 validate_v8() {
@@ -92,7 +105,8 @@ validate_v8() {
   run_musa_consistency \
     https://v8.clubemusa.com.br \
     musa-pde-entry-v12-primeiro-ajuste-aplicavel \
-    candidate
+    candidate \
+    v8
 }
 
 validate_mira() {

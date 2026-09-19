@@ -5,7 +5,8 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskProcessExecutionEvidenceSnapshot;
+import com.marketinghub.agenttask.AgentTaskProcessExecutionListSnapshot;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
@@ -19,8 +20,10 @@ import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstance
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +45,9 @@ class OpalaCommercialGateTest {
   private final BusinessProcessDefinition process = new BusinessProcessDefinition();
   private final BusinessProcessActivityDefinition activity =
       new BusinessProcessActivityDefinition();
-  private final List<AgentTask> history = new ArrayList<>();
+  private final List<AgentTaskProcessExecutionListSnapshot> history = new java.util.ArrayList<>();
+  private final Map<Long, AgentTaskProcessExecutionEvidenceSnapshot> evidence =
+      new LinkedHashMap<>();
   private ObjectNode snapshot;
 
   /** Monta sete resultados persistidos do mesmo experimento, versão e orçamento sintéticos. */
@@ -70,6 +75,7 @@ class OpalaCommercialGateTest {
     when(readiness.inspect(cycle))
         .thenReturn(
             new LearningCycleCommercialPreparation(true, "Pronto", "/experiments/92", List.of()));
+    int index = 0;
     for (String step :
         List.of(
             "entry",
@@ -79,20 +85,17 @@ class OpalaCommercialGateTest {
             "economics",
             "humanExperienceReview",
             "commercialIntegrityReview")) {
-      var task = new AgentTask();
-      task.setProcessActivityId(step);
-      task.setStatus("COMPLETED");
-      task.setEvidenceJson(
-          json.createObjectNode().set("opalaScope", snapshot.deepCopy()).toString());
-      task.setResultJson(
-          "{\"economics\":{\"offerPriceBrl\":67,\"deadline\":\""
-              + LocalDate.now().plusDays(1)
-              + "\"}}");
-      history.add(task);
+      long taskId = 100L + index++;
+      history.add(summary(taskId, step, "COMPLETED"));
+      evidence.put(taskId, evidence(taskId));
     }
-    when(tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
-            99L, "experiment:92"))
+    when(tasks.findProcessExecutionListSnapshots("experiment:92", OpalaCommercialContext.CODE))
         .thenReturn(history);
+    when(tasks.findProcessExecutionEvidenceSnapshots(anyCollection()))
+        .thenAnswer(
+            invocation ->
+                ((Collection<Long>) invocation.getArgument(0))
+                    .stream().map(evidence::get).filter(java.util.Objects::nonNull).toList());
   }
 
   /** Comprova prontidão uma única vez e registra expressamente que ainda não houve vendas. */
@@ -121,9 +124,7 @@ class OpalaCommercialGateTest {
         .thenReturn(Optional.of(saved.getValue()));
     snapshot.put("checkoutUrl", "https://checkout.sandbox.local/revised");
     assertThat(gate.readiness(process, activity, product, "experiment:92").ready()).isFalse();
-    for (var task : history)
-      task.setEvidenceJson(
-          json.createObjectNode().set("opalaScope", snapshot.deepCopy()).toString());
+    evidence.replaceAll((taskId, ignored) -> evidence(taskId));
     gate.execute(process, activity, product, "experiment:92");
     verify(instances, times(2)).saveAndFlush(saved.capture());
     assertThat(saved.getValue().getOccurrenceNumber()).isEqualTo(2);
@@ -139,5 +140,63 @@ class OpalaCommercialGateTest {
     assertThat(gate.readiness(process, activity, product, "experiment:92").reason())
         .contains("expirou");
     verifyNoInteractions(instances);
+  }
+
+  /** Uma revisão bloqueada encerra o gate sem carregar evidências históricas extensas. */
+  @Test
+  void stopsAtBlockedReviewBeforeLoadingHistoricalEvidence() {
+    int humanReviewIndex =
+        java.util.stream.IntStream.range(0, history.size())
+            .filter(index -> "humanExperienceReview".equals(history.get(index).processActivityId()))
+            .findFirst()
+            .orElseThrow();
+    var blocked = history.get(humanReviewIndex);
+    history.set(
+        humanReviewIndex, summary(blocked.taskId(), blocked.processActivityId(), "BLOCKED"));
+
+    assertThat(gate.readiness(process, activity, product, "experiment:92").ready()).isFalse();
+
+    verify(tasks, never()).findProcessExecutionEvidenceSnapshots(anyCollection());
+  }
+
+  /** Cria o resumo ordenado de uma tarefa sem incluir prompts, resultados ou evidências. */
+  private AgentTaskProcessExecutionListSnapshot summary(Long taskId, String step, String status) {
+    return new AgentTaskProcessExecutionListSnapshot(
+        taskId,
+        process.getId(),
+        process.getProcessCode(),
+        1,
+        step,
+        status,
+        "experiment:92",
+        "psique",
+        "Psique",
+        step,
+        step,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "NOT_REPORTED",
+        Instant.now(),
+        null,
+        null,
+        Instant.now(),
+        null,
+        "MODEL",
+        null,
+        null,
+        null);
+  }
+
+  /** Cria a evidência mínima da última aprovação exigida pelo gate comercial. */
+  private AgentTaskProcessExecutionEvidenceSnapshot evidence(Long taskId) {
+    return new AgentTaskProcessExecutionEvidenceSnapshot(
+        taskId,
+        json.createObjectNode().set("opalaScope", snapshot.deepCopy()).toString(),
+        "{\"economics\":{\"offerPriceBrl\":67,\"deadline\":\""
+            + LocalDate.now().plusDays(1)
+            + "\"}}");
   }
 }

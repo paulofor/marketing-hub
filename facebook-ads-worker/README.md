@@ -5,6 +5,23 @@ posicionamentos no Facebook e no Instagram, e coletar métricas usando a API de
 Marketing do Facebook. O serviço reutiliza o modelo de dados definido no
 projeto `backend`, evitando duplicação de entidades.
 
+## Retomada com autorização financeira
+
+A tela do experimento registra teto acumulado, nova data final e consentimento
+para continuar a coleta sem resultados primários. O executor consome
+`GET /api/facebook-campaign-resumptions/pending`, reserva cada pedido por `claim`
+e confirma o resultado por `result`, sem consultar o banco diretamente.
+
+A retomada preserva a campanha e exige um único conjunto em BRL com orçamento
+vitalício. O teto inclui todo o gasto anterior; o worker verifica gasto, destino
+público, orçamento e término na Meta antes de ativar. Uma falha tenta manter a
+campanha pausada e registra evidência no backend. O experimento só fica RUNNING
+depois da confirmação nativa. A autorização individual também define o limite
+de parada sem leads; os demais experimentos continuam com o padrão de R$ 25.
+
+Contrato e homologação: [cânone de publicação](../docs/canonical/facebook-campaign-publication-canon.v1.md)
+e [matriz Vega #91](../docs/homologacao/vega91-retomada-financeira-v1.md).
+
 Para sugerir interesses relacionados a um seed, o worker consulta a Graph API
 via `/act_<AD_ACCOUNT_ID>/targetingsuggestions` e envia a lista de seeds no
 parâmetro `targeting_list` (por exemplo, `[{"type":"interests","id":"6003139266461"}]`).

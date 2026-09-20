@@ -129,7 +129,7 @@ public class FacebookCampaignMetricsService {
             }
             boolean pausedByAuthorizedLimit = pauseCampaignIfMediaSpendLimitReached(target, payload);
             if (!pausedByAuthorizedLimit) {
-                pauseCampaignIfNoLeadsAfterMinimumSpend(target.campaignId(), payload);
+                pauseCampaignIfNoLeadsAfterMinimumSpend(target, payload);
             }
             sendMetrics(target.campaignId(), payload);
         } catch (FacebookAccessTokenExpiredException ex) {
@@ -257,8 +257,12 @@ public class FacebookCampaignMetricsService {
     /**
      * Pausa diretamente na Meta quando o gasto real passou do piso sem gerar lead, mesmo se o backend falhar.
      */
-    private void pauseCampaignIfNoLeadsAfterMinimumSpend(String campaignId, CampaignMetricsUpdateRequest payload) {
-        if (!shouldEmergencyPause(payload)) {
+    private void pauseCampaignIfNoLeadsAfterMinimumSpend(CampaignMetricsSyncTarget target, CampaignMetricsUpdateRequest payload) {
+        String campaignId = target.campaignId();
+        BigDecimal threshold = target.zeroLeadSpendThreshold() == null || target.zeroLeadSpendThreshold().signum() <= 0
+                ? EMERGENCY_ZERO_LEAD_SPEND_THRESHOLD : target.zeroLeadSpendThreshold();
+        if (target.mediaSpendLimit() != null && target.mediaSpendLimit().signum() > 0) threshold = threshold.min(target.mediaSpendLimit());
+        if (!shouldEmergencyPause(payload, threshold)) {
             return;
         }
         try {
@@ -317,11 +321,16 @@ public class FacebookCampaignMetricsService {
      * Verifica se o payload da Meta exige trava emergencial por gasto sem resultado.
      */
     private boolean shouldEmergencyPause(CampaignMetricsUpdateRequest payload) {
+        return shouldEmergencyPause(payload, EMERGENCY_ZERO_LEAD_SPEND_THRESHOLD);
+    }
+
+    /** Aplica o limiar individual autorizado mantendo o comportamento conservador legado. */
+    private boolean shouldEmergencyPause(CampaignMetricsUpdateRequest payload, BigDecimal threshold) {
         if (payload == null || payload.spend() == null) {
             return false;
         }
         long leads = payload.leads() != null ? payload.leads() : 0L;
-        return leads == 0L && payload.spend().compareTo(EMERGENCY_ZERO_LEAD_SPEND_THRESHOLD) >= 0;
+        return leads == 0L && payload.spend().compareTo(threshold) >= 0;
     }
 
     /**
@@ -508,7 +517,13 @@ public class FacebookCampaignMetricsService {
             String campaignId,
             long experimentId,
             BigDecimal mediaSpendLimit,
-            Instant lastSyncedAt) {}
+            Instant lastSyncedAt,
+            BigDecimal zeroLeadSpendThreshold) {
+        /** Preserva contratos legados com limiar conservador padrão. */
+        public CampaignMetricsSyncTarget(String campaignId, long experimentId, BigDecimal mediaSpendLimit, Instant lastSyncedAt) {
+            this(campaignId, experimentId, mediaSpendLimit, lastSyncedAt, null);
+        }
+    }
 
     public record CampaignMetricsUpdateRequest(
             LocalDate dateStart,

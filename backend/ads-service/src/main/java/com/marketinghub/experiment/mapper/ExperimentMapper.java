@@ -27,6 +27,11 @@ public interface ExperimentMapper {
       Pattern.compile(
           "(primaryText|headline|description|cta) excede (\\d+) caracteres \\(atual: (\\d+)\\)");
 
+  /** Mapeia o experimento e o limite financeiro efetivo para a interface administrativa. */
+  @org.mapstruct.Mapping(
+      target = "zeroResultSpendLimit",
+      expression =
+          "java(com.marketinghub.experiment.funnel.ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(experiment))")
   @org.mapstruct.Mapping(target = "nicheId", source = "niche.id")
   @org.mapstruct.Mapping(target = "productId", source = "product.id")
   @org.mapstruct.Mapping(target = "productName", source = "product.name")

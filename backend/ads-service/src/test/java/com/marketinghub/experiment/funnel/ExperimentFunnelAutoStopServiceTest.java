@@ -362,4 +362,19 @@ class ExperimentFunnelAutoStopServiceTest {
         "",
         false);
   }
+
+  /** A autorização individual evita a parada de 25, mas preserva o teto absoluto de 150. */
+  @Test
+  void authorizedResumptionWaitsForItsTotalLimit() {
+    experiment.setMediaSpendLimit(new BigDecimal("150"));
+    experiment.setZeroResultSpendLimit(new BigDecimal("150"));
+    ExperimentCampaignMetric metric = new ExperimentCampaignMetric();
+    metric.setSpend(new BigDecimal("149.99"));
+    when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.of(metric));
+    assertThat(service.stopIfNoPrimaryResultAfterMinimumSpend(experiment)).isFalse();
+    assertThat(service.stopIfMediaSpendLimitReached(experiment)).isFalse();
+    metric.setSpend(new BigDecimal("150"));
+    assertThat(service.stopIfMediaSpendLimitReached(experiment)).isTrue();
+    assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
+  }
 }

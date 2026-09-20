@@ -30,4 +30,36 @@ public record ExperimentCockpitSampleDecisionDto(
     Boolean precisionTargetFitsMediaSpendLimit,
     String projectionConfidence,
     String financialGuardrail,
-    String recommendation) {}
+    String recommendation) {
+  /** Aplica o limite autorizado sem alterar a leitura estatística ou as metas comerciais. */
+  public ExperimentCockpitSampleDecisionDto withZeroResultStopSpend(BigDecimal value) {
+    return new ExperimentCockpitSampleDecisionDto(
+        applicable,
+        measurementAvailable,
+        measurementSource,
+        status,
+        headline,
+        explanation,
+        humanVisitors,
+        initialTargetVisitors,
+        visitorsRemainingForInitialDecision,
+        targetPurchasesAtInitialDecision,
+        precisionTargetVisitors,
+        visitorsRemainingForPrecisionDecision,
+        purchases,
+        observedPurchaseRatePercent,
+        confidenceLower95Percent,
+        confidenceUpper95Percent,
+        zeroPurchaseUpper95Percent,
+        estimatedCostPerHumanVisitor,
+        projectedSpendForInitialTarget,
+        projectedSpendForPrecisionTarget,
+        value,
+        mediaSpendLimit,
+        initialTargetFitsMediaSpendLimit,
+        precisionTargetFitsMediaSpendLimit,
+        projectionConfidence,
+        financialGuardrail,
+        recommendation);
+  }
+}

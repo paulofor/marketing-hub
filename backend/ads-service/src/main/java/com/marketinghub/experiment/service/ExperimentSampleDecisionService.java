@@ -63,6 +63,17 @@ public class ExperimentSampleDecisionService {
       SampleMeasurement measurement,
       long purchases,
       BigDecimal currentSpend) {
+    return evaluateSample(experiment, measurement, purchases, currentSpend)
+        .withZeroResultStopSpend(
+            ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(experiment));
+  }
+
+  /** Calcula a evidência comercial independentemente da autorização financeira individual. */
+  private ExperimentCockpitSampleDecisionDto evaluateSample(
+      Experiment experiment,
+      SampleMeasurement measurement,
+      long purchases,
+      BigDecimal currentSpend) {
     if (!isApplicable(experiment)) {
       return notApplicable(
           measurement, purchases, experiment != null ? experiment.getMediaSpendLimit() : null);

@@ -144,6 +144,28 @@ Regras obrigatórias:
 - nenhuma variante incompleta pode substituir uma das duas escolhas, pois isso contamina a leitura comercial;
 - o backend deve bloquear payload com mais de duas seleções e a interface deve impedir a marcação da terceira opção.
 
+### Retomada financeira autorizada de campanha existente — 20/09/2026
+
+Uma autorização humana explícita pode reabrir a coleta da mesma campanha pausada,
+com novo teto **acumulado**, prazo final e motivo persistidos. Isso não zera gasto,
+eventos, visitantes, compras, `funnel_reset_at` nem a identidade da campanha. O comando
+simples de reativação não pode declarar Facebook `RUNNING` sem confirmação da Meta.
+A retomada deve registrar a exceção à parada por ausência de resultado primário:
+o limite dessa parada pode passar a ser o teto autorizado, somente nesse experimento.
+Os demais experimentos mantêm R$ 25,00. Falhas técnicas, reprovação estatística e teto
+absoluto permanecem aplicáveis; atingir volume de amostra não autoriza novo gasto.
+
+O backend registra e enfileira a autorização; o Facebook Ads Worker aplica e relê
+orçamento e prazo na Meta antes de ativar a campanha. Na modalidade com um único
+conjunto e orçamento vitalício, o orçamento nativo é o teto acumulado, incluindo o
+gasto anterior. O fluxo bloqueia outras modalidades até haver contrato equivalente.
+Uma falha mantém a campanha pausada e o erro visível, sem declarar sucesso. A tela
+exibe solicitação, resultado e motivo; chamadas concorrentes preservam uma autorização.
+
+Autorização específica: reativar Vega #91 com teto acumulado de R$ 150,00 para
+coletar mais dados, considerando o cadastro por e-mail como sinal inicial de interesse,
+ainda sem equivaler a venda. Não se aplica ao #92 e não autoriza contato com o lead.
+
 ### 4.1.3.2 Regra mandatória — política única de parada por campanha
 
 Campanhas pagas não devem depender de regra operacional por tipo de experimento. A decisão de parada deve ser única por campanha e orientada a prova comercial objetiva: se a campanha não prova que pode gerar resultado, ela deve parar antes de consumir mais orçamento.
@@ -158,7 +180,7 @@ Regra canônica:
 - na mesma decisão, concluir o `ExperimentRun` produtivo, classificar a validade da evidência, preencher motivo e horário final e cancelar tarefas de agentes ainda reabríveis da referência `experiment:<id>`;
 - nunca considerar a liquidação final concluída antes de executar com sucesso as regras derivadas da métrica; falha nessa reconciliação deve manter a campanha elegível para nova sincronização;
 - experimento `USER_STOPPED` que já possua gasto final acima do limite pode ser reconciliado pelo comando administrativo sem reativar campanha, conjunto ou anúncio;
-- enquanto essa reconciliação financeira estiver disponível, o backend deve ocultar e rejeitar a reativação do experimento antigo; uma nova hipótese comercial deve nascer em experimento sucessor, com métricas e orçamento próprios;
+- sem nova autorização financeira explícita registrada pelo contrato de retomada, enquanto essa reconciliação financeira estiver disponível, o backend deve ocultar e rejeitar a reativação simples do experimento antigo; uma nova hipótese comercial deve nascer em experimento sucessor, com métricas e orçamento próprios;
 - usar `CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND` para gasto mínimo sem resultado primário e `CAMPAIGN_STATISTICALLY_FAILED_STAGE` para reprovação estatística de etapa;
 - manter motivos antigos de low-ticket apenas como histórico de dados já gravados, sem usá-los como caminho operacional novo.
 

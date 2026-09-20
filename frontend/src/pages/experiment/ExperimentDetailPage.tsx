@@ -1,3 +1,4 @@
+import ExperimentCampaignResumptionPanel from "./ExperimentCampaignResumptionPanel";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -3175,6 +3176,7 @@ export default function ExperimentDetailPage() {
           </Tabs.Content>
           <Tabs.Content value="funnel">
             <ExperimentFunnelTab
+              zeroResultStopSpend={data.zeroResultSpendLimit}
               experimentId={expId}
               experimentType={data?.experimentType}
               campaignMetric={data?.campaignMetric}
@@ -3195,10 +3197,13 @@ export default function ExperimentDetailPage() {
             />
           </Tabs.Content>
           <Tabs.Content value="campaign">
-            <ExperimentFacebookCampaignTab
-              campaigns={facebookCampaigns}
-              isLoading={isLoadingFacebookCampaigns}
-            />
+            <>
+              <ExperimentCampaignResumptionPanel experimentId={expId} />
+              <ExperimentFacebookCampaignTab
+                campaigns={facebookCampaigns}
+                isLoading={isLoadingFacebookCampaigns}
+              />
+            </>
           </Tabs.Content>
           <Tabs.Content value="post-deploy">
             <ExperimentPostDeployMonitorTab

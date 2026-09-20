@@ -7311,3 +7311,19 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
 - a visão consolidada apresenta hipótese, mudança principal, vídeos, oferta, checkout, experimento, homologação, pendências e trajetória até publicação, usando dados agregados pelo backend;
 - o cadastro técnico de slots, a validação de URL, o editor de contrato e as métricas por versão foram preservados;
 - publicação, ativação de campanha e gasto continuam fora desta tela e sujeitos aos gates próprios.
+
+## 2026-09-20 — Vega #91: retomada com teto acumulado de R$ 150
+
+- Usuário autorizou retomar a coleta pelo sinal de um cadastro por e-mail. O teto de R$ 150
+  inclui os R$ 27,45 já gastos; não representa R$ 150 adicionais. Janela preparada até 26/09.
+- A investigação confirmou campanha pausada e prazo Meta vencido. O comando anterior alterava
+  somente o estado do Hub, e a parada fixa em R$ 25 impediria a continuidade autorizada.
+- Implementada autorização auditável na tela, reserva exclusiva pelo backend e confirmação
+  de orçamento vitalício, prazo e ativação pelo worker. A exceção financeira é individual;
+  campanha, público, criativo, coorte e histórico são preservados, assim como os limites do #92.
+- Comparadas a reativação direta, a duplicação da campanha e a retomada oficial da campanha
+  existente. Escolhida a terceira: mantém histórico comparável e comprova o teto nativo,
+  com custo de implementação maior que uma mudança de status, mas sem repetir a causa da falha.
+- Homologação local concluída com testes backend/worker/frontend, MySQL 5.7 real e desktop/mobile.
+  PR #5270 registra a entrega; a retomada operacional será executada pela tela após a publicação.
+  [Matriz, limites e evidências](../homologacao/vega91-retomada-financeira-v1.md).

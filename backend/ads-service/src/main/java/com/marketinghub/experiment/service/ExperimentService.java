@@ -1028,7 +1028,9 @@ public class ExperimentService {
     return exp;
   }
 
-  /** Reativa um experimento parado registrando motivo de negócio e histórico auditável. */
+  /**
+   * Reativa canal direto com auditoria; campanhas Meta exigem confirmação pela retomada financeira.
+   */
   @Transactional
   public Experiment reactivate(Long id, ReactivateExperimentRequest request) {
     String reason = normalizeStatusChangeReason(request != null ? request.reason() : null);
@@ -1037,6 +1039,11 @@ public class ExperimentService {
     if (!isReactivationAvailable(exp)) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "experiment status does not allow reactivation");
+    }
+    if (exp.getPlatform() == ExperimentPlatform.FACEBOOK) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Use a retomada financeira na aba Campanha Meta para confirmar orçamento, prazo e ativação no provedor.");
     }
     validateRunningStatusTransition(exp);
     exp.setStatus(ExperimentStatus.RUNNING);

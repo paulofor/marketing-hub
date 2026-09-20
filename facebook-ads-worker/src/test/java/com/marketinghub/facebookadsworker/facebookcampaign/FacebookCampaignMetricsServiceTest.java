@@ -148,10 +148,10 @@ class FacebookCampaignMetricsServiceTest {
 
         Method method = FacebookCampaignMetricsService.class.getDeclaredMethod(
                 "pauseCampaignIfNoLeadsAfterMinimumSpend",
-                String.class,
+                FacebookCampaignMetricsService.CampaignMetricsSyncTarget.class,
                 FacebookCampaignMetricsService.CampaignMetricsUpdateRequest.class);
         method.setAccessible(true);
-        method.invoke(service, "cmp-1", payload);
+        method.invoke(service, new FacebookCampaignMetricsService.CampaignMetricsSyncTarget("cmp-1", 91L, new BigDecimal("100"), null), payload);
 
         verify(facebookAdsService).pauseCampaign("cmp-1");
     }
@@ -264,4 +264,19 @@ class FacebookCampaignMetricsServiceTest {
                 "/api"
         );
     }
+    /** A exceção do experimento autoriza coleta adicional, mas nunca ultrapassa o teto total. */
+    @Test
+    void authorizedResumptionKeepsDefaultForOthersAndStopsAtTotalLimit() throws Exception {
+        FacebookAdsService api = mock(FacebookAdsService.class);
+        FacebookCampaignMetricsService worker = service(api);
+        var target = new FacebookCampaignMetricsService.CampaignMetricsSyncTarget("cmp-91", 91L, new BigDecimal("150"), null, new BigDecimal("150"));
+        Method method = FacebookCampaignMetricsService.class.getDeclaredMethod("pauseCampaignIfNoLeadsAfterMinimumSpend",
+                FacebookCampaignMetricsService.CampaignMetricsSyncTarget.class, FacebookCampaignMetricsService.CampaignMetricsUpdateRequest.class);
+        method.setAccessible(true);
+        method.invoke(worker, target, new FacebookCampaignMetricsService.CampaignMetricsUpdateRequest(null,null,0L,0L,0L,0L,new BigDecimal("149.99")));
+        org.mockito.Mockito.verifyNoInteractions(api);
+        method.invoke(worker, target, new FacebookCampaignMetricsService.CampaignMetricsUpdateRequest(null,null,0L,0L,0L,0L,new BigDecimal("150")));
+        verify(api).pauseCampaign("cmp-91");
+    }
+
 }

@@ -234,6 +234,10 @@ public class Experiment {
   @Column(name = "media_spend_limit", precision = 10, scale = 2)
   private java.math.BigDecimal mediaSpendLimit;
 
+  /** Limite individual sem resultado autorizado por retomada auditável; nulo preserva o padrão. */
+  @Column(name = "zero_result_spend_limit", precision = 10, scale = 2)
+  private java.math.BigDecimal zeroResultSpendLimit;
+
   @Column(name = "unit_price_brl", precision = 10, scale = 2)
   private java.math.BigDecimal unitPrice;
 

@@ -76,6 +76,11 @@
   de campanha, ad sets e anúncios na Graph API e reportar o retrato ao backend em
   `POST /api/facebook-campaigns/{campaignId}/status-sync`; o painel deve refletir a Meta, não somente
   o status salvo no momento da publicação.
+- Retomadas financeiras devem consumir `/api/facebook-campaign-resumptions/pending`, reservar por
+  `claim` e reportar por `result`. Preservar a identidade da campanha e usar teto acumulado, incluindo
+  gasto anterior, com releitura nativa de orçamento e prazo antes da ativação. A exceção à parada
+  sem leads vem do limite efetivo informado pelo backend para aquele experimento; nunca alterar
+  o padrão global de R$ 25. Gasto indisponível bloqueia a retomada, sem inferir zero.
 - Na criação de criativos (`POST /adcreatives`), `call_to_action.type` deve ser sempre um enum técnico aceito pela Meta
   (ex.: `LEARN_MORE`, `SIGN_UP`, `SHOP_NOW`) e nunca o texto comercial do botão. Labels comerciais vindos do criativo
   devem ser normalizados antes do envio, usando fallback seguro (`LEARN_MORE` para destino web e `SIGN_UP` para lead form).
@@ -96,8 +101,9 @@
 - Ao testar validação de interesses, lembre que o worker consulta a Graph API em sequência
   (`pt_BR`, `en_US` e sem locale). Enfileire respostas para cada tentativa para evitar falhas
   por requisições não stubadas.
-- A coleta de métricas via Insights deve usar `date_preset = maximum` para obter o histórico
-  completo; o valor `lifetime` não é aceito pela Graph API e gera erro `(#100)`.
+- A coleta de métricas via Insights deve usar `time_range` explícito desde o início da campanha
+  até o dia corrente, preservando o gasto anterior à retomada. Não usar `lifetime`, que não é
+  aceito pela Graph API, nem depender de preset que possa omitir o dia corrente.
 - Quando a Graph API retorna `data=[]` no Insights, reporte métricas zeradas ao backend
   em vez de tratar como erro para evitar itens presos como pendentes.
 - Chamadas de Insights (`/{campaignId}/insights`) devem evitar logs de sucesso em `INFO`

@@ -273,7 +273,9 @@ public class FacebookAdsCampaignController {
                     c.getId(),
                     c.getExperiment().getId(),
                     c.getExperiment().getMediaSpendLimit(),
-                    c.getMetricsLastSyncedAt()))
+                    c.getMetricsLastSyncedAt(),
+                    com.marketinghub.experiment.funnel.ExperimentFinancialGuardrailPolicy
+                        .zeroPrimaryResultMinimumSpend(c.getExperiment())))
         .toList();
   }
 
@@ -1242,7 +1244,11 @@ public class FacebookAdsCampaignController {
       boolean requiredCollectorsPresent) {}
 
   public record CampaignMetricsSyncTarget(
-      String campaignId, Long experimentId, BigDecimal mediaSpendLimit, Instant lastSyncedAt) {}
+      String campaignId,
+      Long experimentId,
+      BigDecimal mediaSpendLimit,
+      Instant lastSyncedAt,
+      BigDecimal zeroLeadSpendThreshold) {}
 
   public record CampaignMetricsUpdateRequest(
       LocalDate dateStart,

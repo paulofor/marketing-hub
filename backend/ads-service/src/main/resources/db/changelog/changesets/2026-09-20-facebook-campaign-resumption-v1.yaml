@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-20-experiment-zero-result-limit-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: experiment
+                columnName: zero_result_spend_limit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE experiment ADD COLUMN zero_result_spend_limit DECIMAL(10,2) NULL;
+  - changeSet:
+      id: 2026-09-20-facebook-campaign-resumption-v1
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS facebook_campaign_resumption (
+                id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                experiment_id BIGINT NOT NULL,
+                campaign_id VARCHAR(36) NOT NULL,
+                ad_set_id VARCHAR(36) NOT NULL,
+                status VARCHAR(20) NOT NULL,
+                total_limit DECIMAL(10,2) NOT NULL,
+                previous_limit DECIMAL(10,2) NULL,
+                previous_start_date DATE NULL,
+                previous_end_date DATE NULL,
+                end_date DATE NOT NULL,
+                reason VARCHAR(1024) NOT NULL,
+                destination_url VARCHAR(2048) NOT NULL,
+                requested_at DATETIME(6) NOT NULL,
+                lease_token VARCHAR(36) NULL,
+                lease_until DATETIME(6) NULL,
+                completed_at DATETIME(6) NULL,
+                error TEXT NULL,
+                evidence LONGTEXT NULL,
+                INDEX idx_fb_resume_experiment (experiment_id, id),
+                INDEX idx_fb_resume_pending (status, lease_until, id),
+                CONSTRAINT fk_fb_resume_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

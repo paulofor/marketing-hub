@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Valida a migração Opala em MySQL local descartável e limpa somente o projeto informado.
+# Valida Opala, Quartzo e consultas transacionais em MySQL local descartável.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 : "${OPALA_COMPOSE_PROJECT:?Informe o projeto Compose exclusivo da sandbox ou do job}"
@@ -13,7 +13,7 @@ docker version
 docker buildx version
 docker compose version
 "${compose[@]}" up -d --wait learning-cycles-mysql
-"${compose[@]}" exec -T learning-cycles-mysql mysql -uroot -pcycles-root-local-only -e 'CREATE DATABASE IF NOT EXISTS opala_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
+"${compose[@]}" exec -T learning-cycles-mysql mysql -uroot -pcycles-root-local-only -e 'CREATE DATABASE IF NOT EXISTS opala_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE IF NOT EXISTS quartzo_persistence_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
 for attempt in $(seq 1 30); do
   if timeout 1 bash -c "</dev/tcp/${opala_db_host}/18307" 2>/dev/null; then
     break
@@ -25,4 +25,5 @@ for attempt in $(seq 1 30); do
   sleep 1
 done
 OPALA_MYSQL_URL="jdbc:mysql://${opala_db_host}:18307/opala_test?useSSL=false&allowPublicKeyRetrieval=true" \
-  mvn -B -f backend/ads-service/pom.xml '-Dtest=OpalaCommercial*Test,QuartzoCommercialMigrationTest' test
+QUARTZO_MYSQL_URL="jdbc:mysql://${opala_db_host}:18307/quartzo_persistence_test?useSSL=false&serverTimezone=UTC" \
+  mvn -B -f backend/ads-service/pom.xml '-Dtest=OpalaCommercial*Test,QuartzoCommercial*Test' test

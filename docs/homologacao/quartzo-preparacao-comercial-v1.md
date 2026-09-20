@@ -55,7 +55,21 @@ a migração e a consulta JPA receberam validações de persistência separadas.
 
 ## Publicação e operação
 
-PR/deploy e execução administrativa de Capella serão acompanhados após a validação
-local. Preparação concluída não representa campanha autorizada. O produto não possui
-plano financeiro LIVE no momento da consulta; custos e limites precisam estar
-explicitados na fonte oficial antes de liberar divulgação paga.
+O PR #5272 foi integrado em `6e3c45e1259f8f3645c6bc659d92dde0a702f84c`; os checks
+e o deploy da aplicação passaram. A inspeção funcional posterior encontrou MySQL 1792
+na leitura do processo com os dados reais de Capella. A correção complementar separa
+as consultas de prontidão das reservas de escrita, conforme o loop já conhecido.
+Cinco testes com JPA e transações reais cobrem as quatro leituras e o comando de escrita;
+a execução física usa o schema descartável `quartzo_persistence_test` no runner do PR.
+Antes da correção, os quatro testes de leitura reproduziram MySQL 1792; a reserva de
+escrita passou. Após a correção, os 70 testes do runner Opala/Quartzo passaram sem
+falhas, erros ou skips. A regressão com arquitetura, reaproveitamento de pareceres,
+continuidade de processos e persistência H2 passou em 122 casos. Spotless, `bash -n`,
+ShellCheck e revisão do diff aprovados; a topologia MySQL temporária foi removida.
+
+Pela interface foi criado o plano financeiro preliminar LIVE de Capella, mantendo custos
+não comprovados como pendências. Página móvel e checkout responderam com a oferta de
+R$ 67; as 16 imagens carregaram. Não foi realizado pagamento. A execução histórica #7,
+bloqueada pela tarefa #422 sem URL, foi pausada pela tela antes da nova preparação.
+Preparação concluída não representa campanha autorizada: custos e limites precisam
+estar explicitados na fonte oficial antes de liberar divulgação paga.

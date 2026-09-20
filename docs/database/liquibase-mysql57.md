@@ -213,3 +213,10 @@ v17 em banco sintético separado, confere a rota Opala preservada, reaplicação
 por aposentadoria somente das versões novas. A fixture é
 `liquibase-mysql57/quartzo-commercial-preparation-test.yaml`; o runner continua usando
 projeto Compose exclusivo e limpa a topologia ao terminar.
+
+O runner também executa `QuartzoCommercialPersistenceTest` com entidades JPA e
+transações Spring reais. O schema `quartzo_persistence_test` fica separado da fixture
+de migração, pois seus três mapeamentos são criados e removidos a cada teste. A variável
+`QUARTZO_MYSQL_URL` aceita somente esse schema na porta local 18307. O contrato recusa
+`FOR UPDATE` nas quatro rotas de consulta e exige sua preservação no comando de gravação,
+prevenindo a recorrência de MySQL 1792 que mocks de repositório não detectam.

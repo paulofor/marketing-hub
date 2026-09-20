@@ -194,7 +194,7 @@ public class QuartzoCommercialService
     return CompletionDisposition.COMPLETE;
   }
 
-  /** Confirma fontes atuais e comprovações determinísticas antes das revisões pagas. */
+  /** Confirma fontes e comprovantes sem reservar registros durante a consulta das revisões. */
   public void prepared(
       BusinessProcessDefinition process,
       QuartzoCommercialContext.Scope scope,
@@ -206,7 +206,7 @@ public class QuartzoCommercialService
           definitions.findByProcessDefinitionIdAndActivityId(process.getId(), step).orElseThrow();
       require(
           instances
-              .findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+              .findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
                   definition.getId(), source)
               .filter(i -> current(i, snapshot))
               .isPresent(),
@@ -268,7 +268,7 @@ public class QuartzoCommercialService
             () -> new IllegalStateException("O subprocesso Quartzo v1 não está publicado."));
   }
 
-  /** Revalida a conclusão do filho antes de reutilizar qualquer parecer no processo pai. */
+  /** Revalida a conclusão do filho em consulta sem lock antes de reutilizar pareceres no pai. */
   @Transactional(readOnly = true)
   public boolean completed(Product product, String source) {
     var process = target();
@@ -277,7 +277,7 @@ public class QuartzoCommercialService
     var snapshot = context.snapshot(source);
     context.scope(source, product.getId(), false);
     if (instances
-        .findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+        .findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
             ready.getId(), source)
         .filter(i -> current(i, snapshot))
         .isEmpty()) return false;

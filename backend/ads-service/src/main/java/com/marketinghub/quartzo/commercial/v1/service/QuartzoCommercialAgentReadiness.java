@@ -68,7 +68,7 @@ public class QuartzoCommercialAgentReadiness
     }
   }
 
-  /** Mudanças de versão, ativos ou parecer invalidam somente a comprovação afetada e seus gates. */
+  /** Consulta sem reserva de escrita e invalida somente a comprovação afetada e seus gates. */
   @Override
   public boolean requiresFreshExecution(
       BusinessProcessDefinition process,
@@ -77,7 +77,7 @@ public class QuartzoCommercialAgentReadiness
       String source) {
     if (!context.applies(product)) return false;
     var previous =
-        instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+        instances.findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
             activity.getId(), source);
     if (previous.isEmpty() || !"COMPLETED".equals(previous.get().getStatus())) return false;
     try {

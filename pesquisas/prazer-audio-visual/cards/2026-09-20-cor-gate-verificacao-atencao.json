@@ -1,0 +1,18 @@
+{
+  "cardKey": "cor-gate-verificacao-desengajamento",
+  "collection": "prazer-audio-visual",
+  "title": "Usar cor para controlar agrupamento e troca de atenção",
+  "finding": "Em 43 participantes, a latência para desengajar o olhar cresceu de forma não linear quando o estímulo fixado compartilhava características com o alvo periférico; a cor respondeu pela maior parte do custo e amplificou efeitos de forma e categoria.",
+  "mechanism": "A cor pode atuar como um gate perceptivo de alta prioridade: uma correspondência cromática mantém o objeto atual em uma etapa limitada de verificação, na qual semelhanças adicionais prolongam a inspeção antes da sacada para outro alvo.",
+  "commercialApplication": "Testar cores compartilhadas para elementos que devem ser percebidos como unidade e maior separação cromática quando a interface exige troca rápida para um novo alvo, CTA, alerta ou próximo passo.",
+  "evidenceStrength": "Média-alta para desengajamento oculomotor em laboratório: manipulação experimental de cor, forma e categoria com N=43; ainda indireta para UX real, prazer, retenção ou conversão.",
+  "publishedOn": "2026-09-01",
+  "validUntil": "2027-03-01",
+  "experimentHypothesis": "Quando a tarefa exige mudar rapidamente para um novo alvo, uma cor perceptualmente distinta do elemento atualmente fixado reduzirá tempo de localização e erros em comparação com um alvo que compartilha a mesma cor.",
+  "risks": "Separação cromática excessiva pode prejudicar coerência estética ou acessibilidade; cor não deve ser o único código de estado, e diferenças precisam ser avaliadas para daltonismo e contraste.",
+  "limits": "O paradigma usa sacadas em estímulos controlados e não mede estética, prazer ou compra; o modelo de gate é uma interpretação mecanística e não uma regra universal de design.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-20-cor-gate-verificacao-atencao.md",
+  "sourceTitle": "Fonte revisada — cor como gate de verificação e desengajamento atencional",
+  "sourceSha256": "575338edd525b16a0df49c95ff08e2060f5134257d25b3ad673be8af3e7140fb"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-voz-aprovada-lipsync-desacoplado",
+  "collection": "video",
+  "title": "Desacoplar voz aprovada da performance visual",
+  "finding": "O H3 Max Lip Sync da fal transforma uma imagem e uma locução pronta em vídeo com sincronização labial, mantendo o áudio fornecido e oferecendo modo guiado por transcrição ou somente waveform. Isso permite aprovar roteiro e voz antes de escolher ou variar o apresentador visual.",
+  "mechanism": "Tratar roteiro e locução como artefatos canônicos reduz variáveis por render: a fala é validada primeiro e depois reutilizada para gerar diferentes personas, idiomas ou variantes visuais. A etapa de lip sync torna-se uma transformação downstream, em vez de deixar o renderer inventar simultaneamente texto, voz e boca.",
+  "commercialApplication": "No Marketing Hub, Têmis pode aprovar script_version e voice_asset_id antes da geração visual. Apolo então produz talking-heads com presenter_image variável, mantendo texto, prosódia e CTA constantes; para anúncios maiores, blocos de até 15 segundos podem ser montados no projeto estruturado.",
+  "evidenceStrength": "Forte para disponibilidade, API, preços, limites, resoluções e uso comercial declarado pela fal; moderada para qualidade comparativa, pois ainda faltam benchmarks independentes específicos do endpoint de lip sync.",
+  "publishedOn": "2026-09-18",
+  "validUntil": "2026-12-17",
+  "experimentHypothesis": "Para peças curtas com apresentador, aprovar voz antes da imagem e reutilizar a mesma locução entre variantes reduzirá erros textuais/fonéticos, regenerações, tempo e custo por versão aprovada sem degradar de forma relevante a naturalidade percebida.",
+  "risks": "O limite de 15 segundos exige montagem de trechos; uma imagem única restringe gesto corporal e câmera; lip sync pode falhar com obstruções, ângulos difíceis, canto ou áudio processado; consentimento e direitos sobre rosto e voz são obrigatórios; segmentar demais um anúncio pode introduzir descontinuidade visual.",
+  "limits": "H3 Max Lip Sync é um endpoint hospedado e não há pesos separados do pós-treino especializado. A base MiniMax H3 é open-weight sob uma Community License com restrições específicas, não uma licença OSI permissiva. O endpoint não redubla vídeo existente; para isso são necessários modelos video-to-video como VEED ou Sync Labs.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-20-h3-max-lip-sync-voz-desacoplada.md",
+  "sourceTitle": "Fonte revisada — H3 Max Lip Sync: voz aprovada como camada reutilizável",
+  "sourceSha256": "a426a8275581c7aebcb618ad5b231940781df8104c64e29f83490e4c562da228"
+}

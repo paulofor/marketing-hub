@@ -4,8 +4,11 @@ import com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment;
 import com.marketinghub.financialplan.v1.service.FinancialPlanService;
 import com.marketinghub.financialplan.v1.service.catalog.PlanCatalog;
 import com.marketinghub.financialplan.v1.service.getplan.PlanView;
+import com.marketinghub.financialplan.v1.service.prepareplan.PlanPreparation;
+import com.marketinghub.financialplan.v1.service.prepareplan.PreparePlanRequest;
 import com.marketinghub.financialplan.v1.service.saveplan.SavePlanRequest;
 import jakarta.validation.Valid;
+import java.security.Principal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -44,6 +47,24 @@ public class FinancialPlanController {
       @RequestParam(defaultValue = "LIVE") Environment environment,
       @Valid @RequestBody SavePlanRequest request) {
     return service.create("PRODUCT", id, environment, request);
+  }
+
+  /** Apresenta duas escolhas e o contexto comercial canônico antes da preparação. */
+  @GetMapping("/products/{id}/preparation")
+  public PlanPreparation preparation(
+      @PathVariable Long id, @RequestParam(defaultValue = "LIVE") Environment environment) {
+    return service.preparation(id, environment);
+  }
+
+  /** Prepara a revisão com suporte e IA, registrando a identidade disponível do operador. */
+  @PostMapping("/products/{id}/preparation")
+  public PlanView prepare(
+      @PathVariable Long id,
+      @RequestParam(defaultValue = "LIVE") Environment environment,
+      @Valid @RequestBody PreparePlanRequest request,
+      Principal principal) {
+    return service.prepare(
+        id, environment, request, principal == null ? null : principal.getName());
   }
 
   /** Cria modelo reutilizável sem aprovar produtos automaticamente. */

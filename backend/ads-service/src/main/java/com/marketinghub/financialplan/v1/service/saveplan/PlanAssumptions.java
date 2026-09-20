@@ -18,7 +18,14 @@ public record PlanAssumptions(
     @DecimalMin("0.01") @Digits(integer = 9, fraction = 6) BigDecimal priceBrl,
     @DecimalMin("0.01") @DecimalMax("99.99") BigDecimal minimumMarginPercent,
     @DecimalMin("0") @Digits(integer = 9, fraction = 6) BigDecimal maximumCacBrl,
-    @NotNull @Size(min = 3, max = 3) List<@NotNull @Valid Scenario> scenarios) {
+    @NotNull @Size(min = 3, max = 3) List<@NotNull @Valid Scenario> scenarios,
+    @Valid Preparation preparation) {
+  /** Escolhas operacionais; suporte não equivale ao período econômico ou ao acesso vendido. */
+  public record Preparation(
+      @NotNull @Min(1) @Max(3660) @JsonDeserialize(using = WholeNumberDeserializer.class)
+          Integer supportDays,
+      @NotNull Boolean personalizedAi) {}
+
   /** Premissas do pacote completo: tarifa por tentativa, câmbio documentado e teto por cliente. */
   public record AiCost(
       @NotNull Currency currency,

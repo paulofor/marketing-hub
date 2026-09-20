@@ -50,8 +50,9 @@ try {
     await p.goto(`http://127.0.0.1:15175/financial/plans?productId=${id}`, {
       waitUntil: "networkidle",
     });
+    await p.getByText("Edição financeira avançada", { exact: true }).click();
     await p
-      .getByRole("button", { name: "Criar plano do produto", exact: true })
+      .getByRole("button", { name: "Editar premissas detalhadas" })
       .click();
     await p.getByRole("button", { name: "Salvar revisão e calcular" }).click();
     assert.equal(
@@ -162,7 +163,10 @@ try {
       p.getByText(/Uso intenso: oito tentativas por cliente/),
     ).toBeVisible();
     checks += 4;
-    await p.getByRole("button", { name: "Criar nova revisão" }).click();
+    await p.getByText("Edição financeira avançada", { exact: true }).click();
+    await p
+      .getByRole("button", { name: "Editar premissas detalhadas" })
+      .click();
     await p
       .getByLabel("Preço por cliente/pacote (R$)", { exact: true })
       .fill("1");

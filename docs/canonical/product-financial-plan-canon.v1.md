@@ -19,7 +19,35 @@ Dados de homologação usam escopo `TEST`, separado de `LIVE`, sem resultados de
 
 ## Operação pela tela
 
-1. Abra **Plano financeiro** no menu ou no card do produto/tipo.
+### Preparação simplificada — decisão de 20/09/2026
+
+O formulário padrão do produto solicita somente **período de suporte em dias**, com
+sugestão editável, e **geração personalizada com IA**, inicialmente **Sim**. Para Quartzo,
+a sugestão inicial é sete dias; para outros tipos, trinta dias. São propostas operacionais,
+nunca alteração automática da oferta ou do acesso já vendido. Escolhas já registradas
+prevalecem sobre os valores iniciais.
+
+O backend identifica produto, versão, plano comercial e revisão, reaproveita as premissas
+da revisão correspondente e registra as duas escolhas em uma nova revisão imutável.
+Preço e CAC podem vir do cadastro/plano comercial com origem explícita. Custos ausentes
+continuam desconhecidos: custos históricos agregados não substituem sua decomposição,
+e escolher IA não confirma provedor, tarifa nem consumo. Escolher sem IA declara somente
+ausência de geração personalizada, preservando os custos iniciais de produção.
+
+Suporte e período da projeção são conceitos separados. A sugestão de suporte não modifica
+silenciosamente custos, prazo de acesso ou período econômico já cadastrado. Quando ainda
+não há período econômico, a preparação propõe trinta dias, com a premissa registrada.
+Os detalhes financeiros e a edição completa ficam em uma opção avançada, sem exigir seu
+preenchimento na preparação simplificada. As lacunas e gates continuam sendo verdade do
+backend; salvar as duas escolhas não autoriza gasto, publicação nem aprovação financeira.
+
+Antes de salvar, o backend reconfere revisão e versão comercial. Concorrência exige
+recarregar; produtos, ambientes e versões não compartilham premissas automaticamente.
+
+### Edição avançada e modelos por tipo
+
+1. Abra **Plano financeiro** no menu ou no card do produto/tipo. No produto, a opção
+   **Edição financeira avançada** mantém o formulário completo para revisar fontes e custos.
 2. Cadastre um modelo do tipo quando houver premissas reutilizáveis. No produto, selecione
    **Usar modelo** ou crie um plano próprio; confirme versão, plano comercial e período.
 3. Informe fontes, preço, custos e três cenários. Campo numérico vazio permanece pendente;

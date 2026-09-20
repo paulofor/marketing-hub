@@ -20,6 +20,7 @@ export const costLabels = {
 } as const;
 export type CostKey = keyof typeof costLabels;
 export interface PlanAssumptions {
+  preparation?: { supportDays: number; personalizedAi: boolean } | null;
   productVersion: string | null;
   periodDays: number | null;
   validUntil: string;
@@ -136,6 +137,69 @@ export interface PlanCatalog {
   commercialPlans: Array<{ id: number; name: string }>;
 }
 const base = "/api/financial-plans/v1";
+export interface PlanPreparation {
+  expectedRevision: number;
+  sourceRevisionId: number | null;
+  commercialPlanId: number | null;
+  commercialPlanVersion: number | null;
+  productVersion: string | null;
+  supportDays: number;
+  personalizedAi: boolean;
+  suggestion: string;
+  priceBrl: number | null;
+  canPrepare: boolean;
+  blocker: string | null;
+}
+export type PrepareFinancialPlan = Pick<
+  PlanPreparation,
+  | "expectedRevision"
+  | "commercialPlanId"
+  | "commercialPlanVersion"
+  | "productVersion"
+  | "supportDays"
+  | "personalizedAi"
+>;
+export function useFinancialPlanPreparation(
+  ownerId: number,
+  environment: PlanEnvironment,
+) {
+  return useQuery({
+    queryKey: ["financial-plan-preparation", ownerId, environment],
+    queryFn: async () =>
+      (
+        await axios.get<PlanPreparation>(
+          `${base}/products/${ownerId}/preparation`,
+          { params: { environment } },
+        )
+      ).data,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}
+export function usePrepareFinancialPlan(
+  ownerId: number,
+  environment: PlanEnvironment,
+) {
+  const cache = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: PrepareFinancialPlan) =>
+      (
+        await axios.post<FinancialPlan>(
+          `${base}/products/${ownerId}/preparation`,
+          body,
+          { params: { environment } },
+        )
+      ).data,
+    onSuccess: async () => {
+      await cache.invalidateQueries({
+        queryKey: ["financial-plans", "products", ownerId, environment],
+      });
+      await cache.invalidateQueries({
+        queryKey: ["financial-plan-preparation", ownerId, environment],
+      });
+    },
+  });
+}
 export function useFinancialPlanCatalog(productId?: number) {
   return useQuery({
     queryKey: ["financial-plan-catalog", productId],

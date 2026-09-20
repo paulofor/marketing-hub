@@ -1,0 +1,18 @@
+{
+  "cardKey": "beneficio-embutido-como-canal-de-aquisicao",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Benefício digital embutido pode abrir um canal de aquisição",
+  "finding": "Pesquisa Bango/3Gem com 2.500 consumidores dos EUA encontrou que 31% disseram que trocariam de provedor financeiro por acesso gratuito às assinaturas favoritas; entre a Geração Z, 48%. Em paralelo, a AT&T passou a oferecer a clientes elegíveis a mensalidade de US$ 19 da LifeMD sem custo, com alcance potencial superior a 100 milhões de clientes. São sinais de intenção declarada e de implementação real, não prova de aumento causal de conversão ou retenção.",
+  "mechanism": "Um benefício recorrente percebido como útil pode reduzir o esforço de descoberta e transferir parte da confiança e da distribuição do parceiro para o produto, fazendo a aquisição acontecer no momento de escolha ou permanência no serviço principal.",
+  "commercialApplication": "Testar um produto digital como benefício gratuito, crédito ou plano incluído em um parceiro que já concentra o público-alvo — software vertical, associação, comunidade, banco, telco ou varejista — contra aquisição direta paga, medindo ativação, conversão posterior para pagamento, retenção e CAC reconciliado.",
+  "evidenceStrength": "Moderada como sinal de comportamento e estratégia de distribuição: pesquisa independente contratada por fornecedor do setor, combinada a um lançamento real em grande escala; ainda sem resultados públicos de conversão ou retenção da parceria.",
+  "publishedOn": "2026-09-20",
+  "validUntil": "2026-12-31",
+  "experimentHypothesis": "Para um produto digital de nicho, distribuição via parceiro com benefício embutido elevará usuários ativados por real investido e conversão para uso ou pagamento recorrente em relação à mídia paga direta, sem deteriorar retenção.",
+  "risks": "O benefício gratuito pode desvalorizar o produto, atrair usuários sem intenção, transferir poder para o parceiro ou mascarar o CAC real; não generalizar de finanças, telecom e saúde para outros mercados.",
+  "limits": "A pesquisa Bango mede intenção declarada e a empresa tem interesse comercial em bundling. AT&T e LifeMD ainda não publicaram adoção, churn, CAC, ativação ou receita incremental da parceria. O crescimento prévio da LifeMD não deve ser atribuído a esse acordo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-20-beneficio-embutido-canal-aquisicao.md",
+  "sourceTitle": "Fonte revisada — benefício digital embutido como canal de aquisição",
+  "sourceSha256": "e46de30cf28a07b7a314c88c993cea164e12ec82cc0965533063ade6a29d1473"
+}

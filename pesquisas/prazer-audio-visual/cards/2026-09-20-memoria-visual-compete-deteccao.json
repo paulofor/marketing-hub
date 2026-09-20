@@ -1,0 +1,18 @@
+{
+  "cardKey": "memoria-visual-mantida-compete-deteccao",
+  "collection": "prazer-audio-visual",
+  "title": "Reduzir carga visual mantida antes de um sinal crítico",
+  "finding": "Em cinco experimentos, aumentar a carga da memória de trabalho visual prejudicou a detecção de novos estímulos tanto quando a informação estava em estado ativo quanto passivo; quando a informação era liberada da memória, o prejuízo desaparecia.",
+  "mechanism": "Informação visual mantida, mesmo fora da prioridade imediata, pode continuar recrutando armazenamento sensorial e competir com o processamento de nova entrada visual.",
+  "commercialApplication": "Antes de CTA, alerta, preço, escolha ou instrução crítica, comparar uma sequência que descarrega ou resume detalhes anteriores com outra que exige mantê-los enquanto o novo alvo aparece.",
+  "evidenceStrength": "Média-alta para competição entre memória de trabalho visual e detecção: cinco experimentos convergentes em Cognition; transferência para interfaces naturais e resultados comerciais ainda precisa de teste.",
+  "publishedOn": "2026-05-16",
+  "validUntil": "2027-03-20",
+  "experimentHypothesis": "Reduzir a quantidade de informação visual que o usuário precisa manter imediatamente antes de um elemento crítico aumentará a detecção e reduzirá erros sem diminuir compreensão do contexto.",
+  "risks": "Simplificação excessiva pode remover contexto necessário ou aumentar navegação; não inferir que todo conteúdo fora do foco consciente gera o mesmo custo de memória.",
+  "limits": "Estados ativo e passivo foram definidos por tarefas laboratoriais; o estudo não mediu prazer, persuasão, retenção publicitária ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-20-memoria-visual-compete-deteccao.md",
+  "sourceTitle": "Fonte revisada — memória visual mantida compete com nova detecção",
+  "sourceSha256": "e688ef41a178cd881f2c9c7097075d3585f68680eef779a252c7bab6c53700dc"
+}

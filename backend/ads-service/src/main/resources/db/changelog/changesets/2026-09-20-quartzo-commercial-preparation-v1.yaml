@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-20-quartzo-commercial-preparation-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=16
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=7
+      changes:
+        - sqlFile:
+            path: 2026-09-20-quartzo-commercial-preparation-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_chain_definition SET status='RETIRED' WHERE chain_code='pde-value-creation-delivery' AND version_number=17;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='quartzo-commercial-preparation-v1' AND version_number=1;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-commercial-homologation-activation' AND version_number=8;

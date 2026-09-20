@@ -30,6 +30,9 @@ public class PdeCommercialPreparationActivityExecutor
   private final LearningSalesCycleRepository cycles;
   private final ObjectMapper json;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialContext quartzoContext;
+
   /** Configura catálogo, ciclos e leitor do contrato de roteamento versionado. */
   public PdeCommercialPreparationActivityExecutor(
       BusinessProcessDefinitionRepository processes,
@@ -52,7 +55,7 @@ public class PdeCommercialPreparationActivityExecutor
             metadata(activity).path("commercialPreparationRouterVersion").asText());
   }
 
-  /** Resolve a rota exata e expõe o subprocesso sem executar trabalho do tipo no backend pai. */
+  /** Resolve a rota exata; Quartzo pode preparar a primeira venda antes de existir ciclo. */
   @Override
   @Transactional(readOnly = true)
   public BackendProductProcessActivityReadiness readiness(
@@ -94,6 +97,29 @@ public class PdeCommercialPreparationActivityExecutor
               + ".",
           true,
           false);
+    }
+    if (quartzoContext != null && quartzoContext.applies(product)) {
+      var scope = quartzoContext.scope(sourceReference, product.getId(), true);
+      String url =
+          "/products/"
+              + product.getId()
+              + "/value-chain-history/processes/"
+              + target.getId()
+              + "/activities?sourceReference="
+              + java.net.URLEncoder.encode(
+                  sourceReference, java.nio.charset.StandardCharsets.UTF_8);
+      if (scope.cycleId() != null)
+        url += "&chainId=" + scope.chainId() + "&learningCycleId=" + scope.cycleId();
+      return new BackendProductProcessActivityReadiness(
+          true,
+          "Quartzo: página, kit e venda direta no experimento selecionado.",
+          "Abrir subprocesso",
+          "Preparar a oferta sem reativar campanha nem alterar orçamento.",
+          null,
+          null,
+          List.of(),
+          target.getId(),
+          url);
     }
     var cycle = cycle(product, sourceReference);
     String navigationUrl =

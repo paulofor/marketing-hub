@@ -86,6 +86,31 @@ e fragmenta a operação); atividades genéricas (menor esforço, mas mistura co
 de tipos); subprocesso especializado (reutiliza o motor e mantém regras explícitas).
 Escolhida a terceira por aderência ao tipo e menor risco de duplicação.
 
+## Preparação comercial Quartzo — decisão de 20/09/2026
+
+O tipo `LOW_TICKET_DIGITAL_PRODUCT` (Quartzo) recebe o subprocesso versionado
+`quartzo-commercial-preparation-v1`, **Preparar operação comercial Quartzo**, no
+Processo 5. Ele reutiliza o motor BPM, a página auditada pelo GeraSalesPage, a biblioteca
+aprovada, o plano financeiro de Plutus e os agentes de revisão. Não exige slot Opala,
+login gratuito, paywall, assinatura ou vídeo quando esses itens não pertencem à oferta.
+
+O percurso confirma oferta e versão, página própria com prova real, criativo aprovado,
+checkout e entrega do kit, público, margem e pareceres de Psique e Têmis. Personalização
+exige briefing, prazo e custo de entrega explícitos; uma prévia visual não comprova a
+entrega paga. Capella continua Quartzo e mantém sua proposta cadastrada.
+
+Toda prova pertence ao mesmo produto e experimento e deve refletir os ativos atuais.
+Preparação pode anteceder o primeiro ciclo de aprendizado; ausência de ciclo não permite
+inventar um nem usar dados de outro experimento. Experimentos interrompidos podem ser
+inspecionados e preparados sem reativação. Campanha em execução não recebe alterações
+comerciais por esse subprocesso. Conclusão significa preparação, não venda, autorização
+de mídia ou liberação da campanha. A ativação continua exigindo homologação e decisão
+humana sobre versão, orçamento, janela e regra de parada.
+
+Alternativas consideradas: ampliar as condições de Opala (menor início, maior risco de
+misturar contratos); criar motor separado (maior custo e duplicação); especializar Quartzo
+no BPM existente (contratos claros e reaproveitamento). Escolhida a terceira.
+
 ## Gestão das versões PDE Opala — decisão de 16/09/2026
 
 Todo produto oficialmente vinculado ao tipo `PDE` (nome interno Opala) deve oferecer no card do

@@ -25,4 +25,4 @@ for attempt in $(seq 1 30); do
   sleep 1
 done
 OPALA_MYSQL_URL="jdbc:mysql://${opala_db_host}:18307/opala_test?useSSL=false&allowPublicKeyRetrieval=true" \
-  mvn -B -f backend/ads-service/pom.xml '-Dtest=OpalaCommercial*Test' test
+  mvn -B -f backend/ads-service/pom.xml '-Dtest=OpalaCommercial*Test,QuartzoCommercialMigrationTest' test

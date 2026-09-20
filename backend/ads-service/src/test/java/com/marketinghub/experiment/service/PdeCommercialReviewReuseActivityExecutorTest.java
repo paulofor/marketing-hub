@@ -73,9 +73,18 @@ class PdeCommercialReviewReuseActivityExecutorTest {
     when(routing.isOpala(4L)).thenReturn(true);
     when(routing.target(cycle)).thenReturn(child);
     when(routing.completed(cycle)).thenReturn(true);
-    when(tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
-            77L, "experiment:92"))
-        .thenReturn(List.of(sourceTask));
+    when(tasks.findLatestReviewSnapshots(
+            77L,
+            "experiment:92",
+            "humanExperienceReview",
+            org.springframework.data.domain.PageRequest.of(0, 1)))
+        .thenReturn(
+            List.of(
+                new com.marketinghub.agenttask.AgentTaskReviewSnapshot(
+                    sourceTask.getId(),
+                    sourceTask.getStatus(),
+                    sourceTask.getEvidenceJson(),
+                    sourceTask.getResultJson())));
     when(definitions.findByProcessDefinitionIdAndActivityId(77L, "ready"))
         .thenReturn(Optional.of(readyDefinition));
     when(instances.findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(

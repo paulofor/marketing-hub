@@ -168,6 +168,44 @@ class ProcessExecutionGraphTest {
     assertThat(checked).isEqualTo(2);
   }
 
+  /** Executa o grafo Quartzo e seu pai reais, exigindo prova funcional em cada passagem. */
+  @Test
+  void quartzoMigrationProvidesExecutableTypedPreparation() throws Exception {
+    String sql;
+    try (var input =
+        getClass()
+            .getResourceAsStream(
+                "/db/changelog/changesets/2026-09-20-quartzo-commercial-preparation-v1.sql")) {
+      sql = new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+    }
+    int checked = 0;
+    for (String line :
+        sql.lines()
+            .filter(l -> l.contains("'{") && l.contains("UTC_TIMESTAMP(),UTC_TIMESTAMP()"))
+            .toList()) {
+      var diagram =
+          new ObjectMapper()
+              .readTree(
+                  line.substring(
+                      line.indexOf("'{") + 1, line.lastIndexOf("}',UTC_TIMESTAMP()") + 1));
+      var graph = new ProcessExecutionGraph(diagram);
+      var activities = new java.util.ArrayList<ProductProcessActivityExecutionGroupResponse>();
+      for (var node : diagram.path("nodes"))
+        if ("TASK".equals(node.path("type").asText()))
+          activities.add(activity(node.path("id").asText(), false));
+      var ordered = graph.ordered(activities);
+      assertThat(ordered).isNotEmpty();
+      assertThat(ordered.getFirst().activityId()).isIn("entry", "commercialPreparation");
+      assertThat(graph.predecessorsSatisfied(ordered.getLast().activityId(), activities)).isFalse();
+      for (var current : ordered) {
+        assertThat(graph.predecessorsSatisfied(current.activityId(), activities)).isTrue();
+        when(current.objectiveAchieved()).thenReturn(true);
+      }
+      checked++;
+    }
+    assertThat(checked).isEqualTo(2);
+  }
+
   /** Cria projeção mínima com identidade e estado oficial da atividade. */
   private ProductProcessActivityExecutionGroupResponse activity(String id, boolean achieved) {
     var activity = mock(ProductProcessActivityExecutionGroupResponse.class);

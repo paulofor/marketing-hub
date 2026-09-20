@@ -43,6 +43,7 @@ public class CustomerBpmTaskConsumer {
           new BpmContract("landing-page-generation", "customer"),
           new BpmContract("pde-commercial-homologation-activation", "humanExperienceReview"),
           new BpmContract("opala-commercial-preparation-v1", "humanExperienceReview"),
+          new BpmContract("quartzo-commercial-preparation-v1", "humanExperienceReview"),
           new BpmContract("pde-construction-approval", "humanExperienceReview"),
           new BpmContract("pde-construction-approval", "psiqueAdherent"),
           new BpmContract("pde-construction-approval", "psiqueRecovery"),
@@ -305,6 +306,7 @@ public class CustomerBpmTaskConsumer {
             "landing-page-generation",
             "pde-commercial-homologation-activation",
             "opala-commercial-preparation-v1",
+            "quartzo-commercial-preparation-v1",
             "pde-construction-approval")
         .contains(processCode);
   }
@@ -1069,6 +1071,8 @@ public class CustomerBpmTaskConsumer {
   /** Seleciona o prompt versionado específico da entidade avaliada. */
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
+      case "quartzo-commercial-preparation-v1" ->
+          "prompts/quartzo-commercial/v1/customer-review.md";
       case "creative-production-approval" -> "prompts/bpm/v3/creative-customer-review.md";
       case "pde-commercial-homologation-activation", "opala-commercial-preparation-v1" ->
           "prompts/bpm/v3/pde-commercial-homologation-customer-review.md";
@@ -1081,6 +1085,8 @@ public class CustomerBpmTaskConsumer {
   /** Seleciona o schema versionado específico da entidade avaliada. */
   static String schemaResourceFor(String processCode) {
     return switch (processCode) {
+      case "quartzo-commercial-preparation-v1" ->
+          "prompts/quartzo-commercial/v1/customer-review-schema.json";
       case "creative-production-approval" -> "prompts/bpm/v3/creative-customer-review-schema.json";
       case "pde-commercial-homologation-activation", "opala-commercial-preparation-v1" ->
           "prompts/bpm/v3/pde-commercial-homologation-customer-review-schema.json";
@@ -1707,6 +1713,10 @@ public class CustomerBpmTaskConsumer {
       evidence.put(
           "opalaScope",
           json.readTree(String.valueOf(task.get("processContextJson"))).path("opalaCommercial"));
+    if ("quartzo-commercial-preparation-v1".equals(processCode(task)))
+      evidence.put(
+          "quartzoScope",
+          json.readTree(String.valueOf(task.get("processContextJson"))).path("quartzoCommercial"));
     return json.writeValueAsString(evidence);
   }
 

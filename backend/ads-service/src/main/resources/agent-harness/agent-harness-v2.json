@@ -281,6 +281,8 @@
         }
       ],
       "artifacts": [
+        {"artifactType": "PROMPT", "name": "Revisão comercial Quartzo", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/quartzo-commercial/v1/customer-review.md", "description": "Preparação auditável de pacote digital low-ticket, com entrega e evidência próprias do tipo Quartzo."},
+        {"artifactType": "OUTPUT_SCHEMA", "name": "Schema comercial Quartzo", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/quartzo-commercial/v1/customer-review-schema.json", "description": "Preparação auditável de pacote digital low-ticket, com entrega e evidência próprias do tipo Quartzo."},
         { "artifactType": "MCP_SERVER", "name": "MCP do Agente Cliente", "version": "v1", "path": "customer-agent-worker/src/main/resources/mcp/customer-agent.mjs", "description": "Contexto e memória limitados ao domínio de Psique." },
         { "artifactType": "PROMPT", "name": "Núcleo comportamental, sensorial e estético", "version": "v4", "path": "customer-agent-worker/src/main/resources/prompts/psique/behavioral-core-v4.md", "description": "Princípios afetivos, sociais, sensoriais e de composição visual atuais." },
         { "artifactType": "BEHAVIOR_LIBRARY", "name": "Uso auditável de inteligência de pesquisa", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/psique/research-intelligence-usage-v1.md", "description": "Critérios para Psique aplicar e citar cartões de pesquisa sem inventar evidências." },
@@ -613,6 +615,8 @@
         }
       ],
       "artifacts": [
+        {"artifactType": "PROMPT", "name": "Revisão comercial Quartzo", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/quartzo-commercial/v1/integrity-review.md", "description": "Preparação auditável de pacote digital low-ticket, com entrega e evidência próprias do tipo Quartzo."},
+        {"artifactType": "OUTPUT_SCHEMA", "name": "Schema comercial Quartzo", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/quartzo-commercial/v1/integrity-review-schema.json", "description": "Preparação auditável de pacote digital low-ticket, com entrega e evidência próprias do tipo Quartzo."},
         { "artifactType": "MCP_SERVER", "name": "MCP do Aprovador Meta", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/mcp/meta-ad-approver.mjs", "description": "Contexto, memória e inspeção do criativo." },
         { "artifactType": "MCP_SERVER", "name": "MCP de revisão da biblioteca", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/mcp/temis-library-review.mjs", "description": "Revisão de imagens da biblioteca audiovisual." },
         { "artifactType": "PROMPT", "name": "Núcleo de Têmis", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/temis/v1/agent-core.md", "description": "Identidade e limites de revisão permanentes separados da atividade." },

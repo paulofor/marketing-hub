@@ -204,3 +204,12 @@ regressão antes de seguir para PR.
 
 A regressão de setembro está registrada em
 [homologação local do CI](../homologacao/actions-mira-ciclos-2026-09-13.md).
+
+## Preparação comercial Quartzo — v1
+
+O mesmo job `validate-opala-commercial-preparation` também executa
+`QuartzoCommercialMigrationTest`: aplica o subprocesso Quartzo, Processo 5 v8 e cadeia
+v17 em banco sintético separado, confere a rota Opala preservada, reaplicação e rollback
+por aposentadoria somente das versões novas. A fixture é
+`liquibase-mysql57/quartzo-commercial-preparation-test.yaml`; o runner continua usando
+projeto Compose exclusivo e limpa a topologia ao terminar.

@@ -421,6 +421,55 @@ describe("ProductProcessActivityExecutionPanel", () => {
     expect(onExecute).not.toHaveBeenCalled();
   });
 
+  it.each([
+    undefined,
+    "/products/7/value-chain-history/processes/90/activities?sourceReference=experiment%3A88",
+  ])(
+    "preserves the selected chain and experiment in a Quartzo subprocess without a cycle: %s",
+    (navigationUrl) => {
+      const activity = baseActivity();
+      activity.executionControl = {
+        executorType: "BACKEND",
+        interactionType: "SUBPROCESS",
+        actionLabel: "Abrir Quartzo",
+        description: "Preparar o kit",
+        actionAvailable: true,
+        availabilityReason: "Disponível",
+        confirmationRequired: false,
+        targetProcessDefinitionId: 90,
+        requirements: [],
+        navigationUrl,
+      };
+      render(
+        <MemoryRouter
+          initialEntries={[
+            "/products/7/value-chain-history/processes/89/activities?chainId=17&sourceReference=experiment%3A88",
+          ]}
+        >
+          <ProductProcessActivityExecutionPanel
+            activity={activity}
+            productId={7}
+            pending={false}
+            onExecute={onExecute}
+          />
+        </MemoryRouter>,
+      );
+      const url = new URL(
+        screen
+          .getByRole("link", { name: "Abrir Quartzo" })
+          .getAttribute("href")!,
+        "http://localhost",
+      );
+      expect(url.pathname).toBe(
+        "/products/7/value-chain-history/processes/90/activities",
+      );
+      expect(url.searchParams.get("chainId")).toBe("17");
+      expect(url.searchParams.get("sourceReference")).toBe("experiment:88");
+      expect(url.searchParams.has("learningCycleId")).toBe(false);
+      expect(onExecute).not.toHaveBeenCalled();
+    },
+  );
+
   it("shows the preflight workspace and keeps a pending run non-reentrant", () => {
     renderPanel({
       ...baseActivity(),

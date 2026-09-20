@@ -79,6 +79,24 @@ export default function ProductProcessActivityExecutionPanel({
   }
   if (chainId) subprocessSearch.set("chainId", String(chainId));
   if (cycleId) subprocessSearch.set("learningCycleId", String(cycleId));
+  const sourceReference = currentSearch.get("sourceReference");
+  if (sourceReference) subprocessSearch.set("sourceReference", sourceReference);
+  const subprocessPath = `/products/${productId}/value-chain-history/processes/${control.targetProcessDefinitionId}/activities`;
+  let subprocessUrl = control.navigationUrl;
+  if (!subprocessUrl) {
+    const query = subprocessSearch.toString();
+    subprocessUrl = `${subprocessPath}${query ? `?${query}` : ""}`;
+  } else if (
+    subprocessUrl === subprocessPath ||
+    subprocessUrl.startsWith(`${subprocessPath}?`)
+  ) {
+    const supplied = new URL(subprocessUrl, window.location.origin);
+    subprocessSearch.forEach((value, key) => {
+      if (!supplied.searchParams.has(key))
+        supplied.searchParams.set(key, value);
+    });
+    subprocessUrl = `${supplied.pathname}${supplied.search}${supplied.hash}`;
+  }
   const recovery = activity.recoveryAction;
   const controlCompleted = activity.operationalState === "COMPLETED";
   const recoveryLabel = recovery
@@ -86,7 +104,7 @@ export default function ProductProcessActivityExecutionPanel({
     : "";
   const waitingForTask = Boolean(
     feedback?.taskIds?.length &&
-    !feedback.taskIds.includes(currentTask?.taskId ?? -1),
+      !feedback.taskIds.includes(currentTask?.taskId ?? -1),
   );
 
   return (
@@ -141,13 +159,7 @@ export default function ProductProcessActivityExecutionPanel({
         ) : control.interactionType === "SUBPROCESS" ||
           (control.interactionType === "AUTOMATIC" && control.navigationUrl) ? (
           control.targetProcessDefinitionId && control.actionAvailable ? (
-            <Link
-              className="btn btn-primary"
-              to={
-                control.navigationUrl ||
-                `/products/${productId}/value-chain-history/processes/${control.targetProcessDefinitionId}/activities${subprocessSearch.size ? `?${subprocessSearch}` : ""}`
-              }
-            >
+            <Link className="btn btn-primary" to={subprocessUrl}>
               <Workflow size={17} aria-hidden="true" />
               {control.actionLabel || "Abrir subprocesso"}
             </Link>

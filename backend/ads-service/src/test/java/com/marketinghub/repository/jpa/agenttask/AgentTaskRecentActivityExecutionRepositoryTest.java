@@ -25,6 +25,46 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
   @Autowired private AgentTaskRepository repository;
   @Autowired private AgentTaskActivityCoverageRepository coverageRepository;
 
+  /** A última tentativa em aberto impede reutilizar aprovação anterior sem hidratar prompts. */
+  @Test
+  void loadsOnlyLatestReviewOfExactActivityIncludingUnfinishedAttempt() {
+    var agent = agent();
+    var process = process("quartzo-commercial-preparation-v1", 1);
+    var approved = task(agent, process, "humanExperienceReview", 500, "2026-09-20T08:00:00Z");
+    approved.setSourceReference("experiment:88");
+    approved.setStatus("COMPLETED");
+    var pending = task(agent, process, "humanExperienceReview", 501, "2026-09-20T09:00:00Z");
+    pending.setSourceReference("experiment:88");
+    pending.setStatus("IN_PROGRESS");
+    pending.setExecutionPrompt("Auditoria extensa excluída da consulta. ".repeat(100000));
+    task(agent, process, "commercialIntegrityReview", 502, "2026-09-20T10:00:00Z")
+        .setSourceReference("experiment:88");
+    task(agent, process, "humanExperienceReview", 503, "2026-09-20T11:00:00Z")
+        .setSourceReference("experiment:92");
+    entityManager.flush();
+    entityManager.clear();
+    var statistics =
+        entityManager
+            .getEntityManager()
+            .getEntityManagerFactory()
+            .unwrap(org.hibernate.SessionFactory.class)
+            .getStatistics();
+    statistics.setStatisticsEnabled(true);
+    statistics.clear();
+    try {
+      var result =
+          repository.findLatestReviewSnapshots(
+              process.getId(), "experiment:88", "humanExperienceReview", PageRequest.of(0, 1));
+      assertThat(result).hasSize(1);
+      assertThat(result.getFirst().taskId()).isEqualTo(pending.getId());
+      assertThat(result.getFirst().status()).isEqualTo("IN_PROGRESS");
+      assertThat(statistics.getEntityLoadCount()).isZero();
+      assertThat(statistics.getPrepareStatementCount()).isEqualTo(1);
+    } finally {
+      statistics.setStatisticsEnabled(false);
+    }
+  }
+
   /** A fila de recuperação lê somente falhas candidatas do agente e preserva sua ordem. */
   @Test
   void filtersCallbackCandidatesBeforeLoadingHistoricalTaskAudits() {

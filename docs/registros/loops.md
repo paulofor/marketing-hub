@@ -6307,3 +6307,21 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Prevenção:** testes de contrato backend, HTTP do worker, limites 149,99/150,
   confirmação divergente, ausência de Insights, duplicidade e tela com consentimento.
   Matriz: `docs/homologacao/vega91-retomada-financeira-v1.md`.
+
+## LOOP-QUARTZO-HOMOLOGACAO-EXIGE-SLOT-OPALA — 20/09/2026
+
+- **Histórico confirmado:** Capella #7 é Quartzo; experimento #88 tem página
+  GeraSalesPage auditada #27, mas a tarefa #422 não recebeu destino porque o resolvedor
+  comercial exigia `experienceVersion`/slot PDE. O Processo 5 v7 só roteava Opala.
+- **Causa:** contrato de assinatura/slot aplicado à venda de kit low-ticket, antes
+  de considerar o tipo cadastrado e a fonte comercial auditada do experimento.
+- **Correção:** Processo 5 v8/cadeia v17 roteiam Quartzo para contrato próprio de
+  preparação; a página e o checkout vêm da publicação auditada. Versão e experimento
+  explícitos permanecem obrigatórios, inclusive sem ciclo. Revisões não carregam
+  manifestos Opala e o pai reutiliza os pareceres do mesmo conjunto de ativos.
+- **Prevenção:** `QuartzoCommercialIntegrationTest`, `QuartzoCommercialContextTest`,
+  `QuartzoCommercialServiceTest`, `QuartzoCommercialMigrationTest`, contratos dos dois
+  workers e navegação desktop/mobile. Escala decimal e ordem de JSON são normalizadas
+  para não repetir `LOOP-OPALA-GATE-FINAL-COMPARA-JSON-LITERAL`. A vigência e a
+  reutilização leem somente a última revisão por SQL, prevenindo também
+  `LOOP-OPALA-HISTORICO-RECARREGA-PROMPTS-POR-ATIVIDADE`.

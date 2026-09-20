@@ -163,6 +163,11 @@ public class QuartzoCommercialContext {
       result.put("pageHash", fingerprintText(Objects.toString(publication.getHtml(), "")));
     }
     result.set("productProof", json.valueToTree(assets.payloadForExperiment(experiment.getId())));
+    result.put(
+        "productProofInPage",
+        publication != null
+            && assets.hasRequiredApprovedAssetReferences(
+                experiment.getId(), publication.getHtml()));
     var allCreatives = creatives.findByExperimentId(experiment.getId());
     var superseded =
         allCreatives.stream()

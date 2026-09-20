@@ -84,7 +84,7 @@ class QuartzoCommercialServiceTest {
         "destinationUrl":"https://example.test/kit","checkoutUrl":"https://example.test/pay",
         "deliverable":"Kit utilizável","deliveryMode":"PERSONALIZED","checkoutMonetization":"Compra única",
         "riskReversal":"Reembolso no prazo contratado","validationContract":{"delivery":{"personalization":true}},
-        "productProof":[{"assetId":1}],"creatives":[{"id":2}],"salesProven":false,"mediaSpendAuthorized":false,
+        "productProof":[{"assetId":1}],"productProofInPage":true,"creatives":[{"id":2}],"salesProven":false,"mediaSpendAuthorized":false,
         "financialPlan":{"stale":false,"assumptions":{"priceBrl":67},"evaluation":{"status":"PROJECTED_VIABLE"},
         "analysis":{"status":"COMPLETED","result":{"scenarios":[{"name":"CONSERVATIVE"},{"name":"BASE","profitBrl":20,"averagePriceBrl":67},{"name":"OPTIMISTIC"}]}}}}
         """);
@@ -263,6 +263,10 @@ class QuartzoCommercialServiceTest {
   /** Checkouts divergentes, economia vencida e prova ausente produzem orientação sem escrita. */
   @Test
   void blocksMissingProofConflictingCheckoutAndStaleEconomics() {
+    snapshot.put("productProofInPage", false);
+    assertThat(
+            service.readiness(process, activities.get("entry"), product, "experiment:88").reason())
+        .contains("arquivos exatos");
     snapshot.withArray("productProof").removeAll();
     assertThat(
             service.readiness(process, activities.get("entry"), product, "experiment:88").reason())

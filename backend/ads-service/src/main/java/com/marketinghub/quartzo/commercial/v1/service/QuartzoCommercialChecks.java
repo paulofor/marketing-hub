@@ -61,6 +61,9 @@ public class QuartzoCommercialChecks {
         require(
             snapshot.path("productProof").isArray() && !snapshot.path("productProof").isEmpty(),
             "Aprove uma prova real do kit na Biblioteca Audiovisual antes da divulgação.");
+        require(
+            snapshot.path("productProofInPage").asBoolean(false),
+            "A página auditada precisa mostrar os arquivos exatos aprovados do kit; republique pelo GeraSalesPage.");
       }
       case "creative" -> {
         require(

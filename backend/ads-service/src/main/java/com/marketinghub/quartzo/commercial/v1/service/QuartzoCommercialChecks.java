@@ -100,7 +100,8 @@ public class QuartzoCommercialChecks {
             !plan.path("stale").asBoolean(true),
             "Atualize o plano financeiro vencido ou alterado.");
         require(
-            "PROJECTED_VIABLE".equals(plan.path("evaluation").path("status").asText()),
+            List.of("READY_FOR_ANALYSIS", "PROJECTED_VIABLE")
+                .contains(plan.path("evaluation").path("status").asText()),
             "Corrija custos ausentes ou margem inviável no plano financeiro.");
         require(
             plan.path("assumptions").path("priceBrl").isNumber()
@@ -113,7 +114,15 @@ public class QuartzoCommercialChecks {
         require(
             "COMPLETED".equals(plan.path("analysis").path("status").asText()),
             "Solicite e conclua o parecer de Plutus sobre esta revisão pela tela Plano financeiro.");
-        var scenarios = plan.path("analysis").path("result").path("scenarios");
+        var result = plan.path("analysis").path("result");
+        require(
+            "APPROVE".equals(result.path("decision").asText()),
+            "Plutus não aprovou a hipótese econômica desta revisão.");
+        require(
+            List.of("COMPLETE_AGGREGATE", "COMPLETE_DETAILED")
+                .contains(result.path("costCoverageAssessment").path("status").asText()),
+            "Plutus não comprovou cobertura suficiente dos custos desta revisão.");
+        var scenarios = result.path("scenarios");
         require(
             scenarios.isArray() && scenarios.size() == 3,
             "O parecer de Plutus precisa preservar os três cenários auditáveis.");

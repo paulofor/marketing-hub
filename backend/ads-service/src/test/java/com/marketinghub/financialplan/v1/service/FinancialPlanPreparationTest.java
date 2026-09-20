@@ -6,12 +6,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.financialagent.FinancialAgentExecution;
+import com.marketinghub.financialagent.FinancialAgentExecutionStatus;
+import com.marketinghub.financialagent.service.FinancialAgentExecutionResponse;
 import com.marketinghub.financialagent.service.FinancialAgentService;
+import com.marketinghub.financialagent.service.StartRevenueProjectionRequest;
 import com.marketinghub.financialplan.v1.FinancialPlanRevision;
 import com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment;
 import com.marketinghub.financialplan.v1.controller.FinancialPlanController;
 import com.marketinghub.financialplan.v1.service.prepareplan.*;
 import com.marketinghub.financialplan.v1.service.saveplan.PlanAssumptions;
+import com.marketinghub.financialplan.v1.service.saveplan.SavePlanRequest;
 import com.marketinghub.planning.*;
 import com.marketinghub.product.Product;
 import com.marketinghub.producttype.ProductTypeDefinition;
@@ -41,6 +46,8 @@ class FinancialPlanPreparationTest {
   private final CommercialPlanRepository plans = mock(CommercialPlanRepository.class);
   private final CommercialPlanVersionRepository versions =
       mock(CommercialPlanVersionRepository.class);
+  private final FinancialAgentExecutionRepository executions =
+      mock(FinancialAgentExecutionRepository.class);
   private final FinancialAgentService plutus = mock(FinancialAgentService.class);
   private final Product product = new Product();
   private final CommercialPlan plan = new CommercialPlan();
@@ -56,7 +63,7 @@ class FinancialPlanPreparationTest {
             mock(ProductTypeDefinitionRepository.class),
             plans,
             versions,
-            mock(FinancialAgentExecutionRepository.class),
+            executions,
             plutus,
             json,
             Validation.buildDefaultValidatorFactory().getValidator());
@@ -71,8 +78,11 @@ class FinancialPlanPreparationTest {
     when(products.findLockedById(95101L)).thenReturn(Optional.of(product));
     plan.setId(95102L);
     plan.setExpectedCacBrl(new BigDecimal("25"));
+    plan.setVariableCostPerSaleBrl(new BigDecimal("13.50"));
+    plan.setFixedOperationalCostBrl(new BigDecimal("73.20"));
     when(plans.findByProductId(95101L)).thenReturn(List.of(plan));
     when(plans.findIdsByProductId(95101L)).thenReturn(List.of(plan.getId()));
+    when(plans.findById(plan.getId())).thenReturn(Optional.of(plan));
     var version = new CommercialPlanVersion();
     version.setVersionNumber(4);
     when(versions.findTopByPlanIdOrderByVersionNumberDesc(plan.getId()))
@@ -123,7 +133,7 @@ class FinancialPlanPreparationTest {
     return r;
   }
 
-  /** Sugere sete dias e IA sem transformar fontes ausentes em margem aprovada. */
+  /** Usa o envelope oficial sem inventar decomposição nem transformar análise em aprovação. */
   @Test
   void defaultsAndMissingSources() {
     var preview = service.preparation(product.getId(), Environment.LIVE);
@@ -136,8 +146,13 @@ class FinancialPlanPreparationTest {
     assertThat(saved.assumptions().preparation().supportDays()).isEqualTo(7);
     assertThat(saved.assumptions().ai().perAttempt()).isNull();
     assertThat(saved.assumptions().costs().otherVariableBrl()).isNull();
-    assertThat(saved.canRequestAnalysis()).isFalse();
-    assertThat(saved.evaluation().status()).isEqualTo("MISSING_INPUTS");
+    assertThat(saved.assumptions().costs().fixedPerPeriodBrl()).isEqualByComparingTo("73.20");
+    assertThat(saved.assumptions().variableCostEnvelope().amountPerCustomerBrl())
+        .isEqualByComparingTo("13.50");
+    assertThat(saved.assumptions().variableCostEnvelope().sourceReference())
+        .isEqualTo("commercial-plan:95102@v4:variableCostPerSaleBrl");
+    assertThat(saved.canRequestAnalysis()).isTrue();
+    assertThat(saved.evaluation().status()).isEqualTo("READY_FOR_ANALYSIS");
     assertThat(
             FinancialPlanPreparation.prepare(
                 saved.assumptions(), request(0, 7, true), plan, saved.assumptions().priceBrl()))
@@ -176,7 +191,7 @@ class FinancialPlanPreparationTest {
     assertThat(result.periodDays()).isEqualTo(a.periodDays());
   }
 
-  /** Desligar IA remove apenas geração variável; religar exige fonte de tarifa. */
+  /** Alternar IA preserva investimento e exige que Plutus confira o envelope da nova escolha. */
   @Test
   void togglingAiPreservesInitialInvestmentAndRequiresRealPricing() throws Exception {
     var a = complete();
@@ -186,7 +201,104 @@ class FinancialPlanPreparationTest {
     assertThat(without.costs().initialAiBrl()).isEqualTo(a.costs().initialAiBrl());
     var with = FinancialPlanPreparation.prepare(without, request(1, 7, true), plan, a.priceBrl());
     assertThat(with.ai().perAttempt()).isNull();
-    assertThat(FinancialPlanCalculator.evaluate(with).status()).isEqualTo("MISSING_INPUTS");
+    assertThat(FinancialPlanCalculator.evaluate(with).status()).isEqualTo("READY_FOR_ANALYSIS");
+  }
+
+  /** Mantém o bloqueio quando o plano comercial não informa o custo variável agregado. */
+  @Test
+  void missingCommercialEnvelopeRemainsUnknown() {
+    plan.setVariableCostPerSaleBrl(null);
+    var saved = service.prepare(product.getId(), Environment.LIVE, request(0, 7, true), null);
+    assertThat(saved.assumptions().variableCostEnvelope()).isNull();
+    assertThat(saved.evaluation().status()).isEqualTo("MISSING_INPUTS");
+    assertThat(saved.canRequestAnalysis()).isFalse();
+  }
+
+  /** Impede custo de Plutus quando a própria unidade já perde dinheiro após o CAC máximo. */
+  @Test
+  void negativeAggregateContributionBlocksPaidReview() {
+    plan.setVariableCostPerSaleBrl(new BigDecimal("50"));
+    var saved = service.prepare(product.getId(), Environment.LIVE, request(0, 7, true), null);
+    assertThat(saved.evaluation().status()).isEqualTo("REVIEW_REQUIRED");
+    assertThat(saved.canRequestAnalysis()).isFalse();
+    assertThat(saved.pendingActions()).anyMatch(value -> value.contains("contribuição após o CAC"));
+    verifyNoInteractions(plutus);
+  }
+
+  /** Enfileira uma única revisão pronta com envelope e identidade comercial congelados. */
+  @Test
+  void readyAggregateRevisionCanRequestAuditablePlutusReview() {
+    var persisted = new java.util.concurrent.atomic.AtomicReference<FinancialPlanRevision>();
+    doAnswer(
+            invocation -> {
+              var revision = invocation.<FinancialPlanRevision>getArgument(0);
+              revision.setId(999L);
+              persisted.set(revision);
+              return revision;
+            })
+        .when(revisions)
+        .saveAndFlush(any());
+    var saved = service.prepare(product.getId(), Environment.LIVE, request(0, 7, true), null);
+    when(revisions.findLockedById(saved.id())).thenReturn(Optional.of(persisted.get()));
+    when(plutus.startRevenueProjection(eq(plan.getId()), any(StartRevenueProjectionRequest.class)))
+        .thenReturn(
+            new FinancialAgentExecutionResponse(
+                777L,
+                plan.getId(),
+                FinancialAgentExecutionStatus.PENDING,
+                "READ_ONLY_REVENUE_PROJECTION",
+                4,
+                888L,
+                null,
+                "{}",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Instant.now()));
+    var execution = new FinancialAgentExecution();
+    execution.setId(777L);
+    execution.setCommercialPlan(plan);
+    execution.setStatus(FinancialAgentExecutionStatus.PENDING);
+    when(executions.findById(777L)).thenReturn(Optional.of(execution));
+
+    var requested = service.requestAnalysis(product.getId(), Environment.LIVE, saved.id());
+    var retried = service.requestAnalysis(product.getId(), Environment.LIVE, saved.id());
+
+    assertThat(requested.analysis().status()).isEqualTo("PENDING");
+    assertThat(retried.analysis().executionId()).isEqualTo(requested.analysis().executionId());
+    var context = org.mockito.ArgumentCaptor.forClass(StartRevenueProjectionRequest.class);
+    verify(plutus, times(1)).startRevenueProjection(eq(plan.getId()), context.capture());
+    assertThat(context.getValue().decisionContext())
+        .contains(
+            "READY_FOR_ANALYSIS",
+            "ALL_VARIABLE_COSTS_EXCLUDING_CAC",
+            "commercial-plan:95102@v4:variableCostPerSaleBrl");
+  }
+
+  /** Recusa envelope textual que não corresponde ao valor e à versão oficiais do plano. */
+  @Test
+  void forgedAggregateReferenceCannotUnlockReview() throws Exception {
+    var assumptions =
+        FinancialPlanPreparation.prepare(
+            null, request(0, 7, true), plan, product.getCurrentPriceBrl());
+    var node = (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(assumptions);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) node.path("variableCostEnvelope"))
+        .put("sourceReference", "commercial-plan:999@v1:variableCostPerSaleBrl");
+    var forged = json.treeToValue(node, PlanAssumptions.class);
+
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    "PRODUCT",
+                    product.getId(),
+                    Environment.LIVE,
+                    new SavePlanRequest(
+                        "Plano sintético", "Operador local", 0, plan.getId(), null, forged)))
+        .hasMessageContaining("envelope variável diverge");
+    verifyNoInteractions(plutus);
   }
 
   /** Edição avançada não pode apresentar custo zero enquanto promete geração personalizada. */
@@ -200,7 +312,7 @@ class FinancialPlanPreparationTest {
     assertThat(
             FinancialPlanCalculator.evaluate(json.treeToValue(node, PlanAssumptions.class))
                 .blockers())
-        .anyMatch(b -> b.contains("geração personalizada"));
+        .anyMatch(b -> b.contains("personalizada incluída no envelope"));
   }
 
   /** Recusa submissão após outra revisão e não busca fontes de LIVE durante TEST. */

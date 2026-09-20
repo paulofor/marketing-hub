@@ -228,6 +228,16 @@ components:
         priceBrl: {type: number, minimum: 0.01, nullable: true}
         minimumMarginPercent: {type: number, minimum: 0.01, maximum: 99.99, nullable: true}
         maximumCacBrl: {$ref: '#/components/schemas/Amount'}
+        variableCostEnvelope:
+          type: object
+          nullable: true
+          description: Custo variável total por cliente preservado sem presumir a decomposição interna; CAC permanece separado.
+          required: [amountPerCustomerBrl, coverage, sourceReference, checkedOn]
+          properties:
+            amountPerCustomerBrl: {$ref: '#/components/schemas/Amount'}
+            coverage: {type: string, enum: [ALL_VARIABLE_COSTS_EXCLUDING_CAC]}
+            sourceReference: {type: string, maxLength: 1000}
+            checkedOn: {type: string, format: date}
         ai:
           type: object
           required: [currency]
@@ -287,7 +297,7 @@ components:
         evaluation:
           type: object
           properties:
-            status: {type: string, enum: [MISSING_INPUTS, REVIEW_REQUIRED, PROJECTED_VIABLE]}
+            status: {type: string, enum: [MISSING_INPUTS, REVIEW_REQUIRED, READY_FOR_ANALYSIS, PROJECTED_VIABLE]}
             label: {type: string}
             blockers: {type: array, items: {type: string}}
             scenarios:

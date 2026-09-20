@@ -1,33 +1,73 @@
 {
+  "decision": "APPROVE",
+  "decisionBasis": "A cobertura sintética está completa e o cenário-base mantém contribuição positiva; isso não comprova vendas.",
+  "costCoverageAssessment": {
+    "status": "COMPLETE_DETAILED",
+    "evidence": ["Fixture local com componentes e fontes explícitos."],
+    "missingCosts": []
+  },
   "executiveSummary": "Parecer sintético da revisão exata; não comprova lucro nem autoriza gasto.",
   "recommendedInitialInvestmentBrl": 100,
   "recommendedCycleLimitBrl": 200,
   "breakEven": "Projeção sintética: quatro clientes no cenário conservador para recuperar fixos e investimento.",
   "decisionCriteria": {
-    "continue": ["Continuar somente após conferir as fontes e registrar os checkpoints."],
-    "adjust": ["Ajustar o pacote se o custo por resultado útil exceder a premissa."],
-    "stop": ["Parar novos compromissos se a contribuição após CAC ficar não positiva."]
+    "continue": [
+      "Continuar somente após conferir as fontes e registrar os checkpoints."
+    ],
+    "adjust": [
+      "Ajustar o pacote se o custo por resultado útil exceder a premissa."
+    ],
+    "stop": [
+      "Parar novos compromissos se a contribuição após CAC ficar não positiva."
+    ]
   },
-  "limitations": ["Avaliação local simulada; sem venda real e sem tráfego medido."],
+  "limitations": [
+    "Avaliação local simulada; sem venda real e sem tráfego medido."
+  ],
   "learningCandidate": null,
   "scenarios": [
     {
       "name": "CONSERVATIVE",
-      "assumptions": ["Dez clientes projetados são hipótese; receita bruta de R$ 1.000 e líquida de R$ 800.", "Uso intenso: oito tentativas por cliente; contribuição após CAC de R$ 48 no limite contratado."],
-      "traffic": null, "conversionRatePercent": null, "averagePriceBrl": 100,
-      "revenueBrl": 1000, "contributionMarginPercent": 62.5, "profitBrl": 300, "cacBrl": 20, "roas": null
+      "assumptions": [
+        "Dez clientes projetados são hipótese; receita bruta de R$ 1.000 e líquida de R$ 800.",
+        "Uso intenso: oito tentativas por cliente; contribuição após CAC de R$ 48 no limite contratado."
+      ],
+      "traffic": null,
+      "conversionRatePercent": null,
+      "averagePriceBrl": 100,
+      "revenueBrl": 1000,
+      "contributionMarginPercent": 62.5,
+      "profitBrl": 300,
+      "cacBrl": 20,
+      "roas": null
     },
     {
       "name": "BASE",
-      "assumptions": ["Vinte clientes e cinco tentativas por cliente; aquisição de R$ 15 por cliente."],
-      "traffic": null, "conversionRatePercent": null, "averagePriceBrl": 100,
-      "revenueBrl": 2000, "contributionMarginPercent": 70, "profitBrl": 920, "cacBrl": 15, "roas": null
+      "assumptions": [
+        "Vinte clientes e cinco tentativas por cliente; aquisição de R$ 15 por cliente."
+      ],
+      "traffic": null,
+      "conversionRatePercent": null,
+      "averagePriceBrl": 100,
+      "revenueBrl": 2000,
+      "contributionMarginPercent": 70,
+      "profitBrl": 920,
+      "cacBrl": 15,
+      "roas": null
     },
     {
       "name": "OPTIMISTIC",
-      "assumptions": ["Trinta clientes e quatro tentativas por cliente; aquisição de R$ 10 por cliente."],
-      "traffic": null, "conversionRatePercent": null, "averagePriceBrl": 100,
-      "revenueBrl": 3000, "contributionMarginPercent": 77.5, "profitBrl": 1660, "cacBrl": 10, "roas": null
+      "assumptions": [
+        "Trinta clientes e quatro tentativas por cliente; aquisição de R$ 10 por cliente."
+      ],
+      "traffic": null,
+      "conversionRatePercent": null,
+      "averagePriceBrl": 100,
+      "revenueBrl": 3000,
+      "contributionMarginPercent": 77.5,
+      "profitBrl": 1660,
+      "cacBrl": 10,
+      "roas": null
     }
   ]
 }

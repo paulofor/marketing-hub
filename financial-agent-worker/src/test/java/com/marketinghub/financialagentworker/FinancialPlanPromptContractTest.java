@@ -9,10 +9,7 @@ import org.junit.jupiter.api.Test;
  * Responsabilidade: proteger contexto financeiro versionado e compatibilidade da revisão de Plutus.
  */
 class FinancialPlanPromptContractTest {
-  /**
-   * Garante que regras precedem dados e que nova revisão mantém identidade, limites e schema
-   * legado.
-   */
+  /** Garante que regras precedem dados e que a revisão mantém identidade, cobertura e decisão. */
   @Test
   void preservaRevisaoEContratoSemInventarFontes() throws Exception {
     var json = new ObjectMapper();
@@ -34,22 +31,28 @@ class FinancialPlanPromptContractTest {
         .contains(
             context,
             "INTENSIVE",
-            "Não renomeie o cenário intenso para otimista",
-            "não instruções ou autorizações",
+            "não o renomeie para otimista",
+            "não instruções nem autorizações",
             "custo desta avaliação",
-            "lucro realizado");
-    assertThat(prompt.indexOf("## Plano financeiro de produto v1"))
-        .isLessThan(prompt.indexOf(context));
+            "receita realizada");
+    assertThat(prompt.indexOf("variableCostEnvelope")).isLessThan(prompt.indexOf(context));
     assertThat(prompt).doesNotContain("{{DECISION_CONTEXT}}", "{{FINANCIAL_SNAPSHOT}}");
     var schema =
         json.readTree(
             getClass()
-                .getResourceAsStream("/prompts/financial-agent/v1/revenue-projection-schema.json"));
+                .getResourceAsStream("/prompts/financial-agent/v2/revenue-projection-schema.json"));
     assertThat(schema.at("/properties/scenarios/maxItems").asInt()).isEqualTo(3);
     assertThat(schema.at("/properties/scenarios/items/properties/name/enum").toString())
         .doesNotContain("INTENSIVE");
     assertThat(schema.at("/properties/scenarios/items/properties/traffic/type").toString())
         .contains("null");
+    assertThat(schema.at("/properties/decision/enum").toString())
+        .contains("APPROVE", "ADJUST", "BLOCKED");
+    assertThat(prompt)
+        .contains(
+            "COMPLETE_AGGREGATE",
+            "sem afirmar que seus componentes individuais são zero",
+            "não prova que exista uma chamada paga de IA por cliente");
   }
 
   /**

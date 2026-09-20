@@ -19,12 +19,20 @@ public record PlanAssumptions(
     @DecimalMin("0.01") @DecimalMax("99.99") BigDecimal minimumMarginPercent,
     @DecimalMin("0") @Digits(integer = 9, fraction = 6) BigDecimal maximumCacBrl,
     @NotNull @Size(min = 3, max = 3) List<@NotNull @Valid Scenario> scenarios,
-    @Valid Preparation preparation) {
+    @Valid Preparation preparation,
+    @Valid VariableCostEnvelope variableCostEnvelope) {
   /** Escolhas operacionais; suporte não equivale ao período econômico ou ao acesso vendido. */
   public record Preparation(
       @NotNull @Min(1) @Max(3660) @JsonDeserialize(using = WholeNumberDeserializer.class)
           Integer supportDays,
       @NotNull Boolean personalizedAi) {}
+
+  /** Preserva custo variável agregado sem declarar seus componentes desconhecidos como zero. */
+  public record VariableCostEnvelope(
+      @NotNull @DecimalMin("0") @Digits(integer = 9, fraction = 6) BigDecimal amountPerCustomerBrl,
+      @NotNull VariableCostCoverage coverage,
+      @NotBlank @Size(max = 1000) String sourceReference,
+      @NotNull LocalDate checkedOn) {}
 
   /** Premissas do pacote completo: tarifa por tentativa, câmbio documentado e teto por cliente. */
   public record AiCost(
@@ -76,5 +84,10 @@ public record PlanAssumptions(
     CONSERVATIVE,
     BASE,
     OPTIMISTIC
+  }
+
+  /** Cobertura declarada pelo campo agregado, sem inferir a decomposição interna. */
+  public enum VariableCostCoverage {
+    ALL_VARIABLE_COSTS_EXCLUDING_CAC
   }
 }

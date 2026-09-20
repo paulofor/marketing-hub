@@ -19,8 +19,50 @@ export default function FinancialPlanPlutusDetails({
     BASE: "Base",
     OPTIMISTIC: "Otimista",
   };
+  const decisionLabels = {
+    APPROVE: "Aprovar a hipótese econômica",
+    ADJUST: "Ajustar antes de avançar",
+    BLOCKED: "Bloqueado por fonte essencial",
+  } as const;
+  const coverageLabels = {
+    COMPLETE_AGGREGATE: "Cobertura agregada completa",
+    COMPLETE_DETAILED: "Cobertura detalhada completa",
+    INCOMPLETE: "Cobertura incompleta",
+  } as const;
   return (
     <section aria-label="Recomendações de Plutus" className="mt-3">
+      {result.decision && (
+        <div className="alert alert-secondary">
+          <strong>Decisão: {decisionLabels[result.decision]}</strong>
+          {result.decisionBasis && (
+            <p className="mb-0">{result.decisionBasis}</p>
+          )}
+        </div>
+      )}
+      {result.costCoverageAssessment && (
+        <div>
+          <strong>
+            {coverageLabels[result.costCoverageAssessment.status]}
+          </strong>
+          <ul>
+            {result.costCoverageAssessment.evidence.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+          {!!result.costCoverageAssessment.missingCosts.length && (
+            <>
+              <h3 className="h6">Custos ainda ausentes</h3>
+              <ul>
+                {result.costCoverageAssessment.missingCosts.map(
+                  (item, index) => (
+                    <li key={index}>{item}</li>
+                  ),
+                )}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
       {("recommendedInitialInvestmentBrl" in result ||
         "recommendedCycleLimitBrl" in result) && (
         <dl className="row">

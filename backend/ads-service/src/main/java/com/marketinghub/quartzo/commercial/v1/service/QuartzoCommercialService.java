@@ -164,6 +164,9 @@ public class QuartzoCommercialService
     var evidence = snapshot.deepCopy();
     evidence.put("evidenceType", "QUARTZO_COMMERCIAL_PREPARATION_V1");
     evidence.put("activity", activity.getActivityId());
+    evidence.put(
+        "activityFingerprint",
+        QuartzoCommercialContext.activityFingerprint(activity.getActivityId(), snapshot));
     instance.setObjectiveEvidenceJson(evidence.toString());
     instances.saveAndFlush(instance);
     return new BackendProductProcessActivityExecutionResult(
@@ -286,11 +289,22 @@ public class QuartzoCommercialService
     return true;
   }
 
-  /** Informa se o resultado persistido pertence à identidade e aos ativos ainda vigentes. */
+  /**
+   * Informa se a prova pertence à identidade e às fontes específicas ainda vigentes da atividade.
+   */
   public boolean current(BusinessProcessActivityInstance instance, JsonNode snapshot) {
-    return instance.isObjectiveAchieved()
-        && "COMPLETED".equals(instance.getStatus())
-        && sameScope(context.read(instance.getObjectiveEvidenceJson()), snapshot);
+    if (!instance.isObjectiveAchieved() || !"COMPLETED".equals(instance.getStatus())) return false;
+    var proof = context.read(instance.getObjectiveEvidenceJson());
+    if (!sameIdentity(snapshot.path("productId"), proof.path("productId"))
+        || !sameIdentity(snapshot.path("experimentId"), proof.path("experimentId"))
+        || !snapshot.path("productVersion").equals(proof.path("productVersion"))) return false;
+    String activity = proof.path("activity").asText();
+    if (activity.isBlank()) return sameScope(proof, snapshot);
+    String expected = QuartzoCommercialContext.activityFingerprint(activity, snapshot);
+    String recorded = proof.path("activityFingerprint").asText();
+    if (recorded.isBlank())
+      recorded = QuartzoCommercialContext.activityFingerprint(activity, proof);
+    return !expected.isBlank() && expected.equals(recorded);
   }
 
   /** Compara identidade pelo valor inteiro persistido e exige a mesma impressão dos insumos. */

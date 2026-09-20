@@ -86,7 +86,7 @@ class QuartzoCommercialServiceTest {
         "riskReversal":"Reembolso no prazo contratado","validationContract":{"delivery":{"personalization":true}},
         "productProof":[{"assetId":1}],"productProofInPage":true,"creatives":[{"id":2}],"salesProven":false,"mediaSpendAuthorized":false,
         "financialPlan":{"stale":false,"assumptions":{"priceBrl":67},"evaluation":{"status":"PROJECTED_VIABLE"},
-        "analysis":{"status":"COMPLETED","result":{"scenarios":[{"name":"CONSERVATIVE"},{"name":"BASE","profitBrl":20,"averagePriceBrl":67},{"name":"OPTIMISTIC"}]}}}}
+        "analysis":{"status":"COMPLETED","result":{"decision":"APPROVE","costCoverageAssessment":{"status":"COMPLETE_DETAILED","evidence":["fixture"],"missingCosts":[]},"scenarios":[{"name":"CONSERVATIVE"},{"name":"BASE","profitBrl":20,"averagePriceBrl":67},{"name":"OPTIMISTIC"}]}}}}
         """);
     snapshot.put("productId", product.getId());
     snapshot.put("experimentId", experiment.getId());
@@ -195,12 +195,33 @@ class QuartzoCommercialServiceTest {
     prepare();
     var request = approved();
     var task = task("humanExperienceReview");
+    snapshot.put("destinationUrl", "https://example.test/updated-kit");
     snapshot.put("fingerprint", "changed");
     assertThatThrownBy(() -> service.apply(task, request))
         .hasMessageContaining("renove a atividade");
     prepare();
     assertThatThrownBy(() -> service.apply(task, request)).hasMessageContaining("mudaram");
     assertThat(saved.get(1L).getOccurrenceNumber()).isEqualTo(2);
+  }
+
+  /** Revisão financeira renova somente economia e preserva as quatro provas independentes. */
+  @Test
+  void financialRevisionDoesNotRepeatUnrelatedPreparation() throws Exception {
+    prepare();
+    var entry = saved.get(activities.get("entry").getId());
+    var legacy = (ObjectNode) json.readTree(entry.getObjectiveEvidenceJson());
+    legacy.remove("activityFingerprint");
+    entry.setObjectiveEvidenceJson(legacy.toString());
+    snapshot.withObject("/financialPlan/analysis/result/scenarios/1").put("profitBrl", 21);
+    snapshot.put("fingerprint", "financial-change");
+
+    prepare();
+
+    for (String step : List.of("entry", "creative", "checkout", "targeting"))
+      assertThat(saved.get(activities.get(step).getId()).getOccurrenceNumber())
+          .as(step)
+          .isEqualTo(1);
+    assertThat(saved.get(activities.get("economics").getId()).getOccurrenceNumber()).isEqualTo(2);
   }
 
   /** Um gate omitido ou negativo jamais se transforma em conclusão técnica bem-sucedida. */
@@ -289,6 +310,44 @@ class QuartzoCommercialServiceTest {
                 .reason())
         .contains("vencido");
     verify(instances, never()).saveAndFlush(any());
+  }
+
+  /** Exige decisão favorável e cobertura completa no parecer financeiro, não só cenários. */
+  @Test
+  void economicsRejectsUnapprovedOrIncompletePlutusReview() {
+    var result = snapshot.withObject("/financialPlan/analysis/result");
+    result.put("decision", "ADJUST");
+    assertThat(
+            service
+                .readiness(process, activities.get("economics"), product, "experiment:88")
+                .reason())
+        .contains("não aprovou");
+    result.put("decision", "APPROVE");
+    result.withObject("/costCoverageAssessment").put("status", "INCOMPLETE");
+    assertThat(
+            service
+                .readiness(process, activities.get("economics"), product, "experiment:88")
+                .reason())
+        .contains("cobertura suficiente");
+  }
+
+  /** Conclui economia após Plutus aprovar a revisão agregada sem reclassificá-la como venda. */
+  @Test
+  void economicsAcceptsReadyAggregateRevisionOnlyAfterApprovedPlutusReview() throws Exception {
+    snapshot.withObject("/financialPlan/evaluation").put("status", "READY_FOR_ANALYSIS");
+    var result = snapshot.withObject("/financialPlan/analysis/result");
+    result.put("decision", "APPROVE");
+    result.withObject("/costCoverageAssessment").put("status", "COMPLETE_AGGREGATE");
+
+    var completed = service.execute(process, activities.get("economics"), product, "experiment:88");
+
+    assertThat(completed.objectiveAchieved()).isTrue();
+    assertThat(
+            json.readTree(saved.get(activities.get("economics").getId()).getObjectiveEvidenceJson())
+                .path("salesProven")
+                .asBoolean())
+        .isFalse();
+    assertThat(experiment.getFacebookReleaseRequestedAt()).isNull();
   }
 
   /** Exige a preparação antes dos pareceres, evitando consumir revisão paga sem insumos. */

@@ -27,6 +27,30 @@ class FinancialPlanCalculatorTest {
     return FinancialPlanCalculator.evaluate(json.treeToValue(p, PlanAssumptions.class));
   }
 
+  /** Converte a fixture detalhada em envelope agregado sem declarar componentes como zero. */
+  private ObjectNode aggregateInput() throws IOException {
+    var p = input();
+    var costs = (ObjectNode) p.get("costs");
+    for (String field :
+        java.util.List.of(
+            "feePercent",
+            "taxPercent",
+            "commissionPercent",
+            "refundPercent",
+            "fixedFeeBrl",
+            "supportBrl",
+            "storageBrl",
+            "deliveryBrl",
+            "otherVariableBrl")) costs.putNull(field);
+    ((ObjectNode) p.get("ai")).putNull("perAttempt");
+    p.putObject("variableCostEnvelope")
+        .put("amountPerCustomerBrl", 13.5)
+        .put("coverage", "ALL_VARIABLE_COSTS_EXCLUDING_CAC")
+        .put("sourceReference", "commercial-plan:9@v4:variableCostPerSaleBrl")
+        .put("checkedOn", "2026-09-20");
+    return p;
+  }
+
   /** Confere manualmente BRL, deduções únicas, fixos, investimento e estresse por cliente. */
   @Test
   void calculaPacoteCompletoSemDuplaContagem() throws Exception {
@@ -56,6 +80,28 @@ class FinancialPlanCalculatorTest {
     assertThat(result.status()).isEqualTo("MISSING_INPUTS");
     assertThat(result.scenarios()).isEmpty();
     assertThat(result.blockers()).anyMatch(s -> s.contains("suporte"));
+  }
+
+  /** Libera somente o parecer quando o envelope e os limites determinísticos são suficientes. */
+  @Test
+  void envelopeAgregadoFicaProntoParaPlutusSemSimularDecomposicao() throws Exception {
+    var result = evaluate(aggregateInput());
+    assertThat(result.status()).isEqualTo("READY_FOR_ANALYSIS");
+    assertThat(result.scenarios()).isEmpty();
+    assertThat(result.blockers()).isEmpty();
+  }
+
+  /** Bloqueia dupla dedução e contribuição não positiva antes de qualquer chamada paga. */
+  @Test
+  void envelopeAgregadoRejeitaComponenteDuplicadoEUnidadeInviavel() throws Exception {
+    var duplicated = aggregateInput();
+    ((ObjectNode) duplicated.get("costs")).put("supportBrl", 2);
+    assertThat(evaluate(duplicated).blockers()).anyMatch(v -> v.contains("combine os dois"));
+
+    var unprofitable = aggregateInput();
+    unprofitable.put("priceBrl", 30);
+    assertThat(evaluate(unprofitable).blockers())
+        .anyMatch(v -> v.contains("contribuição após o CAC"));
   }
 
   /** Recusa conversão cambial sem fonte mesmo quando um número foi informado. */

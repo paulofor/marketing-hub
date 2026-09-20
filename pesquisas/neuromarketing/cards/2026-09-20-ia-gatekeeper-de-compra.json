@@ -1,0 +1,18 @@
+{
+  "cardKey": "ia-gatekeeper-de-compra",
+  "collection": "neuromarketing",
+  "title": "IA pode descobrir marcas novas, mas ainda filtra pela confiança",
+  "finding": "No Brasil, mais da metade dos compradores online pesquisados usou IA na jornada de compra mais recente. Em pesquisa da Acosta com 1.271 compradores dos EUA, 34% usavam IA para comprar; entre os influenciados por IA, 40% relataram ter experimentado uma nova marca, embora quase metade ainda preferisse uma marca conhecida diante de uma alternativa desconhecida e apenas 22% confiassem em agentes para tomar a decisão de compra.",
+  "mechanism": "A IA pode funcionar simultaneamente como canal de descoberta e filtro de confiança: amplia o conjunto considerado, mas familiaridade, qualidade e atualização dos dados, privacidade e percepção de independência ainda influenciam se uma oferta desconhecida entra ou permanece na shortlist.",
+  "commercialApplication": "Evoluir o AgentReadableOfferAudit para testar se cada oferta expõe proposta de valor, preço, público, entregáveis, limitações, diferenciais verificáveis, evidências, políticas e origem dos dados de forma clara o suficiente para ser recuperada, comparada e explicada por agentes sem depender de conhecimento prévio da marca.",
+  "evidenceStrength": "Moderada-baixa: combina um sinal brasileiro recente de jornada mediada por IA com pesquisa proprietária dos EUA de 1.271 compradores; ambos são descritivos e não demonstram causalidade sobre recomendação, tráfego ou venda.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2026-12-20",
+  "experimentHypothesis": "Uma oferta com dados completos, diferenciais verificáveis e evidências organizadas será recuperada com maior precisão e aparecerá com mais consistência em shortlists padronizadas de agentes do que a versão atual; qualquer efeito em visita, lead, checkout e pagamento deve ser medido separadamente.",
+  "risks": "Confundir discoverability com garantia de ranking, fabricar prova social, estruturar alegações não verificadas, otimizar para agentes em detrimento da clareza humana, expor dados pessoais desnecessários ou tratar recomendação de IA como endosso independente.",
+  "limits": "Os dados da Acosta são autorrelatados, dos EUA e coletados em maio de 2026; a evidência brasileira vem de estudo produzido em colaboração com a Visa Acceptance Solutions. Nenhuma fonte prova que dados estruturados aumentam ranking em ChatGPT, Gemini ou outros agentes, nem mede efeito incremental em receita do Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-20-ia-gatekeeper-descoberta-confianca.md",
+  "sourceTitle": "Fonte revisada — IA como canal de descoberta e filtro de confiança na compra",
+  "sourceSha256": "d42547d25caf7732ce698cf69e9b241361ebee13fd0f22df0a3d3ece13d8e018"
+}

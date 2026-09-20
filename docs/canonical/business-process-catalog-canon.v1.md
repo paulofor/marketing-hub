@@ -945,6 +945,13 @@ de correções pendentes. Mudança material invalida a comprovação anterior; o
 e escala decimal não constituem mudança comercial. O pai reutiliza esses pareceres
 sem repetir cobrança de revisão. Preflight e autorização final continuam posteriores.
 
+Os identificadores do produto e do experimento são inteiros positivos: a comparação
+deve preservar seu valor ao serializar e reler a prova. `LongNode` no contexto e
+`IntNode` na leitura JSON não representam identidades distintas. Texto, fração,
+ausência, valor fora de `long` ou outro identificador continuam inválidos. O teste
+de persistência deve executar o comando e reconciliar em outra transação, além de
+comprovar idempotência, callbacks e reutilização pelo pai.
+
 São utilizados os endpoints BPM existentes: histórico em
 `/api/business-processes/{processId}/products/{productId}/activity-executions`, comando em
 `/api/business-processes/{processId}/products/{productId}/activities/{activityId}/execution-requests`,

@@ -6334,3 +6334,22 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   para não repetir `LOOP-OPALA-GATE-FINAL-COMPARA-JSON-LITERAL`. A vigência e a
   reutilização leem somente a última revisão por SQL, prevenindo também
   `LOOP-OPALA-HISTORICO-RECARREGA-PROMPTS-POR-ATIVIDADE`.
+
+### Comprovação Quartzo descartada após serialização — 20/09/2026
+
+- **Histórico confirmado:** a execução #12 de Capella persistiu a instância #318
+  `COMPLETED`, com objetivo atingido para `entry`; a consulta seguinte a apresentou
+  como não iniciada, e a automação bloqueou por falta de progresso. A evidência estava
+  no banco; não faltavam página, prova ou gravação.
+- **Causa reproduzida localmente:** o contexto monta os IDs como `LongNode`; ao reler
+  JSON com valores pequenos, Jackson retorna `IntNode`. O comparador usava igualdade
+  de nós para a identidade, apesar de normalizar números no fingerprint. Os testes
+  antigos montavam ambos os lados a partir de texto e escondiam essa diferença.
+  Corrigir apenas as fixtures para os tipos reais fez dez de doze testes falharem.
+- **Alternativas:** mudar o mapper global amplia o risco; regravar os comprovantes
+  repete a falha e perde tempo; comparar os valores inteiros no contrato resolve a
+  causa e preserva as provas. Foi escolhida a terceira opção.
+- **Prevenção:** callbacks, vigência, consolidação e retorno ao pai usam o mesmo
+  comparador estrito. Fixtures usam IDs Long reais; comandos e reconciliação são
+  executados em transações separadas. Casos negativos recusam identidade ausente,
+  textual, fracionária, fora do limite ou pertencente a outro produto/experimento.

@@ -293,12 +293,22 @@ public class QuartzoCommercialService
         && sameScope(context.read(instance.getObjectiveEvidenceJson()), snapshot);
   }
 
-  /** Compara identidade explícita e impressão dos insumos sem aceitar prova vazia. */
+  /** Compara identidade pelo valor inteiro persistido e exige a mesma impressão dos insumos. */
   private boolean sameScope(JsonNode proof, JsonNode snapshot) {
     return !snapshot.path("fingerprint").asText().isBlank()
         && snapshot.path("fingerprint").equals(proof.path("fingerprint"))
-        && snapshot.path("productId").equals(proof.path("productId"))
-        && snapshot.path("experimentId").equals(proof.path("experimentId"))
+        && sameIdentity(snapshot.path("productId"), proof.path("productId"))
+        && sameIdentity(snapshot.path("experimentId"), proof.path("experimentId"))
         && snapshot.path("productVersion").equals(proof.path("productVersion"));
+  }
+
+  /** Aceita IntNode e LongNode equivalentes sem converter texto, fração ou identidade inválida. */
+  private boolean sameIdentity(JsonNode expected, JsonNode actual) {
+    return expected.isIntegralNumber()
+        && actual.isIntegralNumber()
+        && expected.canConvertToLong()
+        && actual.canConvertToLong()
+        && expected.longValue() > 0
+        && expected.longValue() == actual.longValue();
   }
 }

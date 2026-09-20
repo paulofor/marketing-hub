@@ -54,7 +54,7 @@ class QuartzoCommercialServiceTest {
   final BusinessProcessDefinition process = new BusinessProcessDefinition();
   ObjectNode snapshot;
 
-  /** Configura fontes sintéticas com repositórios isolados, mantendo checks e serviço reais. */
+  /** Usa IDs Long como o contexto real; as provas retornam do JSON após a persistência. */
   @BeforeEach
   void setup() throws Exception {
     experiment.setId(88L);
@@ -88,6 +88,8 @@ class QuartzoCommercialServiceTest {
         "financialPlan":{"stale":false,"assumptions":{"priceBrl":67},"evaluation":{"status":"PROJECTED_VIABLE"},
         "analysis":{"status":"COMPLETED","result":{"scenarios":[{"name":"CONSERVATIVE"},{"name":"BASE","profitBrl":20,"averagePriceBrl":67},{"name":"OPTIMISTIC"}]}}}}
         """);
+    snapshot.put("productId", product.getId());
+    snapshot.put("experimentId", experiment.getId());
     when(context.snapshot("experiment:88")).thenAnswer(i -> snapshot.deepCopy());
     when(destinations.hasCompleteCommercialContract(experiment)).thenReturn(true);
     when(destinations.hasCompletedGeraSalesPagePipeline(88L)).thenReturn(true);
@@ -298,6 +300,32 @@ class QuartzoCommercialServiceTest {
     assertThat(
             service.readiness(process, activities.get("ready"), product, "experiment:88").reason())
         .contains("Falta o parecer");
+  }
+
+  /**
+   * Preserva a conclusão após serialização, sem aceitar outra identidade ou conversão permissiva.
+   */
+  @Test
+  void validatesPersistedNumericIdentityWithoutCoercion() throws Exception {
+    prepare();
+    var instance = saved.get(1L);
+    String original = instance.getObjectiveEvidenceJson();
+    assertThat(service.current(instance, snapshot)).isTrue();
+    for (String field : List.of("productId", "experimentId")) {
+      for (String invalid :
+          List.of("null", "0", "-1", "999", "7.5", "\"7\"", "9223372036854775808")) {
+        var proof = (ObjectNode) json.readTree(original);
+        proof.set(field, json.readTree(invalid));
+        instance.setObjectiveEvidenceJson(proof.toString());
+        assertThat(service.current(instance, snapshot)).as("%s=%s", field, invalid).isFalse();
+      }
+      var proof = (ObjectNode) json.readTree(original);
+      proof.remove(field);
+      instance.setObjectiveEvidenceJson(proof.toString());
+      assertThat(service.current(instance, snapshot)).as("%s ausente", field).isFalse();
+    }
+    instance.setObjectiveEvidenceJson(original);
+    assertThat(service.current(instance, snapshot)).isTrue();
   }
 
   /** Percorre as atividades determinísticas usando as mesmas fontes e referência. */

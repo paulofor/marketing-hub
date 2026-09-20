@@ -39,7 +39,9 @@ import org.springframework.orm.jpa.persistenceunit.PersistenceManagedTypes;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.support.TransactionTemplate;
 
-/** Responsabilidade: comprovar consultas Quartzo sem locks e preservar reservas nas gravações. */
+/**
+ * Responsabilidade: comprovar leitura, identidade e reservas das evidências Quartzo persistidas.
+ */
 class QuartzoCommercialPersistenceTest {
   private static final String SOURCE = "experiment:92088";
   private final ObjectMapper json = new ObjectMapper();
@@ -125,6 +127,8 @@ class QuartzoCommercialPersistenceTest {
         {"productId":92007,"experimentId":92088,"productVersion":"local-v1","fingerprint":"local-proof",
          "destinationUrl":"https://example.test/kit","checkoutUrl":"https://example.test/pay"}
         """);
+    snapshot.put("productId", product.getId());
+    snapshot.put("experimentId", experiment.getId());
     var context = mock(QuartzoCommercialContext.class);
     when(context.applies(product)).thenReturn(true);
     when(context.scope(eq(SOURCE), any(), anyBoolean())).thenReturn(scope);
@@ -263,6 +267,32 @@ class QuartzoCommercialPersistenceTest {
           assertThat(instances.count()).isEqualTo(1);
         });
     assertThat(statements).anyMatch(sql -> sql.toLowerCase().contains("for update"));
+  }
+
+  /** Reconcilia cada comando em outra transação e reaproveita o filho sem perder sua identidade. */
+  @Test
+  void preservesProgressAcrossCommandAndReconciliationTransactions() {
+    var steps = new ArrayList<>(QuartzoCommercialChecks.PREPARATION);
+    steps.add("ready");
+    for (String step : steps) {
+      var activity = activities.get(step);
+      writing.executeWithoutResult(
+          status ->
+              assertThat(service.execute(process, activity, product, SOURCE).objectiveAchieved())
+                  .isTrue());
+      statements.clear();
+      reading.executeWithoutResult(
+          status ->
+              assertThat(readiness.requiresFreshExecution(process, activity, product, SOURCE))
+                  .isFalse());
+      assertReadsWithoutLocks();
+    }
+    reading.executeWithoutResult(status -> assertThat(service.completed(product, SOURCE)).isTrue());
+    writing.executeWithoutResult(
+        status -> {
+          steps.forEach(step -> service.execute(process, activities.get(step), product, SOURCE));
+          assertThat(instances.count()).isEqualTo(6);
+        });
   }
 
   /** Registra a identidade mínima do processo isolado, sem consultar dados de produção. */

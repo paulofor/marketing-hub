@@ -73,3 +73,18 @@ R$ 67; as 16 imagens carregaram. Não foi realizado pagamento. A execução hist
 bloqueada pela tarefa #422 sem URL, foi pausada pela tela antes da nova preparação.
 Preparação concluída não representa campanha autorizada: custos e limites precisam
 estar explicitados na fonte oficial antes de liberar divulgação paga.
+
+## Reconciliação após gravação — 20/09/2026
+
+O PR #5273 resolveu as leituras MySQL e permitiu iniciar o run #12 pela tela. A
+instância #318 da entrada foi gravada como concluída, mas o leitor descartou sua
+identidade: o contexto usa IDs Long e Jackson relê IDs pequenos como inteiros.
+As fixtures anteriores também liam os IDs de texto, ocultando a diferença. Usar
+os tipos reais reproduziu dez falhas em doze testes antes da correção.
+
+O comparador agora confere inteiros positivos pelo valor, sem coerção de texto ou
+fração, e preserva a validação de versão e fingerprint. A regressão local passou
+em 215 casos; dois testes opcionais de migração foram executados em seguida no
+runner físico. Os 72 testes Opala/Quartzo no MySQL 5.7 passaram sem falhas, erros
+ou skips, incluindo comandos e reconciliação em transações separadas, retorno ao
+pai e repetição idempotente. A topologia temporária foi removida.

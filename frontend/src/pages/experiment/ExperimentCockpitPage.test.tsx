@@ -50,6 +50,7 @@ describe("ExperimentCockpitPage", () => {
           clicks: 60,
           ctr: 5,
           cpc: 2.08,
+          humanVisitors: 4,
           pageViews: 42,
           partialVideoViews: 12,
           completeVideoViews: 4,
@@ -74,6 +75,38 @@ describe("ExperimentCockpitPage", () => {
           headline: "Pronto para leitura",
           description: "Sem bloqueios",
           blockers: [],
+        },
+        sampleDecision: {
+          applicable: true,
+          measurementAvailable: true,
+          measurementSource: "PDE_ATTRIBUTED_HUMAN_COHORT",
+          status: "INSUFFICIENT_DATA",
+          headline: "Amostra comercial ainda insuficiente",
+          explanation:
+            "4 de 100 visitantes humanos distintos atribuídos; ainda faltam 96 para a primeira decisão.",
+          humanVisitors: 4,
+          initialTargetVisitors: 100,
+          visitorsRemainingForInitialDecision: 96,
+          targetPurchasesAtInitialDecision: 5,
+          precisionTargetVisitors: 500,
+          visitorsRemainingForPrecisionDecision: 496,
+          purchases: 0,
+          observedPurchaseRatePercent: 0,
+          confidenceLower95Percent: 0,
+          confidenceUpper95Percent: 60.24,
+          zeroPurchaseUpper95Percent: 52.71,
+          estimatedCostPerHumanVisitor: 1.47,
+          projectedSpendForInitialTarget: 147.25,
+          projectedSpendForPrecisionTarget: 736.25,
+          zeroPrimaryResultStopSpend: 25,
+          mediaSpendLimit: 100,
+          initialTargetFitsMediaSpendLimit: false,
+          precisionTargetFitsMediaSpendLimit: false,
+          projectionConfidence: "PRELIMINARY",
+          financialGuardrail:
+            "O teto atual protege o caixa, mas não financia a primeira amostra no custo observado; qualquer ampliação exige nova autorização.",
+          recommendation:
+            "Preservar versão, preço, público e oferta até a primeira decisão.",
         },
         funnel: [
           {
@@ -117,6 +150,12 @@ describe("ExperimentCockpitPage", () => {
     ).toBeTruthy();
     expect(screen.getByText("Reforçar CTA pós-vídeo")).toBeTruthy();
     expect(screen.getByText("Vídeos completos")).toBeTruthy();
+    expect(screen.getByText("Amostra comercial ainda insuficiente")).toBeTruthy();
+    expect(screen.getByText("4 / 100")).toBeTruthy();
+    expect(screen.getByText("0 / 5")).toBeTruthy();
+    expect(screen.getByText("4 / 500")).toBeTruthy();
+    expect(screen.getByText("Projeção preliminar")).toBeTruthy();
+    expect(screen.getByText(/Parada automática sem resultado primário:/)).toBeTruthy();
     expect(axios.get).toHaveBeenCalledWith("/api/experiments/67/cockpit");
   });
 });

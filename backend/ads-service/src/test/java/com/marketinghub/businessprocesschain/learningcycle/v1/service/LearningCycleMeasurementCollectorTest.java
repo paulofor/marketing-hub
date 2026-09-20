@@ -105,7 +105,10 @@ class LearningCycleMeasurementCollectorTest {
 
     assertThat(result.ready()).isTrue();
     assertThat(result.evidence().path("automatic").asBoolean()).isTrue();
-    assertThat(result.evidence().path("sessions").asLong()).isEqualTo(4);
+    assertThat(result.evidence().path("contractVersion").asText())
+        .isEqualTo("LEARNING_CYCLE_AUTOMATIC_MEASUREMENT_V2");
+    assertThat(result.evidence().path("humanVisitors").asLong()).isEqualTo(4);
+    assertThat(result.evidence().path("sessions").asLong()).isEqualTo(7);
     assertThat(result.evidence().path("starts").asLong()).isEqualTo(2);
     assertThat(result.evidence().path("firstResults").asLong()).isEqualTo(1);
     assertThat(result.evidence().path("netSales").asLong()).isZero();
@@ -114,6 +117,8 @@ class LearningCycleMeasurementCollectorTest {
     assertThat(result.evidence().path("contributionBrl").decimalValue())
         .isEqualByComparingTo("-27.30");
     assertThat(result.evidence().at("/sources/pdeAnalytics/humanEvents").asLong()).isEqualTo(86);
+    assertThat(result.evidence().at("/sources/pdeAnalytics/uniqueVisitors").asLong()).isEqualTo(4);
+    assertThat(result.summary()).contains("4 visitantes humanos distintos em 7 sessões");
     assertThat(result.evidence().path("sourceFingerprint").asText()).hasSize(64);
   }
 
@@ -205,12 +210,14 @@ class LearningCycleMeasurementCollectorTest {
         .isEqualTo(first.evidence().path("sourceFingerprint").asText());
   }
 
-  /** Constrói o resumo atribuído com quatro sessões e os 86 eventos históricos conhecidos. */
+  /** Constrói o resumo atribuído com quatro visitantes, sete sessões e 86 eventos. */
   private PdeAnalyticsSummary summary(long subscriptionApproved) {
     return summaryWithEvents(subscriptionApproved, "TASTING_STARTED", "VALUE_MOMENT");
   }
 
-  /** Permite variar eventos agregados sem alterar identidade, sessões e segregação do cenário. */
+  /**
+   * Permite variar eventos agregados sem alterar identidade, visitantes e segregação do cenário.
+   */
   private PdeAnalyticsSummary summaryWithEvents(long subscriptionApproved, String... eventTypes) {
     return summaryWithRawEvents(subscriptionApproved, 86, eventTypes);
   }
@@ -224,9 +231,9 @@ class LearningCycleMeasurementCollectorTest {
         86,
         rawEvents,
         4,
-        4,
-        4,
-        4,
+        7,
+        7,
+        7,
         0,
         0,
         0,

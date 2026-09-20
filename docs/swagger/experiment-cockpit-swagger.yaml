@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub Experiment Cockpit API
-  version: 1.0.0
+  version: 1.1.0
 paths:
   /api/experiments/{id}/cockpit:
     get:
@@ -30,6 +30,7 @@ components:
         - scoreboard
         - question
         - health
+        - sampleDecision
         - funnel
         - bottleneck
         - learnings
@@ -52,6 +53,8 @@ components:
           $ref: "#/components/schemas/ExperimentCockpitQuestion"
         health:
           $ref: "#/components/schemas/ExperimentCockpitHealth"
+        sampleDecision:
+          $ref: "#/components/schemas/ExperimentCockpitSampleDecision"
         funnel:
           type: array
           items:
@@ -87,6 +90,15 @@ components:
           type: number
         cpc:
           type: number
+        directContacts:
+          type: integer
+          format: int64
+        directContactTarget:
+          type: integer
+        humanVisitors:
+          type: integer
+          format: int64
+          description: Visitantes humanos distintos atribuídos ao experimento e segregados de QA, robôs e crawlers.
         pageViews:
           type: integer
           format: int64
@@ -141,6 +153,112 @@ components:
           type: array
           items:
             type: string
+    ExperimentCockpitSampleDecision:
+      type: object
+      required:
+        - applicable
+        - measurementAvailable
+        - measurementSource
+        - status
+        - headline
+        - explanation
+        - humanVisitors
+        - initialTargetVisitors
+        - visitorsRemainingForInitialDecision
+        - targetPurchasesAtInitialDecision
+        - precisionTargetVisitors
+        - visitorsRemainingForPrecisionDecision
+        - purchases
+        - zeroPrimaryResultStopSpend
+        - projectionConfidence
+        - financialGuardrail
+        - recommendation
+      properties:
+        applicable:
+          type: boolean
+          description: Indica se a estratégia de visitantes pagos se aplica ao objetivo e canal.
+        measurementAvailable:
+          type: boolean
+        measurementSource:
+          type: string
+        status:
+          type: string
+          enum:
+            - NOT_APPLICABLE
+            - MEASUREMENT_UNAVAILABLE
+            - MEASUREMENT_INVALID
+            - CONFIGURATION_REQUIRED
+            - INSUFFICIENT_DATA
+            - INITIAL_TARGET_REACHED
+            - INITIAL_ZERO_SALES_REJECTED
+            - INITIAL_TARGET_NOT_REACHED
+            - PRECISION_TARGET_REACHED
+            - PRECISION_TARGET_NOT_REACHED
+        headline:
+          type: string
+        explanation:
+          type: string
+        humanVisitors:
+          type: integer
+          format: int64
+        initialTargetVisitors:
+          type: integer
+        visitorsRemainingForInitialDecision:
+          type: integer
+          format: int64
+        targetPurchasesAtInitialDecision:
+          type: integer
+        precisionTargetVisitors:
+          type: integer
+        visitorsRemainingForPrecisionDecision:
+          type: integer
+          format: int64
+        purchases:
+          type: integer
+          format: int64
+        observedPurchaseRatePercent:
+          type: number
+          nullable: true
+        confidenceLower95Percent:
+          type: number
+          nullable: true
+          description: Limite inferior bilateral exato de Clopper-Pearson em percentual.
+        confidenceUpper95Percent:
+          type: number
+          nullable: true
+          description: Limite superior bilateral exato de Clopper-Pearson em percentual.
+        zeroPurchaseUpper95Percent:
+          type: number
+          nullable: true
+          description: Limite superior unilateral exato de 95% quando não há compra.
+        estimatedCostPerHumanVisitor:
+          type: number
+          nullable: true
+        projectedSpendForInitialTarget:
+          type: number
+          nullable: true
+        projectedSpendForPrecisionTarget:
+          type: number
+          nullable: true
+        zeroPrimaryResultStopSpend:
+          type: number
+          description: Gasto em BRL que aciona a parada automática quando não existe resultado primário.
+        mediaSpendLimit:
+          type: number
+          nullable: true
+        initialTargetFitsMediaSpendLimit:
+          type: boolean
+          nullable: true
+        precisionTargetFitsMediaSpendLimit:
+          type: boolean
+          nullable: true
+        projectionConfidence:
+          type: string
+          enum: [NOT_APPLICABLE, UNAVAILABLE, PRELIMINARY, OBSERVED]
+        financialGuardrail:
+          type: string
+        recommendation:
+          type: string
     ExperimentCockpitFunnelStage:
       type: object
       properties:

@@ -5396,6 +5396,11 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 - **Prevenção:** contrato SQL do mesmo recorte atribuído, teste do histórico do #91, bloqueios contra
   fonte ausente/legada, ausência do comando manual, fingerprint, MySQL 5.7 e desktop/mobile. Matriz:
   `docs/homologacao/ciclo-vendas-medicao-automatica-v3.md`.
+- **Fechamento adicional em 2026-09-20:** a decisão progressiva do experimento passou a usar
+  visitantes humanos distintos, mas o gate de escala do ciclo ainda comparava sessões com a meta de
+  amostra. A evidência automática v2 agora persiste `humanVisitors`, mantém sessões apenas para
+  auditoria e impede escala quando retornos repetidos inflam o volume. Testes de contrato cobrem
+  quatro visitantes em sete sessões e cem sessões de apenas quarenta visitantes.
 
 ## LOOP-CICLO-DECISAO-SEM-AGENTE — formulário transfere análise estratégica ao usuário
 

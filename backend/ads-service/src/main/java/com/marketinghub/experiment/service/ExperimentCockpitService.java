@@ -15,12 +15,14 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
+import com.marketinghub.experiment.monitoring.pde.PdeExperimentAnalyticsReader;
 import com.marketinghub.experiment.service.cockpit.ExperimentCockpitActionDto;
 import com.marketinghub.experiment.service.cockpit.ExperimentCockpitBottleneckDto;
 import com.marketinghub.experiment.service.cockpit.ExperimentCockpitDto;
 import com.marketinghub.experiment.service.cockpit.ExperimentCockpitFunnelStageDto;
 import com.marketinghub.experiment.service.cockpit.ExperimentCockpitHealthDto;
 import com.marketinghub.experiment.service.cockpit.ExperimentCockpitQuestionDto;
+import com.marketinghub.experiment.service.cockpit.ExperimentCockpitSampleDecisionDto;
 import com.marketinghub.experiment.service.cockpit.ExperimentCockpitScoreboardDto;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import java.math.BigDecimal;
@@ -29,11 +31,13 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 /** Serviço que consolida a leitura comercial de venda de um experimento. */
 @Service
+@Slf4j
 public class ExperimentCockpitService {
 
   private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
@@ -45,6 +49,8 @@ public class ExperimentCockpitService {
   private final ExperimentFunnelService funnelService;
   private final ExperimentFunnelDiagnosticService funnelDiagnosticService;
   private final ExperimentDirectContactService directContactService;
+  private final ExperimentSampleDecisionService sampleDecisionService;
+  private final PdeExperimentAnalyticsReader pdeExperimentAnalyticsReader;
 
   /** Inicializa o cockpit com fontes canônicas de experimento, prontidão, funil e diagnóstico. */
   public ExperimentCockpitService(
@@ -53,13 +59,17 @@ public class ExperimentCockpitService {
       ExperimentDiagnosticsService diagnosticsService,
       ExperimentFunnelService funnelService,
       ExperimentFunnelDiagnosticService funnelDiagnosticService,
-      ExperimentDirectContactService directContactService) {
+      ExperimentDirectContactService directContactService,
+      ExperimentSampleDecisionService sampleDecisionService,
+      PdeExperimentAnalyticsReader pdeExperimentAnalyticsReader) {
     this.experimentRepository = experimentRepository;
     this.readinessService = readinessService;
     this.diagnosticsService = diagnosticsService;
     this.funnelService = funnelService;
     this.funnelDiagnosticService = funnelDiagnosticService;
     this.directContactService = directContactService;
+    this.sampleDecisionService = sampleDecisionService;
+    this.pdeExperimentAnalyticsReader = pdeExperimentAnalyticsReader;
   }
 
   /** Monta a visão consolidada do cockpit para um experimento. */
@@ -77,12 +87,27 @@ public class ExperimentCockpitService {
         funnelDiagnosticService.diagnose(experimentId);
     ExperimentDiagnosticsDto experimentDiagnostics = diagnosticsService.diagnose(experimentId);
     BigDecimal revenue = funnelService.approvedRevenue(experimentId);
+    ExperimentSampleDecisionService.SampleMeasurement sampleMeasurement =
+        measureHumanVisitors(experiment, analytics);
     ExperimentCockpitScoreboardDto scoreboard =
-        buildScoreboard(experiment, commercialFunnelStages, analytics, revenue);
+        buildScoreboard(
+            experiment,
+            commercialFunnelStages,
+            analytics,
+            revenue,
+            sampleMeasurement.humanVisitors());
+    ExperimentCockpitSampleDecisionDto sampleDecision =
+        sampleDecisionService.evaluate(
+            experiment, sampleMeasurement, scoreboard.purchases(), scoreboard.spend());
     List<String> metricIntegrityIssues = diagnoseMetricIntegrity(analytics, funnelStages);
     ExperimentCockpitBottleneckDto bottleneck =
         diagnoseBottleneck(
-            experiment, readiness, funnelDiagnostics, scoreboard, metricIntegrityIssues);
+            experiment,
+            readiness,
+            funnelDiagnostics,
+            scoreboard,
+            sampleDecision,
+            metricIntegrityIssues);
     return new ExperimentCockpitDto(
         experiment.getId(),
         experiment.getName(),
@@ -91,7 +116,9 @@ public class ExperimentCockpitService {
         valueOf(experiment.getCampaignObjective()),
         scoreboard,
         buildQuestion(experiment),
-        buildHealth(experiment, readiness, experimentDiagnostics, metricIntegrityIssues),
+        buildHealth(
+            experiment, readiness, experimentDiagnostics, metricIntegrityIssues, sampleDecision),
+        sampleDecision,
         commercialFunnelStages.stream()
             .sorted(Comparator.comparingInt(ExperimentFunnelStageDto::getOrder))
             .map(this::toCockpitStage)
@@ -105,8 +132,18 @@ public class ExperimentCockpitService {
   private ExperimentCockpitDto buildFakeCockpit(Experiment experiment, Long experimentId) {
     ExperimentLandingAnalyticsDto analytics = funnelService.summarizeLandingAnalytics(experimentId);
     List<ExperimentFunnelStageDto> funnelStages = funnelService.summarize(experimentId);
+    ExperimentSampleDecisionService.SampleMeasurement sampleMeasurement =
+        measureHumanVisitors(experiment, analytics);
     ExperimentCockpitScoreboardDto scoreboard =
-        buildScoreboard(experiment, funnelStages, analytics, BigDecimal.ZERO);
+        buildScoreboard(
+            experiment,
+            funnelStages,
+            analytics,
+            BigDecimal.ZERO,
+            sampleMeasurement.humanVisitors());
+    ExperimentCockpitSampleDecisionDto sampleDecision =
+        sampleDecisionService.evaluate(
+            experiment, sampleMeasurement, scoreboard.purchases(), scoreboard.spend());
     ExperimentCockpitBottleneckDto bottleneck =
         bottleneck(
             "FAKE_PDE_VIDEO_METRICAS",
@@ -128,6 +165,7 @@ public class ExperimentCockpitService {
             "Experimento fake: leitura comercial bloqueada",
             "Use este cockpit apenas para validar acesso, vídeo e métricas; não interprete como venda, rejeição ou aprovação de oferta.",
             List.of("Campanha real desabilitada para este tipo de experimento.")),
+        sampleDecision,
         funnelStages.stream()
             .sorted(Comparator.comparingInt(ExperimentFunnelStageDto::getOrder))
             .map(this::toCockpitStage)
@@ -144,7 +182,8 @@ public class ExperimentCockpitService {
       Experiment experiment,
       List<ExperimentFunnelStageDto> funnelStages,
       ExperimentLandingAnalyticsDto analytics,
-      BigDecimal revenue) {
+      BigDecimal revenue,
+      long humanVisitors) {
     ExperimentCampaignMetric metric = experiment.getCampaignMetric();
     BigDecimal spend = money(metric != null ? metric.getSpend() : null);
     boolean awaitingVerifiedExposure = isAwaitingVerifiedExposure(metric);
@@ -178,6 +217,7 @@ public class ExperimentCockpitService {
         clicks != null && clicks > 0 && metric != null ? metric.getCpc() : null,
         directContacts,
         directContactTarget,
+        humanVisitors,
         measuredPageViews,
         partialVideoViews,
         completeVideoViews,
@@ -187,6 +227,45 @@ public class ExperimentCockpitService {
         divide(spend, leads),
         divide(spend, checkoutAccesses),
         divide(spend, purchases));
+  }
+
+  /** Mede visitantes e vendas líquidas da mesma coorte humana atribuída. */
+  private ExperimentSampleDecisionService.SampleMeasurement measureHumanVisitors(
+      Experiment experiment, ExperimentLandingAnalyticsDto analytics) {
+    if (sampleDecisionService.isApplicable(experiment)
+        && experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL) {
+      try {
+        var summary = pdeExperimentAnalyticsReader.read(experiment);
+        if (summary == null) {
+          throw new IllegalStateException("PDE_SAMPLE_SUMMARY_EMPTY");
+        }
+        var outcomes = pdeExperimentAnalyticsReader.commercialOutcomes(experiment, summary);
+        if (outcomes == null
+            || !outcomes.financialReferencesComplete()
+            || !outcomes.refundReferencesMatchPurchases()) {
+          throw new IllegalStateException("PDE_SAMPLE_FINANCIAL_OUTCOMES_INVALID");
+        }
+        long netPurchases = Math.max(0L, outcomes.purchases() - outcomes.refunds());
+        return ExperimentSampleDecisionService.SampleMeasurement.available(
+            "PDE_ATTRIBUTED_HUMAN_COHORT", summary.uniqueVisitors(), netPurchases);
+      } catch (RuntimeException ex) {
+        log.error(
+            "Falha ao medir visitantes e vendas líquidas PDE da amostra; module=backend operation=sample-decision experimentId={} followUpActionUrl={} exceptionClass={} exceptionMessage={}",
+            experiment.getId(),
+            experiment.getFollowUpActionUrl(),
+            ex.getClass().getName(),
+            ex.getMessage(),
+            ex);
+        return ExperimentSampleDecisionService.SampleMeasurement.unavailable(
+            "PDE_ATTRIBUTED_HUMAN_COHORT");
+      }
+    }
+    if (analytics != null && analytics.visitors() != null) {
+      return ExperimentSampleDecisionService.SampleMeasurement.available(
+          "LANDING_ATTRIBUTED_HUMAN_VISITORS", analytics.visitors().probableVisitors());
+    }
+    return ExperimentSampleDecisionService.SampleMeasurement.unavailable(
+        "LANDING_ATTRIBUTED_HUMAN_VISITORS");
   }
 
   /** Monta a pergunta comercial principal do experimento. */
@@ -206,7 +285,8 @@ public class ExperimentCockpitService {
       Experiment experiment,
       ExperimentReadinessSummaryDto readiness,
       ExperimentDiagnosticsDto diagnostics,
-      List<String> metricIntegrityIssues) {
+      List<String> metricIntegrityIssues,
+      ExperimentCockpitSampleDecisionDto sampleDecision) {
     List<String> blockers =
         new ArrayList<>(
             readiness.issues().stream()
@@ -214,6 +294,12 @@ public class ExperimentCockpitService {
                 .filter(StringUtils::hasText)
                 .toList());
     blockers.addAll(metricIntegrityIssues);
+    if (sampleDecision != null
+        && sampleDecision.applicable()
+        && List.of("MEASUREMENT_UNAVAILABLE", "MEASUREMENT_INVALID", "CONFIGURATION_REQUIRED")
+            .contains(sampleDecision.status())) {
+      blockers.add(sampleDecision.explanation());
+    }
     if (blockers.isEmpty()) {
       if (isDirectOneToOne(experiment)) {
         return new ExperimentCockpitHealthDto(
@@ -243,6 +329,7 @@ public class ExperimentCockpitService {
       ExperimentReadinessSummaryDto readiness,
       ExperimentFunnelDiagnosticsResponseDto funnelDiagnostics,
       ExperimentCockpitScoreboardDto scoreboard,
+      ExperimentCockpitSampleDecisionDto sampleDecision,
       List<String> metricIntegrityIssues) {
     if (!metricIntegrityIssues.isEmpty()) {
       return bottleneck(
@@ -284,6 +371,11 @@ public class ExperimentCockpitService {
           issue.message(),
           "Os números entre etapas podem estar distorcendo a decisão de venda.",
           "Corrigir tracking, eventos e sequência do funil.");
+    }
+    Optional<ExperimentCockpitBottleneckDto> sampleBottleneck =
+        diagnoseSampleBottleneck(sampleDecision);
+    if (sampleBottleneck.isPresent()) {
+      return sampleBottleneck.get();
     }
     if (scoreboard.purchases() > 0) {
       return bottleneck(
@@ -386,6 +478,82 @@ public class ExperimentCockpitService {
         "Não há volume suficiente de exposição, clique ou sessão para decidir.",
         "A prioridade é colocar o experimento validamente diante do mercado.",
         "Publicar ou destravar distribuição e confirmar tracking.");
+  }
+
+  /** Traduz a decisão progressiva em gargalo principal sem inferir causa por amostra pequena. */
+  private Optional<ExperimentCockpitBottleneckDto> diagnoseSampleBottleneck(
+      ExperimentCockpitSampleDecisionDto decision) {
+    if (decision == null || !decision.applicable()) {
+      return Optional.empty();
+    }
+    return switch (decision.status()) {
+      case "MEASUREMENT_UNAVAILABLE", "MEASUREMENT_INVALID", "CONFIGURATION_REQUIRED" ->
+          Optional.of(
+              bottleneck(
+                  "MENSURACAO_AMOSTRA_INDISPONIVEL",
+                  decision.headline(),
+                  "danger",
+                  decision.explanation(),
+                  "Sem denominador confiável, qualquer conclusão sobre conversão pode levar a gasto ou descarte incorreto.",
+                  decision.recommendation()));
+      case "INSUFFICIENT_DATA" ->
+          decision.humanVisitors() <= 0
+              ? Optional.empty()
+              : Optional.of(
+                  bottleneck(
+                      "AMOSTRA_COMERCIAL_INSUFICIENTE",
+                      decision.headline(),
+                      "secondary",
+                      decision.explanation(),
+                      "O volume atual ainda não separa acaso de desempenho comercial da versão.",
+                      decision.recommendation()));
+      case "INITIAL_TARGET_REACHED" ->
+          Optional.of(
+              bottleneck(
+                  "SINAL_COMERCIAL_INICIAL",
+                  decision.headline(),
+                  "success",
+                  decision.explanation(),
+                  "Existe sinal de receita, mas ainda falta precisão, entrega e economia para escalar.",
+                  decision.recommendation()));
+      case "INITIAL_ZERO_SALES_REJECTED" ->
+          Optional.of(
+              bottleneck(
+                  "AMOSTRA_INICIAL_SEM_VENDAS",
+                  decision.headline(),
+                  "warning",
+                  decision.explanation(),
+                  "Aquela versão e público ficaram abaixo da meta planejada; isso não reprova automaticamente o produto inteiro.",
+                  decision.recommendation()));
+      case "INITIAL_TARGET_NOT_REACHED" ->
+          Optional.of(
+              bottleneck(
+                  "META_INICIAL_NAO_ATINGIDA",
+                  decision.headline(),
+                  "warning",
+                  decision.explanation(),
+                  "Ainda não há base para escala; funil, valor entregue e economia precisam orientar o próximo teste.",
+                  decision.recommendation()));
+      case "PRECISION_TARGET_REACHED" ->
+          Optional.of(
+              bottleneck(
+                  "AMOSTRA_PRECISA_META_ATINGIDA",
+                  decision.headline(),
+                  "success",
+                  decision.explanation(),
+                  "A conversão tem volume para revisão de escala, ainda condicionada a contribuição e valor entregue.",
+                  decision.recommendation()));
+      case "PRECISION_TARGET_NOT_REACHED" ->
+          Optional.of(
+              bottleneck(
+                  "AMOSTRA_PRECISA_META_NAO_ATINGIDA",
+                  decision.headline(),
+                  "warning",
+                  decision.explanation(),
+                  "A versão não sustentou a conversão planejada no volume de precisão.",
+                  decision.recommendation()));
+      default -> Optional.empty();
+    };
   }
 
   /** Bloqueia leitura comercial quando as fontes canônicas de pageview não fecham entre si. */
@@ -494,6 +662,66 @@ public class ExperimentCockpitService {
       Long experimentId, ExperimentCockpitBottleneckDto bottleneck) {
     String experimentRoute = "/experiments/" + experimentId;
     return switch (bottleneck.code()) {
+      case "AMOSTRA_COMERCIAL_INSUFICIENTE" ->
+          List.of(
+              action(
+                  "PRESERVAR_TESTE",
+                  "Preservar a versão em teste",
+                  "O volume ainda não permite atribuir a ausência de compra à página, oferta ou público.",
+                  experimentRoute),
+              action(
+                  "ACOMPANHAR_AMOSTRA",
+                  "Acompanhar amostra e teto",
+                  "Observe visitantes humanos, compras líquidas e gasto sem ampliar o limite financeiro automaticamente.",
+                  experimentRoute + "/cockpit"));
+      case "SINAL_COMERCIAL_INICIAL" ->
+          List.of(
+              action(
+                  "VALIDAR_ECONOMIA_ENTREGA",
+                  "Validar margem e entrega",
+                  "O sinal inicial só merece nova rodada quando compra, entrega, primeiro uso e satisfação fecharem.",
+                  experimentRoute),
+              action(
+                  "PLANEJAR_AMOSTRA_PRECISA",
+                  "Planejar rodada de precisão",
+                  "Mantenha a versão estável e submeta qualquer novo investimento à autorização humana.",
+                  experimentRoute + "/cockpit"));
+      case "AMOSTRA_INICIAL_SEM_VENDAS", "META_INICIAL_NAO_ATINGIDA" ->
+          List.of(
+              action(
+                  "INVESTIGAR_GARGALO_COMERCIAL",
+                  "Investigar o gargalo real",
+                  "Confronte comportamento, utilidade, oferta e mensuração antes de escolher a variável seguinte.",
+                  experimentRoute),
+              action(
+                  "CRIAR_SUCESSOR_CONTROLADO",
+                  "Preparar sucessor controlado",
+                  "Preserve o histórico e altere somente uma variável comercial na próxima versão.",
+                  experimentRoute));
+      case "AMOSTRA_PRECISA_META_ATINGIDA" ->
+          List.of(
+              action(
+                  "ANALISAR_ESCALA_COMPLETA",
+                  "Analisar escala com contribuição",
+                  "A conversão tem volume; confirme margem líquida, entrega, satisfação e reembolso antes de ampliar mídia.",
+                  experimentRoute),
+              action(
+                  "SOLICITAR_AUTORIZACAO_ESCALA",
+                  "Preparar decisão de escala",
+                  "Qualquer aumento de orçamento continua dependendo de autorização humana explícita.",
+                  experimentRoute + "/cockpit"));
+      case "AMOSTRA_PRECISA_META_NAO_ATINGIDA" ->
+          List.of(
+              action(
+                  "NAO_ESCALAR",
+                  "Não escalar esta versão",
+                  "O volume de precisão ficou abaixo da conversão planejada.",
+                  experimentRoute),
+              action(
+                  "REVISAR_PROXIMA_VARIAVEL",
+                  "Escolher a próxima variável",
+                  "Use o gargalo persistido para criar um sucessor comparável.",
+                  experimentRoute));
       case "VENDA_CONFIRMADA" ->
           List.of(
               action(
@@ -593,7 +821,10 @@ public class ExperimentCockpitService {
                   "Conferir eventos do canal direto",
                   "Preserve a separação entre QA, contato humano, checkout, pagamento, entrega e primeiro uso.",
                   experimentRoute));
-      case "EXECUCAO_INVALIDA", "FALHA_TECNICA_FUNIL", "CLIQUE_SEM_PAGINA" ->
+      case "EXECUCAO_INVALIDA",
+          "FALHA_TECNICA_FUNIL",
+          "CLIQUE_SEM_PAGINA",
+          "MENSURACAO_AMOSTRA_INDISPONIVEL" ->
           List.of(
               action(
                   "CORRIGIR_TRACKING",

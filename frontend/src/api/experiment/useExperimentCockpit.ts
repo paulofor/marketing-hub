@@ -12,6 +12,7 @@ export interface ExperimentCockpitScoreboard {
   cpc?: number | null;
   directContacts: number;
   directContactTarget: number;
+  humanVisitors: number;
   pageViews: number;
   partialVideoViews: number;
   completeVideoViews: number;
@@ -38,6 +39,36 @@ export interface ExperimentCockpitHealth {
   headline: string;
   description: string;
   blockers: string[];
+}
+
+export interface ExperimentCockpitSampleDecision {
+  applicable: boolean;
+  measurementAvailable: boolean;
+  measurementSource: string;
+  status: string;
+  headline: string;
+  explanation: string;
+  humanVisitors: number;
+  initialTargetVisitors: number;
+  visitorsRemainingForInitialDecision: number;
+  targetPurchasesAtInitialDecision: number;
+  precisionTargetVisitors: number;
+  visitorsRemainingForPrecisionDecision: number;
+  purchases: number;
+  observedPurchaseRatePercent?: number | null;
+  confidenceLower95Percent?: number | null;
+  confidenceUpper95Percent?: number | null;
+  zeroPurchaseUpper95Percent?: number | null;
+  estimatedCostPerHumanVisitor?: number | null;
+  projectedSpendForInitialTarget?: number | null;
+  projectedSpendForPrecisionTarget?: number | null;
+  zeroPrimaryResultStopSpend: number;
+  mediaSpendLimit?: number | null;
+  initialTargetFitsMediaSpendLimit?: boolean | null;
+  precisionTargetFitsMediaSpendLimit?: boolean | null;
+  projectionConfidence: string;
+  financialGuardrail: string;
+  recommendation: string;
 }
 
 export interface ExperimentCockpitFunnelStage {
@@ -75,6 +106,7 @@ export interface ExperimentCockpit {
   scoreboard: ExperimentCockpitScoreboard;
   question: ExperimentCockpitQuestion;
   health: ExperimentCockpitHealth;
+  sampleDecision: ExperimentCockpitSampleDecision;
   funnel: ExperimentCockpitFunnelStage[];
   bottleneck: ExperimentCockpitBottleneck;
   learnings: string[];

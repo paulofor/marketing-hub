@@ -12,6 +12,7 @@ public record ExperimentCockpitDto(
     ExperimentCockpitScoreboardDto scoreboard,
     ExperimentCockpitQuestionDto question,
     ExperimentCockpitHealthDto health,
+    ExperimentCockpitSampleDecisionDto sampleDecision,
     List<ExperimentCockpitFunnelStageDto> funnel,
     ExperimentCockpitBottleneckDto bottleneck,
     List<String> learnings,

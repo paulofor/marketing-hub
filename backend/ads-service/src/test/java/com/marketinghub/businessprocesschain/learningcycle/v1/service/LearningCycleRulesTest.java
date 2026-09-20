@@ -38,6 +38,7 @@ class LearningCycleRulesTest {
     data.put("periodStart", NOW.minusSeconds(86400).toString());
     data.put("periodEnd", NOW.minusSeconds(5).toString());
     data.put("observedAt", NOW.toString());
+    data.put("humanVisitors", 10);
     for (String key :
         new String[] {"sessions", "starts", "firstResults", "checkouts", "netSales", "refunds"})
       data.put(key, 10);
@@ -100,6 +101,7 @@ class LearningCycleRulesTest {
         "periodStart",
         "periodEnd",
         "observedAt",
+        "humanVisitors",
         "sessions",
         "netSales",
         "spendBrl",
@@ -118,6 +120,17 @@ class LearningCycleRulesTest {
         () -> LearningCycleRules.validateMetrics(cycle(), data, NOW));
     data.put("experimentId", 91);
     data.put("revenueBrl", -1);
+    assertThrows(
+        ResponseStatusException.class,
+        () -> LearningCycleRules.validateMetrics(cycle(), data, NOW));
+  }
+
+  /** Recusa uma fotografia em que o denominador humano contradiz as sessões conciliadas. */
+  @Test
+  void rejectsMoreHumanVisitorsThanSessions() {
+    var data = metrics();
+    data.put("humanVisitors", 11);
+
     assertThrows(
         ResponseStatusException.class,
         () -> LearningCycleRules.validateMetrics(cycle(), data, NOW));
@@ -179,5 +192,21 @@ class LearningCycleRulesTest {
     data.put("contributionBrl", 100);
     data.put("observedAt", NOW.minusSeconds(86401).toString());
     assertNotNull(LearningCycleRules.scaleBlocker(cycle(), data, brief, NOW));
+  }
+
+  /** Sessões repetidas não substituem visitantes distintos no gate de escala. */
+  @Test
+  void blocksScaleWhenRepeatedSessionsInflateTheSample() {
+    var data = metrics();
+    data.put("sessions", 100);
+    data.put("humanVisitors", 40);
+    var brief = json.createObjectNode().put("sampleTarget", 100).put("minimumNetSales", 5);
+
+    assertEquals(
+        "Amostra mínima de visitantes humanos distintos ainda não atingida.",
+        LearningCycleRules.scaleBlocker(cycle(), data, brief, NOW));
+
+    data.put("humanVisitors", 100);
+    assertNull(LearningCycleRules.scaleBlocker(cycle(), data, brief, NOW));
   }
 }

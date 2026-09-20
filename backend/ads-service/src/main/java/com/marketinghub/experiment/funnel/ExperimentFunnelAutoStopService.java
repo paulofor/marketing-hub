@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 public class ExperimentFunnelAutoStopService {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ExperimentFunnelAutoStopService.class);
-  private static final BigDecimal ZERO_PRIMARY_RESULT_MINIMUM_SPEND = new BigDecimal("25.00");
   private static final Duration LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE = Duration.ofHours(48);
   private static final long LOW_IMPRESSIONS_MINIMUM = 100L;
 
@@ -71,7 +70,7 @@ public class ExperimentFunnelAutoStopService {
         "Automatic campaign stop triggered for experiment {} due to zero primary result after minimum spend: spend={}, minimumSpend={}, formSubmissions={}, sampleEmailOpens={}, purchases={}",
         experiment.getId(),
         evidence.campaignSpend(),
-        ZERO_PRIMARY_RESULT_MINIMUM_SPEND,
+        ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(),
         evidence.formSubmissions(),
         evidence.sampleEmailOpens(),
         evidence.purchases());
@@ -133,7 +132,8 @@ public class ExperimentFunnelAutoStopService {
   /** Consolida uma única leitura canônica do gasto e dos resultados primários do experimento. */
   private ZeroPrimaryResultEvidence resolveZeroPrimaryResultEvidence(Experiment experiment) {
     BigDecimal campaignSpend = resolveCampaignSpend(experiment);
-    if (campaignSpend.compareTo(ZERO_PRIMARY_RESULT_MINIMUM_SPEND) < 0) {
+    if (campaignSpend.compareTo(ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend())
+        < 0) {
       return new ZeroPrimaryResultEvidence(campaignSpend, 0, 0, 0);
     }
     ExperimentFunnelDiagnosticsResponseDto diagnostics =
@@ -151,7 +151,9 @@ public class ExperimentFunnelAutoStopService {
 
     /** Confirma simultaneamente o limite de gasto e a ausência de todos os resultados primários. */
     private boolean reachedStopThreshold() {
-      return campaignSpend.compareTo(ZERO_PRIMARY_RESULT_MINIMUM_SPEND) >= 0
+      return campaignSpend.compareTo(
+                  ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend())
+              >= 0
           && formSubmissions == 0
           && sampleEmailOpens == 0
           && purchases == 0;

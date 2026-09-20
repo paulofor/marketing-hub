@@ -209,6 +209,14 @@ devem ser explícitos; nunca inventar o processo seguinte por numeração ou sta
 As leituras canônicas de `businessprocess.execution` e `businessprocesschain.learningcycle.v1`
 já suportam esses destinos; a navegação reutiliza seus contratos sem nova regra de avanço.
 
+**Disponibilidade da navegação — decisão de 20/09/2026:** quando a posição oficial já
+identificar produto, cadeia e definição exata do processo ou subprocesso corrente, o botão de
+acesso deve aparecer imediatamente. A consulta detalhada das atividades enriquece responsável,
+estado e motivo em paralelo, mas lentidão ou falha dessa leitura não pode ocultar o destino já
+resolvido pelo backend. Nesse caso, a tela mantém o acesso somente de leitura ao processo e informa
+que os detalhes não foram atualizados, com retentativa explícita. Falha ou ausência da própria
+posição continua bloqueando o acesso; o frontend não deduz definição por nome, sequência ou status.
+
 O Marketing Hub mantém um cadastro próprio e versionado de processos de negócio. Esse catálogo é a
 fonte de verdade para propósito, responsáveis, eventos, atividades, gates, entradas, saídas e relação
 com contratos técnicos. A tela canônica é `/business-processes` e a API é

@@ -49,6 +49,53 @@ const assert = require("node:assert/strict");
     processMeasurements: [],
     subprocessPosition: null,
   };
+  const capella = {
+    ...rigel,
+    productId: 7,
+    chainDefinitionId: 17,
+    chainVersion: 17,
+    processDefinitionId: 82,
+    processCode: "pde-commercial-homologation-activation",
+    processName: "Homologação e ativação comercial do PDE",
+    sequenceNumber: 5,
+    subprocessPosition: {
+      trackingStatus: "IN_PROGRESS",
+      subprocessCount: 2,
+      currentActivityName: "Preparar operação comercial conforme o tipo",
+      currentSubprocessDefinitionId: 81,
+      currentSubprocessSequenceNumber: 1,
+      currentSubprocessCode: "quartzo-commercial-preparation-v1",
+      currentSubprocessName: "Preparar operação comercial Quartzo",
+      currentSubprocessObjective:
+        "Fontes e pareceres comprovados; ativação e mídia exigem homologação e autorização.",
+      nextSubprocessDefinitionId: 58,
+      nextSubprocessSequenceNumber: 4,
+      nextSubprocessCode: "experiment-homologation-activation",
+      nextSubprocessName: "Homologação técnica de experimento",
+      nextSubprocessObjective:
+        "Preflight técnico persistido, sem decidir ativação.",
+      measurements: [],
+      salesFlow: null,
+    },
+  };
+  const capellaActivities = structuredClone(rigelActivities);
+  Object.assign(capellaActivities, {
+    productId: 7,
+    productName: "Capella · QA local",
+    productInternalName: "Capella",
+    selectedProcessDefinitionId: 81,
+    processCode: "quartzo-commercial-preparation-v1",
+    processName: "Preparar operação comercial Quartzo",
+    currentExecutionReference: "experiment:88",
+    currentActivityId: "economics",
+    currentActivityName: "Conferir margem e parecer de Plutus",
+  });
+  Object.assign(capellaActivities.activities[0], {
+    activityId: "economics",
+    activityName: capellaActivities.currentActivityName,
+    activityOwnerName: "Backend",
+    sequenceNumber: 5,
+  });
   const products = [
     {
       id: 4,
@@ -62,6 +109,17 @@ const assert = require("node:assert/strict");
       currentPriceBrl: 67,
       primaryHypothesis:
         "Melhorar o primeiro resultado útil e medir a continuidade até compra.",
+    },
+    {
+      id: 7,
+      name: "Capella · QA local",
+      internalName: "Capella",
+      productTypeInternalName: "Quartzo",
+      slug: "agenda-cheia-para-manicures",
+      commercialStatus: "VALIDACAO_COMERCIAL",
+      automaticExecutionEnabled: true,
+      automaticExecutionStatus: "PLAY",
+      currentPriceBrl: 67,
     },
     {
       id: 9,
@@ -118,6 +176,7 @@ const assert = require("node:assert/strict");
         unexpected = [],
         requests = [];
       let mode = "success";
+      let capellaDetailsGate = null;
       const card = (product) =>
         page.getByRole("region", {
           name: `Posição de ${product} · QA local na cadeia de valor`,
@@ -140,9 +199,11 @@ const assert = require("node:assert/strict");
           let data;
           if (url.pathname === "/api/products") data = products;
           else if (url.pathname === "/api/products/value-chain-positions")
-            data = [vega, rigel];
+            data = [vega, capella, rigel];
           else if (url.pathname === "/api/products/value-chain-positions/4")
             data = vega;
+          else if (url.pathname === "/api/products/value-chain-positions/7")
+            data = capella;
           else if (url.pathname === "/api/products/value-chain-positions/9")
             data = rigel;
           else if (url.pathname.endsWith("/process-context")) {
@@ -162,7 +223,10 @@ const assert = require("node:assert/strict");
                   nextWork: null,
                 });
             } else {
-              assert(url.pathname.includes("/products/9/"));
+              assert(
+                url.pathname.includes("/products/7/") ||
+                  url.pathname.includes("/products/9/"),
+              );
               assert.equal(url.searchParams.get("cycleId"), null);
               data = null;
             }
@@ -218,13 +282,24 @@ const assert = require("node:assert/strict");
             }
             if (mode === "slow")
               await new Promise((resolve) => setTimeout(resolve, 600));
+          } else if (
+            url.pathname ===
+            "/api/business-processes/81/products/7/activity-executions"
+          ) {
+            assert.equal(url.searchParams.get("learningCycleId"), null);
+            assert.equal(url.searchParams.get("chainId"), "17");
+            if (capellaDetailsGate) await capellaDetailsGate;
+            data = structuredClone(capellaActivities);
           } else if (url.pathname.endsWith("/automation/v1")) {
             const match = url.pathname.match(
               /business-processes\/(\d+)\/products\/(\d+)/,
             );
             const processId = Number(match[1]),
               productId = Number(match[2]);
-            assert.equal(url.searchParams.get("chainId"), "14");
+            assert.equal(
+              url.searchParams.get("chainId"),
+              productId === 7 ? "17" : "14",
+            );
             assert.equal(
               url.searchParams.get("learningCycleId"),
               productId === 4 ? "2" : null,
@@ -233,10 +308,14 @@ const assert = require("node:assert/strict");
               id: productId,
               productId,
               processDefinitionId: processId,
-              chainId: 14,
+              chainId: productId === 7 ? 17 : 14,
               learningCycleId: productId === 4 ? 2 : null,
               sourceReference:
-                productId === 4 ? "experiment:92" : "experiment:89",
+                productId === 4
+                  ? "experiment:92"
+                  : productId === 7
+                    ? "experiment:88"
+                    : "experiment:89",
               status: "RUNNING",
               reason: "Execução simulada na sandbox.",
               currentActivityId: null,
@@ -290,6 +369,10 @@ const assert = require("node:assert/strict");
         ["home", "/"],
         ["catalog", "/products"],
       ]) {
+        let releaseCapellaDetails;
+        capellaDetailsGate = new Promise((resolve) => {
+          releaseCapellaDetails = resolve;
+        });
         await page.goto(origin + pathname, { waitUntil: "domcontentloaded" });
         await expect(
           card("Vega").getByText(
@@ -305,6 +388,22 @@ const assert = require("node:assert/strict");
           "href",
           `${context.nextWork.url.split("#")[0]}#process-execution`,
         );
+        await expect(
+          card("Capella").getByRole("link", {
+            name: "Abrir próximo processo",
+          }),
+        ).toHaveAttribute(
+          "href",
+          "/products/7/value-chain-history/processes/81/activities?chainId=17#process-execution",
+        );
+        await expect(
+          card("Capella").getByText("Consultando a atividade atual..."),
+        ).toBeVisible();
+        releaseCapellaDetails();
+        capellaDetailsGate = null;
+        await expect(
+          card("Capella").getByText("Responsável: Backend"),
+        ).toBeVisible();
         await expect(
           card("Rigel").getByRole("link", { name: "Abrir próximo processo" }),
         ).toHaveAttribute(
@@ -325,7 +424,7 @@ const assert = require("node:assert/strict");
         await page.screenshot({
           path: path.join(output, `${device}-${surface}.png`),
         });
-        for (const product of ["Vega", "Rigel"]) {
+        for (const product of ["Vega", "Capella", "Rigel"]) {
           const link = card(product).getByRole("link", {
             name:
               product === "Vega"
@@ -413,10 +512,10 @@ const assert = require("node:assert/strict");
       });
       await expect(
         card("Rigel").getByRole("link", { name: "Abrir próximo processo" }),
-      ).toHaveCount(0);
+      ).toBeVisible();
       mode = "slow";
       await card("Rigel")
-        .getByRole("button", { name: "Tentar novamente" })
+        .getByRole("button", { name: "Atualizar detalhes" })
         .click();
       await expect(
         card("Rigel").getByRole("button", { name: "Consultando..." }),
@@ -435,6 +534,12 @@ const assert = require("node:assert/strict");
         await page.goto(origin, { waitUntil: "domcontentloaded" });
         if (variant === "mismatch")
           await expect(card("Rigel").getByRole("alert")).toBeVisible();
+        if (variant === "mismatch")
+          await expect(
+            card("Rigel").getByRole("link", {
+              name: "Abrir próximo processo",
+            }),
+          ).toBeVisible();
         if (variant === "complete")
           await expect(
             card("Rigel").getByRole("link", {

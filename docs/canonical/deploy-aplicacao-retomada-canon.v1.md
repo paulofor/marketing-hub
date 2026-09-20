@@ -69,6 +69,13 @@ pelo evento, com testes, fila, rollback, retenção e confirmação das revisõe
 A detecção compara o histórico com a revisão efetivamente publicada, recuperando módulos
 pendentes mesmo quando o evento manual não contém `github.event.before`.
 
+Como a fila `queue: max` preserva cada revisão, o Watchdog mede a ausência de progresso do
+publicador, e não apenas a idade original do run que contém a `main` atual. Uma revisão pode
+permanecer aguardando além da janela enquanto execuções anteriores da mesma fila continuam
+terminando; nesse caso o estado é `DEPLOYING`. O estado passa a `STALE` quando não existe run que
+cubra a mudança pendente ou quando a fila deixa de registrar progresso dentro da janela máxima.
+Runs posteriores, de outra branch ou de outro workflow não renovam essa prova.
+
 Argos, Psique e Íris devem reconhecer tanto `push` quanto `workflow_dispatch` da aplicação,
 sempre na branch `main` e no mesmo SHA. Uma execução de outro commit, branch, tag ou PR não
 libera os agentes. O push de origem testa e empacota a imagem imutável do agente e confirma, em

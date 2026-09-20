@@ -57,7 +57,10 @@ class FakeDetector:
 
 
 def deploy(sha=HEAD, age=10):
-    return freshness.LiveDeploy(1, sha, "in_progress", NOW - timedelta(minutes=age), "https://example/run/1")
+    created_at = NOW - timedelta(minutes=age)
+    return freshness.LiveDeploy(
+        1, sha, "in_progress", created_at, created_at, "https://example/run/1"
+    )
 
 
 class FreshnessTest(unittest.TestCase):
@@ -115,6 +118,73 @@ class FreshnessTest(unittest.TestCase):
             "id": 1, "name": freshness.DEPLOY_WORKFLOW, "head_branch": "main", "head_sha": HEAD,
             "status": "in_progress", "created_at": (NOW - timedelta(minutes=90)).isoformat(), "html_url": "x"
         }]}
+        self.assertEqual(freshness.live_deploys(payload, NOW, 75), [])
+
+    def test_old_head_deploy_remains_live_while_preserved_queue_advances(self):
+        incident_now = datetime(2026, 9, 20, 13, 20, 26, tzinfo=timezone.utc)
+        payload = {"workflow_runs": [
+            {
+                "id": 35509191148,
+                "name": freshness.DEPLOY_WORKFLOW,
+                "head_branch": "main",
+                "head_sha": HEAD,
+                "status": "queued",
+                "created_at": "2026-09-20T11:56:00Z",
+                "updated_at": "2026-09-20T11:56:00Z",
+                "html_url": "https://github.example/actions/runs/35509191148",
+            },
+            {
+                "id": 35509048321,
+                "name": freshness.DEPLOY_WORKFLOW,
+                "head_branch": "main",
+                "head_sha": CHANGE,
+                "status": "completed",
+                "conclusion": "success",
+                "created_at": "2026-09-20T11:52:52Z",
+                "updated_at": "2026-09-20T13:18:11Z",
+                "html_url": "https://github.example/actions/runs/35509048321",
+            },
+        ]}
+
+        runs = freshness.live_deploys(payload, incident_now, 75)
+
+        self.assertEqual([run.id for run in runs], [35509191148])
+        self.assertEqual(
+            runs[0].last_progress_at,
+            datetime(2026, 9, 20, 13, 18, 11, tzinfo=timezone.utc),
+        )
+        result = self.evaluate(deploys=runs)
+        self.assertEqual(result["status"], "DEPLOYING")
+        self.assertEqual(
+            result["deploy_last_progress_at"],
+            "2026-09-20T13:18:11+00:00",
+        )
+
+    def test_newer_run_does_not_refresh_an_older_stuck_deploy(self):
+        payload = {"workflow_runs": [
+            {
+                "id": 1,
+                "name": freshness.DEPLOY_WORKFLOW,
+                "head_branch": "main",
+                "head_sha": HEAD,
+                "status": "queued",
+                "created_at": (NOW - timedelta(minutes=90)).isoformat(),
+                "updated_at": (NOW - timedelta(minutes=90)).isoformat(),
+                "html_url": "https://example/run/1",
+            },
+            {
+                "id": 2,
+                "name": freshness.DEPLOY_WORKFLOW,
+                "head_branch": "main",
+                "head_sha": HEAD,
+                "status": "completed",
+                "conclusion": "success",
+                "created_at": (NOW - timedelta(minutes=10)).isoformat(),
+                "updated_at": (NOW - timedelta(minutes=2)).isoformat(),
+                "html_url": "https://example/run/2",
+            },
+        ]}
+
         self.assertEqual(freshness.live_deploys(payload, NOW, 75), [])
 
     def test_unknown_revision_is_stale_without_current_deploy(self):

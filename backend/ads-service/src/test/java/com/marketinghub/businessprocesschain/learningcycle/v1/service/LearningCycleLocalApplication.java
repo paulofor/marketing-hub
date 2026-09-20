@@ -343,6 +343,7 @@ public class LearningCycleLocalApplication {
               evidence.put("source", "Fontes oficiais simuladas e segregadas da fixture local");
               evidence.put("periodStart", cycle.getWindowStart().toString());
               evidence.put("periodEnd", periodEnd.toString());
+              evidence.put("humanVisitors", longValue(source, "humanVisitors", 10));
               evidence.put("sessions", longValue(source, "sessions", 10));
               evidence.put("starts", longValue(source, "starts", 8));
               evidence.put("firstResults", longValue(source, "firstResults", 7));
@@ -359,7 +360,9 @@ public class LearningCycleLocalApplication {
               evidence.put(
                   "satisfactionVerified", booleanValue(source, "satisfactionVerified", false));
               var sources = evidence.putObject("sources");
-              sources.putObject("pdeAnalytics").put("trafficQualityIncluded", "HUMAN");
+              var pdeAnalytics = sources.putObject("pdeAnalytics");
+              pdeAnalytics.put("trafficQualityIncluded", "HUMAN");
+              pdeAnalytics.put("uniqueVisitors", evidence.path("humanVisitors").asLong());
               sources.putObject("acquisition").put("mode", "META_INSIGHTS_FIXTURE");
               sources.putObject("financialOutcomes").put("referencesComplete", true);
               sources.putObject("costLedger").put("auditable", true);

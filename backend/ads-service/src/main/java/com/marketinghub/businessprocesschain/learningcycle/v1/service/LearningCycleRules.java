@@ -162,8 +162,8 @@ public final class LearningCycleRules {
       return "Corrija os dados e separe o tráfego de teste antes de escalar.";
     if (parseInstant(metrics, "observedAt").isBefore(now.minusSeconds(86400)))
       return "Atualize a leitura dos resultados antes de solicitar escala.";
-    if (metrics.path("sessions").asLong() < brief.path("sampleTarget").asLong())
-      return "Amostra mínima declarada ainda não atingida.";
+    if (metrics.path("humanVisitors").asLong() < brief.path("sampleTarget").asLong())
+      return "Amostra mínima de visitantes humanos distintos ainda não atingida.";
     if (metrics.path("netSales").asLong() < brief.path("minimumNetSales").asLong())
       return "Vendas líquidas mínimas ainda não comprovadas.";
     if (metrics.path("contributionBrl").decimalValue().signum() <= 0)
@@ -188,13 +188,23 @@ public final class LearningCycleRules {
         evidence.path("testDataExcluded").isBoolean() && evidence.path("dataValid").isBoolean(),
         "Declare a qualidade dos dados e a segregação do tráfego de teste.");
     for (String field :
-        List.of("sessions", "starts", "firstResults", "checkouts", "netSales", "refunds")) {
+        List.of(
+            "humanVisitors",
+            "sessions",
+            "starts",
+            "firstResults",
+            "checkouts",
+            "netSales",
+            "refunds")) {
       require(
           evidence.path(field).isIntegralNumber()
               && evidence.path(field).canConvertToLong()
               && evidence.path(field).asLong(-1) >= 0,
           "Informe uma contagem válida para " + field + ".");
     }
+    require(
+        evidence.path("humanVisitors").asLong() <= evidence.path("sessions").asLong(),
+        "Visitantes humanos distintos não podem superar o total de sessões humanas.");
     for (String field : List.of("spendBrl", "revenueBrl", "contributionBrl")) {
       require(
           evidence.path(field).isNumber() && evidence.path(field).decimalValue().precision() <= 14,

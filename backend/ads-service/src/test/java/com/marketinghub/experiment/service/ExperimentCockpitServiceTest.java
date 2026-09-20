@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
+import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.directcontact.v1.ExperimentDirectContactService;
@@ -23,6 +24,9 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorsDto;
+import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
+import com.marketinghub.experiment.monitoring.pde.PdeCommercialOutcomeSummary;
+import com.marketinghub.experiment.monitoring.pde.PdeExperimentAnalyticsReader;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import java.math.BigDecimal;
 import java.util.List;
@@ -31,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /** Testa a consolidação comercial do cockpit de experimentos. */
@@ -43,6 +48,11 @@ class ExperimentCockpitServiceTest {
   @Mock private ExperimentFunnelService funnelService;
   @Mock private ExperimentFunnelDiagnosticService funnelDiagnosticService;
   @Mock private ExperimentDirectContactService directContactService;
+  @Mock private PdeExperimentAnalyticsReader pdeExperimentAnalyticsReader;
+
+  @Spy
+  private ExperimentSampleDecisionService sampleDecisionService =
+      new ExperimentSampleDecisionService(new ExperimentBinomialConfidenceService());
 
   @InjectMocks private ExperimentCockpitService service;
 
@@ -145,6 +155,90 @@ class ExperimentCockpitServiceTest {
 
     assertEquals("AMOSTRA_INSUFICIENTE_ANUNCIO", cockpit.bottleneck().code());
     assertEquals("CONTINUAR_COLETA", cockpit.nextActions().get(0).code());
+  }
+
+  /** Garante que quatro visitantes do Vega não virem diagnóstico prematuro contra a página. */
+  @Test
+  void getCockpitUsesProgressiveSampleBeforeChangingSalesPage() {
+    Long experimentId = 92L;
+    Experiment experiment =
+        Experiment.builder()
+            .id(experimentId)
+            .name("MUSA-H003-E003")
+            .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+            .campaignObjective(ExperimentCampaignObjective.SALES)
+            .platform(ExperimentPlatform.FACEBOOK)
+            .sampleSize(100)
+            .targetCvr(new BigDecimal("5.00"))
+            .mediaSpendLimit(new BigDecimal("100.00"))
+            .campaignMetric(
+                ExperimentCampaignMetric.builder()
+                    .impressions(120L)
+                    .clicks(4L)
+                    .spend(new BigDecimal("5.89"))
+                    .cpc(new BigDecimal("1.47"))
+                    .build())
+            .build();
+    when(experimentRepository.findById(experimentId)).thenReturn(Optional.of(experiment));
+    when(readinessService.summarize(experimentId))
+        .thenReturn(
+            new ExperimentReadinessSummaryDto(
+                false, 0, false, 0, false, false, 0, 0, List.of(), List.of(), false, List.of()));
+    when(diagnosticsService.diagnose(experimentId))
+        .thenReturn(
+            new ExperimentDiagnosticsDto(
+                ExperimentDiagnosticsSeverity.INFO,
+                "Pronto",
+                "Sem bloqueio operacional.",
+                null,
+                List.of(),
+                null));
+    when(funnelService.summarizeLandingAnalytics(experimentId))
+        .thenReturn(
+            new ExperimentLandingAnalyticsDto(
+                0, 0, 0, 0, 0, 0, null, List.of(), List.of(), List.of(), null, null, List.of()));
+    when(funnelService.summarize(experimentId))
+        .thenReturn(
+            List.of(
+                stage(ExperimentFunnelStage.VISUALIZACAO_FORM, 4),
+                stage(ExperimentFunnelStage.ENVIO_FORM, 0),
+                stage(ExperimentFunnelStage.ACESSO_CHECKOUT, 0),
+                stage(ExperimentFunnelStage.COMPRA, 0)));
+    when(funnelDiagnosticService.diagnose(experimentId))
+        .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(), null));
+    when(funnelService.approvedRevenue(experimentId)).thenReturn(BigDecimal.ZERO);
+    PdeAnalyticsSummary pdeSummary = pdeSummary(4, 7);
+    when(pdeExperimentAnalyticsReader.read(experiment)).thenReturn(pdeSummary);
+    when(pdeExperimentAnalyticsReader.commercialOutcomes(experiment, pdeSummary))
+        .thenReturn(pdeOutcomes(1, 1));
+
+    var cockpit = service.getCockpit(experimentId);
+
+    assertEquals(4, cockpit.scoreboard().humanVisitors());
+    assertEquals("INSUFFICIENT_DATA", cockpit.sampleDecision().status());
+    assertEquals(4, cockpit.sampleDecision().humanVisitors());
+    assertEquals(0, cockpit.sampleDecision().purchases());
+    assertEquals(100, cockpit.sampleDecision().initialTargetVisitors());
+    assertEquals(5, cockpit.sampleDecision().targetPurchasesAtInitialDecision());
+    assertEquals(500, cockpit.sampleDecision().precisionTargetVisitors());
+    assertEquals("AMOSTRA_COMERCIAL_INSUFICIENTE", cockpit.bottleneck().code());
+    assertEquals("PRESERVAR_TESTE", cockpit.nextActions().getFirst().code());
+  }
+
+  /** Bloqueia a leitura comercial quando a coorte PDE autoritativa não pode ser medida. */
+  @Test
+  void getCockpitBlocksCommercialReadingWhenPdeCohortIsUnavailable() {
+    Long experimentId = 93L;
+    Experiment experiment = preparePdeSalesExperiment(experimentId);
+    when(pdeExperimentAnalyticsReader.read(experiment))
+        .thenThrow(new IllegalStateException("PDE indisponível no teste"));
+
+    var cockpit = service.getCockpit(experimentId);
+
+    assertEquals("BLOCKED", cockpit.health().status());
+    assertEquals("MEASUREMENT_UNAVAILABLE", cockpit.sampleDecision().status());
+    assertEquals("MENSURACAO_AMOSTRA_INDISPONIVEL", cockpit.bottleneck().code());
+    assertEquals("CORRIGIR_TRACKING", cockpit.nextActions().getFirst().code());
   }
 
   /** Garante que a recomendação prudente permanece até a impressão anterior ao piso definido. */
@@ -372,6 +466,50 @@ class ExperimentCockpitServiceTest {
     when(funnelService.approvedRevenue(experimentId)).thenReturn(BigDecimal.ZERO);
   }
 
+  /** Prepara um experimento PDE de vendas para validar bloqueios da medição de amostra. */
+  private Experiment preparePdeSalesExperiment(Long experimentId) {
+    Experiment experiment =
+        Experiment.builder()
+            .id(experimentId)
+            .name("PDE com medição indisponível")
+            .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+            .campaignObjective(ExperimentCampaignObjective.SALES)
+            .platform(ExperimentPlatform.FACEBOOK)
+            .sampleSize(100)
+            .targetCvr(new BigDecimal("5.00"))
+            .mediaSpendLimit(new BigDecimal("100.00"))
+            .campaignMetric(
+                ExperimentCampaignMetric.builder()
+                    .impressions(120L)
+                    .clicks(4L)
+                    .spend(new BigDecimal("5.89"))
+                    .build())
+            .build();
+    when(experimentRepository.findById(experimentId)).thenReturn(Optional.of(experiment));
+    when(readinessService.summarize(experimentId))
+        .thenReturn(
+            new ExperimentReadinessSummaryDto(
+                false, 0, false, 0, false, false, 0, 0, List.of(), List.of(), false, List.of()));
+    when(diagnosticsService.diagnose(experimentId))
+        .thenReturn(
+            new ExperimentDiagnosticsDto(
+                ExperimentDiagnosticsSeverity.INFO,
+                "Pronto",
+                "Sem bloqueio operacional.",
+                null,
+                List.of(),
+                null));
+    when(funnelService.summarizeLandingAnalytics(experimentId))
+        .thenReturn(
+            new ExperimentLandingAnalyticsDto(
+                0, 0, 0, 0, 0, 0, null, List.of(), List.of(), List.of(), null, null, List.of()));
+    when(funnelService.summarize(experimentId)).thenReturn(List.of());
+    when(funnelDiagnosticService.diagnose(experimentId))
+        .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(), null));
+    when(funnelService.approvedRevenue(experimentId)).thenReturn(BigDecimal.ZERO);
+    return experiment;
+  }
+
   /** Cria uma etapa mínima do funil para o teste do cockpit. */
   private ExperimentFunnelStageDto stage(ExperimentFunnelStage stage, long totalCount) {
     ExperimentFunnelStageDto dto = new ExperimentFunnelStageDto();
@@ -386,5 +524,52 @@ class ExperimentCockpitServiceTest {
   private ExperimentLandingAnalyticsVisitorDto visitor(String visitorId, long pageViews) {
     return new ExperimentLandingAnalyticsVisitorDto(
         visitorId, 1, pageViews, null, null, 0, 1, null, "mobile", "Mobile", pageViews > 1);
+  }
+
+  /** Cria resumo PDE mínimo com visitantes distintos e sessões humanas atribuídos. */
+  private PdeAnalyticsSummary pdeSummary(long humanVisitors, long humanSessions) {
+    return new PdeAnalyticsSummary(
+        "metodo-musa-7-dias",
+        "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+        humanSessions,
+        humanVisitors,
+        humanSessions,
+        humanSessions,
+        humanSessions,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of());
+  }
+
+  /** Cria desfecho financeiro mínimo com compras e reembolsos deduplicados. */
+  private PdeCommercialOutcomeSummary pdeOutcomes(long purchases, long refunds) {
+    return new PdeCommercialOutcomeSummary(
+        purchases,
+        refunds,
+        BigDecimal.ZERO,
+        BigDecimal.ZERO,
+        BigDecimal.ZERO,
+        true,
+        true,
+        true,
+        true,
+        0,
+        0,
+        0,
+        0,
+        0);
   }
 }

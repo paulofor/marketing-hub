@@ -13,7 +13,10 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useExperimentCockpit } from "../../api/experiment/useExperimentCockpit";
+import {
+  type ExperimentCockpitSampleDecision,
+  useExperimentCockpit,
+} from "../../api/experiment/useExperimentCockpit";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 
@@ -52,6 +55,32 @@ function severityClass(severity?: string | null) {
 
 function valueOrDash(value?: string | null) {
   return value?.trim() ? value : "—";
+}
+
+function progressPercent(value: number, target: number) {
+  if (target <= 0) return 0;
+  return Math.min(100, Math.max(0, (value / target) * 100));
+}
+
+function sampleStatusClass(status: string) {
+  if (status === "INITIAL_TARGET_REACHED" || status === "PRECISION_TARGET_REACHED") {
+    return "success";
+  }
+  if (
+    status === "MEASUREMENT_UNAVAILABLE" ||
+    status === "MEASUREMENT_INVALID" ||
+    status === "CONFIGURATION_REQUIRED"
+  ) {
+    return "danger";
+  }
+  if (
+    status === "INITIAL_ZERO_SALES_REJECTED" ||
+    status === "INITIAL_TARGET_NOT_REACHED" ||
+    status === "PRECISION_TARGET_NOT_REACHED"
+  ) {
+    return "warning";
+  }
+  return "secondary";
 }
 
 export default function ExperimentCockpitPage() {
@@ -138,6 +167,10 @@ export default function ExperimentCockpitPage() {
         <p className="mb-1 text-muted">{bottleneck.commercialImpact}</p>
         <p className="mb-0 fw-semibold">{bottleneck.recommendedFocus}</p>
       </section>
+
+      {data.sampleDecision?.applicable ? (
+        <SampleDecisionPanel decision={data.sampleDecision} />
+      ) : null}
 
       <section className="row g-3">
         <div className="col-lg-7">
@@ -315,6 +348,130 @@ export default function ExperimentCockpitPage() {
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+function SampleDecisionPanel({
+  decision,
+}: {
+  decision: ExperimentCockpitSampleDecision;
+}) {
+  const tone = sampleStatusClass(decision.status);
+  const hasInterval =
+    decision.confidenceLower95Percent != null &&
+    decision.confidenceUpper95Percent != null;
+
+  return (
+    <section
+      className="border rounded-2 p-3"
+      aria-label="Estratégia progressiva de amostra"
+    >
+      <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <div>
+          <div className={`badge text-bg-${tone} mb-2`}>
+            Decisão por amostra
+          </div>
+          <h2 className="h5 mb-1">{decision.headline}</h2>
+          <p className="text-muted small mb-0">{decision.explanation}</p>
+        </div>
+        {decision.projectionConfidence === "PRELIMINARY" ? (
+          <span className="badge text-bg-light border">Projeção preliminar</span>
+        ) : null}
+      </div>
+
+      <div className="row g-3">
+        <SampleProgress
+          label="Primeira decisão"
+          current={decision.humanVisitors}
+          target={decision.initialTargetVisitors}
+          suffix="visitantes humanos distintos"
+        />
+        <SampleProgress
+          label="Meta comercial inicial"
+          current={decision.purchases}
+          target={decision.targetPurchasesAtInitialDecision}
+          suffix="compras"
+        />
+        <SampleProgress
+          label="Rodada de precisão"
+          current={decision.humanVisitors}
+          target={decision.precisionTargetVisitors}
+          suffix="visitantes humanos distintos"
+        />
+      </div>
+
+      <div className="row g-3 mt-1 small">
+        <div className="col-lg-6">
+          <div className="bg-light rounded-2 p-3 h-100">
+            <div className="fw-semibold mb-2">Leitura estatística</div>
+            <div>
+              Conversão observada: {formatPercent(decision.observedPurchaseRatePercent)}
+            </div>
+            <div>
+              Intervalo de 95%: {hasInterval ? `${formatPercent(decision.confidenceLower95Percent)} a ${formatPercent(decision.confidenceUpper95Percent)}` : "—"}
+            </div>
+            {decision.zeroPurchaseUpper95Percent != null ? (
+              <div>
+                Limite superior com zero compras: {formatPercent(decision.zeroPurchaseUpper95Percent)}
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <div className="col-lg-6">
+          <div className="bg-light rounded-2 p-3 h-100">
+            <div className="fw-semibold mb-2">Proteção financeira separada</div>
+            <div>
+              Custo observado por visitante: {formatCurrency(decision.estimatedCostPerHumanVisitor)}
+            </div>
+            <div>
+              Projeção até a primeira decisão: {formatCurrency(decision.projectedSpendForInitialTarget)}
+            </div>
+            <div>
+              Parada automática sem resultado primário: {formatCurrency(decision.zeroPrimaryResultStopSpend)}
+            </div>
+            <div>Teto atual: {formatCurrency(decision.mediaSpendLimit)}</div>
+            <p className="text-muted mb-0 mt-2">{decision.financialGuardrail}</p>
+          </div>
+        </div>
+      </div>
+
+      <p className="fw-semibold mb-0 mt-3">{decision.recommendation}</p>
+    </section>
+  );
+}
+
+function SampleProgress({
+  label,
+  current,
+  target,
+  suffix,
+}: {
+  label: string;
+  current: number;
+  target: number;
+  suffix: string;
+}) {
+  const percent = progressPercent(current, target);
+  return (
+    <div className="col-12 col-md-4">
+      <div className="border rounded-2 p-3 h-100">
+        <div className="small text-muted">{label}</div>
+        <div className="h5 mb-1">
+          {formatNumber(current)} / {formatNumber(target)}
+        </div>
+        <div className="small text-muted mb-2">{suffix}</div>
+        <div
+          className="progress"
+          role="progressbar"
+          aria-label={label}
+          aria-valuenow={Math.round(percent)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div className="progress-bar" style={{ width: `${percent}%` }} />
+        </div>
+      </div>
     </div>
   );
 }

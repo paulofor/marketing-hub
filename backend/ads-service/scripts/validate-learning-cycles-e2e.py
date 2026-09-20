@@ -245,6 +245,9 @@ cycle=command(cycle)
 assert cycle['stage']=='DECISION'
 assert cycle['events'][-1]['action']=='MEASURE' and cycle['events'][-1]['evidence']['automatic']
 assert cycle['events'][-1]['operatorName']=='Marketing Hub · backend'
+assert cycle['events'][-1]['evidence']['contractVersion']=='LEARNING_CYCLE_AUTOMATIC_MEASUREMENT_V2'
+assert cycle['events'][-1]['evidence']['humanVisitors']==10
+assert cycle['events'][-1]['evidence']['sources']['pdeAnalytics']['uniqueVisitors']==10
 assert cycle['events'][-1]['evidence']['sources']['pdeAnalytics']['trafficQualityIncluded']=='HUMAN'
 check('Autorização, publicação e conciliação automática comprovadas sem digitação de métricas')
 
@@ -290,19 +293,25 @@ assert cycle['stage']=='DECISION'
 command(cycle,'CONTINUE',expected=409)
 check('Fonte indisponível não vira zero; produto, revisão, amostra, vendas e teto governam a coleta')
 
-configure_measurement(snapshot='sales-v4',netSales=5,checkouts=6,spendBrl=100,revenueBrl=335,
+configure_measurement(snapshot='sales-v4',humanVisitors=4,sessions=10,netSales=5,checkouts=6,spendBrl=100,revenueBrl=335,
     contributionBrl=200,deliveryVerified=True,useVerified=True,satisfactionVerified=True)
 cycle=command(cycle,'FIX_MEASUREMENT',dict(rootCause='Fotografia anterior não tinha vendas',correctionPlan='Reconciliar novo snapshot oficial'))
 assert cycle['stage']=='DECISION'
+assert not next(item for item in cycle['commands'] if item['action']=='SCALE')['available']
+command(cycle,'SCALE',dict(scaleHypothesis='Sessões repetidas não comprovam amostra'),expected=409)
+configure_measurement(snapshot='sales-v5',humanVisitors=10,sessions=10,netSales=5,checkouts=6,spendBrl=100,revenueBrl=335,
+    contributionBrl=200,deliveryVerified=True,useVerified=True,satisfactionVerified=True)
+cycle=command(cycle,'FIX_MEASUREMENT',dict(rootCause='Amostra possuía sessões repetidas',correctionPlan='Reconciliar visitantes humanos distintos'))
+assert cycle['stage']=='DECISION'
 
 cycle=command(cycle,'SCALE',dict(scaleHypothesis='Ampliar após vendas úteis'))
-configure_measurement(snapshot='scale-v5',netSales=5,checkouts=6,spendBrl=110,revenueBrl=335,
+configure_measurement(snapshot='scale-v6',netSales=5,checkouts=6,spendBrl=110,revenueBrl=335,
     contributionBrl=190,deliveryVerified=True,useVerified=True,satisfactionVerified=True)
 cycle=command(cycle,'AUTHORIZE_SCALE',dict(confirmed=True,productVersion=cycle['productVersion'],budgetLimitBrl=150,windowEnd=iso(now()+dt.timedelta(days=2))))
 assert cycle['stage']=='DECISION' and cycle['budgetLimitBrl']==150
 assert http('/fixture/experiments/91001/budget-state')['mediaSpendLimit']==150
-assert cycle['events'][-1]['action']=='MEASURE' and cycle['events'][-1]['evidence']['sourceFingerprint'].endswith('scale-v5')
-check('Escala exige nova autorização, limite oficial e nova fotografia, sem alterar mídia pelo ciclo')
+assert cycle['events'][-1]['action']=='MEASURE' and cycle['events'][-1]['evidence']['sourceFingerprint'].endswith('scale-v6')
+check('Escala exige visitantes distintos, nova autorização, limite oficial e nova fotografia')
 
 command(cycle,'ADJUST',dict(return_to,learning='Melhorar microação',nextHypothesis='Ação guiada'),expected=409)
 http('/fixture/experiments/91001/stop',{})

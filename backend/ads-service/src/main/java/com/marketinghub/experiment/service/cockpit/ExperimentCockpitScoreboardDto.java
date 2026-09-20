@@ -14,6 +14,7 @@ public record ExperimentCockpitScoreboardDto(
     BigDecimal cpc,
     long directContacts,
     int directContactTarget,
+    long humanVisitors,
     long pageViews,
     long partialVideoViews,
     long completeVideoViews,

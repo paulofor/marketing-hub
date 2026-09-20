@@ -167,6 +167,55 @@ Interpretação de negócio:
 - uma campanha como a do experimento 56 deve parar ao cruzar `R$ 25,00` sem envio de formulário, abertura de email de amostra ou compra;
 - quando a regra dispara, o próximo passo recomendado é corrigir causa-raiz de oferta, promessa, público, landing, formulário, checkout ou tracking antes de retomar mídia.
 
+### 4.1.3.3 Regra mandatória — decisão progressiva por visitantes humanos e vendas líquidas
+
+Experimentos PDE com objetivo `SALES` em mídia paga e coorte financeira conciliada devem separar
+proteção financeira, primeira decisão comercial e estimativa de conversão com maior precisão. O
+tamanho de amostra não autoriza gasto, não substitui os limites de campanha e não transforma
+ausência precoce de compra em rejeição da oferta. Outros tipos de funil só podem adotar esta regra
+quando expuserem visitantes distintos e vendas líquidas da mesma coorte com contrato canônico;
+até lá, preservam sua regra própria.
+
+Regras obrigatórias:
+
+- o denominador comercial deve contar somente visitantes humanos distintos, atribuídos ao
+  experimento e à versão em execução; sessões repetidas do mesmo visitante, robôs, crawlers de
+  plataforma, QA interno, acessos sem atribuição e dados de outra versão permanecem na auditoria,
+  mas não entram na amostra;
+- o numerador deve contar compras financeiras autoritativas e deduplicadas da mesma coorte,
+  descontando vendas reembolsadas; intenção de assinatura ou evento técnico intermediário não é
+  venda;
+- `experiment.sample_size` define a primeira decisão comercial e `experiment.target_cvr` define a
+  meta de conversão; a quantidade-alvo de compras é o arredondamento para cima de
+  `sample_size * target_cvr / 100`;
+- antes de atingir a primeira amostra, o cockpit deve classificar a evidência como
+  `INSUFFICIENT_DATA` e não recomendar troca de oferta, preço, público, criativo ou página somente
+  pela ausência de compras; falhas técnicas comprovadas, inconsistência de mensuração e travas
+  financeiras continuam tendo prioridade;
+- quando a primeira amostra terminar sem compra, o backend deve calcular o limite superior
+  unilateral exato de 95% para conversão zero. No caso de 100 visitantes, esse limite é
+  aproximadamente 2,95%; se ele ficar abaixo da meta, existe evidência contra aquela versão e
+  público, sem invalidar automaticamente a necessidade ou o produto inteiro;
+- quando a primeira amostra alcançar a quantidade-alvo de compras, o resultado é um sinal comercial
+  inicial, não autorização de escala. A versão deve permanecer estável e só seguir para uma rodada
+  de precisão se margem, entrega, primeiro uso e satisfação justificarem novo investimento;
+- a meta da rodada de precisão deve ser calculada para um intervalo de 95%, usando margem desejada
+  de no máximo 2 pontos percentuais e no máximo metade da conversão-alvo, arredondada para o próximo
+  bloco de 50 visitantes e nunca abaixo da primeira amostra. Para meta de 5%, o alvo resultante é
+  500 visitantes humanos distintos;
+- o cockpit deve expor visitantes atuais, compras líquidas, progresso até as duas amostras,
+  conversão observada, intervalo binomial bilateral exato de 95% pelo método Clopper-Pearson,
+  projeção preliminar de custo por visitante e compatibilidade com o teto de mídia;
+- projeção calculada com menos de 20 visitantes deve ser identificada como preliminar e nunca usada
+  sozinha para aumentar orçamento, interromper campanha ou alterar a hipótese;
+- a parada financeira de R$ 25 sem resultado primário e o `media_spend_limit` continuam protegendo o
+  caixa. Se uma dessas travas ocorrer antes da amostra inicial, o resultado permanece
+  estatisticamente insuficiente; alcançar o volume planejado exige nova autorização financeira,
+  nunca aumento automático;
+- escala só pode ser recomendada depois da rodada de precisão quando a meta observada, contribuição
+  líquida, entrega, primeiro uso e satisfação estiverem coerentes. Toda ampliação de mídia continua
+  sujeita à autorização humana.
+
 ### 4.1.4 Regra mandatória — execução auditável por `ExperimentRun`
 
 O `Experiment` continua representando uma pergunta comercial atômica: uma dor principal, uma promessa principal, uma oferta principal, uma rota comercial, uma variável primária e uma métrica primária. A tentativa operacional de colocar essa pergunta no mercado deve ser representada por `ExperimentRun`, sem alterar o significado comercial do experimento.

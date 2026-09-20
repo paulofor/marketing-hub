@@ -1,3 +1,24 @@
+## 2026-09-20 — Decisão progressiva por amostra humana no cockpit
+
+- Causa confirmada no código, endpoint e banco: o experimento #92 possuía `sample_size=100` e
+  `target_cvr=5`, mas o cockpit não consumia esses campos e recomendava alterar a primeira dobra
+  depois de apenas quatro visitantes humanos distintos atribuídos.
+- Decisão: separar proteção financeira, primeira leitura comercial e rodada de precisão. A primeira
+  meta usa 100 visitantes e cinco compras líquidas; a precisão planejada para 5% usa 500
+  visitantes, sem ampliar orçamento automaticamente.
+- Implementação: o backend passa a calcular progresso, intervalo de confiança, limite para zero
+  compras líquidas, intervalo binomial exato, custo por visitante e compatibilidade com o teto; o
+  frontend exibe a estratégia e a parada automática de R$ 25, impedindo que ausência precoce de
+  venda seja apresentada como conclusão sobre página ou oferta. A ativação inicial fica restrita a
+  funis PDE com coorte humana e financeira conciliada, evitando projetar compras brutas de outros
+  funis como vendas líquidas.
+- Prevenção: testes cobrem 4/100, 0/100, 5/100, 25/500, mensuração inválida, teto insuficiente,
+  segregação de tráfego e renderização desktop/iPhone/Pixel. Matriz em
+  `docs/homologacao/estrategia-amostra-progressiva-experimentos-v1.md`.
+- Integração sistêmica: o ciclo de aprendizagem também passou a medir a meta por visitantes humanos
+  distintos no contrato automático v2; sessões continuam auditáveis, mas não liberam escala. Isso
+  evita decisões diferentes entre cockpit e automação para o mesmo experimento.
+
 ## 2026-09-17 — Deploy PDE não duplica copy editável do Marketing Hub
 
 - A execução `35229024349` publicou os artefatos e aprovou os checks operacionais, mas o smoke da

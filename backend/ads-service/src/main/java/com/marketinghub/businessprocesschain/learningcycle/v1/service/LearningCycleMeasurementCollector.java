@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class LearningCycleMeasurementCollector {
-  static final String CONTRACT = "LEARNING_CYCLE_AUTOMATIC_MEASUREMENT_V1";
+  static final String CONTRACT = "LEARNING_CYCLE_AUTOMATIC_MEASUREMENT_V2";
   private final PdeExperimentAnalyticsReader analytics;
   private final ExperimentAcquisitionMetricsReader acquisition;
   private final ExperimentCostReconciliationService costs;
@@ -147,6 +147,7 @@ public class LearningCycleMeasurementCollector {
             experiment.getId(),
             funnel.currentExperienceVersion(),
             funnel.totalEvents(),
+            funnel.uniqueVisitors(),
             funnel.sessions(),
             funnel.lastEventAt(),
             outcomes.purchases(),
@@ -173,6 +174,7 @@ public class LearningCycleMeasurementCollector {
     evidence.put("periodStart", cycle.getWindowStart().toString());
     evidence.put("periodEnd", periodEnd.toString());
     evidence.put("observedAt", now.toString());
+    evidence.put("humanVisitors", funnel.uniqueVisitors());
     evidence.put("sessions", funnel.sessions());
     evidence.put("starts", starts);
     evidence.put("firstResults", firstResults);
@@ -196,6 +198,7 @@ public class LearningCycleMeasurementCollector {
     pde.put("trafficQualityIncluded", "HUMAN");
     pde.put("humanEvents", funnel.totalEvents());
     pde.put("rawEvents", funnel.rawTotalEvents());
+    pde.put("uniqueVisitors", funnel.uniqueVisitors());
     pde.put("humanSessions", funnel.humanSessions());
     pde.put("rawSessions", funnel.rawSessions());
     putNullable(pde, "lastEventAt", funnel.lastEventAt());
@@ -229,6 +232,8 @@ public class LearningCycleMeasurementCollector {
 
     String summary =
         "Conciliação automática: "
+            + funnel.uniqueVisitors()
+            + " visitantes humanos distintos em "
             + funnel.sessions()
             + " sessões, "
             + firstResults

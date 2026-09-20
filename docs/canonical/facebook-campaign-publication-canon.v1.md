@@ -319,3 +319,11 @@ Este procedimento existe para validar, sem alterar a arquitetura principal do fu
 Este padrão passa a ser chamado de **protocolo jobid**. Ao disponibilizar um experimento para publicação em campanha, o backend deve gerar e expor um `publicationJobId` estável para aquela liberação. O primeiro passo do job é registrado pelo próprio backend no momento em que o experimento é entregue ao Facebook Ads Worker.
 
 A cada interação do Facebook Ads Worker com a API da Meta durante a publicação, o worker deve registrar no backend um passo do job contendo `jobId`, data-hora, etapa, endpoint, método HTTP, payload enviado, payload recebido, status e erro quando existir. A tabela `facebook_campaign_publication_job_step` é a fonte operacional para reconstruir a linha do tempo do job e investigar causa-raiz de falhas de publicação.
+
+## Retomada financeira de campanha existente — 20/09/2026
+
+A retomada autorizada segue o contrato em `procedimento-experimento-canon.v1.md`.
+O limite emergencial sem leads deve vir do backend por experimento, com fallback
+conservador de R$ 25,00 para contratos antigos. A exceção explícita nunca supera
+`media_spend_limit`. O executor confirma teto vitalício e prazo no único conjunto
+antes da ativação e conserva a identidade, o gasto e a atribuição anteriores.

@@ -2118,3 +2118,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-19-opala-commercial-integrity-final-candidate-v3.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-20-facebook-campaign-resumption-v1.yaml
+      relativeToChangelogFile: true

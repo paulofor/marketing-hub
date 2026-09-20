@@ -1,0 +1,105 @@
+openapi: 3.0.3
+info:
+  title: Retomada financeira de campanhas Meta
+  version: 1.0.0
+  description: Autoriza teto acumulado, preserva histórico e confirma Meta antes de RUNNING. Suporta BRL e um conjunto com orçamento vitalício.
+paths:
+  /api/facebook-campaign-resumptions/experiments/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      summary: Consulta disponibilidade, gasto sincronizado, limite efetivo e último pedido
+      responses:
+        '200':
+          description: Resumo persistido; available e blocker governam a tela
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  applicable: {type: boolean}
+                  available: {type: boolean}
+                  blocker: {type: string, nullable: true}
+                  synchronizedSpend: {type: number}
+                  currentLimit: {type: number, nullable: true}
+                  zeroResultStopSpend: {type: number}
+                  latest: {$ref: '#/components/schemas/Execution'}
+    post:
+      summary: Registra autorização e exceção individual sem ativar mídia na requisição
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [totalLimit, endDate, reason, authorizeSpending, useTotalLimitForZeroResults]
+              properties:
+                totalLimit: {type: number, minimum: 0.01, multipleOf: 0.01, description: 'Teto acumulado BRL, incluindo gasto anterior'}
+                endDate: {type: string, format: date, description: 'Prazo entre hoje e 30 dias; fim às 23:59:59 em America/Sao_Paulo'}
+                reason: {type: string, minLength: 10, maxLength: 800}
+                authorizeSpending: {type: boolean, enum: [true]}
+                useTotalLimitForZeroResults: {type: boolean, enum: [true]}
+      responses:
+        '200': {description: 'Pedido pendente ou repetição idempotente; não significa campanha ativa'}
+        '400': {description: 'Consentimento, teto, motivo ou prazo inválidos'}
+        '409': {description: 'Campanha incompatível, requisitos pendentes ou outra retomada em andamento'}
+  /api/facebook-campaign-resumptions/pending:
+    get:
+      summary: Ponto canônico inicial do executor; até 20 pedidos pendentes ou com reserva expirada
+      responses:
+        '200': {description: 'Lista de Execution sem leaseToken'}
+  /api/facebook-campaign-resumptions/{id}/claim:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Reserva exclusiva por quinze minutos; permite recuperação idempotente após queda
+      responses:
+        '200': {description: 'Execution com leaseToken exclusivo'}
+        '409': {description: 'Já reservado ou concluído'}
+  /api/facebook-campaign-resumptions/{id}/result:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      summary: Confirma execução ou falha, validando evidência nativa antes de RUNNING
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [leaseToken, success]
+              properties:
+                leaseToken: {type: string}
+                success: {type: boolean}
+                error: {type: string, nullable: true}
+                evidence:
+                  type: object
+                  description: 'Snapshots Meta sem token. Sucesso exige campaignId, campaignStatus=ACTIVE, adSetId, lifetimeBudgetMinor, endDate e spend menor que o teto.'
+      responses:
+        '200': {description: 'Resultado persistido; callback repetido é idempotente'}
+        '409': {description: 'Reserva inválida ou evidência divergente'}
+components:
+  parameters:
+    Id:
+      in: path
+      name: id
+      required: true
+      schema: {type: integer, format: int64}
+  schemas:
+    Execution:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        experimentId: {type: integer, format: int64}
+        campaignId: {type: string}
+        adSetId: {type: string}
+        status: {type: string, enum: [PENDING, RUNNING, COMPLETED, FAILED]}
+        totalLimit: {type: number}
+        endDate: {type: string, format: date}
+        reason: {type: string}
+        destinationUrl: {type: string}
+        requestedAt: {type: string, format: date-time}
+        completedAt: {type: string, format: date-time, nullable: true}
+        leaseToken: {type: string, nullable: true}
+        error: {type: string, nullable: true}
+        evidence: {type: object, nullable: true}

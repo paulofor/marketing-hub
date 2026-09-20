@@ -1648,8 +1648,9 @@ class ExperimentServiceTest {
     facebookAdsCampaignRepository.save(campaign);
   }
 
+  /** Impede que uma reativação administrativa declare Meta ativa sem confirmação externa. */
   @Test
-  void reactivateStoppedExperimentRegistersReasonAndHistory() {
+  void reactivateStoppedFacebookExperimentRequiresNativeConfirmation() {
     MarketNiche niche =
         nicheRepository.save(MarketNiche.builder().name("Niche Reactivation").build());
     var angle =
@@ -1712,26 +1713,21 @@ class ExperimentServiceTest {
     campaign.setBudgetMode(BudgetMode.CAMPAIGN);
     facebookAdsCampaignRepository.save(campaign);
 
-    Experiment reactivated =
-        service.reactivate(
-            experiment.getId(),
-            new com.marketinghub.experiment.dto.ReactivateExperimentRequest(
-                "Retomar ciclo controlado para validar a nova entrada do PDE Musa."));
-
-    assertThat(reactivated.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
-    assertThat(reactivated.getLastStatusChangeAction()).isEqualTo("REACTIVATE");
-    assertThat(reactivated.getLastStatusChangeReason()).contains("Retomar ciclo controlado");
-    assertThat(reactivated.getLastStatusChangedAt()).isNotNull();
-    assertThat(experimentStatusChangeRepository.findAll())
-        .anySatisfy(
-            change -> {
-              assertThat(change.getExperiment().getId()).isEqualTo(experiment.getId());
-              assertThat(change.getPreviousStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
-              assertThat(change.getNewStatus()).isEqualTo(ExperimentStatus.RUNNING);
-              assertThat(change.getAction()).isEqualTo("REACTIVATE");
-            });
-    reactivated.setStatus(ExperimentStatus.USER_STOPPED);
-    experimentRepository.save(reactivated);
+    assertThatThrownBy(
+            () ->
+                service.reactivate(
+                    experiment.getId(),
+                    new com.marketinghub.experiment.dto.ReactivateExperimentRequest(
+                        "Retomar ciclo controlado")))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("retomada financeira");
+    assertThat(experimentRepository.findById(experiment.getId()).orElseThrow().getStatus())
+        .isEqualTo(ExperimentStatus.USER_STOPPED);
+    assertThat(
+            experimentStatusChangeRepository.findAll().stream()
+                .filter(change -> change.getExperiment().getId().equals(experiment.getId()))
+                .toList())
+        .isEmpty();
   }
 
   /** Protege campanha existente e preserva eventos e janela de métricas ao retomar uma falha. */

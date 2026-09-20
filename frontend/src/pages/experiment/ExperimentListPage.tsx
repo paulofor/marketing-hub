@@ -91,9 +91,9 @@ function isCommercialValidationExperiment(experiment: {
     .toUpperCase();
   return Boolean(
     normalizedStatus === "RUNNING" ||
-      normalizedStatus === "VALIDACAO_COMERCIAL" ||
-      normalizedStatus === "COMMERCIAL_VALIDATION" ||
-      normalizedStatus === "COMMERCIAL_VALIDATING",
+    normalizedStatus === "VALIDACAO_COMERCIAL" ||
+    normalizedStatus === "COMMERCIAL_VALIDATION" ||
+    normalizedStatus === "COMMERCIAL_VALIDATING",
   );
 }
 
@@ -477,7 +477,15 @@ export default function ExperimentListPage() {
                         Parada do usuário
                       </button>
                     )}
-                    {canReactivate && (
+                    {canReactivate && e.platform === "FACEBOOK" && (
+                      <Link
+                        className="btn btn-sm btn-outline-success ms-1"
+                        to={`/experiments/${e.id}`}
+                      >
+                        Retomada financeira na aba Campanha Meta
+                      </Link>
+                    )}
+                    {canReactivate && e.platform !== "FACEBOOK" && (
                       <button
                         type="button"
                         className="btn btn-sm btn-outline-success ms-1"

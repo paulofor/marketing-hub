@@ -18,10 +18,8 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 2,
 });
 
-const ZERO_PRIMARY_RESULT_MINIMUM_SPEND = 25;
 const LOW_IMPRESSIONS_MINIMUM = 100;
 const LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE_HOURS = 48;
-const EMERGENCY_ZERO_LEAD_SPEND_THRESHOLD = 25;
 
 interface ExperimentFunnelTabProps {
   experimentId: string;
@@ -30,6 +28,7 @@ interface ExperimentFunnelTabProps {
   totalSpend?: number | null;
   spendLastSyncedAt?: string | null;
   alterationLocked?: boolean;
+  zeroResultStopSpend?: number | null;
 }
 
 const BRAZIL_OPERATIONAL_TIME_ZONE = "America/Sao_Paulo";
@@ -56,6 +55,7 @@ export default function ExperimentFunnelTab({
   totalSpend,
   spendLastSyncedAt,
   alterationLocked = false,
+  zeroResultStopSpend = 25,
 }: ExperimentFunnelTabProps) {
   const isLowTicketProduct = experimentType === "LOW_TICKET_PRODUCT";
   const isPdeMembershipSubscriptionFunnel =
@@ -426,12 +426,12 @@ export default function ExperimentFunnelTab({
     },
     {
       title: "Gasto sem resultado primário",
-      detail: `Parar se o gasto chegar a ${formatCurrency(ZERO_PRIMARY_RESULT_MINIMUM_SPEND)} sem envio de formulário, abertura do e-mail de amostra ou compra.`,
+      detail: `Parar se o gasto chegar a ${formatCurrency(zeroResultStopSpend ?? 25)} sem envio de formulário, abertura do e-mail de amostra ou compra.`,
       status:
         normalizedTotalSpend != null &&
-        normalizedTotalSpend >= ZERO_PRIMARY_RESULT_MINIMUM_SPEND
+        normalizedTotalSpend >= (zeroResultStopSpend ?? 25)
           ? "Piso de gasto já atingido; depende dos resultados primários do funil."
-          : `Ainda abaixo do piso de ${formatCurrency(ZERO_PRIMARY_RESULT_MINIMUM_SPEND)}.`,
+          : `Ainda abaixo do piso de ${formatCurrency(zeroResultStopSpend ?? 25)}.`,
     },
     {
       title: "Etapa prioritária reprovada",
@@ -453,7 +453,7 @@ export default function ExperimentFunnelTab({
     },
     {
       title: "Trava financeira emergencial",
-      detail: `Pausa diretamente na Meta se o Insights indicar gasto de pelo menos ${formatCurrency(EMERGENCY_ZERO_LEAD_SPEND_THRESHOLD)} com zero leads.`,
+      detail: `Pausa diretamente na Meta se o Insights indicar gasto de pelo menos ${formatCurrency(zeroResultStopSpend ?? 25)} com zero leads.`,
       status:
         "Protege orçamento mesmo se o backend estiver indisponível durante a sincronização de métricas.",
     },

@@ -6293,3 +6293,17 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   As regressões invertem a ordem de criativos e público, a ordem de chaves e escalas decimais e
   exigem prontidão e vigência da conclusão; mudança real de checkout continua exigindo novos
   pareceres. É proibido comparar literalmente o snapshot integral deste contrato nesses consumidores.
+
+## LOOP-META-RETOMADA-APENAS-STATUS — Hub ativo sem reativação na Meta
+
+- **Data:** 20/09/2026.
+- **Evidência:** Vega #91 estava pausado, com prazo Meta encerrado, orçamento vitalício
+  de R$ 100 e gasto R$ 27,45. O comando administrativo `reactivate` somente mudava o
+  experimento; o worker mantinha uma trava fixa de R$ 25 com zero leads Meta, mesmo
+  com um cadastro registrado no PDE.
+- **Correção:** retomada com autorização individual persistida, teto acumulado e prazo;
+  fila/reserva/callback, orçamento nativo confirmado e estado RUNNING somente após
+  resposta Meta. A exceção sem resultados fica limitada ao teto e não afeta #92.
+- **Prevenção:** testes de contrato backend, HTTP do worker, limites 149,99/150,
+  confirmação divergente, ausência de Insights, duplicidade e tela com consentimento.
+  Matriz: `docs/homologacao/vega91-retomada-financeira-v1.md`.

@@ -625,7 +625,7 @@ describe("ExperimentListPage", () => {
     ).toBeTruthy();
   });
 
-  it("reactivates a stopped experiment with a registered reason", async () => {
+  it("routes paused Meta campaigns to financial resumption", async () => {
     const experiments = [
       {
         id: "67",
@@ -640,6 +640,66 @@ describe("ExperimentListPage", () => {
         status: "USER_STOPPED",
         reactivationAvailable: true,
         platform: "FACEBOOK",
+        stage: "AD",
+        createdAt: "2026-07-21T00:00:00Z",
+        updatedAt: "2026-07-22T00:16:31Z",
+      },
+    ];
+
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/experiments/summary")
+        return Promise.resolve({ data: experiments });
+      if (url === "/api/niches") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 10,
+              name: "Mulheres urbanas",
+              description: "",
+              demandVolume: "",
+              promises: "",
+              offers: "",
+              baseSegmentation: "",
+              interests: "",
+              demographicFilters: "",
+              extraTips: "",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: null });
+    });
+    (axios.post as any).mockResolvedValueOnce({
+      data: { ...experiments[0], status: "RUNNING" },
+    });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("link", {
+        name: "Retomada financeira na aba Campanha Meta",
+      }),
+    ).toHaveAttribute("href", "/experiments/67");
+    expect(
+      screen.queryByRole("button", { name: "Retornar à atividade" }),
+    ).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+  it("reactivates a stopped direct experiment with a registered reason", async () => {
+    const experiments = [
+      {
+        id: "67",
+        nicheId: 10,
+        hypothesisId: "hypothesis-67",
+        name: "MUSA-H001-E005",
+        hypothesis: "Método MUSA",
+        cost: 32.34,
+        startDate: "2026-07-21",
+        endDate: null,
+        creativeApproved: true,
+        status: "USER_STOPPED",
+        reactivationAvailable: true,
+        platform: "DIRECT_ONE_TO_ONE",
         stage: "AD",
         createdAt: "2026-07-21T00:00:00Z",
         updatedAt: "2026-07-22T00:16:31Z",

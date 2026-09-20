@@ -148,6 +148,7 @@ export interface Experiment {
   mdePercent?: number | null;
   dailyBudget?: number | null;
   mediaSpendLimit?: number | null;
+  zeroResultSpendLimit?: number | null;
   unitPrice?: number | null;
   cost?: number | null;
   totalCost?: number | null;

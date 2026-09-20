@@ -53,7 +53,8 @@ public class ExperimentFunnelAutoStopService {
 
   /**
    * Aplica a regra única de campanha inclusive na liquidação final após uma pausa observada na
-   * Meta: após R$ 25,00, campanha sem resultado primário deve parar.
+   * Meta: ao atingir o limite canônico ou a exceção autorizada, campanha sem resultado primário
+   * deve parar.
    *
    * @return {@code true} quando o experimento foi parado automaticamente, {@code false} caso
    *     contrário.
@@ -70,14 +71,19 @@ public class ExperimentFunnelAutoStopService {
         "Automatic campaign stop triggered for experiment {} due to zero primary result after minimum spend: spend={}, minimumSpend={}, formSubmissions={}, sampleEmailOpens={}, purchases={}",
         experiment.getId(),
         evidence.campaignSpend(),
-        ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(),
+        ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(experiment),
         evidence.formSubmissions(),
         evidence.sampleEmailOpens(),
         evidence.purchases());
     invalidateExperimentAndRequestStops(
         experiment,
         FacebookCampaignStopReason.CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND,
-        "campanha gastou R$ 25,00 sem resultado primário: envio de formulário, abertura de email de amostra ou compra");
+        "campanha gastou R$ %s sem resultado primário: envio de formulário, abertura de email de amostra ou compra"
+            .formatted(
+                ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(experiment)
+                    .setScale(2)
+                    .toPlainString()
+                    .replace('.', ',')));
     return true;
   }
 
@@ -132,14 +138,21 @@ public class ExperimentFunnelAutoStopService {
   /** Consolida uma única leitura canônica do gasto e dos resultados primários do experimento. */
   private ZeroPrimaryResultEvidence resolveZeroPrimaryResultEvidence(Experiment experiment) {
     BigDecimal campaignSpend = resolveCampaignSpend(experiment);
-    if (campaignSpend.compareTo(ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend())
+    if (campaignSpend.compareTo(
+            ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(experiment))
         < 0) {
-      return new ZeroPrimaryResultEvidence(campaignSpend, 0, 0, 0);
+      return new ZeroPrimaryResultEvidence(
+          campaignSpend,
+          ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(experiment),
+          0,
+          0,
+          0);
     }
     ExperimentFunnelDiagnosticsResponseDto diagnostics =
         diagnosticService.diagnose(experiment.getId());
     return new ZeroPrimaryResultEvidence(
         campaignSpend,
+        ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(experiment),
         successesFor(diagnostics, ExperimentFunnelStage.ENVIO_FORM),
         successesFor(diagnostics, ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA),
         successesFor(diagnostics, ExperimentFunnelStage.COMPRA));
@@ -147,13 +160,15 @@ public class ExperimentFunnelAutoStopService {
 
   /** Representa a evidência mínima necessária para aplicar a trava comercial sem falso positivo. */
   private record ZeroPrimaryResultEvidence(
-      BigDecimal campaignSpend, long formSubmissions, long sampleEmailOpens, long purchases) {
+      BigDecimal campaignSpend,
+      BigDecimal minimumSpend,
+      long formSubmissions,
+      long sampleEmailOpens,
+      long purchases) {
 
     /** Confirma simultaneamente o limite de gasto e a ausência de todos os resultados primários. */
     private boolean reachedStopThreshold() {
-      return campaignSpend.compareTo(
-                  ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend())
-              >= 0
+      return campaignSpend.compareTo(minimumSpend) >= 0
           && formSubmissions == 0
           && sampleEmailOpens == 0
           && purchases == 0;

@@ -137,6 +137,10 @@ public class AgentTaskService {
   private com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext
       opalaCommercialContext;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialContext
+      quartzoCommercialContext;
+
   @Autowired(required = false)
   private com.marketinghub.catalogovivo.v1.service.CatalogoVivoService catalogoVivo;
 
@@ -1984,8 +1988,8 @@ public class AgentTaskService {
   }
 
   /**
-   * Consolida histórico, ficha congelada e contratos do ciclo para os agentes, preservando a
-   * entrada privada de Íris.
+   * Consolida histórico, ficha e fontes comerciais do tipo para os agentes, preservando a entrada
+   * privada de Íris e a identidade do experimento Quartzo mesmo sem ciclo.
    */
   private String processContext(AgentTask task) {
     try {
@@ -2029,6 +2033,12 @@ public class AgentTaskService {
           && com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext.CODE.equals(
               task.getProcessDefinition().getProcessCode())) {
         context.put("opalaCommercial", opalaCommercialContext.snapshot(task.getSourceReference()));
+      }
+      if (quartzoCommercialContext != null
+          && com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialContext.CODE.equals(
+              task.getProcessDefinition().getProcessCode())) {
+        context.put(
+            "quartzoCommercial", quartzoCommercialContext.snapshot(task.getSourceReference()));
       }
       context.put("completedHumanActivities", completedHumanActivities);
       context.put("blockedActivities", blockedActivities);

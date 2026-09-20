@@ -2,7 +2,7 @@ package com.marketinghub.experiment.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskReviewSnapshot;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
@@ -53,6 +53,10 @@ public class PdeCommercialReviewReuseActivityExecutor
   private final AgentTaskRepository tasks;
   private final BusinessProcessActivityInstanceRepository instances;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialService
+      quartzoPreparation;
+
   /** Reconhece somente os dois gates que declaram reutilização auditável na versão do processo. */
   @Override
   public boolean supports(
@@ -96,7 +100,7 @@ public class PdeCommercialReviewReuseActivityExecutor
                   "Parecer do mesmo escopo",
                   true,
                   "Tarefa #"
-                      + proof.task().getId()
+                      + proof.task().taskId()
                       + " e consolidação #"
                       + proof.readyInstance().getId()
                       + " correspondem à configuração vigente.")));
@@ -154,8 +158,8 @@ public class PdeCommercialReviewReuseActivityExecutor
     evidence.put("evidenceType", "COMMERCIAL_REVIEW_REUSED_V1");
     evidence.put("sourceProcessDefinitionId", proof.process().getId());
     evidence.put("sourceProcessCode", proof.process().getProcessCode());
-    evidence.put("sourceActivityId", proof.task().getProcessActivityId());
-    evidence.put("sourceTaskId", proof.task().getId());
+    evidence.put("sourceActivityId", proof.sourceActivity());
+    evidence.put("sourceTaskId", proof.task().taskId());
     evidence.put("sourceReadyInstanceId", proof.readyInstance().getId());
     evidence.put("sourceReference", sourceReference);
     evidence.put("fingerprint", fingerprint);
@@ -180,28 +184,42 @@ public class PdeCommercialReviewReuseActivityExecutor
     return completed(sourceReference);
   }
 
-  /** Localiza a revisão e a consolidação exatas, depois de o gate Opala revalidar o snapshot. */
+  /** Localiza a revisão após o gate do tipo revalidar produto, experimento, versão e ativos. */
   private ReusedReview proof(
       BusinessProcessActivityDefinition activity, Product product, String sourceReference) {
-    LearningSalesCycle cycle = cycle(product, sourceReference);
-    if (!routing.isOpala(product.getId()))
-      throw new IllegalStateException(
-          "O tipo do produto ainda não possui verificador de reutilização de parecer.");
-    BusinessProcessDefinition target = routing.target(cycle);
-    if (target == null)
-      throw new IllegalStateException("A preparação comercial do tipo não pertence a esta cadeia.");
-    if (!routing.completed(cycle))
-      throw new IllegalStateException(
-          "Conclua ou revalide a preparação Opala da configuração atual antes de reutilizar pareceres.");
+    BusinessProcessDefinition target;
+    if (quartzoPreparation != null
+        && product.getProductTypeDefinition() != null
+        && com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialContext.TYPE.equals(
+            product.getProductTypeDefinition().getCode())) {
+      if (!quartzoPreparation.completed(product, sourceReference))
+        throw new IllegalStateException(
+            "Conclua ou revalide a preparação Quartzo antes de reutilizar pareceres.");
+      target = quartzoPreparation.target();
+    } else {
+      LearningSalesCycle cycle = cycle(product, sourceReference);
+      if (!routing.isOpala(product.getId()))
+        throw new IllegalStateException(
+            "O tipo do produto ainda não possui verificador de reutilização de parecer.");
+      target = routing.target(cycle);
+      if (target == null)
+        throw new IllegalStateException(
+            "A preparação comercial do tipo não pertence a esta cadeia.");
+      if (!routing.completed(cycle))
+        throw new IllegalStateException(
+            "Conclua ou revalide a preparação Opala da configuração atual antes de reutilizar pareceres.");
+    }
     String sourceActivity = metadata(activity).path("reuseSubprocessActivityId").asText();
-    AgentTask task =
+    var task =
         tasks
-            .findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
-                target.getId(), sourceReference)
+            .findLatestReviewSnapshots(
+                target.getId(),
+                sourceReference,
+                sourceActivity,
+                org.springframework.data.domain.PageRequest.of(0, 1))
             .stream()
-            .filter(candidate -> sourceActivity.equals(candidate.getProcessActivityId()))
-            .reduce((first, second) -> second)
-            .filter(candidate -> "COMPLETED".equals(candidate.getStatus()))
+            .findFirst()
+            .filter(candidate -> "COMPLETED".equals(candidate.status()))
             .orElseThrow(
                 () ->
                     new IllegalStateException(
@@ -220,7 +238,7 @@ public class PdeCommercialReviewReuseActivityExecutor
                 () ->
                     new IllegalStateException(
                         "A consolidação vigente da preparação não foi encontrada."));
-    return new ReusedReview(target, task, readyInstance);
+    return new ReusedReview(target, task, sourceActivity, readyInstance);
   }
 
   /** Confere a referência exata sem selecionar silenciosamente outro experimento ou produto. */
@@ -259,9 +277,9 @@ public class PdeCommercialReviewReuseActivityExecutor
   private String fingerprint(ReusedReview proof) {
     try {
       String source =
-          proof.task().getId()
+          proof.task().taskId()
               + "|"
-              + Objects.toString(proof.task().getEvidenceJson(), "")
+              + Objects.toString(proof.task().evidenceJson(), "")
               + "|"
               + proof.readyInstance().getId()
               + "|"
@@ -271,7 +289,7 @@ public class PdeCommercialReviewReuseActivityExecutor
               MessageDigest.getInstance("SHA-256").digest(source.getBytes(StandardCharsets.UTF_8)));
     } catch (Exception ex) {
       log.error(
-          "Falha ao calcular impressão da revisão comercial. taskId={}", proof.task().getId(), ex);
+          "Falha ao calcular impressão da revisão comercial. taskId={}", proof.task().taskId(), ex);
       throw new IllegalStateException("Não foi possível identificar a evidência reutilizada.", ex);
     }
   }
@@ -295,6 +313,7 @@ public class PdeCommercialReviewReuseActivityExecutor
   /** Agrupa as três identidades imutáveis usadas para comprovar a reutilização. */
   private record ReusedReview(
       BusinessProcessDefinition process,
-      AgentTask task,
+      AgentTaskReviewSnapshot task,
+      String sourceActivity,
       BusinessProcessActivityInstance readyInstance) {}
 }

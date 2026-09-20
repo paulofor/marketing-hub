@@ -57,6 +57,15 @@ class ProcessRunCommercialContinuationTest {
     verify(cycles, never()).save(any());
   }
 
+  /** O kit pode preparar a mesma ocorrência enquanto o processo comercial aguarda seus insumos. */
+  @Test
+  void allowsQuartzoPreparationOfTheSameOccurrence() {
+    definition(56L, "quartzo-commercial-preparation-v1");
+    assertThat(context.permitsCommercialContinuation(waiting, candidate)).isTrue();
+    candidate.setSourceReference("experiment:88");
+    assertThat(context.permitsCommercialContinuation(waiting, candidate)).isFalse();
+  }
+
   /** Mantém isolamento entre produto, cadeia, ciclo, experimento e versões não preparadoras. */
   @ParameterizedTest
   @ValueSource(

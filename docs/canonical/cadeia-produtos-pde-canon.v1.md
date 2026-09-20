@@ -878,3 +878,14 @@ origem e processo no banco. Prompts completos não participam da consulta de pro
 A seleção de falhas recuperáveis deve filtrar candidatos no SQL antes de hidratar as
 tarefas, preservando reserva exclusiva, contrato e limite de tentativa. O crescimento
 da auditoria não deve impedir o usuário de acompanhar ou executar a próxima atividade.
+
+## Cadeia v17 e homologação comercial v8 — Quartzo (20/09/2026)
+
+A cadeia v17 deriva da v16 substituindo somente o Processo 5 pela v8, que acrescenta
+`quartzo-commercial-preparation-v1` v1 ao roteamento tipado. Opala continua no mesmo
+subprocesso. Quartzo prepara página própria, prova do kit, anúncio, checkout/entrega,
+público, margem e avaliações independentes. A conclusão é interna e auditável;
+divulgação paga exige preflight, limites e autorização próprios do experimento.
+Ciclos/execuções históricos não são migrados por essa publicação. A primeira preparação
+Quartzo pode usar experimento explícito sem ciclo; a criação posterior de um ciclo
+muda o contexto e exige revalidação das provas naquela ocorrência.

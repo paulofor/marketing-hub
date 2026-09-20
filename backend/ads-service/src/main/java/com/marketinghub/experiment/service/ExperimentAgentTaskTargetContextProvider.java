@@ -64,6 +64,9 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
   private com.marketinghub.opala.commercial.v1.service.OpalaCommercialVersionContract
       opalaVersionContract;
 
+  @Autowired(required = false)
+  private com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialContext quartzoContext;
+
   /** Configura as fontes canônicas de experimento, produto e contrato PDE. */
   @Autowired
   public ExperimentAgentTaskTargetContextProvider(
@@ -186,12 +189,35 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
   }
 
   /**
-   * Monta o alvo comercial ou privado, preservando a versão aceita e impedindo mistura de produtos.
+   * Monta o alvo conforme o tipo: página auditada Quartzo, candidata Opala ou protótipo privado.
    */
   private Optional<AgentTaskTargetResponse> target(
       String sourceReference, Experiment experiment, Product product, String processCode) {
     if (product == null || product.getId() == null || blank(product.getSlug())) {
       return Optional.empty();
+    }
+    if (quartzoContext != null
+        && quartzoContext.applies(product)
+        && experiment != null
+        && List.of("quartzo-commercial-preparation-v1", "pde-commercial-homologation-activation")
+            .contains(Objects.requireNonNullElse(processCode, ""))) {
+      var scope = quartzoContext.scope(sourceReference, product.getId(), false);
+      var snapshot = quartzoContext.snapshot(sourceReference);
+      return Optional.of(
+          new AgentTaskTargetResponse(
+              sourceReference,
+              experiment.getId(),
+              product.getId(),
+              product.getSlug(),
+              product.getName(),
+              product.getInternalName(),
+              scope.productVersion(),
+              snapshot.path("destinationUrl").asText(null),
+              null,
+              null,
+              snapshot.path("checkoutUrl").asText(null),
+              experiment.getUnitPrice(),
+              snapshot));
     }
     if ("opala-commercial-preparation-v1".equals(processCode)
         && experiment != null

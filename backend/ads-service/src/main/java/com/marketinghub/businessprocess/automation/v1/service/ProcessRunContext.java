@@ -138,7 +138,9 @@ public class ProcessRunContext {
         : "O ciclo está encerrado. Resultados preservados; nenhuma nova atividade será iniciada neste ciclo.";
   }
 
-  /** Reconhece a preparação comercial da mesma ocorrência aguardada pelo processo de vendas. */
+  /**
+   * Reconhece a preparação Opala ou Quartzo da mesma ocorrência aguardada pelo processo de vendas.
+   */
   public boolean permitsCommercialContinuation(ProcessRun waiting, ProcessRun candidate) {
     if (waiting.getLearningCycleId() == null
         || !"learningCycle".equals(waiting.getCurrentActivityId())
@@ -158,7 +160,10 @@ public class ProcessRunContext {
         && Objects.equals("experiment:" + cycle.getExperimentId(), waiting.getSourceReference())
         && "pde-sales-delivery-learning"
             .equals(process(waiting.getProcessDefinitionId()).getProcessCode())
-        && Set.of("pde-commercial-homologation-activation", "opala-commercial-preparation-v1")
+        && Set.of(
+                "pde-commercial-homologation-activation",
+                "opala-commercial-preparation-v1",
+                "quartzo-commercial-preparation-v1")
             .contains(process(candidate.getProcessDefinitionId()).getProcessCode());
   }
 

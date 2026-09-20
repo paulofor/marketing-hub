@@ -20,6 +20,21 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar as caixas de entrada dos agentes. */
 public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
+  /** Filtra a atividade no banco e inclui a tentativa atual mesmo quando ainda não foi aprovada. */
+  @Query(
+      """
+      select new com.marketinghub.agenttask.AgentTaskReviewSnapshot(task.id, task.status, task.evidenceJson, task.resultJson)
+      from AgentTask task
+      where task.processDefinition.id = :processId and task.sourceReference = :reference
+        and task.processActivityId = :activityId
+      order by task.createdAt desc, task.id desc
+      """)
+  List<com.marketinghub.agenttask.AgentTaskReviewSnapshot> findLatestReviewSnapshots(
+      @Param("processId") Long processId,
+      @Param("reference") String reference,
+      @Param("activityId") String activityId,
+      Pageable pageable);
+
   /** Seleciona provas funcionais do contexto exato sem carregar prompts de nenhuma atividade. */
   @Query(
       """

@@ -920,3 +920,35 @@ Sem ação específica, usar `navigationUrl` para abrir a atividade pendente, pr
 integralmente o contexto. Não inferir formulário ou autorização a partir de IDs ou texto.
 Sem destino, informar sua ausência; após falha de atualização, exigir nova consulta
 antes de oferecer o link de ação. Carregamento de consulta/comando mantém indicador próprio.
+
+## Preparação comercial Quartzo v1 — 20/09/2026
+
+O Processo 5 v8 da cadeia v17 conserva o percurso Opala e acrescenta a rota
+`LOW_TICKET_DIGITAL_PRODUCT` → `quartzo-commercial-preparation-v1` v1. As versões
+anteriores e suas tarefas permanecem imutáveis. O filho contém oito atividades:
+página/prova, criativo, checkout/entrega, público, economia, Psique, Têmis e conclusão.
+As cinco primeiras reutilizam fontes persistidas e registram comprovação pelo backend;
+não refazem ativos aprovados nem confundem materialização de vínculos com publicação.
+
+O contexto é `experiment:<id>`, pertence ao produto e preserva a versão do ciclo ou,
+antes do primeiro ciclo, `validationDefinitionVersion`. A navegação mantém cadeia e
+referência explícitas mesmo sem ciclo. Preparação interna aceita experimento planejado,
+pausado ou interrompido; campanha em operação exige outra candidata. Nenhum comando
+deste filho reativa mídia, altera orçamento ou autoriza cobrança.
+
+Os pareceres usam prompts/schemas Quartzo dos próprios workers e o plano financeiro
+LIVE da mesma versão e do plano comercial vinculado. Não exigem manifesto, slot,
+assinatura ou paywall Opala. Os dez critérios são oferta, preço, prova, checkout,
+entrega, personalização, reembolso/suporte, instrumentação, economia e identidade.
+Reprovação funcional fica auditada; APPROVED exige todos em PASS, evidências e ausência
+de correções pendentes. Mudança material invalida a comprovação anterior; ordem JSON
+e escala decimal não constituem mudança comercial. O pai reutiliza esses pareceres
+sem repetir cobrança de revisão. Preflight e autorização final continuam posteriores.
+
+São utilizados os endpoints BPM existentes: histórico em
+`/api/business-processes/{processId}/products/{productId}/activity-executions`, comando em
+`/api/business-processes/{processId}/products/{productId}/activities/{activityId}/execution-requests`,
+automação em `/api/business-processes/{processId}/products/{productId}/automation/v1`
+e filas/callbacks em `/api/internal/agent-tasks/{agentKey}/stage-executions`
+(`pending`, `{taskId}/result`, `{taskId}/failure`). Nenhum novo acesso direto entre
+workers ou ao banco foi introduzido.

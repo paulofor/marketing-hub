@@ -155,7 +155,8 @@ class OpalaCommercialFinancialPlanTest {
             List.of(
                 new Scenario(ScenarioCode.CONSERVATIVE, 3, 0, new BigDecimal("15")),
                 new Scenario(ScenarioCode.BASE, 5, 0, new BigDecimal("15")),
-                new Scenario(ScenarioCode.OPTIMISTIC, 8, 0, new BigDecimal("10"))));
+                new Scenario(ScenarioCode.OPTIMISTIC, 8, 0, new BigDecimal("10"))),
+            null);
     var scenario =
         new PlanEvaluation.ScenarioResult(
             "BASE",
@@ -189,7 +190,8 @@ class OpalaCommercialFinancialPlanTest {
               assumptions.priceBrl(),
               assumptions.minimumMarginPercent(),
               assumptions.maximumCacBrl(),
-              assumptions.scenarios());
+              assumptions.scenarios(),
+              assumptions.preparation());
     var mapper = new ObjectMapper().findAndRegisterModules();
     var plan = new FinancialPlanRevision();
     plan.setId(81L);

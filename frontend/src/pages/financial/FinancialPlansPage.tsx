@@ -4,12 +4,15 @@ import axios from "axios";
 import ReactMarkdown from "react-markdown";
 import PageTitle from "../../components/PageTitle";
 import FinancialPlanPlutusDetails from "./FinancialPlanPlutusDetails";
+import FinancialPlanPreparationEditor from "./FinancialPlanPreparationEditor";
 import {
   costLabels,
   useFinancialPlanCatalog,
   useFinancialPlans,
   useSaveFinancialPlan,
   useAnalyzeFinancialPlan,
+  usePrepareFinancialPlan,
+  type PrepareFinancialPlan,
   type CostKey,
   type FinancialPlan,
   type PlanCatalog,
@@ -58,8 +61,8 @@ export default function FinancialPlansPage() {
       <div>
         <PageTitle>Plano financeiro</PageTitle>
         <p className="text-muted">
-          Planeje a margem de cada produto e versão. Reutilize premissas por
-          tipo e peça a revisão de Plutus.
+          Defina o suporte e a personalização. O sistema reaproveita as
+          referências financeiras para preparar a revisão do produto.
         </p>
       </div>
       {catalog.isError && (
@@ -176,21 +179,38 @@ function PlanWorkspace({
     environment,
   );
   const save = useSaveFinancialPlan(scope, ownerId, environment);
+  const prepare = usePrepareFinancialPlan(ownerId, environment);
   const analyze = useAnalyzeFinancialPlan(ownerId, environment);
   const [selectedId, setSelectedId] = useState(initialRevisionId);
   const [editing, setEditing] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
   const [copy, setCopy] = useState<FinancialPlan>();
   const [notice, setNotice] = useState("");
   const selected = selectedId
     ? history.data?.find((p) => p.id === selectedId)
     : history.data?.[0];
-  const busy = save.isPending || analyze.isPending;
-  const startEdit = (source?: FinancialPlan) => {
+  const busy = save.isPending || analyze.isPending || prepare.isPending;
+  const startEdit = (source?: FinancialPlan, detailed = false) => {
     setCopy(source);
+    setAdvanced(detailed || scope === "product-types");
     setEditing(true);
     setNotice("");
     save.reset();
+    prepare.reset();
   };
+  async function submitPreparation(request: PrepareFinancialPlan) {
+    setNotice("");
+    try {
+      const result = await prepare.mutateAsync(request);
+      setSelectedId(result.id);
+      setEditing(false);
+      setNotice(
+        "Preparação salva. Confira abaixo a avaliação e as premissas que ainda precisam de fonte.",
+      );
+    } catch {
+      /* A mutation mantém as escolhas disponíveis após erro ou conflito. */
+    }
+  }
   async function submit(request: SaveFinancialPlan) {
     setNotice("");
     try {
@@ -243,6 +263,18 @@ function PlanWorkspace({
           </>
         )}
       </div>
+      {scope === "products" && !editing && (
+        <details>
+          <summary>Edição financeira avançada</summary>
+          <button
+            className="btn btn-outline-secondary mt-2"
+            disabled={busy}
+            onClick={() => startEdit(selected, true)}
+          >
+            Editar premissas detalhadas
+          </button>
+        </details>
+      )}
       {scope === "products" && templates.isError && (
         <div className="alert alert-warning">
           Não foi possível carregar os modelos deste tipo.
@@ -262,7 +294,7 @@ function PlanWorkspace({
                   key={t.id}
                   className="btn btn-outline-primary"
                   disabled={busy || editing || t.stale}
-                  onClick={() => startEdit(t)}
+                  onClick={() => startEdit(t, true)}
                 >
                   Usar modelo: {t.name} · revisão {t.revision}
                 </button>
@@ -304,12 +336,21 @@ function PlanWorkspace({
           {notice}
         </div>
       )}
-      {(save.isError || analyze.isError) && (
+      {(save.isError || analyze.isError || prepare.isError) && (
         <div className="alert alert-danger" role="alert">
-          {errorMessage(save.error ?? analyze.error)}
+          {errorMessage(save.error ?? analyze.error ?? prepare.error)}
         </div>
       )}
-      {editing && (
+      {editing && !advanced && (
+        <FinancialPlanPreparationEditor
+          ownerId={ownerId}
+          environment={environment}
+          busy={busy}
+          onSubmit={submitPreparation}
+          onCancel={() => setEditing(false)}
+        />
+      )}
+      {editing && advanced && (
         <PlanEditor
           key={copy?.id ?? "new"}
           source={copy}
@@ -334,6 +375,16 @@ function PlanWorkspace({
                   : "Premissas de operação"}
               </p>
               <strong>{selected.evaluation.label}</strong>
+              {selected.assumptions.preparation && (
+                <p className="mt-2">
+                  Suporte: {selected.assumptions.preparation.supportDays} dias ·
+                  geração personalizada com IA:{" "}
+                  {selected.assumptions.preparation.personalizedAi
+                    ? "Sim"
+                    : "Não"}
+                  .
+                </p>
+              )}
               {selected.stale && (
                 <p className="text-danger mt-2">
                   Revisão precisa ser atualizada
@@ -415,14 +466,16 @@ function PlanWorkspace({
           {(selected.evaluation.blockers.length > 0 ||
             selected.pendingActions.length > 0) && (
             <div className="alert alert-warning" role="status">
-              <h2 className="h6">Pendências e responsáveis</h2>
-              <ul className="mb-0">
-                {[...selected.evaluation.blockers, ...selected.pendingActions]
-                  .filter((v, i, all) => all.indexOf(v) === i)
-                  .map((v) => (
-                    <li key={v}>{v}</li>
-                  ))}
-              </ul>
+              <details>
+                <summary>Pendências financeiras e responsáveis</summary>
+                <ul className="mb-0">
+                  {[...selected.evaluation.blockers, ...selected.pendingActions]
+                    .filter((v, i, all) => all.indexOf(v) === i)
+                    .map((v) => (
+                      <li key={v}>{v}</li>
+                    ))}
+                </ul>
+              </details>
             </div>
           )}
           {!!selected.evaluation.scenarios.length && (
@@ -624,6 +677,7 @@ function PlanEditor({
         scope === "products" ? number("commercialPlanId") : null,
       templateId: copyingType ? source!.id : (source?.templateId ?? null),
       assumptions: {
+        preparation: copyingType ? null : (a?.preparation ?? null),
         productVersion: text("productVersion") || null,
         periodDays: number("periodDays"),
         validUntil: text("validUntil"),

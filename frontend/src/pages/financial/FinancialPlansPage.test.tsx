@@ -12,6 +12,25 @@ import FinancialPlanPlutusDetails from "./FinancialPlanPlutusDetails";
 import projectionText from "../../../../backend/ads-service/src/test/resources/financial-plan/plutus-response.json?raw";
 import { costLabels } from "../../api/financial/useFinancialPlans";
 const mocks = vi.hoisted(() => ({
+  preparation: {
+    data: {
+      expectedRevision: 0,
+      sourceRevisionId: null,
+      commercialPlanId: 7,
+      commercialPlanVersion: 1,
+      productVersion: "v1",
+      supportDays: 7,
+      personalizedAi: true,
+      suggestion: "Sugestão inicial: 7 dias de suporte.",
+      priceBrl: 67,
+      canPrepare: true,
+      blocker: null,
+    },
+    isLoading: false,
+    isError: false,
+    isFetching: false,
+    refetch: vi.fn(),
+  },
   history: { data: [] as unknown[], isLoading: false, isError: false },
   mutation: {
     mutateAsync: vi.fn(),
@@ -37,6 +56,8 @@ vi.mock("../../api/financial/useFinancialPlans", async (importOriginal) => ({
       ? mocks.history
       : { data: [], isLoading: false, isError: false },
   useSaveFinancialPlan: () => mocks.mutation,
+  usePrepareFinancialPlan: () => mocks.mutation,
+  useFinancialPlanPreparation: () => mocks.preparation,
   useAnalyzeFinancialPlan: () => ({
     isPending: false,
     isError: false,
@@ -59,6 +80,8 @@ beforeEach(() => {
   mocks.history.isLoading = false;
   mocks.mutation.isPending = false;
   mocks.mutation.isError = false;
+  mocks.preparation.isError = false;
+  mocks.preparation.data.personalizedAi = true;
 });
 afterEach(cleanup);
 describe("Plano financeiro", () => {
@@ -113,7 +136,7 @@ describe("Plano financeiro", () => {
     mocks.mutation.mutateAsync.mockRejectedValue(new Error("fixture"));
     page();
     fireEvent.click(
-      screen.getByRole("button", { name: "Criar plano do produto" }),
+      screen.getByRole("button", { name: "Editar premissas detalhadas" }),
     );
     fireEvent.change(screen.getByLabelText("Nome do plano"), {
       target: { value: "Plano inicial" },
@@ -163,7 +186,7 @@ describe("Plano financeiro", () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole("button", { name: "Salvando..." })).toBeDisabled();
-    expect(screen.getByLabelText("Nome do plano")).toBeDisabled();
+    expect(screen.getByLabelText("Período de suporte (dias)")).toBeDisabled();
   });
   it("exibe falha de consulta sem apresentar zero como lucro", () => {
     mocks.history.isError = true;
@@ -182,5 +205,66 @@ describe("Plano financeiro", () => {
     expect(
       screen.queryByLabelText("Versão do produto"),
     ).not.toBeInTheDocument();
+  });
+  it("solicita só suporte e IA com sugestões vindas do backend", async () => {
+    mocks.mutation.mutateAsync.mockRejectedValue(new Error("fixture"));
+    page();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Criar plano do produto" }),
+    );
+    expect(screen.getByLabelText("Período de suporte (dias)")).toHaveValue(7);
+    expect(screen.getByLabelText("Geração personalizada com IA")).toHaveValue(
+      "true",
+    );
+    expect(screen.queryByLabelText("Nome do plano")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Taxa de pagamento (%)"),
+    ).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Período de suporte (dias)"), {
+      target: { value: "14" },
+    });
+    fireEvent.change(screen.getByLabelText("Geração personalizada com IA"), {
+      target: { value: "false" },
+    });
+    fireEvent.submit(
+      screen
+        .getByRole("button", { name: "Salvar preparação e calcular" })
+        .closest("form")!,
+    );
+    await waitFor(() =>
+      expect(mocks.mutation.mutateAsync).toHaveBeenCalledWith({
+        expectedRevision: 0,
+        commercialPlanId: 7,
+        commercialPlanVersion: 1,
+        productVersion: "v1",
+        supportDays: 14,
+        personalizedAi: false,
+      }),
+    );
+    expect(screen.getByLabelText("Período de suporte (dias)")).toHaveValue(14);
+  });
+  it("respeita a escolha anterior de não personalizar", () => {
+    mocks.preparation.data.personalizedAi = false;
+    page();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Criar plano do produto" }),
+    );
+    expect(screen.getByLabelText("Geração personalizada com IA")).toHaveValue(
+      "false",
+    );
+  });
+  it("permite recuperar falha de sugestões sem exibir formulário financeiro extenso", () => {
+    mocks.preparation.isError = true;
+    page();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Criar plano do produto" }),
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Não foi possível carregar as sugestões",
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Atualizar referências" }),
+    );
+    expect(mocks.preparation.refetch).toHaveBeenCalledOnce();
   });
 });

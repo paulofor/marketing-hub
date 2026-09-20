@@ -15,13 +15,19 @@ public final class FinancialPlanCalculator {
   /** Impede instanciação do calculador sem estado. */
   private FinancialPlanCalculator() {}
 
-  /** Calcula cenários declarados e estresse de consumo, preservando lacunas explícitas. */
+  /**
+   * Calcula cenários e estresse, preservando lacunas e coerência com a personalização escolhida.
+   */
   public static PlanEvaluation evaluate(PlanAssumptions p) {
     List<String> missing = missing(p);
     if (!missing.isEmpty())
       return new PlanEvaluation("MISSING_INPUTS", "Premissas incompletas", missing, List.of());
     List<String> blockers = new ArrayList<>();
     var ai = p.ai();
+    if (p.preparation() != null
+        && p.preparation().personalizedAi() != (ai.perAttempt().signum() > 0))
+      blockers.add(
+          "Plutus / Dédalo: a tarifa e as tentativas precisam corresponder à escolha de geração personalizada.");
     BigDecimal attempt = attemptBrl(ai);
     if (ai.perAttempt().signum() == 0 && ai.maximumAttempts() != 0)
       blockers.add(

@@ -50,6 +50,36 @@ paths:
         '200': {$ref: '#/components/responses/Plan'}
         '400': {$ref: '#/components/responses/Invalid'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /api/financial-plans/v1/products/{id}/preparation:
+    parameters:
+      - {$ref: '#/components/parameters/Owner'}
+      - {$ref: '#/components/parameters/Environment'}
+    get:
+      summary: Sugere suporte e personalização a partir do contexto do produto
+      description: Fontes de outro ambiente e versões vencidas não são adotadas; seleção comercial ambígua exige edição avançada.
+      responses:
+        '200':
+          description: Contexto e sugestões canônicas, sem escrita nem chamada paga
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Preparation'}
+        '404': {$ref: '#/components/responses/Missing'}
+    post:
+      summary: Salva nova revisão a partir de duas escolhas operacionais
+      description: >-
+        O restante do payload identifica o contexto mostrado na tela para controle de concorrência.
+        Preço e CAC reaproveitam referências existentes; ausência de custos continua pendente.
+        Registra suporte separado do período econômico. Não solicita Plutus nem altera oferta ou gastos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PreparePlan'}
+      responses:
+        '200': {$ref: '#/components/responses/Plan'}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '404': {$ref: '#/components/responses/Missing'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /api/financial-plans/v1/product-types/{id}:
     parameters:
       - {$ref: '#/components/parameters/Owner'}
@@ -133,6 +163,30 @@ components:
     Conflict:
       description: Revisão concorrente, plano de outro produto, modelo incompatível ou premissas vencidas/incompletas
   schemas:
+    Preparation:
+      type: object
+      properties:
+        expectedRevision: {type: integer}
+        sourceRevisionId: {type: integer, format: int64, nullable: true}
+        commercialPlanId: {type: integer, format: int64, nullable: true}
+        commercialPlanVersion: {type: integer, nullable: true}
+        productVersion: {type: string, nullable: true}
+        supportDays: {type: integer, minimum: 1, maximum: 3660}
+        personalizedAi: {type: boolean}
+        suggestion: {type: string}
+        priceBrl: {$ref: '#/components/schemas/Amount'}
+        canPrepare: {type: boolean}
+        blocker: {type: string, nullable: true}
+    PreparePlan:
+      type: object
+      required: [expectedRevision, commercialPlanId, commercialPlanVersion, productVersion, supportDays]
+      properties:
+        expectedRevision: {type: integer, minimum: 0}
+        commercialPlanId: {type: integer, format: int64}
+        commercialPlanVersion: {type: integer}
+        productVersion: {type: string, minLength: 1, maxLength: 100}
+        supportDays: {type: integer, minimum: 1, maximum: 3660}
+        personalizedAi: {type: boolean, default: true}
     Options:
       type: array
       items:
@@ -159,6 +213,14 @@ components:
       type: object
       required: [validUntil, evidence, ai, costs, scenarios]
       properties:
+        preparation:
+          type: object
+          nullable: true
+          description: Escolhas da preparação simplificada; ausente em revisões históricas.
+          required: [supportDays, personalizedAi]
+          properties:
+            supportDays: {type: integer, minimum: 1, maximum: 3660}
+            personalizedAi: {type: boolean}
         productVersion: {type: string, maxLength: 100, nullable: true, description: Obrigatório no plano do produto}
         periodDays: {type: integer, minimum: 1, maximum: 3660, nullable: true}
         validUntil: {type: string, format: date}

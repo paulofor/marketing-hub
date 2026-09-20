@@ -142,12 +142,14 @@ public class FinancialPlanLocalApplication {
         .getRepository(FinancialPlanRevisionRepository.class);
   }
 
-  /** Monta somente identidades sintéticas, mantendo o tipo diferente para testar isolamento. */
+  /** Monta produto, versão e preço sintéticos, mantendo outro tipo para testar isolamento. */
   private Product product(long id) {
     var p = new Product();
     p.setId(id);
     p.setInternalName("Produto sintético " + id);
     p.setName("Produto local " + id);
+    p.setValidationDefinitionVersion("fixture-v1");
+    p.setCurrentPriceBrl(new BigDecimal("67"));
     var type = type(id == 95103 ? 952 : 951);
     p.setProductTypeDefinition(type);
     return p;
@@ -159,6 +161,7 @@ public class FinancialPlanLocalApplication {
     t.setId(id);
     t.setName("Tipo local " + id);
     t.setInternalName("Mineral sintético " + id);
+    t.setCode(id == 951 ? "LOW_TICKET_DIGITAL_PRODUCT" : "PDE");
     return t;
   }
 
@@ -217,6 +220,7 @@ public class FinancialPlanLocalApplication {
     var p = new CommercialPlan();
     p.setId(id);
     p.setName("Plano comercial sintético " + id);
+    p.setExpectedCacBrl(new BigDecimal("25"));
     return p;
   }
 

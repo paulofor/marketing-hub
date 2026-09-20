@@ -8,7 +8,9 @@ import com.marketinghub.financialplan.v1.FinancialPlanRevision;
 import com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment;
 import com.marketinghub.financialplan.v1.service.catalog.PlanCatalog;
 import com.marketinghub.financialplan.v1.service.getplan.*;
+import com.marketinghub.financialplan.v1.service.prepareplan.*;
 import com.marketinghub.financialplan.v1.service.saveplan.*;
+import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
 import com.marketinghub.repository.jpa.financialplan.FinancialPlanRevisionRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
@@ -83,6 +85,112 @@ public class FinancialPlanService {
   @Transactional(readOnly = true)
   public PlanView get(String scope, Long scopeId, Environment environment, Long id) {
     return view(required(scope, scopeId, environment, id, false));
+  }
+
+  /** Propõe somente suporte e personalização, preservando contexto comercial e lacunas. */
+  @Transactional(readOnly = true)
+  public PlanPreparation preparation(Long productId, Environment environment) {
+    return preparationContext(productId, environment).preview();
+  }
+
+  /** Grava escolhas simples em revisão imutável, sem aceitar contexto comercial desatualizado. */
+  @Transactional
+  public PlanView prepare(
+      Long productId, Environment environment, PreparePlanRequest request, String actor) {
+    if (!validator.validate(request).isEmpty())
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Revise o período de suporte.");
+    requireOwner("PRODUCT", productId, true);
+    var context = preparationContext(productId, environment);
+    var preview = context.preview();
+    if (!preview.canPrepare()) throw conflict(preview.blocker());
+    if (preview.expectedRevision() != request.expectedRevision()
+        || !Objects.equals(preview.commercialPlanId(), request.commercialPlanId())
+        || !Objects.equals(preview.commercialPlanVersion(), request.commercialPlanVersion())
+        || !Objects.equals(preview.productVersion(), request.productVersion()))
+      throw conflict("O contexto mudou. Recarregue a preparação antes de salvar.");
+    var source = context.source();
+    var assumptions =
+        FinancialPlanPreparation.prepare(
+            source == null ? null : source.assumptions(),
+            request,
+            context.plan(),
+            preview.priceBrl());
+    var saved =
+        create(
+            "PRODUCT",
+            productId,
+            environment,
+            new SavePlanRequest(
+                source == null ? "Plano financeiro do produto #" + productId : source.name(),
+                actor == null || actor.isBlank() ? "Operador via preparação simplificada" : actor,
+                request.expectedRevision(),
+                request.commercialPlanId(),
+                source == null ? null : source.templateId(),
+                assumptions));
+    if (!Objects.equals(saved.commercialPlanVersion(), request.commercialPlanVersion())
+        || saved.stale())
+      throw conflict("O contexto comercial mudou durante a gravação. Recarregue a preparação.");
+    return saved;
+  }
+
+  /** Mantém juntos as referências já verificadas e o resumo que o formulário pode apresentar. */
+  private record PreparationContext(
+      PlanPreparation preview, PlanView source, CommercialPlan plan) {}
+
+  /** Resolve fontes do mesmo produto/ambiente e recusa versões vencidas ou seleção ambígua. */
+  private PreparationContext preparationContext(Long productId, Environment environment) {
+    var product = products.findById(productId).orElseThrow(() -> missing("Produto"));
+    var history = list("PRODUCT", productId, environment);
+    var source = history.isEmpty() ? null : history.getFirst();
+    var candidates = plans.findByProductId(productId);
+    var plan =
+        source == null
+            ? candidates.size() == 1 ? candidates.getFirst() : null
+            : candidates.stream()
+                .filter(p -> p.getId().equals(source.commercialPlanId()))
+                .findFirst()
+                .orElse(null);
+    String version =
+        source == null
+            ? product.getValidationDefinitionVersion()
+            : source.assumptions().productVersion();
+    var choices = source == null ? null : source.assumptions().preparation();
+    boolean quartzo =
+        product.getProductTypeDefinition() != null
+            && "LOW_TICKET_DIGITAL_PRODUCT".equals(product.getProductTypeDefinition().getCode());
+    int days = choices == null ? quartzo ? 7 : 30 : choices.supportDays();
+    var price =
+        source != null && source.assumptions().priceBrl() != null
+            ? source.assumptions().priceBrl()
+            : product.getCurrentPriceBrl() != null
+                ? product.getCurrentPriceBrl()
+                : plan == null ? null : plan.getOfferPriceBrl();
+    String blocker =
+        plan == null
+            ? "Defina o plano comercial do produto na edição avançada."
+            : version == null || version.isBlank()
+                ? "Registre a versão do produto na edição avançada."
+                : source != null && source.stale()
+                    ? "A revisão anterior venceu ou mudou de contexto. Confira suas fontes na edição avançada."
+                    : null;
+    var preview =
+        new PlanPreparation(
+            source == null ? 0 : source.revision(),
+            source == null ? null : source.id(),
+            plan == null ? null : plan.getId(),
+            plan == null ? null : currentVersion(plan.getId()),
+            version,
+            days,
+            choices == null || choices.personalizedAi(),
+            choices == null
+                ? "Sugestão inicial: "
+                    + days
+                    + " dias de suporte. Ajuste conforme a entrega do produto."
+                : "Período de suporte da última revisão; ajuste se necessário.",
+            price,
+            blocker == null,
+            blocker);
+    return new PreparationContext(preview, source, plan);
   }
 
   /** Salva revisão imutável com versão comercial congelada e controle de concorrência. */

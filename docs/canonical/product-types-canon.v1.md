@@ -107,6 +107,12 @@ comerciais por esse subprocesso. Conclusão significa preparação, não venda, 
 de mídia ou liberação da campanha. A ativação continua exigindo homologação e decisão
 humana sobre versão, orçamento, janela e regra de parada.
 
+Histórico, prontidão, renovação e reutilização de comprovantes são consultas: usam
+o método sem lock do repositório e devem funcionar em transação somente leitura.
+A reserva pessimista da ocorrência permanece exclusiva do comando que grava sua
+conclusão. O contrato deve ser testado com JPA, transações Spring e MySQL 5.7 real,
+incluindo preparação vazia, comprovante vigente, alteração de fonte e retorno ao pai.
+
 Alternativas consideradas: ampliar as condições de Opala (menor início, maior risco de
 misturar contratos); criar motor separado (maior custo e duplicação); especializar Quartzo
 no BPM existente (contratos claros e reaproveitamento). Escolhida a terceira.

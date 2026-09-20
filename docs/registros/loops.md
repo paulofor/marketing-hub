@@ -5631,6 +5631,15 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
   A leitura passa a usar a consulta sem lock já protegida pelo teste JPA/MySQL; regressão específica
   do roteamento exige o método de leitura e rejeita a reserva de escrita. O método bloqueante
   permanece exclusivo dos comandos que criam ou alteram ocorrências.
+- **Recorrência em Quartzo em 20/09/2026:** o GET do Processo 5 v8 de Capella
+  (`/api/business-processes/82/products/7/activity-executions`) falhou com MySQL 1792.
+  Os logs apontaram `QuartzoCommercialAgentReadiness.requiresFreshExecution`; a revisão
+  local encontrou a mesma reserva indevida em `prepared` e `completed`. As três leituras
+  passam a usar o método sem lock existente; `execute` conserva a reserva de escrita.
+  `QuartzoCommercialPersistenceTest` reproduz os quatro caminhos de leitura e comprova
+  a reserva do comando com repositórios reais e transações Spring. O runner Opala/Quartzo
+  passa a executar também esse contrato em schema MySQL 5.7 isolado. Os mocks anteriores
+  não reproduziam o comportamento transacional do banco.
 - **Segunda causa exposta após o deploy em 16/09/2026:** removido o lock indevido, o mesmo GET
   alcançou a leitura do slot v8 e revelou `No enum constant PdeProductionSlotStatus.`. O schema real
   ainda limitava `status` ao `ENUM` legado, sem `CANDIDATE`; em modo MySQL não estrito, a migração

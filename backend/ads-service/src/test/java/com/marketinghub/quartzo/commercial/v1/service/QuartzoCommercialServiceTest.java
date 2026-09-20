@@ -130,6 +130,9 @@ class QuartzoCommercialServiceTest {
     when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
             anyLong(), eq("experiment:88")))
         .thenAnswer(i -> Optional.ofNullable(saved.get(i.getArgument(0, Long.class))));
+    when(instances.findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            anyLong(), eq("experiment:88")))
+        .thenAnswer(i -> Optional.ofNullable(saved.get(i.getArgument(0, Long.class))));
     when(instances.saveAndFlush(any()))
         .thenAnswer(
             i -> {

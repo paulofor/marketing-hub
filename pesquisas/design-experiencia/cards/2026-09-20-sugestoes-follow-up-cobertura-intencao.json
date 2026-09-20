@@ -1,0 +1,18 @@
+{
+  "cardKey": "sugestoes-follow-up-cobertura-intencao",
+  "collection": "neuromarketing",
+  "title": "Cobrir intenções distintas nas sugestões de continuidade",
+  "finding": "Em um sistema conversacional de produção, sugestões de continuidade otimizadas para qualidade individual e cobertura de intenções distintas elevaram o CTR e melhoraram a avaliação humana em relação a baselines.",
+  "mechanism": "Opções semanticamente diferentes podem reduzir redundância e o esforço de formular o próximo passo, aumentando a chance de o conjunto conter uma direção compatível com a intenção latente do usuário.",
+  "commercialApplication": "Testar no customer-agent poucas sugestões pós-resposta que cubram intenções ortogonais, como esclarecer, comparar, executar, verificar ou aprofundar, em vez de variações de redação da mesma ação.",
+  "evidenceStrength": "Preprint com A/B de produção de uma semana, randomização por usuário e avaliação humana; forte como sinal de engajamento no produto estudado, mas sem evidência de conversão ou satisfação no Marketing Hub.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2026-12-19",
+  "experimentHypothesis": "Sugestões de continuidade com maior cobertura de intenções aumentarão uso útil do próximo passo e reduzirão reformulações sem elevar abandono ou escolhas irrelevantes.",
+  "risks": "Otimizar CTR isoladamente pode incentivar cliques sem ganho de tarefa, introduzir nudging excessivo ou desviar o usuário de uma intenção não representada nas opções.",
+  "limits": "O estudo é um preprint de um único sistema; métricas de cobertura são parcialmente alinhadas ao treinamento e o A/B não mede satisfação, conclusão da tarefa, venda ou pagamento reconciliado.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-20-sugestoes-follow-up-cobertura-intencao.md",
+  "sourceTitle": "Fonte revisada — sugestões de continuidade por cobertura de intenção",
+  "sourceSha256": "f173fe910a81c1dd7f51277766fffbb47094d50156a17c3824422af634642a8a"
+}

@@ -52,3 +52,15 @@
   margin-top: 0.5rem;
   font-weight: 400;
 }
+
+.product-next-process__details {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.product-next-process__details p {
+  margin: 0;
+}

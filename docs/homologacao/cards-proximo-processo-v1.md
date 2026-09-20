@@ -82,3 +82,52 @@ Servidor temporário e navegadores encerrados; nenhuma topologia Docker foi cria
 Alterações de frontend, testes e documentação prontas na sandbox, sem commit, PR ou deploy.
 O ganho esperado é reduzir procura e cliques até o processo; nenhum aumento de receita foi
 atribuído à homologação.
+
+## Correção Capella — 20/09/2026
+
+A posição oficial identifica Capella no subprocesso `quartzo-commercial-preparation-v1`, definição
+81, mas a consulta resumida das atividades levou aproximadamente 29 segundos em produção. Como o
+card condicionava toda a navegação a essa segunda resposta, exibia apenas “Consultando o próximo
+processo...” durante o período e parecia não possuir o botão solicitado.
+
+| Alternativa                                       | Benefício                                         | Risco / esforço                                                  | Decisão                                   |
+| ------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------- |
+| Otimizar somente a consulta detalhada             | Reduz o tempo para exibir atividade e responsável | Ainda mantém a navegação dependente de uma leitura mais cara     | Não resolve a dependência causal          |
+| Criar outro endpoint de navegação                 | Pode entregar um DTO mínimo                       | Duplica o contrato que a posição oficial já fornece              | Descartada por complexidade desnecessária |
+| Exibir o destino oficial e enriquecer em paralelo | Botão imediato, sem regra nova de avanço          | Precisa distinguir falha da posição de falha apenas dos detalhes | Escolhida por simplicidade e segurança    |
+
+### Matriz definida antes dos testes
+
+| Critério                     | Verificação prevista                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| Carregamento lento           | O botão de Capella aparece antes da resposta de atividades e aponta à definição 81 com cadeia 17 |
+| Enriquecimento               | A atividade, o responsável e o impedimento aparecem depois da resposta consistente               |
+| Falha e retentativa          | O destino oficial permanece; o alerta não apresenta detalhe antigo e permite nova consulta       |
+| Divergência                  | Resposta de outro produto, processo ou atividade não contamina o card                            |
+| Conclusão e posição inválida | Conclusão confirmada remove o acesso; ausência/falha da posição não inventa destino              |
+| Integração                   | Somente endpoints GET existentes; navegar não inicia tarefa nem muda estado                      |
+| Dispositivos                 | Chromium desktop, iPhone 15 Pro e Pixel 7 emulados, incluindo toque e largura útil               |
+| Regressão                    | Testes de componentes relacionados, TypeScript, build, Prettier e revisão do diff                |
+
+### Resultado da correção
+
+Os 114 testes relacionados passaram, assim como TypeScript, build e Prettier. A homologação
+Playwright aprovou 24 controles em Chromium desktop, iPhone 15 Pro e Pixel 7: foram 18
+navegações entre início/catálogo e Vega/Capella/Rigel, três acessos ao processo coordenador e três
+grupos de estados/recuperação. Todas as integrações observadas foram GET; não houve escrita, erro
+JavaScript ou chamada externa inesperada.
+
+No cenário específico, a resposta de atividades de Capella permaneceu suspensa enquanto o teste
+comprovou o botão apontando para
+`/products/7/value-chain-history/processes/81/activities?chainId=17#process-execution`. Depois da
+liberação, o card apresentou a atividade 5.1.5 e o responsável Backend; o clique chegou ao painel
+de execução do processo nos três dispositivos. A primeira tentativa do navegador expôs uma lacuna
+na fixture, que aceitava contexto nulo somente para Rigel; a fixture foi ampliada para Capella e a
+validação afetada foi repetida com sucesso.
+
+Evidências locais: `artifacts/product-next-process/capella-current-process-local/` para testes,
+TypeScript e build; `artifacts/product-next-process/capella-current-process-browser/browser/` para
+capturas, requisições e resultados do navegador, com a confirmação final em
+`artifacts/product-next-process/capella-current-process-browser-final/browser/`. As capturas foram
+inspecionadas visualmente. O aviso preexistente de tamanho do bundle permanece sem relação com esta
+correção.

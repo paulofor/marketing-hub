@@ -78,7 +78,7 @@ describe("Acesso ao processo oficial nos cards sem ciclo", () => {
       "/products/9/value-chain-history/processes/75/activities?chainId=14#process-execution",
     );
     expect(
-      screen.getByText(
+      await screen.findByText(
         "Próxima atividade: 6.1 — Operar e otimizar o experimento",
       ),
     ).toBeVisible();
@@ -144,7 +144,7 @@ describe("Acesso ao processo oficial nos cards sem ciclo", () => {
         screen.queryByRole("link", { name: /atividade$/ }),
       ).not.toBeInTheDocument();
       if (state === "BLOCKED")
-        expect(screen.getByText(activity.stateReason)).toBeVisible();
+        expect(await screen.findByText(activity.stateReason)).toBeVisible();
       expect(axios.post).not.toHaveBeenCalled();
     },
   );
@@ -159,16 +159,20 @@ describe("Acesso ao processo oficial nos cards sem ciclo", () => {
       activities: [{ ...activity, selectedVersionActivity: false }],
     },
   ])(
-    "não usa orientação vazia, de outro contexto ou de atividade histórica",
+    "mantém o processo oficial sem exibir detalhes vazios, divergentes ou históricos",
     async (data) => {
       vi.mocked(axios.get).mockResolvedValue({ data });
       renderCard();
       expect(await screen.findByRole("alert")).toHaveTextContent(
-        "Não foi possível confirmar",
+        "Não foi possível atualizar os detalhes",
       );
       expect(
-        screen.queryByRole("link", { name: "Abrir próximo processo" }),
-      ).not.toBeInTheDocument();
+        screen.getByRole("link", { name: "Abrir próximo processo" }),
+      ).toHaveAttribute(
+        "href",
+        "/products/9/value-chain-history/processes/75/activities?chainId=14#process-execution",
+      );
+      expect(screen.queryByText("Outra atividade")).not.toBeInTheDocument();
     },
   );
 
@@ -211,14 +215,25 @@ describe("Acesso ao processo oficial nos cards sem ciclo", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("exibe carregamento e permite recuperar um timeout sem abrir um destino presumido", async () => {
-    vi.mocked(axios.get).mockRejectedValueOnce(
-      new Error("timeout of 45000ms exceeded"),
+  it("abre o processo oficial durante a consulta lenta e permite atualizar os detalhes após timeout", async () => {
+    let reject!: (reason: Error) => void;
+    vi.mocked(axios.get).mockImplementationOnce(
+      () =>
+        new Promise((_, fail) => {
+          reject = fail;
+        }),
     );
     renderCard();
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Consultando o próximo processo",
+    expect(
+      screen.getByRole("link", { name: "Abrir próximo processo" }),
+    ).toHaveAttribute(
+      "href",
+      "/products/9/value-chain-history/processes/75/activities?chainId=14#process-execution",
     );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Consultando a atividade atual",
+    );
+    await act(async () => reject(new Error("timeout of 45000ms exceeded")));
     await screen.findByRole("alert");
     let resolve!: (value: unknown) => void;
     vi.mocked(axios.get).mockImplementationOnce(
@@ -228,7 +243,7 @@ describe("Acesso ao processo oficial nos cards sem ciclo", () => {
         }),
     );
     await userEvent.click(
-      screen.getByRole("button", { name: "Tentar novamente" }),
+      screen.getByRole("button", { name: "Atualizar detalhes" }),
     );
     await waitFor(() =>
       expect(
@@ -241,7 +256,7 @@ describe("Acesso ao processo oficial nos cards sem ciclo", () => {
     ).toBeVisible();
   });
 
-  it("oculta o destino anterior se a atualização falhar", async () => {
+  it("mantém o destino oficial se a atualização dos detalhes falhar", async () => {
     vi.mocked(axios.get).mockResolvedValue({ data: history });
     const { client } = renderCard();
     await screen.findByRole("link", { name: "Abrir próximo processo" });
@@ -251,8 +266,11 @@ describe("Acesso ao processo oficial nos cards sem ciclo", () => {
     });
     expect(await screen.findByRole("alert")).toBeVisible();
     expect(
-      screen.queryByRole("link", { name: "Abrir próximo processo" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("link", { name: "Abrir próximo processo" }),
+    ).toHaveAttribute(
+      "href",
+      "/products/9/value-chain-history/processes/75/activities?chainId=14#process-execution",
+    );
   });
 
   it("não consulta nem confirma uma atividade com a posição indisponível", () => {

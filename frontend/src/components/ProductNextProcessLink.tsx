@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import "./ProductNextProcessLink.css";
 
@@ -13,6 +14,7 @@ export default function ProductNextProcessLink({
   reason,
   url,
   cycleProcess = false,
+  children,
 }: {
   processNumber?: string | number | null;
   processName: string;
@@ -23,6 +25,7 @@ export default function ProductNextProcessLink({
   reason?: string | null;
   url: string;
   cycleProcess?: boolean;
+  children?: ReactNode;
 }) {
   const blocked = state === "BLOCKED";
   const running = state === "IN_PROGRESS" || state === "PENDING";
@@ -72,6 +75,7 @@ export default function ProductNextProcessLink({
           <p>{reason}</p>
         </details>
       ) : null}
+      {children}
     </div>
   );
 }

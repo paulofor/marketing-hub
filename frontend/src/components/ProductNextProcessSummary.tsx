@@ -42,15 +42,18 @@ export default function ProductNextProcessSummary({
   const queryString = new URLSearchParams();
   if (position.chainDefinitionId != null)
     queryString.set("chainId", String(position.chainDefinitionId));
+  const processUrl = `/products/${position.productId}/value-chain-history/processes/${processId}/activities${queryString.toString() ? `?${queryString}` : ""}`;
+  const positionProcessName =
+    subprocess?.currentSubprocessName ??
+    position.processName ??
+    "Processo atual";
   const unavailable =
     isPositionError ||
     query.isError ||
     !consistent ||
     Boolean(data?.currentActivityId && !activity);
 
-  if (query.isLoading && !query.isFetched)
-    return <p role="status">Consultando o próximo processo...</p>;
-  if (unavailable)
+  if (isPositionError || processId == null)
     return (
       <div className="product-next-process" role="alert">
         <p>Não foi possível confirmar o próximo processo.</p>
@@ -70,6 +73,45 @@ export default function ProductNextProcessSummary({
         </button>
         <Link to={historyUrl}>Ver cadeia de valor</Link>
       </div>
+    );
+  if (query.isLoading && !query.isFetched)
+    return (
+      <ProductNextProcessLink
+        processNumber={processNumber}
+        processName={positionProcessName}
+        url={processUrl}
+      >
+        <small role="status">Consultando a atividade atual...</small>
+      </ProductNextProcessLink>
+    );
+  if (unavailable)
+    return (
+      <ProductNextProcessLink
+        processNumber={processNumber}
+        processName={positionProcessName}
+        url={processUrl}
+      >
+        <div className="product-next-process__details" role="alert">
+          <p>
+            Não foi possível atualizar os detalhes da atividade. O processo
+            indicado pela posição oficial continua disponível.
+          </p>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-primary"
+            onClick={() => void query.refetch()}
+            disabled={query.isFetching}
+          >
+            {query.isFetching ? (
+              <span
+                className="spinner-border spinner-border-sm"
+                aria-hidden="true"
+              />
+            ) : null}
+            {query.isFetching ? " Consultando..." : "Atualizar detalhes"}
+          </button>
+        </div>
+      </ProductNextProcessLink>
     );
   if (!activity || data.objectiveAchieved)
     return (
@@ -92,7 +134,7 @@ export default function ProductNextProcessSummary({
       responsible={activity.activityOwnerName}
       state={activity.operationalState}
       reason={activity.stateReason}
-      url={`/products/${position.productId}/value-chain-history/processes/${processId}/activities${queryString.toString() ? `?${queryString}` : ""}`}
+      url={processUrl}
     />
   );
 }

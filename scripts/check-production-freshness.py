@@ -109,23 +109,40 @@ class LiveDeploy:
     sha: str
     status: str
     created_at: datetime
+    last_progress_at: datetime
     url: str
 
 
 def live_deploys(
     payload: dict[str, Any], now: datetime, max_minutes: int, workflow: str = DEPLOY_WORKFLOW
 ) -> list[LiveDeploy]:
-    result: list[LiveDeploy] = []
+    workflow_runs: list[tuple[dict[str, Any], datetime, datetime]] = []
     for run in payload.get("workflow_runs", []):
         if run.get("name") != workflow or run.get("head_branch") != "main":
             continue
+        created = parse_time(run.get("created_at"))
+        if created is None:
+            continue
+        updated = parse_time(run.get("updated_at")) or created
+        workflow_runs.append((run, created, updated))
+
+    result: list[LiveDeploy] = []
+    for run, created, updated in workflow_runs:
         if run.get("status") == "completed":
             continue
-        created = parse_time(run.get("created_at"))
         sha = run.get("head_sha")
-        if created is None or not isinstance(sha, str):
+        if not isinstance(sha, str):
             continue
-        if minutes_between(created, now) > max_minutes:
+
+        # queue:max preserva todos os SHAs e pode manter o run do HEAD aguardando por mais
+        # tempo que a janela. Uma revisão anterior concluída recentemente comprova que a fila
+        # continua avançando; uma execução antiga sem esse pulso continua sendo descartada.
+        last_progress = max(
+            progress
+            for _other, other_created, progress in workflow_runs
+            if other_created <= created
+        )
+        if minutes_between(max(updated, last_progress), now) > max_minutes:
             continue
         result.append(
             LiveDeploy(
@@ -133,6 +150,7 @@ def live_deploys(
                 sha=sha,
                 status=str(run.get("status", "unknown")),
                 created_at=created,
+                last_progress_at=max(updated, last_progress),
                 url=str(run.get("html_url", "")),
             )
         )
@@ -200,9 +218,10 @@ def evaluate_target(
         if run:
             result.update(
                 status="DEPLOYING",
-                reason="revisão de produção ausente/não verificável, mas há deploy da main atual em andamento",
+                reason="revisão de produção ausente/não verificável, mas há deploy da main atual na fila ou em andamento",
                 deploy_run_id=run.id,
                 deploy_url=run.url,
+                deploy_last_progress_at=run.last_progress_at.isoformat(),
             )
         else:
             result.update(
@@ -216,9 +235,10 @@ def evaluate_target(
         if run:
             result.update(
                 status="DEPLOYING",
-                reason="revisão observada diverge da main, com deploy da main atual em andamento",
+                reason="revisão observada diverge da main, com deploy da main atual na fila ou em andamento",
                 deploy_run_id=run.id,
                 deploy_url=run.url,
+                deploy_last_progress_at=run.last_progress_at.isoformat(),
             )
         else:
             result.update(status="STALE", reason="revisão observada não é ancestral da main atual")
@@ -244,9 +264,10 @@ def evaluate_target(
     if run:
         result.update(
             status="DEPLOYING",
-            reason="há deploy em andamento que contém a primeira mudança pendente",
+            reason="há deploy na fila ou em andamento que contém a primeira mudança pendente",
             deploy_run_id=run.id,
             deploy_url=run.url,
+            deploy_last_progress_at=run.last_progress_at.isoformat(),
         )
     elif stale_minutes <= grace_minutes:
         result.update(
@@ -424,6 +445,7 @@ def main() -> int:
                     "sha": run.sha,
                     "status": run.status,
                     "created_at": run.created_at.isoformat(),
+                    "last_progress_at": run.last_progress_at.isoformat(),
                     "url": run.url,
                 }
                 for run in deploys
@@ -434,6 +456,7 @@ def main() -> int:
                     "sha": run.sha,
                     "status": run.status,
                     "created_at": run.created_at.isoformat(),
+                    "last_progress_at": run.last_progress_at.isoformat(),
                     "url": run.url,
                 }
                 for run in psique_deploys
@@ -444,6 +467,7 @@ def main() -> int:
                     "sha": run.sha,
                     "status": run.status,
                     "created_at": run.created_at.isoformat(),
+                    "last_progress_at": run.last_progress_at.isoformat(),
                     "url": run.url,
                 }
                 for run in musa_pde_deploys

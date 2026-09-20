@@ -1,5 +1,23 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-ACTIONS-WATCHDOG-IDADE-DA-FILA — backlog saudável abre incidente de freshness
+
+- **Data:** 2026-09-20. WatchDog de produção, run
+  [35513173776](https://github.com/paulofor/marketing-hub/actions/runs/35513173776), incidente
+  [#5271](https://github.com/paulofor/marketing-hub/issues/5271).
+- **Evidência histórica:** oito commits consecutivos de pesquisa acionaram deploys preservados por
+  `queue: max`. Às 13:20, o deploy `35509048321` acabara de publicar `d9577918` e o run seguinte
+  já executava, mas o run do HEAD `f86a4cab` aguardava havia 84 minutos. Os PDEs v5–v8 estavam
+  `UP`; a fila terminou todas as revisões com sucesso e o incidente foi fechado automaticamente.
+- **Causa-raiz:** o WatchDog descartava qualquer run criado há mais de 75 minutos, mesmo quando ele
+  apenas aguardava numa fila que continuava avançando. A idade de enfileiramento foi confundida
+  com tempo sem progresso e produziu `STALE` falso.
+- **Correção sistêmica:** runs pendentes continuam elegíveis enquanto uma execução anterior da
+  mesma fila e branch registra progresso recente. A revisão do HEAD permanece obrigatória; um run
+  posterior, outro workflow ou uma fila realmente inativa não renova essa prova.
+- **Prevenção:** regressão reproduz run do HEAD antigo, predecessor recém-concluído e fila sem
+  progresso; o relatório expõe `last_progress_at` para auditoria sem ampliar a janela de 75 minutos.
+
 ## LOOP-VEGA-RUN-PUBLICADO-PERDE-PRONTIDAO — cockpit regride após publicar
 
 - **Data:** 2026-09-19. Vega, experimento #92, run produtivo #2.

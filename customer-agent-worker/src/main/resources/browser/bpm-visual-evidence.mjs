@@ -144,6 +144,27 @@ await context.route("**/*", async (route) => {
 
 const page = await context.newPage();
 const artifacts = [];
+
+/** Recusa pixels obtidos em posição diferente da declarada na evidência. */
+async function verifyCapturePosition(expectedY) {
+  const observed = await page.evaluate(() => ({ x: scrollX, y: scrollY }));
+  if (observed.x !== 0 || observed.y !== expectedY) {
+    throw new Error(
+      `Captura visual fora da posição: esperado x=0,y=${expectedY}; observado x=${observed.x},y=${observed.y}.`,
+    );
+  }
+}
+
+/** Posiciona sem herdar a animação de rolagem da página, preservando seu HTML e estilo. */
+async function positionForCapture(expectedY) {
+  await page.evaluate(
+    (top) => scrollTo({ left: 0, top, behavior: "instant" }),
+    expectedY,
+  );
+  await page.waitForTimeout(150);
+  await verifyCapturePosition(expectedY);
+}
+
 try {
   const response = await page.goto(requestedUrl.toString(), {
     waitUntil: "domcontentloaded",
@@ -165,7 +186,7 @@ try {
       innerHeight * foldLimit,
     );
     for (let y = 0; y < scrollLimit; y += innerHeight) {
-      scrollTo(0, y);
+      scrollTo({ left: 0, top: y, behavior: "instant" });
       await new Promise((resolve) => setTimeout(resolve, 80));
     }
     await Promise.all(
@@ -184,9 +205,9 @@ try {
       }),
     );
     if (document.fonts?.ready) await document.fonts.ready;
-    scrollTo(0, 0);
+    scrollTo({ left: 0, top: 0, behavior: "instant" });
   }, maxFolds);
-  await page.waitForTimeout(300);
+  await positionForCapture(0);
 
   const runtimeIdentity = await page.evaluate(async () => {
     const publicationSourceSha256 =
@@ -256,12 +277,14 @@ try {
     evidenceDirectory,
     "page-1-iphone-15-pro-full-page.png",
   );
+  await verifyCapturePosition(0);
   await page.screenshot({
     path: fullPagePath,
     fullPage: true,
     scale: "css",
     animations: "disabled",
   });
+  await verifyCapturePosition(0);
   artifacts.push({
     captureSessionId: input.captureSessionId,
     evidenceKey: "page-1-iphone-15-pro-full-page",
@@ -281,8 +304,7 @@ try {
 
   for (let index = 0; index < positions.length; index += 1) {
     const scrollY = positions[index];
-    await page.evaluate((position) => scrollTo(0, position), scrollY);
-    await page.waitForTimeout(150);
+    await positionForCapture(scrollY);
     const foldNumber = index + 1;
     const foldPath = path.resolve(
       evidenceDirectory,
@@ -293,6 +315,7 @@ try {
       fullPage: false,
       animations: "disabled",
     });
+    await verifyCapturePosition(scrollY);
     artifacts.push({
       captureSessionId: input.captureSessionId,
       evidenceKey: `page-1-iphone-15-pro-fold-${foldNumber}`,
@@ -311,8 +334,7 @@ try {
     });
   }
 
-  await page.evaluate(() => scrollTo(0, 0));
-  await page.waitForTimeout(150);
+  await positionForCapture(0);
 
   await fs.writeFile(
     outputPath,

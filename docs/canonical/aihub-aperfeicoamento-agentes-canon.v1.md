@@ -268,3 +268,17 @@ Psique revalida a origem, o HTML servido, a CTA e as capturas antes de chamar o
 modelo. Parecer financeiro válido não deve ser repetido por uma falha de publicação.
 Contratos: `docs/swagger/gerasalespage-publication-recovery-v1-swagger.yaml`.
 Homologação: `docs/homologacao/gerasalespage-publication-recovery-v1.md`.
+
+## Posição comprovada na captura de Psique — 21/09/2026
+
+O capturador deve usar rolagem instantânea para posicionar a página e conferir as
+coordenadas reais antes e depois de cada screenshot. A captura inteira parte do
+topo; cada dobra deve corresponder à posição declarada em seu metadado. Uma espera
+fixa não comprova o término de `scroll-behavior:smooth`. Não alterar o HTML, a copy
+ou o estilo comercial para atender ao capturador.
+
+Se a página impedir a posição esperada, a tarefa recebe falha técnica com posição
+esperada/observada antes da revisão paga. Preservar o gate de identidade da fonte,
+do HTML servido e dos PNGs. Testes devem conferir pixels de um cabeçalho fixado em
+página longa com rolagem suave, repetição da captura e recusa de posição incorreta.
+Essa precisão melhora a evidência; não comprova aprovação comercial nem vendas.

@@ -6463,3 +6463,23 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   clique duplicado e captura real antes/depois via Lead Portal local e verificador
   de Psique. A entrega ainda depende de publicação autorizada das alterações; o
   registro da correção local não declara o processo produtivo concluído.
+
+## LOOP-PSIQUE-CAPTURA-ANTES-DO-FIM-DA-ROLAGEM — 21/09/2026
+
+- **Evidência:** o replay local do snapshot auditado de Capella recuperou corretamente
+  a identidade, mas o PNG full-page variou entre tentativas. As 13 dobras individuais
+  eram iguais; a diferença ficou no cabeçalho da página inteira. Instrumentação
+  constatou `scrollY=117` antes de um screenshot registrado como `scrollY=0`.
+- **Causa:** o capturador herdava `scroll-behavior:smooth` e esperava um tempo fixo.
+  O término da animação não era conferido; os testes verificavam dimensões e
+  metadados, sem conferir os pixels de um cabeçalho fixado.
+- **Alternativas:** aumentar a espera mantém a dependência de tempo; alterar o CSS
+  modifica o artefato comercial; posicionar instantaneamente e conferir coordenadas
+  resolve no executor. Escolhida a terceira.
+- **Correção local:** rolagem instantânea sem alterar o documento e conferência
+  antes/depois de cada screenshot. Posição divergente produz bloqueio técnico antes
+  da avaliação paga. Marcadores de publicação continuam obrigatórios; esta falha
+  adicional não substitui a causa registrada nas tarefas históricas #467/#468.
+- **Prevenção:** regressões com página longa, pixels do cabeçalho, repetição e página
+  que recusa rolagem. Ambas falharam no capturador anterior. Matriz e evidências em
+  `docs/homologacao/psique-captura-rolagem-instantanea-v1.md`.

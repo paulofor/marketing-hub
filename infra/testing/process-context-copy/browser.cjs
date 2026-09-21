@@ -255,12 +255,24 @@ async function paste(page) {
             "fixtures, mocks e expectativas",
             "regressões para as causas corrigidas",
             "Aprimore os agentes envolvidos",
+            "Autorização explícita",
+            "criar ou atualizar manualmente os Pull Requests necessários",
+            "atividade por atividade e tarefa por tarefa",
+            "Consulte as revisões reais no GitHub",
+            "complete o histórico raso",
+            "Não substitua resultado comprovado por erro de tentativa redundante",
             "confirmado em produção",
           ])
             assert(copied.includes(part), part);
           const instructions = copied.split(
             "CONTEXTO DO PROCESSO — MARKETING HUB",
           )[0];
+          assert(
+            !/Pull Request executado\s+pelo usuário|só crie ou prepare PR mediante pedido explícito|o prompt não autoriza deploy/.test(
+              instructions,
+            ),
+            "A cópia não pode restaurar a restrição antiga de publicação.",
+          );
           assert(
             !/Vega|MUSA|Quartzo|Opala|experiment:\d+|Tarefa #\d+/.test(
               instructions,

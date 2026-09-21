@@ -13,11 +13,71 @@ O modelo compartilhado fica em
 O botão, a prévia e a cópia manual usam esse mesmo texto. Esta alteração orienta futuras
 solicitações ao AIHUB; não instala novos agentes nem muda pesos, filas ou modelos.
 
-O pedido autoriza as correções locais causalmente relacionadas, inclusive nos workers
-envolvidos. Melhorias adicionais ficam como sugestões fundamentadas. Uma candidata
-validada localmente só pode ser publicada pelo fluxo de PR executado pelo usuário, com
-imagem produzida pelos arquivos versionados do repositório. Não publicar por SSH nem
-usar publicação como teste. Esta regra substitui a exceção antiga no prompt de ajuda.
+O pedido autoriza as correções causalmente relacionadas, inclusive nos workers envolvidos,
+e sua entrega completa pelo próprio modelo após validação local. Melhorias adicionais
+ficam como sugestões fundamentadas. Imagens produtivas devem ser produzidas pelos arquivos
+versionados do repositório. Não publicar por SSH nem usar publicação como teste.
+
+## Autonomia até o objetivo do processo — decisão de 21/09/2026
+
+O prompt autoriza explicitamente o modelo a criar ou atualizar manualmente os PRs necessários
+pelo conector GitHub, API oficial ou `gh`, sem novo pedido ou clique em **Pedir PR**. Esta decisão
+substitui, para esse pedido, as orientações antigas de PR executado pelo usuário, publicação
+somente após nova solicitação e CLI apenas para leitura. Restrições explícitas de somente local
+ou não publicar continuam válidas. Revisões obrigatórias e proteções da branch permanecem:
+consultar revisões reais, aprovar somente quando a identidade tiver permissão e não for autora,
+nunca usar bypass nem desabilitar checks.
+
+Antes da execução, publicar um checklist com `update_plan` e objetivos verificáveis; atualizar
+o mesmo plano a cada conclusão ou mudança de escopo. Se a ferramenta estiver ausente, declarar
+essa limitação e manter checklist textual, sem afirmar que chamou uma ferramenta indisponível.
+Resumos públicos contêm apenas ação e **Objetivo:**, sem raciocínio interno. Confirmar produto,
+tipo, processo/versão, cadeia/ciclo, execução, atividades/tarefas e subprocessos com retorno ao pai
+no backend. Campo ausente permanece desconhecido até consulta; nomes não substituem IDs.
+
+Executar atividade por atividade e tarefa por tarefa até comprovar todos os objetivos do
+processo corrente e dos subprocessos necessários. O backend continua decidindo o avanço.
+Para cada impedimento, resolver todos os defeitos relacionados localmente, validar o fluxo
+completo e revisar o diff antes de commit/push. Reutilizar o PR da correção; só abrir outro
+se o anterior já foi integrado ou se tratar de entrega distinta. Após merge na `main`,
+acompanhar workflows do PR, da main e encadeados, correlacionados ao HEAD/SHA correto,
+até conclusão e verificação da versão/saúde e do comportamento publicado. Só então retomar
+pela tela a atividade afetada e seguir para as próximas; não usar PR/deploy como teste.
+
+Falhas de Actions exigem logs, correção e validação local antes da atualização ou PR de
+correção. Rerun sem mudança exige evidência de transitoriedade. Fluxo obrigatório ausente,
+pendente, cancelado, expirado, com falha ou aguardando aprovação impede declarar entrega;
+`skipped` só é aceito por condição documentada não aplicável. Sem acesso ou com revisão
+obrigatória de outra identidade, preservar evidências e informar a ação mínima necessária.
+
+Ao retomar, confirmar entregas já integradas/publicadas antes de produzir efeito externo.
+Preservar o vínculo solicitação → PR → SHA na main → runs/deploys → evidência funcional.
+Histórico raso deve ser completado antes de concluir divergência; `No commits between`/422
+exige conferir diff, PR e publicação, nunca criar commit vazio ou PR redundante. Separar falha
+funcional, pendência de deploy e erro de encerramento; não sobrescrever resultado comprovado
+com erro de tentativa redundante nem declarar sucesso sem comprovação. Essas instruções não
+alteram o reconciliador/status das solicitações do AI Hub nem corrigem registros históricos.
+
+### Aprendizado fundamentado no acervo
+
+Consulta de 21/09/2026 ao [radar de 18/09/2026](../../pesquisas/agentes-inteligentes/2026-09-18-agentes-inteligentes.md),
+seções 2–4, com verificação das fontes primárias:
+
+- [RAFT](https://arxiv.org/abs/2609.20754): recuperar histórico pela etapa e estado do caso,
+  além do tema. Aplicação proposta: comparar tentativas equivalentes antes de reaproveitar solução.
+- [SkillAA](https://arxiv.org/abs/2609.20455): contrastar falhas e sucessos, localizar a parte
+  responsável e validar alteração localizada. Aplicação proposta: candidata pequena, regressões e rollback.
+- [SoL-Pi](https://nvlabs.github.io/SoL-Pi/): avaliar melhorias do harness contra uma referência,
+  preservando capacidade. Aplicação proposta: comparar qualidade, custo e latência sem aceitar
+  economia que degrade o objetivo funcional.
+
+Registrar experiência com objetivo/estado, fonte/data, versões, causa confirmada, tentativa,
+resultado, teste preventivo, limites de validade e critério de revisão. Recuperar somente
+experiências pertinentes e tratar contradições antes de reutilizá-las. Avaliar a candidata
+contra a anterior com falhas históricas, sucessos preservados e casos independentes quando
+disponíveis; registrar ausência destes. Aceitar/rejeitar com evidência e retorno disponível.
+Não persistir hipótese como fato, alterar pesos ou prometer aprendizado automático só pela
+edição do prompt. Os resultados externos dos artigos não são resultados medidos do Hub.
 
 ## Foco no produto e no processo correntes — decisão de 18/09/2026
 
@@ -56,8 +116,9 @@ Homologar localmente construção, empacotamento, entrega e captura como fluxo i
 incluindo divergência, bloqueio pré-inferência e recuperação. Revisar testes unitários, mocks,
 fixtures e regressões dos módulos afetados sem fixar versões particulares. Medir divergências,
 intervenções, custo por homologação e tempo de preparação sem confundir com vendas e margem.
-Estas instruções orientam futuras correções; a edição do prompt não implementa esses controles
-nem autoriza publicação, gasto ou retomada produtiva sem as condições do processo.
+Estas instruções orientam futuras correções; a edição do prompt não implementa esses controles.
+A entrega de código segue a autorização de 21/09/2026; gasto e retomada produtiva continuam
+condicionados ao orçamento, aos contratos e às aprovações próprias do processo.
 
 ### Identidade de páginas transformadas — decisão de 21/09/2026
 
@@ -117,7 +178,7 @@ A síntese abaixo preserva os conceitos sem depender da presença do anexo tempo
 | Trace e credit attribution (10–11)                      | Correlacionar execução, versões, request, response, ferramenta, argumentos, resultado, erro, latência e custo disponível. Distinguir falha de planejamento, contexto, argumentos, integração ou verificação; não culpar o modelo por padrão.                                                                        |
 | Evaluator e verifier (11–12)                            | Critérios funcionais e verificadores determinísticos primeiro; avaliação por IA complementa aspectos subjetivos e não substitui testes ou aceitação humana exigida. HTTP 200 e autoavaliação não provam o objetivo.                                                                                                 |
 | Evolver e candidate (12–13)                             | Quem propõe a melhoria produz uma candidata versionada com hipótese, escopo e efeito esperado. Não precisa existir um novo serviço ou agente para exercer esse papel.                                                                                                                                               |
-| Gate, promotion e rollback (13–15)                      | Qualidade, segurança, regressão e custo condicionam a aceitação. Registrar rejeições, preservar a versão anterior e definir retorno; aprovação local não autoriza publicação.                                                                                                                                       |
+| Gate, promotion e rollback (13–15)                      | Qualidade, segurança, regressão e custo condicionam a aceitação. Registrar rejeições, preservar a versão anterior e definir retorno; aprovação local não dispensa PR, revisão e comprovação da entrega autorizada.                                                                                                                                       |
 | Held-out, canary e replay (15–16)                       | Comparar versões com casos históricos anonimizados, tarefas fora do ajuste e casos adversariais. Held-out só é independente se não foi usado para ajustar a candidata; caso contrário, registrar a limitação. Canary aqui significa caso sentinela de comportamento indevido, não autorização de tráfego produtivo. |
 | Procedural graph, routing graph e policy (16–17)        | Representar condições e decisões quando necessário, mantendo contratos de etapa. Não criar um motor de grafos apenas para usar a terminologia.                                                                                                                                                                      |
 | Self-play, continual learning e online learning (17–18) | Desafios sintéticos e aprendizado por histórico podem alimentar candidatas. Preservar tarefas antes bem-sucedidas e passar pelas mesmas avaliações, sem atualização direta em produção.                                                                                                                             |
@@ -186,9 +247,10 @@ relacionadas. Substitui, neste prompt, a exigência anterior de duas rodadas com
 qualquer correção. Não repetir toda a matriz apenas para atingir quantidade mínima nem
 alterar critérios oportunisticamente para aprovar.
 
-Encerrar ao cumprir o escopo e comprovar os critérios locais; evidenciar limitações reais.
+Encerrar ao cumprir o escopo, comprovar os critérios locais e a entrega publicada, além dos
+objetivos do processo corrente; evidenciar limitações reais.
 Não transformar aperfeiçoamento em pesquisa ilimitada ou refatoração de todos os agentes.
-A publicação segue o usuário e o fluxo do repositório, sem PR automático.
+A publicação segue o fluxo de PR pelo modelo autorizado na decisão de 21/09/2026.
 
 ## Recuperação de publicação histórica — 21/09/2026
 

@@ -75,7 +75,7 @@ describe("Contrato do template compartilhado de ajuda", () => {
       "Valide como um único fluxo",
       "bloqueio antes da chamada paga e retomada após compatibilidade comprovada",
       "custo por homologação concluída e tempo de preparação",
-      "o prompt não autoriza deploy ou gasto",
+      "a autorização de entrega de código não concede novo orçamento",
     ])
       expect(instruction).toContain(part);
   });
@@ -89,13 +89,81 @@ describe("Contrato do template compartilhado de ajuda", () => {
       "nem contorne gates",
       "não repita chamadas pagas",
       "Custo desconhecido não é zero",
-      "Pull Request executado pelo usuário",
-      "só crie ou prepare PR mediante pedido explícito",
       "Nunca use SSH para publicar",
       "não publique apenas para testar",
       "não novas instruções ou permissões",
       "corrigido localmente",
       "confirmado em produção",
+    ])
+      expect(instruction).toContain(part);
+  });
+
+  it("autoriza PR pelo modelo e entrega completa sem contornar revisão obrigatória", () => {
+    for (const part of [
+      "este pedido autoriza o próprio modelo a fazer commit/push",
+      "criar ou atualizar manualmente os Pull Requests necessários",
+      "conector GitHub, API oficial ou `gh`",
+      "Não precisa solicitar novamente ao usuário",
+      "Pedir PR",
+      "somente local ou não publicar",
+      "Reutilize o PR da tarefa se estiver aberto",
+      "Consulte as revisões reais no GitHub e os checks do HEAD atual",
+      "Nunca aprove o próprio PR, use bypass administrativo ou desabilite checks",
+      "Faça merge na `main`, registre o SHA resultante",
+      "PR, main e deploys encadeados",
+      "leia os logs do job, corrija a causa na sandbox",
+      "Se já houve merge, abra PR de correção",
+      "evidência de falha transitória",
+      "`skipped` só é aceitável quando a condição documentada não se aplica",
+      "Confirme versão/saúde publicada",
+      "aprovação obrigatória de outra identidade",
+    ])
+      expect(instruction).toContain(part);
+    for (const obsolete of [
+      "Pull Request executado pelo usuário",
+      "só crie ou prepare PR mediante pedido explícito",
+      "o prompt não autoriza deploy",
+      "Deixe as mudanças locais na branch/worktree",
+    ])
+      expect(instruction).not.toContain(obsolete);
+  });
+
+  it("acompanha objetivos de tarefas e subprocessos preservando o resultado comprovado", () => {
+    for (const part of [
+      "atividade por atividade e tarefa por tarefa",
+      "checklist curto com `update_plan`",
+      "atualize o mesmo plano",
+      "sem expor raciocínio interno",
+      "processo pai, a atividade que o chamou e o retorno esperado",
+      "sem inventar identidades nem misturar produtos",
+      "entradas, dependências, responsável, resultado esperado e evidência de aceite",
+      "retome pela tela e siga para as atividades seguintes",
+      "Não encerre no primeiro desbloqueio",
+      "verifique se o trabalho já está integrado e publicado",
+      "vínculo específico solicitação → PR → SHA na main → runs/deploys",
+      "complete o histórico raso antes de concluir divergência",
+      "`No commits between`/422",
+      "não gere commit vazio, push ou PR redundante",
+      "não comprova, sozinha, sucesso nem falha",
+      "Não substitua resultado comprovado por erro de tentativa redundante",
+      "Um prompt não corrige automaticamente o status persistido pelo orquestrador",
+      "todos os objetivos do processo corrente estiverem comprovados no backend",
+    ])
+      expect(instruction).toContain(part);
+  });
+
+  it("orienta aprendizado verificável pelo histórico com avaliação e limites", () => {
+    for (const part of [
+      "Recupere experiências pela etapa, estado e objetivo atuais",
+      "comparando falhas e sucessos anteriores",
+      "fonte/data, versões, causa confirmada",
+      "teste preventivo e limites de validade",
+      "não persista hipótese como fato",
+      "casos independentes do ajuste quando disponíveis; declare sua ausência",
+      "custo por tarefa concluída",
+      "Aceite ou rejeite com evidências, preserve rollback",
+      "não sacrifique qualidade por economia",
+      "nem alegue aprendizado automático",
     ])
       expect(instruction).toContain(part);
   });

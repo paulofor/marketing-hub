@@ -36,6 +36,9 @@ class GeraSalesPageCommercialTermsTest {
         String original = "<html><body><main><h1>Oferta</h1></main></body></html>";
         String first = GeraSalesPageCommercialTerms.render(original, source("Formulário após pagar"), json);
         assertThat(first).contains("Formulário após pagar", "Política do vendedor", "Recebedor cadastrado");
+        assertThat(first).contains("Primeira resposta em até 2 dias úteis", "Suporte por 14 dias corridos",
+                "Entrega em até 4 dias úteis", "Reembolso integral: Até oito dias após receber",
+                "Sem dados de cartão", "Prazo bancário informado pelo provedor");
         assertThat(GeraSalesPageCommercialTerms.render(first, source("Formulário após pagar"), json)).isEqualTo(first);
         String changed = GeraSalesPageCommercialTerms.render(first, source("Formulário atualizado"), json);
         assertThat(changed).containsOnlyOnce("data-mh-commercial-terms").contains("Formulário atualizado")
@@ -50,6 +53,32 @@ class GeraSalesPageCommercialTermsTest {
                 source("<img src=x onerror='alert(1)'> & \"dados\""), json);
         assertThat(html).contains("&lt;img", "&amp;", "&quot;dados&quot;")
                 .doesNotContain("<img src=x");
+    }
+
+    /** Uma omissão do modelo é corrigida tanto no singular quanto com condições diferentes de suporte. */
+    @ParameterizedTest
+    @ValueSource(ints = {1, 3})
+    void preservesSupportDeadlineAndReplacesThePreviousOne(int days) {
+        var context = json.valueToTree(source("Formulário oficial"));
+        ((com.fasterxml.jackson.databind.node.ObjectNode) context.path("experiment").path("product")
+                .path("experienceContract").path("support")).put("firstResponseBusinessDays", days);
+        String old = GeraSalesPageCommercialTerms.render("<body><main>Oferta sem prazo do suporte</main></body>",
+                source("Formulário oficial"), json);
+        String changed = GeraSalesPageCommercialTerms.render(old, json.convertValue(context, Map.class), json);
+        assertThat(changed).contains("Primeira resposta em até " + days + (days == 1 ? " dia útil." : " dias úteis."))
+                .doesNotContain("Primeira resposta em até 2 dias úteis").containsOnlyOnce("data-mh-commercial-terms");
+    }
+
+    /** Fonte incompleta ou malformada não inventa dias, marco inicial ou integralidade do reembolso. */
+    @Test
+    void doesNotInferUnknownCommercialCommitments() {
+        Map<String, Object> input = Map.of("experiment", Map.of("product", Map.of("experienceContract", Map.of(
+                "delivery", Map.of("businessDays", 5, "startsAfter", "UNKNOWN"),
+                "support", Map.of("firstResponseBusinessDays", "1", "durationCalendarDaysAfterDelivery", -2),
+                "refund", Map.of("fullRefund", false, "requestWindow", "Conforme política cadastrada")))));
+        String result = GeraSalesPageCommercialTerms.render("<body>Oferta</body>", input, json);
+        assertThat(result).contains("Solicitação de reembolso: Conforme política cadastrada")
+                .doesNotContain("Entrega em até", "Primeira resposta", "Suporte por", "Reembolso integral");
     }
 
     /** Duas etapas preservam condições mesmo se o modelo omitir, mantendo bruto e custo originais. */
@@ -71,6 +100,8 @@ class GeraSalesPageCommercialTermsTest {
                 new StageArtifact(type, name, contentType, "local/" + name, "test-hash", metadata);
         var result = processor.process(new StageContext<>(execution, input, store, Map.of()));
         assertThat(result.output().payload().get("html").toString()).contains("Abra o formulário", "Política do vendedor");
+        assertThat(result.output().payload().get("html").toString()).contains("Primeira resposta em até 2 dias úteis",
+                "Suporte por 14 dias corridos", "Entrega em até 4 dias úteis", "Reembolso integral");
         var audited = (OpenAiResult<?>) result.metrics().get("openAiResult");
         assertThat(audited.rawResponse()).isEqualTo("raw-provider-response");
         assertThat(audited.modelResponse()).contains("data-mh-commercial-terms");
@@ -94,8 +125,16 @@ class GeraSalesPageCommercialTermsTest {
     /** Cria contrato independente de produto, sem valores presumidos pelo renderizador. */
     private Map<String, Object> source(String briefing) {
         return Map.of("experiment", Map.of("id", 246, "product", Map.of("id", 23,
-                "experienceContract", Map.of("delivery", Map.of("briefingChannel", briefing),
+                "experienceContract", Map.of("delivery", Map.of("briefingChannel", briefing,
+                                "businessDays", 4, "startsAfter", "PAYMENT_APPROVED_AND_COMPLETE_BRIEFING",
+                                "businessDaysDefinition", "Dias úteis conforme calendário cadastrado",
+                                "channel", "Link enviado ao e-mail do briefing", "access", "Arquivo para baixar"),
+                        "support", Map.of("email", "teste+suporte@sandbox.local", "firstResponseBusinessDays", 2,
+                                "durationCalendarDaysAfterDelivery", 14, "scope", "Ajuda para acessar os arquivos",
+                                "exclusions", "Sem serviços adicionais"),
                         "checkoutIdentity", Map.of("explanation", "Recebedor cadastrado"),
-                        "refund", Map.of("providerProtectionDistinction", "Política do vendedor, distinta do provedor")))));
+                        "refund", Map.of("providerProtectionDistinction", "Política do vendedor, distinta do provedor",
+                                "fullRefund", true, "requestWindow", "Até oito dias após receber", "reasonRequired", false,
+                                "instructions", "Sem dados de cartão", "processing", "Prazo bancário informado pelo provedor")))));
     }
 }

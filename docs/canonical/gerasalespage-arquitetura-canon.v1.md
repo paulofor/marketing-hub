@@ -103,3 +103,12 @@ funcional enriquecida, resposta bruta, custos e publicação continuam separados
 auditoria. A revisão de qualidade recebe os termos antes da publicação. Recuperar
 uma publicação histórica não altera silenciosamente seu HTML; uma nova geração
 produz outra publicação auditada quando conteúdo precisa mudar.
+
+O mesmo bloco preserva os compromissos estruturados de entrega, acesso,
+personalização, primeira resposta do suporte, duração após entrega, escopo,
+exclusões e procedimento de reembolso. Dias só são interpretados quando inteiros
+positivos; prazo de entrega só recebe marco inicial quando o contrato o define.
+Janela e integralidade do reembolso não são presumidas. Dados técnicos ou fontes
+incompletas não viram promessas. Uma página que já exibiu um campo corretamente
+não garante que a próxima síntese o conservará; validar esses compromissos mesmo
+quando os esclarecimentos de briefing e recebedor estiverem presentes.

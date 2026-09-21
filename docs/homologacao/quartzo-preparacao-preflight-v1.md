@@ -83,3 +83,27 @@ foi reproduzido localmente e passou. A suíte backend completa foi executada ant
 de publicar esse complemento. A configuração efetiva do fornecedor foi consultada
 em diagnóstico somente de leitura, limitada aos três campos públicos, e o CNPJ
 cadastrado foi acrescentado à oferta pela tela.
+
+## Preservação integral de atendimento — nova regressão
+
+A publicação #30 omitiu o prazo de primeira resposta, embora a fonte oficial o
+mantivesse. Os três esclarecimentos anteriores estavam presentes; isso confirma
+que preservar apenas esses campos não cobria todos os compromissos. A validação
+em navegador bloqueou a retomada antes de nova chamada de Psique.
+
+Matriz antes dos testes: renderizar a página real que omitiu o prazo; conferir
+primeira resposta, duração, entrega e janela/procedimento de reembolso; preservar
+outras identidades e valores (inclusive singular/plural); substituir prazos antigos
+sem duplicar o bloco; ignorar dias textuais, negativos e marco inicial desconhecido;
+manter escape, auditoria e custo nas duas etapas; conferir desktop/iPhone/Pixel,
+conteúdo fechado do FAQ, imagens carregadas e CTA fixa. Modelo e backend são
+simulados nos testes; replay usa apenas a fonte pública já auditada. Não executar
+parecer comercial até comprovar a publicação corrigida.
+
+Resultado: suíte completa do AI Worker com 251 casos, zero falhas/erros e dois
+testes antigos desabilitados de outro fluxo. Build e diff aprovados. Replay do
+HTML #30 com o contrato atual passou em desktop, iPhone e Pixel: prazo de resposta,
+período de suporte, entrega e reembolso presentes, um único bloco, sem largura
+excedente e com a última linha livre da CTA fixa. A tentativa offline inicial
+não encontrou um plugin no espelho Maven; a execução normal resolveu a dependência
+e concluiu a validação. Sem novo modelo pago nem mutação produtiva nesses testes.

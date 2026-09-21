@@ -4231,6 +4231,24 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   HTTP valida limite/cursor e o frontend comprova que a execução antiga não é requisitada antes do
   clique. O cânone exige paginação e proíbe `LONGTEXT` em polling de cards administrativos.
 
+## LOOP-BPM-HISTORICO-RECALCULA-CONTEXTO — leitura repete as mesmas fontes por atividade
+
+- **Data:** 2026-09-21.
+- **Sintoma:** a tela do processo Quartzo de Capella permanecia em “Carregando o histórico
+  auditável”; o endpoint de atividades levou de 31 a 66,7 segundos e ultrapassou o timeout de 45
+  segundos do frontend.
+- **Causa-raiz confirmada em tela, logs, código e consultas do banco:** a projeção do processo
+  consultava readiness e validade para cada uma das oito atividades. Cada avaliação reconstruía o
+  mesmo snapshot Quartzo, relendo experimento, publicação, prova, criativos, público e plano
+  financeiro cerca de doze vezes dentro da mesma transação somente leitura.
+- **Correção sistêmica:** escopo e snapshot imutável passam a ser reutilizados apenas durante a
+  transação de leitura corrente, com cópia defensiva do JSON e descarte obrigatório ao concluir ou
+  falhar. Comandos de escrita permanecem sem cache para perceber alterações feitas na própria
+  transação.
+- **Prevenção:** testes exigem uma única leitura das fontes por transação, nova leitura na requisição
+  seguinte e nenhuma reutilização em transação de escrita. Gates comerciais, fingerprints e
+  invalidação por mudança material permanecem inalterados.
+
 ## LOOP-AI-WORKER-IMAGEM-RECOMPILA-BACKEND — imagem esgota disco depois dos testes verdes
 
 - **Data:** 2026-09-02.

@@ -21,8 +21,11 @@ import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /** Responsabilidade: testar identidade, fontes e invalidação da preparação low-ticket sem slots. */
 class QuartzoCommercialContextTest {
@@ -31,16 +34,21 @@ class QuartzoCommercialContextTest {
   final ExperimentCampaignDestinationPolicy destinations =
       mock(ExperimentCampaignDestinationPolicy.class);
   final CreativeRepository creatives = mock(CreativeRepository.class);
+  final CommercialPlanLandingAssetService assets = mock(CommercialPlanLandingAssetService.class);
+  final ExperimentTargetingSelectionService targeting =
+      mock(ExperimentTargetingSelectionService.class);
+  final FinancialPlanService finances = mock(FinancialPlanService.class);
+  final CommercialPlanRepository plans = mock(CommercialPlanRepository.class);
   final QuartzoCommercialContext context =
       new QuartzoCommercialContext(
           experiments,
           cycles,
           destinations,
           creatives,
-          mock(CommercialPlanLandingAssetService.class),
-          mock(ExperimentTargetingSelectionService.class),
-          mock(FinancialPlanService.class),
-          mock(CommercialPlanRepository.class),
+          assets,
+          targeting,
+          finances,
+          plans,
           new ObjectMapper().findAndRegisterModules());
   Product product;
   Experiment experiment;
@@ -75,6 +83,15 @@ class QuartzoCommercialContextTest {
             .html("<main>Kit</main>")
             .build();
     when(destinations.latestSalesPagePublication(88L)).thenReturn(Optional.of(publication));
+  }
+
+  /** Garante que uma simulação transacional anterior não contamine o teste seguinte. */
+  @AfterEach
+  void clearTransactionContext() {
+    if (TransactionSynchronizationManager.isSynchronizationActive())
+      TransactionSynchronizationManager.clearSynchronization();
+    TransactionSynchronizationManager.setCurrentTransactionReadOnly(false);
+    TransactionSynchronizationManager.setActualTransactionActive(false);
   }
 
   /** Um produto interrompido e sem ciclo pode ser preparado sem reativação ou slot Opala. */
@@ -123,6 +140,50 @@ class QuartzoCommercialContextTest {
     experiment.setFunnelPromise("Outra promessa");
     assertThat(context.snapshot("experiment:88").path("fingerprint").asText())
         .isNotEqualTo(changed);
+  }
+
+  /** Reutiliza fontes comerciais na mesma leitura sem congelá-las entre requisições. */
+  @Test
+  void reusesSnapshotOnlyInsideSameReadOnlyTransaction() {
+    inReadOnlyTransaction(
+        () -> {
+          var initial = context.snapshot("experiment:88");
+          initial.put("priceBrl", 999);
+          for (int activity = 0; activity < 12; activity++)
+            assertThat(context.snapshot("experiment:88").path("priceBrl").decimalValue())
+                .isEqualByComparingTo("67");
+          var initialScope = context.scope("experiment:88", 7L, true);
+          for (int activity = 0; activity < 8; activity++)
+            assertThat(context.scope("experiment:88", 7L, true)).isSameAs(initialScope);
+        });
+
+    verify(creatives).findByExperimentId(88L);
+    verify(targeting).list(88L);
+    verify(finances)
+        .list(
+            "PRODUCT",
+            7L,
+            com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment.LIVE);
+    verify(experiments, times(2)).findById(88L);
+
+    context.snapshot("experiment:88");
+    verify(creatives, times(2)).findByExperimentId(88L);
+  }
+
+  /**
+   * Mantém comandos de escrita sem cache para que alterações na mesma transação sejam percebidas.
+   */
+  @Test
+  void doesNotCacheSnapshotInsideWriteTransaction() {
+    inTransaction(
+        false,
+        () -> {
+          context.snapshot("experiment:88");
+          context.snapshot("experiment:88");
+        });
+
+    verify(creatives, times(2)).findByExperimentId(88L);
+    verify(experiments, times(2)).findById(88L);
   }
 
   /** O retorno do MySQL e a ordem de chaves JSON não criam alterações comerciais fictícias. */
@@ -176,5 +237,26 @@ class QuartzoCommercialContextTest {
     var result = context.snapshot("experiment:88").path("creatives");
     assertThat(result.size()).isEqualTo(1);
     assertThat(result.get(0).path("id").asLong()).isEqualTo(2L);
+  }
+
+  /** Executa o cenário dentro de uma transação somente leitura simulada e sempre a encerra. */
+  private void inReadOnlyTransaction(Runnable action) {
+    inTransaction(true, action);
+  }
+
+  /** Simula o ciclo Spring necessário para validar criação e descarte do cache transacional. */
+  private void inTransaction(boolean readOnly, Runnable action) {
+    TransactionSynchronizationManager.setActualTransactionActive(true);
+    TransactionSynchronizationManager.setCurrentTransactionReadOnly(readOnly);
+    TransactionSynchronizationManager.initSynchronization();
+    try {
+      action.run();
+    } finally {
+      TransactionSynchronizationManager.getSynchronizations()
+          .forEach(
+              synchronization ->
+                  synchronization.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
+      clearTransactionContext();
+    }
   }
 }

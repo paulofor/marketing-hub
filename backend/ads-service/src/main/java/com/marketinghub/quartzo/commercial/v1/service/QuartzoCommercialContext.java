@@ -24,12 +24,16 @@ import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepositor
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /** Responsabilidade: reunir fontes comerciais do Quartzo sem exigir contratos ou slots de Opala. */
 @Component
@@ -37,6 +41,7 @@ import org.springframework.stereotype.Component;
 public class QuartzoCommercialContext {
   public static final String CODE = "quartzo-commercial-preparation-v1";
   public static final String TYPE = "LOW_TICKET_DIGITAL_PRODUCT";
+  private final Object readTransactionCacheKey = new Object();
   private final ExperimentRepository experiments;
   private final LearningSalesCycleRepository cycles;
   private final ExperimentCampaignDestinationPolicy destinations;
@@ -78,6 +83,13 @@ public class QuartzoCommercialContext {
       Long chainId,
       GeraSalesPagePublicationAudit publication) {}
 
+  /** Identifica uma validação de escopo sem misturar leitura e preparação para escrita. */
+  private record ScopeCacheKey(String source, Long productId, boolean mutation) {}
+
+  /** Mantém fontes imutáveis somente durante uma consulta transacional do processo. */
+  private record ReadTransactionCache(
+      Map<ScopeCacheKey, Scope> scopes, Map<String, ObjectNode> snapshots) {}
+
   /** Reconhece exclusivamente o código oficial do tipo, nunca seu nome comercial. */
   public boolean applies(Product product) {
     return product != null
@@ -87,6 +99,9 @@ public class QuartzoCommercialContext {
 
   /** Confere a propriedade da referência e preserva o estado interrompido sem reativá-lo. */
   public Scope scope(String source, Long productId, boolean mutation) {
+    var cache = readTransactionCache();
+    var cacheKey = new ScopeCacheKey(source, productId, mutation);
+    if (cache != null && cache.scopes().containsKey(cacheKey)) return cache.scopes().get(cacheKey);
     require(
         source != null && source.matches("experiment:[1-9][0-9]{0,17}"),
         "Selecione o experimento exato do produto Quartzo antes da preparação.");
@@ -120,17 +135,23 @@ public class QuartzoCommercialContext {
     require(
         publication == null || Objects.equals(publication.getExperimentId(), experiment.getId()),
         "A página auditada pertence a outro experimento.");
-    return new Scope(
-        experiment,
-        product,
-        version,
-        cycle == null ? null : cycle.getId(),
-        cycle == null ? null : cycle.getChainDefinitionId(),
-        publication);
+    var result =
+        new Scope(
+            experiment,
+            product,
+            version,
+            cycle == null ? null : cycle.getId(),
+            cycle == null ? null : cycle.getChainDefinitionId(),
+            publication);
+    if (cache != null) cache.scopes().put(cacheKey, result);
+    return result;
   }
 
   /** Congela fontes e ativos relevantes; alteração material invalida as revisões anteriores. */
   public ObjectNode snapshot(String source) {
+    var cache = readTransactionCache();
+    if (cache != null && cache.snapshots().containsKey(source))
+      return cache.snapshots().get(source).deepCopy();
     var scope = scope(source, null, false);
     var experiment = scope.experiment();
     var product = scope.product();
@@ -214,7 +235,28 @@ public class QuartzoCommercialContext {
     result.put("mediaSpendAuthorized", false);
     result.put("salesProven", false);
     result.put("fingerprint", fingerprintText(canonical(result).toString()));
+    if (cache != null) cache.snapshots().put(source, result.deepCopy());
     return result;
+  }
+
+  /** Reutiliza o retrato dentro da mesma transação somente leitura e o descarta ao seu término. */
+  private ReadTransactionCache readTransactionCache() {
+    if (!TransactionSynchronizationManager.isActualTransactionActive()
+        || !TransactionSynchronizationManager.isSynchronizationActive()
+        || !TransactionSynchronizationManager.isCurrentTransactionReadOnly()) return null;
+    var existing = TransactionSynchronizationManager.getResource(readTransactionCacheKey);
+    if (existing instanceof ReadTransactionCache cache) return cache;
+    var created = new ReadTransactionCache(new HashMap<>(), new HashMap<>());
+    TransactionSynchronizationManager.bindResource(readTransactionCacheKey, created);
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          /** Remove as fontes da thread mesmo quando a transação termina com erro. */
+          @Override
+          public void afterCompletion(int status) {
+            TransactionSynchronizationManager.unbindResourceIfPossible(readTransactionCacheKey);
+          }
+        });
+    return created;
   }
 
   /** Identifica somente as fontes que comprovam a atividade, preservando provas independentes. */

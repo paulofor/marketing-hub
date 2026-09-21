@@ -73,3 +73,8 @@ e workflow verde não substituem essa prova. O destino padrão dos PDEs permanec
 Alternativas avaliadas: migrar DNS adiciona risco e escopo; acionar emissão de
 certificado apenas para escolher o host confunde operações; selecionar o destino
 existente explicitamente resolve a causa com menor risco. Escolhida a terceira.
+
+A sonda HTTP de pagamentos deve consultar `/agenda-cheia/obrigado.html`, que é a
+rota real do pós-compra. A raiz desse serviço não oferece uma página e pode retornar
+404 mesmo quando a experiência e suas APIs estão disponíveis. A prova posterior de
+hash continua obrigatória; não trocar sua validação por aceitar qualquer HTTP 200.

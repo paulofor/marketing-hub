@@ -326,9 +326,13 @@ jobs:
           else
             public_url="https://kit-whatsapp-pronto.digicomdigital.com.br"
           fi
+          public_probe="${public_url}/"
+          if [ "${{ inputs.deployment_target }}" = "public_payments" ]; then
+            public_probe="${public_url}/agenda-cheia/obrigado.html"
+          fi
           curl --fail --show-error --silent \
             --retry 12 --retry-delay 10 --retry-connrefused \
-            "${public_url}/" >/dev/null
+            "$public_probe" >/dev/null
           if [ "${{ inputs.deployment_target }}" != "public_payments" ] && [ "${{ inputs.issue_digicomdigital_certificate }}" != "true" ]; then
             curl --fail --show-error --silent \
               --retry 12 --retry-delay 10 --retry-connrefused \

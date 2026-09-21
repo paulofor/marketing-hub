@@ -67,3 +67,31 @@ Publicação e aceite de Psique/Têmis permanecem critérios separados a confirm
 após a entrega. Nenhum teste conta como venda. Falha de atendimento humano/SLA
 não é comprovada ou descartada por teste de software; custo e latência de uma
 homologação comercial concluída ainda não estão disponíveis nesta rodada local.
+
+## Falha real de publicação e correção local
+
+O PR #5288 foi integrado em `9ef3b432964fbf5f561d58b765868d83779f67f7`.
+O deploy de pagamentos `35629994566` falhou na autenticação, antes de substituir
+o serviço. A causa e o teste preventivo estão em
+`LOOP-PAGAMENTOS-CREDENCIAL-PRIORITARIA-RECUSADA`.
+Foi validado localmente o helper compartilhado com seleção por autenticação,
+incluindo credencial prioritária recusada, quinta candidata válida, configuração
+ausente, chave inválida, limpeza e manutenção dos nove publicadores anteriores.
+OpenSSH isolado comprovou SSH/SCP/rsync e recusa de identidade divergente;
+`bash -n`, ShellCheck e parser YAML aprovados. A topologia temporária foi removida.
+Não houve publicação manual por SSH. O resultado remoto ainda depende do deploy.
+
+Na validação publicada da edição foi confirmada uma diferença que a fixture
+inicial não cobria: o banco mantinha `NULL`, mas o mapper convertia ausência em
+zero no GET. A correção adicional qualifica o somador de custos e não envia
+campos financeiros intactos. A matriz passa a cobrir o mapper gerado, a
+persistência `NULL` e o formulário tanto com a representação legada quanto com
+ausências verdadeiras. A campanha permanece parada; não se cria teto para salvar.
+
+Rodada final: 3.353 casos backend, sem falhas/erros e 20 condicionais ignorados.
+O novo teste do mapper inicialmente precisava da injeção do mapper auxiliar;
+a fixture foi corrigida usando o contexto Spring real e seus dois casos foram
+reexecutados, sem alterar o comportamento produtivo ou repetir suítes não afetadas.
+Frontend: 736 testes, typecheck/build e ambas as representações em desktop/iPhone/
+Pixel aprovados. JAR backend e recursos externos verificados, Spotless e diff sem
+pendências. Nenhuma chamada paga foi usada para investigar os zeros indevidos.

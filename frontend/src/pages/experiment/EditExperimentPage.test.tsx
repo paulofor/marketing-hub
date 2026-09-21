@@ -87,12 +87,20 @@ describe("correção da promessa preservando o planejamento pendente", () => {
     await waitFor(() => expect(fixture.save).toHaveBeenCalledOnce());
     expect(fixture.save.mock.calls[0][0]).toMatchObject({
       funnelPromise: "Entrega no prazo aprovado",
-      dailyBudget: 12,
-      mediaSpendLimit: 0,
-      baselineCvr: 0,
-      targetCvr: 0,
       unitPrice: 59,
     });
+    // O DTO pode exibir zero para NULL persistido; campos intactos não devem voltar na request.
+    const serialized = JSON.parse(
+      JSON.stringify(fixture.save.mock.calls[0][0]),
+    );
+    for (const field of [
+      "dailyBudget",
+      "mediaSpendLimit",
+      "baselineCvr",
+      "targetCvr",
+    ]) {
+      expect(serialized).not.toHaveProperty(field);
+    }
     expect(fixture.save.mock.calls[0][0]).not.toHaveProperty("status");
     expect(window.alert).not.toHaveBeenCalled();
   });

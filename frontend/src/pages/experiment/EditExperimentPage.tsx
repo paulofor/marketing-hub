@@ -601,15 +601,15 @@ export default function EditExperimentPage() {
         kpiTarget: parsedKpiTarget,
         dailyBudget: mediaPlanChanged
           ? (parsedDailyBudget ?? null)
-          : (data.dailyBudget ?? null),
+          : undefined,
         mediaSpendLimit: mediaPlanChanged
           ? (parsedMediaSpendLimit ?? null)
-          : (data.mediaSpendLimit ?? null),
+          : undefined,
         unitPrice: parsedUnitPrice,
         metricPresetId: values.metricPresetId || undefined,
         sampleSize: data.sampleSize ?? undefined,
-        baselineCvr: parsedBaselineCvr,
-        targetCvr: parsedTargetCvr,
+        baselineCvr: conversionTargetsChanged ? parsedBaselineCvr : undefined,
+        targetCvr: conversionTargetsChanged ? parsedTargetCvr : undefined,
         mde: data.mdePercent ?? undefined,
         startDate: values.startDate || undefined,
         endDate: values.endDate || undefined,

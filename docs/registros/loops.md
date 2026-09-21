@@ -6531,3 +6531,43 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   com configuração real e integrações externas desabilitadas.
 - **Limites:** software não comprova SLA humano, satisfação, venda ou lucro.
   Pareceres precisam ser revalidados depois das mudanças materiais da oferta.
+
+## LOOP-PAGAMENTOS-CREDENCIAL-PRIORITARIA-RECUSADA — 21/09/2026
+
+- **Evidência:** deploy `35629994566`, revisão `9ef3b432964f`, falhou com
+  `Permission denied (publickey,password)` antes de qualquer troca de container.
+  Consulta operacional somente de leitura confirmou o host canônico acessível e
+  o serviço de pagamentos anterior ainda em execução. Builds/testes passaram;
+  não tratar isso como falha da aplicação nem repetir o mesmo deploy sem mudança.
+- **Causa confirmada:** expressão escolhia a primeira chave não vazia, descartando
+  as demais antes de autenticar. É o mesmo mecanismo do loop de SSH dos agentes.
+- **Correção:** reutilizar `configure-vps-ssh-fallback.sh`, testar as credenciais
+  já inventariadas, publicar configuração SSH somente após autenticação e usar
+  essa configuração em todos os transportes. A quinta candidata é opcional;
+  nenhuma credencial foi copiada do SSH da sandbox ou impressa nos diagnósticos.
+- **Alternativas:** repetir a chave recusada não muda o resultado; trocar segredos
+  sem evidência exige intervenção indevida; testar o inventário existente fecha
+  o defeito de seleção e falha explicitamente se nenhuma chave autenticar.
+- **Prevenção:** Bash/ShellCheck, contrato do workflow, doubles para recusa da
+  prioritária e aceite da última, ausência/invalidade de chaves e limpeza; OpenSSH
+  real isolado confirma SSH/SCP/rsync, recusas e divergência de identidade.
+- **Limite:** testes locais não provam que um segredo do GitHub autentica hoje;
+  essa confirmação pertence ao preflight do deploy oficial, antes de mutações.
+
+## LOOP-EXPERIMENTO-NULL-VIRA-ZERO-NO-MAPPER — 21/09/2026
+
+- **Evidência:** a edição de Capella ainda recebeu `baselineCvr must be < targetCvr`
+  depois do PR #5288. MCP confirmou teto, base e alvo `NULL`, enquanto o GET
+  retornava zero. O código gerado do MapStruct chamava `money(...)` para todas
+  essas propriedades; a fixture inicial representava zero armazenado e não esse
+  caso. Não atribuir o erro à falta de orçamento nem preenchê-lo para destravar.
+- **Causa confirmada:** helper público `BigDecimal -> BigDecimal`, criado para
+  somar custos reconciliados, foi selecionado como conversor geral do mapper.
+  O formulário reenviava também campos que o usuário não tinha alterado.
+- **Correção:** qualificar o helper para uso explícito na soma, manter ausências
+  no DTO e omitir campos financeiros intactos no formulário. Valores informados,
+  inclusive zero legítimo, e totais reconciliados preservam seus contratos.
+- **Prevenção:** teste do mapper gerado para ausências/valores, persistência com
+  teto/metas/datas `NULL`, edição real do formulário, regressões financeiras e
+  homologação em três dispositivos. Corrigido localmente antes de atualizar o
+  PR #5290, sem novo gasto ou execução paga para investigar.

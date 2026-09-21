@@ -130,6 +130,31 @@ class ExperimentServiceTest {
     assertThat(saved.getFacebookReleaseRequestedAt()).isNull();
   }
 
+  /** Preserva ausência real de metas e teto quando a interface corrige somente a promessa. */
+  @Test
+  void contentEditPreservesNullFinancialInputsBehindDisplayDefaults() {
+    Experiment original = legacyExperimentForContentEdit(new BigDecimal("20"));
+    original.setBaselineCvr(null);
+    original.setTargetCvr(null);
+    original.setMediaSpendLimit(null);
+    original.setStartDate(null);
+    original.setEndDate(null);
+    experimentRepository.saveAndFlush(original);
+    UpdateExperimentRequest request = contentEditFor(original);
+    request.setFunnelPromise("Entrega conforme a decisão registrada");
+
+    service.update(original.getId(), request);
+
+    Experiment saved = experimentRepository.findById(original.getId()).orElseThrow();
+    assertThat(saved.getBaselineCvr()).isNull();
+    assertThat(saved.getTargetCvr()).isNull();
+    assertThat(saved.getMediaSpendLimit()).isNull();
+    assertThat(saved.getStartDate()).isNull();
+    assertThat(saved.getEndDate()).isNull();
+    assertThat(saved.getStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
+    assertThat(saved.getFunnelPromise()).isEqualTo(request.getFunnelPromise());
+  }
+
   /** Mantém a validação integral ao alterar verba, teto ou período, sem flexibilizar publicação. */
   @ParameterizedTest
   @ValueSource(strings = {"daily", "limit", "period"})

@@ -62,6 +62,7 @@ candidate_values=(
   "${VPS_SSH_KEY_FALLBACK_1:-}"
   "${VPS_SSH_KEY_FALLBACK_2:-}"
   "${VPS_SSH_KEY_FALLBACK_3:-}"
+  "${VPS_SSH_KEY_FALLBACK_4:-}"
 )
 identity_files=()
 configured_candidates=0

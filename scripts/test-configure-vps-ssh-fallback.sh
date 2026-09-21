@@ -187,3 +187,14 @@ test ! -s "$scan_github_env"
 test -z "$(find "$test_tmp_directory/runtime-scan-failure" -mindepth 1 -print -quit)"
 
 echo "Fallback seguro de credenciais SSH validado."
+
+# Pagamentos possui cinco credenciais históricas; a última também deve poder autenticar.
+last_github_env="$test_tmp_directory/github-env-last"
+touch "$last_github_env"
+VPS_SSH_KEY_PRIMARY='PRIMARY-REJECTED' \
+VPS_SSH_KEY_FALLBACK_4='LAST-ACCEPTED' \
+SSH_KEYGEN_BIN="$mock_keygen" SSH_KEYSCAN_HELPER="$mock_keyscan" \
+SSH_BIN="$mock_ssh" MOCK_ACCEPTED_KEY_MARKER='LAST-ACCEPTED' \
+VPS_SSH_RUNTIME_ROOT="$test_tmp_directory/runtime-last" \
+  bash "$configuration_script" 163.245.200.7 root "$last_github_env" >/dev/null
+grep -Fq 'SSH_DEPLOY_READY=true' "$last_github_env"

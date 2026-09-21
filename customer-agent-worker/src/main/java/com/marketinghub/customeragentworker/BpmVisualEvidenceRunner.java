@@ -68,7 +68,24 @@ public class BpmVisualEvidenceRunner {
       Path workDirectory,
       PdeExperienceEvidenceLoader.LiveVisualContract liveVisualContract)
       throws Exception {
+    return capture(sourceUrl, workDirectory, liveVisualContract, List.of());
+  }
+
+  /** Captura páginas oficiais adicionais em leitura e valida cada sequência antes do modelo. */
+  VisualEvidenceBundle capture(
+      String sourceUrl,
+      Path workDirectory,
+      PdeExperienceEvidenceLoader.LiveVisualContract liveVisualContract,
+      List<String> additionalPageUrls)
+      throws Exception {
     validatePublicUrl(sourceUrl);
+    if (additionalPageUrls == null || additionalPageUrls.size() > 1)
+      throw new VisualEvidenceException(
+          "A captura aceita somente a página e seu checkout oficial.");
+    for (String url : additionalPageUrls) validatePublicUrl(url);
+    List<String> expectedUrls = new ArrayList<>();
+    expectedUrls.add(sourceUrl);
+    expectedUrls.addAll(additionalPageUrls);
     Files.createDirectories(workDirectory);
     Path input = workDirectory.resolve("visual-input.json");
     Path output = workDirectory.resolve("visual-output.json");
@@ -77,7 +94,10 @@ public class BpmVisualEvidenceRunner {
     Files.writeString(
         input,
         json.writeValueAsString(
-            java.util.Map.of("sourceUrl", sourceUrl, "captureSessionId", captureSessionId)),
+            java.util.Map.of(
+                "sourceUrl", sourceUrl,
+                "captureSessionId", captureSessionId,
+                "additionalPageUrls", additionalPageUrls)),
         StandardCharsets.UTF_8);
     Process process =
         new ProcessBuilder(
@@ -100,7 +120,7 @@ public class BpmVisualEvidenceRunner {
                   workDirectory.resolve("visual-browser.log"), StandardCharsets.UTF_8));
     }
     CaptureOutput capture = json.readValue(output.toFile(), CaptureOutput.class);
-    validateCapture(captureSessionId, evidenceDirectory, capture, liveVisualContract);
+    validateCapture(captureSessionId, evidenceDirectory, capture, liveVisualContract, expectedUrls);
     return new VisualEvidenceBundle(capture, workDirectory);
   }
 
@@ -109,33 +129,102 @@ public class BpmVisualEvidenceRunner {
       String expectedSession,
       Path evidenceDirectory,
       CaptureOutput capture,
-      PdeExperienceEvidenceLoader.LiveVisualContract liveVisualContract)
+      PdeExperienceEvidenceLoader.LiveVisualContract liveVisualContract,
+      List<String> expectedUrls)
       throws Exception {
     if (capture == null
         || !expectedSession.equals(capture.captureSessionId())
         || !"IPHONE_15_PRO".equals(capture.deviceProfile())
         || capture.pages() == null
-        || capture.pages().size() != 1
+        || capture.pages().size() != expectedUrls.size()
         || capture.artifacts() == null
         || capture.artifacts().isEmpty()) {
       throw new VisualEvidenceException("Contrato da captura visual de Psique está incompleto.");
     }
+    validateLiveVisualContract(capture.pages().getFirst(), liveVisualContract);
+    for (int index = 0; index < expectedUrls.size(); index++) {
+      PageFacts page = capture.pages().get(index);
+      if (page.pageNumber() == null
+          || page.pageNumber() != index + 1
+          || !sameRequestedUrl(expectedUrls.get(index), page.requestedUrl())
+          || page.status() == null
+          || page.status() < 200
+          || page.status() >= 400
+          || page.documentSha256() == null
+          || !SHA256.matcher(page.documentSha256()).matches()) {
+        throw new VisualEvidenceException("Identidade da página capturada difere da URL oficial.");
+      }
+      validatePublicUrl(page.finalUrl());
+      validatePageArtifacts(page, capture.artifacts());
+    }
+    Path realEvidenceDirectory = evidenceDirectory.toRealPath();
+    Set<Path> artifactFiles = new LinkedHashSet<>();
+    Set<String> evidenceKeys = new LinkedHashSet<>();
+    for (VisualArtifact artifact : capture.artifacts()) {
+      Path file = Path.of(artifact.localPath()).toAbsolutePath().normalize();
+      if (artifact.pageNumber() == null
+          || artifact.pageNumber() < 1
+          || artifact.pageNumber() > expectedUrls.size()
+          || !Set.of("FULL_PAGE", "FOLD").contains(artifact.evidenceType())
+          || !expectedSession.equals(artifact.captureSessionId())
+          || !"IPHONE_15_PRO".equals(artifact.deviceProfile())
+          || !artifactFiles.add(file)
+          || artifact.evidenceKey() == null
+          || !evidenceKeys.add(artifact.evidenceKey())
+          || !file.startsWith(evidenceDirectory.toAbsolutePath().normalize())
+          || !Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)
+          || !file.toRealPath().startsWith(realEvidenceDirectory)
+          || Files.size(file) < PNG_SIGNATURE.length
+          || !pngSignature(file)) {
+        throw new VisualEvidenceException("Arquivo visual ausente ou fora da sessão autorizada.");
+      }
+    }
+  }
+
+  /** Tolera somente a barra raiz e porta HTTP padrão normalizadas pelo navegador. */
+  private boolean sameRequestedUrl(String expected, String observed) {
+    if (observed == null) return false;
+    URI left = URI.create(expected);
+    URI right = URI.create(observed);
+    String leftPath = left.getRawPath().isEmpty() ? "/" : left.getRawPath();
+    String rightPath =
+        right.getRawPath() == null || right.getRawPath().isEmpty() ? "/" : right.getRawPath();
+    int leftPort =
+        left.getPort() >= 0
+            ? left.getPort()
+            : ("https".equalsIgnoreCase(left.getScheme()) ? 443 : 80);
+    int rightPort =
+        right.getPort() >= 0
+            ? right.getPort()
+            : ("https".equalsIgnoreCase(right.getScheme()) ? 443 : 80);
+    return left.getScheme().equalsIgnoreCase(right.getScheme())
+        && left.getHost().equalsIgnoreCase(right.getHost())
+        && leftPort == rightPort
+        && leftPath.equals(rightPath)
+        && Objects.equals(left.getRawQuery(), right.getRawQuery())
+        && Objects.equals(left.getRawFragment(), right.getRawFragment());
+  }
+
+  /** Exige full-page e todas as dobras da mesma página, sem misturar origem ou dimensões. */
+  private void validatePageArtifacts(PageFacts page, List<VisualArtifact> artifacts) {
     List<VisualArtifact> fullPages =
-        capture.artifacts().stream()
+        artifacts.stream()
+            .filter(artifact -> Objects.equals(page.pageNumber(), artifact.pageNumber()))
             .filter(artifact -> "FULL_PAGE".equals(artifact.evidenceType()))
             .toList();
     List<VisualArtifact> folds =
-        capture.artifacts().stream()
+        artifacts.stream()
+            .filter(artifact -> Objects.equals(page.pageNumber(), artifact.pageNumber()))
             .filter(artifact -> "FOLD".equals(artifact.evidenceType()))
             .sorted(java.util.Comparator.comparing(VisualArtifact::foldNumber))
             .toList();
     if (fullPages.size() != 1 || folds.isEmpty()) {
       throw new VisualEvidenceException("Captura exige full-page e ao menos uma dobra mobile.");
     }
-    validateLiveVisualContract(capture.pages().getFirst(), liveVisualContract);
     VisualArtifact fullPage = fullPages.getFirst();
     if (fullPage.pageNumber() == null
-        || fullPage.pageNumber() != 1
+        || !Objects.equals(fullPage.sourceUrl(), page.requestedUrl())
+        || !Objects.equals(fullPage.finalUrl(), page.finalUrl())
         || fullPage.foldNumber() != null
         || fullPage.scrollY() == null
         || fullPage.scrollY() != 0
@@ -168,24 +257,6 @@ public class BpmVisualEvidenceRunner {
           || !Objects.equals(fold.sourceUrl(), fullPage.sourceUrl())
           || !Objects.equals(fold.finalUrl(), fullPage.finalUrl())) {
         throw new VisualEvidenceException("Sequência de dobras mobile está incompleta.");
-      }
-    }
-    Path realEvidenceDirectory = evidenceDirectory.toRealPath();
-    Set<Path> artifactFiles = new LinkedHashSet<>();
-    Set<String> evidenceKeys = new LinkedHashSet<>();
-    for (VisualArtifact artifact : capture.artifacts()) {
-      Path file = Path.of(artifact.localPath()).toAbsolutePath().normalize();
-      if (!expectedSession.equals(artifact.captureSessionId())
-          || !"IPHONE_15_PRO".equals(artifact.deviceProfile())
-          || !artifactFiles.add(file)
-          || artifact.evidenceKey() == null
-          || !evidenceKeys.add(artifact.evidenceKey())
-          || !file.startsWith(evidenceDirectory.toAbsolutePath().normalize())
-          || !Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)
-          || !file.toRealPath().startsWith(realEvidenceDirectory)
-          || Files.size(file) < PNG_SIGNATURE.length
-          || !pngSignature(file)) {
-        throw new VisualEvidenceException("Arquivo visual ausente ou fora da sessão autorizada.");
       }
     }
   }
@@ -317,7 +388,7 @@ public class BpmVisualEvidenceRunner {
       List<PageFacts> pages,
       List<VisualArtifact> artifacts) {}
 
-  /** Registra fatos técnicos da página sem substituir a interpretação estética. */
+  /** Registra fatos e o hash dos bytes HTTP da página que originou os pixels capturados. */
   record PageFacts(
       Integer pageNumber,
       String requestedUrl,
@@ -329,7 +400,8 @@ public class BpmVisualEvidenceRunner {
       List<String> visibleCtas,
       List<String> firstFoldCtas,
       String visibleText,
-      RuntimeIdentity runtimeIdentity) {}
+      RuntimeIdentity runtimeIdentity,
+      String documentSha256) {}
 
   /** Registra a identidade imutável lida no mesmo domínio dos pixels capturados. */
   record RuntimeIdentity(

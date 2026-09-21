@@ -239,7 +239,7 @@ public class AgentTaskVisualEvidenceService {
     }
     String sourceUrl = publicUrl(request.sourceUrl(), "URL solicitada");
     String finalUrl = publicUrl(request.finalUrl(), "URL final");
-    validateFrozenTarget(task, sourceUrl);
+    validateFrozenTarget(task, sourceUrl, request.pageNumber());
     if (request.capturedAt() == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Horário de captura ausente.");
     }
@@ -274,16 +274,26 @@ public class AgentTaskVisualEvidenceService {
         bytes);
   }
 
-  /**
-   * Confirma que a URL fotografada pertence ao produto, experimento e versão congelados na tarefa.
-   */
-  private void validateFrozenTarget(AgentTask task, String sourceUrl) {
+  /** Confirma a landing e, somente na segunda página da revisão Quartzo, o checkout oficial. */
+  private void validateFrozenTarget(AgentTask task, String sourceUrl, int pageNumber) {
     String processCode =
         task.getProcessDefinition() == null ? null : task.getProcessDefinition().getProcessCode();
+    boolean quartzoReview =
+        "quartzo-commercial-preparation-v1".equals(processCode)
+            && "humanExperienceReview".equals(task.getProcessActivityId())
+            && "customer-agent".equals(task.getAssignedAgent().getAgentKey());
+    if (quartzoReview && pageNumber > 2) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A revisão Quartzo admite a landing e o checkout oficiais.");
+    }
     String expectedUrl =
         targetContextProvider
             .resolve(task.getSourceReference(), processCode)
-            .map(AgentTaskTargetResponse::publicUrl)
+            .map(
+                target ->
+                    quartzoReview && pageNumber == 2
+                        ? target.commercialCheckoutUrl()
+                        : target.publicUrl())
             .filter(value -> !value.isBlank())
             .map(value -> publicUrl(value, "URL congelada da tarefa"))
             .orElseThrow(

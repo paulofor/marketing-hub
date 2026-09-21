@@ -221,6 +221,18 @@ de reutilizar silenciosamente a URL genérica ou a versão de outro produto. Em 
 deve comparar a URL solicitada com esse alvo congelado e rejeitar pixels de outro produto, versão ou
 tarefa mesmo quando o arquivo e a sessão pareçam tecnicamente válidos.
 
+Na revisão comercial Quartzo, a página 1 é a landing auditada e a página 2 é o
+`commercialCheckoutUrl` oficial do mesmo alvo. Psique abre somente as telas iniciais em leitura;
+não preenche formulário nem conclui pagamento. O backend confere a URL exata, incluindo a referência
+do checkout na query. Falta de página, dobra, identidade ou persistência bloqueia antes do modelo.
+O prompt e o callback preservam `visualCapture`: sessão, fatos da navegação, número da página e
+IDs/hashes dos PNGs. A outbox mantém esse contexto após reinício, sem repetir inferência.
+`documentSha256` identifica os bytes HTTP da navegação; os marcadores de origem auditada e HTML
+persistido antes da instrumentação têm finalidades diferentes e não precisam ser iguais.
+Captura de checkout não prova compra, retorno aprovado, briefing, entrega, uso ou reembolso.
+Ausência de evidência no contexto deve ser declarada como lacuna, sem inventar funcionalidade,
+canal de suporte, prazo ou resultado comercial.
+
 Jornadas novas originadas por plano comercial devem incluir o experimento na referência canônica
 (`commercial-plan:<id>@v<versão>:journey:experiment-<id>`). Referências legadas sem esse segmento só
 podem resolver o experimento primário inequívoco do plano; múltiplos vínculos ambíguos não autorizam

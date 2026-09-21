@@ -13,6 +13,118 @@ import org.junit.jupiter.api.io.TempDir;
 class BpmVisualEvidenceRunnerTest {
   @TempDir Path temporaryDirectory;
 
+  /** Preserva jornadas existentes cuja URL raiz é normalizada pelo navegador. */
+  @Test
+  void acceptsCanonicalRootSlashAndDefaultPortWithoutChangingQuery() throws Exception {
+    Path script = visualScript(1);
+    Files.writeString(
+        script,
+        Files.readString(script).replace("https://example.com/jornada", "https://example.com/"));
+    var runner =
+        new BpmVisualEvidenceRunner(
+            new ObjectMapper().findAndRegisterModules(), "/bin/sh", script.toString());
+    assertThat(
+            runner
+                .capture("https://example.com:443", temporaryDirectory.resolve("root"))
+                .capture()
+                .pages())
+        .hasSize(1);
+    assertThatThrownBy(
+            () ->
+                runner.capture(
+                    "https://example.com?other=product", temporaryDirectory.resolve("wrong-query")))
+        .hasMessageContaining("difere da URL oficial");
+  }
+
+  /** Captura as duas páginas oficiais sem misturar sequência, URLs ou identidades. */
+  @Test
+  void acceptsLandingAndCheckoutAndRejectsMissingCheckoutFolds() throws Exception {
+    for (boolean omitFold : java.util.List.of(false, true)) {
+      Path script = temporaryDirectory.resolve("multipage-" + omitFold + ".mjs");
+      Files.writeString(
+          script,
+          """
+          import fs from 'node:fs';
+          const [inputFile, output, directory] = process.argv.slice(2);
+          const input = JSON.parse(fs.readFileSync(inputFile, 'utf8'));
+          fs.mkdirSync(directory, {recursive:true});
+          const pages = [], artifacts = [];
+          for (const [index,url] of [input.sourceUrl,...input.additionalPageUrls].entries()) {
+            const pageNumber = index+1;
+            pages.push({pageNumber,requestedUrl:url,finalUrl:url,status:200,documentSha256:'f'.repeat(64)});
+            for (const type of ['FULL_PAGE','FOLD']) {
+              if (OMIT_FOLD && pageNumber===2 && type==='FOLD') continue;
+              const localPath = directory+'/'+pageNumber+'-'+type+'.png';
+              fs.writeFileSync(localPath, Buffer.from([137,80,78,71,13,10,26,10]));
+              artifacts.push({captureSessionId:input.captureSessionId,evidenceKey:pageNumber+'-'+type,
+                evidenceType:type,deviceProfile:'IPHONE_15_PRO',pageNumber,foldNumber:type==='FOLD'?1:null,
+                viewportWidth:393,viewportHeight:852,pageHeightPx:852,scrollY:0,sourceUrl:url,finalUrl:url,
+                capturedAt:'2026-01-01T00:00:00Z',localPath});
+            }
+          }
+          fs.writeFileSync(output,JSON.stringify({captureSessionId:input.captureSessionId,deviceProfile:'IPHONE_15_PRO',pages,artifacts}));
+          """
+              .replace("OMIT_FOLD", Boolean.toString(omitFold)));
+      var runner =
+          new BpmVisualEvidenceRunner(
+              new ObjectMapper().findAndRegisterModules(), "node", script.toString());
+      var work = temporaryDirectory.resolve("multipage-output-" + omitFold);
+      if (omitFold) {
+        assertThatThrownBy(
+                () ->
+                    runner.capture(
+                        "https://example.com/kit",
+                        work,
+                        PdeExperienceEvidenceLoader.LiveVisualContract.none(),
+                        java.util.List.of("https://example.com/checkout")))
+            .hasMessageContaining("ao menos uma dobra");
+      } else {
+        var capture =
+            runner
+                .capture(
+                    "https://example.com/kit",
+                    work,
+                    PdeExperienceEvidenceLoader.LiveVisualContract.none(),
+                    java.util.List.of("https://example.com/checkout"))
+                .capture();
+        assertThat(capture.pages()).hasSize(2);
+        assertThat(capture.artifacts())
+            .extracting(BpmVisualEvidenceRunner.VisualArtifact::pageNumber)
+            .containsExactly(1, 1, 2, 2);
+      }
+    }
+  }
+
+  /** Recusa URL privada adicional sem iniciar o browser nem chamar o modelo. */
+  @Test
+  void rejectsPrivateCheckoutBeforeBrowser() {
+    var runner = new BpmVisualEvidenceRunner(new ObjectMapper(), "/bin/false", "/missing");
+    assertThatThrownBy(
+            () ->
+                runner.capture(
+                    "https://example.com/kit",
+                    temporaryDirectory,
+                    PdeExperienceEvidenceLoader.LiveVisualContract.none(),
+                    java.util.List.of("http://127.0.0.1/private")))
+        .hasMessageContaining("rede privada");
+  }
+
+  /** Não aprova captura parcial quando o executor deveria ter incluído o checkout. */
+  @Test
+  void rejectsMissingExpectedCheckoutPage() throws Exception {
+    var runner =
+        new BpmVisualEvidenceRunner(
+            new ObjectMapper().findAndRegisterModules(), "/bin/sh", visualScript(1).toString());
+    assertThatThrownBy(
+            () ->
+                runner.capture(
+                    "https://example.com/jornada",
+                    temporaryDirectory.resolve("missing-checkout"),
+                    PdeExperienceEvidenceLoader.LiveVisualContract.none(),
+                    java.util.List.of("https://example.com/checkout")))
+        .hasMessageContaining("Contrato da captura visual");
+  }
+
   /** Aceita uma página completa e dobras sequenciais produzidas dentro da sessão. */
   @Test
   void acceptsFullPageAndEverySequentialFold() throws Exception {
@@ -230,7 +342,7 @@ class BpmVisualEvidenceRunnerTest {
         session=$(sed -n 's/.*"captureSessionId":"\\([^"]*\\)".*/\\1/p' "$input")
         printf '\\211PNG\\r\\n\\032\\n' > "$evidence/full.png"
         printf '\\211PNG\\r\\n\\032\\n' > "$evidence/fold.png"
-        printf '{"captureSessionId":"%s","deviceProfile":"IPHONE_15_PRO","pages":[{"pageNumber":1,"requestedUrl":"https://example.com/jornada","finalUrl":"https://example.com/jornada","status":200,"title":"Jornada","viewport":{},"headings":[],"visibleCtas":["CTA anterior"],"firstFoldCtas":["CTA anterior"],"visibleText":"Condição anterior","runtimeIdentity":{"version":"v8","experienceVersion":"musa-v12","frontendSourceSha256":"%s","imageTag":"test","commitSha":"test","publicationSourceSha256":"%s","servedHtmlSha256":"%s"}}],"artifacts":[{"captureSessionId":"%s","evidenceKey":"full","evidenceType":"FULL_PAGE","deviceProfile":"IPHONE_15_PRO","pageNumber":1,"foldNumber":null,"viewportWidth":393,"viewportHeight":852,"pageHeightPx":852,"scrollY":0,"sourceUrl":"https://example.com/jornada","finalUrl":"https://example.com/jornada","capturedAt":"2026-08-29T10:00:00Z","localPath":"%s/full.png"},{"captureSessionId":"%s","evidenceKey":"fold-%s","evidenceType":"FOLD","deviceProfile":"IPHONE_15_PRO","pageNumber":1,"foldNumber":%s,"viewportWidth":393,"viewportHeight":852,"pageHeightPx":852,"scrollY":0,"sourceUrl":"https://example.com/jornada","finalUrl":"https://example.com/jornada","capturedAt":"2026-08-29T10:00:01Z","localPath":"%s/fold.png"}]}' "$session" "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" "SERVED_HTML_SHA256" "$session" "$evidence" "$session" "FOLD_NUMBER" "FOLD_NUMBER" "$evidence" > "$output"
+        printf '{"captureSessionId":"%s","deviceProfile":"IPHONE_15_PRO","pages":[{"pageNumber":1,"requestedUrl":"https://example.com/jornada","finalUrl":"https://example.com/jornada","status":200,"title":"Jornada","viewport":{},"headings":[],"visibleCtas":["CTA anterior"],"firstFoldCtas":["CTA anterior"],"visibleText":"Condição anterior","documentSha256":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","runtimeIdentity":{"version":"v8","experienceVersion":"musa-v12","frontendSourceSha256":"%s","imageTag":"test","commitSha":"test","publicationSourceSha256":"%s","servedHtmlSha256":"%s"}}],"artifacts":[{"captureSessionId":"%s","evidenceKey":"full","evidenceType":"FULL_PAGE","deviceProfile":"IPHONE_15_PRO","pageNumber":1,"foldNumber":null,"viewportWidth":393,"viewportHeight":852,"pageHeightPx":852,"scrollY":0,"sourceUrl":"https://example.com/jornada","finalUrl":"https://example.com/jornada","capturedAt":"2026-08-29T10:00:00Z","localPath":"%s/full.png"},{"captureSessionId":"%s","evidenceKey":"fold-%s","evidenceType":"FOLD","deviceProfile":"IPHONE_15_PRO","pageNumber":1,"foldNumber":%s,"viewportWidth":393,"viewportHeight":852,"pageHeightPx":852,"scrollY":0,"sourceUrl":"https://example.com/jornada","finalUrl":"https://example.com/jornada","capturedAt":"2026-08-29T10:00:01Z","localPath":"%s/fold.png"}]}' "$session" "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" "SERVED_HTML_SHA256" "$session" "$evidence" "$session" "FOLD_NUMBER" "FOLD_NUMBER" "$evidence" > "$output"
         """
             .replace("FOLD_NUMBER", Integer.toString(foldNumber))
             .replace("SERVED_HTML_SHA256", servedHtmlSha256));

@@ -107,3 +107,19 @@ período de suporte, entrega e reembolso presentes, um único bloco, sem largura
 excedente e com a última linha livre da CTA fixa. A tentativa offline inicial
 não encontrou um plugin no espelho Maven; a execução normal resolveu a dependência
 e concluiu a validação. Sem novo modelo pago nem mutação produtiva nesses testes.
+
+## Recuperação da etapa final de página — 2026-09-21
+
+O POST final foi interrompido por `WebClientRequestException: Connection reset by peer`.
+Banco e logs não possuem response ID, resposta ou custo; os seis antecessores permanecem
+concluídos e o quality review, aprovado. Não há evidência para declarar consumo zero.
+
+A matriz local inclui retomada por HTTP com controller/service reais, seis resultados
+preservados, identidades independentes, bloqueios por resposta existente/custo/tokens,
+reprovação funcional, mudança de modelo/schema/template/entrada/antecessor e versão obsoleta.
+Quatro comandos simultâneos em transações com lock SQL H2 produziram um único novo job.
+Mudança depois do comando impede entrega no `pending`, antes de qualquer chamada paga.
+A auditoria original é reproduzida localmente para comprovar comparação semântica dos JSONs.
+Desktop, iPhone e Pixel percorrem tela → controller → service → fila com dependências locais,
+verificando confirmação, uma solicitação e bloqueio após enfileiramento. Nenhuma dessas
+validações chama modelo, campanha, banco produtivo para escrita ou pagamento real.

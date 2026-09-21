@@ -9,6 +9,8 @@ import com.marketinghub.gerasalespage.v1.service.GeraSalesPageStageService;
 import com.marketinghub.gerasalespage.v1.service.GeraSalesPageStartResponse;
 import com.marketinghub.gerasalespage.v1.service.republish.PublicationRecoveryView;
 import com.marketinghub.gerasalespage.v1.service.republish.RepublishPublicationRequest;
+import com.marketinghub.gerasalespage.v1.service.retry.StageRetryRequest;
+import com.marketinghub.gerasalespage.v1.service.retry.StageRetryView;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +46,19 @@ public class GeraSalesPageController {
   @PostMapping("/experiments/{experimentId}/gerasalespage/v1/rebuild")
   public ResponseEntity<GeraSalesPageStartResponse> rebuild(@PathVariable Long experimentId) {
     return ResponseEntity.accepted().body(service.rebuild(experimentId));
+  }
+
+  /** Expõe a disponibilidade de retomada da última etapa sem disparar consumo de IA. */
+  @GetMapping("/experiments/{experimentId}/gerasalespage/v1/stage-recovery")
+  public StageRetryView stageRecovery(@PathVariable Long experimentId) {
+    return service.retryView(experimentId);
+  }
+
+  /** Solicita uma única retomada técnica preservando o histórico da tentativa original. */
+  @PostMapping("/experiments/{experimentId}/gerasalespage/v1/stage-recovery")
+  public StageRetryView retryStage(
+      @PathVariable Long experimentId, @Valid @RequestBody StageRetryRequest request) {
+    return service.retry(experimentId, request.failedJobId());
   }
 
   /** Lista as versões publicadas da página com prompts e schemas usados em cada versão. */

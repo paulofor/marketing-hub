@@ -112,3 +112,18 @@ Janela e integralidade do reembolso não são presumidas. Dados técnicos ou fon
 incompletas não viram promessas. Uma página que já exibiu um campo corretamente
 não garante que a próxima síntese o conservará; validar esses compromissos mesmo
 quando os esclarecimentos de briefing e recebedor estiverem presentes.
+
+### Retomada de transporte sem regenerar etapas (2026-09-21)
+
+`GET/POST /api/experiments/{id}/gerasalespage/v1/stage-recovery` permite retomar apenas
+uma última tentativa com falha de transporte classificada, sem resposta, identificador de
+resposta, tokens ou custo conhecido. Ausência desses dados não significa consumo zero.
+A tela informa o consumo desconhecido e solicita confirmação para a nova chamada.
+
+O backend confere modelo, template, schema, todos os campos do experimento e saídas anteriores
+contra o prompt persistido. Divergência, entrada não verificável, antecessor incompleto ou
+reprovação funcional bloqueiam. A conferência se repete antes de entregar a fila ao executor.
+A nova tentativa referencia a original, sem sobrescrever erro, custos ou etapas concluídas.
+Comandos administrativos compartilham lock no experimento; repetir o mesmo comando devolve
+a mesma tentativa. O worker continua pelo `pending` oficial e o backend decide o avanço.
+Não há retentativa paga automática nem alteração do gate comercial.

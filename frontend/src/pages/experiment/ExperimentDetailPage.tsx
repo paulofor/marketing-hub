@@ -1,3 +1,4 @@
+import SalesPageStageRecovery from "./SalesPageStageRecovery";
 import ExperimentCampaignResumptionPanel from "./ExperimentCampaignResumptionPanel";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
@@ -2592,6 +2593,7 @@ export default function ExperimentDetailPage() {
                 </button>
               </div>
             </div>
+            <SalesPageStageRecovery experimentId={data.id} />
             {geraSalesPagePublications.isLoading ? (
               <div className="text-muted small mt-3">
                 Carregando auditoria da página...

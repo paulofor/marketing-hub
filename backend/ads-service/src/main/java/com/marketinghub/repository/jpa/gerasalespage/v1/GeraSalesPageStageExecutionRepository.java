@@ -12,6 +12,10 @@ public interface GeraSalesPageStageExecutionRepository
   /** Busca uma execução pelo identificador técnico do job. */
   Optional<GeraSalesPageStageExecution> findTopByIdJobOrderByExecutionRequestedAtDesc(String idJob);
 
+  /** Busca somente a última tentativa para não carregar auditorias históricas na tela. */
+  Optional<GeraSalesPageStageExecution> findTopByExperimentIdOrderByExecutionRequestedAtDesc(
+      Long experimentId);
+
   /** Busca a execução mais recente da etapa dentro do experimento. */
   Optional<GeraSalesPageStageExecution>
       findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(

@@ -1,0 +1,49 @@
+openapi: 3.0.3
+info:
+  title: GeraSalesPage v1 — retomada da etapa interrompida
+  version: v1
+paths:
+  /api/experiments/{experimentId}/gerasalespage/v1/stage-recovery:
+    parameters:
+      - in: path
+        name: experimentId
+        required: true
+        schema: {type: integer, format: int64}
+    get:
+      summary: Confere última tentativa, antecessores, transporte e identidade das entradas sem consumo de IA
+      responses:
+        '200':
+          description: Disponibilidade, etapa, status, idJob e motivo determinados pelo backend
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/StageRetryView'}
+    post:
+      summary: Retoma somente a etapa técnica conferida, com lock no experimento e histórico preservado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [failedJobId]
+              properties:
+                failedJobId: {type: string, minLength: 1}
+      responses:
+        '200':
+          description: Nova tentativa ou a mesma retomada já solicitada; sem duplicar etapas concluídas
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/StageRetryView'}
+        '400': {description: Identificador ausente}
+        '409': {description: Geração mudou, resultado conhecido, falha funcional ou entrada incompatível}
+components:
+  schemas:
+    StageRetryView:
+      type: object
+      required: [available, reason]
+      properties:
+        idJob: {type: string, nullable: true}
+        stageCode: {type: string, nullable: true}
+        status: {type: string, nullable: true}
+        available: {type: boolean}
+        reason: {type: string}

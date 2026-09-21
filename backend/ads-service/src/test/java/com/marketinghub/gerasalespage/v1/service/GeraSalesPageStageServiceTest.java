@@ -143,7 +143,7 @@ class GeraSalesPageStageServiceTest {
             .executionRequestedAt(Instant.now().minusSeconds(60))
             .build();
 
-    when(experimentRepository.findById(53L)).thenReturn(Optional.of(experiment));
+    when(experimentRepository.findForSalesPageRecovery(53L)).thenReturn(Optional.of(experiment));
     when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(53L))
         .thenReturn(List.of(previous));
     AiPromptSchemaTemplate activeTemplate = template(GeraSalesPageStageCode.OFFER_BRIEF.code());
@@ -185,7 +185,7 @@ class GeraSalesPageStageServiceTest {
         LeadPortalFlow.builder().id(39L).slug("decoraia-express-exp-57").approved(true).build());
     completeCommercialContract(experiment);
 
-    when(experimentRepository.findById(57L)).thenReturn(Optional.of(experiment));
+    when(experimentRepository.findForSalesPageRecovery(57L)).thenReturn(Optional.of(experiment));
     AiPromptSchemaTemplate activeTemplate = template(GeraSalesPageStageCode.OFFER_BRIEF.code());
     when(templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(
             "gera-sales-page-v1", GeraSalesPageStageCode.OFFER_BRIEF.code()))
@@ -211,7 +211,7 @@ class GeraSalesPageStageServiceTest {
     experiment.setId(58L);
     experiment.setFollowUpActionUrl("#checkout");
     completeCommercialContract(experiment);
-    when(experimentRepository.findById(58L)).thenReturn(Optional.of(experiment));
+    when(experimentRepository.findForSalesPageRecovery(58L)).thenReturn(Optional.of(experiment));
 
     org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.start(58L))
         .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
@@ -227,7 +227,7 @@ class GeraSalesPageStageServiceTest {
     experiment.setCommercialCheckoutUrl(
         "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=kit-89");
     completeCommercialContract(experiment);
-    when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment));
+    when(experimentRepository.findForSalesPageRecovery(89L)).thenReturn(Optional.of(experiment));
     AiPromptSchemaTemplate activeTemplate = template(GeraSalesPageStageCode.OFFER_BRIEF.code());
     when(templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(
             "gera-sales-page-v1", GeraSalesPageStageCode.OFFER_BRIEF.code()))
@@ -324,7 +324,7 @@ class GeraSalesPageStageServiceTest {
     experiment.setId(56L);
     experiment.setFollowUpActionUrl(
         "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=abc");
-    when(experimentRepository.findById(56L)).thenReturn(Optional.of(experiment));
+    when(experimentRepository.findForSalesPageRecovery(56L)).thenReturn(Optional.of(experiment));
 
     org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.rebuild(56L))
         .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)

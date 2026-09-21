@@ -9,6 +9,8 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentAiPromptSchemaUsageService;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
+import com.marketinghub.gerasalespage.v1.service.retry.GeraSalesPageRetryPolicy;
+import com.marketinghub.gerasalespage.v1.service.retry.StageRetryView;
 import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.product.Product;
 import com.marketinghub.productai.ProductAiSubtype;
@@ -24,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -39,6 +42,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class GeraSalesPageStageService {
   private static final Logger log = LoggerFactory.getLogger(GeraSalesPageStageService.class);
   private static final String PIPELINE_CODE = "gera-sales-page-v1";
+  private static final String RETRY_PREFIX = "Retomada técnica da execução: ";
   private static final String STATUS_STARTED = "INICIADO";
   private static final String STATUS_PROCESSING = "EM_PROCESSAMENTO";
   private static final String STATUS_WAITING_OPENAI = "AGUARDANDO_RETORNO_OPENAI";
@@ -83,7 +87,7 @@ public class GeraSalesPageStageService {
   public GeraSalesPageStartResponse start(Long experimentId) {
     Experiment experiment =
         experimentRepository
-            .findById(experimentId)
+            .findForSalesPageRecovery(experimentId)
             .orElseThrow(
                 () -> new EntityNotFoundException("Experiment not found: " + experimentId));
     validateCommercialContract(experiment);
@@ -99,7 +103,7 @@ public class GeraSalesPageStageService {
   public GeraSalesPageStartResponse rebuild(Long experimentId) {
     Experiment experiment =
         experimentRepository
-            .findById(experimentId)
+            .findForSalesPageRecovery(experimentId)
             .orElseThrow(
                 () -> new EntityNotFoundException("Experiment not found: " + experimentId));
     validateCommercialContract(experiment);
@@ -121,14 +125,142 @@ public class GeraSalesPageStageService {
         experimentId, execution.getStageCode(), idJobText(execution), execution.getStatus());
   }
 
-  /** Lista pendências de uma etapa e inclui prompt/schema ativo do banco no contrato do worker. */
+  /** Informa a última tentativa e o motivo auditável para permitir ou bloquear sua retomada. */
   @Transactional(readOnly = true)
+  public StageRetryView retryView(Long experimentId) {
+    Experiment experiment =
+        experimentRepository
+            .findById(experimentId)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Experiment not found: " + experimentId));
+    return executionRepository
+        .findTopByExperimentIdOrderByExecutionRequestedAtDesc(experimentId)
+        .map(execution -> retryView(experiment, execution))
+        .orElseGet(
+            () -> new StageRetryView(null, null, null, false, "Nenhuma geração solicitada."));
+  }
+
+  /** Serializa a retomada da tentativa exata, preservando etapas concluídas e a falha original. */
+  @Transactional
+  public StageRetryView retry(Long experimentId, String failedJobId) {
+    Experiment experiment =
+        experimentRepository
+            .findForSalesPageRecovery(experimentId)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Experiment not found: " + experimentId));
+    var latest =
+        executionRepository
+            .findTopByExperimentIdOrderByExecutionRequestedAtDesc(experimentId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.CONFLICT, "Nenhuma geração solicitada."));
+    if ((RETRY_PREFIX + failedJobId).equals(latest.getErrorDetail())
+        || Objects.toString(latest.getErrorDetail(), "")
+            .startsWith(RETRY_PREFIX + failedJobId + "\n")) {
+      return new StageRetryView(
+          latest.getIdJob(),
+          latest.getStageCode(),
+          latest.getStatus(),
+          false,
+          "Retomada já registrada. Acompanhe esta mesma tentativa; nenhuma solicitação duplicada foi criada.");
+    }
+    if (!latest.getIdJob().equals(failedJobId))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A geração mudou. Atualize a tela antes de solicitar a retomada.");
+    validateCommercialContract(experiment);
+    validateCheckoutUrl(experiment);
+    var view = retryView(experiment, latest);
+    if (!view.available()) throw new ResponseStatusException(HttpStatus.CONFLICT, view.reason());
+    var retry = createNewExecution(experimentId, latest.getStageCode());
+    retry.setPrompt(latest.getPrompt());
+    retry.setPromptMarkdownContent(latest.getPromptMarkdownContent());
+    retry.setSchemaJson(latest.getSchemaJson());
+    retry.setOpenAiModel(latest.getOpenAiModel());
+    retry.setErrorDetail(RETRY_PREFIX + failedJobId);
+    executionRepository.save(retry);
+    log.info(
+        "GeraSalesPage: retomada técnica solicitada. experimentId={} failedJobId={} retryJobId={} stage={}",
+        experimentId,
+        failedJobId,
+        retry.getIdJob(),
+        retry.getStageCode());
+    return new StageRetryView(
+        retry.getIdJob(),
+        retry.getStageCode(),
+        retry.getStatus(),
+        false,
+        "Retomada solicitada somente para a etapa interrompida. Etapas anteriores e histórico preservados.");
+  }
+
+  /** Confere a classificação da falha, todos os antecessores e a identidade da entrada enviada. */
+  private StageRetryView retryView(Experiment experiment, GeraSalesPageStageExecution execution) {
+    String reason =
+        switch (Objects.toString(execution.getStatus(), "")) {
+          case STATUS_STARTED ->
+              "Etapa na fila. Acompanhe esta tentativa; não é necessário refazer a página.";
+          case STATUS_PROCESSING, STATUS_WAITING_OPENAI ->
+              "Etapa em processamento. Aguarde o resultado desta tentativa.";
+          case STATUS_COMPLETED ->
+              "Geração concluída. Confira a versão publicada e continue pelo processo corrente.";
+          default ->
+              "A última etapa não possui falha de transporte recuperável sem resposta. Corrija o bloqueio indicado na auditoria.";
+        };
+    boolean available = false;
+    if (GeraSalesPageRetryPolicy.transportFailureWithoutResult(execution)) {
+      var previous = previousStageOutputs(experiment.getId());
+      var codes = GeraSalesPageStageCode.orderedCodes();
+      int index = codes.indexOf(execution.getStageCode());
+      boolean predecessorsComplete =
+          index >= 0 && codes.subList(0, index).stream().allMatch(previous::containsKey);
+      if (predecessorsComplete
+          && GeraSalesPageRetryPolicy.sameInputs(
+              execution,
+              loadTemplate(execution.getStageCode()),
+              experimentPayload(experiment),
+              previous,
+              objectMapper)) {
+        available = true;
+        reason =
+            "Conexão interrompida sem resposta recuperável. A retomada usa as mesmas entradas e preserva as etapas concluídas. Uma nova chamada de IA pode ter custo; o consumo da tentativa interrompida não foi informado.";
+      } else {
+        reason =
+            "Entradas ou etapas anteriores estão incompletas, alteradas ou sem comprovação de compatibilidade. Confira a origem antes de solicitar nova geração; nenhuma chamada de IA foi feita.";
+      }
+    }
+    return new StageRetryView(
+        execution.getIdJob(), execution.getStageCode(), execution.getStatus(), available, reason);
+  }
+
+  /**
+   * Bloqueia retomada cuja entrada mudou depois da solicitação, antes de entregar trabalho ao
+   * executor.
+   */
+  private boolean retryInputsStillValid(
+      GeraSalesPageStageExecution execution, AiPromptSchemaTemplate template) {
+    if (execution.getErrorDetail() == null || !execution.getErrorDetail().startsWith(RETRY_PREFIX))
+      return true;
+    if (GeraSalesPageRetryPolicy.sameInputs(
+        execution,
+        template,
+        experimentPayload(execution.getExperiment()),
+        previousStageOutputs(execution.getExperimentId()),
+        objectMapper)) return true;
+    execution.setStatus(STATUS_FAILED);
+    execution.setErrorMessage("Entrada alterada após solicitar retomada; chamada de IA bloqueada.");
+    executionRepository.save(execution);
+    return false;
+  }
+
+  /** Revalida retomadas e entrega pendências válidas com prompt/schema ativo ao worker. */
+  @Transactional
   public List<GeraSalesPagePendingResponse> pending(String stageCode) {
     validateStage(stageCode);
     AiPromptSchemaTemplate template = loadTemplate(stageCode);
     return executionRepository
         .findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(stageCode, STATUS_STARTED)
         .stream()
+        .filter(execution -> retryInputsStillValid(execution, template))
         .map(execution -> toPendingResponse(execution, template))
         .toList();
   }
@@ -156,14 +288,20 @@ public class GeraSalesPageStageService {
     executionRepository.save(execution);
   }
 
-  /** Salva resposta ou falha da etapa e enfileira a próxima etapa quando houver sucesso. */
+  /**
+   * Preserva resposta, falha e origem da retomada; enfileira a próxima etapa somente no sucesso.
+   */
   @Transactional
   public void receiveResult(String idJob, GeraSalesPageResultRequest payload) {
     GeraSalesPageStageExecution execution = findExecution(idJob);
     if (StringUtils.hasText(payload.errorMessage())) {
       execution.setStatus(STATUS_FAILED);
       execution.setErrorMessage(payload.errorMessage());
-      execution.setErrorDetail(payload.errorDetail());
+      String retryOrigin = Objects.toString(execution.getErrorDetail(), "");
+      execution.setErrorDetail(
+          retryOrigin.startsWith(RETRY_PREFIX)
+              ? retryOrigin.split("\n", 2)[0] + "\n" + Objects.toString(payload.errorDetail(), "")
+              : payload.errorDetail());
     } else {
       execution.setStatus(STATUS_COMPLETED);
       execution.setModelResponse(payload.modelResponse());

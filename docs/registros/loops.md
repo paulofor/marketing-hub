@@ -6629,3 +6629,17 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   passa a preservar também compromissos estruturados de entrega/suporte/reembolso;
   a regressão cobre valores distintos, singular/plural e dados malformados sem
   inventar prazo. A recuperação histórica continua sem modificar HTML silenciosamente.
+
+## LOOP-GERASALESPAGE-TRANSPORTE-SEM-RETOMADA — falha final exige refazer etapas válidas
+
+- **Evidência (2026-09-21):** seis etapas concluídas e revisão aprovada, seguidas de
+  `WebClientRequestException: Connection reset by peer` no POST do pacote final. Sem resposta
+  ou ID recuperável no banco/log. A tela só oferecia reconstrução integral ou republicação antiga.
+- **Causa:** contrato administrativo sem retomada da última etapa técnica; `start` reutilizava
+  apenas a primeira etapa e `rebuild` substituía todas. Repetição integral aumenta consumo sem
+  corrigir o transporte nem aproveitar o trabalho válido.
+- **Correção:** retomada explícita pela tela com comparação integral das entradas, bloqueio de
+  resultado já conhecido, lock/idempotência e revalidação antes do `pending`. Erro original e
+  custos preservados. Consumo sem resposta permanece desconhecido, nunca zero.
+- **Prevenção:** testes de fluxo HTTP→service→fila→retorno, produtos independentes, entradas
+  alteradas, reprovação funcional, resposta existente e repetição do comando; interface móvel.

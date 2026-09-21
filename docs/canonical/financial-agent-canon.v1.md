@@ -41,6 +41,11 @@ de IA: deve cobrir a entrega contratada, inclusive o uso posterior, e os custos 
   pode classificar `COMPLETE_AGGREGATE` sem inventar a decomposição. CAC e custo fixo permanecem
   separados; fonte contraditória, cobertura parcial ou custo essencial fora do envelope exige
   `INCOMPLETE`. Personalização com IA não prova, isoladamente, chamada paga por cliente.
+- Quando `fixedOperationalCostBrl` for preservado como envelope oficial da mesma versão, Plutus
+  pode cobrir agregadamente a infraestrutura e os demais custos operacionais fixos do período sem
+  declarar sua decomposição como zero. A lacuna do ledger realizado permanece na conciliação, mas
+  não invalida sozinha o envelope planejado vigente. Divergência de valor, versão, fonte ou período
+  continua bloqueante.
 - No parecer Opala, `variableCostPerSaleBrl` exclui CAC e `contributionPerSaleBrl` representa a
   contribuição antes da aquisição, calculada pelo cenário-base determinístico. `maxCacBrl`
   permanece um limite separado; contribuição e margem após CAC ficam no cenário do plano. É
@@ -94,6 +99,14 @@ Na projeção financeira de produto v2, as decisões são `APPROVE`, `ADJUST` e 
 nenhuma fonte essencial ausente. `READY_FOR_ANALYSIS` autoriza apenas a avaliação de Plutus e
 nunca equivale a aprovação, venda comprovada ou autorização de gasto.
 
+Na projeção v3, o backend executa preflight antes do modelo e envia `projectionBasis` com meta
+condicional, contrato de entrega, envelopes, tratamento dos custos históricos e sensibilidades
+determinísticas. O cenário-base pode usar uma meta comercial explicitamente persistida para medir
+viabilidade, sem tratá-la como previsão. Custos realizados de período encerrado entram na recuperação
+acumulada; investimento incremental zero só vale ao reutilizar a versão existente sem nova produção
+ou gasto. Contrato de pacote fixo usa a entrega integral como limite `INTENSIVE`; uso aberto continua
+exigindo quota. Ausência ou contradição nesses campos bloqueia antes de consumir Plutus.
+
 Esta decisão atualiza o cânone e os prompts consumidos pelos executores e pelo AIHUB. Não cria
 novos agendamentos, etapas BPM ou um bloqueio automático transversal de vendas nesta revisão.
 A homologação de cada produto deve comprovar suas travas de consumo antes da ativação; ausência
@@ -104,7 +117,9 @@ de contrato executável precisa ficar explícita, não pode ser declarada resolv
 - O backend congela planejamento, campanha, custos de IA/vídeo, demais custos atribuídos e receita aprovada.
 - O executor consome somente o endpoint `pending` e opera com Codex em sandbox `read-only`.
 - A v1 não movimenta dinheiro, compra créditos, altera preço, orçamento, campanha, publicação ou status comercial.
-- Reembolsos e infraestrutura ausentes devem aparecer como lacuna de fonte, nunca como zero confirmado.
+- Reembolsos e infraestrutura ausentes na reconciliação devem aparecer como lacuna de fonte, nunca
+  como zero confirmado. Na projeção, um envelope vigente pode cobrir essas parcelas agregadamente,
+  mantendo a lacuna de realizado separada e sem dupla dedução.
 - Projeções, impactos estimados, pedidos, checkouts e PRs nunca contam como receita.
 - Projeções de receita devem consumir as premissas financeiras estruturadas e versionadas do Plano Comercial. Ausência de preço, custo variável, tráfego, conversão, CAC, reembolso ou custo fixo deve aparecer como limitação explícita, sem inferência silenciosa.
 - Toda nova geração manual de imagem ou projeto de vídeo do Estúdio exige produto e plano comercial; experimento é opcional e deve pertencer ao plano quando informado. Tentativas legadas ou excepcionalmente sem plano nunca podem desaparecer: entram no ledger como custo sem atribuição. Por decisão comercial de 2026-08-12, tentativas anteriores a 2026-08-13 cujo custo é irrecuperável são encerradas contabilmente em USD 0, com evidência `USER_ASSUMED_ZERO_LEGACY_20260812`; custos conhecidos não podem ser zerados. A exceção não se aplica a nenhuma tentativa nova.
@@ -153,7 +168,7 @@ Decisões permitidas: `RECONCILED`, `REVIEW_REQUIRED` e `BLOCKED_BY_MISSING_SOUR
 
 O módulo executor é `financial-agent-worker`. Prompt e schema ficam versionados em
 `src/main/resources/prompts/financial-agent/`; contratos históricos permanecem em `v1` e a
-projeção de produto com decisão/cobertura usa `v2`. A imagem de produção deve ser construída
+projeção de produto com preflight e decisão/cobertura usa `v3`; a `v2` permanece histórica. A imagem de produção deve ser construída
 exclusivamente pelo Dockerfile e Compose do repositório. O workflow dedicado testa, reconstrói,
 reinicia e valida o login do Codex no VPS. O backend permanece fonte de verdade e o worker não
 acessa o banco.

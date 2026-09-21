@@ -33,6 +33,18 @@ final class FinancialPlanPreparation {
                     + ":variableCostPerSaleBrl",
                 today)
             : null;
+    var fixedCostEnvelope =
+        aggregate && plan.getFixedOperationalCostBrl() != null
+            ? new FixedCostEnvelope(
+                plan.getFixedOperationalCostBrl(),
+                FixedCostCoverage.ALL_FIXED_OPERATIONAL_COSTS_FOR_PERIOD,
+                "commercial-plan:"
+                    + plan.getId()
+                    + "@v"
+                    + request.commercialPlanVersion()
+                    + ":fixedOperationalCostBrl",
+                today)
+            : null;
     var ai = source == null ? emptyAi(null) : source.ai();
     if (!request.personalizedAi()) {
       ai =
@@ -124,7 +136,11 @@ final class FinancialPlanPreparation {
             + " O suporte não altera prazo de acesso nem contratos vendidos."
             + " O período econômico é distinto do suporte; quando ausente, a proposta inicial é 30 dias."
             + (aggregate
-                ? " O custo variável por venda do plano comercial foi preservado como envelope agregado de todos os custos variáveis, exceto CAC; seus componentes continuam desconhecidos e não foram preenchidos com zero. Plutus deve conferir a cobertura antes de aprovar."
+                ? " O custo variável por venda do plano comercial foi preservado como envelope agregado;"
+                    + (fixedCostEnvelope == null
+                        ? " o custo fixo continua pendente de fonte."
+                        : " o custo fixo por período também foi preservado como envelope agregado.")
+                    + " Seus componentes continuam desconhecidos e não foram preenchidos com zero. Plutus deve conferir a cobertura antes de aprovar."
                 : "")
             + (!request.personalizedAi()
                 ? " Sem IA variável: tentativas e tarifa zero; unidade é o pacote quando não definida."
@@ -143,7 +159,8 @@ final class FinancialPlanPreparation {
             : plan.getExpectedCacBrl(),
         scenarios,
         new Preparation(request.supportDays(), request.personalizedAi()),
-        variableCostEnvelope);
+        variableCostEnvelope,
+        fixedCostEnvelope);
   }
 
   /**

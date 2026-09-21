@@ -48,6 +48,11 @@ class FinancialPlanCalculatorTest {
         .put("coverage", "ALL_VARIABLE_COSTS_EXCLUDING_CAC")
         .put("sourceReference", "commercial-plan:9@v4:variableCostPerSaleBrl")
         .put("checkedOn", "2026-09-20");
+    p.putObject("fixedCostEnvelope")
+        .put("amountPerPeriodBrl", 100)
+        .put("coverage", "ALL_FIXED_OPERATIONAL_COSTS_FOR_PERIOD")
+        .put("sourceReference", "commercial-plan:9@v4:fixedOperationalCostBrl")
+        .put("checkedOn", "2026-09-20");
     return p;
   }
 

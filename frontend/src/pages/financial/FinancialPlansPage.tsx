@@ -420,6 +420,15 @@ function PlanWorkspace({
                   conferir a cobertura.
                 </p>
               )}
+              {selected.assumptions.fixedCostEnvelope && (
+                <p>
+                  Custo fixo agregado do período:{" "}
+                  {money(
+                    selected.assumptions.fixedCostEnvelope.amountPerPeriodBrl,
+                  )}
+                  . A composição permanece no envelope oficial do plano.
+                </p>
+              )}
               {selected.commercialPlanId && (
                 <p>
                   Plano comercial #{selected.commercialPlanId} · versão{" "}
@@ -458,6 +467,14 @@ function PlanWorkspace({
                     {selected.assumptions.variableCostEnvelope.sourceReference}
                     {" · conferência: "}
                     {selected.assumptions.variableCostEnvelope.checkedOn}.
+                  </p>
+                )}
+                {selected.assumptions.fixedCostEnvelope && (
+                  <p style={{ overflowWrap: "anywhere" }}>
+                    Envelope fixo:{" "}
+                    {selected.assumptions.fixedCostEnvelope.sourceReference}
+                    {" · conferência: "}
+                    {selected.assumptions.fixedCostEnvelope.checkedOn}.
                   </p>
                 )}
                 {selected.assumptions.ai.currency === "USD" && (
@@ -708,6 +725,10 @@ function PlanEditor({
           copyingType || data.get("replaceVariableCostEnvelope") === "true"
             ? null
             : (a?.variableCostEnvelope ?? null),
+        fixedCostEnvelope:
+          copyingType || data.get("replaceFixedCostEnvelope") === "true"
+            ? null
+            : (a?.fixedCostEnvelope ?? null),
         ai: {
           currency: text("currency") as "BRL" | "USD",
           providerModel: text("providerModel") || null,
@@ -924,6 +945,22 @@ function PlanEditor({
                   value="true"
                 />
                 Substituir o envelope pela decomposição detalhada desta revisão
+              </label>
+            </div>
+          )}
+          {a?.fixedCostEnvelope && (
+            <div className="alert alert-secondary">
+              O custo fixo agregado de{" "}
+              {money(a.fixedCostEnvelope.amountPerPeriodBrl)} está vinculado à
+              versão comercial e evita tratar sua composição como zero.
+              <label className="d-block mt-2">
+                <input
+                  className="form-check-input me-2"
+                  type="checkbox"
+                  name="replaceFixedCostEnvelope"
+                  value="true"
+                />
+                Substituir o envelope fixo pela premissa detalhada desta revisão
               </label>
             </div>
           )}

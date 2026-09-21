@@ -157,6 +157,7 @@ class OpalaCommercialFinancialPlanTest {
                 new Scenario(ScenarioCode.BASE, 5, 0, new BigDecimal("15")),
                 new Scenario(ScenarioCode.OPTIMISTIC, 8, 0, new BigDecimal("10"))),
             null,
+            null,
             null);
     var scenario =
         new PlanEvaluation.ScenarioResult(
@@ -193,7 +194,8 @@ class OpalaCommercialFinancialPlanTest {
               assumptions.maximumCacBrl(),
               assumptions.scenarios(),
               assumptions.preparation(),
-              assumptions.variableCostEnvelope());
+              assumptions.variableCostEnvelope(),
+              assumptions.fixedCostEnvelope());
     var mapper = new ObjectMapper().findAndRegisterModules();
     var plan = new FinancialPlanRevision();
     plan.setId(81L);

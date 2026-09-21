@@ -27,6 +27,12 @@ export interface PlanAssumptions {
     sourceReference: string;
     checkedOn: string;
   } | null;
+  fixedCostEnvelope?: {
+    amountPerPeriodBrl: number;
+    coverage: "ALL_FIXED_OPERATIONAL_COSTS_FOR_PERIOD";
+    sourceReference: string;
+    checkedOn: string;
+  } | null;
   productVersion: string | null;
   periodDays: number | null;
   validUntil: string;

@@ -46,7 +46,9 @@ test("captura página completa, dobras mobile e identidade pública com pixels r
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "psique-visual-"));
   const server = http.createServer((request, response) => {
     if (request.url === "/version-diagnostics.json") {
-      response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      response.writeHead(200, {
+        "content-type": "application/json; charset=utf-8",
+      });
       response.end(
         JSON.stringify({
           version: "v8",
@@ -61,15 +63,18 @@ test("captura página completa, dobras mobile e identidade pública com pixels r
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     const sections = Array.from(
       { length: 12 },
-      (_, index) => `<section><h2>Dobra ${index + 1}</h2><p>Prova visual contínua da jornada.</p>${
-        index === 0
-          ? "<button>Começar meu ajuste gratuito</button><p>Acesso por 90 dias, sem assinatura ou renovação.</p>"
-          : ""
-      }</section>`,
+      (_, index) =>
+        `<section><h2>Dobra ${index + 1}</h2><p>Prova visual contínua da jornada.</p>${
+          index === 0
+            ? "<button>Começar meu ajuste gratuito</button><p>Acesso por 90 dias, sem assinatura ou renovação.</p>"
+            : ""
+        }</section>`,
     ).join("");
     response.end(`<!doctype html>
       <html lang="pt-BR"><head><title>Jornada de homologação</title>
       <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="mh-publication-source-sha256" content="${"c".repeat(64)}">
+      <meta name="mh-served-html-sha256" content="${"e".repeat(64)}">
       <style>*{box-sizing:border-box}html,body{margin:0}section{height:852px;padding:48px;font:24px sans-serif}section:nth-child(odd){background:#f6f1ff}a{display:inline-block;padding:18px;background:#5f246e;color:white}</style>
       </head><body>${sections}</body></html>`);
   });
@@ -101,6 +106,8 @@ test("captura página completa, dobras mobile e identidade pública com pixels r
       frontendSourceSha256: "a".repeat(64),
       imageTag: "pde-platform-frontend-v8:test",
       commitSha: "test-commit",
+      publicationSourceSha256: "c".repeat(64),
+      servedHtmlSha256: "e".repeat(64),
     });
     assert.deepEqual(capture.pages[0].viewport, {
       width: 393,
@@ -142,6 +149,58 @@ test("captura página completa, dobras mobile e identidade pública com pixels r
     assert.deepEqual(pngDimensions(firstFoldPixels), {
       width: 1179,
       height: 2556,
+    });
+  } finally {
+    server.close();
+    await once(server, "close");
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("preserva identidade do HTML quando o host não publica diagnóstico PDE em JSON", async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "psique-quartzo-"));
+  const sourceHash = "d".repeat(64);
+  const server = http.createServer((request, response) => {
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    if (request.url === "/version-diagnostics.json") {
+      response.end("<!doctype html><html><body>Lead Portal</body></html>");
+      return;
+    }
+    response.end(`<!doctype html><html><head>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="mh-publication-source-sha256" content="${sourceHash}">
+      <meta name="mh-served-html-sha256" content="${"e".repeat(64)}">
+      <style>body{margin:0;font:20px sans-serif}main{min-height:852px;padding:32px}</style>
+      </head><body><main><h1>Kit auditado</h1><button>Comprar</button></main></body></html>`);
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.equal(typeof address, "object");
+  const input = path.join(directory, "input.json");
+  const output = path.join(directory, "output.json");
+  const evidence = path.join(directory, "evidence");
+  await fs.writeFile(
+    input,
+    JSON.stringify({
+      sourceUrl: `http://127.0.0.1:${address.port}/kit`,
+      captureSessionId: "capture-session-quartzo",
+    }),
+  );
+  try {
+    const result = await runCapture(input, output, evidence, {
+      CUSTOMER_AGENT_VISUAL_TEST_MODE: "true",
+    });
+    assert.equal(result.code, 0, result.log);
+    const capture = JSON.parse(await fs.readFile(output, "utf8"));
+    assert.deepEqual(capture.pages[0].runtimeIdentity, {
+      version: null,
+      experienceVersion: null,
+      frontendSourceSha256: null,
+      imageTag: null,
+      commitSha: null,
+      publicationSourceSha256: sourceHash,
+      servedHtmlSha256: "e".repeat(64),
     });
   } finally {
     server.close();

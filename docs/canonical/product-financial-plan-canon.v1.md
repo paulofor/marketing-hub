@@ -37,6 +37,12 @@ taxas, reembolso, suporte, entrega e IA não são deduzidos novamente; Plutus de
 cobertura antes de aprovar. Escolher IA não confirma provedor, tarifa nem consumo. Escolher sem
 IA declara somente ausência de geração personalizada, preservando os custos iniciais de produção.
 
+Decisão complementar de 21/09/2026: `fixedOperationalCostBrl` da mesma versão comercial também
+pode ser preservado como envelope de todos os custos operacionais fixos do período, com valor,
+cobertura, fonte e data de conferência. Sua composição não vira zero e o valor usado no cálculo
+deve coincidir com o envelope. A cobertura incompleta da reconciliação realizada continua visível,
+mas não substitui silenciosamente o envelope de planejamento vigente nem provoca nova dedução.
+
 Suporte e período da projeção são conceitos separados. A sugestão de suporte não modifica
 silenciosamente custos, prazo de acesso ou período econômico já cadastrado. Quando ainda
 não há período econômico, a preparação propõe trinta dias, com a premissa registrada.
@@ -47,11 +53,25 @@ backend; salvar as duas escolhas não autoriza gasto, publicação nem aprovaç�
 Antes de salvar, o backend reconfere revisão e versão comercial. Concorrência exige
 recarregar; produtos, ambientes e versões não compartilham premissas automaticamente.
 
-Quando preço, CAC, envelope variável, custo fixo, fonte e validade são suficientes, mas margem
+Quando preço, CAC, envelopes variável e fixo, fontes e validade são suficientes, mas margem
 mínima e cenários ainda dependem do parecer, a revisão fica `READY_FOR_ANALYSIS`. Esse estado só
 libera Plutus: não significa `PROJECTED_VIABLE`. O parecer deve registrar decisão e cobertura;
 somente `APPROVE` com cobertura agregada ou detalhada completa pode atender ao gate econômico.
 `ADJUST`, `BLOCKED`, contribuição não positiva ou fonte essencial ausente preservam o bloqueio.
+
+Antes da chamada paga, o backend deve estruturar e validar a base da projeção. Ela inclui a unidade
+fixa de entrega do contrato, a meta comercial condicional, os dois envelopes, o tratamento temporal
+dos custos realizados e os cenários de sensibilidade. Meta não é previsão nem venda. Para reutilizar
+a versão já construída, o investimento incremental é zero somente no escopo que proíbe nova
+produção ou gasto; qualquer necessidade nova invalida o parecer. Custos históricos permanecem na
+visão de recuperação acumulada e nunca são cobrados novamente por venda.
+
+Sem previsão de demanda vigente, os três cenários podem usar limites determinísticos: o conservador
+testa uma venda abaixo do equilíbrio operacional, o base usa a meta comercial explícita e o
+otimista mede quantas vendas recuperam os custos históricos conhecidos. Essas sensibilidades medem
+viabilidade condicional, não probabilidade de atingir o volume. Divergência entre meta de vendas,
+receita-alvo e preço, contrato sem unidade fixa ou custo realizado sobreposto ao novo período deve
+bloquear antes do modelo, com ação explícita.
 
 ### Edição avançada e modelos por tipo
 
@@ -97,6 +117,11 @@ O backend calcula cenários conservador, base e otimista e acrescenta **uso inte
 as premissas conservadoras com todas as tentativas permitidas. A tela apenas apresenta os
 resultados. Percentuais de taxas, tributos, comissões e provisão de reembolso incidem sobre
 o preço bruto; tarifa fixa incide por pedido. Cada dedução entra uma única vez.
+
+Quando o produto vende um pacote fixo e o envelope variável cobre o pacote integral por cliente,
+uso intenso significa entregar todo o pacote contratado. Chamadas internas do executor não viram
+franquia do cliente e sua quantidade não é exigida como se houvesse uso aberto. Produto contínuo,
+ilimitado ou sem unidade contratual fixa continua exigindo quota e limite defensáveis.
 
 - Receita líquida projetada = preço menos deduções comerciais.
 - Contribuição antes de aquisição = receita líquida menos IA e custos variáveis de entrega.

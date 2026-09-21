@@ -189,18 +189,36 @@ try {
   await page.waitForTimeout(300);
 
   const runtimeIdentity = await page.evaluate(async () => {
-    const endpoint = new URL("/version-diagnostics.json", location.href);
-    const response = await fetch(endpoint, { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error(`Diagnóstico público retornou HTTP ${response.status}.`);
+    const publicationSourceSha256 =
+      document
+        .querySelector('meta[name="mh-publication-source-sha256"]')
+        ?.getAttribute("content") ?? null;
+    const servedHtmlSha256 =
+      document
+        .querySelector('meta[name="mh-served-html-sha256"]')
+        ?.getAttribute("content") ?? null;
+    let value = {};
+    try {
+      const endpoint = new URL("/version-diagnostics.json", location.href);
+      const response = await fetch(endpoint, { cache: "no-store" });
+      const contentType = response.headers.get("content-type") ?? "";
+      if (
+        response.ok &&
+        contentType.toLowerCase().includes("application/json")
+      ) {
+        value = await response.json();
+      }
+    } catch {
+      // A identidade do HTML publicado continua verificável sem diagnóstico de imagem PDE.
     }
-    const value = await response.json();
     return {
       version: value.version ?? null,
       experienceVersion: value.experienceVersion ?? null,
       frontendSourceSha256: value.frontendSourceSha256 ?? null,
       imageTag: value.imageTag ?? null,
       commitSha: value.commitSha ?? null,
+      publicationSourceSha256,
+      servedHtmlSha256,
     };
   });
 

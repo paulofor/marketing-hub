@@ -230,6 +230,8 @@ public class FinancialPlanService {
       p.setCommercialPlanVersion(currentVersion(request.commercialPlanId()));
       validateVariableCostEnvelope(
           request.assumptions(), request.commercialPlanId(), p.getCommercialPlanVersion());
+      validateFixedCostEnvelope(
+          request.assumptions(), request.commercialPlanId(), p.getCommercialPlanVersion());
       if (request.templateId() != null) {
         var template =
             revisions.findById(request.templateId()).orElseThrow(() -> missing("Modelo"));
@@ -245,7 +247,8 @@ public class FinancialPlanService {
       }
     } else if (request.commercialPlanId() != null
         || request.templateId() != null
-        || request.assumptions().variableCostEnvelope() != null) {
+        || request.assumptions().variableCostEnvelope() != null
+        || request.assumptions().fixedCostEnvelope() != null) {
       throw conflict("Modelo por tipo não recebe plano comercial nem parecer de outro produto.");
     }
     if (request.assumptions().ai().pricingCheckedOn() != null
@@ -254,6 +257,9 @@ public class FinancialPlanService {
     if (request.assumptions().variableCostEnvelope() != null
         && request.assumptions().variableCostEnvelope().checkedOn().isAfter(today()))
       throw conflict("A conferência do custo variável agregado não pode ter data futura.");
+    if (request.assumptions().fixedCostEnvelope() != null
+        && request.assumptions().fixedCostEnvelope().checkedOn().isAfter(today()))
+      throw conflict("A conferência do custo fixo agregado não pode ter data futura.");
     p.setAssumptionsJson(write(request.assumptions(), scope, scopeId));
     for (var prior : history) {
       if (Objects.equals(prior.getCommercialPlanId(), p.getCommercialPlanId())
@@ -285,6 +291,23 @@ public class FinancialPlanService {
       throw conflict(
           "Resolva as pendências antes de solicitar Plutus: "
               + String.join(" ", current.pendingActions()));
+    var product = products.findById(productId).orElseThrow(() -> missing("Produto"));
+    var commercialPlan =
+        plans.findById(p.getCommercialPlanId()).orElseThrow(() -> missing("Plano comercial"));
+    var projection =
+        FinancialProjectionContext.build(
+            product, commercialPlan, p.getCommercialPlanVersion(), current, json);
+    if (!projection.ready()) {
+      log.warn(
+          "Parecer financeiro bloqueado antes de Plutus productId={} financialPlanId={} revision={} blockers={}",
+          productId,
+          id,
+          p.getRevisionNumber(),
+          projection.blockers());
+      throw conflict(
+          "Complete as fontes antes de solicitar Plutus: "
+              + String.join(" ", projection.blockers()));
+    }
     var context = new LinkedHashMap<String, Object>();
     context.put("financialPlanId", p.getId());
     context.put("financialPlanRevision", p.getRevisionNumber());
@@ -293,6 +316,7 @@ public class FinancialPlanService {
     context.put("environment", environment.name());
     context.put("assumptions", current.assumptions());
     context.put("deterministicEvaluation", current.evaluation());
+    context.put("projectionBasis", projection.context());
     var request = new StartRevenueProjectionRequest(write(context, "PRODUCT", productId));
     if (!validator.validate(request).isEmpty())
       throw conflict(
@@ -439,6 +463,26 @@ public class FinancialPlanService {
         || plan.getVariableCostPerSaleBrl().compareTo(envelope.amountPerCustomerBrl()) != 0)
       throw conflict(
           "O envelope variável diverge do plano comercial vigente; recarregue as fontes.");
+  }
+
+  /** Vincula o envelope fixo ao campo e à versão oficiais sem presumir sua decomposição. */
+  private void validateFixedCostEnvelope(
+      PlanAssumptions assumptions, Long commercialPlanId, Integer commercialPlanVersion) {
+    var envelope = assumptions.fixedCostEnvelope();
+    if (envelope == null) return;
+    var plan = plans.findById(commercialPlanId).orElseThrow(() -> missing("Plano comercial"));
+    String expectedReference =
+        "commercial-plan:"
+            + commercialPlanId
+            + "@v"
+            + commercialPlanVersion
+            + ":fixedOperationalCostBrl";
+    if (!expectedReference.equals(envelope.sourceReference())
+        || plan.getFixedOperationalCostBrl() == null
+        || plan.getFixedOperationalCostBrl().compareTo(envelope.amountPerPeriodBrl()) != 0
+        || assumptions.costs().fixedPerPeriodBrl() == null
+        || assumptions.costs().fixedPerPeriodBrl().compareTo(envelope.amountPerPeriodBrl()) != 0)
+      throw conflict("O envelope fixo diverge do plano comercial vigente; recarregue as fontes.");
   }
 
   /** Usa a mesma referência UTC do backend para validade das premissas. */

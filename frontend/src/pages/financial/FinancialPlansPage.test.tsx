@@ -96,6 +96,12 @@ function aggregatePlan() {
     sourceReference: "commercial-plan:7@v1:variableCostPerSaleBrl",
     checkedOn: "2026-09-20",
   };
+  assumptions.fixedCostEnvelope = {
+    amountPerPeriodBrl: 73.2,
+    coverage: "ALL_FIXED_OPERATIONAL_COSTS_FOR_PERIOD",
+    sourceReference: "commercial-plan:7@v1:fixedOperationalCostBrl",
+    checkedOn: "2026-09-20",
+  };
   return {
     id: 91,
     scope: "PRODUCT",
@@ -302,12 +308,16 @@ describe("Plano financeiro", () => {
     );
   });
   it("expõe o envelope sem fingir decomposição e permite substituí-lo conscientemente", async () => {
-    mocks.history.data = [aggregatePlan()];
+    const plan = aggregatePlan();
+    mocks.history.data = [plan];
     mocks.mutation.mutateAsync.mockRejectedValue(new Error("fixture"));
     page();
     expect(
       screen.getByText(/Custo variável agregado por cliente/),
     ).toHaveTextContent("R$ 13,50");
+    expect(
+      screen.getByText(/Custo fixo agregado do período/),
+    ).toHaveTextContent("R$ 73,20");
     fireEvent.click(
       screen.getByRole("button", { name: "Editar premissas detalhadas" }),
     );
@@ -331,6 +341,9 @@ describe("Plano financeiro", () => {
       mocks.mutation.mutateAsync.mock.calls[0][0].assumptions
         .variableCostEnvelope,
     ).toBeNull();
+    expect(
+      mocks.mutation.mutateAsync.mock.calls[0][0].assumptions.fixedCostEnvelope,
+    ).toEqual(plan.assumptions.fixedCostEnvelope);
   });
   it("permite recuperar falha de sugestões sem exibir formulário financeiro extenso", () => {
     mocks.preparation.isError = true;

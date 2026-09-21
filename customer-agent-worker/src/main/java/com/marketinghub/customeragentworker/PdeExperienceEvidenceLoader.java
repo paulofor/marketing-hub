@@ -165,7 +165,8 @@ final class PdeExperienceEvidenceLoader {
     return new LiveVisualContract(
         requiredTextValues(contract, "requiredFirstFoldCtas"),
         requiredTextValues(contract, "requiredVisibleTexts"),
-        runtimeIdentity(contract));
+        runtimeIdentity(contract),
+        "");
   }
 
   /** Lê a identidade imutável que deve estar exposta pelo artefato público antes da revisão. */
@@ -314,17 +315,31 @@ final class PdeExperienceEvidenceLoader {
   record LiveVisualContract(
       List<String> requiredFirstFoldCtas,
       List<String> requiredVisibleTexts,
-      RuntimeIdentity runtimeIdentity) {
+      RuntimeIdentity runtimeIdentity,
+      String publicationSourceSha256) {
     /** Representa manifestos históricos que ainda não declaravam sinais visuais ao vivo. */
     static LiveVisualContract none() {
-      return new LiveVisualContract(List.of(), List.of(), RuntimeIdentity.none());
+      return new LiveVisualContract(List.of(), List.of(), RuntimeIdentity.none(), "");
+    }
+
+    /** Vincula uma página publicada ao hash e à CTA auditados pelo backend. */
+    static LiveVisualContract publishedPage(String publicationSourceSha256, String firstFoldCta) {
+      if (!SHA256.matcher(Optional.ofNullable(publicationSourceSha256).orElse("")).matches()) {
+        throw new IllegalArgumentException("Hash da página publicada inválido.");
+      }
+      if (firstFoldCta == null || firstFoldCta.isBlank()) {
+        throw new IllegalArgumentException("CTA da página publicada ausente.");
+      }
+      return new LiveVisualContract(
+          List.of(firstFoldCta.trim()), List.of(), RuntimeIdentity.none(), publicationSourceSha256);
     }
 
     /** Informa se existe alguma condição visual que precisa ser confrontada com o navegador. */
     boolean required() {
       return !requiredFirstFoldCtas.isEmpty()
           || !requiredVisibleTexts.isEmpty()
-          || runtimeIdentity.required();
+          || runtimeIdentity.required()
+          || !publicationSourceSha256.isBlank();
     }
   }
 

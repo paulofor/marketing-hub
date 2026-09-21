@@ -121,14 +121,22 @@ try {
     assert.equal(history[0].assumptions.periodDays, 30);
     assert.equal(history[0].assumptions.ai.perAttempt, 0);
     assert.equal(history[0].assumptions.costs.initialAiBrl, null);
-    assert.equal(history[0].evaluation.status, "MISSING_INPUTS");
+    assert.equal(history[0].evaluation.status, "READY_FOR_ANALYSIS");
+    assert.equal(
+      history[0].assumptions.variableCostEnvelope.amountPerCustomerBrl,
+      13.5,
+    );
+    assert.equal(
+      history[0].assumptions.fixedCostEnvelope.amountPerPeriodBrl,
+      73.2,
+    );
     assert.deepEqual(
       await (
         await page.request.get(`${base}/products/${id}?environment=LIVE`)
       ).json(),
       [],
     );
-    checks += 10;
+    checks += 12;
     const stale = await page.request.post(path, {
       data: { ...preview, supportDays: 7, personalizedAi: true },
     });

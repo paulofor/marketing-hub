@@ -77,6 +77,14 @@ public final class FinancialPlanCalculator {
     need(missing, envelope.coverage(), "cobertura do custo variável agregado");
     need(missing, envelope.sourceReference(), "fonte do custo variável agregado");
     need(missing, envelope.checkedOn(), "data da conferência do custo variável agregado");
+    var fixedEnvelope = p.fixedCostEnvelope();
+    need(missing, fixedEnvelope, "envelope de custos fixos do período");
+    if (fixedEnvelope != null) {
+      need(missing, fixedEnvelope.amountPerPeriodBrl(), "custos fixos agregados do período");
+      need(missing, fixedEnvelope.coverage(), "cobertura dos custos fixos agregados");
+      need(missing, fixedEnvelope.sourceReference(), "fonte dos custos fixos agregados");
+      need(missing, fixedEnvelope.checkedOn(), "data da conferência dos custos fixos agregados");
+    }
     need(missing, p.costs().fixedPerPeriodBrl(), "custos fixos do período");
     if (p.scenarios().stream().map(Scenario::code).distinct().count() != 3)
       missing.add("Plutus: preserve os cenários conservador, base e otimista.");
@@ -99,6 +107,10 @@ public final class FinancialPlanCalculator {
         && p.ai().perAttempt().signum() != 0)
       blockers.add(
           "Plutus / Dédalo: entrega sem IA personalizada não pode declarar tarifa variável positiva.");
+    if (fixedEnvelope != null
+        && p.costs().fixedPerPeriodBrl() != null
+        && fixedEnvelope.amountPerPeriodBrl().compareTo(p.costs().fixedPerPeriodBrl()) != 0)
+      blockers.add("Plutus: o envelope fixo diverge do custo fixo usado no cálculo do período.");
     var contributionBeforeCac = p.priceBrl().subtract(envelope.amountPerCustomerBrl());
     var contributionAfterCac = contributionBeforeCac.subtract(p.maximumCacBrl());
     if (contributionBeforeCac.signum() <= 0)

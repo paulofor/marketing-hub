@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /** Responsabilidade: testar identidade, fontes e invalidação da preparação low-ticket sem slots. */
 class QuartzoCommercialContextTest {
@@ -87,6 +89,34 @@ class QuartzoCommercialContextTest {
         .isEqualTo(publication.getSalesPageUrl());
     assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
     verify(experiments, never()).save(any());
+  }
+
+  /**
+   * A tela recompõe a fotografia uma única vez por transação e nunca compartilha objeto mutável.
+   */
+  @Test
+  void reusesSnapshotOnlyInsideCurrentTransaction() {
+    TransactionSynchronizationManager.initSynchronization();
+    try {
+      context.scope("experiment:88", 7L, true);
+      var first = context.snapshot("experiment:88");
+      first.put("destinationUrl", "https://mutated.test");
+      var second = context.snapshot("experiment:88");
+
+      assertThat(second.path("destinationUrl").asText()).isEqualTo(publication.getSalesPageUrl());
+      verify(experiments, times(1)).findById(88L);
+      verify(cycles, times(1)).findByExperimentId(88L);
+      verify(destinations, times(1)).latestSalesPagePublication(88L);
+    } finally {
+      TransactionSynchronizationManager.getSynchronizations()
+          .forEach(
+              synchronization ->
+                  synchronization.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
+      TransactionSynchronizationManager.clearSynchronization();
+    }
+
+    context.snapshot("experiment:88");
+    verify(experiments, times(2)).findById(88L);
   }
 
   /** Não permite usar outra identidade nem modificar uma campanha que está em operação. */

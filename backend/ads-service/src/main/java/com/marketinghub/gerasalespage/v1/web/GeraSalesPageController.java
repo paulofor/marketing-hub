@@ -7,6 +7,8 @@ import com.marketinghub.gerasalespage.v1.service.GeraSalesPagePublicationRespons
 import com.marketinghub.gerasalespage.v1.service.GeraSalesPageResultRequest;
 import com.marketinghub.gerasalespage.v1.service.GeraSalesPageStageService;
 import com.marketinghub.gerasalespage.v1.service.GeraSalesPageStartResponse;
+import com.marketinghub.gerasalespage.v1.service.republish.PublicationRecoveryView;
+import com.marketinghub.gerasalespage.v1.service.republish.RepublishPublicationRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -48,6 +50,23 @@ public class GeraSalesPageController {
   @GetMapping("/experiments/{experimentId}/gerasalespage/v1/publications")
   public List<GeraSalesPagePublicationResponse> publications(@PathVariable Long experimentId) {
     return publicationAuditService.listPublications(experimentId);
+  }
+
+  /** Confere se a publicação atual pode ser reenviada sem criar uma nova versão comercial. */
+  @GetMapping("/experiments/{experimentId}/gerasalespage/v1/publications/{publicationId}/recovery")
+  public PublicationRecoveryView recovery(
+      @PathVariable Long experimentId, @PathVariable Long publicationId) {
+    return publicationAuditService.recovery(experimentId, publicationId);
+  }
+
+  /** Recupera a identidade da mesma página auditada sem gerar novamente seu conteúdo. */
+  @PostMapping(
+      "/experiments/{experimentId}/gerasalespage/v1/publications/{publicationId}/republish")
+  public PublicationRecoveryView republish(
+      @PathVariable Long experimentId,
+      @PathVariable Long publicationId,
+      @Valid @RequestBody RepublishPublicationRequest request) {
+    return publicationAuditService.republish(experimentId, publicationId, request);
   }
 
   /** Lista jobs pendentes de uma etapa para consumo canônico pelo AI Worker. */

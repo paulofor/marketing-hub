@@ -9,6 +9,8 @@ import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationStageAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
+import com.marketinghub.gerasalespage.v1.service.republish.PublicationRecoveryView;
+import com.marketinghub.gerasalespage.v1.service.republish.RepublishPublicationRequest;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
@@ -33,6 +35,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,10 +51,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-/**
- * Responsabilidade: criar e consultar snapshots historicos das paginas publicadas pelo
- * GeraSalesPage v1.
- */
+/** Responsabilidade: preservar e recuperar as publicações auditadas do GeraSalesPage v1. */
 @Service
 public class GeraSalesPagePublicationAuditService {
   private static final Logger log =
@@ -134,6 +134,145 @@ public class GeraSalesPagePublicationAuditService {
     return publicationRepository.findByExperimentIdOrderByPublishedAtDesc(experimentId).stream()
         .map(this::toResponse)
         .toList();
+  }
+
+  /** Consulta a recuperação sem publicar, reservar escrita ou alterar provas históricas. */
+  @Transactional(readOnly = true)
+  public PublicationRecoveryView recovery(Long experimentId, Long publicationId) {
+    Experiment experiment =
+        experimentRepository
+            .findById(experimentId)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Experiment not found: " + experimentId));
+    var audit = ownedPublication(experimentId, publicationId);
+    try {
+      recoveryFlow(experiment, audit);
+      return recoveryView(
+          audit,
+          true,
+          "Reenvia a mesma página aprovada, sem gerar conteúdo ou alterar oferta, campanha e orçamento.",
+          null);
+    } catch (ResponseStatusException ex) {
+      log.info(
+          "GeraSalesPage: recuperação indisponível experimentId={} publicationId={}",
+          experimentId,
+          publicationId,
+          ex);
+      return recoveryView(audit, false, ex.getReason(), null);
+    }
+  }
+
+  /** Reenvia somente os bytes auditados atuais, preservando conteúdo, histórico e geração paga. */
+  @Transactional
+  public PublicationRecoveryView republish(
+      Long experimentId, Long publicationId, RepublishPublicationRequest request) {
+    Experiment experiment =
+        experimentRepository
+            .findForSalesPageRecovery(experimentId)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Experiment not found: " + experimentId));
+    var audit = ownedPublication(experimentId, publicationId);
+    LeadPortalFlow flow = recoveryFlow(experiment, audit);
+    requireRecovery(
+        request != null && Objects.equals(sha256(audit.getHtml()), request.expectedSourceSha256()),
+        "A identidade da publicação mudou. Recarregue a página antes de republicar.");
+    landingAssetService.validateApprovedAssetReferences(experimentId, audit.getHtml());
+    String previousHtml = flow.getCustomFormHtml();
+    try {
+      flow.setCustomFormHtml(injectPublicationSourceIdentity(audit.getHtml()).trim());
+      leadPortalFlowPublisher.publish(flow);
+      leadPortalFlowRepository.save(flow);
+    } catch (RuntimeException ex) {
+      flow.setCustomFormHtml(previousHtml);
+      log.error(
+          "GeraSalesPage: falha na recuperação experimentId={} publicationId={} flowId={} url={}",
+          experimentId,
+          publicationId,
+          flow.getId(),
+          audit.getSalesPageUrl(),
+          ex);
+      throw new ResponseStatusException(
+          HttpStatus.BAD_GATEWAY,
+          "Não foi possível reenviar a página. A publicação auditada foi preservada; tente novamente após corrigir a integração.",
+          ex);
+    }
+    log.info(
+        "GeraSalesPage: publicação reenviada experimentId={} publicationId={} flowId={} sourceSha256={}",
+        experimentId,
+        publicationId,
+        flow.getId(),
+        sha256(audit.getHtml()));
+    return recoveryView(
+        audit,
+        true,
+        "Página reenviada sem nova geração. Aguarde a atualização pública e retome o processo para conferir a experiência.",
+        Instant.now());
+  }
+
+  /** Valida propriedade antes de expor qualquer informação da publicação. */
+  private GeraSalesPagePublicationAudit ownedPublication(Long experimentId, Long publicationId) {
+    return publicationRepository
+        .findById(publicationId)
+        .filter(audit -> Objects.equals(experimentId, audit.getExperimentId()))
+        .orElseThrow(
+            () -> new EntityNotFoundException("Publicação não encontrada neste experimento."));
+  }
+
+  /** Recusa restauração de versões antigas, destinos trocados ou conteúdo não auditado. */
+  private LeadPortalFlow recoveryFlow(Experiment experiment, GeraSalesPagePublicationAudit audit) {
+    var latest =
+        publicationRepository.findTopByExperimentIdOrderByPublishedAtDesc(experiment.getId());
+    requireRecovery(
+        latest.isPresent() && Objects.equals(latest.get().getId(), audit.getId()),
+        "Somente a publicação auditada mais recente pode ser reenviada.");
+    requireRecovery(
+        leadPortalFlowPublisher.isAvailable(),
+        "A integração de publicação do Lead Portal está indisponível.");
+    requireRecovery(StringUtils.hasText(audit.getHtml()), "A publicação não possui HTML auditado.");
+    var flow =
+        leadPortalFlowRepository
+            .findBySlug("exp-" + experiment.getId() + "-gerasalespage-v1")
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "A recuperação exige o fluxo standalone já aprovado para esta publicação."));
+    requireRecovery(
+        flow.isApproved()
+            && flow.getExperiment() != null
+            && Objects.equals(flow.getExperiment().getId(), experiment.getId())
+            && experiment.getLeadPortalFlow() != null
+            && Objects.equals(experiment.getLeadPortalFlow().getId(), flow.getId())
+            && "GERA_SALES_PAGE_V1_STANDALONE".equals(flow.getModel()),
+        "O fluxo aprovado ou seu vínculo mudou. Revise o destino antes de republicar.");
+    requireRecovery(
+        StringUtils.hasText(audit.getSalesPageUrl())
+            && Objects.equals(audit.getSalesPageUrl(), experiment.getFollowUpActionUrl())
+            && Objects.equals(audit.getSalesPageUrl(), leadPortalPublicUrlResolver.resolve(flow)),
+        "O destino atual diverge da publicação auditada. Nenhum endereço foi alterado.");
+    requireRecovery(
+        Objects.equals(flow.getCustomFormHtml(), audit.getHtml().trim())
+            || Objects.equals(
+                flow.getCustomFormHtml(), injectPublicationSourceIdentity(audit.getHtml()).trim()),
+        "O conteúdo atual diverge da publicação auditada. Não será sobrescrito pela recuperação.");
+    return flow;
+  }
+
+  /** Compõe a resposta sem declarar homologação visual ou aprovação comercial. */
+  private PublicationRecoveryView recoveryView(
+      GeraSalesPagePublicationAudit audit, boolean available, String reason, Instant submittedAt) {
+    return new PublicationRecoveryView(
+        audit.getId(),
+        available,
+        reason,
+        StringUtils.hasText(audit.getHtml()) ? sha256(audit.getHtml()) : null,
+        audit.getSalesPageUrl(),
+        submittedAt);
+  }
+
+  /** Bloqueia conflitos de recuperação sem flexibilizar a identidade da publicação. */
+  private void requireRecovery(boolean valid, String reason) {
+    if (!valid) throw new ResponseStatusException(HttpStatus.CONFLICT, reason);
   }
 
   /**

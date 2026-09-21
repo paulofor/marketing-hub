@@ -236,7 +236,7 @@ public class BpmVisualEvidenceRunner {
     if (expected == null || expected.isBlank()) return;
     String observed = actual == null ? null : actual.publicationSourceSha256();
     if (!Objects.equals(expected, observed)) {
-      throw new VisualEvidenceException(
+      throw new PublicationIdentityException(
           "Aguardando atualização da página: o HTML servido diverge da publicação auditada. "
               + "esperado="
               + expected
@@ -246,7 +246,7 @@ public class BpmVisualEvidenceRunner {
     }
     String served = actual.servedHtmlSha256();
     if (served == null || !SHA256.matcher(served).matches()) {
-      throw new VisualEvidenceException(
+      throw new PublicationIdentityException(
           "Aguardando atualização da página: o Lead Portal não comprovou a identidade do HTML servido. "
               + "observado="
               + Objects.toString(served, "ausente")
@@ -359,7 +359,7 @@ public class BpmVisualEvidenceRunner {
       String localPath) {}
 
   /** Distingue ausência de prova visual de uma falha posterior do modelo. */
-  static final class VisualEvidenceException extends IllegalStateException {
+  static class VisualEvidenceException extends IllegalStateException {
     /** Cria o bloqueio explícito com a causa que a pessoa operadora deve corrigir. */
     VisualEvidenceException(String message) {
       super(message);
@@ -368,6 +368,17 @@ public class BpmVisualEvidenceRunner {
     /** Preserva a causa técnica completa quando a captura ou persistência falha. */
     VisualEvidenceException(String message, Throwable cause) {
       super(message, cause);
+    }
+  }
+
+  /**
+   * Responsabilidade: diferenciar identidade de publicação ausente de falha no armazenamento
+   * visual.
+   */
+  static final class PublicationIdentityException extends VisualEvidenceException {
+    /** Preserva as identidades esperada e observada descritas pelo preflight. */
+    PublicationIdentityException(String message) {
+      super(message);
     }
   }
 }

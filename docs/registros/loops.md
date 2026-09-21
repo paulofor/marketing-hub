@@ -6442,3 +6442,24 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   diagnóstico não JSON, origem divergente, runtime sem hash e bloqueio anterior à revisão paga.
   A página histórica precisa ser republicada pelo fluxo autorizado depois que a correção entrar em
   produção; a correção local não altera campanha, orçamento nem executa Psique.
+
+### Recorrência — publicação histórica sem comando de recuperação em 21/09/2026
+
+- **Evidência confirmada:** Plutus #52 aprovou a revisão financeira 4 e o processo #12
+  avançou para cinco atividades concluídas. Psique #467 bloqueou antes do modelo por
+  ausência de `mh-publication-source-sha256`. O snapshot #27 e o HTML do fluxo #60
+  preservavam exatamente a mesma fonte; os workers já estavam no build atualizado.
+- **Causa-raiz:** a marcação de identidade só era aplicada a novas publicações. A
+  deduplicação por job preservava corretamente o snapshot antigo, mas a tela só
+  oferecia refazer a geração. Deploy saudável não atualiza dados históricos sozinho.
+- **Alternativas:** refazer poderia alterar oferta e consumir IA; dispensar identidade
+  removeria a proteção; recuperar o snapshot atual resolve o vínculo sem mudar conteúdo.
+  Foi escolhida a terceira alternativa.
+- **Correção local:** consulta e comando próprios de recuperação no controller
+  GeraSalesPage, confirmação na auditoria da tela e orientação específica de Psique.
+  O backend recusa versões antigas, alterações de conteúdo/destino, vínculo incorreto,
+  integração ausente e ativos revogados; reenvios preservam os IDs e a auditoria.
+- **Prevenção:** regressões com identificadores diferentes, falha HTTP/retentativa,
+  clique duplicado e captura real antes/depois via Lead Portal local e verificador
+  de Psique. A entrega ainda depende de publicação autorizada das alterações; o
+  registro da correção local não declara o processo produtivo concluído.

@@ -15,7 +15,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-/** Publishes approved lead portal flows to the public lead portal application. */
+/** Responsabilidade: sincronizar fluxos aprovados com a aplicação pública do Lead Portal. */
 @Component
 public class LeadPortalFlowPublisher {
 
@@ -27,6 +27,7 @@ public class LeadPortalFlowPublisher {
   private final LeadPortalIntegrationProperties properties;
   private final ExperimentHeroImageResolver heroImageResolver;
 
+  /** Configura o cliente HTTP e os dados canônicos da integração. */
   public LeadPortalFlowPublisher(
       RestTemplate restTemplate,
       LeadPortalIntegrationProperties properties,
@@ -36,6 +37,12 @@ public class LeadPortalFlowPublisher {
     this.heroImageResolver = heroImageResolver;
   }
 
+  /** Informa se um comando explícito pode enviar dados ao portal público. */
+  public boolean isAvailable() {
+    return properties.isEnabled() && StringUtils.hasText(properties.getBaseUrl());
+  }
+
+  /** Envia o fluxo aprovado, preservando o tratamento dos formulários gerenciados. */
   public void publish(LeadPortalFlow flow) {
     if (!properties.isEnabled()) {
       return;
@@ -49,6 +56,7 @@ public class LeadPortalFlowPublisher {
     try {
       restTemplate.put(uri, new HttpEntity<>(payload, headers));
     } catch (HttpClientErrorException ex) {
+      log.warn("Lead Portal: publicação recusada slug={} endpoint={}", flow.getSlug(), uri, ex);
       if (ex.getStatusCode() == HttpStatus.BAD_REQUEST && isManagedSimpleFlowRejection(ex)) {
         log.info(
             "Skipping publication for managed simple flow '{}': {}",
@@ -59,11 +67,13 @@ public class LeadPortalFlowPublisher {
       throw new LeadPortalPublicationException(
           "Failed to publish lead portal flow " + flow.getSlug(), ex);
     } catch (RestClientException ex) {
+      log.error("Lead Portal: falha de publicação slug={} endpoint={}", flow.getSlug(), uri, ex);
       throw new LeadPortalPublicationException(
           "Failed to publish lead portal flow " + flow.getSlug(), ex);
     }
   }
 
+  /** Remove do portal um fluxo cuja disponibilização foi revogada. */
   public void remove(String slug) {
     if (!properties.isEnabled()) {
       return;
@@ -72,10 +82,12 @@ public class LeadPortalFlowPublisher {
     try {
       restTemplate.delete(uri);
     } catch (RestClientException ex) {
+      log.error("Lead Portal: falha ao remover fluxo slug={} endpoint={}", slug, uri, ex);
       throw new LeadPortalPublicationException("Failed to remove lead portal flow " + slug, ex);
     }
   }
 
+  /** Resolve o endpoint canônico de publicação para o slug informado. */
   private URI buildUri(String slug) {
     if (!StringUtils.hasText(properties.getBaseUrl())) {
       throw new LeadPortalPublicationException("Lead portal base URL is not configured");
@@ -86,6 +98,7 @@ public class LeadPortalFlowPublisher {
         .toUri();
   }
 
+  /** Identifica o contrato que delega formulários simples ao próprio portal. */
   private boolean isManagedSimpleFlowRejection(HttpClientErrorException ex) {
     String body = ex.getResponseBodyAsString();
     return body != null && body.contains(SIMPLE_FLOW_MANAGED_MESSAGE);

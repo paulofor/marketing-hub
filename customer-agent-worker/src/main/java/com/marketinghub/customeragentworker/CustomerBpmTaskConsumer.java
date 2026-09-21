@@ -1586,12 +1586,38 @@ public class CustomerBpmTaskConsumer {
           "executionAudit",
           executionAudit(promptSent, agentPromptPart, activityPromptPart, accessedUrls));
     }
-    body.put(
-        "blockerGuidance",
-        visualEvidenceFailure(error)
-            ? missingVisualEvidenceGuidance(task)
-            : technicalGuidance(task));
+    body.put("blockerGuidance", failureGuidance(task, error));
     return body;
+  }
+
+  /** Direciona bloqueio de identidade à recuperação da página antes de repetir a revisão paga. */
+  Map<String, Object> failureGuidance(Map<String, Object> task, Throwable error) {
+    for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+      if (cause instanceof BpmVisualEvidenceRunner.PublicationIdentityException) {
+        var links = new ArrayList<>(helpLinks(task));
+        String source = String.valueOf(task.get("sourceReference"));
+        if (source.matches("experiment:[1-9][0-9]*")) {
+          links.add(
+              Map.of(
+                  "label",
+                  "Recuperar página aprovada",
+                  "url",
+                  "/experiments/"
+                      + source.substring("experiment:".length())
+                      + "#sales-page-publication"));
+        }
+        return Map.of(
+            "category",
+            "MISSING_EVIDENCE",
+            "recommendedAction",
+            "Aguardando atualização da página. Use Reenviar página aprovada na auditoria do experimento e aguarde a atualização pública. Depois retome o processo para conferir a identidade e capturar a experiência; não refaça a página nem repita a análise com a mesma divergência.",
+            "helpLinks",
+            List.copyOf(links));
+      }
+    }
+    return visualEvidenceFailure(error)
+        ? missingVisualEvidenceGuidance(task)
+        : technicalGuidance(task);
   }
 
   /** Identifica a causa visual mesmo quando uma integração a encapsulou em outra exceção. */

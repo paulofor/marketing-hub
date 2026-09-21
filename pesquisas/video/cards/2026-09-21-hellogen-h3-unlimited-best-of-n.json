@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-geracao-paralela-selecao-best-of-n",
+  "collection": "video",
+  "title": "Gerar vários candidatos e selecionar o melhor quando o custo marginal despenca",
+  "finding": "A HelloGen passou a oferecer MiniMax H3 em 480p sem cobrança por clipe nos planos Pro e Max, mantendo prioridade diária garantida e fila padrão depois; isso reforça que best-of-N pode deixar de ser limitado por custo marginal e passar a ser limitado por latência e revisão.",
+  "mechanism": "Com custo marginal por render próximo de zero dentro do plano, o harness pode alocar várias tentativas por cena, aplicar filtros automáticos de invariantes e ranquear candidatos antes do acabamento. O orçamento deixa de escalar linearmente com N, mas fila, throughput e revisão ainda escalam.",
+  "commercialApplication": "No videomaker do Marketing Hub, usar H3 Unlimited para explorar variações de hook, demonstração e CTA em 480p, filtrar por invariantes e conformidade, selecionar 1–2 finalistas e então regenerar ou finalizar em um renderer de maior resolução quando necessário.",
+  "evidenceStrength": "Alta para preço, limites, status web e termos comerciais, verificados em páginas oficiais da HelloGen; alta para disponibilidade/API e preços do H3 na fal; baixa para qualidade relativa porque não há benchmark independente específico do tier ilimitado.",
+  "publishedOn": "2026-09-21",
+  "validUntil": "2026-10-21",
+  "experimentHypothesis": "Com orçamento mensal fixo, aumentar moderadamente N nas cenas críticas usando um tier sem cobrança por clipe reduzirá custo por tomada aprovada e aumentará a taxa de cenas que passam nos gates automáticos, sem elevar o tempo total de revisão acima de um limite definido.",
+  "risks": "Fila padrão pode criar latência imprevisível; 480p pode mascarar artefatos que aparecem no acabamento; geração excessiva pode transferir custo para revisão humana ou VLM; uso comercial continua sujeito a direitos de terceiros.",
+  "limits": "O tier ilimitado é MiniMax H3 em 480p; 1080p/4K dependem de upscaler separado; modelos premium continuam por créditos; não foi verificada API pública específica para o tier ilimitado.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-21-hellogen-h3-unlimited-best-of-n.md",
+  "sourceTitle": "Fonte revisada — HelloGen H3 Unlimited e best-of-N",
+  "sourceSha256": "fbbd6672d1b324fc0bd453607bf340b94e83f79c9caa647e29a0a4d3a225643d"
+}

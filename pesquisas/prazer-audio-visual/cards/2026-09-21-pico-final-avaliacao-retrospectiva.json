@@ -1,0 +1,18 @@
+{
+  "cardKey": "pico-final-avaliacao-retrospectiva",
+  "collection": "prazer-audio-visual",
+  "title": "Desenhar o pico e o encerramento da experiência",
+  "finding": "Em um experimento com 30 adultos e sequências emocionais, pico e último momento acrescentaram poder explicativo à avaliação retrospectiva além da média da experiência (ΔR² = 0,138); um modelo EEG orientado por peak-end também superou baselines de predição.",
+  "mechanism": "A avaliação posterior parece ponderar momentos emocionalmente salientes e o encerramento de forma desproporcional, em vez de integrar cada instante com peso uniforme; sinais LPP sustentados foram os correlatos neurais mais associados ao gating de pico do modelo.",
+  "commercialApplication": "Em vídeo, onboarding ou experiência interativa, comparar uma versão com pico emocional claro e encerramento deliberadamente coerente contra outra com intensidade distribuída de modo mais uniforme, mantendo conteúdo médio semelhante.",
+  "evidenceStrength": "Média-alta para avaliação retrospectiva em laboratório: houve manipulação de pico/final, EEG de 64 canais, regressão comportamental e validação cruzada; a amostra é pequena e os estímulos eram imagens estáticas.",
+  "publishedOn": "2026-09-21",
+  "validUntil": "2027-03-21",
+  "experimentHypothesis": "Uma experiência com pico identificável e final coerente terá maior avaliação retrospectiva e lembrança do que uma versão de intensidade uniforme, sem reduzir compreensão; retenção e resultado comercial devem ser medidos separadamente.",
+  "risks": "Maximizar intensidade pode gerar desconforto, fadiga ou parecer manipulativo; um final excessivamente positivo pode quebrar coerência narrativa. Não interpretar avaliação retrospectiva como prova de compra.",
+  "limits": "N = 30 adultos jovens; imagens IAPS estáticas; o conjunto externo SEED não validou o efeito peak-end completo; não houve vídeo natural, CTA, conversão ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-21-pico-final-avaliacao-retrospectiva.md",
+  "sourceTitle": "Fonte revisada — pico e final na avaliação retrospectiva",
+  "sourceSha256": "d6085346dd51a50bc4f481951b043ff680edd219c58d78071276700943cf5523"
+}

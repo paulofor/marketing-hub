@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-estado-persistente-eventos-temporais",
+  "collection": "video",
+  "title": "Manter lógica e espaço fora do renderer generativo",
+  "finding": "Mora formaliza uma arquitetura em que regras e mecânicas ficam em código, estrutura espacial e assets ficam em 3D, e o modelo de vídeo em tempo real atua como camada de apresentação audiovisual; isso reforça que continuidade não precisa depender somente da memória probabilística do renderer.",
+  "mechanism": "Manter um estado canônico externo para geometria, identidades, posições, props, câmera e restrições permite aplicar eventos temporais como patches validados e renderizar cada tomada a partir desse estado, separando continuidade determinística de aparência generativa.",
+  "commercialApplication": "Em campanhas multi-shot ou séries do Marketing Hub, persistir um scene_state com cenário, personagem, produto, figurino, props e âncoras de câmera; aplicar eventos e mudanças como patches, renderizar a tomada e atualizar o estado apenas depois da revisão visual.",
+  "evidenceStrength": "Moderada: a arquitetura foi descrita em fonte primária da Meshy e é comparável a pesquisas recentes de world models, mas Mora 1 é apenas demonstração de pesquisa e ainda não há validação independente de produção.",
+  "publishedOn": "2026-09-21",
+  "validUntil": "2026-12-20",
+  "experimentHypothesis": "Em peças multi-shot equivalentes, manter explicitamente o estado espacial e comercial fora do renderer reduzirá erros de continuidade entre tomadas em comparação com prompts independentes, sem aumentar o tempo total de edição além de um limite aceitável.",
+  "risks": "A arquitetura adiciona complexidade e sincronização; um estado canônico incorreto pode propagar erros; a pesquisa pode não se traduzir para publicidade convencional; não se deve acoplar o harness a um fornecedor ainda experimental.",
+  "limits": "Mora 1 é uma demonstração de pesquisa, não uma ferramenta geral de criação; não foram verificados API pública, preço específico ou pesos abertos para Mora; o padrão precisa ser testado com ferramentas atuais antes de adoção estrutural.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-21-mora-estado-espacial-render-generativo.md",
+  "sourceTitle": "Fonte revisada — Mora e estado espacial fora do renderer generativo",
+  "sourceSha256": "fb85d9f57d1c6f4243fb1f996769f5b2b738f6a070a40fbe4d253ac061532f35"
+}

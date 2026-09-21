@@ -58,6 +58,7 @@ jobs:
           ./scripts/test-public-proxy-lifecycle-contract.sh
           ./scripts/test-public-proxy-recovery-contract.sh
           ./scripts/test-public-proxy-recovery-e2e.sh
+          node --test src/test/js/agenda-cheia-post-purchase.test.cjs
           mvn -B test
 
   docker:

@@ -65,6 +65,23 @@ Uma rodada local completa sem defeitos conclui a homologação. Se houver corre�
 
 ## Sugestões incorporadas
 
+### Contrato do produto na geração — 21/09/2026
+
+O `pending` inclui `experiment.product`: identidade, tipo, versão, formato,
+entrega, receita, preço, promessa, entregáveis, checkout, garantia e os objetos
+`validationContract`/`experienceContract`. Estes são fontes oficiais atuais para
+as condições de entrega, suporte, formatos e reembolso; copy histórica não deve
+inventar condições ausentes nem substituir uma decisão comercial atual.
+Produto ausente permanece objeto vazio; campos ausentes não recebem compromisso
+padrão. Notas internas e dados de outros produtos ficam fora desta projeção.
+O executor já serializa `experiment` no prompt de todas as etapas, mantendo o
+contrato completo na auditoria. Gate comercial, revisão e publicação permanecem.
+
+Antes, o fluxo de Capella não transportava os contratos ao gerador; registrar
+prazo e suporte no produto não corrigiria essa lacuna. Repetir a geração manteria
+o risco; colar condições somente no texto de um anúncio duplicaria a fonte;
+transportar o contrato na entrada canônica preserva responsabilidade e reúso.
+
 - Separar página de vendas direta de página com formulário evita misturar objetivos comerciais.
 - A etapa de quality review deve ser gate comercial, não apenas revisão visual.
 - O pacote final deve informar claramente se está pronto para tráfego pago.

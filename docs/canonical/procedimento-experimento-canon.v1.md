@@ -144,6 +144,16 @@ Regras obrigatórias:
 - nenhuma variante incompleta pode substituir uma das duas escolhas, pois isso contamina a leitura comercial;
 - o backend deve bloquear payload com mais de duas seleções e a interface deve impedir a marcação da terceira opção.
 
+### Correção de conteúdo sem nova autorização financeira — 21/09/2026
+
+A edição de uma promessa não deve exigir inventar orçamento ou meta de conversão
+para um experimento legado. Se canal, verba, teto, período e metas forem preservados,
+o backend permite corrigir o conteúdo, mantendo inclusive pendências antigas e o
+status da campanha. A interface não normaliza silenciosamente teto zero para outra
+autorização. Alterar o plano de mídia ou as metas exige a validação correspondente;
+criação, prontidão, liberação e retomada continuam com todos os gates financeiros.
+Salvar conteúdo não ativa campanha nem comprova prontidão comercial.
+
 ### Retomada financeira autorizada de campanha existente — 20/09/2026
 
 Uma autorização humana explícita pode reabrir a coleta da mesma campanha pausada,

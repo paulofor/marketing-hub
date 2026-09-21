@@ -6506,3 +6506,28 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   permanecem preservados enquanto suas entradas continuarem válidas.
 - **Prevenção:** matriz, comparação com comportamento anterior e evidências em
   `docs/homologacao/psique-evidencias-quartzo-v2.md`.
+
+## LOOP-GERASALESPAGE-CONDICOES-PRODUTO-AUSENTES — 21/09/2026
+
+- **Evidência:** Psique #470 solicitou prazo e suporte concretos. O cadastro de
+  Capella continha entrega no mesmo dia, enquanto o pós-compra já anunciava três
+  dias úteis. O usuário aprovou três dias úteis e delegou as condições de atendimento.
+- **Causa confirmada:** `experimentPayload` entregava copy e artefatos, mas não o
+  produto nem seus contratos. Corrigir apenas o cadastro não levaria essa fonte ao
+  gerador. A ausência foi reproduzida com dois produtos independentes.
+- **Correção:** projeção comercial explícita `experiment.product` no `pending`,
+  com identidade e contratos estruturados, mantendo o consumidor e os gates.
+  Condições ausentes não são preenchidas; dados internos não são serializados.
+- **Falha relacionada:** o pós-compra ignorava `ENTREGUE`, repetia o formulário e
+  anunciava fila após o retorno concluído. Agora mostra o estado oficial, evita
+  submissão simultânea e preserva dados com orientação em falha de rede.
+- **Prevenção:** contratos para produtos distintos, preservação do fluxo legado,
+  testes de estados/envio/falha, ZIP real e navegador em três perfis. Matriz em
+  `docs/homologacao/capella-entrega-atendimento-v1.md`.
+- **Impedimentos relacionados confirmados localmente:** o formulário exigia
+  alterar orçamento/metas legados antes de salvar texto; agora preserva os
+  valores e mantém a validação para mudanças financeiras. O YAML de pagamentos
+  não iniciava por indentação inválida; corrigido e coberto por teste Spring
+  com configuração real e integrações externas desabilitadas.
+- **Limites:** software não comprova SLA humano, satisfação, venda ou lucro.
+  Pareceres precisam ser revalidados depois das mudanças materiais da oferta.

@@ -348,12 +348,27 @@ public class AgendaCheiaKitProductionService {
                 + "Dia 7 — Reforce o contato pelo WhatsApp";
     }
 
-    /** Cria instruções simples de uso e limites realistas do produto. */
+    /** Entrega instruções, formatos e condições de atendimento junto dos arquivos comprados. */
     private String instructions(AgendaCheiaBriefing briefing) {
         return "AGENDA CHEIA NAIL DESIGN — KIT PERSONALIZADO\n\nProduzido para: "
                 + publicText(briefing.getProfessionalName())
                 + "\n\nUse uma arte por dia com a legenda correspondente. "
-                + "O kit melhora sua apresentação e cria oportunidades de conversa; não garante clientes ou agendamentos.";
+                + "O kit melhora sua apresentação e cria oportunidades de conversa; não garante clientes ou agendamentos."
+                + "\n\nARQUIVOS E USO\n10 posts PNG 1080x1080, 10 stories PNG 1080x1920, "
+                + "10 legendas, 5 mensagens de WhatsApp e calendário de 7 dias em texto. "
+                + "As artes são prontas para publicar; não incluem arquivo editável Canva ou PSD. "
+                + "Guarde sua cópia do ZIP. Use os arquivos na divulgação do próprio negócio; "
+                + "não revenda nem redistribua o kit. As fotografias não são exclusivas."
+                + "\n\nATENDIMENTO\ncontato@digicomdigital.com.br — primeira resposta em até 1 dia útil "
+                + "(segunda a sexta, exceto feriados nacionais, horário de Brasília). "
+                + "Suporte de uso por 7 dias corridos após a entrega, incluindo acesso, download "
+                + "e correção de divergências em relação ao briefing. Não inclui gestão de redes sociais, "
+                + "nova identidade visual ou revisões ilimitadas."
+                + "\n\nREEMBOLSO\nVocê pode solicitar reembolso integral desde a compra até 7 dias corridos "
+                + "após receber o kit, sem precisar justificar, pelo mesmo e-mail. Informe o e-mail da compra "
+                + "e a identificação do pagamento, nunca dados do cartão. Solicitamos o estorno sem demora; "
+                + "a compensação depende do meio de pagamento. Falhas de entrega, problemas nos arquivos "
+                + "e outros direitos continuam sendo atendidos após o período de suporte de uso.";
     }
 
     /** Seleciona a chamada de cada situação comercial. */

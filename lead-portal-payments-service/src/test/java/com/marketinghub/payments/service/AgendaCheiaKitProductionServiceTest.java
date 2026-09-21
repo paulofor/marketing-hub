@@ -61,6 +61,11 @@ class AgendaCheiaKitProductionServiceTest {
             assertThat(zip.getEntry("story-10.png")).isNotNull();
             assertThat(zip.getEntry("legendas-prontas.txt")).isNotNull();
             assertThat(zip.getEntry("mensagens-whatsapp.txt")).isNotNull();
+            String instructions = new String(zip.getInputStream(zip.getEntry("LEIA-ME.txt")).readAllBytes(),
+                    StandardCharsets.UTF_8);
+            assertThat(instructions).contains("contato@digicomdigital.com.br", "até 1 dia útil",
+                    "7 dias corridos após a entrega", "sem precisar justificar",
+                    "1080x1080", "1080x1920", "não incluem arquivo editável");
         }
         verify(emailService).sendCompletedKit(
                 org.mockito.ArgumentMatchers.eq(payment),

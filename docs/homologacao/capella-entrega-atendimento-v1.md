@@ -95,3 +95,24 @@ reexecutados, sem alterar o comportamento produtivo ou repetir suítes não afet
 Frontend: 736 testes, typecheck/build e ambas as representações em desktop/iPhone/
 Pixel aprovados. JAR backend e recursos externos verificados, Spotless e diff sem
 pendências. Nenhuma chamada paga foi usada para investigar os zeros indevidos.
+
+## Destino público de pagamentos — complemento em 21/09/2026
+
+A conferência externa posterior ao deploy comprovou que o domínio do pós-compra
+estava no host legado, diferente do host PDE atualizado. O ajuste fica restrito ao
+workflow: alvo público explícito, imagem pelo SHA e prova DNS/bytes da experiência.
+
+Matriz local: destino PDE preservado; pagamento público sem emissão de certificado;
+combinações de certificado incompatíveis bloqueadas; arquivos corretos aceitos;
+página antiga com HTTP 200, DNS divergente, redirecionamento externo, 404 e arquivo
+local ausente bloqueados. Dados sintéticos e HTTP local, sem pagamento, modelo ou
+SMTP real. O conteúdo do pós-compra não mudou desde a homologação desktop/iPhone/Pixel;
+a prova pública por hashes e nova conferência visual ocorrerão após o deploy.
+
+Resultado local do complemento: sete testes HTTP/CLI e cinco casos executados do
+seletor de destino aprovados; contratos de SSH, ciclo de vida/recuperação do proxy
+e fila compartilhada aprovados. Actionlint (incluindo ShellCheck), `bash -n`,
+compilação Python e `git diff --check` aprovados. No teste de contrato preexistente
+que procura expressões literais `${...}`, SC2016 foi tratado como literal intencional;
+nenhum alerta foi suprimido no script de publicação novo. A aplicação Java e o
+conteúdo visual permanecem idênticos aos já homologados neste lote.

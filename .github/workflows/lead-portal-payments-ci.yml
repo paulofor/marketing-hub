@@ -10,6 +10,8 @@ on:
       - "scripts/configure-vps-ssh-fallback.sh"
       - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/test-payments-ssh-workflow.mjs"
+      - "scripts/verify-public-artifacts.py"
+      - "scripts/test-verify-public-artifacts.py"
   pull_request:
     paths:
       - "lead-portal-payments-service/**"
@@ -18,8 +20,18 @@ on:
       - "scripts/configure-vps-ssh-fallback.sh"
       - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/test-payments-ssh-workflow.mjs"
+      - "scripts/verify-public-artifacts.py"
+      - "scripts/test-verify-public-artifacts.py"
   workflow_dispatch:
     inputs:
+      deployment_target:
+        description: "Destino publicado: PDEs ou pagamentos públicos (pagamentopalf.site)"
+        required: true
+        default: "pde"
+        type: choice
+        options:
+          - "pde"
+          - "public_payments"
       issue_clubemusa_certificate:
         description: "Emitir/renovar certificado do Clube MUSA depois que o DNS apontar para este VPS"
         required: true
@@ -66,6 +78,7 @@ jobs:
           ./scripts/test-public-proxy-recovery-e2e.sh
           node --test src/test/js/agenda-cheia-post-purchase.test.cjs
           node ../scripts/test-payments-ssh-workflow.mjs
+          python3 ../scripts/test-verify-public-artifacts.py
           bash ../scripts/test-configure-vps-ssh-fallback.sh
           mvn -B test
 
@@ -112,7 +125,7 @@ jobs:
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/lead-portal-payments-service:buildcache,mode=max
       - name: Expose image tag
         id: image_tag
-        run: echo "value=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+        run: echo "value=${IMAGE_SHA_TAG}" >> "$GITHUB_OUTPUT"
 
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
@@ -129,9 +142,9 @@ jobs:
       queue: max
       cancel-in-progress: false
     env:
-      # O institucional permanece no host legado que recebe o DNS de
-      # digicomdigital.com.br. Os PDEs do Clube MUSA continuam no host canônico.
-      DEPLOY_HOST: ${{ inputs.issue_digicomdigital_certificate == 'true' && '191.252.102.54' || '163.245.200.7' }}
+      # Pagamentos e institucional têm DNS no host legado; PDEs mantêm seu host.
+      # Selecionar pagamentos não solicita emissão de certificado.
+      DEPLOY_HOST: ${{ (inputs.deployment_target == 'public_payments' || inputs.issue_digicomdigital_certificate == 'true') && '191.252.102.54' || '163.245.200.7' }}
       DEPLOY_USER: root
       REMOTE_PATH: ${{ secrets.LEAD_PORTAL_PAYMENTS_REMOTE_PATH || '/root/lead-portal-payments-service' }}
       IMAGE_REGISTRY: ghcr.io
@@ -142,6 +155,22 @@ jobs:
       LEAD_PORTAL_PAYMENTS_NETWORK: ${{ secrets.LEAD_PORTAL_PAYMENTS_NETWORK != '' && secrets.LEAD_PORTAL_PAYMENTS_NETWORK || 'public-net' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate deployment target
+        env:
+          DEPLOYMENT_TARGET: ${{ inputs.deployment_target || 'pde' }}
+          ISSUE_CLUBEMUSA: ${{ inputs.issue_clubemusa_certificate }}
+          ISSUE_KIT_WHATSAPP: ${{ inputs.issue_kit_whatsapp_certificate }}
+        run: |
+          case "$DEPLOYMENT_TARGET" in
+            pde) ;;
+            public_payments)
+              if [ "$ISSUE_CLUBEMUSA" = true ] || [ "$ISSUE_KIT_WHATSAPP" = true ]; then
+                echo 'Certificados de PDE não podem ser emitidos no destino de pagamentos.' >&2
+                exit 1
+              fi
+              ;;
+            *) echo 'Destino de publicação desconhecido.' >&2; exit 1 ;;
+          esac
       - name: Validate certificate target
         if: (inputs.issue_clubemusa_certificate == 'true' && inputs.issue_digicomdigital_certificate == 'true') || (inputs.issue_clubemusa_certificate == 'true' && inputs.issue_kit_whatsapp_certificate == 'true') || (inputs.issue_digicomdigital_certificate == 'true' && inputs.issue_kit_whatsapp_certificate == 'true')
         run: |
@@ -164,7 +193,7 @@ jobs:
           echo "Credencial de geração premium disponível para o deploy (conteúdo protegido)."
       - name: Configure SSH
         env:
-          VPS_SSH_KEY_PRIMARY: ${{ inputs.issue_digicomdigital_certificate == 'true' && secrets.VPS_SSH_KEY || secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY }}
+          VPS_SSH_KEY_PRIMARY: ${{ (inputs.deployment_target == 'public_payments' || inputs.issue_digicomdigital_certificate == 'true') && secrets.VPS_SSH_KEY || secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY }}
           VPS_SSH_KEY_FALLBACK_1: ${{ secrets.PDE_PLATFORM_VPS_SSH_KEY }}
           VPS_SSH_KEY_FALLBACK_2: ${{ secrets.VPS_SSH_CHAVE }}
           VPS_SSH_KEY_FALLBACK_3: ${{ secrets.VPS_SSH_KEY }}
@@ -290,7 +319,9 @@ jobs:
             && test -n \"\${proxy_container}\" \
             && test \"\$(docker inspect \"\${proxy_container}\" --format '{{.State.Running}}')\" = 'true' \
             && test \"\$(docker inspect \"\${proxy_container}\" --format '{{.HostConfig.RestartPolicy.Name}}')\" = 'always'"
-          if [ "${{ inputs.issue_digicomdigital_certificate }}" = "true" ]; then
+          if [ "${{ inputs.deployment_target }}" = "public_payments" ]; then
+            public_url="https://pagamentopalf.site"
+          elif [ "${{ inputs.issue_digicomdigital_certificate }}" = "true" ]; then
             public_url="https://www.digicomdigital.com.br"
           else
             public_url="https://kit-whatsapp-pronto.digicomdigital.com.br"
@@ -298,7 +329,7 @@ jobs:
           curl --fail --show-error --silent \
             --retry 12 --retry-delay 10 --retry-connrefused \
             "${public_url}/" >/dev/null
-          if [ "${{ inputs.issue_digicomdigital_certificate }}" != "true" ]; then
+          if [ "${{ inputs.deployment_target }}" != "public_payments" ] && [ "${{ inputs.issue_digicomdigital_certificate }}" != "true" ]; then
             curl --fail --show-error --silent \
               --retry 12 --retry-delay 10 --retry-connrefused \
               "${public_url}/healthz" | grep -q '"status":"UP"'
@@ -320,6 +351,14 @@ jobs:
               exit 1
             fi
           fi
+      - name: Verify public payment artifacts
+        if: inputs.deployment_target == 'public_payments'
+        run: |
+          python3 scripts/verify-public-artifacts.py \
+            --base-url https://pagamentopalf.site/agenda-cheia/ \
+            --expected-address "$DEPLOY_HOST" \
+            --source-directory lead-portal-payments-service/src/main/resources/static/agenda-cheia \
+            obrigado.html obrigado.js
       - name: Clean build artifacts from repository
         if: always()
         run: |

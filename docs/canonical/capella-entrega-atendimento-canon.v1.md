@@ -59,3 +59,17 @@ suporte não são prazo geral de perda de direitos.
 Cadastro, página gerada, pós-compra e pareceres devem ser conferidos separadamente.
 Este documento registra a decisão; não comprova publicação, aprovação dos agentes,
 atendimento realizado, venda ou lucro.
+
+## Publicação efetiva do pós-compra
+
+Em 21/09/2026, `pagamentopalf.site` ainda resolve para `191.252.102.54`, enquanto
+os PDEs usam o host `163.245.200.7`. Atualizar somente o segundo host não publica
+a experiência de pagamentos. O workflow versionado de pagamentos deve oferecer
+`deployment_target=public_payments` independentemente da emissão de certificados,
+usar a imagem identificada pelo SHA do commit e conferir DNS e SHA-256 do HTML e
+JavaScript públicos contra o checkout do mesmo commit. HTTP 200, container saudável
+e workflow verde não substituem essa prova. O destino padrão dos PDEs permanece.
+
+Alternativas avaliadas: migrar DNS adiciona risco e escopo; acionar emissão de
+certificado apenas para escolher o host confunde operações; selecionar o destino
+existente explicitamente resolve a causa com menor risco. Escolhida a terceira.

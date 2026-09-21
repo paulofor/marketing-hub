@@ -6571,3 +6571,19 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   teto/metas/datas `NULL`, edição real do formulário, regressões financeiras e
   homologação em três dispositivos. Corrigido localmente antes de atualizar o
   PR #5290, sem novo gasto ou execução paga para investigar.
+
+## LOOP-PAGAMENTOS-DEPLOY-FORA-DO-DNS
+
+- **Confirmação (21/09/2026):** o run `35633767097` publicou corretamente a imagem
+  `6c1d03e781c36ce7d93a05795942ae5c88585361` no host PDE `163.245.200.7`, mas
+  `pagamentopalf.site` resolve para `191.252.102.54`. O HTML público continuava na
+  versão anterior (SHA-256 `b6a28be90ab704ab9d552cb50c26d8e3c8a4ac2e78c04a0a6aa224426699aea1`).
+- **Causa:** o destino legado só era selecionável por uma opção de certificado
+  institucional, e o smoke test padrão avaliava outro domínio (Kit WhatsApp).
+- **Correção:** destino explícito `public_payments`, sem emissão de certificado,
+  imagem imutável por commit e comprovação dos bytes HTML/JS e DNS públicos. Não
+  alterar DNS, orçamento ou serviços por SSH manual.
+- **Prevenção:** contrato do workflow e servidor HTTP local cobrem arquivo atual,
+  HTTP 200 com conteúdo antigo, destino DNS incorreto, redirecionamento externo,
+  HTTP 404 e erro de origem local. A confirmação produtiva depende do novo deploy;
+  testes locais não comprovam publicação nem resultado comercial.

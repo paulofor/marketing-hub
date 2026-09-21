@@ -96,12 +96,13 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
                         effectiveRawResult.outputTokens() == null ? 0 : effectiveRawResult.outputTokens()));
     }
 
-    /** Injeta analytics de pagina e clique no checkout no HTML final publicado pelo GeraSalesPage v1. */
+    /** Preserva condições comerciais no HTML revisado e publicado; acrescenta analytics só na publicação. */
     private OpenAiResult<String> enrichFinalSalesPageResponse(
             StageContext<GeraSalesPageInput> context,
             OpenAiResult<String> rawResult,
             GeraSalesPageOutput output) {
-        if (!PUBLICATION_PACKAGE_STAGE.equals(context.execution().stageCode())) {
+        boolean publication = PUBLICATION_PACKAGE_STAGE.equals(context.execution().stageCode());
+        if (!publication && !"sales-page-html".equals(context.execution().stageCode())) {
             return rawResult;
         }
         Object htmlValue = output.payload().get("html");
@@ -109,10 +110,10 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
             return rawResult;
         }
         Map<String, Object> enrichedPayload = new LinkedHashMap<>(output.payload());
-        String htmlWithTransformationMarkers = ensureTransformationVisualMarkers(html);
-        enrichedPayload.put("html", htmlWithTransformationMarkers.contains("data-mh-sales-page-analytics")
-                ? htmlWithTransformationMarkers
-                : injectSalesPageAnalyticsTracking(htmlWithTransformationMarkers));
+        String htmlWithTerms = GeraSalesPageCommercialTerms.render(html, context.input().promptData(), objectMapper);
+        String finalHtml = publication ? ensureTransformationVisualMarkers(htmlWithTerms) : htmlWithTerms;
+        enrichedPayload.put("html", !publication || finalHtml.contains("data-mh-sales-page-analytics")
+                ? finalHtml : injectSalesPageAnalyticsTracking(finalHtml));
         try {
             String enrichedModelResponse = objectMapper.writeValueAsString(enrichedPayload);
             return new OpenAiResult<>(

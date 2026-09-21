@@ -59,6 +59,20 @@ intervenções, custo por homologação e tempo de preparação sem confundir co
 Estas instruções orientam futuras correções; a edição do prompt não implementa esses controles
 nem autoriza publicação, gasto ou retomada produtiva sem as condições do processo.
 
+### Identidade de páginas transformadas — decisão de 21/09/2026
+
+Quando uma página auditada atravessar transformações legítimas de publicação, como injeção de
+Pixel, analytics ou otimização de imagens, não comparar o hash bruto do snapshot com o documento
+servido: os bytes são diferentes por contrato. A publicação deve transportar separadamente o
+SHA-256 da origem auditada; o servidor público deve expor também o SHA-256 do HTML persistido que
+entregou. A captura visual registra essas duas identidades e o SHA-256 dos pixels.
+
+Antes de uma revisão paga, o executor confere origem esperada, origem observada e identidade do
+servido. Ausência ou divergência gera bloqueio técnico acionável, sem chamar o modelo e sem
+converter o impedimento em reprovação comercial. Testes integrados devem cobrir transformação
+legítima, origem divergente, identidade do servido ausente e host sem diagnóstico PDE em JSON.
+HTTP 200, URL, texto declarado ou apenas um dos hashes não comprovam essa cadeia.
+
 ## Prioridade comercial e diversidade de implementação
 
 

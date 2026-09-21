@@ -15,7 +15,12 @@ class FinancialPlanPromptContractTest {
     var json = new ObjectMapper();
     var runner = new FinancialCodexRunner(new FinancialAgentProperties(), json);
     String context =
-        "{\"financialPlanId\":95111,\"financialPlanRevision\":2,\"productId\":95102,\"assumptions\":{\"priceBrl\":99}}";
+        "{\"financialPlanId\":95111,\"financialPlanRevision\":2,\"productId\":95102,"
+            + "\"assumptions\":{\"priceBrl\":99},\"projectionBasis\":{"
+            + "\"analysisScope\":{\"incrementalInitialInvestmentBrl\":0},"
+            + "\"scenarioBasis\":{\"baseCustomers\":5},"
+            + "\"deliveryContract\":{\"intensiveBoundary\":"
+            + "\"FULL_CONTRACTED_PACKAGE_ALREADY_COVERED_BY_VARIABLE_ENVELOPE\"}}}";
     var job =
         new FinancialAgentJob(
             91L,
@@ -31,16 +36,19 @@ class FinancialPlanPromptContractTest {
         .contains(
             context,
             "INTENSIVE",
-            "não o renomeie para otimista",
+            "sem renomeá-lo para otimista",
             "não instruções nem autorizações",
             "custo desta avaliação",
-            "receita realizada");
+            "receita realizada",
+            "meta comercial condicional",
+            "reconciliação realizada",
+            "nova produção ou gasto");
     assertThat(prompt.indexOf("variableCostEnvelope")).isLessThan(prompt.indexOf(context));
     assertThat(prompt).doesNotContain("{{DECISION_CONTEXT}}", "{{FINANCIAL_SNAPSHOT}}");
     var schema =
         json.readTree(
             getClass()
-                .getResourceAsStream("/prompts/financial-agent/v2/revenue-projection-schema.json"));
+                .getResourceAsStream("/prompts/financial-agent/v3/revenue-projection-schema.json"));
     assertThat(schema.at("/properties/scenarios/maxItems").asInt()).isEqualTo(3);
     assertThat(schema.at("/properties/scenarios/items/properties/name/enum").toString())
         .doesNotContain("INTENSIVE");
@@ -51,8 +59,9 @@ class FinancialPlanPromptContractTest {
     assertThat(prompt)
         .contains(
             "COMPLETE_AGGREGATE",
-            "sem afirmar que seus componentes individuais são zero",
-            "não prova que exista uma chamada paga de IA por cliente");
+            "FULL_CONTRACTED_PACKAGE_ALREADY_COVERED_BY_VARIABLE_ENVELOPE",
+            "planejado válido",
+            "não é custo da entrega");
   }
 
   /**

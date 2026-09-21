@@ -24,7 +24,10 @@ import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublication
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationStageAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -122,11 +125,28 @@ class GeraSalesPagePublicationAuditServiceTest {
     assertThat(audit.getValue().getHtml()).contains("application/json");
     assertThat(audit.getValue().getHtml()).contains("section_view_time");
     assertThat(flow.getValue().getCustomFormHtml()).contains("data-track-section");
+    assertThat(flow.getValue().getCustomFormHtml())
+        .contains(
+            "<meta name=\"mh-publication-source-sha256\" content=\""
+                + sha256(audit.getValue().getHtml())
+                + "\">");
+    assertThat(audit.getValue().getHtml()).doesNotContain("mh-publication-source-sha256");
     assertThat(stages.getValue()).hasSize(2);
     assertThat(stages.getValue().getFirst().getPublicationAuditId()).isEqualTo(10L);
     assertThat(stages.getValue().getFirst().getStageCode()).isEqualTo("sales-page-offer-brief");
     assertThat(stages.getValue().getFirst().getPrompt()).isEqualTo("prompt job-offer");
     assertThat(stages.getValue().getFirst().getSchemaJson()).isEqualTo("{\"type\":\"object\"}");
+  }
+
+  /** Calcula no teste a identidade que deve vincular snapshot e documento publicado. */
+  private String sha256(String value) {
+    try {
+      return HexFormat.of()
+          .formatHex(
+              MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
+    } catch (Exception ex) {
+      throw new AssertionError("SHA-256 indisponível no teste", ex);
+    }
   }
 
   /**

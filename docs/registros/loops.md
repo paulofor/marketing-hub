@@ -3848,6 +3848,14 @@ run` também herdava o stdin do heredoc SSH, consumia silenciosamente os comando
   explícito. O índice prefixado `source_reference(191)` torna as consultas exatas e por prefixo
   compatíveis com MySQL 5.7/utf8mb4. Testes de contrato impedem antecipação do histórico e a
   homologação física exige criação e reaplicação do índice.
+- **Recorrência fechada localmente em 2026-09-21:** o detalhe do processo Quartzo de Capella
+  respondeu em 20,49 s, 31,41 s e 21,91 s mesmo com auditoria de prompt desativada. Os logs
+  confirmaram que a mesma fotografia de página, criativo, público e finanças era reconstruída para
+  `economics`, Psique, Têmis e `ready` na mesma transação. O contexto Quartzo agora resolve fontes e
+  snapshot uma vez por referência e transação, devolve cópias isoladas aos consumidores e descarta
+  o cache ao suspender ou concluir a transação. A regressão comprova uma resolução das fontes,
+  isolamento contra mutação e nova leitura em outra transação; a latência publicada só poderá ser
+  medida depois do PR e deploy autorizados.
 
 ## LOOP-IRIS-DEPLOY-CONCORRENTE-COM-APP — health do agente disputa reinício do backend
 
@@ -6391,3 +6399,46 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   provas legadas válidas e renovam somente a etapa cuja fonte mudou. Testes cobrem fonte ausente,
   contribuição negativa, dupla dedução, decisão desfavorável, cobertura incompleta e revisão
   financeira sem repetição das quatro atividades anteriores.
+
+### Recorrência — snapshot de projeção confundiu realizado e planejado em 21/09/2026
+
+- **Evidência confirmada:** após a revisão #3 preservar o custo variável agregado, Plutus #51
+  reconheceu contribuição unitária positiva de R$ 28,50, mas respondeu `BLOCKED/INCOMPLETE`.
+  A entrada omitia a receita-alvo estruturada, não qualificava R$ 73,20 como envelope fixo e
+  apresentava infraestrutura e R$ 69,95 históricos sem classificação temporal. A meta de cinco
+  vendas e o pacote fixo existiam no contrato/evidência, mas chegaram apenas como texto.
+- **Causa-raiz:** o mesmo snapshot genérico atendia conciliação realizada e projeção. As lacunas do
+  ledger realizado sobrepunham fontes atuais de planejamento; Plutus também tratava chamadas
+  internas de um kit fixo como franquia aberta do cliente. O backend autorizava a chamada paga sem
+  validar meta, unidade contratual, período dos custos e cenário-base positivo.
+- **Alternativas:** preencher zeros por produto criaria margem fictícia; aceitar o parecer bloqueado
+  eliminaria o gate; estruturar meta, contrato, envelopes e tempo dos custos antes do modelo resolve
+  a causa sem mudar oferta. Foi escolhida a terceira opção.
+- **Correção local:** a revisão passa a preservar envelopes variável e fixo com fontes da mesma
+  versão. O preflight deriva cenários de sensibilidade da meta, equilíbrio e recuperação histórica,
+  bloqueia divergências antes de Plutus e limita investimento incremental zero à reutilização da
+  versão existente sem nova produção. O prompt v3 distingue planejamento de realizado e interpreta
+  `INTENSIVE` como o pacote integral quando o contrato é fixo. O parecer #51 permanece histórico e
+  não será repetido com a mesma entrada.
+
+### Recorrência — revisão Quartzo não comprovava a página servida em 21/09/2026
+
+- **Evidência confirmada:** a publicação #27 do experimento #88 preserva o HTML auditado com
+  SHA-256 `ffa40b6d321da1f1bd757472b99147d2cc8c119190727c4bb9d24ca137356ccb`, enquanto o
+  Lead Portal serve uma variante legítima com Pixel, analytics e imagens otimizadas. Psique só
+  carregava contrato visual para PDE e Opala; Quartzo ficava sem vínculo visual. O capturador ainda
+  presumia JSON em `/version-diagnostics.json`, mas esse host devolve HTML.
+- **Causa-raiz:** a cadeia não separava a identidade do snapshot comercial da identidade do HTML
+  transformado e servido. Comparar os hashes brutos produziria falso bloqueio; confiar apenas em
+  URL, HTTP 200 ou texto não comprovaria os pixels da versão esperada.
+- **Alternativas:** aceitar a URL reduz esforço, mas não prova versão; comparar os bytes diretamente
+  rejeita transformações válidas; transportar o hash da origem, calcular o hash do servido e vincular
+  ambos às capturas preserva linhagem e funcionamento. Foi escolhida a terceira alternativa.
+- **Correção local:** o GeraSalesPage marca a origem auditada antes da publicação; o Lead Portal
+  calcula a identidade do HTML persistido antes dos scripts dinâmicos; Psique confere ambos e a CTA
+  antes do modelo, captura a página e todas as dobras e persiste os hashes dos PNGs. Divergência ou
+  identidade ausente retorna “aguardando atualização da página”, responsável e ação necessária.
+- **Prevenção:** testes cobrem transformação legítima, igualdade entre representações públicas,
+  diagnóstico não JSON, origem divergente, runtime sem hash e bloqueio anterior à revisão paga.
+  A página histórica precisa ser republicada pelo fluxo autorizado depois que a correção entrar em
+  produção; a correção local não altera campanha, orçamento nem executa Psique.

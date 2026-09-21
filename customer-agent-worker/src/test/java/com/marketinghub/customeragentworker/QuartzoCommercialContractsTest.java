@@ -32,7 +32,10 @@ class QuartzoCommercialContractsTest {
             "sourceReference",
             "experiment:88",
             "processContextJson",
-            "{\"quartzoCommercial\":{\"fingerprint\":\"frozen-quartzo\",\"productId\":7}}",
+            "{\"quartzoCommercial\":{\"fingerprint\":\"frozen-quartzo\",\"productId\":7,"
+                + "\"pageHash\":\""
+                + "a".repeat(64)
+                + "\",\"primaryCta\":\"Comprar o kit por R$ 67\"}}",
             "taskTarget",
             Map.of("publicUrl", "https://example.test/kit", "productId", 7));
     assertThat(CustomerBpmTaskConsumer.supportsContract(code, "humanExperienceReview")).isTrue();
@@ -54,5 +57,8 @@ class QuartzoCommercialContractsTest {
                 .path("fingerprint")
                 .asText())
         .isEqualTo("frozen-quartzo");
+    var visualContract = worker.liveVisualContract(task);
+    assertThat(visualContract.publicationSourceSha256()).isEqualTo("a".repeat(64));
+    assertThat(visualContract.requiredFirstFoldCtas()).containsExactly("Comprar o kit por R$ 67");
   }
 }

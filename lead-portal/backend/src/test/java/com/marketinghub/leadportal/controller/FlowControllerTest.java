@@ -9,6 +9,9 @@ import com.marketinghub.leadportal.model.FlowQuestionType;
 import com.marketinghub.leadportal.service.FlowService;
 import com.marketinghub.leadportal.entity.FlowAccessEntity;
 import com.marketinghub.leadportal.repository.FlowAccessRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
 import jakarta.servlet.http.Cookie;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -259,7 +262,8 @@ class FlowControllerTest {
     @Test
     void getStandaloneFlowPageReturnsHtmlDocumentWithoutJsonFetch() throws Exception {
         UpsertFlowRequest request = buildRequest();
-        request.setCustomFormHtml("<!doctype html><html><body>Landing direta</body></html>");
+        String sourceHtml = "<!doctype html><html><body>Landing direta</body></html>";
+        request.setCustomFormHtml(sourceHtml);
 
         mockMvc.perform(put("/api/flows/landing-direta")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -278,6 +282,10 @@ class FlowControllerTest {
                 .andExpect(content().string(containsString("Landing direta")))
                 .andExpect(content().string(containsString("data-mh-landing-analytics=\"true\"")))
                 .andExpect(content().string(containsString("data-mh-clarity-analytics=\"aggregate-v1\"")))
+                .andExpect(content().string(containsString(
+                        "<meta name=\"mh-served-html-sha256\" content=\""
+                                + sha256(sourceHtml)
+                                + "\">")))
                 .andExpect(content().string(containsString("consentv2")))
                 .andExpect(content().string(containsString("analytics_Storage: 'denied'")))
                 .andExpect(content().string(containsString("data-clarity-mask")))
@@ -302,6 +310,35 @@ class FlowControllerTest {
                 .andExpect(content().string(containsString("isSelfReferentialLink")))
                 .andExpect(content().string(containsString("form_start")))
                 .andExpect(content().string(containsString("form_submit")));
+    }
+
+    /** Comprova que a rota JSON e a rota standalone expõem a mesma identidade do HTML salvo. */
+    @Test
+    void publicRepresentationsExposeSameSourceIdentityBeforeDynamicScripts() throws Exception {
+        String publicationHash = "a".repeat(64);
+        String sourceHtml = "<!doctype html><html><head>"
+                + "<meta name=\"mh-publication-source-sha256\" content=\""
+                + publicationHash
+                + "\"><title>Identidade</title></head>"
+                + "<body><a href=\"#comprar\">Comprar</a></body></html>";
+        UpsertFlowRequest request = buildRequest();
+        request.setCustomFormHtml(sourceHtml);
+        mockMvc.perform(put("/api/flows/landing-identificada")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        String marker = "<meta name=\"mh-served-html-sha256\" content=\""
+                + sha256(sourceHtml)
+                + "\">";
+        mockMvc.perform(get("/api/flows/landing-identificada"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.customFormHtml").value(containsString(marker)))
+                .andExpect(jsonPath("$.customFormHtml").value(containsString(publicationHash)));
+        mockMvc.perform(get("/api/flows/landing-identificada/page").param("mh_test", "1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(marker)))
+                .andExpect(content().string(containsString(publicationHash)));
     }
 
     /** Valida o comando interno idempotente que reprocessa ativos de uma landing histórica. */
@@ -536,5 +573,12 @@ class FlowControllerTest {
         request.setDescription("Descubra seu potencial");
         request.setQuestions(List.of(question));
         return request;
+    }
+
+    /** Calcula no teste a identidade esperada do HTML bruto enviado ao Lead Portal. */
+    private String sha256(String value) throws Exception {
+        return HexFormat.of().formatHex(
+                MessageDigest.getInstance("SHA-256")
+                        .digest(value.getBytes(StandardCharsets.UTF_8)));
     }
 }

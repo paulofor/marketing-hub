@@ -69,6 +69,10 @@ class FinancialPlanPreparationTest {
             Validation.buildDefaultValidatorFactory().getValidator());
     product.setId(95101L);
     product.setValidationDefinitionVersion("fixture-v1");
+    product.setValidationDefinitionJson(
+        "{\"format\":{\"type\":\"CUSTOM_VISUAL_ASSET_PACK\",\"valueUnit\":\"kit utilizável\"},"
+            + "\"delivery\":{\"mode\":\"PERSONALIZED_ASSISTED\",\"personalization\":true},"
+            + "\"successEvidence\":{\"firstMilestoneSales\":5}}");
     product.setCurrentPriceBrl(new BigDecimal("67"));
     var type = new ProductTypeDefinition();
     type.setId(951L);
@@ -77,9 +81,16 @@ class FinancialPlanPreparationTest {
     when(products.findById(95101L)).thenReturn(Optional.of(product));
     when(products.findLockedById(95101L)).thenReturn(Optional.of(product));
     plan.setId(95102L);
+    plan.setOfferPriceBrl(new BigDecimal("67"));
+    plan.setTargetRevenue(new BigDecimal("335"));
+    plan.setOperationalRevenueTarget(new BigDecimal("335"));
     plan.setExpectedCacBrl(new BigDecimal("25"));
     plan.setVariableCostPerSaleBrl(new BigDecimal("13.50"));
     plan.setFixedOperationalCostBrl(new BigDecimal("73.20"));
+    plan.setActualCampaignCost(new BigDecimal("59.70"));
+    plan.setActualAiCost(new BigDecimal("69.95"));
+    plan.setActualTotalCost(new BigDecimal("143.15"));
+    plan.setDeadline(LocalDate.of(2026, 8, 16));
     when(plans.findByProductId(95101L)).thenReturn(List.of(plan));
     when(plans.findIdsByProductId(95101L)).thenReturn(List.of(plan.getId()));
     when(plans.findById(plan.getId())).thenReturn(Optional.of(plan));
@@ -151,6 +162,10 @@ class FinancialPlanPreparationTest {
         .isEqualByComparingTo("13.50");
     assertThat(saved.assumptions().variableCostEnvelope().sourceReference())
         .isEqualTo("commercial-plan:95102@v4:variableCostPerSaleBrl");
+    assertThat(saved.assumptions().fixedCostEnvelope().amountPerPeriodBrl())
+        .isEqualByComparingTo("73.20");
+    assertThat(saved.assumptions().fixedCostEnvelope().sourceReference())
+        .isEqualTo("commercial-plan:95102@v4:fixedOperationalCostBrl");
     assertThat(saved.canRequestAnalysis()).isTrue();
     assertThat(saved.evaluation().status()).isEqualTo("READY_FOR_ANALYSIS");
     assertThat(
@@ -275,10 +290,117 @@ class FinancialPlanPreparationTest {
         .contains(
             "READY_FOR_ANALYSIS",
             "ALL_VARIABLE_COSTS_EXCLUDING_CAC",
-            "commercial-plan:95102@v4:variableCostPerSaleBrl");
+            "ALL_FIXED_OPERATIONAL_COSTS_FOR_PERIOD",
+            "commercial-plan:95102@v4:variableCostPerSaleBrl",
+            "CONDITIONAL_COMMERCIAL_TARGET_NOT_DEMAND_FORECAST",
+            "DETERMINISTIC_SENSITIVITY_NOT_DEMAND_FORECAST",
+            "EXISTING_PRODUCT_VERSION_INCREMENTAL_SALE",
+            "\"baseCustomers\":5",
+            "\"baseProfitBrl\":69.30",
+            "\"optimisticRecoveryCustomers\":8");
   }
 
-  /** Recusa envelope textual que não corresponde ao valor e à versão oficiais do plano. */
+  /** Bloqueia a chamada paga quando contrato e receita-alvo não definem o cenário-base. */
+  @Test
+  void missingCommercialTargetBlocksBeforePlutus() {
+    product.setValidationDefinitionJson(
+        "{\"format\":{\"type\":\"CUSTOM_VISUAL_ASSET_PACK\",\"valueUnit\":\"kit\"},"
+            + "\"delivery\":{\"mode\":\"PERSONALIZED_ASSISTED\",\"personalization\":true}}");
+    plan.setTargetRevenue(null);
+    plan.setOperationalRevenueTarget(null);
+    var persisted = new java.util.concurrent.atomic.AtomicReference<FinancialPlanRevision>();
+    doAnswer(
+            invocation -> {
+              var revision = invocation.<FinancialPlanRevision>getArgument(0);
+              revision.setId(999L);
+              persisted.set(revision);
+              return revision;
+            })
+        .when(revisions)
+        .saveAndFlush(any());
+    var saved = service.prepare(product.getId(), Environment.LIVE, request(0, 7, true), null);
+    when(revisions.findLockedById(saved.id())).thenReturn(Optional.of(persisted.get()));
+
+    assertThatThrownBy(() -> service.requestAnalysis(product.getId(), Environment.LIVE, saved.id()))
+        .hasMessageContaining("meta de clientes ou receita");
+    verifyNoInteractions(plutus);
+  }
+
+  /** Bloqueia o contrato de uso aberto antes de pedir que o modelo estime uma quota inexistente. */
+  @Test
+  void openEndedDeliveryBlocksBeforePlutus() {
+    product.setValidationDefinitionJson(
+        "{\"format\":{\"type\":\"CONTINUOUS_ASSISTANT\",\"valueUnit\":\"acesso contínuo\"},"
+            + "\"delivery\":{\"mode\":\"PERSONALIZED_ASSISTED\",\"personalization\":true},"
+            + "\"successEvidence\":{\"firstMilestoneSales\":5}}");
+    var persisted = new java.util.concurrent.atomic.AtomicReference<FinancialPlanRevision>();
+    doAnswer(
+            invocation -> {
+              var revision = invocation.<FinancialPlanRevision>getArgument(0);
+              revision.setId(999L);
+              persisted.set(revision);
+              return revision;
+            })
+        .when(revisions)
+        .saveAndFlush(any());
+    var saved = service.prepare(product.getId(), Environment.LIVE, request(0, 7, true), null);
+    when(revisions.findLockedById(saved.id())).thenReturn(Optional.of(persisted.get()));
+
+    assertThatThrownBy(() -> service.requestAnalysis(product.getId(), Environment.LIVE, saved.id()))
+        .hasMessageContaining("unidade fixa de entrega");
+    verifyNoInteractions(plutus);
+  }
+
+  /** Bloqueia custos realizados sobrepostos ao novo período antes de consumir outro parecer. */
+  @Test
+  void overlappingHistoricalCostsBlockBeforePlutus() {
+    plan.setDeadline(LocalDate.now(ZoneOffset.UTC).plusDays(10));
+    var persisted = new java.util.concurrent.atomic.AtomicReference<FinancialPlanRevision>();
+    doAnswer(
+            invocation -> {
+              var revision = invocation.<FinancialPlanRevision>getArgument(0);
+              revision.setId(999L);
+              persisted.set(revision);
+              return revision;
+            })
+        .when(revisions)
+        .saveAndFlush(any());
+    var saved = service.prepare(product.getId(), Environment.LIVE, request(0, 7, true), null);
+    when(revisions.findLockedById(saved.id())).thenReturn(Optional.of(persisted.get()));
+
+    assertThatThrownBy(() -> service.requestAnalysis(product.getId(), Environment.LIVE, saved.id()))
+        .hasMessageContaining("custos realizados que podem pertencer ao novo período");
+    verifyNoInteractions(plutus);
+  }
+
+  /** Bloqueia meta que não cobre o custo fixo mesmo com contribuição unitária positiva. */
+  @Test
+  void nonPositiveBaseTargetBlocksBeforePlutus() {
+    plan.setTargetRevenue(new BigDecimal("67"));
+    plan.setOperationalRevenueTarget(new BigDecimal("67"));
+    product.setValidationDefinitionJson(
+        "{\"format\":{\"type\":\"CUSTOM_VISUAL_ASSET_PACK\",\"valueUnit\":\"kit\"},"
+            + "\"delivery\":{\"mode\":\"PERSONALIZED_ASSISTED\",\"personalization\":true},"
+            + "\"successEvidence\":{\"firstMilestoneSales\":1}}");
+    var persisted = new java.util.concurrent.atomic.AtomicReference<FinancialPlanRevision>();
+    doAnswer(
+            invocation -> {
+              var revision = invocation.<FinancialPlanRevision>getArgument(0);
+              revision.setId(999L);
+              persisted.set(revision);
+              return revision;
+            })
+        .when(revisions)
+        .saveAndFlush(any());
+    var saved = service.prepare(product.getId(), Environment.LIVE, request(0, 7, true), null);
+    when(revisions.findLockedById(saved.id())).thenReturn(Optional.of(persisted.get()));
+
+    assertThatThrownBy(() -> service.requestAnalysis(product.getId(), Environment.LIVE, saved.id()))
+        .hasMessageContaining("não produz resultado-base positivo");
+    verifyNoInteractions(plutus);
+  }
+
+  /** Recusa envelopes textuais que não correspondem aos valores e à versão oficiais do plano. */
   @Test
   void forgedAggregateReferenceCannotUnlockReview() throws Exception {
     var assumptions =
@@ -298,6 +420,21 @@ class FinancialPlanPreparationTest {
                     new SavePlanRequest(
                         "Plano sintético", "Operador local", 0, plan.getId(), null, forged)))
         .hasMessageContaining("envelope variável diverge");
+
+    ((com.fasterxml.jackson.databind.node.ObjectNode) node.path("variableCostEnvelope"))
+        .put("sourceReference", "commercial-plan:95102@v4:variableCostPerSaleBrl");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) node.path("fixedCostEnvelope"))
+        .put("amountPerPeriodBrl", 0);
+    var forgedFixed = json.treeToValue(node, PlanAssumptions.class);
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    "PRODUCT",
+                    product.getId(),
+                    Environment.LIVE,
+                    new SavePlanRequest(
+                        "Plano sintético", "Operador local", 0, plan.getId(), null, forgedFixed)))
+        .hasMessageContaining("envelope fixo diverge");
     verifyNoInteractions(plutus);
   }
 

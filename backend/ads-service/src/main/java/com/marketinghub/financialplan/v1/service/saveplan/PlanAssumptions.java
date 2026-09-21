@@ -20,7 +20,8 @@ public record PlanAssumptions(
     @DecimalMin("0") @Digits(integer = 9, fraction = 6) BigDecimal maximumCacBrl,
     @NotNull @Size(min = 3, max = 3) List<@NotNull @Valid Scenario> scenarios,
     @Valid Preparation preparation,
-    @Valid VariableCostEnvelope variableCostEnvelope) {
+    @Valid VariableCostEnvelope variableCostEnvelope,
+    @Valid FixedCostEnvelope fixedCostEnvelope) {
   /** Escolhas operacionais; suporte não equivale ao período econômico ou ao acesso vendido. */
   public record Preparation(
       @NotNull @Min(1) @Max(3660) @JsonDeserialize(using = WholeNumberDeserializer.class)
@@ -31,6 +32,13 @@ public record PlanAssumptions(
   public record VariableCostEnvelope(
       @NotNull @DecimalMin("0") @Digits(integer = 9, fraction = 6) BigDecimal amountPerCustomerBrl,
       @NotNull VariableCostCoverage coverage,
+      @NotBlank @Size(max = 1000) String sourceReference,
+      @NotNull LocalDate checkedOn) {}
+
+  /** Preserva o custo fixo total do período sem transformar sua composição em valores zero. */
+  public record FixedCostEnvelope(
+      @NotNull @DecimalMin("0") @Digits(integer = 9, fraction = 6) BigDecimal amountPerPeriodBrl,
+      @NotNull FixedCostCoverage coverage,
       @NotBlank @Size(max = 1000) String sourceReference,
       @NotNull LocalDate checkedOn) {}
 
@@ -89,5 +97,10 @@ public record PlanAssumptions(
   /** Cobertura declarada pelo campo agregado, sem inferir a decomposição interna. */
   public enum VariableCostCoverage {
     ALL_VARIABLE_COSTS_EXCLUDING_CAC
+  }
+
+  /** Cobertura declarada pelo custo fixo planejado da versão comercial. */
+  public enum FixedCostCoverage {
+    ALL_FIXED_OPERATIONAL_COSTS_FOR_PERIOD
   }
 }

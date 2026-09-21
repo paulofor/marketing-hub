@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -40,6 +41,7 @@ public class BpmVisualEvidenceRunner {
           "session",
           "signature",
           "token");
+  private static final Pattern SHA256 = Pattern.compile("^[a-f0-9]{64}$");
   private final ObjectMapper json;
   private final String nodeBinary;
   private final String scriptPath;
@@ -193,6 +195,7 @@ public class BpmVisualEvidenceRunner {
       PageFacts page, PdeExperienceEvidenceLoader.LiveVisualContract contract) {
     if (contract == null || !contract.required()) return;
     validateRuntimeIdentity(page.runtimeIdentity(), contract.runtimeIdentity());
+    validatePageSourceIdentity(page.runtimeIdentity(), contract.publicationSourceSha256());
     List<String> firstFoldCtas = normalizedValues(page.firstFoldCtas());
     String visibleText = normalize(page.visibleText());
     for (String required : contract.requiredFirstFoldCtas()) {
@@ -225,6 +228,29 @@ public class BpmVisualEvidenceRunner {
               + expected.frontendSourceSha256()
               + "; recebido="
               + (actual == null ? "ausente" : actual.frontendSourceSha256()));
+    }
+  }
+
+  /** Bloqueia Quartzo quando o HTML servido não é a publicação auditada pelo backend. */
+  private void validatePageSourceIdentity(RuntimeIdentity actual, String expected) {
+    if (expected == null || expected.isBlank()) return;
+    String observed = actual == null ? null : actual.publicationSourceSha256();
+    if (!Objects.equals(expected, observed)) {
+      throw new VisualEvidenceException(
+          "Aguardando atualização da página: o HTML servido diverge da publicação auditada. "
+              + "esperado="
+              + expected
+              + "; observado="
+              + Objects.toString(observed, "ausente")
+              + "; responsável=Lead Portal/GeraSalesPage; ação=republique ou restaure a versão auditada.");
+    }
+    String served = actual.servedHtmlSha256();
+    if (served == null || !SHA256.matcher(served).matches()) {
+      throw new VisualEvidenceException(
+          "Aguardando atualização da página: o Lead Portal não comprovou a identidade do HTML servido. "
+              + "observado="
+              + Objects.toString(served, "ausente")
+              + "; responsável=Lead Portal; ação=publique a versão com identidade de runtime.");
     }
   }
 
@@ -311,7 +337,9 @@ public class BpmVisualEvidenceRunner {
       String experienceVersion,
       String frontendSourceSha256,
       String imageTag,
-      String commitSha) {}
+      String commitSha,
+      String publicationSourceSha256,
+      String servedHtmlSha256) {}
 
   /** Descreve um arquivo local e todos os metadados que serão persistidos no backend. */
   record VisualArtifact(

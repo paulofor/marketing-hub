@@ -2,7 +2,7 @@
 """Homologa planos financeiros com API/JPA/MySQL reais e Plutus simulado, sem publicação."""
 import argparse, hashlib, json, os, pathlib, subprocess, time, urllib.request, xml.etree.ElementTree as ET
 ROOT=pathlib.Path(__file__).resolve().parents[3]
-DEFAULT_PROJECT='aihub-a5554e2c-e77e-4ca7-a59b-5a1194899c9b-a94f5ffe4c'
+DEFAULT_PROJECT='aihub-339e0d38-fe59-4d38-bc4c-5cbf81bc5012-56dddc3aa6'
 PROJECT=os.environ.get('FINANCIAL_PLAN_COMPOSE_PROJECT',DEFAULT_PROJECT)
 if os.environ.get('GITHUB_ACTIONS')!='true' and PROJECT!=DEFAULT_PROJECT:
     raise SystemExit('Use o projeto exclusivo desta sandbox.')
@@ -96,6 +96,7 @@ for round in range(1,args.rounds+1):
             ui=subprocess.Popen(['node','infra/testing/product-financial-plan/frontend-server.mjs'],cwd=ROOT,stdout=ui_log,stderr=subprocess.STDOUT)
             ready(ui,'http://127.0.0.1:15175/financial/plans')
             run(['node','infra/testing/product-financial-plan/browser-matrix.mjs'],folder/'browser-matrix.log',env=dict(os.environ,FINANCIAL_PLAN_ARTIFACTS=str(folder/'browser')))
+            run(['node','infra/testing/product-financial-plan/preparation-matrix.mjs'],folder/'preparation-matrix.log',env=dict(os.environ,FINANCIAL_PLAN_ARTIFACTS=str(folder/'preparation-browser')))
         before=read('/api/financial-plans/v1/products/95101')
         stop(api)
         api=subprocess.Popen(java,cwd=ROOT,stdout=api_log,stderr=subprocess.STDOUT)

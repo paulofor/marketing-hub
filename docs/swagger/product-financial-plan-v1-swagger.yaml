@@ -238,6 +238,16 @@ components:
             coverage: {type: string, enum: [ALL_VARIABLE_COSTS_EXCLUDING_CAC]}
             sourceReference: {type: string, maxLength: 1000}
             checkedOn: {type: string, format: date}
+        fixedCostEnvelope:
+          type: object
+          nullable: true
+          description: Custo fixo operacional total do período, com fonte da mesma versão comercial e sem presumir sua decomposição interna.
+          required: [amountPerPeriodBrl, coverage, sourceReference, checkedOn]
+          properties:
+            amountPerPeriodBrl: {$ref: '#/components/schemas/Amount'}
+            coverage: {type: string, enum: [ALL_FIXED_OPERATIONAL_COSTS_FOR_PERIOD]}
+            sourceReference: {type: string, maxLength: 1000}
+            checkedOn: {type: string, format: date}
         ai:
           type: object
           required: [currency]

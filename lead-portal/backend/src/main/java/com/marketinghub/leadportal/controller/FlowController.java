@@ -4,15 +4,21 @@ import com.marketinghub.leadportal.analytics.ClarityTrackingScriptFactory;
 import com.marketinghub.leadportal.dto.FlowResponse;
 import com.marketinghub.leadportal.dto.UpsertFlowRequest;
 import com.marketinghub.leadportal.model.Flow;
-import com.marketinghub.leadportal.model.FlowQuestion;
 import com.marketinghub.leadportal.model.FlowAccessMetadata;
+import com.marketinghub.leadportal.model.FlowQuestion;
 import com.marketinghub.leadportal.model.SimpleFormStyle;
 import com.marketinghub.leadportal.service.FlowService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
-import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +40,8 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin
 @Validated
 public class FlowController {
+
+    private static final Logger log = LoggerFactory.getLogger(FlowController.class);
 
     private final FlowService flowService;
     private final ClarityTrackingScriptFactory clarityTrackingScriptFactory;
@@ -104,7 +112,8 @@ public class FlowController {
         }
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_HTML)
-                .body(clarityTrackingScriptFactory.inject(injectLandingAnalyticsScript(slug, html)));
+                .body(clarityTrackingScriptFactory.inject(
+                        injectLandingAnalyticsScript(slug, injectServedHtmlIdentity(html))));
     }
 
     /**
@@ -172,7 +181,8 @@ public class FlowController {
             return response;
         }
         String instrumentedHtml = clarityTrackingScriptFactory.inject(
-                injectLandingAnalyticsScript(response.slug(), response.customFormHtml()));
+                injectLandingAnalyticsScript(
+                        response.slug(), injectServedHtmlIdentity(response.customFormHtml())));
         return new FlowResponse(
                 response.slug(),
                 response.name(),
@@ -184,6 +194,37 @@ public class FlowController {
                 response.facebookPixelId(),
                 response.facebookPixelCode(),
                 response.facebookPixelCreatedAt());
+    }
+
+    /**
+     * Expõe no mesmo documento um SHA-256 do HTML bruto persistido antes da instrumentação dinâmica.
+     */
+    private String injectServedHtmlIdentity(String html) {
+        if (html == null) {
+            return null;
+        }
+        String hash = sourceSha256(html);
+        String marker = "<meta name=\"mh-served-html-sha256\" content=\"" + hash + "\">";
+        var head = java.util.regex.Pattern.compile("(?i)<head(?:\\s[^>]*)?>").matcher(html);
+        if (head.find()) {
+            return head.replaceFirst(
+                    java.util.regex.Matcher.quoteReplacement(head.group() + "\n" + marker));
+        }
+        return marker + "\n" + html;
+    }
+
+    /**
+     * Calcula a identidade imutável do HTML salvo sem misturar scripts acrescentados na resposta.
+     */
+    private String sourceSha256(String html) {
+        try {
+            return HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256")
+                            .digest(html.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException ex) {
+            log.error("Lead Portal: SHA-256 indisponível ao identificar HTML público.", ex);
+            throw new IllegalStateException("Não foi possível identificar o HTML público.", ex);
+        }
     }
 
     /**

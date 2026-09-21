@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeStatus;
@@ -24,12 +25,16 @@ import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepositor
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /** Responsabilidade: reunir fontes comerciais do Quartzo sem exigir contratos ou slots de Opala. */
 @Component
@@ -37,6 +42,7 @@ import org.springframework.stereotype.Component;
 public class QuartzoCommercialContext {
   public static final String CODE = "quartzo-commercial-preparation-v1";
   public static final String TYPE = "LOW_TICKET_DIGITAL_PRODUCT";
+  private static final Object TRANSACTION_CACHE_RESOURCE = new Object();
   private final ExperimentRepository experiments;
   private final LearningSalesCycleRepository cycles;
   private final ExperimentCampaignDestinationPolicy destinations;
@@ -78,6 +84,13 @@ public class QuartzoCommercialContext {
       Long chainId,
       GeraSalesPagePublicationAudit publication) {}
 
+  /** Responsabilidade: manter a entidade do ciclo junto da projeção pública da referência. */
+  private record ResolvedScope(Scope scope, LearningSalesCycle cycle) {}
+
+  /** Responsabilidade: compartilhar fontes e fotografia somente durante a transação corrente. */
+  private record TransactionContextCache(
+      Map<String, ResolvedScope> scopes, Map<String, ObjectNode> snapshots) {}
+
   /** Reconhece exclusivamente o código oficial do tipo, nunca seu nome comercial. */
   public boolean applies(Product product) {
     return product != null
@@ -90,29 +103,40 @@ public class QuartzoCommercialContext {
     require(
         source != null && source.matches("experiment:[1-9][0-9]{0,17}"),
         "Selecione o experimento exato do produto Quartzo antes da preparação.");
+    ResolvedScope resolved =
+        TransactionSynchronizationManager.isSynchronizationActive()
+            ? transactionContextCache().scopes().computeIfAbsent(source, this::resolveScope)
+            : resolveScope(source);
+    require(
+        productId == null || Objects.equals(productId, resolved.scope().product().getId()),
+        "O experimento pertence a outro produto.");
+    if (mutation) {
+      require(
+          List.of(ExperimentStatus.PLANNED, ExperimentStatus.USER_STOPPED, ExperimentStatus.PAUSED)
+              .contains(resolved.scope().experiment().getStatus()),
+          "Prepare uma candidata planejada ou interrompida; não altere a campanha em operação.");
+      if (resolved.cycle() != null) {
+        require(
+            "OPEN".equals(resolved.cycle().getStatus())
+                && List.of("AUTHORIZATION", "PUBLICATION").contains(resolved.cycle().getStage()),
+            "O ciclo não está na etapa de preparação comercial.");
+      }
+    }
+    return resolved.scope();
+  }
+
+  /** Resolve uma vez as fontes invariantes da referência dentro da mesma transação. */
+  private ResolvedScope resolveScope(String source) {
     var experiment = experiments.findById(Long.parseLong(source.substring(11))).orElseThrow();
     var product = experiment.getProduct();
     require(applies(product), "Este subprocesso exige o tipo cadastrado Quartzo.");
     require(
-        productId == null || Objects.equals(productId, product.getId()),
-        "O experimento pertence a outro produto.");
-    require(
         experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT,
         "O experimento Quartzo precisa usar o contrato de venda low-ticket.");
-    if (mutation)
-      require(
-          List.of(ExperimentStatus.PLANNED, ExperimentStatus.USER_STOPPED, ExperimentStatus.PAUSED)
-              .contains(experiment.getStatus()),
-          "Prepare uma candidata planejada ou interrompida; não altere a campanha em operação.");
     var cycle = cycles.findByExperimentId(experiment.getId()).orElse(null);
     require(
         cycle == null || Objects.equals(cycle.getProductId(), product.getId()),
         "O ciclo pertence a outro produto.");
-    if (mutation && cycle != null)
-      require(
-          "OPEN".equals(cycle.getStatus())
-              && List.of("AUTHORIZATION", "PUBLICATION").contains(cycle.getStage()),
-          "O ciclo não está na etapa de preparação comercial.");
     String version =
         cycle == null ? product.getValidationDefinitionVersion() : cycle.getProductVersion();
     require(version != null && !version.isBlank(), "Registre a versão do contrato do produto.");
@@ -120,17 +144,34 @@ public class QuartzoCommercialContext {
     require(
         publication == null || Objects.equals(publication.getExperimentId(), experiment.getId()),
         "A página auditada pertence a outro experimento.");
-    return new Scope(
-        experiment,
-        product,
-        version,
-        cycle == null ? null : cycle.getId(),
-        cycle == null ? null : cycle.getChainDefinitionId(),
-        publication);
+    return new ResolvedScope(
+        new Scope(
+            experiment,
+            product,
+            version,
+            cycle == null ? null : cycle.getId(),
+            cycle == null ? null : cycle.getChainDefinitionId(),
+            publication),
+        cycle);
   }
 
-  /** Congela fontes e ativos relevantes; alteração material invalida as revisões anteriores. */
+  /**
+   * Congela fontes e ativos relevantes uma vez por transação; alteração material invalida as
+   * revisões anteriores na próxima leitura.
+   */
   public ObjectNode snapshot(String source) {
+    if (!TransactionSynchronizationManager.isSynchronizationActive()) return buildSnapshot(source);
+    var cache = transactionContextCache().snapshots();
+    var cached = cache.get(source);
+    if (cached == null) {
+      cached = buildSnapshot(source);
+      cache.put(source, cached);
+    }
+    return cached.deepCopy();
+  }
+
+  /** Monta a fotografia canônica quando ainda não existe leitura compartilhada na transação. */
+  private ObjectNode buildSnapshot(String source) {
     var scope = scope(source, null, false);
     var experiment = scope.experiment();
     var product = scope.product();
@@ -215,6 +256,42 @@ public class QuartzoCommercialContext {
     result.put("salesProven", false);
     result.put("fingerprint", fingerprintText(canonical(result).toString()));
     return result;
+  }
+
+  /** Mantém a fotografia somente no ciclo da transação e a remove em suspensão ou conclusão. */
+  private TransactionContextCache transactionContextCache() {
+    var current = TransactionSynchronizationManager.getResource(TRANSACTION_CACHE_RESOURCE);
+    if (current != null) return (TransactionContextCache) current;
+    var cache = new TransactionContextCache(new HashMap<>(), new HashMap<>());
+    TransactionSynchronizationManager.bindResource(TRANSACTION_CACHE_RESOURCE, cache);
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          /** Libera o cache ao suspender a transação para não contaminar uma transação aninhada. */
+          @Override
+          public void suspend() {
+            unbindIfCurrent(cache);
+          }
+
+          /** Restaura o cache quando a transação original volta à thread. */
+          @Override
+          public void resume() {
+            if (!TransactionSynchronizationManager.hasResource(TRANSACTION_CACHE_RESOURCE))
+              TransactionSynchronizationManager.bindResource(TRANSACTION_CACHE_RESOURCE, cache);
+          }
+
+          /** Descarta a fotografia ao terminar a leitura ou escrita corrente. */
+          @Override
+          public void afterCompletion(int status) {
+            unbindIfCurrent(cache);
+          }
+        });
+    return cache;
+  }
+
+  /** Remove somente o cache criado por esta transação, preservando qualquer contexto restaurado. */
+  private void unbindIfCurrent(TransactionContextCache cache) {
+    if (TransactionSynchronizationManager.getResource(TRANSACTION_CACHE_RESOURCE) == cache)
+      TransactionSynchronizationManager.unbindResource(TRANSACTION_CACHE_RESOURCE);
   }
 
   /** Identifica somente as fontes que comprovam a atividade, preservando provas independentes. */

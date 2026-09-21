@@ -40,9 +40,51 @@ Uma rodada completa sem defeitos encerra a homologação. Havendo defeito corrig
 duas rodadas completas consecutivas após a última correção. Casos sintéticos exercitam
 generalização; não constituem held-out independente nem comprovação de lucro real.
 
+## Extensão da matriz — preflight econômico Quartzo em 21/09/2026
+
+Definida antes da matriz completa da correção de Capella. O caso original usa preço de R$ 67,
+envelope variável de R$ 13,50, CAC máximo de R$ 25, envelope fixo de R$ 73,20, meta explícita de
+cinco vendas e R$ 143,15 de custos históricos encerrados. Nenhuma chamada real a Plutus, campanha,
+compra ou dado produtivo é criada pela homologação.
+
+| Área | Critério adicional de aceite |
+| --- | --- |
+| Caminho feliz | Duas escolhas geram revisão pronta; preflight estrutura contrato, meta, envelopes e três sensibilidades; Plutus simulado recebe uma única execução |
+| Validações | Meta incompatível com preço, cenário-base sem lucro, pacote aberto e envelope adulterado bloqueiam antes da fila paga |
+| Tempo e custos | Custos históricos encerrados aparecem na recuperação sem dupla dedução; período sobreposto exige classificação e não é presumido |
+| Compatibilidade | Planos detalhados preservam seus cenários e investimento declarado; revisão agregada não exige decomposição artificial |
+| Retomada | Repetição da mesma revisão converge para a execução já criada; falha técnica continua auditável sem cobrança duplicada |
+| Processo Quartzo | Parecer `APPROVE` com cobertura completa conclui `economics`, mantém vendas como não comprovadas e libera somente a revisão humana de Psique |
+| Leitura do processo | Fontes e snapshot Quartzo são resolvidos uma vez por referência e transação, sem compartilhar o `ObjectNode` mutável entre gates |
+| Interface | Resumo mostra envelopes variável e fixo; edição avançada só os substitui por decisão explícita; formulário simples roda em desktop, iPhone e Pixel |
+| Observabilidade | Request, versão do prompt/schema, base da projeção, decisão, custo do parecer e impedimentos de preflight permanecem vinculados à revisão |
+| Isolamento | Produtos 95101–95120, MySQL e provedor simulado; TEST/LIVE locais separados e nenhuma identidade de Capella escrita em produção |
+
 A preservação dos dados é verificada na reaplicação e no reinício da aplicação. O rollback
 da migração remove a tabela nova e é testado somente no banco descartável; a recriação do
 schema não recupera seus registros. Um rollback apenas do código pode manter a tabela aditiva.
+
+## Extensão da matriz — identidade visual Quartzo em 21/09/2026
+
+Definida antes dos testes integrados dos módulos de publicação e Psique. As páginas, tarefas e
+revisões são sintéticas; o navegador usa `mh_test=1`. Nenhuma chamada ao modelo, publicação
+produtiva, campanha ou gasto é autorizado por esta matriz.
+
+| Área | Critério adicional de aceite |
+| --- | --- |
+| Construção | GeraSalesPage preserva o snapshot sem marcador e publica o SHA-256 exato desse snapshot no documento enviado |
+| Transformação | Pixel e otimização de imagens podem mudar os bytes sem perder a identidade da origem auditada |
+| Entrega | Lead Portal expõe SHA-256 do HTML persistido antes de analytics e Clarity dinâmicos, igual nas rotas JSON e standalone |
+| Captura | Chromium mobile lê origem auditada e HTML servido, mesmo quando `/version-diagnostics.json` devolve HTML |
+| Gate feliz | Origem esperada e observada coincidem, runtime tem hash válido, CTA está na primeira dobra e os PNGs são persistíveis |
+| Falhas | Origem divergente, hash servido ausente/inválido ou CTA ausente bloqueiam antes do modelo com responsável e ação |
+| Idempotência | Repetir a consulta não cria tarefa, publicação ou chamada paga; a página histórica só muda pelo fluxo autorizado |
+| Observabilidade | Tarefa conserva publicação, hashes, URL final, dispositivo, dobras e SHA-256 de cada captura |
+| Segregação | Fixtures usam slugs e tarefas locais; `mh_test=1` impede analytics comercial e nenhum dado produtivo é gravado |
+
+O caso original de Capella usa apenas os hashes produtivos em consulta de diagnóstico; a
+homologação de escrita usa dados locais. Após a publicação da correção, a página #27 precisa ser
+republicada sem nova geração para receber o marcador de origem antes da primeira revisão de Psique.
 
 ## Resultados
 
@@ -80,6 +122,45 @@ Reprodução: `python3 infra/testing/product-financial-plan/run-local.py --round
 rodada completa. O runner remove containers, rede e volumes temporários ao encerrar cada rodada.
 
 ## Diagnósticos locais durante a implementação
+
+### Correção do preflight Quartzo em 21/09/2026
+
+- Suítes completas: backend com 3.324 testes aprovados e 19 ignorados condicionais; worker
+  Plutus com 51 aprovados; frontend com 718 aprovados em 170 arquivos. Typecheck, builds,
+  Spotless, Prettier, compilação Python e `git diff --check` aprovados.
+- Integração descartável MySQL 5.7: 51 verificações de API, oito solicitações concorrentes,
+  duas execuções simuladas de fila e zero chamadas reais ao modelo. Migração, reaplicação,
+  reinício, persistência e limpeza da topologia foram aprovados.
+- Interface: 68 verificações da tela avançada e 87 da preparação simplificada em desktop,
+  iPhone 15 Pro e Pixel 7. Os dados permaneceram no ambiente `TEST` local.
+- A primeira execução completa revelou duas expectativas antigas que ainda aceitavam plano
+  agregado sem envelope fixo. As fixtures foram corrigidas para o contrato vigente; a proteção
+  não foi removida. As suítes e a integração relevantes passaram após o ajuste.
+- Diagnóstico integrado final aprovado em 185,19 segundos, fingerprint das fontes
+  `2b2204b8d5a721ee701e290e2224ea52ce3d0531f4fd833d282577e9d944024d`. A rodada inclui a
+  evidência condicional à presença do envelope fixo e o equilíbrio operacional calculado sem
+  investimento inicial.
+- A homologação comprova o contrato e o próximo passo do processo com Plutus simulado. Não
+  comprova venda, demanda, margem realizada nem melhora de resposta do modelo real.
+- A regressão de contexto comprova que a tela não recompõe as mesmas fontes para cada atividade na
+  mesma transação. A produção vigente permaneceu entre 20,49 s e 31,41 s nas três medições; a
+  redução de latência precisa ser aferida somente após a publicação autorizada desta correção.
+
+### Identidade visual Quartzo em 21/09/2026
+
+- Suítes completas: backend com 3.324 testes aprovados e 19 ignorados condicionais; Psique com
+  131 testes Java aprovados, um condicional ignorado e 18 testes de navegador aprovados; Lead
+  Portal com 60 testes aprovados. Packages, Spotless, sintaxe Node e `git diff --check` aprovados.
+- Fluxo integrado real local: Lead Portal em H2 recebeu uma página segregada, entregou origem
+  `1b5234d766c8e498a10726a41e984ff4baf0ff314c1d69d8c97996fc306d6c9b` e HTML servido
+  `0dbb7461336b8c5f374fd037dc8e65d427841fdc22eeeaf17f31b59baf2e5390`. Psique capturou
+  iPhone 15 Pro, CTA na primeira dobra, full-page e três dobras com SHA-256 próprios. Foram feitas
+  zero chamadas pagas; a fixture foi apagada ao final.
+- A primeira inicialização manual do aplicativo não carregou o datasource H2 de teste e tentou a
+  configuração MySQL padrão, falhando antes de abrir conexão. A homologação foi reiniciada com URL,
+  driver, usuário e schema H2 explícitos e então passou. Nenhuma escrita produtiva ocorreu.
+- Reprodução da parte navegador/entrega, com Lead Portal local já saudável:
+  `node infra/testing/quartzo-page-identity/run-local.mjs http://127.0.0.1:18081`.
 
 - Cálculo: dez casos unitários aprovados; um cenário médio rentável com consumo máximo
   deficitário é reprovado pelo teste de uso intenso.

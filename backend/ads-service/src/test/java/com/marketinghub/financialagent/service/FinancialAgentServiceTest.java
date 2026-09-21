@@ -41,6 +41,8 @@ class FinancialAgentServiceTest {
     plan.setName("MUSA v7");
     plan.setActualRevenue(BigDecimal.ZERO);
     plan.setOfferPriceBrl(new BigDecimal("97.00"));
+    plan.setTargetRevenue(new BigDecimal("485.00"));
+    plan.setOperationalRevenueTarget(new BigDecimal("485.00"));
     plan.setVariableCostPerSaleBrl(new BigDecimal("12.00"));
     plan.setExpectedMonthlyTraffic(800);
     plan.setExpectedConversionRatePercent(new BigDecimal("1.50"));
@@ -93,7 +95,10 @@ class FinancialAgentServiceTest {
     assertThat(response.agentTaskId()).isEqualTo(55L);
     assertThat(response.financialSnapshot()).contains("\"approvedRevenueBrl\":0");
     assertThat(response.financialSnapshot()).contains("\"offerPriceBrl\":97.00");
+    assertThat(response.financialSnapshot()).contains("\"targetRevenueBrl\":485.00");
     assertThat(response.financialSnapshot()).contains("\"expectedMonthlyTraffic\":800");
+    assertThat(response.financialSnapshot())
+        .contains("planningSourceCoverage", "DECLARED_IN_COMMERCIAL_PLAN");
   }
 
   /** Entrega ao MCP o mesmo snapshot imutavel associado a execucao reservada. */

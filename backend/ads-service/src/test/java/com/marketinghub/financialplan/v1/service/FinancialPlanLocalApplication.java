@@ -149,6 +149,10 @@ public class FinancialPlanLocalApplication {
     p.setInternalName("Produto sintético " + id);
     p.setName("Produto local " + id);
     p.setValidationDefinitionVersion("fixture-v1");
+    p.setValidationDefinitionJson(
+        "{\"format\":{\"type\":\"CUSTOM_VISUAL_ASSET_PACK\",\"valueUnit\":\"kit utilizável\"},"
+            + "\"delivery\":{\"mode\":\"PERSONALIZED_ASSISTED\",\"personalization\":true},"
+            + "\"successEvidence\":{\"firstMilestoneSales\":5}}");
     p.setCurrentPriceBrl(new BigDecimal("67"));
     var type = type(id == 95103 ? 952 : 951);
     p.setProductTypeDefinition(type);
@@ -220,7 +224,16 @@ public class FinancialPlanLocalApplication {
     var p = new CommercialPlan();
     p.setId(id);
     p.setName("Plano comercial sintético " + id);
+    p.setOfferPriceBrl(new BigDecimal("67"));
+    p.setTargetRevenue(new BigDecimal("335"));
+    p.setOperationalRevenueTarget(new BigDecimal("335"));
     p.setExpectedCacBrl(new BigDecimal("25"));
+    p.setVariableCostPerSaleBrl(new BigDecimal("13.50"));
+    p.setFixedOperationalCostBrl(new BigDecimal("73.20"));
+    p.setActualCampaignCost(new BigDecimal("59.70"));
+    p.setActualAiCost(new BigDecimal("69.95"));
+    p.setActualTotalCost(new BigDecimal("143.15"));
+    p.setDeadline(java.time.LocalDate.of(2026, 8, 16));
     return p;
   }
 
@@ -230,6 +243,7 @@ public class FinancialPlanLocalApplication {
     var repo = mock(CommercialPlanRepository.class);
     when(repo.findIdsByProductId(anyLong())).thenAnswer(i -> List.of((Long) i.getArgument(0)));
     when(repo.findByProductId(anyLong())).thenAnswer(i -> List.of(plan(i.getArgument(0))));
+    when(repo.findById(anyLong())).thenAnswer(i -> Optional.of(plan(i.getArgument(0))));
     return repo;
   }
 

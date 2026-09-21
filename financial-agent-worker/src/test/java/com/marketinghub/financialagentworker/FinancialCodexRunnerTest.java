@@ -92,7 +92,7 @@ class FinancialCodexRunnerTest {
     String schema =
         Files.readString(
             Path.of(
-                "src/main/resources/prompts/financial-agent/v2/revenue-projection-schema.json"));
+                "src/main/resources/prompts/financial-agent/v3/revenue-projection-schema.json"));
 
     assertThat(schema).doesNotContain("uniqueItems", "anyOf", "oneOf", "allOf");
     assertThat(schema)

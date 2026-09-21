@@ -340,11 +340,7 @@ public class CustomerBpmTaskConsumer {
     }
     Path workDirectory = Files.createTempDirectory("psique-bpm-visual-task-" + taskId(task) + "-");
     try {
-      PdeExperienceEvidenceLoader.LiveVisualContract liveVisualContract =
-          List.of("pde-commercial-homologation-activation", "opala-commercial-preparation-v1")
-                  .contains(processCode(task))
-              ? pdeExperienceEvidenceLoader.loadLiveVisualContract(task.get("taskTarget"))
-              : PdeExperienceEvidenceLoader.LiveVisualContract.none();
+      PdeExperienceEvidenceLoader.LiveVisualContract liveVisualContract = liveVisualContract(task);
       BpmVisualEvidenceRunner.VisualEvidenceBundle bundle =
           visualEvidenceRunner.capture(publicUrl, workDirectory, liveVisualContract);
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded =
@@ -365,6 +361,22 @@ public class CustomerBpmTaskConsumer {
       throw new BpmVisualEvidenceRunner.VisualEvidenceException(
           "Não foi possível capturar e persistir a prova visual obrigatória de Psique.", ex);
     }
+  }
+
+  /** Resolve a identidade visual exigida pelo tipo antes de consumir a revisão de Psique. */
+  PdeExperienceEvidenceLoader.LiveVisualContract liveVisualContract(Map<String, Object> task)
+      throws IOException {
+    if (List.of("pde-commercial-homologation-activation", "opala-commercial-preparation-v1")
+        .contains(processCode(task))) {
+      return pdeExperienceEvidenceLoader.loadLiveVisualContract(task.get("taskTarget"));
+    }
+    if ("quartzo-commercial-preparation-v1".equals(processCode(task))) {
+      JsonNode scope =
+          json.readTree(String.valueOf(task.get("processContextJson"))).path("quartzoCommercial");
+      return PdeExperienceEvidenceLoader.LiveVisualContract.publishedPage(
+          scope.path("pageHash").asText(""), scope.path("primaryCta").asText(""));
+    }
+    return PdeExperienceEvidenceLoader.LiveVisualContract.none();
   }
 
   /**

@@ -23,7 +23,11 @@ import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublication
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -63,6 +67,8 @@ public class GeraSalesPagePublicationAuditService {
   private static final List<String> FORBIDDEN_VISIBLE_OPERATIONAL_LABELS =
       List.of("depois desejado:", "dor atual:", "preview do produto:", "prova do produto:");
   private static final Pattern NON_TRACK_SECTION_CHARS = Pattern.compile("[^a-z0-9_-]+");
+  private static final Pattern HTML_HEAD_PATTERN = Pattern.compile("(?i)<head(?:\\s[^>]*)?>");
+  private static final String PUBLICATION_SOURCE_META = "mh-publication-source-sha256";
   private static final int MIN_TRANSFORMATION_VISUAL_SCENES = 3;
 
   private final ExperimentRepository experimentRepository;
@@ -277,7 +283,8 @@ public class GeraSalesPagePublicationAuditService {
     String flowSlug = "exp-" + experiment.getId() + "-gerasalespage-v1";
     String publishableHtml =
         preparePublicSalesPageHtml(experiment, publicationExecution, html, flowSlug);
-    LeadPortalFlow flow = upsertDirectCheckoutFlow(experiment, publishableHtml);
+    LeadPortalFlow flow =
+        upsertDirectCheckoutFlow(experiment, injectPublicationSourceIdentity(publishableHtml));
     try {
       leadPortalFlowPublisher.publish(flow);
     } catch (LeadPortalPublicationException ex) {
@@ -300,6 +307,34 @@ public class GeraSalesPagePublicationAuditService {
     experiment.setSchemaFirstLeadPortalEnabled(true);
     experiment.setFollowUpActionUrl(publicUrl);
     return new DirectCheckoutPublication(publicUrl, publishableHtml);
+  }
+
+  /** Vincula ao documento enviado ao Lead Portal o hash do snapshot preservado na auditoria. */
+  private String injectPublicationSourceIdentity(String html) {
+    if (html.toLowerCase(Locale.ROOT).contains("name=\"" + PUBLICATION_SOURCE_META + "\"")) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "HTML da publicação contém marcador de identidade reservado pelo Marketing Hub.");
+    }
+    String marker =
+        "<meta name=\"" + PUBLICATION_SOURCE_META + "\" content=\"" + sha256(html) + "\">";
+    Matcher head = HTML_HEAD_PATTERN.matcher(html);
+    if (head.find()) {
+      return head.replaceFirst(Matcher.quoteReplacement(head.group() + "\n" + marker));
+    }
+    return marker + "\n" + html;
+  }
+
+  /** Calcula a identidade imutável do snapshot comercial que originou a página pública. */
+  private String sha256(String html) {
+    try {
+      return HexFormat.of()
+          .formatHex(
+              MessageDigest.getInstance("SHA-256").digest(html.getBytes(StandardCharsets.UTF_8)));
+    } catch (NoSuchAlgorithmException ex) {
+      log.error("SHA-256 indisponível ao identificar publicação do GeraSalesPage.", ex);
+      throw new IllegalStateException("Não foi possível identificar a publicação.", ex);
+    }
   }
 
   /** Cria ou atualiza o fluxo publico usado exclusivamente como pagina de venda standalone. */

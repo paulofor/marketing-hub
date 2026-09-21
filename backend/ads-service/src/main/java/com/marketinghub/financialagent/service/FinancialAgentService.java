@@ -494,6 +494,8 @@ public class FinancialAgentService {
     snapshot.put("periodStart", plan.getCreatedAt());
     snapshot.put("periodEnd", plan.getDeadline());
     snapshot.put("monthlyBudgetCeilingBrl", plan.getMaxBudget());
+    snapshot.put("targetRevenueBrl", plan.getTargetRevenue());
+    snapshot.put("operationalRevenueTargetBrl", plan.getOperationalRevenueTarget());
     snapshot.put("offerPriceBrl", plan.getOfferPriceBrl());
     snapshot.put("variableCostPerSaleBrl", plan.getVariableCostPerSaleBrl());
     snapshot.put("expectedMonthlyTraffic", plan.getExpectedMonthlyTraffic());
@@ -527,6 +529,22 @@ public class FinancialAgentService {
             "approvedSales", "CONSOLIDATED_IN_COMMERCIAL_PLAN",
             "refunds", "NOT_YET_AVAILABLE_AS_SEPARATE_SOURCE",
             "infrastructure", "NOT_YET_ATTRIBUTED_BY_PLAN"));
+    snapshot.put(
+        "planningSourceCoverage",
+        Map.of(
+            "targetRevenue",
+            plan.getTargetRevenue() == null ? "NOT_DECLARED" : "DECLARED_IN_COMMERCIAL_PLAN",
+            "variableCostPerSale",
+            plan.getVariableCostPerSaleBrl() == null
+                ? "NOT_DECLARED"
+                : "DECLARED_IN_COMMERCIAL_PLAN",
+            "fixedOperationalCost",
+            plan.getFixedOperationalCostBrl() == null
+                ? "NOT_DECLARED"
+                : "DECLARED_IN_COMMERCIAL_PLAN"));
+    snapshot.put(
+        "snapshotInterpretation",
+        "sourceCoverage descreve a reconciliação realizada; planningSourceCoverage descreve premissas do plano. A revisão financeira vigente decide se os envelopes planejados podem ser usados na projeção.");
     snapshot.put(
         "guardrails",
         List.of(

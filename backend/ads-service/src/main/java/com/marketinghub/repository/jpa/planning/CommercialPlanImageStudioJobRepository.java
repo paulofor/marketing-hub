@@ -67,6 +67,12 @@ public interface CommercialPlanImageStudioJobRepository
       @Param("processing") CommercialPlanImageStudioStatus processing,
       @Param("cutoff") Instant cutoff);
 
+  /** Carrega em lote a proveniência das peças selecionadas, preservando suas fontes de edição. */
+  @org.springframework.data.jpa.repository.EntityGraph(
+      attributePaths = {"sourceVisualAsset", "resultVisualAsset"})
+  List<CommercialPlanImageStudioJob> findByResultVisualAssetIdInAndStatusOrderByIdAsc(
+      List<Long> assetIds, CommercialPlanImageStudioStatus status);
+
   /** Informa se o asset foi materializado por uma execução governada do estúdio. */
   boolean existsByResultVisualAssetId(Long assetId);
 

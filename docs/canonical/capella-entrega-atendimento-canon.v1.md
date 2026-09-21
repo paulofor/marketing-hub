@@ -93,3 +93,38 @@ Conferência adicional na configuração pública efetiva do backend em 21/09/20
 fornecedor `Digicom Digital`, CNPJ `25.215.414/0001-69`, mesmo e-mail de atendimento.
 Essa identificação foi cadastrada na oferta pela tela. Não se deduz vínculo
 societário a partir do nome mostrado pelo provedor de pagamentos.
+
+## Evidência de direitos e aviso de privacidade (21/09/2026)
+
+Têmis #473 apontou uma promessa antiga em `pdeExperienceJson.promise`, ausência de
+proveniência no contexto recebido e ausência de aviso no briefing. O cadastro deve
+usar o resultado contratado (conteúdo pronto para divulgação) sem garantir aquisição
+de clientes; isso não muda preço, formato, quantidade ou a hipótese comercial.
+
+A biblioteca já persistia `origin` e `rights_statement`. As execuções do Estúdio
+registravam produtor, modelo, edição/origem e SHA-256 em `response_json`. O contexto
+comercial deve transportar esses dados, incluindo a fonte de uma edição, sem passar
+prompt bruto, base64 ou declarar que revisão estética equivale a licença. Ausência
+de fonte/hash continua explícita; divergência não pode ser convertida em aprovação.
+Na conferência de 21/09, os 20 arquivos aprovados associados ao plano coincidiram
+com os hashes das respostas de geração. Esse vínculo comprova rastreabilidade do
+arquivo, não exclusividade nem direitos de terceiros eventualmente presentes nas entradas.
+
+O aviso versionado `/agenda-cheia/privacidade.html` fica acessível antes e dentro do
+briefing. Identifica controlador, contato, finalidades, dados obrigatórios/opcionais,
+compartilhamento operacional, critério de retenção e canal de direitos. A execução
+do contrato fundamenta os dados necessários à entrega; o formulário não cria opt-in
+de marketing nem autorização de treinamento. A retenção segue a necessidade de
+produção, download e atendimento, com revisão manual de eliminação e preservação
+justificada de obrigações legais. Não prometer descarte automático inexistente nem
+reduzir acesso já contratado ao terminar os sete dias de suporte.
+
+Alternativas: regenerar imagens aumentaria custo e perderia prova válida; declarar
+licença apenas porque a imagem foi aprovada inventaria segurança; recuperar registros
+existentes e tornar a privacidade visível corrige a causa com menor risco e esforço.
+A geração fotográfica da biblioteca ocorre separada do briefing; o compositor usa
+os dados profissionais localmente nos arquivos que a cliente decide publicar.
+
+Fontes oficiais consultadas em 21/09/2026: [LGPD, arts. 7, 9, 15, 16 e 18](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709compilado.htm)
+e [OpenAI Services Agreement, seção 4](https://openai.com/policies/services-agreement/).
+A atribuição contratual da saída pelo provedor não substitui a verificação das entradas.

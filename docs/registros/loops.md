@@ -6643,3 +6643,17 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   custos preservados. Consumo sem resposta permanece desconhecido, nunca zero.
 - **Prevenção:** testes de fluxo HTTP→service→fila→retorno, produtos independentes, entradas
   alteradas, reprovação funcional, resposta existente e repetição do comando; interface móvel.
+
+## LOOP-QUARTZO-PROVENIENCIA-OMITIDA
+
+- **Confirmado em 21/09/2026:** Têmis #473 recebeu ativos aprovados sem a origem,
+  declaração de direitos e execução produtora já presentes no banco. O contrato de
+  `CommercialPlanLandingAssetService` removia esses campos ao resumir a biblioteca.
+- **Correção:** expor proveniência e hash da resposta auditada, inclusive para ativos
+  legados sem hash na coluna, mantendo explícitas lacunas e divergências. Não
+  regenerar o material nem converter aprovação visual em autorização jurídica.
+- **Prevenção:** testes cobrem geração/edição, fonte anterior, ausência de direitos,
+  resposta inválida, hash divergente e supressão de payload bruto. A privacidade no
+  ponto de coleta é verificada por HTTP e navegador antes de nova avaliação paga.
+- **Limite:** rastreabilidade não comprova exclusividade, venda, entrega operacional
+  nem direito sobre material de terceiros; o parecer continua independente.

@@ -102,6 +102,21 @@ class AgendaCheiaDeliveryIntegrationTest {
         });
     }
 
+    /** Disponibiliza o aviso e seu link antes da coleta, sem exigir compra nem disparar produção. */
+    @Test
+    void exposesPrivacyNoticeAtTheBriefingCollectionPoint() {
+        var notice = http.getForEntity("/agenda-cheia/privacidade.html", String.class);
+        assertThat(notice.getStatusCode().value()).isEqualTo(200);
+        assertThat(notice.getBody()).contains("agenda-cheia-privacy-v1-2026-09-21",
+                "25.215.414/0001-69", "contato@digicomdigital.com.br", "O que pedimos",
+                "Uso e compartilhamento", "Por quanto tempo", "Como exercer seus direitos");
+        String page = http.getForObject("/agenda-cheia/obrigado.html", String.class);
+        assertThat(page).contains("id=\"briefing-privacy\"", "href=\"/agenda-cheia/privacidade.html\"");
+        assertThat(page.indexOf("id=\"briefing-privacy\"")).isLessThan(page.indexOf("name=\"buyerEmail\""));
+        org.mockito.Mockito.verifyNoInteractions(photos);
+        assertThat(EMAILS).isEmpty();
+    }
+
     /** Confirma briefing, composição, dois e-mails, download e idempotência após conclusão. */
     @Test
     void deliversRealArchiveWithoutDuplicatingCompletedPurchase() throws Exception {

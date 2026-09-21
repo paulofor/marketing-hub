@@ -116,3 +116,17 @@ compilação Python e `git diff --check` aprovados. No teste de contrato preexis
 que procura expressões literais `${...}`, SC2016 foi tratado como literal intencional;
 nenhum alerta foi suprimido no script de publicação novo. A aplicação Java e o
 conteúdo visual permanecem idênticos aos já homologados neste lote.
+
+A primeira publicação no host público chegou aos arquivos corretos, mas a sonda
+preexistente da raiz recebeu 404 e encerrou o run `35635197798` antes da prova de
+hashes. A correção consulta a rota real do pós-compra. A matriz adiciona servidor
+sem homepage e três seleções efetivas de URL; mantém os testes de versão divergente.
+
+Conferência pública de 21/09/2026: HTML SHA-256
+`6cbecff8ef99ab5a81cb8195db0d91d47f905782b1f4ec3f9e650185d4e8741b` e JS
+`483eaf2c05f4dfd89849f483372afe237b072ea9510838c8768f1a47af8ecf06` coincidem
+com o repositório. Desktop, iPhone e Pixel exibiram suporte, reembolso e estados do
+pós-compra corretamente, com respostas de pagamento interceptadas localmente; sem
+compras reais, envio de e-mail ou gravação de briefing. A sonda corrigida passou em
+oito testes HTTP/CLI e três seleções de URL, além dos cinco casos de destino,
+Actionlint/ShellCheck e diff. A conclusão do workflow aguarda o novo deploy.

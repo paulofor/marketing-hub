@@ -6587,3 +6587,7 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   HTTP 200 com conteúdo antigo, destino DNS incorreto, redirecionamento externo,
   HTTP 404 e erro de origem local. A confirmação produtiva depende do novo deploy;
   testes locais não comprovam publicação nem resultado comercial.
+- **Sonda complementar:** no run `35635197798`, o destino público foi atualizado,
+  mas a raiz sem homepage retornou 404. Os arquivos reais foram confirmados por
+  SHA-256 e navegador; a sonda deve consultar `/agenda-cheia/obrigado.html` e só então
+  verificar os hashes. Teste HTTP local cobre raiz 404 com artefato íntegro.

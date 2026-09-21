@@ -20,7 +20,7 @@ class Handler(BaseHTTPRequestHandler):
     """Simula publicação, cache antigo, redirecionamento e indisponibilidade."""
 
     def do_GET(self):
-        if self.path.startswith("/missing"):
+        if self.path == "/" or self.path.startswith("/missing"):
             self.send_error(404)
             return
         if self.path.startswith("/redirect"):
@@ -62,6 +62,12 @@ class PublicArtifactsTest(unittest.TestCase):
         evidence = MODULE.verify(self.base, "127.0.0.1", self.directory.name, ["page.html"])
         self.assertEqual(len(evidence), 1)
         self.assertEqual(len(evidence[0]["sha256"]), 64)
+
+    def test_service_without_homepage_still_verifies_its_publication(self):
+        with self.assertRaises(MODULE.urllib.error.HTTPError) as response:
+            MODULE.urllib.request.urlopen(self.base)
+        self.assertEqual(response.exception.code, 404)
+        self.assertEqual(len(MODULE.verify(self.base, "127.0.0.1", self.directory.name, ["page.html"])), 1)
 
     def test_old_page_fails_even_with_http_200(self):
         with self.assertRaisesRegex(ValueError, "Artefato público divergente"):

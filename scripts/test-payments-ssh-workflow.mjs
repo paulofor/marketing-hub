@@ -52,3 +52,20 @@ for (const [target, club, kit, success] of [
   assert.equal(result.status === 0, success, `${target}/${club}/${kit}: ${result.stderr}`);
 }
 console.log('Seleção de destino executada localmente: 5 casos, bash -n e ShellCheck.');
+
+// Um serviço de pagamentos pode responder 404 na raiz e servir o pós-compra corretamente.
+const publicStep = steps.find(step => step.includes('Validate public HTTPS proxy'));
+const probeLogic = publicStep.slice(publicStep.indexOf('          if [ "${{ inputs.deployment_target }}"')).split('          curl --fail')[0];
+for (const [target, institutional, expected] of [
+  ['public_payments', 'false', 'https://pagamentopalf.site/agenda-cheia/obrigado.html'],
+  ['pde', 'true', 'https://www.digicomdigital.com.br/'],
+  ['pde', 'false', 'https://kit-whatsapp-pronto.digicomdigital.com.br/'],
+]) {
+  const script = probeLogic.replaceAll('${{ inputs.deployment_target }}', target)
+    .replaceAll('${{ inputs.issue_digicomdigital_certificate }}', institutional) + '\nprintf "%s" "$public_probe"\n';
+  const result = spawnSync('bash', ['-e'], {input: script, encoding: 'utf8'});
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, expected);
+}
+assert.ok(publicStep.includes('"$public_probe" >/dev/null'));
+console.log('Sondas públicas executadas: pagamentos no pós-compra e rotas PDE/institucional preservadas.');

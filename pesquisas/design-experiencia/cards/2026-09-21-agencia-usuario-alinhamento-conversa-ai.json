@@ -1,0 +1,18 @@
+{
+  "cardKey": "agencia-usuario-alinhamento-conversa-ai",
+  "collection": "neuromarketing",
+  "title": "Preservar agência do usuário em conversas com IA",
+  "finding": "Em análise observacional de 15.881 diálogos humano-ChatGPT e 10.784 humano-humano, dar ao interlocutor espaço para moldar a troca foi o preditor mais consistente de alinhamento turno a turno; sinais de polidez não se comportaram da mesma forma nos dois contextos.",
+  "mechanism": "Hipótese interpretativa: escolha, possibilidade de redirecionamento e participação ativa podem sustentar adaptação mútua melhor do que apenas tornar a IA mais polida ou calorosa. O estudo não estabelece causalidade.",
+  "commercialApplication": "No customer-agent, testar pontos explícitos de agência como confirmação de interpretação, escolha entre próximos passos, correção de premissas e redirecionamento fácil, comparando com uma interação mais fluida e assertiva.",
+  "evidenceStrength": "Preprint com grande corpus observacional e modelos de efeitos mistos; forte como sinal de interação, mas sem manipulação causal e sem evidência de conversão, satisfação comercial ou venda.",
+  "publishedOn": "2026-09-18",
+  "validUntil": "2026-12-21",
+  "experimentHypothesis": "Preservar pontos explícitos de agência reduzirá correções e abandono e aumentará conclusão de tarefa sem reduzir CTA entre usuários que já têm intenção de avançar.",
+  "risks": "Excesso de escolhas pode aumentar carga cognitiva; alinhamento linguístico pode ser confundido com qualidade real; pontos de agência não devem virar dark patterns ou escolhas artificiais.",
+  "limits": "O estudo é observacional, usa diálogos existentes e mede alinhamento conversacional, não satisfação, task success, conversão, pagamento ou efeito comercial no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-21-agencia-usuario-alinhamento-conversa-ai.md",
+  "sourceTitle": "Fonte revisada — agência do usuário e alinhamento em conversas com IA",
+  "sourceSha256": "ebceb04c55e8b7b562312ae4794c210e44e78cb58a6046cfc132cee64166221a"
+}

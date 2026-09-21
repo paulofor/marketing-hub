@@ -122,7 +122,10 @@ public interface ExperimentMapper {
     return List.copyOf(violations);
   }
 
-  /** Converte valor monetário opcional para zero quando ausente. */
+  /**
+   * Usa zero somente na soma explícita de custos disponíveis, preservando campos ausentes no DTO.
+   */
+  @org.mapstruct.Named("knownCostForSum")
   default BigDecimal money(BigDecimal value) {
     return value != null ? value : BigDecimal.ZERO;
   }

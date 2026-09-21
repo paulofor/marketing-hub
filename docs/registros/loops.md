@@ -6553,3 +6553,21 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   real isolado confirma SSH/SCP/rsync, recusas e divergência de identidade.
 - **Limite:** testes locais não provam que um segredo do GitHub autentica hoje;
   essa confirmação pertence ao preflight do deploy oficial, antes de mutações.
+
+## LOOP-EXPERIMENTO-NULL-VIRA-ZERO-NO-MAPPER — 21/09/2026
+
+- **Evidência:** a edição de Capella ainda recebeu `baselineCvr must be < targetCvr`
+  depois do PR #5288. MCP confirmou teto, base e alvo `NULL`, enquanto o GET
+  retornava zero. O código gerado do MapStruct chamava `money(...)` para todas
+  essas propriedades; a fixture inicial representava zero armazenado e não esse
+  caso. Não atribuir o erro à falta de orçamento nem preenchê-lo para destravar.
+- **Causa confirmada:** helper público `BigDecimal -> BigDecimal`, criado para
+  somar custos reconciliados, foi selecionado como conversor geral do mapper.
+  O formulário reenviava também campos que o usuário não tinha alterado.
+- **Correção:** qualificar o helper para uso explícito na soma, manter ausências
+  no DTO e omitir campos financeiros intactos no formulário. Valores informados,
+  inclusive zero legítimo, e totais reconciliados preservam seus contratos.
+- **Prevenção:** teste do mapper gerado para ausências/valores, persistência com
+  teto/metas/datas `NULL`, edição real do formulário, regressões financeiras e
+  homologação em três dispositivos. Corrigido localmente antes de atualizar o
+  PR #5290, sem novo gasto ou execução paga para investigar.

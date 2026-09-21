@@ -154,6 +154,12 @@ autorização. Alterar o plano de mídia ou as metas exige a validação corresp
 criação, prontidão, liberação e retomada continuam com todos os gates financeiros.
 Salvar conteúdo não ativa campanha nem comprova prontidão comercial.
 
+O DTO deve preservar `null` em teto, metas e custos ausentes. Helpers de soma que
+tratam ausência como zero precisam de qualificador explícito no MapStruct, para
+não virarem conversores automáticos de todo `BigDecimal`. O editor omite campos
+financeiros não editados; um zero apenas exibido por uma versão antiga da API não
+pode ser enviado como decisão nova nem substituir `NULL` persistido.
+
 ### Retomada financeira autorizada de campanha existente — 20/09/2026
 
 Uma autorização humana explícita pode reabrir a coleta da mesma campanha pausada,

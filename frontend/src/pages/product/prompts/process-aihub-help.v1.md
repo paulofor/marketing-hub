@@ -1,10 +1,18 @@
 # SOLICITAÇÃO DE AJUDA — MARKETING HUB / AIHUB
 
-Resolva o impedimento do **processo corrente para o produto corrente**, identificados no
-contexto ao final. Investigue, implemente e valide as correções locais necessárias até
-comprovar o escopo; não pare no primeiro defeito nem peça nova autorização a cada ajuste
-relacionado. Aprimore os agentes envolvidos sempre que houver uma melhoria sustentada
-pelas evidências do problema.
+Execute o **processo corrente para o produto corrente**, identificados no contexto ao final,
+atividade por atividade e tarefa por tarefa, até comprovar todos os seus objetivos.
+Investigue, implemente, valide e entregue as correções necessárias; não pare no primeiro
+defeito nem peça nova autorização a cada ajuste relacionado. Aprimore os agentes envolvidos
+sempre que houver uma melhoria sustentada pelas evidências do problema.
+
+**Autorização explícita:** este pedido autoriza o próprio modelo a fazer commit/push,
+criar ou atualizar manualmente os Pull Requests necessários pelo conector GitHub, API oficial
+ou `gh`, revisar, aprovar quando permitido, fazer merge na `main` e acompanhar/corrigir os
+workflows e deploys. Não precisa solicitar novamente ao usuário nem esperar o botão **Pedir PR**.
+Esta autorização substitui orientações antigas de aguardar novo pedido de PR ou de deixar
+a publicação para o usuário. Respeite restrições explícitas como somente local ou não publicar,
+as proteções do repositório e as condições de validação e entrega abaixo.
 
 **O objetivo principal é gerar vendas e receitas com valor real para o cliente e margem
 sustentável.** Preserve a fidelidade entre produto, comunicação e entrega. Testes aprovados
@@ -12,10 +20,18 @@ não comprovam vendas; diferencie hipótese comercial de resultado medido.
 
 ## 1. Confirme o contexto e o objetivo
 
+- Antes da primeira ação, publique um checklist curto com `update_plan`, com critérios de
+  conclusão por atividade; atualize o mesmo plano ao concluir etapas ou mudar o escopo.
+  Se a ferramenta não estiver disponível, declare a limitação e mantenha checklist textual.
+  Nos resumos públicos, registre ação e uma frase **Objetivo: ...**, sem expor raciocínio interno.
 - Confirme na tela e no backend o estado atual, o produto, seu tipo cadastrado, cadeia,
   processo e versão, ciclo, experimento, atividades e tarefas. O contexto copiado é uma
   fotografia da consulta; não presuma que ainda esteja atualizado. Preserve essas identidades,
   histórico, custos, evidências, contratos vendidos e aprovações.
+- Identifique por nome e ID o produto, processo/versão, execução, atividade e tarefa corrente;
+  quando houver subprocesso, identifique também o processo pai, a atividade que o chamou e
+  o retorno esperado. Declare campos ausentes e consulte os contratos oficiais para completá-los,
+  sem inventar identidades nem misturar produtos, ciclos ou execuções históricas.
 - Consulte os contratos do produto e os cânones pertinentes em `docs/canonical`, incluindo
   `product-types-canon.v1.md` e `product-execution-profiles-canon.v1.md`. Respeite as definições
   macro do tipo e a ficha de execução aprovada em todo o processo e seus subprocessos.
@@ -23,6 +39,11 @@ não comprovam vendas; diferencie hipótese comercial de resultado medido.
 - PDE significa experiência de produto digital (Product Digital Experience). Use o formato
   aprovado e homologue o resultado prometido ao cliente, sem presumir uma tecnologia ou
   jornada universal. Identifique a atividade que impede o avanço e seu critério de conclusão.
+- Para cada atividade e tarefa, confira entradas, dependências, responsável, resultado esperado
+  e evidência de aceite. Acompanhe até o backend comprovar o objetivo, incluindo subprocessos
+  e retorno ao pai. Após cada correção publicada e validada, retome pela tela e siga para as
+  atividades seguintes. Não encerre no primeiro desbloqueio nem avance para outro processo
+  fora do escopo; sucesso técnico de uma tarefa não comprova o objetivo do processo inteiro.
 
 ## 2. Investigue e corrija a causa
 
@@ -57,7 +78,8 @@ não comprovam vendas; diferencie hipótese comercial de resultado medido.
   e ação necessária. Não transforme esse impedimento em reprovação comercial paga.
 - Após comprovar a entrega correta, deixe o backend liberar a continuação, respeitando
   orçamento e aprovações, reutilizando resultados ainda válidos e impedindo tarefas duplicadas.
-  Se depender de publicação, aguarde o fluxo autorizado; o prompt não autoriza deploy ou gasto.
+  Se depender de publicação, execute o fluxo de PR, merge e deploy autorizado neste pedido;
+  a autorização de entrega de código não concede novo orçamento de campanha ou consumo pago.
 
 ### Melhore a camada responsável
 
@@ -71,6 +93,16 @@ não comprovam vendas; diferencie hipótese comercial de resultado medido.
   `aihub-aperfeicoamento-agentes-canon.v1.md` e, se pertinente, trechos de
   `pesquisas/agentes-inteligentes` com fonte e data. Pesquisa é referência, não autorização
   nem prova de ganho. Ao revisar prompts operacionais, use as fontes oficiais indicadas no cânone.
+- Recupere experiências pela etapa, estado e objetivo atuais, comparando falhas e sucessos
+  anteriores. Registre fonte/data, versões, causa confirmada, solução tentada, resultado,
+  teste preventivo e limites de validade. Resolva contradições antes de reutilizar uma memória;
+  não persista hipótese como fato nem dados sensíveis no aprendizado.
+- Avalie uma candidata de cada vez contra a versão anterior: caso que falhou, casos antes
+  bem-sucedidos e casos independentes do ajuste quando disponíveis; declare sua ausência.
+  Meça conclusão funcional, recorrência, intervenção humana, latência e custo por tarefa
+  concluída quando houver dados. Aceite ou rejeite com evidências, preserve rollback e não
+  sacrifique qualidade por economia. Encerre a melhoria ao cumprir o escopo; não crie pesquisa
+  ilimitada nem alegue aprendizado automático ou aumento de vendas sem medição.
 
 ## 4. Preserve a rentabilidade
 
@@ -107,19 +139,59 @@ no backend quando pertinentes; parecer de IA não substitui esses controles nem 
   Se uma validação essencial não puder ser executada, registre a tentativa, o erro e a evidência
   disponível; não publique apenas para testar.
 
-## 6. Entregue com limites claros
+## 6. Entregue por PR até confirmar a publicação
 
-Deixe as mudanças locais na branch/worktree. Toda alteração passa por Pull Request executado
-pelo usuário antes da publicação; só crie ou prepare PR mediante pedido explícito. Nunca use
-SSH para publicar alterações, nem commit, push, PR, Actions ou deploy como mecanismo de teste.
-Imagens produtivas devem vir dos arquivos versionados neste repositório. Intervenções de runtime
-exigem autorização e o coordenador de `deploy-aplicacao-retomada-canon.v1.md`; a coordenação não
-substitui consentimento. Preserve autorizações próprias de campanha, cobrança e gasto.
+- Primeiro resolva e valide localmente todos os defeitos relacionados ao impedimento,
+  incluindo integrações simuladas, e revise o diff e os critérios de aceite antes de commit/push.
+  Não use commit, push, PR, Actions ou deploy como mecanismo de teste nem publique correção
+  parcial para descobrir o próximo erro. Análise sem alteração não exige PR.
+- Reutilize o PR da tarefa se estiver aberto. Se já foi integrado, só abra novo PR para
+  mudanças adicionais necessárias; não misture lotes históricos de uma branch compartilhada.
+  Você pode fazer todos os PRs necessários para atingir os objetivos autorizados.
+- Consulte as revisões reais no GitHub e os checks do HEAD atual. Corrija conflitos localmente
+  e revalide o que afetarem. Aprove somente quando a identidade autenticada tiver permissão
+  e não for autora do PR. Nunca aprove o próprio PR, use bypass administrativo ou desabilite
+  checks. Aguarde revisão obrigatória de outra identidade quando exigida.
+- Faça merge na `main`, registre o SHA resultante e acompanhe todos os workflows aplicáveis:
+  PR, main e deploys encadeados. Use `gh pr checks`, `gh run list`, `gh run view` e
+  `gh run watch --exit-status`, ou APIs equivalentes, correlacionando PR, HEAD, SHA, runs e jobs.
+  Reconsulte a lista até os fluxos esperados aparecerem e terminarem.
+- Se um workflow falhar, leia os logs do job, corrija a causa na sandbox e valide antes de
+  atualizar o PR. Se já houve merge, abra PR de correção e acompanhe o novo SHA.
+  Reexecute sem mudança somente com evidência de falha transitória.
+- Não declare entrega concluída com workflow/deploy obrigatório ausente, pendente, em execução,
+  aguardando aprovação, com falha, cancelado ou expirado. `skipped` só é aceitável quando a
+  condição documentada não se aplica. Confirme versão/saúde publicada quando disponíveis
+  e valide o comportamento pela tela antes de retomar a atividade e continuar o processo.
+- Nunca use SSH para publicar alterações. Imagens produtivas devem vir do código, Dockerfile,
+  Compose ou pipeline versionados neste repositório. Intervenções operacionais fora do deploy
+  normal seguem `deploy-aplicacao-retomada-canon.v1.md`, com autorização e coordenação;
+  não substituem o PR. Preserve autorizações próprias de campanha, cobrança e gasto.
+
+## 7. Preserve a verdade da entrega ao retomar e encerrar
+
+- Antes de repetir ações, verifique se o trabalho já está integrado e publicado. Preserve
+  a resposta final e o vínculo específico solicitação → PR → SHA na main → runs/deploys →
+  evidência funcional. Histórico de outra solicitação na mesma branch não comprova esta entrega.
+- Atualize as referências Git e complete o histórico raso antes de concluir divergência de
+  ancestralidade. Se não houver diferenças ou a API responder `No commits between`/422,
+  confira diff, PR já integrado e publicação: não gere commit vazio, push ou PR redundante.
+  Ausência de commits novos não comprova, sozinha, sucesso nem falha da solicitação.
+- Diferencie falha real de execução, pendência de deploy e erro de encerramento após entrega
+  confirmada. Não substitua resultado comprovado por erro de tentativa redundante; mantenha
+  a ocorrência técnica separada. Não oculte falhas reais nem marque sucesso sem evidências.
+  Um prompt não corrige automaticamente o status persistido pelo orquestrador: se ele divergir,
+  investigue e corrija a causa pelo fluxo autorizado, preservando a entrega já comprovada.
+- Só finalize como concluído quando todos os objetivos do processo corrente estiverem
+  comprovados no backend, as alterações integradas na `main`, os workflows/jobs obrigatórios
+  e deploys previstos bem-sucedidos e a experiência publicada validada. Se faltar acesso,
+  credencial, decisão de produto ou aprovação obrigatória de outra identidade, registre o
+  bloqueio concreto, o que já foi entregue e a ação mínima necessária; não declare conclusão.
 
 Informe de forma objetiva: causa confirmada, correções e agentes aprimorados, testes e evidências,
-comparação com o comportamento anterior, situação atual do processo e limitações. Diferencie
-**corrigido localmente**, **publicado** e **confirmado em produção**. Se depender de publicação,
-registre essa pendência sem declarar o processo concluído. Só atribua próxima ação ao usuário
+comparação com o comportamento anterior, objetivos de cada atividade, situação atual do processo
+e limitações. Inclua links do PR e dos runs, SHA na main e evidências dos deploys. Diferencie
+**corrigido localmente**, **publicado** e **confirmado em produção**. Só atribua próxima ação ao usuário
 quando ela realmente depender dele. Sugira oportunidades comerciais fora do escopo separadamente,
 com impacto esperado, esforço e métrica de validação, sem apresentar hipóteses como vendas medidas.
 Quando o impedimento envolver builds, acompanhe divergências de versão, intervenções manuais,

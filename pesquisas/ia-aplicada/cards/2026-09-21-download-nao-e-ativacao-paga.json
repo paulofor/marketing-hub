@@ -1,0 +1,18 @@
+{
+  "cardKey": "download-nao-e-ativacao-paga",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Download não comprova ativação ou disposição a pagar",
+  "finding": "A Appfigures estimou que Muse e Grok Bot alcançaram rapidamente escala de instalação semelhante, mas com monetização inicial muito diferente; distribuição forte pode gerar curiosidade e downloads sem demonstrar valor econômico equivalente.",
+  "mechanism": "Exposição e distribuição reduzem o custo de aquisição do primeiro evento, enquanto ativação e pagamento dependem de intenção, percepção de valor e utilidade real depois da instalação.",
+  "commercialApplication": "Comparar canais, criativos e ofertas por ativação qualificada, CTA, checkout, pagamento reconciliado e retenção, usando instalação ou clique apenas como etapas intermediárias.",
+  "evidenceStrength": "Evidência observacional moderada baseada em estimativas independentes de inteligência de apps; útil como sinal de funil, mas sem causalidade demonstrada.",
+  "publishedOn": "2026-09-21",
+  "validUntil": "2026-11-15",
+  "experimentHypothesis": "Otimizar campanhas para ativação qualificada ou pagamento, em vez de instalação, reduzirá o custo por usuário economicamente válido mesmo que o custo por instalação aumente.",
+  "risks": "Pode haver diferenças grandes de marca, preço, distribuição e proposta entre os produtos comparados; receita inicial também pode não prever retenção.",
+  "limits": "As receitas são estimadas pela Appfigures, não auditadas; não há CAC, coortes de retenção, receita web ou LTV comparável entre Muse e Grok Bot.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-21-download-nao-e-ativacao-paga.md",
+  "sourceTitle": "Downloads não equivalem a ativação paga — evidência Appfigures",
+  "sourceSha256": "9991c6a792277feecb56e2c41e521f055a6d0f7f92173691acd92b7df62c27ba"
+}

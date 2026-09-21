@@ -6609,3 +6609,17 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Limite:** e-mail externo e pagamento são doubles locais; testes não comprovam SMTP
   produtivo, venda, margem realizada ou preflight publicado. Veja
   `docs/homologacao/quartzo-preparacao-preflight-v1.md`.
+
+### LOOP-GERASALESPAGE-CONDICAO-CADASTRADA-OMITIDA — 21/09/2026
+
+- **Evidência:** após cadastrar canal do briefing e distinção entre reembolso próprio
+  e proteção do provedor, copy/HTML omitiram ambos; preservaram apenas o recebedor.
+  A entrada tinha os campos estruturados, logo não era falta de contexto no backend.
+- **Causa:** informações operacionais essenciais dependiam da síntese livre do modelo.
+- **Correção:** renderização no executor das condições explicitamente cadastradas,
+  antes da revisão do HTML e novamente no pacote final. Sem exceção por produto ou ID.
+- **Prevenção:** replay do HTML que perdeu os termos e testes de outros contextos,
+  ausência, remoção, mudança, duplicação, escape, duas etapas, auditoria e custo.
+  Desktop/iPhone/Pixel conferem leitura até a última linha, sem cobertura pela CTA fixa.
+- **Limite:** manter termos não comprova operação de atendimento, entrega ou vendas;
+  a revisão independente e o preflight permanecem necessários.

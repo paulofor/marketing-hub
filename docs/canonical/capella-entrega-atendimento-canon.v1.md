@@ -88,3 +88,8 @@ Forestieri; a apresentação deve explicitar esse nome e o canal da oferta, sem
 inventar CNPJ, vínculo societário ou titularidade não documentada. A política de
 reembolso do vendedor é independente da proteção adicional Compra Garantida do
 Mercado Pago. Essas distinções devem aparecer antes de pagar.
+
+Conferência adicional na configuração pública efetiva do backend em 21/09/2026:
+fornecedor `Digicom Digital`, CNPJ `25.215.414/0001-69`, mesmo e-mail de atendimento.
+Essa identificação foi cadastrada na oferta pela tela. Não se deduz vínculo
+societário a partir do nome mostrado pelo provedor de pagamentos.

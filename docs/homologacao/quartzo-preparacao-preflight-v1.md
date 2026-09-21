@@ -52,3 +52,34 @@ retorno aos caminhos anteriores; não sobrescrever os recursos históricos.
   ZIP baixado correspondeu byte a byte ao arquivo produzido, com 24 entradas.
 - Ainda é necessário observar a decisão dos agentes publicados. Os testes de
   composição não medem sozinhos mudança de julgamento do modelo.
+
+## Condições omitidas na geração
+
+Na geração seguinte, o HTML `a9a82535-a863-4224-9fa8-d9885ce3cd7a` conservou o
+recebedor, mas omitiu canal do briefing e distinção de reembolso, ambos presentes
+na fonte oficial. Não se repetiu Psique. O complemento no executor GeraSalesPage
+renderiza três campos explícitos do contrato como texto escapado nas etapas de
+HTML e publicação, antes da auditoria. A revisão de qualidade recebe o mesmo bloco.
+Não se inventam condições, não se mudam imagens nem se aceitam scripts do contrato.
+
+Matriz adicional: fonte ausente não inventa texto; termos presentes aparecem mesmo
+quando o modelo omite; repetição não duplica; mudança legítima substitui termos;
+HTML malicioso fica texto; estágios anteriores não mudam; resposta bruta e custos
+continuam auditáveis. Teste integrado do processor usa modelo/backend simulados e
+confere HTML devolvido nas duas etapas. Conferir layout desktop/iPhone/Pixel local
+antes de atualizar o PR. A geração vigente termina normalmente; nenhuma chamada
+em curso é cancelada e nenhuma avaliação paga ocorre antes da correção.
+
+O AI Worker passou nos 248 casos da suíte local, com dois condicionais ignorados,
+sem falhas/erros. A dependência backend foi instalada localmente após a resolução
+remota retornar 401; não foi necessário acesso adicional. O replay do HTML real
+passou em desktop/iPhone/Pixel. A inspeção visual identificou a CTA fixa cobrindo
+as últimas linhas; o bloco agora reserva espaço final, verificado nos três perfis.
+As regressões afetadas e o build foram repetidos após esse ajuste de apresentação.
+
+O CI detectou os novos prompts ausentes do inventário `agent-harness-v2.json`.
+O catálogo recebeu as duas versões preservando as anteriores; o teste específico
+foi reproduzido localmente e passou. A suíte backend completa foi executada antes
+de publicar esse complemento. A configuração efetiva do fornecedor foi consultada
+em diagnóstico somente de leitura, limitada aos três campos públicos, e o CNPJ
+cadastrado foi acrescentado à oferta pela tela.

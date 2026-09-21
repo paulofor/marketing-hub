@@ -86,3 +86,20 @@ transportar o contrato na entrada canônica preserva responsabilidade e reúso.
 - A etapa de quality review deve ser gate comercial, não apenas revisão visual.
 - O pacote final deve informar claramente se está pronto para tráfego pago.
 - A publicação efetiva deve ser uma integração posterior, depois de validar checkout e pixel/eventos de compra.
+
+## Condições comerciais que não podem desaparecer — 21/09/2026
+
+O executor preserva no HTML revisado e no pacote publicado os campos textuais
+explícitos `experiment.product.experienceContract.delivery.briefingChannel`,
+`checkoutIdentity.explanation` e `refund.providerProtectionDistinction`. Eles
+explicam uma próxima ação da cliente ou uma condição de compra; não são metadados
+internos. A síntese do modelo pode organizar a narrativa, mas não apagar esses
+esclarecimentos cadastrados.
+
+O bloco visível usa texto escapado, substituição idempotente e espaço para leitura
+no celular mesmo com CTA fixa. Sem fonte não inventa termos; remoção da fonte remove
+o bloco anterior. Não muda preço, fornecedor, política, fotos ou contrato. A saída
+funcional enriquecida, resposta bruta, custos e publicação continuam separados na
+auditoria. A revisão de qualidade recebe os termos antes da publicação. Recuperar
+uma publicação histórica não altera silenciosamente seu HTML; uma nova geração
+produz outra publicação auditada quando conteúdo precisa mudar.

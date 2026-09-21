@@ -127,3 +127,11 @@ A nova tentativa referencia a original, sem sobrescrever erro, custos ou etapas 
 Comandos administrativos compartilham lock no experimento; repetir o mesmo comando devolve
 a mesma tentativa. O worker continua pelo `pending` oficial e o backend decide o avanço.
 Não há retentativa paga automática nem alteração do gate comercial.
+
+### Proveniência recebida pelos revisores
+
+A prova do produto deve levar, além de URL/versão/estado, a origem e a declaração de
+uso comercial cadastradas, identidade da geração concluída, modelo, fonte de edição
+e hash auditado quando disponíveis. Prompt e binário brutos não entram nesse resumo.
+Um campo ausente permanece ausente; revisão visual não atesta direitos. O mesmo
+contrato atende novas páginas e a preparação Quartzo, sem regra por produto ou ID.

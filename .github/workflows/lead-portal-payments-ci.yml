@@ -362,7 +362,7 @@ jobs:
             --base-url https://pagamentopalf.site/agenda-cheia/ \
             --expected-address "$DEPLOY_HOST" \
             --source-directory lead-portal-payments-service/src/main/resources/static/agenda-cheia \
-            obrigado.html obrigado.js
+            obrigado.html obrigado.js privacidade.html
       - name: Clean build artifacts from repository
         if: always()
         run: |

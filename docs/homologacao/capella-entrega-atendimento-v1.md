@@ -130,3 +130,26 @@ pós-compra corretamente, com respostas de pagamento interceptadas localmente; s
 compras reais, envio de e-mail ou gravação de briefing. A sonda corrigida passou em
 oito testes HTTP/CLI e três seleções de URL, além dos cinco casos de destino,
 Actionlint/ShellCheck e diff. A conclusão do workflow aguarda o novo deploy.
+
+## Complemento após Têmis #473
+
+- Conferir promessa do contrato versus oferta publicada, preservando a hipótese de
+  aquisição sem garantir clientes/renda.
+- Provar que o contexto contém origem/direitos/produtor/hash já auditados, inclusive
+  legado, sem inventar os ausentes ou expor prompts/base64. Conferidos 20 hashes
+  públicos contra respostas persistidas, todos iguais.
+- Abrir aviso de privacidade sem pagamento, pelo link antes dos campos e no rodapé;
+  validar desktop/iPhone/Pixel e caminho de retorno, sem enviar dados reais.
+- GET HTTP do aviso passa com identificação, finalidade, retenção e contato;
+  integração de pagamento/briefing/ZIP/e-mail simulado continua válida.
+- Publicação deve comparar também SHA-256 de `privacidade.html`; só depois cadastrar
+  a política pela UI e retomar a mesma execução para novos pareceres com entradas alteradas.
+
+Rodada local deste complemento: backend com 3.372 testes contabilizados (20
+condicionais ignorados), pagamentos com 50, zero falhas/erros; ambos empacotados.
+A navegação passou em 18 cenários (seis por desktop, iPhone 15 Pro e Pixel 7), com
+pagamento e envio interceptados, sem gravação ou mensagem real. Formatação backend,
+diff, testes JavaScript do pós-compra e contratos da sonda também conferidos.
+O passo alterado do workflow passou em `bash -n` e ShellCheck. Actionlint mantém
+os mesmos avisos legados da base (sintaxe `concurrency.queue` não reconhecida pela
+versão local e expansões SSH já existentes), sem achado novo neste complemento.

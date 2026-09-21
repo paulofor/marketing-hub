@@ -1,17 +1,23 @@
 package com.marketinghub.planning.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.geralanding.publiclanding.service.ApprovedLandingProductEvidenceGate;
 import com.marketinghub.planning.CommercialPlanVisualAsset;
 import com.marketinghub.planning.CommercialPlanVisualAssetStatus;
+import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioJob;
+import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioStatus;
 import com.marketinghub.planning.imagestudio.v1.CommercialPlanVisualAssetReviewStatus;
+import com.marketinghub.repository.jpa.planning.CommercialPlanImageStudioJobRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanVisualAssetRepository;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,26 +27,36 @@ import org.springframework.util.StringUtils;
  * Responsabilidade: fornecer e validar as provas visuais aprovadas que uma landing deve reutilizar.
  */
 @Service
+@Slf4j
 public class CommercialPlanLandingAssetService implements ApprovedLandingProductEvidenceGate {
   private static final int MAX_REQUIRED_REFERENCES = 4;
 
   private final CommercialPlanRepository commercialPlanRepository;
   private final CommercialPlanVisualAssetRepository visualAssetRepository;
+  private final CommercialPlanImageStudioJobRepository imageJobs;
+  private final ObjectMapper json;
 
   /** Inicializa o serviço com as fontes canônicas do plano e de sua biblioteca audiovisual. */
   public CommercialPlanLandingAssetService(
       CommercialPlanRepository commercialPlanRepository,
-      CommercialPlanVisualAssetRepository visualAssetRepository) {
+      CommercialPlanVisualAssetRepository visualAssetRepository,
+      CommercialPlanImageStudioJobRepository imageJobs,
+      ObjectMapper json) {
     this.commercialPlanRepository = commercialPlanRepository;
     this.visualAssetRepository = visualAssetRepository;
+    this.imageJobs = imageJobs;
+    this.json = json;
   }
 
   /** Lista as imagens aprovadas para landing do plano vigente que governa o experimento. */
   @Transactional(readOnly = true)
   public List<LandingAssetReference> referencesForExperiment(Long experimentId) {
-    if (experimentId == null) {
-      return List.of();
-    }
+    return approvedAssetsForExperiment(experimentId).stream().map(this::toReference).toList();
+  }
+
+  /** Consulta somente a biblioteca aprovada do plano que governa o experimento. */
+  private List<CommercialPlanVisualAsset> approvedAssetsForExperiment(Long experimentId) {
+    if (experimentId == null) return List.of();
     return commercialPlanRepository.findByExperimentReference(experimentId).stream()
         .findFirst()
         .map(
@@ -51,7 +67,6 @@ public class CommercialPlanLandingAssetService implements ApprovedLandingProduct
                     .stream()
                     .filter(this::isIndependentlyApprovedForLanding)
                     .filter(asset -> StringUtils.hasText(asset.getAssetUrl()))
-                    .map(this::toReference)
                     .toList())
         .orElseGet(List::of);
   }
@@ -59,9 +74,23 @@ public class CommercialPlanLandingAssetService implements ApprovedLandingProduct
   /** Monta o contrato de provas que Íris e os renderizadores recebem antes de produzir o HTML. */
   @Transactional(readOnly = true)
   public List<Map<String, Object>> payloadForExperiment(Long experimentId) {
-    return referencesForExperiment(experimentId).stream()
+    var approved = approvedAssetsForExperiment(experimentId);
+    if (approved.isEmpty()) return List.of();
+    var jobs =
+        imageJobs
+            .findByResultVisualAssetIdInAndStatusOrderByIdAsc(
+                approved.stream().map(CommercialPlanVisualAsset::getId).toList(),
+                CommercialPlanImageStudioStatus.COMPLETED)
+            .stream()
+            .collect(
+                Collectors.toMap(
+                    job -> job.getResultVisualAsset().getId(),
+                    job -> job,
+                    (previous, latest) -> latest));
+    return approved.stream()
         .map(
-            reference -> {
+            asset -> {
+              var reference = toReference(asset);
               Map<String, Object> payload = new LinkedHashMap<>();
               payload.put("assetId", reference.assetId());
               payload.put("assetUrl", reference.assetUrl());
@@ -70,9 +99,76 @@ public class CommercialPlanLandingAssetService implements ApprovedLandingProduct
               payload.put("status", "APPROVED");
               payload.put("agentReviewStatus", "APPROVED");
               payload.put("requiredUsage", "PRESERVE_EXACT_FILE_NO_REDRAW");
+              payload.put("provenance", provenance(asset, jobs.get(asset.getId())));
               return Map.copyOf(payload);
             })
         .toList();
+  }
+
+  /**
+   * Expõe a declaração e a geração auditada sem convertê-las em garantia jurídica ou licença
+   * inventada.
+   */
+  private Map<String, Object> provenance(
+      CommercialPlanVisualAsset asset, CommercialPlanImageStudioJob job) {
+    Map<String, Object> proof = new LinkedHashMap<>();
+    proof.put("recordSource", "commercial_plan_visual_asset");
+    proof.put("origin", Objects.toString(asset.getOrigin(), ""));
+    proof.put("rightsStatement", Objects.toString(asset.getRightsStatement(), ""));
+    proof.put("rightsEvidenceType", "OPERATION_DECLARATION");
+    proof.put("recordedAt", Objects.toString(asset.getCreatedAt(), ""));
+    proof.put("independentReviewExecutionId", Objects.toString(asset.getReviewerExecutionId(), ""));
+    String hash = Objects.toString(asset.getContentSha256(), "").toLowerCase(Locale.ROOT);
+    if (!hash.matches("[0-9a-f]{64}")) hash = "";
+    if (job != null) {
+      Map<String, Object> audit = new LinkedHashMap<>();
+      audit.put("recordSource", "commercial_plan_image_studio_job");
+      audit.put("jobId", job.getId());
+      audit.put("resultAssetId", asset.getId());
+      audit.put("producerExecutionId", Objects.toString(job.getProducerExecutionId(), ""));
+      audit.put("model", Objects.toString(job.getModel(), ""));
+      audit.put("operation", Objects.toString(job.getOperation(), ""));
+      audit.put("status", job.getStatus().name());
+      audit.put("finishedAt", Objects.toString(job.getFinishedAt(), ""));
+      audit.put("requestRecorded", StringUtils.hasText(job.getRequestJson()));
+      audit.put("responseRecorded", StringUtils.hasText(job.getResponseJson()));
+      if (job.getSourceVisualAsset() != null) {
+        var source = job.getSourceVisualAsset();
+        audit.put("sourceAssetId", source.getId());
+        audit.put("sourceOrigin", Objects.toString(source.getOrigin(), ""));
+        audit.put("sourceRightsStatement", Objects.toString(source.getRightsStatement(), ""));
+      }
+      String generatedHash = auditImageHash(job);
+      audit.put("generatedImageSha256", generatedHash);
+      if (hash.isBlank()) hash = generatedHash;
+      audit.put("registeredHashMatchesAudit", !hash.isBlank() && hash.equals(generatedHash));
+      proof.put("generationAudit", Map.copyOf(audit));
+    }
+    proof.put("contentSha256", hash);
+    proof.put("hashAvailable", !hash.isBlank());
+    proof.put("generationAuditAvailable", job != null);
+    proof.put(
+        "limitations",
+        "A declaração de direitos pertence ao cadastro da operação; revisão visual não é licença. "
+            + "A geração e o hash permitem auditar a origem, sem provar exclusividade ou direitos sobre entradas de terceiros.");
+    return Map.copyOf(proof);
+  }
+
+  /** Recupera somente o hash da imagem da resposta auditada, inclusive em cadastros legados. */
+  private String auditImageHash(CommercialPlanImageStudioJob job) {
+    if (!StringUtils.hasText(job.getResponseJson())) return "";
+    try {
+      String hash =
+          json.readTree(job.getResponseJson()).path("data").path(0).path("image_sha256").asText("");
+      return hash.matches("[0-9a-fA-F]{64}") ? hash.toLowerCase(Locale.ROOT) : "";
+    } catch (Exception ex) {
+      log.warn(
+          "Auditoria de origem visual inválida. jobId={} assetId={}",
+          job.getId(),
+          job.getResultVisualAsset().getId(),
+          ex);
+      return "";
+    }
   }
 
   /** Exige ao menos uma prova aprovada e limita a quatro arquivos distintos por página. */

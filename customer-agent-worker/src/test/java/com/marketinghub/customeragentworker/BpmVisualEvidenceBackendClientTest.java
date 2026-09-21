@@ -101,7 +101,8 @@ class BpmVisualEvidenceBackendClientTest {
                         "tag",
                         "commit",
                         "c".repeat(64),
-                        "e".repeat(64)))),
+                        "e".repeat(64)),
+                    "f".repeat(64))),
             List.of(artifact));
 
     try {

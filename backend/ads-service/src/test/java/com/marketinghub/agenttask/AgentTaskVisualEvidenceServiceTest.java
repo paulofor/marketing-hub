@@ -40,6 +40,162 @@ class AgentTaskVisualEvidenceServiceTest {
   private AgentTaskVisualEvidenceService service;
   private AgentTask task;
 
+  /** Valida no serviço real os PNGs produzidos pelo navegador oficial do worker na sandbox. */
+  @Test
+  @org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable(
+      named = "PSIQUE_CAPTURE_EVIDENCE_OUTPUT",
+      matches = ".+")
+  void acceptsRealWorkerCaptureThroughBackendStorageContract() throws Exception {
+    var json = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+    var capture =
+        json.readTree(
+            java.nio.file.Path.of(System.getenv("PSIQUE_CAPTURE_EVIDENCE_OUTPUT"), "capture.json")
+                .toFile());
+    var process = new com.marketinghub.businessprocess.BusinessProcessDefinition();
+    process.setProcessCode("quartzo-commercial-preparation-v1");
+    task.setProcessDefinition(process);
+    task.setProcessActivityId("humanExperienceReview");
+    when(taskRepository.findById(258L)).thenReturn(Optional.of(task));
+    when(targetContextProvider.resolve(task.getSourceReference(), process.getProcessCode()))
+        .thenReturn(
+            Optional.of(
+                new AgentTaskTargetResponse(
+                    task.getSourceReference(),
+                    504L,
+                    208L,
+                    "kit-receitas",
+                    "Pacote sintético de receitas",
+                    "Sintético",
+                    "v4",
+                    capture.path("pages").get(0).path("requestedUrl").asText(),
+                    null,
+                    null,
+                    capture.path("pages").get(1).path("requestedUrl").asText(),
+                    new java.math.BigDecimal("39.00"))));
+    var ids = new java.util.concurrent.atomic.AtomicLong(1200);
+    when(evidenceRepository.saveAndFlush(any()))
+        .thenAnswer(
+            invocation -> {
+              AgentTaskVisualEvidence evidence = invocation.getArgument(0);
+              evidence.setId(ids.incrementAndGet());
+              return evidence;
+            });
+    assertThat(capture.path("artifacts").size()).isEqualTo(4);
+    for (var artifact : capture.path("artifacts")) {
+      var request =
+          new AgentTaskVisualEvidenceRequest(
+              artifact.path("captureSessionId").asText(),
+              artifact.path("evidenceKey").asText(),
+              artifact.path("evidenceType").asText(),
+              artifact.path("deviceProfile").asText(),
+              artifact.path("pageNumber").asInt(),
+              artifact.path("foldNumber").isNull() ? null : artifact.path("foldNumber").asInt(),
+              artifact.path("viewportWidth").asInt(),
+              artifact.path("viewportHeight").asInt(),
+              artifact.path("pageHeightPx").asInt(),
+              artifact.path("scrollY").asInt(),
+              artifact.path("sourceUrl").asText(),
+              artifact.path("finalUrl").asText(),
+              Instant.parse(artifact.path("capturedAt").asText()));
+      byte[] pixels =
+          java.nio.file.Files.readAllBytes(
+              java.nio.file.Path.of(artifact.path("localPath").asText()));
+      var stored =
+          service.store(
+              "customer-agent",
+              258L,
+              request,
+              new MockMultipartFile("file", "capture.png", "image/png", pixels));
+      assertThat(stored.pageNumber()).isEqualTo(request.pageNumber());
+      assertThat(stored.sha256())
+          .isEqualTo(
+              java.util.HexFormat.of()
+                  .formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(pixels)));
+    }
+  }
+
+  /** Aceita checkout só na página prevista, no mesmo produto e com a preferência exata. */
+  @Test
+  void storesOnlyCanonicalQuartzoCheckoutOnSecondPage() throws Exception {
+    var process = new com.marketinghub.businessprocess.BusinessProcessDefinition();
+    process.setProcessCode("quartzo-commercial-preparation-v1");
+    task.setProcessDefinition(process);
+    task.setProcessActivityId("humanExperienceReview");
+    when(taskRepository.findById(258L)).thenReturn(Optional.of(task));
+    when(targetContextProvider.resolve(task.getSourceReference(), process.getProcessCode()))
+        .thenReturn(
+            Optional.of(
+                new AgentTaskTargetResponse(
+                    task.getSourceReference(),
+                    406L,
+                    204L,
+                    "kit-independente",
+                    "Kit",
+                    "Produto sintético",
+                    "v3",
+                    "https://example.com/kit",
+                    null,
+                    null,
+                    "https://example.com/checkout?pref_id=approved",
+                    new java.math.BigDecimal("39.00"))));
+    when(evidenceRepository.saveAndFlush(any()))
+        .thenAnswer(
+            invocation -> {
+              AgentTaskVisualEvidence evidence = invocation.getArgument(0);
+              evidence.setId(901L);
+              return evidence;
+            });
+    var accepted =
+        service.store(
+            "customer-agent",
+            258L,
+            checkoutRequest(2, "https://example.com/checkout?pref_id=approved"),
+            png("checkout"));
+    assertThat(accepted.pageNumber()).isEqualTo(2);
+    assertThat(accepted.sourceUrl()).endsWith("pref_id=approved");
+    for (var invalid :
+        java.util.List.of(
+            checkoutRequest(1, "https://example.com/checkout?pref_id=approved"),
+            checkoutRequest(2, "https://example.com/checkout?pref_id=another-product"),
+            checkoutRequest(3, "https://example.com/checkout?pref_id=approved"))) {
+      assertThatThrownBy(() -> service.store("customer-agent", 258L, invalid, png("invalid")))
+          .isInstanceOf(ResponseStatusException.class);
+    }
+  }
+
+  /** Mantém os outros processos restritos à URL pública do próprio alvo. */
+  @Test
+  void doesNotEnableCheckoutForUnrelatedProcess() {
+    when(taskRepository.findById(258L)).thenReturn(Optional.of(task));
+    assertThatThrownBy(
+            () ->
+                service.store(
+                    "customer-agent",
+                    258L,
+                    checkoutRequest(2, "https://checkout.example/rigel"),
+                    png("unrelated")))
+        .hasMessageContaining("snapshot não pertence");
+    verify(s3, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+  }
+
+  /** Cria prova de checkout com metadados completos e sem dados de pagamento. */
+  private AgentTaskVisualEvidenceRequest checkoutRequest(int page, String url) {
+    return new AgentTaskVisualEvidenceRequest(
+        "checkout-test",
+        "page-" + page + "-fold-1",
+        "FOLD",
+        "IPHONE_15_PRO",
+        page,
+        1,
+        393,
+        852,
+        852,
+        0,
+        url,
+        url,
+        Instant.parse("2026-08-29T10:00:00Z"));
+  }
+
   /** Configura bucket privado, relógio fixo e lease de Psique para cada teste. */
   @BeforeEach
   void setUp() {

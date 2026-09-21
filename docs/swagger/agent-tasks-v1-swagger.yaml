@@ -267,7 +267,12 @@ paths:
   /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/visual-evidence:
     post:
       summary: Persiste uma captura privada ou o PNG final produzido por Íris
-      description: CREATIVE_RENDER exige tarefa Íris nonAudiovisual, perfil CREATIVE_1080X1350 e dimensões reais 1080 por 1350; não representa captura Playwright nem prova de consumidor.
+      description: >-
+        CREATIVE_RENDER exige tarefa Íris nonAudiovisual, perfil CREATIVE_1080X1350 e dimensões reais 1080 por 1350;
+        não representa captura Playwright nem prova de consumidor. Na revisão humanExperienceReview de
+        quartzo-commercial-preparation-v1 por Psique, página 1 exige a URL pública do alvo e página 2
+        exige exatamente commercialCheckoutUrl do mesmo alvo, incluindo query. Não permite outra URL
+        de checkout nem comprova pagamento ou entrega.
       parameters:
         - $ref: "#/components/parameters/AgentKey"
         - $ref: "#/components/parameters/TaskId"

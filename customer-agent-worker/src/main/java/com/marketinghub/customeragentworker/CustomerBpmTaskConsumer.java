@@ -183,6 +183,7 @@ public class CustomerBpmTaskConsumer {
       }
       if (replayApprovedCallback(task)) return;
       visualEvidence = prepareVisualEvidence(task);
+      task = withCaptureFacts(task, visualEvidence.bundle(), visualEvidence.uploaded());
       execution = execute(task, visualEvidence.uploaded());
       validateExecution(task, execution);
       enqueueDecision(task, execution);
@@ -342,7 +343,8 @@ public class CustomerBpmTaskConsumer {
     try {
       PdeExperienceEvidenceLoader.LiveVisualContract liveVisualContract = liveVisualContract(task);
       BpmVisualEvidenceRunner.VisualEvidenceBundle bundle =
-          visualEvidenceRunner.capture(publicUrl, workDirectory, liveVisualContract);
+          visualEvidenceRunner.capture(
+              publicUrl, workDirectory, liveVisualContract, additionalVisualUrls(task));
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded =
           visualEvidenceBackendClient.upload(taskId(task), bundle);
       if (uploaded.isEmpty()) {
@@ -361,6 +363,50 @@ public class CustomerBpmTaskConsumer {
       throw new BpmVisualEvidenceRunner.VisualEvidenceException(
           "Não foi possível capturar e persistir a prova visual obrigatória de Psique.", ex);
     }
+  }
+
+  /** Inclui o checkout oficial Quartzo na leitura visual sem executar pagamento ou formulário. */
+  List<String> additionalVisualUrls(Map<String, Object> task) throws IOException {
+    if (!"quartzo-commercial-preparation-v1".equals(processCode(task))) return List.of();
+    String checkout =
+        json.readTree(String.valueOf(task.get("processContextJson")))
+            .path("quartzoCommercial")
+            .path("checkoutUrl")
+            .asText("")
+            .trim();
+    if (checkout.isBlank())
+      throw new BpmVisualEvidenceRunner.VisualEvidenceException(
+          "Quartzo sem checkout oficial para conferência visual antes do parecer.");
+    return List.of(checkout);
+  }
+
+  /** Preserva fatos validados e seus artefatos no prompt, outbox e callback da mesma tentativa. */
+  static Map<String, Object> withCaptureFacts(
+      Map<String, Object> task,
+      BpmVisualEvidenceRunner.VisualEvidenceBundle bundle,
+      List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded) {
+    if (bundle == null) return task;
+    var capture = bundle.capture();
+    Map<String, Object> enriched = new LinkedHashMap<>(task);
+    enriched.put(
+        "visualCapture",
+        Map.of(
+            "contractVersion", "visual-capture-context-v1",
+            "captureSessionId", capture.captureSessionId(),
+            "deviceProfile", capture.deviceProfile(),
+            "interactionMode", "READ_ONLY_INITIAL_PAGES",
+            "pages", capture.pages(),
+            "artifacts",
+                uploaded.stream()
+                    .map(
+                        item ->
+                            Map.of(
+                                "id", item.id(),
+                                "pageNumber", item.pageNumber(),
+                                "evidenceKey", item.evidenceKey(),
+                                "sha256", item.sha256()))
+                    .toList()));
+    return enriched;
   }
 
   /** Resolve a identidade visual exigida pelo tipo antes de consumir a revisão de Psique. */
@@ -1084,7 +1130,7 @@ public class CustomerBpmTaskConsumer {
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
       case "quartzo-commercial-preparation-v1" ->
-          "prompts/quartzo-commercial/v1/customer-review.md";
+          "prompts/quartzo-commercial/v2/customer-review.md";
       case "creative-production-approval" -> "prompts/bpm/v3/creative-customer-review.md";
       case "pde-commercial-homologation-activation", "opala-commercial-preparation-v1" ->
           "prompts/bpm/v3/pde-commercial-homologation-customer-review.md";
@@ -1747,6 +1793,7 @@ public class CustomerBpmTaskConsumer {
               .toList());
       evidence.put("visualEvidenceCount", visualEvidence.size());
     }
+    if (task.get("visualCapture") != null) evidence.put("visualCapture", task.get("visualCapture"));
     if ("opala-commercial-preparation-v1".equals(processCode(task)))
       evidence.put(
           "opalaScope",

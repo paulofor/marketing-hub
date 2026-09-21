@@ -282,6 +282,7 @@
       ],
       "artifacts": [
         {"artifactType": "PROMPT", "name": "Revisão comercial Quartzo", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/quartzo-commercial/v1/customer-review.md", "description": "Preparação auditável de pacote digital low-ticket, com entrega e evidência próprias do tipo Quartzo."},
+        {"artifactType": "PROMPT", "name": "Revisão comercial Quartzo com checkout e fatos visuais", "version": "v2", "path": "customer-agent-worker/src/main/resources/prompts/quartzo-commercial/v2/customer-review.md", "description": "Preserva identidade, fatos e hashes da landing e do checkout sem confundir captura com pagamento ou entrega."},
         {"artifactType": "OUTPUT_SCHEMA", "name": "Schema comercial Quartzo", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/quartzo-commercial/v1/customer-review-schema.json", "description": "Preparação auditável de pacote digital low-ticket, com entrega e evidência próprias do tipo Quartzo."},
         { "artifactType": "MCP_SERVER", "name": "MCP do Agente Cliente", "version": "v1", "path": "customer-agent-worker/src/main/resources/mcp/customer-agent.mjs", "description": "Contexto e memória limitados ao domínio de Psique." },
         { "artifactType": "PROMPT", "name": "Núcleo comportamental, sensorial e estético", "version": "v4", "path": "customer-agent-worker/src/main/resources/prompts/psique/behavioral-core-v4.md", "description": "Princípios afetivos, sociais, sensoriais e de composição visual atuais." },

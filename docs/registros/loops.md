@@ -6483,3 +6483,26 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Prevenção:** regressões com página longa, pixels do cabeçalho, repetição e página
   que recusa rolagem. Ambas falharam no capturador anterior. Matriz e evidências em
   `docs/homologacao/psique-captura-rolagem-instantanea-v1.md`.
+
+## LOOP-PSIQUE-QUARTZO-CONTEXTO-VISUAL-INCOMPLETO — 21/09/2026
+
+- **Evidência:** após recuperar a publicação auditada, a tarefa #470 conseguiu avaliar
+  Capella e retornou `ADJUST`. O checkout era citado no contexto, mas não fotografado;
+  os fatos e marcadores verificados pelo capturador eram descartados antes do prompt.
+  O serviço de upload também aceitava apenas a landing, impedindo uma segunda página.
+- **Causa confirmada:** contrato incompleto entre captura, contexto, persistência e
+  interpretação. Não é evidência de falha do checkout nem rejeição de mercado.
+- **Alternativas:** repetir com os mesmos anexos mantém a lacuna; aceitar só a URL
+  elimina a prova; capturar o checkout oficial e preservar fatos/IDs/hashes completa
+  a evidência sem alterar oferta. Escolhida a terceira opção.
+- **Correção:** captura de landing e checkout na mesma sessão, cobertura por página,
+  validação da URL oficial no backend, contexto persistível `visualCapture` e prompt
+  Quartzo v2. A outbox preserva fatos após reinício; URL insegura ou captura incompleta
+  bloqueia antes do modelo. Checkout aberto não comprova pagamento ou entrega.
+- **Limite:** o parecer também apontou lacunas reais de comunicação e compromissos
+  comerciais. Contrato menciona uso no mesmo dia e pós-compra prevê três dias úteis;
+  canal/SLA de suporte não estão confirmados. Essas decisões não são inventadas pelo
+  worker nem resolvidas por repetir a revisão. Plutus e as cinco atividades aprovadas
+  permanecem preservados enquanto suas entradas continuarem válidas.
+- **Prevenção:** matriz, comparação com comportamento anterior e evidências em
+  `docs/homologacao/psique-evidencias-quartzo-v2.md`.

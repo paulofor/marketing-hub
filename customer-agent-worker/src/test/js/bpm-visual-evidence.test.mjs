@@ -7,10 +7,118 @@ import path from "node:path";
 import { once } from "node:events";
 import test from "node:test";
 import { chromium } from "playwright-core";
+import { createHash } from "node:crypto";
 
 const script =
   process.env.CUSTOMER_AGENT_BPM_VISUAL_SCRIPT ??
   path.resolve("src/main/resources/browser/bpm-visual-evidence.mjs");
+
+test("captura landing e checkout em uma sessão sem acionar compra e vincula bytes às imagens", async () => {
+  const directory = await fs.mkdtemp(
+    path.join(os.tmpdir(), "psique-checkout-"),
+  );
+  let mutations = 0;
+  const checkout =
+    '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><h1>Kit independente</h1><p>Total R$ 49,00. Pagamento único.</p><form action="/pay" method="post"><button>Pagar</button></form></body></html>';
+  const landing =
+    '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><h1>Kit</h1><a href="/checkout">Comprar</a></body></html>';
+  const server = http.createServer((request, response) => {
+    if (request.method !== "GET" || request.url === "/pay") mutations++;
+    if (request.url === "/version-diagnostics.json") {
+      response.writeHead(404);
+      response.end();
+      return;
+    }
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    response.end(request.url === "/checkout" ? checkout : landing);
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  try {
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const input = path.join(directory, "input.json");
+    const output = path.join(directory, "output.json");
+    await fs.writeFile(
+      input,
+      JSON.stringify({
+        sourceUrl: base + "/kit?mh_test=1",
+        additionalPageUrls: [base + "/checkout"],
+        captureSessionId: "independent-kit",
+      }),
+    );
+    const result = await runCapture(
+      input,
+      output,
+      path.join(directory, "images"),
+      { CUSTOMER_AGENT_VISUAL_TEST_MODE: "true" },
+    );
+    assert.equal(result.code, 0, result.log);
+    const capture = JSON.parse(await fs.readFile(output, "utf8"));
+    assert.equal(mutations, 0);
+    assert.deepEqual(
+      capture.pages.map((p) => p.pageNumber),
+      [1, 2],
+    );
+    assert.equal(
+      capture.pages[0].documentSha256,
+      createHash("sha256").update(landing).digest("hex"),
+    );
+    assert.equal(
+      capture.pages[1].documentSha256,
+      createHash("sha256").update(checkout).digest("hex"),
+    );
+    assert.match(capture.pages[1].visibleText, /49,00/);
+    assert.deepEqual(
+      capture.artifacts.map((a) => [a.pageNumber, a.evidenceType]),
+      [
+        [1, "FULL_PAGE"],
+        [1, "FOLD"],
+        [2, "FULL_PAGE"],
+        [2, "FOLD"],
+      ],
+    );
+    assert.equal(new Set(capture.artifacts.map((a) => a.evidenceKey)).size, 4);
+    assert.equal(
+      new Set(capture.artifacts.map((a) => a.captureSessionId)).size,
+      1,
+    );
+  } finally {
+    server.close();
+    await once(server, "close");
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("rejeita credencial no checkout adicional antes de capturar qualquer página", async () => {
+  const directory = await fs.mkdtemp(
+    path.join(os.tmpdir(), "psique-checkout-secret-"),
+  );
+  try {
+    const input = path.join(directory, "input.json");
+    const output = path.join(directory, "output.json");
+    await fs.writeFile(
+      input,
+      JSON.stringify({
+        sourceUrl: "https://example.com/kit",
+        additionalPageUrls: [
+          "https://example.com/checkout?access_token=private",
+        ],
+        captureSessionId: "invalid-checkout",
+      }),
+    );
+    const result = await runCapture(
+      input,
+      output,
+      path.join(directory, "images"),
+      { CUSTOMER_AGENT_VISUAL_TEST_MODE: "true" },
+    );
+    assert.notEqual(result.code, 0);
+    assert.match(result.log, /URL pública inválida/);
+    assert.equal(await fs.stat(output).catch(() => null), null);
+  } finally {
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
 
 /** Lê as dimensões declaradas no IHDR sem depender de biblioteca de imagem. */
 function pngDimensions(pixels) {

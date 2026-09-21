@@ -78,3 +78,13 @@ A sonda HTTP de pagamentos deve consultar `/agenda-cheia/obrigado.html`, que é 
 rota real do pós-compra. A raiz desse serviço não oferece uma página e pode retornar
 404 mesmo quando a experiência e suas APIs estão disponíveis. A prova posterior de
 hash continua obrigatória; não trocar sua validação por aceitar qualquer HTTP 200.
+
+O briefing é preenchido no formulário do pós-compra
+`https://pagamentopalf.site/agenda-cheia/obrigado.html`, usando o link que contém a
+identificação do pagamento aprovado, recebido no retorno do checkout ou por e-mail.
+Falha de acesso é tratada pelo canal de suporte, com identificação da compra e sem
+pedir dados de cartão. O checkout observado identifica o recebedor como Paulo
+Forestieri; a apresentação deve explicitar esse nome e o canal da oferta, sem
+inventar CNPJ, vínculo societário ou titularidade não documentada. A política de
+reembolso do vendedor é independente da proteção adicional Compra Garantida do
+Mercado Pago. Essas distinções devem aparecer antes de pagar.

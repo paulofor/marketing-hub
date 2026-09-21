@@ -1130,7 +1130,7 @@ public class CustomerBpmTaskConsumer {
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
       case "quartzo-commercial-preparation-v1" ->
-          "prompts/quartzo-commercial/v2/customer-review.md";
+          "prompts/quartzo-commercial/v3/customer-review.md";
       case "creative-production-approval" -> "prompts/bpm/v3/creative-customer-review.md";
       case "pde-commercial-homologation-activation", "opala-commercial-preparation-v1" ->
           "prompts/bpm/v3/pde-commercial-homologation-customer-review.md";

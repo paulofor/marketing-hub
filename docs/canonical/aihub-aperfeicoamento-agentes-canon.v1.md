@@ -282,3 +282,23 @@ esperada/observada antes da revisão paga. Preservar o gate de identidade da fon
 do HTML servido e dos PNGs. Testes devem conferir pixels de um cabeçalho fixado em
 página longa com rolagem suave, repetição da captura e recusa de posição incorreta.
 Essa precisão melhora a evidência; não comprova aprovação comercial nem vendas.
+
+## Preparação não antecipa o preflight — 21/09/2026
+
+Psique e Têmis no subprocesso Quartzo avaliam a preparação para o preflight do pai,
+conforme a cadeia v17 e homologação v8. A compra simulada, os eventos persistidos,
+o envio e download no ambiente comercial e a recuperação operacional pertencem ao
+preflight posterior. Exigi-los como atividade já concluída cria dependência circular.
+
+Isso não dispensa prova material do kit, fidelidade da oferta, canal do briefing,
+entrega contratada, suporte/reembolso, identidade, plano de métricas e economia.
+PASS em um gate dessa revisão comprova preparação, nunca operação, venda ou lucro.
+Ausência de um teste posterior deve ser declarada em remainingRisk/limitations;
+falha observada, promessa contraditória ou fonte essencial ausente continuam bloqueando.
+`requiredChanges` deve distinguir impedimento demonstrado de preferência estética.
+
+Evidência: Psique #471, publicação #28, comparada com os contratos persistidos do pai
+e com `checkout` do subprocesso. Prompts Psique v3 e Têmis v2 preservam as versões
+anteriores e os schemas. Matriz e limites em
+[homologação da fronteira Quartzo](../homologacao/quartzo-preparacao-preflight-v1.md).
+Não há alegação de ganho de vendas ou de aprendizado automático.

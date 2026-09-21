@@ -30,18 +30,26 @@ class QuartzoCommercialContractsTest {
             "activityId",
             "humanExperienceReview",
             "sourceReference",
-            "experiment:88",
+            "experiment:246",
             "processContextJson",
-            "{\"quartzoCommercial\":{\"fingerprint\":\"frozen-quartzo\",\"productId\":7,"
+            "{\"quartzoCommercial\":{\"fingerprint\":\"frozen-quartzo\",\"productId\":23,"
                 + "\"pageHash\":\""
                 + "a".repeat(64)
                 + "\",\"primaryCta\":\"Comprar o kit por R$ 67\"}}",
             "taskTarget",
-            Map.of("publicUrl", "https://example.test/kit", "productId", 7));
+            Map.of("publicUrl", "https://example.test/kit", "productId", 23));
     assertThat(CustomerBpmTaskConsumer.supportsContract(code, "humanExperienceReview")).isTrue();
     assertThat(CustomerBpmTaskConsumer.requiresVisualAudit(code)).isTrue();
     assertThat(worker.prompt(task, List.of()))
         .contains("frozen-quartzo", "PRODUCT_PROOF", "PERSONALIZATION", "página própria")
+        .contains(
+            "PREPARAÇÃO COMERCIAL",
+            "preflight técnico",
+            "Não exija que essa atividade posterior",
+            "falha já demonstrada permanece bloqueante",
+            "sem inventar um teste",
+            "requiredChanges somente para impedimentos objetivos",
+            "download quebrado")
         .doesNotContain("{{TASK_CONTEXT}}", "versionedCommercialHomologationEvidence");
     var schema =
         json.readTree(

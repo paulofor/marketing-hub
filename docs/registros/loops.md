@@ -6591,3 +6591,21 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   mas a raiz sem homepage retornou 404. Os arquivos reais foram confirmados por
   SHA-256 e navegador; a sonda deve consultar `/agenda-cheia/obrigado.html` e só então
   verificar os hashes. Teste HTTP local cobre raiz 404 com artefato íntegro.
+
+### LOOP-QUARTZO-PREFLIGHT-ANTECIPADO — 21/09/2026
+
+- **Evidência:** Psique #471 recebeu publicação auditada #28 e aprovou oferta, preço,
+  prova, checkout e economia; bloqueou por compra simulada, ZIP/e-mail e eventos ainda
+  não executados. O pai v8 reserva essas verificações ao preflight após a preparação;
+  a definição `checkout` Quartzo também declara essa ordem.
+- **Causa:** prompts Quartzo pediam provas sem delimitar a fase, criando dependência
+  circular. Dúvidas reais de briefing/recebedor/reembolso foram tratadas na fonte,
+  separadas do erro de escopo. Não se presume aprovação apenas mudando o prompt.
+- **Correção:** Psique v3/Têmis v2 explicitam critérios atuais, pendências posteriores
+  e falhas conhecidas que não podem ser adiadas; versões e schemas antigos preservados.
+- **Prevenção:** contratos dos dois workers verificam composição e limites usando
+  outras identidades; integração local HTTP/DB/ZIP/transporte de e-mail cobre sucesso,
+  falha, recuperação e duplicata. Avaliação real e oito objetivos ainda exigem backend.
+- **Limite:** e-mail externo e pagamento são doubles locais; testes não comprovam SMTP
+  produtivo, venda, margem realizada ou preflight publicado. Veja
+  `docs/homologacao/quartzo-preparacao-preflight-v1.md`.

@@ -30,9 +30,12 @@ prevalecem sobre os valores iniciais.
 O backend identifica produto, versão, plano comercial e revisão, reaproveita as premissas
 da revisão correspondente e registra as duas escolhas em uma nova revisão imutável.
 Preço e CAC podem vir do cadastro/plano comercial com origem explícita. Custos ausentes
-continuam desconhecidos: custos históricos agregados não substituem sua decomposição,
-e escolher IA não confirma provedor, tarifa nem consumo. Escolher sem IA declara somente
-ausência de geração personalizada, preservando os custos iniciais de produção.
+continuam desconhecidos: custos realizados agregados não substituem uma projeção. O campo
+planejado `variableCostPerSaleBrl` da mesma versão comercial pode ser preservado como envelope
+de todos os custos variáveis, exceto CAC, sem declarar seus componentes como zero. Nesse modo,
+taxas, reembolso, suporte, entrega e IA não são deduzidos novamente; Plutus deve confirmar a
+cobertura antes de aprovar. Escolher IA não confirma provedor, tarifa nem consumo. Escolher sem
+IA declara somente ausência de geração personalizada, preservando os custos iniciais de produção.
 
 Suporte e período da projeção são conceitos separados. A sugestão de suporte não modifica
 silenciosamente custos, prazo de acesso ou período econômico já cadastrado. Quando ainda
@@ -43,6 +46,12 @@ backend; salvar as duas escolhas não autoriza gasto, publicação nem aprovaç�
 
 Antes de salvar, o backend reconfere revisão e versão comercial. Concorrência exige
 recarregar; produtos, ambientes e versões não compartilham premissas automaticamente.
+
+Quando preço, CAC, envelope variável, custo fixo, fonte e validade são suficientes, mas margem
+mínima e cenários ainda dependem do parecer, a revisão fica `READY_FOR_ANALYSIS`. Esse estado só
+libera Plutus: não significa `PROJECTED_VIABLE`. O parecer deve registrar decisão e cobertura;
+somente `APPROVE` com cobertura agregada ou detalhada completa pode atender ao gate econômico.
+`ADJUST`, `BLOCKED`, contribuição não positiva ou fonte essencial ausente preservam o bloqueio.
 
 ### Edição avançada e modelos por tipo
 
@@ -116,6 +125,9 @@ uma nova revisão, sujeita à mesma avaliação. O backend persiste vínculo, st
 custo disponível. Um modelo de tipo não transfere parecer ao produto.
 O contexto legado de projeção comporta até 64.000 caracteres para preservar fontes e cálculos;
 o backend valida esse limite antes da fila, sem truncamento ou remoção silenciosa de evidências.
+O contrato de projeção v2 exige `decision`, justificativa e avaliação de cobertura. Envelope
+agregado completo é uma base auditável, não uma decomposição; custos ausentes fora de sua
+cobertura continuam bloqueantes.
 
 Preservar os pontos canônicos já existentes: oferta (`economics`), desenho da entrega,
 homologação e operação. O plano complementa a ficha e seus gates; não substitui reservas

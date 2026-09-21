@@ -2,6 +2,8 @@ package com.marketinghub.quartzo.commercial.v1.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
@@ -215,17 +217,86 @@ public class QuartzoCommercialContext {
     return result;
   }
 
+  /** Identifica somente as fontes que comprovam a atividade, preservando provas independentes. */
+  public static String activityFingerprint(String activity, JsonNode snapshot) {
+    if ("ready".equals(activity) || activity == null || activity.isBlank())
+      return snapshot.path("fingerprint").asText();
+    var scoped = JsonNodeFactory.instance.objectNode();
+    copy(
+        snapshot,
+        scoped,
+        List.of(
+            "contractVersion",
+            "productTypeCode",
+            "productId",
+            "experimentId",
+            "productVersion",
+            "cycleId",
+            "priceBrl",
+            "productPriceBrl"));
+    switch (activity) {
+      case "entry" ->
+          copy(
+              snapshot,
+              scoped,
+              List.of(
+                  "singlePain",
+                  "freeReward",
+                  "funnelPromise",
+                  "primaryCta",
+                  "campaignObjective",
+                  "platform",
+                  "promise",
+                  "deliverable",
+                  "productContract",
+                  "publicationId",
+                  "publicationJobId",
+                  "destinationUrl",
+                  "pageHash",
+                  "productProof",
+                  "productProofInPage"));
+      case "creative" ->
+          copy(
+              snapshot,
+              scoped,
+              List.of("promise", "deliverable", "destinationUrl", "pageHash", "creatives"));
+      case "checkout" ->
+          copy(
+              snapshot,
+              scoped,
+              List.of(
+                  "checkoutUrl",
+                  "deliverable",
+                  "deliveryMode",
+                  "checkoutMonetization",
+                  "riskReversal",
+                  "validationContract"));
+      case "targeting" -> copy(snapshot, scoped, List.of("savedAudience"));
+      case "economics" -> copy(snapshot, scoped, List.of("financialPlan"));
+      default -> {
+        return snapshot.path("fingerprint").asText();
+      }
+    }
+    return fingerprintText(canonical(scoped).toString());
+  }
+
+  /** Copia ausências como nulo para que remoções materiais também alterem a identificação. */
+  private static void copy(JsonNode source, ObjectNode target, List<String> fields) {
+    fields.forEach(
+        field -> target.set(field, source.has(field) ? source.get(field) : NullNode.instance));
+  }
+
   /** Normaliza ordem de propriedades e escala numérica sem alterar o significado dos contratos. */
-  private JsonNode canonical(JsonNode value) {
+  private static JsonNode canonical(JsonNode value) {
     if (value.isObject()) {
-      var normalized = json.createObjectNode();
+      var normalized = JsonNodeFactory.instance.objectNode();
       var keys = new java.util.TreeSet<String>();
       value.fieldNames().forEachRemaining(keys::add);
       keys.forEach(key -> normalized.set(key, canonical(value.get(key))));
       return normalized;
     }
     if (value.isArray()) {
-      var normalized = json.createArrayNode();
+      var normalized = JsonNodeFactory.instance.arrayNode();
       value.forEach(item -> normalized.add(canonical(item)));
       return normalized;
     }
@@ -236,7 +307,7 @@ public class QuartzoCommercialContext {
   }
 
   /** Identifica um conjunto de fontes sem usar data de consulta nem outras informações voláteis. */
-  private String fingerprintText(String value) {
+  private static String fingerprintText(String value) {
     try {
       return HexFormat.of()
           .formatHex(

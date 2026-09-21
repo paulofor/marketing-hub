@@ -21,6 +21,12 @@ export const costLabels = {
 export type CostKey = keyof typeof costLabels;
 export interface PlanAssumptions {
   preparation?: { supportDays: number; personalizedAi: boolean } | null;
+  variableCostEnvelope?: {
+    amountPerCustomerBrl: number;
+    coverage: "ALL_VARIABLE_COSTS_EXCLUDING_CAC";
+    sourceReference: string;
+    checkedOn: string;
+  } | null;
   productVersion: string | null;
   periodDays: number | null;
   validUntil: string;
@@ -104,6 +110,13 @@ export interface FinancialPlan {
   };
 }
 export interface FinancialProjection {
+  decision?: "APPROVE" | "ADJUST" | "BLOCKED";
+  decisionBasis?: string;
+  costCoverageAssessment?: {
+    status: "COMPLETE_AGGREGATE" | "COMPLETE_DETAILED" | "INCOMPLETE";
+    evidence: string[];
+    missingCosts: string[];
+  };
   executiveSummary?: string;
   limitations?: string[];
   breakEven?: string;

@@ -409,6 +409,17 @@ function PlanWorkspace({
                 tentativas · teto de IA por cliente:{" "}
                 {money(selected.assumptions.ai.maximumCostPerCustomerBrl)}.
               </p>
+              {selected.assumptions.variableCostEnvelope && (
+                <p>
+                  Custo variável agregado por cliente:{" "}
+                  {money(
+                    selected.assumptions.variableCostEnvelope
+                      .amountPerCustomerBrl,
+                  )}
+                  , sem CAC. A decomposição não foi presumida; Plutus deve
+                  conferir a cobertura.
+                </p>
+              )}
               {selected.commercialPlanId && (
                 <p>
                   Plano comercial #{selected.commercialPlanId} · versão{" "}
@@ -441,6 +452,14 @@ function PlanWorkspace({
                   conferência:{" "}
                   {selected.assumptions.ai.pricingCheckedOn || "Não informada"}.
                 </p>
+                {selected.assumptions.variableCostEnvelope && (
+                  <p style={{ overflowWrap: "anywhere" }}>
+                    Envelope variável:{" "}
+                    {selected.assumptions.variableCostEnvelope.sourceReference}
+                    {" · conferência: "}
+                    {selected.assumptions.variableCostEnvelope.checkedOn}.
+                  </p>
+                )}
                 {selected.assumptions.ai.currency === "USD" && (
                   <p>
                     Câmbio informado:{" "}
@@ -685,6 +704,10 @@ function PlanEditor({
         priceBrl: number("priceBrl"),
         minimumMarginPercent: number("minimumMarginPercent"),
         maximumCacBrl: number("maximumCacBrl"),
+        variableCostEnvelope:
+          copyingType || data.get("replaceVariableCostEnvelope") === "true"
+            ? null
+            : (a?.variableCostEnvelope ?? null),
         ai: {
           currency: text("currency") as "BRL" | "USD",
           providerModel: text("providerModel") || null,
@@ -888,6 +911,22 @@ function PlanEditor({
             outros custos. Investimento inicial inclui criação, testes e
             agentes; recarga de créditos não é consumo.
           </p>
+          {a?.variableCostEnvelope && (
+            <div className="alert alert-secondary">
+              O custo variável agregado de{" "}
+              {money(a.variableCostEnvelope.amountPerCustomerBrl)} está ativo e
+              evita dupla dedução dos componentes abaixo.
+              <label className="d-block mt-2">
+                <input
+                  className="form-check-input me-2"
+                  type="checkbox"
+                  name="replaceVariableCostEnvelope"
+                  value="true"
+                />
+                Substituir o envelope pela decomposição detalhada desta revisão
+              </label>
+            </div>
+          )}
           <div className="row g-3">
             {(Object.keys(costLabels) as CostKey[]).map((k) =>
               field(

@@ -92,10 +92,17 @@ class FinancialCodexRunnerTest {
     String schema =
         Files.readString(
             Path.of(
-                "src/main/resources/prompts/financial-agent/v1/revenue-projection-schema.json"));
+                "src/main/resources/prompts/financial-agent/v2/revenue-projection-schema.json"));
 
     assertThat(schema).doesNotContain("uniqueItems", "anyOf", "oneOf", "allOf");
-    assertThat(schema).contains("CONSERVATIVE", "BASE", "OPTIMISTIC", "learningCandidate");
+    assertThat(schema)
+        .contains(
+            "CONSERVATIVE",
+            "BASE",
+            "OPTIMISTIC",
+            "learningCandidate",
+            "COMPLETE_AGGREGATE",
+            "BLOCKED");
   }
 
   /** Protege a separação entre hipótese aprovada e autorização de gasto. */

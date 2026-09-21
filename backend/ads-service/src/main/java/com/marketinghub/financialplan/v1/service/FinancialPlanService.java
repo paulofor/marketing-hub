@@ -228,6 +228,8 @@ public class FinancialPlanService {
         throw conflict("Selecione um plano comercial deste produto.");
       p.setCommercialPlanId(request.commercialPlanId());
       p.setCommercialPlanVersion(currentVersion(request.commercialPlanId()));
+      validateVariableCostEnvelope(
+          request.assumptions(), request.commercialPlanId(), p.getCommercialPlanVersion());
       if (request.templateId() != null) {
         var template =
             revisions.findById(request.templateId()).orElseThrow(() -> missing("Modelo"));
@@ -241,12 +243,17 @@ public class FinancialPlanService {
           throw conflict("O modelo venceu. Revise suas premissas antes de adotá-lo.");
         p.setTemplateId(template.getId());
       }
-    } else if (request.commercialPlanId() != null || request.templateId() != null) {
+    } else if (request.commercialPlanId() != null
+        || request.templateId() != null
+        || request.assumptions().variableCostEnvelope() != null) {
       throw conflict("Modelo por tipo não recebe plano comercial nem parecer de outro produto.");
     }
     if (request.assumptions().ai().pricingCheckedOn() != null
         && request.assumptions().ai().pricingCheckedOn().isAfter(today()))
       throw conflict("A conferência da tarifa não pode ter data futura.");
+    if (request.assumptions().variableCostEnvelope() != null
+        && request.assumptions().variableCostEnvelope().checkedOn().isAfter(today()))
+      throw conflict("A conferência do custo variável agregado não pode ter data futura.");
     p.setAssumptionsJson(write(request.assumptions(), scope, scopeId));
     for (var prior : history) {
       if (Objects.equals(prior.getCommercialPlanId(), p.getCommercialPlanId())
@@ -328,7 +335,8 @@ public class FinancialPlanService {
         pending.add("Responsável pelo produto: o tipo mudou; revise a aplicabilidade do modelo.");
       }
     }
-    if ("MISSING_INPUTS".equals(evaluation.status())) pending.addAll(evaluation.blockers());
+    if (List.of("MISSING_INPUTS", "REVIEW_REQUIRED").contains(evaluation.status()))
+      pending.addAll(evaluation.blockers());
     if (p.getEnvironment() == Environment.TEST)
       pending.add("Homologação: parecer pago indisponível para dados TEST.");
     if ("TYPE".equals(p.getScopeKind()))
@@ -410,6 +418,27 @@ public class FinancialPlanService {
         .findTopByPlanIdOrderByVersionNumberDesc(planId)
         .orElseThrow(() -> conflict("O plano comercial precisa ter uma versão registrada."))
         .getVersionNumber();
+  }
+
+  /**
+   * Vincula o envelope ao campo e à versão exatos do plano, recusando declaração textual forjada.
+   */
+  private void validateVariableCostEnvelope(
+      PlanAssumptions assumptions, Long commercialPlanId, Integer commercialPlanVersion) {
+    var envelope = assumptions.variableCostEnvelope();
+    if (envelope == null) return;
+    var plan = plans.findById(commercialPlanId).orElseThrow(() -> missing("Plano comercial"));
+    String expectedReference =
+        "commercial-plan:"
+            + commercialPlanId
+            + "@v"
+            + commercialPlanVersion
+            + ":variableCostPerSaleBrl";
+    if (!expectedReference.equals(envelope.sourceReference())
+        || plan.getVariableCostPerSaleBrl() == null
+        || plan.getVariableCostPerSaleBrl().compareTo(envelope.amountPerCustomerBrl()) != 0)
+      throw conflict(
+          "O envelope variável diverge do plano comercial vigente; recarregue as fontes.");
   }
 
   /** Usa a mesma referência UTC do backend para validade das premissas. */

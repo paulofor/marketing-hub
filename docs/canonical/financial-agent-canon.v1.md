@@ -37,6 +37,10 @@ de IA: deve cobrir a entrega contratada, inclusive o uso posterior, e os custos 
   `variableCostPerSaleBrl` já contém taxas e provisão de reembolso, preservar a identidade
   `contributionPerSaleBrl = offerPriceBrl - variableCostPerSaleBrl` e abrir a composição nas
   premissas; não subtrair essas mesmas deduções novamente.
+- Quando `variableCostPerSaleBrl` for preservado como envelope oficial da mesma versão, Plutus
+  pode classificar `COMPLETE_AGGREGATE` sem inventar a decomposição. CAC e custo fixo permanecem
+  separados; fonte contraditória, cobertura parcial ou custo essencial fora do envelope exige
+  `INCOMPLETE`. Personalização com IA não prova, isoladamente, chamada paga por cliente.
 - No parecer Opala, `variableCostPerSaleBrl` exclui CAC e `contributionPerSaleBrl` representa a
   contribuição antes da aquisição, calculada pelo cenário-base determinístico. `maxCacBrl`
   permanece um limite separado; contribuição e margem após CAC ficam no cenário do plano. É
@@ -84,6 +88,11 @@ auditoria. Não repetir avaliação com as mesmas entradas e o mesmo impedimento
   `REVIEW_REQUIRED` para desvio econômico com fontes completas e `BLOCKED_BY_MISSING_SOURCE`
   para lacuna essencial. Nos demais fluxos, usar as decisões e campos do schema vigente;
   não inventar estado ou endpoint para impor a regra.
+
+Na projeção financeira de produto v2, as decisões são `APPROVE`, `ADJUST` e `BLOCKED`.
+`APPROVE` exige cobertura `COMPLETE_AGGREGATE` ou `COMPLETE_DETAILED`, cenário-base positivo e
+nenhuma fonte essencial ausente. `READY_FOR_ANALYSIS` autoriza apenas a avaliação de Plutus e
+nunca equivale a aprovação, venda comprovada ou autorização de gasto.
 
 Esta decisão atualiza o cânone e os prompts consumidos pelos executores e pelo AIHUB. Não cria
 novos agendamentos, etapas BPM ou um bloqueio automático transversal de vendas nesta revisão.
@@ -142,7 +151,12 @@ Decisões permitidas: `RECONCILED`, `REVIEW_REQUIRED` e `BLOCKED_BY_MISSING_SOUR
 
 ## Operação
 
-O módulo executor é `financial-agent-worker`. Prompt e schema ficam versionados em `src/main/resources/prompts/financial-agent/v1`. A imagem de produção deve ser construída exclusivamente pelo Dockerfile e Compose do repositório. O workflow dedicado testa, reconstrói, reinicia e valida o login do Codex no VPS. O backend permanece fonte de verdade e o worker não acessa o banco.
+O módulo executor é `financial-agent-worker`. Prompt e schema ficam versionados em
+`src/main/resources/prompts/financial-agent/`; contratos históricos permanecem em `v1` e a
+projeção de produto com decisão/cobertura usa `v2`. A imagem de produção deve ser construída
+exclusivamente pelo Dockerfile e Compose do repositório. O workflow dedicado testa, reconstrói,
+reinicia e valida o login do Codex no VPS. O backend permanece fonte de verdade e o worker não
+acessa o banco.
 
 O worker deve persistir logs em arquivo e publicar somente a leitura pelo endpoint operacional versionado `/ops-financial-agent-observability-v1/financial-agent-worker-log`. O MCP deve disponibilizar essa origem no módulo `financial-agent-worker` da ferramenta `java_module_logs`, permitindo correlacionar reserva, conciliação, decisão, Codex e callbacks sem depender apenas do resumo persistido no backend.
 

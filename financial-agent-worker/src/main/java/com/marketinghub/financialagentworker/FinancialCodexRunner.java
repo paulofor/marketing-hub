@@ -56,7 +56,7 @@ public class FinancialCodexRunner {
             assumptions
                 ? "prompts/financial-agent/v1/commercial-assumptions-schema.json"
                 : projection
-                    ? "prompts/financial-agent/v1/revenue-projection-schema.json"
+                    ? "prompts/financial-agent/v2/revenue-projection-schema.json"
                     : "prompts/financial-agent/v1/report-schema.json",
             ".json");
     Path mcp = materialize("mcp/financial-agent.mjs", ".mjs");
@@ -475,7 +475,7 @@ public class FinancialCodexRunner {
         read(assumptions
                 ? "prompts/financial-agent/v1/commercial-assumptions.md"
                 : projection
-                    ? "prompts/financial-agent/v1/revenue-projection.md"
+                    ? "prompts/financial-agent/v2/revenue-projection.md"
                     : "prompts/financial-agent/v1/report.md")
             .replace("{{PLAN_ID}}", String.valueOf(job.commercialPlanId()))
             .replace("{{PLAN_VERSION}}", String.valueOf(job.commercialPlanVersion()))
@@ -521,11 +521,16 @@ public class FinancialCodexRunner {
       }
       if (scenarioNames.size() != 3
           || !scenarioNames.equals(Set.of("CONSERVATIVE", "BASE", "OPTIMISTIC"))
+          || !Set.of("APPROVE", "ADJUST", "BLOCKED").contains(result.path("decision").asText())
+          || !Set.of("COMPLETE_AGGREGATE", "COMPLETE_DETAILED", "INCOMPLETE")
+              .contains(result.path("costCoverageAssessment").path("status").asText())
+          || !result.path("costCoverageAssessment").path("evidence").isArray()
+          || !result.path("costCoverageAssessment").path("missingCosts").isArray()
           || !result.has("recommendedInitialInvestmentBrl")
           || !result.has("breakEven")
           || !result.hasNonNull("executiveSummary")
           || !result.has("learningCandidate")) {
-        throw new IllegalArgumentException("Projeção de receita fora do contrato financeiro v1.");
+        throw new IllegalArgumentException("Projeção de receita fora do contrato financeiro v2.");
       }
       return;
     }

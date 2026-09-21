@@ -6371,3 +6371,23 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   comparador estrito. Fixtures usam IDs Long reais; comandos e reconciliação são
   executados em transações separadas. Casos negativos recusam identidade ausente,
   textual, fracionária, fora do limite ou pertencente a outro produto/experimento.
+
+## LOOP-QUARTZO-PLANO-SIMPLIFICADO-SEM-SAIDA — 20/09/2026
+
+- **Sintoma confirmado:** Capella permitia registrar somente suporte e personalização, mas a
+  revisão permanecia com 29 premissas ausentes e o próprio botão de Plutus ficava desabilitado.
+  Três retomadas repetiram página, criativo, checkout e público antes de parar em economia.
+- **Causa-raiz:** o preparador ignorava o custo variável planejado do plano comercial porque ele
+  não estava decomposto, enquanto o gate exigia a decomposição completa antes de permitir que
+  Plutus propusesse margem e cenários. Além disso, uma única impressão digital do snapshot inteiro
+  invalidava todas as provas após qualquer revisão financeira.
+- **Alternativas avaliadas:** preencher componentes com zero criaria margem falsa; chamar Plutus
+  sem base econômica transferiria a lacuna ao modelo; preservar o agregado como envelope auditável
+  e limitar cada prova às fontes de sua atividade evita dupla contagem e repetição. A terceira foi
+  adotada.
+- **Correção e prevenção:** a revisão pode ficar `READY_FOR_ANALYSIS` somente com preço, CAC,
+  envelope variável, custo fixo, versão, fonte e validade. Plutus v2 registra decisão e cobertura;
+  apenas aprovação com cobertura completa atende Quartzo. Fingerprints por atividade reutilizam
+  provas legadas válidas e renovam somente a etapa cuja fonte mudou. Testes cobrem fonte ausente,
+  contribuição negativa, dupla dedução, decisão desfavorável, cobertura incompleta e revisão
+  financeira sem repetição das quatro atividades anteriores.

@@ -19,6 +19,20 @@ final class FinancialPlanPreparation {
       PlanAssumptions source, PreparePlanRequest request, CommercialPlan plan, BigDecimal price) {
     var today = LocalDate.now(ZoneOffset.UTC);
     var previous = source == null ? null : source.preparation();
+    boolean detailed = hasDetailedVariableSources(source, request.personalizedAi());
+    boolean aggregate = !detailed && plan.getVariableCostPerSaleBrl() != null;
+    var variableCostEnvelope =
+        aggregate
+            ? new VariableCostEnvelope(
+                plan.getVariableCostPerSaleBrl(),
+                VariableCostCoverage.ALL_VARIABLE_COSTS_EXCLUDING_CAC,
+                "commercial-plan:"
+                    + plan.getId()
+                    + "@v"
+                    + request.commercialPlanVersion()
+                    + ":variableCostPerSaleBrl",
+                today)
+            : null;
     var ai = source == null ? emptyAi(null) : source.ai();
     if (!request.personalizedAi()) {
       ai =
@@ -33,14 +47,31 @@ final class FinancialPlanPreparation {
               ai.includedUnits() == null ? 1 : ai.includedUnits(),
               0,
               BigDecimal.ZERO);
-    } else if (ai.perAttempt() != null && ai.perAttempt().signum() == 0) {
+    } else if (aggregate || ai.perAttempt() != null && ai.perAttempt().signum() == 0) {
       ai = emptyAi(ai.includedUnits());
     }
     var c =
         source == null
             ? new Costs(null, null, null, null, null, null, null, null, null, null, null, null)
             : source.costs();
-    if (previous == null || !previous.supportDays().equals(request.supportDays()))
+    if (aggregate)
+      c =
+          new Costs(
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              c.initialAiBrl(),
+              c.initialOtherBrl(),
+              plan.getFixedOperationalCostBrl() == null
+                  ? c.fixedPerPeriodBrl()
+                  : plan.getFixedOperationalCostBrl());
+    else if (previous == null || !previous.supportDays().equals(request.supportDays()))
       c =
           new Costs(
               c.feePercent(),
@@ -69,13 +100,15 @@ final class FinancialPlanPreparation {
                               .orElse(null);
                   Integer attempts = null;
                   if (!request.personalizedAi()) attempts = 0;
-                  else if (selectedAi.perAttempt() != null && old != null)
+                  else if (!aggregate && selectedAi.perAttempt() != null && old != null)
                     attempts = old.attemptsPerCustomer();
                   return new Scenario(
                       code,
                       old == null ? null : old.customers(),
                       attempts,
-                      old == null ? null : old.cacBrl());
+                      old == null || old.cacBrl() == null
+                          ? plan.getExpectedCacBrl()
+                          : old.cacBrl());
                 })
             .toList();
     String note =
@@ -90,6 +123,9 @@ final class FinancialPlanPreparation {
             + ". Preço e CAC reaproveitados das referências cadastradas; custos sem fonte permanecem pendentes."
             + " O suporte não altera prazo de acesso nem contratos vendidos."
             + " O período econômico é distinto do suporte; quando ausente, a proposta inicial é 30 dias."
+            + (aggregate
+                ? " O custo variável por venda do plano comercial foi preservado como envelope agregado de todos os custos variáveis, exceto CAC; seus componentes continuam desconhecidos e não foram preenchidos com zero. Plutus deve conferir a cobertura antes de aprovar."
+                : "")
             + (!request.personalizedAi()
                 ? " Sem IA variável: tentativas e tarifa zero; unidade é o pacote quando não definida."
                 : "");
@@ -106,7 +142,40 @@ final class FinancialPlanPreparation {
             ? source.maximumCacBrl()
             : plan.getExpectedCacBrl(),
         scenarios,
-        new Preparation(request.supportDays(), request.personalizedAi()));
+        new Preparation(request.supportDays(), request.personalizedAi()),
+        variableCostEnvelope);
+  }
+
+  /**
+   * Reconhece somente uma decomposição variável completa e compatível com a escolha operacional.
+   */
+  private static boolean hasDetailedVariableSources(
+      PlanAssumptions source, boolean personalizedAi) {
+    if (source == null || source.variableCostEnvelope() != null) return false;
+    var c = source.costs();
+    boolean costsPresent =
+        c.feePercent() != null
+            && c.taxPercent() != null
+            && c.commissionPercent() != null
+            && c.refundPercent() != null
+            && c.fixedFeeBrl() != null
+            && c.supportBrl() != null
+            && c.storageBrl() != null
+            && c.deliveryBrl() != null
+            && c.otherVariableBrl() != null;
+    if (!costsPresent) return false;
+    var ai = source.ai();
+    if (!personalizedAi) return ai.perAttempt() != null && ai.perAttempt().signum() == 0;
+    return ai.providerModel() != null
+        && !ai.providerModel().isBlank()
+        && ai.perAttempt() != null
+        && ai.perAttempt().signum() > 0
+        && ai.pricingSource() != null
+        && !ai.pricingSource().isBlank()
+        && ai.pricingCheckedOn() != null
+        && ai.includedUnits() != null
+        && ai.maximumAttempts() != null
+        && ai.maximumCostPerCustomerBrl() != null;
   }
 
   /** Preserva o texto de origem sem acumular notas automáticas a cada gravação idêntica. */

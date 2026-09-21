@@ -136,6 +136,27 @@ class QuartzoCommercialContextTest {
     assertThat(context.snapshot("experiment:88").path("fingerprint").asText()).isEqualTo(initial);
   }
 
+  /**
+   * Isola a validade de cada prova para que finanças não invalidem página, criativo ou checkout.
+   */
+  @Test
+  void fingerprintsEachPreparationActivityByItsOwnSources() {
+    var initial = context.snapshot("experiment:88");
+    var financialChange = initial.deepCopy();
+    financialChange.putObject("financialPlan").put("revision", 2);
+    assertThat(QuartzoCommercialContext.activityFingerprint("entry", financialChange))
+        .isEqualTo(QuartzoCommercialContext.activityFingerprint("entry", initial));
+    assertThat(QuartzoCommercialContext.activityFingerprint("economics", financialChange))
+        .isNotEqualTo(QuartzoCommercialContext.activityFingerprint("economics", initial));
+
+    var pageChange = initial.deepCopy();
+    pageChange.put("destinationUrl", "https://example.test/other-kit");
+    assertThat(QuartzoCommercialContext.activityFingerprint("entry", pageChange))
+        .isNotEqualTo(QuartzoCommercialContext.activityFingerprint("entry", initial));
+    assertThat(QuartzoCommercialContext.activityFingerprint("economics", pageChange))
+        .isEqualTo(QuartzoCommercialContext.activityFingerprint("economics", initial));
+  }
+
   /** Apenas o anúncio final aprovado participa da revisão, preservando a separação de linhagens. */
   @Test
   void onlyIncludesApprovedLeafCreatives() {

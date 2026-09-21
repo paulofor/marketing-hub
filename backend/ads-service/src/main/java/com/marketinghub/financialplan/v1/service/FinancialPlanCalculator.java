@@ -19,6 +19,7 @@ public final class FinancialPlanCalculator {
    * Calcula cenários e estresse, preservando lacunas e coerência com a personalização escolhida.
    */
   public static PlanEvaluation evaluate(PlanAssumptions p) {
+    if (p.variableCostEnvelope() != null) return evaluateAggregate(p);
     List<String> missing = missing(p);
     if (!missing.isEmpty())
       return new PlanEvaluation("MISSING_INPUTS", "Premissas incompletas", missing, List.of());
@@ -63,6 +64,65 @@ public final class FinancialPlanCalculator {
         blockers.isEmpty() ? "Viável em projeção · requer parecer e gates" : "Revisar viabilidade",
         List.copyOf(blockers),
         List.copyOf(results));
+  }
+
+  /** Qualifica o envelope agregado para Plutus sem inventar sua decomposição ou uma política. */
+  private static PlanEvaluation evaluateAggregate(PlanAssumptions p) {
+    List<String> missing = new ArrayList<>();
+    need(missing, p.periodDays(), "período contratado");
+    need(missing, p.priceBrl(), "preço por cliente/pacote");
+    need(missing, p.maximumCacBrl(), "CAC máximo proposto");
+    var envelope = p.variableCostEnvelope();
+    need(missing, envelope.amountPerCustomerBrl(), "custo variável agregado por cliente");
+    need(missing, envelope.coverage(), "cobertura do custo variável agregado");
+    need(missing, envelope.sourceReference(), "fonte do custo variável agregado");
+    need(missing, envelope.checkedOn(), "data da conferência do custo variável agregado");
+    need(missing, p.costs().fixedPerPeriodBrl(), "custos fixos do período");
+    if (p.scenarios().stream().map(Scenario::code).distinct().count() != 3)
+      missing.add("Plutus: preserve os cenários conservador, base e otimista.");
+    if (!missing.isEmpty())
+      return new PlanEvaluation("MISSING_INPUTS", "Premissas incompletas", missing, List.of());
+
+    List<String> blockers = new ArrayList<>();
+    if (hasDetailedVariableCost(p.costs()))
+      blockers.add(
+          "Plutus / responsável pelo produto: escolha o envelope agregado ou a decomposição; não combine os dois.");
+    if (p.preparation() != null && p.preparation().personalizedAi() && p.ai().perAttempt() != null)
+      blockers.add(
+          "Plutus / Dédalo: IA personalizada incluída no envelope não pode receber outra tarifa por tentativa.");
+    if (p.preparation() == null && p.ai().perAttempt() != null && p.ai().perAttempt().signum() > 0)
+      blockers.add(
+          "Plutus / Dédalo: o envelope agregado não pode ser combinado com outra tarifa variável de IA.");
+    if (p.preparation() != null
+        && !p.preparation().personalizedAi()
+        && p.ai().perAttempt() != null
+        && p.ai().perAttempt().signum() != 0)
+      blockers.add(
+          "Plutus / Dédalo: entrega sem IA personalizada não pode declarar tarifa variável positiva.");
+    var contributionBeforeCac = p.priceBrl().subtract(envelope.amountPerCustomerBrl());
+    var contributionAfterCac = contributionBeforeCac.subtract(p.maximumCacBrl());
+    if (contributionBeforeCac.signum() <= 0)
+      blockers.add("Plutus: o custo variável agregado não deixa contribuição antes do CAC.");
+    if (contributionAfterCac.signum() <= 0)
+      blockers.add("Plutus: a contribuição após o CAC máximo não é positiva.");
+    if (!blockers.isEmpty())
+      return new PlanEvaluation(
+          "REVIEW_REQUIRED", "Revisar viabilidade", List.copyOf(blockers), List.of());
+    return new PlanEvaluation(
+        "READY_FOR_ANALYSIS", "Pronto para parecer de Plutus", List.of(), List.of());
+  }
+
+  /** Detecta decomposição por cliente que causaria dupla dedução com o envelope agregado. */
+  private static boolean hasDetailedVariableCost(Costs c) {
+    return c.feePercent() != null
+        || c.taxPercent() != null
+        || c.commissionPercent() != null
+        || c.refundPercent() != null
+        || c.fixedFeeBrl() != null
+        || c.supportBrl() != null
+        || c.storageBrl() != null
+        || c.deliveryBrl() != null
+        || c.otherVariableBrl() != null;
   }
 
   /** Lista campos essenciais sem converter ausência em uma hipótese numérica silenciosa. */

@@ -53,6 +53,7 @@ import {
 } from "../../api/pipeline/useGeraLandingStageModels";
 import { useExperimentCompleteMarkdownReport } from "../../api/experiment/useExperimentCompleteMarkdownReport";
 import { useGeraSalesPagePublications } from "../../api/experiment/useGeraSalesPagePublications";
+import SalesPagePublicationRecovery from "./SalesPagePublicationRecovery";
 import { useExperimentVideoAssets } from "../../api/experiment/useExperimentVideoAssets";
 import {
   usePostDeployMonitor,
@@ -2554,7 +2555,10 @@ export default function ExperimentDetailPage() {
         </div>
       ) : null}
       {supportsTraditionalLanding && canManageGeraSalesPage(data?.id) ? (
-        <div className="card border-0 shadow-sm rounded-3 mt-3">
+        <div
+          className="card border-0 shadow-sm rounded-3 mt-3"
+          id="sales-page-publication"
+        >
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
               <div>
@@ -2594,6 +2598,11 @@ export default function ExperimentDetailPage() {
               </div>
             ) : latestSalesPagePublication ? (
               <div className="mt-3">
+                <SalesPagePublicationRecovery
+                  key={latestSalesPagePublication.id}
+                  experimentId={String(data.id)}
+                  publicationId={latestSalesPagePublication.id}
+                />
                 <div className="row g-3">
                   <div className="col-12 col-lg-4">
                     <div className="border rounded-3 p-3 h-100">

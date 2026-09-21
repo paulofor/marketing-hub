@@ -1,0 +1,64 @@
+openapi: 3.0.3
+info:
+  title: Recuperação da publicação auditada GeraSalesPage
+  version: v1
+paths:
+  /api/experiments/{experimentId}/gerasalespage/v1/publications/{publicationId}/recovery:
+    parameters: &identity
+      - in: path
+        name: experimentId
+        required: true
+        schema: {type: integer, format: int64}
+      - in: path
+        name: publicationId
+        required: true
+        schema: {type: integer, format: int64}
+    get:
+      summary: Consulta disponibilidade sem publicar ou consumir IA
+      responses:
+        '200':
+          description: Disponibilidade oficial e identidade da fonte auditada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Recovery'}
+        '404': {description: Publicação não pertence ao experimento}
+  /api/experiments/{experimentId}/gerasalespage/v1/publications/{publicationId}/republish:
+    parameters: *identity
+    post:
+      summary: Reenvia somente o snapshot atual e preserva histórico, oferta e campanha
+      description: >-
+        Requer fluxo standalone já aprovado, mesma URL e mesmos bytes auditados.
+        Não cria geração, revisão comercial ou tarefa paga. Serializa por experimento.
+        Repetição reenvia o mesmo conteúdo; submittedAt confirma envio ao portal,
+        nunca homologação da página pública. Cache pode atrasar sua atualização.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedSourceSha256]
+              properties:
+                expectedSourceSha256: {type: string, pattern: '^[a-f0-9]{64}$'}
+      responses:
+        '200':
+          description: Portal recebeu o mesmo conteúdo com identidade de origem
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Recovery'}
+        '400': {description: Hash ausente ou inválido}
+        '404': {description: Publicação não pertence ao experimento}
+        '409': {description: Fonte, aprovação, vínculo, destino ou versão divergente}
+        '502': {description: Falha ao sincronizar com o portal; histórico preservado}
+components:
+  schemas:
+    Recovery:
+      type: object
+      required: [publicationId, available, reason]
+      properties:
+        publicationId: {type: integer, format: int64}
+        available: {type: boolean}
+        reason: {type: string}
+        sourceSha256: {type: string, nullable: true}
+        salesPageUrl: {type: string, nullable: true}
+        submittedAt: {type: string, format: date-time, nullable: true}

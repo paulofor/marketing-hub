@@ -189,3 +189,20 @@ alterar critérios oportunisticamente para aprovar.
 Encerrar ao cumprir o escopo e comprovar os critérios locais; evidenciar limitações reais.
 Não transformar aperfeiçoamento em pesquisa ilimitada ou refatoração de todos os agentes.
 A publicação segue o usuário e o fluxo do repositório, sem PR automático.
+
+## Recuperação de publicação histórica — 21/09/2026
+
+Quando Psique bloquear a identidade de uma página GeraSalesPage já auditada, o
+bloqueio técnico deve apontar a auditoria do experimento e a ação **Reenviar página
+aprovada**. Não solicitar outra geração nem converter ausência de identidade em
+reprovação comercial. A disponibilidade e as validações do reenvio pertencem ao
+backend: publicação mais recente, mesmo experimento, fluxo standalone aprovado,
+destino e conteúdo preservados, hash confirmado e referências de ativos válidas.
+
+O reenvio acrescenta a identificação da fonte e preserva o snapshot, a oferta e a
+data histórica. Confirmação de envio não comprova atualização do cache ou captura
+visual. Após a atualização pública, a continuação parte do processo corrente e
+Psique revalida a origem, o HTML servido, a CTA e as capturas antes de chamar o
+modelo. Parecer financeiro válido não deve ser repetido por uma falha de publicação.
+Contratos: `docs/swagger/gerasalespage-publication-recovery-v1-swagger.yaml`.
+Homologação: `docs/homologacao/gerasalespage-publication-recovery-v1.md`.

@@ -7,11 +7,17 @@ on:
       - "lead-portal-payments-service/**"
       - ".github/workflows/lead-portal-payments-ci.yml"
       - ".github/workflows/recover-public-proxy.yml"
+      - "scripts/configure-vps-ssh-fallback.sh"
+      - "scripts/ssh-keyscan-with-retry.sh"
+      - "scripts/test-payments-ssh-workflow.mjs"
   pull_request:
     paths:
       - "lead-portal-payments-service/**"
       - ".github/workflows/lead-portal-payments-ci.yml"
       - ".github/workflows/recover-public-proxy.yml"
+      - "scripts/configure-vps-ssh-fallback.sh"
+      - "scripts/ssh-keyscan-with-retry.sh"
+      - "scripts/test-payments-ssh-workflow.mjs"
   workflow_dispatch:
     inputs:
       issue_clubemusa_certificate:
@@ -59,6 +65,8 @@ jobs:
           ./scripts/test-public-proxy-recovery-contract.sh
           ./scripts/test-public-proxy-recovery-e2e.sh
           node --test src/test/js/agenda-cheia-post-purchase.test.cjs
+          node ../scripts/test-payments-ssh-workflow.mjs
+          bash ../scripts/test-configure-vps-ssh-fallback.sh
           mvn -B test
 
   docker:
@@ -156,16 +164,13 @@ jobs:
           echo "Credencial de geração premium disponível para o deploy (conteúdo protegido)."
       - name: Configure SSH
         env:
-          VPS_SSH_KEY: ${{ inputs.issue_digicomdigital_certificate == 'true' && secrets.VPS_SSH_KEY || secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY != '' && secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY || secrets.PDE_PLATFORM_VPS_SSH_KEY != '' && secrets.PDE_PLATFORM_VPS_SSH_KEY || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.SSH_PRIVATE_KEY }}
+          VPS_SSH_KEY_PRIMARY: ${{ inputs.issue_digicomdigital_certificate == 'true' && secrets.VPS_SSH_KEY || secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_1: ${{ secrets.PDE_PLATFORM_VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_2: ${{ secrets.VPS_SSH_CHAVE }}
+          VPS_SSH_KEY_FALLBACK_3: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_4: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          if [ -z "${VPS_SSH_KEY}" ]; then
-            echo "Erro: nenhuma chave SSH foi encontrada. Configure LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY para o host ${DEPLOY_HOST} ou mantenha um fallback compatível." >&2
-            exit 1
-          fi
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "${VPS_SSH_KEY}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "SSH_COMMON_ARGS=-i $HOME/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes -o ConnectTimeout=60" >> "$GITHUB_ENV"
+          bash scripts/configure-vps-ssh-fallback.sh "$DEPLOY_HOST" "$DEPLOY_USER" "$GITHUB_ENV"
       - name: Ensure Docker runtime on VPS
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s' <<'REMOTE_DOCKER_BOOTSTRAP'

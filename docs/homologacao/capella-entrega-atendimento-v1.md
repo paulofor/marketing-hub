@@ -67,3 +67,16 @@ Publicação e aceite de Psique/Têmis permanecem critérios separados a confirm
 após a entrega. Nenhum teste conta como venda. Falha de atendimento humano/SLA
 não é comprovada ou descartada por teste de software; custo e latência de uma
 homologação comercial concluída ainda não estão disponíveis nesta rodada local.
+
+## Falha real de publicação e correção local
+
+O PR #5288 foi integrado em `9ef3b432964fbf5f561d58b765868d83779f67f7`.
+O deploy de pagamentos `35629994566` falhou na autenticação, antes de substituir
+o serviço. A causa e o teste preventivo estão em
+`LOOP-PAGAMENTOS-CREDENCIAL-PRIORITARIA-RECUSADA`.
+Foi validado localmente o helper compartilhado com seleção por autenticação,
+incluindo credencial prioritária recusada, quinta candidata válida, configuração
+ausente, chave inválida, limpeza e manutenção dos nove publicadores anteriores.
+OpenSSH isolado comprovou SSH/SCP/rsync e recusa de identidade divergente;
+`bash -n`, ShellCheck e parser YAML aprovados. A topologia temporária foi removida.
+Não houve publicação manual por SSH. O resultado remoto ainda depende do deploy.

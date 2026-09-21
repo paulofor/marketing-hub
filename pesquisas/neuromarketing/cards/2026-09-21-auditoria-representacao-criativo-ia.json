@@ -1,0 +1,18 @@
+{
+  "cardKey": "auditoria-representacao-criativo-ia",
+  "collection": "neuromarketing",
+  "title": "Audite autoridade e idealização nos criativos gerados por IA",
+  "finding": "Estudo peer-reviewed com 300 posts corporativos do Instagram e 300 imagens correspondentes geradas por IA mostrou que a geração pode reproduzir, amplificar ou redistribuir padrões de representação; mesmo com maior diversidade demográfica, houve convergência estética para corpos mais jovens, polidos, simétricos e convencionalmente atraentes e assimetrias de autoridade, competência e centralidade.",
+  "mechanism": "A recombinação algorítmica pode padronizar estética e redistribuir sinais visuais de legitimidade por meio de papel, posição, enquadramento, idade aparente, postura e protagonismo. Assim, diversidade superficial pode coexistir com idealização repetitiva ou distribuição desigual de autoridade.",
+  "commercialApplication": "Adicionar um RepresentationAudit aos creative variants gerados por IA para revisar quem é centralizado, quem ocupa papéis de competência ou cuidado, variedade de idade e aparência, idealização recorrente e assimetrias de enquadramento antes da aprovação em Meta Ads, landing pages e demais peças visuais.",
+  "evidenceStrength": "Moderada para risco representacional: estudo peer-reviewed, comparativo e de métodos mistos, mas restrito a comunicação corporativa no Instagram e sem medir percepção do consumidor ou resultado comercial.",
+  "publishedOn": "2026-09-20",
+  "validUntil": "2027-03-20",
+  "experimentHypothesis": "Variantes revisadas para reduzir idealização repetitiva e assimetrias de autoridade poderão aumentar autenticidade ou identificação percebida sem reduzir CTA, mas o efeito deve ser medido no público e oferta reais.",
+  "risks": "Não inferir atributos sensíveis dos usuários, não impor quotas demográficas rígidas, não transformar diversidade em tokenismo e não alegar ganho de conversão não observado. A revisão deve evitar discriminação e preservar coerência com produto, público e contexto.",
+  "limits": "O estudo não é de Meta Ads nem de performance; usou arquiteturas e prompts específicos, concentrou-se em gênero, idade e etnia e não mediu confiança, CTR, CPL, vendas ou recepção da audiência. Padrões podem mudar rapidamente entre modelos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-21-auditoria-representacao-criativo-ia.md",
+  "sourceTitle": "Fonte revisada — Auditoria de representação em criativos gerados por IA",
+  "sourceSha256": "f7ffbdde9d3254f9bed9e5e958d23e515eaefaceb9c0a1841afb88ba9bb4d6e8"
+}

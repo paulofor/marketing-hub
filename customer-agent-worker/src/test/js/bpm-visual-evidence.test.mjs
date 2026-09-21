@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { once } from "node:events";
 import test from "node:test";
+import { chromium } from "playwright-core";
 
 const script =
   process.env.CUSTOMER_AGENT_BPM_VISUAL_SCRIPT ??
@@ -40,6 +41,109 @@ async function runCapture(input, output, evidence, environment = {}) {
   });
   const [code] = await once(child, "close");
   return { code, log };
+}
+
+/** Confere pixels do PNG real sem usar o metadado declarado como prova da posição. */
+async function pixelAt(png, x, y) {
+  const browser = await chromium.launch({
+    ...(process.env.CHROMIUM_BIN
+      ? { executablePath: process.env.CHROMIUM_BIN }
+      : {}),
+    args: ["--no-sandbox", "--disable-dev-shm-usage"],
+  });
+  try {
+    const page = await browser.newPage();
+    return await page.evaluate(
+      async ({ data, x, y }) => {
+        const image = new Image();
+        image.src = `data:image/png;base64,${data}`;
+        await image.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0);
+        return [...context.getImageData(x, y, 1, 1).data];
+      },
+      { data: png.toString("base64"), x, y },
+    );
+  } finally {
+    await browser.close();
+  }
+}
+
+for (const locked of [false, true]) {
+  test(
+    locked
+      ? "bloqueia captura quando a página impede a posição declarada"
+      : "captura o cabeçalho no topo com rolagem suave sem deslocar pixels entre tentativas",
+    { timeout: 60_000 },
+    async () => {
+      const directory = await fs.mkdtemp(
+        path.join(os.tmpdir(), "psique-scroll-"),
+      );
+      const server = http.createServer((_request, response) => {
+        response.writeHead(200, { "content-type": "text/html" });
+        response.end(`<!doctype html><html><head>
+          <meta name="viewport" content="width=device-width,initial-scale=1">
+          <style>html{scroll-behavior:smooth}body{margin:0;background:white}
+          header{position:sticky;top:0;height:80px;background:rgb(255,0,255)}
+          main{height:12000px}</style></head><body>
+          <header></header><main><button>Comprar pacote</button></main>
+          ${locked ? '<script>scrollTo({top:120,behavior:"instant"});window.scrollTo=()=>{};</script>' : ""}
+          </body></html>`);
+      });
+      server.listen(0, "127.0.0.1");
+      await once(server, "listening");
+      try {
+        const input = path.join(directory, "input.json");
+        await fs.writeFile(
+          input,
+          JSON.stringify({
+            sourceUrl: `http://127.0.0.1:${server.address().port}/kit`,
+            captureSessionId: "capture-scroll-test",
+          }),
+        );
+        const images = [];
+        for (let attempt = 0; attempt < (locked ? 1 : 2); attempt++) {
+          const output = path.join(directory, `capture-${attempt}.json`);
+          const result = await runCapture(
+            input,
+            output,
+            path.join(directory, `evidence-${attempt}`),
+            { CUSTOMER_AGENT_VISUAL_TEST_MODE: "true" },
+          );
+          if (locked) {
+            assert.notEqual(
+              result.code,
+              0,
+              "A captura não pode declarar uma posição não atingida.",
+            );
+            assert.match(
+              result.log,
+              /posição.*esperad[ao].*0.*observad[ao].*120/i,
+            );
+            assert.equal(await fs.stat(output).catch(() => null), null);
+            return;
+          }
+          assert.equal(result.code, 0, result.log);
+          const capture = JSON.parse(await fs.readFile(output, "utf8"));
+          const full = capture.artifacts.find(
+            (a) => a.evidenceType === "FULL_PAGE",
+          );
+          assert.equal(full.scrollY, 0);
+          const png = await fs.readFile(full.localPath);
+          assert.deepEqual(await pixelAt(png, 10, 10), [255, 0, 255, 255]);
+          images.push(png);
+        }
+        assert.deepEqual(images[0], images[1]);
+      } finally {
+        server.close();
+        await once(server, "close");
+        await fs.rm(directory, { recursive: true, force: true });
+      }
+    },
+  );
 }
 
 test("captura página completa, dobras mobile e identidade pública com pixels reais", async () => {

@@ -1,0 +1,90 @@
+openapi: 3.0.3
+info:
+  title: GeraSalesPage v1 — contexto comercial do produto
+  version: 1.1.0
+paths:
+  /api/internal/gerasalespage/v1/{stageCode}/stage-executions/pending:
+    get:
+      summary: Entrega pendências com experimento e condições oficiais do produto
+      parameters:
+        - in: path
+          name: stageCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Contrato aditivo; produto ausente é objeto vazio, nunca condições inventadas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    experimentId:
+                      type: integer
+                      format: int64
+                    experiment:
+                      type: object
+                      additionalProperties: true
+                      properties:
+                        product:
+                          $ref: '#/components/schemas/ProductCommercialContext'
+components:
+  schemas:
+    ProductCommercialContext:
+      type: object
+      description: Fontes atuais do cadastro; contratos JSON são objetos, sem dupla serialização.
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          nullable: true
+        version:
+          type: string
+          nullable: true
+        typeCode:
+          type: string
+          nullable: true
+        format:
+          type: string
+          nullable: true
+        deliveryMode:
+          type: string
+          nullable: true
+        revenueModel:
+          type: string
+          nullable: true
+        valueUnit:
+          type: string
+          nullable: true
+        priceBrl:
+          type: number
+          nullable: true
+        promise:
+          type: string
+          nullable: true
+        deliverable:
+          type: string
+          nullable: true
+        checkoutMonetization:
+          type: string
+          nullable: true
+        riskReversal:
+          type: string
+          nullable: true
+        validationContract:
+          description: JSON estruturado; campo legado não JSON permanece texto e ausência permanece objeto vazio.
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: string
+        experienceContract:
+          description: JSON estruturado com entrega e condições cadastradas, sem padrões inferidos.
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: string

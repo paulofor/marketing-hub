@@ -1221,11 +1221,13 @@ public class ExperimentService {
   }
 
   /**
-   * Atualiza os campos mutáveis e preserva KPI e preset opcionais em experimentos ainda planejados.
+   * Atualiza os campos mutáveis sem exigir nova autorização de mídia para corrigir apenas conteúdo;
+   * qualquer mudança de canal, verba ou período revalida integralmente o plano de mídia.
    */
   @Transactional
   public Experiment update(Long id, UpdateExperimentRequest request) {
     Experiment exp = repository.findById(id).orElseThrow();
+    boolean mediaPlanChanged = mediaSpendPlanChanged(exp, request);
 
     if (request.getName() == null || request.getHypothesis() == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "required fields missing");
@@ -1249,7 +1251,11 @@ public class ExperimentService {
         request.getBaselineCvr() != null ? request.getBaselineCvr() : exp.getBaselineCvr();
     BigDecimal resolvedTargetCvr =
         request.getTargetCvr() != null ? request.getTargetCvr() : exp.getTargetCvr();
-    if (resolvedBaselineCvr != null
+    boolean conversionTargetsChanged =
+        !sameAmount(resolvedBaselineCvr, exp.getBaselineCvr())
+            || !sameAmount(resolvedTargetCvr, exp.getTargetCvr());
+    if (conversionTargetsChanged
+        && resolvedBaselineCvr != null
         && resolvedTargetCvr != null
         && resolvedBaselineCvr.compareTo(resolvedTargetCvr) >= 0) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "baselineCvr must be < targetCvr");
@@ -1379,12 +1385,14 @@ public class ExperimentService {
     exp.setStartDate(request.getStartDate());
     exp.setEndDate(request.getEndDate());
     validateBudgetForPlatform(exp.getPlatform(), exp.getDailyBudget());
-    validateMediaSpendPlan(
-        exp.getPlatform(),
-        exp.getDailyBudget(),
-        exp.getMediaSpendLimit(),
-        exp.getStartDate(),
-        exp.getEndDate());
+    if (mediaPlanChanged) {
+      validateMediaSpendPlan(
+          exp.getPlatform(),
+          exp.getDailyBudget(),
+          exp.getMediaSpendLimit(),
+          exp.getStartDate(),
+          exp.getEndDate());
+    }
     if (request.getCreativesToGenerate() != null) {
       exp.setCreativesToGenerate(request.getCreativesToGenerate());
     }
@@ -1980,6 +1988,25 @@ public class ExperimentService {
           HttpStatus.BAD_REQUEST,
           "dailyBudget não se aplica ao canal de abordagem individual consentida");
     }
+  }
+
+  /**
+   * Identifica alterações financeiras antes de modificar a entidade, preservando valores legados.
+   */
+  private boolean mediaSpendPlanChanged(Experiment experiment, UpdateExperimentRequest request) {
+    return (request.isPlatformPresent()
+            && resolveExperimentPlatform(request.getPlatform()) != experiment.getPlatform())
+        || (request.isDailyBudgetPresent()
+            && !sameAmount(request.getDailyBudget(), experiment.getDailyBudget()))
+        || (request.isMediaSpendLimitPresent()
+            && !sameAmount(request.getMediaSpendLimit(), experiment.getMediaSpendLimit()))
+        || !Objects.equals(request.getStartDate(), experiment.getStartDate())
+        || !Objects.equals(request.getEndDate(), experiment.getEndDate());
+  }
+
+  /** Compara valores monetários sem tratar diferenças de escala decimal como nova verba. */
+  private boolean sameAmount(BigDecimal first, BigDecimal second) {
+    return first == null ? second == null : second != null && first.compareTo(second) == 0;
   }
 
   /** Valida a combinação de orçamento diário, teto total e período do experimento. */

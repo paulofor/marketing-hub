@@ -10,6 +10,7 @@ import com.marketinghub.experiment.service.ExperimentAiPromptSchemaUsageService;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
+import com.marketinghub.product.Product;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
@@ -230,7 +231,7 @@ public class GeraSalesPageStageService {
         previousStageOutputs(execution.getExperimentId()));
   }
 
-  /** Monta o contexto comercial mínimo do experimento para os prompts da página de vendas. */
+  /** Entrega experimento e contrato atual do produto sem inferir condições ausentes da oferta. */
   private Map<String, Object> experimentPayload(Experiment experiment) {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("id", experiment.getId());
@@ -249,6 +250,7 @@ public class GeraSalesPageStageService {
     payload.put("productAiSubtype", experiment.getProductAiSubtype());
     payload.put("salesPageDestination", salesPageDestination(experiment));
     payload.put("unitPrice", experiment.getUnitPrice());
+    payload.put("product", productPayload(experiment.getProduct()));
     payload.put(
         "hypothesisFramework", parseJsonOrText(experiment.getHypothesisFrameworkJsonForPending()));
     payload.put("feoDeliverablePackage", latestFeoDeliverablePackage(experiment.getId()));
@@ -258,6 +260,34 @@ public class GeraSalesPageStageService {
     payload.put(
         "minimumApprovedLandingVisualAssets",
         landingAssetService.requiredReferenceCount(experiment.getId()));
+    return payload;
+  }
+
+  /**
+   * Transporta apenas fontes comerciais oficiais, preservando JSON estruturado e dados ausentes.
+   */
+  private Map<String, Object> productPayload(Product product) {
+    if (product == null) return Map.of();
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("id", product.getId());
+    payload.put("name", product.getName());
+    payload.put("version", product.getValidationDefinitionVersion());
+    payload.put(
+        "typeCode",
+        product.getProductTypeDefinition() == null
+            ? null
+            : product.getProductTypeDefinition().getCode());
+    payload.put("format", product.getProductFormat());
+    payload.put("deliveryMode", product.getDeliveryMode());
+    payload.put("revenueModel", product.getRevenueModel());
+    payload.put("valueUnit", product.getValueUnit());
+    payload.put("priceBrl", product.getCurrentPriceBrl());
+    payload.put("promise", product.getPromise());
+    payload.put("deliverable", product.getTripwire());
+    payload.put("checkoutMonetization", product.getCheckoutMonetization());
+    payload.put("riskReversal", product.getRiskReversal());
+    payload.put("validationContract", parseJsonOrText(product.getValidationDefinitionJson()));
+    payload.put("experienceContract", parseJsonOrText(product.getPdeExperienceJson()));
     return payload;
   }
 

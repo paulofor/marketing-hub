@@ -24,6 +24,7 @@ import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { salesPageDestinationCopy } from "./experimentDestinationCopy";
 import { experimentStageLabels } from "./stageLabels";
+import { isMediaPlanEdited } from "./experimentMediaPlan";
 import {
   parseOptionalEntityId,
   parseOptionalConversionRate,
@@ -480,15 +481,19 @@ export default function EditExperimentPage() {
       const parsedMediaSpendLimit = parseOptionalPositiveAmount(
         values.mediaSpendLimit,
       );
+      const mediaPlanChanged = isMediaPlanEdited(data, values);
       if (parsedMediaSpendLimit === null) {
         alert("Informe um teto total de mídia válido ou deixe o campo vazio");
         return;
       }
       if (
         values.platform === "FACEBOOK" &&
-        ((parsedDailyBudget == null) !== (parsedMediaSpendLimit == null))
+        mediaPlanChanged &&
+        (parsedDailyBudget == null) !== (parsedMediaSpendLimit == null)
       ) {
-        alert("Orçamento diário e teto total de mídia devem ser informados juntos");
+        alert(
+          "Orçamento diário e teto total de mídia devem ser informados juntos",
+        );
         return;
       }
       const parsedKpiTarget = parseOptionalPositiveAmount(values.kpiTarget);
@@ -502,15 +507,20 @@ export default function EditExperimentPage() {
         return;
       }
       const parsedTargetCvr = parseOptionalConversionRate(values.targetCvr);
+      const conversionTargetsChanged =
+        (parsedBaselineCvr ?? null) !== (data.baselineCvr ?? null) ||
+        (parsedTargetCvr ?? null) !== (data.targetCvr ?? null);
       if (
         parsedTargetCvr === null ||
         (isSalesObjectiveExperiment &&
+          conversionTargetsChanged &&
           (parsedTargetCvr == null || parsedTargetCvr <= 0))
       ) {
         alert("Informe uma meta de conversão entre 0,01% e 100%");
         return;
       }
       if (
+        conversionTargetsChanged &&
         parsedBaselineCvr != null &&
         parsedTargetCvr != null &&
         parsedBaselineCvr >= parsedTargetCvr
@@ -589,8 +599,12 @@ export default function EditExperimentPage() {
             ? "SALES"
             : "LEADS",
         kpiTarget: parsedKpiTarget,
-        dailyBudget: parsedDailyBudget ?? null,
-        mediaSpendLimit: parsedMediaSpendLimit ?? null,
+        dailyBudget: mediaPlanChanged
+          ? (parsedDailyBudget ?? null)
+          : (data.dailyBudget ?? null),
+        mediaSpendLimit: mediaPlanChanged
+          ? (parsedMediaSpendLimit ?? null)
+          : (data.mediaSpendLimit ?? null),
         unitPrice: parsedUnitPrice,
         metricPresetId: values.metricPresetId || undefined,
         sampleSize: data.sampleSize ?? undefined,

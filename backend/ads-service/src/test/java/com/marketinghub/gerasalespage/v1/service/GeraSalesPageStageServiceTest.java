@@ -16,6 +16,7 @@ import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
+import com.marketinghub.product.Product;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
@@ -30,6 +31,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -49,6 +52,64 @@ class GeraSalesPageStageServiceTest {
   private ObjectMapper objectMapper = new ObjectMapper();
 
   private GeraSalesPageStageService service;
+
+  /**
+   * Preserva condições distintas de produtos e as serializa no contexto consumido pelo executor.
+   */
+  @ParameterizedTest
+  @CsvSource({"301,401,3,7", "302,402,5,14"})
+  void pendingCarriesProductTermsWithoutCrossingProducts(
+      long productId, long experimentId, int deliveryDays, int supportDays) throws Exception {
+    Product product = new Product();
+    product.setId(productId);
+    product.setName("Kit de teste " + productId);
+    product.setValidationDefinitionVersion("v2");
+    product.setProductFormat("Kit de arquivos");
+    product.setDeliveryMode("Personalizada");
+    product.setCurrentPriceBrl(new BigDecimal("79.00"));
+    product.setRiskReversal("Reembolso pelo canal do produto");
+    product.setValidationDefinitionJson(
+        "{\"delivery\":{\"businessDays\":"
+            + deliveryDays
+            + "},\"support\":{\"days\":"
+            + supportDays
+            + "}}");
+    product.setPdeExperienceJson("{\"formats\":[\"PNG\",\"TXT\"]}");
+    Experiment experiment = new Experiment();
+    experiment.setId(experimentId);
+    experiment.setProduct(product);
+    experiment.setUnitPrice(new BigDecimal("79.00"));
+    GeraSalesPageStageExecution execution =
+        GeraSalesPageStageExecution.builder()
+            .idJob("product-terms-" + experimentId)
+            .experimentId(experimentId)
+            .stageCode(GeraSalesPageStageCode.OFFER_BRIEF.code())
+            .status("INICIADO")
+            .build();
+    execution.setExperiment(experiment);
+    when(templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(
+            "gera-sales-page-v1", GeraSalesPageStageCode.OFFER_BRIEF.code()))
+        .thenReturn(Optional.of(template(GeraSalesPageStageCode.OFFER_BRIEF.code())));
+    when(executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            GeraSalesPageStageCode.OFFER_BRIEF.code(), "INICIADO"))
+        .thenReturn(List.of(execution));
+
+    var response = service.pending(GeraSalesPageStageCode.OFFER_BRIEF.code()).get(0);
+    var transported = objectMapper.readTree(objectMapper.writeValueAsString(response));
+    var terms = transported.path("experiment").path("product");
+    assertThat(transported.path("experimentId").asLong()).isEqualTo(experimentId);
+    assertThat(terms.path("id").asLong()).isEqualTo(productId);
+    assertThat(terms.path("version").asText()).isEqualTo("v2");
+    assertThat(terms.path("validationContract").path("delivery").path("businessDays").asInt())
+        .isEqualTo(deliveryDays);
+    assertThat(terms.path("validationContract").path("support").path("days").asInt())
+        .isEqualTo(supportDays);
+    assertThat(terms.path("experienceContract").path("formats").isArray()).isTrue();
+    assertThat(terms.path("riskReversal").asText()).isEqualTo(product.getRiskReversal());
+    assertThat(terms.path("checkoutMonetization").isNull()).isTrue();
+    assertThat(terms.path("typeCode").isNull()).isTrue();
+    assertThat(terms.has("commercialNotes")).isFalse();
+  }
 
   /** Inicializa service com ObjectMapper real para validar parsing do quality review. */
   @BeforeEach
@@ -243,6 +304,7 @@ class GeraSalesPageStageServiceTest {
 
     Map<String, Object> packagePayload =
         castMap(pending.get(0).experiment().get("feoDeliverablePackage"));
+    assertThat(castMap(pending.get(0).experiment().get("product"))).isEmpty();
     assertThat(packagePayload.get("id")).isEqualTo(7L);
     assertThat(packagePayload.get("name")).isEqualTo(deliverablePackage.getName());
     List<Map<String, Object>> deliverables = castList(packagePayload.get("deliverables"));

@@ -58,6 +58,8 @@ import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
@@ -105,6 +107,89 @@ class ExperimentServiceTest {
   @Autowired CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository;
 
   private Long testProductId;
+
+  /** Permite corrigir promessa sem inventar teto nem reativar a campanha legada. */
+  @ParameterizedTest
+  @ValueSource(strings = {"20.00", "37.50"})
+  void contentEditPreservesIncompleteMediaPlan(String dailyBudget) {
+    Experiment original = legacyExperimentForContentEdit(new BigDecimal(dailyBudget));
+    UpdateExperimentRequest request = contentEditFor(original);
+    request.setDailyBudget(original.getDailyBudget().stripTrailingZeros());
+    request.setMediaSpendLimit(BigDecimal.ZERO);
+    request.setBaselineCvr(BigDecimal.ZERO);
+    request.setTargetCvr(BigDecimal.ZERO);
+    request.setFunnelPromise("Entrega conforme o contrato aprovado, após o briefing completo");
+
+    service.update(original.getId(), request);
+
+    Experiment saved = experimentRepository.findById(original.getId()).orElseThrow();
+    assertThat(saved.getFunnelPromise()).isEqualTo(request.getFunnelPromise());
+    assertThat(saved.getMediaSpendLimit()).isEqualByComparingTo(BigDecimal.ZERO);
+    assertThat(saved.getDailyBudget()).isEqualByComparingTo(dailyBudget);
+    assertThat(saved.getStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
+    assertThat(saved.getFacebookReleaseRequestedAt()).isNull();
+  }
+
+  /** Mantém a validação integral ao alterar verba, teto ou período, sem flexibilizar publicação. */
+  @ParameterizedTest
+  @ValueSource(strings = {"daily", "limit", "period"})
+  void contentEditDoesNotBypassChangedMediaPlan(String field) {
+    Experiment original = legacyExperimentForContentEdit(new BigDecimal("20"));
+    UpdateExperimentRequest request = contentEditFor(original);
+    if (field.equals("daily")) request.setDailyBudget(new BigDecimal("30"));
+    if (field.equals("limit")) request.setMediaSpendLimit(new BigDecimal("30"));
+    if (field.equals("period")) request.setEndDate(original.getEndDate().plusDays(1));
+
+    assertThatThrownBy(() -> service.update(original.getId(), request))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    Experiment saved = experimentRepository.findById(original.getId()).orElseThrow();
+    assertThat(saved.getDailyBudget()).isEqualByComparingTo("20");
+    assertThat(saved.getMediaSpendLimit()).isEqualByComparingTo(BigDecimal.ZERO);
+    assertThat(saved.getEndDate()).isEqualTo(original.getEndDate());
+  }
+
+  /** Cria um registro sintético legado sem autorização de mídia, com identidades próprias. */
+  private Experiment legacyExperimentForContentEdit(BigDecimal dailyBudget) {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("QA conteúdo").build());
+    var hypothesis =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("QA contrato")
+                .build());
+    var journey =
+        journeyTemplateRepository.save(JourneyTemplate.builder().name("QA conteúdo").build());
+    return experimentRepository.save(
+        Experiment.builder()
+            .niche(niche)
+            .hypothesisRef(hypothesis)
+            .journeyTemplate(journey)
+            .name("QA conteúdo " + UUID.randomUUID())
+            .hypothesis("QA entrega")
+            .stage(ExperimentStage.AD)
+            .primaryVariable("Promessa")
+            .primaryMetric("Compra")
+            .platform(ExperimentPlatform.FACEBOOK)
+            .status(ExperimentStatus.USER_STOPPED)
+            .dailyBudget(dailyBudget)
+            .mediaSpendLimit(BigDecimal.ZERO)
+            .baselineCvr(BigDecimal.ZERO)
+            .targetCvr(BigDecimal.ZERO)
+            .startDate(LocalDate.of(2026, 8, 1))
+            .endDate(LocalDate.of(2026, 8, 5))
+            .build());
+  }
+
+  /** Representa a edição de conteúdo preservando as datas e o canal originais. */
+  private UpdateExperimentRequest contentEditFor(Experiment original) {
+    UpdateExperimentRequest request = new UpdateExperimentRequest();
+    request.setName(original.getName());
+    request.setHypothesis(original.getHypothesis());
+    request.setStartDate(original.getStartDate());
+    request.setEndDate(original.getEndDate());
+    request.setPlatform(original.getPlatform());
+    return request;
+  }
 
   /** Mantém a falha recuperável na lista e no filtro para o operador conseguir retomá-la. */
   @Test

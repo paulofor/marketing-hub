@@ -6623,3 +6623,9 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   Desktop/iPhone/Pixel conferem leitura até a última linha, sem cobertura pela CTA fixa.
 - **Limite:** manter termos não comprova operação de atendimento, entrega ou vendas;
   a revisão independente e o preflight permanecem necessários.
+- **Recorrência confirmada:** a publicação #30 preservou os três esclarecimentos,
+  mas omitiu a primeira resposta do suporte, cadastrada como um dia útil. Não havia
+  sequer esse prazo dentro do FAQ fechado. Nenhum parecer foi repetido. O bloco
+  passa a preservar também compromissos estruturados de entrega/suporte/reembolso;
+  a regressão cobre valores distintos, singular/plural e dados malformados sem
+  inventar prazo. A recuperação histórica continua sem modificar HTML silenciosamente.

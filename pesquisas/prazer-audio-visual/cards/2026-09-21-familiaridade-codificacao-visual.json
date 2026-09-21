@@ -1,0 +1,18 @@
+{
+  "cardKey": "familiaridade-acelera-codificacao-visual",
+  "collection": "prazer-audio-visual",
+  "title": "Usar convenções familiares quando o reconhecimento precisa ser rápido",
+  "finding": "Três experimentos indicaram que estímulos visuais familiares foram codificados com vantagem de acurácia, enquanto a familiaridade do distrator não aumentou a captura atencional; isso favorece um mecanismo de template da memória de longo prazo, não apenas maior prioridade atencional.",
+  "mechanism": "Representações consolidadas na memória de longo prazo podem funcionar como templates que aceleram a transformação de entrada visual em memória de trabalho sem exigir captura adicional de atenção.",
+  "commercialApplication": "Em interfaces, vídeo instrucional e sinalização de curta duração, comparar ícones e convenções já familiares ao público com alternativas novas de significado equivalente quando velocidade de reconhecimento for importante.",
+  "evidenceStrength": "Média-alta para codificação visual básica: três experimentos convergentes, incluindo evidência bayesiana de ausência de maior captura atencional por familiaridade; estímulos eram letras e duas amostras tinham N = 20.",
+  "publishedOn": "2026-09-21",
+  "validUntil": "2027-03-21",
+  "experimentHypothesis": "Símbolos familiares reduzirão tempo de identificação e erros em exposições breves comparados a símbolos novos equivalentes, sem necessariamente aumentar atenção, prazer ou persuasão.",
+  "risks": "Excesso de familiaridade pode reduzir diferenciação, novidade ou capacidade de chamar atenção; convenções podem variar por cultura e público.",
+  "limits": "Os estímulos eram letras inglesas/hebraicas em tarefas RSVP, não ícones comerciais ou cenas; experimentos 2 e 3 tiveram N = 20; coleta online; análises não pré-registradas; não houve métricas de prazer, retenção ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-21-familiaridade-codificacao-visual.md",
+  "sourceTitle": "Fonte revisada — familiaridade acelera codificação visual",
+  "sourceSha256": "4a241c5314ac33dd6de485f3e8ffd28982938c731cb72cf704aa9d55a8aa349d"
+}

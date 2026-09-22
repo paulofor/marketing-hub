@@ -1,0 +1,18 @@
+{
+  "cardKey": "recompensa-automatica-progresso-meta",
+  "collection": "neuromarketing",
+  "title": "Converter recompensa automaticamente em progresso de uma meta",
+  "finding": "A Sprive combina cashback de compras cotidianas com aplicação automática na amortização da hipoteca e reporta forte tração: 567 mil usuários cadastrados, crescimento de receita superior a 25 vezes desde janeiro de 2025 e receita anualizada acima de £18 milhões.",
+  "mechanism": "Associar uma recompensa frequente a uma meta concreta pode reduzir o esforço de resgate, aumentar a saliência do progresso e transformar uma ação já existente em avanço percebido sem exigir um novo hábito separado.",
+  "commercialApplication": "Em produtos com créditos, bônus, cashback ou recompensas, comparar aplicação automática em uma meta escolhida pelo usuário contra resgate manual, medindo ativação, uso recorrente, retenção, satisfação e resultado econômico.",
+  "evidenceStrength": "Evidência comercial observacional moderada de um único produto com métricas de tração relevantes; o mecanismo comportamental é plausível, mas não foi isolado causalmente.",
+  "publishedOn": "2026-09-22",
+  "validUntil": "2027-01-31",
+  "experimentHypothesis": "Aplicar automaticamente uma recompensa a uma meta explícita aumentará o uso efetivo do benefício e a retenção em relação a deixar a recompensa disponível para resgate manual, sem reduzir satisfação ou margem.",
+  "risks": "Automação inadequada pode reduzir sensação de controle, aplicar benefícios a uma meta que perdeu relevância ou tornar o incentivo economicamente insustentável; deve haver consentimento e reversibilidade.",
+  "limits": "Caso britânico de fintech, com métricas reportadas pela empresa e forte influência possível de juros, contexto macroeconômico, exposição de mídia e canais de aquisição; não há experimento causal do mecanismo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-22-recompensa-automatica-progresso-meta.md",
+  "sourceTitle": "Recompensa automática convertida em progresso de objetivo",
+  "sourceSha256": "d7041e93e8ae9c998978113fa7acb46b4499a18da43dc37a5df1c9310a7221b8"
+}

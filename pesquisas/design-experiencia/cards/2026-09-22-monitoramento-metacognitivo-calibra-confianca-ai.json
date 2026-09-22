@@ -1,0 +1,18 @@
+{
+  "cardKey": "monitoramento-metacognitivo-calibra-confianca-ai",
+  "collection": "neuromarketing",
+  "title": "Pequena fricção pode reduzir aceitação acrítica de sugestões de IA",
+  "finding": "Em experimento randomizado com 129 estudantes, exigir justificativa escrita antes de aceitar ou rejeitar sugestões de revisão reduziu a adoção de sugestões defeituosas de 65% para 41%, sem redução detectada na aceitação de sugestões corretas.",
+  "mechanism": "A justificativa introduz uma fricção metacognitiva que pode interromper a aceitação automática e forçar uma checagem mínima da recomendação. O próprio estudo encontrou justificativas superficiais, portanto a fricção não garante raciocínio profundo.",
+  "commercialApplication": "Em decisões de maior consequência no Marketing Hub, testar um checkpoint breve antes de aceitar recomendações de IA: registrar a razão principal, selecionar o critério decisivo ou indicar a evidência usada. Aplicar a fricção de forma proporcional ao risco.",
+  "evidenceStrength": "Evidência experimental moderada, ainda em preprint: experimento randomizado N=129 em atividade acadêmica com sugestões de IA de qualidade mista. Atualiza o card com uma intervenção concreta de calibração de deferência.",
+  "publishedOn": "2026-09-22",
+  "validUntil": "2026-11-06",
+  "experimentHypothesis": "Um checkpoint breve de justificativa antes de aceitar recomendações de IA em etapas críticas reduzirá adoção de sugestões incorretas sem diminuir de forma relevante a aceitação de recomendações corretas.",
+  "risks": "Fricção excessiva pode aumentar esforço, abandono e racionalização superficial. Não deve ser aplicada a microações de baixo risco nem usada como substituto de verificação factual.",
+  "limits": "O estudo foi realizado com estudantes e escrita acadêmica, não com decisões comerciais. Não há evidência de impacto em conversão, receita ou retenção, e o efeito pode depender de expertise e tipo de tarefa.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-22-monitoramento-metacognitivo-calibra-confianca-ai.md",
+  "sourceTitle": "Fonte revisada — Justificativa escrita antes de aceitar sugestões de IA",
+  "sourceSha256": "2a85fb5bd7f5626d2ca9c31e2d547b923945542ff68c83b182c916ee8797c012"
+}

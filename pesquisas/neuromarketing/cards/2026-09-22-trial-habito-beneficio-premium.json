@@ -1,0 +1,18 @@
+{
+  "cardKey": "trial-habito-beneficio-premium",
+  "collection": "neuromarketing",
+  "title": "Trial deve formar hábito no valor premium, não só no desconto",
+  "finding": "Quatro estudos de campo em um serviço freemium indicam que benefícios premium esperados/experimentados e hábitos específicos no premium se associam à conversão e retenção; hábitos muito fortes apresentaram relações em U invertido em análises de free tier e trial descontado.",
+  "mechanism": "O trial pode reduzir incerteza ao tornar benefícios premium concretos e repetíveis, criando uma rotina ligada ao valor; por outro lado, hábito no gratuito pode reforçar o status quo e uso intenso de trial barato pode refletir fatores como trial hopping, mecanismo ainda não comprovado.",
+  "commercialApplication": "Em ofertas recorrentes, estruturar o trial para levar o usuário a 1–2 ações premium distintivas, tornar o benefício experimentado explícito e instrumentar regularidade de uso; comparar trial guiado pelo valor com simples liberação de acesso.",
+  "evidenceStrength": "Moderada-alta no contexto estudado: artigo peer-reviewed com quatro estudos de campo e retenção comportamental real no Estudo 4; generalização além de notícias digitais e causalidade do nível de hábito ainda exigem teste.",
+  "publishedOn": "2026-09-21",
+  "validUntil": "2028-09-21",
+  "experimentHypothesis": "Um trial que induza cedo o uso de benefícios premium distintivos aumentará conversão a preço cheio e retenção versus um trial passivo, sem elevar cancelamentos, arrependimento ou reclamações.",
+  "risks": "Usar renovação opaca, fricção de cancelamento ou estímulos compulsivos para fabricar retenção; confundir uso frequente com valor real; otimizar hábito sem satisfação.",
+  "limits": "A pesquisa envolve uma única empresa jornalística europeia; hábitos não foram randomizados; auto-renovação pode gerar retenção passiva; a curvatura em U invertido pode refletir fatores não observados e trial hopping é apenas hipótese.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-22-trial-habito-beneficio-premium.md",
+  "sourceTitle": "Fonte revisada — Trial, hábito e benefício premium",
+  "sourceSha256": "35d095fa64f3d03e899501523c269d8c43f2ec53b120ab08269f90ef2c6f3ee4"
+}

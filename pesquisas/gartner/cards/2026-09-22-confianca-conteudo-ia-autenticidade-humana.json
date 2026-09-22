@@ -1,0 +1,18 @@
+{
+  "cardKey": "confianca-conteudo-ia-autenticidade-humana",
+  "collection": "neuromarketing",
+  "title": "Preserve sinais humanos em conteúdo assistido por IA",
+  "finding": "Em pesquisa da Gartner com 1.006 consumidores dos EUA em maio-junho de 2026, 65% disseram que marcas produzem conteúdo demais gerado por IA, 57% relataram menor confiança nas mensagens das marcas, 35% passaram a recorrer menos a influenciadores e 43% mais a pessoas reais para recomendações de compra.",
+  "mechanism": "A saturação de conteúdo sintético ou percebido como genérico pode aumentar ceticismo e elevar o valor relativo de sinais de autoria, experiência e contexto humanos. A pesquisa mostra associação de percepção e confiança, não causalidade.",
+  "commercialApplication": "No Marketing Hub, testar criativos em que a IA acelera a produção, mas a peça preserva sinais humanos concretos — pessoa real, experiência específica, demonstração, contexto e transparência — contra peças com aparência mais sintética ou genérica.",
+  "evidenceStrength": "Pesquisa oficial da Gartner com 1.006 consumidores dos Estados Unidos; sinal relevante de percepção e confiança, mas sem experimento causal e sem evidência direta de conversão no público brasileiro.",
+  "publishedOn": "2026-09-22",
+  "validUntil": "2027-03-22",
+  "experimentHypothesis": "Criativos assistidos por IA que preservam sinais humanos verificáveis terão maior confiança percebida e melhor progressão de CTA e checkout do que criativos equivalentes percebidos como genéricos ou excessivamente sintéticos.",
+  "risks": "Transformar autenticidade em artifício, exagerar sinais humanos, ocultar uso relevante de IA ou concluir que todo conteúdo sintético reduz desempenho.",
+  "limits": "A amostra é dos Estados Unidos e mede atitudes declaradas. Os dados não provam que sinais humanos aumentam vendas; retenção, CTA, checkout e pagamento precisam ser medidos no público e na oferta reais.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/gartner/cards/fontes/2026-09-22-confianca-conteudo-ia-autenticidade-humana.md",
+  "sourceTitle": "Fonte revisada — Confiança em conteúdo de marketing com IA",
+  "sourceSha256": "20b8a2b7d7cb5858e93cd194d63940e004c304b97fdbf661a67842e3b99fb8c0"
+}

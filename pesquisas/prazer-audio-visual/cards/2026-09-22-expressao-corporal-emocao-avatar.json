@@ -1,0 +1,18 @@
+{
+  "cardKey": "expressao-corporal-emocao-avatar",
+  "collection": "prazer-audio-visual",
+  "title": "Usar movimento corporal como canal emocional em vídeo com avatar",
+  "finding": "Uma revisão sistemática de 49 estudos indica que postura e movimento corporal carregam informação sobre estados emocionais, especialmente em contextos de maior arousal e relevância social, embora o campo tenha heterogeneidade e risco de viés elevados.",
+  "mechanism": "Estados emocionais alteram padrões de postura, energia, amplitude, velocidade e dinâmica do movimento; esses sinais corporais funcionam como um canal adicional de comunicação social que pode complementar face e voz.",
+  "commercialApplication": "Em vídeos com avatar, personagem ou pessoa gerada por IA, comparar uma versão em que movimento e postura são coerentes com a emoção-alvo contra uma versão com corpo neutro, mantendo texto, voz e expressão facial tão constantes quanto possível.",
+  "evidenceStrength": "Média-baixa para uma regra operacional específica: revisão sistemática de 49 estudos oferece convergência qualitativa, mas relata forte heterogeneidade metodológica, amostras pequenas/homogêneas e risco de viés global elevado.",
+  "publishedOn": "2026-09-22",
+  "validUntil": "2027-03-22",
+  "experimentHypothesis": "Em momentos emocionais de maior arousal ou relevância social, um avatar com postura e dinâmica corporal congruentes à emoção-alvo aumentará identificação emocional e coerência percebida em relação ao mesmo avatar com corpo neutro, sem assumir efeito em retenção ou venda.",
+  "risks": "Gestos exagerados podem parecer artificiais, estereotipados ou culturalmente inadequados; um mapeamento rígido emoção-gesto pode reduzir naturalidade e credibilidade.",
+  "limits": "A revisão sintetiza estudos muito heterogêneos, com diferentes métodos de indução e captura; não define gestos universais, não estima um efeito causal único e não mede prazer, CTA, retenção ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-22-expressao-corporal-emocao-avatar.md",
+  "sourceTitle": "Fonte revisada — movimento corporal como canal de emoção em vídeo",
+  "sourceSha256": "6f92b361df1f760738d1c574dd1eb291b76764d2909c46b260acd4aa06f66c66"
+}

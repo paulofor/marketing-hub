@@ -1,0 +1,18 @@
+{
+  "cardKey": "memoria-audiovisual-objeto-integrado",
+  "collection": "prazer-audio-visual",
+  "title": "Tratar sinais audiovisuais coerentes como uma unidade de memória",
+  "finding": "Em uma tarefa de memória de trabalho, recuperar o objeto audiovisual completo foi mais eficiente do que recuperar apenas sua parte visual ou auditiva; EEG multivariado mostrou que consultar uma modalidade reinstalava também a característica associada da outra modalidade.",
+  "mechanism": "Características auditivas e visuais apresentadas juntas podem ser armazenadas como um objeto crossmodal integrado. Ao recuperar apenas uma característica, a parceira irrelevante pode ser reativada automaticamente, exigindo mais controle cognitivo para separar o conjunto.",
+  "commercialApplication": "Em vídeo, onboarding e interfaces, testar pares som-imagem estáveis para sinais que precisam ser reconhecidos depois como uma unidade. Quando a tarefa posterior exigir foco em apenas uma modalidade, testar também uma versão desacoplada para evitar interferência.",
+  "evidenceStrength": "Média-alta para memória audiovisual no paradigma estudado: 37 participantes analisados, comportamento + EEG, grandes diferenças de tempo de resposta e reinstalação crossmodal convergente; estímulos laboratoriais simples limitam a generalização.",
+  "publishedOn": "2026-09-22",
+  "validUntil": "2027-03-22",
+  "experimentHypothesis": "Um sinal crítico apresentado e recuperado como par audiovisual consistente reduzirá tempo de reconhecimento e erros em relação a uma condição em que o usuário precisa reconstruir o par a partir de uma única modalidade; se apenas uma modalidade for relevante, o pareamento poderá aumentar interferência.",
+  "risks": "Acoplamento excessivo pode reativar informação irrelevante, aumentar distração ou criar dependência de uma modalidade que pode não estar disponível; não inferir benefício universal de memória ou persuasão.",
+  "limits": "A amostra final foi de 37 adultos jovens; os estímulos eram orientações visuais e tons sem significado naturalista; o estudo não mediu prazer, retenção de vídeo, CTA ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-22-memoria-audiovisual-objeto-integrado.md",
+  "sourceTitle": "Fonte revisada — memória audiovisual como objeto integrado",
+  "sourceSha256": "f7ce57e1971205249f41d030bb527ab82b2681cc6e515bc88d000afe42053d56"
+}

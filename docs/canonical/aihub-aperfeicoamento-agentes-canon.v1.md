@@ -18,6 +18,24 @@ e sua entrega completa pelo próprio modelo após validação local. Melhorias a
 ficam como sugestões fundamentadas. Imagens produtivas devem ser produzidas pelos arquivos
 versionados do repositório. Não publicar por SSH nem usar publicação como teste.
 
+## Cinco pontos em toda oferta — decisão de 22/09/2026
+
+O texto compartilhado dos botões **Prompt para AIHUB**, incluindo prévia e cópia manual,
+deve lembrar explicitamente os cinco critérios de
+[`cadeia-produtos-pde-canon.v1.md`](cadeia-produtos-pde-canon.v1.md#cinco-critérios-concretos-de-criação-e-avaliação--decisão-de-22092026):
+desejo reconhecido, primeiro passo fácil, valor antes do compromisso, continuidade paga
+compreensível e repetição com margem. Para cada um, orientar entregável concreto, evidência
+de aceite e métrica na atividade responsável, reutilizando resultados válidos e respeitando
+tipo, ficha, oferta e orçamento aprovados. O lembrete não fixa produto, processo ou versão
+histórica nem cria novos gates ou subprocessos automaticamente.
+
+Degustação depende do plano aprovado, com benefício, limites e custos explícitos; quando
+não aplicável, exigir demonstração ou amostra real adequada ao produto e registrar o motivo.
+Resultado exibido não comprova utilidade nem exposição efetiva à oferta. Participação e
+cadastro são sinais intermediários, não vendas rentáveis; custos ou métricas sem fonte
+permanecem desconhecidos. Os critérios orientam criação e avaliação, sem alegar eficácia
+causal comprovada pelo experimento que motivou o aprendizado.
+
 ## Autonomia até o objetivo do processo — decisão de 21/09/2026
 
 O prompt autoriza explicitamente o modelo a criar ou atualizar manualmente os PRs necessários
@@ -136,7 +154,6 @@ HTTP 200, URL, texto declarado ou apenas um dos hashes não comprovam essa cadei
 
 ## Prioridade comercial e diversidade de implementação
 
-
 Decisão de 14/09/2026: o prompt deve explicitar como objetivo principal **gerar VENDAS e
 receitas com produtos incríveis e comunicação eficaz**, sustentados por valor real para
 o cliente. Os agentes devem avaliar sua contribuição para esse objetivo sem apresentar
@@ -178,7 +195,7 @@ A síntese abaixo preserva os conceitos sem depender da presença do anexo tempo
 | Trace e credit attribution (10–11)                      | Correlacionar execução, versões, request, response, ferramenta, argumentos, resultado, erro, latência e custo disponível. Distinguir falha de planejamento, contexto, argumentos, integração ou verificação; não culpar o modelo por padrão.                                                                        |
 | Evaluator e verifier (11–12)                            | Critérios funcionais e verificadores determinísticos primeiro; avaliação por IA complementa aspectos subjetivos e não substitui testes ou aceitação humana exigida. HTTP 200 e autoavaliação não provam o objetivo.                                                                                                 |
 | Evolver e candidate (12–13)                             | Quem propõe a melhoria produz uma candidata versionada com hipótese, escopo e efeito esperado. Não precisa existir um novo serviço ou agente para exercer esse papel.                                                                                                                                               |
-| Gate, promotion e rollback (13–15)                      | Qualidade, segurança, regressão e custo condicionam a aceitação. Registrar rejeições, preservar a versão anterior e definir retorno; aprovação local não dispensa PR, revisão e comprovação da entrega autorizada.                                                                                                                                       |
+| Gate, promotion e rollback (13–15)                      | Qualidade, segurança, regressão e custo condicionam a aceitação. Registrar rejeições, preservar a versão anterior e definir retorno; aprovação local não dispensa PR, revisão e comprovação da entrega autorizada.                                                                                                  |
 | Held-out, canary e replay (15–16)                       | Comparar versões com casos históricos anonimizados, tarefas fora do ajuste e casos adversariais. Held-out só é independente se não foi usado para ajustar a candidata; caso contrário, registrar a limitação. Canary aqui significa caso sentinela de comportamento indevido, não autorização de tráfego produtivo. |
 | Procedural graph, routing graph e policy (16–17)        | Representar condições e decisões quando necessário, mantendo contratos de etapa. Não criar um motor de grafos apenas para usar a terminologia.                                                                                                                                                                      |
 | Self-play, continual learning e online learning (17–18) | Desafios sintéticos e aprendizado por histórico podem alimentar candidatas. Preservar tarefas antes bem-sucedidas e passar pelas mesmas avaliações, sem atualização direta em produção.                                                                                                                             |

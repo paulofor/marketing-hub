@@ -45,6 +45,42 @@ não comprovam vendas; diferencie hipótese comercial de resultado medido.
   atividades seguintes. Não encerre no primeiro desbloqueio nem avance para outro processo
   fora do escopo; sucesso técnico de uma tarefa não comprova o objetivo do processo inteiro.
 
+### Lembrete obrigatório: cinco pontos em toda oferta
+
+Ao criar, revisar ou homologar uma oferta, confira os cinco critérios de
+`cadeia-produtos-pde-canon.v1.md`. Vincule cada ponto à atividade responsável, com entregável,
+evidência de aceite e métrica; reutilize resultados válidos e registre lacunas na fonte,
+respeitando o escopo corrente, o tipo, a ficha de execução e a oferta aprovados.
+
+1. **Começar pelo desejo reconhecido.** Atena e Íris devem registrar desejo/resultado escolhido,
+   público, linguagem observada com fonte/data e hipótese de mensagem, sem inventar insegurança.
+   **Objetivo: despertar identificação e participação.** Medir visitantes humanos atribuídos →
+   primeira interação, por variante e janela.
+2. **Tornar o primeiro passo fácil.** Dédalo e Psique devem justificar cada pergunta e comprovar
+   primeira ação evidente, próximo botão e botão final acessíveis no celular, recuperação e
+   resultado compreensível. **Objetivo: reduzir o esforço até o benefício.** Medir início →
+   conclusão → resultado recebido, abandono por etapa e tempo até o primeiro benefício.
+3. **Demonstrar valor antes do compromisso.** Na comunicação e integração, comprovar benefício
+   inicial aplicável por demonstração ou amostra real adequada ao produto. Se o plano aprovar
+   degustação, referenciar seu subprocesso e pareceres, limite gratuito, custo por uso, teto e
+   proteção contra abuso; caso contrário, registrar o motivo e a prova alternativa.
+   **Objetivo: demonstrar utilidade preservando a margem.** Separar resultado exibido de aplicação
+   ou relato de utilidade e de interesse em salvar/continuar. Não impor questionário ou gratuidade.
+4. **Explicar por que pagar pela continuidade.** Comunicação, integração, Psique e Têmis devem
+   conferir benefício adicional, entregáveis, como usar, preço total/recorrência, prazo, acesso,
+   suporte e reembolso coerentes com o checkout; a experiência inicial cumpre sua própria promessa.
+   **Objetivo: transformar interesse em compra compreensível.** Medir exposição efetiva à oferta →
+   clique → checkout → compra; gerar resultado não comprova que a pessoa viu a oferta.
+5. **Repetir com evidência de margem.** Na operação e no aprendizado, com Plutus, preservar a
+   referência anterior, fato versus hipótese, explicação concorrente e uma mudança principal
+   por teste; definir amostra, janela, atribuição e limites aprovados, excluindo testes, bots e
+   duplicidades. **Objetivo: encontrar vendas repetíveis e rentáveis.** Decidir com compras
+   líquidas, receita conciliada, CAC, custo integral de entrega, reembolsos, contribuição e margem.
+
+Participação e cadastro são sinais intermediários; não comprovam utilidade, vendas ou lucro.
+Trate aprendizados iniciais como hipóteses a validar em cada produto. Métrica ou custo sem fonte
+permanece desconhecido, nunca zero; este lembrete não autoriza novo gasto nem mudança de oferta.
+
 ## 2. Investigue e corrija a causa
 
 - Percorra o fluxo da tela ao endpoint, serviço, persistência, executor e retorno ao backend.

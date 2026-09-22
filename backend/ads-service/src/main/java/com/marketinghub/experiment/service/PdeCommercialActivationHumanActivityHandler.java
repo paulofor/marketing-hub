@@ -89,13 +89,20 @@ public class PdeCommercialActivationHumanActivityHandler
     CommercialPlan plan = currentPlan(product.getId(), experiment.getId());
     ExperimentRun productionRun = latestProductionRun(experiment.getId());
     BigDecimal cycleBudget = currentCycleBudget(experiment.getId());
-    BigDecimal budgetLimit =
+    BigDecimal governingBudgetLimit =
         cycleBudget != null ? cycleBudget : plan == null ? null : plan.getMaxBudget();
-    boolean budgetDefined = budgetLimit != null && budgetLimit.compareTo(BigDecimal.ZERO) > 0;
+    boolean paidMedia = experiment.getPlatform() == ExperimentPlatform.FACEBOOK;
+    BigDecimal budgetLimit = paidMedia ? experiment.getMediaSpendLimit() : governingBudgetLimit;
+    boolean governingBudgetDefined =
+        governingBudgetLimit != null && governingBudgetLimit.compareTo(BigDecimal.ZERO) > 0;
+    boolean budgetDefined =
+        governingBudgetDefined && budgetLimit != null && budgetLimit.compareTo(BigDecimal.ZERO) > 0;
     boolean budgetAligned =
-        cycleBudget == null
-            || (experiment.getMediaSpendLimit() != null
-                && experiment.getMediaSpendLimit().compareTo(cycleBudget) == 0);
+        !paidMedia
+            || !budgetDefined
+            || (cycleBudget == null
+                ? budgetLimit.compareTo(governingBudgetLimit) <= 0
+                : budgetLimit.compareTo(cycleBudget) == 0);
     boolean auditContextReady =
         plan != null
             && plan.getId() != null
@@ -134,20 +141,28 @@ public class PdeCommercialActivationHumanActivityHandler
             "Teto financeiro definido",
             budgetDefined && budgetAligned,
             budgetDefined && budgetAligned
-                ? (cycleBudget == null ? "O plano" : "O ciclo")
-                    + " limita a operação a "
-                    + brl(budgetLimit)
-                    + "."
-                : budgetDefined
-                    ? "O teto do experimento diverge do ciclo, que limita a operação a "
+                ? paidMedia
+                    ? "O experimento limita a mídia a "
+                        + brl(budgetLimit)
+                        + ", dentro do teto "
+                        + (cycleBudget == null ? "do plano de " : "do ciclo de ")
+                        + brl(governingBudgetLimit)
+                        + "."
+                    : (cycleBudget == null ? "O plano" : "O ciclo")
+                        + " limita a operação a "
                         + brl(budgetLimit)
                         + "."
-                    : "O plano comercial ainda não possui teto financeiro positivo.",
+                : budgetDefined
+                    ? "O teto de mídia do experimento excede ou diverge do limite vigente de "
+                        + brl(governingBudgetLimit)
+                        + "."
+                    : "O plano e o experimento ainda não possuem teto financeiro operacional"
+                        + " positivo.",
             budgetDefined && budgetAligned
                 ? "Não ultrapasse o teto persistido sem uma nova decisão humana."
                 : budgetDefined
-                    ? "Ajuste o teto operacional do experimento ao valor exato do ciclo antes de autorizar."
-                    : "Defina o teto no plano comercial antes de autorizar a ativação."));
+                    ? "Ajuste o teto operacional do experimento ao limite vigente antes de autorizar."
+                    : "Defina o teto no plano e no experimento antes de autorizar a ativação."));
     requirements.add(
         new HumanProductProcessActivityRequirement(
             "AUDIT_CONTEXT_READY",
@@ -178,6 +193,10 @@ public class PdeCommercialActivationHumanActivityHandler
             ? "amostra ainda não definida"
             : "amostra de " + experiment.getSampleSize() + " contatos";
     String budget = budgetDefined ? brl(budgetLimit) : "teto financeiro ainda não definido";
+    String budgetConstraint =
+        budgetDefined && !budgetAligned
+            ? " (fora do limite vigente de " + brl(governingBudgetLimit) + ")"
+            : "";
     String auditEvidenceReference =
         auditContextReady
             ? "experiment:"
@@ -188,6 +207,16 @@ public class PdeCommercialActivationHumanActivityHandler
                 + productionRun.getRunNumber()
                 + "; commercial-plan:"
                 + plan.getId()
+                + (paidMedia
+                    ? "; daily-budget:"
+                        + experiment.getDailyBudget()
+                        + "; media-spend-limit:"
+                        + experiment.getMediaSpendLimit()
+                        + "; window:"
+                        + experiment.getStartDate()
+                        + "/"
+                        + experiment.getEndDate()
+                    : "")
             : null;
     return new HumanProductProcessActivityReadiness(
         ready,
@@ -199,13 +228,21 @@ public class PdeCommercialActivationHumanActivityHandler
         "Revise e autorize",
         "O experimento "
             + experiment.getName()
-            + " está pronto, com "
+            + (ready ? " está pronto, com " : " ainda não está pronto; possui ")
             + sample
             + " e teto total de "
             + budget
+            + budgetConstraint
             + "."
             + (experiment.getPlatform() == ExperimentPlatform.FACEBOOK
-                ? " Ao confirmar, você autoriza a publicação na Meta e o gasto de mídia dentro desses limites."
+                ? " Orçamento diário de "
+                    + brlOrPending(experiment.getDailyBudget())
+                    + ", de "
+                    + dateOrPending(experiment.getStartDate())
+                    + " até "
+                    + dateOrPending(experiment.getEndDate())
+                    + ". Ao confirmar, você autoriza a publicação na Meta e o gasto de mídia dentro"
+                    + " desses limites."
                 : ""),
         CONFIRMATION_TOKEN,
         "EXPERIMENT_ACTIVATION",
@@ -285,5 +322,15 @@ public class PdeCommercialActivationHumanActivityHandler
   /** Formata o teto financeiro em linguagem de negócio para a confirmação. */
   private String brl(BigDecimal value) {
     return NumberFormat.getCurrencyInstance(Locale.forLanguageTag("pt-BR")).format(value);
+  }
+
+  /** Evita apresentar ausência de orçamento como zero durante a decisão humana. */
+  private String brlOrPending(BigDecimal value) {
+    return value == null ? "não definido" : brl(value);
+  }
+
+  /** Evita inventar uma janela quando as datas operacionais ainda não foram escolhidas. */
+  private String dateOrPending(java.time.LocalDate value) {
+    return value == null ? "data não definida" : value.toString();
   }
 }

@@ -581,6 +581,19 @@ impressão da evidência e custo incremental zero. Só é válido para o mesmo p
 experimento, versão e configuração comercial. Mudança material invalida o snapshot e exige renovar
 somente o parecer afetado; os custos permanecem contabilizados no subprocesso original.
 
+Em 5.4, o estado do run (`READY_TO_PUBLISH`, `RUNNING`, `PAUSED` ou equivalente) não comprova
+sozinho que a homologação continua vigente. Para Quartzo, o gate visual deve citar a publicação
+auditada atual, o SHA-256 do HTML e a impressão do contrato comercial congelado. Se qualquer uma
+dessas identidades mudar, o backend preserva o run anterior e cria outra tentativa; é proibido
+sobrescrever a evidência histórica ou reconciliar pixels de uma publicação anterior. A tentativa
+nova usa o contrato funcional de venda vigente, inclusive checkout e entrega, sem reativar mídia.
+
+Na decisão 5.5, a mensagem apresentada ao operador deve usar o teto operacional exato do
+experimento, limitado pelo plano/ciclo, além do orçamento diário e da janela persistida. O máximo
+do plano não pode ser exibido como se fosse o valor autorizado para a campanha. Em canal pago, a
+confirmação deve declarar claramente que publica a campanha e autoriza gasto dentro desses limites;
+texto genérico de “sem gasto” é proibido nesse gate.
+
 Na revisão 5.1.7, a linhagem de criativos permanece visível, mas somente o descendente final
 `READY` e `APPROVED` é a comunicação efetiva. A revisão deve exigir exatamente uma candidata final,
 comparar nela os termos materiais com página e checkout e consumir a governança da mídia vinculada

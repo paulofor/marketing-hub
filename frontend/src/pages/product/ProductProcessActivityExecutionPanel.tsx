@@ -104,7 +104,7 @@ export default function ProductProcessActivityExecutionPanel({
     : "";
   const waitingForTask = Boolean(
     feedback?.taskIds?.length &&
-      !feedback.taskIds.includes(currentTask?.taskId ?? -1),
+    !feedback.taskIds.includes(currentTask?.taskId ?? -1),
   );
 
   return (
@@ -858,8 +858,8 @@ function ReviewAndAcceptDecision({
           <strong>{control.confirmationTitle || "Tudo pronto"}</strong>
           <p>{control.confirmationMessage}</p>
           <small>
-            A evidência e a justificativa serão registradas automaticamente.
-            Esta autorização não cria campanha paga nem realiza gasto.
+            A evidência será registrada automaticamente. O efeito desta
+            confirmação é exatamente o descrito acima pelo backend.
           </small>
         </div>
       </div>

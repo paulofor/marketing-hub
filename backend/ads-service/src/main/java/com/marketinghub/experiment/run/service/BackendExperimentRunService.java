@@ -56,6 +56,7 @@ public class BackendExperimentRunService {
   private final ExperimentRunGateResultRepository gateResultRepository;
   private final MoisCommercialDossierPreflightService moisCommercialDossierPreflightService;
   private final PdeCommercialPreflightActivityProjector preflightActivityProjector;
+  private final QuartzoPreflightEvidenceScopeService quartzoEvidenceScope;
 
   /** Inicializa o serviço com os repositórios e a projeção canônica do preflight no BPM. */
   @Autowired
@@ -64,12 +65,14 @@ public class BackendExperimentRunService {
       ExperimentRunRepository experimentRunRepository,
       ExperimentRunGateResultRepository gateResultRepository,
       MoisCommercialDossierPreflightService moisCommercialDossierPreflightService,
-      PdeCommercialPreflightActivityProjector preflightActivityProjector) {
+      PdeCommercialPreflightActivityProjector preflightActivityProjector,
+      QuartzoPreflightEvidenceScopeService quartzoEvidenceScope) {
     this.experimentRepository = experimentRepository;
     this.experimentRunRepository = experimentRunRepository;
     this.gateResultRepository = gateResultRepository;
     this.moisCommercialDossierPreflightService = moisCommercialDossierPreflightService;
     this.preflightActivityProjector = preflightActivityProjector;
+    this.quartzoEvidenceScope = quartzoEvidenceScope;
   }
 
   /** Mantém os testes unitários que não exercitam a projeção no processo comercial. */
@@ -83,6 +86,7 @@ public class BackendExperimentRunService {
         experimentRunRepository,
         gateResultRepository,
         moisCommercialDossierPreflightService,
+        null,
         null);
   }
 
@@ -173,6 +177,9 @@ public class BackendExperimentRunService {
     Set<String> expectedGateCodes = homologationGateCodes(run.getExperiment());
     Map<String, GateEvidence> evidenceByCode =
         validateHomologationRequest(run, request, expectedGateCodes);
+    if (quartzoEvidenceScope != null) {
+      quartzoEvidenceScope.validateAndBind(run, evidenceByCode.get(LANDING_GATE));
+    }
     Instant evaluatedAt = Instant.now();
     gates.stream()
         .filter(gate -> expectedGateCodes.contains(gate.getGateCode()))

@@ -31,8 +31,11 @@ class PdeCommercialPreflightActivityExecutorTest {
   private final BackendExperimentRunService runService = mock(BackendExperimentRunService.class);
   private final ProductProcessActivityPredecessorService predecessors =
       mock(ProductProcessActivityPredecessorService.class);
+  private final QuartzoPreflightEvidenceScopeService quartzoEvidence =
+      mock(QuartzoPreflightEvidenceScopeService.class);
   private final PdeCommercialPreflightActivityExecutor executor =
-      new PdeCommercialPreflightActivityExecutor(experiments, runs, runService, predecessors);
+      new PdeCommercialPreflightActivityExecutor(
+          experiments, runs, runService, predecessors, quartzoEvidence);
 
   /** Executa o run em rascunho e orienta o registro das evidências funcionais pendentes. */
   @Test
@@ -95,6 +98,8 @@ class PdeCommercialPreflightActivityExecutorTest {
         .thenReturn(Optional.of(run));
     when(predecessors.readiness(any(), any(), any()))
         .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Revisões concluídas."));
+    when(quartzoEvidence.applies(run)).thenReturn(true);
+    when(quartzoEvidence.hasCurrentEvidence(run)).thenReturn(true);
 
     BackendProductProcessActivityExecutionResult result =
         executor.execute(process(), activity(), product, "experiment:89");
@@ -103,6 +108,56 @@ class PdeCommercialPreflightActivityExecutorTest {
     verify(runService).synchronizePreflightActivity(12L);
     assertThat(result.operationalState()).isEqualTo("COMPLETED");
     assertThat(result.objectiveAchieved()).isTrue();
+  }
+
+  /** Abre nova tentativa quando um run ativo comprova outra publicação comercial. */
+  @Test
+  void createsNewRunWhenActiveRunUsesStalePublication() {
+    Product product = Product.builder().id(9L).build();
+    Experiment experiment = experiment(product);
+    ExperimentRun staleRun = run(experiment, ExperimentRunStatus.RUNNING);
+    ExperimentRun currentRun = run(experiment, ExperimentRunStatus.DRAFT);
+    currentRun.setId(13L);
+    currentRun.setRunNumber(2);
+    when(experiments.findById(89L)).thenReturn(Optional.of(experiment));
+    when(runs.findTopByExperimentIdAndModeOrderByRunNumberDesc(89L, ExperimentRunMode.PRODUCTION))
+        .thenReturn(
+            Optional.of(staleRun),
+            Optional.of(staleRun),
+            Optional.of(staleRun),
+            Optional.of(currentRun));
+    when(predecessors.readiness(any(), any(), any()))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Revisões concluídas."));
+    when(quartzoEvidence.applies(staleRun)).thenReturn(true);
+    when(quartzoEvidence.hasCurrentEvidence(staleRun)).thenReturn(false);
+    doAnswer(
+            invocation -> {
+              currentRun.setStatus(ExperimentRunStatus.PREFLIGHT_PENDING);
+              return null;
+            })
+        .when(runService)
+        .runPreflight(13L);
+
+    BackendProductProcessActivityReadiness readiness =
+        executor.readiness(process(), activity(), product, "experiment:89");
+    BackendProductProcessActivityExecutionResult result =
+        executor.execute(process(), activity(), product, "experiment:89");
+
+    assertThat(readiness.ready()).isTrue();
+    assertThat(readiness.actionLabel()).contains("publicação atual");
+    assertThat(readiness.requirements())
+        .anySatisfy(
+            requirement -> {
+              assertThat(requirement.code()).isEqualTo("PRODUCTION_RUN");
+              assertThat(requirement.satisfied()).isFalse();
+              assertThat(requirement.detail()).contains("não comprova");
+            });
+    verify(runService)
+        .create(
+            org.mockito.ArgumentMatchers.eq(89L),
+            any(com.marketinghub.experiment.run.service.create.CreateExperimentRunRequest.class));
+    verify(runService).runPreflight(13L);
+    assertThat(result.operationalState()).isEqualTo("PENDING");
   }
 
   /** Preserva o run bloqueado e executa o preflight em uma nova tentativa produtiva. */

@@ -189,6 +189,13 @@ describe("ProductProcessActivityExecutionPanel", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByText("7/7 verificações prontas")).toBeVisible();
     expect(screen.getByText(/amostra de 15 contatos/)).toBeVisible();
+    expect(screen.getByText(/autoriza a publicação na Meta/)).toBeVisible();
+    expect(
+      screen.queryByText(/não cria campanha paga nem realiza gasto/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/exatamente o descrito acima pelo backend/),
+    ).toBeVisible();
 
     fireEvent.click(
       screen.getByRole("button", { name: "Li, entendi e autorizo" }),
@@ -617,9 +624,11 @@ describe("ProductProcessActivityExecutionPanel", () => {
       executionControl: {
         ...activity.executionControl!,
         actionLabel: "Li, entendi e autorizo",
+        description:
+          "A confirmação autoriza a publicação da campanha na Meta e o gasto de mídia dentro da janela aprovada.",
         confirmationTitle: "Revise e autorize",
         confirmationMessage:
-          "O experimento Rigel está pronto, com amostra de 15 contatos e teto total de R$ 540,00.",
+          "O experimento Rigel está pronto, com amostra de 15 contatos e teto total de R$ 540,00. Ao confirmar, você autoriza a publicação na Meta e o gasto de mídia dentro desses limites.",
         decisionMode: "REVIEW_AND_ACCEPT",
         auditEvidenceReference:
           "experiment:89; experiment-run:9/run-number:2; commercial-plan:4",

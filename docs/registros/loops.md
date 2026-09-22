@@ -1,5 +1,28 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-PDE-PREFLIGHT-REUTILIZA-PUBLICACAO-ANTIGA — estado verde sem versão vigente
+
+- **Data e evidência:** em 22/09/2026, Capella/experimento #88 possuía o run produtivo #1 em
+  `RUNNING`, mas o gate visual citava a publicação #27 e a página comercial vigente era a #31,
+  com outro SHA-256 e outro contrato Quartzo. O Processo 5 v8 tratava qualquer estado operacional
+  posterior ao preflight como conclusão e poderia avançar sem conferir os pixels atuais.
+- **Causa-raiz:** o executor conciliava o status do run, não a identidade imutável das evidências.
+  A evolução do experimento de leads para vendas também deixou no run antigo o gate de formulário,
+  em vez do contrato atual de checkout e entrega. Deploy saudável e pareceres atuais não renovam
+  automaticamente uma homologação técnica histórica.
+- **Alternativas avaliadas:** reutilizar o run é simples, mas aceita prova obsoleta; sobrescrever
+  seus gates elimina a auditoria; criar outra tentativa vinculada à publicação vigente preserva o
+  passado e mede a candidata real. Foi escolhida a terceira opção.
+- **Correção sistêmica:** Quartzo exige no gate visual `publication`, `page-sha256` e
+  `quartzo-fingerprint` exatos. Divergência em run concluído abre nova tentativa, sem alterar a
+  anterior; o backend valida e grava a versão auditada antes de aceitar os quatro resultados.
+  A decisão humana passa a mostrar teto efetivo, orçamento diário e janela, sem a mensagem genérica
+  que negava gasto no mesmo botão que libera Meta.
+- **Prevenção:** testes cobrem run `RUNNING` antigo, tokens parciais/incorretos, criação idempotente
+  da nova tentativa, contrato de vendas e apresentação do teto de experimento menor que o máximo do
+  plano. Matriz e evidências em
+  [homologação do Processo 5 de Capella](../homologacao/capella-processo-pai-preflight-v1.md).
+
 ## LOOP-ACTIONS-WATCHDOG-IDADE-DA-FILA — backlog saudável abre incidente de freshness
 
 - **Data:** 2026-09-20. WatchDog de produção, run

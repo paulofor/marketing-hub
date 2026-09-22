@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,17 +56,35 @@ public class PdeCommercialPreflightActivityExecutor
   private final ExperimentRunRepository experimentRunRepository;
   private final BackendExperimentRunService experimentRunService;
   private final ProductProcessActivityPredecessorService predecessorService;
+  private final QuartzoPreflightEvidenceScopeService quartzoEvidenceScope;
 
   /** Configura experimento, runs, comando de preflight e validação da ordem BPM. */
+  @Autowired
   public PdeCommercialPreflightActivityExecutor(
       ExperimentRepository experimentRepository,
       ExperimentRunRepository experimentRunRepository,
       BackendExperimentRunService experimentRunService,
-      ProductProcessActivityPredecessorService predecessorService) {
+      ProductProcessActivityPredecessorService predecessorService,
+      QuartzoPreflightEvidenceScopeService quartzoEvidenceScope) {
     this.experimentRepository = experimentRepository;
     this.experimentRunRepository = experimentRunRepository;
     this.experimentRunService = experimentRunService;
     this.predecessorService = predecessorService;
+    this.quartzoEvidenceScope = quartzoEvidenceScope;
+  }
+
+  /** Mantém testes unitários de percursos sem contrato especial de evidência. */
+  PdeCommercialPreflightActivityExecutor(
+      ExperimentRepository experimentRepository,
+      ExperimentRunRepository experimentRunRepository,
+      BackendExperimentRunService experimentRunService,
+      ProductProcessActivityPredecessorService predecessorService) {
+    this(
+        experimentRepository,
+        experimentRunRepository,
+        experimentRunService,
+        predecessorService,
+        null);
   }
 
   /** Reconhece exclusivamente o preflight do processo comercial PDE publicado. */
@@ -90,13 +109,20 @@ public class PdeCommercialPreflightActivityExecutor
         predecessorService.readiness(process, activityDefinition, sourceReference);
     Experiment experiment = referencedExperiment(product, sourceReference);
     Optional<ExperimentRun> run = latestProductionRun(experiment.getId());
-    String actionLabel = run.map(this::actionLabel).orElse("Criar e executar preflight");
+    boolean stale = run.map(this::isCompletedWithStaleEvidence).orElse(false);
+    String actionLabel =
+        stale
+            ? "Criar preflight para a publicação atual"
+            : run.map(this::actionLabel).orElse("Criar e executar preflight");
     String reason =
         predecessor.ready()
-            ? run.map(this::runReason)
-                .orElse("As revisões estão concluídas; o backend pode criar o run produtivo.")
+            ? stale
+                ? "O run anterior usa outra publicação; o backend preservará seu histórico e abrirá"
+                    + " uma tentativa para a versão atual."
+                : run.map(this::runReason)
+                    .orElse("As revisões estão concluídas; o backend pode criar o run produtivo.")
             : predecessor.reason();
-    boolean executable = predecessor.ready() && run.map(this::canExecute).orElse(true);
+    boolean executable = predecessor.ready() && (stale || run.map(this::canExecute).orElse(true));
     List<ProductProcessActivityRequirementResponse> requirements =
         List.of(
             new ProductProcessActivityRequirementResponse(
@@ -110,12 +136,16 @@ public class PdeCommercialPreflightActivityExecutor
             new ProductProcessActivityRequirementResponse(
                 "PRODUCTION_RUN",
                 "Run produtivo de homologação",
-                run.isPresent(),
-                run.map(value -> "Run #" + value.getRunNumber() + " em " + value.getStatus())
-                    .orElse("Nenhum run produtivo foi criado."),
-                run.isPresent()
+                run.isPresent() && !stale,
+                stale
+                    ? "O run #"
+                        + run.orElseThrow().getRunNumber()
+                        + " não comprova a publicação comercial atual."
+                    : run.map(value -> "Run #" + value.getRunNumber() + " em " + value.getStatus())
+                        .orElse("Nenhum run produtivo foi criado."),
+                run.isPresent() && !stale
                     ? "Use o painel abaixo para concluir gates e evidências."
-                    : "Execute o comando para criar a tentativa produtiva."));
+                    : "Execute o comando para criar uma tentativa vinculada à publicação atual."));
     return new BackendProductProcessActivityReadiness(
         executable,
         reason,
@@ -142,10 +172,13 @@ public class PdeCommercialPreflightActivityExecutor
       throw new IllegalStateException(readiness.reason());
     }
     Experiment experiment = referencedExperiment(product, sourceReference);
+    ExperimentRun latest = latestProductionRun(experiment.getId()).orElse(null);
     ExperimentRun run =
-        latestProductionRun(experiment.getId())
-            .filter(value -> !RETRY_WITH_NEW_RUN_STATUSES.contains(value.getStatus()))
-            .orElseGet(() -> createProductionRun(experiment.getId()));
+        latest == null
+                || RETRY_WITH_NEW_RUN_STATUSES.contains(latest.getStatus())
+                || isCompletedWithStaleEvidence(latest)
+            ? createProductionRun(experiment.getId())
+            : latest;
     if (run.getStatus() == ExperimentRunStatus.DRAFT) {
       experimentRunService.runPreflight(run.getId());
       run = latestProductionRun(experiment.getId()).orElseThrow();
@@ -246,5 +279,13 @@ public class PdeCommercialPreflightActivityExecutor
   private boolean canExecute(ExperimentRun run) {
     return run.getStatus() != ExperimentRunStatus.PREFLIGHT_PENDING
         && run.getStatus() != ExperimentRunStatus.PREFLIGHT_RUNNING;
+  }
+
+  /** Impede que um estado operacional antigo valide pixels ou contratos de outra publicação. */
+  private boolean isCompletedWithStaleEvidence(ExperimentRun run) {
+    return COMPLETED_STATUSES.contains(run.getStatus())
+        && quartzoEvidenceScope != null
+        && quartzoEvidenceScope.applies(run)
+        && !quartzoEvidenceScope.hasCurrentEvidence(run);
   }
 }

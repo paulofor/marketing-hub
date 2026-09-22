@@ -24,6 +24,7 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -60,10 +61,42 @@ class PdeCommercialActivationHumanActivityHandlerTest {
     assertThat(result.confirmationMessage().replace('\u00a0', ' ')).contains("R$ 400,00");
     assertThat(result.decisionMode()).isEqualTo("REVIEW_AND_ACCEPT");
     assertThat(result.auditEvidenceReference())
-        .isEqualTo("experiment:89; experiment-run:9/run-number:2; commercial-plan:4");
+        .isEqualTo(
+            "experiment:89; experiment-run:9/run-number:2; commercial-plan:4; daily-budget:20.00; media-spend-limit:400.00; window:2026-09-23/2026-09-28");
     assertThat(result.requirements())
         .extracting(requirement -> requirement.code())
         .contains("PREFLIGHT_APPROVED", "BUDGET_LIMIT_DEFINED");
+  }
+
+  /** Mostra ao operador o teto efetivo do experimento sem confundi-lo com o máximo do plano. */
+  @Test
+  void presentsExactExperimentBudgetAndWindowInsidePlanLimit() {
+    Product product = Product.builder().id(9L).build();
+    Experiment experiment = experiment(product, ExperimentStatus.PLANNED);
+    experiment.setMediaSpendLimit(new BigDecimal("125.00"));
+    when(experiments.findById(89L)).thenReturn(java.util.Optional.of(experiment));
+    when(readinessService.summarize(89L)).thenReturn(readiness(true));
+    when(plans.findByExperimentReference(89L))
+        .thenReturn(
+            List.of(CommercialPlan.builder().id(4L).maxBudget(new BigDecimal("400.00")).build()));
+    when(runs.findTopByExperimentIdAndModeOrderByRunNumberDesc(89L, ExperimentRunMode.PRODUCTION))
+        .thenReturn(java.util.Optional.of(ExperimentRun.builder().id(9L).runNumber(2).build()));
+
+    HumanProductProcessActivityReadiness result =
+        handler.readiness(process(), activity(), product, "experiment:89");
+
+    assertThat(result.ready()).isTrue();
+    assertThat(result.confirmationMessage().replace('\u00a0', ' '))
+        .contains("teto total de R$ 125,00", "R$ 20,00", "2026-09-23", "2026-09-28")
+        .doesNotContain("teto total de R$ 400,00");
+    assertThat(result.requirements())
+        .anySatisfy(
+            requirement -> {
+              assertThat(requirement.code()).isEqualTo("BUDGET_LIMIT_DEFINED");
+              assertThat(requirement.satisfied()).isTrue();
+              assertThat(requirement.detail().replace('\u00a0', ' '))
+                  .contains("R$ 125,00", "R$ 400,00");
+            });
   }
 
   /** Distingue o consentimento para mídia Meta da operação direta sem disparar a autorização. */
@@ -139,7 +172,7 @@ class PdeCommercialActivationHumanActivityHandlerTest {
             requirement -> {
               assertThat(requirement.code()).isEqualTo("BUDGET_LIMIT_DEFINED");
               assertThat(requirement.satisfied()).isFalse();
-              assertThat(requirement.detail()).contains("diverge do ciclo");
+              assertThat(requirement.detail()).contains("limite vigente");
             });
   }
 
@@ -296,6 +329,11 @@ class PdeCommercialActivationHumanActivityHandlerTest {
         .product(product)
         .name("Rigel direto")
         .sampleSize(15)
+        .platform(com.marketinghub.experiment.ExperimentPlatform.FACEBOOK)
+        .dailyBudget(new BigDecimal("20.00"))
+        .mediaSpendLimit(new BigDecimal("400.00"))
+        .startDate(LocalDate.of(2026, 9, 23))
+        .endDate(LocalDate.of(2026, 9, 28))
         .status(status)
         .build();
   }

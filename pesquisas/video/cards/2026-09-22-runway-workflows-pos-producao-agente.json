@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-agente-edicao-regras-explicitas-mcp",
+  "collection": "video",
+  "title": "Operar pós-produção modular por agente com nós de compositing, depth e HDR",
+  "finding": "A Runway expandiu Workflows com Compositing, Alpha, HDR, Depth Map e RGB Depth; sua documentação também confirma que o Agent pode construir, editar e executar Workflows, e que workflows vinculados ao Developer podem virar endpoints de API.",
+  "mechanism": "Transformar pós-produção em grafo de nós permite que o agente opere etapas reais e independentes — geração, extração de frames, depth, compositing, HDR e export — refazendo apenas o nó que falhou e preservando o restante do projeto.",
+  "commercialApplication": "No Marketing Hub, estruturar Apolo como orquestrador de pipeline modular: renderer -> revisão -> correções localizadas -> depth/alpha/compositing/HDR -> export, com regras de marca, claims e gates entre os nós.",
+  "evidenceStrength": "Alta para disponibilidade dos recursos e integração Agent/Workflows, confirmadas na documentação atual da Runway; moderada para ganhos operacionais, que precisam ser medidos no pipeline real.",
+  "publishedOn": "2026-09-22",
+  "validUntil": "2026-11-21",
+  "experimentHypothesis": "Um pipeline audiovisual modular operado por agente reduzirá retrabalho e tempo de pós-produção ao permitir repetir somente etapas defeituosas, sem aumentar violações de marca, claims ou inconsistências entre cenas.",
+  "risks": "Automação pode propagar um erro para nós posteriores; custos por créditos podem crescer em pipelines longos; workflows proprietários aumentam lock-in; ações irreversíveis precisam de checkpoints, logs e aprovação humana.",
+  "limits": "Nem todos os novos nós têm preço unitário separado publicado; disponibilidade pode variar por plano. O estado e as políticas críticas devem permanecer representados fora do fornecedor para preservar portabilidade.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-22-runway-workflows-pos-producao-agente.md",
+  "sourceTitle": "Fonte revisada — Runway Workflows amplia pós-produção no pipeline do agente",
+  "sourceSha256": "07ed3ddb7e3ce375fcd66c0ef907ea9b3ede2010f707e901002cf9a145a6c802"
+}

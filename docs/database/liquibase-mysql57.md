@@ -4,6 +4,18 @@ O workflow `.github/workflows/liquibase-mysql57.yml` executa a validação está
 
 Ele é executado automaticamente em Pull Requests que alteram changelogs, o validador estático ou o próprio workflow. Também pode ser iniciado manualmente pelo GitHub Actions.
 
+## Critérios comerciais PDE — v1
+
+O job `validate-pde-commercial-principles` usa MySQL 5.7 e Liquibase real para validar
+as novas versões dos objetivos, paridade entre diagrama e atividades, preservação dos
+contratos e vínculos antigos, bloqueio de fontes ausentes/colisão, reaplicação e rollback
+não destrutivo. As definições de referência não contêm dados de clientes ou experimentos.
+
+Localmente: definir `PDE_PRINCIPLES_COMPOSE_PROJECT` com o projeto exclusivo autorizado,
+`PDE_PRINCIPLES_DB_HOST=sandbox-docker` na sandbox (`127.0.0.1` no runner), e executar
+`python3 infra/testing/pde-commercial-principles/run-mysql.py`. A topologia é removida no
+encerramento. [Matriz de homologação](../homologacao/cinco-principios-comerciais-pde-v1.md).
+
 ## Etapa estática do workflow
 
 Executar `scripts/validate-liquibase-mysql57.sh` para verificar includes relativos, includes duplicados, dependências conhecidas, campos temporais e risco do erro MySQL 1093 nos arquivos alterados.

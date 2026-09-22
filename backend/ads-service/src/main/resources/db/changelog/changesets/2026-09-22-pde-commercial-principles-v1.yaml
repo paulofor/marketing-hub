@@ -1,0 +1,61 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-22-pde-commercial-principles-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-commercial-plan-offer' AND version_number=6 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='marketStrategy' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='economics' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].id'))='productArchitecture'
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-construction-approval' AND version_number=8 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='journey' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='access' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].id'))='technicalHomologation' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[7].id'))='psiqueAdherent' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[8].id'))='psiqueRecovery'
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-communication-sales-journey' AND version_number=7 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='communicationContract' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].id'))='destination' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='integration'
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-tasting-proof-of-value' AND version_number=2 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='strategy' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='economics' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].id'))='materialization' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='humanExperienceReview' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].id'))='commercialIntegrityReview' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].id'))='integration'
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='operacao-otimizacao-experimento' AND version_number=5 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='task-1' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='task-2' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].id'))='task-3' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='task-4' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[7].id'))='task-7' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[10].id'))='task-10'
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=4 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='LEARNING' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='PLANNING' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[12].id'))='MEASUREMENT' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[13].id'))='DECISION'
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-sales-delivery-learning' AND version_number=8 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].id'))='consolidate' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[7].id'))='learningCycle'
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=17
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT IF(COUNT(*)=6,1,0) FROM business_process_chain_item i JOIN business_process_chain_definition c ON c.id=i.chain_definition_id WHERE c.chain_code='pde-value-creation-delivery' AND c.version_number=17
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.commercialCriteriaVersion')),'') <> 'PDE_COMMERCIAL_PRINCIPLES_V1' AND ((process_code='pde-commercial-plan-offer' AND version_number=7) OR (process_code='pde-construction-approval' AND version_number=9) OR (process_code='pde-communication-sales-journey' AND version_number=8) OR (process_code='pde-tasting-proof-of-value' AND version_number=3) OR (process_code='operacao-otimizacao-experimento' AND version_number=6) OR (process_code='value-chain-learning-sales-cycle' AND version_number=5) OR (process_code='pde-sales-delivery-learning' AND version_number=9))
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=18 AND purpose NOT LIKE '%Critérios comerciais explícitos v1.'
+      changes:
+        - sqlFile:
+            path: 2026-09-22-pde-commercial-principles-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-commercial-plan-offer' AND version_number=7;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-construction-approval' AND version_number=9;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-communication-sales-journey' AND version_number=8;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-tasting-proof-of-value' AND version_number=3;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='operacao-otimizacao-experimento' AND version_number=6;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='value-chain-learning-sales-cycle' AND version_number=5;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-sales-delivery-learning' AND version_number=9;
+              UPDATE business_process_chain_definition SET status='RETIRED' WHERE chain_code='pde-value-creation-delivery' AND version_number=18;

@@ -1,0 +1,14 @@
+services:
+  principles-mysql:
+    image: mysql:5.7
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: principles_test
+      MYSQL_ROOT_PASSWORD: principles-local-only
+    ports:
+      - "33418:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pprinciples-local-only"]
+      interval: 2s
+      timeout: 3s
+      retries: 60

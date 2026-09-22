@@ -172,6 +172,47 @@ codinome mineral, formato ou tecnologia do produto.
 
 ## Cadeia principal
 
+### Cinco critérios concretos de criação e avaliação — decisão de 22/09/2026
+
+Os cinco critérios abaixo integram os objetivos das atividades existentes. São exigências de
+planejamento, construção e avaliação, não novos processos nem comprovação automática de seus
+resultados. A fonte inicial é a observação do experimento #91: houve participação, resultado
+exibido e um cadastro; ainda não há comprovação de vendas rentáveis ou do mecanismo causal.
+O aprendizado é uma hipótese transferível, não uma receita universal de questionário/gratuidade.
+
+| Critério | Atividades responsáveis | Saída e evidência de aceite | Medição |
+| --- | --- | --- | --- |
+| Desejo reconhecido | Processo 2 `marketStrategy`; Processo 4 `communicationContract` | Um desejo/resultado escolhido, público e situação, linguagem observada com fonte/data, mensagem candidata e explicação concorrente. Íris mantém a oferta aprovada; não inventa inadequação nem emoção individual. | Pessoas humanas distintas que fazem a primeira interação / visitantes humanos atribuídos, por variante e janela. |
+| Primeiro passo fácil | Processo 2 `productArchitecture`; Processo 3 `journey`, `technicalHomologation`, `psiqueAdherent`, `psiqueRecovery` | Primeira ação evidente; finalidade de cada pergunta; próximo botão e botão final alcançáveis no celular, sem conteúdo bloqueante; recuperação e resultado compreensível. Capturas e execução real da mesma versão, em desktop, iPhone e Android. | Início → conclusão → resultado recebido; abandono por etapa e tempo até o primeiro benefício, com denominadores e origem. |
+| Valor antes do compromisso | Processo 4 `communicationContract`, `destination`, `integration`; subprocesso `pde-tasting-proof-of-value` | Registrar aplicabilidade no plano. Se escolhida, referenciar a execução da degustação e seus pareceres antes de integrar: benefício aplicável, fronteira gratuita/paga, custo por uso, limite total, consentimento e antiabuso. Sem degustação, comprovar demonstração/amostra real adequada ao tipo, com motivo. | Resultado exibido separado de aplicação/relato de utilidade; interesse em salvar/continuar separado de cadastro, acesso e compra. |
+| Continuidade paga compreensível | Processo 4 `communicationContract`, `integration`; degustação `humanExperienceReview`, `commercialIntegrityReview` | Benefício adicional, entregáveis, como usar, preço total/recorrência, prazo, acesso, suporte e reembolso coerentes com produto e checkout. A experiência inicial cumpre sua própria promessa. Teste de compreensão; simulação de agente identificada como tal. | Exposição efetiva à oferta → clique → checkout → compra conciliada; retorno e acesso em eventos próprios. Resultado pronto não comprova oferta vista. |
+| Repetição com margem | Processo 6 `consolidate`, `learningCycle`; operação `task-1` a `task-4`, `task-7`, `task-10`; ciclo `LEARNING`, `PLANNING`, `MEASUREMENT`, `DECISION` | Referência anterior, fato versus hipótese, fonte/data, explicação concorrente, uma mudança principal, condições mantidas, amostra/janela/atribuição e limites aprovados. Custos essenciais conhecidos e parecer financeiro vigente. | Compras líquidas, receita conciliada, CAC, custo integral de entrega, reembolso, contribuição e margem; participação é indicador intermediário. |
+
+O contrato de eventos deve declarar gatilho observável, versão, unidade de contagem, numerador,
+denominador, janela de conversão e exclusão de testes/bots/duplicidades. Para exposição à oferta,
+registrar visibilidade real do bloco e tempo mínimo previamente definido; testar que gerar o
+resultado ou manter a oferta fora da tela não dispara esse evento. O limiar pertence ao plano,
+não é uma regra universal copiada do #91. Telemetria sem fonte continua desconhecida, nunca zero.
+
+Amostra insuficiente produz decisão inconclusiva; parada financeira protege caixa e não prova
+rejeição estatística. Cinco observações humanas, quando realizadas, são avaliação qualitativa
+consentida e ficam separadas da amostra comercial e das simulações dos agentes. Escala exige
+vendas líquidas, entrega útil e margem conforme a política aprovada, além de autorização própria.
+
+**Versionamento:** cadeia v18 e novas versões dos processos afetados preservam IDs de nós,
+responsáveis, recursos, contratos de execução e fluxos. Só os objetivos foram detalhados; não há
+novo gate determinístico, executor ou instrumentação instalado por estes textos. A degustação
+continua condicional: as atividades exigem referência e evidências antes da integração, mas esta
+revisão não acrescenta uma chamada automática no grafo. Produtos/ciclos em curso conservam seus
+vínculos, aprovações e custos; os critérios novos pertencem às novas definições. As versões
+anteriores permanecem disponíveis enquanto houver execuções vinculadas, como já ocorre nas
+cadeias v14–v17: aposentá-las agora impediria comandos de referências sem ficha fixada.
+A seleção de novos trabalhos usa a versão publicada mais recente; não migrar tarefas antigas.
+
+Foram comparados checklist isolado (baixo esforço, pouco ligado à execução), processo novo
+(controle adicional, duplicação e custo) e objetivos concretos nas atividades existentes
+(baixo acoplamento e evidência reutilizável). Foi adotada a terceira alternativa.
+
 ```text
 1. Descobrir oportunidade
 -> 2. Definir plano comercial e oferta

@@ -1,0 +1,18 @@
+{
+  "cardKey": "compressao-escolha-sem-remover-agencia",
+  "collection": "neuromarketing",
+  "title": "Comprimir escolhas sem esconder alternativas",
+  "finding": "Pesquisa global com 21.500 consumidores, incluindo Brasil, descreve escolha, conveniência e personalização acumuladas como fontes de trabalho adicional de verificação e decisão; 86% disseram valorizar mais se algo funciona do que a marca.",
+  "mechanism": "Quando a interface transfere ao consumidor comparação, verificação e coordenação demais, conveniência aparente pode virar carga decisória; uma primeira camada menor e explicada pode reduzir esforço sem retirar agência se alternativas continuarem acessíveis.",
+  "commercialApplication": "Em landing pages, formulários e Click-to-WhatsApp, apresentar 2–3 caminhos relevantes, uma recomendação com motivo curto e opção visível de ver outras alternativas; comparar com exposição simultânea de todas as opções.",
+  "evidenceStrength": "Moderada como sinal comportamental/atitudinal: amostra global grande em 20 países, incluindo Brasil, mas estudo prospectivo e não experimental, sem corte brasileiro publicado para as métricas usadas.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2027-09-16",
+  "experimentHypothesis": "Uma escolha inicial comprimida e explicada reduzirá tempo até decisão e abandono sem elevar arrependimento, cancelamento, reclamações ou sensação de manipulação.",
+  "risks": "Transformar simplificação em steering manipulativo, esconder opção economicamente melhor, personalizar de forma invasiva ou criar um default interessado que prejudique autonomia.",
+  "limits": "Os dados são de survey agregado e parte do relatório é prospectiva para 2036; não há demonstração causal de que menos opções aumentem conversão e não há resultado específico de Meta Ads ou WhatsApp.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-22-compressao-escolha-sem-remover-agencia.md",
+  "sourceTitle": "Fonte revisada — Compressão de escolha sem remover agência",
+  "sourceSha256": "de1cd2bdb3721eac73c84411df4090ab8fdf0cf422631534eff71dec735bac8d"
+}

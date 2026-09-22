@@ -16,6 +16,7 @@ esta entrega não altera os experimentos #91/#92 nem comprova vendas.
 | Tela | Objetivos completos nas atividades e nos textos de ajuda; desktop, iPhone 15 Pro e Pixel 7 legíveis sem perda de critérios. |
 | Integração local | Dados pós-migração alimentam a interface local com API simulada; nenhum evento de teste vai à produção. |
 | Regressões | Testes unitários do backend e validação estática Liquibase; nenhuma alteração de prompt operacional dos workers. |
+| Compatibilidade dos executores | Gate e retrabalho reconhecem o grafo pós-migração; revisões compatíveis mantêm conclusão e correção, versões incompletas ou com semântica alterada são recusadas. |
 | Produção | PR revisado, main integrada, workflows aplicáveis aprovados, saúde/versão e critérios conferidos na tela e API. |
 
 ## Limites
@@ -46,7 +47,16 @@ O rollback retira somente a disponibilidade das novas definições, sem apagar d
 
 ## Resultados locais
 
-- Backend: 3.373 testes na suíte, zero falhas/erros; 20 condicionais não aplicáveis ao ambiente.
+A revisão antes do merge encontrou gate e retrabalho restritos ao número 8, embora a nova
+revisão preserve o grafo. O reconhecimento passa a conferir o contrato das revisões posteriores,
+mantendo a v8 original. Foram comparados lista de versões (recorrência a cada revisão), aceitar
+qualquer versão maior (risco de contrato incompatível) e conferir responsabilidades do grafo;
+a terceira opção mantém flexibilidade com recusa explícita de contratos desconhecidos.
+
+- Backend final: 3.397 testes na suíte, zero falhas/erros; 21 não executados nessa rodada
+  (20 condicionais de ambiente e uma comparação literal de HTML já desabilitada no projeto).
+  A fixture nova MySQL é executada separadamente; a compatibilidade teve também 51 testes
+  direcionados aprovados, incluindo conclusão e retrabalho em versões independentes.
 - Fixture física final: Liquibase/MySQL 5.7 aprovado, incluindo fontes inválidas, colisão,
   paridade dos objetivos, preservação de atividades/tarefas/custo/vínculo sintéticos,
   reaplicação e rollback com disponibilidade anterior preservada.

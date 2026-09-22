@@ -209,6 +209,12 @@ anteriores permanecem disponíveis enquanto houver execuções vinculadas, como 
 cadeias v14–v17: aposentá-las agora impediria comandos de referências sem ficha fixada.
 A seleção de novos trabalhos usa a versão publicada mais recente; não migrar tarefas antigas.
 
+Os executores de homologação e retrabalho preservam a v8 original e reconhecem revisões
+posteriores pelo contrato do grafo: cinco avaliações, correção condicional e gate determinístico,
+com os mesmos domínios e atividades de remediação. Alterar descrições não remove o executor;
+grafo incompleto, ambíguo ou incompatível não herda esse contrato apenas por ter versão maior.
+O teste físico da migração deve comprovar também esse reconhecimento após materializar a versão.
+
 Foram comparados checklist isolado (baixo esforço, pouco ligado à execução), processo novo
 (controle adicional, duplicação e custo) e objetivos concretos nas atividades existentes
 (baixo acoplamento e evidência reutilizável). Foi adotada a terceira alternativa.

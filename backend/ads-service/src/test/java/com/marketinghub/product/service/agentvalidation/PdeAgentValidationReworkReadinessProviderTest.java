@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-/** Responsabilidade: comprovar a rota condicional de correção e revalidação do PDE v8. */
+/** Comprova a rota condicional de correção e revalidação nas revisões compatíveis do PDE. */
 class PdeAgentValidationReworkReadinessProviderTest {
   private static final String SOURCE = "product:10@agent-validation-v1";
   private final ProductProcessActivityPredecessorService predecessors =
@@ -46,9 +46,19 @@ class PdeAgentValidationReworkReadinessProviderTest {
         .thenAnswer(call -> history.stream().map(this::snapshot).toList());
   }
 
-  /** Encaminha o parecer rejeitado para Dédalo com causa, ação e retorno explícitos. */
-  @Test
-  void exposesCorrectionAfterFunctionalRejectionFromPreviousProcessVersion() {
+  /** Preserva a rota causal de correção em revisões que alteram somente os objetivos. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(ints = {8, 9, 42})
+  void exposesCorrectionAfterFunctionalRejectionFromPreviousProcessVersion(int version)
+      throws Exception {
+    process.setVersionNumber(version);
+    for (var source :
+        new ObjectMapper()
+            .readTree(
+                java.nio.file.Path.of("../../infra/testing/pde-commercial-principles/sources.json")
+                    .toFile()))
+      if (process.getProcessCode().equals(source.path("processCode").asText()))
+        process.setDiagramJson(source.path("diagram").toString());
     AgentTask rejection = rejection(350L);
     history.add(rejection);
 
@@ -217,7 +227,7 @@ class PdeAgentValidationReworkReadinessProviderTest {
 
   /** Limita a regra à versão que declara a rota de retrabalho. */
   @Test
-  void supportsOnlyVersionEightActivities() {
+  void preservesVersionEightAndRejectsPreviousContracts() {
     assertThat(provider.supports(process, activity("prototypeCorrection"))).isTrue();
     assertThat(provider.supports(process, activity("psiqueSafety"))).isTrue();
 

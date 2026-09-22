@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class PdeAgentValidationReworkReadinessProvider
     implements AgentProductProcessActivityReadinessProvider {
-  static final int PROCESS_VERSION = 8;
   static final String CORRECTION_ACTIVITY = "prototypeCorrection";
   private static final Set<String> REVIEW_ACTIVITIES =
       Set.of(
@@ -65,14 +64,12 @@ public class PdeAgentValidationReworkReadinessProvider
     this.json = json;
   }
 
-  /** Reconhece somente as atividades executadas da versão com retrabalho explícito. */
+  /** Reconhece atividades de revisões que preservam o contrato de retrabalho explícito. */
   @Override
   public boolean supports(
       BusinessProcessDefinition process, BusinessProcessActivityDefinition activityDefinition) {
-    return process != null
-        && activityDefinition != null
-        && PdeAgentValidationGateActivityExecutor.PROCESS_CODE.equals(process.getProcessCode())
-        && Integer.valueOf(PROCESS_VERSION).equals(process.getVersionNumber())
+    return activityDefinition != null
+        && PdeAgentValidationProcessContract.supports(process, json)
         && (REVIEW_ACTIVITIES.contains(activityDefinition.getActivityId())
             || CORRECTION_ACTIVITY.equals(activityDefinition.getActivityId()));
   }

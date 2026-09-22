@@ -267,6 +267,8 @@ class PdeCommercialPrinciplesMysql57Test {
                           + code
                           + "' AND version_number="
                           + (version + 1)));
+      if ("pde-construction-approval".equals(code))
+        verifyExecutionCompatibility(code, version + 1, actual);
       assertThat(actual.remove("commercialCriteriaVersion").asText())
           .isEqualTo("PDE_COMMERCIAL_PRINCIPLES_V1");
       JsonNode objectives = expected.path(code).path("objectives");
@@ -317,6 +319,25 @@ class PdeCommercialPrinciplesMysql57Test {
                 connection,
                 "SELECT COUNT(*) FROM business_process_chain_item i JOIN business_process_chain_definition c ON c.id=i.chain_definition_id JOIN business_process_definition p ON p.id=i.process_definition_id WHERE c.version_number=18 AND p.status='PUBLISHED'"))
         .isEqualTo("6");
+  }
+
+  /** Confere que a definição materializada continua reconhecida pelo gate e pelo retrabalho. */
+  private void verifyExecutionCompatibility(String code, int version, JsonNode diagram) {
+    var process = new BusinessProcessDefinition();
+    process.setProcessCode(code);
+    process.setVersionNumber(version);
+    process.setDiagramJson(diagram.toString());
+    var activity = new BusinessProcessActivityDefinition();
+    activity.setActivityId("agentValidationGate");
+    var executor =
+        new com.marketinghub.product.service.agentvalidation.PdeAgentValidationGateActivityExecutor(
+            null, null, null, null, mapper);
+    assertThat(executor.supports(process, activity)).isTrue();
+    activity.setActivityId("prototypeCorrection");
+    var readiness =
+        new com.marketinghub.product.service.agentvalidation
+            .PdeAgentValidationReworkReadinessProvider(null, null, mapper);
+    assertThat(readiness.supports(process, activity)).isTrue();
   }
 
   /** Exporta as respostas pós-migração para homologar a interface com dependências simuladas. */

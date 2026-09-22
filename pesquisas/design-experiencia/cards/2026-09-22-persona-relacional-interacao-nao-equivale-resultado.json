@@ -1,0 +1,18 @@
+{
+  "cardKey": "persona-relacional-interacao-nao-equivale-resultado",
+  "collection": "neuromarketing",
+  "title": "Persona relacional aumenta interação, mas não produz o mesmo valor para toda intenção",
+  "finding": "Em experimento de campo randomizado com 9.586 novos usuários, uma persona mais calorosa e relacional aumentou sessões (+8,1%), duração (+10,6%) e rodadas (+24,2%), mas os efeitos sobre outputs e diversidade de intenção variaram pelo objetivo de entrada.",
+  "mechanism": "Calor relacional pode reduzir atrito social e prolongar a conversa, porém mais interação pode representar exploração útil, socialização ou simplesmente maior custo. O efeito depende da intenção e não deve ser lido como proxy automático de utilidade.",
+  "commercialApplication": "No customer-agent, condicionar tom/persona à intenção e separar métricas de consumo conversacional de resultados reais. Comparar uma persona direta para execução de tarefa com uma relacional para exploração, medindo resolução, CTA, checkout, retorno e custo.",
+  "evidenceStrength": "Evidência forte para comportamento dentro de uma plataforma, ainda em preprint: experimento de campo randomizado N=9.586 com modelo e capacidades constantes, variando a persona. Não é prova de efeito comercial.",
+  "publishedOn": "2026-09-22",
+  "validUntil": "2026-11-06",
+  "experimentHypothesis": "Uma política de persona condicionada à intenção aumentará resultados úteis por unidade de interação melhor do que uma persona relacional aplicada de forma uniforme, especialmente em tarefas objetivas.",
+  "risks": "Otimizar calor apenas para prolongar conversas pode incentivar dependência, manipulação de engajamento e custo computacional sem benefício. A persona não deve mascarar limitações nem pressionar usuários a permanecer.",
+  "limits": "O estudo mede consumo, arquivos e metas dentro de uma única plataforma; não demonstra aumento de felicidade, satisfação, conversão ou vendas. Os efeitos por intenção podem depender da taxonomia e do produto.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-22-persona-relacional-interacao-nao-equivale-resultado.md",
+  "sourceTitle": "Fonte revisada — Persona relacional aumenta interação, mas o efeito depende da intenção",
+  "sourceSha256": "781f1a0a9da2cd369a80a9c611e3e84eea5646fb3fd02074beb301bdf243985c"
+}

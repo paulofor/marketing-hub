@@ -1,0 +1,18 @@
+{
+  "cardKey": "black-friday-jornada-antecipada-distribuida",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Black Friday funciona como janela de decisão de várias semanas",
+  "finding": "Pesquisa brasileira para a Black Friday 2026 indica que metade dos consumidores começa a pesquisar ofertas mais de 30 dias antes, 54% pretende distribuir compras ao longo de novembro e apenas 20% planeja concentrar tudo na sexta-feira oficial.",
+  "mechanism": "Quando pesquisa, preparação financeira e comparação começam antes do evento, diferentes etapas da jornada podem responder melhor a mensagens distintas: descoberta e captura de intenção primeiro, prova e oferta durante a consideração, urgência apenas perto do fechamento.",
+  "commercialApplication": "Comparar uma campanha faseada ao longo da janela de decisão contra concentração de mídia nos últimos dias, atribuindo resultados por fase até pagamento reconciliado, CAC e margem.",
+  "evidenceStrength": "Evidência observacional moderada de pesquisa brasileira com 1.044 consumidores; útil para formular timing de experimento, sem demonstrar efeito causal em vendas.",
+  "publishedOn": "2026-09-22",
+  "validUntil": "2026-12-07",
+  "experimentHypothesis": "Uma campanha que captura intenção antes de novembro e adapta mensagem e oferta ao avanço da jornada gerará mais pagamentos reconciliados por real investido do que concentrar a maior parte da campanha na semana da Black Friday.",
+  "risks": "Antecipar comunicação pode elevar fadiga, aumentar expectativa por descontos ou deslocar compras sem gerar demanda incremental; frequência e margem precisam ser controladas.",
+  "limits": "Pesquisa de intenção sazonal ligada ao ecossistema LWSA; não mede transações reais nem prova que começar antes melhora conversão, CAC ou margem.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-22-black-friday-jornada-antecipada-distribuida.md",
+  "sourceTitle": "Black Friday como janela de decisão antecipada e distribuída",
+  "sourceSha256": "8ef4f44ad813e5f7226a8cd03b97593fd55307dfa369227ed719fada16a79c16"
+}

@@ -1,0 +1,227 @@
+[
+  {
+    "processCode": "pde-opportunity-discovery",
+    "name": "Descoberta factual da oportunidade PDE",
+    "purpose": "Reunir evidências factuais de mercado antes de qualquer decisão estratégica.",
+    "ownerName": "Argos",
+    "triggerDescription": "Novo ciclo de pesquisa ou sinal real de mercado.",
+    "outcomeDescription": "Dossiê factual rastreável pronto para a decisão estratégica de Atena.",
+    "versionNumber": 6,
+    "technicalReference": "agent-responsibility-matrix-v3 / MARKET_EVIDENCE",
+    "processType": "VALUE_PROCESS",
+    "executionScope": "INDEPENDENT",
+    "parentProcessCode": null,
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Pergunta de mercado recebida",
+          "owner": "Backend",
+          "description": "O recorte e a origem da pesquisa ficam congelados."
+        },
+        {
+          "id": "marketEvidence",
+          "type": "TASK",
+          "label": "Reunir evidências factuais de mercado",
+          "owner": "Argos",
+          "description": "Documenta demanda, concorrentes, linguagem pública, ofertas, preços visíveis, fontes, lacunas e qualidade sem escolher posicionamento, formato ou canal.",
+          "responsibleAgentKeys": [
+            "market-radar"
+          ],
+          "responsibilityDomain": "MARKET_EVIDENCE"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Dossiê factual suficiente?",
+          "owner": "Backend",
+          "description": "Bloqueia fonte vazia, vencida, artificial ou sem rastreabilidade."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Dossiê entregue a Atena",
+          "owner": "Backend",
+          "description": "A pesquisa termina sem selecionar estratégia nem fabricar venda."
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "marketEvidence"
+        },
+        {
+          "from": "marketEvidence",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "end"
+        }
+      ]
+    }
+  },
+  {
+    "processCode": "pde-commercial-homologation-activation",
+    "name": "Homologação e ativação comercial do PDE",
+    "purpose": "Comprovar que a versão está pronta para vender, entregar o prometido e operar dentro dos limites financeiros antes de qualquer ativação.",
+    "ownerName": "Backend de Experimentos",
+    "triggerDescription": "Produto e jornada aprovados, com tipo cadastrado, ficha aplicável e versões exatas.",
+    "outcomeDescription": "Ativação autorizada para a versão comprovada ou bloqueio persistido com causa e retorno à atividade responsável.",
+    "versionNumber": 8,
+    "technicalReference": "cadeia-produtos-pde-canon.v1 / PROCESSO_5_PREPARACAO_POR_TIPO_V1",
+    "processType": "VALUE_PROCESS",
+    "executionScope": "PRODUCT",
+    "parentProcessCode": null,
+    "diagram": {
+      "schemaVersion": "PDE_COMMERCIAL_HOMOLOGATION_ACTIVATION_V7",
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Produto e jornada aprovados",
+          "owner": "Backend",
+          "description": "O backend fixa produto, experimento, versão, tipo e ficha antes de preparar a operação."
+        },
+        {
+          "id": "commercialPreparation",
+          "type": "TASK",
+          "label": "Preparar operação comercial conforme o tipo",
+          "owner": "Backend",
+          "description": "Seleciona pelo tipo cadastrado e pela ficha o subprocesso comercial aplicável, sem inferir pelo nome ou formato do produto.",
+          "commercialPreparationRouterVersion": "COMMERCIAL_PREPARATION_BY_PRODUCT_TYPE_V1",
+          "subprocessRoutes": [
+            {
+              "productTypeCode": "PDE",
+              "productTypeInternalName": "Opala",
+              "subprocessCode": "opala-commercial-preparation-v1",
+              "subprocessVersion": 1
+            },
+            {
+              "productTypeCode": "LOW_TICKET_DIGITAL_PRODUCT",
+              "productTypeInternalName": "Quartzo",
+              "subprocessCode": "quartzo-commercial-preparation-v1",
+              "subprocessVersion": 1
+            }
+          ]
+        },
+        {
+          "id": "humanExperienceReview",
+          "type": "TASK",
+          "label": "Validar experiência e valor para o cliente",
+          "owner": "Psique",
+          "description": "Reutiliza o parecer de Psique produzido na preparação do mesmo produto, experimento, versão e configuração; mudança material exige renovação.",
+          "responsibilityDomain": "HUMAN_EXPERIENCE_REVIEW",
+          "reuseSubprocessActivityId": "humanExperienceReview",
+          "evidenceReuseVersion": "COMMERCIAL_REVIEW_REUSE_V1"
+        },
+        {
+          "id": "commercialIntegrityReview",
+          "type": "TASK",
+          "label": "Validar integridade comercial",
+          "owner": "Têmis",
+          "description": "Reutiliza o parecer independente de Têmis da mesma preparação; divergência de anúncio, promessa, preço, checkout ou entrega bloqueia e retorna à origem.",
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW",
+          "reuseSubprocessActivityId": "commercialIntegrityReview",
+          "evidenceReuseVersion": "COMMERCIAL_REVIEW_REUSE_V1"
+        },
+        {
+          "id": "preflight",
+          "type": "TASK",
+          "label": "Executar homologação técnica do experimento",
+          "owner": "Backend",
+          "description": "Chama a homologação técnica para comprovar desktop, celular, compra simulada, acesso, entrega, falhas, eventos, segregação e limites, reutilizando evidências ainda vigentes.",
+          "subprocessCode": "experiment-homologation-activation"
+        },
+        {
+          "id": "decision",
+          "type": "GATEWAY",
+          "label": "Preparação, experiência, integridade, técnica e economia estão válidas?",
+          "owner": "Backend",
+          "description": "Qualquer reprovação ou mudança material bloqueia a ativação e preserva a causa e a atividade responsável."
+        },
+        {
+          "id": "authorization",
+          "type": "TASK",
+          "label": "Autorizar ativação, orçamento e janela",
+          "owner": "Operador humano",
+          "description": "Aprova explicitamente a versão, canais, teto financeiro, período e condições de parada; nenhum gate técnico concede gasto."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Ativação autorizada",
+          "owner": "Backend",
+          "description": "O Processo 6 executa a operação; RUNNING depende da confirmação externa e dos gates de publicação."
+        }
+      ],
+      "flows": [
+        {
+          "id": "prepare-by-type",
+          "from": "start",
+          "to": "commercialPreparation"
+        },
+        {
+          "id": "reuse-psique",
+          "from": "commercialPreparation",
+          "to": "humanExperienceReview"
+        },
+        {
+          "id": "reuse-themis",
+          "from": "humanExperienceReview",
+          "to": "commercialIntegrityReview"
+        },
+        {
+          "id": "technical-homologation",
+          "from": "commercialIntegrityReview",
+          "to": "preflight"
+        },
+        {
+          "id": "commercial-gate",
+          "from": "preflight",
+          "to": "decision"
+        },
+        {
+          "id": "approved",
+          "from": "decision",
+          "to": "authorization",
+          "label": "Todos os gates vigentes"
+        },
+        {
+          "id": "authorized",
+          "from": "authorization",
+          "to": "end"
+        },
+        {
+          "id": "rework-preparation",
+          "from": "decision",
+          "to": "commercialPreparation",
+          "label": "Corrigir causa na preparação",
+          "kind": "REWORK"
+        },
+        {
+          "id": "rework-experience",
+          "from": "decision",
+          "to": "humanExperienceReview",
+          "label": "Renovar experiência afetada",
+          "kind": "REWORK"
+        },
+        {
+          "id": "rework-integrity",
+          "from": "decision",
+          "to": "commercialIntegrityReview",
+          "label": "Renovar integridade afetada",
+          "kind": "REWORK"
+        },
+        {
+          "id": "rework-technical",
+          "from": "decision",
+          "to": "preflight",
+          "label": "Renovar homologação afetada",
+          "kind": "REWORK"
+        }
+      ]
+    }
+  }
+]

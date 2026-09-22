@@ -142,15 +142,12 @@ public class PdeAgentValidationGateActivityExecutor
     this.clock = clock;
   }
 
-  /** Reconhece somente o gate backend da versão com retrabalho funcional explícito. */
+  /** Reconhece o gate backend em revisões compatíveis do contrato de retrabalho funcional. */
   @Override
   public boolean supports(
       BusinessProcessDefinition process, BusinessProcessActivityDefinition activityDefinition) {
-    return process != null
-        && activityDefinition != null
-        && PROCESS_CODE.equals(process.getProcessCode())
-        && process.getVersionNumber() != null
-        && process.getVersionNumber() == PdeAgentValidationReworkReadinessProvider.PROCESS_VERSION
+    return activityDefinition != null
+        && PdeAgentValidationProcessContract.supports(process, json)
         && ACTIVITY_ID.equals(activityDefinition.getActivityId());
   }
 

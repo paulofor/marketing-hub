@@ -3,6 +3,8 @@ name: Validação Liquibase MySQL 5.7
 on:
   pull_request:
     paths:
+      - "infra/testing/pde-commercial-principles/**"
+      - "backend/ads-service/src/test/java/com/marketinghub/businessprocess/PdeCommercialPrinciplesMysql57Test.java"
       - "infra/testing/catalogo-vivo/**"
       - "backend/ads-service/src/main/java/com/marketinghub/catalogovivo/**"
       - "backend/ads-service/src/main/java/com/marketinghub/repository/jdbc/catalogovivo/**"
@@ -94,6 +96,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-pde-commercial-principles:
+    name: Critérios comerciais PDE com MySQL 5.7
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: backend/ads-service/pom.xml
+      - name: Validar critérios, versões, histórico e rollback
+        env:
+          PDE_PRINCIPLES_COMPOSE_PROJECT: principles-${{ github.run_id }}-${{ github.run_attempt }}
+        run: python3 infra/testing/pde-commercial-principles/run-mysql.py
+      - name: Preservar resultados da homologação
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pde-commercial-principles-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            backend/ads-service/target/surefire-reports/*PdeCommercialPrinciples*
+            backend/ads-service/target/principles/
+          if-no-files-found: warn
+
   validate-catalogo-vivo-opala:
     name: Catálogo Vivo Opala com MySQL 5.7
     runs-on: ubuntu-latest

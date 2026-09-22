@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
-/** Responsabilidade: comprovar o gate v8 sem fabricar leitura, venda ou autorização de mídia. */
+/** Comprova o gate e suas revisões compatíveis sem fabricar venda ou autorização de mídia. */
 class PdeAgentValidationGateActivityExecutorTest {
   private static final Instant NOW = Instant.parse("2026-09-06T12:00:00Z");
   private static final String SOURCE = "product:10@agent-validation-v1";
@@ -129,9 +129,17 @@ class PdeAgentValidationGateActivityExecutorTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
   }
 
-  /** Libera somente comunicação em STOP e preserva mercado, pagamento e mídia como pendentes. */
-  @Test
-  void approvesCompleteAgentValidationWithoutCommercialSideEffects() throws Exception {
+  /** Libera somente comunicação em revisões compatíveis e preserva mercado, pagamento e mídia. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(ints = {8, 9, 42})
+  void approvesCompleteAgentValidationWithoutCommercialSideEffects(int version) throws Exception {
+    process.setVersionNumber(version);
+    for (var source :
+        json.readTree(
+            java.nio.file.Path.of("../../infra/testing/pde-commercial-principles/sources.json")
+                .toFile()))
+      if (process.getProcessCode().equals(source.path("processCode").asText()))
+        process.setDiagramJson(source.path("diagram").toString());
     var readiness = executor.readiness(process, gate, product, SOURCE);
     var result = executor.execute(process, gate, product, SOURCE);
 
@@ -303,7 +311,7 @@ class PdeAgentValidationGateActivityExecutorTest {
 
   /** Impede que uma versão anterior reutilize silenciosamente o executor e o contrato do v8. */
   @Test
-  void supportsOnlyPublishedVersionEightContract() {
+  void preservesVersionEightAndRejectsPreviousContracts() {
     assertThat(executor.supports(process, gate)).isTrue();
 
     process.setVersionNumber(7);

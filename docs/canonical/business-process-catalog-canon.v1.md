@@ -356,6 +356,16 @@ As versões publicadas anteriores e suas tarefas permanecem imutáveis.
 
 ### Modelo operacional explícito
 
+**Critérios comerciais — 22/09/2026:** a cadeia v18 detalha 29 objetivos com entrega,
+aceite e medição para os cinco princípios definidos em
+`cadeia-produtos-pde-canon.v1.md`: desejo reconhecido, primeiro passo fácil, prova de valor,
+continuidade paga e repetição com margem. Os objetivos chegam às tarefas pelo contrato BPM
+existente; não há novo executor/gate automático por editar o texto. A revisão preserva
+topologia e demais metadados. Excepcionalmente, as definições anteriores continuam publicadas
+para sustentar referências em curso sem ficha fixada, seguindo a convivência já existente
+nas cadeias v14–v17. Novos trabalhos selecionam a versão mais recente; não reclassificar
+aprovações antigas nem migrar vínculos de produtos, tarefas ou ciclos automaticamente.
+
 O catálogo e a execução adotam três níveis distintos e persistidos:
 
 1. **Atividade:** definição versionada do trabalho dentro de uma versão de processo. Preserva o

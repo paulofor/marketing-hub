@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-feedback-visual-agente-autocorrecao",
+  "collection": "video",
+  "title": "Fechar o loop do videomaker com revisor audiovisual open-weight e tool-calling",
+  "finding": "A Xiaomi lançou MiMo-V2.6-Pro-RL e Flash-RL com pesos MIT, entrada nativa de texto, imagem, vídeo e áudio, contexto de 1M tokens e tool calling, além de publicar mini-harnesses e ambientes de reinforcement learning.",
+  "mechanism": "Um avaliador audiovisual separado do renderer pode assistir e ouvir o rough cut, confrontar o material com briefing e regras, decidir a correção e chamar ferramentas. Com pesos permissivos, essa camada pode ser fixada por versão e, em infraestrutura adequada, auto-hospedada.",
+  "commercialApplication": "No videomaker do Marketing Hub, usar uma camada de revisão audiovisual versionada para validar continuidade, claims, CTA, áudio, legendas e fidelidade do produto antes do gate humano, acionando apenas a correção localizada necessária.",
+  "evidenceStrength": "Alta para licença, pesos, modalidades, contexto, tool calling, disponibilidade e preços, confirmados por Xiaomi e Hugging Face; moderada para qualidade relativa porque benchmarks de lançamento ainda precisam de reprodução independente no workload de vídeo.",
+  "publishedOn": "2026-09-22",
+  "validUntil": "2026-12-21",
+  "experimentHypothesis": "Um revisor audiovisual open-weight ou API compatível, separado do renderer e aplicado antes do gate humano, reduzirá defeitos tardios e regenerações sem aumentar de forma desproporcional latência, falsos positivos e custo total.",
+  "risks": "Modelos multimodais podem aprovar erros ou gerar falsos alertas; tool-calling incorreto pode alterar partes aprovadas; self-hosting exige GPU e operação; licença do modelo não resolve direitos sobre mídia, voz, marca ou pessoas processadas.",
+  "limits": "MiMo-V2.6 retorna texto, não vídeo final. Os checkpoints Pro e Flash são grandes demais para a VPS atual do Marketing Hub e self-hosting requer infraestrutura substancial; impacto em qualidade e conversão deve ser validado experimentalmente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-22-mimo-v26-feedback-audiovisual-open-weight.md",
+  "sourceTitle": "Fonte revisada — Xiaomi MiMo-V2.6 como revisor audiovisual open-weight",
+  "sourceSha256": "9566f2affa1b0d3656312fab666e49746a5d566bdfcc601e06a8b872faa402c4"
+}

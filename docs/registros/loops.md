@@ -6460,17 +6460,23 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 
 - **Histórico confirmado:** a retomada #2 de Capella preservava R$ 20/dia e teto total de R$ 125,
   porém falhou ao escrever `spend_cap=12500` na campanha. A conta Meta informa mínimo nativo de
-  `30000` centavos; a campanha permaneceu pausada e nenhum novo gasto foi registrado.
-- **Causa-raiz:** o worker assumia que todo teto autorizado era aceito como `spend_cap` de campanha
-  e não consultava `min_campaign_group_spend_cap`. O callback descartava ainda o corpo oficial do
-  erro, reduzindo a evidência diagnóstica.
-- **Alternativas avaliadas:** elevar para R$ 300 violaria a autorização; confiar só na pausa
-  periódica poderia ultrapassar R$ 125; aplicar `lifetime_spend_cap` ao único ad set, mantendo seu
-  `daily_budget`, conserva ritmo e limite nativo. A terceira foi adotada, conforme o contrato
-  tipado dos SDKs oficiais da Meta.
-- **Prevenção:** o worker escolhe a camada do teto antes de escrever, relê orçamento, teto, prazo e
-  estado, falha fechado em divergência e registra status/código/subcódigo/corpo da Graph API. A
-  compensação consulta primeiro o estado para não repetir uma pausa já confirmada.
+  `30000` centavos. A correção intermediária tentou `daily_budget=2000` e
+  `lifetime_spend_cap=12500` no mesmo ad set; a retomada #3 foi rejeitada com código `100`,
+  subcódigo `1885624`, porque limite de gasto e orçamento são mutuamente exclusivos. A campanha
+  permaneceu pausada e nenhum novo gasto foi registrado.
+- **Causa-raiz:** consultar `min_campaign_group_spend_cap` resolveu somente a primeira restrição.
+  O contrato confundiu a existência tipada de `lifetime_spend_cap` no SDK com compatibilidade
+  desse campo com `daily_budget` no mesmo objeto. A Meta também rejeitou, em validação sem efeito,
+  converter o conjunto recorrente diretamente para `lifetime_budget` (`100/1885257`).
+- **Alternativas avaliadas:** elevar para R$ 300 violaria a autorização; converter o conjunto para
+  orçamento vitalício foi rejeitado pela API e perderia o ritmo diário; migrar R$ 20/dia para a
+  campanha pausada e aplicar R$ 125 como `lifetime_spend_cap` no único conjunto sem orçamento
+  próprio preserva as duas travas. A terceira foi adotada após a Meta aceitar em `validate_only` a
+  atualização do diário na campanha.
+- **Prevenção:** o worker nunca combina orçamento e teto vitalício no mesmo ad set. Ele executa a
+  migração com a campanha pausada, relê orçamento nos dois níveis, teto, prazo e estados, aceita
+  retry de uma migração parcial segura e falha fechado em divergência. Backend rejeita evidência do
+  modo intermediário incompatível; status, código, subcódigo e corpo oficial permanecem auditáveis.
 
 ## LOOP-QUARTZO-HOMOLOGACAO-EXIGE-SLOT-OPALA — 20/09/2026
 

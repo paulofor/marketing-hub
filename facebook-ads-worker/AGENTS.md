@@ -2,7 +2,7 @@
 
 - O objetivo `SALES` explícito prevalece sobre a existência de degustação/recompensa gratuita, inclusive no PDE; manter `OUTCOME_SALES` e conversão `PURCHASE` com pixel obrigatório.
 - Quando a Meta rejeitar `spend_cap` exclusivamente com HTTP 400/código 100/subcódigo 2446307, aplicar o fallback de orçamento vitalício de um único ad set descrito em `docs/canonical/facebook-campaign-publication-canon.v1.md`: sem elevar teto, sem acumular dias perdidos, sem CBO, com releitura do orçamento e término na Meta antes de criar anúncios. Não remover a trava para outros erros.
-- Em retomada de um único ad set diário, consultar `min_campaign_group_spend_cap`; quando o teto total autorizado for menor que esse mínimo, preservar `daily_budget` e aplicar `lifetime_spend_cap` no próprio ad set. Exigir releitura exata de `daily_budget`, `lifetime_spend_cap`, término e estado antes de ativar a campanha; nunca elevar o teto para satisfazer o mínimo da Meta.
+- Em retomada de um único ad set diário, consultar `min_campaign_group_spend_cap`; quando o teto total autorizado for menor que esse mínimo, nunca combine `daily_budget` e `lifetime_spend_cap` no mesmo ad set. Com a campanha pausada, migre o `daily_budget` autorizado para a campanha, zere o orçamento próprio do único ad set e aplique nele `lifetime_spend_cap` exatamente igual ao teto. Exija releitura exata dos dois níveis, término e estado antes de ativar; retries devem concluir com segurança uma migração parcial e nunca elevar o teto para satisfazer o mínimo da Meta.
 
 - 🚨 **Muito importante:** qualquer alteração neste módulo deve ser refletida em todos os arquivos `.md` deste diretório. Mantenha a documentação atualizada.
 - Este projeto utiliza o modelo de dados definido no **backend**.
@@ -81,8 +81,10 @@
   `claim` e reportar por `result`. Preservar a identidade da campanha e usar teto acumulado, incluindo
   gasto anterior, com releitura nativa de orçamento e prazo antes da ativação. A fila não entrega
   autorização antes da data inicial. Conjunto diário mantém `daily_budget` e recebe proteção por
-  `spend_cap` da campanha quando o teto atende ao mínimo da conta; abaixo desse mínimo, o único
-  conjunto recebe `lifetime_spend_cap` igual ao teto autorizado. Conjunto vitalício mantém seu modo.
+  `spend_cap` da campanha quando o teto atende ao mínimo da conta; abaixo desse mínimo, a retomada
+  migra o diário para a campanha e o único conjunto sem orçamento próprio recebe
+  `lifetime_spend_cap` igual ao teto autorizado. Essa exceção de compatibilidade não transforma a
+  publicação inicial em CBO. Conjunto vitalício mantém seu modo.
   Limites sem resultado e sem compra, além da meta de compras, vêm do backend e não alteram a
   política dos demais experimentos. Gasto indisponível ou readback divergente bloqueia a retomada,
   sem inferir zero, e a falha preserva a resposta oficial sem credencial.

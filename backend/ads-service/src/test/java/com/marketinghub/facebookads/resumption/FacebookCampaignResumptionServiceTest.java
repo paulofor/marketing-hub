@@ -110,9 +110,9 @@ class FacebookCampaignResumptionServiceTest {
     verify(metrics, never()).save(any());
   }
 
-  /** Aceita o teto no único conjunto diário quando o mínimo da campanha é maior. */
+  /** Aceita diário na campanha e teto no único conjunto quando o mínimo da conta é maior. */
   @Test
-  void completesWithAdSetLifetimeCapBelowCampaignMinimum() {
+  void completesWithCampaignDailyBudgetAndAdSetLifetimeCapBelowMinimum() {
     service.request(91L, input());
     var claim = service.claim(1L);
     var evidence =
@@ -120,10 +120,13 @@ class FacebookCampaignResumptionServiceTest {
             .put("campaignId", "campaign")
             .put("campaignStatus", "ACTIVE")
             .put("adSetId", "adset")
-            .put("budgetMode", "DAILY_WITH_ADSET_LIFETIME_CAP")
+            .put("budgetMode", "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP")
             .put("adSetLifetimeSpendCapMinor", 15000)
             .put("accountMinimumCampaignSpendCapMinor", 30000)
             .put("dailyBudgetMinor", 2000)
+            .put("campaignDailyBudgetMinor", 2000)
+            .put("adSetDailyBudgetMinor", 0)
+            .put("campaignSpendCapMinor", 0)
             .put("spend", new BigDecimal("27.45"))
             .put("startDate", LocalDate.now(ZoneId.of("America/Sao_Paulo")).toString())
             .put("endDate", end.toString());
@@ -136,7 +139,7 @@ class FacebookCampaignResumptionServiceTest {
     assertThat(e.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
   }
 
-  /** Recusa o fallback quando o mínimo informado não excede o teto autorizado. */
+  /** Recusa a migração quando o mínimo informado não excede o teto autorizado. */
   @Test
   void rejectsUnjustifiedAdSetLifetimeCapFallback() {
     service.request(91L, input());
@@ -146,9 +149,38 @@ class FacebookCampaignResumptionServiceTest {
             .put("campaignId", "campaign")
             .put("campaignStatus", "ACTIVE")
             .put("adSetId", "adset")
-            .put("budgetMode", "DAILY_WITH_ADSET_LIFETIME_CAP")
+            .put("budgetMode", "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP")
             .put("adSetLifetimeSpendCapMinor", 15000)
             .put("accountMinimumCampaignSpendCapMinor", 10000)
+            .put("dailyBudgetMinor", 2000)
+            .put("campaignDailyBudgetMinor", 2000)
+            .put("adSetDailyBudgetMinor", 0)
+            .put("campaignSpendCapMinor", 0)
+            .put("spend", new BigDecimal("27.45"))
+            .put("startDate", LocalDate.now(ZoneId.of("America/Sao_Paulo")).toString())
+            .put("endDate", end.toString());
+
+    assertThatThrownBy(
+            () ->
+                service.result(
+                    1L, new ResumeCampaignResult(claim.leaseToken(), true, null, evidence)))
+        .hasMessageContaining("não confirmou");
+    assertThat(e.getStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
+  }
+
+  /** Recusa orçamento e teto vitalício simultâneos no conjunto, incompatíveis na Meta. */
+  @Test
+  void rejectsDailyBudgetMixedWithAdSetLifetimeCap() {
+    service.request(91L, input());
+    var claim = service.claim(1L);
+    var evidence =
+        json.createObjectNode()
+            .put("campaignId", "campaign")
+            .put("campaignStatus", "ACTIVE")
+            .put("adSetId", "adset")
+            .put("budgetMode", "DAILY_WITH_ADSET_LIFETIME_CAP")
+            .put("adSetLifetimeSpendCapMinor", 15000)
+            .put("accountMinimumCampaignSpendCapMinor", 30000)
             .put("dailyBudgetMinor", 2000)
             .put("spend", new BigDecimal("27.45"))
             .put("startDate", LocalDate.now(ZoneId.of("America/Sao_Paulo")).toString())

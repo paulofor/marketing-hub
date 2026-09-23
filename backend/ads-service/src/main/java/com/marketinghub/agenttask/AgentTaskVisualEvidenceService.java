@@ -274,24 +274,28 @@ public class AgentTaskVisualEvidenceService {
         bytes);
   }
 
-  /** Confirma a landing e, somente na segunda página da revisão Quartzo, o checkout oficial. */
+  /** Confirma a experiência e, na segunda página das revisões comerciais, o checkout oficial. */
   private void validateFrozenTarget(AgentTask task, String sourceUrl, int pageNumber) {
     String processCode =
         task.getProcessDefinition() == null ? null : task.getProcessDefinition().getProcessCode();
-    boolean quartzoReview =
-        "quartzo-commercial-preparation-v1".equals(processCode)
+    boolean commercialReview =
+        processCode != null
+            && java.util.Set.of(
+                    "quartzo-commercial-preparation-v1", "safira-commercial-preparation-v1")
+                .contains(processCode)
             && "humanExperienceReview".equals(task.getProcessActivityId())
             && "customer-agent".equals(task.getAssignedAgent().getAgentKey());
-    if (quartzoReview && pageNumber > 2) {
+    if (commercialReview && pageNumber > 2) {
       throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "A revisão Quartzo admite a landing e o checkout oficiais.");
+          HttpStatus.CONFLICT,
+          "A revisão comercial admite somente a experiência e o checkout oficiais.");
     }
     String expectedUrl =
         targetContextProvider
             .resolve(task.getSourceReference(), processCode)
             .map(
                 target ->
-                    quartzoReview && pageNumber == 2
+                    commercialReview && pageNumber == 2
                         ? target.commercialCheckoutUrl()
                         : target.publicUrl())
             .filter(value -> !value.isBlank())

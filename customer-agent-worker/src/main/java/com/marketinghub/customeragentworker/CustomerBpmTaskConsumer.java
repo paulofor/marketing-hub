@@ -44,6 +44,7 @@ public class CustomerBpmTaskConsumer {
           new BpmContract("pde-commercial-homologation-activation", "humanExperienceReview"),
           new BpmContract("opala-commercial-preparation-v1", "humanExperienceReview"),
           new BpmContract("quartzo-commercial-preparation-v1", "humanExperienceReview"),
+          new BpmContract("safira-commercial-preparation-v1", "humanExperienceReview"),
           new BpmContract("pde-construction-approval", "humanExperienceReview"),
           new BpmContract("pde-construction-approval", "psiqueAdherent"),
           new BpmContract("pde-construction-approval", "psiqueRecovery"),
@@ -308,6 +309,7 @@ public class CustomerBpmTaskConsumer {
             "pde-commercial-homologation-activation",
             "opala-commercial-preparation-v1",
             "quartzo-commercial-preparation-v1",
+            "safira-commercial-preparation-v1",
             "pde-construction-approval")
         .contains(processCode);
   }
@@ -365,18 +367,24 @@ public class CustomerBpmTaskConsumer {
     }
   }
 
-  /** Inclui o checkout oficial Quartzo na leitura visual sem executar pagamento ou formulário. */
+  /** Inclui o checkout oficial de Quartzo ou Safira sem executar pagamento nem formulário. */
   List<String> additionalVisualUrls(Map<String, Object> task) throws IOException {
-    if (!"quartzo-commercial-preparation-v1".equals(processCode(task))) return List.of();
+    String processCode = processCode(task);
+    if (!List.of("quartzo-commercial-preparation-v1", "safira-commercial-preparation-v1")
+        .contains(processCode)) return List.of();
+    String contextField =
+        "safira-commercial-preparation-v1".equals(processCode)
+            ? "safiraCommercial"
+            : "quartzoCommercial";
     String checkout =
         json.readTree(String.valueOf(task.get("processContextJson")))
-            .path("quartzoCommercial")
+            .path(contextField)
             .path("checkoutUrl")
             .asText("")
             .trim();
     if (checkout.isBlank())
       throw new BpmVisualEvidenceRunner.VisualEvidenceException(
-          "Quartzo sem checkout oficial para conferência visual antes do parecer.");
+          "Oferta sem checkout oficial para conferência visual antes do parecer.");
     return List.of(checkout);
   }
 
@@ -412,7 +420,10 @@ public class CustomerBpmTaskConsumer {
   /** Resolve a identidade visual exigida pelo tipo antes de consumir a revisão de Psique. */
   PdeExperienceEvidenceLoader.LiveVisualContract liveVisualContract(Map<String, Object> task)
       throws IOException {
-    if (List.of("pde-commercial-homologation-activation", "opala-commercial-preparation-v1")
+    if (List.of(
+            "pde-commercial-homologation-activation",
+            "opala-commercial-preparation-v1",
+            "safira-commercial-preparation-v1")
         .contains(processCode(task))) {
       return pdeExperienceEvidenceLoader.loadLiveVisualContract(task.get("taskTarget"));
     }
@@ -1131,6 +1142,7 @@ public class CustomerBpmTaskConsumer {
     return switch (processCode) {
       case "quartzo-commercial-preparation-v1" ->
           "prompts/quartzo-commercial/v3/customer-review.md";
+      case "safira-commercial-preparation-v1" -> "prompts/safira-commercial/v1/customer-review.md";
       case "creative-production-approval" -> "prompts/bpm/v3/creative-customer-review.md";
       case "pde-commercial-homologation-activation", "opala-commercial-preparation-v1" ->
           "prompts/bpm/v3/pde-commercial-homologation-customer-review.md";
@@ -1144,6 +1156,8 @@ public class CustomerBpmTaskConsumer {
   static String schemaResourceFor(String processCode) {
     return switch (processCode) {
       case "quartzo-commercial-preparation-v1" ->
+          "prompts/quartzo-commercial/v1/customer-review-schema.json";
+      case "safira-commercial-preparation-v1" ->
           "prompts/quartzo-commercial/v1/customer-review-schema.json";
       case "creative-production-approval" -> "prompts/bpm/v3/creative-customer-review-schema.json";
       case "pde-commercial-homologation-activation", "opala-commercial-preparation-v1" ->
@@ -1802,6 +1816,10 @@ public class CustomerBpmTaskConsumer {
       evidence.put(
           "quartzoScope",
           json.readTree(String.valueOf(task.get("processContextJson"))).path("quartzoCommercial"));
+    if ("safira-commercial-preparation-v1".equals(processCode(task)))
+      evidence.put(
+          "safiraScope",
+          json.readTree(String.valueOf(task.get("processContextJson"))).path("safiraCommercial"));
     return json.writeValueAsString(evidence);
   }
 

@@ -117,6 +117,22 @@ Alternativas consideradas: ampliar as condições de Opala (menor início, maior
 misturar contratos); criar motor separado (maior custo e duplicação); especializar Quartzo
 no BPM existente (contratos claros e reaproveitamento). Escolhida a terceira.
 
+## Preparação comercial Safira — decisão de 23/09/2026
+
+O tipo `AI_PRODUCT` (Safira) usa `safira-commercial-preparation-v1` no Processo 5 v9. O percurso
+exige experimento de venda explícito, subtipo persistido, experiência pública do mesmo experimento,
+demonstração inicial útil, diferença paga clara, checkout, entrega, suporte, reembolso, eventos,
+plano comercial, economia completa e revisões independentes. Custos de IA, infraestrutura,
+entrega, suporte, mídia, taxas e reembolsos devem permanecer cobertos nos cenários conservador,
+esperado e de uso intenso.
+
+A validação privada multiagente comprova somente a referência interna do produto. Ela não é cliente,
+entrevista, aplicação, satisfação, venda ou autorização e não pode suprir a jornada pública. O
+preflight posterior vincula slot, SHA-256 e fingerprint e comprova compra simulada, acesso, entrega,
+falhas e eventos. Somente a decisão humana do Processo 5 autoriza versão, canal, teto, janela e
+paradas. Essa separação evita vender uma demonstração ainda sem contrato operacional e evita repetir
+chamadas pagas quando apenas uma evidência material mudou.
+
 ## Gestão das versões PDE Opala — decisão de 16/09/2026
 
 Todo produto oficialmente vinculado ao tipo `PDE` (nome interno Opala) deve oferecer no card do

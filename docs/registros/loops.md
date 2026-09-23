@@ -1,5 +1,26 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-SAFIRA-SEM-PERCURSO-COMERCIAL — validação privada não inicia o Processo 5
+
+- **Data e evidência:** em 23/09/2026, Mira #10 concluiu o Processo 4 por referência privada
+  `product:10@agent-validation-v1`, mas o Processo 5 v8 ficou indisponível: não havia experimento
+  comercial e o roteador conhecia somente Opala e Quartzo. Criar um experimento sem contrato ainda
+  deixaria Psique, Têmis e preflight sem identidade comum.
+- **Causa-raiz:** `AI_PRODUCT` possuía definição de tipo e validação interna, mas não um percurso
+  operacional entre oferta pública, economia, revisões, preflight e autorização. Reutilizar a prova
+  privada como venda ocultaria ausência de cliente, canal, custos e entrega comercial.
+- **Alternativas avaliadas:** promover a prova privada é rápido e falso; tratar Safira como Opala
+  mistura contratos; criar um subprocesso tipado reaproveitando o motor BPM exige mais trabalho,
+  mas mantém evidências e custos corretos. Foi escolhida a terceira opção.
+- **Correção sistêmica:** Processo 5 v9/cadeia v20 roteiam `AI_PRODUCT` para
+  `safira-commercial-preparation-v1`. Jornada, economia, Psique, Têmis e consolidação usam o mesmo
+  experimento, slot, SHA-256 e fingerprint. O preflight recusa outra publicação e 5.5 permanece
+  decisão humana de gasto.
+- **Prevenção:** testes cobrem ausência de experimento/subtipo, versão divergente, prova privada,
+  mudança de slot, callback de outro escopo, idempotência, reutilização no pai e ausência de efeitos
+  comerciais. Matriz em
+  [homologação Safira](../homologacao/safira-commercial-preparation-v1.md).
+
 ## LOOP-PDE-PREFLIGHT-REUTILIZA-PUBLICACAO-ANTIGA — estado verde sem versão vigente
 
 - **Data e evidência:** em 22/09/2026, Capella/experimento #88 possuía o run produtivo #1 em

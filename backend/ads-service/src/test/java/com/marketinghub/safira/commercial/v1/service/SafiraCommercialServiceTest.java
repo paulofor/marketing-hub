@@ -1,0 +1,202 @@
+package com.marketinghub.safira.commercial.v1.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskReviewSnapshot;
+import com.marketinghub.agenttask.BusinessProcessActivityInstance;
+import com.marketinghub.agenttask.CompleteAgentTaskRequest;
+import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
+import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorReadiness;
+import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorService;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.product.Product;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+/** Responsabilidade: testar a orquestração idempotente e os callbacks comerciais de Safira. */
+class SafiraCommercialServiceTest {
+  private final ObjectMapper json = new ObjectMapper();
+  private final SafiraCommercialContext context = mock(SafiraCommercialContext.class);
+  private final SafiraCommercialChecks checks = mock(SafiraCommercialChecks.class);
+  private final BusinessProcessActivityInstanceRepository instances =
+      mock(BusinessProcessActivityInstanceRepository.class);
+  private final BusinessProcessActivityDefinitionRepository definitions =
+      mock(BusinessProcessActivityDefinitionRepository.class);
+  private final BusinessProcessDefinitionRepository processes =
+      mock(BusinessProcessDefinitionRepository.class);
+  private final AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+  private final ProductProcessActivityPredecessorService predecessors =
+      mock(ProductProcessActivityPredecessorService.class);
+  private final SafiraCommercialService service =
+      new SafiraCommercialService(
+          context, checks, instances, definitions, processes, tasks, predecessors);
+  private final Map<Long, BusinessProcessActivityInstance> saved = new HashMap<>();
+  private final Map<String, BusinessProcessActivityDefinition> activities = new LinkedHashMap<>();
+  private final Map<String, AgentTaskReviewSnapshot> reviews = new HashMap<>();
+  private final Product product = Product.builder().id(10L).build();
+  private final Experiment experiment = new Experiment();
+  private final BusinessProcessDefinition process = new BusinessProcessDefinition();
+  private ObjectNode snapshot;
+
+  /** Monta uma candidata sintética completa, sem depender de Mira ou de IDs de produção. */
+  @BeforeEach
+  void setup() throws Exception {
+    experiment.setId(301L);
+    experiment.setProduct(product);
+    process.setId(90L);
+    process.setProcessCode(SafiraCommercialContext.CODE);
+    process.setVersionNumber(1);
+    process.setStatus("PUBLISHED");
+    var scope =
+        new SafiraCommercialContext.Scope(experiment, product, "public-v1", null, null, null, null);
+    when(context.scope(anyString(), any(), any(Boolean.class))).thenReturn(scope);
+    when(context.read(any())).thenAnswer(call -> json.readTree(call.getArgument(0, String.class)));
+    snapshot =
+        (ObjectNode)
+            json.readTree(
+                """
+                {"productId":10,"experimentId":301,"productVersion":"public-v1",
+                 "fingerprint":"safira-frozen","financialPlan":{"revision":1},
+                 "experienceHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+                """);
+    when(context.snapshot("experiment:301")).thenAnswer(call -> snapshot.deepCopy());
+    when(predecessors.readiness(any(), any(), anyString()))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "ok"));
+
+    for (String step :
+        List.of(
+            "journey",
+            "economics",
+            "humanExperienceReview",
+            "commercialIntegrityReview",
+            "ready")) {
+      var definition = new BusinessProcessActivityDefinition();
+      definition.setId((long) activities.size() + 1);
+      definition.setActivityId(step);
+      definition.setProcessDefinition(process);
+      activities.put(step, definition);
+      when(definitions.findByProcessDefinitionIdAndActivityId(90L, step))
+          .thenReturn(Optional.of(definition));
+    }
+    when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            anyLong(), eq("experiment:301")))
+        .thenAnswer(call -> Optional.ofNullable(saved.get(call.getArgument(0, Long.class))));
+    when(instances.findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            anyLong(), eq("experiment:301")))
+        .thenAnswer(call -> Optional.ofNullable(saved.get(call.getArgument(0, Long.class))));
+    when(instances.saveAndFlush(any()))
+        .thenAnswer(
+            call -> {
+              BusinessProcessActivityInstance instance = call.getArgument(0);
+              saved.put(instance.getActivityDefinition().getId(), instance);
+              return instance;
+            });
+    when(tasks.findLatestReviewSnapshots(eq(90L), eq("experiment:301"), anyString(), any()))
+        .thenAnswer(
+            call -> {
+              var review = reviews.get(call.getArgument(2, String.class));
+              return review == null ? List.of() : List.of(review);
+            });
+    when(processes.findByProcessCodeAndVersionNumber(SafiraCommercialContext.CODE, 1))
+        .thenReturn(Optional.of(process));
+  }
+
+  /** Conclui preparação, revisões e consolidação uma vez, sem duplicar ocorrências. */
+  @Test
+  void completesExactCandidateIdempotently() throws Exception {
+    service.execute(process, activities.get("journey"), product, "experiment:301");
+    service.execute(process, activities.get("economics"), product, "experiment:301");
+    completeReview("humanExperienceReview");
+    completeReview("commercialIntegrityReview");
+
+    assertThat(
+            service
+                .execute(process, activities.get("ready"), product, "experiment:301")
+                .objectiveAchieved())
+        .isTrue();
+    assertThat(service.completed(product, "experiment:301")).isTrue();
+    service.execute(process, activities.get("ready"), product, "experiment:301");
+
+    assertThat(saved).hasSize(3);
+    assertThat(saved.get(activities.get("ready").getId()).getOccurrenceNumber()).isEqualTo(1);
+  }
+
+  /** Recusa parecer incompleto ou vinculado a outra fotografia comercial. */
+  @Test
+  void rejectsIncompleteOrStaleReview() throws Exception {
+    service.execute(process, activities.get("journey"), product, "experiment:301");
+    service.execute(process, activities.get("economics"), product, "experiment:301");
+    var task = task("humanExperienceReview");
+    var approved = approved();
+    var incomplete = (ObjectNode) json.readTree(approved.resultJson());
+    incomplete.withArray("gateChecks").remove(0);
+    assertThatThrownBy(
+            () ->
+                service.apply(
+                    task,
+                    new CompleteAgentTaskRequest(incomplete.toString(), approved.evidenceJson())))
+        .hasMessageContaining("omitiu");
+
+    snapshot.put("fingerprint", "changed-after-review");
+    assertThatThrownBy(() -> service.apply(task, approved)).hasMessageContaining("mudaram");
+  }
+
+  /** Persiste um parecer aprovado sintético como se tivesse retornado do agente responsável. */
+  private void completeReview(String activity) throws Exception {
+    var task = task(activity);
+    var request = approved();
+    service.apply(task, request);
+    reviews.put(
+        activity,
+        new AgentTaskReviewSnapshot(
+            task.getId(), "COMPLETED", request.evidenceJson(), request.resultJson()));
+  }
+
+  /** Cria uma tarefa Safira vinculada ao processo e à candidata sintética. */
+  private AgentTask task(String activity) {
+    var task = new AgentTask();
+    task.setId((long) reviews.size() + 1);
+    task.setProcessDefinition(process);
+    task.setProcessActivityId(activity);
+    task.setSourceReference("experiment:301");
+    return task;
+  }
+
+  /** Monta os dez gates obrigatórios com evidência verificável e escopo congelado. */
+  private CompleteAgentTaskRequest approved() {
+    var result = json.createObjectNode();
+    result.put("decision", "APPROVED");
+    result.putArray("requiredChanges");
+    result.putArray("evidence").add("experiência pública capturada");
+    var gates = result.putArray("gateChecks");
+    for (String gate : SafiraCommercialService.REVIEW_GATES)
+      gates
+          .addObject()
+          .put("gate", gate)
+          .put("status", "PASS")
+          .put("customerEvidence", "evidência " + gate);
+    var evidence = json.createObjectNode();
+    evidence.set("safiraScope", snapshot.deepCopy());
+    return new CompleteAgentTaskRequest(result.toString(), evidence.toString());
+  }
+}

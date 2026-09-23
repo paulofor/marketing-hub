@@ -41,6 +41,7 @@ public class CommercialBpmTaskConsumer {
           new BpmContract("pde-commercial-homologation-activation", "commercialIntegrityReview"),
           new BpmContract("opala-commercial-preparation-v1", "commercialIntegrityReview"),
           new BpmContract("quartzo-commercial-preparation-v1", "commercialIntegrityReview"),
+          new BpmContract("safira-commercial-preparation-v1", "commercialIntegrityReview"),
           new BpmContract("creative-production-approval", "commercial"),
           new BpmContract("landing-page-generation", "commercial"),
           new BpmContract("pde-construction-approval", "commercialIntegrityReview"));
@@ -451,6 +452,7 @@ public class CommercialBpmTaskConsumer {
     return switch (processCode) {
       case "quartzo-commercial-preparation-v1" ->
           "prompts/quartzo-commercial/v2/integrity-review.md";
+      case "safira-commercial-preparation-v1" -> "prompts/safira-commercial/v1/integrity-review.md";
       case "pde-commercial-homologation-activation", "opala-commercial-preparation-v1" ->
           "prompts/bpm/pde-commercial-homologation-independent-review.md";
       case "creative-production-approval" -> "prompts/bpm/creative-commercial-review.md";
@@ -463,6 +465,8 @@ public class CommercialBpmTaskConsumer {
   static String schemaResourceFor(String processCode) {
     return switch (processCode) {
       case "quartzo-commercial-preparation-v1" ->
+          "prompts/quartzo-commercial/v1/integrity-review-schema.json";
+      case "safira-commercial-preparation-v1" ->
           "prompts/quartzo-commercial/v1/integrity-review-schema.json";
       case "pde-commercial-homologation-activation", "opala-commercial-preparation-v1" ->
           "prompts/bpm/pde-commercial-homologation-independent-review-schema.json";
@@ -776,6 +780,10 @@ public class CommercialBpmTaskConsumer {
       evidence.put(
           "quartzoScope",
           json.readTree(String.valueOf(task.get("processContextJson"))).path("quartzoCommercial"));
+    if ("safira-commercial-preparation-v1".equals(processCode(task)))
+      evidence.put(
+          "safiraScope",
+          json.readTree(String.valueOf(task.get("processContextJson"))).path("safiraCommercial"));
     return json.writeValueAsString(evidence);
   }
 

@@ -33,6 +33,9 @@ public class PdeCommercialPreparationActivityExecutor
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialContext quartzoContext;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.safira.commercial.v1.service.SafiraCommercialContext safiraContext;
+
   /** Configura catálogo, ciclos e leitor do contrato de roteamento versionado. */
   public PdeCommercialPreparationActivityExecutor(
       BusinessProcessDefinitionRepository processes,
@@ -118,6 +121,37 @@ public class PdeCommercialPreparationActivityExecutor
           null,
           null,
           List.of(),
+          target.getId(),
+          url);
+    }
+    if (safiraContext != null && safiraContext.applies(product)) {
+      var scope = safiraContext.scope(sourceReference, product.getId(), true);
+      String url =
+          "/products/"
+              + product.getId()
+              + "/value-chain-history/processes/"
+              + target.getId()
+              + "/activities?sourceReference="
+              + java.net.URLEncoder.encode(
+                  sourceReference, java.nio.charset.StandardCharsets.UTF_8);
+      if (scope.cycleId() != null)
+        url += "&chainId=" + scope.chainId() + "&learningCycleId=" + scope.cycleId();
+      return new BackendProductProcessActivityReadiness(
+          true,
+          "Safira: experiência pública, oferta e economia do experimento selecionado.",
+          "Abrir subprocesso",
+          "Preparar a venda do Produto IA sem reusar a prova privada como evidência humana nem autorizar mídia.",
+          null,
+          null,
+          List.of(
+              requirement(
+                  "PRODUCT_TYPE", "Tipo cadastrado", true, productTypeCode, "Preserve o tipo."),
+              requirement(
+                  "TYPE_ROUTE",
+                  "Percurso do tipo",
+                  true,
+                  target.getProcessCode() + " v" + target.getVersionNumber(),
+                  "Execute somente este subprocesso.")),
           target.getId(),
           url);
     }

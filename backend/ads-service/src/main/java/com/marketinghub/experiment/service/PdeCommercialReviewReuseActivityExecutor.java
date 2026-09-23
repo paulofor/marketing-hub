@@ -57,6 +57,9 @@ public class PdeCommercialReviewReuseActivityExecutor
   private com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialService
       quartzoPreparation;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.safira.commercial.v1.service.SafiraCommercialService safiraPreparation;
+
   /** Reconhece somente os dois gates que declaram reutilização auditável na versão do processo. */
   @Override
   public boolean supports(
@@ -86,7 +89,7 @@ public class PdeCommercialReviewReuseActivityExecutor
               ? "Parecer vigente localizado no subprocesso; a reutilização não gera nova chamada paga."
               : predecessor.reason(),
           "Reutilizar parecer vigente",
-          "O backend referencia a tarefa original e registra custo incremental zero; qualquer mudança material invalida a prova no gate Opala.",
+          "O backend referencia a tarefa original e registra custo incremental zero; qualquer mudança material invalida a prova no gate do tipo.",
           null,
           null,
           List.of(
@@ -188,7 +191,15 @@ public class PdeCommercialReviewReuseActivityExecutor
   private ReusedReview proof(
       BusinessProcessActivityDefinition activity, Product product, String sourceReference) {
     BusinessProcessDefinition target;
-    if (quartzoPreparation != null
+    if (safiraPreparation != null
+        && product.getProductTypeDefinition() != null
+        && com.marketinghub.safira.commercial.v1.service.SafiraCommercialContext.TYPE.equals(
+            product.getProductTypeDefinition().getCode())) {
+      if (!safiraPreparation.completed(product, sourceReference))
+        throw new IllegalStateException(
+            "Conclua ou revalide a preparação Safira antes de reutilizar pareceres.");
+      target = safiraPreparation.target();
+    } else if (quartzoPreparation != null
         && product.getProductTypeDefinition() != null
         && com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialContext.TYPE.equals(
             product.getProductTypeDefinition().getCode())) {

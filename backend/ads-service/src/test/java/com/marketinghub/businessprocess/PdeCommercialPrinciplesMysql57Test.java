@@ -29,6 +29,8 @@ class PdeCommercialPrinciplesMysql57Test {
       "db/changelog/changesets/2026-09-22-pde-commercial-principles-v1.yaml";
   private static final String GAP_DEEPENING_CHANGE =
       "db/changelog/changesets/2026-09-23-product-discovery-gap-deepening-v1.yaml";
+  private static final String SAFIRA_CHANGE =
+      "db/changelog/changesets/2026-09-23-safira-commercial-preparation-v1.yaml";
   private final ObjectMapper mapper = new ObjectMapper();
 
   /** Aplica a revisão, recusa fontes inválidas e conserva toda evidência nas reaplicações. */
@@ -99,6 +101,7 @@ class PdeCommercialPrinciplesMysql57Test {
         assertThat(scalar(connection, "SELECT chain_definition_id FROM product"))
             .isEqualTo(productChain);
         verifyGapDeepeningMigration(host, productChain);
+        verifySafiraMigration(host, productChain);
         exportForBrowser(connection, sources);
       }
     }
@@ -150,6 +153,71 @@ class PdeCommercialPrinciplesMysql57Test {
         verifyGapDeepeningState(connection, productChain);
       }
     }
+  }
+
+  /** Versiona Processo 5 e cadeia sem promover a validação privada nem reescrever o histórico. */
+  private void verifySafiraMigration(String host, String productChain) throws Exception {
+    try (var connection = openConnection(host)) {
+      String historicalParent =
+          scalar(
+              connection,
+              "SELECT diagram_json FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=8");
+      var database =
+          DatabaseFactory.getInstance()
+              .findCorrectDatabaseImplementation(new JdbcConnection(connection));
+      try (var migration =
+          new Liquibase(SAFIRA_CHANGE, new ClassLoaderResourceAccessor(), database)) {
+        migration.update("");
+        verifySafiraState(connection, productChain, historicalParent);
+        String activityCount =
+            scalar(
+                connection,
+                "SELECT COUNT(*) FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id WHERE process.process_code IN ('safira-commercial-preparation-v1','pde-commercial-homologation-activation') AND process.version_number IN (1,9)");
+        migration.update("");
+        assertThat(
+                scalar(
+                    connection,
+                    "SELECT COUNT(*) FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id WHERE process.process_code IN ('safira-commercial-preparation-v1','pde-commercial-homologation-activation') AND process.version_number IN (1,9)"))
+            .isEqualTo(activityCount);
+
+        migration.rollback(1, "");
+        assertThat(
+                scalar(
+                    connection,
+                    "SELECT CONCAT((SELECT status FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=8),':',(SELECT status FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=9),':',(SELECT status FROM business_process_definition WHERE process_code='safira-commercial-preparation-v1' AND version_number=1),':',(SELECT status FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=19),':',(SELECT status FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=20))"))
+            .isEqualTo("PUBLISHED:RETIRED:RETIRED:PUBLISHED:RETIRED");
+
+        migration.update("");
+        verifySafiraState(connection, productChain, historicalParent);
+      }
+    }
+  }
+
+  /** Confere rota tipada, atividades, cadeia e imutabilidade da versão comercial anterior. */
+  private void verifySafiraState(
+      Connection connection, String productChain, String historicalParent) throws Exception {
+    assertThat(
+            scalar(
+                connection,
+                "SELECT CONCAT((SELECT status FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=8),':',(SELECT status FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=9),':',(SELECT status FROM business_process_definition WHERE process_code='safira-commercial-preparation-v1' AND version_number=1),':',(SELECT JSON_LENGTH(JSON_EXTRACT(diagram_json,'$.nodes[1].subprocessRoutes')) FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=9),':',(SELECT COUNT(*) FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id WHERE process.process_code='safira-commercial-preparation-v1' AND process.version_number=1))"))
+        .isEqualTo("RETIRED:PUBLISHED:PUBLISHED:3:5");
+    assertThat(
+            scalar(
+                connection,
+                "SELECT JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].subprocessRoutes[2].subprocessCode')) FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=9"))
+        .isEqualTo("safira-commercial-preparation-v1");
+    assertThat(
+            scalar(
+                connection,
+                "SELECT CONCAT((SELECT status FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=19),':',(SELECT status FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=20),':',(SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=20),':',(SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id JOIN business_process_definition process ON process.id=item.process_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=20 AND process.process_code='pde-commercial-homologation-activation' AND process.version_number=9))"))
+        .isEqualTo("RETIRED:PUBLISHED:6:1");
+    assertThat(
+            scalar(
+                connection,
+                "SELECT diagram_json FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=8"))
+        .isEqualTo(historicalParent);
+    assertThat(scalar(connection, "SELECT chain_definition_id FROM product"))
+        .isEqualTo(productChain);
   }
 
   /** Abre uma conexão exclusiva para que o fechamento do Liquibase não invalide outras provas. */

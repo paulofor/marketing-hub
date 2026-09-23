@@ -281,6 +281,7 @@
         }
       ],
       "artifacts": [
+        {"artifactType": "PROMPT", "name": "Revisão comercial Safira", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/safira-commercial/v1/customer-review.md", "description": "Homologa valor, esforço, segurança e continuidade paga do AI Product público usando identidade e evidências comerciais congeladas pelo backend."},
         {"artifactType": "PROMPT", "name": "Revisão comercial Quartzo", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/quartzo-commercial/v1/customer-review.md", "description": "Preparação auditável de pacote digital low-ticket, com entrega e evidência próprias do tipo Quartzo."},
         {"artifactType": "PROMPT", "name": "Revisão comercial Quartzo com checkout e fatos visuais", "version": "v2", "path": "customer-agent-worker/src/main/resources/prompts/quartzo-commercial/v2/customer-review.md", "description": "Preserva identidade, fatos e hashes da landing e do checkout sem confundir captura com pagamento ou entrega."},
         {"artifactType": "PROMPT", "name": "Preparação Quartzo e limites do preflight", "version": "v3", "path": "customer-agent-worker/src/main/resources/prompts/quartzo-commercial/v3/customer-review.md", "description": "Comprova critérios atuais, preserva falhas bloqueantes e transfere verificações operacionais ao preflight posterior."},
@@ -621,6 +622,7 @@
         }
       ],
       "artifacts": [
+        {"artifactType": "PROMPT", "name": "Integridade comercial Safira", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/safira-commercial/v1/integrity-review.md", "description": "Confere anúncio, promessa, checkout, entrega, privacidade, economia e identidade do AI Product sem criar alternativa ou autorizar mídia."},
         {"artifactType": "PROMPT", "name": "Revisão comercial Quartzo", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/quartzo-commercial/v1/integrity-review.md", "description": "Preparação auditável de pacote digital low-ticket, com entrega e evidência próprias do tipo Quartzo."},
         {"artifactType": "PROMPT", "name": "Integridade Quartzo e limites do preflight", "version": "v2", "path": "meta-ad-approver-worker/src/main/resources/prompts/quartzo-commercial/v2/integrity-review.md", "description": "Distingue integridade da preparação e provas do preflight sem dispensar identidade, economia ou falhas comprovadas."},
         {"artifactType": "OUTPUT_SCHEMA", "name": "Schema comercial Quartzo", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/quartzo-commercial/v1/integrity-review-schema.json", "description": "Preparação auditável de pacote digital low-ticket, com entrega e evidência próprias do tipo Quartzo."},

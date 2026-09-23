@@ -58,6 +58,9 @@ public class PdeCommercialPreflightActivityExecutor
   private final ProductProcessActivityPredecessorService predecessorService;
   private final QuartzoPreflightEvidenceScopeService quartzoEvidenceScope;
 
+  @Autowired(required = false)
+  private SafiraPreflightEvidenceScopeService safiraEvidenceScope;
+
   /** Configura experimento, runs, comando de preflight e validação da ordem BPM. */
   @Autowired
   public PdeCommercialPreflightActivityExecutor(
@@ -283,9 +286,15 @@ public class PdeCommercialPreflightActivityExecutor
 
   /** Impede que um estado operacional antigo valide pixels ou contratos de outra publicação. */
   private boolean isCompletedWithStaleEvidence(ExperimentRun run) {
-    return COMPLETED_STATUSES.contains(run.getStatus())
-        && quartzoEvidenceScope != null
-        && quartzoEvidenceScope.applies(run)
-        && !quartzoEvidenceScope.hasCurrentEvidence(run);
+    if (!COMPLETED_STATUSES.contains(run.getStatus())) return false;
+    boolean quartzoStale =
+        quartzoEvidenceScope != null
+            && quartzoEvidenceScope.applies(run)
+            && !quartzoEvidenceScope.hasCurrentEvidence(run);
+    boolean safiraStale =
+        safiraEvidenceScope != null
+            && safiraEvidenceScope.applies(run)
+            && !safiraEvidenceScope.hasCurrentEvidence(run);
+    return quartzoStale || safiraStale;
   }
 }

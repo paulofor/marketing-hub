@@ -163,7 +163,8 @@ public class ProcessRunContext {
         && Set.of(
                 "pde-commercial-homologation-activation",
                 "opala-commercial-preparation-v1",
-                "quartzo-commercial-preparation-v1")
+                "quartzo-commercial-preparation-v1",
+                "safira-commercial-preparation-v1")
             .contains(process(candidate.getProcessDefinitionId()).getProcessCode());
   }
 

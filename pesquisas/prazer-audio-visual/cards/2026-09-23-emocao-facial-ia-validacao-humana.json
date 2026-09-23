@@ -1,0 +1,18 @@
+{
+  "cardKey": "emocao-facial-ia-validacao-humana",
+  "collection": "prazer-audio-visual",
+  "title": "Validar emoção facial gerada por IA com pessoas, não só classificador",
+  "finding": "Em três estudos com mais de 2.000 participantes, rostos fotorealistas gerados por IA transmitiram bem as emoções-alvo e não foram distinguidos de forma confiável de fotos reais, mas naturalidade e autenticidade variaram por emoção; raiva teve as avaliações mais fracas.",
+  "mechanism": "Reconhecimento categórico da emoção e fotorealismo não são equivalentes a naturalidade ou autenticidade percebida; observadores humanos integram configuração facial e pistas sociais que um prompt ou classificador automático pode não capturar.",
+  "commercialApplication": "Para avatares e personagens de IA, aplicar QA em duas camadas: classificação automática e validação humana de reconhecimento, naturalidade e autenticidade; em vídeo, acrescentar consistência temporal e de identidade.",
+  "evidenceStrength": "Média-alta para validação de expressões faciais estáticas, com amostras grandes e múltiplos estudos; evidência limitada para vídeo dinâmico, confiança em avatares e resultado comercial.",
+  "publishedOn": "2026-09-23",
+  "validUntil": "2027-03-23",
+  "experimentHypothesis": "Expressões que passam por validação humana além do classificador produzirão maior identificação correta da emoção e naturalidade percebida do que saídas aprovadas apenas por prompt ou modelo automático.",
+  "risks": "Avaliações podem carregar vieses demográficos e culturais; expressões muito convincentes podem aumentar risco de engano; não usar autenticidade percebida como justificativa para personificação enganosa.",
+  "limits": "Os estímulos eram estáticos; algumas emoções são mais difíceis de separar; o estudo não mede prazer, confiança, retenção, CTA ou venda em produtos digitais.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-23-emocao-facial-ia-validacao-humana.md",
+  "sourceTitle": "Fonte revisada — validação humana de expressões faciais geradas por IA",
+  "sourceSha256": "c51e15142d2fbc4d4aedef8ff57510b2e539d767cb6dacc61b1da3328aa32611"
+}

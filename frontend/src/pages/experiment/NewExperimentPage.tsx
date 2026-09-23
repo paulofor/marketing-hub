@@ -59,6 +59,20 @@ export function hypothesesEligibleForProduct(
   );
 }
 
+export function persistedProductUnitPrice(
+  currentUnitPrice: string,
+  product?: Product,
+): string {
+  if (
+    currentUnitPrice ||
+    !product?.currentPriceBrl ||
+    product.currentPriceBrl <= 0
+  ) {
+    return currentUnitPrice;
+  }
+  return String(product.currentPriceBrl);
+}
+
 const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
   AI_VISUAL_PREVIEW: "Prévia visual IA",
   AI_PERSONALIZED_SAMPLE: "Amostra personalizada IA",
@@ -216,15 +230,15 @@ export default function NewExperimentPage() {
   })() as Array<{ code: string; name: string; idea?: string }>;
   const canGeneratePromiseOptions = Boolean(
     form.nicheId &&
-      form.hypothesisId &&
-      form.productId &&
-      form.desireTerritoryCode,
+    form.hypothesisId &&
+    form.productId &&
+    form.desireTerritoryCode,
   );
   const promiseOptionsRequest = usePromiseOptionsRequest(promiseRequestId);
   const promiseRequestStatus = promiseOptionsRequest.data?.status;
   const isWaitingPromiseOptions = Boolean(
     promiseRequestId &&
-      !["COMPLETED", "FAILED"].includes(promiseRequestStatus ?? ""),
+    !["COMPLETED", "FAILED"].includes(promiseRequestStatus ?? ""),
   );
   const isLowTicketProduct = form.experimentType === "LOW_TICKET_PRODUCT";
   const isPdeMembershipSubscriptionFunnel =
@@ -244,7 +258,7 @@ export default function NewExperimentPage() {
     !isProductAiExperiment ||
     Boolean(
       productAiPreparationData?.ready &&
-        productAiPreparationData.productAiSubtype === selectedProductAiSubtype,
+      productAiPreparationData.productAiSubtype === selectedProductAiSubtype,
     );
   const experimentTypeLabel = isPdeMembershipSubscriptionFunnel
     ? "PDE / assinatura MUSA"
@@ -309,6 +323,21 @@ export default function NewExperimentPage() {
       }));
     }
   }, [selectedHypothesis]);
+
+  useEffect(() => {
+    if (!productIdParam || selectedProduct?.id !== Number(productIdParam)) {
+      return;
+    }
+    setForm((current) => {
+      const unitPrice = persistedProductUnitPrice(
+        current.unitPrice,
+        selectedProduct,
+      );
+      return unitPrice === current.unitPrice
+        ? current
+        : { ...current, unitPrice };
+    });
+  }, [productIdParam, selectedProduct?.id, selectedProduct?.currentPriceBrl]);
 
   useEffect(() => {
     if (promiseOptionsRequest.data?.status === "COMPLETED") {

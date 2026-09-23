@@ -399,14 +399,20 @@ public class BusinessProcessDefinitionService {
     }
   }
 
-  /** Lista as atividades persistidas e mantém leitura segura durante migrações de dados legados. */
+  /** Lista atividades persistidas na ordem causal do grafo e preserva legados sem topologia. */
   private List<BusinessProcessActivityDefinitionResponse> activityResponses(
       BusinessProcessDefinition process) {
     if (activityRepository != null) {
       List<BusinessProcessActivityDefinition> persisted =
           activityRepository.findAllByProcessDefinitionIdOrderByIdAsc(process.getId());
       if (!persisted.isEmpty()) {
-        return persisted.stream().map(this::activityResponse).toList();
+        return BusinessProcessGraphTopology.orderActivities(
+                read(process.getDiagramJson()),
+                persisted,
+                BusinessProcessActivityDefinition::getActivityId)
+            .stream()
+            .map(this::activityResponse)
+            .toList();
       }
     }
     List<BusinessProcessActivityDefinitionResponse> fallback = new ArrayList<>();

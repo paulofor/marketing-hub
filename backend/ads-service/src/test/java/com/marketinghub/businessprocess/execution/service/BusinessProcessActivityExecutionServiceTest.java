@@ -485,6 +485,95 @@ class BusinessProcessActivityExecutionServiceTest {
         .hasMessageContaining("Referência não encontrada");
   }
 
+  /** Usa o fluxo do BPM para iniciar pela preparação mesmo quando os IDs vieram fora de ordem. */
+  @Test
+  void ordersProductActivitiesByCanonicalGraphInsteadOfDatabaseIds() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            mock(AgentTaskActivityCoverageRepository.class),
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            null,
+            new ObjectMapper());
+    BusinessProcessDefinition process = selectedProcess();
+    process.setId(92L);
+    process.setProcessCode("pde-commercial-homologation-activation");
+    process.setName("Homologação e ativação comercial do PDE");
+    process.setVersionNumber(9);
+    process.setStatus("PUBLISHED");
+    process.setDiagramJson(
+        """
+        {
+          "nodes":[
+            {"id":"start","type":"START"},
+            {"id":"authorization","type":"TASK"},
+            {"id":"commercialIntegrityReview","type":"TASK"},
+            {"id":"commercialPreparation","type":"TASK"},
+            {"id":"humanExperienceReview","type":"TASK"},
+            {"id":"preflight","type":"TASK"},
+            {"id":"end","type":"END"}
+          ],
+          "flows":[
+            {"from":"start","to":"commercialPreparation"},
+            {"from":"commercialPreparation","to":"humanExperienceReview"},
+            {"from":"humanExperienceReview","to":"commercialIntegrityReview"},
+            {"from":"commercialIntegrityReview","to":"preflight"},
+            {"from":"preflight","to":"authorization"},
+            {"from":"authorization","to":"end"}
+          ]
+        }
+        """);
+    Product mira = Product.builder().id(10L).internalName("Mira").build();
+    List<BusinessProcessActivityDefinition> persisted =
+        List.of(
+            activity(901L, process, "authorization", "Autorizar ativação, orçamento e janela"),
+            activity(902L, process, "commercialIntegrityReview", "Validar integridade comercial"),
+            activity(
+                903L,
+                process,
+                "commercialPreparation",
+                "Preparar operação comercial conforme o tipo"),
+            activity(
+                904L,
+                process,
+                "humanExperienceReview",
+                "Validar experiência e valor para o cliente"),
+            activity(905L, process, "preflight", "Executar homologação técnica"));
+    when(processes.findById(92L)).thenReturn(Optional.of(process));
+    when(products.findById(10L)).thenReturn(Optional.of(mira));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(10L)).thenReturn(List.of());
+    when(commercialPlans.findByProductId(10L)).thenReturn(List.of());
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(92L)).thenReturn(persisted);
+
+    var history = executionService.productProcessExecutions(92L, 10L);
+
+    assertThat(history.activities())
+        .extracting(activity -> activity.activityId())
+        .containsExactly(
+            "commercialPreparation",
+            "humanExperienceReview",
+            "commercialIntegrityReview",
+            "preflight",
+            "authorization");
+    assertThat(history.currentActivityId()).isEqualTo("commercialPreparation");
+    assertThat(history.activities())
+        .extracting(activity -> activity.sequenceNumber())
+        .containsExactly(1, 2, 3, 4, 5);
+  }
+
   /** Expõe o comando backend bloqueado sem quebrar a tela de produto ainda sem experimento. */
   @Test
   void explainsBackendActivityWhenProductHasNoExperiment() {

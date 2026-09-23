@@ -259,6 +259,14 @@ execução ainda estiver em uma atividade do processo pai, a tela deve declarar 
 apresentar o próximo subprocesso. Ausência de histórico deve aparecer como planejamento, nunca como
 subprocesso concluído.
 
+A ordem operacional das atividades vem exclusivamente da topologia causal do `diagram_json`
+versionado, ignorando somente fluxos `REWORK` explicitamente declarados. O identificador técnico da
+linha, a ordem do `INSERT`, a ordem devolvida pelo banco e a posição dos nós no JSON não representam
+sequência de execução. Backend, histórico, catálogo e executor devem reutilizar a mesma interpretação
+topológica; em empates legítimos de ramos paralelos, preservar a ordem declarada dos nós apenas como
+critério estável de apresentação. Definições legadas sem grafo podem preservar sua leitura histórica,
+mas uma versão publicada executável não pode depender desse fallback.
+
 Decisão de 11/09/2026: início e catálogo destacam, antes dos detalhes do processo, um link
 direto para a atividade orientada de cada produto. Número, nome e responsável vêm do contrato
 canônico de execução; produto, cadeia, ciclo quando existir e âncora da atividade são

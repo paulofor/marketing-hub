@@ -20,6 +20,18 @@
   mudança de slot, callback de outro escopo, idempotência, reutilização no pai e ausência de efeitos
   comerciais. Matriz em
   [homologação Safira](../homologacao/safira-commercial-preparation-v1.md).
+- **Recorrência de ordenação confirmada em 23/09/2026:** a v9 do processo pai copiou atividades
+  válidas, porém a leitura administrativa ordenava pelo ID substituto criado pelo MySQL. Como o
+  `INSERT ... SELECT` não define sequência causal, a autorização humana apareceu como 5.1 e foi
+  escolhida como atividade atual antes da preparação comercial.
+- **Causa-raiz complementar:** serviços de leitura e execução tratavam `id`/ordem física como
+  sequência, embora o contrato de dependências já estivesse no grafo BPM versionado.
+- **Correção sistêmica complementar:** uma topologia compartilhada passou a ordenar definições,
+  execução de produto, execução independente e destinos do ciclo pelos fluxos progressivos do BPM;
+  retornos `REWORK` continuam fora da progressão inicial e históricos sem grafo permanecem legíveis.
+- **Prevenção complementar:** regressões embaralham IDs e a declaração dos nós, exigem
+  `commercialPreparation → humanExperienceReview → commercialIntegrityReview → preflight →
+  authorization` e comprovam que a atividade atual de Mira é a preparação, não a autorização.
 
 ## LOOP-PDE-PREFLIGHT-REUTILIZA-PUBLICACAO-ANTIGA — estado verde sem versão vigente
 

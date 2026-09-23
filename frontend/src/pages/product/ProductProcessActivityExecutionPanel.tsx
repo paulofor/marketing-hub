@@ -189,7 +189,8 @@ export default function ProductProcessActivityExecutionPanel({
         ) : null)}
 
       {processManaged &&
-        ["COMMAND", "WORKSPACE"].includes(control.interactionType) && (
+        ["COMMAND", "WORKSPACE"].includes(control.interactionType) &&
+        !control.navigationUrl && (
           <p className="small text-body-secondary mb-2">
             Esta atividade é executada automaticamente pelo controle do processo
             no cabeçalho.
@@ -204,7 +205,7 @@ export default function ProductProcessActivityExecutionPanel({
             target="_blank"
             rel="noopener noreferrer"
           >
-            Abrir destino aprovado
+            {control.actionLabel || "Abrir destino aprovado"}
           </a>
         )}
 

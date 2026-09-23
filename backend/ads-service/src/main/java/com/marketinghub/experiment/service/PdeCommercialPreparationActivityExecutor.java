@@ -58,6 +58,12 @@ public class PdeCommercialPreparationActivityExecutor
             metadata(activity).path("commercialPreparationRouterVersion").asText());
   }
 
+  /** Permite explicar e abrir o cadastro comercial antes de existir um experimento. */
+  @Override
+  public boolean supportsReadinessWithoutExecutionContext() {
+    return true;
+  }
+
   /** Resolve a rota exata; Quartzo pode preparar a primeira venda antes de existir ciclo. */
   @Override
   @Transactional(readOnly = true)
@@ -100,6 +106,9 @@ public class PdeCommercialPreparationActivityExecutor
               + ".",
           true,
           false);
+    }
+    if (!experimentReference(sourceReference)) {
+      return missingCommercialExperiment(product, productTypeCode, target);
     }
     if (quartzoContext != null && quartzoContext.applies(product)) {
       var scope = quartzoContext.scope(sourceReference, product.getId(), true);
@@ -231,6 +240,58 @@ public class PdeCommercialPreparationActivityExecutor
     return product == null || product.getProductTypeDefinition() == null
         ? null
         : product.getProductTypeDefinition().getCode();
+  }
+
+  /** Confere o formato mínimo da identidade comercial sem consultar ou fabricar o experimento. */
+  private boolean experimentReference(String sourceReference) {
+    return sourceReference != null && sourceReference.matches("experiment:[1-9][0-9]{0,17}");
+  }
+
+  /** Expõe a transição segura para um experimento sem promover a validação privada nem gastar. */
+  private BackendProductProcessActivityReadiness missingCommercialExperiment(
+      Product product, String productTypeCode, BusinessProcessDefinition target) {
+    Long nicheId = product.getMarketNiche() == null ? null : product.getMarketNiche().getId();
+    boolean nicheReady = nicheId != null;
+    String reason =
+        nicheReady
+            ? "A preparação exige um experimento comercial explícito; a validação privada não comprova oferta pública, compra ou utilidade humana."
+            : "A preparação exige um experimento comercial explícito, mas o produto ainda não possui nicho cadastrado.";
+    String navigationUrl =
+        nicheReady
+            ? "/experiments/new?nicheId=" + nicheId + "&productId=" + product.getId()
+            : "/products/" + product.getId() + "/edit";
+    String actionLabel =
+        nicheReady ? "Criar experimento comercial" : "Completar cadastro comercial";
+    return new BackendProductProcessActivityReadiness(
+        false,
+        reason,
+        actionLabel,
+        "Materialize somente as decisões comerciais persistidas; não publique, não ative campanha e não autorize orçamento nesta etapa.",
+        "COMMERCIAL_EXPERIMENT",
+        product.getId(),
+        List.of(
+            requirement(
+                "PRODUCT_TYPE", "Tipo cadastrado", true, productTypeCode, "Preserve o tipo."),
+            requirement(
+                "TYPE_ROUTE",
+                "Percurso do tipo",
+                true,
+                target.getProcessCode() + " v" + target.getVersionNumber(),
+                "Execute somente este subprocesso."),
+            requirement(
+                "MARKET_NICHE",
+                "Nicho comercial",
+                nicheReady,
+                nicheReady ? "Nicho #" + nicheId + " vinculado." : "Nicho ausente.",
+                nicheReady ? "Preserve o nicho." : "Cadastre o nicho antes do experimento."),
+            requirement(
+                "COMMERCIAL_EXPERIMENT",
+                "Experimento comercial",
+                false,
+                "Nenhum experimento foi selecionado para esta execução.",
+                "Crie o experimento com oferta, canal e métricas explícitos; a prova privada permanece apenas como referência.")),
+        null,
+        navigationUrl);
   }
 
   /** Confere que a referência representa o ciclo e o produto recebidos. */

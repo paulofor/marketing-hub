@@ -658,6 +658,10 @@ Safira exige experimento de venda explícito, subtipo de Produto IA persistido, 
 mesmo experimento, cinco critérios da oferta, checkout, entrega, criativo, público, plano comercial
 e economia completa. A validação multiagente privada pode ser referência do produto, mas nunca
 substitui cliente, utilidade humana, venda, plano comercial, experiência pública ou autorização.
+Quando houver validação privada e ainda não existir experimento, a atividade 5.1 deve permanecer
+bloqueada e oferecer a criação comercial já vinculada ao produto e ao nicho. Essa transição não
+promove a prova privada, não preenche escolhas ausentes, não publica experiência, não ativa campanha
+e não concede orçamento; decisões comerciais não persistidas continuam exigindo confirmação humana.
 
 O reaproveitamento de 5.1.6 em 5.2 e de 5.1.7 em 5.3 registra a tarefa e a consolidação originais,
 impressão da evidência e custo incremental zero. Só é válido para o mesmo produto, cadeia, ciclo,
@@ -1054,3 +1058,6 @@ O preflight vincula os pixels ao slot, ao SHA-256 da experiência e ao fingerpri
 atividade humana 5.5 continua sendo a única autorização de versão, canal, teto, janela e parada.
 Publicar esta definição não cria experimento, não reativa a validação privada, não chama modelo, não
 publica campanha e não concede orçamento. Execuções históricas permanecem na definição original.
+Na ausência de contexto comercial, o roteador pode expor um destino pré-preenchido para criá-lo,
+mantendo o objetivo pendente até existir um `experiment:<id>` compatível. A prontidão sem contexto é
+somente orientação auditável: não executa atividade, não cria registro e não reutiliza parecer pago.

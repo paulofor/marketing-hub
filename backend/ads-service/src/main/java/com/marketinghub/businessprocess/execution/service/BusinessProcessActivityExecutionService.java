@@ -1144,14 +1144,14 @@ public class BusinessProcessActivityExecutionService {
     if (!requestableActivityState(operationalState)) {
       return "A atividade já possui execução registrada neste ciclo.";
     }
+    if (hasBackendExecutor && backendReadiness != null && !backendReadiness.ready()) {
+      return backendReadiness.reason();
+    }
     if (!hasExecutionContext) {
       return "O produto ainda não possui experimento nem contrato privado para contextualizar a execução.";
     }
     if (!productExecutionEnabled) {
       return "O produto está em STOP e não pode iniciar novas atividades.";
-    }
-    if (hasBackendExecutor && backendReadiness != null && !backendReadiness.ready()) {
-      return backendReadiness.reason();
     }
     if (hasHumanExecutor && humanReadiness != null && !humanReadiness.ready()) {
       return humanReadiness.reason();
@@ -1684,7 +1684,10 @@ public class BusinessProcessActivityExecutionService {
               : backendActivityExecutor(selectedProcess, definition);
       BackendProductProcessActivityReadiness backendReadiness =
           backendExecutor
-              .filter(ignored -> hasExecutionContext && readinessSourceReference != null)
+              .filter(
+                  executor ->
+                      (hasExecutionContext && readinessSourceReference != null)
+                          || executor.supportsReadinessWithoutExecutionContext())
               .map(
                   executor ->
                       executor.readiness(

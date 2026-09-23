@@ -26,13 +26,42 @@ describe("ProductProcessActivityExecutionPanel", () => {
       ...activity.executionControl!,
       executorType: "BACKEND",
       interactionType: "COMMAND",
+      actionLabel: "Abrir destino aprovado",
       actionAvailable: false,
       navigationUrl: "https://local.example/private",
     };
-    renderPanel(activity);
+    renderPanel(activity, true);
     const link = screen.getByRole("link", { name: "Abrir destino aprovado" });
     expect(link).toHaveAttribute("href", "https://local.example/private");
     expect(link).toHaveAttribute("target", "_blank");
+    expect(onExecute).not.toHaveBeenCalled();
+  });
+
+  it("uses the backend action label for a safe commercial-context destination", () => {
+    const activity = blockedHomologation();
+    activity.recoveryAction = null;
+    activity.executionControl = {
+      ...activity.executionControl!,
+      executorType: "BACKEND",
+      interactionType: "WORKSPACE",
+      actionLabel: "Criar experimento comercial",
+      actionAvailable: false,
+      navigationUrl: "/experiments/new?nicheId=34&productId=10",
+    };
+
+    renderPanel(activity, true);
+
+    const link = screen.getByRole("link", {
+      name: "Criar experimento comercial",
+    });
+    expect(link).toHaveAttribute(
+      "href",
+      "/experiments/new?nicheId=34&productId=10",
+    );
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(
+      screen.queryByText(/executada automaticamente pelo controle do processo/),
+    ).not.toBeInTheDocument();
     expect(onExecute).not.toHaveBeenCalled();
   });
 

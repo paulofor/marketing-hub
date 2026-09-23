@@ -32,6 +32,19 @@
 - **Prevenção complementar:** regressões embaralham IDs e a declaração dos nós, exigem
   `commercialPreparation → humanExperienceReview → commercialIntegrityReview → preflight →
   authorization` e comprovam que a atividade atual de Mira é a preparação, não a autorização.
+- **Recorrência de transição confirmada em 23/09/2026:** depois da correção da ordem, Mira
+  continuou indisponível com a mensagem genérica de ausência de experimento ou contrato privado,
+  embora a validação privada e seus pareceres estivessem persistidos. A tela não oferecia o caminho
+  para materializar o contexto comercial exigido por Safira.
+- **Causa-raiz complementar da transição:** a leitura de prontidão só consultava executores do
+  backend depois que já existia uma referência de execução. O próprio roteador responsável por
+  exigir o experimento não podia explicar como criá-lo, produzindo um bloqueio circular.
+- **Correção sistêmica da transição:** executores opt-in podem orientar a criação do contexto sem
+  liberar a atividade. O roteador comercial direciona ao formulário de experimento já vinculado ao
+  produto e ao nicho, mantém `COMMERCIAL_EXPERIMENT` pendente e proíbe promover a prova privada,
+  publicar, ativar campanha ou autorizar orçamento nesse passo.
+- **Prevenção da transição:** regressões cobrem produto Safira com e sem nicho, referência privada,
+  ausência total de contexto, motivo específico, destino pré-preenchido e rótulo acionável na tela.
 
 ## LOOP-PDE-PREFLIGHT-REUTILIZA-PUBLICACAO-ANTIGA — estado verde sem versão vigente
 

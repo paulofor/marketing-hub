@@ -2,12 +2,14 @@ package com.marketinghub.experiment.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
 import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
@@ -61,12 +63,59 @@ class PdeCommercialPreparationActivityExecutorTest {
     assertThat(result.reason()).contains("QUARTZ", "não possui percurso");
   }
 
+  /** Orienta Safira ao experimento comercial sem transformar a validação privada em venda. */
+  @Test
+  void guidesSafiraWithoutExecutionContextToCommercialExperiment() {
+    Product product = product("AI_PRODUCT");
+    product.setMarketNiche(MarketNiche.builder().id(34L).name("Pele madura").build());
+    BusinessProcessDefinition target = process(91L, "safira-commercial-preparation-v1", 1);
+    when(processes.findByProcessCodeAndVersionNumber("safira-commercial-preparation-v1", 1))
+        .thenReturn(Optional.of(target));
+
+    var result =
+        executor.readiness(
+            process(92L, "pde-commercial-homologation-activation", 9), activity(), product, null);
+
+    assertThat(executor.supportsReadinessWithoutExecutionContext()).isTrue();
+    assertThat(result.ready()).isFalse();
+    assertThat(result.reason()).contains("experimento comercial explícito", "validação privada");
+    assertThat(result.actionLabel()).isEqualTo("Criar experimento comercial");
+    assertThat(result.workspaceCode()).isEqualTo("COMMERCIAL_EXPERIMENT");
+    assertThat(result.workspaceReferenceId()).isEqualTo(4L);
+    assertThat(result.navigationUrl()).isEqualTo("/experiments/new?nicheId=34&productId=4");
+    assertThat(result.requirements())
+        .extracting(requirement -> requirement.code())
+        .containsExactly("PRODUCT_TYPE", "TYPE_ROUTE", "MARKET_NICHE", "COMMERCIAL_EXPERIMENT");
+    assertThat(result.requirements().getLast().satisfied()).isFalse();
+    verifyNoInteractions(cycles);
+  }
+
+  /** Direciona primeiro ao cadastro quando ainda falta o nicho necessário ao experimento. */
+  @Test
+  void guidesProductWithoutNicheToCommercialRegistration() {
+    BusinessProcessDefinition target = process(91L, "safira-commercial-preparation-v1", 1);
+    when(processes.findByProcessCodeAndVersionNumber("safira-commercial-preparation-v1", 1))
+        .thenReturn(Optional.of(target));
+
+    var result =
+        executor.readiness(
+            process(92L, "pde-commercial-homologation-activation", 9),
+            activity(),
+            product("AI_PRODUCT"),
+            "product:4@agent-validation-v1");
+
+    assertThat(result.ready()).isFalse();
+    assertThat(result.reason()).contains("não possui nicho cadastrado");
+    assertThat(result.actionLabel()).isEqualTo("Completar cadastro comercial");
+    assertThat(result.navigationUrl()).isEqualTo("/products/4/edit");
+  }
+
   /** Cria o contrato versionado mínimo usado pelas duas variações de produto. */
   private BusinessProcessActivityDefinition activity() {
     var activity = new BusinessProcessActivityDefinition();
     activity.setActivityId("commercialPreparation");
     activity.setDefinitionJson(
-        "{\"commercialPreparationRouterVersion\":\"COMMERCIAL_PREPARATION_BY_PRODUCT_TYPE_V1\",\"subprocessRoutes\":[{\"productTypeCode\":\"PDE\",\"productTypeInternalName\":\"Opala\",\"subprocessCode\":\"opala-commercial-preparation-v1\",\"subprocessVersion\":1}]}");
+        "{\"commercialPreparationRouterVersion\":\"COMMERCIAL_PREPARATION_BY_PRODUCT_TYPE_V1\",\"subprocessRoutes\":[{\"productTypeCode\":\"PDE\",\"productTypeInternalName\":\"Opala\",\"subprocessCode\":\"opala-commercial-preparation-v1\",\"subprocessVersion\":1},{\"productTypeCode\":\"AI_PRODUCT\",\"productTypeInternalName\":\"Safira\",\"subprocessCode\":\"safira-commercial-preparation-v1\",\"subprocessVersion\":1}]}");
     return activity;
   }
 

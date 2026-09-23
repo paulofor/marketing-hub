@@ -1,0 +1,18 @@
+{
+  "cardKey": "autenticidade-criativo-ia",
+  "collection": "neuromarketing",
+  "title": "Saturação de conteúdo com IA pode corroer autenticidade percebida",
+  "finding": "Pesquisa da Gartner com 1.006 consumidores dos EUA encontrou 65% dizendo que marcas produzem conteúdo demais gerado por IA, 57% relatando menor confiança em mensagens de marca, 35% recorrendo menos a influenciadores e 43% recorrendo mais a pessoas reais para recomendações por causa da prevalência de conteúdo sintético.",
+  "mechanism": "Quando IA é usada principalmente para multiplicar volume, repetição e genericidade, o ganho de escala pode aumentar sensação de saturação e reduzir autenticidade percebida. Conteúdo humano verificável, expertise e diferenciação podem ganhar valor relativo nesse ambiente.",
+  "commercialApplication": "Em creative variants, usar IA para melhorar qualidade, relevância e diversidade real, não apenas aumentar quantidade. Exigir prova ou perspectiva distintiva, preservar procedência de creators e depoimentos e acompanhar confiança percebida junto com métricas do funil.",
+  "evidenceStrength": "Moderada: survey recente da Gartner com 1.006 consumidores dos EUA; forte como sinal de percepção e confiança, mas autorrelatado, restrito a um mercado e sem teste causal de vendas.",
+  "publishedOn": "2026-09-22",
+  "validUntil": "2027-03-22",
+  "experimentHypothesis": "Uma família menor de criativos com ângulos realmente distintos, prova real e elementos humanos verificáveis preservará mais confiança e desempenho de funil do que uma família maior de peças sintéticas pouco diferenciadas, mantendo oferta, público e investimento equivalentes.",
+  "risks": "Não interpretar 'humano' como licença para fabricar creator, depoimento ou prova social. Não ocultar uso de IA quando disclosure for exigido e não reduzir diversidade real apenas para parecer autêntico.",
+  "limits": "A pesquisa mede percepção declarada, não CTR, CPL ou vendas; a amostra é dos EUA; a percepção de conteúdo sintético e as normas de disclosure evoluem rapidamente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-23-autenticidade-criativo-ia-gartner.md",
+  "sourceTitle": "Fonte revisada — Saturação de conteúdo com IA e autenticidade percebida",
+  "sourceSha256": "c8ad05a272462aed7358701a801513b73d83694af43c32b3411ea549821ac8de"
+}

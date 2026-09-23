@@ -181,6 +181,7 @@ class ProductProcessCommitServiceTest {
         4,
         4,
         6,
+        null,
         List.of(),
         null);
   }
@@ -222,6 +223,7 @@ class ProductProcessCommitServiceTest {
         current.processVersion(),
         current.sequenceNumber(),
         current.processCount(),
+        current.nextProcess(),
         List.of(planned),
         null);
   }

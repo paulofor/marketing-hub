@@ -215,6 +215,40 @@ describe("Acesso ao processo oficial nos cards sem ciclo", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("abre a continuação informada pelo backend quando o macroprocesso atual termina", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { ...history, currentActivityId: null, objectiveAchieved: true },
+    });
+    renderCard({
+      ...position,
+      nextProcess: {
+        processDefinitionId: 82,
+        processCode: "pde-commercial-homologation-activation",
+        processName: "Homologação e ativação comercial do PDE",
+        processVersion: 8,
+        sequenceNumber: 5,
+      },
+    });
+
+    expect(
+      await screen.findByText(
+        "Processo 5 — Homologação e ativação comercial do PDE",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Abrir próximo processo" }),
+    ).toHaveAttribute(
+      "href",
+      "/products/9/value-chain-history/processes/82/activities?chainId=14#process-execution",
+    );
+    expect(
+      screen.queryByText(
+        "Processo concluído. Consulte a continuidade na cadeia.",
+      ),
+    ).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
   it("abre o processo oficial durante a consulta lenta e permite atualizar os detalhes após timeout", async () => {
     let reject!: (reason: Error) => void;
     vi.mocked(axios.get).mockImplementationOnce(

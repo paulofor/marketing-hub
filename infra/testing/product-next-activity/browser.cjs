@@ -96,6 +96,73 @@ const assert = require("node:assert/strict");
     activityOwnerName: "Backend",
     sequenceNumber: 5,
   });
+  const mira = {
+    ...rigel,
+    productId: 10,
+    chainDefinitionId: 19,
+    chainVersion: 19,
+    processDefinitionId: 85,
+    processCode: "pde-communication-sales-journey",
+    processName: "Comunicação e jornada de venda do PDE",
+    sequenceNumber: 4,
+    processCount: 6,
+    nextProcess: {
+      processDefinitionId: 82,
+      processCode: "pde-commercial-homologation-activation",
+      processName: "Homologação e ativação comercial do PDE",
+      processVersion: 8,
+      sequenceNumber: 5,
+    },
+    subprocessPosition: {
+      trackingStatus: "RECORDED",
+      subprocessCount: 2,
+      currentActivityName: null,
+      currentSubprocessDefinitionId: null,
+      currentSubprocessSequenceNumber: null,
+      currentSubprocessCode: null,
+      currentSubprocessName: null,
+      currentSubprocessObjective: null,
+      nextSubprocessDefinitionId: 65,
+      nextSubprocessSequenceNumber: 3,
+      nextSubprocessCode: "pde-landing-production-approval",
+      nextSubprocessName: "Geração e aprovação independente de landing",
+      nextSubprocessObjective:
+        "Landing técnica, humana e comercialmente aprovada.",
+      measurements: [],
+      salesFlow: null,
+    },
+  };
+  const miraCompletedActivities = structuredClone(rigelActivities);
+  Object.assign(miraCompletedActivities, {
+    productId: 10,
+    productName: "Mira · QA local",
+    productInternalName: "Mira",
+    selectedProcessDefinitionId: 85,
+    processCode: "pde-communication-sales-journey",
+    processName: "Comunicação e jornada de venda do PDE",
+    currentExecutionReference: "product:10@agent-validation-v1",
+    currentActivityId: null,
+    currentActivityName: null,
+    objectiveAchieved: true,
+  });
+  const miraNextActivities = structuredClone(rigelActivities);
+  Object.assign(miraNextActivities, {
+    productId: 10,
+    productName: "Mira · QA local",
+    productInternalName: "Mira",
+    selectedProcessDefinitionId: 82,
+    processCode: "pde-commercial-homologation-activation",
+    processName: "Homologação e ativação comercial do PDE",
+    currentExecutionReference: "product:10@agent-validation-v1",
+    currentActivityId: "commercialPreparation",
+    currentActivityName: "Preparar operação comercial conforme o tipo",
+  });
+  Object.assign(miraNextActivities.activities[0], {
+    activityId: "commercialPreparation",
+    activityName: miraNextActivities.currentActivityName,
+    activityOwnerName: "Backend",
+    sequenceNumber: 1,
+  });
   const products = [
     {
       id: 4,
@@ -131,6 +198,17 @@ const assert = require("node:assert/strict");
       automaticExecutionEnabled: true,
       automaticExecutionStatus: "PLAY",
       currentPriceBrl: 349,
+    },
+    {
+      id: 10,
+      name: "Mira · QA local",
+      internalName: "Mira",
+      productTypeInternalName: "Safira",
+      slug: "mira-private-v3",
+      commercialStatus: "COMUNICACAO_E_JORNADA",
+      automaticExecutionEnabled: true,
+      automaticExecutionStatus: "PLAY",
+      currentPriceBrl: 49,
     },
   ];
   await mkdir(output, { recursive: true });
@@ -199,13 +277,15 @@ const assert = require("node:assert/strict");
           let data;
           if (url.pathname === "/api/products") data = products;
           else if (url.pathname === "/api/products/value-chain-positions")
-            data = [vega, capella, rigel];
+            data = [vega, capella, rigel, mira];
           else if (url.pathname === "/api/products/value-chain-positions/4")
             data = vega;
           else if (url.pathname === "/api/products/value-chain-positions/7")
             data = capella;
           else if (url.pathname === "/api/products/value-chain-positions/9")
             data = rigel;
+          else if (url.pathname === "/api/products/value-chain-positions/10")
+            data = mira;
           else if (url.pathname.endsWith("/process-context")) {
             if (url.pathname.includes("/products/4/")) {
               assert.equal(url.searchParams.get("cycleId"), "2");
@@ -225,7 +305,8 @@ const assert = require("node:assert/strict");
             } else {
               assert(
                 url.pathname.includes("/products/7/") ||
-                  url.pathname.includes("/products/9/"),
+                  url.pathname.includes("/products/9/") ||
+                  url.pathname.includes("/products/10/"),
               );
               assert.equal(url.searchParams.get("cycleId"), null);
               data = null;
@@ -290,6 +371,20 @@ const assert = require("node:assert/strict");
             assert.equal(url.searchParams.get("chainId"), "17");
             if (capellaDetailsGate) await capellaDetailsGate;
             data = structuredClone(capellaActivities);
+          } else if (
+            url.pathname ===
+            "/api/business-processes/85/products/10/activity-executions"
+          ) {
+            assert.equal(url.searchParams.get("learningCycleId"), null);
+            assert.equal(url.searchParams.get("chainId"), "19");
+            data = structuredClone(miraCompletedActivities);
+          } else if (
+            url.pathname ===
+            "/api/business-processes/82/products/10/activity-executions"
+          ) {
+            assert.equal(url.searchParams.get("learningCycleId"), null);
+            assert.equal(url.searchParams.get("chainId"), "19");
+            data = structuredClone(miraNextActivities);
           } else if (url.pathname.endsWith("/automation/v1")) {
             const match = url.pathname.match(
               /business-processes\/(\d+)\/products\/(\d+)/,
@@ -298,7 +393,7 @@ const assert = require("node:assert/strict");
               productId = Number(match[2]);
             assert.equal(
               url.searchParams.get("chainId"),
-              productId === 7 ? "17" : "14",
+              productId === 7 ? "17" : productId === 10 ? "19" : "14",
             );
             assert.equal(
               url.searchParams.get("learningCycleId"),
@@ -308,14 +403,16 @@ const assert = require("node:assert/strict");
               id: productId,
               productId,
               processDefinitionId: processId,
-              chainId: productId === 7 ? 17 : 14,
+              chainId: productId === 7 ? 17 : productId === 10 ? 19 : 14,
               learningCycleId: productId === 4 ? 2 : null,
               sourceReference:
                 productId === 4
                   ? "experiment:92"
                   : productId === 7
                     ? "experiment:88"
-                    : "experiment:89",
+                    : productId === 10
+                      ? "product:10@agent-validation-v1"
+                      : "experiment:89",
               status: "RUNNING",
               reason: "Execução simulada na sandbox.",
               currentActivityId: null,
@@ -414,6 +511,18 @@ const assert = require("node:assert/strict");
           card("Rigel").getByText("Responsável: Hermes"),
         ).toBeVisible();
         await expect(card("Rigel").getByText(/Experimento #92/)).toHaveCount(0);
+        await expect(
+          card("Mira").getByRole("link", { name: "Abrir próximo processo" }),
+        ).toHaveAttribute(
+          "href",
+          "/products/10/value-chain-history/processes/82/activities?chainId=19#process-execution",
+        );
+        await expect(card("Mira").getByText("Próximo subprocesso")).toHaveCount(
+          0,
+        );
+        await expect(
+          card("Mira").getByText("Geração e aprovação independente de landing"),
+        ).toHaveCount(0);
         assert.equal(
           await page.evaluate(
             () => document.documentElement.scrollWidth > innerWidth + 1,
@@ -424,7 +533,7 @@ const assert = require("node:assert/strict");
         await page.screenshot({
           path: path.join(output, `${device}-${surface}.png`),
         });
-        for (const product of ["Vega", "Capella", "Rigel"]) {
+        for (const product of ["Vega", "Capella", "Rigel", "Mira"]) {
           const link = card(product).getByRole("link", {
             name:
               product === "Vega"

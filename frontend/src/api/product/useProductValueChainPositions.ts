@@ -42,6 +42,13 @@ export type ProductValueChainPosition = {
   processVersion?: number | null;
   sequenceNumber?: number | null;
   processCount?: number | null;
+  nextProcess?: {
+    processDefinitionId: number;
+    processCode: string;
+    processName: string;
+    processVersion: number;
+    sequenceNumber: number;
+  } | null;
   processMeasurements?: ProductStageMeasurement[];
   subprocessPosition?: {
     salesFlow?: SalesFlow | null;

@@ -1146,6 +1146,25 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
   Psique passa a classificar a causa entre transporte de evidência, conteúdo da landing, contrato
   canônico e outras causas; testes impedem reescrever o histórico ou duplicar revisões pendentes.
 
+## LOOP-PDE-CARD-MACROPROCESSO-CONCLUIDO-SEM-CONTINUIDADE — botão some após sucesso
+
+- **Recorrência confirmada em 23/09/2026 — Mira #10:** o processo 4 estava comprovadamente
+  concluído em 4/4 atividades, mas o status comercial ainda preservava a preparação privada. O card
+  substituía o botão azul por um link genérico ao histórico e continuava sugerindo o subprocesso de
+  landing #65, embora o próprio contrato privado declarasse que uma landing separada não se
+  aplicava.
+- **Causa-raiz:** a posição do produto expunha somente o macroprocesso mapeado pelo status e os
+  subprocessos derivados das tarefas. Ela não publicava a definição seguinte da cadeia; ao receber
+  `objectiveAchieved=true`, o frontend removia o processo concluído, mas não possuía um destino
+  backend para a continuidade.
+- **Correção sistêmica:** o endpoint de posição passa a expor `nextProcess` a partir da cadeia
+  publicada. A leitura canônica das atividades continua sendo a autoridade da conclusão; somente
+  depois dela o card apresenta o botão azul para o macroprocesso seguinte e oculta a sugestão
+  interna conflitante, sem iniciar trabalho ou antecipar transição comercial.
+- **Prevenção:** testes backend comprovam identidade e ausência de sucessor no fim da cadeia;
+  testes frontend reproduzem Mira com processo 4 concluído, processo 5 informado e landing opcional
+  histórica, exigindo um único destino azul, produto/cadeia preservados e zero escrita HTTP.
+
 ## LOOP-PDE-INTERFACE-SEGURA-COM-ROTA-LEGADA-INSEGURA — contrato contornado fora da tela
 
 - **Sintoma confirmado em 2026-08-23:** a jornada oficial MUSA v7 usava link mágico e respostas

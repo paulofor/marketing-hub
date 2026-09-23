@@ -78,9 +78,11 @@
   o status salvo no momento da publicação.
 - Retomadas financeiras devem consumir `/api/facebook-campaign-resumptions/pending`, reservar por
   `claim` e reportar por `result`. Preservar a identidade da campanha e usar teto acumulado, incluindo
-  gasto anterior, com releitura nativa de orçamento e prazo antes da ativação. A exceção à parada
-  sem leads vem do limite efetivo informado pelo backend para aquele experimento; nunca alterar
-  o padrão global de R$ 25. Gasto indisponível bloqueia a retomada, sem inferir zero.
+  gasto anterior, com releitura nativa de orçamento e prazo antes da ativação. A fila não entrega
+  autorização antes da data inicial. Conjunto diário mantém `daily_budget` e recebe proteção por
+  `spend_cap` da campanha; conjunto vitalício mantém seu modo. Limites sem resultado e sem compra,
+  além da meta de compras, vêm do backend e não alteram a política dos demais experimentos. Gasto
+  indisponível bloqueia a retomada, sem inferir zero.
 - Na criação de criativos (`POST /adcreatives`), `call_to_action.type` deve ser sempre um enum técnico aceito pela Meta
   (ex.: `LEARN_MORE`, `SIGN_UP`, `SHOP_NOW`) e nunca o texto comercial do botão. Labels comerciais vindos do criativo
   devem ser normalizados antes do envio, usando fallback seguro (`LEARN_MORE` para destino web e `SIGN_UP` para lead form).

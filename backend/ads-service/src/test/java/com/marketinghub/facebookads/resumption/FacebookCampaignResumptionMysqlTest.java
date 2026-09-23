@@ -36,6 +36,13 @@ class FacebookCampaignResumptionMysqlTest {
               new JdbcConnection(connection));
       liquibase.update(new liquibase.Contexts());
       liquibase.update(new liquibase.Contexts());
+      Liquibase stopPolicyLiquibase =
+          new Liquibase(
+              "db/changelog/changesets/2026-09-22-facebook-campaign-resumption-stop-policy-v2.yaml",
+              new ClassLoaderResourceAccessor(),
+              new JdbcConnection(connection));
+      stopPolicyLiquibase.update(new liquibase.Contexts());
+      stopPolicyLiquibase.update(new liquibase.Contexts());
       try (Statement st = connection.createStatement();
           ResultSet rs =
               st.executeQuery(
@@ -64,7 +71,12 @@ class FacebookCampaignResumptionMysqlTest {
       r.setAdSetId("synthetic-adset");
       r.setStatus("PENDING");
       r.setTotalLimit(new BigDecimal("150"));
+      r.setDailyBudget(new BigDecimal("20"));
+      r.setStartDate(LocalDate.now());
       r.setEndDate(LocalDate.now().plusDays(6));
+      r.setZeroResultSpendLimit(new BigDecimal("50"));
+      r.setZeroPurchaseSpendLimit(new BigDecimal("50"));
+      r.setPurchaseStopCount(5);
       r.setReason("Homologação local sem mídia real");
       r.setDestinationUrl("https://example.invalid");
       r.setRequestedAt(Instant.now());
@@ -81,6 +93,10 @@ class FacebookCampaignResumptionMysqlTest {
       session.clear();
       assertThat(session.find(FacebookCampaignResumption.class, r.getId()).getTotalLimit())
           .isEqualByComparingTo("150");
+      assertThat(session.find(FacebookCampaignResumption.class, r.getId()).getDailyBudget())
+          .isEqualByComparingTo("20");
+      assertThat(session.find(FacebookCampaignResumption.class, r.getId()).getPurchaseStopCount())
+          .isEqualTo(5);
     } finally {
       StandardServiceRegistryBuilder.destroy(registry);
     }

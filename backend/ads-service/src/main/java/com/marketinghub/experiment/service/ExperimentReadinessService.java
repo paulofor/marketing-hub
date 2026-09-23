@@ -24,7 +24,6 @@ import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import java.math.BigDecimal;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -550,7 +549,7 @@ public class ExperimentReadinessService {
     return issues.isEmpty();
   }
 
-  /** Confirma a ausência de verba no canal direto ou um plano financeiro completo no Facebook. */
+  /** Confirma a ausência de verba no canal direto ou limites completos e coerentes no Facebook. */
   private boolean hasReadyMediaBudget(Experiment experiment) {
     if (experiment == null) {
       return false;
@@ -570,9 +569,7 @@ public class ExperimentReadinessService {
         || experiment.getStartDate().isAfter(experiment.getEndDate())) {
       return false;
     }
-    long inclusiveDays =
-        ChronoUnit.DAYS.between(experiment.getStartDate(), experiment.getEndDate()) + 1;
-    return dailyBudget.multiply(BigDecimal.valueOf(inclusiveDays)).compareTo(mediaSpendLimit) <= 0;
+    return true;
   }
 
   /** Trata zero legado como ausência de verba para experimentos de canal direto. */

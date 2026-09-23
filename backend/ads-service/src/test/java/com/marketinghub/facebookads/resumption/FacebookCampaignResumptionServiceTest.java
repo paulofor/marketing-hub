@@ -86,6 +86,9 @@ class FacebookCampaignResumptionServiceTest {
     assertThat(e.getStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
     assertThat(saved.getPreviousLimit()).isEqualByComparingTo("100");
     assertThat(saved.getPreviousEndDate()).isEqualTo(LocalDate.of(2026, 9, 11));
+    assertThat(saved.getDailyBudget()).isEqualByComparingTo("20");
+    assertThat(saved.getZeroPurchaseSpendLimit()).isEqualByComparingTo("50");
+    assertThat(saved.getPurchaseStopCount()).isEqualTo(5);
     assertThat(e.getFunnelResetAt()).isEqualTo(Instant.parse("2026-09-06T22:18:58Z"));
     assertThat(service.summary(91L).synchronizedSpend()).isEqualByComparingTo("27.45");
     var claim = service.claim(1L);
@@ -93,7 +96,9 @@ class FacebookCampaignResumptionServiceTest {
     assertThatThrownBy(() -> service.claim(1L)).hasMessageContaining("reservada");
     var evidence =
         json.readTree(
-            "{\"campaignId\":\"campaign\",\"campaignStatus\":\"ACTIVE\",\"adSetId\":\"adset\",\"lifetimeBudgetMinor\":15000,\"spend\":27.45,\"endDate\":\""
+            "{\"campaignId\":\"campaign\",\"campaignStatus\":\"ACTIVE\",\"adSetId\":\"adset\",\"budgetMode\":\"DAILY_WITH_CAMPAIGN_CAP\",\"campaignSpendCapMinor\":15000,\"dailyBudgetMinor\":2000,\"spend\":27.45,\"startDate\":\""
+                + LocalDate.now(ZoneId.of("America/Sao_Paulo"))
+                + "\",\"endDate\":\""
                 + end
                 + "\"}");
     var result = new ResumeCampaignResult(claim.leaseToken(), true, null, evidence);
@@ -154,14 +159,32 @@ class FacebookCampaignResumptionServiceTest {
                 service.request(
                     91L,
                     new ResumeCampaignRequest(
-                        new BigDecimal("150"), end, "Coletar mais dados", false, true)))
+                        new BigDecimal("150"),
+                        new BigDecimal("20"),
+                        LocalDate.now(ZoneId.of("America/Sao_Paulo")),
+                        end,
+                        new BigDecimal("50"),
+                        new BigDecimal("50"),
+                        5,
+                        "Coletar mais dados",
+                        false,
+                        false)))
         .hasMessageContaining("Confirme");
     assertThatThrownBy(
             () ->
                 service.request(
                     91L,
                     new ResumeCampaignRequest(
-                        new BigDecimal("27.45"), end, "Coletar mais dados", true, true)))
+                        new BigDecimal("27.45"),
+                        new BigDecimal("20"),
+                        LocalDate.now(ZoneId.of("America/Sao_Paulo")),
+                        end,
+                        new BigDecimal("27.45"),
+                        new BigDecimal("27.45"),
+                        5,
+                        "Coletar mais dados",
+                        true,
+                        false)))
         .hasMessageContaining("superar");
     assertThatThrownBy(
             () ->
@@ -169,35 +192,50 @@ class FacebookCampaignResumptionServiceTest {
                     91L,
                     new ResumeCampaignRequest(
                         new BigDecimal("150"),
+                        new BigDecimal("20"),
                         LocalDate.now().minusDays(2),
+                        end,
+                        new BigDecimal("50"),
+                        new BigDecimal("50"),
+                        5,
                         "Coletar mais dados",
                         true,
-                        true)))
-        .hasMessageContaining("Prazo");
+                        false)))
+        .hasMessageContaining("Início");
     c.setStatus(FacebookAdStatus.ACTIVE);
     assertThatThrownBy(() -> service.request(91L, input())).hasMessageContaining("pausada");
     verify(requests, never()).save(any());
   }
 
-  /** Mantém a regra padrão nos demais experimentos e limita qualquer exceção ao teto absoluto. */
+  /** Mantém a regra padrão nos demais experimentos e limita cada parada ao teto absoluto. */
   @Test
   void isolatesFinancialException() {
     assertThat(ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(e))
         .isEqualByComparingTo("25");
     service.request(91L, input());
     assertThat(ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(e))
-        .isEqualByComparingTo("150");
+        .isEqualByComparingTo("50");
+    assertThat(e.getZeroPurchaseSpendLimit()).isEqualByComparingTo("50");
     assertThat(ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(new Experiment()))
         .isEqualByComparingTo("25");
     e.setMediaSpendLimit(new BigDecimal("125"));
     assertThat(ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(e))
-        .isEqualByComparingTo("125");
+        .isEqualByComparingTo("50");
   }
 
   /** Fornece a autorização explícita do cenário de retomada controlada. */
   private ResumeCampaignRequest input() {
     return new ResumeCampaignRequest(
-        new BigDecimal("150"), end, "Coletar mais dados preservando a campanha", true, true);
+        new BigDecimal("150"),
+        new BigDecimal("20"),
+        LocalDate.now(ZoneId.of("America/Sao_Paulo")),
+        end,
+        new BigDecimal("50"),
+        new BigDecimal("50"),
+        5,
+        "Coletar mais dados preservando a campanha",
+        true,
+        false);
   }
 
   /** Percorre as rotas HTTP reais com serviço canônico e persistência simulada segregada. */
@@ -222,7 +260,7 @@ class FacebookCampaignResumptionServiceTest {
         .andExpect(
             org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.status")
                 .value("PENDING"));
-    when(requests.findPending(any(), any())).thenReturn(List.of(saved));
+    when(requests.findPending(any(), any(), any())).thenReturn(List.of(saved));
     mvc.perform(
             org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
                 "/api/facebook-campaign-resumptions/pending"))
@@ -244,7 +282,9 @@ class FacebookCampaignResumptionServiceTest {
             .put("campaignId", "campaign")
             .put("campaignStatus", "ACTIVE")
             .put("adSetId", "adset")
+            .put("budgetMode", "LIFETIME")
             .put("lifetimeBudgetMinor", 15000)
+            .put("startDate", LocalDate.now(ZoneId.of("America/Sao_Paulo")).toString())
             .put("endDate", end.toString())
             .put("spend", new BigDecimal("27.45"));
     var result =

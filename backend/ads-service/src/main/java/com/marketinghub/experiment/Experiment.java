@@ -238,6 +238,14 @@ public class Experiment {
   @Column(name = "zero_result_spend_limit", precision = 10, scale = 2)
   private java.math.BigDecimal zeroResultSpendLimit;
 
+  /** Limite acumulado de mídia sem compra atribuída autorizado para esta execução. */
+  @Column(name = "zero_purchase_spend_limit", precision = 10, scale = 2)
+  private java.math.BigDecimal zeroPurchaseSpendLimit;
+
+  /** Quantidade de compras atribuídas que encerra a coleta comercial desta autorização. */
+  @Column(name = "purchase_stop_count")
+  private Integer purchaseStopCount;
+
   @Column(name = "unit_price_brl", precision = 10, scale = 2)
   private java.math.BigDecimal unitPrice;
 

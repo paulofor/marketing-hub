@@ -1,0 +1,113 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-22-experiment-purchase-stop-count-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: experiment
+                columnName: purchase_stop_count
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE experiment ADD COLUMN purchase_stop_count INT NULL AFTER zero_result_spend_limit;
+  - changeSet:
+      id: 2026-09-22-facebook-resumption-daily-budget-v2
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_campaign_resumption
+                columnName: daily_budget
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_campaign_resumption ADD COLUMN daily_budget DECIMAL(10,2) NULL AFTER total_limit;
+  - changeSet:
+      id: 2026-09-22-facebook-resumption-start-date-v2
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_campaign_resumption
+                columnName: start_date
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_campaign_resumption ADD COLUMN start_date DATE NULL AFTER previous_end_date;
+  - changeSet:
+      id: 2026-09-22-facebook-resumption-zero-result-limit-v2
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_campaign_resumption
+                columnName: zero_result_spend_limit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_campaign_resumption ADD COLUMN zero_result_spend_limit DECIMAL(10,2) NULL AFTER end_date;
+  - changeSet:
+      id: 2026-09-22-experiment-zero-purchase-limit-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: experiment
+                columnName: zero_purchase_spend_limit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE experiment ADD COLUMN zero_purchase_spend_limit DECIMAL(10,2) NULL AFTER zero_result_spend_limit;
+  - changeSet:
+      id: 2026-09-22-facebook-resumption-zero-purchase-limit-v2
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_campaign_resumption
+                columnName: zero_purchase_spend_limit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_campaign_resumption ADD COLUMN zero_purchase_spend_limit DECIMAL(10,2) NULL AFTER zero_result_spend_limit;
+  - changeSet:
+      id: 2026-09-22-facebook-resumption-purchase-stop-count-v2
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_campaign_resumption
+                columnName: purchase_stop_count
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_campaign_resumption ADD COLUMN purchase_stop_count INT NULL AFTER zero_purchase_spend_limit;

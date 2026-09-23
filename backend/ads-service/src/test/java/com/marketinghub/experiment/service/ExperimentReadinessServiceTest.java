@@ -215,6 +215,37 @@ class ExperimentReadinessServiceTest {
     assertThat(summary.runningGateRequirements()).allMatch(requirement -> requirement.ready());
   }
 
+  /** Mantém a campanha pronta quando o teto absoluto encerra antes do ritmo diário máximo. */
+  @Test
+  void shouldAcceptDailyBudgetWhoseFullWindowCouldExceedAbsoluteCap() {
+    Long experimentId = 88L;
+    Experiment experiment = buildExperiment(experimentId, 188L);
+    experiment.setDailyBudget(new BigDecimal("20.00"));
+    experiment.setMediaSpendLimit(new BigDecimal("125.00"));
+    experiment.setStartDate(LocalDate.of(2026, 9, 23));
+    experiment.setEndDate(LocalDate.of(2026, 9, 29));
+    LeadPortalFlow flow = new LeadPortalFlow();
+    flow.setApproved(true);
+    experiment.setLeadPortalFlow(flow);
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(2L);
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(true);
+    mockPublishableSelection(
+        experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+    mockCompletedGeraLandingStages(experimentId);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.runningGateRequirements())
+        .filteredOn(requirement -> requirement.code().equals("MEDIA_BUDGET_READY"))
+        .singleElement()
+        .satisfies(requirement -> assertThat(requirement.ready()).isTrue());
+  }
+
   /** Bloqueia a publicação Meta quando o teto total não acompanha o orçamento diário. */
   @Test
   void shouldBlockFacebookCampaignWithoutAuthorizedMediaSpendLimit() {

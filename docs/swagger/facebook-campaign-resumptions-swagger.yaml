@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Retomada financeira de campanhas Meta
-  version: 1.0.0
-  description: Autoriza teto acumulado, preserva histórico e confirma Meta antes de RUNNING. Suporta BRL e um conjunto com orçamento vitalício.
+  version: 2.0.0
+  description: Autoriza orçamento diário, teto acumulado, janela e condições de parada; preserva histórico e confirma Meta antes de RUNNING. Suporta BRL e um conjunto diário ou vitalício.
 paths:
   /api/facebook-campaign-resumptions/experiments/{id}:
     parameters:
@@ -21,24 +21,32 @@ paths:
                   available: {type: boolean}
                   blocker: {type: string, nullable: true}
                   synchronizedSpend: {type: number}
+                  dailyBudget: {type: number, nullable: true}
                   currentLimit: {type: number, nullable: true}
                   zeroResultStopSpend: {type: number}
+                  zeroPurchaseStopSpend: {type: number, nullable: true}
+                  purchaseStopCount: {type: integer, nullable: true}
                   latest: {$ref: '#/components/schemas/Execution'}
     post:
-      summary: Registra autorização e exceção individual sem ativar mídia na requisição
+      summary: Registra orçamento, janela e paradas autorizadas sem ativar mídia na requisição
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [totalLimit, endDate, reason, authorizeSpending, useTotalLimitForZeroResults]
+              required: [totalLimit, dailyBudget, startDate, endDate, zeroResultSpendLimit, zeroPurchaseSpendLimit, reason, authorizeSpending]
               properties:
                 totalLimit: {type: number, minimum: 0.01, multipleOf: 0.01, description: 'Teto acumulado BRL, incluindo gasto anterior'}
-                endDate: {type: string, format: date, description: 'Prazo entre hoje e 30 dias; fim às 23:59:59 em America/Sao_Paulo'}
+                dailyBudget: {type: number, minimum: 0.01, multipleOf: 0.01, description: 'Ritmo diário máximo no conjunto; pode encerrar antes pelo teto acumulado'}
+                startDate: {type: string, format: date, description: 'Início entre hoje e 30 dias em America/Sao_Paulo; a fila não entrega antes desta data'}
+                endDate: {type: string, format: date, description: 'Fim na mesma janela, às 23:59:59 em America/Sao_Paulo'}
+                zeroResultSpendLimit: {type: number, minimum: 0.01, multipleOf: 0.01, description: 'Gasto acumulado máximo sem qualquer resultado primário'}
+                zeroPurchaseSpendLimit: {type: number, minimum: 0.01, multipleOf: 0.01, nullable: true, description: 'Gasto acumulado máximo sem compra, mesmo com resultado intermediário'}
+                purchaseStopCount: {type: integer, minimum: 1, nullable: true, description: 'Compras atribuídas que encerram a coleta como sucesso'}
                 reason: {type: string, minLength: 10, maxLength: 800}
                 authorizeSpending: {type: boolean, enum: [true]}
-                useTotalLimitForZeroResults: {type: boolean, enum: [true]}
+                useTotalLimitForZeroResults: {type: boolean, description: 'Compatibilidade legada; usa o teto como limite sem resultados quando zeroResultSpendLimit estiver ausente'}
       responses:
         '200': {description: 'Pedido pendente ou repetição idempotente; não significa campanha ativa'}
         '400': {description: 'Consentimento, teto, motivo ou prazo inválidos'}
@@ -74,7 +82,7 @@ paths:
                 error: {type: string, nullable: true}
                 evidence:
                   type: object
-                  description: 'Snapshots Meta sem token. Sucesso exige campaignId, campaignStatus=ACTIVE, adSetId, lifetimeBudgetMinor, endDate e spend menor que o teto.'
+                  description: 'Snapshots Meta sem token. Sucesso exige IDs, campanha ACTIVE, budgetMode, orçamento/teto nativos, startDate, endDate e gasto menor que o teto.'
       responses:
         '200': {description: 'Resultado persistido; callback repetido é idempotente'}
         '409': {description: 'Reserva inválida ou evidência divergente'}
@@ -95,7 +103,12 @@ components:
         adSetId: {type: string}
         status: {type: string, enum: [PENDING, RUNNING, COMPLETED, FAILED]}
         totalLimit: {type: number}
+        dailyBudget: {type: number, nullable: true}
+        startDate: {type: string, format: date, nullable: true}
         endDate: {type: string, format: date}
+        zeroResultSpendLimit: {type: number, nullable: true}
+        zeroPurchaseSpendLimit: {type: number, nullable: true}
+        purchaseStopCount: {type: integer, nullable: true}
         reason: {type: string}
         destinationUrl: {type: string}
         requestedAt: {type: string, format: date-time}

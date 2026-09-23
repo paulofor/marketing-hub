@@ -9,8 +9,10 @@ const summary = {
   applicable: true,
   available: true,
   synchronizedSpend: 27.45,
+  dailyBudget: 20,
   currentLimit: 100,
   zeroResultStopSpend: 25,
+  zeroPurchaseStopSpend: null,
   latest: null,
 };
 function mount() {
@@ -41,17 +43,24 @@ describe("Retomada financeira Meta", () => {
     mount();
     const user = userEvent.setup();
     const submit = await screen.findByRole("button", {
-      name: "Autorizar e retomar na Meta",
+      name: "Autorizar retomada",
     });
     expect(submit).toBeDisabled();
+    await user.type(screen.getByLabelText("Orçamento diário (R$) *"), "20");
     await user.type(
       screen.getByLabelText("Teto acumulado de mídia (R$) *"),
-      "150",
+      "125",
+    );
+    await user.type(
+      screen.getByLabelText("Data inicial da retomada *"),
+      "2026-09-23",
     );
     await user.type(
       screen.getByLabelText("Data final da retomada *"),
-      "2026-09-26",
+      "2026-09-29",
     );
+    await user.type(screen.getByLabelText("Parar sem compra em (R$) *"), "50");
+    await user.type(screen.getByLabelText("Parar ao atingir compras"), "5");
     await user.type(
       screen.getByLabelText("Motivo da retomada *"),
       "Coletar mais dados do interesse no produto",
@@ -65,11 +74,16 @@ describe("Retomada financeira Meta", () => {
       expect(axios.post).toHaveBeenCalledWith(
         "/api/facebook-campaign-resumptions/experiments/91",
         {
-          totalLimit: 150,
-          endDate: "2026-09-26",
+          totalLimit: 125,
+          dailyBudget: 20,
+          startDate: "2026-09-23",
+          endDate: "2026-09-29",
+          zeroResultSpendLimit: 50,
+          zeroPurchaseSpendLimit: 50,
+          purchaseStopCount: 5,
           reason: "Coletar mais dados do interesse no produto",
           authorizeSpending: true,
-          useTotalLimitForZeroResults: true,
+          useTotalLimitForZeroResults: false,
         },
       ),
     );
@@ -85,7 +99,11 @@ describe("Retomada financeira Meta", () => {
           id: 1,
           status: "FAILED",
           totalLimit: 150,
+          dailyBudget: 20,
+          startDate: "2026-09-20",
           endDate: "2026-09-26",
+          zeroResultSpendLimit: 50,
+          zeroPurchaseSpendLimit: 50,
           reason: "Coletar mais dados",
           error: "Meta não confirmou orçamento",
         },
@@ -99,11 +117,23 @@ describe("Retomada financeira Meta", () => {
       screen.queryByText(/Meta confirmou orçamento, prazo e campanha ativa/),
     ).not.toBeInTheDocument();
   });
-  it("apresenta campanha legada sem teto sem quebrar a tela", async () => {
+  it("apresenta autorização legada sem os campos novos sem quebrar a tela", async () => {
     vi.mocked(axios.get).mockResolvedValue({
-      data: { ...summary, currentLimit: null },
+      data: {
+        ...summary,
+        currentLimit: null,
+        latest: {
+          id: 7,
+          status: "FAILED",
+          totalLimit: 150,
+          endDate: "2026-09-26",
+          reason: "Autorização anterior à política estruturada",
+        },
+      },
     });
     mount();
     expect(await screen.findByText("Não informado")).toBeInTheDocument();
+    expect(screen.getByText(/Até 2026-09-26/)).toBeInTheDocument();
+    expect(screen.queryByText(/null/)).not.toBeInTheDocument();
   });
 });

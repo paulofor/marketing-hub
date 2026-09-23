@@ -6366,6 +6366,30 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   confirmação divergente, ausência de Insights, duplicidade e tela com consentimento.
   Matriz: `docs/homologacao/vega91-retomada-financeira-v1.md`.
 
+## LOOP-META-RETOMADA-INCOMPATIVEL-COM-ORCAMENTO-DIARIO — autorização não executável
+
+- **Data:** 22/09/2026.
+- **Evidência:** Capella #7, experimento #88, já possuía campanha Meta pausada com um único
+  conjunto de orçamento diário de R$ 20 e gasto acumulado. O gate do processo chamava a liberação
+  de primeira publicação, que bloqueia corretamente campanha duplicada. A retomada existente
+  aceitava somente conjunto vitalício e não representava início futuro, parada em R$ 50 sem compra
+  nem encerramento em cinco compras.
+- **Causa:** primeira publicação e retomada usavam contratos financeiros diferentes; o processo
+  humano não exigia uma autorização de retomada correspondente ao plano vigente. Além disso,
+  `daily_budget × dias` era tratado como gasto obrigatório, rejeitando teto menor mesmo com
+  `spend_cap` nativo.
+- **Alternativas avaliadas:** nova campanha perderia coorte e histórico; conversão para orçamento
+  vitalício mudaria a configuração auditada; preservar o ad set diário e aplicar teto no nível da
+  campanha mantém identidade, esforço e proteção financeira. A terceira foi adotada.
+- **Correção:** autorização estruturada com orçamento diário, teto acumulado, início/fim, parada
+  sem resultado, parada sem compra e meta de compras; fila só a partir do início; worker valida
+  `daily_budget`, `spend_cap`, término e estado na Meta. O gate humano reutiliza a campanha apenas
+  quando essa autorização coincide com o experimento.
+- **Prevenção:** testes do caso original e de identificadores independentes cobrem orçamento diário
+  e vitalício, janela futura, readback divergente, gasto indisponível, callback, ausência de compra
+  apesar de lead, cinco compras, concorrência e idempotência. Matriz:
+  `docs/homologacao/capella88-retomada-autorizada-v2.md`.
+
 ## LOOP-QUARTZO-HOMOLOGACAO-EXIGE-SLOT-OPALA — 20/09/2026
 
 - **Histórico confirmado:** Capella #7 é Quartzo; experimento #88 tem página

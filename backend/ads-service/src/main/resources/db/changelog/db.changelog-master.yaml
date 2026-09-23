@@ -2127,3 +2127,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-22-pde-commercial-principles-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-22-facebook-campaign-resumption-stop-policy-v2.yaml
+      relativeToChangelogFile: true

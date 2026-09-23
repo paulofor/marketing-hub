@@ -115,6 +115,73 @@ public class ExperimentFunnelAutoStopService {
     return true;
   }
 
+  /** Interrompe a campanha quando o gasto autorizado sem compra atribuída atinge seu limite. */
+  public boolean stopIfNoPurchaseAfterAuthorizedSpend(Experiment experiment) {
+    if (!isEligibleForZeroPrimaryResultStop(experiment)
+        || experiment.getZeroPurchaseSpendLimit() == null
+        || experiment.getZeroPurchaseSpendLimit().signum() <= 0) {
+      return false;
+    }
+    BigDecimal campaignSpend = resolveCampaignSpend(experiment);
+    if (campaignSpend.compareTo(experiment.getZeroPurchaseSpendLimit()) < 0) {
+      return false;
+    }
+    ExperimentFunnelDiagnosticsResponseDto diagnostics =
+        diagnosticService.diagnose(experiment.getId());
+    long purchases = successesFor(diagnostics, ExperimentFunnelStage.COMPRA);
+    if (purchases > 0) {
+      return false;
+    }
+    String reason =
+        "campanha gastou R$ %s sem compra atribuída"
+            .formatted(
+                experiment
+                    .getZeroPurchaseSpendLimit()
+                    .setScale(2)
+                    .toPlainString()
+                    .replace('.', ','));
+    LOGGER.warn(
+        "Automatic campaign stop triggered for experiment {} due to zero purchase after authorized spend: spend={}, zeroPurchaseSpendLimit={}",
+        experiment.getId(),
+        campaignSpend,
+        experiment.getZeroPurchaseSpendLimit());
+    invalidateExperimentAndRequestStops(
+        experiment,
+        FacebookCampaignStopReason.CAMPAIGN_ZERO_PURCHASE_AFTER_AUTHORIZED_SPEND,
+        reason);
+    return true;
+  }
+
+  /** Pausa a campanha como sucesso quando as compras atribuídas atingem a meta autorizada. */
+  public boolean stopIfPurchaseGoalReached(Experiment experiment) {
+    if (experiment == null
+        || experiment.getStatus() != ExperimentStatus.RUNNING
+        || experiment.getPurchaseStopCount() == null
+        || experiment.getPurchaseStopCount() <= 0) {
+      return false;
+    }
+    ExperimentFunnelDiagnosticsResponseDto diagnostics =
+        diagnosticService.diagnose(experiment.getId());
+    long purchases = successesFor(diagnostics, ExperimentFunnelStage.COMPRA);
+    if (purchases < experiment.getPurchaseStopCount()) {
+      return false;
+    }
+    String reason =
+        "meta autorizada de %d compras confirmadas atingida"
+            .formatted(experiment.getPurchaseStopCount());
+    LOGGER.info(
+        "Automatic campaign success stop triggered for experiment {}: purchases={}, purchaseStopCount={}",
+        experiment.getId(),
+        purchases,
+        experiment.getPurchaseStopCount());
+    experiment.setStatus(ExperimentStatus.STANDBY);
+    standbyService.requestFacebookCampaignStops(
+        experiment.getId(), FacebookCampaignStopReason.CAMPAIGN_PURCHASE_GOAL_REACHED, reason);
+    runMetricLifecycleService.completeCommercialSuccess(
+        experiment, FacebookCampaignStopReason.CAMPAIGN_PURCHASE_GOAL_REACHED, reason);
+    return true;
+  }
+
   /**
    * Mantém elegíveis a execução ativa e a pausa externa recém-reconciliada, sem reabrir estados
    * comerciais já encerrados.

@@ -594,6 +594,14 @@ do plano não pode ser exibido como se fosse o valor autorizado para a campanha.
 confirmação deve declarar claramente que publica a campanha e autoriza gasto dentro desses limites;
 texto genérico de “sem gasto” é proibido nesse gate.
 
+Quando o experimento já possuir campanha Meta, 5.5 não chama novamente o contrato de primeira
+publicação. Antes do aceite, o backend exige uma retomada estruturada vigente da mesma campanha,
+com orçamento diário, teto acumulado, início, fim e condições de parada. A execução futura pode ser
+autorizada antes da data inicial, mas a fila operacional não a entrega antes dessa data. O teto pode
+ser menor que `orçamento diário × dias`, pois orçamento diário é ritmo máximo e o teto é a trava
+absoluta. O aceite do processo comprova autorização; `RUNNING` continua dependente da confirmação
+nativa da Meta.
+
 Na revisão 5.1.7, a linhagem de criativos permanece visível, mas somente o descendente final
 `READY` e `APPROVED` é a comunicação efetiva. A revisão deve exigir exatamente uma candidata final,
 comparar nela os termos materiais com página e checkout e consumir a governança da mídia vinculada

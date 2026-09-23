@@ -155,14 +155,13 @@ class ExperimentServiceTest {
     assertThat(saved.getFunnelPromise()).isEqualTo(request.getFunnelPromise());
   }
 
-  /** Mantém a validação integral ao alterar verba, teto ou período, sem flexibilizar publicação. */
+  /** Mantém a validação integral quando a edição ainda deixa verba ou período incompletos. */
   @ParameterizedTest
-  @ValueSource(strings = {"daily", "limit", "period"})
+  @ValueSource(strings = {"daily", "period"})
   void contentEditDoesNotBypassChangedMediaPlan(String field) {
     Experiment original = legacyExperimentForContentEdit(new BigDecimal("20"));
     UpdateExperimentRequest request = contentEditFor(original);
     if (field.equals("daily")) request.setDailyBudget(new BigDecimal("30"));
-    if (field.equals("limit")) request.setMediaSpendLimit(new BigDecimal("30"));
     if (field.equals("period")) request.setEndDate(original.getEndDate().plusDays(1));
 
     assertThatThrownBy(() -> service.update(original.getId(), request))
@@ -545,9 +544,9 @@ class ExperimentServiceTest {
         .hasMessageContaining("sucessor Facebook já existe");
   }
 
-  /** Recusa um período cujo gasto planejado ultrapassa o teto total autorizado. */
+  /** Aceita teto menor que orçamento diário vezes dias porque o teto interrompe antes da janela. */
   @Test
-  void createFacebookSuccessorRejectsPlanAboveAuthorizedLimit() {
+  void createFacebookSuccessorAcceptsDailyPacingWithLowerAbsoluteCap() {
     MarketNiche niche =
         nicheRepository.save(MarketNiche.builder().name("Vega teto Facebook").build());
     Product product = productRepository.findById(testProductId).orElseThrow();
@@ -581,20 +580,32 @@ class ExperimentServiceTest {
                 .followUpActionUrl("https://v7.clubemusa.com.br")
                 .commercialCheckoutUrl("https://go.pepper.com.br/owm6x")
                 .build());
+    FacebookAccount account =
+        facebookAccountRepository.save(
+            FacebookAccount.builder().name("Conta Vega teto").adAccountId("act_vega_cap").build());
+    FacebookPage page =
+        facebookPageRepository.save(
+            FacebookPage.builder()
+                .account(account)
+                .pageId("page-vega-cap")
+                .name("Vega teto")
+                .build());
+    InstagramAccount instagram = createInstagramAccount();
 
-    assertThatThrownBy(
-            () ->
-                service.createFacebookSuccessor(
-                    source.getId(),
-                    new CreateFacebookSuccessorRequest(
-                        new BigDecimal("20.00"),
-                        new BigDecimal("100.00"),
-                        LocalDate.of(2026, 9, 1),
-                        LocalDate.of(2026, 9, 6),
-                        1L,
-                        1L)))
-        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-        .hasMessageContaining("ultrapassa o teto total");
+    Experiment successor =
+        service.createFacebookSuccessor(
+            source.getId(),
+            new CreateFacebookSuccessorRequest(
+                new BigDecimal("20.00"),
+                new BigDecimal("100.00"),
+                LocalDate.of(2026, 9, 1),
+                LocalDate.of(2026, 9, 6),
+                page.getId(),
+                instagram.getId()));
+
+    assertThat(successor.getDailyBudget()).isEqualByComparingTo("20.00");
+    assertThat(successor.getMediaSpendLimit()).isEqualByComparingTo("100.00");
+    assertThat(successor.getEndDate()).isEqualTo(LocalDate.of(2026, 9, 6));
   }
 
   @Test

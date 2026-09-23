@@ -17,10 +17,12 @@ import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.dto.ExperimentRunningGateRequirementDto;
 import com.marketinghub.experiment.run.ExperimentRun;
 import com.marketinghub.experiment.run.ExperimentRunMode;
+import com.marketinghub.facebookads.resumption.service.FacebookCampaignResumptionService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.math.BigDecimal;
@@ -37,9 +39,19 @@ class PdeCommercialActivationHumanActivityHandlerTest {
   private final ExperimentReadinessService readinessService =
       mock(ExperimentReadinessService.class);
   private final ExperimentService experimentService = mock(ExperimentService.class);
+  private final FacebookAdsCampaignRepository campaigns = mock(FacebookAdsCampaignRepository.class);
+  private final FacebookCampaignResumptionService campaignResumptions =
+      mock(FacebookCampaignResumptionService.class);
   private final PdeCommercialActivationHumanActivityHandler handler =
       new PdeCommercialActivationHumanActivityHandler(
-          experiments, runs, plans, cycles, readinessService, experimentService);
+          experiments,
+          runs,
+          plans,
+          cycles,
+          readinessService,
+          experimentService,
+          campaigns,
+          campaignResumptions);
 
   /** Libera a decisão somente com gates verdes e teto financeiro positivo. */
   @Test
@@ -258,6 +270,57 @@ class PdeCommercialActivationHumanActivityHandlerTest {
             "CONFIRM:pde-commercial-homologation-activation:authorization"));
 
     verify(experimentService).releaseForFacebook(89L);
+    verify(experimentService, never()).updateStatus(89L, ExperimentStatus.RUNNING);
+  }
+
+  /** Exige autorização financeira estruturada antes de aceitar campanha já publicada. */
+  @Test
+  void blocksExistingCampaignWithoutCurrentResumptionAuthorization() {
+    Product product = Product.builder().id(9L).build();
+    Experiment experiment = experiment(product, ExperimentStatus.USER_STOPPED);
+    when(experiments.findById(89L)).thenReturn(java.util.Optional.of(experiment));
+    when(readinessService.summarize(89L)).thenReturn(readiness(true));
+    when(plans.findByExperimentReference(89L))
+        .thenReturn(
+            List.of(CommercialPlan.builder().id(4L).maxBudget(new BigDecimal("400.00")).build()));
+    when(runs.findTopByExperimentIdAndModeOrderByRunNumberDesc(89L, ExperimentRunMode.PRODUCTION))
+        .thenReturn(java.util.Optional.of(ExperimentRun.builder().id(9L).runNumber(2).build()));
+    when(campaigns.existsByExperimentId(89L)).thenReturn(true);
+
+    HumanProductProcessActivityReadiness result =
+        handler.readiness(process(), activity(), product, "experiment:89");
+
+    assertThat(result.ready()).isFalse();
+    assertThat(result.requirements())
+        .anySatisfy(
+            requirement -> {
+              assertThat(requirement.code()).isEqualTo("CAMPAIGN_RESUMPTION_AUTHORIZED");
+              assertThat(requirement.satisfied()).isFalse();
+            });
+  }
+
+  /** Reutiliza a campanha somente depois que a autorização estruturada vigente foi confirmada. */
+  @Test
+  void approvesExistingCampaignWithoutPublishingAnotherOne() {
+    Product product = Product.builder().id(9L).build();
+    Experiment experiment = experiment(product, ExperimentStatus.USER_STOPPED);
+    when(experiments.findById(89L)).thenReturn(java.util.Optional.of(experiment));
+    when(campaigns.existsByExperimentId(89L)).thenReturn(true);
+
+    handler.approve(
+        process(),
+        activity(),
+        product,
+        "experiment:89",
+        new ProductProcessActivityExecutionRequest(
+            "APPROVE",
+            "Paulo Operador",
+            "Retomada financeira e preflight revisados.",
+            "experiment-run:12",
+            "CONFIRM:pde-commercial-homologation-activation:authorization"));
+
+    verify(campaignResumptions).requireCurrentAuthorization(89L);
+    verify(experimentService, never()).releaseForFacebook(89L);
     verify(experimentService, never()).updateStatus(89L, ExperimentStatus.RUNNING);
   }
 

@@ -59,7 +59,6 @@ import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -2009,7 +2008,7 @@ public class ExperimentService {
     return first == null ? second == null : second != null && first.compareTo(second) == 0;
   }
 
-  /** Valida a combinação de orçamento diário, teto total e período do experimento. */
+  /** Valida orçamento diário, teto absoluto e período sem confundir ritmo com gasto máximo. */
   private void validateMediaSpendPlan(
       ExperimentPlatform platform,
       BigDecimal dailyBudget,
@@ -2045,13 +2044,6 @@ public class ExperimentService {
     }
     if (startDate.isAfter(endDate)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must be before endDate");
-    }
-    long inclusiveDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
-    BigDecimal maximumPlannedSpend = dailyBudget.multiply(BigDecimal.valueOf(inclusiveDays));
-    if (maximumPlannedSpend.compareTo(mediaSpendLimit) > 0) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST,
-          "O período planejado ultrapassa o teto total de mídia; reduza os dias ou o orçamento diário");
     }
   }
 

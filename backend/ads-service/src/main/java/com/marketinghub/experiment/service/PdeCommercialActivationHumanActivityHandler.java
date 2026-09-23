@@ -12,10 +12,12 @@ import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.run.ExperimentRun;
 import com.marketinghub.experiment.run.ExperimentRunMode;
+import com.marketinghub.facebookads.resumption.service.FacebookCampaignResumptionService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.math.BigDecimal;
@@ -46,6 +48,8 @@ public class PdeCommercialActivationHumanActivityHandler
   private final LearningSalesCycleRepository learningCycleRepository;
   private final ExperimentReadinessService readinessService;
   private final ExperimentService experimentService;
+  private final FacebookAdsCampaignRepository facebookAdsCampaignRepository;
+  private final FacebookCampaignResumptionService campaignResumptionService;
 
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.opala.commercial.v1.service.OpalaCommercialRouting opalaRouting;
@@ -57,13 +61,17 @@ public class PdeCommercialActivationHumanActivityHandler
       CommercialPlanRepository commercialPlanRepository,
       LearningSalesCycleRepository learningCycleRepository,
       ExperimentReadinessService readinessService,
-      ExperimentService experimentService) {
+      ExperimentService experimentService,
+      FacebookAdsCampaignRepository facebookAdsCampaignRepository,
+      FacebookCampaignResumptionService campaignResumptionService) {
     this.experimentRepository = experimentRepository;
     this.experimentRunRepository = experimentRunRepository;
     this.commercialPlanRepository = commercialPlanRepository;
     this.learningCycleRepository = learningCycleRepository;
     this.readinessService = readinessService;
     this.experimentService = experimentService;
+    this.facebookAdsCampaignRepository = facebookAdsCampaignRepository;
+    this.campaignResumptionService = campaignResumptionService;
   }
 
   /** Reconhece exclusivamente o gate humano da homologação comercial do PDE. */
@@ -135,6 +143,21 @@ public class PdeCommercialActivationHumanActivityHandler
                         requirement.ready(),
                         requirement.detail(),
                         requirement.recommendation())));
+    if (paidMedia && facebookAdsCampaignRepository.existsByExperimentId(experiment.getId())) {
+      boolean resumptionAuthorized =
+          campaignResumptionService.hasCurrentAuthorization(experiment.getId());
+      requirements.add(
+          new HumanProductProcessActivityRequirement(
+              "CAMPAIGN_RESUMPTION_AUTHORIZED",
+              "Retomada da campanha existente autorizada",
+              resumptionAuthorized,
+              resumptionAuthorized
+                  ? "Orçamento, janela e condições de parada pertencem à retomada vigente da mesma campanha."
+                  : "A campanha já existe e permanece pausada sem uma autorização estruturada de retomada.",
+              resumptionAuthorized
+                  ? "Preserve a campanha, a coorte e os limites autorizados."
+                  : "Abra o experimento e autorize a retomada financeira antes de concluir este gate."));
+    }
     requirements.add(
         new HumanProductProcessActivityRequirement(
             "BUDGET_LIMIT_DEFINED",
@@ -264,6 +287,10 @@ public class PdeCommercialActivationHumanActivityHandler
     Experiment experiment = referencedExperiment(product, sourceReference);
     if (experiment.getStatus() == ExperimentStatus.RUNNING) return;
     if (experiment.getPlatform() == ExperimentPlatform.FACEBOOK) {
+      if (facebookAdsCampaignRepository.existsByExperimentId(experiment.getId())) {
+        campaignResumptionService.requireCurrentAuthorization(experiment.getId());
+        return;
+      }
       experimentService.releaseForFacebook(experiment.getId());
       return;
     }

@@ -17,8 +17,11 @@ public interface FacebookCampaignResumptionRepository
 
   /** Lista trabalho pendente ou abandonado com limite e filtro no banco. */
   @Query(
-      "select r from FacebookCampaignResumption r where r.status = 'PENDING' or (r.status = 'RUNNING' and r.leaseUntil < :now) order by r.id")
-  List<FacebookCampaignResumption> findPending(@Param("now") Instant now, Pageable pageable);
+      "select r from FacebookCampaignResumption r where "
+          + "(r.status = 'PENDING' and (r.startDate is null or r.startDate <= :today)) "
+          + "or (r.status = 'RUNNING' and r.leaseUntil < :now) order by r.id")
+  List<FacebookCampaignResumption> findPending(
+      @Param("now") Instant now, @Param("today") java.time.LocalDate today, Pageable pageable);
 
   /** Impede reservas e callbacks concorrentes de alterarem a mesma execução. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)

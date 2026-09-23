@@ -574,7 +574,7 @@ class BusinessProcessActivityExecutionServiceTest {
         .containsExactly(1, 2, 3, 4, 5);
   }
 
-  /** Expõe o comando backend bloqueado sem quebrar a tela de produto ainda sem experimento. */
+  /** Expõe o bloqueio genérico ou a transição contextual sem fabricar uma execução. */
   @Test
   void explainsBackendActivityWhenProductHasNoExperiment() {
     BusinessProcessActivityDefinitionRepository activityDefinitions =
@@ -632,6 +632,36 @@ class BusinessProcessActivityExecutionServiceTest {
                   .contains("não possui experimento");
             });
     verify(backendExecutor, never()).readiness(any(), any(), any(), any());
+
+    when(backendExecutor.supportsReadinessWithoutExecutionContext()).thenReturn(true);
+    when(backendExecutor.readiness(process, preflight, product, null))
+        .thenReturn(
+            new BackendProductProcessActivityReadiness(
+                false,
+                "Crie o experimento comercial explícito.",
+                "Criar experimento comercial",
+                "Materialize as decisões persistidas sem publicar ou gastar.",
+                "COMMERCIAL_EXPERIMENT",
+                9L,
+                List.of(),
+                null,
+                "/experiments/new?nicheId=34&productId=9"));
+
+    var guided = executionService.productProcessExecutions(56L, 9L);
+
+    assertThat(guided.activities())
+        .singleElement()
+        .satisfies(
+            activity -> {
+              assertThat(activity.executionRequestAvailable()).isFalse();
+              assertThat(activity.executionRequestReason()).contains("experimento comercial");
+              assertThat(activity.executionControl().interactionType()).isEqualTo("WORKSPACE");
+              assertThat(activity.executionControl().actionLabel())
+                  .isEqualTo("Criar experimento comercial");
+              assertThat(activity.executionControl().navigationUrl())
+                  .isEqualTo("/experiments/new?nicheId=34&productId=9");
+            });
+    verify(backendExecutor).readiness(process, preflight, product, null);
   }
 
   /** Projeta e despacha a aprovação humana pelo mesmo contrato canônico da atividade. */

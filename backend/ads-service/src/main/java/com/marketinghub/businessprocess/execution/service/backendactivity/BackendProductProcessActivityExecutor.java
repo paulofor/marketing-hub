@@ -11,6 +11,11 @@ public interface BackendProductProcessActivityExecutor {
   boolean supports(
       BusinessProcessDefinition process, BusinessProcessActivityDefinition activityDefinition);
 
+  /** Informa se o executor consegue orientar a criação do contexto antes da primeira execução. */
+  default boolean supportsReadinessWithoutExecutionContext() {
+    return false;
+  }
+
   /** Verifica pré-condições persistidas sem produzir efeito externo ou alterar o processo. */
   BackendProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,

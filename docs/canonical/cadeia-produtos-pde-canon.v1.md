@@ -617,7 +617,7 @@ dentro dos limites financeiros, registrando a autorização humana sem antecipar
 
 | Número  | Atividade                                   | Responsabilidade e objetivo                                                                                                                                                                        |
 | ------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **5.1** | Preparar operação comercial conforme o tipo | Backend seleciona pelo tipo cadastrado e pela ficha o subprocesso aplicável. Opala (`PDE`) chama `opala-commercial-preparation-v1`; tipos sem percurso configurado não passam por Opala.           |
+| **5.1** | Preparar operação comercial conforme o tipo | Backend seleciona pelo tipo cadastrado e pela ficha o subprocesso aplicável. Opala (`PDE`), Quartzo (`LOW_TICKET_DIGITAL_PRODUCT`) e Safira (`AI_PRODUCT`) usam percursos próprios; tipo sem rota não passa por outro mineral. |
 | **5.2** | Validar experiência e valor para o cliente  | Psique comprova compreensão, uso e valor. Pode reutilizar o parecer vigente de 5.1.6 no mesmo escopo, sem nova chamada paga.                                                                       |
 | **5.3** | Validar integridade comercial               | Têmis comprova coerência entre anúncio, promessa, preço, condições, checkout e entrega. Pode reutilizar 5.1.7 no mesmo escopo.                                                                     |
 | **5.4** | Executar homologação técnica do experimento | Backend usa `experiment-homologation-activation` e as evidências técnicas vigentes para validar superfícies, compra simulada, acesso, entrega, falhas, eventos, segregação e controles de consumo. |
@@ -636,6 +636,21 @@ Para o tipo Opala, **5.1** contém:
 | **5.1.7** | Revisar integridade da jornada                 | Têmis                              |
 | **5.1.8** | Consolidar preparação e retornar ao Processo 5 | Backend                            |
 
+Para o tipo Safira, **5.1** chama `safira-commercial-preparation-v1` e contém:
+
+| Ordem | Atividade | Responsável |
+| --- | --- | --- |
+| **1** | Conferir jornada pública e prova de valor | Backend |
+| **2** | Conferir margem e parecer de Plutus | Backend |
+| **3** | Homologar experiência de compra e uso do Produto IA | Psique |
+| **4** | Revisar integridade comercial Safira | Têmis |
+| **5** | Consolidar preparação e retornar ao Processo 5 | Backend |
+
+Safira exige experimento de venda explícito, subtipo de Produto IA persistido, slot público do
+mesmo experimento, cinco critérios da oferta, checkout, entrega, criativo, público, plano comercial
+e economia completa. A validação multiagente privada pode ser referência do produto, mas nunca
+substitui cliente, utilidade humana, venda, plano comercial, experiência pública ou autorização.
+
 O reaproveitamento de 5.1.6 em 5.2 e de 5.1.7 em 5.3 registra a tarefa e a consolidação originais,
 impressão da evidência e custo incremental zero. Só é válido para o mesmo produto, cadeia, ciclo,
 experimento, versão e configuração comercial. Mudança material invalida o snapshot e exige renovar
@@ -643,8 +658,9 @@ somente o parecer afetado; os custos permanecem contabilizados no subprocesso or
 
 Em 5.4, o estado do run (`READY_TO_PUBLISH`, `RUNNING`, `PAUSED` ou equivalente) não comprova
 sozinho que a homologação continua vigente. Para Quartzo, o gate visual deve citar a publicação
-auditada atual, o SHA-256 do HTML e a impressão do contrato comercial congelado. Se qualquer uma
-dessas identidades mudar, o backend preserva o run anterior e cria outra tentativa; é proibido
+auditada atual, o SHA-256 do HTML e a impressão do contrato comercial congelado. Para Safira, deve
+citar o slot do experimento, o SHA-256 do contrato da experiência e o fingerprint comercial. Se
+qualquer uma dessas identidades mudar, o backend preserva o run anterior e cria outra tentativa; é proibido
 sobrescrever a evidência histórica ou reconciliar pixels de uma publicação anterior. A tentativa
 nova usa o contrato funcional de venda vigente, inclusive checkout e entrega, sem reativar mídia.
 
@@ -1015,3 +1031,18 @@ divulgação paga exige preflight, limites e autorização próprios do experime
 Ciclos/execuções históricos não são migrados por essa publicação. A primeira preparação
 Quartzo pode usar experimento explícito sem ciclo; a criação posterior de um ciclo
 muda o contexto e exige revalidação das provas naquela ocorrência.
+
+## Cadeia v20 e homologação comercial v9 — Safira (23/09/2026)
+
+A cadeia v20 deriva da v19 substituindo somente o Processo 5 pela v9. O roteamento tipado passa a
+incluir `AI_PRODUCT` no subprocesso `safira-commercial-preparation-v1`, preservando Opala e Quartzo.
+Safira não pode herdar a preparação privada como evidência comercial: o processo falha fechado até
+existirem experimento de venda, subtipo, experiência pública, plano, economia e pareceres da mesma
+configuração. Psique e Têmis recebem contexto e prompts próprios; seus pareceres podem ser
+reutilizados no pai com custo incremental zero enquanto fingerprint, produto, experimento e versão
+permanecerem iguais.
+
+O preflight vincula os pixels ao slot, ao SHA-256 da experiência e ao fingerprint comercial. A
+atividade humana 5.5 continua sendo a única autorização de versão, canal, teto, janela e parada.
+Publicar esta definição não cria experimento, não reativa a validação privada, não chama modelo, não
+publica campanha e não concede orçamento. Execuções históricas permanecem na definição original.

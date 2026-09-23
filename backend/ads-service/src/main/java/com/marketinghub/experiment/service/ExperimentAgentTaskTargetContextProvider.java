@@ -67,6 +67,9 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
   @Autowired(required = false)
   private com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialContext quartzoContext;
 
+  @Autowired(required = false)
+  private com.marketinghub.safira.commercial.v1.service.SafiraCommercialContext safiraContext;
+
   /** Configura as fontes canônicas de experimento, produto e contrato PDE. */
   @Autowired
   public ExperimentAgentTaskTargetContextProvider(
@@ -189,12 +192,35 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
   }
 
   /**
-   * Monta o alvo conforme o tipo: página auditada Quartzo, candidata Opala ou protótipo privado.
+   * Monta o alvo conforme o tipo: experiência Safira, página Quartzo, candidata Opala ou protótipo.
    */
   private Optional<AgentTaskTargetResponse> target(
       String sourceReference, Experiment experiment, Product product, String processCode) {
     if (product == null || product.getId() == null || blank(product.getSlug())) {
       return Optional.empty();
+    }
+    if (safiraContext != null
+        && safiraContext.applies(product)
+        && experiment != null
+        && List.of("safira-commercial-preparation-v1", "pde-commercial-homologation-activation")
+            .contains(Objects.requireNonNullElse(processCode, ""))) {
+      var scope = safiraContext.scope(sourceReference, product.getId(), false);
+      var snapshot = safiraContext.snapshot(sourceReference);
+      return Optional.of(
+          new AgentTaskTargetResponse(
+              sourceReference,
+              experiment.getId(),
+              product.getId(),
+              product.getSlug(),
+              product.getName(),
+              product.getInternalName(),
+              scope.productVersion(),
+              snapshot.path("publicUrl").asText(null),
+              snapshot.path("checkoutProvider").asText(null),
+              snapshot.path("checkoutReference").asText(null),
+              snapshot.path("checkoutUrl").asText(null),
+              experiment.getUnitPrice(),
+              snapshot));
     }
     if (quartzoContext != null
         && quartzoContext.applies(product)

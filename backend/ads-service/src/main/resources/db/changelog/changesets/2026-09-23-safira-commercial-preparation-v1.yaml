@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-23-safira-commercial-preparation-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: business_process_definition
+        - tableExists:
+            tableName: business_process_activity_definition
+        - tableExists:
+            tableName: business_process_chain_definition
+        - tableExists:
+            tableName: business_process_chain_item
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=8 AND JSON_VALID(diagram_json)=1
+        - sqlCheck:
+            expectedResult: 5
+            sql: SELECT COUNT(*) FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id WHERE process.process_code='pde-commercial-homologation-activation' AND process.version_number=8
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=19
+        - sqlCheck:
+            expectedResult: 6
+            sql: SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=19
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT IF(COUNT(*) <= 1, 1, 0) FROM business_process_definition WHERE process_code='safira-commercial-preparation-v1' AND version_number=1
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT IF(COUNT(*) <= 1, 1, 0) FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=9
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT IF(COUNT(*) <= 1, 1, 0) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=20
+      changes:
+        - sqlFile:
+            path: 2026-09-23-safira-commercial-preparation-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_definition SET status='PUBLISHED' WHERE process_code='pde-commercial-homologation-activation' AND version_number=8;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-commercial-homologation-activation' AND version_number=9;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='safira-commercial-preparation-v1' AND version_number=1;
+              UPDATE business_process_chain_definition SET status='PUBLISHED' WHERE chain_code='pde-value-creation-delivery' AND version_number=19;
+              UPDATE business_process_chain_definition SET status='RETIRED' WHERE chain_code='pde-value-creation-delivery' AND version_number=20;

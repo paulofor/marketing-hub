@@ -58,6 +58,9 @@ public class BackendExperimentRunService {
   private final PdeCommercialPreflightActivityProjector preflightActivityProjector;
   private final QuartzoPreflightEvidenceScopeService quartzoEvidenceScope;
 
+  @Autowired(required = false)
+  private SafiraPreflightEvidenceScopeService safiraEvidenceScope;
+
   /** Inicializa o serviço com os repositórios e a projeção canônica do preflight no BPM. */
   @Autowired
   public BackendExperimentRunService(
@@ -179,6 +182,9 @@ public class BackendExperimentRunService {
         validateHomologationRequest(run, request, expectedGateCodes);
     if (quartzoEvidenceScope != null) {
       quartzoEvidenceScope.validateAndBind(run, evidenceByCode.get(LANDING_GATE));
+    }
+    if (safiraEvidenceScope != null) {
+      safiraEvidenceScope.validateAndBind(run, evidenceByCode.get(LANDING_GATE));
     }
     Instant evaluatedAt = Instant.now();
     gates.stream()

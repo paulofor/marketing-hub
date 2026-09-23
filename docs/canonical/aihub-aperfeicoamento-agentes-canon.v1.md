@@ -333,3 +333,10 @@ e com `checkout` do subprocesso. Prompts Psique v3 e Têmis v2 preservam as vers
 anteriores e os schemas. Matriz e limites em
 [homologação da fronteira Quartzo](../homologacao/quartzo-preparacao-preflight-v1.md).
 Não há alegação de ganho de vendas ou de aprendizado automático.
+
+O mesmo limite vale para Safira: as agentes recebem fotografia imutável de produto, experimento,
+subtipo, versão, slot, experiência, checkout e economia. Psique avalia esforço, valor inicial,
+diferença paga, segurança e uso; Têmis confronta promessa, preço, entrega, identidade e margem.
+Ambas devem distinguir validação privada de evidência humana e deixar compra simulada, entrega,
+falhas e eventos para o preflight. Alteração de fingerprint invalida somente a prova atingida; não
+autoriza repetição cega, publicação ou gasto.

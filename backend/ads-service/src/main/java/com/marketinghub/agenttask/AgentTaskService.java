@@ -141,6 +141,10 @@ public class AgentTaskService {
   private com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialContext
       quartzoCommercialContext;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.safira.commercial.v1.service.SafiraCommercialContext
+      safiraCommercialContext;
+
   @Autowired(required = false)
   private com.marketinghub.catalogovivo.v1.service.CatalogoVivoService catalogoVivo;
 
@@ -1989,7 +1993,7 @@ public class AgentTaskService {
 
   /**
    * Consolida histórico, ficha e fontes comerciais do tipo para os agentes, preservando a entrada
-   * privada de Íris e a identidade do experimento Quartzo mesmo sem ciclo.
+   * privada de Íris e as identidades comerciais exatas de Quartzo e Safira.
    */
   private String processContext(AgentTask task) {
     try {
@@ -2039,6 +2043,12 @@ public class AgentTaskService {
               task.getProcessDefinition().getProcessCode())) {
         context.put(
             "quartzoCommercial", quartzoCommercialContext.snapshot(task.getSourceReference()));
+      }
+      if (safiraCommercialContext != null
+          && com.marketinghub.safira.commercial.v1.service.SafiraCommercialContext.CODE.equals(
+              task.getProcessDefinition().getProcessCode())) {
+        context.put(
+            "safiraCommercial", safiraCommercialContext.snapshot(task.getSourceReference()));
       }
       context.put("completedHumanActivities", completedHumanActivities);
       context.put("blockedActivities", blockedActivities);

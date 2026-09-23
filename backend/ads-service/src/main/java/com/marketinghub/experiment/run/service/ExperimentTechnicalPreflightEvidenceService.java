@@ -72,6 +72,15 @@ public class ExperimentTechnicalPreflightEvidenceService {
   private final ObjectMapper json;
   private final Clock clock;
 
+  @Autowired(required = false)
+  private SafiraPreflightEvidenceScopeService safiraEvidence;
+
+  @Autowired(required = false)
+  private com.marketinghub.safira.commercial.v1.service.SafiraCommercialContext safiraContext;
+
+  @Autowired(required = false)
+  private com.marketinghub.safira.commercial.v1.service.SafiraCommercialChecks safiraChecks;
+
   /** Configura fontes técnicas, financeiras e de identidade da publicação vigente. */
   @Autowired
   public ExperimentTechnicalPreflightEvidenceService(
@@ -157,6 +166,13 @@ public class ExperimentTechnicalPreflightEvidenceService {
         && !quartzoEvidence.hasCurrentEvidence(run)) {
       throw new IllegalStateException(
           "A publicação, o HTML ou o contrato Quartzo mudaram após a homologação.");
+    }
+    if ("surfaces".equals(activityId)
+        && safiraEvidence != null
+        && safiraEvidence.applies(run)
+        && !safiraEvidence.hasCurrentEvidence(run)) {
+      throw new IllegalStateException(
+          "O slot, a experiência ou o contrato Safira mudaram após a homologação.");
     }
     ObjectNode evidence = evidence(activityId, sourceReference, experiment, run, selected);
     String fingerprint = fingerprint(evidence);
@@ -269,6 +285,10 @@ public class ExperimentTechnicalPreflightEvidenceService {
       var scope = quartzoContext.scope(sourceReference, product.getId(), false);
       quartzoChecks.check("economics", scope, quartzoContext.snapshot(sourceReference));
     }
+    if (safiraContext != null && safiraChecks != null && safiraContext.applies(product)) {
+      var scope = safiraContext.scope(sourceReference, product.getId(), false);
+      safiraChecks.check("economics", scope, safiraContext.snapshot(sourceReference));
+    }
   }
 
   /** Escolhe o plano mais recente ainda válido para governar o teto operacional. */
@@ -331,6 +351,11 @@ public class ExperimentTechnicalPreflightEvidenceService {
         evidence.put(
             "commercialFingerprint",
             quartzoContext.snapshot(sourceReference).path("fingerprint").asText());
+      }
+      if (safiraContext != null && safiraContext.applies(experiment.getProduct())) {
+        evidence.put(
+            "commercialFingerprint",
+            safiraContext.snapshot(sourceReference).path("fingerprint").asText());
       }
     }
     return evidence;

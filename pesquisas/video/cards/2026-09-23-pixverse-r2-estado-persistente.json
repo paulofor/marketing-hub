@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-estado-persistente-eventos-temporais",
+  "collection": "video",
+  "title": "Usar memória de sessão do world model sem abandonar estado canônico externo",
+  "finding": "PixVerse R2 mantém uma sessão audiovisual contínua em que texto, referências, áudio e ações atualizam o estado e influenciam eventos posteriores; o Game Engine já roda no modelo e mundos públicos estão disponíveis.",
+  "mechanism": "Memória interna reduz a necessidade de redescrever contexto a cada instante, enquanto um scene_state externo mantém fatos comerciais e identidade como fonte autoritativa para detectar e corrigir drift.",
+  "commercialApplication": "Em campanhas multi-shot ou interativas, alimentar o renderer com estado validado e eventos, usar a memória de sessão para continuidade e só atualizar o estado canônico após revisão audiovisual.",
+  "evidenceStrength": "Moderada: lançamento e disponibilidade pública confirmados pela PixVerse, mas claims de memória e coerência são do fornecedor e não há API R2 pública verificada.",
+  "publishedOn": "2026-09-23",
+  "validUntil": "2026-12-22",
+  "experimentHypothesis": "Combinar estado canônico externo com memória de sessão reduzirá redescrição e erros de continuidade em sequências longas versus clipes independentes, sem aumentar a persistência de erros acima de um limite aceitável.",
+  "risks": "A memória de sessão pode persistir um erro; claims de coerência longa ainda carecem de benchmark independente; world models em tempo real podem sacrificar fidelidade; ausência de API dedicada limita automação de produção.",
+  "limits": "Não foi localizada API específica, preço específico nem pesos abertos do R2; disponibilidade atual é mais adequada a exploração/Game Engine do que a backend convencional de produção.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-23-pixverse-r2-estado-persistente.md",
+  "sourceTitle": "Fonte revisada — PixVerse R2 e estado persistente em mundo audiovisual",
+  "sourceSha256": "1012da561a895325aec113e983320b4f8bbcab97f91499a9864d7ccf2a520f36"
+}

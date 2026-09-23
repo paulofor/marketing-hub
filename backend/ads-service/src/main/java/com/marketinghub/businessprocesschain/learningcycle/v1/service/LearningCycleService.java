@@ -4,6 +4,7 @@ import static com.marketinghub.businessprocesschain.learningcycle.v1.service.Lea
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocess.BusinessProcessGraphTopology;
 import com.marketinghub.businessprocesschain.BusinessProcessChainDefinition;
 import com.marketinghub.businessprocesschain.learningcycle.v1.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand;
@@ -1223,9 +1224,7 @@ public class LearningCycleService {
         "O retorno deve apontar uma atividade real da cadeia selecionada.");
   }
 
-  /**
-   * Lista os processos e seus subprocessos publicados, preservando a versão exata do macroprocesso.
-   */
+  /** Lista processos e atividades pelo grafo, preservando a versão exata do macroprocesso. */
   private List<LearningCycleCatalog.Target> targets(BusinessProcessChainDefinition chain) {
     Map<Long, BusinessProcessDefinition> selected = new LinkedHashMap<>();
     chain.getItems().stream()
@@ -1246,7 +1245,12 @@ public class LearningCycleService {
     return selected.values().stream()
         .flatMap(
             process ->
-                activities.findAllByProcessDefinitionIdOrderByIdAsc(process.getId()).stream()
+                BusinessProcessGraphTopology.orderActivities(
+                        processDiagram(process),
+                        activities.findAllByProcessDefinitionIdOrderByIdAsc(process.getId()),
+                        com.marketinghub.businessprocess.BusinessProcessActivityDefinition
+                            ::getActivityId)
+                    .stream()
                     .map(
                         activity ->
                             new LearningCycleCatalog.Target(
@@ -1257,6 +1261,12 @@ public class LearningCycleService {
                                 activity.getOwnerName(),
                                 process.getProcessCode())))
         .toList();
+  }
+
+  /** Preserva alvos históricos sem diagrama e interpreta o contrato quando ele está disponível. */
+  private JsonNode processDiagram(BusinessProcessDefinition process) {
+    String diagram = process.getDiagramJson();
+    return diagram == null || diagram.isBlank() ? null : json.read(diagram);
   }
 
   /** Recupera a fotografia mais recente, sem somar leituras cumulativas. */

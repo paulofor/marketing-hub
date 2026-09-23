@@ -15,6 +15,7 @@ import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.agenttask.CreateAgentTaskRequest;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocess.BusinessProcessGraphTopology;
 import com.marketinghub.businessprocess.execution.service.agentactivity.AgentProductProcessActivityReadiness;
 import com.marketinghub.businessprocess.execution.service.agentactivity.AgentProductProcessActivityReadinessProvider;
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityExecutionResult;
@@ -320,7 +321,7 @@ public class BusinessProcessActivityExecutionService {
         processDefinitionId, productId, learningCycleId, chainId, includePromptAudit, null);
   }
 
-  /** Consulta a referência explicitamente escolhida, preservando a seleção automática legada. */
+  /** Consulta a referência escolhida e projeta atividades na ordem causal do grafo versionado. */
   @Transactional(readOnly = true)
   public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
       Long processDefinitionId,
@@ -349,7 +350,11 @@ public class BusinessProcessActivityExecutionService {
         productProcessActivityInstances(
             productPlans, productExperiments, productId, selectedProcess.getProcessCode());
     List<BusinessProcessActivityDefinition> selectedActivities =
-        activityDefinitionRepository.findAllByProcessDefinitionIdOrderByIdAsc(processDefinitionId);
+        BusinessProcessGraphTopology.orderActivities(
+            processDiagram(selectedProcess),
+            activityDefinitionRepository.findAllByProcessDefinitionIdOrderByIdAsc(
+                processDefinitionId),
+            BusinessProcessActivityDefinition::getActivityId);
 
     String currentExecutionReference =
         explicitReference != null
@@ -2167,6 +2172,20 @@ public class BusinessProcessActivityExecutionService {
         .findById(processDefinitionId)
         .orElseThrow(
             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Processo não encontrado."));
+  }
+
+  /** Lê o grafo persistido e impede que corrupção altere silenciosamente a ordem operacional. */
+  private JsonNode processDiagram(BusinessProcessDefinition process) {
+    if (process.getDiagramJson() == null || process.getDiagramJson().isBlank()) return null;
+    try {
+      return objectMapper.readTree(process.getDiagramJson());
+    } catch (Exception ex) {
+      LOGGER.error(
+          "Falha ao ler grafo BPM para ordenar atividades. processDefinitionId={}",
+          process.getId(),
+          ex);
+      throw new IllegalStateException("O grafo persistido do processo está inválido.", ex);
+    }
   }
 
   /** Confirma que o identificador pertence a uma atividade executável da definição selecionada. */

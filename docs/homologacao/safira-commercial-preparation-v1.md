@@ -20,6 +20,7 @@
 | Agentes | Callback sem dez gates, evidência ou fingerprint atual | Tarefa não comprova objetivo |
 | Preflight | Slot, SHA-256 ou fingerprint alterado após homologação | Run anterior preservado e nova tentativa exigida |
 | Concorrência | Reinício, callback repetido e retomada | Conclusão idempotente, sem tarefa ou cobrança duplicada |
+| Ordem operacional | IDs persistidos e nós declarados fora da sequência causal | Grafo apresenta preparação, Psique, Têmis, preflight e autorização nessa ordem |
 | Observabilidade | Falha capturada | Log com produto, experimento, atividade e stack trace |
 | Métricas | Resultado, oferta vista, checkout, compra, entrega e aplicação | Eventos separados; nenhum intermediário conta como venda |
 | Dados de teste | Compra e eventos simulados | Identidades segregadas de pessoas, receita e mídia reais |

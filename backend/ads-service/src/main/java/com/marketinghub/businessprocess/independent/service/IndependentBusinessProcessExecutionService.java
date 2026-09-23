@@ -9,6 +9,7 @@ import com.marketinghub.agenttask.AgentTaskIndependentExecutionSummarySnapshot;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessActivitySummarySnapshot;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocess.BusinessProcessGraphTopology;
 import com.marketinghub.businessprocess.independent.IndependentBusinessProcessExecution;
 import com.marketinghub.businessprocess.independent.service.catalog.IndependentBusinessProcessCatalogResponse;
 import com.marketinghub.businessprocess.independent.service.catalog.IndependentBusinessProcessInputFieldResponse;
@@ -523,7 +524,7 @@ public class IndependentBusinessProcessExecutionService {
     return Map.copyOf(statuses);
   }
 
-  /** Ordena as tentativas reais e preserva atividades ainda não iniciadas no relatório. */
+  /** Ordena atividades pelo grafo e preserva tentativas reais ainda não iniciadas no relatório. */
   private List<IndependentBusinessProcessActivityResponse> activities(
       IndependentBusinessProcessExecution execution, List<AgentTask> tasks) {
     Map<String, List<AgentTask>> byActivity = new LinkedHashMap<>();
@@ -532,8 +533,11 @@ public class IndependentBusinessProcessExecutionService {
             byActivity.computeIfAbsent(activityKey(task), ignored -> new ArrayList<>()).add(task));
     List<IndependentBusinessProcessActivityResponse> response = new ArrayList<>();
     List<BusinessProcessActivityDefinition> definitions =
-        activityRepository.findAllByProcessDefinitionIdOrderByIdAsc(
-            execution.getProcessDefinition().getId());
+        BusinessProcessGraphTopology.orderActivities(
+            processDiagram(execution),
+            activityRepository.findAllByProcessDefinitionIdOrderByIdAsc(
+                execution.getProcessDefinition().getId()),
+            BusinessProcessActivityDefinition::getActivityId);
     for (BusinessProcessActivityDefinition definition : definitions) {
       List<AgentTask> attempts = byActivity.remove(definition.getActivityId());
       if (attempts == null) attempts = List.of();
@@ -754,6 +758,14 @@ public class IndependentBusinessProcessExecutionService {
           ex);
       throw new IllegalStateException("Dados persistidos da execução estão inválidos.", ex);
     }
+  }
+
+  /** Preserva processos históricos sem diagrama e valida a topologia quando ela foi persistida. */
+  private JsonNode processDiagram(IndependentBusinessProcessExecution execution) {
+    String diagram = execution.getProcessDefinition().getDiagramJson();
+    return diagram == null || diagram.isBlank()
+        ? null
+        : read(diagram, "diagrama", execution.getId());
   }
 
   /**

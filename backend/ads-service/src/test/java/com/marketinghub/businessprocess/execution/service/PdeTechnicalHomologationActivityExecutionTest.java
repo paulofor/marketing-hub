@@ -118,10 +118,25 @@ class PdeTechnicalHomologationActivityExecutionTest {
         {"id":"prototypeCorrection","type":"TASK","label":"Corrigir o protótipo a partir do parecer",
          "owner":"Dédalo","responsibleAgentKeys":["landing-generator"],
          "activationMode":"ON_FUNCTIONAL_REJECTION","actionLabel":"Criar tarefa de correção",
-         "remediatesActivities":["technicalHomologation"]}
+        "remediatesActivities":["technicalHomologation"]}
         """;
     process.setDiagramJson(
-        "{\"nodes\":[" + node + (recoveryEnabled ? "," + correctionNode : "") + "]}");
+        "{\"nodes\":["
+            + "{\"id\":\"journey\",\"type\":\"TASK\"},"
+            + "{\"id\":\"deliverables\",\"type\":\"TASK\"},"
+            + "{\"id\":\"audiovisual\",\"type\":\"TASK\"},"
+            + "{\"id\":\"access\",\"type\":\"TASK\"},"
+            + node
+            + (recoveryEnabled ? "," + correctionNode : "")
+            + "],\"flows\":["
+            + "{\"from\":\"journey\",\"to\":\"deliverables\"},"
+            + "{\"from\":\"deliverables\",\"to\":\"audiovisual\"},"
+            + "{\"from\":\"audiovisual\",\"to\":\"access\"},"
+            + "{\"from\":\"access\",\"to\":\"technicalHomologation\"}"
+            + (recoveryEnabled
+                ? ",{\"from\":\"technicalHomologation\",\"to\":\"prototypeCorrection\"}"
+                : "")
+            + "]}");
     var activity = new BusinessProcessActivityDefinition();
     activity.setId(705L);
     activity.setProcessDefinition(process);

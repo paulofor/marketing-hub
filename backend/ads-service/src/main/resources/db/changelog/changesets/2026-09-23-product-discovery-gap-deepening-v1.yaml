@@ -1,0 +1,138 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-23-product-discovery-gap-deepening-v1-01-customer-interview-table
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_cycle
+        - tableExists:
+            tableName: product_discovery_opportunity
+        - or:
+            - not:
+                tableExists:
+                  tableName: product_discovery_customer_interview
+            - sqlCheck:
+                expectedResult: 1
+                sql: |
+                  SELECT IF(
+                    (SELECT COUNT(*)
+                       FROM information_schema.COLUMNS
+                      WHERE TABLE_SCHEMA = DATABASE()
+                        AND TABLE_NAME = 'product_discovery_customer_interview') = 16
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.COLUMNS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'product_discovery_customer_interview'
+                            AND COLUMN_NAME IN (
+                              'consent_captured_at', 'created_at', 'updated_at'
+                            )
+                            AND DATA_TYPE = 'datetime'
+                            AND DATETIME_PRECISION = 6
+                            AND IS_NULLABLE = 'NO') = 3
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.COLUMNS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'product_discovery_customer_interview'
+                            AND COLUMN_NAME = 'anonymous_participant_code'
+                            AND DATA_TYPE = 'varchar'
+                            AND CHARACTER_MAXIMUM_LENGTH = 7
+                            AND IS_NULLABLE = 'NO') = 1
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.COLUMNS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'product_discovery_customer_interview'
+                            AND COLUMN_NAME = 'amount_spent'
+                            AND DATA_TYPE = 'decimal'
+                            AND NUMERIC_PRECISION = 12
+                            AND NUMERIC_SCALE = 2
+                            AND IS_NULLABLE = 'YES') = 1
+                    AND (SELECT COUNT(DISTINCT INDEX_NAME)
+                           FROM information_schema.STATISTICS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'product_discovery_customer_interview'
+                            AND INDEX_NAME IN (
+                              'uk_pd_customer_interview_cycle_code',
+                              'idx_pd_customer_interview_opportunity',
+                              'idx_pd_customer_interview_cycle_outcome'
+                            )) = 3
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.REFERENTIAL_CONSTRAINTS
+                          WHERE CONSTRAINT_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'product_discovery_customer_interview'
+                            AND CONSTRAINT_NAME IN (
+                              'fk_pd_customer_interview_cycle',
+                              'fk_pd_customer_interview_opportunity'
+                            )) = 2,
+                    1,
+                    0
+                  )
+      changes:
+        - sqlFile:
+            path: 2026-09-23-product-discovery-customer-interview-table-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE IF EXISTS product_discovery_customer_interview;
+
+  - changeSet:
+      id: 2026-09-23-product-discovery-gap-deepening-v1-02-process-and-chain
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_customer_interview
+        - tableExists:
+            tableName: business_process_definition
+        - tableExists:
+            tableName: business_process_activity_definition
+        - tableExists:
+            tableName: business_process_chain_definition
+        - tableExists:
+            tableName: business_process_chain_item
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=6 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='marketEvidence'
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=18
+        - sqlCheck:
+            expectedResult: 6
+            sql: SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=18
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT IF(COUNT(*) <= 1, 1, 0) FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=7
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=7 AND (COALESCE(technical_reference,'') <> 'docs/canonical/descoberta-produtos-pde-canon.v1.md / candidate-gap-deepening-v1' OR COALESCE(JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.researchContractVersion')),'') <> 'CANDIDATE_GAP_DEEPENING_V1')
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT IF(COUNT(*) <= 1, 1, 0) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=19
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=19 AND item.sequence_number NOT BETWEEN 1 AND 6
+      changes:
+        - sqlFile:
+            path: 2026-09-23-product-discovery-gap-deepening-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_definition SET status='PUBLISHED' WHERE process_code='pde-opportunity-discovery' AND version_number=6;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-opportunity-discovery' AND version_number=7;
+              UPDATE business_process_chain_definition SET status='PUBLISHED' WHERE chain_code='pde-value-creation-delivery' AND version_number=18;
+              UPDATE business_process_chain_definition SET status='RETIRED' WHERE chain_code='pde-value-creation-delivery' AND version_number=19;

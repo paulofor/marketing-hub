@@ -8,6 +8,19 @@ Crie o plano de pesquisa do ciclo {{cycleId}}.
 - Fontes editoriais de referência: {{referenceSources}}
 - Restrições comerciais: {{commercialConstraints}}
 - Objetivo: {{objective}}
+- Atividade atual: {{stageCode}}
+
+Candidatas preservadas da pesquisa inicial:
+
+{{previousCandidates}}
+
+Entrevistas consentidas e anônimas sobre comportamento passado:
+
+{{customerInterviews}}
+
+Política persistida de consultas, tentativas e custo:
+
+{{gapResearchPolicy}}
 
 Biblioteca interna consultada pelo executor:
 
@@ -27,3 +40,7 @@ Contexto auditável da ampliação controlada:
 {{marketExpansionContext}}
 
 Retorne somente o contrato estruturado solicitado pelo schema.
+
+Quando a atividade for `candidate-gap-deepening`, inclua `candidateGaps` para todas e somente as
+candidatas recebidas e `researchLimits` com os limites exatos da política. Quando for `research`,
+esses dois campos são opcionais e não devem inventar candidatas antes da coleta.

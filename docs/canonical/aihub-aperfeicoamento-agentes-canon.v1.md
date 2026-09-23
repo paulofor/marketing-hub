@@ -97,6 +97,20 @@ disponíveis; registrar ausência destes. Aceitar/rejeitar com evidência e reto
 Não persistir hipótese como fato, alterar pesos ou prometer aprendizado automático só pela
 edição do prompt. Os resultados externos dos artigos não são resultados medidos do Hub.
 
+Na descoberta de produtos, a memória de Argos deve ser recuperada pela candidata, pergunta
+pendente e estado da etapa. A execução seguinte recebe candidatas e evidências anteriores, relatos
+consentidos, consultas já executadas e limites; não recebe permissão para renomear candidatas,
+reiniciar a pesquisa ampla ou converter entrevista qualitativa em prevalência. Comparar resultado
+anterior, nova evidência, contraponto e ausência de progresso torna a melhoria observável sem criar
+aprendizado automático fictício.
+
+Referência interna consultada em 23/09/2026:
+`pesquisas/agentes-inteligentes/2026-09-10-agentes-inteligentes.md`, especialmente AgentGrad e
+Q2D-Web. A aplicação adotada é localizada: modificar apenas a etapa de Argos cuja lacuna foi
+confirmada e auditar as consultas que o próprio agente formulou, separando plano, execução e
+resultado. Os benchmarks citados pertencem a outros domínios e não comprovam ganho de vendas nem de
+desempenho no Marketing Hub.
+
 ## Foco no produto e no processo correntes — decisão de 18/09/2026
 
 O template compartilhado deve ser direto e independente de um caso: produto, tipo, formato,

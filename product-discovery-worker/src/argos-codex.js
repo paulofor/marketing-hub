@@ -73,7 +73,7 @@ export async function planDirectedResearch(job, options = {}) {
       throw error;
     }
     const plan = normalizePlanForExecution(JSON.parse(rawResponse), job);
-    validatePlan(plan);
+    validatePlan(plan, job);
     return {
       plan,
       rawResponse,
@@ -232,6 +232,9 @@ export function parseCodexUsage(stdout) {
 
 /** Produz um plano seguro quando o piloto Codex está desligado ou ainda sem sessão. */
 export function deterministicPlan(job) {
+  if (job.stageCode === "candidate-gap-deepening") {
+    return deterministicGapDeepeningPlan(job);
+  }
   const theme = compactQuery(
     [job.theme, job.targetAudience].filter(Boolean).join(" "),
   );
@@ -348,6 +351,98 @@ export function deterministicPlan(job) {
   };
 }
 
+/** Produz uma retomada limitada por candidata quando o planejador de modelo não está disponível. */
+function deterministicGapDeepeningPlan(job) {
+  const candidates = job.previousCandidates || [];
+  if (candidates.length < 2 || candidates.length > 3) {
+    throw new Error(
+      "Aprofundamento exige duas ou três candidatas persistidas na pesquisa inicial",
+    );
+  }
+  const queryCounts = candidates.length === 2 ? [4, 4] : [3, 3, 2];
+  const candidateGaps = candidates.map((candidate, index) => {
+    const name = compactQuery(candidate.name, 90);
+    const queries = [
+      `${name} relato comprou desistiu dificuldade`,
+      `${name} preço entrega público review`,
+      `${name} alternativa gratuita reclamação`,
+      `${name} evidência contrária não funciona`,
+    ].slice(0, queryCounts[index]);
+    return {
+      candidateName: candidate.name,
+      pendingQuestion: compactQuery(
+        `Qual situação, alternativa e obstáculo residual tornam ${name} prioritária ou dispensável?`,
+        300,
+      ),
+      appropriateSource:
+        "Relatos públicos de clientes, ofertas atuais aderentes, anúncios observados e contrapontos independentes.",
+      evidenceNeeded:
+        "Ocasião concreta, preço e entrega atuais, público atendido, compra ou desistência e dificuldade residual.",
+      contraryEvidenceToSeek:
+        "Relatos de ausência de prioridade, solução gratuita suficiente, reembolso, abandono ou resultado não entregue.",
+      publicQueries: queries,
+      maxPublicQueries: queries.length,
+      maxEstimatedSearchCostUsd: Number((queries.length * 0.005).toFixed(8)),
+    };
+  });
+  const publicQueries = candidateGaps.flatMap((gap) => gap.publicQueries);
+  const theme = compactQuery(
+    candidates.map((candidate) => candidate.name).join(" e "),
+    120,
+  );
+  const plan = {
+    researchLens: compactQuery(`Lacunas específicas de ${theme}`, 160),
+    expansionAxis: "INITIAL_SCOPE",
+    expansionRationale:
+      "A pesquisa retoma as candidatas persistidas, as entrevistas consentidas e as perguntas que impedem o handoff.",
+    questions: [
+      ...candidateGaps.map((gap) => gap.pendingQuestion),
+      "Que evidência contrária altera a conclusão anterior sem transformar ausência de fonte em ausência de mercado?",
+    ],
+    publicQueries,
+    marketplaceRequests: [
+      { marketplace: "HOTMART", query: theme, maxProducts: 10 },
+      { marketplace: "CLICKBANK", query: theme, maxProducts: 10 },
+    ],
+    metaAdRequests: [
+      {
+        query: normalizeMetaQuery([theme, job.theme, job.targetAudience]),
+        country: "BR",
+        publisherPlatform: "INSTAGRAM",
+        maxAds: 25,
+      },
+    ],
+    minimumComparableOffers: 10,
+    stopConditions: [
+      "nenhuma evidência nova para a pergunta candidata-específica",
+      "lente ou consulta repetida",
+      "limite de doze consultas ou US$ 0,06 estimados nesta tentativa",
+      "fonte atual indisponível ou contraditória sem resolução",
+    ],
+    candidateGaps,
+    researchLimits: {
+      maxPublicQueries: 12,
+      maxEstimatedSearchCostUsd: 0.06,
+    },
+  };
+  validatePlan(plan, job);
+  return {
+    plan,
+    rawResponse: JSON.stringify(plan),
+    model: "deterministic-gap-deepening-v1",
+    mode: "DETERMINISTIC",
+    prompt: JSON.stringify({
+      operation: "PRODUCT_DISCOVERY_CANDIDATE_GAP_DEEPENING_V1",
+      cycleId: job.cycleId,
+      candidateNames: candidates.map((candidate) => candidate.name),
+      interviewCount: (job.customerInterviews || []).length,
+      limits: job.gapResearchPolicy,
+    }),
+    reasoningEffort: "NOT_APPLICABLE",
+    usage: null,
+  };
+}
+
 /** Compila a frase livre do modelo no contrato curto aceito pela Biblioteca Meta. */
 export function normalizePlanForExecution(plan, job = {}) {
   if (!Array.isArray(plan?.metaAdRequests)) return plan;
@@ -366,7 +461,10 @@ export function normalizePlanForExecution(plan, job = {}) {
 }
 
 /** Valida limites que impedem o agente de ampliar coleta ou inventar fontes. */
-export function validatePlan(plan) {
+export function validatePlan(plan, job = {}) {
+  const gapDeepening = job.stageCode === "candidate-gap-deepening";
+  const minimumPublicQueries = gapDeepening ? 2 : 8;
+  const maximumPublicQueries = gapDeepening ? 12 : 24;
   if (
     typeof plan.researchLens !== "string" ||
     plan.researchLens.trim().length < 8 ||
@@ -384,8 +482,8 @@ export function validatePlan(plan) {
     !Array.isArray(plan.questions) ||
     plan.questions.length < 3 ||
     !Array.isArray(plan.publicQueries) ||
-    plan.publicQueries.length < 8 ||
-    plan.publicQueries.length > 24 ||
+    plan.publicQueries.length < minimumPublicQueries ||
+    plan.publicQueries.length > maximumPublicQueries ||
     !Array.isArray(plan.marketplaceRequests) ||
     plan.marketplaceRequests.length === 0 ||
     !Array.isArray(plan.metaAdRequests) ||
@@ -394,6 +492,7 @@ export function validatePlan(plan) {
   ) {
     throw new Error("Plano dirigido de Argos fora do contrato v1");
   }
+  if (gapDeepening) validateCandidateGapPlan(plan, job);
   if (
     plan.publicQueries.some((query) => !query || Array.from(query).length > 180)
   ) {
@@ -426,6 +525,98 @@ export function validatePlan(plan) {
         "Consulta Meta deve representar uma categoria ampla com dois a cinco termos e até 60 caracteres",
       );
     }
+  }
+}
+
+/** Exige pergunta, fonte, contraponto e orçamento para cada candidata já persistida. */
+function validateCandidateGapPlan(plan, job) {
+  const expectedNames = new Set(
+    (job.previousCandidates || []).map((item) => normalizeIdentity(item.name)),
+  );
+  const gaps = Array.isArray(plan.candidateGaps) ? plan.candidateGaps : [];
+  const receivedNames = new Set();
+  let plannedQueries = 0;
+  let plannedCost = 0;
+  for (const gap of gaps) {
+    const name = normalizeIdentity(gap?.candidateName);
+    if (
+      !name ||
+      receivedNames.has(name) ||
+      !expectedNames.has(name) ||
+      !String(gap.pendingQuestion || "").trim() ||
+      !String(gap.appropriateSource || "").trim() ||
+      !String(gap.evidenceNeeded || "").trim() ||
+      !String(gap.contraryEvidenceToSeek || "").trim() ||
+      !Array.isArray(gap.publicQueries) ||
+      gap.publicQueries.length < 1 ||
+      gap.publicQueries.length > 4 ||
+      Number(gap.maxPublicQueries) !== gap.publicQueries.length ||
+      Math.abs(
+        Number(gap.maxEstimatedSearchCostUsd) -
+          gap.publicQueries.length * 0.005,
+      ) > 0.000000001
+    ) {
+      throw new Error(
+        "Plano de aprofundamento não cobre pergunta, fonte, contraponto e limite por candidata",
+      );
+    }
+    receivedNames.add(name);
+    plannedQueries += gap.publicQueries.length;
+    plannedCost += Number(gap.maxEstimatedSearchCostUsd);
+  }
+  const declaredQueries = new Set(plan.publicQueries.map(normalizeIdentity));
+  const candidateQueries = new Set(
+    gaps.flatMap((gap) => gap.publicQueries).map(normalizeIdentity),
+  );
+  const previousQueries = new Set(
+    (job.marketExpansionContext?.previousPublicQueries || []).map(
+      normalizeIdentity,
+    ),
+  );
+  const previousLenses = new Set(
+    (job.marketExpansionContext?.previousResearchLenses || []).map((item) =>
+      normalizeIdentity(item.researchLens),
+    ),
+  );
+  const previousMarketplaceQueries = new Set(
+    (job.marketExpansionContext?.previousMarketplaceQueries || []).map(
+      normalizeIdentity,
+    ),
+  );
+  const previousMetaQueries = new Set(
+    (job.marketExpansionContext?.previousMetaQueries || []).map(
+      normalizeIdentity,
+    ),
+  );
+  const laterAttempt = previousQueries.size > 0;
+  const hasNewMarketplaceQuery = (plan.marketplaceRequests || []).some(
+    (request) =>
+      !previousMarketplaceQueries.has(
+        normalizeIdentity(`${request.marketplace}:${request.query}`),
+      ),
+  );
+  const hasNewMetaQuery = (plan.metaAdRequests || []).some(
+    (request) => !previousMetaQueries.has(normalizeIdentity(request.query)),
+  );
+  if (
+    !setsEqual(receivedNames, expectedNames) ||
+    !setsEqual(declaredQueries, candidateQueries) ||
+    candidateQueries.size !== plannedQueries ||
+    [...candidateQueries].some((query) => previousQueries.has(query)) ||
+    (laterAttempt &&
+      (plan.expansionAxis === "INITIAL_SCOPE" ||
+        plannedQueries < 4 ||
+        previousLenses.has(normalizeIdentity(plan.researchLens)) ||
+        !hasNewMarketplaceQuery ||
+        !hasNewMetaQuery)) ||
+    plannedQueries > 12 ||
+    plannedCost > 0.060000001 ||
+    Number(plan.researchLimits?.maxPublicQueries) !== 12 ||
+    Number(plan.researchLimits?.maxEstimatedSearchCostUsd) !== 0.06
+  ) {
+    throw new Error(
+      "Plano de aprofundamento não preserva candidatas ou excede o teto da tentativa",
+    );
   }
 }
 
@@ -470,6 +661,10 @@ async function buildPromptComposition(job) {
       null,
       2,
     ),
+    stageCode: job.stageCode || "research",
+    previousCandidates: JSON.stringify(job.previousCandidates || [], null, 2),
+    customerInterviews: JSON.stringify(job.customerInterviews || [], null, 2),
+    gapResearchPolicy: JSON.stringify(job.gapResearchPolicy || null, null, 2),
   };
   const agentPromptPart = systemPrompt.trim();
   const activityPromptPart = resolvePromptPlaceholders(
@@ -481,6 +676,18 @@ async function buildPromptComposition(job) {
     agentPromptPart,
     activityPromptPart,
   };
+}
+
+/** Normaliza identidade e consultas somente para validação de igualdade. */
+function normalizeIdentity(value) {
+  return String(value || "")
+    .trim()
+    .toLocaleLowerCase("pt-BR");
+}
+
+/** Confere conjuntos sem depender da ordem escolhida pelo modelo. */
+function setsEqual(left, right) {
+  return left.size === right.size && [...left].every((item) => right.has(item));
 }
 
 /** Resume a biblioteca viva para planejar consultas sem duplicar manifestos e artigos integrais. */

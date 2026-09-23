@@ -5,6 +5,7 @@ public enum ProductDiscoveryCycleStatus {
   DRAFT,
   READY_FOR_RESEARCH,
   RESEARCHING,
+  AWAITING_CUSTOMER_EVIDENCE,
   COMPLETED,
   FAILED,
   ARCHIVED

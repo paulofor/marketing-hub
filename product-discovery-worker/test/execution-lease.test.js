@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   analysisAuditCallbackPayload,
+  attachGapDeepeningReport,
   backendFailureMessage,
   createPollLock,
   failureCallbackPayload,
@@ -9,6 +10,192 @@ import {
   researchPlanCallbackPayload,
   withExecutionLease,
 } from "../src/worker.js";
+
+test("relatório do aprofundamento agrega consultas e custo das duas tentativas", () => {
+  const gap = (candidateName, publicQueries) => ({
+    candidateName,
+    pendingQuestion: `Pergunta de ${candidateName}`,
+    appropriateSource: "Relato e oferta atual",
+    evidenceNeeded: "Compra, desistência, preço e entrega",
+    contraryEvidenceToSeek: "Alternativa gratuita suficiente",
+    publicQueries,
+  });
+  const execution = {
+    directedAttempts: [
+      {
+        attemptNumber: 1,
+        directed: {
+          mode: "CODEX",
+          plan: {
+            publicQueries: ["q1", "q2"],
+            candidateGaps: [
+              gap("Candidata A", ["q1"]),
+              gap("Candidata B", ["q2"]),
+            ],
+          },
+        },
+      },
+      {
+        attemptNumber: 2,
+        directed: {
+          mode: "CODEX",
+          plan: {
+            publicQueries: ["q3", "q4"],
+            candidateGaps: [
+              gap("Candidata A", ["q3"]),
+              gap("Candidata B", ["q4"]),
+            ],
+          },
+        },
+      },
+    ],
+    analysisAttempts: [
+      { analysis: { mode: "CODEX" } },
+      { analysis: { mode: "CODEX" } },
+    ],
+    report: {
+      opportunities: [
+        {
+          name: "Candidata A",
+          maturity: "DOSSIER_READY",
+          evidenceJson: JSON.stringify({
+            referencedEvidence: {
+              publicEvidence: [
+                { evidenceId: "P1", sourceQuery: "q1" },
+                { evidenceId: "P3", sourceQuery: "q3" },
+              ],
+              customerInterviews: [{ evidenceId: "I1" }],
+            },
+          }),
+        },
+        { name: "Candidata B", maturity: "RESEARCHABLE" },
+      ],
+      evidenceReport: {
+        marketExpansion: {
+          attempts: [
+            { attemptNumber: 1, outcome: "ADJUST_AND_CONTINUE" },
+            { attemptNumber: 2, outcome: "DOSSIER_READY_FOUND" },
+          ],
+        },
+      },
+    },
+  };
+  const job = {
+    previousCandidates: [{ name: "Candidata A" }, { name: "Candidata B" }],
+    customerInterviews: Array.from({ length: 5 }, (_, index) => ({
+      id: index + 1,
+    })),
+    gapResearchPolicy: {
+      estimatedSearchCostPerRequestUsd: 0.005,
+      maximumModelInvocations: 4,
+      costCoverage: "ESTIMATED_SEARCH_ONLY",
+      modelCostCoverage: "AGENT_TASK_AUDIT_AFTER_CALLBACK",
+      pricingSource: "https://brave.com/search/api/",
+      pricingObservedOn: "2026-09-23",
+    },
+  };
+
+  const report = attachGapDeepeningReport(execution, job);
+
+  assert.equal(report.evidenceReport.gapDeepening.actualSearchRequests, 4);
+  assert.equal(report.evidenceReport.gapDeepening.plannedSearchRequests, 4);
+  assert.deepEqual(report.evidenceReport.gapDeepening.unexecutedQueries, []);
+  assert.equal(report.evidenceReport.gapDeepening.estimatedSearchCostUsd, 0.02);
+  assert.equal(report.evidenceReport.gapDeepening.modelInvocationCount, 4);
+  assert.equal(
+    report.evidenceReport.gapDeepening.modelCostCoverage,
+    "AGENT_TASK_AUDIT_AFTER_CALLBACK",
+  );
+  assert.deepEqual(
+    report.evidenceReport.gapDeepening.resolvedGaps[0].executedQueries,
+    ["q1", "q3"],
+  );
+  assert.deepEqual(
+    report.evidenceReport.gapDeepening.resolvedGaps[0].resolutionQueries,
+    ["q1", "q3"],
+  );
+  assert.equal(
+    report.evidenceReport.gapDeepening.resolvedGaps[1].status,
+    "STILL_OPEN",
+  );
+});
+
+test("não declara como executadas as consultas de uma lente repetida", () => {
+  const gap = (candidateName, publicQueries) => ({
+    candidateName,
+    pendingQuestion: `Pergunta de ${candidateName}`,
+    appropriateSource: "Relato e oferta atual",
+    evidenceNeeded: "Compra, desistência, preço e entrega",
+    contraryEvidenceToSeek: "Alternativa gratuita suficiente",
+    publicQueries,
+  });
+  const execution = {
+    directedAttempts: [
+      {
+        attemptNumber: 1,
+        directed: {
+          mode: "CODEX",
+          plan: {
+            publicQueries: ["q1", "q2"],
+            candidateGaps: [
+              gap("Candidata A", ["q1"]),
+              gap("Candidata B", ["q2"]),
+            ],
+          },
+        },
+      },
+      {
+        attemptNumber: 2,
+        directed: {
+          mode: "CODEX",
+          plan: {
+            publicQueries: ["q3", "q4"],
+            candidateGaps: [
+              gap("Candidata A", ["q3"]),
+              gap("Candidata B", ["q4"]),
+            ],
+          },
+        },
+      },
+    ],
+    analysisAttempts: [{ attemptNumber: 1, analysis: { mode: "CODEX" } }],
+    report: {
+      opportunities: [
+        { name: "Candidata A", maturity: "RESEARCHABLE" },
+        { name: "Candidata B", maturity: "RESEARCHABLE" },
+      ],
+      evidenceReport: {
+        marketExpansion: {
+          attempts: [
+            { attemptNumber: 1, outcome: "ADJUST_AND_CONTINUE" },
+            { attemptNumber: 2, outcome: "REPEATED_RESEARCH_LENS" },
+          ],
+        },
+      },
+    },
+  };
+  const job = {
+    previousCandidates: [{ name: "Candidata A" }, { name: "Candidata B" }],
+    customerInterviews: Array.from({ length: 5 }),
+    gapResearchPolicy: {
+      estimatedSearchCostPerRequestUsd: 0.005,
+      maximumModelInvocations: 4,
+      costCoverage: "ESTIMATED_SEARCH_ONLY",
+      modelCostCoverage: "AGENT_TASK_AUDIT_AFTER_CALLBACK",
+      pricingSource: "https://brave.com/search/api/",
+      pricingObservedOn: "2026-09-23",
+    },
+  };
+
+  const deepening = attachGapDeepeningReport(execution, job).evidenceReport
+    .gapDeepening;
+
+  assert.equal(deepening.plannedSearchRequests, 4);
+  assert.equal(deepening.actualSearchRequests, 2);
+  assert.deepEqual(deepening.executedQueries, ["q1", "q2"]);
+  assert.deepEqual(deepening.unexecutedQueries, ["q3", "q4"]);
+  assert.equal(deepening.estimatedSearchCostUsd, 0.01);
+});
 
 test("preserva na tela a causa segura devolvida pelo backend", async () => {
   const message = await backendFailureMessage(
@@ -124,32 +311,40 @@ test("não repete erro HTTP de contrato nem conexão interrompida após estabele
   const noWait = async () => assert.fail("não deveria aguardar nova tentativa");
 
   await assert.rejects(
-    postJson("http://backend/api/plan", {}, {
-      maxAttempts: 3,
-      fetchFn: async () => {
-        contractCalls += 1;
-        return {
-          ok: false,
-          status: 400,
-          text: async () => JSON.stringify({ message: "Contrato inválido" }),
-        };
+    postJson(
+      "http://backend/api/plan",
+      {},
+      {
+        maxAttempts: 3,
+        fetchFn: async () => {
+          contractCalls += 1;
+          return {
+            ok: false,
+            status: 400,
+            text: async () => JSON.stringify({ message: "Contrato inválido" }),
+          };
+        },
+        sleepFn: noWait,
       },
-      sleepFn: noWait,
-    }),
+    ),
     /status 400: Contrato inválido/,
   );
   await assert.rejects(
-    postJson("http://backend/api/complete", {}, {
-      maxAttempts: 3,
-      fetchFn: async () => {
-        uncertainCalls += 1;
-        const cause = Object.assign(new Error("connection reset"), {
-          code: "ECONNRESET",
-        });
-        throw new TypeError("fetch failed", { cause });
+    postJson(
+      "http://backend/api/complete",
+      {},
+      {
+        maxAttempts: 3,
+        fetchFn: async () => {
+          uncertainCalls += 1;
+          const cause = Object.assign(new Error("connection reset"), {
+            code: "ECONNRESET",
+          });
+          throw new TypeError("fetch failed", { cause });
+        },
+        sleepFn: noWait,
       },
-      sleepFn: noWait,
-    }),
+    ),
     /fetch failed/,
   );
 

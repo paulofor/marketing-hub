@@ -4,16 +4,14 @@ import { buildApiUrl } from "../../utils/buildApiUrl";
 export type ProductDiscoveryCycleStatus =
   | "DRAFT"
   | "READY_FOR_RESEARCH"
+  | "AWAITING_CUSTOMER_EVIDENCE"
   | "RESEARCHING"
   | "COMPLETED"
   | "FAILED"
   | "ARCHIVED";
 
 export type ProductDiscoveryOpportunityDecision =
-  | "APPROVE"
-  | "RESEARCH_MORE"
-  | "REJECT"
-  | "HUMAN_REVIEW";
+  "APPROVE" | "RESEARCH_MORE" | "REJECT" | "HUMAN_REVIEW";
 
 export interface ProductDiscoveryCycle {
   id: number;
@@ -45,6 +43,8 @@ export interface ProductDiscoveryOpportunity {
   commercialRisk?: string | null;
   evidenceJson?: string | null;
   score: number;
+  maturity?:
+    "SIGNAL" | "RESEARCHABLE" | "DOSSIER_READY" | "HUMAN_REVIEW" | "REJECTED";
   decision: ProductDiscoveryOpportunityDecision;
   createdAt: string;
   updatedAt: string;
@@ -113,12 +113,75 @@ export interface ProductDiscoveryPrivateValidationHandoffResult {
   message: string;
 }
 
+export type ProductDiscoveryInterviewOutcome = "PURCHASED" | "ABANDONED";
+
+export interface ProductDiscoveryCustomerInterview {
+  id: number;
+  cycleId: number;
+  opportunityId: number;
+  opportunityName: string;
+  anonymousParticipantCode: string;
+  outcome: ProductDiscoveryInterviewOutcome;
+  occurredOn: string;
+  consentCapturedAt: string;
+  purchaseSituation: string;
+  desiredResult: string;
+  difficulty: string;
+  alternativeTried: string;
+  amountSpent?: number | null;
+  currency?: string | null;
+  remainingDifficulty: string;
+  createdAt: string;
+}
+
+export interface ProductDiscoveryGapDeepening {
+  cycleId: number;
+  applicable: boolean;
+  cycleStatus: ProductDiscoveryCycleStatus;
+  stageCode: string;
+  minimumInterviews: number;
+  maximumInterviews: number;
+  interviewCount: number;
+  purchasedCount: number;
+  abandonedCount: number;
+  coveredOpportunityIds: number[];
+  missingOpportunityIds: number[];
+  readyForResearch: boolean;
+  maximumPublicQueriesPerAttempt: number;
+  maximumAttempts: number;
+  maximumModelInvocations: number;
+  maximumSearchCostUsd: number;
+  searchCostCoverage: string;
+  modelCostCoverage: string;
+  searchPricingSource: string;
+  searchPricingObservedOn: string;
+  guidance: string;
+  interviews: ProductDiscoveryCustomerInterview[];
+}
+
+export interface CreateProductDiscoveryCustomerInterviewPayload {
+  opportunityId: number;
+  anonymousParticipantCode: string;
+  outcome: ProductDiscoveryInterviewOutcome;
+  occurredOn: string;
+  purchaseSituation: string;
+  desiredResult: string;
+  difficulty: string;
+  alternativeTried: string;
+  amountSpent?: number;
+  currency?: string;
+  remainingDifficulty: string;
+  consentConfirmed: boolean;
+  noPersonalDataConfirmed: boolean;
+}
+
 export const productDiscoveryStatusLabels: Record<
   ProductDiscoveryCycleStatus,
   string
 > = {
   DRAFT: "Rascunho",
   READY_FOR_RESEARCH: "Pronto para pesquisa",
+  AWAITING_CUSTOMER_EVIDENCE: "Aguardando entrevistas",
   RESEARCHING: "Pesquisando",
   COMPLETED: "Concluído",
   FAILED: "Falhou",
@@ -138,14 +201,92 @@ export const productDiscoveryDecisionLabels: Record<
 const productDiscoveryKeys = {
   cycles: ["product-discovery", "cycles"] as const,
   cycle: (cycleId: number) => ["product-discovery", "cycles", cycleId] as const,
+  gapDeepening: (cycleId: number) =>
+    ["product-discovery", "cycles", cycleId, "gap-deepening"] as const,
   maturityRanking: ["product-discovery", "maturity-ranking"] as const,
 };
 
 async function parseJsonResponse<T>(response: Response, errorMessage: string) {
   if (!response.ok) {
-    throw new Error(`${errorMessage} (status ${response.status}).`);
+    let backendDetail: string | undefined;
+    try {
+      const payload = (await response.json()) as {
+        detail?: unknown;
+        message?: unknown;
+        error?: unknown;
+      };
+      backendDetail = [payload.detail, payload.message, payload.error].find(
+        (value): value is string =>
+          typeof value === "string" && value.trim().length > 0,
+      );
+    } catch {
+      // A resposta sem JSON ainda recebe a mensagem estável da operação abaixo.
+    }
+    throw new Error(
+      `${backendDetail?.trim() || errorMessage} (status ${response.status}).`,
+    );
   }
   return (await response.json()) as T;
+}
+
+export function useProductDiscoveryGapDeepening(cycleId?: number) {
+  return useQuery({
+    queryKey: cycleId
+      ? productDiscoveryKeys.gapDeepening(cycleId)
+      : ["product-discovery", "gap-deepening", "missing"],
+    enabled: cycleId != null,
+    queryFn: async () => {
+      const response = await fetch(
+        buildApiUrl(
+          `/api/product-discovery/v1/cycles/${cycleId}/gap-deepening`,
+        ),
+      );
+      return parseJsonResponse<ProductDiscoveryGapDeepening>(
+        response,
+        "Não foi possível carregar o aprofundamento das candidatas",
+      );
+    },
+  });
+}
+
+export function useCreateProductDiscoveryCustomerInterview(cycleId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      payload: CreateProductDiscoveryCustomerInterviewPayload,
+    ) => {
+      const response = await fetch(
+        buildApiUrl(
+          `/api/product-discovery/v1/cycles/${cycleId}/gap-deepening/interviews`,
+        ),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+      return parseJsonResponse<ProductDiscoveryGapDeepening>(
+        response,
+        "Não foi possível registrar a entrevista",
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: productDiscoveryKeys.gapDeepening(cycleId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: productDiscoveryKeys.cycle(cycleId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: productDiscoveryKeys.cycles,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["independent-business-process-executions"],
+        }),
+      ]);
+    },
+  });
 }
 
 export function useProductDiscoveryCycles() {

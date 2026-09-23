@@ -55,6 +55,8 @@ const backendCallbackRetryDelayMs = Number(
 const healthHost = process.env.PRODUCT_DISCOVERY_HEALTH_HOST || "0.0.0.0";
 const healthPort = Number(process.env.PRODUCT_DISCOVERY_HEALTH_PORT || "8080");
 const searchConfig = resolveSearchConfig();
+const INITIAL_STAGE_PATH = "research";
+const GAP_DEEPENING_STAGE_PATH = "candidate-gap-deepening";
 const healthState = createHealthState();
 const automaticExecution = createAutomaticExecutionControl({
   backendBaseUrl,
@@ -98,11 +100,13 @@ async function runCycle() {
       markPollCompleted(healthState);
       return;
     }
-    const pending = await getJson(
-      `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending`,
-    );
-    for (const job of pending) {
-      await processJob(job);
+    for (const stagePath of [INITIAL_STAGE_PATH, GAP_DEEPENING_STAGE_PATH]) {
+      const pending = await getJson(
+        `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/${stagePath}/stage-executions/pending`,
+      );
+      for (const job of pending) {
+        await processJob(job);
+      }
     }
     markPollCompleted(healthState);
   } catch (error) {
@@ -119,15 +123,20 @@ export async function processJob(job, dependencies = {}) {
   const post = dependencies.postJson || postJson;
   const selectLibrary =
     dependencies.selectResearchLibraryContext || selectResearchLibraryContext;
-  const planResearch = dependencies.planDirectedResearch || planDirectedResearch;
+  const planResearch =
+    dependencies.planDirectedResearch || planDirectedResearch;
   const internetSearch = dependencies.searchInternet || searchInternet;
   const collectCommercialEvidence =
     dependencies.collectMarketplaceEvidence || collectMarketplaceEvidence;
   const synthesize =
     dependencies.synthesizeMarketCandidates || synthesizeMarketCandidates;
   const analyze = dependencies.analyzeSearchResults || analyzeSearchResults;
+  const stagePath = callbackStagePath(job);
+  const stageMaximumQueries = Number(
+    job.gapResearchPolicy?.maximumPublicQueriesPerAttempt || maxSearchQueries,
+  );
   logger.info(
-    `[product-discovery-worker] processing cycle=${job.cycleId} theme=${job.theme}`,
+    `[product-discovery-worker] processing cycle=${job.cycleId} stage=${job.stageCode} theme=${job.theme}`,
   );
   try {
     const researchLibraryContext = await selectLibrary(job);
@@ -135,6 +144,7 @@ export async function processJob(job, dependencies = {}) {
     const execution = await executeBoundedMarketResearch(enrichedJob, {
       maxAttempts:
         dependencies.maxAttempts ??
+        job.gapResearchPolicy?.maximumAttempts ??
         process.env.ARGOS_MARKET_EXPANSION_MAX_ATTEMPTS,
       repositoryEvidence: researchLibraryContext.evidence,
       repositoryCoverage: researchLibraryContext.coverage,
@@ -147,7 +157,7 @@ export async function processJob(job, dependencies = {}) {
       },
       persistPlan: async (directedAttempts) => {
         await post(
-          `${activeBackendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/plan`,
+          `${activeBackendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/${stagePath}/stage-executions/${job.cycleId}/plan`,
           withExecutionLease(
             job,
             researchPlanHistoryCallbackPayload(directedAttempts),
@@ -160,8 +170,11 @@ export async function processJob(job, dependencies = {}) {
           {
             config: dependencies.searchConfig || searchConfig,
             maxSearchResults,
-            minSearchQueries,
-            maxSearchQueries,
+            minSearchQueries:
+              stagePath === GAP_DEEPENING_STAGE_PATH
+                ? stageMaximumQueries
+                : Math.min(minSearchQueries, stageMaximumQueries),
+            maxSearchQueries: stageMaximumQueries,
             maxResultsPerQuery,
             logger,
           },
@@ -203,24 +216,33 @@ export async function processJob(job, dependencies = {}) {
         return analysis;
       },
       analyze: (context) =>
-        analyze(context.job, context.publicEvidence, context.marketplaceOffers, {
-          minimumComparableOffers: context.plan.minimumComparableOffers,
-          metaAdEvidence: context.metaAdEvidence,
-          metaCoverage: context.metaCoverage,
-          candidateBlueprints: context.analysis.synthesis.candidates,
-          analysisSummary: context.analysis.synthesis.decisionSummary,
-          analysisMode: context.analysis.mode,
-          analysisModel: context.analysis.model,
-          repositoryEvidence: context.repositoryEvidence,
-          repositoryCoverage: context.repositoryCoverage,
-        }),
+        analyze(
+          context.job,
+          context.publicEvidence,
+          context.marketplaceOffers,
+          {
+            minimumComparableOffers: context.plan.minimumComparableOffers,
+            metaAdEvidence: context.metaAdEvidence,
+            metaCoverage: context.metaCoverage,
+            candidateBlueprints: context.analysis.synthesis.candidates,
+            analysisSummary: context.analysis.synthesis.decisionSummary,
+            analysisMode: context.analysis.mode,
+            analysisModel: context.analysis.model,
+            repositoryEvidence: context.repositoryEvidence,
+            repositoryCoverage: context.repositoryCoverage,
+            customerInterviews: context.job.customerInterviews || [],
+          },
+        ),
     });
+    if (stagePath === GAP_DEEPENING_STAGE_PATH) {
+      attachGapDeepeningReport(execution, job);
+    }
     execution.report.analysisAudit = analysisAuditHistoryCallbackPayload(
       execution.directedAttempts,
       execution.analysisAttempts,
     );
     await post(
-      `${activeBackendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/complete`,
+      `${activeBackendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/${stagePath}/stage-executions/${job.cycleId}/complete`,
       withExecutionLease(job, execution.report),
     );
     (dependencies.markCycleCompleted || markCycleCompleted)(
@@ -234,7 +256,7 @@ export async function processJob(job, dependencies = {}) {
   } catch (error) {
     (dependencies.markCycleFailed || markCycleFailed)(healthState, job, error);
     await post(
-      `${activeBackendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/fail`,
+      `${activeBackendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/${stagePath}/stage-executions/${job.cycleId}/fail`,
       withExecutionLease(job, failureCallbackPayload(error)),
     );
     logger.error(
@@ -242,6 +264,178 @@ export async function processJob(job, dependencies = {}) {
       error,
     );
   }
+}
+
+/** Resolve a rota de callback pela etapa persistida, nunca pelo conteúdo do tema. */
+export function callbackStagePath(job = {}) {
+  return job.stageCode === "candidate-gap-deepening"
+    ? GAP_DEEPENING_STAGE_PATH
+    : INITIAL_STAGE_PATH;
+}
+
+/** Acrescenta ao callback a prova dos relatos, consultas e custo estimado do aprofundamento. */
+export function attachGapDeepeningReport(execution, job) {
+  const attemptReports =
+    execution.report.evidenceReport?.marketExpansion?.attempts || [];
+  const executedAttemptNumbers = new Set(
+    attemptReports
+      .filter((item) => item.outcome !== "REPEATED_RESEARCH_LENS")
+      .map((item) => Number(item.attemptNumber)),
+  );
+  const plannedAttempts = execution.directedAttempts.map((item, index) => ({
+    ...item,
+    attemptNumber: Number(item.attemptNumber || index + 1),
+  }));
+  const executedAttempts = plannedAttempts.filter((item) =>
+    executedAttemptNumbers.has(item.attemptNumber),
+  );
+  const plans = executedAttempts.map((item) => item.directed.plan);
+  const allPlannedQueries = [
+    ...new Set(
+      plannedAttempts.flatMap((item) => item.directed.plan.publicQueries || []),
+    ),
+  ];
+  const modelInvocationCount =
+    execution.directedAttempts.filter((item) => item.directed.mode === "CODEX")
+      .length +
+    execution.analysisAttempts.filter((item) => item.analysis.mode === "CODEX")
+      .length;
+  const maximumModelInvocations = Number(
+    job.gapResearchPolicy?.maximumModelInvocations || 4,
+  );
+  if (modelInvocationCount > maximumModelInvocations) {
+    throw new Error(
+      "Aprofundamento excedeu o limite persistido de chamadas de modelo",
+    );
+  }
+  const executedQueries = [
+    ...new Set(plans.flatMap((plan) => plan.publicQueries || [])),
+  ];
+  const gapsByCandidate = new Map();
+  for (const plan of plans) {
+    for (const gap of plan.candidateGaps || []) {
+      const key = normalizeIdentity(gap.candidateName);
+      const previous = gapsByCandidate.get(key);
+      gapsByCandidate.set(key, {
+        ...gap,
+        publicQueries: [
+          ...new Set([
+            ...(previous?.publicQueries || []),
+            ...(gap.publicQueries || []),
+          ]),
+        ],
+      });
+    }
+  }
+  const opportunitiesByName = new Map(
+    (execution.report.opportunities || []).map((item) => [
+      normalizeIdentity(item.name),
+      item,
+    ]),
+  );
+  const resolvedGaps = [...gapsByCandidate.values()].map((gap) => {
+    const candidate = opportunitiesByName.get(
+      normalizeIdentity(gap.candidateName),
+    );
+    const resolution = candidateResolutionEvidence(
+      candidate,
+      gap.publicQueries || [],
+    );
+    return {
+      candidateName: gap.candidateName,
+      pendingQuestion: gap.pendingQuestion,
+      appropriateSource: gap.appropriateSource,
+      evidenceNeeded: gap.evidenceNeeded,
+      contraryEvidenceSought: gap.contraryEvidenceToSeek,
+      executedQueries: gap.publicQueries || [],
+      resolutionQueries: resolution.queries,
+      resolutionEvidenceIds: resolution.evidenceIds,
+      resolutionBasis:
+        resolution.queries.length > 0
+          ? "NEW_PUBLIC_SEARCH"
+          : resolution.evidenceIds.length > 0
+            ? "INTERVIEWS_OR_REUSED_EVIDENCE"
+            : "NO_RESOLUTION_EVIDENCE",
+      status:
+        candidate?.maturity === "DOSSIER_READY"
+          ? "RESOLVED"
+          : candidate?.maturity === "REJECTED"
+            ? "CONTRADICTED"
+            : "STILL_OPEN",
+      resultingMaturity: candidate?.maturity || "RESEARCHABLE",
+    };
+  });
+  const estimatedCostPerRequest = Number(
+    job.gapResearchPolicy?.estimatedSearchCostPerRequestUsd || 0,
+  );
+  execution.report.evidenceReport ||= {};
+  execution.report.evidenceReport.gapDeepening = {
+    contractVersion: "CANDIDATE_GAP_DEEPENING_V1",
+    customerInterviewCount: (job.customerInterviews || []).length,
+    candidateCount: (job.previousCandidates || []).length,
+    plannedSearchRequests: allPlannedQueries.length,
+    actualSearchRequests: executedQueries.length,
+    executedQueries,
+    unexecutedQueries: allPlannedQueries.filter(
+      (query) => !executedQueries.includes(query),
+    ),
+    estimatedSearchCostUsd: Number(
+      (executedQueries.length * estimatedCostPerRequest).toFixed(8),
+    ),
+    searchCostCoverage: job.gapResearchPolicy?.costCoverage || "NOT_REPORTED",
+    pricingSource: job.gapResearchPolicy?.pricingSource || null,
+    pricingObservedOn: job.gapResearchPolicy?.pricingObservedOn || null,
+    modelInvocationCount,
+    modelCostCoverage:
+      job.gapResearchPolicy?.modelCostCoverage || "NOT_REPORTED",
+    resolvedGaps,
+  };
+  return execution.report;
+}
+
+/** Identifica as buscas e evidências realmente vinculadas à conclusão da candidata. */
+function candidateResolutionEvidence(candidate, candidateQueries) {
+  if (!candidate?.evidenceJson) return { queries: [], evidenceIds: [] };
+  try {
+    const evidence = JSON.parse(candidate.evidenceJson);
+    const referenced = evidence?.referencedEvidence || {};
+    const publicEvidence = Array.isArray(referenced.publicEvidence)
+      ? referenced.publicEvidence
+      : [];
+    const normalizedQueries = new Set(candidateQueries.map(normalizeIdentity));
+    const queries = [
+      ...new Set(
+        publicEvidence
+          .map((item) => item.sourceQuery)
+          .filter(
+            (query) => query && normalizedQueries.has(normalizeIdentity(query)),
+          ),
+      ),
+    ];
+    const evidenceIds = [
+      ...new Set(
+        [
+          ...publicEvidence,
+          ...(referenced.marketplaceOffers || []),
+          ...(referenced.metaAdEvidence || []),
+          ...(referenced.repositoryEvidence || []),
+          ...(referenced.customerInterviews || []),
+        ]
+          .map((item) => item?.evidenceId)
+          .filter(Boolean),
+      ),
+    ];
+    return { queries, evidenceIds };
+  } catch {
+    return { queries: [], evidenceIds: [] };
+  }
+}
+
+/** Compara identidades preservando acentos e caixa apenas na apresentação. */
+function normalizeIdentity(value) {
+  return String(value || "")
+    .trim()
+    .toLocaleLowerCase("pt-BR");
 }
 
 /** Agrega planejamento e síntese na mesma tarefa sem perder as respostas brutas separadas. */
@@ -373,6 +567,7 @@ export function researchPlanHistoryCallbackPayload(directedAttempts) {
       strategyCode: MARKET_EXPANSION_STRATEGY_CODE,
       attempts: directedAttempts.map((item) => ({
         attemptNumber: item.attemptNumber,
+        planDisposition: item.planDisposition || "AUTHORIZED_FOR_COLLECTION",
         plan: item.directed.plan,
       })),
     }),
@@ -393,9 +588,7 @@ export function researchPlanHistoryCallbackPayload(directedAttempts) {
       directedAttempts,
       "activityPromptPart",
     ),
-    reasoningEffort: modelExecution
-      ? latest.reasoningEffort
-      : "NOT_APPLICABLE",
+    reasoningEffort: modelExecution ? latest.reasoningEffort : "NOT_APPLICABLE",
     inputTokens: usage?.inputTokens,
     cachedInputTokens: usage?.cachedInputTokens,
     outputTokens: usage?.outputTokens,

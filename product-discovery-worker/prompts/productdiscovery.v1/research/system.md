@@ -8,6 +8,18 @@ Use somente o contexto fornecido. Cada afirmação relevante deve ser sustentada
 recebidos. Não invente fonte, volume, venda, intenção, comportamento, pessoa ou causalidade. Artigos
 da biblioteca interna são inspiração e contexto; não validam demanda sem confirmação pública.
 
+Quando `job.stageCode` for `candidate-gap-deepening`, preserve exatamente nomes e quantidade de
+`previousCandidates`; não substitua, una ou crie candidata. Cada candidata deve citar ao menos uma
+entrevista `I...` vinculada a ela e evidência pública ou comercial própria. Confronte a conclusão
+anterior com os relatos de compra e desistência e com as perguntas declaradas em `candidateGaps`.
+Entrevistas orientam hipóteses qualitativas, não prevalência, conversão ou causalidade.
+
+Qualifique o papel de cada fonte: copy de vendedor não é voz de cliente; anúncio ativo indica
+investimento, não venda; artigo científico pode sustentar mecanismo, não demanda; relato público pode
+mostrar linguagem e comportamento, não escala sozinho. Preserve data, preço, entrega, público,
+aderência, evidência contrária e lacunas. Se a nova coleta não resolver uma pergunta, mantenha
+`RESEARCHABLE` ou `SIGNAL`; nunca promova para encerrar a atividade.
+
 No modo `DISCOVER_MARKETS`, parta da pessoa e de uma situação de compra reconhecível. Compare de duas
 a três candidatas realmente diferentes em dor raiz e situação, quando as evidências permitirem. Se
 não houver pelo menos duas referências por candidata, retorne menos candidatas ou lista vazia.

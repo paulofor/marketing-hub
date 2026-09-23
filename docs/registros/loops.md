@@ -705,6 +705,29 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
 - **Teste de contrato da recorrência:** as três consultas reais da #16 devem ser reduzidas e aceitas;
   HTTP 400 deve falhar a execução, HTTP 503 deve preservar cobertura indisponível e o relatório deve
   diferenciar `OBSERVED_EMPTY`, espera de observação e integração não executada.
+- **Recorrência confirmada em 23/09/2026 — execução #26:** três lentes produziram 59 evidências e
+  treze ofertas, porém cada candidata citava apenas uma oferta, oito referências eram snapshots de
+  junho e não havia anúncio ativo aderente nem artigo científico por candidata. O limite geral
+  encerrou honestamente a tarefa, mas `RESEARCH_MORE` continuou sem pergunta, fonte e evidência
+  esperada específicas, impedindo uma retomada que aprendesse com o corpus acumulado.
+- **Causa-raiz complementar:** a ampliação era limitada por tentativa, mas não possuía uma atividade
+  BPM posterior, gate de comportamento passado, identidade persistida das candidatas nem orçamento
+  candidato-específico. Repetir o ciclo podia mudar nomes e refazer buscas amplas sem resolver a
+  dúvida que impedia Atena.
+- **Correção sistêmica v7:** o Processo 1 adiciona `candidateGapDeepening`; o backend preserva
+  candidatas e exige cinco a oito entrevistas anônimas consentidas, com compra, desistência e
+  cobertura integral. O worker recebe corpus anterior, perguntas, contrapontos e teto de duas
+  tentativas, doze consultas por tentativa, quatro invocações de modelo e US$ 0,12 estimados de
+  busca. O custo do modelo é calculado no ledger após o callback. Somente o segundo callback conclui
+  Argos e sincroniza dossiês com Atena.
+- **Prevenção complementar:** testes cobrem gate incompleto, participante duplicado, dados de contato,
+  callback cruzado, nomes alterados, limite/custo, reaproveitamento do corpus, ausência de progresso,
+  relatório de lacunas e idempotência. O relatório separa consultas planejadas, tentadas e rejeitadas
+  antes da coleta, vinculando buscas e IDs de evidência à resolução; assim uma lente repetida não cria
+  consumo ou prova fictícios. A proposta repetida recebe a disposição
+  `REJECTED_REPEATED_RESEARCH_LENS`, permitida somente na última tentativa; uma repetição declarada
+  como autorizada continua inválida. Entrevistas continuam qualitativas e a entrega a Atena não conta
+  como utilidade, venda ou margem.
 
 ## LOOP-HERMES-CANAL-DIRETO-TRATADO-COMO-META — piloto aprovado bloqueia por campanha inexistente
 
@@ -4485,7 +4508,7 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   legado v4 aceitava qualquer string. Plutus devolveu um parecer funcional `ADJUST`, mas copiou o
   instante completo para `economics.deadline`; somente o validador posterior à chamada paga exigiu
   `YYYY-MM-DD` e converteu o parecer em falha técnica. A correção mantém prompt e parecer históricos,
-  ativa uma versão textual v2 e um schema próprio do Opala que exige data *date-only* antes da
+  ativa uma versão textual v2 e um schema próprio do Opala que exige data _date-only_ antes da
   inferência, e adiciona os cenários Opala válido e Opala com timestamp à matriz real do worker.
   Novas tarefas recebem o contrato alinhado; respostas brutas e custos das tentativas anteriores
   permanecem imutáveis.
@@ -4815,7 +4838,7 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   executava `docker builder prune -af` e `docker image prune -af` antes de criar seus containers.
   Nesse intervalo, a imagem recém-puxada de Argos ainda não pertencia a container algum e podia ser
   removida, deixando o metadado local apontando para conteúdo inexistente. Repetir apenas o `compose
-  up` trataria a consequência e manteria a corrida.
+up` trataria a consequência e manteria a corrida.
 - **Correção sistêmica:** todos os workflows que publicam no VPS de agentes compartilham a fila
   `deploy-vps-163-245-202-80`, preservam execuções pendentes e ativas e o Meta Ad Approver deixa de
   executar prune agressivo antes da publicação.
@@ -5323,7 +5346,6 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   porta, proxy e lifecycle; os cânones de plataforma, cadeia e validação agora exigem evidência de
   isolamento por produto. Matriz: `docs/homologacao/pde-isolamento-produto-mira-vega-v1.md`.
 
-
 ### Complemento Mira #351 — conclusão histórica bloqueando a revalidação
 
 Em 08/09/2026, após #353 `READY`, o motor da tela encerrava `technicalHomologation` pela
@@ -5391,7 +5413,6 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   Estúdio oficial e exige evidências antes de liberar homologação e autorização.
 - Contratos locais rejeitam mídia de outro produto/experimento, função errada, arquivo substituído,
   aprovação revogada e integração vencida. Referência: `docs/homologacao/ciclos-videos-campanha-entrada-pde-v2.md`.
-
 
 ## LOOP-HERMES-PDE-ANALYTICS-LEGADO — métricas corretas existem, mas o agente lê outra fonte
 
@@ -5506,7 +5527,6 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   cenários, callback de Têmis e gate local, além de regressões de produto/versão/linhagem.
   Evidências: `docs/homologacao/vega-integridade-gate-ciclo-v1.md`.
 
-
 ## LOOP-BPM-ACOMPANHAMENTO-RETRANSMITE-PROMPTS — correção em 2026-09-11
 
 - **Sintoma:** a tarefa #396 do Vega estava COMPLETED, mas a tela permanecia em
@@ -5530,7 +5550,6 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 - **Prevenção adicional:** testes JPA verificam consulta escalar, segregação por
   origem/processo/versão e seleção dos erros recuperáveis; testes do service mantêm
   validação exata e impedem repetição de retry.
-
 
 ### Continuidade de LOOP-BPM-UI-WORKER-READINESS-DIVERGENTE — ciclo privado, 11/09/2026
 
@@ -5638,7 +5657,6 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
   matriz HTTP/MySQL e navegadores. Evidências e resultados em
   `docs/homologacao/vega-processo-comunicacao-recuperacao-v1.md`.
 
-
 ## LOOP-CRIATIVO-BRIEFING-SEM-PECA — produção concluída sem pixels para revisão
 
 - Confirmado em 2026-09-12: Vega ciclo 2, experiment:92, tarefas 403 e 404. O produtor entregou render brief; Psique recebeu texto sem PNG e pediu a peça real. O prompt mandava SINGLE_CREATIVE sem modalidade VISUAL; o validador bloqueou e o callback técnico descartou o parecer.
@@ -5646,7 +5664,6 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
 - Correção: renderização determinística dentro da atividade de Íris, tipo CREATIVE_RENDER, fonte/hash/versão/crop auditados; backend exige arquivos reais; revisores recebem PNGs e auditam hashes; neutralidade visual explícita sem pixels; callbacks preservam response bruto; ADJUST retorna à produção e exige nova revisão.
 - Prevenção: testes de CreativeVisualEvidenceService, CreativeProductionReadinessProvider, ProofCardRenderer, IrisCreativeMaterializer, CreativeVisualInput e CreativeReviewImages, além da matriz completa em infra/testing/vega-process-recovery/run-round.sh. Não liberar imagem apenas com briefing, substituir prova por desenho ou marcar aprovação sem parecer.
 - Cânone: docs/canonical/iris-communication-agent-canon.v1.md. Evidências: docs/homologacao/vega-processo-comunicacao-recuperacao-v1.md.
-
 
 ## LOOP-BACKEND-JAR-ANTIGO-APOS-TESTES — imagem recebe pacote de uma revisão anterior
 
@@ -5695,7 +5712,6 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
   gravou string vazia e o Hibernate não conseguiu materializar a entidade. A correção restaura
   `VARCHAR(32)`, conforme o changelog canônico inicial e o contrato JPA, repara somente a candidata
   v8/experimento #92 ainda não publicada e acrescenta regressão física com o `ENUM` legado.
-
 
 ## LOOP-CICLO-GATE-FONTE-DIVERGENTE — homologação ignora o gate do experimento
 
@@ -5906,7 +5922,6 @@ Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
   passa a executar o callback exato da imagem no service real do backend, além
   dos doubles HTTP; não aceitar retorno 204 simulado como prova dessa integração.
 
-
 ### Continuidade de LOOP-BPM-DECISAO-HUMANA-COMO-EXECUCAO — consulta de vídeo encerrada
 
 - Confirmado em 13/09/2026 por UI, MCP e código: Vega/#92, ciclos 15/16,
@@ -6010,7 +6025,6 @@ Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
 - **Prevenção:** testes do helper incluem CTA, negações, IDs, providers, evidência
   incompleta e reprovação real. A matriz local abre a tela em desktop/iPhone/Pixel e
   solicita somente acabamento simulado do bruto correto, sem provider externo.
-
 
 ### Prevenção adicional — fichas de execução por entrega (14/09/2026)
 
@@ -6157,8 +6171,7 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 ## LOOP-CICLO-MODELO-ATUAL-CADEIA-ANTIGA — 16/09/2026
 
 - Tela de produtos enviava processo 78 e cadeia 14 para o ciclo 2/experimento 92.
-  HTTP 409 confirmado por navegador, logs MCP e banco; a cadeia 14 contém processo
-  75. O mesmo GET com 75 funciona. Orçamento já aprovado não explica o erro.
+  HTTP 409 confirmado por navegador, logs MCP e banco; a cadeia 14 contém processo 75. O mesmo GET com 75 funciona. Orçamento já aprovado não explica o erro.
 - Causa: `SalesFlowResolver` selecionava última versão publicada; o fallback Opala
   conservava o processo recebido da cadeia atual, não o membro da cadeia do ciclo.
 - Correção: obter o processo pai exclusivamente dos itens da cadeia persistida.

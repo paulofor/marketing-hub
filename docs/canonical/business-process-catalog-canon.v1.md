@@ -366,6 +366,10 @@ para sustentar referências em curso sem ficha fixada, seguindo a convivência j
 nas cadeias v14–v17. Novos trabalhos selecionam a versão mais recente; não reclassificar
 aprovações antigas nem migrar vínculos de produtos, tarefas ou ciclos automaticamente.
 
+**Aprofundamento de descoberta — 23/09/2026:** a cadeia v19 preserva os processos 2–6 da v18 e
+adota exclusivamente o Processo 1 v7. Essa mudança acrescenta o gate comportamental e a atividade
+`candidateGapDeepening`; não reabre nem migra ciclos vinculados à v6.
+
 O catálogo e a execução adotam três níveis distintos e persistidos:
 
 1. **Atividade:** definição versionada do trabalho dentro de uma versão de processo. Preserva o
@@ -627,6 +631,15 @@ cadeia, agente responsável ou ausência momentânea de produto:
 O processo `pde-opportunity-discovery` é `INDEPENDENT`: uma pergunta real de mercado inicia o ciclo,
 e somente uma oportunidade factual aprovada poderá originar produto posteriormente. Vincular produto
 apenas para conseguir disparar Argos inverte a cadeia causal e é proibido.
+
+Desde a versão 7, a execução contém duas atividades de Argos: `marketEvidence` reúne candidatas e
+lacunas iniciais; `candidateGapDeepening` só entra na fila depois do gate de entrevistas consentidas
+e aprofunda as perguntas por candidata dentro de limites persistidos. O backend preserva a mesma
+referência independente, as identidades das candidatas, as duas tarefas, evidências, custo e
+progresso. A atividade inicial concluída não conclui o processo, não sincroniza dossiês com Atena e
+não pode ser reaberta para contornar a coleta comportamental. A única saída direta é uma pesquisa
+que não encontrou candidata factual: nesse caso o backend encerra honestamente sem entrevista, nova
+busca ou handoff, preservando o relatório vazio como resultado.
 
 `INDEPENDENT` descreve ausência de produto na execução, não ausência de alocação na Cadeia de Valor.
 Sua definição, atividades e entrada operacional seguem a mesma regra obrigatória de integração ao

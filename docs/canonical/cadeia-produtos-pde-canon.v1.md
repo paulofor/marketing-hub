@@ -180,13 +180,13 @@ resultados. A fonte inicial é a observação do experimento #91: houve particip
 exibido e um cadastro; ainda não há comprovação de vendas rentáveis ou do mecanismo causal.
 O aprendizado é uma hipótese transferível, não uma receita universal de questionário/gratuidade.
 
-| Critério | Atividades responsáveis | Saída e evidência de aceite | Medição |
-| --- | --- | --- | --- |
-| Desejo reconhecido | Processo 2 `marketStrategy`; Processo 4 `communicationContract` | Um desejo/resultado escolhido, público e situação, linguagem observada com fonte/data, mensagem candidata e explicação concorrente. Íris mantém a oferta aprovada; não inventa inadequação nem emoção individual. | Pessoas humanas distintas que fazem a primeira interação / visitantes humanos atribuídos, por variante e janela. |
-| Primeiro passo fácil | Processo 2 `productArchitecture`; Processo 3 `journey`, `technicalHomologation`, `psiqueAdherent`, `psiqueRecovery` | Primeira ação evidente; finalidade de cada pergunta; próximo botão e botão final alcançáveis no celular, sem conteúdo bloqueante; recuperação e resultado compreensível. Capturas e execução real da mesma versão, em desktop, iPhone e Android. | Início → conclusão → resultado recebido; abandono por etapa e tempo até o primeiro benefício, com denominadores e origem. |
-| Valor antes do compromisso | Processo 4 `communicationContract`, `destination`, `integration`; subprocesso `pde-tasting-proof-of-value` | Registrar aplicabilidade no plano. Se escolhida, referenciar a execução da degustação e seus pareceres antes de integrar: benefício aplicável, fronteira gratuita/paga, custo por uso, limite total, consentimento e antiabuso. Sem degustação, comprovar demonstração/amostra real adequada ao tipo, com motivo. | Resultado exibido separado de aplicação/relato de utilidade; interesse em salvar/continuar separado de cadastro, acesso e compra. |
-| Continuidade paga compreensível | Processo 4 `communicationContract`, `integration`; degustação `humanExperienceReview`, `commercialIntegrityReview` | Benefício adicional, entregáveis, como usar, preço total/recorrência, prazo, acesso, suporte e reembolso coerentes com produto e checkout. A experiência inicial cumpre sua própria promessa. Teste de compreensão; simulação de agente identificada como tal. | Exposição efetiva à oferta → clique → checkout → compra conciliada; retorno e acesso em eventos próprios. Resultado pronto não comprova oferta vista. |
-| Repetição com margem | Processo 6 `consolidate`, `learningCycle`; operação `task-1` a `task-4`, `task-7`, `task-10`; ciclo `LEARNING`, `PLANNING`, `MEASUREMENT`, `DECISION` | Referência anterior, fato versus hipótese, fonte/data, explicação concorrente, uma mudança principal, condições mantidas, amostra/janela/atribuição e limites aprovados. Custos essenciais conhecidos e parecer financeiro vigente. | Compras líquidas, receita conciliada, CAC, custo integral de entrega, reembolso, contribuição e margem; participação é indicador intermediário. |
+| Critério                        | Atividades responsáveis                                                                                                                               | Saída e evidência de aceite                                                                                                                                                                                                                                                                                       | Medição                                                                                                                                               |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desejo reconhecido              | Processo 2 `marketStrategy`; Processo 4 `communicationContract`                                                                                       | Um desejo/resultado escolhido, público e situação, linguagem observada com fonte/data, mensagem candidata e explicação concorrente. Íris mantém a oferta aprovada; não inventa inadequação nem emoção individual.                                                                                                 | Pessoas humanas distintas que fazem a primeira interação / visitantes humanos atribuídos, por variante e janela.                                      |
+| Primeiro passo fácil            | Processo 2 `productArchitecture`; Processo 3 `journey`, `technicalHomologation`, `psiqueAdherent`, `psiqueRecovery`                                   | Primeira ação evidente; finalidade de cada pergunta; próximo botão e botão final alcançáveis no celular, sem conteúdo bloqueante; recuperação e resultado compreensível. Capturas e execução real da mesma versão, em desktop, iPhone e Android.                                                                  | Início → conclusão → resultado recebido; abandono por etapa e tempo até o primeiro benefício, com denominadores e origem.                             |
+| Valor antes do compromisso      | Processo 4 `communicationContract`, `destination`, `integration`; subprocesso `pde-tasting-proof-of-value`                                            | Registrar aplicabilidade no plano. Se escolhida, referenciar a execução da degustação e seus pareceres antes de integrar: benefício aplicável, fronteira gratuita/paga, custo por uso, limite total, consentimento e antiabuso. Sem degustação, comprovar demonstração/amostra real adequada ao tipo, com motivo. | Resultado exibido separado de aplicação/relato de utilidade; interesse em salvar/continuar separado de cadastro, acesso e compra.                     |
+| Continuidade paga compreensível | Processo 4 `communicationContract`, `integration`; degustação `humanExperienceReview`, `commercialIntegrityReview`                                    | Benefício adicional, entregáveis, como usar, preço total/recorrência, prazo, acesso, suporte e reembolso coerentes com produto e checkout. A experiência inicial cumpre sua própria promessa. Teste de compreensão; simulação de agente identificada como tal.                                                    | Exposição efetiva à oferta → clique → checkout → compra conciliada; retorno e acesso em eventos próprios. Resultado pronto não comprova oferta vista. |
+| Repetição com margem            | Processo 6 `consolidate`, `learningCycle`; operação `task-1` a `task-4`, `task-7`, `task-10`; ciclo `LEARNING`, `PLANNING`, `MEASUREMENT`, `DECISION` | Referência anterior, fato versus hipótese, fonte/data, explicação concorrente, uma mudança principal, condições mantidas, amostra/janela/atribuição e limites aprovados. Custos essenciais conhecidos e parecer financeiro vigente.                                                                               | Compras líquidas, receita conciliada, CAC, custo integral de entrega, reembolso, contribuição e margem; participação é indicador intermediário.       |
 
 O contrato de eventos deve declarar gatilho observável, versão, unidade de contagem, numerador,
 denominador, janela de conversão e exclusão de testes/bots/duplicidades. Para exposição à oferta,
@@ -208,6 +208,10 @@ vínculos, aprovações e custos; os critérios novos pertencem às novas defini
 anteriores permanecem disponíveis enquanto houver execuções vinculadas, como já ocorre nas
 cadeias v14–v17: aposentá-las agora impediria comandos de referências sem ficha fixada.
 A seleção de novos trabalhos usa a versão publicada mais recente; não migrar tarefas antigas.
+
+A cadeia v19 preserva integralmente os cinco critérios da v18 e troca somente o Processo 1 pela
+versão v7, que instala o gate e a segunda atividade de aprofundamento descritos abaixo. Execuções
+da cadeia v18 continuam vinculadas às definições e tarefas que já possuíam.
 
 Uma nova definição pode reutilizar uma evidência paga da revisão anterior sem mover a tarefa
 histórica quando produto, referência, contrato funcional, entrada estratégica e bytes do resultado
@@ -291,6 +295,12 @@ mas não comprova sozinha uma oportunidade.
 **Trabalho essencial:**
 
 - identificar público e cena concreta da dor;
+- comparar situações concretas em que o desejo ganhou prioridade e gerou ação, registrando ocasião,
+  resultado desejado, dificuldade, alternativa tentada e gasto conhecido sem converter intenção
+  declarada em comportamento;
+- qualificar cada evidência pela candidata a que pertence, atualidade, aderência, público, preço,
+  entrega e papel da fonte. Linguagem de vendedor, relato de cliente, anúncio e artigo científico
+  respondem a perguntas diferentes e nenhum deles comprova sozinho demanda por uma solução com IA;
 - capturar e anonimizar a fala observada, separando desejo, dor, tentativa frustrada e inferências;
 - consultar novamente, em cada ciclo, todos os artigos disponíveis nas coleções vivas
   `pesquisas/gartner` e `pesquisas/ia-aplicada`, sem congelar uma lista de arquivos;
@@ -330,6 +340,40 @@ mas não comprova sozinha uma oportunidade.
   antecipar que kit, webapp ou qualquer outra implementação será a vencedora;
 - comparar de duas a três oportunidades antes de priorizar uma.
 
+### Aprofundamento obrigatório por candidata — decisão de 23/09/2026
+
+O Processo 1 v7 separa a coleta ampla de Argos da atividade **Aprofundar lacunas da candidata**.
+A primeira atividade preserva as candidatas e declara as perguntas ainda abertas. Antes da segunda
+coleta, o backend exige entre **cinco e oito entrevistas exploratórias consentidas e anônimas**,
+incluindo ao menos uma situação em que a pessoa comprou, uma em que desistiu e cobertura de todas as
+candidatas. O conjunto orienta hipóteses qualitativas; não estima prevalência, tamanho de mercado ou
+taxa de conversão.
+
+Cada entrevista registra somente código anônimo, candidata, decisão passada, data da situação,
+ocasião, resultado desejado, dificuldade, alternativa tentada, gasto e moeda quando conhecidos e
+dificuldade residual. Nome, e-mail, telefone ou contato não pertencem ao contrato. As perguntas
+devem partir de comportamento passado e permanecer abertas e neutras, seguindo a referência
+consultada em 23/09/2026 do
+[GOV.UK sobre entrevistas em profundidade](https://www.gov.uk/service-manual/user-research/using-in-depth-interviews).
+
+Para cada candidata, o plano da segunda atividade deve declarar:
+
+- pergunta pendente e por que impede a decisão;
+- tipo de fonte adequado e evidência necessária;
+- evidência contrária que também será procurada;
+- consultas públicas concretas e vínculo entre consulta e resultado;
+- limite de consultas, tentativas e custo estimado;
+- conclusão `RESOLVIDA`, `NÃO RESOLVIDA` ou `CONTRADITA`, com fontes e limitações.
+
+A etapa reutiliza o corpus válido, preserva IDs e nomes das candidatas e interrompe a coleta quando
+não houver evidência nova, a lente se repetir ou o teto for atingido. O limite inicial é de doze
+consultas públicas por tentativa, duas tentativas e US$ 0,12 estimados de busca no total, baseado no
+preço público observado em 23/09/2026 na
+[Brave Search API](https://brave.com/search/api/). Planejamento e síntese ficam limitados a quatro
+invocações de modelo no total. O custo monetário do modelo permanece separado, calculado pelo backend
+no ledger da tarefa após o callback; antes disso é desconhecido, nunca zero. Mudar esses limites
+exige nova decisão versionada.
+
 **Saída final:** dossiê de oportunidade com matriz rastreável de inspirações e evidências, público,
 dor raiz, lacuna, intenção de compra, perguntas prioritárias, sinais de confiança, ativos de
 distribuição, formatos digitais candidatos, qualidade das fontes, contrato e validação multiagente
@@ -344,6 +388,14 @@ multiagente íntegra, vantagem funcional demonstrável sobre a alternativa gratu
 bloqueio de Psique ou Têmis. Preferência, compra e satisfação permanecem hipóteses até surgirem
 eventos humanos do experimento comercial. A candidata também deve entregar resultado pronto sem
 transferir ao consumidor o trabalho de operar a IA.
+
+Na versão v7, o gate também exige as duas atividades de Argos concluídas, entrevistas dentro do
+intervalo aprovado, compra e desistência observadas, cobertura de todas as candidatas, qualificação
+das fontes e comprovação dos limites de coleta. Lacuna que permaneça aberta conserva
+`PESQUISAR MAIS`; não é permitido repetir a mesma entrada ou promover a candidata apenas para
+encerrar o processo. A entrega a Atena não comprova utilidade nem compra: Atena define a proposta,
+Plutus valida a economia, Dédalo materializa a menor experiência útil e os processos posteriores
+medem aplicação, compras líquidas, reembolsos, custo integral, contribuição e margem.
 
 ## 2. Plano comercial e desenho da oferta PDE
 
@@ -563,26 +615,26 @@ dentro dos limites financeiros, registrando a autorização humana sem antecipar
 
 **Composição canônica a partir da cadeia v16:**
 
-| Número | Atividade | Responsabilidade e objetivo |
-|---|---|---|
-| **5.1** | Preparar operação comercial conforme o tipo | Backend seleciona pelo tipo cadastrado e pela ficha o subprocesso aplicável. Opala (`PDE`) chama `opala-commercial-preparation-v1`; tipos sem percurso configurado não passam por Opala. |
-| **5.2** | Validar experiência e valor para o cliente | Psique comprova compreensão, uso e valor. Pode reutilizar o parecer vigente de 5.1.6 no mesmo escopo, sem nova chamada paga. |
-| **5.3** | Validar integridade comercial | Têmis comprova coerência entre anúncio, promessa, preço, condições, checkout e entrega. Pode reutilizar 5.1.7 no mesmo escopo. |
+| Número  | Atividade                                   | Responsabilidade e objetivo                                                                                                                                                                        |
+| ------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **5.1** | Preparar operação comercial conforme o tipo | Backend seleciona pelo tipo cadastrado e pela ficha o subprocesso aplicável. Opala (`PDE`) chama `opala-commercial-preparation-v1`; tipos sem percurso configurado não passam por Opala.           |
+| **5.2** | Validar experiência e valor para o cliente  | Psique comprova compreensão, uso e valor. Pode reutilizar o parecer vigente de 5.1.6 no mesmo escopo, sem nova chamada paga.                                                                       |
+| **5.3** | Validar integridade comercial               | Têmis comprova coerência entre anúncio, promessa, preço, condições, checkout e entrega. Pode reutilizar 5.1.7 no mesmo escopo.                                                                     |
 | **5.4** | Executar homologação técnica do experimento | Backend usa `experiment-homologation-activation` e as evidências técnicas vigentes para validar superfícies, compra simulada, acesso, entrega, falhas, eventos, segregação e controles de consumo. |
-| **5.5** | Autorizar ativação, orçamento e janela | Decisão humana aprova a versão exata, canais, teto, período e condições de parada; nenhum parecer técnico autoriza gasto. |
+| **5.5** | Autorizar ativação, orçamento e janela      | Decisão humana aprova a versão exata, canais, teto, período e condições de parada; nenhum parecer técnico autoriza gasto.                                                                          |
 
 Para o tipo Opala, **5.1** contém:
 
-| Número | Atividade | Responsável |
-|---|---|---|
-| **5.1.1** | Preparar entrada do próprio PDE | Dédalo |
-| **5.1.2** | Vincular e preparar criativo aprovado | Dédalo, com ativos de Íris e Apolo |
-| **5.1.3** | Configurar checkout e acesso | Dédalo |
-| **5.1.4** | Preparar público aprovado | Dédalo, conforme Atena |
-| **5.1.5** | Validar custos, limites e margem | Plutus |
-| **5.1.6** | Homologar experiência comercial | Psique |
-| **5.1.7** | Revisar integridade da jornada | Têmis |
-| **5.1.8** | Consolidar preparação e retornar ao Processo 5 | Backend |
+| Número    | Atividade                                      | Responsável                        |
+| --------- | ---------------------------------------------- | ---------------------------------- |
+| **5.1.1** | Preparar entrada do próprio PDE                | Dédalo                             |
+| **5.1.2** | Vincular e preparar criativo aprovado          | Dédalo, com ativos de Íris e Apolo |
+| **5.1.3** | Configurar checkout e acesso                   | Dédalo                             |
+| **5.1.4** | Preparar público aprovado                      | Dédalo, conforme Atena             |
+| **5.1.5** | Validar custos, limites e margem               | Plutus                             |
+| **5.1.6** | Homologar experiência comercial                | Psique                             |
+| **5.1.7** | Revisar integridade da jornada                 | Têmis                              |
+| **5.1.8** | Consolidar preparação e retornar ao Processo 5 | Backend                            |
 
 O reaproveitamento de 5.1.6 em 5.2 e de 5.1.7 em 5.3 registra a tarefa e a consolidação originais,
 impressão da evidência e custo incremental zero. Só é válido para o mesmo produto, cadeia, ciclo,
@@ -704,14 +756,14 @@ assets produzidos, tarefas concluídas ou impacto estimado não contam como vend
 
 ## Relação com os processos atuais
 
-| Macroprocesso PDE              | Situação inicial no catálogo                  | Uso recomendado                                                          |
-| ------------------------------ | --------------------------------------------- | ------------------------------------------------------------------------ |
-| Descoberta e priorização       | Ainda não formalizado como processo publicado | Criar processo próprio a partir do cânone de descoberta                  |
-| Plano comercial e oferta       | Ainda não formalizado como processo publicado | Criar processo próprio ligado ao Planejamento Comercial                  |
-| Protótipo, validação multiagente e aprovação do PDE | Parcial | Criar processo PDE; usar fabricação de imagens/arquivos como subprocesso |
-| Comunicação e jornada de venda | Coberto por processos especializados          | Reutilizar criativos e landing sob o mesmo Plano Comercial               |
-| Homologação e ativação         | Processo publicado                            | Reutilizar e adaptar gates específicos de PDE quando necessário          |
-| Venda, entrega e decisão       | Processos publicados                          | Reutilizar operação/otimização e venda/entrega/satisfação                |
+| Macroprocesso PDE                                   | Situação inicial no catálogo                  | Uso recomendado                                                          |
+| --------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------ |
+| Descoberta e priorização                            | Ainda não formalizado como processo publicado | Criar processo próprio a partir do cânone de descoberta                  |
+| Plano comercial e oferta                            | Ainda não formalizado como processo publicado | Criar processo próprio ligado ao Planejamento Comercial                  |
+| Protótipo, validação multiagente e aprovação do PDE | Parcial                                       | Criar processo PDE; usar fabricação de imagens/arquivos como subprocesso |
+| Comunicação e jornada de venda                      | Coberto por processos especializados          | Reutilizar criativos e landing sob o mesmo Plano Comercial               |
+| Homologação e ativação                              | Processo publicado                            | Reutilizar e adaptar gates específicos de PDE quando necessário          |
+| Venda, entrega e decisão                            | Processos publicados                          | Reutilizar operação/otimização e venda/entrega/satisfação                |
 
 ## Entrada transversal — pessoas que não conseguem construir seus agentes
 
@@ -934,7 +986,6 @@ ativos, criativo e contrato da mesma versão; o usuário recebe links para as te
 A execução assistida e os limites estão em [Ciclos de aprendizado e vendas](ciclos-aprendizado-vendas-canon.v1.md).
 Publicar o BPM não produz vídeo, não cria tarefa paga nem ativa campanha.
 
-
 ## Acompanhamento leve e auditoria integral — 11/09/2026
 
 A lista operacional pode usar `includePromptAudit=false` no contrato de atividades:
@@ -947,7 +998,6 @@ da execução do agente.
 O endpoint canônico `GET /api/business-processes/{processDefinitionId}/products/{productId}/tasks/{taskId}/prompt-audit?sourceReference=...`
 valida produto, processo e referência exatos antes de entregar os textos integrais.
 Atualizar o acompanhamento não deve retransmitir todos os prompts históricos.
-
 
 A prontidão de retrabalho deve consultar somente campos usados na decisão, filtrando
 origem e processo no banco. Prompts completos não participam da consulta de prontidão.

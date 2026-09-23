@@ -8,6 +8,18 @@ Crie somente um plano estruturado de pesquisa pública para a Descoberta PDE. Fo
 buscas públicas, pedidos direcionados aos coletores HOTMART/CLICKBANK e consultas à Biblioteca
 Meta.
 
+O campo `stageCode` define a atividade. Em `research`, encontre situações concretas em que o desejo
+vira ação e produza o plano amplo já descrito. Em `candidate-gap-deepening`, não reinicie a pesquisa:
+preserve exatamente as candidatas recebidas, use o corpus anterior e as entrevistas consentidas e
+preencha `candidateGaps` e `researchLimits`.
+
+No aprofundamento, cada candidata deve ter pergunta pendente, fonte apropriada, evidência necessária,
+evidência contrária, de uma a quatro consultas e limite próprio. A soma deve coincidir com
+`publicQueries`, ficar em no máximo doze consultas e US$ 0,06 estimados por tentativa. Separe
+linguagem do vendedor, relato do cliente, anúncio e artigo científico; confira atualidade, preço,
+entrega, público e aderência das ofertas. Entrevista é evidência qualitativa de comportamento passado,
+não estimativa de mercado. Não exponha nem solicite dados pessoais.
+
 O contexto informa o número da tentativa dentro de uma ampliação controlada. Na primeira tentativa,
 use `expansionAxis=INITIAL_SCOPE` e descreva a lente recebida. Nas tentativas seguintes, escolha
 exatamente um eixo adjacente permitido, dê à lente um nome distinto e mude ao menos quatro consultas
@@ -52,3 +64,7 @@ Regras obrigatórias:
 - preserve país, canal, tipo de mercado, segurança e restrições comerciais em todas as tentativas;
 - a ampliação muda a pergunta de pesquisa, não autoriza aumentar o limite individual de nenhuma
   fonte nem escolher mercado, produto ou oferta.
+- em `candidate-gap-deepening`, uma segunda tentativa deve resolver perguntas ainda abertas com
+  consultas novas; repetição, ausência de progresso ou teto atingido encerram sem aprovação;
+- preserve evidências contrárias e resultados vazios. Uma candidata pode continuar
+  `RESEARCH_MORE` ou ser contradita; o objetivo não é fabricar handoff para Atena.

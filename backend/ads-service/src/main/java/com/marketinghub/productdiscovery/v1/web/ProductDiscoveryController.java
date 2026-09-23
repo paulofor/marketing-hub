@@ -1,9 +1,12 @@
 package com.marketinghub.productdiscovery.v1.web;
 
 import com.marketinghub.productdiscovery.v1.service.CreateProductDiscoveryCycleRequest;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryCustomerInterviewRequest;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryCustomerInterviewService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryCycleDetailResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryCycleResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryFailureRequest;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryGapDeepeningResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryLegacyCleanupResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceOfferListResponse;
@@ -44,6 +47,7 @@ public class ProductDiscoveryController {
   private final ProductDiscoveryMetaAdEvidenceService metaAdEvidenceService;
   private final ProductDiscoveryMetaAdBrowserCollectionService metaAdBrowserCollectionService;
   private final ProductDiscoverySupervisedMetaSessionService supervisedMetaSessionService;
+  private final ProductDiscoveryCustomerInterviewService customerInterviewService;
 
   /** Inicializa o controller com o serviço canônico do módulo. */
   public ProductDiscoveryController(
@@ -51,12 +55,14 @@ public class ProductDiscoveryController {
       ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService,
       ProductDiscoveryMetaAdEvidenceService metaAdEvidenceService,
       ProductDiscoveryMetaAdBrowserCollectionService metaAdBrowserCollectionService,
-      ProductDiscoverySupervisedMetaSessionService supervisedMetaSessionService) {
+      ProductDiscoverySupervisedMetaSessionService supervisedMetaSessionService,
+      ProductDiscoveryCustomerInterviewService customerInterviewService) {
     this.service = service;
     this.marketplaceEvidenceService = marketplaceEvidenceService;
     this.metaAdEvidenceService = metaAdEvidenceService;
     this.metaAdBrowserCollectionService = metaAdBrowserCollectionService;
     this.supervisedMetaSessionService = supervisedMetaSessionService;
+    this.customerInterviewService = customerInterviewService;
   }
 
   /** Lista ciclos recentes de descoberta para a tela administrativa. */
@@ -181,12 +187,58 @@ public class ProductDiscoveryController {
     return ResponseEntity.ok(service.getResearchPlan(cycleId));
   }
 
+  /** Exibe o gate de entrevistas e os limites da pesquisa dirigida por lacunas. */
+  @GetMapping("/product-discovery/v1/cycles/{cycleId}/gap-deepening")
+  public ResponseEntity<ProductDiscoveryGapDeepeningResponse> gapDeepening(
+      @PathVariable Long cycleId) {
+    return ResponseEntity.ok(customerInterviewService.get(cycleId));
+  }
+
+  /** Registra uma entrevista consentida e anônima sem criar decisão estratégica. */
+  @PostMapping("/product-discovery/v1/cycles/{cycleId}/gap-deepening/interviews")
+  public ResponseEntity<ProductDiscoveryGapDeepeningResponse> recordCustomerInterview(
+      @PathVariable Long cycleId,
+      @Valid @RequestBody ProductDiscoveryCustomerInterviewRequest request) {
+    return ResponseEntity.ok(customerInterviewService.record(cycleId, request));
+  }
+
   /** Recebe resultado funcional de pesquisa do worker. */
   @PostMapping(
       "/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/complete")
   public ResponseEntity<ProductDiscoveryCycleDetailResponse> complete(
       @PathVariable Long cycleId, @Valid @RequestBody ProductDiscoveryResultRequest request) {
     return ResponseEntity.ok(service.complete(cycleId, request));
+  }
+
+  /** Entrega à mesma instância de Argos os ciclos cujo gate de entrevistas foi atendido. */
+  @GetMapping(
+      "/internal/product-discovery/productdiscovery/v1/candidate-gap-deepening/stage-executions/pending")
+  public ResponseEntity<List<ProductDiscoveryPendingResponse>> pendingGapDeepening() {
+    return ResponseEntity.ok(service.pendingGapDeepening());
+  }
+
+  /** Persiste o plano candidato-específico antes da coleta adicional. */
+  @PostMapping(
+      "/internal/product-discovery/productdiscovery/v1/candidate-gap-deepening/stage-executions/{cycleId}/plan")
+  public ResponseEntity<ProductDiscoveryResearchPlanResponse> registerGapDeepeningPlan(
+      @PathVariable Long cycleId, @Valid @RequestBody ProductDiscoveryResearchPlanRequest request) {
+    return ResponseEntity.ok(service.registerGapDeepeningPlan(cycleId, request));
+  }
+
+  /** Recebe o aprofundamento e só então libera dossiês qualificados ao handoff. */
+  @PostMapping(
+      "/internal/product-discovery/productdiscovery/v1/candidate-gap-deepening/stage-executions/{cycleId}/complete")
+  public ResponseEntity<ProductDiscoveryCycleDetailResponse> completeGapDeepening(
+      @PathVariable Long cycleId, @Valid @RequestBody ProductDiscoveryResultRequest request) {
+    return ResponseEntity.ok(service.completeGapDeepening(cycleId, request));
+  }
+
+  /** Preserva uma falha técnica da segunda atividade sem apagar entrevistas ou pesquisa inicial. */
+  @PostMapping(
+      "/internal/product-discovery/productdiscovery/v1/candidate-gap-deepening/stage-executions/{cycleId}/fail")
+  public ResponseEntity<ProductDiscoveryCycleResponse> failGapDeepening(
+      @PathVariable Long cycleId, @Valid @RequestBody ProductDiscoveryFailureRequest request) {
+    return ResponseEntity.ok(service.failGapDeepening(cycleId, request));
   }
 
   /** Recebe falha operacional do worker com causa auditável. */

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Product Discovery
-  version: 1.4.0
+  version: 1.5.0
   description: Endpoints administrativos e internos da descoberta de produtos PDE.
 paths:
   /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending:
@@ -30,6 +30,152 @@ paths:
       responses:
         "200":
           description: Plano persistido sem credenciais dos marketplaces
+  /api/product-discovery/v1/cycles/{cycleId}/gap-deepening:
+    get:
+      tags: [Product Discovery]
+      summary: Consulta entrevistas anônimas, cobertura das candidatas e limites do aprofundamento
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Gate comportamental e política de pesquisa candidata-específica
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDiscoveryGapDeepening"
+        "404": { description: Ciclo não encontrado }
+  /api/product-discovery/v1/cycles/{cycleId}/gap-deepening/interviews:
+    post:
+      tags: [Product Discovery]
+      summary: Registra uma entrevista consentida sobre comportamento passado
+      description: Não aceita nome, e-mail, telefone ou contato; a amostra qualitativa não estima o mercado.
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductDiscoveryCustomerInterviewInput"
+      responses:
+        "200":
+          description: Relato persistido e gate recalculado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDiscoveryGapDeepening"
+        "400": { description: Campos ou consentimentos ausentes }
+        "409":
+          {
+            description: Versão/estado incompatível ou código anônimo duplicado,
+          }
+        "422":
+          {
+            description: Contato pessoal,
+            candidata,
+            data,
+            gasto ou limite inválido,
+          }
+  /api/internal/product-discovery/productdiscovery/v1/candidate-gap-deepening/stage-executions/pending:
+    get:
+      tags: [Product Discovery]
+      summary: Reserva uma pesquisa de lacunas cujo gate de entrevistas foi atendido
+      responses:
+        "200":
+          description: No máximo uma execução com candidatas, corpus anterior, entrevistas e política de custo
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 1
+                items:
+                  $ref: "#/components/schemas/ProductDiscoveryPendingExecution"
+  /api/internal/product-discovery/productdiscovery/v1/candidate-gap-deepening/stage-executions/{cycleId}/plan:
+    post:
+      tags: [Product Discovery]
+      summary: Persiste perguntas, fontes, contrapontos, consultas e limites por candidata
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [executionLeaseId, planJson, rawResponse, model]
+              properties:
+                executionLeaseId: { type: string, format: uuid }
+                planJson:
+                  type: string
+                  description: Plano por candidata; uma última proposta interrompida pode usar `REJECTED_REPEATED_RESEARCH_LENS` sem autorizar coleta.
+                rawResponse: { type: string }
+                model: { type: string }
+      responses:
+        "200":
+          { description: Plano ou histórico de até duas tentativas auditado }
+        "409": { description: Lease ou etapa divergente }
+        "422": { description: Candidata, consulta, fonte ou teto inválido }
+  /api/internal/product-discovery/productdiscovery/v1/candidate-gap-deepening/stage-executions/{cycleId}/complete:
+    post:
+      tags: [Product Discovery]
+      summary: Conclui o aprofundamento preservando as identidades das candidatas
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductDiscoveryResult"
+      responses:
+        "200":
+          {
+            description: Dossiês atualizados e sincronizados para o handoff controlado,
+          }
+        "409": { description: Lease ou etapa divergente }
+        "422":
+          {
+            description: Gate,
+            identidade,
+            relatório,
+            consultas ou custo não comprovado,
+          }
+  /api/internal/product-discovery/productdiscovery/v1/candidate-gap-deepening/stage-executions/{cycleId}/fail:
+    post:
+      tags: [Product Discovery]
+      summary: Registra falha da segunda atividade sem apagar a pesquisa e as entrevistas
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [executionLeaseId, errorMessage]
+              properties:
+                executionLeaseId: { type: string, format: uuid }
+                errorMessage: { type: string }
+                executionAudit:
+                  $ref: "#/components/schemas/ProductDiscoveryAnalysisAudit"
+      responses:
+        "200": { description: Falha auditada }
+        "409": { description: Lease ou etapa divergente }
   /api/product-discovery/v1/cycles/{cycleId}/supervised-meta-session:
     get:
       tags: [Product Discovery]
@@ -328,6 +474,115 @@ paths:
                 $ref: "#/components/schemas/ProductDiscoveryLegacyCleanup"
 components:
   schemas:
+    ProductDiscoveryCustomerInterviewInput:
+      type: object
+      additionalProperties: false
+      required:
+        - opportunityId
+        - anonymousParticipantCode
+        - outcome
+        - occurredOn
+        - purchaseSituation
+        - desiredResult
+        - difficulty
+        - alternativeTried
+        - remainingDifficulty
+        - consentConfirmed
+        - noPersonalDataConfirmed
+      properties:
+        opportunityId: { type: integer, format: int64 }
+        anonymousParticipantCode:
+          type: string
+          maxLength: 7
+          pattern: "^[A-Za-z]{1,3}[0-9]{1,4}$"
+          example: P01
+        outcome: { type: string, enum: [PURCHASED, ABANDONED] }
+        occurredOn: { type: string, format: date }
+        purchaseSituation: { type: string, maxLength: 3000 }
+        desiredResult: { type: string, maxLength: 3000 }
+        difficulty: { type: string, maxLength: 3000 }
+        alternativeTried: { type: string, maxLength: 3000 }
+        amountSpent: { type: number, minimum: 0, nullable: true }
+        currency: { type: string, minLength: 3, maxLength: 3, nullable: true }
+        remainingDifficulty: { type: string, maxLength: 3000 }
+        consentConfirmed: { type: boolean, enum: [true] }
+        noPersonalDataConfirmed: { type: boolean, enum: [true] }
+    ProductDiscoveryCustomerInterview:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        cycleId: { type: integer, format: int64 }
+        opportunityId: { type: integer, format: int64 }
+        opportunityName: { type: string }
+        anonymousParticipantCode: { type: string }
+        outcome: { type: string, enum: [PURCHASED, ABANDONED] }
+        occurredOn: { type: string, format: date }
+        consentCapturedAt: { type: string, format: date-time }
+        purchaseSituation: { type: string }
+        desiredResult: { type: string }
+        difficulty: { type: string }
+        alternativeTried: { type: string }
+        amountSpent: { type: number, nullable: true }
+        currency: { type: string, nullable: true }
+        remainingDifficulty: { type: string }
+        createdAt: { type: string, format: date-time }
+    ProductDiscoveryGapDeepening:
+      type: object
+      required:
+        - cycleId
+        - applicable
+        - cycleStatus
+        - stageCode
+        - minimumInterviews
+        - maximumInterviews
+        - interviewCount
+        - purchasedCount
+        - abandonedCount
+        - coveredOpportunityIds
+        - missingOpportunityIds
+        - readyForResearch
+        - maximumPublicQueriesPerAttempt
+        - maximumAttempts
+        - maximumModelInvocations
+        - maximumSearchCostUsd
+        - searchCostCoverage
+        - modelCostCoverage
+        - searchPricingSource
+        - searchPricingObservedOn
+        - guidance
+        - interviews
+      properties:
+        cycleId: { type: integer, format: int64 }
+        applicable: { type: boolean }
+        cycleStatus: { type: string }
+        stageCode: { type: string }
+        minimumInterviews: { type: integer, enum: [5] }
+        maximumInterviews: { type: integer, enum: [8] }
+        interviewCount: { type: integer, minimum: 0, maximum: 8 }
+        purchasedCount: { type: integer, minimum: 0 }
+        abandonedCount: { type: integer, minimum: 0 }
+        coveredOpportunityIds:
+          type: array
+          items: { type: integer, format: int64 }
+        missingOpportunityIds:
+          type: array
+          items: { type: integer, format: int64 }
+        readyForResearch: { type: boolean }
+        maximumPublicQueriesPerAttempt: { type: integer, enum: [12] }
+        maximumAttempts: { type: integer, enum: [2] }
+        maximumModelInvocations: { type: integer, enum: [4] }
+        maximumSearchCostUsd: { type: number, enum: [0.12] }
+        searchCostCoverage: { type: string, enum: [ESTIMATED_SEARCH_ONLY] }
+        modelCostCoverage:
+          { type: string, enum: [AGENT_TASK_AUDIT_AFTER_CALLBACK] }
+        searchPricingSource: { type: string, format: uri }
+        searchPricingObservedOn: { type: string, format: date }
+        guidance: { type: string }
+        interviews:
+          type: array
+          maxItems: 8
+          items:
+            $ref: "#/components/schemas/ProductDiscoveryCustomerInterview"
     ProductDiscoveryPrivateValidationHandoff:
       type: object
       required:
@@ -609,14 +864,14 @@ components:
       properties:
         cycleId: { type: integer, format: int64 }
         pipelineCode: { type: string, enum: [productdiscovery.v1] }
-        stageCode: { type: string, enum: [research] }
+        stageCode: { type: string, enum: [research, candidate-gap-deepening] }
         executionLeaseId: { type: string, format: uuid }
         executionAttempt: { type: integer, minimum: 1 }
         researchIntelligence:
           nullable: true
           description: Curadoria consultiva do cadastro de Argos, preservada no planejamento e síntese factual.
           allOf:
-            - $ref: './video-studio-swagger.yaml#/components/schemas/ResearchIntelligenceSelection'
+            - $ref: "./video-studio-swagger.yaml#/components/schemas/ResearchIntelligenceSelection"
         theme: { type: string, maxLength: 191 }
         targetAudience: { type: string, maxLength: 191, nullable: true }
         country: { type: string }
@@ -632,6 +887,31 @@ components:
           type: string
           nullable: true
           description: Uma URL editorial pública por linha.
+        previousCandidates:
+          type: array
+          description: Candidatas persistidas cuja identidade deve ser preservada no aprofundamento.
+          items: { type: object }
+        previousEvidenceReportJson:
+          type: string
+          nullable: true
+        customerInterviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductDiscoveryCustomerInterview"
+        gapResearchPolicy:
+          type: object
+          nullable: true
+          properties:
+            maximumAttempts: { type: integer, enum: [2] }
+            maximumPublicQueriesPerAttempt: { type: integer, enum: [12] }
+            maximumModelInvocations: { type: integer, enum: [4] }
+            estimatedSearchCostPerRequestUsd: { type: number, enum: [0.005] }
+            maximumSearchCostUsd: { type: number, enum: [0.12] }
+            costCoverage: { type: string, enum: [ESTIMATED_SEARCH_ONLY] }
+            modelCostCoverage:
+              { type: string, enum: [AGENT_TASK_AUDIT_AFTER_CALLBACK] }
+            pricingSource: { type: string, format: uri }
+            pricingObservedOn: { type: string, format: date }
     ProductDiscoveryResult:
       type: object
       required: [executionLeaseId, decisionSummary, opportunities]
@@ -641,7 +921,7 @@ components:
         opportunities:
           type: array
           maxItems: 3
-          description: No modo DISCOVER_MARKETS, são obrigatórias 2–3 candidatas factuais; sinais imaturos permanecem RESEARCH_MORE.
+          description: No modo DISCOVER_MARKETS, aceita lista vazia quando não há evidência; caso existam candidatas, são obrigatórias 2–3 factuais e sinais imaturos permanecem RESEARCH_MORE.
           items:
             $ref: "#/components/schemas/ProductDiscoveryOpportunityResult"
         evidenceReport:

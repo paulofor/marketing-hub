@@ -10,6 +10,11 @@ Não priorize as candidatas e não recomende estratégia. Use `maturity` apenas 
 factual do dossiê: `SIGNAL`, `RESEARCHABLE`, `DOSSIER_READY`, `HUMAN_REVIEW` ou `REJECTED`.
 Responda de forma direta, sem repetir a mesma evidência em campos diferentes.
 
+No aprofundamento, reescreva os campos somente quando a nova evidência sustentar a mudança e
+preserve os nomes recebidos. Use compra, desistência, ocasião, resultado desejado, alternativa,
+gasto conhecido e dificuldade residual das entrevistas; ausência de gasto continua desconhecida.
+Registre a contradição ou a lacuna em `commercialRisk` quando ela não for resolvida.
+
 Quando `researchIntelligence` estiver presente no contexto abaixo, use somente a rota
 `market-radar` como referência consultiva. Preserve IDs, fontes, hipóteses e limites
 na evidência relatada; não conte artigo, intenção ou referência como venda observada.

@@ -148,6 +148,45 @@ test("síntese bloqueia evidência repetida sem usar keyword incompatível no sc
   assert.doesNotMatch(schema, /"uniqueItems"/);
 });
 
+test("aprofundamento preserva todas as candidatas e vincula entrevista da própria situação", () => {
+  const context = researchContext();
+  const first = validSynthesis().candidates[0];
+  first.evidenceIds = [...first.evidenceIds, "I1"];
+  const second = structuredClone(first);
+  second.name = "Imagem para encontro importante";
+  second.evidenceIds = ["P1", "P2", "O1", "R1", "I2"];
+  context.job.stageCode = "candidate-gap-deepening";
+  context.job.previousCandidates = [
+    { name: first.name },
+    { name: second.name },
+  ];
+  context.job.customerInterviews = [
+    {
+      opportunityName: first.name,
+      outcome: "PURCHASED",
+      purchaseSituation: "Evento marcado.",
+    },
+    {
+      opportunityName: second.name,
+      outcome: "ABANDONED",
+      purchaseSituation: "Encontro marcado.",
+    },
+  ];
+  const synthesis = {
+    decisionSummary:
+      "As duas lacunas foram reavaliadas sem fabricar aprovação.",
+    candidates: [first, second],
+  };
+
+  validateSynthesis(synthesis, context);
+  synthesis.candidates[1].name = "Candidata inventada";
+
+  assert.throws(
+    () => validateSynthesis(synthesis, context),
+    /alterou a identidade da candidata/,
+  );
+});
+
 test("modo degradado não fabrica as três sugestões genéricas antigas", () => {
   const result = deterministicSynthesis(researchContext());
 

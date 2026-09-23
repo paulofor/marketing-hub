@@ -139,15 +139,32 @@ export function validateSynthesis(synthesis, context) {
   const knownIds = new Set(
     allEvidence(context).map((evidence) => evidence.evidenceId),
   );
+  const gapDeepening = context.job?.stageCode === "candidate-gap-deepening";
+  const expectedNames = new Set(
+    (context.job?.previousCandidates || []).map((item) =>
+      normalizeIdentity(item.name),
+    ),
+  );
+  const interviewCandidateNames = new Map(
+    interviewEvidence(context).map((item) => [
+      item.evidenceId,
+      normalizeIdentity(item.opportunityName),
+    ]),
+  );
   const names = new Set();
   for (const candidate of synthesis.candidates) {
     const name = String(candidate?.name || "").trim();
-    if (!name || names.has(name.toLowerCase())) {
+    if (!name || names.has(normalizeIdentity(name))) {
       throw new Error(
         "Síntese de Argos contém candidata sem identidade distinta",
       );
     }
-    names.add(name.toLowerCase());
+    names.add(normalizeIdentity(name));
+    if (gapDeepening && !expectedNames.has(normalizeIdentity(name))) {
+      throw new Error(
+        `Aprofundamento de Argos alterou a identidade da candidata ${name}`,
+      );
+    }
     if (
       /^(diagnóstico|plano de primeira ação|simulador prático)\b/i.test(name)
     ) {
@@ -166,6 +183,17 @@ export function validateSynthesis(synthesis, context) {
     if (!candidate.evidenceIds.some((id) => /^[POM]/.test(id))) {
       throw new Error(
         `Candidata ${name} usa inspiração interna sem confirmação pública`,
+      );
+    }
+    if (
+      gapDeepening &&
+      !candidate.evidenceIds.some(
+        (id) =>
+          interviewCandidateNames.get(id) === normalizeIdentity(candidate.name),
+      )
+    ) {
+      throw new Error(
+        `Candidata ${name} não vinculou entrevista consentida do próprio contexto`,
       );
     }
     const pdeFit = candidate.pdeDeliveryFit;
@@ -195,6 +223,11 @@ export function validateSynthesis(synthesis, context) {
         `Candidata ${name} descreve entrega física em vez de experiência digital com IA`,
       );
     }
+  }
+  if (gapDeepening && !setsEqual(names, expectedNames)) {
+    throw new Error(
+      "Aprofundamento de Argos deve preservar todas as candidatas iniciais",
+    );
   }
 }
 
@@ -240,6 +273,10 @@ function sanitizedContext(context) {
   return {
     job: compactJob(context.job),
     plan: compactPlan(context.plan),
+    previousCandidates: (context.job?.previousCandidates || []).map(
+      compactPreviousCandidate,
+    ),
+    customerInterviews: interviewEvidence(context),
     researchIntelligence: context.job?.researchIntelligence || null,
     publicEvidence: (context.publicEvidence || []).map(compactPublicEvidence),
     repositoryEvidence: (context.repositoryEvidence || []).map(
@@ -273,6 +310,7 @@ function compactJob(job = {}) {
     researchMode: job.researchMode,
     marketType: job.marketType,
     referenceSources: job.referenceSources,
+    stageCode: job.stageCode,
     marketExpansionContext: job.marketExpansionContext,
   };
 }
@@ -288,7 +326,50 @@ function compactPlan(plan = {}) {
       .map((item) => truncateForPrompt(item, 350)),
     metaAdRequests: plan.metaAdRequests || [],
     minimumComparableOffers: plan.minimumComparableOffers,
+    candidateGaps: plan.candidateGaps || [],
+    researchLimits: plan.researchLimits || null,
   };
+}
+
+/** Resume o dossiê inicial sem perder identidade, fatos ou maturidade anterior. */
+function compactPreviousCandidate(item = {}) {
+  return {
+    id: item.id,
+    name: item.name,
+    primaryAudience: item.primaryAudience,
+    rootPain: truncateForPrompt(item.rootPain, 900),
+    practicalPain: truncateForPrompt(item.practicalPain, 900),
+    emotionalPain: truncateForPrompt(item.emotionalPain, 900),
+    scaleEvidence: truncateForPrompt(item.scaleEvidence, 1000),
+    unmetnessEvidence: truncateForPrompt(item.unmetnessEvidence, 1000),
+    pdeExperience: truncateForPrompt(item.pdeExperience, 1400),
+    commercialRisk: truncateForPrompt(item.commercialRisk, 1200),
+    score: item.score,
+    maturity: item.maturity,
+    decision: item.decision,
+    evidence: safeJson(item.evidenceJson),
+  };
+}
+
+/** Converte relatos persistidos em evidências citáveis sem adicionar contato pessoal. */
+function interviewEvidence(context) {
+  return (context.job?.customerInterviews || []).map((item, index) => ({
+    evidenceId: `I${index + 1}`,
+    sourceType: "CONSENTED_CUSTOMER_INTERVIEW",
+    opportunityId: item.opportunityId,
+    opportunityName: item.opportunityName,
+    outcome: item.outcome,
+    occurredOn: item.occurredOn,
+    purchaseSituation: truncateForPrompt(item.purchaseSituation, 900),
+    desiredResult: truncateForPrompt(item.desiredResult, 900),
+    difficulty: truncateForPrompt(item.difficulty, 900),
+    alternativeTried: truncateForPrompt(item.alternativeTried, 900),
+    amountSpent: item.amountSpent,
+    currency: item.currency,
+    remainingDifficulty: truncateForPrompt(item.remainingDifficulty, 900),
+    interpretationLimit:
+      "Relato qualitativo de comportamento passado; não estima mercado, conversão ou causalidade.",
+  }));
 }
 
 /** Preserva identidade, URL e linguagem pública dentro de um orçamento previsível. */
@@ -299,6 +380,9 @@ function compactPublicEvidence(item = {}) {
     title: truncateForPrompt(item.title, 300),
     url: item.url,
     snippet: truncateForPrompt(item.snippet, 700),
+    sourceQuery: truncateForPrompt(item.sourceQuery, 300),
+    sourceRole: item.sourceRole,
+    retrievedAt: item.retrievedAt,
   };
 }
 
@@ -385,7 +469,30 @@ function allEvidence(context) {
     ...(context.repositoryEvidence || []),
     ...(context.marketplaceOffers || []),
     ...(context.metaAdEvidence || []),
+    ...interviewEvidence(context),
   ];
+}
+
+/** Lê evidência persistida sem derrubar o prompt por um registro histórico inválido. */
+function safeJson(value) {
+  if (!value) return null;
+  try {
+    return typeof value === "string" ? JSON.parse(value) : value;
+  } catch {
+    return { invalidHistoricalEvidenceJson: true };
+  }
+}
+
+/** Normaliza somente para comparação interna de identidades já persistidas. */
+function normalizeIdentity(value) {
+  return String(value || "")
+    .trim()
+    .toLocaleLowerCase("pt-BR");
+}
+
+/** Confere igualdade exata de conjuntos sem depender da ordem do modelo. */
+function setsEqual(left, right) {
+  return left.size === right.size && [...left].every((item) => right.has(item));
 }
 
 /** Registra somente URLs realmente recebidas, sem transformar caminho local em navegação web. */

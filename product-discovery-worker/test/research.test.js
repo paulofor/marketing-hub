@@ -54,16 +54,16 @@ test("schema exige duas ou três candidatas factuais", () => {
     ),
   );
   const prompt = readFileSync(
-    new URL(
-      "../prompts/productdiscovery.v1/research/user.md",
-      import.meta.url,
-    ),
+    new URL("../prompts/productdiscovery.v1/research/user.md", import.meta.url),
     "utf8",
   );
 
   assert.equal(schema.properties.candidates.minItems, 2);
   assert.equal(schema.properties.candidates.maxItems, 3);
-  assert.equal(schema.properties.candidates.items.properties.name.maxLength, 191);
+  assert.equal(
+    schema.properties.candidates.items.properties.name.maxLength,
+    191,
+  );
   assert.equal(
     schema.properties.candidates.items.properties.primaryAudience.maxLength,
     191,
@@ -186,10 +186,7 @@ test("buildSearchQueries usa o foco amplo sem hipersegmentar toda busca comercia
       "beleza e bem-estar",
     ],
     ["Homens entre 25 e 35 anos foco em finanças.", "finanças"],
-    [
-      "Mulheres entre 35 e 60 anos foco em relacionamentos.",
-      "relacionamentos",
-    ],
+    ["Mulheres entre 35 e 60 anos foco em relacionamentos.", "relacionamentos"],
   ];
 
   for (const [theme, focus] of themes) {
@@ -199,9 +196,7 @@ test("buildSearchQueries usa o foco amplo sem hipersegmentar toda busca comercia
       marketType: "B2C",
       acquisitionChannel: "Instagram",
     });
-    assert.ok(
-      queries.some((query) => query === `${focus} curso online preço`),
-    );
+    assert.ok(queries.some((query) => query === `${focus} curso online preço`));
     assert.ok(
       queries.some((query) =>
         query.includes(`${focus} scientific study mechanism`),
@@ -602,7 +597,8 @@ test("conta apps oficiais por produto e não transforma notícia com preço em o
     {
       title: "Skin Bliss: Skincare Routines",
       url: "https://play.google.com/store/apps/details?id=com.getskinbliss.skinbliss&hl=pt",
-      snippet: "Aplicativo com versão gratuita e recursos Premium por assinatura.",
+      snippet:
+        "Aplicativo com versão gratuita e recursos Premium por assinatura.",
     },
     {
       title: "Skinive: análise de pele",
@@ -890,9 +886,7 @@ test("searchInternet uses stronger default search depth before stopping", async 
   assert.equal(results.length, 12);
   assert.ok(
     calls.some((url) =>
-      new URL(url).searchParams
-        .get("q")
-        ?.includes("curso online preço"),
+      new URL(url).searchParams.get("q")?.includes("curso online preço"),
     ),
     "deve executar consultas comerciais específicas antes de parar",
   );
@@ -940,7 +934,8 @@ test("descoberta ampla preserva ofertas e ciência antes de encerrar por volume"
                   {
                     title: "Systematic review of wellbeing intervention",
                     url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
-                    description: "Peer reviewed systematic review intervention.",
+                    description:
+                      "Peer reviewed systematic review intervention.",
                   },
                 ],
               },
@@ -1274,7 +1269,8 @@ test("analyzeSearchResults promove somente candidata segura com evidência próp
         evidenceId: "P2",
         title: "Comparação pública independente",
         url: "https://reviews.example/comparacao",
-        snippet: "Review de curso pago que não resolve e exige montagem manual.",
+        snippet:
+          "Review de curso pago que não resolve e exige montagem manual.",
       },
       {
         evidenceId: "P3",
@@ -1347,6 +1343,23 @@ test("scientific and commercial queries are inside the operational query limit",
         query.includes("site:play.google.com/store/apps"),
     ),
   );
+});
+
+test("aprofundamento executa somente as consultas aprovadas por candidata", () => {
+  const directedQueries = [
+    "candidata A relato de compra",
+    "candidata A evidência contrária",
+    "candidata B preço e entrega",
+    "candidata B relato de desistência",
+  ];
+
+  const queries = buildSearchQueries({
+    stageCode: "candidate-gap-deepening",
+    theme: "tema amplo que não deve gerar consulta",
+    directedQueries: [...directedQueries, directedQueries[0]],
+  });
+
+  assert.deepEqual(queries, directedQueries);
 });
 
 test("plano dirigido extenso não elimina pesquisa científica e comercial", () => {

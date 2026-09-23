@@ -265,6 +265,11 @@ export const SEARCH_PROVIDERS = {
 };
 
 export function buildSearchQueries(job) {
+  if (job?.stageCode === "candidate-gap-deepening") {
+    return deduplicateQueries(
+      Array.isArray(job.directedQueries) ? job.directedQueries : [],
+    );
+  }
   const base = marketFocusSearchBase(job);
   const domainQueries = inferDomainPainQueries(base);
   const genericQueries = CONSUMER_LANGUAGE_TEMPLATES.map((template) =>
@@ -487,7 +492,10 @@ export async function searchInternet(job, options = {}) {
     let queryResults = [];
     attemptedQueries += 1;
     try {
-      queryResults = await searchQuery(query, config, fetchFn, logger);
+      const retrievedAt = new Date().toISOString();
+      queryResults = (await searchQuery(query, config, fetchFn, logger)).map(
+        (item) => ({ ...item, sourceQuery: query, retrievedAt }),
+      );
     } catch (error) {
       if (!isSearchProviderHttpError(error)) {
         throw error;
@@ -682,7 +690,10 @@ function publicOfferIdentity(value) {
   try {
     const url = new URL(value);
     const domain = url.hostname.replace(/^www\./, "").toLowerCase();
-    if (domain === "play.google.com" && url.pathname === "/store/apps/details") {
+    if (
+      domain === "play.google.com" &&
+      url.pathname === "/store/apps/details"
+    ) {
       const appId = url.searchParams.get("id");
       return appId ? `${domain}:${appId}`.slice(0, 255) : domain;
     }
@@ -690,9 +701,7 @@ function publicOfferIdentity(value) {
       const appId = url.pathname.match(/\/id(\d+)(?:\/|$)/)?.[1];
       return appId ? `${domain}:id${appId}` : domain;
     }
-    if (
-      /(^|\.)(hotmart\.com|udemy\.com|kiwify\.com\.br)$/.test(domain)
-    ) {
+    if (/(^|\.)(hotmart\.com|udemy\.com|kiwify\.com\.br)$/.test(domain)) {
       return `${domain}:${url.pathname.replace(/\/$/, "")}`.slice(0, 255);
     }
     return domain;
@@ -712,7 +721,29 @@ export function analyzeSearchResults(
     title: result.title,
     url: result.url,
     snippet: result.snippet,
+    sourceQuery: result.sourceQuery || null,
+    sourceRole: classifyEvidenceRole(result),
+    retrievedAt: result.retrievedAt || null,
   }));
+  const customerInterviews = (options.customerInterviews || []).map(
+    (item, index) => ({
+      evidenceId: `I${index + 1}`,
+      sourceType: "CONSENTED_CUSTOMER_INTERVIEW",
+      opportunityId: item.opportunityId,
+      opportunityName: item.opportunityName,
+      outcome: item.outcome,
+      occurredOn: item.occurredOn,
+      purchaseSituation: item.purchaseSituation,
+      desiredResult: item.desiredResult,
+      difficulty: item.difficulty,
+      alternativeTried: item.alternativeTried,
+      amountSpent: item.amountSpent,
+      currency: item.currency,
+      remainingDifficulty: item.remainingDifficulty,
+      interpretationLimit:
+        "Relato qualitativo de comportamento passado; não estima demanda, conversão ou causalidade.",
+    }),
+  );
   const scientificArticles = extractScientificArticles(results, job).slice(
     0,
     8,
@@ -808,119 +839,122 @@ export function analyzeSearchResults(
               : "Evitar extrapolar evidência científica para promessa absoluta e validar disposição de compra em experimento controlado.";
 
   const opportunities = opportunityBlueprints.map((blueprint) => {
-      const evidenceIds = new Set(blueprint.evidenceIds || []);
-      const referenced = (items) =>
-        (items || []).filter((item) => evidenceIds.has(item.evidenceId));
-      const referencedPublicEvidence = referenced(evidence);
-      const referencedMarketplaceOffers = referenced(comparableMarketplaceOffers);
-      const referencedMetaAdEvidence = referenced(metaAdEvidence);
-      const candidatePublicDomains = new Set(
-        referencedPublicEvidence
-          .map((item) => safeDomain(item.url))
-          .filter(Boolean),
+    const evidenceIds = new Set(blueprint.evidenceIds || []);
+    const referenced = (items) =>
+      (items || []).filter((item) => evidenceIds.has(item.evidenceId));
+    const referencedPublicEvidence = referenced(evidence);
+    const referencedMarketplaceOffers = referenced(comparableMarketplaceOffers);
+    const referencedMetaAdEvidence = referenced(metaAdEvidence);
+    const referencedCustomerInterviews = referenced(customerInterviews);
+    const candidatePublicDomains = new Set(
+      referencedPublicEvidence
+        .map((item) => safeDomain(item.url))
+        .filter(Boolean),
+    );
+    const candidateHighRiskHits = countCandidateDeliveryRisk(blueprint);
+    const score = Math.min(
+      100,
+      scoreWithoutPdeFit + (candidateHighRiskHits > 0 ? 5 : 25),
+    );
+    const candidateEvidenceReady =
+      candidatePublicDomains.size >= 2 &&
+      referencedMarketplaceOffers.length > 0 &&
+      referencedMetaAdEvidence.some(
+        (item) => item.active && metaAdIncludesInstagram(item),
       );
-      const candidateHighRiskHits = countCandidateDeliveryRisk(blueprint);
-      const score = Math.min(
-        100,
-        scoreWithoutPdeFit + (candidateHighRiskHits > 0 ? 5 : 25),
-      );
-      const candidateEvidenceReady =
-        candidatePublicDomains.size >= 2 &&
-        referencedMarketplaceOffers.length > 0 &&
-        referencedMetaAdEvidence.some(
-          (item) => item.active && metaAdIncludesInstagram(item),
-        );
-      const candidateDecision = factualCandidateDecision({
-        evidenceCount: evidence.length,
-        marketplaceGatePassed,
-        instagramB2cGatePassed,
-        candidateHighRiskHits,
-        purchaseMomentGate,
-        scientificArticleCount: scientificArticles.length,
-        commercialIntentHits,
-        score,
-        independentDomains,
-      });
-      const maturity = effectiveCandidateMaturity(blueprint.maturity, {
-        discoveryMode: job.researchMode === "DISCOVER_MARKETS",
-        directedMarketplaceResearch,
-        instagramB2cRequired,
-        marketplaceGatePassed,
-        instagramB2cGatePassed,
-        candidateEvidenceReady,
-        scientificEvidenceReady: scientificArticles.length > 0,
-        commercialEvidenceReady: commercialIntentHits > 0,
-        score,
-        decision: candidateDecision,
-      });
-      const decision =
-        maturity === "HUMAN_REVIEW"
-          ? "HUMAN_REVIEW"
-          : maturity === "REJECTED"
-            ? "REJECT"
-            : maturity === "DOSSIER_READY"
-              ? candidateDecision
-              : "RESEARCH_MORE";
-      const candidateRisk =
-        candidateHighRiskHits > 0
-          ? "A entrega proposta contém sinal de alto risco e exige revisão humana antes de qualquer experimento."
-          : "";
-      return {
-        name: blueprint.name,
-        primaryAudience: blueprint.primaryAudience,
-        rootPain: blueprint.rootPain,
-        practicalPain: blueprint.practicalPain,
-        emotionalPain: blueprint.emotionalPain,
-        scaleEvidence: blueprint.scaleEvidence,
-        unmetnessEvidence: blueprint.unmetnessEvidence,
-        pdeExperience: `Fronteira factual para avaliação da Atena: ${blueprint.pdeValueBoundary} Entrada mínima: ${blueprint.pdeDeliveryFit.minimumInput} Trabalho da IA nos bastidores: ${blueprint.pdeDeliveryFit.aiBackstageWork} Resultado digital pronto: ${blueprint.pdeDeliveryFit.readyDigitalOutcome} Base científica candidata: ${mechanismEvidence}`,
-        firstCampaignAngle: null,
-        commercialRisk:
-          `${blueprint.commercialRisk} ${candidateRisk} ${commercialRisk}`.trim(),
-        evidenceJson: JSON.stringify({
-          candidateEvidence: {
-            purchaseSituation: blueprint.purchaseSituation,
-            observedLanguage: blueprint.observedLanguage,
-            currentAlternatives: blueprint.currentAlternatives,
-            residualEffort: blueprint.residualEffort,
-            pdeDeliveryFit: blueprint.pdeDeliveryFit,
-            instagramFitEvidence: blueprint.instagramFitEvidence,
-            evidenceIds: blueprint.evidenceIds,
-            maturity,
-          },
-          referencedEvidence: {
-            publicEvidence: referencedPublicEvidence,
-            marketplaceOffers: referencedMarketplaceOffers,
-            metaAdEvidence: referencedMetaAdEvidence,
-            repositoryEvidence: referenced(options.repositoryEvidence),
-          },
-          publicEvidence: evidence,
-          marketplaceOffers: comparableMarketplaceOffers,
-          metaAdEvidence,
-          repositoryEvidence: options.repositoryEvidence || [],
-          metaCoverage,
-          metaAdInterpretation:
-            "Atividade e longevidade sugerem investimento sustentado, mas não comprovam vendas isoladamente.",
-          instagramB2cRequired,
-          instagramB2cGatePassed,
-          instagramPublicEvidence,
-          purchaseMomentGate,
-          scientificArticles,
-          commercialIntentHits,
-          candidateReadiness: {
-            independentPublicPaths: candidatePublicDomains.size,
-            referencedComparableOffers: referencedMarketplaceOffers.length,
-            referencedActiveInstagramAds: referencedMetaAdEvidence.filter(
-              (item) => item.active && metaAdIncludesInstagram(item),
-            ).length,
-            highRiskHits: candidateHighRiskHits,
-          },
-        }),
-        score,
-        maturity,
-        decision,
-      };
+    const candidateDecision = factualCandidateDecision({
+      evidenceCount: evidence.length,
+      marketplaceGatePassed,
+      instagramB2cGatePassed,
+      candidateHighRiskHits,
+      purchaseMomentGate,
+      scientificArticleCount: scientificArticles.length,
+      commercialIntentHits,
+      score,
+      independentDomains,
     });
+    const maturity = effectiveCandidateMaturity(blueprint.maturity, {
+      discoveryMode: job.researchMode === "DISCOVER_MARKETS",
+      directedMarketplaceResearch,
+      instagramB2cRequired,
+      marketplaceGatePassed,
+      instagramB2cGatePassed,
+      candidateEvidenceReady,
+      scientificEvidenceReady: scientificArticles.length > 0,
+      commercialEvidenceReady: commercialIntentHits > 0,
+      score,
+      decision: candidateDecision,
+    });
+    const decision =
+      maturity === "HUMAN_REVIEW"
+        ? "HUMAN_REVIEW"
+        : maturity === "REJECTED"
+          ? "REJECT"
+          : maturity === "DOSSIER_READY"
+            ? candidateDecision
+            : "RESEARCH_MORE";
+    const candidateRisk =
+      candidateHighRiskHits > 0
+        ? "A entrega proposta contém sinal de alto risco e exige revisão humana antes de qualquer experimento."
+        : "";
+    return {
+      name: blueprint.name,
+      primaryAudience: blueprint.primaryAudience,
+      rootPain: blueprint.rootPain,
+      practicalPain: blueprint.practicalPain,
+      emotionalPain: blueprint.emotionalPain,
+      scaleEvidence: blueprint.scaleEvidence,
+      unmetnessEvidence: blueprint.unmetnessEvidence,
+      pdeExperience: `Fronteira factual para avaliação da Atena: ${blueprint.pdeValueBoundary} Entrada mínima: ${blueprint.pdeDeliveryFit.minimumInput} Trabalho da IA nos bastidores: ${blueprint.pdeDeliveryFit.aiBackstageWork} Resultado digital pronto: ${blueprint.pdeDeliveryFit.readyDigitalOutcome} Base científica candidata: ${mechanismEvidence}`,
+      firstCampaignAngle: null,
+      commercialRisk:
+        `${blueprint.commercialRisk} ${candidateRisk} ${commercialRisk}`.trim(),
+      evidenceJson: JSON.stringify({
+        candidateEvidence: {
+          purchaseSituation: blueprint.purchaseSituation,
+          observedLanguage: blueprint.observedLanguage,
+          currentAlternatives: blueprint.currentAlternatives,
+          residualEffort: blueprint.residualEffort,
+          pdeDeliveryFit: blueprint.pdeDeliveryFit,
+          instagramFitEvidence: blueprint.instagramFitEvidence,
+          evidenceIds: blueprint.evidenceIds,
+          maturity,
+        },
+        referencedEvidence: {
+          publicEvidence: referencedPublicEvidence,
+          marketplaceOffers: referencedMarketplaceOffers,
+          metaAdEvidence: referencedMetaAdEvidence,
+          repositoryEvidence: referenced(options.repositoryEvidence),
+          customerInterviews: referencedCustomerInterviews,
+        },
+        publicEvidence: evidence,
+        marketplaceOffers: comparableMarketplaceOffers,
+        metaAdEvidence,
+        repositoryEvidence: options.repositoryEvidence || [],
+        customerInterviews,
+        metaCoverage,
+        metaAdInterpretation:
+          "Atividade e longevidade sugerem investimento sustentado, mas não comprovam vendas isoladamente.",
+        instagramB2cRequired,
+        instagramB2cGatePassed,
+        instagramPublicEvidence,
+        purchaseMomentGate,
+        scientificArticles,
+        commercialIntentHits,
+        candidateReadiness: {
+          independentPublicPaths: candidatePublicDomains.size,
+          referencedComparableOffers: referencedMarketplaceOffers.length,
+          referencedActiveInstagramAds: referencedMetaAdEvidence.filter(
+            (item) => item.active && metaAdIncludesInstagram(item),
+          ).length,
+          highRiskHits: candidateHighRiskHits,
+        },
+      }),
+      score,
+      maturity,
+      decision,
+    };
+  });
   const decision = aggregateOpportunityDecision(opportunities, {
     evidenceCount: evidence.length,
     marketplaceGatePassed,
@@ -930,9 +964,7 @@ export function analyzeSearchResults(
     (opportunity) => opportunity.maturity === "DOSSIER_READY",
   ).length;
   const maturitySummary =
-    dossierReadyCount > 0
-      ? `${dossierReadyCount} DOSSIER_READY`
-      : decision;
+    dossierReadyCount > 0 ? `${dossierReadyCount} DOSSIER_READY` : decision;
 
   return {
     decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta/Instagram aderentes, ${metaCoverageSummary}, ${instagramPublicEvidence.length} evidências públicas auxiliares de Instagram, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Validação do momento de compra: ${purchaseMomentGate.status}. Maturidade factual: ${maturitySummary}.`,
@@ -945,6 +977,7 @@ export function analyzeSearchResults(
       metaAdEvidence,
       metaCoverage,
       repositoryEvidence: options.repositoryEvidence || [],
+      customerInterviews,
       repositoryCoverage: options.repositoryCoverage || [],
       analysisMode: options.analysisMode || "DETERMINISTIC",
       analysisModel: options.analysisModel || null,
@@ -963,6 +996,27 @@ export function analyzeSearchResults(
       },
     },
   };
+}
+
+/** Diferencia o papel da fonte para impedir que copy comercial vire voz do cliente. */
+function classifyEvidenceRole(result = {}) {
+  const domain = safeDomain(result.url);
+  const text = `${result.title || ""} ${result.snippet || ""}`.toLowerCase();
+  if (isScientificArticleCandidate(result)) return "SCIENTIFIC_MECHANISM";
+  if (
+    /instagram\.com|facebook\.com/.test(domain) ||
+    /an[uú]ncio|patrocinado/.test(text)
+  ) {
+    return "ADVERTISING_SIGNAL";
+  }
+  if (/reddit\.com|reclameaqui\.com|quora\.com|forum|f[oó]rum/.test(domain)) {
+    return "CUSTOMER_LANGUAGE";
+  }
+  if (isPublicComparableOffer(result)) return "SELLER_OFFER";
+  if (/avalia[cç][aã]o|review|comprei|desisti|reembolso/.test(text)) {
+    return "CUSTOMER_LANGUAGE";
+  }
+  return "EDITORIAL_OR_OTHER";
 }
 
 /** Decide a candidata sem propagar riscos encontrados apenas nas fontes das demais. */

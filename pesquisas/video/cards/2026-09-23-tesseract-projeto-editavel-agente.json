@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-projeto-estruturado-editavel-agente",
+  "collection": "video",
+  "title": "Manter edição como projeto local e granular operado por agente",
+  "finding": "Tesseract 0.2.0 disponibilizou um runtime local para agentes com Linux, macOS e Windows, projeto editável nativo de vídeo, motion graphics e som, além de exportação 4K/60 fps.",
+  "mechanism": "Persistir camadas, composições, keyframes e áudio em um projeto estruturado permite ao agente aplicar patches locais e renderizar novamente sem regenerar footage já aprovado.",
+  "commercialApplication": "No Marketing Hub, separar geração de tomadas da montagem/finishing: renderer -> projeto editável -> revisão -> patch localizado -> export, preservando partes aprovadas.",
+  "evidenceStrength": "Alta para disponibilidade funcional, plataformas, exportação e licença, confirmadas em release e termos oficiais; moderada para ganho operacional, que precisa de benchmark interno.",
+  "publishedOn": "2026-09-23",
+  "validUntil": "2026-12-22",
+  "experimentHypothesis": "Em peças equivalentes, manter um projeto Tesseract/editável entre revisões reduzirá regenerações completas e tempo até aprovação em comparação com remontagem a cada versão, sem aumentar erros de áudio, timing ou claims.",
+  "risks": "O engine é proprietário e a licença comercial tem limiar de receita; estado de projeto incorreto pode propagar erros; automação local depende de recursos e estabilidade do ambiente; mudanças comerciais sensíveis exigem checkpoints e aprovação.",
+  "limits": "Tesseract não gera footage ou avatares por conta própria; Linux acabou de ser adicionado; o software não é open source e desempenho em workloads reais de nuvem/VPS ainda precisa ser medido.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-23-tesseract-projeto-editavel-local-agente.md",
+  "sourceTitle": "Fonte revisada — Tesseract torna edição local operável por agente",
+  "sourceSha256": "11692e570502075e9624680e7ed30bb8eb3338e153cd6de3ddf0f1e6f80a99fb"
+}

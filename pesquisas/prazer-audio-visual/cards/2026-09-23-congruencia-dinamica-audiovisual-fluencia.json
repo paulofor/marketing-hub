@@ -1,0 +1,18 @@
+{
+  "cardKey": "congruencia-dinamica-audiovisual-fluencia",
+  "collection": "prazer-audio-visual",
+  "title": "Usar congruência direcional som-imagem para reforçar ganho visual",
+  "finding": "Em fMRI, movimento auditivo direcional congruente com o movimento visual aumentou a sensibilidade ao contraste em V1–V3, enquanto incongruência a reduziu; um modelo de normalização divisiva com feedback auditivo descreveu a modulação.",
+  "mechanism": "Sinais auditivos coerentes com a direção visual podem modular o ganho de contraste no córtex visual inicial por feedback crossmodal e normalização divisiva, priorizando evidência visual congruente.",
+  "commercialApplication": "Em vídeos, AR, jogos e interfaces com objetos em movimento, testar áudio espacial ou direcional coerente com o movimento visual contra áudio estático ou incongruente, medindo detecção, legibilidade, erros e conforto antes de retenção ou CTA.",
+  "evidenceStrength": "Média-alta para mecanismo neural básico, com manipulação experimental e modelagem de resposta ao contraste; amostra pequena e ausência de desfecho comportamental ou comercial limitam a generalização.",
+  "publishedOn": "2026-09-23",
+  "validUntil": "2027-03-23",
+  "experimentHypothesis": "Em elementos visuais de contraste moderado, áudio direcional congruente reduzirá tempo de detecção e erros em relação a áudio incongruente ou estático, sem aumentar distração.",
+  "risks": "Som espacial excessivo ou incongruente pode reduzir clareza, competir com fala ou causar fadiga; aumento de ganho visual não deve ser interpretado como aumento de prazer.",
+  "limits": "A evidência nova usa estímulos laboratoriais simples e fMRI; não mede prazer, retenção, memória de marca, CTA ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-23-congruencia-dinamica-audiovisual-fluencia.md",
+  "sourceTitle": "Fonte revisada — congruência direcional audiovisual e ganho visual",
+  "sourceSha256": "339a18cadc46b11621e195f1ca7d03d89df1cc51fd161470e0b44a17e9d794ca"
+}

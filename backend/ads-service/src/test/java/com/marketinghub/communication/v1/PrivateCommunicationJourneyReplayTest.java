@@ -4,7 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agent.Agent;
+import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
@@ -36,12 +39,18 @@ class PrivateCommunicationJourneyReplayTest {
     var parent = new BusinessProcessDefinition();
     parent.setId(63L);
     parent.setProcessCode("pde-communication-sales-journey");
+    parent.setVersionNumber(7);
     parent.setDiagramJson(
         """
-        {"nodes":[{"id":"communicationContract","type":"TASK"},{"id":"creatives","type":"TASK"},
-        {"id":"destination","type":"TASK"},{"id":"integration","type":"TASK"}],
-        "flows":[{"from":"communicationContract","to":"creatives"},{"from":"creatives","to":"destination"},
-        {"from":"destination","to":"integration"}]}
+        {"nodes":[{"id":"start","type":"START"},
+        {"id":"communicationContract","type":"TASK","responsibleAgentKeys":["communication-director"],
+        "responsibilityDomain":"COMMUNICATION_MATERIALIZATION","executionResourceCode":"iris-communication-worker"},
+        {"id":"creatives","type":"TASK","subprocessCode":"creative-production-approval"},
+        {"id":"destination","type":"TASK","subprocessCode":"landing-page-generation"},
+        {"id":"integration","type":"TASK"},{"id":"gate","type":"GATEWAY"},{"id":"end","type":"END"}],
+        "flows":[{"from":"start","to":"communicationContract"},{"from":"communicationContract","to":"creatives"},
+        {"from":"creatives","to":"destination"},{"from":"destination","to":"integration"},
+        {"from":"integration","to":"gate"},{"from":"gate","to":"end"}]}
         """);
     var child = new BusinessProcessDefinition();
     child.setId(64L);
@@ -109,6 +118,38 @@ class PrivateCommunicationJourneyReplayTest {
     var tasks = mock(AgentTaskRepository.class);
     when(tasks.findFunctionalSnapshotsByProcessSince(64L, reference, null))
         .thenReturn(creativeTasks);
+    JsonNode communicationArtifact = null;
+    for (var value : input.path("communicationArtifacts"))
+      if ("communicationContract".equals(value.path("activityId").asText())) {
+        communicationArtifact = value;
+        break;
+      }
+    if (communicationArtifact == null) throw new IllegalStateException("Comunicação ausente.");
+    long communicationTaskId = communicationArtifact.path("taskId").asLong();
+    JsonNode communicationRow = null;
+    for (var value : exported.path("tasks"))
+      if (value.path("id").asLong() == communicationTaskId) {
+        communicationRow = value;
+        break;
+      }
+    if (communicationRow == null) throw new IllegalStateException("Tarefa de comunicação ausente.");
+    var communicationTask = new AgentTask();
+    communicationTask.setId(communicationTaskId);
+    communicationTask.setAssignedAgent(
+        Agent.builder().id(990401L).agentKey("communication-director").build());
+    communicationTask.setProcessDefinition(parent);
+    communicationTask.setProcessActivityId("communicationContract");
+    communicationTask.setSourceReference(reference);
+    communicationTask.setStatus(communicationRow.path("status").asText());
+    communicationTask.setResultJson(communicationRow.path("result_json").asText());
+    communicationTask.setActivityInstance(
+        persisted.stream()
+            .filter(
+                value ->
+                    "communicationContract".equals(value.getActivityDefinition().getActivityId()))
+            .findFirst()
+            .orElseThrow());
+    when(tasks.findById(communicationTaskId)).thenReturn(Optional.of(communicationTask));
     var instances = mock(BusinessProcessActivityInstanceRepository.class);
     when(instances
             .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(

@@ -5811,6 +5811,21 @@ Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
   A falha foi reproduzida antes da correção; as duas rodadas finais foram reiniciadas
   e concluídas com 3.157 testes executados por rodada.
 
+- **Continuidade confirmada em 23/09/2026:** Mira/produto 10, cadeia 18, processo
+  85/v8, execução 15. O backend projetou corretamente a tarefa paga #411 e sua
+  instância #273 da v7 como contrato de comunicação vigente, mas o executor privado
+  exigia o mesmo `process_definition_id`; depois, a integração de referência
+  `product:<id>@agent-validation-v1` seguiria a rota de experimento/plano.
+- **Causa complementar:** a revisão v8 detalhou objetivos e preservou grafo, agentes,
+  recursos, subprocessos e fluxos, mas destino e integração não compartilhavam um
+  contrato de compatibilidade de revisão. A projeção da tela e o gate executor tinham
+  conceitos diferentes de evidência vigente.
+- **Correção e prevenção:** validar deterministicamente origem e destino v7/v8,
+  tarefa, instância, agente, referência, resultado e SHA-256; registrar a linhagem na
+  nova ocorrência e rotear a integração `PRODUCT_PRIVATE` antes de procurar plano,
+  experimento ou slot. Mudança estrutural falha fechada. Regressões e matriz em
+  `docs/homologacao/mira-comunicacao-revisao-compativel-v1.md`.
+
 ## LOOP-ACTIONS-CICLOS-ROLLBACK-POSICIONAL — fixture cresce e confere a versão errada
 
 - **Confirmado em 13/09/2026:** Liquibase run `34725144902` passou; `d32cba915` incluiu

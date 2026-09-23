@@ -66,6 +66,34 @@ class PdeSalesJourneyIntegrationActivityExecutorTest {
   private CommercialPlan plan;
   private PdeProductionSlot slot;
 
+  /** Conclui a referência privada do produto sem fabricar experimento, plano ou slot comercial. */
+  @Test
+  void routesValidatedPrivateProductToItsAuditedJourney() {
+    String reference = "product:10@agent-validation-v1";
+    rigel.setId(10L);
+    var privateJourney = mock(com.marketinghub.communication.v1.PrivateCommunicationJourney.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        executor, "privateJourney", privateJourney);
+    when(privateJourney.readiness(process, integration, rigel, reference))
+        .thenReturn(
+            new com.marketinghub.businessprocess.execution.service.backendactivity
+                .BackendProductProcessActivityReadiness(true, "Jornada privada comprovada."));
+    when(privateJourney.complete(process, integration, rigel, reference))
+        .thenReturn(
+            new com.marketinghub.businessprocess.execution.service.backendactivity
+                .BackendProductProcessActivityExecutionResult(
+                reference, "COMPLETED", true, "Integração privada comprovada."));
+
+    assertThat(executor.readiness(process, integration, rigel, reference).ready()).isTrue();
+    assertThat(executor.execute(process, integration, rigel, reference).objectiveAchieved())
+        .isTrue();
+
+    verify(privateJourney, org.mockito.Mockito.times(2))
+        .readiness(process, integration, rigel, reference);
+    verify(privateJourney).complete(process, integration, rigel, reference);
+    verifyNoInteractions(experiments, plans, slots, slotService, products, periods);
+  }
+
   /**
    * O ciclo corrente recebe seu próprio diagnóstico, mesmo quando o produto tem posição histórica.
    */

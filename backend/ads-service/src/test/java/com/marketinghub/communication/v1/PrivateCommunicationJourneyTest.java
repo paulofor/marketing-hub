@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.*;
 import com.marketinghub.businessprocess.*;
 import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorService;
@@ -14,6 +15,8 @@ import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.*;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +44,7 @@ class PrivateCommunicationJourneyTest {
   private final BusinessProcessDefinition parent = new BusinessProcessDefinition();
   private final BusinessProcessDefinition child = new BusinessProcessDefinition();
   private final Product product = Product.builder().id(91004L).slug("local-pde").build();
+  private AgentTask communicationTask;
   private final PrivateCommunicationJourney journey =
       new PrivateCommunicationJourney(
           context,
@@ -63,12 +67,18 @@ class PrivateCommunicationJourneyTest {
   void fixture() throws Exception {
     parent.setId(91063L);
     parent.setProcessCode("pde-communication-sales-journey");
+    parent.setVersionNumber(7);
     parent.setDiagramJson(
         """
-        {"nodes":[{"id":"start","type":"START"},{"id":"communicationContract","type":"TASK"},
-        {"id":"creatives","type":"TASK"},{"id":"destination","type":"TASK"},{"id":"integration","type":"TASK"}],
+        {"nodes":[{"id":"start","type":"START"},
+        {"id":"communicationContract","type":"TASK","responsibleAgentKeys":["communication-director"],
+        "responsibilityDomain":"COMMUNICATION_MATERIALIZATION","executionResourceCode":"iris-communication-worker"},
+        {"id":"creatives","type":"TASK","subprocessCode":"creative-production-approval"},
+        {"id":"destination","type":"TASK","subprocessCode":"landing-page-generation"},
+        {"id":"integration","type":"TASK"},{"id":"gate","type":"GATEWAY"},{"id":"end","type":"END"}],
         "flows":[{"from":"start","to":"communicationContract"},{"from":"communicationContract","to":"creatives"},
-        {"from":"creatives","to":"destination"},{"from":"destination","to":"integration"}]}
+        {"from":"creatives","to":"destination"},{"from":"destination","to":"integration"},
+        {"from":"integration","to":"gate"},{"from":"gate","to":"end"}]}
         """);
     child.setId(91064L);
     child.setProcessCode("creative-production-approval");
@@ -111,7 +121,7 @@ class PrivateCommunicationJourneyTest {
             .put("taskId", 910402L)
             .put("processDefinitionId", parent.getId())
             .put("activityId", "communicationContract")
-            .put("resultSha256", "b".repeat(64));
+            .put("agentKey", "communication-director");
     var output =
         communication
             .putObject("result")
@@ -125,6 +135,7 @@ class PrivateCommunicationJourneyTest {
         .put("messageStrategy", "Primeiro ajuste útil e retomável.")
         .putArray("channelBriefings")
         .add("Peça privada com destino homologado.");
+    communication.put("resultSha256", sha(output.toString()));
     var technical =
         input
             .putArray("approvedUpstreamArtifacts")
@@ -181,7 +192,18 @@ class PrivateCommunicationJourneyTest {
     creativeTasks.add(task(910407L, "customer", "customer-agent", "COMPLETED", review.toString()));
     creativeTasks.add(
         task(910408L, "commercial", "meta-ad-approver", "COMPLETED", review.toString()));
-    persisted.add(completed(activity(parent, 910637L, "communicationContract"), "{}"));
+    var communicationInstance = completed(activity(parent, 910637L, "communicationContract"), "{}");
+    persisted.add(communicationInstance);
+    communicationTask = new AgentTask();
+    communicationTask.setId(910402L);
+    communicationTask.setAssignedAgent(
+        Agent.builder().id(910401L).agentKey("communication-director").build());
+    communicationTask.setProcessDefinition(parent);
+    communicationTask.setProcessActivityId("communicationContract");
+    communicationTask.setSourceReference(REFERENCE);
+    communicationTask.setStatus("COMPLETED");
+    communicationTask.setResultJson(output.toString());
+    communicationTask.setActivityInstance(communicationInstance);
     persisted.add(
         completed(
             activity(parent, 910638L, "creatives"),
@@ -195,6 +217,7 @@ class PrivateCommunicationJourneyTest {
         .thenAnswer(i -> Optional.of(json.convertValue(input, Map.class)));
     when(tasks.findFunctionalSnapshotsByProcessSince(child.getId(), REFERENCE, null))
         .thenReturn(creativeTasks);
+    when(tasks.findById(communicationTask.getId())).thenReturn(Optional.of(communicationTask));
     when(instances
             .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
                 anyLong(), eq(REFERENCE)))
@@ -274,6 +297,11 @@ class PrivateCommunicationJourneyTest {
         "events",
         "payment",
         "communication",
+        "taskHash",
+        "taskResult",
+        "taskAgent",
+        "taskInstance",
+        "taskProcess",
         "creativeReview",
         "human"
       })
@@ -293,6 +321,14 @@ class PrivateCommunicationJourneyTest {
               .put("internalTrafficSegregated", false);
       case "payment" -> input.put("paymentEnabled", true);
       case "communication" -> input.putArray("communicationArtifacts");
+      case "taskHash" ->
+          ((ObjectNode) input.path("communicationArtifacts").get(0))
+              .put("resultSha256", "e".repeat(64));
+      case "taskResult" -> communicationTask.setResultJson("{}");
+      case "taskAgent" -> communicationTask.getAssignedAgent().setAgentKey("another-agent");
+      case "taskInstance" -> communicationTask.getActivityInstance().setStatus("BLOCKED");
+      case "taskProcess" ->
+          communicationTask.getProcessDefinition().setProcessCode("other-process");
       case "creativeReview" ->
           creativeTasks.add(task(910409L, "commercial", "meta-ad-approver", "BLOCKED", "{}"));
       case "human" -> persisted.get(2).setStatus("BLOCKED");
@@ -414,6 +450,71 @@ class PrivateCommunicationJourneyTest {
         .isFalse();
   }
 
+  /** Reutiliza a comunicação v7 na revisão editorial v8 com origem e compatibilidade explícitas. */
+  @Test
+  void reusesCompatibleCommunicationRevisionWithoutRepeatingAgentTask() throws Exception {
+    persisted.clear();
+    creativeTasks.clear();
+    input.removeAll();
+    reset(instances, tasks);
+    REFERENCE = "product:" + product.getId() + "@agent-validation-v1";
+    fixture();
+    input.put("mode", IrisPrivateProductContext.MODE);
+    input.remove(List.of("cycleId", "chainDefinitionId"));
+    var source = new BusinessProcessDefinition();
+    source.setId(91063L);
+    source.setProcessCode(parent.getProcessCode());
+    source.setVersionNumber(7);
+    source.setDiagramJson(parent.getDiagramJson());
+    communicationTask.setProcessDefinition(source);
+    communicationTask.getActivityInstance().getActivityDefinition().setProcessDefinition(source);
+    ((ObjectNode) input.path("communicationArtifacts").get(0))
+        .put("processDefinitionId", source.getId());
+    parent.setId(91085L);
+    parent.setVersionNumber(8);
+    ObjectNode targetDiagram = (ObjectNode) json.readTree(parent.getDiagramJson());
+    targetDiagram.put("commercialCriteriaVersion", "PDE_COMMERCIAL_PRINCIPLES_V1");
+    parent.setDiagramJson(targetDiagram.toString());
+    var privateProducts = mock(IrisPrivateProductContext.class);
+    when(privateProducts.resolve(REFERENCE))
+        .thenAnswer(i -> Optional.of(json.convertValue(input, Map.class)));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        journey, "privateProducts", privateProducts);
+
+    assertThat(destination.readiness(parent, destinationActivity, product, REFERENCE).ready())
+        .isTrue();
+    destination.execute(parent, destinationActivity, product, REFERENCE);
+    journey.complete(parent, integrationActivity, product, REFERENCE);
+
+    var destinationEvidence =
+        json.readTree(
+            persisted.stream()
+                .filter(
+                    instance ->
+                        "destination".equals(instance.getActivityDefinition().getActivityId()))
+                .findFirst()
+                .orElseThrow()
+                .getObjectiveEvidenceJson());
+    assertThat(destinationEvidence.path("communicationTaskId").asLong()).isEqualTo(910402L);
+    assertThat(destinationEvidence.path("predecessors").get(0).path("reuseContract").asText())
+        .isEqualTo("PDE_COMMUNICATION_COMPATIBLE_REVISION_V1");
+    assertThat(
+            destinationEvidence
+                .path("predecessors")
+                .get(0)
+                .path("sourceProcessDefinitionId")
+                .asLong())
+        .isEqualTo(91063L);
+    assertThat(
+            destinationEvidence
+                .path("predecessors")
+                .get(0)
+                .path("targetProcessDefinitionId")
+                .asLong())
+        .isEqualTo(91085L);
+    verify(tasks, never()).save(any());
+  }
+
   /** Cria uma definição isolada mantendo o processo proprietário. */
   private BusinessProcessActivityDefinition activity(
       BusinessProcessDefinition process, long id, String code) {
@@ -452,5 +553,12 @@ class PrivateCommunicationJourneyTest {
         Instant.parse("2026-09-12T11:00:00Z"),
         Instant.parse("2026-09-12T11:10:00Z"),
         result);
+  }
+
+  /** Calcula a identidade dos bytes persistidos usados pela projeção do contexto privado. */
+  private String sha(String value) throws Exception {
+    return HexFormat.of()
+        .formatHex(
+            MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
   }
 }

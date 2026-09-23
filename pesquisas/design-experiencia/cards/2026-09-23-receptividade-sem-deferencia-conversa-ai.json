@@ -1,0 +1,18 @@
+{
+  "cardKey": "receptividade-sem-deferencia-conversa-ai",
+  "collection": "neuromarketing",
+  "title": "Receptividade pode aumentar escuta sem exigir concordância do agente",
+  "finding": "Em experimento pré-registrado com 196 participantes após exclusões, respostas mais receptivas com a mesma conclusão substantiva foram preferidas e vistas como mais prováveis de serem ouvidas. Para respostas originalmente geradas por modelos, o ganho foi modesto, mas positivo, em qualidade e preferência.",
+  "mechanism": "Reconhecer a perspectiva do usuário, explicitar terreno comum legítimo e reformular o desacordo de modo construtivo pode reduzir fricção interpessoal. O efeito desejável depende de manter separado o julgamento substantivo: receptividade não deve virar validação de premissas falsas ou deferência automática.",
+  "commercialApplication": "No customer-agent, preservar primeiro fatos, evidência e recomendação; depois comunicar a conclusão de forma receptiva. Testar uma resposta direta contra uma resposta receptiva com a mesma conclusão, medindo compreensão, correções, continuidade útil, conclusão da tarefa e aceitação de informação correta.",
+  "evidenceStrength": "Moderada: experimento humano pré-registrado com 200 recrutados e 196 após exclusões, além de análises de respostas humanas e de quatro modelos. O contexto é aconselhamento moral em preprint, e os efeitos observados para respostas de modelos foram modestos; não há prova comercial.",
+  "publishedOn": "2026-09-23",
+  "validUntil": "2026-11-07",
+  "experimentHypothesis": "Uma política que preserve julgamento independente e acrescente reconhecimento específico da perspectiva, terreno comum real e caminho construtivo aumentará a probabilidade de o usuário considerar uma correção sem elevar concordância indevida nem reduzir task success.",
+  "risks": "Otimizar receptividade sem ancorar o julgamento pode virar bajulação, validação de erro ou persuasão manipulativa. Métricas de agrado e continuidade podem recompensar respostas socialmente confortáveis mesmo quando factualmente piores.",
+  "limits": "O estudo usa cenários de aconselhamento moral e não mede CTA, checkout, vendas ou retenção. Os ganhos para respostas originalmente geradas por modelos foram menores do que para textos humanos, e a generalização para atendimento comercial precisa de teste próprio.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-23-receptividade-sem-deferencia-conversa-ai.md",
+  "sourceTitle": "Fonte revisada — Receptividade sem deferência substantiva em conversas com IA",
+  "sourceSha256": "6244305ab7f9dac2bfce1ba409e5c67be40d0296b3e453a71a45d03a8d5cf299"
+}

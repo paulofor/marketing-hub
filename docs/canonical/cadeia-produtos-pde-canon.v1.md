@@ -209,6 +209,14 @@ anteriores permanecem disponíveis enquanto houver execuções vinculadas, como 
 cadeias v14–v17: aposentá-las agora impediria comandos de referências sem ficha fixada.
 A seleção de novos trabalhos usa a versão publicada mais recente; não migrar tarefas antigas.
 
+Uma nova definição pode reutilizar uma evidência paga da revisão anterior sem mover a tarefa
+histórica quando produto, referência, contrato funcional, entrada estratégica e bytes do resultado
+continuarem idênticos **e** um verificador determinístico comprovar atividades, responsáveis,
+recursos, subprocessos e fluxos compatíveis. A nova ocorrência deve registrar definição e versão
+de origem e destino, tarefa, instância e hashes. Processo diferente, revisão regressiva, grafo
+alterado, marcador ausente ou prova substituída bloqueia o reaproveitamento; não se repete uma
+chamada paga apenas para trocar o ID da definição.
+
 Os executores de homologação e retrabalho preservam a v8 original e reconhecem revisões
 posteriores pelo contrato do grafo: cinco avaliações, correção condicional e gate determinístico,
 com os mesmos domínios e atividades de remediação. Alterar descrições não remove o executor;

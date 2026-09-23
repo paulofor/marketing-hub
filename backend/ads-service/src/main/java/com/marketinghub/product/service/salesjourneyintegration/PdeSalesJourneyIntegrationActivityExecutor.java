@@ -11,6 +11,7 @@ import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityExecutionResult;
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityExecutor;
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityReadiness;
+import com.marketinghub.communication.v1.IrisPrivateProductContext;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.monitoring.dto.PostDeployPdeProductionSlotDto;
 import com.marketinghub.pde.PdeProductionSlot;
@@ -162,6 +163,9 @@ public class PdeSalesJourneyIntegrationActivityExecutor
           false, "Não existe executor backend para esta atividade.");
     }
     try {
+      if (IrisPrivateProductContext.supports(sourceReference)) {
+        return privateJourney.readiness(process, activityDefinition, product, sourceReference);
+      }
       var cycle = scopedCycle(product, sourceReference);
       if (cycle.isEmpty()
           && !ELIGIBLE_COMMERCIAL_STATUSES.contains(product.getCommercialStatus())) {
@@ -206,6 +210,9 @@ public class PdeSalesJourneyIntegrationActivityExecutor
         readiness(process, activityDefinition, product, sourceReference);
     if (!readiness.ready()) {
       throw new IllegalStateException(readiness.reason());
+    }
+    if (IrisPrivateProductContext.supports(sourceReference)) {
+      return privateJourney.complete(process, activityDefinition, product, sourceReference);
     }
     var cycle = scopedCycle(product, sourceReference);
     if (cycle.filter(this::requiresPrivatePreparation).isPresent()) {

@@ -3,6 +3,7 @@ package com.marketinghub.communication.v1;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
@@ -301,7 +302,7 @@ public class PrivateCommunicationJourney {
         "O destino não preserva o contrato e os limites privados do contexto.");
     var preceding = predecessors.readiness(process, activity, reference);
     require(preceding.ready(), preceding.reason());
-    var communication = communication(input, process.getId(), reference);
+    var communication = communication(input, process, reference);
     var technical = technical(input, reference, version, url);
     var evidence = json.createObjectNode();
     evidence.put(
@@ -319,8 +320,8 @@ public class PrivateCommunicationJourney {
     evidence.put("requiresLandingGeneration", false);
     evidence.set("gateInstanceId", input.path("gateInstanceId"));
     evidence.put("gateSha256", hash(input.path("validationGate").toString()));
-    evidence.set("communicationTaskId", communication.path("taskId"));
-    evidence.set("communicationSha256", communication.path("resultSha256"));
+    evidence.set("communicationTaskId", communication.artifact().path("taskId"));
+    evidence.set("communicationSha256", communication.artifact().path("resultSha256"));
     evidence.set("technicalTaskId", technical.path("taskId"));
     evidence.set("technicalResultSha256", technical.path("resultSha256"));
     evidence.set("validatedChecks", technical.path("result").path("checks"));
@@ -342,12 +343,19 @@ public class PrivateCommunicationJourney {
         "integration".equals(activity.getActivityId())
             ? List.of("communicationContract", "creatives", "destination")
             : List.of("communicationContract", "creatives")) {
-      var instance =
+      var currentInstance =
           prior.stream()
               .filter(i -> code.equals(i.getActivityDefinition().getActivityId()))
               .max(
                   java.util.Comparator.comparing(
-                      BusinessProcessActivityInstance::getOccurrenceNumber))
+                      BusinessProcessActivityInstance::getOccurrenceNumber));
+      var instance =
+          currentInstance
+              .or(
+                  () ->
+                      "communicationContract".equals(code)
+                          ? Optional.ofNullable(communication.task().getActivityInstance())
+                          : Optional.empty())
               .orElseThrow(
                   () -> new IllegalStateException("Conclua neste ciclo a atividade " + code + "."));
       require(
@@ -361,13 +369,25 @@ public class PrivateCommunicationJourney {
                 .toString()
                 .equals(instance.getObjectiveEvidenceJson()),
             "O destino deve ser confirmado novamente: suas provas foram substituídas.");
-      predecessorsProof
-          .addObject()
-          .put("activityId", code)
-          .put("instanceId", instance.getId())
-          .put(
-              "evidenceSha256",
-              hash(Objects.requireNonNullElse(instance.getObjectiveEvidenceJson(), "")));
+      var predecessorProof =
+          predecessorsProof
+              .addObject()
+              .put("activityId", code)
+              .put("instanceId", instance.getId())
+              .put(
+                  "evidenceSha256",
+                  hash(Objects.requireNonNullElse(instance.getObjectiveEvidenceJson(), "")));
+      if ("communicationContract".equals(code)
+          && !process.getId().equals(communication.task().getProcessDefinition().getId())) {
+        predecessorProof
+            .put("reuseContract", "PDE_COMMUNICATION_COMPATIBLE_REVISION_V1")
+            .put("sourceProcessDefinitionId", communication.task().getProcessDefinition().getId())
+            .put(
+                "sourceProcessVersion",
+                communication.task().getProcessDefinition().getVersionNumber())
+            .put("targetProcessDefinitionId", process.getId())
+            .put("targetProcessVersion", process.getVersionNumber());
+      }
     }
     require(
         tasks.findFunctionalSnapshots(reference, Set.of("landing-page-generation"), null).stream()
@@ -376,13 +396,62 @@ public class PrivateCommunicationJourney {
     return evidence;
   }
 
-  /** Exige a comunicação da mesma definição e o hash estratégico ainda vigente. */
-  private JsonNode communication(JsonNode input, Long processId, String reference) {
+  /** Exige comunicação íntegra da mesma definição ou de uma revisão estrutural compatível. */
+  private CommunicationEvidence communication(
+      JsonNode input, BusinessProcessDefinition process, String reference) {
     for (var artifact : input.path("communicationArtifacts")) {
       var result = artifact.path("result");
       if (!"communicationContract".equals(artifact.path("activityId").asText())) continue;
+      long taskId = artifact.path("taskId").asLong();
+      var task =
+          tasks
+              .findById(taskId)
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "A tarefa do contrato de comunicação não foi encontrada."));
+      var sourceProcess = task.getProcessDefinition();
+      var sourceInstance = task.getActivityInstance();
       require(
-          processId.equals(artifact.path("processDefinitionId").asLong())
+          task.getResultJson() != null && !task.getResultJson().isBlank(),
+          "O resultado persistido do contrato de comunicação está ausente.");
+      JsonNode persistedResult;
+      try {
+        persistedResult = json.readTree(task.getResultJson());
+      } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+        log.warn(
+            "Resultado da comunicação inválido. taskId={} sourceReference={}",
+            taskId,
+            reference,
+            ex);
+        throw new IllegalStateException(
+            "O resultado persistido do contrato de comunicação é inválido.", ex);
+      }
+      require(
+          taskId > 0
+              && sourceProcess != null
+              && sourceProcess.getId().equals(artifact.path("processDefinitionId").asLong())
+              && PrivateCommunicationProcessContract.supports(sourceProcess, process, json)
+              && sourceInstance != null
+              && sourceInstance.getActivityDefinition() != null
+              && sourceInstance.getActivityDefinition().getProcessDefinition() != null
+              && sourceProcess
+                  .getId()
+                  .equals(sourceInstance.getActivityDefinition().getProcessDefinition().getId())
+              && "communicationContract"
+                  .equals(sourceInstance.getActivityDefinition().getActivityId())
+              && reference.equals(sourceInstance.getSourceReference())
+              && "COMPLETED".equals(sourceInstance.getStatus())
+              && sourceInstance.isObjectiveAchieved()
+              && task.getAssignedAgent() != null
+              && "communication-director".equals(task.getAssignedAgent().getAgentKey())
+              && "communication-director".equals(artifact.path("agentKey").asText())
+              && "communicationContract".equals(task.getProcessActivityId())
+              && reference.equals(task.getSourceReference())
+              && "COMPLETED".equals(task.getStatus())
+              && task.getResultJson() != null
+              && hash(task.getResultJson()).equals(artifact.path("resultSha256").asText())
+              && persistedResult.equals(result)
               && "IRIS_COMMUNICATION_V1".equals(result.path("contractVersion").asText())
               && "COMMUNICATION_PACKAGE".equals(result.path("outputType").asText())
               && "COMPLETED".equals(result.path("executionStatus").asText())
@@ -395,11 +464,14 @@ public class PrivateCommunicationJourney {
               && !result.path("functionalOutput").path("messageStrategy").asText().isBlank()
               && !result.path("functionalOutput").path("channelBriefings").isEmpty(),
           "O contrato de comunicação não corresponde à estratégia e à definição deste ciclo.");
-      return artifact;
+      return new CommunicationEvidence(artifact, task);
     }
     throw new IllegalStateException(
         "Conclua o contrato de comunicação do próprio contexto com Íris.");
   }
+
+  /** Mantém juntos o artefato projetado e a tarefa persistida que comprova sua origem. */
+  private record CommunicationEvidence(JsonNode artifact, AgentTask task) {}
 
   /** Exige os controles de integração comprovados pelo executor técnico no gate vigente. */
   private JsonNode technical(JsonNode input, String reference, String version, String url) {

@@ -32,6 +32,9 @@ public class FacebookCampaignResumption {
   @Column(name = "total_limit", nullable = false, precision = 10, scale = 2)
   private BigDecimal totalLimit;
 
+  @Column(name = "daily_budget", precision = 10, scale = 2)
+  private BigDecimal dailyBudget;
+
   @Column(name = "previous_limit", precision = 10, scale = 2)
   private BigDecimal previousLimit;
 
@@ -41,8 +44,20 @@ public class FacebookCampaignResumption {
   @Column(name = "previous_end_date")
   private LocalDate previousEndDate;
 
+  @Column(name = "start_date")
+  private LocalDate startDate;
+
   @Column(name = "end_date", nullable = false)
   private LocalDate endDate;
+
+  @Column(name = "zero_result_spend_limit", precision = 10, scale = 2)
+  private BigDecimal zeroResultSpendLimit;
+
+  @Column(name = "zero_purchase_spend_limit", precision = 10, scale = 2)
+  private BigDecimal zeroPurchaseSpendLimit;
+
+  @Column(name = "purchase_stop_count")
+  private Integer purchaseStopCount;
 
   @Column(name = "reason", nullable = false, length = 1024)
   private String reason;

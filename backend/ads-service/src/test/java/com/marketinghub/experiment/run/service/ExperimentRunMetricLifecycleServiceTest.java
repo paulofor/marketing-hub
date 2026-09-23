@@ -120,6 +120,30 @@ class ExperimentRunMetricLifecycleServiceTest {
     verify(experimentRunRepository).save(run);
   }
 
+  /** Conclui a execução por meta atingida sem registrar falha da hipótese comercial. */
+  @Test
+  void completesCommercialRunAsSuccessAtPurchaseGoal() {
+    Experiment experiment = Experiment.builder().id(88L).build();
+    ExperimentRun run = run(experiment, ExperimentRunStatus.RUNNING);
+    when(experimentRunRepository.findTopByExperimentIdAndModeOrderByRunNumberDesc(
+            88L, ExperimentRunMode.PRODUCTION))
+        .thenReturn(Optional.of(run));
+
+    service.completeCommercialSuccess(
+        experiment,
+        FacebookCampaignStopReason.CAMPAIGN_PURCHASE_GOAL_REACHED,
+        "meta autorizada de 5 compras confirmadas atingida");
+
+    assertThat(run.getStatus()).isEqualTo(ExperimentRunStatus.COMPLETED);
+    assertThat(run.getEvidenceValidity()).isEqualTo(ExperimentEvidenceValidity.COMMERCIALLY_VALID);
+    assertThat(run.getFailureClassification()).isNull();
+    assertThat(run.getStopReason())
+        .isEqualTo(FacebookCampaignStopReason.CAMPAIGN_PURCHASE_GOAL_REACHED.name());
+    assertThat(run.getFailureDetail())
+        .isEqualTo("meta autorizada de 5 compras confirmadas atingida");
+    verify(experimentRunRepository).save(run);
+  }
+
   /** Cria uma campanha mínima com o marco de publicação informado. */
   private FacebookAdsCampaign campaign(Experiment experiment, String createdAt) {
     FacebookAdsCampaign campaign = new FacebookAdsCampaign();

@@ -586,7 +586,13 @@ public class FacebookAdsCampaignController {
   private void evaluateMetricsSideEffectsSafely(
       FacebookAdsCampaign campaign, ExperimentCampaignMetric metric) {
     try {
+      if (funnelAutoStopService.stopIfPurchaseGoalReached(campaign.getExperiment())) {
+        return;
+      }
       if (funnelAutoStopService.stopIfMediaSpendLimitReached(campaign.getExperiment())) {
+        return;
+      }
+      if (funnelAutoStopService.stopIfNoPurchaseAfterAuthorizedSpend(campaign.getExperiment())) {
         return;
       }
       funnelAutoStopService.stopIfNoPrimaryResultAfterMinimumSpend(campaign.getExperiment());

@@ -67,6 +67,19 @@ public class ExperimentRunMetricLifecycleService {
         .ifPresent(run -> completeCommercialStop(run, experiment, stopReason, detail));
   }
 
+  /** Encerra a janela como sucesso quando a quantidade de compras autorizada foi atingida. */
+  public void completeCommercialSuccess(
+      Experiment experiment, FacebookCampaignStopReason stopReason, String detail) {
+    if (experiment == null || experiment.getId() == null || stopReason == null) {
+      return;
+    }
+    experimentRunRepository
+        .findTopByExperimentIdAndModeOrderByRunNumberDesc(
+            experiment.getId(), ExperimentRunMode.PRODUCTION)
+        .filter(run -> !isTerminal(run.getStatus()))
+        .ifPresent(run -> completeCommercialSuccess(run, experiment, stopReason, detail));
+  }
+
   /**
    * Persiste o resultado comercial final sem transformar uma reprovação válida em falha técnica.
    */
@@ -89,6 +102,27 @@ public class ExperimentRunMetricLifecycleService {
         stopReason,
         run.getEvidenceValidity(),
         run.getFailureClassification());
+  }
+
+  /** Persiste conclusão comercial positiva sem classificar a meta atingida como falha. */
+  private void completeCommercialSuccess(
+      ExperimentRun run,
+      Experiment experiment,
+      FacebookCampaignStopReason stopReason,
+      String detail) {
+    run.setStatus(ExperimentRunStatus.COMPLETED);
+    run.setStopReason(stopReason.name());
+    run.setFailureClassification(null);
+    run.setFailureDetail(detail);
+    run.setEvidenceValidity(ExperimentEvidenceValidity.COMMERCIALLY_VALID);
+    run.setEndedAt(Instant.now());
+    experimentRunRepository.save(run);
+    log.info(
+        "experiment_run_commercial_success experimentId={} runId={} stopReason={} evidenceValidity={}",
+        experiment.getId(),
+        run.getId(),
+        stopReason,
+        run.getEvidenceValidity());
   }
 
   /** Identifica estados que não podem ser reabertos pela reconciliação financeira. */

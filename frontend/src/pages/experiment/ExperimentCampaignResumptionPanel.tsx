@@ -6,7 +6,12 @@ type ResumeView = {
   id: number;
   status: string;
   totalLimit: number;
+  dailyBudget?: number | null;
+  startDate?: string | null;
   endDate: string;
+  zeroResultSpendLimit?: number | null;
+  zeroPurchaseSpendLimit?: number | null;
+  purchaseStopCount?: number | null;
   reason: string;
   error?: string | null;
 };
@@ -15,8 +20,11 @@ type ResumeSummary = {
   available: boolean;
   blocker?: string | null;
   synchronizedSpend: number;
+  dailyBudget: number | null;
   currentLimit: number | null;
   zeroResultStopSpend: number;
+  zeroPurchaseStopSpend?: number | null;
+  purchaseStopCount?: number | null;
   latest?: ResumeView | null;
 };
 const money = (v: number | null) =>
@@ -31,11 +39,15 @@ export default function ExperimentCampaignResumptionPanel({
   experimentId: string;
 }) {
   const queryClient = useQueryClient();
+  const [dailyBudget, setDailyBudget] = useState("");
   const [limit, setLimit] = useState("");
+  const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [zeroPurchaseSpendLimit, setZeroPurchaseSpendLimit] = useState("");
+  const [purchaseStopCount, setPurchaseStopCount] = useState("");
   const [reason, setReason] = useState("");
   const [authorized, setAuthorized] = useState(false);
-  const [exception, setException] = useState(false);
+  const [stopRulesConfirmed, setStopRulesConfirmed] = useState(false);
   const [message, setMessage] = useState("");
   const endpoint = `/api/facebook-campaign-resumptions/experiments/${experimentId}`;
   const { data } = useQuery<ResumeSummary>({
@@ -51,10 +63,17 @@ export default function ExperimentCampaignResumptionPanel({
       (
         await axios.post(endpoint, {
           totalLimit: Number(limit),
+          dailyBudget: Number(dailyBudget),
+          startDate,
           endDate,
+          zeroResultSpendLimit: Number(zeroPurchaseSpendLimit),
+          zeroPurchaseSpendLimit: Number(zeroPurchaseSpendLimit),
+          purchaseStopCount: purchaseStopCount
+            ? Number(purchaseStopCount)
+            : null,
           reason: reason.trim(),
           authorizeSpending: authorized,
-          useTotalLimitForZeroResults: exception,
+          useTotalLimitForZeroResults: false,
         })
       ).data,
     onSuccess: () => {
@@ -86,12 +105,25 @@ export default function ExperimentCampaignResumptionPanel({
         </p>
         <p>
           Gasto sincronizado: <strong>{money(data.synchronizedSpend)}</strong> ·
+          Orçamento diário atual: <strong>{money(data.dailyBudget)}</strong> ·
           Teto atual: <strong>{money(data.currentLimit)}</strong>
         </p>
         {data.latest && (
           <div className="alert alert-light border" role="status">
             Pedido #{data.latest.id}: <strong>{data.latest.status}</strong> ·
-            Teto {money(data.latest.totalLimit)} · Até {data.latest.endDate}
+            {data.latest.dailyBudget != null
+              ? ` ${money(data.latest.dailyBudget)}/dia ·`
+              : ""}{" "}
+            Teto {money(data.latest.totalLimit)} ·{" "}
+            {data.latest.startDate
+              ? `De ${data.latest.startDate} até ${data.latest.endDate}`
+              : `Até ${data.latest.endDate}`}
+            {data.latest.zeroPurchaseSpendLimit != null
+              ? ` · Parar sem compra em ${money(data.latest.zeroPurchaseSpendLimit)}`
+              : ""}
+            {data.latest.purchaseStopCount
+              ? ` · Parar em ${data.latest.purchaseStopCount} compras`
+              : ""}
             <p className="mb-0">{data.latest.reason}</p>
             {data.latest.error && (
               <p className="text-danger mb-0">{data.latest.error}</p>
@@ -115,6 +147,22 @@ export default function ExperimentCampaignResumptionPanel({
           >
             <div className="row g-3">
               <div className="col-md-4">
+                <label htmlFor="resume-daily-budget" className="form-label">
+                  Orçamento diário (R$) *
+                </label>
+                <input
+                  id="resume-daily-budget"
+                  className="form-control"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={dailyBudget}
+                  onChange={(e) => setDailyBudget(e.target.value)}
+                  required
+                  disabled={command.isPending}
+                />
+              </div>
+              <div className="col-md-4">
                 <label htmlFor="resume-cap" className="form-label">
                   Teto acumulado de mídia (R$) *
                 </label>
@@ -131,6 +179,20 @@ export default function ExperimentCampaignResumptionPanel({
                 />
               </div>
               <div className="col-md-4">
+                <label htmlFor="resume-start" className="form-label">
+                  Data inicial da retomada *
+                </label>
+                <input
+                  id="resume-start"
+                  className="form-control"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  required
+                  disabled={command.isPending}
+                />
+              </div>
+              <div className="col-md-4">
                 <label htmlFor="resume-end" className="form-label">
                   Data final da retomada *
                 </label>
@@ -141,6 +203,37 @@ export default function ExperimentCampaignResumptionPanel({
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   required
+                  disabled={command.isPending}
+                />
+              </div>
+              <div className="col-md-4">
+                <label htmlFor="resume-zero-result" className="form-label">
+                  Parar sem compra em (R$) *
+                </label>
+                <input
+                  id="resume-zero-result"
+                  className="form-control"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={zeroPurchaseSpendLimit}
+                  onChange={(e) => setZeroPurchaseSpendLimit(e.target.value)}
+                  required
+                  disabled={command.isPending}
+                />
+              </div>
+              <div className="col-md-4">
+                <label htmlFor="resume-purchase-goal" className="form-label">
+                  Parar ao atingir compras
+                </label>
+                <input
+                  id="resume-purchase-goal"
+                  className="form-control"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={purchaseStopCount}
+                  onChange={(e) => setPurchaseStopCount(e.target.value)}
                   disabled={command.isPending}
                 />
               </div>
@@ -178,21 +271,20 @@ export default function ExperimentCampaignResumptionPanel({
                 id="resume-exception"
                 className="form-check-input"
                 type="checkbox"
-                checked={exception}
-                onChange={(e) => setException(e.target.checked)}
+                checked={stopRulesConfirmed}
+                onChange={(e) => setStopRulesConfirmed(e.target.checked)}
                 required
                 disabled={command.isPending}
               />
               <label htmlFor="resume-exception" className="form-check-label">
-                Autorizo este experimento a coletar dados até esse teto mesmo
-                sem novos resultados primários. As demais proteções continuam
-                válidas. *
+                Confirmo os limites de parada sem compra e por quantidade de
+                compras. As demais proteções continuam válidas. *
               </label>
             </div>
             <button
               type="submit"
               className="btn btn-success mt-3"
-              disabled={command.isPending || !authorized || !exception}
+              disabled={command.isPending || !authorized || !stopRulesConfirmed}
             >
               {command.isPending && (
                 <span
@@ -202,7 +294,7 @@ export default function ExperimentCampaignResumptionPanel({
               )}
               {command.isPending
                 ? "Registrando autorização..."
-                : "Autorizar e retomar na Meta"}
+                : "Autorizar retomada"}
             </button>
           </form>
         )}

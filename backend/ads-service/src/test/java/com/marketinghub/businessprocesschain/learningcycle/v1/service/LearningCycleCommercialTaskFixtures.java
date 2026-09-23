@@ -39,7 +39,11 @@ public class LearningCycleCommercialTaskFixtures {
             plans,
             cycles,
             readiness,
-            mock(com.marketinghub.experiment.service.ExperimentService.class));
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
+            mock(com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository.class),
+            mock(
+                com.marketinghub.facebookads.resumption.service.FacebookCampaignResumptionService
+                    .class));
     var gate =
         mock(
             com.marketinghub.businessprocess.execution.service.humanactivity

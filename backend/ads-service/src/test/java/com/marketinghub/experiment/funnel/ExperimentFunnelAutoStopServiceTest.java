@@ -131,6 +131,73 @@ class ExperimentFunnelAutoStopServiceTest {
     assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
   }
 
+  /** Para no limite sem venda mesmo quando o funil já registrou um formulário válido. */
+  @Test
+  void stopsAtAuthorizedNoPurchaseLimitDespiteIntermediateResult() {
+    experiment.setZeroPurchaseSpendLimit(new BigDecimal("50.00"));
+    when(campaignMetricRepository.findByExperiment(experiment))
+        .thenReturn(Optional.of(metricWithSpend("50.00")));
+    when(diagnosticService.diagnose(99L))
+        .thenReturn(
+            new ExperimentFunnelDiagnosticsResponseDto(
+                List.of(
+                    stage(
+                        ExperimentFunnelStage.ENVIO_FORM,
+                        5,
+                        1,
+                        FunnelDiagnosticStatus.INSUFFICIENT_DATA),
+                    stage(
+                        ExperimentFunnelStage.COMPRA,
+                        1,
+                        0,
+                        FunnelDiagnosticStatus.INSUFFICIENT_DATA)),
+                null));
+    FacebookAdsCampaign campaign = campaign("camp-zero-purchase");
+    when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
+
+    boolean stopped = service.stopIfNoPurchaseAfterAuthorizedSpend(experiment);
+
+    assertThat(stopped).isTrue();
+    assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
+    assertThat(campaign.getStopReason())
+        .isEqualTo(FacebookCampaignStopReason.CAMPAIGN_ZERO_PURCHASE_AFTER_AUTHORIZED_SPEND);
+    verify(runMetricLifecycleService)
+        .completeCommercialStop(
+            experiment,
+            FacebookCampaignStopReason.CAMPAIGN_ZERO_PURCHASE_AFTER_AUTHORIZED_SPEND,
+            "campanha gastou R$ 50,00 sem compra atribuída");
+  }
+
+  /** Encerra a coleta com sucesso quando a meta autorizada de compras é atingida. */
+  @Test
+  void stopsAsCommercialSuccessAtAuthorizedPurchaseCount() {
+    experiment.setPurchaseStopCount(5);
+    when(diagnosticService.diagnose(99L))
+        .thenReturn(
+            new ExperimentFunnelDiagnosticsResponseDto(
+                List.of(
+                    stage(
+                        ExperimentFunnelStage.COMPRA,
+                        5,
+                        5,
+                        FunnelDiagnosticStatus.HEALTHY_OR_INCONCLUSIVE)),
+                null));
+    FacebookAdsCampaign campaign = campaign("camp-purchase-goal");
+    when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
+
+    boolean stopped = service.stopIfPurchaseGoalReached(experiment);
+
+    assertThat(stopped).isTrue();
+    assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.STANDBY);
+    assertThat(campaign.getStopReason())
+        .isEqualTo(FacebookCampaignStopReason.CAMPAIGN_PURCHASE_GOAL_REACHED);
+    verify(runMetricLifecycleService)
+        .completeCommercialSuccess(
+            experiment,
+            FacebookCampaignStopReason.CAMPAIGN_PURCHASE_GOAL_REACHED,
+            "meta autorizada de 5 compras confirmadas atingida");
+  }
+
   /**
    * Garante que a liquidação final invalida o experimento e corrige a causa mesmo após a Meta ter
    * sido reconciliada como pausa externa.

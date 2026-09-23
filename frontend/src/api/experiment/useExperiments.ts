@@ -149,6 +149,8 @@ export interface Experiment {
   dailyBudget?: number | null;
   mediaSpendLimit?: number | null;
   zeroResultSpendLimit?: number | null;
+  zeroPurchaseSpendLimit?: number | null;
+  purchaseStopCount?: number | null;
   unitPrice?: number | null;
   cost?: number | null;
   totalCost?: number | null;
@@ -180,12 +182,7 @@ export interface Experiment {
   stage: ExperimentStage;
   creativeGenerationMode?: "DEFAULT" | "PIPELINE_ADS";
   creativeGenerationStatus?:
-    | "IDLE"
-    | "REQUESTED"
-    | "PROCESSING"
-    | "COMPLETED"
-    | "FAILED"
-    | "TIMEOUT";
+    "IDLE" | "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED" | "TIMEOUT";
   creativeGenerationRequestedAt?: string | null;
   creativeGenerationStartedAt?: string | null;
   creativeGenerationFinishedAt?: string | null;

@@ -9,6 +9,9 @@ public record ResumeCampaignSummary(
     boolean available,
     String blocker,
     BigDecimal synchronizedSpend,
+    BigDecimal dailyBudget,
     BigDecimal currentLimit,
     BigDecimal zeroResultStopSpend,
+    BigDecimal zeroPurchaseStopSpend,
+    Integer purchaseStopCount,
     ResumeCampaignView latest) {}

@@ -30,6 +30,8 @@ import org.springframework.web.server.ResponseStatusException;
 public class FacebookCampaignResumptionService {
   private static final Logger LOG =
       LoggerFactory.getLogger(FacebookCampaignResumptionService.class);
+  private static final ZoneId COMMERCIAL_ZONE = ZoneId.of("America/Sao_Paulo");
+  private static final Set<String> AUTHORIZED_STATUSES = Set.of("PENDING", "RUNNING", "COMPLETED");
   private final FacebookCampaignResumptionRepository requests;
   private final ExperimentRepository experiments;
   private final FacebookAdsCampaignRepository campaigns;
@@ -70,8 +72,11 @@ public class FacebookCampaignResumptionService {
         applicable && blocker == null,
         blocker,
         spend(e),
+        e.getDailyBudget(),
         e.getMediaSpendLimit(),
         ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(e),
+        e.getZeroPurchaseSpendLimit(),
+        e.getPurchaseStopCount(),
         view(latest, false));
   }
 
@@ -81,23 +86,34 @@ public class FacebookCampaignResumptionService {
   @Transactional
   public ResumeCampaignView request(Long experimentId, ResumeCampaignRequest input) {
     Experiment e = experiments.findForFacebookRelease(experimentId).orElseThrow();
+    if (input == null || !input.authorizeSpending())
+      throw bad("Confirme o orçamento diário, o teto acumulado e as condições de parada.");
+    LocalDate today = LocalDate.now(COMMERCIAL_ZONE);
+    LocalDate startDate = input.startDate() == null ? today : input.startDate();
+    BigDecimal dailyBudget = input.dailyBudget() == null ? e.getDailyBudget() : input.dailyBudget();
+    BigDecimal zeroResultSpendLimit =
+        input.zeroResultSpendLimit() != null
+            ? input.zeroResultSpendLimit()
+            : input.useTotalLimitForZeroResults() ? input.totalLimit() : null;
+    BigDecimal zeroPurchaseSpendLimit = input.zeroPurchaseSpendLimit();
     FacebookCampaignResumption latest =
         requests.findFirstByExperimentIdOrderByIdDesc(experimentId).orElse(null);
     if (latest != null && Set.of("PENDING", "RUNNING").contains(latest.getStatus())) {
-      if (input != null
-          && Objects.equals(input.endDate(), latest.getEndDate())
-          && input.totalLimit() != null
-          && input.totalLimit().compareTo(latest.getTotalLimit()) == 0
-          && Objects.equals(input.reason(), latest.getReason())
-          && input.authorizeSpending()
-          && input.useTotalLimitForZeroResults()) return view(latest, false);
+      if (sameAuthorization(
+          latest,
+          dailyBudget,
+          input.totalLimit(),
+          startDate,
+          input.endDate(),
+          zeroResultSpendLimit,
+          zeroPurchaseSpendLimit,
+          input.purchaseStopCount(),
+          input.reason())) return view(latest, false);
       throw conflict("Já existe uma retomada em andamento para este experimento.");
     }
     List<FacebookAdsCampaign> linked = campaigns.findDetailedByExperimentId(experimentId);
     String blocker = blocker(e, linked, latest);
     if (blocker != null) throw conflict(blocker);
-    if (input == null || !input.authorizeSpending() || !input.useTotalLimitForZeroResults())
-      throw bad("Confirme o teto acumulado e a exceção individual à parada sem resultados.");
     if (input.reason() == null
         || input.reason().trim().length() < 10
         || input.reason().length() > 800) throw bad("Informe motivo entre 10 e 800 caracteres.");
@@ -107,15 +123,27 @@ public class FacebookCampaignResumptionService {
         || input.totalLimit().compareTo(new BigDecimal("99999999.99")) > 0
         || input.totalLimit().compareTo(spend(e)) <= 0)
       throw bad("Teto acumulado deve superar o gasto e ter no máximo duas casas decimais.");
-    LocalDate today = LocalDate.now(ZoneId.of("America/Sao_Paulo"));
-    if (input.endDate() == null
-        || input.endDate().isBefore(today)
+    if (startDate.isBefore(today)
+        || input.endDate() == null
+        || input.endDate().isBefore(startDate)
         || input.endDate().isAfter(today.plusDays(30)))
-      throw bad("Prazo da retomada deve estar entre hoje e 30 dias.");
-    if (e.getDailyBudget() == null
-        || e.getDailyBudget().signum() <= 0
-        || e.getDailyBudget().compareTo(input.totalLimit()) > 0)
-      throw bad("Orçamento diário de referência incompatível com o teto.");
+      throw bad("Início e fim da retomada devem estar entre hoje e 30 dias, em ordem válida.");
+    if (!validMoney(dailyBudget) || dailyBudget.compareTo(input.totalLimit()) > 0)
+      throw bad("Orçamento diário incompatível com o teto acumulado.");
+    if (!validMoney(zeroResultSpendLimit)
+        || zeroResultSpendLimit.compareTo(spend(e)) <= 0
+        || zeroResultSpendLimit.compareTo(input.totalLimit()) > 0)
+      throw bad(
+          "A parada sem resultado deve superar o gasto atual e não pode ultrapassar o teto acumulado.");
+    if (zeroPurchaseSpendLimit != null
+        && (!validMoney(zeroPurchaseSpendLimit)
+            || zeroPurchaseSpendLimit.compareTo(spend(e)) <= 0
+            || zeroPurchaseSpendLimit.compareTo(input.totalLimit()) > 0))
+      throw bad(
+          "A parada sem compra deve superar o gasto atual e não pode ultrapassar o teto acumulado.");
+    if (input.purchaseStopCount() != null
+        && (input.purchaseStopCount() <= 0 || input.purchaseStopCount() > 100000))
+      throw bad("A meta de compras para parada deve ficar entre 1 e 100000.");
     FacebookAdsCampaign campaign = linked.get(0);
     FacebookCampaignResumption r = new FacebookCampaignResumption();
     r.setExperimentId(e.getId());
@@ -123,17 +151,25 @@ public class FacebookCampaignResumptionService {
     r.setAdSetId(campaign.getAdSets().get(0).getId());
     r.setStatus("PENDING");
     r.setTotalLimit(input.totalLimit());
+    r.setDailyBudget(dailyBudget);
     r.setPreviousLimit(e.getMediaSpendLimit());
     r.setPreviousStartDate(e.getStartDate());
     r.setPreviousEndDate(e.getEndDate());
+    r.setStartDate(startDate);
     r.setEndDate(input.endDate());
+    r.setZeroResultSpendLimit(zeroResultSpendLimit);
+    r.setZeroPurchaseSpendLimit(zeroPurchaseSpendLimit);
+    r.setPurchaseStopCount(input.purchaseStopCount());
     r.setReason(input.reason().trim());
     r.setDestinationUrl(e.getFollowUpActionUrl());
     r.setRequestedAt(Instant.now());
-    e.setStartDate(today);
+    e.setDailyBudget(dailyBudget);
+    e.setStartDate(startDate);
     e.setEndDate(input.endDate());
     e.setMediaSpendLimit(input.totalLimit());
-    e.setZeroResultSpendLimit(input.totalLimit());
+    e.setZeroResultSpendLimit(zeroResultSpendLimit);
+    e.setZeroPurchaseSpendLimit(zeroPurchaseSpendLimit);
+    e.setPurchaseStopCount(input.purchaseStopCount());
     if (!readiness.isReadyForCampaign(e))
       throw conflict(
           "Requisitos comerciais da campanha precisam estar aprovados antes da retomada.");
@@ -144,26 +180,74 @@ public class FacebookCampaignResumptionService {
         r.getReason()
             + " Teto acumulado: "
             + r.getTotalLimit()
-            + "; fim: "
+            + "; orçamento diário: "
+            + r.getDailyBudget()
+            + "; janela: "
+            + r.getStartDate()
+            + " a "
             + r.getEndDate()
-            + "; exceção sem resultado: teto autorizado.",
+            + "; parada sem resultado: "
+            + r.getZeroResultSpendLimit()
+            + "; parada sem compra: "
+            + (r.getZeroPurchaseSpendLimit() == null
+                ? "não definida"
+                : r.getZeroPurchaseSpendLimit())
+            + "; parada por compras: "
+            + (r.getPurchaseStopCount() == null ? "não definida" : r.getPurchaseStopCount())
+            + ".",
         e.getStatus());
     LOG.info(
-        "Retomada autorizada: requestId={} experimentId={} campaignId={} totalLimit={} endDate={}",
+        "Retomada autorizada: requestId={} experimentId={} campaignId={} dailyBudget={} totalLimit={} startDate={} endDate={} zeroResultSpendLimit={} zeroPurchaseSpendLimit={} purchaseStopCount={}",
         r.getId(),
         e.getId(),
         campaign.getId(),
+        r.getDailyBudget(),
         r.getTotalLimit(),
-        r.getEndDate());
+        r.getStartDate(),
+        r.getEndDate(),
+        r.getZeroResultSpendLimit(),
+        r.getZeroPurchaseSpendLimit(),
+        r.getPurchaseStopCount());
     return view(r, false);
   }
 
   /** Lista uma fila pequena; o executor precisa reservar cada item antes de alterar a Meta. */
   @Transactional(readOnly = true)
   public List<ResumeCampaignView> pending() {
-    return requests.findPending(Instant.now(), PageRequest.of(0, 20)).stream()
+    return requests
+        .findPending(Instant.now(), LocalDate.now(COMMERCIAL_ZONE), PageRequest.of(0, 20))
+        .stream()
         .map(r -> view(r, false))
         .toList();
+  }
+
+  /** Confirma que a campanha existente possui autorização estruturada igual ao plano vigente. */
+  @Transactional(readOnly = true)
+  public boolean hasCurrentAuthorization(Long experimentId) {
+    Experiment e = experiments.findById(experimentId).orElse(null);
+    FacebookCampaignResumption latest =
+        requests.findFirstByExperimentIdOrderByIdDesc(experimentId).orElse(null);
+    return e != null
+        && latest != null
+        && AUTHORIZED_STATUSES.contains(latest.getStatus())
+        && sameMoney(e.getDailyBudget(), latest.getDailyBudget())
+        && sameMoney(e.getMediaSpendLimit(), latest.getTotalLimit())
+        && Objects.equals(e.getStartDate(), latest.getStartDate())
+        && Objects.equals(e.getEndDate(), latest.getEndDate())
+        && latest.getEndDate() != null
+        && !latest.getEndDate().isBefore(LocalDate.now(COMMERCIAL_ZONE))
+        && sameMoney(e.getZeroResultSpendLimit(), latest.getZeroResultSpendLimit())
+        && sameMoney(e.getZeroPurchaseSpendLimit(), latest.getZeroPurchaseSpendLimit())
+        && Objects.equals(e.getPurchaseStopCount(), latest.getPurchaseStopCount());
+  }
+
+  /** Bloqueia a confirmação BPM quando a retomada não foi autorizada pelo contrato financeiro. */
+  @Transactional(readOnly = true)
+  public void requireCurrentAuthorization(Long experimentId) {
+    if (!hasCurrentAuthorization(experimentId)) {
+      throw conflict(
+          "Autorize primeiro a retomada da campanha existente com orçamento, janela e condições de parada estruturados.");
+    }
   }
 
   /** Reserva exclusivamente o pedido e permite recuperar queda do executor após quinze minutos. */
@@ -199,8 +283,8 @@ public class FacebookCampaignResumptionService {
           || !"ACTIVE".equals(evidence.path("campaignStatus").asText())
           || !r.getAdSetId().equals(evidence.path("adSetId").asText())
           || !r.getCampaignId().equals(evidence.path("campaignId").asText())
-          || evidence.path("lifetimeBudgetMinor").asLong(-1)
-              != r.getTotalLimit().movePointRight(2).longValueExact()
+          || !budgetEvidenceMatches(r, evidence)
+          || !r.getStartDate().toString().equals(evidence.path("startDate").asText())
           || !r.getEndDate().toString().equals(evidence.path("endDate").asText())
           || !evidence.path("spend").isNumber()
           || evidence.path("spend").decimalValue().compareTo(r.getTotalLimit()) >= 0
@@ -267,6 +351,56 @@ public class FacebookCampaignResumptionService {
         .orElse(BigDecimal.ZERO);
   }
 
+  /** Valida dinheiro positivo com precisão compatível com os campos DECIMAL(10,2). */
+  private boolean validMoney(BigDecimal value) {
+    return value != null
+        && value.signum() > 0
+        && value.scale() <= 2
+        && value.compareTo(new BigDecimal("99999999.99")) <= 0;
+  }
+
+  /** Compara valores monetários sem transformar diferença de escala em mudança material. */
+  private boolean sameMoney(BigDecimal first, BigDecimal second) {
+    return first == null ? second == null : second != null && first.compareTo(second) == 0;
+  }
+
+  /** Reconhece repetição idêntica para impedir autorizações concorrentes duplicadas. */
+  private boolean sameAuthorization(
+      FacebookCampaignResumption latest,
+      BigDecimal dailyBudget,
+      BigDecimal totalLimit,
+      LocalDate startDate,
+      LocalDate endDate,
+      BigDecimal zeroResultSpendLimit,
+      BigDecimal zeroPurchaseSpendLimit,
+      Integer purchaseStopCount,
+      String reason) {
+    return sameMoney(dailyBudget, latest.getDailyBudget())
+        && sameMoney(totalLimit, latest.getTotalLimit())
+        && Objects.equals(startDate, latest.getStartDate())
+        && Objects.equals(endDate, latest.getEndDate())
+        && sameMoney(zeroResultSpendLimit, latest.getZeroResultSpendLimit())
+        && sameMoney(zeroPurchaseSpendLimit, latest.getZeroPurchaseSpendLimit())
+        && Objects.equals(purchaseStopCount, latest.getPurchaseStopCount())
+        && reason != null
+        && reason.trim().equals(latest.getReason());
+  }
+
+  /** Aceita orçamento vitalício legado ou diário protegido pelo teto nativo da campanha. */
+  private boolean budgetEvidenceMatches(
+      FacebookCampaignResumption r, com.fasterxml.jackson.databind.JsonNode evidence) {
+    long totalMinor = r.getTotalLimit().movePointRight(2).longValueExact();
+    String mode = evidence.path("budgetMode").asText();
+    if ("LIFETIME".equals(mode)) {
+      return evidence.path("lifetimeBudgetMinor").asLong(-1) == totalMinor;
+    }
+    return "DAILY_WITH_CAMPAIGN_CAP".equals(mode)
+        && evidence.path("campaignSpendCapMinor").asLong(-1) == totalMinor
+        && r.getDailyBudget() != null
+        && evidence.path("dailyBudgetMinor").asLong(-1)
+            == r.getDailyBudget().movePointRight(2).longValueExact();
+  }
+
   /** Registra autorização e confirmação no histórico já exibido pelo experimento. */
   private void record(Experiment e, String action, String reason, ExperimentStatus previous) {
     e.setLastStatusChangeAction(action);
@@ -295,7 +429,12 @@ public class FacebookCampaignResumptionService {
           r.getAdSetId(),
           r.getStatus(),
           r.getTotalLimit(),
+          r.getDailyBudget(),
+          r.getStartDate(),
           r.getEndDate(),
+          r.getZeroResultSpendLimit(),
+          r.getZeroPurchaseSpendLimit(),
+          r.getPurchaseStopCount(),
           r.getReason(),
           r.getDestinationUrl(),
           r.getRequestedAt(),

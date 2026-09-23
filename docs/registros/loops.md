@@ -6437,6 +6437,41 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   apesar de lead, cinco compras, concorrência e idempotência. Matriz:
   `docs/homologacao/capella88-retomada-autorizada-v2.md`.
 
+## LOOP-PREFLIGHT-SUBPROCESSO-SEM-EXECUTOR — 23/09/2026
+
+- **Histórico confirmado:** o processo pai #82 já havia concluído o preflight de Capella pelo run
+  produtivo #12, com 11 gates aprovados, mas a execução independente #17 da definição #58 parou na
+  primeira atividade com “contrato de execução não configurado”. As quatro atividades não possuíam
+  instâncias, apesar de as evidências estarem persistidas e vigentes.
+- **Causa-raiz:** o backend projetava o run apenas na atividade `preflight` do processo pai. A
+  definição filha `experiment-homologation-activation` descrevia `surfaces`, `transaction`,
+  `measurement` e `financialGuardrails`, mas nenhuma delas tinha executor registrado; por isso o
+  motor não conseguia materializar os próprios objetivos do subprocesso.
+- **Alternativas avaliadas:** marcar status manualmente perderia rastreabilidade; ocultar o
+  subprocesso manteria o diagrama sem operação; criar um executor genérico que reutiliza gates,
+  identidade da publicação e limites financeiros preserva ordem, custo e histórico. A terceira foi
+  adotada.
+- **Prevenção:** cada atividade agora mapeia sua fonte exata, exige run produtivo vigente, rejeita
+  hash Quartzo desatualizado, registra custo incremental zero e usa impressão idempotente. Testes
+  cobrem produto incorreto, gate sem evidência, publicação divergente, limites acima do plano e
+  repetição do comando. Matriz: `docs/homologacao/capella88-preflight-processo58-v1.md`.
+
+## LOOP-META-RETOMADA-TETO-ABAIXO-DO-MINIMO-DA-CONTA — 23/09/2026
+
+- **Histórico confirmado:** a retomada #2 de Capella preservava R$ 20/dia e teto total de R$ 125,
+  porém falhou ao escrever `spend_cap=12500` na campanha. A conta Meta informa mínimo nativo de
+  `30000` centavos; a campanha permaneceu pausada e nenhum novo gasto foi registrado.
+- **Causa-raiz:** o worker assumia que todo teto autorizado era aceito como `spend_cap` de campanha
+  e não consultava `min_campaign_group_spend_cap`. O callback descartava ainda o corpo oficial do
+  erro, reduzindo a evidência diagnóstica.
+- **Alternativas avaliadas:** elevar para R$ 300 violaria a autorização; confiar só na pausa
+  periódica poderia ultrapassar R$ 125; aplicar `lifetime_spend_cap` ao único ad set, mantendo seu
+  `daily_budget`, conserva ritmo e limite nativo. A terceira foi adotada, conforme o contrato
+  tipado dos SDKs oficiais da Meta.
+- **Prevenção:** o worker escolhe a camada do teto antes de escrever, relê orçamento, teto, prazo e
+  estado, falha fechado em divergência e registra status/código/subcódigo/corpo da Graph API. A
+  compensação consulta primeiro o estado para não repetir uma pausa já confirmada.
+
 ## LOOP-QUARTZO-HOMOLOGACAO-EXIGE-SLOT-OPALA — 20/09/2026
 
 - **Histórico confirmado:** Capella #7 é Quartzo; experimento #88 tem página

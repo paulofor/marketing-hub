@@ -1,5 +1,10 @@
 # Matriz de homologação — retomada autorizada Capella #88 v2
 
+> Registro histórico da entrega de 22/09/2026. Em 23/09/2026, a Meta informou mínimo de
+> `spend_cap` de campanha de R$ 300 e recusou o teto autorizado de R$ 125. A campanha permaneceu
+> pausada. A causa, o fallback nativo no único conjunto e os testes preventivos estão na
+> [matriz vigente](capella88-preflight-processo58-v1.md); este arquivo preserva a evidência anterior.
+
 Data: 22/09/2026. Escopo: produto Capella #7, experimento #88, processo #82 v8 e
 campanha Meta existente. Os dados produtivos só serão registrados pela tela depois do merge e
 deploy; os casos locais usam identificadores e servidores simulados.

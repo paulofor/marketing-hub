@@ -25,12 +25,16 @@ class FacebookCampaignResumptionWorkerTest {
   private final List<JsonNode> writes = new CopyOnWriteArrayList<>();
   private boolean rejectBudget,
       wrongReadback,
+      wrongAdSetCap,
       emptyInsights,
       backendUnavailable,
       rejectSuccessCallback;
   private boolean dailyMode;
+  private boolean campaignCapUsable = true;
   private String campaignStatus = "PAUSED";
   private long campaignSpendCap;
+  private long adSetLifetimeSpendCap;
+  private long minimumCampaignSpendCap;
   private String finalEnd;
   private int probes;
 
@@ -111,14 +115,18 @@ class FacebookCampaignResumptionWorkerTest {
               if ("POST".equals(request.getMethod())) {
                 JsonNode body = json.readTree(request.getBody().readUtf8());
                 writes.add(body);
-                if (body.has("lifetime_budget") && rejectBudget)
+                if ((body.has("lifetime_budget") || body.has("lifetime_spend_cap"))
+                    && rejectBudget)
                   return new MockResponse()
                       .setResponseCode(400)
-                      .setBody("{\"error\":\"invalid budget\"}");
+                      .setBody(
+                          "{\"error\":{\"message\":\"invalid budget\",\"code\":100,\"error_subcode\":2446307}}");
                 if (path.endsWith("/campaign") && body.has("status"))
                   campaignStatus = body.path("status").asText();
                 if (path.endsWith("/campaign") && body.has("spend_cap"))
                   campaignSpendCap = body.path("spend_cap").asLong();
+                if (path.endsWith("/adset") && body.has("lifetime_spend_cap"))
+                  adSetLifetimeSpendCap = body.path("lifetime_spend_cap").asLong();
                 return ok("{\"success\":true}");
               }
               if (path.endsWith("/insights")) {
@@ -130,7 +138,11 @@ class FacebookCampaignResumptionWorkerTest {
                 return ok(emptyInsights ? "{\"data\":[]}" : "{\"data\":[{\"spend\":\"27.45\"}]}");
               }
               String fields = request.getRequestUrl().queryParameter("fields");
-              if ("currency".equals(fields)) return ok("{\"currency\":\"BRL\"}");
+              if ("currency,min_campaign_group_spend_cap".equals(fields))
+                return ok(
+                    "{\"currency\":\"BRL\",\"min_campaign_group_spend_cap\":\""
+                        + minimumCampaignSpendCap
+                        + "\"}");
               if ("start_time".equals(fields))
                 return ok("{\"start_time\":\"2026-09-07T00:13:13-0300\"}");
               if (path.endsWith("/adset"))
@@ -138,7 +150,9 @@ class FacebookCampaignResumptionWorkerTest {
                     ? ok(
                         "{\"id\":\"adset\",\"status\":\"ACTIVE\",\"daily_budget\":\""
                             + (wrongReadback ? 1000 : 2000)
-                            + "\",\"lifetime_budget\":\"0\",\"end_time\":\""
+                            + "\",\"lifetime_budget\":\"0\",\"lifetime_spend_cap\":\""
+                            + (adSetLifetimeSpendCap + (wrongAdSetCap ? 100 : 0))
+                            + "\",\"end_time\":\""
                             + finalEnd
                             + "\"}")
                     : ok(
@@ -150,9 +164,19 @@ class FacebookCampaignResumptionWorkerTest {
               if (fields.contains("adsets"))
                 return dailyMode
                     ? ok(
-                        "{\"id\":\"campaign\",\"status\":\"PAUSED\",\"account_id\":\"123456\",\"adsets\":{\"data\":[{\"id\":\"adset\",\"lifetime_budget\":\"0\",\"daily_budget\":\"2000\"}]}}")
+                        "{\"id\":\"campaign\",\"status\":\""
+                            + campaignStatus
+                            + "\",\"effective_status\":\""
+                            + campaignStatus
+                            + "\",\"can_use_spend_cap\":"
+                            + campaignCapUsable
+                            + ",\"account_id\":\"123456\",\"adsets\":{\"data\":[{\"id\":\"adset\",\"lifetime_budget\":\"0\",\"lifetime_spend_cap\":\"0\",\"daily_budget\":\"2000\"}]}}")
                     : ok(
-                        "{\"id\":\"campaign\",\"status\":\"PAUSED\",\"account_id\":\"123456\",\"adsets\":{\"data\":[{\"id\":\"adset\",\"lifetime_budget\":\"10000\",\"daily_budget\":\"0\"}]}}");
+                        "{\"id\":\"campaign\",\"status\":\""
+                            + campaignStatus
+                            + "\",\"effective_status\":\""
+                            + campaignStatus
+                            + "\",\"can_use_spend_cap\":true,\"account_id\":\"123456\",\"adsets\":{\"data\":[{\"id\":\"adset\",\"lifetime_budget\":\"10000\",\"lifetime_spend_cap\":\"0\",\"daily_budget\":\"0\"}]}}");
               if ("id,status,spend_cap".equals(fields))
                 return ok(
                     "{\"id\":\"campaign\",\"status\":\"PAUSED\",\"spend_cap\":\""
@@ -214,7 +238,8 @@ class FacebookCampaignResumptionWorkerTest {
                 .path("lifetime_budget")
                 .asText())
         .isEqualTo("15000");
-    assertThat(writes.get(0).path("status").asText()).isEqualTo("PAUSED");
+    assertThat(writes)
+        .noneMatch(n -> "PAUSED".equals(n.path("status").asText()) && n.size() == 1);
     assertThat(writes.get(writes.size() - 1).path("status").asText()).isEqualTo("ACTIVE");
     assertThat(probes).isEqualTo(5);
     assertThat(campaignStatus).isEqualTo("ACTIVE");
@@ -235,6 +260,71 @@ class FacebookCampaignResumptionWorkerTest {
     assertThat(campaignStatus).isEqualTo("ACTIVE");
   }
 
+  /** Usa teto vitalício do único conjunto quando o mínimo de campanha excede a autorização. */
+  @Test
+  void preservesDailyBudgetWithAdSetLifetimeCapBelowCampaignMinimum() {
+    dailyMode = true;
+    minimumCampaignSpendCap = 30000L;
+    task.put("totalLimit", 125);
+
+    worker.poll();
+
+    assertThat(result.path("success").asBoolean()).isTrue();
+    assertThat(result.path("evidence").path("budgetMode").asText())
+        .isEqualTo("DAILY_WITH_ADSET_LIFETIME_CAP");
+    assertThat(result.path("evidence").path("accountMinimumCampaignSpendCapMinor").asLong())
+        .isEqualTo(30000L);
+    assertThat(result.path("evidence").path("adSetLifetimeSpendCapMinor").asLong())
+        .isEqualTo(12500L);
+    assertThat(writes).noneMatch(n -> n.has("spend_cap"));
+    assertThat(writes)
+        .anyMatch(
+            n ->
+                "2000".equals(n.path("daily_budget").asText())
+                    && "12500".equals(n.path("lifetime_spend_cap").asText()));
+    assertThat(campaignStatus).isEqualTo("ACTIVE");
+  }
+
+  /** Bloqueia sem escrever quando a conta não confirma campanha nem exceção por mínimo. */
+  @Test
+  void missingNativeCapSupportFailsBeforeBudgetMutation() {
+    dailyMode = true;
+    campaignCapUsable = false;
+
+    worker.poll();
+
+    assertThat(result.path("success").asBoolean()).isFalse();
+    assertThat(result.path("error").asText()).contains("teto nativo compatível");
+    assertThat(writes).isEmpty();
+    assertThat(campaignStatus).isEqualTo("PAUSED");
+  }
+
+  /** Não ativa quando a Meta aceita a escrita, mas devolve outro teto no conjunto diário. */
+  @Test
+  void divergentAdSetLifetimeCapKeepsCampaignPaused() {
+    dailyMode = true;
+    minimumCampaignSpendCap = 30000L;
+    wrongAdSetCap = true;
+
+    worker.poll();
+
+    assertThat(result.path("success").asBoolean()).isFalse();
+    assertThat(result.path("error").asText()).contains("teto acumulado");
+    assertThat(campaignStatus).isEqualTo("PAUSED");
+  }
+
+  /** Pausa primeiro uma campanha recuperada ativa antes de reaplicar limites e reativá-la. */
+  @Test
+  void activeRecoveryIsPausedBeforeBudgetMutation() {
+    campaignStatus = "ACTIVE";
+
+    worker.poll();
+
+    assertThat(result.path("success").asBoolean()).isTrue();
+    assertThat(writes.get(0).path("status").asText()).isEqualTo("PAUSED");
+    assertThat(writes.get(writes.size() - 1).path("status").asText()).isEqualTo("ACTIVE");
+  }
+
   /** Rejeição da Meta não deve se transformar em sucesso nem consumir o orçamento novo. */
   @Test
   void rejectedBudgetKeepsCampaignPausedAndReportsFailure() {
@@ -242,7 +332,18 @@ class FacebookCampaignResumptionWorkerTest {
     worker.poll();
     assertThat(result.path("success").asBoolean()).isFalse();
     assertThat(campaignStatus).isEqualTo("PAUSED");
-    assertThat(result.path("error").asText()).isNotBlank();
+    assertThat(result.path("error").asText()).contains("code=100");
+    assertThat(result.path("evidence").path("metaError").path("httpStatus").asInt())
+        .isEqualTo(400);
+    assertThat(
+            result
+                .path("evidence")
+                .path("metaError")
+                .path("response")
+                .path("error")
+                .path("error_subcode")
+                .asInt())
+        .isEqualTo(2446307);
   }
 
   /** Resposta HTTP aceita sem confirmação do valor nativo não libera veiculação. */

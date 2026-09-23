@@ -110,6 +110,58 @@ class FacebookCampaignResumptionServiceTest {
     verify(metrics, never()).save(any());
   }
 
+  /** Aceita o teto no único conjunto diário quando o mínimo da campanha é maior. */
+  @Test
+  void completesWithAdSetLifetimeCapBelowCampaignMinimum() {
+    service.request(91L, input());
+    var claim = service.claim(1L);
+    var evidence =
+        json.createObjectNode()
+            .put("campaignId", "campaign")
+            .put("campaignStatus", "ACTIVE")
+            .put("adSetId", "adset")
+            .put("budgetMode", "DAILY_WITH_ADSET_LIFETIME_CAP")
+            .put("adSetLifetimeSpendCapMinor", 15000)
+            .put("accountMinimumCampaignSpendCapMinor", 30000)
+            .put("dailyBudgetMinor", 2000)
+            .put("spend", new BigDecimal("27.45"))
+            .put("startDate", LocalDate.now(ZoneId.of("America/Sao_Paulo")).toString())
+            .put("endDate", end.toString());
+
+    assertThat(
+            service
+                .result(1L, new ResumeCampaignResult(claim.leaseToken(), true, null, evidence))
+                .status())
+        .isEqualTo("COMPLETED");
+    assertThat(e.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+  }
+
+  /** Recusa o fallback quando o mínimo informado não excede o teto autorizado. */
+  @Test
+  void rejectsUnjustifiedAdSetLifetimeCapFallback() {
+    service.request(91L, input());
+    var claim = service.claim(1L);
+    var evidence =
+        json.createObjectNode()
+            .put("campaignId", "campaign")
+            .put("campaignStatus", "ACTIVE")
+            .put("adSetId", "adset")
+            .put("budgetMode", "DAILY_WITH_ADSET_LIFETIME_CAP")
+            .put("adSetLifetimeSpendCapMinor", 15000)
+            .put("accountMinimumCampaignSpendCapMinor", 10000)
+            .put("dailyBudgetMinor", 2000)
+            .put("spend", new BigDecimal("27.45"))
+            .put("startDate", LocalDate.now(ZoneId.of("America/Sao_Paulo")).toString())
+            .put("endDate", end.toString());
+
+    assertThatThrownBy(
+            () ->
+                service.result(
+                    1L, new ResumeCampaignResult(claim.leaseToken(), true, null, evidence)))
+        .hasMessageContaining("não confirmou");
+    assertThat(e.getStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
+  }
+
   /** Recusa confirmação sem prova do teto e mantém a campanha pausada. */
   @Test
   void rejectsFalseSuccessAndStaleCallback() {

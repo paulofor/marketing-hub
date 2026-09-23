@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
+import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.http.*;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 /**
  * Executa retomadas autorizadas e confirma orçamento nativo antes de ativar a campanha existente.
@@ -27,6 +29,8 @@ public class FacebookCampaignResumptionWorker {
   private final FacebookWorkerConfigurationClient configuration;
   private final ObjectMapper json;
   private final String apiVersion;
+  private final String backendApiUrl;
+  private final String metaApiUrl;
   private final HttpClient publicHttp =
       HttpClient.newBuilder()
           .followRedirects(HttpClient.Redirect.NORMAL)
@@ -44,6 +48,8 @@ public class FacebookCampaignResumptionWorker {
     this.backend =
         builder.clone().baseUrl(backendUrl + "/api/facebook-campaign-resumptions").build();
     this.meta = builder.clone().baseUrl(metaUrl).build();
+    this.backendApiUrl = trimSlash(backendUrl) + "/api/facebook-campaign-resumptions";
+    this.metaApiUrl = trimSlash(metaUrl) + "/" + apiVersion;
     this.configuration = configuration;
     this.json = json;
     this.apiVersion = apiVersion;
@@ -53,6 +59,10 @@ public class FacebookCampaignResumptionWorker {
   @Scheduled(cron = "0 * * * * *")
   public void poll() {
     try {
+      LOG.info(
+          "Retomada backend GET: url==>{}/pending params={}",
+          backendApiUrl,
+          JsonLogFormatter.wrap(json, Map.of()));
       JsonNode pending =
           backend
               .get()
@@ -60,6 +70,10 @@ public class FacebookCampaignResumptionWorker {
               .retrieve()
               .bodyToMono(JsonNode.class)
               .block(Duration.ofSeconds(30));
+      LOG.info(
+          "Retomada backend GET: url<=={}/pending response={}",
+          backendApiUrl,
+          JsonLogFormatter.wrap(json, pending));
       if (pending == null || !pending.isArray() || pending.isEmpty()) return;
       var config =
           configuration
@@ -70,6 +84,11 @@ public class FacebookCampaignResumptionWorker {
       for (JsonNode item : pending) {
         long id = item.path("id").asLong();
         try {
+          LOG.info(
+              "Retomada backend POST: url==>{}/{}/claim payload={}",
+              backendApiUrl,
+              id,
+              JsonLogFormatter.wrap(json, Map.of()));
           JsonNode claimed =
               backend
                   .post()
@@ -77,16 +96,23 @@ public class FacebookCampaignResumptionWorker {
                   .retrieve()
                   .bodyToMono(JsonNode.class)
                   .block(Duration.ofSeconds(30));
+          LOG.info(
+              "Retomada backend POST: url<=={}/{}/claim response={}",
+              backendApiUrl,
+              id,
+              JsonLogFormatter.wrap(json, claimed));
           execute(claimed, config.accessToken());
         } catch (Exception ex) {
           LOG.error(
-              "Falha consumindo retomada: requestId={} endpoint=/api/facebook-campaign-resumptions",
+              "Falha consumindo retomada: requestId={} url<=={}/{}/claim",
+              id,
+              backendApiUrl,
               id,
               ex);
         }
       }
     } catch (Exception ex) {
-      LOG.error("Falha consultando fila de retomadas Facebook", ex);
+      LOG.error("Falha consultando fila de retomadas Facebook: url<=={}/pending", backendApiUrl, ex);
     }
   }
 
@@ -114,14 +140,19 @@ public class FacebookCampaignResumptionWorker {
       JsonNode before =
           get(
               campaignId,
-              "id,status,spend_cap,account_id,adsets.limit(2){id,status,effective_status,lifetime_budget,daily_budget,end_time}",
+              "id,status,effective_status,spend_cap,can_use_spend_cap,account_id,adsets.limit(2){id,status,effective_status,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time}",
               token,
               requestId);
       evidence.set("before", before);
       String accountId = before.path("account_id").asText();
       if (!accountId.matches("[0-9]+"))
         throw new IllegalStateException("Conta Meta não confirmada");
-      JsonNode account = get("act_" + accountId, "currency", token, requestId);
+      JsonNode account =
+          get(
+              "act_" + accountId,
+              "currency,min_campaign_group_spend_cap",
+              token,
+              requestId);
       evidence.set("account", account);
       JsonNode sets = before.path("adsets").path("data");
       if (!"BRL".equals(account.path("currency").asText())
@@ -142,8 +173,9 @@ public class FacebookCampaignResumptionWorker {
       if (!"PAUSED".equals(before.path("status").asText())
           && !"ACTIVE".equals(before.path("status").asText()))
         throw new IllegalStateException("Estado da campanha não permite retomada");
-      // Pausa também uma execução recuperada antes de reaplicar ou verificar qualquer limite.
-      post(campaignId, Map.of("status", "PAUSED"), token, requestId);
+      if ("ACTIVE".equals(before.path("status").asText())) {
+        post(campaignId, Map.of("status", "PAUSED"), token, requestId);
+      }
       JsonNode insights = insights(campaignId, token, requestId);
       evidence.set("insights", insights);
       JsonNode rows = insights.path("data");
@@ -154,6 +186,7 @@ public class FacebookCampaignResumptionWorker {
         throw new IllegalStateException("Teto autorizado já consumido");
       verifyDestination(task.path("destinationUrl").asText(), requestId);
       String budgetMode;
+      long minimumCampaignSpendCap = account.path("min_campaign_group_spend_cap").asLong(0L);
       if (lifetimeMode) {
         budgetMode = "LIFETIME";
         if (before.path("spend_cap").asLong() > 0)
@@ -170,29 +203,55 @@ public class FacebookCampaignResumptionWorker {
             token,
             requestId);
       } else {
-        budgetMode = "DAILY_WITH_CAMPAIGN_CAP";
-        post(campaignId, Map.of("spend_cap", Long.toString(minor)), token, requestId);
-        post(
-            adSetId,
-            Map.of(
-                "daily_budget",
-                Long.toString(dailyMinor),
-                "end_time",
-                end.toString(),
-                "status",
-                "ACTIVE"),
-            token,
-            requestId);
+        boolean belowCampaignMinimum =
+            minimumCampaignSpendCap > 0 && minor < minimumCampaignSpendCap;
+        boolean campaignCapSupported =
+            before.path("can_use_spend_cap").asBoolean(false)
+                && !belowCampaignMinimum
+                && beforeAdSet.path("lifetime_spend_cap").asLong(0L) == 0L;
+        if (campaignCapSupported) {
+          budgetMode = "DAILY_WITH_CAMPAIGN_CAP";
+          post(campaignId, Map.of("spend_cap", Long.toString(minor)), token, requestId);
+          post(
+              adSetId,
+              Map.of(
+                  "daily_budget",
+                  Long.toString(dailyMinor),
+                  "end_time",
+                  end.toString(),
+                  "status",
+                  "ACTIVE"),
+              token,
+              requestId);
+        } else if (belowCampaignMinimum) {
+          budgetMode = "DAILY_WITH_ADSET_LIFETIME_CAP";
+          post(
+              adSetId,
+              Map.of(
+                  "daily_budget",
+                  Long.toString(dailyMinor),
+                  "lifetime_spend_cap",
+                  Long.toString(minor),
+                  "end_time",
+                  end.toString(),
+                  "status",
+                  "ACTIVE"),
+              token,
+              requestId);
+        } else {
+          throw new IllegalStateException(
+              "A conta Meta não confirmou um teto nativo compatível com a autorização");
+        }
       }
       JsonNode verified =
-          get(adSetId, "id,status,lifetime_budget,daily_budget,end_time", token, requestId);
+          get(
+              adSetId,
+              "id,status,effective_status,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time",
+              token,
+              requestId);
       evidence.set("verifiedAdSet", verified);
       if (!"ACTIVE".equals(verified.path("status").asText())
-          || !OffsetDateTime.parse(
-                  verified.path("end_time").asText(),
-                  java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXX"))
-              .toInstant()
-              .equals(end))
+          || !parseMetaInstant(verified.path("end_time").asText()).equals(end))
         throw new IllegalStateException(
             "Meta não confirmou estado e prazo autorizados do conjunto");
       JsonNode verifiedCampaign = get(campaignId, "id,status,spend_cap", token, requestId);
@@ -201,11 +260,17 @@ public class FacebookCampaignResumptionWorker {
           && (verified.path("lifetime_budget").asLong(-1) != minor
               || verified.path("daily_budget").asLong() != 0))
         throw new IllegalStateException("Meta não confirmou orçamento vitalício autorizado");
-      if (dailyMode
-          && (verified.path("daily_budget").asLong(-1) != dailyMinor
-              || verified.path("lifetime_budget").asLong() != 0
-              || verifiedCampaign.path("spend_cap").asLong(-1) != minor))
-        throw new IllegalStateException("Meta não confirmou orçamento diário e teto acumulado");
+      if (dailyMode) {
+        boolean dailyBudgetConfirmed =
+            verified.path("daily_budget").asLong(-1) == dailyMinor
+                && verified.path("lifetime_budget").asLong() == 0;
+        boolean nativeCapConfirmed =
+            "DAILY_WITH_CAMPAIGN_CAP".equals(budgetMode)
+                ? verifiedCampaign.path("spend_cap").asLong(-1) == minor
+                : verified.path("lifetime_spend_cap").asLong(-1) == minor;
+        if (!dailyBudgetConfirmed || !nativeCapConfirmed)
+          throw new IllegalStateException("Meta não confirmou orçamento diário e teto acumulado");
+      }
       post(campaignId, Map.of("status", "ACTIVE"), token, requestId);
       JsonNode active = get(campaignId, "id,status,effective_status", token, requestId);
       evidence.set("after", active);
@@ -216,22 +281,28 @@ public class FacebookCampaignResumptionWorker {
       evidence.put("campaignStatus", "ACTIVE");
       evidence.put("adSetId", adSetId);
       evidence.put("budgetMode", budgetMode);
+      evidence.put("accountMinimumCampaignSpendCapMinor", minimumCampaignSpendCap);
       evidence.put("campaignSpendCapMinor", verifiedCampaign.path("spend_cap").asLong());
       evidence.put("dailyBudgetMinor", verified.path("daily_budget").asLong());
       evidence.put("lifetimeBudgetMinor", verified.path("lifetime_budget").asLong());
+      evidence.put(
+          "adSetLifetimeSpendCapMinor", verified.path("lifetime_spend_cap").asLong());
       evidence.put("startDate", startDate.toString());
       evidence.put("endDate", endDate.toString());
       evidence.put("spend", spend);
       result(task, true, null, evidence);
     } catch (Exception ex) {
       LOG.error("Falha retomando campanha: requestId={} campaignId={}", requestId, campaignId, ex);
+      addFailureEvidence(evidence, ex);
       try {
-        post(campaignId, Map.of("status", "PAUSED"), token, requestId);
+        ensureCampaignPaused(campaignId, token, requestId);
         evidence.put("compensation", "PAUSED");
       } catch (Exception pauseEx) {
         LOG.error(
-            "Falha na pausa compensatória: requestId={} campaignId={}",
+            "Falha na pausa compensatória: requestId={} campaignId={} url<=={}/{}",
             requestId,
+            campaignId,
+            metaApiUrl,
             campaignId,
             pauseEx);
         evidence.put("compensation", "PAUSE_UNCONFIRMED");
@@ -240,9 +311,11 @@ public class FacebookCampaignResumptionWorker {
         result(task, false, ex.getMessage(), evidence);
       } catch (Exception callbackEx) {
         LOG.error(
-            "Falha registrando resultado: requestId={} campaignId={}",
+            "Falha registrando resultado: requestId={} campaignId={} url<=={}/{}/result",
             requestId,
             campaignId,
+            backendApiUrl,
+            requestId,
             callbackEx);
       }
     }
@@ -250,25 +323,33 @@ public class FacebookCampaignResumptionWorker {
 
   /** Consulta evidência nativa com autenticação em header e auditoria sem token. */
   private JsonNode get(String id, String fields, String token, long requestId) {
-    JsonNode response =
-        meta.get()
-            .uri(
-                b ->
-                    b.path("/" + apiVersion + "/" + id)
-                        .queryParam("fields", "{fields}")
-                        .build(fields))
-            .headers(h -> h.setBearerAuth(token))
-            .retrieve()
-            .bodyToMono(JsonNode.class)
-            .block(Duration.ofSeconds(30));
+    String endpoint = metaApiUrl + "/" + id;
     LOG.info(
-        "Retomada Meta GET: requestId={} endpoint=/{}/{} fields={} response={}",
+        "Retomada Meta GET: requestId={} url==>{} params={}",
         requestId,
-        apiVersion,
-        id,
-        fields,
-        response);
-    return response;
+        endpoint,
+        JsonLogFormatter.wrap(json, Map.of("fields", fields)));
+    try {
+      JsonNode response =
+          meta.get()
+              .uri(
+                  b ->
+                      b.path("/" + apiVersion + "/" + id)
+                          .queryParam("fields", "{fields}")
+                          .build(fields))
+              .headers(h -> h.setBearerAuth(token))
+              .retrieve()
+              .bodyToMono(JsonNode.class)
+              .block(Duration.ofSeconds(30));
+      LOG.info(
+          "Retomada Meta GET: requestId={} url<=={} response={}",
+          requestId,
+          endpoint,
+          JsonLogFormatter.wrap(json, response));
+      return response;
+    } catch (WebClientResponseException ex) {
+      throw metaFailure("GET", endpoint, null, ex, requestId);
+    }
   }
 
   /** Obtém gasto acumulado desde a criação, sem depender do preset que omite o dia corrente. */
@@ -282,48 +363,144 @@ public class FacebookCampaignResumptionWorker {
             + "\",\"until\":\""
             + LocalDate.now(ZoneId.of("America/Sao_Paulo"))
             + "\"}";
-    JsonNode response =
-        meta.get()
-            .uri(
-                b ->
-                    b.path("/" + apiVersion + "/" + campaignId + "/insights")
-                        .queryParam("fields", "spend")
-                        .queryParam("time_range", "{range}")
-                        .queryParam("time_increment", "all_days")
-                        .build(range))
-            .headers(h -> h.setBearerAuth(token))
-            .retrieve()
-            .bodyToMono(JsonNode.class)
-            .block(Duration.ofSeconds(30));
+    String endpoint = metaApiUrl + "/" + campaignId + "/insights";
     LOG.info(
-        "Retomada Meta Insights: requestId={} endpoint=/{}/{}/insights range={} response={}",
+        "Retomada Meta GET: requestId={} url==>{} params={}",
         requestId,
-        apiVersion,
-        campaignId,
-        range,
-        response);
-    return response;
+        endpoint,
+        JsonLogFormatter.wrap(
+            json, Map.of("fields", "spend", "time_range", range, "time_increment", "all_days")));
+    try {
+      JsonNode response =
+          meta.get()
+              .uri(
+                  b ->
+                      b.path("/" + apiVersion + "/" + campaignId + "/insights")
+                          .queryParam("fields", "spend")
+                          .queryParam("time_range", "{range}")
+                          .queryParam("time_increment", "all_days")
+                          .build(range))
+              .headers(h -> h.setBearerAuth(token))
+              .retrieve()
+              .bodyToMono(JsonNode.class)
+              .block(Duration.ofSeconds(30));
+      LOG.info(
+          "Retomada Meta GET: requestId={} url<=={} response={}",
+          requestId,
+          endpoint,
+          JsonLogFormatter.wrap(json, response));
+      return response;
+    } catch (WebClientResponseException ex) {
+      throw metaFailure("GET", endpoint, null, ex, requestId);
+    }
   }
 
   /** Escreve parâmetros autorizados e exige confirmação explícita da Meta. */
   private void post(String id, Map<String, String> body, String token, long requestId) {
-    JsonNode response =
-        meta.post()
-            .uri("/" + apiVersion + "/" + id)
-            .headers(h -> h.setBearerAuth(token))
-            .bodyValue(body)
-            .retrieve()
-            .bodyToMono(JsonNode.class)
-            .block(Duration.ofSeconds(30));
+    String endpoint = metaApiUrl + "/" + id;
     LOG.info(
-        "Retomada Meta POST: requestId={} endpoint=/{}/{} request={} response={}",
+        "Retomada Meta POST: requestId={} url==>{} payload={}",
         requestId,
-        apiVersion,
-        id,
-        body,
-        response);
-    if (response == null || !response.path("success").asBoolean())
-      throw new IllegalStateException("Meta não confirmou atualização");
+        endpoint,
+        JsonLogFormatter.wrap(json, body));
+    try {
+      JsonNode response =
+          meta.post()
+              .uri("/" + apiVersion + "/" + id)
+              .headers(h -> h.setBearerAuth(token))
+              .bodyValue(body)
+              .retrieve()
+              .bodyToMono(JsonNode.class)
+              .block(Duration.ofSeconds(30));
+      LOG.info(
+          "Retomada Meta POST: requestId={} url<=={} response={}",
+          requestId,
+          endpoint,
+          JsonLogFormatter.wrap(json, response));
+      if (response == null || !response.path("success").asBoolean())
+        throw new IllegalStateException("Meta não confirmou atualização");
+    } catch (WebClientResponseException ex) {
+      throw metaFailure("POST", endpoint, body, ex, requestId);
+    }
+  }
+
+  /** Confirma a pausa sem repetir uma escrita quando a campanha já está protegida. */
+  private void ensureCampaignPaused(String campaignId, String token, long requestId) {
+    if (campaignId == null || campaignId.isBlank())
+      throw new IllegalStateException("Campanha ausente para compensação");
+    JsonNode current = get(campaignId, "id,status,effective_status", token, requestId);
+    if (!"PAUSED".equals(current.path("status").asText())) {
+      post(campaignId, Map.of("status", "PAUSED"), token, requestId);
+      current = get(campaignId, "id,status,effective_status", token, requestId);
+    }
+    if (!"PAUSED".equals(current.path("status").asText()))
+      throw new IllegalStateException("Meta não confirmou a pausa compensatória");
+  }
+
+  /** Preserva status, endpoint e corpo oficial da falha Meta sem expor a credencial. */
+  private MetaRequestException metaFailure(
+      String method,
+      String endpoint,
+      Object request,
+      WebClientResponseException ex,
+      long requestId) {
+    String responseBody = ex.getResponseBodyAsString();
+    LOG.error(
+        "Retomada Meta falhou: requestId={} method={} url<=={} status={} payload={} response={}",
+        requestId,
+        method,
+        endpoint,
+        ex.getStatusCode().value(),
+        JsonLogFormatter.wrap(json, request),
+        responseBody,
+        ex);
+    String detail = responseBody;
+    try {
+      JsonNode error = json.readTree(responseBody).path("error");
+      if (!error.path("message").asText().isBlank()) {
+        detail =
+            error.path("message").asText()
+                + " (code="
+                + error.path("code").asText("unknown")
+                + ", subcode="
+                + error.path("error_subcode").asText("unknown")
+                + ")";
+      }
+    } catch (Exception parseEx) {
+      LOG.warn(
+          "Resposta de erro Meta não é JSON: requestId={} method={} endpoint={}",
+          requestId,
+          method,
+          endpoint,
+          parseEx);
+    }
+    return new MetaRequestException(
+        method, endpoint, ex.getStatusCode().value(), responseBody, detail, ex);
+  }
+
+  /** Acrescenta o erro estruturado à auditoria devolvida ao backend. */
+  private void addFailureEvidence(ObjectNode evidence, Exception ex) {
+    if (!(ex instanceof MetaRequestException failure)) return;
+    ObjectNode error = evidence.putObject("metaError");
+    error.put("method", failure.method());
+    error.put("endpoint", failure.endpoint());
+    error.put("httpStatus", failure.httpStatus());
+    try {
+      error.set("response", json.readTree(failure.responseBody()));
+    } catch (Exception parseEx) {
+      LOG.warn(
+          "Falha ao estruturar erro Meta para auditoria: endpoint={}", failure.endpoint(), parseEx);
+      error.put("response", failure.responseBody());
+    }
+  }
+
+  /** Interpreta as duas formas de data devolvidas pela Graph API. */
+  private Instant parseMetaInstant(String value) {
+    return value.endsWith("Z")
+        ? Instant.parse(value)
+        : OffsetDateTime.parse(
+                value, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXX"))
+            .toInstant();
   }
 
   /** Confirma cinco respostas públicas rápidas sem contaminar analytics comerciais. */
@@ -352,6 +529,11 @@ public class FacebookCampaignResumptionWorker {
     body.put("success", success);
     body.put("error", error);
     body.set("evidence", evidence);
+    String endpoint = backendApiUrl + "/" + task.path("id").asLong() + "/result";
+    LOG.info(
+        "Retomada backend POST: url==>{} payload={}",
+        endpoint,
+        JsonLogFormatter.wrap(json, body));
     backend
         .post()
         .uri("/" + task.path("id").asLong() + "/result")
@@ -359,5 +541,57 @@ public class FacebookCampaignResumptionWorker {
         .retrieve()
         .toBodilessEntity()
         .block(Duration.ofSeconds(30));
+    LOG.info(
+        "Retomada backend POST: url<=={} response={}",
+        endpoint,
+        JsonLogFormatter.wrap(json, Map.of()));
+  }
+
+  /** Remove a barra final para compor URLs de auditoria sem alterar o cliente HTTP. */
+  private static String trimSlash(String value) {
+    return value != null && value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
+  }
+
+  /** Responsabilidade: transportar uma falha HTTP Meta com evidência segura para o callback. */
+  private static final class MetaRequestException extends RuntimeException {
+    private final String method;
+    private final String endpoint;
+    private final int httpStatus;
+    private final String responseBody;
+
+    /** Preserva contrato HTTP, resposta e stack trace da integração original. */
+    private MetaRequestException(
+        String method,
+        String endpoint,
+        int httpStatus,
+        String responseBody,
+        String detail,
+        Throwable cause) {
+      super("Meta " + method + " " + endpoint + " respondeu HTTP " + httpStatus + ": " + detail, cause);
+      this.method = method;
+      this.endpoint = endpoint;
+      this.httpStatus = httpStatus;
+      this.responseBody = responseBody;
+    }
+
+    /** Devolve o método HTTP que falhou. */
+    private String method() {
+      return method;
+    }
+
+    /** Devolve o endpoint sem credencial. */
+    private String endpoint() {
+      return endpoint;
+    }
+
+    /** Devolve o status oficial da Graph API. */
+    private int httpStatus() {
+      return httpStatus;
+    }
+
+    /** Devolve o corpo oficial para evidência estruturada. */
+    private String responseBody() {
+      return responseBody;
+    }
   }
 }

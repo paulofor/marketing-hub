@@ -14,15 +14,24 @@ e confirma o resultado por `result`, sem consultar o banco diretamente.
 
 A retomada preserva a campanha e exige um único conjunto em BRL com orçamento
 diário ou vitalício. O teto inclui todo o gasto anterior; no modo diário o worker
-mantém `daily_budget` no conjunto e aplica `spend_cap` na campanha. A fila não
-entrega o pedido antes da data inicial. O worker verifica gasto, destino público,
-orçamento e término na Meta antes de ativar. Uma falha tenta manter a campanha
-pausada e registra evidência no backend. O experimento só fica RUNNING depois da
-confirmação nativa. Limites sem resultado e sem compra são independentes; a meta
-de compras encerra a coleta como sucesso sem confundir projeção com receita.
+mantém `daily_budget` no conjunto e aplica `spend_cap` na campanha quando o teto
+atende ao mínimo da conta. Se `min_campaign_group_spend_cap` for maior que a
+autorização, o único conjunto diário recebe `lifetime_spend_cap` exatamente igual
+ao teto, sem elevar o limite. A fila não entrega o pedido antes da data inicial.
+O worker verifica gasto, destino público, orçamento, teto e término na Meta antes
+de ativar. Uma falha confirma a campanha pausada e registra status, endpoint e
+resposta oficial no backend sem credencial. O experimento só fica RUNNING depois
+da confirmação nativa. Limites sem resultado e sem compra são independentes; a
+meta de compras encerra a coleta como sucesso sem confundir projeção com receita.
 
-Contrato e homologação: [cânone de publicação](../docs/canonical/facebook-campaign-publication-canon.v1.md)
-e [matriz Capella #88](../docs/homologacao/capella88-retomada-autorizada-v2.md).
+Contrato e homologação: [cânone de publicação](../docs/canonical/facebook-campaign-publication-canon.v1.md),
+[matriz original da retomada](../docs/homologacao/capella88-retomada-autorizada-v2.md) e
+[matriz da correção vigente](../docs/homologacao/capella88-preflight-processo58-v1.md).
+
+Em 23/09/2026, a conta de Capella #88 informou mínimo de campanha de R$ 300,
+acima do teto humano de R$ 125. A retomada anterior falhou sem ativar a campanha.
+O fallback de retomada preserva R$ 20/dia e grava o teto de R$ 125 no único ad
+set por `lifetime_spend_cap`; releitura divergente continua bloqueando a ativação.
 
 Para sugerir interesses relacionados a um seed, o worker consulta a Graph API
 via `/act_<AD_ACCOUNT_ID>/targetingsuggestions` e envia a lista de seeds no

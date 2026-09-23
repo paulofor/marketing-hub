@@ -1,0 +1,18 @@
+{
+  "cardKey": "ai-assistants-product-discovery-intent",
+  "collection": "momentos-de-compra-b2c",
+  "title": "IA vira camada recorrente de descoberta e comparação antes da compra",
+  "finding": "Duas pesquisas brasileiras divulgadas em 22/09/2026 mostram uso relevante de IA antes da compra. Na Prompt-me/Fbiz, 46% dos usuários de IA pesquisam produtos ou serviços antes de comprar; 42% usam IA várias vezes ao dia e já experimentaram em média 3,4 ferramentas. Na Neogrid/Opinion Box, 38,4% usam IA em algum ponto da jornada doméstica; entre esses usuários, 45,4% buscam sugestões, 45,2% comparam opções, 37,5% procuram cupons e 30,4% resumem avaliações.",
+  "mechanism": "A IA pode atuar antes do site como camada de descoberta, comparação e redução de incerteza. O uso de múltiplas ferramentas aumenta a importância de informações consistentes e verificáveis sobre preço, reputação, disponibilidade e diferenciais, mas não prova que a presença em assistentes cause conversão.",
+  "commercialApplication": "No Marketing Hub, identificar tráfego e leads influenciados por assistentes de IA e testar uma experiência de validação objetiva — comparação, preço, prova social, disponibilidade, garantia e diferenciais — contra landing genérica. Monitorar a oferta em mais de um assistente e medir checkout e pagamento reconciliado, não apenas citação ou visita.",
+  "evidenceStrength": "Moderada e reforçada por dois levantamentos brasileiros independentes, com mais de mil respondentes cada e resultados coerentes sobre pesquisa/comparação. A evidência continua sendo autorrelatada, sem atribuição transacional nem experimento causal.",
+  "publishedOn": "2026-09-23",
+  "validUntil": "2026-12-22",
+  "experimentHypothesis": "Para usuários que chegam após pesquisa ou comparação via IA, uma página que explicite evidências de preço, comparação, avaliações, disponibilidade, garantia e diferenciais elevará checkout e pagamento reconciliado versus uma landing genérica.",
+  "risks": "Confundir uso declarado com influência real; otimizar para citação sem venda; permitir preço ou disponibilidade desatualizados; manipular conteúdo para agentes; depender de uma única plataforma; expor dados pessoais desnecessários.",
+  "limits": "Os estudos usam amostras e perguntas diferentes e não observam transações individuais. Não há grupo de controle nem prova de que IA aumente conversão. O comportamento pode variar por categoria, ticket, idade e ferramenta, e respostas dos assistentes mudam rapidamente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-23-ai-assistants-descoberta-compra-brasil.md",
+  "sourceTitle": "Fonte revisada — IA como camada de descoberta e comparação de compra no Brasil",
+  "sourceSha256": "547cccac181f7052dc8271dfb012a1dcc9563073fb7217a6da6a4d7abf55fb55"
+}

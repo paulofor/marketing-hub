@@ -13,7 +13,7 @@
 | --- | --- | --- |
 | Caminho feliz | Jornada, economia, Psique, Têmis e consolidação no mesmo escopo | Cinco atividades concluídas e pareceres reutilizáveis no pai |
 | Caso original | Produto IA validado apenas em modo privado | Falha fechada antes de modelo, publicação ou gasto |
-| Transição de contexto | Produto com validação privada e sem experimento | Processo 5 orienta a criação já vinculada a produto/nicho, mas permanece bloqueado |
+| Transição de contexto | Produto com validação privada e sem experimento | Processo 5 orienta a criação já vinculada a produto/nicho e reaproveita o preço persistido, mas permanece bloqueado |
 | Cadastro incompleto | Produto sem nicho para criar o experimento | Direciona ao cadastro do produto e não inventa segmentação |
 | Validação | Tipo, produto, experimento, subtipo ou versão divergentes | Bloqueio com causa e fonte a corrigir |
 | Oferta | Ausência de desejo, primeira ação, prova inicial, continuidade paga ou métricas | Jornada não conclui |

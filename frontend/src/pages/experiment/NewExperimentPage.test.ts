@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Product } from "../../api/product/useProducts";
-import { productsEligibleForNiche } from "./NewExperimentPage";
+import {
+  persistedProductUnitPrice,
+  productsEligibleForNiche,
+} from "./NewExperimentPage";
 import {
   experimentIdentityFields,
   parseOptionalConversionRate,
@@ -32,6 +35,32 @@ describe("productsEligibleForNiche", () => {
         (item) => item.id,
       ),
     ).toEqual([7, 8]);
+  });
+});
+
+describe("persistedProductUnitPrice", () => {
+  it("aplica o preço persistido quando o produto chega pré-selecionado", () => {
+    expect(
+      persistedProductUnitPrice("", {
+        ...product(10, 34),
+        currentPriceBrl: 49,
+      }),
+    ).toBe("49");
+  });
+
+  it("preserva um preço já informado e ignora preço persistido inválido", () => {
+    expect(
+      persistedProductUnitPrice("59", {
+        ...product(10, 34),
+        currentPriceBrl: 49,
+      }),
+    ).toBe("59");
+    expect(
+      persistedProductUnitPrice("", {
+        ...product(10, 34),
+        currentPriceBrl: 0,
+      }),
+    ).toBe("");
   });
 });
 

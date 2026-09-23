@@ -217,6 +217,14 @@ resolvido pelo backend. Nesse caso, a tela mantém o acesso somente de leitura a
 que os detalhes não foram atualizados, com retentativa explícita. Falha ou ausência da própria
 posição continua bloqueando o acesso; o frontend não deduz definição por nome, sequência ou status.
 
+**Continuidade após objetivo comprovado — decisão de 23/09/2026:** a posição oficial também expõe
+em `nextProcess` a definição imediatamente seguinte da cadeia publicada. Quando a leitura canônica
+de atividades comprovar o objetivo do macroprocesso atual, o card troca o processo encerrado pelo
+botão **Abrir próximo processo** desse contrato. Essa navegação não altera status, não registra
+entrada e não afirma que comandos do processo seguinte já estão liberados; os gates continuam no
+painel. Uma sugestão de subprocesso opcional ou histórica não pode permanecer concorrendo com essa
+continuidade. Sem `nextProcess`, a tela explicita o fim ou consulta o histórico, sem inferir destino.
+
 O Marketing Hub mantém um cadastro próprio e versionado de processos de negócio. Esse catálogo é a
 fonte de verdade para propósito, responsáveis, eventos, atividades, gates, entradas, saídas e relação
 com contratos técnicos. A tela canônica é `/business-processes` e a API é

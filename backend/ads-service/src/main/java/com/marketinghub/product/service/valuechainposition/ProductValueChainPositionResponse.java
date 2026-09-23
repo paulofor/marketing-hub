@@ -17,5 +17,6 @@ public record ProductValueChainPositionResponse(
     Integer processVersion,
     Integer sequenceNumber,
     Integer processCount,
+    ProductProcessContinuationResponse nextProcess,
     List<ProductStageMeasurementResponse> processMeasurements,
     ProductSubprocessPositionResponse subprocessPosition) {}

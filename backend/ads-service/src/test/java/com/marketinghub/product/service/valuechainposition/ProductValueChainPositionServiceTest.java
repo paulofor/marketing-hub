@@ -62,6 +62,13 @@ class ProductValueChainPositionServiceTest {
             org.assertj.core.groups.Tuple.tuple(10L, 6, "Venda, entrega e aprendizado do PDE"));
     assertThat(positions).allMatch(position -> "IDENTIFIED".equals(position.resolutionStatus()));
     assertThat(positions).allMatch(position -> position.processCount() == 6);
+    assertThat(positions.get(2).nextProcess())
+        .extracting(
+            ProductProcessContinuationResponse::processDefinitionId,
+            ProductProcessContinuationResponse::processName,
+            ProductProcessContinuationResponse::sequenceNumber)
+        .containsExactly(45L, "Homologação e ativação comercial do PDE", 5);
+    assertThat(positions.getLast().nextProcess()).isNull();
   }
 
   /** Mantém explícito quando um status não possui vínculo, sem inventar um processo. */

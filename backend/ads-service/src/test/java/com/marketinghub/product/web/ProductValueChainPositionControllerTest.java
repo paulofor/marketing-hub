@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.marketinghub.product.service.valuechainposition.ProductProcessContinuationResponse;
 import com.marketinghub.product.service.valuechainposition.ProductValueChainPositionResponse;
 import com.marketinghub.product.service.valuechainposition.ProductValueChainPositionService;
 import com.marketinghub.product.service.valuechainposition.summary.ProductValueChainSummaryResponse;
@@ -38,6 +39,12 @@ class ProductValueChainPositionControllerTest {
                     4,
                     4,
                     6,
+                    new ProductProcessContinuationResponse(
+                        45L,
+                        "pde-commercial-homologation-activation",
+                        "Homologação e ativação comercial do PDE",
+                        4,
+                        5),
                     List.of(),
                     null)));
     var mockMvc =
@@ -50,6 +57,8 @@ class ProductValueChainPositionControllerTest {
         .andExpect(jsonPath("$[0].processDefinitionId").value(43L))
         .andExpect(jsonPath("$[0].processName").value("Comunicação e jornada de venda do PDE"))
         .andExpect(jsonPath("$[0].sequenceNumber").value(4))
+        .andExpect(jsonPath("$[0].nextProcess.processDefinitionId").value(45L))
+        .andExpect(jsonPath("$[0].nextProcess.sequenceNumber").value(5))
         .andExpect(jsonPath("$[0].processCount").value(6));
   }
 
@@ -87,6 +96,12 @@ class ProductValueChainPositionControllerTest {
                 4,
                 4,
                 6,
+                new ProductProcessContinuationResponse(
+                    45L,
+                    "pde-commercial-homologation-activation",
+                    "Homologação e ativação comercial do PDE",
+                    4,
+                    5),
                 List.of(),
                 null));
     var mockMvc =
@@ -98,6 +113,7 @@ class ProductValueChainPositionControllerTest {
         .andExpect(jsonPath("$.productId").value(9L))
         .andExpect(jsonPath("$.processName").value("Comunicação e jornada de venda do PDE"))
         .andExpect(jsonPath("$.sequenceNumber").value(4))
+        .andExpect(jsonPath("$.nextProcess.processDefinitionId").value(45L))
         .andExpect(jsonPath("$.processCount").value(6));
   }
 

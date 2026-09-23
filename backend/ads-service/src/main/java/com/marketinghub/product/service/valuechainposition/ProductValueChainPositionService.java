@@ -174,9 +174,25 @@ public class ProductValueChainPositionService {
         process.getVersionNumber(),
         item.getSequenceNumber(),
         orderedItems.size(),
+        nextProcess(item, orderedItems),
         stageMeasurementResolver.resolveProcessMeasurements(
             product, orderedItems, process, measurementContext),
         subprocessResolver.resolve(product, process, item.getSequenceNumber(), measurementContext));
+  }
+
+  /** Expõe a definição seguinte da cadeia sem antecipar sua entrada ou execução. */
+  private ProductProcessContinuationResponse nextProcess(
+      BusinessProcessChainItem current, List<BusinessProcessChainItem> orderedItems) {
+    int currentIndex = orderedItems.indexOf(current);
+    if (currentIndex < 0 || currentIndex + 1 >= orderedItems.size()) return null;
+    BusinessProcessChainItem next = orderedItems.get(currentIndex + 1);
+    var process = next.getProcessDefinition();
+    return new ProductProcessContinuationResponse(
+        process.getId(),
+        process.getProcessCode(),
+        process.getName(),
+        process.getVersionNumber(),
+        next.getSequenceNumber());
   }
 
   /**
@@ -208,6 +224,7 @@ public class ProductValueChainPositionService {
         null,
         null,
         processCount,
+        null,
         List.of(),
         null);
   }
@@ -246,6 +263,7 @@ public class ProductValueChainPositionService {
         product.getCommercialStatus(),
         "CHAIN_UNAVAILABLE",
         "Cadeia de valor PDE publicada não encontrada.",
+        null,
         null,
         null,
         null,

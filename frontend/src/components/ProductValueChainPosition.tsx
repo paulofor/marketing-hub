@@ -1,4 +1,5 @@
 import { ArrowRight, History, Workflow } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import ProductValueChainCycleSummary from "./ProductValueChainCycleSummary";
 import ProductNextProcessSummary from "./ProductNextProcessSummary";
@@ -137,6 +138,7 @@ export default function ProductValueChainPosition({
   isError = false,
   compact = false,
 }: Props) {
+  const [parentProcessCompleted, setParentProcessCompleted] = useState(false);
   const identified =
     position?.resolutionStatus === "IDENTIFIED" &&
     position.processDefinitionId != null &&
@@ -236,6 +238,7 @@ export default function ProductValueChainPosition({
         <ProductNextProcessSummary
           position={position}
           isPositionError={isError}
+          onParentProcessCompletionChange={setParentProcessCompleted}
         />
       ) : null}
       <div className="product-value-chain-position__heading">
@@ -288,7 +291,8 @@ export default function ProductValueChainPosition({
           {currentProcessMeasurement ? (
             <StageMeasurement measurement={currentProcessMeasurement} compact />
           ) : null}
-          {subprocess &&
+          {!parentProcessCompleted &&
+          subprocess &&
           subprocess.trackingStatus !== "NOT_APPLICABLE" &&
           subprocess.subprocessCount > 0 ? (
             <div className="product-value-chain-position__subprocesses">

@@ -1,0 +1,18 @@
+{
+  "cardKey": "valencia-arousal-trajetoria-narrativa",
+  "collection": "prazer-audio-visual",
+  "title": "Modelar valência e arousal como trajetórias separadas",
+  "finding": "Em fMRI de 64 adultos ouvindo narrativas, a comparação cross-validada de modelos favoreceu uma representação bipolar contínua da valência, de negativa a positiva, em vez de modelos baseados apenas na magnitude emocional ou em canais positivos e negativos separados; arousal mostrou sobreposição parcial, mas não equivalência.",
+  "mechanism": "O tom hedônico de uma narrativa pode ser representado como um sinal contínuo com sinal positivo ou negativo, enquanto arousal constitui uma dimensão parcialmente distinta; tratá-los separadamente preserva informação afetiva que um único rótulo de intensidade perde.",
+  "commercialApplication": "Em storytelling e vídeo gerados por IA, manter curvas temporais separadas de valência e arousal e testar versões com arousal semelhante, mas trajetória de valência diferente, medindo afeto percebido, lembrança, compreensão e engajamento.",
+  "evidenceStrength": "Média-alta para mapeamento representacional com narrativa naturalística, fMRI e comparação cross-validada de modelos; baixa-média para efeitos causais de design ou resultado comercial.",
+  "publishedOn": "2026-09-23",
+  "validUntil": "2027-03-23",
+  "experimentHypothesis": "Uma versão gerada com valência e arousal controlados separadamente produzirá avaliações afetivas e lembrança mais previsíveis do que uma versão otimizada apenas por intensidade emocional, sem reduzir compreensão.",
+  "risks": "Inferir emoção individual a partir de um modelo populacional pode errar; manipulação afetiva deve ser transparente e não explorar vulnerabilidades; BOLD não é dopamina.",
+  "limits": "Estudo correlacional, amostra relativamente jovem, ratings comportamentais de participantes separados e possível confusão entre valência afetiva e conteúdo semântico; não houve teste de vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-23-valencia-arousal-trajetoria-narrativa.md",
+  "sourceTitle": "Fonte revisada — valência e arousal como trajetórias separadas em narrativas",
+  "sourceSha256": "f50eea545ae40a1e33363cbd5270bdedbcb200b7bd288d0e863fef926323ef63"
+}

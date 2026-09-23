@@ -386,7 +386,7 @@ public class FacebookCampaignResumptionService {
         && reason.trim().equals(latest.getReason());
   }
 
-  /** Aceita orçamento vitalício ou diário protegido na campanha ou no único conjunto. */
+  /** Aceita orçamento vitalício ou diário com teto nativo confirmado na camada compatível. */
   private boolean budgetEvidenceMatches(
       FacebookCampaignResumption r, com.fasterxml.jackson.databind.JsonNode evidence) {
     long totalMinor = r.getTotalLimit().movePointRight(2).longValueExact();
@@ -399,7 +399,11 @@ public class FacebookCampaignResumptionService {
             != r.getDailyBudget().movePointRight(2).longValueExact()) return false;
     if ("DAILY_WITH_CAMPAIGN_CAP".equals(mode))
       return evidence.path("campaignSpendCapMinor").asLong(-1) == totalMinor;
-    return "DAILY_WITH_ADSET_LIFETIME_CAP".equals(mode)
+    return "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP".equals(mode)
+        && evidence.path("campaignDailyBudgetMinor").asLong(-1)
+            == r.getDailyBudget().movePointRight(2).longValueExact()
+        && evidence.path("adSetDailyBudgetMinor").asLong(-1) == 0L
+        && evidence.path("campaignSpendCapMinor").asLong(-1) == 0L
         && evidence.path("adSetLifetimeSpendCapMinor").asLong(-1) == totalMinor
         && evidence.path("accountMinimumCampaignSpendCapMinor").asLong(-1) > totalMinor;
   }

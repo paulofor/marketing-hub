@@ -140,7 +140,7 @@ public class FacebookCampaignResumptionWorker {
       JsonNode before =
           get(
               campaignId,
-              "id,status,effective_status,spend_cap,can_use_spend_cap,account_id,adsets.limit(2){id,status,effective_status,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time}",
+              "id,status,effective_status,spend_cap,daily_budget,lifetime_budget,can_use_spend_cap,account_id,adsets.limit(2){id,status,effective_status,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time}",
               token,
               requestId);
       evidence.set("before", before);
@@ -161,13 +161,23 @@ public class FacebookCampaignResumptionWorker {
           || !adSetId.equals(sets.get(0).path("id").asText()))
         throw new IllegalStateException("Retomada exige moeda BRL e um único conjunto autorizado");
       JsonNode beforeAdSet = sets.get(0);
+      long campaignDailyBudget = before.path("daily_budget").asLong(0L);
+      long campaignLifetimeBudget = before.path("lifetime_budget").asLong(0L);
       boolean lifetimeMode =
-          beforeAdSet.path("lifetime_budget").asLong() > 0
+          campaignDailyBudget == 0L
+              && campaignLifetimeBudget == 0L
+              && beforeAdSet.path("lifetime_budget").asLong() > 0
               && beforeAdSet.path("daily_budget").asLong() == 0;
       boolean dailyMode =
-          beforeAdSet.path("daily_budget").asLong() > 0
+          campaignDailyBudget == 0L
+              && campaignLifetimeBudget == 0L
+              && beforeAdSet.path("daily_budget").asLong() > 0
               && beforeAdSet.path("lifetime_budget").asLong() == 0;
-      if (!lifetimeMode && !dailyMode)
+      boolean campaignDailyMode =
+          campaignDailyBudget == dailyMinor
+              && campaignLifetimeBudget == 0L
+              && beforeAdSet.path("lifetime_budget").asLong() == 0L;
+      if (!lifetimeMode && !dailyMode && !campaignDailyMode)
         throw new IllegalStateException(
             "Modo de orçamento do conjunto não permite retomada segura");
       if (!"PAUSED".equals(before.path("status").asText())
@@ -206,7 +216,8 @@ public class FacebookCampaignResumptionWorker {
         boolean belowCampaignMinimum =
             minimumCampaignSpendCap > 0 && minor < minimumCampaignSpendCap;
         boolean campaignCapSupported =
-            before.path("can_use_spend_cap").asBoolean(false)
+            dailyMode
+                && before.path("can_use_spend_cap").asBoolean(false)
                 && !belowCampaignMinimum
                 && beforeAdSet.path("lifetime_spend_cap").asLong(0L) == 0L;
         if (campaignCapSupported) {
@@ -223,13 +234,24 @@ public class FacebookCampaignResumptionWorker {
                   "ACTIVE"),
               token,
               requestId);
-        } else if (belowCampaignMinimum) {
-          budgetMode = "DAILY_WITH_ADSET_LIFETIME_CAP";
+        } else if (belowCampaignMinimum && (dailyMode || campaignDailyMode)) {
+          budgetMode = "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP";
+          post(
+              campaignId,
+              Map.of(
+                  "daily_budget",
+                  Long.toString(dailyMinor),
+                  "spend_cap",
+                  "0",
+                  "status",
+                  "PAUSED"),
+              token,
+              requestId);
           post(
               adSetId,
               Map.of(
                   "daily_budget",
-                  Long.toString(dailyMinor),
+                  "0",
                   "lifetime_spend_cap",
                   Long.toString(minor),
                   "end_time",
@@ -254,16 +276,29 @@ public class FacebookCampaignResumptionWorker {
           || !parseMetaInstant(verified.path("end_time").asText()).equals(end))
         throw new IllegalStateException(
             "Meta não confirmou estado e prazo autorizados do conjunto");
-      JsonNode verifiedCampaign = get(campaignId, "id,status,spend_cap", token, requestId);
+      JsonNode verifiedCampaign =
+          get(
+              campaignId,
+              "id,status,spend_cap,daily_budget,lifetime_budget",
+              token,
+              requestId);
       evidence.set("verifiedCampaign", verifiedCampaign);
       if (lifetimeMode
           && (verified.path("lifetime_budget").asLong(-1) != minor
               || verified.path("daily_budget").asLong() != 0))
         throw new IllegalStateException("Meta não confirmou orçamento vitalício autorizado");
-      if (dailyMode) {
+      if (dailyMode || campaignDailyMode) {
+        boolean campaignDailyFallback =
+            "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP".equals(budgetMode);
         boolean dailyBudgetConfirmed =
-            verified.path("daily_budget").asLong(-1) == dailyMinor
-                && verified.path("lifetime_budget").asLong() == 0;
+            campaignDailyFallback
+                ? verifiedCampaign.path("daily_budget").asLong(-1) == dailyMinor
+                    && verifiedCampaign.path("lifetime_budget").asLong() == 0L
+                    && verifiedCampaign.path("spend_cap").asLong() == 0L
+                    && verified.path("daily_budget").asLong() == 0L
+                    && verified.path("lifetime_budget").asLong() == 0L
+                : verified.path("daily_budget").asLong(-1) == dailyMinor
+                    && verified.path("lifetime_budget").asLong() == 0L;
         boolean nativeCapConfirmed =
             "DAILY_WITH_CAMPAIGN_CAP".equals(budgetMode)
                 ? verifiedCampaign.path("spend_cap").asLong(-1) == minor
@@ -283,7 +318,14 @@ public class FacebookCampaignResumptionWorker {
       evidence.put("budgetMode", budgetMode);
       evidence.put("accountMinimumCampaignSpendCapMinor", minimumCampaignSpendCap);
       evidence.put("campaignSpendCapMinor", verifiedCampaign.path("spend_cap").asLong());
-      evidence.put("dailyBudgetMinor", verified.path("daily_budget").asLong());
+      evidence.put(
+          "dailyBudgetMinor",
+          "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP".equals(budgetMode)
+              ? verifiedCampaign.path("daily_budget").asLong()
+              : verified.path("daily_budget").asLong());
+      evidence.put(
+          "campaignDailyBudgetMinor", verifiedCampaign.path("daily_budget").asLong());
+      evidence.put("adSetDailyBudgetMinor", verified.path("daily_budget").asLong());
       evidence.put("lifetimeBudgetMinor", verified.path("lifetime_budget").asLong());
       evidence.put(
           "adSetLifetimeSpendCapMinor", verified.path("lifetime_spend_cap").asLong());

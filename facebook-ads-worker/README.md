@@ -16,8 +16,10 @@ A retomada preserva a campanha e exige um único conjunto em BRL com orçamento
 diário ou vitalício. O teto inclui todo o gasto anterior; no modo diário o worker
 mantém `daily_budget` no conjunto e aplica `spend_cap` na campanha quando o teto
 atende ao mínimo da conta. Se `min_campaign_group_spend_cap` for maior que a
-autorização, o único conjunto diário recebe `lifetime_spend_cap` exatamente igual
-ao teto, sem elevar o limite. A fila não entrega o pedido antes da data inicial.
+autorização, a campanha pausada recebe o `daily_budget`, o conjunto fica sem
+orçamento próprio e recebe `lifetime_spend_cap` exatamente igual ao teto, sem
+elevar o limite. `daily_budget` e `lifetime_spend_cap` nunca coexistem no mesmo
+conjunto. A fila não entrega o pedido antes da data inicial.
 O worker verifica gasto, destino público, orçamento, teto e término na Meta antes
 de ativar. Uma falha confirma a campanha pausada e registra status, endpoint e
 resposta oficial no backend sem credencial. O experimento só fica RUNNING depois
@@ -30,8 +32,10 @@ Contrato e homologação: [cânone de publicação](../docs/canonical/facebook-c
 
 Em 23/09/2026, a conta de Capella #88 informou mínimo de campanha de R$ 300,
 acima do teto humano de R$ 125. A retomada anterior falhou sem ativar a campanha.
-O fallback de retomada preserva R$ 20/dia e grava o teto de R$ 125 no único ad
-set por `lifetime_spend_cap`; releitura divergente continua bloqueando a ativação.
+Uma segunda tentativa comprovou que a Meta também rejeita orçamento diário e teto
+vitalício simultâneos no mesmo conjunto (`100/1885624`). O fallback vigente migra
+R$ 20/dia para a campanha e grava o teto de R$ 125 no único ad set sem orçamento
+próprio; releitura divergente ou migração parcial insegura bloqueia a ativação.
 
 Para sugerir interesses relacionados a um seed, o worker consulta a Graph API
 via `/act_<AD_ACCOUNT_ID>/targetingsuggestions` e envia a lista de seeds no

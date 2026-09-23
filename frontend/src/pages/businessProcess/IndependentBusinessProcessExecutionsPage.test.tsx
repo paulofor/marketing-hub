@@ -568,6 +568,55 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("leva a execução em espera ao registro auditável das entrevistas", async () => {
+    const awaitingEvidence: IndependentBusinessProcessExecutionSummary = {
+      ...summary,
+      status: "IN_PROGRESS",
+      activityCount: 2,
+      completedActivityCount: 1,
+      processVersionNumber: 7,
+      startedAt: "2026-09-23T10:00:00Z",
+    };
+    const awaitingDetail = detail(awaitingEvidence);
+    awaitingDetail.processReport.status = "IN_PROGRESS";
+    awaitingDetail.processReport.privateValidationHandoff = {
+      available: false,
+      cycleId: 77,
+      status: "WAITING_CUSTOMER_EVIDENCE",
+      actionLabel: "Retomar com Atena",
+      reason:
+        "Argos aguarda de cinco a oito entrevistas consentidas para aprofundar as lacunas.",
+    };
+    vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (url === "/api/independent-business-process-executions/91") {
+        return { data: awaitingDetail };
+      }
+      throw new Error(`URL inesperada: ${url}`);
+    });
+
+    renderPage("/business-process-executions/91");
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Registrar situações reais de compra e desistência",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/cinco a oito entrevistas anônimas e consentidas/i),
+    ).toBeInTheDocument();
+    const interviewLink = screen.getByRole("link", {
+      name: "Abrir entrevistas",
+    });
+    expect(interviewLink).toHaveAttribute(
+      "href",
+      "/product-discovery/cycles/77",
+    );
+    expect(interviewLink).toHaveAttribute("target", "_blank");
+    expect(
+      screen.queryByRole("button", { name: "Retomar com Atena" }),
+    ).toBeNull();
+  });
+
   it("mostra na execução independente o mesmo bloco auditável da tarefa", async () => {
     const completed: IndependentBusinessProcessExecutionSummary = {
       ...summary,

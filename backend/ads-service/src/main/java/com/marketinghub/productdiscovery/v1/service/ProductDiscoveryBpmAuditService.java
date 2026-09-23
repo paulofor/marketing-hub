@@ -34,12 +34,19 @@ public class ProductDiscoveryBpmAuditService {
       LoggerFactory.getLogger(ProductDiscoveryBpmAuditService.class);
   private static final String PROCESS_CODE = "pde-opportunity-discovery";
   private static final String PRIMARY_ACTIVITY_ID = "marketEvidence";
+  private static final String GAP_DEEPENING_ACTIVITY_ID = "candidateGapDeepening";
   private static final String LEGACY_ACTIVITY_ID = "inspiration";
   private static final String OLDER_LEGACY_ACTIVITY_ID = "evidence";
   private static final String AGENT_KEY = "market-radar";
   private static final String EXECUTION_SOURCE_PREFIX = "product-discovery-cycle:";
-  private static final List<String> COMPATIBLE_ACTIVITY_IDS =
+  private static final List<String> INITIAL_COMPATIBLE_ACTIVITY_IDS =
       List.of(PRIMARY_ACTIVITY_ID, LEGACY_ACTIVITY_ID, OLDER_LEGACY_ACTIVITY_ID);
+  private static final List<String> WORK_ACTIVITY_IDS =
+      List.of(
+          PRIMARY_ACTIVITY_ID,
+          GAP_DEEPENING_ACTIVITY_ID,
+          LEGACY_ACTIVITY_ID,
+          OLDER_LEGACY_ACTIVITY_ID);
   private final BusinessProcessDefinitionRepository processRepository;
   private final AgentTaskRepository taskRepository;
   private final AgentTaskService agentTaskService;
@@ -74,7 +81,35 @@ public class ProductDiscoveryBpmAuditService {
             activityId,
             false,
             null),
-        COMPATIBLE_ACTIVITY_IDS);
+        INITIAL_COMPATIBLE_ACTIVITY_IDS);
+  }
+
+  /** Abre a segunda atividade na mesma versão do processo usada pela pesquisa inicial. */
+  public AgentTaskResponse openCandidateGapDeepening(ProductDiscoveryCycle cycle) {
+    requirePersistedCycle(cycle);
+    BusinessProcessDefinition process = processForCycle(cycle);
+    if (!hasTaskActivity(process, GAP_DEEPENING_ACTIVITY_ID)) {
+      throw new IllegalStateException(
+          "A versão do processo deste ciclo não possui aprofundamento de lacunas.");
+    }
+    return agentTaskService.createByHumanIfAbsent(
+        new CreateAgentTaskRequest(
+            AGENT_KEY,
+            "Marketing Hub",
+            gapDeepeningTitle(cycle),
+            "Aprofundar perguntas pendentes por candidata, confrontar evidências favoráveis e contrárias e usar de cinco a oito entrevistas consentidas antes do handoff para Atena.",
+            "HIGH",
+            sourceReference(cycle),
+            process.getId(),
+            GAP_DEEPENING_ACTIVITY_ID,
+            false,
+            null));
+  }
+
+  /** Informa se a execução foi aberta numa versão que exige a segunda atividade. */
+  public boolean supportsCandidateGapDeepening(ProductDiscoveryCycle cycle) {
+    requirePersistedCycle(cycle);
+    return hasTaskActivity(processForCycle(cycle), GAP_DEEPENING_ACTIVITY_ID);
   }
 
   /** Abre nova ocorrência após a observação humana sem apagar a tentativa anterior concluída. */
@@ -206,7 +241,7 @@ public class ProductDiscoveryBpmAuditService {
         .filter(task -> AGENT_KEY.equals(task.getAssignedAgent().getAgentKey()))
         .filter(task -> task.getProcessDefinition() != null)
         .filter(task -> PROCESS_CODE.equals(task.getProcessDefinition().getProcessCode()))
-        .filter(task -> COMPATIBLE_ACTIVITY_IDS.contains(task.getProcessActivityId()))
+        .filter(task -> WORK_ACTIVITY_IDS.contains(task.getProcessActivityId()))
         .filter(task -> !"CANCELLED".equals(task.getStatus()))
         .max(Comparator.comparing(AgentTask::getId, Comparator.nullsFirst(Long::compareTo)))
         .map(AgentTask::getId)
@@ -221,6 +256,41 @@ public class ProductDiscoveryBpmAuditService {
             () ->
                 new IllegalStateException(
                     "Processo publicado de descoberta PDE não encontrado para auditoria."));
+  }
+
+  /** Preserva a versão de processo originalmente vinculada ao ciclo, mesmo após nova publicação. */
+  private BusinessProcessDefinition processForCycle(ProductDiscoveryCycle cycle) {
+    return taskRepository
+        .findBySourceReferenceOrderByCreatedAtAscIdAsc(sourceReference(cycle))
+        .stream()
+        .filter(task -> task.getProcessDefinition() != null)
+        .filter(task -> PROCESS_CODE.equals(task.getProcessDefinition().getProcessCode()))
+        .filter(task -> WORK_ACTIVITY_IDS.contains(task.getProcessActivityId()))
+        .max(Comparator.comparing(AgentTask::getId, Comparator.nullsFirst(Long::compareTo)))
+        .map(AgentTask::getProcessDefinition)
+        .orElseGet(this::publishedProcess);
+  }
+
+  /** Confere uma atividade regular no diagrama versionado sem inferir pelo número da versão. */
+  private boolean hasTaskActivity(BusinessProcessDefinition process, String activityId) {
+    try {
+      JsonNode nodes = objectMapper.readTree(process.getDiagramJson()).path("nodes");
+      for (JsonNode node : nodes) {
+        if (activityId.equals(node.path("id").asText())
+            && "TASK".equals(node.path("type").asText())) {
+          return true;
+        }
+      }
+      return false;
+    } catch (Exception ex) {
+      LOGGER.error(
+          "Falha ao conferir atividade da descoberta PDE. processDefinitionId={} activityId={}",
+          process.getId(),
+          activityId,
+          ex);
+      throw new IllegalStateException(
+          "Não foi possível interpretar as atividades do processo de descoberta PDE.", ex);
+    }
   }
 
   /**
@@ -368,6 +438,15 @@ public class ProductDiscoveryBpmAuditService {
   /** Mantém o título operacional dentro do limite persistido pela caixa de entrada. */
   private String executionTitle(ProductDiscoveryCycle cycle) {
     String prefix = "Pesquisar oportunidade PDE #" + cycle.getId() + " · ";
+    String theme =
+        StringUtils.hasText(cycle.getTheme()) ? cycle.getTheme().trim() : "tema informado";
+    int available = Math.max(0, 160 - prefix.length());
+    return prefix + theme.substring(0, Math.min(theme.length(), available));
+  }
+
+  /** Mantém o título da segunda atividade dentro do limite da caixa de tarefas. */
+  private String gapDeepeningTitle(ProductDiscoveryCycle cycle) {
+    String prefix = "Aprofundar lacunas PDE #" + cycle.getId() + " · ";
     String theme =
         StringUtils.hasText(cycle.getTheme()) ? cycle.getTheme().trim() : "tema informado";
     int available = Math.max(0, 160 - prefix.length());

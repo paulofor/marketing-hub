@@ -134,7 +134,7 @@ public class ProductDiscoveryIndependentExecutionReportService
     List<IndependentBusinessProcessFlowReportResponse.SourceCoverage> sourceCoverage =
         sourceCoverage(cycle, evidenceReport, opportunities);
     return new IndependentBusinessProcessFlowReportResponse(
-        "PDE_OPPORTUNITY_TO_PRIVATE_VALIDATION_V2",
+        "PDE_OPPORTUNITY_TO_PRIVATE_VALIDATION_V3",
         reportStatus(cycle, List.copyOf(latestTasks.values()), ready, products),
         businessHeadline(cycle, sourceCoverage),
         firstText(cycle.getAcquisitionChannel(), "Instagram"),
@@ -155,6 +155,12 @@ public class ProductDiscoveryIndependentExecutionReportService
           int ready,
           int products) {
     if (cycle.getStatus() != ProductDiscoveryCycleStatus.COMPLETED) {
+      if (cycle.getStatus() == ProductDiscoveryCycleStatus.AWAITING_CUSTOMER_EVIDENCE) {
+        return handoffUnavailable(
+            cycle.getId(),
+            "WAITING_CUSTOMER_EVIDENCE",
+            "Argos aguarda de cinco a oito entrevistas consentidas para aprofundar as lacunas das candidatas.");
+      }
       return handoffUnavailable(
           cycle.getId(), "WAITING_RESEARCH", "A pesquisa factual ainda não foi concluída.");
     }
@@ -319,12 +325,23 @@ public class ProductDiscoveryIndependentExecutionReportService
     stages.add(
         stage(
             "ARGOS",
-            "Pesquisa factual",
+            "Pesquisa factual inicial",
             "Argos",
             tasks.get("marketEvidence"),
             opportunity.getDecision().name(),
             opportunity.getMaturity().name(),
             null));
+    if (tasks.containsKey("candidateGapDeepening")) {
+      stages.add(
+          stage(
+              "ARGOS_GAP_DEEPENING",
+              "Aprofundar lacunas da candidata",
+              "Argos",
+              tasks.get("candidateGapDeepening"),
+              opportunity.getDecision().name(),
+              opportunity.getMaturity().name(),
+              "Confrontar evidências favoráveis e contrárias com situações reais de compra e desistência."));
+    }
     stages.add(
         candidateStage(
             "ATENA",

@@ -55,13 +55,15 @@ public interface ProductDiscoveryCycleRepository
   @Query(
       """
       SELECT cycle FROM ProductDiscoveryCycle cycle
-      WHERE cycle.status = :ready
+      WHERE cycle.stageCode = :stageCode
+        AND (cycle.status = :ready
          OR (cycle.status = :researching
              AND ((cycle.leaseExpiresAt IS NOT NULL AND cycle.leaseExpiresAt <= :now)
-                  OR (cycle.leaseExpiresAt IS NULL AND cycle.updatedAt <= :legacyCutoff)))
+                  OR (cycle.leaseExpiresAt IS NULL AND cycle.updatedAt <= :legacyCutoff))))
       ORDER BY cycle.updatedAt ASC
       """)
   List<ProductDiscoveryCycle> findClaimableForUpdate(
+      @Param("stageCode") String stageCode,
       @Param("ready") ProductDiscoveryCycleStatus ready,
       @Param("researching") ProductDiscoveryCycleStatus researching,
       @Param("now") Instant now,

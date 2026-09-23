@@ -6,6 +6,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryCustomerInterviewService;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryGapDeepeningResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityItemResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityRankingResponse;
@@ -17,6 +20,8 @@ import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoverySupervisedMetaSessionResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoverySupervisedMetaSessionService;
 import com.marketinghub.productdiscovery.v1.service.resumePrivateValidationHandoff.ProductDiscoveryPrivateValidationHandoffResponse;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +43,7 @@ class ProductDiscoveryControllerTest {
   @Mock private ProductDiscoveryMetaAdEvidenceService metaAdEvidenceService;
   @Mock private ProductDiscoveryMetaAdBrowserCollectionService metaAdBrowserCollectionService;
   @Mock private ProductDiscoverySupervisedMetaSessionService supervisedMetaSessionService;
+  @Mock private ProductDiscoveryCustomerInterviewService customerInterviewService;
 
   /** Monta o controller isolado para testar as rotas do módulo. */
   @BeforeEach
@@ -49,8 +55,67 @@ class ProductDiscoveryControllerTest {
                     marketplaceEvidenceService,
                     metaAdEvidenceService,
                     metaAdBrowserCollectionService,
-                    supervisedMetaSessionService))
+                    supervisedMetaSessionService,
+                    customerInterviewService))
             .build();
+  }
+
+  /** Deve expor o gate e rejeitar entrevista sem os dois consentimentos explícitos. */
+  @Test
+  void exposesGapDeepeningAndValidatesInterviewConsent() throws Exception {
+    when(customerInterviewService.get(65L))
+        .thenReturn(
+            new ProductDiscoveryGapDeepeningResponse(
+                65L,
+                true,
+                ProductDiscoveryCycleStatus.AWAITING_CUSTOMER_EVIDENCE,
+                "customer-evidence",
+                5,
+                8,
+                2,
+                1,
+                1,
+                List.of(701L),
+                List.of(702L),
+                false,
+                12,
+                2,
+                4,
+                new BigDecimal("0.12000000"),
+                "ESTIMATED_SEARCH_ONLY",
+                "AGENT_TASK_AUDIT_AFTER_CALLBACK",
+                "https://brave.com/search/api/",
+                LocalDate.of(2026, 9, 23),
+                "Falta cobrir uma candidata.",
+                List.of()));
+
+    mockMvc
+        .perform(get("/api/product-discovery/v1/cycles/65/gap-deepening"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.minimumInterviews").value(5))
+        .andExpect(jsonPath("$.maximumSearchCostUsd").value(0.12));
+
+    mockMvc
+        .perform(
+            post("/api/product-discovery/v1/cycles/65/gap-deepening/interviews")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "opportunityId":701,
+                      "anonymousParticipantCode":"P01",
+                      "outcome":"PURCHASED",
+                      "occurredOn":"2026-09-01",
+                      "purchaseSituation":"Ocasião marcada.",
+                      "desiredResult":"Sentir segurança.",
+                      "difficulty":"Escolher entre opções.",
+                      "alternativeTried":"Referências gratuitas.",
+                      "remainingDifficulty":"Montar a decisão.",
+                      "consentConfirmed":false,
+                      "noPersonalDataConfirmed":true
+                    }
+                    """))
+        .andExpect(status().isBadRequest());
   }
 
   /** Deve receber o desfecho auditável do Chromium pelo endpoint interno versionado. */

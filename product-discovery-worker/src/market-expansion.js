@@ -17,19 +17,29 @@ export async function executeBoundedMarketResearch(job, options) {
     options.maxAttempts,
   );
   const maxAttempts =
-    job.researchMode === "DISCOVER_MARKETS" ? configuredMaxAttempts : 1;
+    job.stageCode === "candidate-gap-deepening"
+      ? Math.min(2, configuredMaxAttempts)
+      : job.researchMode === "DISCOVER_MARKETS"
+        ? configuredMaxAttempts
+        : 1;
   const directedAttempts = [];
   const analysisAttempts = [];
   const attemptReports = [];
-  let publicEvidenceItems = [];
-  let marketplaceOfferItems = [];
-  let metaAdItems = [];
-  let metaCoverage = [];
+  const previousEvidence = readPreviousEvidence(job.previousEvidenceReportJson);
+  let publicEvidenceItems = previousEvidence.publicEvidence;
+  let marketplaceOfferItems = previousEvidence.marketplaceOffers;
+  let metaAdItems = previousEvidence.metaAdEvidence;
+  let metaCoverage = previousEvidence.metaCoverage;
   let finalReport;
   let stopReason;
 
-  for (let attemptNumber = 1; attemptNumber <= maxAttempts; attemptNumber += 1) {
+  for (
+    let attemptNumber = 1;
+    attemptNumber <= maxAttempts;
+    attemptNumber += 1
+  ) {
     const expansionContext = buildMarketExpansionContext({
+      job,
       attemptNumber,
       maxAttempts,
       directedAttempts,
@@ -45,13 +55,16 @@ export async function executeBoundedMarketResearch(job, options) {
       marketExpansionContext: expansionContext,
     });
     const directedAttempt = { attemptNumber, directed };
+    const repeatedResearchLens =
+      attemptNumber > 1 &&
+      !isNovelExpansionPlan(directed.plan, directedAttempts);
+    directedAttempt.planDisposition = repeatedResearchLens
+      ? "REJECTED_REPEATED_RESEARCH_LENS"
+      : "AUTHORIZED_FOR_COLLECTION";
     directedAttempts.push(directedAttempt);
     await options.persistPlan(directedAttempts);
 
-    if (
-      attemptNumber > 1 &&
-      !isNovelExpansionPlan(directed.plan, directedAttempts.slice(0, -1))
-    ) {
+    if (repeatedResearchLens) {
       attemptReports.push(
         attemptReport(directedAttempt, {
           newPublicEvidenceCount: 0,
@@ -252,6 +265,7 @@ function synchronizeEvidenceReport(
 
 /** Expõe à próxima rodada somente lacunas e resumos necessários para mudar a lente. */
 export function buildMarketExpansionContext({
+  job,
   attemptNumber,
   maxAttempts,
   directedAttempts,
@@ -267,9 +281,11 @@ export function buildMarketExpansionContext({
     attemptNumber,
     maxAttempts,
     instruction:
-      attemptNumber === 1
-        ? "Investigue o escopo inicial recebido."
-        : "Amplie exatamente uma lente adjacente sem escolher o posicionamento final de Atena.",
+      job?.stageCode === "candidate-gap-deepening"
+        ? "Aprofunde somente as perguntas pendentes das candidatas preservadas, reutilizando o corpus e as entrevistas; não reinicie a descoberta ampla."
+        : attemptNumber === 1
+          ? "Investigue o escopo inicial recebido."
+          : "Amplie exatamente uma lente adjacente sem escolher o posicionamento final de Atena.",
     previousResearchLenses: directedAttempts.map((item) => ({
       attemptNumber: item.attemptNumber,
       researchLens: item.directed.plan.researchLens,
@@ -292,7 +308,11 @@ export function buildMarketExpansionContext({
       metaAdCount: metaAdItems.length,
       metaCoverageStatuses: metaCoverage.map((item) => item.sourceStatus),
     },
-    previousCandidates: (finalReport?.opportunities || []).map((item) => ({
+    previousCandidates: (
+      finalReport?.opportunities ||
+      job?.previousCandidates ||
+      []
+    ).map((item) => ({
       name: item.name,
       primaryAudience: item.primaryAudience,
       rootPain: item.rootPain,
@@ -302,6 +322,40 @@ export function buildMarketExpansionContext({
     })),
     completedAttempts: attemptReports,
   };
+}
+
+/** Recupera somente as coleções factuais persistidas na primeira atividade do mesmo ciclo. */
+function readPreviousEvidence(value) {
+  if (!value) {
+    return {
+      publicEvidence: [],
+      marketplaceOffers: [],
+      metaAdEvidence: [],
+      metaCoverage: [],
+    };
+  }
+  try {
+    const report = typeof value === "string" ? JSON.parse(value) : value;
+    return {
+      publicEvidence: Array.isArray(report?.publicEvidence)
+        ? report.publicEvidence
+        : [],
+      marketplaceOffers: Array.isArray(report?.marketplaceOffers)
+        ? report.marketplaceOffers
+        : [],
+      metaAdEvidence: Array.isArray(report?.metaAdEvidence)
+        ? report.metaAdEvidence
+        : [],
+      metaCoverage: Array.isArray(report?.metaCoverage)
+        ? report.metaCoverage
+        : [],
+    };
+  } catch (error) {
+    throw new Error(
+      "A evidência anterior do aprofundamento não representa um relatório JSON válido",
+      { cause: error },
+    );
+  }
 }
 
 /** Evita gastar outra coleta quando o modelo repete a lente e quase todas as consultas. */
@@ -399,7 +453,9 @@ function attachMarketExpansionReport(
     stopReason,
     stopSummary: stopSummary(stopReason, maxAttempts),
     finalResearchLens:
-      evaluated.at(-1)?.researchLens || attemptReports.at(-1)?.researchLens || null,
+      evaluated.at(-1)?.researchLens ||
+      attemptReports.at(-1)?.researchLens ||
+      null,
     attempts: attemptReports,
   };
 }
@@ -423,7 +479,8 @@ function stopSummary(reason, maxAttempts) {
 /** Mantém a primeira ocorrência de cada fato para preservar ids estáveis entre sínteses. */
 function mergeUnique(current, incoming, keyFunction) {
   const merged = new Map(current.map((item) => [keyFunction(item), item]));
-  for (const item of incoming) merged.set(keyFunction(item), merged.get(keyFunction(item)) || item);
+  for (const item of incoming)
+    merged.set(keyFunction(item), merged.get(keyFunction(item)) || item);
   return [...merged.values()];
 }
 
@@ -495,9 +552,7 @@ export function enforceMarketplaceHandoffGate(
       opportunity.commercialRisk,
       reason,
     );
-    opportunity.evidenceJson = demoteEvidenceMaturity(
-      opportunity.evidenceJson,
-    );
+    opportunity.evidenceJson = demoteEvidenceMaturity(opportunity.evidenceJson);
   }
   if (report?.evidenceReport?.gates) {
     report.evidenceReport.gates.marketplaceGatePassed = false;
@@ -529,11 +584,11 @@ function appendUniqueText(current, addition) {
 }
 
 function metaCoverageKey(item) {
-  return normalize(
-    `${item.query}:${item.country}:${item.publisherPlatform}`,
-  );
+  return normalize(`${item.query}:${item.country}:${item.publisherPlatform}`);
 }
 
 function normalize(value) {
-  return String(value || "").trim().toLocaleLowerCase("pt-BR");
+  return String(value || "")
+    .trim()
+    .toLocaleLowerCase("pt-BR");
 }

@@ -38,3 +38,11 @@ CREATE TABLE agent_task (id BIGINT PRIMARY KEY, process_definition_id BIGINT NOT
  source_reference VARCHAR(100) NOT NULL, status VARCHAR(30) NOT NULL,
  estimated_cost_usd DECIMAL(18,8), result_json LONGTEXT,
  FOREIGN KEY(process_definition_id) REFERENCES business_process_definition(id));
+CREATE TABLE product_discovery_cycle (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE product_discovery_opportunity (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ cycle_id BIGINT NOT NULL,
+ FOREIGN KEY(cycle_id) REFERENCES product_discovery_cycle(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

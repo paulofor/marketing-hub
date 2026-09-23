@@ -46,6 +46,46 @@ de produto.
 Falha, indisponibilidade ou ausencia de resultado da busca nunca deve gerar evidencia
 artificial. O ciclo deve permanecer em pesquisa, com a lacuna explicitada para nova coleta.
 
+## Pesquisa dirigida por lacunas e comportamento passado
+
+Decisão de 23/09/2026: novas execuções usam o Processo 1 v7, que separa a pesquisa ampla de uma
+segunda atividade candidato-específica. Uma conclusão técnica com `RESEARCH_MORE` não encerra uma
+lacuna genérica nem autoriza repetir as mesmas consultas. Argos deve preservar as candidatas
+iniciais, declarar perguntas pendentes e aguardar evidência comportamental antes do aprofundamento.
+Quando a pesquisa inicial não encontra candidata factual, o backend encerra o ciclo com a lista
+vazia, sem exigir entrevistas, abrir aprofundamento ou sincronizar um dossiê inexistente.
+
+O backend coleta de cinco a oito entrevistas exploratórias, consentidas e anônimas, sobre uma
+situação passada. O conjunto precisa incluir ao menos uma compra, uma desistência e todas as
+candidatas. Cada relato registra ocasião, resultado desejado, dificuldade, alternativa tentada,
+gasto conhecido e obstáculo residual; ausência de gasto permanece desconhecida. A tela não recebe
+nome, e-mail, telefone ou contato. Perguntas abertas sobre a última ocorrência substituem perguntas
+indutoras sobre intenção futura. A orientação oficial consultada em 23/09/2026 é
+[Using in-depth interviews — GOV.UK](https://www.gov.uk/service-manual/user-research/using-in-depth-interviews).
+
+Depois do gate, Argos planeja por candidata a pergunta, fonte apropriada, evidência necessária,
+contraponto, consultas e limites. Deve distinguir relato de cliente, linguagem de vendedor, anúncio,
+oferta e ciência; conferir data, preço, entrega, público e aderência das alternativas atuais; buscar
+evidência contrária; separar consultas planejadas, realmente tentadas e não executadas; vincular as
+buscas e os IDs de evidência que resolveram ou contradisseram cada lacuna; e parar sem aprovação
+quando não houver progresso. Uma lente rejeitada antes da coleta permanece auditável como chamada de
+planejamento com `planDisposition=REJECTED_REPEATED_RESEARCH_LENS`, mas suas consultas não podem ser
+declaradas executadas nem entrar no custo de busca. O backend aceita essa disposição somente na
+última tentativa e continua rejeitando repetição declarada como autorizada.
+
+O teto inicial é de doze consultas públicas por tentativa, duas tentativas e US$ 0,12 estimados para
+busca. A estimativa usa US$ 0,005 por requisição, conforme a página pública da
+[Brave Search API](https://brave.com/search/api/) observada em 23/09/2026. Créditos, descontos ou
+cobrança real devem ser conciliados separadamente. O aprofundamento admite no máximo quatro
+invocações de modelo — planejamento e síntese por tentativa — e o backend calcula o custo monetário
+no ledger da tarefa depois do callback. Antes desse cálculo o custo permanece desconhecido, não zero.
+O backend recusa plano, callback cruzado, identidade alterada, corpus sem entrevistas ou relatório
+que não comprove consultas, invocações e cobertura de custo.
+
+O dossiê final entregue a Atena continua sendo hipótese comercial. Utilidade exige experiência
+funcional e observação humana; compra rentável exige pagamento conciliado, reembolso, CAC, custo
+integral, contribuição e margem nos processos posteriores.
+
 ## Relação com a estrada do desejo
 
 A oportunidade PDE deve ser avaliada pela estrada:
@@ -772,9 +812,9 @@ Por decisão de 2026-09-06, o avanço canônico depois de Argos é:
 9. Têmis revisa a integridade da mesma versão e confirma que nenhuma evidência sintética foi
    apresentada como preferência, depoimento, checkout comercial ou venda;
 10. o backend exige homologação e decisões explícitas de Psique e Têmis, recalcula cenários,
-   temporalidade, versão, vigência das fontes e segregação dos eventos e só então libera a
-   preparação da comunicação. O produto permanece em `STOP`; não cria experimento, contato,
-   campanha, gasto, pagamento, venda ou receita;
+    temporalidade, versão, vigência das fontes e segregação dos eventos e só então libera a
+    preparação da comunicação. O produto permanece em `STOP`; não cria experimento, contato,
+    campanha, gasto, pagamento, venda ou receita;
 11. depois de comunicação, homologação comercial e autorização financeira, o experimento mede pela
     primeira vez resposta humana real, desde anúncio atribuído até compra, entrega e satisfação.
 

@@ -27,6 +27,8 @@ class PdeCommercialPrinciplesMysql57Test {
   private static final Path FIXTURE = Path.of("../../infra/testing/pde-commercial-principles");
   private static final String CHANGE =
       "db/changelog/changesets/2026-09-22-pde-commercial-principles-v1.yaml";
+  private static final String GAP_DEEPENING_CHANGE =
+      "db/changelog/changesets/2026-09-23-product-discovery-gap-deepening-v1.yaml";
   private final ObjectMapper mapper = new ObjectMapper();
 
   /** Aplica a revisão, recusa fontes inválidas e conserva toda evidência nas reaplicações. */
@@ -34,13 +36,7 @@ class PdeCommercialPrinciplesMysql57Test {
   void versionsObjectivesWithoutRewritingHistoryOrExecutionContracts() throws Exception {
     String host = System.getenv().getOrDefault("PDE_PRINCIPLES_DB_HOST", "127.0.0.1");
     assertThat(host).isIn("127.0.0.1", "sandbox-docker");
-    try (var connection =
-        DriverManager.getConnection(
-            "jdbc:mysql://"
-                + host
-                + ":33418/principles_test?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8",
-            "root",
-            "principles-local-only")) {
+    try (var connection = openConnection(host)) {
       assertThat(connection.getMetaData().getDatabaseProductVersion()).startsWith("5.7.");
       var sources = loadSources();
       initialize(connection, sources);
@@ -102,9 +98,91 @@ class PdeCommercialPrinciplesMysql57Test {
             .isEqualTo(history);
         assertThat(scalar(connection, "SELECT chain_definition_id FROM product"))
             .isEqualTo(productChain);
+        verifyGapDeepeningMigration(host, productChain);
         exportForBrowser(connection, sources);
       }
     }
+  }
+
+  /**
+   * Aplica a etapa comportamental, comprova retomada após ledger ausente e preserva a cadeia v18.
+   */
+  private void verifyGapDeepeningMigration(String host, String productChain) throws Exception {
+    try (var connection = openConnection(host)) {
+      var database =
+          DatabaseFactory.getInstance()
+              .findCorrectDatabaseImplementation(new JdbcConnection(connection));
+      try (var migration =
+          new Liquibase(GAP_DEEPENING_CHANGE, new ClassLoaderResourceAccessor(), database)) {
+        migration.update("");
+        verifyGapDeepeningState(connection, productChain);
+
+        execute(
+            connection,
+            "DELETE FROM DATABASECHANGELOG WHERE ID='2026-09-23-product-discovery-gap-deepening-v1-01-customer-interview-table'");
+        migration.update("");
+        assertThat(
+                scalar(
+                    connection,
+                    "SELECT COUNT(*) FROM DATABASECHANGELOG WHERE ID LIKE '2026-09-23-product-discovery-gap-deepening-v1-%'"))
+            .isEqualTo("2");
+
+        execute(
+            connection,
+            "DELETE activity FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id WHERE process.process_code='pde-opportunity-discovery' AND process.version_number=7 AND activity.activity_id='candidateGapDeepening'");
+        execute(
+            connection,
+            "DELETE item FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=19 AND item.sequence_number=1");
+        execute(
+            connection,
+            "DELETE FROM DATABASECHANGELOG WHERE ID='2026-09-23-product-discovery-gap-deepening-v1-02-process-and-chain'");
+        migration.update("");
+        verifyGapDeepeningState(connection, productChain);
+
+        migration.rollback(2, "");
+        assertThat(
+                scalar(
+                    connection,
+                    "SELECT CONCAT((SELECT status FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=6),':',(SELECT status FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=7),':',(SELECT status FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=18),':',(SELECT status FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=19),':',(SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='product_discovery_customer_interview'))"))
+            .isEqualTo("PUBLISHED:RETIRED:PUBLISHED:RETIRED:0");
+
+        migration.update("");
+        verifyGapDeepeningState(connection, productChain);
+      }
+    }
+  }
+
+  /** Abre uma conexão exclusiva para que o fechamento do Liquibase não invalide outras provas. */
+  private Connection openConnection(String host) throws Exception {
+    return DriverManager.getConnection(
+        "jdbc:mysql://"
+            + host
+            + ":33418/principles_test?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8",
+        "root",
+        "principles-local-only");
+  }
+
+  /** Confere schema, duas atividades, versão publicada e cadeia sem trocar o produto histórico. */
+  private void verifyGapDeepeningState(Connection connection, String productChain)
+      throws Exception {
+    assertThat(
+            scalar(
+                connection,
+                "SELECT CONCAT((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='product_discovery_customer_interview'),':',(SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='product_discovery_customer_interview' AND COLUMN_NAME IN ('consent_captured_at','created_at','updated_at') AND DATA_TYPE='datetime' AND DATETIME_PRECISION=6 AND IS_NULLABLE='NO'),':',(SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='product_discovery_customer_interview'),':',(SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='product_discovery_customer_interview' AND INDEX_NAME IN ('uk_pd_customer_interview_cycle_code','idx_pd_customer_interview_opportunity','idx_pd_customer_interview_cycle_outcome')))"))
+        .isEqualTo("16:3:2:3");
+    assertThat(
+            scalar(
+                connection,
+                "SELECT CONCAT((SELECT status FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=6),':',(SELECT status FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=7),':',(SELECT JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.researchContractVersion')) FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=7),':',(SELECT GROUP_CONCAT(activity.activity_id ORDER BY activity.activity_id SEPARATOR ',') FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id WHERE process.process_code='pde-opportunity-discovery' AND process.version_number=7))"))
+        .isEqualTo(
+            "RETIRED:PUBLISHED:CANDIDATE_GAP_DEEPENING_V1:candidateGapDeepening,marketEvidence");
+    assertThat(
+            scalar(
+                connection,
+                "SELECT CONCAT((SELECT status FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=18),':',(SELECT status FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=19),':',(SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=19),':',(SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id JOIN business_process_definition process ON process.id=item.process_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=19 AND item.sequence_number=1 AND process.process_code='pde-opportunity-discovery' AND process.version_number=7))"))
+        .isEqualTo("RETIRED:PUBLISHED:6:1");
+    assertThat(scalar(connection, "SELECT chain_definition_id FROM product"))
+        .isEqualTo(productChain);
   }
 
   /** Carrega definições canônicas, sem dados de produtos ou clientes produtivos. */
@@ -121,6 +199,9 @@ class PdeCommercialPrinciplesMysql57Test {
   private void initialize(Connection connection, List<JsonNode> sources) throws Exception {
     for (String table :
         List.of(
+            "product_discovery_customer_interview",
+            "product_discovery_opportunity",
+            "product_discovery_cycle",
             "agent_task",
             "product",
             "business_process_chain_item",

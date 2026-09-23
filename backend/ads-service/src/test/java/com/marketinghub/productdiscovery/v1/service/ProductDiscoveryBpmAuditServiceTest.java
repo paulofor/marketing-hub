@@ -87,6 +87,35 @@ class ProductDiscoveryBpmAuditServiceTest {
     assertThat(request.getValue().processActivityId()).isEqualTo("marketEvidence");
   }
 
+  /** Deve abrir o aprofundamento na mesma versão do processo usada pela tarefa inicial. */
+  @Test
+  void opensCandidateGapDeepeningInOriginalProcessVersion() {
+    ProductDiscoveryCycle cycle = cycle(ProductDiscoveryCycleStatus.AWAITING_CUSTOMER_EVIDENCE);
+    BusinessProcessDefinition versionSeven = new BusinessProcessDefinition();
+    versionSeven.setId(57L);
+    versionSeven.setProcessCode("pde-opportunity-discovery");
+    versionSeven.setVersionNumber(7);
+    versionSeven.setStatus("PUBLISHED");
+    versionSeven.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"marketEvidence\",\"type\":\"TASK\"},"
+            + "{\"id\":\"candidateGapDeepening\",\"type\":\"TASK\"}]}");
+    Agent argos = new Agent();
+    argos.setAgentKey("market-radar");
+    AgentTask initial = linkedTask(901L, "COMPLETED", argos, versionSeven);
+    when(taskRepository.findBySourceReferenceOrderByCreatedAtAscIdAsc("product-discovery-cycle:37"))
+        .thenReturn(List.of(initial));
+    when(agentTaskService.createByHumanIfAbsent(any())).thenReturn(taskResponse());
+
+    service.openCandidateGapDeepening(cycle);
+
+    ArgumentCaptor<CreateAgentTaskRequest> request =
+        ArgumentCaptor.forClass(CreateAgentTaskRequest.class);
+    verify(agentTaskService).createByHumanIfAbsent(request.capture());
+    assertThat(request.getValue().processDefinitionId()).isEqualTo(57L);
+    assertThat(request.getValue().processActivityId()).isEqualTo("candidateGapDeepening");
+    assertThat(service.supportsCandidateGapDeepening(cycle)).isTrue();
+  }
+
   /** Deve abrir uma nova ocorrência auditável para a reanálise da mesma sessão Meta. */
   @Test
   void reopensCompletedResearchForSupervisedMetaEvidence() {

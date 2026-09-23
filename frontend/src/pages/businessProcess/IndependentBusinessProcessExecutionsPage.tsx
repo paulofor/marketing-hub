@@ -112,8 +112,7 @@ function formatCost(value?: number, coverage?: string) {
 export function independentExecutionRequestError(error: unknown) {
   if (!axios.isAxiosError(error)) return "Não foi possível iniciar o processo.";
   const data = error.response?.data as
-    | { detail?: string; message?: string; error?: string }
-    | undefined;
+    { detail?: string; message?: string; error?: string } | undefined;
   return (
     data?.detail ??
     data?.message ??
@@ -881,6 +880,36 @@ function PdeOpportunityFlowReport({
           <strong>{report.plannedProductCount}</strong>
         </div>
       </div>
+
+      {report.privateValidationHandoff.status ===
+      "WAITING_CUSTOMER_EVIDENCE" ? (
+        <section
+          className="independent-process-report__handoff"
+          aria-labelledby="candidate-gap-deepening-title"
+        >
+          <div>
+            <span>Próxima atividade de Argos</span>
+            <h4 id="candidate-gap-deepening-title">
+              Registrar situações reais de compra e desistência
+            </h4>
+            <p>
+              Reúna de cinco a oito entrevistas anônimas e consentidas, cobrindo
+              todas as candidatas, ao menos uma compra e uma desistência. O
+              backend libera o aprofundamento dirigido quando o gate estiver
+              completo.
+            </p>
+          </div>
+          <Link
+            className="btn btn-primary"
+            to={`/product-discovery/cycles/${report.privateValidationHandoff.cycleId}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Abrir entrevistas
+            <ExternalLink size={14} aria-hidden="true" />
+          </Link>
+        </section>
+      ) : null}
 
       {report.privateValidationHandoff.available ? (
         <section

@@ -33,6 +33,76 @@ test("plano seguro direciona Hotmart e ClickBank sem credenciais", () => {
   assert.equal(result.usage, null);
 });
 
+test("aprofundamento determinístico preserva candidatas e limita consultas e custo", () => {
+  const job = {
+    cycleId: 65,
+    stageCode: "candidate-gap-deepening",
+    theme: "atração e presença pessoal",
+    targetAudience: "mulheres adultas",
+    previousCandidates: [
+      { name: "Preparação para ocasião especial" },
+      { name: "Imagem para encontro importante" },
+    ],
+    customerInterviews: Array.from({ length: 5 }, (_, index) => ({
+      id: index + 1,
+    })),
+    gapResearchPolicy: {
+      maximumAttempts: 2,
+      maximumPublicQueriesPerAttempt: 12,
+      maximumModelInvocations: 4,
+      estimatedSearchCostPerRequestUsd: 0.005,
+      maximumSearchCostUsd: 0.12,
+      modelCostCoverage: "AGENT_TASK_AUDIT_AFTER_CALLBACK",
+    },
+  };
+
+  const result = deterministicPlan(job);
+
+  validatePlan(result.plan, job);
+  assert.deepEqual(
+    result.plan.candidateGaps.map((item) => item.candidateName),
+    job.previousCandidates.map((item) => item.name),
+  );
+  assert.equal(result.plan.publicQueries.length, 8);
+  assert.equal(result.plan.researchLimits.maxEstimatedSearchCostUsd, 0.06);
+  assert.equal(
+    result.plan.candidateGaps.reduce(
+      (total, item) => total + item.maxEstimatedSearchCostUsd,
+      0,
+    ),
+    0.04,
+  );
+});
+
+test("aprofundamento rejeita consulta repetida de tentativa anterior", () => {
+  const job = {
+    stageCode: "candidate-gap-deepening",
+    theme: "atração e presença pessoal",
+    targetAudience: "mulheres adultas",
+    previousCandidates: [
+      { name: "Preparação para ocasião especial" },
+      { name: "Imagem para encontro importante" },
+    ],
+  };
+  const result = deterministicPlan(job);
+  const repeatedJob = {
+    ...job,
+    marketExpansionContext: {
+      previousPublicQueries: [result.plan.publicQueries[0]],
+      previousResearchLenses: [{ researchLens: result.plan.researchLens }],
+      previousMarketplaceQueries: result.plan.marketplaceRequests.map(
+        (item) => `${item.marketplace}:${item.query}`,
+      ),
+      previousMetaQueries: result.plan.metaAdRequests.map((item) => item.query),
+    },
+  };
+
+  assert.throws(
+    () => validatePlan(result.plan, repeatedJob),
+    /não preserva candidatas ou excede o teto/,
+  );
+});
+
 test("plano bloqueia marketplace e volume não autorizados", () => {
   const result = deterministicPlan({
     theme: "agenda",

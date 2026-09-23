@@ -6,6 +6,7 @@ import {
   type ProductDiscoveryOpportunity,
   useProductDiscoveryCycle,
 } from "../../api/productDiscovery/useProductDiscovery";
+import CandidateGapDeepeningPanel from "./CandidateGapDeepeningPanel";
 
 function parseCycleId(value: string | undefined) {
   const parsed = Number(value);
@@ -76,6 +77,13 @@ export default function ProductDiscoveryCycleDetailPage() {
             <p className="mb-0">{detail.cycle.decisionSummary}</p>
           </div>
         </section>
+      ) : null}
+
+      {detail ? (
+        <CandidateGapDeepeningPanel
+          cycleId={detail.cycle.id}
+          opportunities={detail.opportunities}
+        />
       ) : null}
 
       <section className="d-flex flex-column gap-3">

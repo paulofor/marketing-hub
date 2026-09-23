@@ -17,8 +17,10 @@ import com.marketinghub.researchintelligence.v1.service.ResearchIntelligenceServ
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -43,6 +45,8 @@ public class ProductDiscoveryService {
   private static final Set<String> COMPARABLE_MARKETPLACES =
       Set.of("hotmart", "clickbank", "public web");
   private static final String STAGE_CODE = "research";
+  private static final String GAP_STAGE_CODE =
+      ProductDiscoveryCustomerInterviewService.GAP_STAGE_CODE;
   private static final Duration EXECUTION_LEASE_DURATION = Duration.ofMinutes(20);
   private static final List<String> LEGACY_ARTIFICIAL_EVIDENCE_MARKERS =
       List.of(
@@ -56,6 +60,8 @@ public class ProductDiscoveryService {
   private final OpportunityDossierResearchSyncService dossierResearchSyncService;
   private final ProductDiscoveryBpmAuditService bpmAuditService;
   @Autowired private ResearchIntelligenceService researchIntelligenceService;
+  @Autowired private ProductDiscoveryCustomerInterviewService customerInterviewService;
+  @Autowired private ProductDiscoveryGapResearchContractService gapResearchContractService;
 
   /** Inicializa o serviço com repositórios canônicos do módulo. */
   public ProductDiscoveryService(
@@ -165,13 +171,27 @@ public class ProductDiscoveryService {
   @Transactional
   public ProductDiscoveryResearchPlanResponse registerResearchPlan(
       Long cycleId, ProductDiscoveryResearchPlanRequest request) {
+    return registerPlan(cycleId, request, STAGE_CODE, false);
+  }
+
+  /** Persiste o plano de lacunas com perguntas, fontes, consultas e teto estimado explícitos. */
+  @Transactional
+  public ProductDiscoveryResearchPlanResponse registerGapDeepeningPlan(
+      Long cycleId, ProductDiscoveryResearchPlanRequest request) {
+    return registerPlan(cycleId, request, GAP_STAGE_CODE, true);
+  }
+
+  /** Centraliza a auditoria dos dois planos sem permitir callback na etapa errada. */
+  private ProductDiscoveryResearchPlanResponse registerPlan(
+      Long cycleId,
+      ProductDiscoveryResearchPlanRequest request,
+      String expectedStageCode,
+      boolean requireGapContract) {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
-    validateExecutionLease(cycle, request.executionLeaseId());
-    if (cycle.getStatus() != ProductDiscoveryCycleStatus.RESEARCHING) {
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "O plano só pode ser registrado durante a pesquisa");
-    }
-    cycle.setResearchPlanJson(requiredText(request.planJson(), "planJson"));
+    validateExecutionLease(cycle, request.executionLeaseId(), expectedStageCode);
+    String planJson = requiredText(request.planJson(), "planJson");
+    if (requireGapContract) gapResearchContractService.validatePlan(cycle, planJson);
+    cycle.setResearchPlanJson(planJson);
     cycle.setResearchPlanRawResponse(requiredText(request.rawResponse(), "rawResponse"));
     cycle.setResearchPlanModel(requiredText(request.model(), "model"));
     cycle.setLeaseExpiresAt(Instant.now().plus(EXECUTION_LEASE_DURATION));
@@ -405,9 +425,21 @@ public class ProductDiscoveryService {
   /** Entrega pendências ao worker e marca ciclos como em pesquisa para evitar consumo duplicado. */
   @Transactional
   public List<ProductDiscoveryPendingResponse> pending() {
+    return pending(STAGE_CODE);
+  }
+
+  /** Entrega somente ciclos cujo gate humano liberou a pesquisa candidata-específica. */
+  @Transactional
+  public List<ProductDiscoveryPendingResponse> pendingGapDeepening() {
+    return pending(GAP_STAGE_CODE);
+  }
+
+  /** Reserva uma etapa exata para impedir que o endpoint inicial consuma o aprofundamento. */
+  private List<ProductDiscoveryPendingResponse> pending(String stageCode) {
     Instant now = Instant.now();
     return cycleRepository
         .findClaimableForUpdate(
+            stageCode,
             ProductDiscoveryCycleStatus.READY_FOR_RESEARCH,
             ProductDiscoveryCycleStatus.RESEARCHING,
             now,
@@ -417,7 +449,7 @@ public class ProductDiscoveryService {
         .map(
             cycle -> {
               cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
-              cycle.setStageCode(STAGE_CODE);
+              cycle.setStageCode(stageCode);
               cycle.setErrorMessage(null);
               cycle.setExecutionLeaseId(UUID.randomUUID().toString());
               cycle.setLeaseExpiresAt(now.plus(EXECUTION_LEASE_DURATION));
@@ -435,33 +467,57 @@ public class ProductDiscoveryService {
   public ProductDiscoveryCycleDetailResponse complete(
       Long cycleId, ProductDiscoveryResultRequest request) {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
-    validateExecutionLease(cycle, request.executionLeaseId());
+    validateExecutionLease(cycle, request.executionLeaseId(), STAGE_CODE);
     validateOpportunityCount(cycle, request);
     recordResearchArtifacts(cycle, request);
     validateOpportunityMaturity(request);
     validateMarketplaceEvidenceGate(cycle, request);
     validatePurchaseMomentGate(cycle, request);
     validateInstagramHandoffEvidence(cycle, request);
-    opportunityRepository.deleteAllByCycleId(cycleId);
-    for (ProductDiscoveryOpportunityResultRequest item : request.opportunities()) {
-      ProductDiscoveryOpportunity opportunity = new ProductDiscoveryOpportunity();
-      opportunity.setCycle(cycle);
-      opportunity.setName(requiredText(item.name(), "name"));
-      opportunity.setPrimaryAudience(requiredText(item.primaryAudience(), "primaryAudience"));
-      opportunity.setRootPain(requiredText(item.rootPain(), "rootPain"));
-      opportunity.setPracticalPain(optionalText(item.practicalPain()));
-      opportunity.setEmotionalPain(optionalText(item.emotionalPain()));
-      opportunity.setScaleEvidence(optionalText(item.scaleEvidence()));
-      opportunity.setUnmetnessEvidence(optionalText(item.unmetnessEvidence()));
-      opportunity.setPdeExperience(optionalText(item.pdeExperience()));
-      opportunity.setFirstCampaignAngle(optionalText(item.firstCampaignAngle()));
-      opportunity.setCommercialRisk(optionalText(item.commercialRisk()));
-      opportunity.setEvidenceJson(optionalText(item.evidenceJson()));
-      opportunity.setScore(item.score());
-      opportunity.setMaturity(item.maturity());
-      opportunity.setDecision(item.decision());
-      opportunityRepository.save(opportunity);
+    replaceInitialOpportunities(cycle, request);
+    cycle.setDecisionSummary(requiredText(request.decisionSummary(), "decisionSummary"));
+    boolean requiresDeepening =
+        !request.opportunities().isEmpty() && bpmAuditService.supportsCandidateGapDeepening(cycle);
+    cycle.setStatus(
+        requiresDeepening
+            ? ProductDiscoveryCycleStatus.AWAITING_CUSTOMER_EVIDENCE
+            : ProductDiscoveryCycleStatus.COMPLETED);
+    cycle.setStageCode(
+        requiresDeepening
+            ? ProductDiscoveryCustomerInterviewService.WAITING_STAGE_CODE
+            : "opportunity-gate");
+    cycle.setErrorMessage(null);
+    clearExecutionLease(cycle);
+    ProductDiscoveryCycle saved = cycleRepository.save(cycle);
+    List<ProductDiscoveryOpportunity> savedOpportunities =
+        opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycleId);
+    if (request.analysisAudit() != null) {
+      bpmAuditService.recordAnalysis(saved, request.analysisAudit());
     }
+    bpmAuditService.complete(saved, savedOpportunities);
+    if (requiresDeepening) {
+      bpmAuditService.openCandidateGapDeepening(saved);
+    } else {
+      dossierResearchSyncService.synchronize(cycleId, savedOpportunities);
+    }
+    return getCycle(cycleId);
+  }
+
+  /** Conclui a segunda atividade sem trocar a identidade das candidatas entrevistadas. */
+  @Transactional
+  public ProductDiscoveryCycleDetailResponse completeGapDeepening(
+      Long cycleId, ProductDiscoveryResultRequest request) {
+    ProductDiscoveryCycle cycle = findCycle(cycleId);
+    validateExecutionLease(cycle, request.executionLeaseId(), GAP_STAGE_CODE);
+    ProductDiscoveryGapDeepeningResponse gate = requiredGapGate(cycleId);
+    validateOpportunityCount(cycle, request);
+    validateOpportunityMaturity(request);
+    validateMarketplaceEvidenceGate(cycle, request);
+    validatePurchaseMomentGate(cycle, request);
+    validateInstagramHandoffEvidence(cycle, request);
+    gapResearchContractService.validateEvidenceReport(cycle, request, gate);
+    recordResearchArtifacts(cycle, request);
+    updateDeepenedOpportunities(cycle, request);
     cycle.setDecisionSummary(requiredText(request.decisionSummary(), "decisionSummary"));
     cycle.setStatus(ProductDiscoveryCycleStatus.COMPLETED);
     cycle.setStageCode("opportunity-gate");
@@ -478,15 +534,86 @@ public class ProductDiscoveryService {
     return getCycle(cycleId);
   }
 
+  /** Substitui somente o resultado inicial, antes de existir qualquer entrevista vinculada. */
+  private void replaceInitialOpportunities(
+      ProductDiscoveryCycle cycle, ProductDiscoveryResultRequest request) {
+    opportunityRepository.deleteAllByCycleId(cycle.getId());
+    for (ProductDiscoveryOpportunityResultRequest item : request.opportunities()) {
+      ProductDiscoveryOpportunity opportunity = new ProductDiscoveryOpportunity();
+      opportunity.setCycle(cycle);
+      opportunity.setName(requiredText(item.name(), "name"));
+      applyOpportunityResult(opportunity, item);
+      opportunityRepository.save(opportunity);
+    }
+  }
+
+  /** Atualiza o dossiê preservando IDs e vínculos das entrevistas da mesma candidata. */
+  private void updateDeepenedOpportunities(
+      ProductDiscoveryCycle cycle, ProductDiscoveryResultRequest request) {
+    List<ProductDiscoveryOpportunity> current =
+        opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycle.getId());
+    Map<String, ProductDiscoveryOpportunity> byName = new LinkedHashMap<>();
+    current.forEach(
+        opportunity ->
+            byName.put(opportunity.getName().trim().toLowerCase(Locale.ROOT), opportunity));
+    Set<String> received = new HashSet<>();
+    for (ProductDiscoveryOpportunityResultRequest item : request.opportunities()) {
+      String normalizedName = requiredText(item.name(), "name").toLowerCase(Locale.ROOT);
+      ProductDiscoveryOpportunity opportunity = byName.get(normalizedName);
+      if (opportunity == null || !received.add(normalizedName)) {
+        throw new ResponseStatusException(
+            HttpStatus.UNPROCESSABLE_ENTITY,
+            "O aprofundamento deve preservar exatamente as identidades das candidatas iniciais");
+      }
+      applyOpportunityResult(opportunity, item);
+      opportunityRepository.save(opportunity);
+    }
+    if (received.size() != current.size()) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          "O aprofundamento não pode remover candidatas que possuem evidência comportamental");
+    }
+  }
+
+  /** Aplica os fatos reavaliados sem alterar ciclo ou identidade da candidata. */
+  private void applyOpportunityResult(
+      ProductDiscoveryOpportunity opportunity, ProductDiscoveryOpportunityResultRequest item) {
+    opportunity.setPrimaryAudience(requiredText(item.primaryAudience(), "primaryAudience"));
+    opportunity.setRootPain(requiredText(item.rootPain(), "rootPain"));
+    opportunity.setPracticalPain(optionalText(item.practicalPain()));
+    opportunity.setEmotionalPain(optionalText(item.emotionalPain()));
+    opportunity.setScaleEvidence(optionalText(item.scaleEvidence()));
+    opportunity.setUnmetnessEvidence(optionalText(item.unmetnessEvidence()));
+    opportunity.setPdeExperience(optionalText(item.pdeExperience()));
+    opportunity.setFirstCampaignAngle(optionalText(item.firstCampaignAngle()));
+    opportunity.setCommercialRisk(optionalText(item.commercialRisk()));
+    opportunity.setEvidenceJson(optionalText(item.evidenceJson()));
+    opportunity.setScore(item.score());
+    opportunity.setMaturity(item.maturity());
+    opportunity.setDecision(item.decision());
+  }
+
+  /** Exige que o gate humano tenha sido atendido antes de aceitar outro consumo de Argos. */
+  private ProductDiscoveryGapDeepeningResponse requiredGapGate(Long cycleId) {
+    ProductDiscoveryGapDeepeningResponse gate = customerInterviewService.get(cycleId);
+    if (!gate.readyForResearch()) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          "O aprofundamento exige de cinco a oito entrevistas, compra e desistência e cobertura de todas as candidatas");
+    }
+    return gate;
+  }
+
   /** Exige de duas a três candidatas no modo autônomo sem afetar validações legadas de mercado. */
   private void validateOpportunityCount(
       ProductDiscoveryCycle cycle, ProductDiscoveryResultRequest request) {
     if (cycle.getResearchMode() != ProductDiscoveryResearchMode.DISCOVER_MARKETS) return;
     int count = request.opportunities().size();
-    if (count < 2 || count > 3) {
+    if (count != 0 && (count < 2 || count > 3)) {
       throw new ResponseStatusException(
           HttpStatus.UNPROCESSABLE_ENTITY,
-          "Descoberta autônoma exige de duas a três candidatas factuais; recebidas " + count);
+          "Descoberta autônoma aceita nenhuma candidata ou exige de duas a três candidatas factuais; recebidas "
+              + count);
     }
   }
 
@@ -1039,8 +1166,21 @@ public class ProductDiscoveryService {
   /** Registra falha operacional do worker preservando a causa para o usuário. */
   @Transactional
   public ProductDiscoveryCycleResponse fail(Long cycleId, ProductDiscoveryFailureRequest request) {
+    return fail(cycleId, request, STAGE_CODE);
+  }
+
+  /** Registra falha técnica da segunda atividade preservando entrevistas e candidatas. */
+  @Transactional
+  public ProductDiscoveryCycleResponse failGapDeepening(
+      Long cycleId, ProductDiscoveryFailureRequest request) {
+    return fail(cycleId, request, GAP_STAGE_CODE);
+  }
+
+  /** Centraliza callbacks de falha e rejeita o endpoint de uma etapa diferente. */
+  private ProductDiscoveryCycleResponse fail(
+      Long cycleId, ProductDiscoveryFailureRequest request, String expectedStageCode) {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
-    validateExecutionLease(cycle, request.executionLeaseId());
+    validateExecutionLease(cycle, request.executionLeaseId(), expectedStageCode);
     cycle.setStatus(ProductDiscoveryCycleStatus.FAILED);
     cycle.setErrorMessage(requiredText(request.errorMessage(), "errorMessage"));
     clearExecutionLease(cycle);
@@ -1098,10 +1238,21 @@ public class ProductDiscoveryService {
    * Converte o ciclo para pendência e inclui a curadoria consultiva de Argos na pesquisa factual.
    */
   private ProductDiscoveryPendingResponse toPendingResponse(ProductDiscoveryCycle cycle) {
+    boolean gapDeepening = GAP_STAGE_CODE.equals(cycle.getStageCode());
+    ProductDiscoveryGapDeepeningResponse gap =
+        gapDeepening && customerInterviewService != null
+            ? customerInterviewService.get(cycle.getId())
+            : null;
+    List<ProductDiscoveryOpportunityResponse> previousCandidates =
+        gapDeepening
+            ? opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycle.getId()).stream()
+                .map(this::toOpportunityResponse)
+                .toList()
+            : List.of();
     return new ProductDiscoveryPendingResponse(
         cycle.getId(),
         PIPELINE_CODE,
-        STAGE_CODE,
+        cycle.getStageCode(),
         cycle.getTheme(),
         cycle.getTargetAudience(),
         cycle.getCountry(),
@@ -1118,7 +1269,11 @@ public class ProductDiscoveryService {
         researchIntelligenceService == null
             ? null
             : researchIntelligenceService.selectForAgentTask(
-                "market-radar", cycle.getTheme(), cycle.getTargetAudience(), cycle.getObjective()));
+                "market-radar", cycle.getTheme(), cycle.getTargetAudience(), cycle.getObjective()),
+        previousCandidates,
+        gapDeepening ? cycle.getResearchEvidenceReportJson() : null,
+        gap == null ? List.of() : gap.interviews(),
+        gapDeepening ? gapResearchContractService.policy() : null);
   }
 
   /** Impede que uma execução expirada sobrescreva o resultado de uma retomada mais recente. */
@@ -1128,6 +1283,16 @@ public class ProductDiscoveryService {
         || !executionLeaseId.equals(cycle.getExecutionLeaseId())) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "Lease da execução de descoberta expirou ou foi substituído");
+    }
+  }
+
+  /** Acrescenta a identidade da etapa para impedir callback cruzado entre as duas filas. */
+  private void validateExecutionLease(
+      ProductDiscoveryCycle cycle, String executionLeaseId, String expectedStageCode) {
+    validateExecutionLease(cycle, executionLeaseId);
+    if (!expectedStageCode.equals(cycle.getStageCode())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A execução pertence a outra etapa da descoberta PDE");
     }
   }
 

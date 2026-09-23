@@ -38,7 +38,9 @@ test("amplia uma lente adjacente e encerra no primeiro dossiê pronto", async ()
   assert.equal(synthesisContexts[1].publicEvidence.length, 2);
   assert.equal(synthesisContexts[1].marketplaceOffers.length, 10);
   assert.deepEqual(
-    synthesisContexts[1].marketplaceOffers.slice(0, 2).map((item) => item.evidenceId),
+    synthesisContexts[1].marketplaceOffers
+      .slice(0, 2)
+      .map((item) => item.evidenceId),
     ["O1", "O2"],
   );
   assert.equal(
@@ -149,10 +151,13 @@ test("usa a mesma identidade comercial do backend antes de abrir handoff", () =>
 
 test("não coleta outra vez quando o plano repete a lente", async () => {
   let collectionCalls = 0;
+  let persistedAttempts = [];
   const execution = await executeBoundedMarketResearch(discoveryJob(), {
     maxAttempts: 3,
     planResearch: async () => directed(1),
-    persistPlan: async () => {},
+    persistPlan: async (attempts) => {
+      persistedAttempts = attempts;
+    },
     collectEvidence: async ({ attemptNumber }) => {
       collectionCalls += 1;
       return evidenceBatch(attemptNumber);
@@ -166,6 +171,10 @@ test("não coleta outra vez quando o plano repete a lente", async () => {
   assert.equal(
     execution.report.evidenceReport.marketExpansion.stopReason,
     "REPEATED_RESEARCH_LENS",
+  );
+  assert.deepEqual(
+    persistedAttempts.map((item) => item.planDisposition),
+    ["AUTHORIZED_FOR_COLLECTION", "REJECTED_REPEATED_RESEARCH_LENS"],
   );
 });
 
@@ -243,11 +252,17 @@ test("mantém ciclo, lease e callback terminal únicos no fluxo integrado", asyn
     planCallbacks.length,
     2,
     JSON.stringify(
-      callbacks.map((item) => ({ url: item.url, error: item.payload.errorMessage })),
+      callbacks.map((item) => ({
+        url: item.url,
+        error: item.payload.errorMessage,
+      })),
     ),
   );
   assert.equal(completeCallbacks.length, 1);
-  assert.equal(callbacks.some((item) => item.url.endsWith("/fail")), false);
+  assert.equal(
+    callbacks.some((item) => item.url.endsWith("/fail")),
+    false,
+  );
   assert.ok(
     callbacks.every((item) => item.payload.executionLeaseId === "lease-77"),
   );
@@ -276,8 +291,18 @@ test("limita configuração e exige novidade mínima na ampliação", () => {
   assert.equal(resolveMarketResearchAttempts(0), 1);
   assert.equal(resolveMarketResearchAttempts(9), 3);
   assert.equal(resolveMarketResearchAttempts("inválido"), 3);
-  assert.equal(isNovelExpansionPlan(directed(2).plan, [{ attemptNumber: 1, directed: directed(1) }]), true);
-  assert.equal(isNovelExpansionPlan(directed(1).plan, [{ attemptNumber: 1, directed: directed(1) }]), false);
+  assert.equal(
+    isNovelExpansionPlan(directed(2).plan, [
+      { attemptNumber: 1, directed: directed(1) },
+    ]),
+    true,
+  );
+  assert.equal(
+    isNovelExpansionPlan(directed(1).plan, [
+      { attemptNumber: 1, directed: directed(1) },
+    ]),
+    false,
+  );
 });
 
 function discoveryJob() {
@@ -309,7 +334,11 @@ function directed(attemptNumber) {
       (_, index) => `consulta-${attemptNumber}-${index + 1}`,
     ),
     marketplaceRequests: [
-      { marketplace: "HOTMART", query: `mercado ${attemptNumber}`, maxProducts: 10 },
+      {
+        marketplace: "HOTMART",
+        query: `mercado ${attemptNumber}`,
+        maxProducts: 10,
+      },
     ],
     metaAdRequests: [
       {
@@ -368,7 +397,9 @@ function evidenceBatch(attemptNumber) {
     marketplaceOffers:
       attemptNumber === 1
         ? [offer(1)]
-        : Array.from({ length: 9 }, (_, index) => offer((attemptNumber - 1) * 9 + index + 2)),
+        : Array.from({ length: 9 }, (_, index) =>
+            offer((attemptNumber - 1) * 9 + index + 2),
+          ),
     metaAdEvidence: [],
     metaCoverage: [
       {
@@ -456,14 +487,22 @@ function promptPhases(prompt) {
   let match;
   while ((match = header.exec(prompt)) !== null) {
     if (currentName) {
-      assert.equal(phases.has(currentName), false, `fase duplicada: ${currentName}`);
+      assert.equal(
+        phases.has(currentName),
+        false,
+        `fase duplicada: ${currentName}`,
+      );
       phases.set(currentName, prompt.slice(contentStart, match.index).trim());
     }
     currentName = match[1].trim();
     contentStart = header.lastIndex;
   }
   if (currentName) {
-    assert.equal(phases.has(currentName), false, `fase duplicada: ${currentName}`);
+    assert.equal(
+      phases.has(currentName),
+      false,
+      `fase duplicada: ${currentName}`,
+    );
     phases.set(currentName, prompt.slice(contentStart).trim());
   }
   return phases;

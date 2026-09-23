@@ -1,0 +1,18 @@
+{
+  "cardKey": "minimizacao-dados-agente-conversacional",
+  "collection": "neuromarketing",
+  "title": "Agentes conversacionais devem minimizar dados por padrão",
+  "finding": "O Avast 2026 Safe Tech Report, com 13.003 adultos em 12 mercados incluindo Brasil, encontrou uma lacuna entre autoconfiança e cautela: 56% globalmente acreditam que reconheceriam um falso de IA, enquanto 52% já compartilharam ou consideraram compartilhar informação sensível com IA; no recorte brasileiro reportado, esses números foram 73% e 70%, respectivamente.",
+  "mechanism": "Interfaces conversacionais podem tornar o compartilhamento mais informal e reduzir a percepção de risco; sentir-se competente para lidar com IA não implica compreender retenção, reutilização ou exposição posterior de dados.",
+  "commercialApplication": "Em Click-to-WhatsApp, formulários conversacionais e agentes, pedir somente dados necessários, explicar finalidade, preferir campos estruturados a texto livre quando possível e inserir aviso ou confirmação antes de dados mais sensíveis. Medir também envio espontâneo de dados desnecessários como sinal de risco.",
+  "evidenceStrength": "Moderada: survey amplo, multinacional e ponderado com 13.003 adultos; o recorte brasileiro é particularmente relevante, mas os resultados são autorrelatados e combinam comportamento realizado com intenção considerada.",
+  "publishedOn": "2026-09-22",
+  "validUntil": "2027-09-22",
+  "experimentHypothesis": "Um fluxo conversacional estruturado e mínimo reduzirá o envio de dados não necessários sem piorar conclusão, abandono ou confiança percebida em comparação com um fluxo aberto de texto livre.",
+  "risks": "Não usar o experimento para incentivar oversharing nem coletar dado sensível sem necessidade, finalidade e base adequada. Evitar urgência, falsas verificações e pedidos amplos de informação pessoal.",
+  "limits": "O estudo não mede vazamentos reais, conversão ou satisfação com um agente específico; 'compartilhou ou considerou compartilhar' mistura intenção e comportamento; o recorte brasileiro detalhado foi reportado por fonte secundária baseada no estudo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-23-minimizacao-dados-agente.md",
+  "sourceTitle": "Fonte revisada — Minimização de dados em agentes conversacionais",
+  "sourceSha256": "3bbf3d4d4b615c4ed00a1434e5e6223a951e3b2cf7d5a383219b1f1313a911d6"
+}

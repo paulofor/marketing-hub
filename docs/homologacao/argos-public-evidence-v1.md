@@ -84,3 +84,18 @@ comprova redução de custo, latência ou aumento de vendas. A matriz de navegad
 no mesmo ciclo, loading com botão desabilitado e ausência de duplicação em desktop/iPhone/Pixel.
 
 A suíte completa identificou expectativa antiga de Swagger v1.5. O teste foi atualizado para v1.6, exigindo também retomada, flag operacional e auditoria de falha; sua revalidação passou. Cobertura Meta de snapshot ausente permanece separada da observação anterior válida.
+
+## Entidades HTML de busca — 24/09/2026
+
+A auditoria da tarefa 482 permitiu comparar todas as 16 observações da resposta real: uma
+observação editorial usava apóstrofo legível onde a busca retornara `&#x27;`; nenhuma palavra foi
+inventada. O executor passa a reconstruir o intervalo bruto após uma única decodificação estrita,
+sem mudar snippet/hash nem a validação literal do backend. Comparação aproximada continua proibida.
+
+Matriz: aspas hexadecimais/decimais/nomeadas, acentos, símbolos, fronteiras UTF-16, início/fim de
+entidade, fonte desconhecida, perda de negação, paráfrase, caixa e decodificação recursiva; regressões
+anteriores e contrato integrado com provedor sintético codificando aspas e modelo devolvendo texto
+legível. Replay local das 16 observações reais aceitou exatamente um remapeamento, sem chamada paga
+nem alteração de fontes. A suite completa do worker passou com 157 testes e a imagem versionada foi
+construída e conferida em container sem rede. Backend/frontend não foram alterados neste ajuste;
+o contrato do backend é revalidado com o callback real do worker e a fixture codificada.

@@ -64,7 +64,7 @@ await processJob(job, {
       url: "https://community.example.org/report",
       title: "Relato sintético de uso",
       snippet:
-        "Usei uma alternativa gratuita e ainda tive dificuldade para escolher.",
+        "Usei uma alternativa &quot;gratuita&quot; e ainda tive dificuldade para escolher.",
       sourceQuery: input.directedQueries[0],
       retrievedAt: "2026-09-24T00:00:00Z",
     },
@@ -134,7 +134,7 @@ await processJob(job, {
               evidenceId: e.evidenceId,
               sourceRole: "PUBLIC_CUSTOMER_REPORT",
               reportedAction: i ? "ABANDONMENT_REPORTED" : "USE_REPORTED",
-              supportingExcerpt: e.snippet,
+              supportingExcerpt: e.snippet.replaceAll("&quot;", '"'),
               limitation: "Relato sintético de teste; sem compra conciliada.",
             })),
           })),
@@ -168,6 +168,16 @@ assert(
     (c) => JSON.parse(c.evidenceJson).publicEvidenceAssessment.ready,
   ),
 );
+for (const candidate of result.opportunities) {
+  const data = JSON.parse(candidate.evidenceJson);
+  const observation = data.publicEvidenceAssessment.observations[0];
+  assert(observation.supportingExcerpt.includes("&quot;"));
+  assert(
+    data.referencedEvidence.publicEvidence[0].snippet.includes(
+      observation.supportingExcerpt,
+    ),
+  );
+}
 await writeFile(
   process.argv[2] || "/tmp/argos-public-worker.json",
   JSON.stringify({ job, plan, result }, null, 2),

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { findRawPublicExcerpt } from "./public-excerpt.js";
 
 export const PUBLIC_EVIDENCE_POLICY = "PUBLIC_SOURCES_V1";
 const roles = new Set([
@@ -32,6 +33,7 @@ export function assessPublicEvidence(
   const supported = observations.map((item) => {
     const source = sources.get(item.evidenceId);
     const excerpt = String(item.supportingExcerpt || "").trim();
+    const rawExcerpt = findRawPublicExcerpt(source?.snippet, excerpt);
     if (!source) {
       throw new Error(
         `Observação pública ${item.evidenceId}: use somente IDs da lista publicEvidence atual; ofertas e anúncios têm contratos separados`,
@@ -45,7 +47,9 @@ export function assessPublicEvidence(
       !actions.has(item.reportedAction) ||
       excerpt.length < 15 ||
       excerpt.length > 500 ||
-      !String(source.snippet || "").includes(excerpt) ||
+      !rawExcerpt ||
+      rawExcerpt.length < 15 ||
+      rawExcerpt.length > 500 ||
       !String(item.limitation || "").trim()
     ) {
       throw new Error(
@@ -74,6 +78,7 @@ export function assessPublicEvidence(
       domains.add(domain);
     return {
       ...item,
+      supportingExcerpt: rawExcerpt,
       url: source.url,
       retrievedAt: source.retrievedAt,
       evidenceScope: "SEARCH_EXCERPT_ONLY",

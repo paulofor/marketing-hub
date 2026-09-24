@@ -954,3 +954,17 @@ arbitrária, outra referência ou definição `DRAFT` continuam recusadas. Isso 
 histórica quando o catálogo publica uma versão mais recente durante a pesquisa.
 
 A cobertura da leitura de snapshot permanece separada da observação original: snapshot ausente não apaga a proveniência de anúncio já observado nem comprova nova coleta.
+
+### Equivalência HTML sem alterar a fonte — 24/09/2026
+
+Trechos de busca podem trazer entidades HTML (`&#x27;`, `&quot;`, `&amp;`) que o modelo lê como
+caracteres. O executor pode comparar uma única decodificação estrita e reconstruir o intervalo
+bruto correspondente. O `supportingExcerpt` persistido continua sendo substring literal do
+`snippet` original, com seu SHA-256 original; resposta bruta do modelo permanece na auditoria.
+Não se permitem paráfrase, remoção de palavras/negações, mudança de caixa, aproximação textual,
+decodificação recursiva ou correspondência parcial de entidade. O backend mantém sua validação
+literal independente. Fontes, famílias, limite de tamanho e critérios comerciais não mudam.
+
+Entre exigir entidades do modelo (frágil), flexibilizar o backend (maior superfície de risco) e
+reconstruir o trecho bruto no executor, adotou-se a terceira alternativa. Referência do decoder:
+[entities](https://github.com/fb55/entities), consultada em 24/09/2026; versão fixada no lockfile.

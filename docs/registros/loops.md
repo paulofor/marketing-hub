@@ -6915,3 +6915,14 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   inadequada para reexecutar a segunda etapa. O novo comando retoma o mesmo ciclo e conserva a
   tarefa falha; dupla submissão não abre tarefas adicionais. A versão congelada na execução
   independente continua válida mesmo quando o catálogo a aposenta; outra versão permanece negada.
+
+### LOOP-ARGOS-PUBLIC-HTML-EXCERPT — 24/09/2026
+
+- Causa confirmada: busca entregou `&#x27;` e síntese devolveu apóstrofo legível no mesmo trecho;
+  a comparação literal rejeitou a observação editorial, sem falsificação de conteúdo.
+- Evidência: resposta auditada da tarefa 482/ciclo 69; os 16 trechos foram comparados, somente um
+  diferia, exclusivamente por entidades HTML. IDs e classificações permaneceram válidos.
+- Correção: mapeamento reversível no executor, recuperando o intervalo bruto e preservando hash,
+  resposta original e validação literal do backend. Não flexibilizar correspondência semântica.
+- Prevenção: entidades numéricas/nomeadas, uma camada, múltiplas ocorrências, rejeição de paráfrase,
+  negação alterada, entidade parcial, hash original e callback integrado com corpus codificado.

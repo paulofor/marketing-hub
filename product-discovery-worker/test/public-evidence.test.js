@@ -1,4 +1,5 @@
 import test from "node:test";
+import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { assessPublicEvidence } from "../src/public-evidence.js";
 
@@ -82,4 +83,33 @@ test("recusa fonte sem data de coleta auditável", () => {
   assert.throws(() =>
     assessPublicEvidence(observations, sources, ["P7", "P8"]),
   );
+});
+
+test("persiste trecho e hash brutos quando o modelo decodifica HTML", () => {
+  const sources = structuredClone(evidence);
+  sources[0].snippet = "A opção &#x27;pronta&#x27; não resolveu a dificuldade.";
+  const items = structuredClone(observations);
+  items[0].supportingExcerpt = "A opção 'pronta' não resolveu a dificuldade.";
+  const result = assessPublicEvidence(items, sources, ["P7", "P8"]);
+  assert.equal(result.observations[0].supportingExcerpt, sources[0].snippet);
+  assert.equal(
+    result.observations[0].sourceSha256,
+    createHash("sha256").update(sources[0].snippet).digest("hex"),
+  );
+  assert.equal(
+    sources[0].snippet,
+    "A opção &#x27;pronta&#x27; não resolveu a dificuldade.",
+  );
+  assert.equal(result.ready, true);
+});
+
+test("preserva os limites literais do backend depois do remapeamento HTML", () => {
+  const sources = structuredClone(evidence);
+  const items = structuredClone(observations);
+  sources[0].snippet = "&#x27;".repeat(100);
+  items[0].supportingExcerpt = "'".repeat(100);
+  assert.throws(() => assessPublicEvidence(items, sources, ["P7", "P8"]));
+  sources[0].snippet = "Texto com ' presente.";
+  items[0].supportingExcerpt = "&#0000000000000039;";
+  assert.throws(() => assessPublicEvidence(items, sources, ["P7", "P8"]));
 });

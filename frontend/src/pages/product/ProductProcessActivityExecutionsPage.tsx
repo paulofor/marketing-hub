@@ -176,17 +176,17 @@ export default function ProductProcessActivityExecutionsPage() {
       ? Number(data.currentExecutionReference.split(":")[1])
       : null;
   const resolvedValueChainSequence = data
-    ? ([
+    ? [
         ...(valueChainPosition.data?.processMeasurements ?? []),
         ...(valueChainPosition.data?.subprocessPosition?.measurements ?? []),
       ].find(
         (measurement) =>
           measurement.processDefinitionId === data.selectedProcessDefinitionId,
       )?.sequenceLabel ||
-        (valueChainPosition.data?.processDefinitionId ===
-        data.selectedProcessDefinitionId
-          ? valueChainPosition.data.sequenceNumber?.toString()
-          : undefined))
+      (valueChainPosition.data?.processDefinitionId ===
+      data.selectedProcessDefinitionId
+        ? valueChainPosition.data.sequenceNumber?.toString()
+        : undefined)
     : undefined;
   const selectedProcessSequence =
     data?.chainPosition?.sequenceLabel ?? resolvedValueChainSequence;
@@ -722,6 +722,12 @@ export default function ProductProcessActivityExecutionsPage() {
                         key={`${activity.activityId}-${execution.taskId}`}
                         execution={execution}
                         contentHeadingLevel="h3"
+                        contextNotice={
+                          execution.processDefinitionId !==
+                          data.selectedProcessDefinitionId
+                            ? `Histórico da v${execution.processVersionNumber}; não determina o estado atual da v${data.selectedProcessVersionNumber}.`
+                            : undefined
+                        }
                         auditRequest={
                           execution.sourceReference
                             ? {

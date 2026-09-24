@@ -6964,3 +6964,22 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   explicitamente não informada; zero medido e custo parcial continuam distintos.
 - Prevenção: regressões de detalhe/listagem com gate comercial bloqueado, erro histórico com
   atualização posterior, falha vigente, custos ausentes/zero/parciais e navegação sem escrita.
+
+## LOOP-BPM-VERSAO-HISTORICA-MASCA-ESTADO-ATUAL — 24/09/2026
+
+- **Evidência confirmada:** a execução #20 do Processo 5 v10 de Capella entrou na fila sem instância
+  própria de `humanExperienceReview`. A consulta da v10 agregou a tarefa #422, bloqueada na v6 pela
+  antiga ausência de URL pública, e apresentou a atividade atual como bloqueada. Minutos depois, a
+  mesma execução concluiu a preparação Quartzo, reutilizou corretamente a tarefa vigente #474 na
+  instância #370 e avançou até 4/5; a falha #422 permaneceu apenas histórica.
+- **Causa-raiz:** a projeção já limitava tarefas por `sourceReference` e `processCode`, mas usava
+  tarefas de todas as versões desse código para calcular o estado da definição selecionada. A
+  identidade da definição (`process_definition_id`) só era aplicada às instâncias.
+- **Alternativas avaliadas:** ocultar a tarefa apagaria auditoria; atribuir #474 ao processo pai
+  duplicaria autoria e custo; excluir do estado atual tarefas já vinculadas a instâncias de outra
+  definição e rotulá-las como históricas preserva o legado sem romper correções entre versões. A
+  terceira foi adotada.
+- **Prevenção:** teste backend cobre v6 bloqueada antes e depois da instância v10 reutilizada. A
+  tela e o contexto copiado para o AIHUB identificam explicitamente registros históricos e informam
+  que eles não determinam o estado atual. Matriz em
+  `docs/homologacao/capella-processo96-projecao-versao-v1.md`.

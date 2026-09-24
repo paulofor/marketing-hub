@@ -59,3 +59,28 @@ contrato de saúde já exigia v7. O validador foi atualizado para aplicar a migr
 conferir a política pública, reaplicação sem duplicatas e rollback preservando o histórico.
 O mesmo script completo passou localmente em MySQL 5.7, após `bash -n` e ShellCheck, sem
 reduzir a comparação com o contrato de saúde dos nove agentes. Topologia temporária removida.
+
+## Correções integradas da retomada — 24/09/2026
+
+A execução real confirmou duas causas adicionais: consulta Meta reutilizando a tentativa da
+primeira etapa e resposta colocando ofertas/anúncios em `publicObservations`. Os trechos P do
+retorno foram conferidos e correspondiam às fontes; a falha era de família de referência.
+
+A candidata de correção mantém P/O/M separados, consulta snapshots no aprofundamento, reduz
+repetição de corpus no contexto e audita resposta recusada/consumo. A tela diferencia liberação de
+pesquisa de prova comportamental e permite retomar somente a etapa falha no mesmo ciclo, com nova
+tarefa e preservação da versão histórica. O aceite cobre dupla submissão, ausência de candidatas,
+estado/política incompatíveis e definição aposentada congelada versus definição arbitrária/DRAFT.
+
+Validação local: worker com 150 testes; frontend com 763 testes, tipagem e build; suíte backend
+completa com 3.497 casos (21 condicionais) e revalidação das classes alteradas; callback do worker em integração com backend; imagem
+versionada e schema em container sem rede; tela simulada em desktop/iPhone/Pixel. Resultados
+sintéticos nunca representam entrevista, preferência, compra ou faturamento. As evidências de
+publicação e execução efetiva devem ser anexadas ao PR, sem substituir a validação local.
+
+Reprodução do contexto real com dependências sintéticas: o prompt de síntese caiu de 425.552 para
+123.048 caracteres (71%), sem nova chamada paga. Essa medição avalia tamanho do contexto; não
+comprova redução de custo, latência ou aumento de vendas. A matriz de navegador inclui retomada
+no mesmo ciclo, loading com botão desabilitado e ausência de duplicação em desktop/iPhone/Pixel.
+
+A suíte completa identificou expectativa antiga de Swagger v1.5. O teste foi atualizado para v1.6, exigindo também retomada, flag operacional e auditoria de falha; sua revalidação passou. Cobertura Meta de snapshot ausente permanece separada da observação anterior válida.

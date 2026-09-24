@@ -5,6 +5,7 @@ import {
   type ProductDiscoveryOpportunity,
   useCreateProductDiscoveryCustomerInterview,
   useAdoptProductDiscoveryPublicEvidence,
+  useResumeProductDiscoveryPublicResearch,
   useProductDiscoveryGapDeepening,
 } from "../../api/productDiscovery/useProductDiscovery";
 
@@ -54,6 +55,7 @@ export default function CandidateGapDeepeningPanel({
   const gapQuery = useProductDiscoveryGapDeepening(cycleId);
   const createInterview = useCreateProductDiscoveryCustomerInterview(cycleId);
   const adoptPublicEvidence = useAdoptProductDiscoveryPublicEvidence(cycleId);
+  const resumePublicResearch = useResumeProductDiscoveryPublicResearch(cycleId);
   const [form, setForm] = useState<FormState>(
     initialForm(opportunities[0]?.id),
   );
@@ -185,6 +187,32 @@ export default function CandidateGapDeepeningPanel({
             {adoptPublicEvidence.isError ? (
               <p role="alert" className="text-danger mt-2">
                 {adoptPublicEvidence.error.message}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {gap.canResumePublicResearch ? (
+          <div className="alert alert-warning mb-0">
+            <p>
+              Após corrigir a causa registrada, retome somente o aprofundamento.
+              A pesquisa inicial e a tentativa bloqueada serão preservadas. A
+              nova tentativa usa os limites acima e pode consumir buscas e
+              modelo.
+            </p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={resumePublicResearch.isPending}
+              onClick={() => resumePublicResearch.mutate()}
+            >
+              {resumePublicResearch.isPending
+                ? "Retomando..."
+                : "Retomar aprofundamento após correção"}
+            </button>
+            {resumePublicResearch.isError ? (
+              <p role="alert" className="text-danger mt-2">
+                {resumePublicResearch.error.message}
               </p>
             ) : null}
           </div>
@@ -502,10 +530,10 @@ export default function CandidateGapDeepeningPanel({
           </form>
         ) : (
           <div className="alert alert-info mb-0">
-            {gap.readyForResearch
-              ? "Os critérios comportamentais foram atendidos. Argos pode aprofundar as lacunas sem repetir a pesquisa inicial."
-              : publicResearch
-                ? "Argos pesquisa automaticamente; acompanhe o resultado e as lacunas no relatório do ciclo."
+            {publicResearch
+              ? "A pesquisa usa fontes públicas, sem entrevistas obrigatórias. Sua liberação não comprova comportamento de compra; confira as evidências e lacunas no relatório do ciclo."
+              : gap.readyForResearch
+                ? "Os critérios comportamentais foram atendidos. Argos pode aprofundar as lacunas sem repetir a pesquisa inicial."
                 : "Esta atividade não aceita novas entrevistas no estado atual; o histórico permanece preservado."}
           </div>
         )}

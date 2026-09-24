@@ -765,6 +765,53 @@ class AgentTaskServiceTest {
     assertThat(response.exceptional()).isFalse();
   }
 
+  /** Permite continuar somente a versão aposentada que foi congelada na execução independente. */
+  @Test
+  void resumesOnlyThePinnedIndependentProcessVersion() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    var independent =
+        mock(
+            com.marketinghub.repository.jpa.businessprocess
+                .IndependentBusinessProcessExecutionRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    BusinessProcessDefinition original = process("RETIRED", "Dédalo");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(processes.findById(9L)).thenReturn(Optional.of(original));
+    when(repository.save(any(AgentTask.class)))
+        .thenAnswer(
+            invocation -> {
+              AgentTask task = invocation.getArgument(0);
+              task.setId(902L);
+              return task;
+            });
+    AgentTaskService service =
+        new AgentTaskService(repository, agents, processes, new ObjectMapper(), Clock.systemUTC());
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "independentExecutions", independent);
+    var request =
+        new CreateAgentTaskRequest(
+            "landing-generator",
+            "Operador",
+            "Retomar atividade",
+            "Aplicar correção preservando a execução.",
+            "HIGH",
+            "independent-test:305",
+            9L,
+            "html",
+            false,
+            null);
+    assertThatThrownBy(() -> service.createByHuman(request))
+        .hasMessageContaining("versão publicada");
+    when(independent.existsBySourceReferenceAndProcessDefinitionId("independent-test:305", 9L))
+        .thenReturn(true);
+    assertThat(service.createByHuman(request).processDefinitionId()).isEqualTo(9L);
+    original.setStatus("DRAFT");
+    assertThatThrownBy(() -> service.createByHuman(request))
+        .hasMessageContaining("versão publicada");
+  }
+
   /** Vincula Hermes à atividade cujo responsável usa seu nome funcional no BPM publicado. */
   @Test
   void createsHumanTaskBoundByAgentFunctionalName() {

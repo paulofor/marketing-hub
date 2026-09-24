@@ -86,13 +86,25 @@ public class ProductDiscoveryBpmAuditService {
 
   /** Abre a segunda atividade na mesma versão do processo usada pela pesquisa inicial. */
   public AgentTaskResponse openCandidateGapDeepening(ProductDiscoveryCycle cycle) {
+    return openCandidateGapDeepening(cycle, false);
+  }
+
+  /**
+   * Abre nova ocorrência da segunda atividade após correção, mantendo versão e tentativa histórica.
+   */
+  public AgentTaskResponse reopenCandidateGapDeepening(ProductDiscoveryCycle cycle) {
+    return openCandidateGapDeepening(cycle, true);
+  }
+
+  /** Monta uma única descrição de aprofundamento para abertura inicial ou retomada explícita. */
+  private AgentTaskResponse openCandidateGapDeepening(ProductDiscoveryCycle cycle, boolean retry) {
     requirePersistedCycle(cycle);
     BusinessProcessDefinition process = processForCycle(cycle);
     if (!hasTaskActivity(process, GAP_DEEPENING_ACTIVITY_ID)) {
       throw new IllegalStateException(
           "A versão do processo deste ciclo não possui aprofundamento de lacunas.");
     }
-    return agentTaskService.createByHumanIfAbsent(
+    CreateAgentTaskRequest request =
         new CreateAgentTaskRequest(
             AGENT_KEY,
             "Marketing Hub",
@@ -105,7 +117,10 @@ public class ProductDiscoveryBpmAuditService {
             process.getId(),
             GAP_DEEPENING_ACTIVITY_ID,
             false,
-            null));
+            null);
+    return retry
+        ? agentTaskService.createByHuman(request)
+        : agentTaskService.createByHumanIfAbsent(request);
   }
 
   /** Informa se a execução foi aberta numa versão que exige a segunda atividade. */

@@ -55,6 +55,7 @@ const assert = require("node:assert/strict");
       const page = await context.newPage();
       const errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
+      let failed = false;
       let posts = 0,
         adopted = false,
         completed = false;
@@ -62,11 +63,13 @@ const assert = require("node:assert/strict");
       const gap = () => ({
         cycleId: id,
         applicable: true,
-        cycleStatus: completed
-          ? "COMPLETED"
-          : adopted
-            ? "READY_FOR_RESEARCH"
-            : "AWAITING_CUSTOMER_EVIDENCE",
+        cycleStatus: failed
+          ? "FAILED"
+          : completed
+            ? "COMPLETED"
+            : adopted
+              ? "READY_FOR_RESEARCH"
+              : "AWAITING_CUSTOMER_EVIDENCE",
         stageCode: completed
           ? "opportunity-gate"
           : adopted
@@ -94,6 +97,7 @@ const assert = require("node:assert/strict");
           ? "PUBLIC_SOURCES_V1"
           : "CONSENTED_INTERVIEWS_V1",
         canAdoptPublicEvidence: !adopted,
+        canResumePublicResearch: failed,
       });
       await page.route("**/*", async (route) => {
         const req = route.request();
@@ -103,7 +107,7 @@ const assert = require("node:assert/strict");
             assert.equal(req.method(), "POST");
             assert.equal(
               url.pathname,
-              `/api/product-discovery/v1/cycles/${id}/gap-deepening/public-research`,
+              `/api/product-discovery/v1/cycles/${id}/gap-deepening/public-research${failed ? "/resume" : ""}`,
             );
             assert.equal(req.postData(), null);
             posts++;
@@ -114,6 +118,7 @@ const assert = require("node:assert/strict");
                 json: { detail: "Indisponibilidade temporária simulada" },
               });
             adopted = true;
+            failed = false;
             return route.fulfill({ json: gap() });
           }
           if (url.pathname.endsWith("/gap-deepening"))
@@ -174,6 +179,24 @@ const assert = require("node:assert/strict");
       await expect(
         page.getByRole("button", { name: "Registrar entrevista" }),
       ).toHaveCount(0);
+      await expect(
+        page.getByText(/Sua liberação não comprova comportamento de compra/),
+      ).toBeVisible();
+      await expect(
+        page.getByText(/Os critérios comportamentais foram atendidos/),
+      ).toHaveCount(0);
+      failed = true;
+      const resumeButton = page.getByRole("button", {
+        name: "Retomar aprofundamento após correção",
+      });
+      await expect(resumeButton).toBeVisible({ timeout: 20000 });
+      await resumeButton.click();
+      await expect(page.getByRole("button", { name: "Retomando..." })).toBeDisabled();
+      await expect(resumeButton).toHaveCount(0);
+      assert.equal(
+        new URL(page.url()).pathname,
+        `/product-discovery/cycles/${id}`,
+      );
       completed = true;
       await expect(
         page.getByRole("heading", { name: "Observações públicas de Argos" }),
@@ -197,7 +220,7 @@ const assert = require("node:assert/strict");
         ),
         true,
       );
-      assert.equal(posts, 2);
+      assert.equal(posts, 3);
       assert.deepEqual(errors, []);
       results.push({
         profile: name,
@@ -211,6 +234,7 @@ const assert = require("node:assert/strict");
           "polling",
           "evidence",
           "mobile-layout",
+          "resume-same-cycle",
         ],
         syntheticMutations: posts,
         pageErrors: errors,

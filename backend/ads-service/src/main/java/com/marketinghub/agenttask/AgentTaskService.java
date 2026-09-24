@@ -51,6 +51,11 @@ public class AgentTaskService {
   private com.marketinghub.product.executionprofile.v1.service.ExecutionProfileContext
       executionProfileContext;
 
+  @Autowired(required = false)
+  private com.marketinghub.repository.jpa.businessprocess
+          .IndependentBusinessProcessExecutionRepository
+      independentExecutions;
+
   private static final Logger log = LoggerFactory.getLogger(AgentTaskService.class);
   private static final Set<String> ALLOWED_TRANSITIONS =
       Set.of(
@@ -1408,7 +1413,19 @@ public class AgentTaskService {
     return value == null || value.isBlank() ? null : value.trim();
   }
 
-  /** Valida atividade publicada ou congelada na ficha, seus gates e a justificativa excepcional. */
+  /**
+   * Confirma uma versão congelada por ficha ou execução independente persistida, nunca pelo texto
+   * do pedido.
+   */
+  private boolean pinsExistingExecution(String reference, Long processId) {
+    if (trimToNull(reference) == null) return false;
+    return (executionProfileContext != null && executionProfileContext.pins(reference, processId))
+        || (independentExecutions != null
+            && independentExecutions.existsBySourceReferenceAndProcessDefinitionId(
+                reference, processId));
+  }
+
+  /** Valida atividade publicada ou congelada na ficha/execução independente e preserva seus gates. */
   private ProcessBinding validateProcessBinding(CreateAgentTaskRequest request, Agent assignee) {
     if (request.exceptional()) {
       String reason = trimToNull(request.exceptionReason());
@@ -1436,8 +1453,7 @@ public class AgentTaskService {
                         HttpStatus.BAD_REQUEST, "Processo não encontrado."));
     if (!"PUBLISHED".equals(definition.getStatus())
         && !("RETIRED".equals(definition.getStatus())
-            && executionProfileContext != null
-            && executionProfileContext.pins(request.sourceReference(), definition.getId()))) {
+            && pinsExistingExecution(request.sourceReference(), definition.getId()))) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "A tarefa só pode usar uma versão publicada do processo.");
     }

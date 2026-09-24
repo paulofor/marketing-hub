@@ -202,6 +202,13 @@ public class ProductDiscoveryController {
     return ResponseEntity.ok(customerInterviewService.adoptPublicEvidence(cycleId));
   }
 
+  /** Retoma falha técnica do aprofundamento público no mesmo ciclo e versão do processo. */
+  @PostMapping("/product-discovery/v1/cycles/{cycleId}/gap-deepening/public-research/resume")
+  public ResponseEntity<ProductDiscoveryGapDeepeningResponse> resumePublicResearch(
+      @PathVariable Long cycleId) {
+    return ResponseEntity.ok(customerInterviewService.resumePublicResearch(cycleId));
+  }
+
   /** Registra uma entrevista consentida e anônima sem criar decisão estratégica. */
   @PostMapping("/product-discovery/v1/cycles/{cycleId}/gap-deepening/interviews")
   public ResponseEntity<ProductDiscoveryGapDeepeningResponse> recordCustomerInterview(

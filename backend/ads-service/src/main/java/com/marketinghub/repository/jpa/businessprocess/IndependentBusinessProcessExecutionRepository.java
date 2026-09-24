@@ -16,6 +16,12 @@ public interface IndependentBusinessProcessExecutionRepository
   /** Localiza uma solicitação idempotente antes de criar trabalho operacional. */
   Optional<IndependentBusinessProcessExecution> findByRequestKey(String requestKey);
 
+  /**
+   * Confirma a versão congelada da execução independente antes de retomar uma atividade histórica.
+   */
+  boolean existsBySourceReferenceAndProcessDefinitionId(
+      String sourceReference, Long processDefinitionId);
+
   /** Lista a primeira página sem hidratar os campos extensos da definição do processo. */
   @Query(
       """

@@ -140,6 +140,7 @@ describe("CandidateGapDeepeningPanel", () => {
             ? "READY_FOR_RESEARCH"
             : "AWAITING_CUSTOMER_EVIDENCE",
           minimumInterviews: adopted ? 0 : 5,
+          readyForResearch: adopted,
           guidance: adopted
             ? "Pesquisa pública em andamento"
             : gapResponse.guidance,
@@ -161,8 +162,57 @@ describe("CandidateGapDeepeningPanel", () => {
       screen.queryByRole("button", { name: "Registrar entrevista" }),
     ).toBeNull();
     expect(
+      screen.getByText(/Sua liberação não comprova comportamento de compra/),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(/Os critérios comportamentais foram atendidos/),
+    ).toBeNull();
+    expect(
       fetchMock.mock.calls.filter(([, init]) => init?.method === "POST"),
     ).toHaveLength(1);
+  });
+
+  it("retoma somente aprofundamento pelo contrato do backend sem duplicar a chamada", async () => {
+    let resumed = false;
+    fetchMock.mockImplementation(async (input, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        expect(String(input)).toContain(
+          "/cycles/65/gap-deepening/public-research/resume",
+        );
+        resumed = true;
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ...gapResponse,
+          evidencePolicy: "PUBLIC_SOURCES_V1",
+          minimumInterviews: 0,
+          canResumePublicResearch: !resumed,
+          cycleStatus: resumed ? "READY_FOR_RESEARCH" : "FAILED",
+        }),
+      };
+    });
+    const user = userEvent.setup();
+    renderPanel();
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Retomar aprofundamento após correção",
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", {
+          name: "Retomar aprofundamento após correção",
+        }),
+      ).toBeNull(),
+    );
+    expect(
+      fetchMock.mock.calls.filter(([, init]) => init?.method === "POST"),
+    ).toHaveLength(1);
+    expect(
+      screen.queryByRole("button", { name: "Registrar entrevista" }),
+    ).toBeNull();
   });
 
   it("registra comportamento passado consentido sem dados de contato", async () => {

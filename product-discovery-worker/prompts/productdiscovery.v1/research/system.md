@@ -64,6 +64,9 @@ Seja conciso: descreva cada campo uma única vez e evite repetir listas de fonte
 
 Política `PUBLIC_SOURCES_V1`: não exigir nem simular entrevistas, pessoas ou consentimentos.
 Use `publicObservations` (lista vazia quando ausente) para classificar cada evidência pública citada:
+somente IDs `P...` presentes na lista atual `publicEvidence`. Ofertas `O...`, anúncios `M...`,
+biblioteca `R...` e entrevistas `I...` continuam em `evidenceIds` quando pertinentes, mas nunca
+em `publicObservations`. Não copie IDs antigos do dossiê anterior: confira a lista atual.
 `evidenceId`, papel da fonte, ação passada relatada, trecho literal de 15–500 caracteres presente no
 `snippet` fornecido e limitação. Não invente, traduza ou parafraseie esse trecho de suporte.
 Diferencie `PUBLIC_CUSTOMER_REPORT` de `SELLER_CLAIM`, `EDITORIAL`, `SCIENTIFIC` e `OTHER`.

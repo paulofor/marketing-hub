@@ -10,14 +10,14 @@ import org.junit.jupiter.api.Test;
 class ArgosMarketDiscoverySwaggerTest {
   private static final Path SWAGGER_ROOT = Path.of("../../docs/swagger");
 
-  /** Exige modo, comprador, aprofundamento comportamental e auditoria no contrato do worker. */
+  /** Exige modo, comprador, aprofundamento público, retomada e auditoria no contrato do worker. */
   @Test
-  void documentsProductDiscoveryV15() throws Exception {
+  void documentsProductDiscoveryV16() throws Exception {
     String swagger = Files.readString(SWAGGER_ROOT.resolve("product-discovery-swagger.yaml"));
 
     assertThat(swagger)
         .contains(
-            "version: 1.5.0",
+            "version: 1.6.0",
             "DISCOVER_MARKETS",
             "VALIDATE_MARKET",
             "marketType",
@@ -29,6 +29,9 @@ class ArgosMarketDiscoverySwaggerTest {
             "ProductDiscoverySupervisedMetaObservation",
             "ProductDiscoverySupervisedMetaSession",
             "/gap-deepening/interviews",
+            "/gap-deepening/public-research/resume",
+            "canResumePublicResearch",
+            "analysisAudit",
             "/candidate-gap-deepening/stage-executions/pending",
             "ProductDiscoveryCustomerInterviewInput",
             "ProductDiscoveryGapDeepening",

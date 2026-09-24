@@ -11,7 +11,10 @@ export type ProductDiscoveryCycleStatus =
   | "ARCHIVED";
 
 export type ProductDiscoveryOpportunityDecision =
-  "APPROVE" | "RESEARCH_MORE" | "REJECT" | "HUMAN_REVIEW";
+  | "APPROVE"
+  | "RESEARCH_MORE"
+  | "REJECT"
+  | "HUMAN_REVIEW";
 
 export interface ProductDiscoveryCycle {
   id: number;
@@ -44,7 +47,11 @@ export interface ProductDiscoveryOpportunity {
   evidenceJson?: string | null;
   score: number;
   maturity?:
-    "SIGNAL" | "RESEARCHABLE" | "DOSSIER_READY" | "HUMAN_REVIEW" | "REJECTED";
+    | "SIGNAL"
+    | "RESEARCHABLE"
+    | "DOSSIER_READY"
+    | "HUMAN_REVIEW"
+    | "REJECTED";
   decision: ProductDiscoveryOpportunityDecision;
   createdAt: string;
   updatedAt: string;
@@ -137,6 +144,7 @@ export interface ProductDiscoveryCustomerInterview {
 export interface ProductDiscoveryGapDeepening {
   evidencePolicy: string;
   canAdoptPublicEvidence: boolean;
+  canResumePublicResearch?: boolean;
   cycleId: number;
   applicable: boolean;
   cycleStatus: ProductDiscoveryCycleStatus;
@@ -466,6 +474,38 @@ export function useResumeProductDiscoveryPrivateValidationHandoff() {
         }),
         queryClient.invalidateQueries({
           queryKey: productDiscoveryKeys.cycle(result.cycleId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["independent-business-process-executions"],
+        }),
+      ]);
+    },
+  });
+}
+
+export function useResumeProductDiscoveryPublicResearch(cycleId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () =>
+      parseJsonResponse<ProductDiscoveryGapDeepening>(
+        await fetch(
+          buildApiUrl(
+            `/api/product-discovery/v1/cycles/${cycleId}/gap-deepening/public-research/resume`,
+          ),
+          { method: "POST" },
+        ),
+        "Não foi possível retomar o aprofundamento",
+      ),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: productDiscoveryKeys.gapDeepening(cycleId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: productDiscoveryKeys.cycle(cycleId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: productDiscoveryKeys.cycles,
         }),
         queryClient.invalidateQueries({
           queryKey: ["independent-business-process-executions"],

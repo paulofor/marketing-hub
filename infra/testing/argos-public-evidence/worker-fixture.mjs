@@ -1,6 +1,7 @@
 // Executa o worker real com somente busca, marketplace e resposta do modelo simulados.
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
+import { collectMarketplaceEvidence } from "../../../product-discovery-worker/src/marketplace-evidence.js";
 import { processJob } from "../../../product-discovery-worker/src/worker.js";
 import {
   planDirectedResearch,
@@ -76,11 +77,27 @@ await processJob(job, {
       retrievedAt: "2026-09-24T00:00:00Z",
     },
   ],
-  collectMarketplaceEvidence: async () => ({
-    marketplaceOffers: [],
-    metaAdEvidence: [],
-    metaCoverage: [],
-  }),
+  collectMarketplaceEvidence: async (plan, options) =>
+    collectMarketplaceEvidence(plan, {
+      ...options,
+      fetchFn: async (url, init) => {
+        assert.equal(options.stageCode, "candidate-gap-deepening");
+        assert.equal(
+          init.method,
+          undefined,
+          "Snapshot não pode alterar tentativa Meta anterior",
+        );
+        return {
+          ok: true,
+          json: async () => ({
+            items: [],
+            sourceStatus: "NOT_REQUESTED",
+            collectionMode: "PERSISTED_ONLY",
+            interpretation: "Snapshot ausente; sem conclusão de mercado.",
+          }),
+        };
+      },
+    }),
   synthesizeMarketCandidates: async (context) =>
     synthesizeMarketCandidates(context, {
       enabled: true,

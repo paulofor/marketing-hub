@@ -431,3 +431,28 @@ test("agrega as duas chamadas de Argos sem perder URLs nem resposta bruta", () =
   assert.equal(payload.accessedUrls.length, 1);
   assert.equal(payload.rawResponse, '{"candidates":[]}');
 });
+
+test("callback de falha transporta a resposta recusada e o consumo disponível", () => {
+  const error = new Error("Referência pública inválida");
+  error.analysisAudit = {
+    rawResponse: '{"status":"REJECTED","rawResponse":"saída original"}',
+    model: "modelo-teste",
+    executionMode: "MODEL",
+    inputTokens: 137,
+    outputTokens: 23,
+  };
+  const callback = JSON.parse(
+    JSON.stringify(
+      withExecutionLease(
+        { executionLeaseId: "lease-falha" },
+        failureCallbackPayload(error),
+      ),
+    ),
+  );
+  assert.equal(callback.executionLeaseId, "lease-falha");
+  assert.equal(callback.analysisAudit.inputTokens, 137);
+  assert.equal(
+    JSON.parse(callback.analysisAudit.rawResponse).rawResponse,
+    "saída original",
+  );
+});

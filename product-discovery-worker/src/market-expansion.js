@@ -583,8 +583,10 @@ function appendUniqueText(current, addition) {
   return text.includes(addition) ? text : `${text} ${addition}`.trim();
 }
 
+/** Distingue leitura de snapshot da observação original sem apagar sua proveniência. */
 function metaCoverageKey(item) {
-  return normalize(`${item.query}:${item.country}:${item.publisherPlatform}`);
+  const scope = item.collectionMode === "PERSISTED_ONLY" ? ":snapshot" : "";
+  return normalize(`${item.query}:${item.country}:${item.publisherPlatform}${scope}`);
 }
 
 function normalize(value) {

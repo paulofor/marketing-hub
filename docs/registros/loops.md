@@ -6897,3 +6897,21 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   comportamentais mínimos, sem dispensar gates existentes. Ausência de fonte mantém lacuna.
 - **Contrato/testes:** `descoberta-produtos-pde-canon.v1.md`, `argos-public-evidence-v1.md`,
   `ProductDiscoveryPublicEvidenceContractTest`, `public-evidence.test.js`.
+
+## LOOP-ARGOS-PUBLIC-SOURCE-FAMILY — 24/09/2026
+
+- Contexto: aprofundamento público retomado no ciclo #69, tarefa #481; fontes e resposta final
+  recuperadas na auditoria local do executor. Os trechos P correspondiam à busca. A síntese também
+  incluiu O15/O4/O13/O19/M1 em `publicObservations`, cujo validador aceita apenas `publicEvidence`.
+- Causa confirmada: schema sem restrição de família e prompt ambíguo; não houve evidência de trecho
+  P fabricado. Separação P/O/M no schema e no prompt fecha essa causa, mantendo validação literal.
+- Integração associada: tentativa 1 do aprofundamento tentou substituir consulta da descoberta;
+  backend recusou corretamente o vínculo imutável. Aprofundamento passa a GET de snapshots e
+  mantém corpus anterior; descoberta inicial continua POST/navegador.
+- Prevenção: testes de schema, família de fonte, coleta por etapa, auditoria de falha e copy da
+  tela. Relatório sem fonte suficiente continua inconclusivo. Liberação não significa evidência
+  comportamental atendida. Canon: `descoberta-produtos-pde-canon.v1.md`.
+- Retomada também exige uma ação do próprio domínio: a tela anterior só oferecia nova descoberta,
+  inadequada para reexecutar a segunda etapa. O novo comando retoma o mesmo ciclo e conserva a
+  tarefa falha; dupla submissão não abre tarefas adicionais. A versão congelada na execução
+  independente continua válida mesmo quando o catálogo a aposenta; outra versão permanece negada.

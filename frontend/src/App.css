@@ -1544,7 +1544,39 @@
 .product-process-activity-control__workspace {
   border-top: 1px solid #cbd5e1;
   margin-top: 0.15rem;
+  min-width: 0;
   padding-top: 1rem;
+}
+
+.experiment-run-panel {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.experiment-run-panel .card,
+.experiment-run-panel .card-body,
+.experiment-run-panel .accordion,
+.experiment-run-panel .accordion-item,
+.experiment-run-panel .accordion-collapse,
+.experiment-run-panel .accordion-body,
+.experiment-run-panel .list-group,
+.experiment-run-panel .list-group-item,
+.experiment-run-panel fieldset,
+.experiment-run-panel .d-flex > div {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.experiment-run-panel .fw-semibold,
+.experiment-run-panel legend,
+.experiment-run-panel .accordion-button {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.experiment-run-panel legend {
+  max-width: 100%;
+  white-space: normal;
 }
 
 .product-process-human-decision {

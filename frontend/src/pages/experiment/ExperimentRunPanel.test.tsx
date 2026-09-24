@@ -86,6 +86,15 @@ describe("ExperimentRunPanel", () => {
 
   afterEach(cleanup);
 
+  it("expõe a raiz fluida que contém códigos técnicos no celular", () => {
+    const { container } = render(<ExperimentRunPanel experimentId="99" />);
+
+    expect(container.firstElementChild).toHaveClass("experiment-run-panel");
+    expect(
+      screen.getAllByText("LANDING_QUALITY_REVIEW_APPROVED").length,
+    ).toBeGreaterThan(0);
+  });
+
   it("registra os quatro gates funcionais somente com evidências completas", () => {
     render(<ExperimentRunPanel experimentId="99" />);
 

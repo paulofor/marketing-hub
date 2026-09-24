@@ -13,16 +13,25 @@
 
 ## Matriz de aceite local
 
-| Caso | Evidência esperada |
-| --- | --- |
-| v6 bloqueada e v10 ainda sem instância | #422 continua consultável, mas a v10 fica `NOT_STARTED` |
-| v10 concluída por reúso | instância #370 governa o estado `COMPLETED` com `REUSED_DIRECT` |
-| bloqueio criado na própria v10 | a tarefa atual continua governando o estado e a recuperação |
-| tarefa de outra definição na tela | cartão informa que é histórico e não determina a v10 |
-| contexto copiado para o AIHUB | cada tarefa declara se pertence à versão selecionada ou ao histórico |
-| referência de outro produto | o backend continua recusando a consulta |
-| lista compacta | prompts, resultados e evidências extensas continuam carregados só sob demanda |
-| desktop, iPhone 15 Pro e Pixel 7 | aviso histórico legível, sem sobreposição nem ação de escrita |
+| Caso                                   | Evidência esperada                                                               |
+| -------------------------------------- | -------------------------------------------------------------------------------- |
+| v6 bloqueada e v10 ainda sem instância | #422 continua consultável, mas a v10 fica `NOT_STARTED`                          |
+| v10 concluída por reúso                | instância #370 governa o estado `COMPLETED` com `REUSED_DIRECT`                  |
+| bloqueio criado na própria v10         | a tarefa atual continua governando o estado e a recuperação                      |
+| tarefa de outra definição na tela      | cartão informa que é histórico e não determina a v10                             |
+| contexto copiado para o AIHUB          | cada tarefa declara se pertence à versão selecionada ou ao histórico             |
+| referência de outro produto            | o backend continua recusando a consulta                                          |
+| lista compacta                         | prompts, resultados e evidências extensas continuam carregados só sob demanda    |
+| desktop, iPhone 15 Pro e Pixel 7       | aviso histórico e preflight legíveis, sem rolagem horizontal nem ação de escrita |
+
+## Regressão responsiva encontrada na publicação
+
+A primeira validação publicada revelou que os códigos técnicos dos gates do preflight aumentavam a
+largura intrínseca do painel para 554 px em telas de 393 e 412 px. A correção foi aplicada no
+componente compartilhado: o workspace pode encolher, contêineres aninhados respeitam a largura
+disponível e identificadores longos quebram linha sem ocultar evidências. A matriz local com o
+payload real do experimento #88 confirmou largura igual ao viewport em desktop, iPhone 15 Pro e
+Pixel 7, sem erros de console ou requisições de escrita.
 
 ## Limites comerciais preservados
 

@@ -2132,3 +2132,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-24-argos-agent-version-v6-strict-contracts.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-24-product-discovery-enums-varchar-v1.yaml
+      relativeToChangelogFile: true

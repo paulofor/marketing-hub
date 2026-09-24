@@ -61,6 +61,21 @@ audit_argos_market_command() {
     'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
 }
 
+audit_product_discovery_enums_update() {
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-09-24-product-discovery-enums-varchar-v1.yaml \
+    liquibase-product-discovery-bpm-audit
+}
+
+# shellcheck disable=SC2016 # O comando abaixo é expandido deliberadamente pelo shell do container.
+audit_product_discovery_enums_command() {
+  local command="$1"
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-09-24-product-discovery-enums-varchar-v1.yaml \
+    liquibase-product-discovery-bpm-audit sh -lc \
+    'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
+}
+
 audit_argos_meta_browser_update() {
   audit_compose run --rm \
     -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-08-30-argos-meta-public-browser-v1.yaml \
@@ -1012,6 +1027,88 @@ audit_assert_equal \
     (SELECT COUNT(*) FROM business_process_chain_item item
       JOIN business_process_chain_definition chain ON chain.id = item.chain_definition_id
       WHERE chain.chain_code = 'pde-value-creation-delivery' AND chain.version_number = 12)
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "DELETE FROM DATABASECHANGELOG
+      WHERE ID = '2026-09-24-product-discovery-enums-varchar-v1-001';" \
+  >/dev/null 2>&1
+audit_product_discovery_enums_update
+audit_product_discovery_enums_update
+audit_assert_equal \
+  "contratos evolutivos da descoberta" \
+  "varchar:32:VALIDATE_MARKET:varchar:24:UNSPECIFIED:varchar:40:READY_FOR_RESEARCH" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT data_type FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'research_mode'), ':',
+    (SELECT character_maximum_length FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'research_mode'), ':',
+    (SELECT column_default FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'research_mode'), ':',
+    (SELECT data_type FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'market_type'), ':',
+    (SELECT character_maximum_length FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'market_type'), ':',
+    (SELECT column_default FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'market_type'), ':',
+    (SELECT data_type FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'status'), ':',
+    (SELECT character_maximum_length FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'status'), ':',
+    (SELECT column_default FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'status')
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "UPDATE product_discovery_cycle
+         SET status = 'AWAITING_CUSTOMER_EVIDENCE'
+       WHERE id = 42;" \
+  >/dev/null 2>&1
+
+audit_product_discovery_enums_command "rollbackCount 1"
+audit_assert_equal \
+  "rollback preserva o estado de espera por evidência" \
+  "enum:AWAITING_CUSTOMER_EVIDENCE" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT data_type FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'status'), ':',
+    (SELECT status FROM product_discovery_cycle WHERE id = 42)
+  );")"
+
+audit_product_discovery_enums_update
+audit_assert_equal \
+  "reaplicação dos contratos evolutivos" \
+  "varchar:AWAITING_CUSTOMER_EVIDENCE:1" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT data_type FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'status'), ':',
+    (SELECT status FROM product_discovery_cycle WHERE id = 42), ':',
+    (SELECT COUNT(*) FROM DATABASECHANGELOG
+      WHERE id = '2026-09-24-product-discovery-enums-varchar-v1-001')
   );")"
 
 echo "Auditoria BPM da descoberta e do retrabalho PDE aprovada no MySQL 5.7."

@@ -1,0 +1,65 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-09-24-product-discovery-enums-varchar-v1.yaml
+  - changeSet:
+      id: 2026-09-24-product-discovery-enums-varchar-v1-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_cycle
+        - columnExists:
+            tableName: product_discovery_cycle
+            columnName: research_mode
+        - columnExists:
+            tableName: product_discovery_cycle
+            columnName: market_type
+        - columnExists:
+            tableName: product_discovery_cycle
+            columnName: status
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT COUNT(*)
+              FROM product_discovery_cycle
+              WHERE research_mode IS NULL
+                 OR CHAR_LENGTH(research_mode) > 32
+                 OR market_type IS NULL
+                 OR CHAR_LENGTH(market_type) > 24
+                 OR status IS NULL
+                 OR CHAR_LENGTH(status) > 40
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_cycle
+                MODIFY COLUMN research_mode VARCHAR(32) NOT NULL DEFAULT 'VALIDATE_MARKET',
+                MODIFY COLUMN market_type VARCHAR(24) NOT NULL DEFAULT 'UNSPECIFIED',
+                MODIFY COLUMN status VARCHAR(40) NOT NULL DEFAULT 'READY_FOR_RESEARCH';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_cycle
+                MODIFY COLUMN research_mode ENUM(
+                  'VALIDATE_MARKET',
+                  'DISCOVER_MARKETS'
+                ) NOT NULL DEFAULT 'VALIDATE_MARKET',
+                MODIFY COLUMN market_type ENUM(
+                  'UNSPECIFIED',
+                  'B2C',
+                  'B2B'
+                ) NOT NULL DEFAULT 'UNSPECIFIED',
+                MODIFY COLUMN status ENUM(
+                  'DRAFT',
+                  'READY_FOR_RESEARCH',
+                  'RESEARCHING',
+                  'AWAITING_CUSTOMER_EVIDENCE',
+                  'COMPLETED',
+                  'FAILED',
+                  'ARCHIVED'
+                ) NOT NULL DEFAULT 'READY_FOR_RESEARCH';

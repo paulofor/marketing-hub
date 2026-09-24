@@ -57,6 +57,57 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
     assertThat(statuses).containsEntry("product-discovery-cycle:42", "BLOCKED");
   }
 
+  /** Diferencia espera por entrevistas de uma tarefa executável ainda na fila. */
+  @Test
+  void reportsWaitingInputWhileCustomerEvidenceIsMissing() {
+    ProductDiscoveryCycleRepository cycles = mock(ProductDiscoveryCycleRepository.class);
+    ProductDiscoveryOpportunityRepository opportunities =
+        mock(ProductDiscoveryOpportunityRepository.class);
+    OpportunityDossierRepository dossiers = mock(OpportunityDossierRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    ProductDiscoveryIndependentStatusProjection snapshot =
+        mock(ProductDiscoveryIndependentStatusProjection.class);
+    when(snapshot.getCycleId()).thenReturn(42L);
+    when(snapshot.getCycleStatus())
+        .thenReturn(ProductDiscoveryCycleStatus.AWAITING_CUSTOMER_EVIDENCE.name());
+    when(snapshot.getReadyOpportunityCount()).thenReturn(1L);
+    when(snapshot.getProductCount()).thenReturn(0L);
+    when(cycles.findIndependentStatusSnapshotsByIds(java.util.Set.of(42L)))
+        .thenReturn(List.of(snapshot));
+    ProductDiscoveryCycle cycle = cycle();
+    cycle.setStatus(ProductDiscoveryCycleStatus.AWAITING_CUSTOMER_EVIDENCE);
+    ProductDiscoveryOpportunity opportunity =
+        opportunity(
+            503L,
+            cycle,
+            "Decisão personalizada de look",
+            ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
+    when(cycles.findById(42L)).thenReturn(Optional.of(cycle));
+    when(opportunities.findAllByCycleIdOrderByScoreDesc(42L)).thenReturn(List.of(opportunity));
+    when(dossiers.findAllByProductDiscoveryCycleIdOrderByIdAsc(42L)).thenReturn(List.of());
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("product-discovery-cycle:42"))
+        .thenReturn(
+            List.of(
+                task(
+                    730L,
+                    "marketEvidence",
+                    "Argos",
+                    "COMPLETED",
+                    "{\"decision\":\"RESEARCH_MORE\"}"),
+                task(731L, "candidateGapDeepening", "Argos", "PENDING", null)));
+    ProductDiscoveryIndependentExecutionReportService service =
+        new ProductDiscoveryIndependentExecutionReportService(
+            cycles, opportunities, dossiers, tasks, new ObjectMapper());
+
+    Map<String, String> statuses =
+        service.summaryStatuses(Map.of("product-discovery-cycle:42", "PENDING"));
+    var report = service.report("product-discovery-cycle:42");
+
+    assertThat(statuses).containsEntry("product-discovery-cycle:42", "WAITING_INPUT");
+    assertThat(report.status()).isEqualTo("WAITING_INPUT");
+    assertThat(report.privateValidationHandoff().status()).isEqualTo("WAITING_CUSTOMER_EVIDENCE");
+  }
+
   /** Expõe fontes, seleção, gates e produto sem exigir leitura de JSON técnico. */
   @Test
   void reportsFullLineageForSelectedCandidate() {

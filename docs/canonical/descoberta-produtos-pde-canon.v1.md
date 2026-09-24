@@ -62,6 +62,10 @@ gasto conhecido e obstáculo residual; ausência de gasto permanece desconhecida
 nome, e-mail, telefone ou contato. Perguntas abertas sobre a última ocorrência substituem perguntas
 indutoras sobre intenção futura. A orientação oficial consultada em 23/09/2026 é
 [Using in-depth interviews — GOV.UK](https://www.gov.uk/service-manual/user-research/using-in-depth-interviews).
+Enquanto esse conjunto não existir, a execução independente deve expor `WAITING_INPUT`, explicar a
+evidência faltante e apontar para o registro consentido. `PENDING` fica reservado a trabalho já
+executável pelo worker; a espera por pessoas reais não pode parecer fila nem incentivar nova chamada
+de modelo com a mesma entrada.
 
 Depois do gate, Argos planeja por candidata a pergunta, fonte apropriada, evidência necessária,
 contraponto, consultas e limites. Deve distinguir relato de cliente, linguagem de vendedor, anúncio,

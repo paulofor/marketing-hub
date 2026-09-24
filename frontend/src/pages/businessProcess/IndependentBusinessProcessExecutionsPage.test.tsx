@@ -571,14 +571,14 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
   it("leva a execução em espera ao registro auditável das entrevistas", async () => {
     const awaitingEvidence: IndependentBusinessProcessExecutionSummary = {
       ...summary,
-      status: "IN_PROGRESS",
+      status: "WAITING_INPUT",
       activityCount: 2,
       completedActivityCount: 1,
       processVersionNumber: 7,
       startedAt: "2026-09-23T10:00:00Z",
     };
     const awaitingDetail = detail(awaitingEvidence);
-    awaitingDetail.processReport.status = "IN_PROGRESS";
+    awaitingDetail.processReport.status = "WAITING_INPUT";
     awaitingDetail.processReport.privateValidationHandoff = {
       available: false,
       cycleId: 77,
@@ -601,6 +601,7 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
         name: "Registrar situações reais de compra e desistência",
       }),
     ).toBeInTheDocument();
+    expect(screen.getAllByText("Aguardando entrada")).not.toHaveLength(0);
     expect(
       screen.getByText(/cinco a oito entrevistas anônimas e consentidas/i),
     ).toBeInTheDocument();

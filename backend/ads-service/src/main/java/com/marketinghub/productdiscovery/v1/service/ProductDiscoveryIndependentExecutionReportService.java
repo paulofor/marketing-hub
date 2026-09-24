@@ -783,6 +783,9 @@ public class ProductDiscoveryIndependentExecutionReportService
       ProductDiscoveryCycle cycle, List<AgentTask> tasks, int ready, int products) {
     if (cycle.getStatus() == ProductDiscoveryCycleStatus.FAILED) return "BLOCKED";
     if (tasks.stream().anyMatch(task -> "BLOCKED".equals(task.getStatus()))) return "BLOCKED";
+    if (cycle.getStatus() == ProductDiscoveryCycleStatus.AWAITING_CUSTOMER_EVIDENCE) {
+      return "WAITING_INPUT";
+    }
     if (tasks.stream().anyMatch(task -> "IN_PROGRESS".equals(task.getStatus())))
       return "IN_PROGRESS";
     if (tasks.stream().anyMatch(task -> "PENDING".equals(task.getStatus()))) return "PENDING";
@@ -797,7 +800,13 @@ public class ProductDiscoveryIndependentExecutionReportService
     if (ProductDiscoveryCycleStatus.FAILED.name().equals(snapshot.getCycleStatus())) {
       return "BLOCKED";
     }
-    if (List.of("BLOCKED", "IN_PROGRESS", "PENDING").contains(technicalStatus)) {
+    if ("BLOCKED".equals(technicalStatus)) return "BLOCKED";
+    if (ProductDiscoveryCycleStatus.AWAITING_CUSTOMER_EVIDENCE
+        .name()
+        .equals(snapshot.getCycleStatus())) {
+      return "WAITING_INPUT";
+    }
+    if (List.of("IN_PROGRESS", "PENDING").contains(technicalStatus)) {
       return technicalStatus;
     }
     boolean completedCycle =

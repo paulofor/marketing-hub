@@ -968,3 +968,12 @@ literal independente. Fontes, famílias, limite de tamanho e critérios comercia
 Entre exigir entidades do modelo (frágil), flexibilizar o backend (maior superfície de risco) e
 reconstruir o trecho bruto no executor, adotou-se a terceira alternativa. Referência do decoder:
 [entities](https://github.com/fb55/entities), consultada em 24/09/2026; versão fixada no lockfile.
+
+### Resumo após retentativa concluída — 24/09/2026
+
+Pesquisa concluída com candidatas `RESEARCH_MORE` mantém o gate comercial bloqueado, mas não
+reexibe erro técnico de uma ocorrência superada. Detalhe e listagem consideram, por atividade e
+agente, somente a tentativa vigente bloqueada para `latestError`; todas as tentativas continuam
+na auditoria e no consumo acumulado. O frontend apresenta “Concluída com lacunas” quando todas
+as atividades terminaram sem falha vigente. Custo `null` ou ausente significa não informado;
+zero somente quando explicitamente medido. Não abrir nova pesquisa para corrigir o resumo.

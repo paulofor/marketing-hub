@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -320,8 +322,9 @@ class IndependentBusinessProcessExecutionServiceTest {
   }
 
   /** Preserva a falha na tentativa antiga sem apresentá-la como bloqueio após a retentativa. */
-  @Test
-  void hidesSupersededErrorAfterSuccessfulRetry() {
+  @ParameterizedTest
+  @ValueSource(strings = {"COMPLETED", "BLOCKED"})
+  void hidesSupersededErrorAfterSuccessfulRetry(String businessStatus) {
     BusinessProcessDefinition process = process("INDEPENDENT", "PUBLISHED");
     IndependentBusinessProcessExecution execution = execution(process);
     AgentTask blocked = task(process, "BLOCKED", "Falha histórica preservada.");
@@ -334,17 +337,18 @@ class IndependentBusinessProcessExecutionServiceTest {
     when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc(execution.getSourceReference()))
         .thenReturn(List.of(blocked, completed));
 
-    var result = service(List.of(handler)).get(91L);
+    var result = serviceWithBusinessStatus(businessStatus).get(91L);
 
-    assertThat(result.execution().status()).isEqualTo("COMPLETED");
+    assertThat(result.execution().status()).isEqualTo(businessStatus);
     assertThat(result.execution().latestError()).isNull();
     assertThat(result.activities().getFirst().tasks().getFirst().executionError())
         .isEqualTo("Falha histórica preservada.");
   }
 
   /** Oculta também na projeção leve a falha superada pela ocorrência posterior concluída. */
-  @Test
-  void lightweightListHidesSupersededErrorAfterSuccessfulRetry() {
+  @ParameterizedTest
+  @ValueSource(strings = {"COMPLETED", "BLOCKED"})
+  void lightweightListHidesSupersededErrorAfterSuccessfulRetry(String businessStatus) {
     IndependentBusinessProcessExecutionListSnapshot execution =
         new IndependentBusinessProcessExecutionListSnapshot(
             91L,
@@ -396,11 +400,11 @@ class IndependentBusinessProcessExecutionServiceTest {
     when(activities.findSummarySnapshotsByProcessDefinitionIds(java.util.Set.of(52L)))
         .thenReturn(List.of(new BusinessProcessActivitySummarySnapshot(52L, "marketEvidence")));
 
-    var result = service(List.of(handler)).list(11, null);
+    var result = serviceWithBusinessStatus(businessStatus).list(11, null);
 
     assertThat(result)
         .singleElement()
-        .satisfies(item -> assertThat(item.status()).isEqualTo("COMPLETED"));
+        .satisfies(item -> assertThat(item.status()).isEqualTo(businessStatus));
     assertThat(result.getFirst().latestError()).isNull();
   }
 
@@ -445,6 +449,53 @@ class IndependentBusinessProcessExecutionServiceTest {
     assertThat(response.estimatedCostUsd()).isEqualByComparingTo("0.01234567");
     assertThat(response.productInternalName()).isNull();
     assertThat(response.finishedAt()).isEqualTo(NOW.plusSeconds(30));
+  }
+
+  /** Simula o gate comercial sem confundi-lo com o resultado técnico da última tentativa. */
+  private IndependentBusinessProcessExecutionService serviceWithBusinessStatus(String status) {
+    var provider = mock(IndependentBusinessProcessExecutionReportProvider.class);
+    var report =
+        mock(
+            com.marketinghub.businessprocess.independent.service.executions
+                .IndependentBusinessProcessFlowReportResponse.class);
+    when(provider.processCode()).thenReturn("pde-opportunity-discovery");
+    when(report.status()).thenReturn(status);
+    when(provider.report(any())).thenReturn(report);
+    when(provider.summaryStatuses(any()))
+        .thenAnswer(
+            invocation -> {
+              java.util.Map<String, String> technical = invocation.getArgument(0);
+              return technical.keySet().stream()
+                  .collect(java.util.stream.Collectors.toMap(key -> key, key -> status));
+            });
+    return new IndependentBusinessProcessExecutionService(
+        executions,
+        processes,
+        activities,
+        tasks,
+        mapper,
+        List.of(handler),
+        List.of(provider),
+        Clock.fixed(NOW, ZoneOffset.UTC));
+  }
+
+  /** Um erro histórico atualizado depois não substitui a causa da tentativa vigente. */
+  @Test
+  void reportsCurrentFailureEvenWhenHistoricalFailureWasUpdatedLater() {
+    var process = process("INDEPENDENT", "PUBLISHED");
+    var execution = execution(process);
+    var old = task(process, "BLOCKED", "Falha superada.");
+    old.setId(268L);
+    old.setUpdatedAt(NOW.plusSeconds(100));
+    var current = task(process, "BLOCKED", "Falha atual.");
+    when(executions.findById(91L)).thenReturn(Optional.of(execution));
+    when(activities.findAllByProcessDefinitionIdOrderByIdAsc(52L))
+        .thenReturn(List.of(activity(process)));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc(execution.getSourceReference()))
+        .thenReturn(List.of(old, current));
+    var result = serviceWithBusinessStatus("BLOCKED").get(91L);
+    assertThat(result.execution().latestError()).isEqualTo("Falha atual.");
+    assertThat(result.activities().getFirst().tasks()).hasSize(2);
   }
 
   /** Monta o serviço com relógio fixo para evitar timestamps flutuantes. */

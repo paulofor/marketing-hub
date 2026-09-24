@@ -6926,3 +6926,17 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   resposta original e validação literal do backend. Não flexibilizar correspondência semântica.
 - Prevenção: entidades numéricas/nomeadas, uma camada, múltiplas ocorrências, rejeição de paráfrase,
   negação alterada, entidade parcial, hash original e callback integrado com corpus codificado.
+
+## LOOP-ARGOS-ERRO-HISTORICO-COMO-BLOQUEIO-ATUAL — 24/09/2026
+
+- Evidência: tarefa 483 e duas atividades da execução 30 concluídas; candidatas continuam
+  `RESEARCH_MORE`. O resumo `BLOCKED` comercial selecionava o erro técnico da tarefa 482.
+- Causa: `latestError` examinava todo o histórico sempre que o gate funcional era bloqueado,
+  mesmo quando as tentativas vigentes tinham sucesso; listagem e detalhe compartilhavam o defeito.
+- Alternativas: ocultar o banner apenas na tela deixaria a API incorreta; apagar o erro destruiria
+  auditoria; selecionar a última ocorrência por atividade/agente preserva a verdade e o histórico.
+  Adotada a terceira, sem alterar maturidade, gate ou tarefas.
+- Defeito relacionado: o navegador formatava custo JSON `null` como zero. Ausência agora é
+  explicitamente não informada; zero medido e custo parcial continuam distintos.
+- Prevenção: regressões de detalhe/listagem com gate comercial bloqueado, erro histórico com
+  atualização posterior, falha vigente, custos ausentes/zero/parciais e navegação sem escrita.

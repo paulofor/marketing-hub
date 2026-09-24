@@ -690,9 +690,20 @@ public class IndependentBusinessProcessExecutionService {
         .orElse(null);
   }
 
-  /** Exibe a causa somente enquanto ela representa o bloqueio funcional vigente. */
+  /**
+   * Exibe somente erros das tentativas vigentes bloqueadas, preservando o histórico na auditoria.
+   */
   private String visibleLatestError(String status, List<AgentTask> tasks) {
-    return "BLOCKED".equals(status) ? latestError(tasks) : null;
+    if (!"BLOCKED".equals(status)) return null;
+    Map<List<String>, AgentTask> latest = new LinkedHashMap<>();
+    tasks.stream()
+        .sorted(Comparator.comparing(AgentTask::getId))
+        .forEach(
+            task ->
+                latest.put(
+                    List.of(activityKey(task), task.getAssignedAgent().getAgentKey()), task));
+    return latestError(
+        latest.values().stream().filter(task -> "BLOCKED".equals(task.getStatus())).toList());
   }
 
   /** Retorna a falha mais recente da projeção leve sem consultar o payload da tarefa. */
@@ -711,7 +722,14 @@ public class IndependentBusinessProcessExecutionService {
   /** Evita que a listagem trate erro de tentativa superada como estado atual da execução. */
   private String visibleLatestSnapshotError(
       String status, List<AgentTaskIndependentExecutionSummarySnapshot> tasks) {
-    return "BLOCKED".equals(status) ? latestSnapshotError(tasks) : null;
+    if (!"BLOCKED".equals(status)) return null;
+    Map<List<String>, AgentTaskIndependentExecutionSummarySnapshot> latest = new LinkedHashMap<>();
+    tasks.stream()
+        .sorted(Comparator.comparing(AgentTaskIndependentExecutionSummarySnapshot::id))
+        .forEach(
+            task -> latest.put(List.of(snapshotActivityKey(task), task.assignedAgentKey()), task));
+    return latestSnapshotError(
+        latest.values().stream().filter(task -> "BLOCKED".equals(task.status())).toList());
   }
 
   /** Reconhece os estados que encerram a tentativa atual da execução. */

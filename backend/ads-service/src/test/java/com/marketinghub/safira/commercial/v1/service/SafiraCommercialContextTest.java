@@ -175,4 +175,22 @@ class SafiraCommercialContextTest {
     assertThat(SafiraCommercialContext.activityFingerprint("economics", visualChange))
         .isEqualTo(SafiraCommercialContext.activityFingerprint("economics", initial));
   }
+
+  /** Aceita o canal individual e invalida provas ao alterar canal, amostra ou limite. */
+  @Test
+  void scopesDirectPilotAndInvalidatesChangedChannelControls() {
+    experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    experiment.setSampleSize(6);
+    assertThat(context.scope("experiment:301", 10L, true)).isNotNull();
+    var initial = context.snapshot("experiment:301");
+    for (String field : List.of("platform", "sampleSize", "dailyBudgetBrl", "mediaSpendLimitBrl")) {
+      var changed = initial.deepCopy();
+      changed.put(field, "changed");
+      for (String activity : List.of("journey", "economics")) {
+        assertThat(SafiraCommercialContext.activityFingerprint(activity, changed))
+            .isNotEqualTo(SafiraCommercialContext.activityFingerprint(activity, initial));
+      }
+    }
+    verify(experiments, never()).save(any());
+  }
 }

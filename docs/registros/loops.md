@@ -2191,6 +2191,12 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
     recursivamente no teste e no startup, e a falha estruturada do executor é preservada no
     callback. A regressão cobre o caso original, ambas as atividades, a síntese e a mensagem de
     erro. Contrato inválido não pode iniciar polling nem consumir tarefa.
+  - em 2026-09-24, o primeiro deploy desse reparo fez rollback porque a migração pressupunha Argos
+    v4 sem v5, enquanto o banco operacional já possuía v5 criada pelo Catálogo Vivo em 10/09. A
+    fixture derivada apenas dos changelogs não representava esse histórico. O contrato estrito passa
+    a ser v6, preserva a v5, aceita somente predecessora v4/v5 auditável e o teste físico semeia a
+    v5 operacional antes de comprovar aplicação, reaplicação e rollback. Toda nova versão de agente
+    deve consultar `agent` e `agent_version` no banco antes de reservar o número.
   - em 2026-08-09, o Aprovador Meta iniciou saudável e autenticado, mas o deploy falhou porque a observabilidade dedicada moveu o health check para `/ops-meta-ad-approver-observability-v1/health` enquanto o workflow continuou consultando `/actuator/health`. Um teste de contrato agora exige que a rota de prontidão do workflow acompanhe o `base-path` versionado do agente.
   - no mesmo ciclo, a correção comercial do criativo 280 falhou no callback porque `creative.primary_text` ainda era `VARCHAR(255)`, menor que a copy válida produzida pelo fluxo. O contrato canônico passou a preservar o texto integral em `LONGTEXT`, alinhado explicitamente na entidade JPA e no changelog MySQL 5.7.
   - em 2026-08-28, o núcleo v2 de Psique mencionava prazer genericamente, mas não possuía

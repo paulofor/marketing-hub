@@ -1,7 +1,7 @@
 databaseChangeLog:
-  - logicalFilePath: db/changelog/changesets/2026-09-24-argos-agent-version-v5-strict-contracts.yaml
+  - logicalFilePath: db/changelog/changesets/2026-09-24-argos-agent-version-v6-strict-contracts.yaml
   - changeSet:
-      id: 2026-09-24-argos-agent-version-v5-strict-contracts-001
+      id: 2026-09-24-argos-agent-version-v6-strict-contracts-001
       author: codex
       preConditions:
         - onFail: HALT
@@ -17,18 +17,18 @@ databaseChangeLog:
             columnName: current_version
         - sqlCheck:
             expectedResult: 1
-            sql: SELECT COUNT(*) FROM agent a LEFT JOIN agent_version av ON av.agent_id = a.id AND av.version_number = 5 WHERE a.agent_key = 'market-radar' AND a.current_version = 4 AND av.id IS NULL
+            sql: SELECT COUNT(*) FROM agent a LEFT JOIN agent_version av ON av.agent_id = a.id AND av.version_number = 6 WHERE a.agent_key = 'market-radar' AND a.current_version IN (4, 5) AND av.id IS NULL
       changes:
         - sql:
             splitStatements: true
             stripComments: true
             sql: |
               INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
-              SELECT a.id, 5,
+              SELECT a.id, 6,
                 JSON_OBJECT(
                   'agentKey', a.agent_key,
-                  'version', 5,
-                  'sourceChangeSet', '2026-09-24-argos-agent-version-v5-strict-contracts-001',
+                  'version', 6,
+                  'sourceChangeSet', '2026-09-24-argos-agent-version-v6-strict-contracts-001',
                   'previousCurrentVersion', a.current_version,
                   'status', a.status,
                   'model', COALESCE(a.model_name, ''),
@@ -43,19 +43,19 @@ databaseChangeLog:
                 UTC_TIMESTAMP()
               FROM agent a
               LEFT JOIN agent_version av
-                ON av.agent_id = a.id AND av.version_number = 5
+                ON av.agent_id = a.id AND av.version_number = 6
               WHERE a.agent_key = 'market-radar'
-                AND a.current_version = 4
+                AND a.current_version IN (4, 5)
                 AND av.id IS NULL;
 
               UPDATE agent a
               JOIN agent_version av
-                ON av.agent_id = a.id AND av.version_number = 5
-              SET a.current_version = 5
+                ON av.agent_id = a.id AND av.version_number = 6
+              SET a.current_version = 6
               WHERE a.agent_key = 'market-radar'
-                AND a.current_version = 4
+                AND a.current_version IN (4, 5)
                 AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet'))
-                  = '2026-09-24-argos-agent-version-v5-strict-contracts-001';
+                  = '2026-09-24-argos-agent-version-v6-strict-contracts-001';
       rollback:
         - sql:
             splitStatements: true
@@ -63,20 +63,20 @@ databaseChangeLog:
             sql: |
               UPDATE agent a
               JOIN agent_version av
-                ON av.agent_id = a.id AND av.version_number = 5
+                ON av.agent_id = a.id AND av.version_number = 6
               SET a.current_version = CAST(
                 JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.previousCurrentVersion'))
                 AS UNSIGNED
               )
               WHERE a.agent_key = 'market-radar'
-                AND a.current_version = 5
+                AND a.current_version = 6
                 AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet'))
-                  = '2026-09-24-argos-agent-version-v5-strict-contracts-001';
+                  = '2026-09-24-argos-agent-version-v6-strict-contracts-001';
 
               DELETE av
               FROM agent_version av
               JOIN agent a ON a.id = av.agent_id
               WHERE a.agent_key = 'market-radar'
-                AND av.version_number = 5
+                AND av.version_number = 6
                 AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet'))
-                  = '2026-09-24-argos-agent-version-v5-strict-contracts-001';
+                  = '2026-09-24-argos-agent-version-v6-strict-contracts-001';

@@ -1,0 +1,18 @@
+{
+  "cardKey": "receptividade-sem-deferencia-conversa-ai",
+  "collection": "neuromarketing",
+  "title": "Separar forma receptiva de independência substantiva sob pressão",
+  "finding": "Duas evidências recentes apontam para a mesma separação de design: respostas mais receptivas podem ser preferidas sem mudar a conclusão, enquanto modelos variam de forma independente em sua tendência de manter ou ceder diante de insistência, bajulação, súplica ou pressão emocional do usuário.",
+  "mechanism": "A forma relacional pode reduzir fricção e aumentar a disposição de ouvir, mas não deve controlar fatos, limites ou recomendações. Tratar stance integrity e receptive delivery como eixos separados permite reconhecer a perspectiva do usuário sem transformar pressão social em mudança automática de posição.",
+  "commercialApplication": "No customer-agent, preservar uma camada substantiva com fatos, limites e critérios e uma camada de comunicação receptiva. Testar cenários de discordância e pressão para verificar se o agente mantém informação correta e limites enquanto reduz atrito e necessidade de correção.",
+  "evidenceStrength": "Moderada: combina um experimento humano pré-registrado com 196 participantes após exclusões, no qual receptividade foi preferida mantendo a conclusão, e um benchmark com 60 modelos de 13 fornecedores que separa manter/ceder da maneira de responder. Ambos são preprints e não medem resultado comercial.",
+  "publishedOn": "2026-09-24",
+  "validUntil": "2026-11-08",
+  "experimentHypothesis": "Uma política de duas camadas, com integridade da posição protegida e comunicação receptiva aplicada depois, reduzirá cedência indevida e retrabalho sem piorar satisfação, continuidade útil nem task success em conversas sob pressão.",
+  "risks": "Receptividade pode degenerar em bajulação se a camada substantiva não estiver protegida; rigidez excessiva pode parecer hostil ou impedir correções legítimas. O teste deve distinguir pressão social de nova evidência factual trazida pelo usuário.",
+  "limits": "Os estudos usam aconselhamento moral e cenários sintéticos de pressão, não atendimento comercial real. A correlação entre capacidade e taxa de ceder não prova causalidade, e perfis por fornecedor podem refletir poucos modelos. CTA, checkout, pagamento e retenção precisam ser validados no próprio funil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-24-receptividade-sem-deferencia-conversa-ai.md",
+  "sourceTitle": "Fonte revisada — Receptividade e independência sob pressão em conversas com IA",
+  "sourceSha256": "64fd01139e6b0c32f29356713a5be1cca82fbaee4bc479c947c792195787bde9"
+}

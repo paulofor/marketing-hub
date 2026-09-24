@@ -53,3 +53,9 @@ Revisão de compatibilidade antes do merge: o pending filtra a política no banc
 `PUBLIC_SOURCES_V1` a executores que declaram suporte. Regressão com persistência real comprova
 que worker legado não assume ciclos novos nem leases públicos expirados. 138 testes de fila,
 controller, serviço e arquitetura revalidados; os 143 do worker permanecem aprovados.
+
+O CI identificou uma fixture de fronteiras de agentes que parava em Argos v6, enquanto o
+contrato de saúde já exigia v7. O validador foi atualizado para aplicar a migração real v7,
+conferir a política pública, reaplicação sem duplicatas e rollback preservando o histórico.
+O mesmo script completo passou localmente em MySQL 5.7, após `bash -n` e ShellCheck, sem
+reduzir a comparação com o contrato de saúde dos nove agentes. Topologia temporária removida.

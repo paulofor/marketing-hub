@@ -82,6 +82,20 @@ no ledger da tarefa depois do callback. Antes desse cálculo o custo permanece d
 O backend recusa plano, callback cruzado, identidade alterada, corpus sem entrevistas ou relatório
 que não comprove consultas, invocações e cobertura de custo.
 
+Por decisão de 23/09/2026, cada atividade de Argos possui um schema estrito próprio. A pesquisa
+inicial não declara `candidateGaps` nem `researchLimits`; o aprofundamento exige ambos. Todos os
+objetos declaram `additionalProperties: false`, e toda propriedade declarada integra `required`,
+como exige o modo Structured Outputs estrito documentado pela
+[OpenAI](https://developers.openai.com/api/docs/guides/structured-outputs), consultado na mesma
+data. O worker valida recursivamente todos os schemas de planejamento e síntese antes de iniciar
+polling ou reportar prontidão. Incompatibilidade encerra o startup sem consumir tarefa. Se o Codex
+falhar, a causa estruturada emitida no `stdout` deve chegar ao callback auditável; o código de saída
+isolado não é diagnóstico suficiente.
+
+Foram comparadas três alternativas: tornar campos de aprofundamento sempre obrigatórios fabricaria
+lacunas antes da coleta; relaxar o modo estrito perderia garantia contratual; separar schemas por
+atividade preserva semântica, falha cedo e custa pouco. A terceira é a regra canônica.
+
 O dossiê final entregue a Atena continua sendo hipótese comercial. Utilidade exige experiência
 funcional e observação humana; compra rentável exige pagamento conciliado, reembolso, CAC, custo
 integral, contribuição e margem nos processos posteriores.

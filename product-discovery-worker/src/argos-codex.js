@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { readStrictOutputSchema } from "./strict-output-schema.js";
 
 /** Cria com Codex um plano de investigação; nenhuma credencial de marketplace entra no prompt. */
 export async function planDirectedResearch(job, options = {}) {
@@ -9,14 +10,11 @@ export async function planDirectedResearch(job, options = {}) {
     String(options.enabled ?? process.env.ARGOS_CODEX_ENABLED) === "true";
   if (!enabled) return deterministicPlan(job);
   const prompt = await buildPromptComposition(job);
-  const schemaContract = await readFile(
-    new URL(
-      "../prompts/productdiscovery.v1/plan/plan-schema.json",
-      import.meta.url,
-    ),
-    "utf8",
+  const schemaResource = planSchemaResource(job);
+  const { contract: schemaContract } = await readStrictOutputSchema(
+    schemaResource.url,
+    schemaResource.name,
   );
-  JSON.parse(schemaContract);
   const directory = await mkdtemp(join(tmpdir(), "argos-plan-"));
   const output = join(directory, "output.json");
   const schema = join(directory, "schema.json");
@@ -176,7 +174,8 @@ export function executeCodexWithInput(command, args, input, options = {}) {
     child.on("close", (code, signal) => {
       if (settled) return;
       if (code !== 0) {
-        const detail = stderr.trim().slice(-2000);
+        const detail =
+          parseCodexFailure(stdout) || stderr.trim().slice(-2000);
         rejectOnce(
           new Error(
             `Codex encerrou a ${phaseName} de Argos com código ${code ?? "desconhecido"}${signal ? ` e sinal ${signal}` : ""}${detail ? `: ${detail}` : ""}`,
@@ -202,6 +201,50 @@ export function executeCodexWithInput(command, args, input, options = {}) {
     });
     child.stdin.end(input, "utf8");
   });
+}
+
+/** Extrai do stream JSON a causa funcional emitida pelo Codex. */
+export function parseCodexFailure(stdout) {
+  let detail = "";
+  for (const line of String(stdout || "").split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const event = JSON.parse(line);
+      if (!["error", "turn.failed"].includes(event.type)) continue;
+      const message =
+        typeof event.message === "string"
+          ? event.message
+          : typeof event.error === "string"
+            ? event.error
+            : event.error?.message;
+      if (typeof message === "string" && message.trim()) {
+        detail = message
+          .replace(/(?:sk-|sess-|eyJ)[A-Za-z0-9._-]+/g, "[SEGREDO_REMOVIDO]")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(-2000);
+      }
+    } catch {
+      // O stream também pode conter linhas operacionais não estruturadas.
+    }
+  }
+  return detail;
+}
+
+/** Seleciona um contrato estrito sem campos condicionais entre atividades. */
+export function planSchemaResource(job = {}) {
+  const gapDeepening = job.stageCode === "candidate-gap-deepening";
+  return {
+    name: gapDeepening
+      ? "aprofundamento de lacunas de Argos"
+      : "planejamento inicial de Argos",
+    url: new URL(
+      gapDeepening
+        ? "../prompts/productdiscovery.v1/plan/gap-deepening-schema.json"
+        : "../prompts/productdiscovery.v1/plan/plan-schema.json",
+      import.meta.url,
+    ),
+  };
 }
 
 /** Inicia a descrição da fase com maiúscula sem alterar o texto auditável restante. */

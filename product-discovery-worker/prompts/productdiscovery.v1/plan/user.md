@@ -43,4 +43,4 @@ Retorne somente o contrato estruturado solicitado pelo schema.
 
 Quando a atividade for `candidate-gap-deepening`, inclua `candidateGaps` para todas e somente as
 candidatas recebidas e `researchLimits` com os limites exatos da política. Quando for `research`,
-esses dois campos são opcionais e não devem inventar candidatas antes da coleta.
+o contrato não aceita esses dois campos e não deve inventar candidatas antes da coleta.

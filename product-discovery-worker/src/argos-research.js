@@ -2,6 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { executeCodexWithInput, parseCodexUsage } from "./argos-codex.js";
+import { readStrictOutputSchema } from "./strict-output-schema.js";
 
 /** Sintetiza candidatas factuais usando somente os identificadores coletados pelo executor. */
 export async function synthesizeMarketCandidates(context, options = {}) {
@@ -9,14 +10,13 @@ export async function synthesizeMarketCandidates(context, options = {}) {
     String(options.enabled ?? process.env.ARGOS_CODEX_ENABLED) === "true";
   if (!enabled) return deterministicSynthesis(context);
   const prompt = await buildResearchPrompt(context);
-  const schemaContract = await readFile(
+  const { contract: schemaContract } = await readStrictOutputSchema(
     new URL(
       "../prompts/productdiscovery.v1/research/response-schema.json",
       import.meta.url,
     ),
-    "utf8",
+    "síntese factual de Argos",
   );
-  JSON.parse(schemaContract);
   const directory = await mkdtemp(join(tmpdir(), "argos-research-"));
   const output = join(directory, "output.json");
   const schema = join(directory, "schema.json");

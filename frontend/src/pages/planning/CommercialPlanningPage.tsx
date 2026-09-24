@@ -3230,6 +3230,22 @@ function CommercialPlanDetailPage({
             >
               <div className="card-body d-flex flex-column gap-3">
                 <div className="row g-3">
+                  <div className="col-12">
+                    <label className="form-label" htmlFor="planning-name">
+                      Nome do plano
+                    </label>
+                    <input
+                      id="planning-name"
+                      className="form-control"
+                      type="text"
+                      required
+                      maxLength={commercialPlanTextLimits.name}
+                      value={planDraft.name}
+                      onChange={(event) =>
+                        updatePlanDraft("name", event.target.value)
+                      }
+                    />
+                  </div>
                   <div className="col-md-4">
                     <label className="form-label" htmlFor="planning-experiment">
                       Adicionar/selecionar experimento

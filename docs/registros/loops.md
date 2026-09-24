@@ -6989,6 +6989,15 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   realmente invocaram o modelo, agrega apenas seus tokens e anexa a síntese completa ao callback de
   falha quando a conclusão é recusada. Regressões cobrem a composição aceita pelo backend, consumo
   do fluxo híbrido e preservação da resposta recusada.
+- **Recorrência de projeção na tarefa #488:** a reanálise terminou com a investigação #43 correta,
+  mas a tela associou a lente final à consulta antiga porque ambas usavam `attemptNumber=1`; o
+  resumo também priorizou uma espera histórica sobre a cobertura `OBSERVED` atual.
+- **Causa e fechamento da projeção:** a numeração reinicia em cada retomada e não identifica a
+  investigação dentro do acervo cumulativo. O worker passa a persistir a cobertura exata dentro da
+  rodada; o backend prefere esse vínculo, recupera históricos pelo ID citado na lente e usa apenas
+  depois os fallbacks legados. O resumo corrente prioriza a observação efetivamente analisada sem
+  apagar tentativas antigas. Regressões cobrem número repetido, investigação divergente e espera
+  histórica seguida de observação.
 
 ## LOOP-BPM-VERSAO-HISTORICA-MASCA-ESTADO-ATUAL — 24/09/2026
 

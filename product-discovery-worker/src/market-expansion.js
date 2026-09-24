@@ -16,10 +16,9 @@ export async function executeBoundedMarketResearch(job, options) {
   const configuredMaxAttempts = resolveMarketResearchAttempts(
     options.maxAttempts,
   );
-  const maxAttempts =
-    job.supervisedMetaReanalysis
-      ? 1
-      : job.stageCode === "candidate-gap-deepening"
+  const maxAttempts = job.supervisedMetaReanalysis
+    ? 1
+    : job.stageCode === "candidate-gap-deepening"
       ? Math.min(2, configuredMaxAttempts)
       : job.researchMode === "DISCOVER_MARKETS"
         ? configuredMaxAttempts
@@ -111,12 +110,18 @@ export async function executeBoundedMarketResearch(job, options) {
       collected.metaCoverage || [],
       metaCoverageKey,
     );
+    const attemptMetaCoverage = selectAttemptMetaCoverage(
+      job,
+      directed.plan,
+      collected.metaCoverage,
+    );
     const progress = {
       newPublicEvidenceCount:
         publicEvidenceItems.length - before.publicEvidence,
       newComparableOfferCount:
         marketplaceOfferItems.length - before.marketplaceOffers,
       newMetaAdCount: metaAdItems.length - before.metaAds,
+      metaCoverage: attemptMetaCoverage,
     };
 
     if (attemptNumber > 1 && !hasNewEvidence(progress)) {
@@ -165,6 +170,7 @@ export async function executeBoundedMarketResearch(job, options) {
       marketplaceOffers,
       metaAdEvidence,
       metaCoverage,
+      currentMetaCoverage: attemptMetaCoverage,
       analysis,
       repositoryEvidence: options.repositoryEvidence || [],
       repositoryCoverage: options.repositoryCoverage || [],
@@ -282,10 +288,9 @@ export function buildMarketExpansionContext({
     strategyCode: MARKET_EXPANSION_STRATEGY_CODE,
     attemptNumber,
     maxAttempts,
-    instruction:
-      job?.supervisedMetaReanalysis
-        ? "Reavalie somente as candidatas preservadas com a investigação Meta supervisionada; reutilize o corpus válido e não repita buscas gerais."
-        : job?.stageCode === "candidate-gap-deepening"
+    instruction: job?.supervisedMetaReanalysis
+      ? "Reavalie somente as candidatas preservadas com a investigação Meta supervisionada; reutilize o corpus válido e não repita buscas gerais."
+      : job?.stageCode === "candidate-gap-deepening"
         ? "Aprofunde somente as perguntas pendentes das candidatas preservadas, reutilizando o corpus e as fontes da política recebida; não reinicie a descoberta ampla."
         : attemptNumber === 1
           ? "Investigue o escopo inicial recebido."
@@ -590,7 +595,35 @@ function appendUniqueText(current, addition) {
 /** Distingue leitura de snapshot da observação original sem apagar sua proveniência. */
 function metaCoverageKey(item) {
   const scope = item.collectionMode === "PERSISTED_ONLY" ? ":snapshot" : "";
-  return normalize(`${item.query}:${item.country}:${item.publisherPlatform}${scope}`);
+  return normalize(
+    `${item.query}:${item.country}:${item.publisherPlatform}${scope}`,
+  );
+}
+
+/** Vincula a rodada à cobertura Meta realmente coletada, sem inferir pela posição acumulada. */
+function selectAttemptMetaCoverage(job, plan, coverages) {
+  if (!Array.isArray(coverages) || coverages.length === 0) return null;
+  const investigationId = Number(
+    job?.supervisedMetaReanalysis?.investigationId,
+  );
+  if (Number.isInteger(investigationId) && investigationId > 0) {
+    const supervised = coverages.find(
+      (item) => Number(item?.investigationId) === investigationId,
+    );
+    if (supervised) return { ...supervised };
+  }
+  const request = plan?.metaAdRequests?.[0];
+  if (request) {
+    const planned = coverages.find(
+      (item) =>
+        normalize(item?.query) === normalize(request.query) &&
+        normalize(item?.country) === normalize(request.country) &&
+        normalize(item?.publisherPlatform) ===
+          normalize(request.publisherPlatform),
+    );
+    if (planned) return { ...planned };
+  }
+  return { ...coverages.at(-1) };
 }
 
 function normalize(value) {

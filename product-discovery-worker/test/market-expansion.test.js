@@ -320,8 +320,11 @@ test("reanálise supervisionada usa uma rodada Meta e não repete buscas gerais"
         metaCoverage: [
           {
             investigationId: 43,
+            query: "consultoria imagem encontro",
+            country: "BR",
             publisherPlatform: "INSTAGRAM",
             sourceStatus: "OBSERVED",
+            collectionMode: "SUPERVISED",
             activeAds: 1,
           },
         ],
@@ -358,6 +361,14 @@ test("reanálise supervisionada usa uma rodada Meta e não repete buscas gerais"
     completeCallback.payload.evidenceReport.marketExpansion.maxAttempts,
     1,
   );
+  const persistedAttempt =
+    completeCallback.payload.evidenceReport.marketExpansion.attempts[0];
+  assert.equal(persistedAttempt.metaCoverage.investigationId, 43);
+  assert.equal(
+    persistedAttempt.metaCoverage.query,
+    "consultoria imagem encontro",
+  );
+  assert.equal(persistedAttempt.metaCoverage.sourceStatus, "OBSERVED");
   assert.equal(planCallback.payload.executionMode, "DETERMINISTIC");
   assert.equal(completeCallback.payload.analysisAudit.executionMode, "MODEL");
   assert.equal(completeCallback.payload.analysisAudit.inputTokens, 20);
@@ -536,7 +547,17 @@ function supervisedJob(executionLeaseId = "lease-70") {
       publicEvidence: [publicItem(1)],
       marketplaceOffers: [offer(1)],
       metaAdEvidence: [],
-      metaCoverage: [],
+      metaCoverage: [
+        {
+          attemptNumber: 1,
+          investigationId: 35,
+          query: "curso feminilidade sedução",
+          country: "BR",
+          publisherPlatform: "INSTAGRAM",
+          sourceStatus: "AWAITING_SUPERVISED_OBSERVATION",
+          collectionMode: "SUPERVISED",
+        },
+      ],
     }),
   };
 }

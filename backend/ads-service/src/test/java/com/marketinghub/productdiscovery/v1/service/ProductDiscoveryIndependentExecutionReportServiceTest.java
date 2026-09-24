@@ -293,6 +293,76 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
     assertThat(report.headline()).doesNotContain("UNAVAILABLE");
   }
 
+  /** Vincula a reanálise supervisionada à investigação citada, mesmo com números reutilizados. */
+  @Test
+  void reportsExactSupervisedMetaCoverageAfterHistoricalAttempts() {
+    ProductDiscoveryCycleRepository cycles = mock(ProductDiscoveryCycleRepository.class);
+    ProductDiscoveryOpportunityRepository opportunities =
+        mock(ProductDiscoveryOpportunityRepository.class);
+    OpportunityDossierRepository dossiers = mock(OpportunityDossierRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    ProductDiscoveryCycle cycle = cycle();
+    cycle.setDecisionSummary(
+        "Ciclo pesquisado com cobertura Meta/Instagram aguardando observação em 5 tentativa(s), sem dossiê pronto.");
+    cycle.setResearchEvidenceReportJson(
+        """
+        {
+          "metaAdEvidence":[{"referenceId":"ad-43"}],
+          "metaCoverage":[
+            {
+              "attemptNumber":1,
+              "investigationId":35,
+              "query":"curso feminilidade sedução",
+              "sourceStatus":"AWAITING_SUPERVISED_OBSERVATION",
+              "collectionMode":"SUPERVISED"
+            },
+            {
+              "attemptNumber":1,
+              "investigationId":43,
+              "query":"consultoria imagem pessoal encontro",
+              "sourceStatus":"OBSERVED",
+              "collectionMode":"SUPERVISED",
+              "adsObserved":1,
+              "advertisersObserved":1
+            }
+          ],
+          "marketExpansion":{
+            "attemptsCompleted":1,
+            "maxAttempts":1,
+            "stopReason":"ATTEMPT_LIMIT_REACHED",
+            "finalResearchLens":"Reanálise da evidência Meta supervisionada #43",
+            "attempts":[
+              {
+                "attemptNumber":1,
+                "researchLens":"Reanálise da evidência Meta supervisionada #43",
+                "outcome":"ATTEMPT_LIMIT_REACHED"
+              }
+            ]
+          }
+        }
+        """);
+    ProductDiscoveryOpportunity signal =
+        opportunity(503L, cycle, "Sinal inicial", ProductDiscoveryOpportunityMaturity.RESEARCHABLE);
+    when(cycles.findById(42L)).thenReturn(Optional.of(cycle));
+    when(opportunities.findAllByCycleIdOrderByScoreDesc(42L)).thenReturn(List.of(signal));
+    when(dossiers.findAllByProductDiscoveryCycleIdOrderByIdAsc(42L)).thenReturn(List.of());
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("product-discovery-cycle:42"))
+        .thenReturn(List.of());
+    ProductDiscoveryIndependentExecutionReportService service =
+        new ProductDiscoveryIndependentExecutionReportService(
+            cycles, opportunities, dossiers, tasks, new ObjectMapper());
+
+    var report = service.report("product-discovery-cycle:42");
+
+    assertThat(report.headline())
+        .isEqualTo(
+            "Ciclo pesquisado com cobertura da Biblioteca Meta observada, sem dossiê pronto.");
+    assertThat(report.marketExpansion().attempts().getFirst().metaQuery())
+        .isEqualTo("consultoria imagem pessoal encontro");
+    assertThat(report.marketExpansion().attempts().getFirst().metaCoverageStatus())
+        .isEqualTo("OBSERVED");
+  }
+
   /** Libera no backend a retomada do legado quando Atena bloqueou antes de criar o protótipo. */
   @Test
   void exposesPrivateValidationResumeForBlockedLegacyHandoff() {

@@ -46,6 +46,10 @@ public class ProductDiscoveryIndependentExecutionReportService
               + "(?:,\\s*"
               + META_COVERAGE_STATUS_CODE
               + ")*");
+  private static final Pattern LEGACY_AWAITING_META_COVERAGE =
+      Pattern.compile("cobertura Meta/Instagram aguardando observação em \\d+ tentativa\\(s\\)");
+  private static final Pattern SUPERVISED_META_RESEARCH_LENS =
+      Pattern.compile("Reanálise da evidência Meta supervisionada #(\\d+)");
   private final ProductDiscoveryCycleRepository cycleRepository;
   private final ProductDiscoveryOpportunityRepository opportunityRepository;
   private final OpportunityDossierRepository dossierRepository;
@@ -226,7 +230,9 @@ public class ProductDiscoveryIndependentExecutionReportService
         && plan.path("minimumIndependentReadings").asInt(0) == 2;
   }
 
-  /** Substitui códigos técnicos legados por uma leitura compreensível da cobertura Meta. */
+  /**
+   * Substitui resumos técnicos ou vencidos pela situação atual e compreensível da cobertura Meta.
+   */
   private String businessHeadline(
       ProductDiscoveryCycle cycle,
       List<IndependentBusinessProcessFlowReportResponse.SourceCoverage> sourceCoverage) {
@@ -234,8 +240,6 @@ public class ProductDiscoveryIndependentExecutionReportService
         firstText(
             cycle.getDecisionSummary(),
             "Argos ainda está reunindo evidências para formar candidatas factuais.");
-    Matcher matcher = TECHNICAL_META_COVERAGE.matcher(headline);
-    if (!matcher.find()) return headline;
     String status =
         sourceCoverage.stream()
             .filter(item -> "META".equals(item.sourceCode()))
@@ -251,7 +255,11 @@ public class ProductDiscoveryIndependentExecutionReportService
               "cobertura da Biblioteca Meta não executada por falha de integração";
           default -> "cobertura da Biblioteca Meta sem resultado auditável";
         };
-    return matcher.replaceAll(Matcher.quoteReplacement(replacement));
+    String normalized =
+        TECHNICAL_META_COVERAGE.matcher(headline).replaceAll(Matcher.quoteReplacement(replacement));
+    return LEGACY_AWAITING_META_COVERAGE
+        .matcher(normalized)
+        .replaceAll(Matcher.quoteReplacement(replacement));
   }
 
   /** Converte as rodadas persistidas pelo worker em um resumo gerencial tipado. */
@@ -266,7 +274,7 @@ public class ProductDiscoveryIndependentExecutionReportService
     if (persistedAttempts.isArray()) {
       for (JsonNode item : persistedAttempts) {
         int attemptNumber = item.path("attemptNumber").asInt();
-        JsonNode metaCoverage = metaCoverageForAttempt(metaCoverages, attemptNumber);
+        JsonNode metaCoverage = metaCoverageForAttempt(item, metaCoverages, attemptNumber);
         attempts.add(
             new IndependentBusinessProcessFlowReportResponse.MarketExpansionAttempt(
                 attemptNumber,
@@ -299,13 +307,27 @@ public class ProductDiscoveryIndependentExecutionReportService
   }
 
   /**
-   * Correlaciona a cobertura Meta pelo número persistido e preserva o fallback histórico por ordem.
+   * Correlaciona a rodada à evidência exata e mantém fallbacks somente para contratos históricos.
    */
-  private JsonNode metaCoverageForAttempt(JsonNode coverages, int attemptNumber) {
+  private JsonNode metaCoverageForAttempt(JsonNode attempt, JsonNode coverages, int attemptNumber) {
+    JsonNode embedded = attempt.path("metaCoverage");
+    if (embedded.isObject()) return embedded;
     if (!coverages.isArray()) return objectMapper.createObjectNode();
-    for (JsonNode coverage : coverages) {
-      if (coverage.path("attemptNumber").asInt(-1) == attemptNumber) return coverage;
+    Matcher supervisedLens =
+        SUPERVISED_META_RESEARCH_LENS.matcher(attempt.path("researchLens").asText(""));
+    if (supervisedLens.find()) {
+      long investigationId = Long.parseLong(supervisedLens.group(1));
+      for (JsonNode coverage : coverages) {
+        if (coverage.path("investigationId").asLong(-1L) == investigationId) return coverage;
+      }
     }
+    JsonNode latestNumberMatch = null;
+    for (JsonNode coverage : coverages) {
+      if (coverage.path("attemptNumber").asInt(-1) == attemptNumber) {
+        latestNumberMatch = coverage;
+      }
+    }
+    if (latestNumberMatch != null) return latestNumberMatch;
     int historicalIndex = attemptNumber - 1;
     return historicalIndex >= 0 && historicalIndex < coverages.size()
         ? coverages.get(historicalIndex)

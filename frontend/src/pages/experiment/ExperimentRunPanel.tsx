@@ -214,7 +214,7 @@ export default function ExperimentRunPanel({
   };
 
   return (
-    <div className="card">
+    <div className="card experiment-run-panel">
       <div className="card-body">
         <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
           <div>

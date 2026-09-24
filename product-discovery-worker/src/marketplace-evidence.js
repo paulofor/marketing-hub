@@ -117,11 +117,13 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
       payload,
       request.publisherPlatform,
     );
-    const relevantAds = filterRelevantOffers(
-      normalizedAds,
-      request.query,
-      options.researchContext,
-    );
+    const relevantAds = options.supervisedMetaReanalysis
+      ? normalizedAds
+      : filterRelevantOffers(
+          normalizedAds,
+          request.query,
+          options.researchContext,
+        );
     logger.info?.(
       `[product-discovery-worker] Meta Ad Library evidence cycle=${options.cycleId} platform=${request.publisherPlatform} sourceStatus=${payload.sourceStatus} ads=${normalizedAds.length} relevant=${relevantAds.length} advertisers=${payload.advertisersObserved ?? 0}`,
     );

@@ -287,6 +287,94 @@ test("mantém ciclo, lease e callback terminal únicos no fluxo integrado", asyn
   );
 });
 
+test("reanálise supervisionada usa uma rodada Meta e não repete buscas gerais", async () => {
+  const callbacks = [];
+  let publicSearchCalls = 0;
+  let commercialCalls = 0;
+  const job = {
+    ...discoveryJob(),
+    executionLeaseId: "lease-70",
+    supervisedMetaReanalysis: {
+      investigationId: 43,
+      query: "consultoria imagem encontro",
+      country: "BR",
+      publisherPlatform: "INSTAGRAM",
+    },
+    previousCandidates: [
+      { name: "Perfil para aplicativo" },
+      { name: "Imagem para ocasião" },
+    ],
+    previousEvidenceReportJson: JSON.stringify({
+      publicEvidence: [publicItem(1)],
+      marketplaceOffers: [offer(1)],
+      metaAdEvidence: [],
+      metaCoverage: [],
+    }),
+  };
+
+  await processJob(job, {
+    backendBaseUrl: "http://backend.local",
+    maxAttempts: 3,
+    logger: { info() {}, error() {} },
+    selectResearchLibraryContext: async () => ({ evidence: [], coverage: [] }),
+    searchInternet: async () => {
+      publicSearchCalls += 1;
+      return [];
+    },
+    collectMarketplaceEvidence: async (plan, options) => {
+      commercialCalls += 1;
+      assert.deepEqual(plan.publicQueries, []);
+      assert.deepEqual(plan.marketplaceRequests, []);
+      assert.equal(plan.metaAdRequests[0].query, "consultoria imagem encontro");
+      assert.equal(options.supervisedMetaReanalysis.investigationId, 43);
+      return {
+        marketplaceOffers: [],
+        metaAdEvidence: [
+          {
+            metaAdId: "ad-43",
+            active: true,
+            publisherPlatforms: ["INSTAGRAM"],
+          },
+        ],
+        metaCoverage: [
+          {
+            investigationId: 43,
+            publisherPlatform: "INSTAGRAM",
+            sourceStatus: "OBSERVED",
+            activeAds: 1,
+          },
+        ],
+      };
+    },
+    synthesizeMarketCandidates: async () => analysis("ADJACENT_PAID_ALTERNATIVE"),
+    analyzeSearchResults: (_researchJob, publicEvidence, offers, options) =>
+      report({
+        publicEvidence,
+        marketplaceOffers: offers,
+        metaAdEvidence: options.metaAdEvidence,
+      }),
+    postJson: async (url, payload) => callbacks.push({ url, payload }),
+    markCycleCompleted() {},
+    markCycleFailed() {},
+  });
+
+  assert.equal(publicSearchCalls, 0);
+  assert.equal(commercialCalls, 1);
+  assert.equal(
+    callbacks.filter((item) => item.url.endsWith("/plan")).length,
+    1,
+  );
+  assert.equal(
+    callbacks.filter((item) => item.url.endsWith("/complete")).length,
+    1,
+  );
+  assert.equal(
+    callbacks.find((item) => item.url.endsWith("/complete")).payload
+      .evidenceReport.marketExpansion.maxAttempts,
+    1,
+  );
+});
+
 test("limita configuração e exige novidade mínima na ampliação", () => {
   assert.equal(resolveMarketResearchAttempts(0), 1);
   assert.equal(resolveMarketResearchAttempts(9), 3);

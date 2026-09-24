@@ -2144,3 +2144,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-24-paid-instagram-acquisition-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-24-argos-supervised-meta-reanalysis-v1.yaml
+      relativeToChangelogFile: true

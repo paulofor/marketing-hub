@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.mois.metaads.v1.service.MoisMetaAdDtos;
 import com.marketinghub.mois.metaads.v1.service.MoisMetaAdInvestigationService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
@@ -78,7 +80,9 @@ class ProductDiscoverySupervisedMetaSessionServiceTest {
             1,
             now,
             now);
-    when(sessionLinkService.linkedInvestigation(cycle)).thenReturn(Optional.of(investigation));
+    lenient()
+        .when(sessionLinkService.linkedInvestigation(cycle))
+        .thenReturn(Optional.of(investigation));
   }
 
   /** Deve persistir a observação bruta e devolver a linguagem que ficará disponível ao Argos. */
@@ -125,6 +129,100 @@ class ProductDiscoverySupervisedMetaSessionServiceTest {
     verify(bpmAuditService, times(1)).reopenForSupervisedMetaEvidence(cycle, 72L);
     assertThat(first.cycleStatus()).isEqualTo("READY_FOR_RESEARCH");
     assertThat(repeated.resumeReason()).contains("já está na fila");
+    assertThat(cycle.getSupervisedMetaReanalysisInvestigationId()).isEqualTo(72L);
+  }
+
+  /** Deve permitir retomar a mesma sessão depois de uma falha técnica sem exigir novo anúncio. */
+  @Test
+  void resumesFailedTechnicalReanalysisWithTheFrozenEvidence() {
+    cycle.setStatus(ProductDiscoveryCycleStatus.FAILED);
+    cycle.setSupervisedMetaReanalysisInvestigationId(72L);
+    when(cycleRepository.findByIdForUpdate(44L)).thenReturn(Optional.of(cycle));
+    when(evidenceService.searchInvestigation(44L, investigation, 50))
+        .thenReturn(observedEvidence());
+    when(cycleRepository.save(cycle)).thenReturn(cycle);
+
+    ProductDiscoverySupervisedMetaSessionResponse response = service.resume(44L);
+
+    assertThat(response.cycleStatus()).isEqualTo("READY_FOR_RESEARCH");
+    assertThat(cycle.getSupervisedMetaReanalysisInvestigationId()).isEqualTo(72L);
+    verify(bpmAuditService).reopenForSupervisedMetaEvidence(cycle, 72L);
+  }
+
+  /** Deve registrar consumo somente quando o relatório contém a investigação e o anúncio exatos. */
+  @Test
+  void completesPinnedReanalysisOnlyWithExactObservedEvidence() throws Exception {
+    cycle.setSupervisedMetaReanalysisInvestigationId(72L);
+    when(investigationService.get(72L)).thenReturn(Optional.of(investigation));
+    when(evidenceService.searchInvestigation(44L, investigation, 50))
+        .thenReturn(observedEvidence());
+    var report =
+        new ObjectMapper()
+            .readTree(
+                """
+                {
+                  "metaCoverage": [{
+                    "investigationId": 72,
+                    "publisherPlatform": "INSTAGRAM",
+                    "sourceStatus": "OBSERVED",
+                    "activeAds": 1
+                  }],
+                  "metaAdEvidence": [{
+                    "referenceId": "ad-72",
+                    "active": true,
+                    "publisherPlatforms": ["INSTAGRAM"]
+                  }]
+                }
+                """);
+
+    service.validateAndCompleteReanalysis(cycle, report);
+
+    assertThat(cycle.getSupervisedMetaReanalysisInvestigationId()).isNull();
+    assertThat(cycle.getLastAnalyzedSupervisedMetaEvidenceAt())
+        .isEqualTo(Instant.parse("2026-08-30T20:00:00Z"));
+  }
+
+  /** Deve rejeitar callback que omite a investigação congelada ou seu anúncio Instagram. */
+  @Test
+  void rejectsCallbackWithoutPinnedObservedEvidence() throws Exception {
+    cycle.setSupervisedMetaReanalysisInvestigationId(72L);
+    when(investigationService.get(72L)).thenReturn(Optional.of(investigation));
+    when(evidenceService.searchInvestigation(44L, investigation, 50))
+        .thenReturn(observedEvidence());
+    var report =
+        new ObjectMapper()
+            .readTree(
+                """
+                {
+                  "metaCoverage": [{
+                    "investigationId": 99,
+                    "publisherPlatform": "INSTAGRAM",
+                    "sourceStatus": "OBSERVED",
+                    "activeAds": 1
+                  }],
+                  "metaAdEvidence": []
+                }
+                """);
+
+    assertThatThrownBy(() -> service.validateAndCompleteReanalysis(cycle, report))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("não incorporou a evidência Instagram supervisionada");
+    assertThat(cycle.getSupervisedMetaReanalysisInvestigationId()).isEqualTo(72L);
+    assertThat(cycle.getLastAnalyzedSupervisedMetaEvidenceAt()).isNull();
+  }
+
+  /** Deve impedir que a mesma observação conclua outra reanálise paga. */
+  @Test
+  void doesNotOfferAnotherReanalysisForAlreadyAnalyzedEvidence() {
+    cycle.setLastAnalyzedSupervisedMetaEvidenceAt(Instant.parse("2026-08-30T20:00:00Z"));
+    when(cycleRepository.findById(44L)).thenReturn(Optional.of(cycle));
+    when(evidenceService.searchInvestigation(44L, investigation, 50))
+        .thenReturn(observedEvidence());
+
+    ProductDiscoverySupervisedMetaSessionResponse response = service.get(44L);
+
+    assertThat(response.canResume()).isFalse();
+    assertThat(response.resumeReason()).contains("já foi analisada");
   }
 
   /** Deve bloquear nova tentativa quando a observação não comprovar anúncio ativo no Instagram. */

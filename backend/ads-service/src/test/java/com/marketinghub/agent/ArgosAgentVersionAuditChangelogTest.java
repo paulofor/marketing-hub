@@ -6,7 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
-/** Protege o histórico auditável das versões operacionais v4, v5 e v6 do agente Argos. */
+/** Protege o histórico auditável das versões operacionais do agente Argos. */
 class ArgosAgentVersionAuditChangelogTest {
 
   /** Exige contrato MySQL 5.7 idempotente sem alterar o changeset já publicado do Argos. */
@@ -78,6 +78,42 @@ class ArgosAgentVersionAuditChangelogTest {
     assertThat(master)
         .contains(
             "file: changesets/2026-09-24-argos-agent-version-v6-strict-contracts.yaml\n"
+                + "      relativeToChangelogFile: true");
+  }
+
+  /** Exige uma versão v8 reversível que congele a sessão Meta e preserve as candidatas. */
+  @Test
+  void shouldPersistArgosVersionEightWithExactSupervisedMetaSession() throws Exception {
+    Path moduleRoot = Path.of("").toAbsolutePath();
+    String changelog =
+        Files.readString(
+            moduleRoot.resolve(
+                "src/main/resources/db/changelog/changesets/2026-09-24-argos-supervised-meta-reanalysis-v1.yaml"));
+    String master =
+        Files.readString(
+            moduleRoot.resolve("src/main/resources/db/changelog/db.changelog-master.yaml"));
+
+    assertThat(changelog)
+        .contains(
+            "logicalFilePath: db/changelog/changesets/2026-09-24-argos-supervised-meta-reanalysis-v1.yaml",
+            "dbms:",
+            "type: mysql",
+            "splitStatements: true",
+            "stripComments: true",
+            "supervised_meta_reanalysis_investigation_id BIGINT NULL",
+            "last_analyzed_supervised_meta_evidence_at DATETIME NULL",
+            "av.version_number = 8",
+            "a.current_version IN (7, 8)",
+            "EXACT_SESSION_REUSE_V1",
+            "repeatsBroadResearch",
+            "preservesCandidateIdentity",
+            "previousCurrentVersion",
+            "JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet'))")
+        .doesNotContain("TIMESTAMP NOT NULL", "CURRENT_TIMESTAMP(6)");
+    assertThat(changelog.split(";")).allSatisfy(this::assertNoMysql1093Pattern);
+    assertThat(master)
+        .contains(
+            "file: changesets/2026-09-24-argos-supervised-meta-reanalysis-v1.yaml\n"
                 + "      relativeToChangelogFile: true");
   }
 

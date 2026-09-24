@@ -125,8 +125,10 @@ export async function processJob(job, dependencies = {}) {
   const post = dependencies.postJson || postJson;
   const selectLibrary =
     dependencies.selectResearchLibraryContext || selectResearchLibraryContext;
-  const planResearch =
-    dependencies.planDirectedResearch || planDirectedResearch;
+  const planResearch = job.supervisedMetaReanalysis
+    ? dependencies.planSupervisedMetaReanalysis ||
+      buildSupervisedMetaReanalysisPlan
+    : dependencies.planDirectedResearch || planDirectedResearch;
   const internetSearch = dependencies.searchInternet || searchInternet;
   const collectCommercialEvidence =
     dependencies.collectMarketplaceEvidence || collectMarketplaceEvidence;
@@ -167,20 +169,22 @@ export async function processJob(job, dependencies = {}) {
         );
       },
       collectEvidence: async ({ job: researchJob, plan, attemptNumber }) => {
-        const results = await internetSearch(
-          { ...researchJob, directedQueries: plan.publicQueries },
-          {
-            config: dependencies.searchConfig || searchConfig,
-            maxSearchResults,
-            minSearchQueries:
-              stagePath === GAP_DEEPENING_STAGE_PATH
-                ? stageMaximumQueries
-                : Math.min(minSearchQueries, stageMaximumQueries),
-            maxSearchQueries: stageMaximumQueries,
-            maxResultsPerQuery,
-            logger,
-          },
-        );
+        const results = job.supervisedMetaReanalysis
+          ? []
+          : await internetSearch(
+              { ...researchJob, directedQueries: plan.publicQueries },
+              {
+                config: dependencies.searchConfig || searchConfig,
+                maxSearchResults,
+                minSearchQueries:
+                  stagePath === GAP_DEEPENING_STAGE_PATH
+                    ? stageMaximumQueries
+                    : Math.min(minSearchQueries, stageMaximumQueries),
+                maxSearchQueries: stageMaximumQueries,
+                maxResultsPerQuery,
+                logger,
+              },
+            );
         const commercialEvidence = await collectCommercialEvidence(plan, {
           backendBaseUrl: activeBackendBaseUrl,
           logger,
@@ -188,6 +192,7 @@ export async function processJob(job, dependencies = {}) {
           stageCode: job.stageCode,
           attemptNumber,
           executionLeaseId: job.executionLeaseId,
+          supervisedMetaReanalysis: job.supervisedMetaReanalysis || null,
           researchContext: [
             job.theme,
             job.targetAudience,
@@ -267,6 +272,65 @@ export async function processJob(job, dependencies = {}) {
       error,
     );
   }
+}
+
+/**
+ * Monta a tentativa determinística que incorpora somente a sessão Meta já observada e reutiliza o
+ * corpus factual persistido.
+ */
+export function buildSupervisedMetaReanalysisPlan(job) {
+  const context = job?.supervisedMetaReanalysis;
+  if (
+    !context?.investigationId ||
+    !context?.query ||
+    !context?.country ||
+    context?.publisherPlatform !== "INSTAGRAM"
+  ) {
+    throw new Error("Contexto da reanálise Meta supervisionada está incompleto");
+  }
+  const plan = {
+    researchLens: `Reanálise da evidência Meta supervisionada #${context.investigationId}`,
+    expansionAxis: "ADJACENT_PAID_ALTERNATIVE",
+    expansionRationale:
+      "A sessão observada complementa as candidatas preservadas sem repetir buscas públicas ou ofertas já coletadas.",
+    questions: [
+      "Qual candidata existente é diretamente sustentada ou contrariada pelo anúncio observado?",
+      "A linguagem, o público e a entrega do anúncio resolvem alguma lacuna factual preservada?",
+      "A nova evidência altera a maturidade sem transformar anúncio em venda comprovada?",
+    ],
+    publicQueries: [],
+    marketplaceRequests: [],
+    metaAdRequests: [
+      {
+        query: context.query,
+        country: context.country,
+        publisherPlatform: context.publisherPlatform,
+        maxAds: 50,
+      },
+    ],
+    minimumComparableOffers: 10,
+    stopConditions: [
+      "Consumir somente a investigação supervisionada congelada pelo backend.",
+      "Preservar identidades e corpus das candidatas anteriores.",
+      "Não repetir pesquisa geral nem tratar anúncio como venda comprovada.",
+    ],
+  };
+  return {
+    plan,
+    rawResponse: JSON.stringify(plan),
+    model: "deterministic-supervised-meta-reanalysis-v1",
+    mode: "DETERMINISTIC",
+    prompt: JSON.stringify({
+      operation: "PRODUCT_DISCOVERY_SUPERVISED_META_REANALYSIS_V1",
+      cycleId: job.cycleId,
+      investigationId: context.investigationId,
+      candidateNames: (job.previousCandidates || []).map(
+        (candidate) => candidate.name,
+      ),
+    }),
+    reasoningEffort: "NOT_APPLICABLE",
+    usage: null,
+  };
 }
 
 /** Resolve a rota de callback pela etapa persistida, nunca pelo conteúdo do tema. */

@@ -187,6 +187,35 @@ test("aprofundamento preserva todas as candidatas e vincula entrevista da própr
   );
 });
 
+test("reanálise Meta supervisionada preserva todas as identidades sem exigir entrevistas", () => {
+  const context = researchContext();
+  const first = validSynthesis().candidates[0];
+  const second = structuredClone(first);
+  second.name = "Imagem para ocasião marcada";
+  context.job.supervisedMetaReanalysis = {
+    investigationId: 43,
+    query: "consultoria imagem encontro",
+    country: "BR",
+    publisherPlatform: "INSTAGRAM",
+  };
+  context.job.previousCandidates = [
+    { name: first.name },
+    { name: second.name },
+  ];
+  const synthesis = {
+    decisionSummary: "A sessão Meta foi confrontada com as candidatas preservadas.",
+    candidates: [first, second],
+  };
+
+  validateSynthesis(synthesis, context);
+  synthesis.candidates.pop();
+
+  assert.throws(
+    () => validateSynthesis(synthesis, context),
+    /preservar todas as candidatas iniciais/,
+  );
+});
+
 test("modo degradado não fabrica as três sugestões genéricas antigas", () => {
   const result = deterministicSynthesis(researchContext());
 

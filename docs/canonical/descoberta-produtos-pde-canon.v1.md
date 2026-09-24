@@ -955,6 +955,31 @@ histórica quando o catálogo publica uma versão mais recente durante a pesquis
 
 A cobertura da leitura de snapshot permanece separada da observação original: snapshot ausente não apaga a proveniência de anúncio já observado nem comprova nova coleta.
 
+### Reanálise Meta supervisionada sem reiniciar a descoberta — 24/09/2026
+
+Quando a tela liberar **Reanalisar com Argos** por uma observação nova da Biblioteca Meta, o backend
+deve congelar a investigação supervisionada exata antes de enfileirar a tarefa. O `pending` entrega
+essa identidade, o corpus acumulado e as mesmas candidatas; o executor realiza uma única rodada,
+sem nova busca Web, marketplace ou planejamento de consulta Meta. A sessão congelada não participa
+da escada imutável `(ciclo, tentativa)` da descoberta original.
+
+O callback só é aceito quando o relatório contém cobertura `OBSERVED` da investigação congelada e
+ao menos um anúncio ativo distribuído no Instagram. Os nomes e a quantidade das candidatas devem
+permanecer idênticos, preservando também seus IDs no backend. O anúncio pode sustentar ou contrariar
+uma lacuna, mas não comprova venda, preferência, margem ou oportunidade pronta. Se a candidata
+continuar `RESEARCH_MORE`, a pesquisa termina com lacunas e Atena permanece bloqueada.
+
+Falha técnica conserva a investigação congelada e permite retomar somente essa análise. Após um
+callback válido, o backend grava o instante da observação incorporada e impede nova reanálise com a
+mesma evidência; outra execução exige observação posterior. Entre alterar a tentativa original,
+substituir silenciosamente a consulta e congelar a sessão supervisionada, adotou-se a terceira
+alternativa para preservar auditoria, reduzir consumo e impedir mistura de evidências.
+
+Matriz de prevenção: sessão e lease exatos; consulta planejada divergente; preservação de IDs;
+ausência de busca ampla; callback sem cobertura ou anúncio ativo; retomada após falha; repetição da
+mesma observação; pesquisa inicial e aprofundamento normais. A versão operacional correspondente é
+Argos v8, com contrato `EXACT_SESSION_REUSE_V1`.
+
 ### Equivalência HTML sem alterar a fonte — 24/09/2026
 
 Trechos de busca podem trazer entidades HTML (`&#x27;`, `&quot;`, `&amp;`) que o modelo lê como

@@ -1,5 +1,6 @@
 package com.marketinghub.productdiscovery.v1.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.mois.metaads.v1.service.MoisMetaAdDtos;
 import com.marketinghub.mois.metaads.v1.service.MoisMetaAdInvestigationService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
@@ -102,9 +103,10 @@ public class ProductDiscoverySupervisedMetaSessionService {
         || cycle.getStatus() == ProductDiscoveryCycleStatus.RESEARCHING) {
       return response(cycle, investigation);
     }
-    if (cycle.getStatus() != ProductDiscoveryCycleStatus.COMPLETED) {
+    if (cycle.getStatus() != ProductDiscoveryCycleStatus.COMPLETED
+        && cycle.getStatus() != ProductDiscoveryCycleStatus.FAILED) {
       throw conflict(
-          "Somente uma pesquisa concluída pode ser reanalisada com nova evidência Meta.");
+          "Somente uma pesquisa concluída ou uma reanálise técnica falha pode usar a evidência Meta supervisionada.");
     }
     ProductDiscoveryMetaAdEvidenceListResponse evidence =
         evidenceService.searchInvestigation(cycleId, investigation, 50);
@@ -112,6 +114,12 @@ public class ProductDiscoverySupervisedMetaSessionService {
       throw conflict(
           "Registre ao menos um anúncio atual, ativo e distribuído no Instagram antes de reanalisar.");
     }
+    if (cycle.getSupervisedMetaReanalysisInvestigationId() == null
+        && !hasNewEvidence(cycle, evidence)) {
+      throw conflict(
+          "A observação supervisionada atual já foi analisada; registre evidência mais recente antes de repetir Argos.");
+    }
+    cycle.setSupervisedMetaReanalysisInvestigationId(investigation.id());
     cycle.setStatus(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
     cycle.setStageCode("research");
     cycle.setErrorMessage(null);
@@ -127,6 +135,31 @@ public class ProductDiscoverySupervisedMetaSessionService {
     return response(saved, investigation);
   }
 
+  /**
+   * Confirma que o callback incorporou a sessão congelada antes de registrar sua observação como
+   * analisada.
+   */
+  public void validateAndCompleteReanalysis(ProductDiscoveryCycle cycle, JsonNode evidenceReport) {
+    Long investigationId = cycle.getSupervisedMetaReanalysisInvestigationId();
+    if (investigationId == null) return;
+    MoisMetaAdDtos.InvestigationResponse investigation = requiredInvestigation(investigationId);
+    ProductDiscoveryMetaAdEvidenceListResponse persisted =
+        evidenceService.searchInvestigation(cycle.getId(), investigation, 50);
+    boolean persistedEvidenceReady =
+        "OBSERVED".equals(persisted.sourceStatus())
+            && persisted.activeAds() > 0
+            && persisted.latestObservationAt() != null;
+    if (!persistedEvidenceReady
+        || !containsPinnedCoverage(evidenceReport, investigationId)
+        || !containsPinnedActiveInstagramAd(evidenceReport, persisted)) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          "A reanálise não incorporou a evidência Instagram supervisionada que autorizou a retomada");
+    }
+    cycle.setLastAnalyzedSupervisedMetaEvidenceAt(persisted.latestObservationAt());
+    cycle.setSupervisedMetaReanalysisInvestigationId(null);
+  }
+
   /** Consolida o contrato da tela com métricas reais e uma orientação acionável. */
   private ProductDiscoverySupervisedMetaSessionResponse response(
       ProductDiscoveryCycle cycle, MoisMetaAdDtos.InvestigationResponse investigation) {
@@ -136,9 +169,12 @@ public class ProductDiscoverySupervisedMetaSessionService {
         cycle.getStatus() == ProductDiscoveryCycleStatus.READY_FOR_RESEARCH
             || cycle.getStatus() == ProductDiscoveryCycleStatus.RESEARCHING;
     boolean canResume =
-        cycle.getStatus() == ProductDiscoveryCycleStatus.COMPLETED
+        (cycle.getStatus() == ProductDiscoveryCycleStatus.COMPLETED
+                || cycle.getStatus() == ProductDiscoveryCycleStatus.FAILED)
             && "OBSERVED".equals(evidence.sourceStatus())
-            && evidence.activeAds() > 0;
+            && evidence.activeAds() > 0
+            && (cycle.getSupervisedMetaReanalysisInvestigationId() != null
+                || hasNewEvidence(cycle, evidence));
     return new ProductDiscoverySupervisedMetaSessionResponse(
         cycle.getId(),
         investigation.id(),
@@ -169,13 +205,65 @@ public class ProductDiscoverySupervisedMetaSessionService {
       ProductDiscoveryMetaAdEvidenceListResponse evidence,
       boolean activeExecution) {
     if (activeExecution) return "A reanálise de Argos já está na fila ou em execução.";
-    if (cycle.getStatus() != ProductDiscoveryCycleStatus.COMPLETED) {
+    if (cycle.getStatus() != ProductDiscoveryCycleStatus.COMPLETED
+        && cycle.getStatus() != ProductDiscoveryCycleStatus.FAILED) {
       return "A pesquisa precisa terminar antes de receber uma reanálise supervisionada.";
     }
     if (!"OBSERVED".equals(evidence.sourceStatus()) || evidence.activeAds() <= 0) {
       return "Registre um anúncio atual, ativo e observado no Instagram para liberar a reanálise.";
     }
+    if (cycle.getSupervisedMetaReanalysisInvestigationId() != null) {
+      return "A tentativa técnica pode ser retomada com a mesma evidência Meta já congelada.";
+    }
+    if (!hasNewEvidence(cycle, evidence)) {
+      return "A evidência Meta atual já foi analisada; uma observação mais recente é necessária.";
+    }
     return "A evidência está pronta para uma nova tentativa auditável de Argos.";
+  }
+
+  /** Indica se a investigação recebeu observação posterior à última análise aceita. */
+  private boolean hasNewEvidence(
+      ProductDiscoveryCycle cycle, ProductDiscoveryMetaAdEvidenceListResponse evidence) {
+    if (evidence.latestObservationAt() == null) return false;
+    return cycle.getLastAnalyzedSupervisedMetaEvidenceAt() == null
+        || evidence.latestObservationAt().isAfter(cycle.getLastAnalyzedSupervisedMetaEvidenceAt());
+  }
+
+  /** Exige a cobertura observada da investigação exata dentro do relatório do worker. */
+  private boolean containsPinnedCoverage(JsonNode evidenceReport, long investigationId) {
+    if (evidenceReport == null) return false;
+    for (JsonNode coverage : evidenceReport.path("metaCoverage")) {
+      if (coverage.path("investigationId").asLong(-1L) == investigationId
+          && "INSTAGRAM".equalsIgnoreCase(coverage.path("publisherPlatform").asText())
+          && "OBSERVED".equalsIgnoreCase(coverage.path("sourceStatus").asText())
+          && coverage.path("activeAds").asInt(0) > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Exige que um anúncio ativo da investigação congelada tenha sido entregue à síntese factual. */
+  private boolean containsPinnedActiveInstagramAd(
+      JsonNode evidenceReport, ProductDiscoveryMetaAdEvidenceListResponse persisted) {
+    if (evidenceReport == null) return false;
+    for (JsonNode ad : evidenceReport.path("metaAdEvidence")) {
+      if (!ad.path("active").asBoolean(false)) continue;
+      String referenceId = ad.path("referenceId").asText(ad.path("metaAdId").asText());
+      boolean belongsToPinnedInvestigation =
+          persisted.items().stream()
+              .anyMatch(
+                  item ->
+                      item.active()
+                          && referenceId.equals(item.metaAdId())
+                          && item.publisherPlatforms().stream()
+                              .anyMatch("INSTAGRAM"::equalsIgnoreCase));
+      if (!belongsToPinnedInvestigation) continue;
+      for (JsonNode platform : ad.path("publisherPlatforms")) {
+        if ("INSTAGRAM".equalsIgnoreCase(platform.asText())) return true;
+      }
+    }
+    return false;
   }
 
   /** Exige um ciclo existente antes de consultar ou gravar evidência supervisionada. */

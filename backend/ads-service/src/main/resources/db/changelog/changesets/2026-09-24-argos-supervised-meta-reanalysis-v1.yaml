@@ -1,0 +1,169 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-09-24-argos-supervised-meta-reanalysis-v1.yaml
+  - changeSet:
+      id: 2026-09-24-argos-supervised-meta-reanalysis-v1-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_cycle
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT IF(
+                (
+                  (
+                    (SELECT COUNT(*)
+                       FROM information_schema.COLUMNS
+                      WHERE TABLE_SCHEMA = DATABASE()
+                        AND TABLE_NAME = 'product_discovery_cycle'
+                        AND COLUMN_NAME = 'supervised_meta_reanalysis_investigation_id') = 0
+                    OR
+                    (SELECT COUNT(*)
+                     FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'product_discovery_cycle'
+                      AND COLUMN_NAME = 'supervised_meta_reanalysis_investigation_id'
+                      AND DATA_TYPE = 'bigint'
+                      AND IS_NULLABLE = 'YES') = 1
+                  )
+                  AND
+                  (
+                    (SELECT COUNT(*)
+                       FROM information_schema.COLUMNS
+                      WHERE TABLE_SCHEMA = DATABASE()
+                        AND TABLE_NAME = 'product_discovery_cycle'
+                        AND COLUMN_NAME = 'last_analyzed_supervised_meta_evidence_at') = 0
+                    OR
+                    (SELECT COUNT(*)
+                     FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'product_discovery_cycle'
+                      AND COLUMN_NAME = 'last_analyzed_supervised_meta_evidence_at'
+                      AND DATA_TYPE = 'datetime'
+                      AND IS_NULLABLE = 'YES') = 1
+                  )
+                ),
+                1,
+                0
+              );
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              SET @argos_supervised_investigation_sql = IF(
+                (SELECT COUNT(*)
+                   FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = 'product_discovery_cycle'
+                    AND COLUMN_NAME = 'supervised_meta_reanalysis_investigation_id') = 0,
+                'ALTER TABLE product_discovery_cycle ADD COLUMN supervised_meta_reanalysis_investigation_id BIGINT NULL AFTER meta_ad_investigation_id',
+                'SELECT 1'
+              );
+              PREPARE argos_supervised_investigation_stmt
+                FROM @argos_supervised_investigation_sql;
+              EXECUTE argos_supervised_investigation_stmt;
+              DEALLOCATE PREPARE argos_supervised_investigation_stmt;
+
+              SET @argos_supervised_analyzed_at_sql = IF(
+                (SELECT COUNT(*)
+                   FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = 'product_discovery_cycle'
+                    AND COLUMN_NAME = 'last_analyzed_supervised_meta_evidence_at') = 0,
+                'ALTER TABLE product_discovery_cycle ADD COLUMN last_analyzed_supervised_meta_evidence_at DATETIME NULL AFTER supervised_meta_reanalysis_investigation_id',
+                'SELECT 1'
+              );
+              PREPARE argos_supervised_analyzed_at_stmt
+                FROM @argos_supervised_analyzed_at_sql;
+              EXECUTE argos_supervised_analyzed_at_stmt;
+              DEALLOCATE PREPARE argos_supervised_analyzed_at_stmt;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_cycle
+                DROP COLUMN last_analyzed_supervised_meta_evidence_at,
+                DROP COLUMN supervised_meta_reanalysis_investigation_id;
+  - changeSet:
+      id: 2026-09-24-argos-supervised-meta-reanalysis-v1-002
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: agent
+        - tableExists:
+            tableName: agent_version
+        - columnExists:
+            tableName: agent
+            columnName: current_version
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM agent a LEFT JOIN agent_version av ON av.agent_id = a.id AND av.version_number = 8 WHERE a.agent_key = 'market-radar' AND a.current_version IN (7, 8) AND (av.id IS NULL OR JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet')) = '2026-09-24-argos-supervised-meta-reanalysis-v1-002')
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, 8,
+                JSON_OBJECT(
+                  'agentKey', a.agent_key,
+                  'version', 8,
+                  'sourceChangeSet', '2026-09-24-argos-supervised-meta-reanalysis-v1-002',
+                  'previousCurrentVersion', a.current_version,
+                  'status', a.status,
+                  'model', COALESCE(a.model_name, ''),
+                  'authority', 'MARKET_EVIDENCE',
+                  'schemaPolicy', 'STRICT_OUTPUT_BY_ACTIVITY_V1',
+                  'evidencePolicy', 'PUBLIC_SOURCES_V1',
+                  'supervisedMetaReanalysis', 'EXACT_SESSION_REUSE_V1',
+                  'repeatsBroadResearch', FALSE,
+                  'preservesCandidateIdentity', TRUE,
+                  'publicResearchSchema', 'product-discovery-worker/prompts/productdiscovery.v1/research/public-response-schema.json',
+                  'initialPlanSchema', 'product-discovery-worker/prompts/productdiscovery.v1/plan/plan-schema.json',
+                  'gapDeepeningSchema', 'product-discovery-worker/prompts/productdiscovery.v1/plan/gap-deepening-schema.json',
+                  'researchSchema', 'product-discovery-worker/prompts/productdiscovery.v1/research/response-schema.json',
+                  'startupContractValidation', TRUE,
+                  'structuredFailurePreservation', TRUE
+                ),
+                UTC_TIMESTAMP()
+              FROM agent a
+              LEFT JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = 8
+              WHERE a.agent_key = 'market-radar'
+                AND a.current_version = 7
+                AND av.id IS NULL;
+
+              UPDATE agent a
+              JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = 8
+              SET a.current_version = 8
+              WHERE a.agent_key = 'market-radar'
+                AND a.current_version = 7
+                AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet'))
+                  = '2026-09-24-argos-supervised-meta-reanalysis-v1-002';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent a
+              JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = 8
+              SET a.current_version = CAST(
+                JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.previousCurrentVersion'))
+                AS UNSIGNED
+              )
+              WHERE a.agent_key = 'market-radar'
+                AND a.current_version = 8
+                AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet'))
+                  = '2026-09-24-argos-supervised-meta-reanalysis-v1-002';

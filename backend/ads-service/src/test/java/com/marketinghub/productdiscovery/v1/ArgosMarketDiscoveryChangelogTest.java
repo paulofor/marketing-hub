@@ -104,6 +104,10 @@ class ArgosMarketDiscoveryChangelogTest {
         .contains(ENUM_REPAIR_FILE)
         .contains("contratos evolutivos da descoberta")
         .contains("rollback preserva o estado de espera por evidência")
-        .contains("reaplicação dos contratos evolutivos");
+        .contains("reaplicação dos contratos evolutivos")
+        .contains("2026-09-24-argos-supervised-meta-reanalysis-v1.yaml")
+        .contains("reanálise Meta supervisionada exata e versão Argos v8")
+        .contains("rollback isolado da reanálise supervisionada")
+        .contains("reaplicação da reanálise supervisionada");
   }
 }

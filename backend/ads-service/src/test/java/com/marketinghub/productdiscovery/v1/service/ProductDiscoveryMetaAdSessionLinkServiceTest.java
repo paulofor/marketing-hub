@@ -113,6 +113,44 @@ class ProductDiscoveryMetaAdSessionLinkServiceTest {
     assertThat(service.linkedAttemptInvestigation(cycle, 2).map(item -> item.id())).contains(74L);
   }
 
+  /** Deve reutilizar a sessão supervisionada exata sem consultar a escada da pesquisa original. */
+  @Test
+  void resolvesPinnedSupervisedReanalysisWithTheActiveLease() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(50L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-50");
+    cycle.setSupervisedMetaReanalysisInvestigationId(72L);
+    when(cycleRepository.findById(50L)).thenReturn(Optional.of(cycle));
+    when(investigationService.get(72L)).thenReturn(Optional.of(investigation(72L)));
+    ProductDiscoveryMetaAdSessionLinkService service =
+        new ProductDiscoveryMetaAdSessionLinkService(
+            cycleRepository, metaAttemptRepository, investigationService, new ObjectMapper());
+
+    assertThat(service.linkedSupervisedReanalysis(50L, "lease-50").map(item -> item.id()))
+        .contains(72L);
+    org.mockito.Mockito.verifyNoInteractions(metaAttemptRepository);
+  }
+
+  /** Deve recusar a sessão congelada quando outro worker já substituiu o lease. */
+  @Test
+  void rejectsPinnedSupervisedReanalysisWithAnotherLease() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(51L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-51");
+    cycle.setSupervisedMetaReanalysisInvestigationId(72L);
+    when(cycleRepository.findById(51L)).thenReturn(Optional.of(cycle));
+    ProductDiscoveryMetaAdSessionLinkService service =
+        new ProductDiscoveryMetaAdSessionLinkService(
+            cycleRepository, metaAttemptRepository, investigationService, new ObjectMapper());
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> service.linkedSupervisedReanalysis(51L, "lease-antigo"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Lease da reanálise supervisionada");
+  }
+
   /** Deve criar a segunda investigação somente depois de preservar a primeira. */
   @Test
   void bindsDistinctSecondAttemptAfterFirstAttempt() {

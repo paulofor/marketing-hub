@@ -159,6 +159,56 @@ test("solicita cobertura Instagram correlacionada e separa anúncios de ofertas"
   assert.equal(evidence.metaCoverage[0].advertisersObserved, 1);
 });
 
+test("reanálise supervisionada preserva o anúncio exato mesmo quando ele contraria a lente", async () => {
+  const evidence = await collectMarketplaceEvidence(
+    {
+      marketplaceRequests: [],
+      metaAdRequests: [
+        {
+          query: "consultoria imagem encontro",
+          country: "BR",
+          publisherPlatform: "INSTAGRAM",
+          maxAds: 25,
+        },
+      ],
+    },
+    {
+      backendBaseUrl: "http://backend.test",
+      cycleId: 70,
+      executionLeaseId: "lease-70",
+      supervisedMetaReanalysis: { investigationId: 43 },
+      researchContext: "perfil para aplicativo de namoro",
+      logger: { info() {}, warn() {} },
+      fetchFn: async () =>
+        jsonResponse({
+          sourceStatus: "OBSERVED",
+          collectionMode: "SUPERVISED",
+          investigationId: 43,
+          query: "consultoria imagem encontro",
+          country: "BR",
+          publisherPlatform: "INSTAGRAM",
+          adsObserved: 1,
+          activeAds: 1,
+          advertisersObserved: 1,
+          items: [
+            {
+              metaAdId: "ad-43",
+              advertiserName: "Estilo para Festa",
+              adTexts: ["Look coordenado para sua ocasião especial"],
+              publisherPlatforms: ["INSTAGRAM"],
+              snapshotUrl: "https://www.facebook.com/ads/library/?id=ad-43",
+              active: true,
+            },
+          ],
+        }),
+    },
+  );
+
+  assert.equal(evidence.metaAdEvidence.length, 1);
+  assert.equal(evidence.metaAdEvidence[0].referenceId, "ad-43");
+  assert.equal(evidence.metaCoverage[0].investigationId, 43);
+});
+
 test("não converte rejeição do contrato interno em indisponibilidade da Meta", async () => {
   await assert.rejects(
     collectMarketplaceEvidence(

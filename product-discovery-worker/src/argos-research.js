@@ -159,6 +159,8 @@ export function validateSynthesis(synthesis, context) {
     allEvidence(context).map((evidence) => evidence.evidenceId),
   );
   const gapDeepening = context.job?.stageCode === "candidate-gap-deepening";
+  const preservesCandidates =
+    gapDeepening || Boolean(context.job?.supervisedMetaReanalysis);
   const expectedNames = new Set(
     (context.job?.previousCandidates || []).map((item) =>
       normalizeIdentity(item.name),
@@ -179,9 +181,9 @@ export function validateSynthesis(synthesis, context) {
       );
     }
     names.add(normalizeIdentity(name));
-    if (gapDeepening && !expectedNames.has(normalizeIdentity(name))) {
+    if (preservesCandidates && !expectedNames.has(normalizeIdentity(name))) {
       throw new Error(
-        `Aprofundamento de Argos alterou a identidade da candidata ${name}`,
+        `Reanálise de Argos alterou a identidade da candidata ${name}`,
       );
     }
     if (
@@ -251,9 +253,9 @@ export function validateSynthesis(synthesis, context) {
       );
     }
   }
-  if (gapDeepening && !setsEqual(names, expectedNames)) {
+  if (preservesCandidates && !setsEqual(names, expectedNames)) {
     throw new Error(
-      "Aprofundamento de Argos deve preservar todas as candidatas iniciais",
+      "Reanálise de Argos deve preservar todas as candidatas iniciais",
     );
   }
 }
@@ -339,6 +341,7 @@ function compactJob(job = {}) {
     referenceSources: job.referenceSources,
     stageCode: job.stageCode,
     evidencePolicy: job.evidencePolicy,
+    supervisedMetaReanalysis: job.supervisedMetaReanalysis || null,
     marketExpansionContext: job.marketExpansionContext,
   };
 }

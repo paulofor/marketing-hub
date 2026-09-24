@@ -1,0 +1,18 @@
+{
+  "cardKey": "ia-utilidade-credibilidade-antes-de-escala",
+  "collection": "neuromarketing",
+  "title": "Use IA onde ela resolve uma tarefa, não apenas onde escala conteúdo",
+  "finding": "Em estudo global da Havas com mais de 21 mil avaliações de experiências de marca com IA em sete mercados, educação/suporte assistidos por IA e comparação de produtos tiveram escores de valor superiores a publicidade, formatos shoppable e conteúdo de creators com IA; 50% disseram que IA pode fazer experiências parecerem iguais, 56% disseram que pode parecer enganosa e 74% consideraram importante poder sair da personalização por IA.",
+  "mechanism": "IA tende a gerar mais valor percebido quando reduz esforço em uma tarefa desejada e preserva credibilidade e controle. Escalar conteúdo ou personalização sem benefício funcional claro pode aumentar homogeneidade, suspeita e percepção de manipulação.",
+  "commercialApplication": "Antes de incluir IA em landing pages, Click-to-WhatsApp, agentes ou criativos, registrar a tarefa humana que será melhorada e os requisitos de credibilidade/controle. Priorizar comparação explicada, educação, suporte e resolução de fricção; tratar geração massiva de conteúdo como hipótese separada.",
+  "evidenceStrength": "Moderada: estudo proprietário global amplo e diretamente voltado a experiências de marca com IA, mas baseado em avaliações e associações reportadas; não demonstra causalidade nem efeito de conversão no Marketing Hub.",
+  "publishedOn": "2026-09-22",
+  "validUntil": "2027-01-22",
+  "experimentHypothesis": "Para a mesma oferta, uma experiência em que a IA executa uma tarefa concreta e explicável terá maior conclusão de tarefa e confiança percebida do que uma experiência em que IA aparece sobretudo como novidade, personalização ou escala de conteúdo; CTA, lead, checkout e pagamento devem ser medidos separadamente.",
+  "risks": "Confundir eficiência operacional com valor ao usuário, automatizar personalização sem controle, usar disclosure como substituto de qualidade, escalar conteúdo genérico ou enganoso e atribuir causalidade comercial a escores proprietários.",
+  "limits": "Os mercados e setores agregados podem não representar o público brasileiro; os escores são construções da pesquisa e não equivalem a receita ou retenção; a associação entre experiências bem avaliadas e maior engagement/brand desire/growth potential não prova causalidade.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-24-ia-utilidade-credibilidade-antes-de-escala.md",
+  "sourceTitle": "Fonte revisada — IA deve criar valor para o usuário antes de escalar experiência",
+  "sourceSha256": "70ee27a6fe84c952ecfe6ae982a3b372973da038d989f6e4daa46fafb4dc9f64"
+}

@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 class ArgosMarketDiscoveryChangelogTest {
   private static final String FILE = "2026-08-30-argos-market-discovery-v1.yaml";
   private static final String META_BROWSER_FILE = "2026-08-30-argos-meta-public-browser-v1.yaml";
+  private static final String ENUM_REPAIR_FILE =
+      "2026-09-24-product-discovery-enums-varchar-v1.yaml";
   private static final Path CHANGELOG_ROOT = Path.of("src/main/resources/db/changelog");
 
   /** Exige resolução relativa e aplicação do pré-requisito de mercado antes do navegador Meta. */
@@ -69,5 +71,39 @@ class ArgosMarketDiscoveryChangelogTest {
         .contains("2026-08-31-product-discovery-autonomous-handoff-v1-%")
         .contains("\"6:4\"")
         .contains("\"0:3\"");
+  }
+
+  /** Repara o ENUM legado e protege defaults e novos estados na matriz física MySQL 5.7. */
+  @Test
+  void repairsLegacyEnumsAsEvolvingVarcharContracts() throws Exception {
+    String master = Files.readString(CHANGELOG_ROOT.resolve("db.changelog-master.yaml"));
+    String yaml = Files.readString(CHANGELOG_ROOT.resolve("changesets").resolve(ENUM_REPAIR_FILE));
+    String baseline =
+        Files.readString(
+            Path.of(
+                "src/test/resources/liquibase-mysql57/product-discovery-bpm-audit-baseline.sql"));
+    String script =
+        Files.readString(Path.of("scripts/validate-product-discovery-bpm-audit-mysql57.sh"));
+
+    assertThat(master)
+        .contains("file: changesets/" + ENUM_REPAIR_FILE + "\n      relativeToChangelogFile: true");
+    assertThat(yaml)
+        .contains(
+            "type: mysql",
+            "splitStatements: true",
+            "stripComments: true",
+            "MODIFY COLUMN research_mode VARCHAR(32) NOT NULL DEFAULT 'VALIDATE_MARKET'",
+            "MODIFY COLUMN market_type VARCHAR(24) NOT NULL DEFAULT 'UNSPECIFIED'",
+            "MODIFY COLUMN status VARCHAR(40) NOT NULL DEFAULT 'READY_FOR_RESEARCH'",
+            "'AWAITING_CUSTOMER_EVIDENCE'")
+        .doesNotContain("TIMESTAMP NOT NULL")
+        .doesNotContain("UPDATE product_discovery_cycle")
+        .doesNotContain("DELETE FROM product_discovery_cycle");
+    assertThat(baseline).contains("status ENUM('DRAFT','READY_FOR_RESEARCH'");
+    assertThat(script)
+        .contains(ENUM_REPAIR_FILE)
+        .contains("contratos evolutivos da descoberta")
+        .contains("rollback preserva o estado de espera por evidência")
+        .contains("reaplicação dos contratos evolutivos");
   }
 }

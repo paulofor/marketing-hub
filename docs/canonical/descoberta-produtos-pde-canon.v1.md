@@ -102,6 +102,13 @@ Foram comparadas três alternativas: tornar campos de aprofundamento sempre obri
 lacunas antes da coleta; relaxar o modo estrito perderia garantia contratual; separar schemas por
 atividade preserva semântica, falha cedo e custa pouco. A terceira é a regra canônica.
 
+Os estados evolutivos do ciclo (`research_mode`, `market_type` e `status`) são persistidos como
+`VARCHAR` com tamanho e defaults explícitos no Liquibase e no mapeamento JPA. O Hibernate não pode
+recriá-los como `ENUM` físico. Essa regra permite introduzir estados canônicos, como
+`AWAITING_CUSTOMER_EVIDENCE`, sem rejeitar o callback depois de uma pesquisa já executada. A matriz
+MySQL 5.7 deve começar com o schema legado em `ENUM`, aplicar a migração, gravar o novo estado,
+executar rollback seguro e reaplicar a correção preservando o valor.
+
 O dossiê final entregue a Atena continua sendo hipótese comercial. Utilidade exige experiência
 funcional e observação humana; compra rentável exige pagamento conciliado, reembolso, CAC, custo
 integral, contribuição e margem nos processos posteriores.

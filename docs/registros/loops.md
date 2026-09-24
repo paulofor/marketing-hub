@@ -6839,6 +6839,23 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Prevenção:** testes de fluxo HTTP→service→fila→retorno, produtos independentes, entradas
   alteradas, reprovação funcional, resposta existente e repetição do comando; interface móvel.
 
+## LOOP-ARGOS-ESTADO-JPA-DIVERGENTE — callback válido falha depois da pesquisa paga
+
+- **Data:** 2026-09-24.
+- **Sintoma:** a tarefa #479 concluiu três planos, três sínteses e duas candidatas factuais, mas o
+  callback final respondeu HTTP 500 e o ciclo #68 terminou como `FAILED` sem materializar o
+  relatório.
+- **Causa-raiz confirmada:** Liquibase e a entidade declaravam campos evolutivos, porém o schema
+  operacional mantinha `research_mode`, `market_type` e `status` como `ENUM` físico criado pelo
+  Hibernate. O novo estado canônico `AWAITING_CUSTOMER_EVIDENCE` não fazia parte do `ENUM`; o MySQL
+  5.7 recusou o `UPDATE` com erro 1265 e desfez a transação inteira.
+- **Correção sistêmica:** os três campos passam a `VARCHAR` com tamanhos e defaults explícitos; a
+  entidade fixa `SqlTypes.VARCHAR` para impedir nova conversão automática. Nenhum estado é
+  remapeado para esconder o significado de espera por entrevistas.
+- **Prevenção:** regressão por reflexão cobre todos os enums persistidos do ciclo; o changelog testa
+  include relativo e contratos MySQL 5.7; a matriz física começa no `ENUM` legado, grava
+  `AWAITING_CUSTOMER_EVIDENCE`, faz rollback e reaplica sem perder o estado.
+
 ## LOOP-QUARTZO-PROVENIENCIA-OMITIDA
 
 - **Confirmado em 21/09/2026:** Têmis #473 recebeu ativos aprovados sem a origem,

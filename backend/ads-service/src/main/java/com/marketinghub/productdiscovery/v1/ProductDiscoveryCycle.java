@@ -11,6 +11,8 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /** Representa um ciclo auditável de pesquisa de dores e oportunidades para produtos PDE. */
 @Entity
@@ -46,18 +48,21 @@ public class ProductDiscoveryCycle {
   private String objective;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "research_mode", nullable = false, length = 32)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "research_mode", nullable = false, length = 32, columnDefinition = "VARCHAR(32)")
   private ProductDiscoveryResearchMode researchMode;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "market_type", nullable = false, length = 24)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "market_type", nullable = false, length = 24, columnDefinition = "VARCHAR(24)")
   private ProductDiscoveryMarketType marketType;
 
   @Column(name = "reference_sources", columnDefinition = "LONGTEXT")
   private String referenceSources;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "status", nullable = false, length = 40)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "status", nullable = false, length = 40, columnDefinition = "VARCHAR(40)")
   private ProductDiscoveryCycleStatus status;
 
   @Column(name = "stage_code", nullable = false, length = 80)

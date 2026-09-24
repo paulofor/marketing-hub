@@ -448,6 +448,10 @@
   background: #dcecff;
   color: #155da4;
 }
+.independent-process-status.is-waiting-input {
+  background: #fff0bf;
+  color: #715512;
+}
 .independent-process-status.is-pending {
   background: #f0f1f2;
   color: #505b64;

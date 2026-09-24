@@ -6856,6 +6856,21 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   include relativo e contratos MySQL 5.7; a matriz física começa no `ENUM` legado, grava
   `AWAITING_CUSTOMER_EVIDENCE`, faz rollback e reaplica sem perder o estado.
 
+## LOOP-ARGOS-ENTREVISTAS-EXIBIDAS-COMO-FILA — gate humano parece trabalho executável
+
+- **Data:** 2026-09-24.
+- **Sintoma confirmado:** após a tarefa #480 concluir corretamente, a execução independente #30
+  mostrava `Na fila`, embora o ciclo #69 estivesse em `AWAITING_CUSTOMER_EVIDENCE` e nenhuma das
+  cinco a oito entrevistas consentidas existisse. A tarefa #481 permanecia pendente por desenho.
+- **Causa-raiz:** o relatório funcional priorizava o `PENDING` técnico da tarefa já materializada e
+  não projetava a espera explícita do ciclo; listagem e detalhe escondiam a diferença entre fila do
+  worker e entrada humana ainda ausente.
+- **Correção sistêmica:** o provedor canônico projeta `WAITING_INPUT` no detalhe e na consulta leve
+  sempre que Argos aguarda evidência de clientes, preservando `BLOCKED` para falha real e `PENDING`
+  para trabalho executável.
+- **Prevenção:** testes de backend cobrem projeção completa e resumida; teste de interface exige
+  `Aguardando entrada` junto do vínculo para entrevistas, sem repetir Argos com a mesma evidência.
+
 ## LOOP-QUARTZO-PROVENIENCIA-OMITIDA
 
 - **Confirmado em 21/09/2026:** Têmis #473 recebeu ativos aprovados sem a origem,

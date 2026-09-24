@@ -139,6 +139,7 @@ export type IndependentBusinessProcessExecutionSummary = {
     | "NOT_STARTED"
     | "PENDING"
     | "IN_PROGRESS"
+    | "WAITING_INPUT"
     | "BLOCKED"
     | "COMPLETED"
     | "CANCELLED";

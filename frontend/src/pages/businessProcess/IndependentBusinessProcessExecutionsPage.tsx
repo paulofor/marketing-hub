@@ -41,6 +41,7 @@ const statusLabels: Record<string, string> = {
   NOT_STARTED: "Não iniciada",
   PENDING: "Na fila",
   IN_PROGRESS: "Em execução",
+  WAITING_INPUT: "Aguardando entrada",
   BLOCKED: "Bloqueada",
   COMPLETED: "Concluída",
   CANCELLED: "Cancelada",
@@ -86,6 +87,7 @@ function statusClass(status: string) {
   if (status === "COMPLETED") return "is-completed";
   if (status === "BLOCKED") return "is-blocked";
   if (status === "IN_PROGRESS") return "is-running";
+  if (status === "WAITING_INPUT") return "is-waiting-input";
   return "is-pending";
 }
 

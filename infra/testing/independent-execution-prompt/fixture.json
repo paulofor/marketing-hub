@@ -1,0 +1,56 @@
+{
+  "execution": {
+    "id": 91001,
+    "requestKey": "INTERNAL_REQUEST_KEY",
+    "processDefinitionId": 92001,
+    "processCode": "pde-opportunity-discovery",
+    "processName": "Descoberta factual da oportunidade PDE",
+    "processVersionNumber": 7,
+    "sourceReference": "product-discovery-cycle:93001",
+    "displayName": "Situação de compra — pesquisa de teste",
+    "requestedByName": "Homologação local",
+    "input": {
+      "theme": "Situação de compra — pesquisa de teste",
+      "apiToken": "PRIVATE_INPUT"
+    },
+    "status": "BLOCKED",
+    "activityCount": 2,
+    "completedActivityCount": 0,
+    "costCoverage": "NOT_REPORTED",
+    "latestError": "O executor encerrou antes de produzir resultado.",
+    "createdAt": "2026-09-24T01:00:00Z",
+    "startedAt": "2026-09-24T01:01:00Z",
+    "finishedAt": "2026-09-24T01:01:08Z"
+  },
+  "activities": [
+    {
+      "activityId": "marketEvidence",
+      "activityName": "Reunir evidências factuais e situações de compra",
+      "status": "BLOCKED",
+      "tasks": [
+        {
+          "taskId": 94001,
+          "processDefinitionId": 92001,
+          "processVersionNumber": 7,
+          "sourceReference": "product-discovery-cycle:93001",
+          "status": "BLOCKED",
+          "assignedAgentKey": "market-radar",
+          "assignedAgentNickname": "Argos",
+          "title": "Pesquisar situação de compra de teste",
+          "executionError": "O executor encerrou antes de produzir resultado.",
+          "costEstimationStatus": "NOT_REPORTED",
+          "createdAt": "2026-09-24T01:00:00Z",
+          "promptSent": "PRIVATE_PROMPT",
+          "result": { "privateData": "PRIVATE_RESULT" },
+          "evidence": { "privateData": "PRIVATE_EVIDENCE" }
+        }
+      ]
+    },
+    {
+      "activityId": "candidateGapDeepening",
+      "activityName": "Aprofundar lacunas da candidata",
+      "status": "NOT_STARTED",
+      "tasks": []
+    }
+  ]
+}

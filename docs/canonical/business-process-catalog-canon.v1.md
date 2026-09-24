@@ -686,6 +686,23 @@ origem, ausência explícita de produto, versão, estado, marcos e duração, mo
 raciocínio, tokens, custo e as partes persistidas do prompt completo. Esses dados pertencem ao mesmo
 endpoint de detalhe e não podem ser reconstruídos por uma segunda consulta ou por heurística visual.
 
+**Prompt para AIHUB em execuções independentes — decisão de 24/09/2026:** o detalhe deve
+oferecer o mesmo botão de ajuda dos processos de produto, com prévia e alternativa de cópia
+manual. Reutiliza `process-aihub-help.v1.md`, adaptado condicionalmente ao escopo independente,
+e o contrato de detalhe já existente em `businessprocess.independent.controller/service`.
+Identifica execução, definição/versão, referência oficial, entrada de pesquisa, ciclo quando
+informado, atividades, tarefas, erros, consumo e relatório de candidatas. Produtos derivados
+só aparecem com os vínculos recebidos; não inventar produto de entrada, tipo, ficha, cadeia,
+experimento ou pai ausentes, nem exigir sua criação para corrigir a pesquisa.
+
+O texto distingue erro técnico, espera por entrada humana e conclusão com lacunas comerciais;
+preserva gates, evidências, histórico e limites aprovados. Orienta correção local e entrega por
+PR conforme a autorização vigente, sem nova autorização de pesquisa paga, campanha ou entrevistas.
+Não exportar prompts de agentes, payloads brutos, chaves idempotentes ou campos arbitrários da
+entrada; o detalhe oficial continua acessível para investigação adicional. Custos ausentes
+permanecem desconhecidos. Consulta com erro não oferece cópia e atualização em curso desabilita
+o botão. Copiar e abrir a prévia não inicia tarefas, retentativas, handoff, IA nem publicação.
+
 Status, progresso e custos exibidos são consolidados pelo backend a partir das instâncias e tarefas
 persistidas. Ausência de medição permanece ausente; execução, aprovação ou documento produzido não é
 venda. A entrada independente não pode conter `productId`, `experimentId` ou associação artificial a

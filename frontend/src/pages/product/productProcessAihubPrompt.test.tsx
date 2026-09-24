@@ -33,8 +33,21 @@ afterEach(() => {
 describe("Contrato do template compartilhado de ajuda", () => {
   const instruction = helpPrompt.replace(/\s+/g, " ");
 
+  it("adapta descoberta sem produto e respeita espera por evidência sem reinício pago", () => {
+    for (const part of [
+      "Execução independente, sem produto definido",
+      "Não invente produto, tipo, ficha, plano comercial, experimento",
+      "separe falha técnica, espera por entrada humana e pesquisa concluída com lacunas",
+      "Não reinicie pesquisas pagas com a mesma entrada e o mesmo impedimento",
+      "entrevistas exigem participantes reais e consentimento, nunca respostas fabricadas",
+      "respeite o gate do backend antes de avançar para Atena ou criar produto",
+      "quando houver produto, seus contratos",
+    ])
+      expect(instruction).toContain(part);
+  });
+
   it("foca o contexto corrente sem embutir um produto, tipo ou execução particular", () => {
-    expect(instruction).toContain("processo corrente para o produto corrente");
+    expect(instruction).toContain("processo corrente no escopo da execução");
     expect(instruction).toContain(
       "Confirme na tela e no backend o estado atual",
     );

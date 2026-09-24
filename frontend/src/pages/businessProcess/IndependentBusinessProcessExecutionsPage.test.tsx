@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -18,8 +19,241 @@ import type {
 } from "../../api/businessProcess/types";
 import IndependentBusinessProcessExecutionsPage from "./IndependentBusinessProcessExecutionsPage";
 import IndependentBusinessProcessExecutionDetailPage from "./IndependentBusinessProcessExecutionDetailPage";
+import IndependentExecutionAihubPromptCopy from "./IndependentExecutionAihubPromptCopy";
+import { independentExecutionAihubContext } from "./independentExecutionAihubContext";
+import helpPrompt from "../product/prompts/process-aihub-help.v1.md?raw";
 
 vi.mock("axios");
+
+describe("Prompt AIHUB da execução independente", () => {
+  const button = () =>
+    screen.getByRole("button", { name: "Prompt para AIHUB" });
+  const consultedAt = "2026-09-24T10:00:00Z";
+
+  beforeEach(() => {
+    vi.stubGlobal("isSecureContext", true);
+    vi.mocked(axios.get).mockResolvedValue({ data: detail() });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.resetAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("copia o prompt compartilhado e o detalhe oficial sem disparar a execução", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    renderPage("/business-process-executions/91");
+    await screen.findByRole("button", { name: "Prompt para AIHUB" });
+    fireEvent.click(button());
+    await screen.findByText("Prompt copiado! Cole na conversa do AIHUB.");
+    const prompt = writeText.mock.calls[0][0];
+    expect(prompt.startsWith(`${helpPrompt.trim()}\n\n`)).toBe(true);
+    expect(prompt).toContain("Execução: #91");
+    expect(prompt).toContain("Referência oficial: product-discovery-cycle:77");
+    expect(prompt).toContain("Tarefa #271");
+    expect(prompt).toContain("Candidata #501");
+    expect(prompt).toContain("/business-process-executions/91");
+    expect(prompt.match(/CONTEXTO DA EXECUÇÃO INDEPENDENTE/g)).toHaveLength(1);
+    expect(screen.queryByLabelText("Prompt completo para AIHUB")).toBeNull();
+    const preview = screen.getByText("Ver prompt para AIHUB")
+      .parentElement as HTMLDetailsElement;
+    preview.open = true;
+    fireEvent(preview, new Event("toggle"));
+    expect(
+      screen.getByLabelText("Prompt completo para AIHUB").textContent,
+    ).toBe(prompt);
+    expect(axios.get).toHaveBeenCalledTimes(1);
+    expect(axios.get).toHaveBeenCalledWith(
+      "/api/independent-business-process-executions/91",
+    );
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it.each(["BLOCKED", "COMPLETED", "WAITING_INPUT", "IN_PROGRESS"] as const)(
+    "preserva %s, progresso e motivo sem converter o estado em aprovação",
+    (status) => {
+      const d = detail({
+        ...summary,
+        status,
+        completedActivityCount: 1,
+        latestError: "Aguardar evidência específica",
+      });
+      const text = independentExecutionAihubContext(
+        d,
+        "http://admin.test",
+        consultedAt,
+      );
+      expect(text).toContain(`Situação da execução no backend: ${status}`);
+      expect(text).toContain("Progresso registrado: 1/1");
+      expect(text).toContain("Causa registrada: Aguardar evidência específica");
+      expect(text).toContain("Handoff: IN_PROGRESS · disponível: Não");
+      expect(text).not.toContain("Objetivo comprovado: Sim");
+    },
+  );
+
+  it("omite payloads brutos e entradas arbitrárias, preservando custo ausente e zero medido", () => {
+    const d = detail();
+    d.execution.input.apiToken = "SECRET_INPUT";
+    d.execution.requestKey = "PRIVATE_REQUEST_KEY";
+    const task = d.activities[0].tasks[0];
+    task.promptSent = "RAW_PROMPT";
+    task.agentPromptPart = "AGENT_SECRET";
+    task.activityPromptPart = "ACTIVITY_SECRET";
+    task.result = { privateData: "RAW_RESULT" };
+    task.evidence = { privateData: "RAW_EVIDENCE" };
+    task.estimatedCostUsd = 0;
+    task.outputTokens = 0;
+    const text = independentExecutionAihubContext(
+      d,
+      "http://admin.test",
+      consultedAt,
+    );
+    expect(text).not.toMatch(
+      /SECRET_INPUT|PRIVATE_REQUEST_KEY|RAW_PROMPT|AGENT_SECRET|ACTIVITY_SECRET|RAW_RESULT|RAW_EVIDENCE/,
+    );
+    expect(text).toContain("Custo estimado da execução: Não informado");
+    expect(text).toContain("Custo estimado: USD 0");
+    expect(text).toContain("saída 0");
+    expect(text).toContain("Fonte: Biblioteca Meta / Instagram");
+    expect(text).toContain("https://example.test/pesquisa");
+  });
+
+  it("não deduz ciclo, produto, cadeia ou experimento sem relatório", () => {
+    const d: IndependentBusinessProcessExecution = {
+      execution: summary,
+      activities: [],
+    };
+    const text = independentExecutionAihubContext(
+      d,
+      "http://admin.test",
+      consultedAt,
+    );
+    expect(text).toContain("Ciclo de descoberta: Não informado");
+    expect(text).toContain("Cadeia e processo pai: não informados");
+    expect(text).toContain("Experimento: não informado");
+    expect(text).toContain("Nenhuma atividade informada");
+    expect(text).toContain("Relatório não informado");
+    expect(text).not.toMatch(
+      /\/products\/|experiment:|Ciclo de descoberta: 77/,
+    );
+  });
+
+  it("identifica produto derivado somente pelo vínculo recebido na candidata", () => {
+    const d = detail();
+    Object.assign(d.processReport.candidates[0], {
+      productId: 901,
+      productName: "Produto de teste",
+      productStatus: "PLANNED",
+    });
+    const text = independentExecutionAihubContext(
+      d,
+      "http://admin.test",
+      consultedAt,
+    );
+    expect(text).toContain(
+      "Produto derivado: 901 · Produto de teste · PLANNED",
+    );
+    expect(text).toContain("não exige produto de entrada");
+  });
+
+  it("oferece cópia manual integral quando clipboard e fallback falham", async () => {
+    vi.stubGlobal("navigator", {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+    });
+    render(
+      <IndependentExecutionAihubPromptCopy
+        detail={detail()}
+        updatedAt={Date.parse(consultedAt)}
+        loading={false}
+      />,
+    );
+    fireEvent.click(button());
+    const manual = await screen.findByRole("textbox", {
+      name: "Prompt para AIHUB para copiar manualmente",
+    });
+    expect(manual).toHaveValue(
+      `${helpPrompt.trim()}\n\n${independentExecutionAihubContext(detail(), window.location.origin, new Date(consultedAt).toISOString())}`,
+    );
+    fireEvent.focus(manual);
+    expect((manual as HTMLTextAreaElement).selectionEnd).toBe(
+      (manual as HTMLTextAreaElement).value.length,
+    );
+    expect(
+      screen.queryByText("Prompt copiado! Cole na conversa do AIHUB."),
+    ).toBeNull();
+  });
+
+  it("bloqueia cópia durante atualização e usa a nova execução sem estado da anterior", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    const { rerender } = render(
+      <IndependentExecutionAihubPromptCopy
+        key={91}
+        detail={detail()}
+        updatedAt={Date.parse(consultedAt)}
+        loading
+      />,
+    );
+    expect(button()).toBeDisabled();
+    rerender(
+      <IndependentExecutionAihubPromptCopy
+        key={91}
+        detail={detail()}
+        updatedAt={Date.parse(consultedAt)}
+        loading={false}
+      />,
+    );
+    fireEvent.click(button());
+    await screen.findByText("Prompt copiado! Cole na conversa do AIHUB.");
+    const next: IndependentBusinessProcessExecution = {
+      execution: {
+        ...summary,
+        id: 92,
+        sourceReference: "research:88",
+        displayName: "Outra pesquisa",
+      },
+      activities: [],
+    };
+    rerender(
+      <IndependentExecutionAihubPromptCopy
+        key={92}
+        detail={next}
+        updatedAt={Date.parse(consultedAt)}
+        loading={false}
+      />,
+    );
+    expect(
+      screen.queryByText("Prompt copiado! Cole na conversa do AIHUB."),
+    ).toBeNull();
+    fireEvent.click(button());
+    await screen.findByText("Prompt copiado! Cole na conversa do AIHUB.");
+    const prompt = writeText.mock.calls[1][0];
+    expect(prompt).toContain("Execução: #92 · Outra pesquisa");
+    expect(prompt).not.toMatch(
+      /Execução: #91|product-discovery-cycle:77|Tarefa #271|Candidata #501/,
+    );
+  });
+
+  it("não oferece prompt durante carregamento ou após falha do endpoint", async () => {
+    let reject!: (error: Error) => void;
+    vi.mocked(axios.get).mockReturnValue(
+      new Promise((_, fail) => {
+        reject = fail;
+      }),
+    );
+    renderPage("/business-process-executions/91");
+    expect(
+      screen.queryByRole("button", { name: "Prompt para AIHUB" }),
+    ).toBeNull();
+    reject(new Error("API indisponível"));
+    await screen.findByText("Não foi possível detalhar a execução.");
+    expect(
+      screen.queryByRole("button", { name: "Prompt para AIHUB" }),
+    ).toBeNull();
+  });
+});
 
 const catalog = [
   {

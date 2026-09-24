@@ -1,6 +1,6 @@
 # SOLICITAÇÃO DE AJUDA — MARKETING HUB / AIHUB
 
-Execute o **processo corrente para o produto corrente**, identificados no contexto ao final,
+Execute o **processo corrente no escopo da execução**, identificado no contexto ao final,
 atividade por atividade e tarefa por tarefa, até comprovar todos os seus objetivos.
 Investigue, implemente, valide e entregue as correções necessárias; não pare no primeiro
 defeito nem peça nova autorização a cada ajuste relacionado. Aprimore os agentes envolvidos
@@ -18,21 +18,38 @@ as proteções do repositório e as condições de validação e entrega abaixo.
 sustentável.** Preserve a fidelidade entre produto, comunicação e entrega. Testes aprovados
 não comprovam vendas; diferencie hipótese comercial de resultado medido.
 
+**Execução independente, sem produto definido:** use a definição/versão do processo,
+o ID da execução, sua referência oficial, tema/entrada, ciclo, candidatas, atividades e
+tarefas como identidade. Não invente produto, tipo, ficha, plano comercial, experimento,
+cadeia ou processo pai ausentes; não importe identidades de outra conversa. Se o relatório
+vincular um produto posteriormente, confirme esse vínculo no backend antes de usá-lo.
+As orientações de produto, oferta, checkout e publicação comercial abaixo só se aplicam quando
+esses contratos existirem e fizerem parte do escopo corrente.
+
+Na descoberta, separe falha técnica, espera por entrada humana e pesquisa concluída com
+lacunas. Corrija a causa antes de retentar; preserve a tentativa original, fontes, custos
+e resultados válidos. Não reinicie pesquisas pagas com a mesma entrada e o mesmo impedimento.
+Aprofunde lacunas específicas, com fontes atuais e limites aprovados; entrevistas exigem
+participantes reais e consentimento, nunca respostas fabricadas. Pesquisa concluída não
+comprova oportunidade aprovada: respeite o gate do backend antes de avançar para Atena ou
+criar produto. Uma espera legítima por evidência deve ser relatada com a ação necessária,
+sem contornar o gate para declarar todos os objetivos atingidos.
+
 ## 1. Confirme o contexto e o objetivo
 
 - Antes da primeira ação, publique um checklist curto com `update_plan`, com critérios de
   conclusão por atividade; atualize o mesmo plano ao concluir etapas ou mudar o escopo.
   Se a ferramenta não estiver disponível, declare a limitação e mantenha checklist textual.
   Nos resumos públicos, registre ação e uma frase **Objetivo: ...**, sem expor raciocínio interno.
-- Confirme na tela e no backend o estado atual, o produto, seu tipo cadastrado, cadeia,
+- Confirme na tela e no backend o estado atual e, quando vinculados, o produto, seu tipo cadastrado, cadeia,
   processo e versão, ciclo, experimento, atividades e tarefas. O contexto copiado é uma
   fotografia da consulta; não presuma que ainda esteja atualizado. Preserve essas identidades,
   histórico, custos, evidências, contratos vendidos e aprovações.
-- Identifique por nome e ID o produto, processo/versão, execução, atividade e tarefa corrente;
+- Identifique por nome e ID o processo/versão, execução, atividade e tarefa corrente e o produto quando houver;
   quando houver subprocesso, identifique também o processo pai, a atividade que o chamou e
   o retorno esperado. Declare campos ausentes e consulte os contratos oficiais para completá-los,
   sem inventar identidades nem misturar produtos, ciclos ou execuções históricas.
-- Consulte os contratos do produto e os cânones pertinentes em `docs/canonical`, incluindo
+- Consulte os cânones pertinentes em `docs/canonical` e, quando houver produto, seus contratos, incluindo
   `product-types-canon.v1.md` e `product-execution-profiles-canon.v1.md`. Respeite as definições
   macro do tipo e a ficha de execução aprovada em todo o processo e seus subprocessos.
   Não deduza o tipo pelo nome nem altere oferta, funil, formato ou versão sem decisão explícita.

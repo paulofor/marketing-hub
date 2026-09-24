@@ -29,6 +29,7 @@ import {
   executeBoundedMarketResearch,
   MARKET_EXPANSION_STRATEGY_CODE,
 } from "./market-expansion.js";
+import { validateArgosOutputSchemaContracts } from "./strict-output-schema.js";
 
 const backendBaseUrl = process.env.BACKEND_BASE_URL || "http://191.252.181.168";
 const pollIntervalMs = Number(
@@ -65,6 +66,7 @@ const automaticExecution = createAutomaticExecutionControl({
 const pollLock = createPollLock();
 
 async function main() {
+  await validateArgosOutputSchemaContracts();
   operationalLogger.info(
     `[product-discovery-worker] started searchProvider=${searchConfig.provider}`,
   );

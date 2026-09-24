@@ -445,10 +445,12 @@ public class ProcessAutomationLocalApplication {
       boolean achieved = task != null && Boolean.TRUE.equals(task.get("achieved"));
       String state = task == null ? "NOT_STARTED" : task.get("status").toString();
       boolean selected = !id.equals("fix") || needsFix || task != null;
+      boolean approvedPrivateDestination =
+          process == 92004 && id.equals("a") && privateDestination(jdbc, product);
       String interaction =
           process == 92002 && id.equals("b")
               ? "APPROVAL"
-              : process == 92004 && id.equals("a") && !privateDestination(jdbc, product)
+              : process == 92004 && id.equals("a") && !approvedPrivateDestination
                   ? "SUBPROCESS"
                   : process == 92010 && id.equals("gate") ? "WORKSPACE" : "COMMAND";
       boolean available =
@@ -459,14 +461,9 @@ public class ProcessAutomationLocalApplication {
           new ProductProcessActivityExecutionControlResponse(
               interaction.equals("APPROVAL")
                   ? "HUMAN"
-                  : id.equals("gate")
-                          || (process == 92004
-                              && id.equals("a")
-                              && privateDestination(jdbc, product))
-                      ? "BACKEND"
-                      : "AGENT",
+                  : id.equals("gate") || approvedPrivateDestination ? "BACKEND" : "AGENT",
               interaction,
-              "Executar atividade",
+              approvedPrivateDestination ? "Abrir destino aprovado" : "Executar atividade",
               "Contrato local",
               available,
               "Preencha os critérios da atividade",
@@ -480,9 +477,7 @@ public class ProcessAutomationLocalApplication {
               List.of(),
               null,
               null,
-              process == 92004 && id.equals("a") && privateDestination(jdbc, product)
-                  ? "https://local.example/private"
-                  : null);
+              approvedPrivateDestination ? "https://local.example/private" : null);
       groups.add(
           new ProductProcessActivityExecutionGroupResponse(
               (long) groups.size() + 1,

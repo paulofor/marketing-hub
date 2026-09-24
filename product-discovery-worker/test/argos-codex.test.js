@@ -6,6 +6,7 @@ import {
   deterministicPlan,
   executeCodexWithInput,
   normalizePlanForExecution,
+  parseCodexFailure,
   parseCodexUsage,
   planDirectedResearch,
   validatePlan,
@@ -275,11 +276,57 @@ test("planejamento envia o contexto pela entrada padrão e lê a saída estrutur
   assert.ok(receivedSchema.required.includes("researchLens"));
   assert.ok(receivedSchema.required.includes("expansionAxis"));
   assert.ok(receivedSchema.required.includes("minimumComparableOffers"));
+  assert.equal(receivedSchema.properties.candidateGaps, undefined);
+  assert.equal(receivedSchema.properties.researchLimits, undefined);
   assert.deepEqual(result.plan, expected);
   assert.equal(result.model, "modelo-teste");
   assert.equal(result.mode, "CODEX");
   assert.equal(result.prompt, receivedInput);
   assert.equal(result.reasoningEffort, "medium");
+});
+
+test("aprofundamento envia somente o schema estrito da própria atividade", async () => {
+  let receivedSchema;
+  const job = {
+    cycleId: 68,
+    stageCode: "candidate-gap-deepening",
+    theme: "atração e presença pessoal",
+    targetAudience: "mulheres adultas",
+    previousCandidates: [
+      { name: "Preparação para ocasião especial" },
+      { name: "Imagem para encontro importante" },
+    ],
+    customerInterviews: Array.from({ length: 5 }, (_, index) => ({
+      id: index + 1,
+    })),
+    gapResearchPolicy: {
+      maximumAttempts: 2,
+      maximumPublicQueriesPerAttempt: 12,
+      maximumModelInvocations: 4,
+      estimatedSearchCostPerRequestUsd: 0.005,
+      maximumSearchCostUsd: 0.12,
+      modelCostCoverage: "AGENT_TASK_AUDIT_AFTER_CALLBACK",
+    },
+  };
+  const expected = deterministicPlan(job).plan;
+
+  const result = await planDirectedResearch(job, {
+    enabled: true,
+    execute: async (_command, args) => {
+      receivedSchema = JSON.parse(
+        await readFile(args[args.indexOf("--output-schema") + 1], "utf8"),
+      );
+      await writeFile(
+        args[args.indexOf("--output-last-message") + 1],
+        JSON.stringify(expected),
+      );
+    },
+  });
+
+  assert.ok(receivedSchema.required.includes("candidateGaps"));
+  assert.ok(receivedSchema.required.includes("researchLimits"));
+  assert.equal(receivedSchema.properties.publicQueries.maxItems, 12);
+  assert.deepEqual(result.plan, expected);
 });
 
 test("planejamento resume a biblioteca viva sem transportar artigos integrais", async () => {
@@ -466,6 +513,51 @@ test("executor identifica a fase factual que excedeu o timeout", async () => {
       spawnProcess: () => child,
     }),
     /Síntese factual de Argos excedeu o timeout de 5 ms/,
+  );
+});
+
+test("executor preserva o erro estruturado emitido no stdout", async () => {
+  const child = new EventEmitter();
+  child.stdout = new EventEmitter();
+  child.stderr = new EventEmitter();
+  child.stdout.setEncoding = () => {};
+  child.stderr.setEncoding = () => {};
+  child.stdin = new EventEmitter();
+  child.stdin.end = () => {
+    queueMicrotask(() => {
+      child.stdout.emit(
+        "data",
+        `${JSON.stringify({
+          type: "turn.failed",
+          error: {
+            message:
+              "invalid_json_schema: required deve incluir candidateGaps",
+          },
+        })}\n`,
+      );
+      child.emit("close", 1, null);
+    });
+  };
+  child.kill = () => {};
+
+  await assert.rejects(
+    executeCodexWithInput("codex", ["exec", "-"], "contexto", {
+      timeoutMs: 100,
+      spawnProcess: () => child,
+    }),
+    /invalid_json_schema: required deve incluir candidateGaps/,
+  );
+  assert.match(
+    parseCodexFailure(
+      '{"type":"error","message":"falha estruturada de teste"}\n',
+    ),
+    /falha estruturada de teste/,
+  );
+  assert.doesNotMatch(
+    parseCodexFailure(
+      '{"type":"error","message":"token sk-segredoNaoPodePersistir"}\n',
+    ),
+    /sk-segredoNaoPodePersistir/,
   );
 });
 

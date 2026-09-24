@@ -9,9 +9,9 @@ buscas públicas, pedidos direcionados aos coletores HOTMART/CLICKBANK e consult
 Meta.
 
 O campo `stageCode` define a atividade. Em `research`, encontre situações concretas em que o desejo
-vira ação e produza o plano amplo já descrito. Em `candidate-gap-deepening`, não reinicie a pesquisa:
-preserve exatamente as candidatas recebidas, use o corpus anterior e as entrevistas consentidas e
-preencha `candidateGaps` e `researchLimits`.
+vira ação e produza o plano amplo já descrito, sem campos de candidatas ainda inexistentes. Em
+`candidate-gap-deepening`, não reinicie a pesquisa: preserve exatamente as candidatas recebidas,
+use o corpus anterior e as entrevistas consentidas e preencha `candidateGaps` e `researchLimits`.
 
 No aprofundamento, cada candidata deve ter pergunta pendente, fonte apropriada, evidência necessária,
 evidência contrária, de uma a quatro consultas e limite próprio. A soma deve coincidir com

@@ -10,7 +10,9 @@
     "marketplaceRequests",
     "metaAdRequests",
     "minimumComparableOffers",
-    "stopConditions"
+    "stopConditions",
+    "candidateGaps",
+    "researchLimits"
   ],
   "properties": {
     "researchLens": {
@@ -40,8 +42,8 @@
     },
     "publicQueries": {
       "type": "array",
-      "minItems": 8,
-      "maxItems": 24,
+      "minItems": 2,
+      "maxItems": 12,
       "items": { "type": "string", "maxLength": 180 }
     },
     "marketplaceRequests": {
@@ -85,6 +87,57 @@
       "type": "array",
       "minItems": 1,
       "items": { "type": "string" }
+    },
+    "candidateGaps": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidateName",
+          "pendingQuestion",
+          "appropriateSource",
+          "evidenceNeeded",
+          "contraryEvidenceToSeek",
+          "publicQueries",
+          "maxPublicQueries",
+          "maxEstimatedSearchCostUsd"
+        ],
+        "properties": {
+          "candidateName": { "type": "string", "maxLength": 191 },
+          "pendingQuestion": { "type": "string", "maxLength": 700 },
+          "appropriateSource": { "type": "string", "maxLength": 700 },
+          "evidenceNeeded": { "type": "string", "maxLength": 700 },
+          "contraryEvidenceToSeek": { "type": "string", "maxLength": 700 },
+          "publicQueries": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": { "type": "string", "maxLength": 180 }
+          },
+          "maxPublicQueries": { "type": "integer", "minimum": 1, "maximum": 4 },
+          "maxEstimatedSearchCostUsd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 0.06
+          }
+        }
+      }
+    },
+    "researchLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxPublicQueries", "maxEstimatedSearchCostUsd"],
+      "properties": {
+        "maxPublicQueries": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "maxEstimatedSearchCostUsd": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.06
+        }
+      }
     }
   }
 }

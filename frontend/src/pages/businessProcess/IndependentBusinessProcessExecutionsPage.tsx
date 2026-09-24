@@ -100,8 +100,8 @@ function formatDate(value?: string) {
     : "Ainda não registrado";
 }
 
-function formatCost(value?: number, coverage?: string) {
-  if (value === undefined || coverage === "NOT_REPORTED") {
+export function formatCost(value?: number | null, coverage?: string) {
+  if (value == null || coverage === "NOT_REPORTED") {
     return "Custo não informado";
   }
   return `${new Intl.NumberFormat("pt-BR", {
@@ -114,7 +114,8 @@ function formatCost(value?: number, coverage?: string) {
 export function independentExecutionRequestError(error: unknown) {
   if (!axios.isAxiosError(error)) return "Não foi possível iniciar o processo.";
   const data = error.response?.data as
-    { detail?: string; message?: string; error?: string } | undefined;
+    | { detail?: string; message?: string; error?: string }
+    | undefined;
   return (
     data?.detail ??
     data?.message ??

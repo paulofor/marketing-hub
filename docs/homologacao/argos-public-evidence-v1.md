@@ -99,3 +99,23 @@ legível. Replay local das 16 observações reais aceitou exatamente um remapeam
 nem alteração de fontes. A suite completa do worker passou com 157 testes e a imagem versionada foi
 construída e conferida em container sem rede. Backend/frontend não foram alterados neste ajuste;
 o contrato do backend é revalidado com o callback real do worker e a fixture codificada.
+
+## Encerramento técnico e lacunas comerciais (24/09/2026)
+
+Matriz adicional: detalhe e listagem após retentativa concluída com gate comercial `BLOCKED`;
+falha vigente preservada mesmo com atualização posterior da tentativa antiga; custo null/ausente,
+zero medido e parcial; histórico intacto; tela em desktop, iPhone e Pixel sem escrita.
+
+O replay usa resultado já persistido, com referência sintética local. Esperado: “Concluída com
+lacunas”, nenhuma causa técnica histórica no resumo, nenhuma oferta de repetir a descoberta e
+nenhum custo desconhecido convertido em zero. Unitários de serviço cobrem o contrato do resumo;
+o navegador cobre o build real com respostas de API simuladas. Não há chamada paga nessa matriz.
+
+Resultado operacional do ciclo 69: tarefa 483 concluiu as duas rodadas permitidas, com candidatas
+`RESEARCH_MORE`, sem promoção para Atena. O gate exige diversidade de fontes comportamentais e
+atualidade comercial; a coleta disponível não cumpriu todos esses requisitos. Relatos públicos
+não viraram entrevistas, consentimento, vendas próprias ou demanda comprovada. O término pelo
+limite é uma conclusão de pesquisa, não aprovação de produto.
+
+Validação deste ajuste: 3.500 casos backend (zero falhas/erros, 22 condicionais não executados),
+766 testes frontend, 30 verificações de navegador em três perfis, tipagem e build aprovados.

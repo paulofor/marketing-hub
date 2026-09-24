@@ -17,7 +17,9 @@ import type {
   IndependentBusinessProcessExecutionSummary,
   StartIndependentBusinessProcessExecution,
 } from "../../api/businessProcess/types";
-import IndependentBusinessProcessExecutionsPage from "./IndependentBusinessProcessExecutionsPage";
+import IndependentBusinessProcessExecutionsPage, {
+  formatCost,
+} from "./IndependentBusinessProcessExecutionsPage";
 import IndependentBusinessProcessExecutionDetailPage from "./IndependentBusinessProcessExecutionDetailPage";
 import IndependentExecutionAihubPromptCopy from "./IndependentExecutionAihubPromptCopy";
 import { independentExecutionAihubContext } from "./independentExecutionAihubContext";
@@ -1190,5 +1192,15 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
         "A reanálise de Argos já está na fila ou em execução.",
       ),
     ).toBeInTheDocument();
+  });
+});
+
+describe("Custos das etapas independentes", () => {
+  it.each([null, undefined])("não converte custo %s em zero", (value) => {
+    expect(formatCost(value, "COMPLETE")).toBe("Custo não informado");
+  });
+  it("preserva zero informado e cobertura parcial", () => {
+    expect(formatCost(0, "COMPLETE")).toContain("0,0000");
+    expect(formatCost(0.12, "PARTIAL")).toContain("0,1200 (parcial)");
   });
 });

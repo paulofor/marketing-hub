@@ -52,6 +52,8 @@ Por decisão explícita do usuário, a descoberta e o aprofundamento devem funci
 recrutamento ou contato externo. O contrato `PUBLIC_SOURCES_V1` substitui a exigência de entrevistas
 nas novas execuções. Ciclos antigos preservam a política original até adesão explícita pela tela;
 a adesão em espera preserva ciclo, tarefas, candidatas e corpus, sem reiniciar a pesquisa ampla.
+O `pending` exige `supportedEvidencePolicy=PUBLIC_SOURCES_V1` para reservar ciclos públicos;
+executores antigos continuam recebendo somente legados, inclusive após expiração do lease.
 Entrevistas existentes permanecem históricas; relatos públicos nunca são registrados como entrevistas.
 
 Argos pesquisa por candidata situações passadas, alternativas, preços, avaliações, reclamações,

@@ -1314,6 +1314,7 @@ class ProductDiscoveryServiceTest {
             eq(ProductDiscoveryCycleStatus.RESEARCHING),
             any(Instant.class),
             any(Instant.class),
+            eq(false),
             page.capture()))
         .thenReturn(List.of(cycle));
     when(cycleRepository.save(cycle)).thenReturn(cycle);

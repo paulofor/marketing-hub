@@ -426,17 +426,29 @@ public class ProductDiscoveryService {
   /** Entrega pendências ao worker e marca ciclos como em pesquisa para evitar consumo duplicado. */
   @Transactional
   public List<ProductDiscoveryPendingResponse> pending() {
-    return pending(STAGE_CODE);
+    return pending(STAGE_CODE, false);
   }
 
   /** Entrega somente ciclos cuja política de evidências liberou a pesquisa candidata-específica. */
   @Transactional
   public List<ProductDiscoveryPendingResponse> pendingGapDeepening() {
-    return pending(GAP_STAGE_CODE);
+    return pending(GAP_STAGE_CODE, false);
   }
 
-  /** Reserva uma etapa exata para impedir que o endpoint inicial consuma o aprofundamento. */
-  private List<ProductDiscoveryPendingResponse> pending(String stageCode) {
+  /** Reserva pesquisa inicial somente nas políticas declaradas pelo executor. */
+  @Transactional
+  public List<ProductDiscoveryPendingResponse> pending(String supportedEvidencePolicy) {
+    return pending(STAGE_CODE, "PUBLIC_SOURCES_V1".equals(supportedEvidencePolicy));
+  }
+
+  /** Reserva aprofundamento somente nas políticas declaradas pelo executor. */
+  @Transactional
+  public List<ProductDiscoveryPendingResponse> pendingGapDeepening(String supportedEvidencePolicy) {
+    return pending(GAP_STAGE_CODE, "PUBLIC_SOURCES_V1".equals(supportedEvidencePolicy));
+  }
+
+  /** Reserva etapa e política compatíveis antes de conceder lease ou iniciar consumo. */
+  private List<ProductDiscoveryPendingResponse> pending(String stageCode, boolean supportsPublicEvidence) {
     Instant now = Instant.now();
     return cycleRepository
         .findClaimableForUpdate(
@@ -445,6 +457,7 @@ public class ProductDiscoveryService {
             ProductDiscoveryCycleStatus.RESEARCHING,
             now,
             now.minus(EXECUTION_LEASE_DURATION),
+            supportsPublicEvidence,
             PageRequest.of(0, 1))
         .stream()
         .map(

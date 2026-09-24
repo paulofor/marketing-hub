@@ -24,7 +24,7 @@ candidatas em RESEARCH_MORE. Não é prova de venda ou autorização para amplia
 
 Rodada local em 24/09/2026 concluída antes do commit:
 
-- Backend: 3.489 casos nos relatórios finais, 3.469 executados sem falhas e 20 condicionais
+- Backend: 3.491 casos nos relatórios finais, 3.471 executados sem falhas e 20 condicionais
   não aplicáveis a esta rodada. Inclui integração com o JSON gerado pelo worker real e MySQL 5.7.
   A suíte completa detectou ausência do schema no Catálogo Vivo; corrigida na fonte e revalidada.
   A mensagem de erro de evidência passou de “entrevistas” para “fontes”; expectativa atualizada
@@ -48,3 +48,8 @@ são triangulação mínima, não confirmação de autoria independente. A colet
 não promete leitura integral das páginas. Aprofundamento insuficiente termina sem promoção.
 
 A publicação e a retomada produtiva serão comprovadas no PR vinculado a esta alteração.
+
+Revisão de compatibilidade antes do merge: o pending filtra a política no banco e só entrega
+`PUBLIC_SOURCES_V1` a executores que declaram suporte. Regressão com persistência real comprova
+que worker legado não assume ciclos novos nem leases públicos expirados. 138 testes de fila,
+controller, serviço e arquitetura revalidados; os 143 do worker permanecem aprovados.

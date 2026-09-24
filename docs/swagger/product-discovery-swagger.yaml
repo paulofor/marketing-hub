@@ -24,6 +24,13 @@ paths:
     get:
       tags: [Product Discovery]
       summary: Reserva uma execução nova ou recupera lease expirado
+      parameters:
+        - in: query
+          name: supportedEvidencePolicy
+          required: false
+          description: PUBLIC_SOURCES_V1 habilita a política pública. Ausência ou valor desconhecido reserva somente ciclos legados, inclusive em recuperação de lease.
+          schema:
+            type: string
       responses:
         "200":
           description: Lista com no máximo uma execução e seu lease exclusivo
@@ -101,7 +108,14 @@ paths:
   /api/internal/product-discovery/productdiscovery/v1/candidate-gap-deepening/stage-executions/pending:
     get:
       tags: [Product Discovery]
-      summary: Reserva uma pesquisa de lacunas cujo gate de entrevistas foi atendido
+      summary: Reserva uma pesquisa de lacunas cuja política de evidências foi atendida
+      parameters:
+        - in: query
+          name: supportedEvidencePolicy
+          required: false
+          description: PUBLIC_SOURCES_V1 habilita a política pública. Ausência ou valor desconhecido reserva somente ciclos legados, inclusive em recuperação de lease.
+          schema:
+            type: string
       responses:
         "200":
           description: No máximo uma execução com candidatas, corpus anterior, entrevistas e política de custo

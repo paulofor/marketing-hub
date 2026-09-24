@@ -32,6 +32,11 @@ export function assessPublicEvidence(
   const supported = observations.map((item) => {
     const source = sources.get(item.evidenceId);
     const excerpt = String(item.supportingExcerpt || "").trim();
+    if (!source) {
+      throw new Error(
+        `Observação pública ${item.evidenceId}: use somente IDs da lista publicEvidence atual; ofertas e anúncios têm contratos separados`,
+      );
+    }
     if (
       !source ||
       !referencedIds.includes(item.evidenceId) ||
@@ -44,7 +49,7 @@ export function assessPublicEvidence(
       !String(item.limitation || "").trim()
     ) {
       throw new Error(
-        "Observação pública sem suporte exato, papel válido ou referência única da candidata",
+        `Observação pública ${item.evidenceId} sem suporte exato, papel válido ou referência única da candidata`,
       );
     }
     const url = new URL(source.url);

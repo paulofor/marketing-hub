@@ -281,8 +281,7 @@ test("executa Chromium quando o backend prepara a sessão e persiste o lote ante
               formatTypes: ["VIDEO"],
               texts: ["Guarda roupa cápsula para o climatério"],
               destinationUrl: "https://estilo.example/oferta",
-              snapshotUrl:
-                "https://www.facebook.com/ads/library/?id=meta-144",
+              snapshotUrl: "https://www.facebook.com/ads/library/?id=meta-144",
               pageActive: true,
               commercialSignal: true,
               rawPayload: { source: "META_AD_LIBRARY_PUBLIC_BROWSER" },
@@ -323,8 +322,7 @@ test("executa Chromium quando o backend prepara a sessão e persiste o lote ante
               advertiserName: "Estilo Maduro",
               adTexts: ["Guarda roupa cápsula para o climatério"],
               publisherPlatforms: ["INSTAGRAM"],
-              snapshotUrl:
-                "https://www.facebook.com/ads/library/?id=meta-144",
+              snapshotUrl: "https://www.facebook.com/ads/library/?id=meta-144",
               active: true,
             },
           ],
@@ -430,7 +428,62 @@ function jsonResponse(payload) {
   return {
     ok: true,
     status: 200,
-    async json() { return payload; },
-    async text() { return JSON.stringify(payload); },
+    async json() {
+      return payload;
+    },
+    async text() {
+      return JSON.stringify(payload);
+    },
   };
 }
+
+test("aprofundamento consulta snapshot sem colidir com tentativa Meta anterior nem abrir navegador", async () => {
+  let calls = 0;
+  const result = await collectMarketplaceEvidence(
+    {
+      metaAdRequests: [
+        {
+          query: "rotina estilo",
+          country: "BR",
+          publisherPlatform: "INSTAGRAM",
+          maxAds: 12,
+        },
+      ],
+    },
+    {
+      backendBaseUrl: "http://backend.test",
+      cycleId: 305,
+      attemptNumber: 1,
+      stageCode: "candidate-gap-deepening",
+      executionLeaseId: "novo-lease",
+      logger: { info() {} },
+      collectPublicMetaAds: () => {
+        throw new Error("Não deve abrir investigação");
+      },
+      fetchFn: async (url, init) => {
+        calls += 1;
+        assert.equal(init.method, undefined);
+        assert.equal(init.body, undefined);
+        assert.equal(
+          url.pathname,
+          "/api/internal/product-discovery/productdiscovery/v1/meta-ad-evidence",
+        );
+        assert.equal(url.searchParams.get("query"), "rotina estilo");
+        assert.equal(url.searchParams.get("limit"), "12");
+        return {
+          ok: true,
+          json: async () => ({
+            items: [],
+            sourceStatus: "NOT_REQUESTED",
+            collectionMode: "PERSISTED_ONLY",
+            interpretation: "Não há snapshot; mercado permanece desconhecido.",
+          }),
+        };
+      },
+    },
+  );
+  assert.equal(calls, 1);
+  assert.equal(result.metaCoverage[0].sourceStatus, "NOT_REQUESTED");
+  assert.equal(result.metaCoverage[0].collectionMode, "PERSISTED_ONLY");
+  assert.deepEqual(result.metaAdEvidence, []);
+});

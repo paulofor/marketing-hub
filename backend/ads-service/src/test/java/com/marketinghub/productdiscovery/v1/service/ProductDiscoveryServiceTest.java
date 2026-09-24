@@ -98,8 +98,7 @@ class ProductDiscoveryServiceTest {
                 "Candidata preservada para aprofundar comportamento passado.",
                 List.of(researchableResult("Imagem para ocasião especial", "{}"))));
 
-    assertThat(response.cycle().status())
-        .isEqualTo(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
+    assertThat(response.cycle().status()).isEqualTo(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
     assertThat(cycle.getStageCode())
         .isEqualTo(ProductDiscoveryCustomerInterviewService.GAP_STAGE_CODE);
     verify(bpmAuditService).openCandidateGapDeepening(cycle);
@@ -1386,6 +1385,45 @@ class ProductDiscoveryServiceTest {
     verify(bpmAuditService).fail(cycle, executionAudit);
   }
 
+  /** Preserva saída inválida e consumo antes de bloquear a tarefa, sem promover candidatas. */
+  @Test
+  void preservesRejectedSynthesisAuditOnFailure() {
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(306L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setStageCode("research");
+    cycle.setExecutionLeaseId("lease-306");
+    cycle.setLeaseExpiresAt(Instant.now().plusSeconds(120));
+    when(cycleRepository.findById(306L)).thenReturn(Optional.of(cycle));
+    when(cycleRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    var audit =
+        new ProductDiscoveryAnalysisAuditRequest(
+            "{\"candidates\":[]}",
+            "modelo-testado",
+            "MODEL",
+            "Prompt enviado",
+            "Responsabilidade",
+            "Atividade",
+            "medium",
+            130L,
+            20L,
+            45L,
+            List.of());
+
+    service.fail(
+        306L, new ProductDiscoveryFailureRequest("lease-306", "Síntese recusada", null, audit));
+
+    assertThat(cycle.getStatus()).isEqualTo(ProductDiscoveryCycleStatus.FAILED);
+    assertThat(cycle.getResearchAnalysisRawResponse()).isEqualTo(audit.rawResponse());
+    assertThat(cycle.getResearchAnalysisModel()).isEqualTo("modelo-testado");
+    verify(bpmAuditService).recordAnalysis(cycle, audit);
+    verify(bpmAuditService).fail(cycle, null);
+    verify(opportunityRepository, never()).saveAll(any());
+  }
+
   /** Deve rejeitar callback atrasado depois que outra tentativa assumiu o ciclo. */
   @Test
   void rejectsCallbackFromReplacedExecution() {
@@ -1676,6 +1714,7 @@ class ProductDiscoveryServiceTest {
         "Gate atendido.",
         List.of(),
         "CONSENTED_INTERVIEWS_V1",
+        false,
         false);
   }
 }

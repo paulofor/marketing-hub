@@ -448,7 +448,8 @@ public class ProductDiscoveryService {
   }
 
   /** Reserva etapa e política compatíveis antes de conceder lease ou iniciar consumo. */
-  private List<ProductDiscoveryPendingResponse> pending(String stageCode, boolean supportsPublicEvidence) {
+  private List<ProductDiscoveryPendingResponse> pending(
+      String stageCode, boolean supportsPublicEvidence) {
     Instant now = Instant.now();
     return cycleRepository
         .findClaimableForUpdate(
@@ -1188,18 +1189,25 @@ public class ProductDiscoveryService {
     return fail(cycleId, request, STAGE_CODE);
   }
 
-  /** Registra falha técnica da segunda atividade preservando entrevistas e candidatas. */
+  /** Registra falha técnica da segunda atividade preservando evidências e candidatas. */
   @Transactional
   public ProductDiscoveryCycleResponse failGapDeepening(
       Long cycleId, ProductDiscoveryFailureRequest request) {
     return fail(cycleId, request, GAP_STAGE_CODE);
   }
 
-  /** Centraliza callbacks de falha e rejeita o endpoint de uma etapa diferente. */
+  /**
+   * Preserva resposta recusada e consumo na falha, rejeitando callback de etapa ou lease diferente.
+   */
   private ProductDiscoveryCycleResponse fail(
       Long cycleId, ProductDiscoveryFailureRequest request, String expectedStageCode) {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
     validateExecutionLease(cycle, request.executionLeaseId(), expectedStageCode);
+    if (request.analysisAudit() != null) {
+      cycle.setResearchAnalysisRawResponse(request.analysisAudit().rawResponse());
+      cycle.setResearchAnalysisModel(request.analysisAudit().model());
+      bpmAuditService.recordAnalysis(cycle, request.analysisAudit());
+    }
     cycle.setStatus(ProductDiscoveryCycleStatus.FAILED);
     cycle.setErrorMessage(requiredText(request.errorMessage(), "errorMessage"));
     clearExecutionLease(cycle);

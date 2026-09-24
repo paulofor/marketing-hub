@@ -93,6 +93,35 @@ public class ProductDiscoveryCustomerInterviewService {
     return response(cycle);
   }
 
+  /** Retoma apenas falha técnica pública após correção, sem recriar a descoberta inicial. */
+  @Transactional
+  public ProductDiscoveryGapDeepeningResponse resumePublicResearch(Long cycleId) {
+    ProductDiscoveryCycle cycle = findCycleForUpdate(cycleId);
+    if (!cycle.usesPublicEvidence()
+        || !bpmAuditService.supportsCandidateGapDeepening(cycle)
+        || !GAP_STAGE_CODE.equals(cycle.getStageCode())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "O ciclo não está no aprofundamento público");
+    }
+    if (cycle.getStatus() == ProductDiscoveryCycleStatus.READY_FOR_RESEARCH
+        || cycle.getStatus() == ProductDiscoveryCycleStatus.RESEARCHING) return response(cycle);
+    if (cycle.getStatus() != ProductDiscoveryCycleStatus.FAILED
+        || opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycleId).isEmpty()) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Somente falha técnica com candidatas preservadas pode ser retomada");
+    }
+    bpmAuditService.reopenCandidateGapDeepening(cycle);
+    cycle.setStatus(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
+    cycle.setErrorMessage(null);
+    cycle.setExecutionLeaseId(null);
+    cycle.setLeaseExpiresAt(null);
+    cycle.setDecisionSummary(
+        "Aprofundamento público retomado após correção. Pesquisa inicial e tentativa bloqueada preservadas; limites da execução mantidos.");
+    cycleRepository.save(cycle);
+    return response(cycle);
+  }
+
   /** Registra uma narrativa consentida e libera a etapa quando todos os gates forem atendidos. */
   @Transactional
   public ProductDiscoveryGapDeepeningResponse record(
@@ -236,6 +265,11 @@ public class ProductDiscoveryCustomerInterviewService {
             && !cycle.usesPublicEvidence()
             && cycle.getStatus() == ProductDiscoveryCycleStatus.AWAITING_CUSTOMER_EVIDENCE
             && WAITING_STAGE_CODE.equals(cycle.getStageCode())
+            && !opportunityIds.isEmpty(),
+        applicable
+            && cycle.usesPublicEvidence()
+            && cycle.getStatus() == ProductDiscoveryCycleStatus.FAILED
+            && GAP_STAGE_CODE.equals(cycle.getStageCode())
             && !opportunityIds.isEmpty());
   }
 

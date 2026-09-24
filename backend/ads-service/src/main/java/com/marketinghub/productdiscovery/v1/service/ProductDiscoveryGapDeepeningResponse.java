@@ -30,4 +30,5 @@ public record ProductDiscoveryGapDeepeningResponse(
     String guidance,
     List<ProductDiscoveryCustomerInterviewResponse> interviews,
     String evidencePolicy,
-    boolean canAdoptPublicEvidence) {}
+    boolean canAdoptPublicEvidence,
+    boolean canResumePublicResearch) {}

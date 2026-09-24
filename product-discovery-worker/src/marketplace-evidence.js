@@ -41,25 +41,44 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
     marketplaceOffers.push(...relevantOffers);
   }
   for (const request of plan.metaAdRequests || []) {
+    const reuseOnly = options.stageCode === "candidate-gap-deepening";
     const url = new URL(
-      `/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${options.cycleId}/meta-ad-evidence`,
+      reuseOnly
+        ? "/api/internal/product-discovery/productdiscovery/v1/meta-ad-evidence"
+        : `/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${options.cycleId}/meta-ad-evidence`,
       backendBaseUrl,
     );
-    const response = await fetchFn(url, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        executionLeaseId: options.executionLeaseId,
-        attemptNumber,
+    if (reuseOnly) {
+      for (const [key, value] of Object.entries({
         query: request.query,
         country: request.country,
         publisherPlatform: request.publisherPlatform,
         limit: request.maxAds,
-      }),
-    });
+      }))
+        url.searchParams.set(key, String(value));
+    }
+    const response = await fetchFn(
+      url,
+      reuseOnly
+        ? {
+            headers: { Accept: "application/json" },
+          }
+        : {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              executionLeaseId: options.executionLeaseId,
+              attemptNumber,
+              query: request.query,
+              country: request.country,
+              publisherPlatform: request.publisherPlatform,
+              limit: request.maxAds,
+            }),
+          },
+    );
     if (!response.ok) {
       const detail = await safeResponseDetail(response);
       logger.warn?.(
@@ -83,18 +102,16 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
         advertisersObserved: 0,
         latestObservationAt: null,
         searchUrl: null,
-        interpretation:
-          `A integração de cobertura respondeu HTTP ${response.status}; isso não comprova ausência de anúncios ou de mercado.`,
+        interpretation: `A integração de cobertura respondeu HTTP ${response.status}; isso não comprova ausência de anúncios ou de mercado.`,
       });
       continue;
     }
     let payload = await response.json();
-    if (shouldUsePublicMetaBrowser(payload, options)) {
-      payload = await collectAndPersistPublicMetaEvidence(
-        payload,
-        request,
-        { ...options, attemptNumber },
-      );
+    if (!reuseOnly && shouldUsePublicMetaBrowser(payload, options)) {
+      payload = await collectAndPersistPublicMetaEvidence(payload, request, {
+        ...options,
+        attemptNumber,
+      });
     }
     const normalizedAds = normalizeMetaAdEvidence(
       payload,
@@ -178,8 +195,7 @@ async function collectAndPersistPublicMetaEvidence(payload, request, options) {
       investigationId: payload.investigationId,
       searchUrl: payload.searchUrl,
       country: payload.country || request.country,
-      publisherPlatform:
-        payload.publisherPlatform || request.publisherPlatform,
+      publisherPlatform: payload.publisherPlatform || request.publisherPlatform,
       maxAds: Math.min(Number(request.maxAds || 25), 25),
     },
     {
@@ -187,10 +203,11 @@ async function collectAndPersistPublicMetaEvidence(payload, request, options) {
       logger: options.logger || console,
     },
   );
-  const collectorRunId = `argos-browser-${options.cycleId}-${options.executionLeaseId}-${options.attemptNumber}`.slice(
-    0,
-    80,
-  );
+  const collectorRunId =
+    `argos-browser-${options.cycleId}-${options.executionLeaseId}-${options.attemptNumber}`.slice(
+      0,
+      80,
+    );
   const url = new URL(
     `/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${options.cycleId}/meta-ad-browser-collection`,
     options.backendBaseUrl,

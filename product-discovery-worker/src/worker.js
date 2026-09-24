@@ -185,6 +185,7 @@ export async function processJob(job, dependencies = {}) {
           backendBaseUrl: activeBackendBaseUrl,
           logger,
           cycleId: job.cycleId,
+          stageCode: job.stageCode,
           attemptNumber,
           executionLeaseId: job.executionLeaseId,
           researchContext: [
@@ -526,6 +527,7 @@ export function failureCallbackPayload(error) {
   return {
     errorMessage: error?.message || "Falha desconhecida na pesquisa PDE",
     ...(error?.executionAudit ? { executionAudit: error.executionAudit } : {}),
+    ...(error?.analysisAudit ? { analysisAudit: error.analysisAudit } : {}),
   };
 }
 

@@ -8,10 +8,17 @@ import jakarta.validation.constraints.NotBlank;
 public record ProductDiscoveryFailureRequest(
     @NotBlank String executionLeaseId,
     @NotBlank String errorMessage,
-    @Valid AgentTaskExecutionAuditRequest executionAudit) {
+    @Valid AgentTaskExecutionAuditRequest executionAudit,
+    @Valid ProductDiscoveryAnalysisAuditRequest analysisAudit) {
+
+  /** Preserva compatibilidade com workers que ainda não enviam a resposta recusada. */
+  public ProductDiscoveryFailureRequest(
+      String executionLeaseId, String errorMessage, AgentTaskExecutionAuditRequest executionAudit) {
+    this(executionLeaseId, errorMessage, executionAudit, null);
+  }
 
   /** Mantém compatibilidade com falhas ocorridas antes da montagem ou chamada do modelo. */
   public ProductDiscoveryFailureRequest(String executionLeaseId, String errorMessage) {
-    this(executionLeaseId, errorMessage, null);
+    this(executionLeaseId, errorMessage, null, null);
   }
 }

@@ -33,6 +33,7 @@ export async function synthesizeMarketCandidates(context, options = {}) {
     process.env.ARGOS_CODEX_REASONING_EFFORT ||
     "medium";
   let execution;
+  let rawResponse;
   try {
     await writeFile(schema, schemaContract);
     const command =
@@ -65,7 +66,6 @@ export async function synthesizeMarketCandidates(context, options = {}) {
       maxBuffer: 10 * 1024 * 1024,
       phaseName: "síntese factual",
     });
-    let rawResponse;
     try {
       rawResponse = await readFile(output, "utf8");
     } catch (error) {
@@ -102,6 +102,19 @@ export async function synthesizeMarketCandidates(context, options = {}) {
       activityPromptPart: prompt.activityPromptPart,
       accessedUrls: accessedUrls(context),
     };
+    if (rawResponse) {
+      failure.analysisAudit = {
+        rawResponse: JSON.stringify({ status: "REJECTED", rawResponse }),
+        model: model || "codex-default",
+        executionMode: "MODEL",
+        promptSent: prompt.fullPrompt,
+        agentPromptPart: prompt.agentPromptPart,
+        activityPromptPart: prompt.activityPromptPart,
+        reasoningEffort,
+        ...parseCodexUsage(execution?.stdout),
+        accessedUrls: accessedUrls(context),
+      };
+    }
     throw failure;
   } finally {
     await rm(directory, { recursive: true, force: true });
@@ -362,7 +375,20 @@ function compactPreviousCandidate(item = {}) {
     score: item.score,
     maturity: item.maturity,
     decision: item.decision,
-    evidence: safeJson(item.evidenceJson),
+    evidence: compactPreviousEvidence(item.evidenceJson),
+  };
+}
+
+/** Preserva o parecer anterior sem repetir o corpus global nem expor IDs antigos como fontes atuais. */
+function compactPreviousEvidence(value) {
+  const previous = safeJson(value);
+  if (!previous) return null;
+  return {
+    candidateEvidence: previous.candidateEvidence,
+    candidateReadiness: previous.candidateReadiness,
+    purchaseMomentGate: previous.purchaseMomentGate,
+    publicResearchGate: previous.publicResearchGate,
+    invalidHistoricalEvidenceJson: previous.invalidHistoricalEvidenceJson,
   };
 }
 

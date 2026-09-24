@@ -175,7 +175,9 @@
               ],
               "properties": {
                 "evidenceId": {
-                  "type": "string"
+                  "type": "string",
+                  "pattern": "^P[1-9][0-9]*$",
+                  "description": "ID da lista publicEvidence (P). Ofertas O, anúncios M, biblioteca R e entrevistas I não pertencem a publicObservations."
                 },
                 "sourceRole": {
                   "type": "string",

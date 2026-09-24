@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Product Discovery
-  version: 1.5.0
+  version: 1.6.0
   description: Endpoints administrativos e internos da descoberta de produtos PDE.
 paths:
   /api/product-discovery/v1/cycles/{cycleId}/gap-deepening/public-research:
@@ -16,9 +16,9 @@ paths:
             type: integer
             format: int64
       responses:
-        '200':
+        "200":
           description: Política PUBLIC_SOURCES_V1 persistida; readyForResearch e canAdoptPublicEvidence refletem o estado oficial.
-        '409':
+        "409":
           description: Ciclo fora da espera permitida ou sem candidatas.
   /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending:
     get:
@@ -202,10 +202,31 @@ paths:
                 executionLeaseId: { type: string, format: uuid }
                 errorMessage: { type: string }
                 executionAudit:
+                  $ref: "agent-tasks-v1-swagger.yaml#/components/schemas/ExecutionAudit"
+                analysisAudit:
+                  description: Resposta recusada e consumo disponíveis, preservados sem materializar candidata.
                   $ref: "#/components/schemas/ProductDiscoveryAnalysisAudit"
       responses:
         "200": { description: Falha auditada }
         "409": { description: Lease ou etapa divergente }
+  /api/product-discovery/v1/cycles/{cycleId}/gap-deepening/public-research/resume:
+    post:
+      tags: [Product Discovery]
+      summary: Retoma falha técnica pública após correção, preservando ciclo e histórico
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Aprofundamento enfileirado ou já em execução
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDiscoveryGapDeepening"
+        "409":
+          { description: Política, etapa, estado ou candidatas incompatíveis }
   /api/product-discovery/v1/cycles/{cycleId}/supervised-meta-session:
     get:
       tags: [Product Discovery]
@@ -581,12 +602,20 @@ components:
         - searchPricingObservedOn
         - guidance
         - interviews
+        - evidencePolicy
+        - canAdoptPublicEvidence
+        - canResumePublicResearch
       properties:
         cycleId: { type: integer, format: int64 }
         applicable: { type: boolean }
         cycleStatus: { type: string }
         stageCode: { type: string }
-        minimumInterviews: { type: integer, enum: [5] }
+        minimumInterviews:
+          {
+            type: integer,
+            enum: [0, 5],
+            description: Zero na política pública; cinco no contrato legado consentido.,
+          }
         maximumInterviews: { type: integer, enum: [8] }
         interviewCount: { type: integer, minimum: 0, maximum: 8 }
         purchasedCount: { type: integer, minimum: 0 }
@@ -598,6 +627,10 @@ components:
           type: array
           items: { type: integer, format: int64 }
         readyForResearch: { type: boolean }
+        evidencePolicy:
+          { type: string, enum: [PUBLIC_SOURCES_V1, CONSENTED_INTERVIEWS_V1] }
+        canAdoptPublicEvidence: { type: boolean }
+        canResumePublicResearch: { type: boolean }
         maximumPublicQueriesPerAttempt: { type: integer, enum: [12] }
         maximumAttempts: { type: integer, enum: [2] }
         maximumModelInvocations: { type: integer, enum: [4] }

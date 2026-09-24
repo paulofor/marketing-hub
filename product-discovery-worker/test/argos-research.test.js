@@ -345,3 +345,120 @@ test("rota pública usa schema próprio e preserva candidatas sem exigir entrevi
   assert.equal(result.synthesis.candidates.length, expected.candidates.length);
   assert.equal(result.synthesis.candidates[0].publicObservations.length, 0);
 });
+
+test("contrato público separa relatos P de ofertas O e anúncios M antes da chamada", async () => {
+  const schema = JSON.parse(
+    await readFile(
+      new URL(
+        "../prompts/productdiscovery.v1/research/public-response-schema.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  const pattern = new RegExp(
+    schema.properties.candidates.items.properties.publicObservations.items.properties.evidenceId.pattern,
+  );
+  assert.equal(pattern.test("P76"), true);
+  for (const id of ["O15", "M1", "R2", "I9", "P0", "P1O15"])
+    assert.equal(pattern.test(id), false);
+  const context = researchContext();
+  context.job.evidencePolicy = "PUBLIC_SOURCES_V1";
+  const synthesis = validSynthesis();
+  synthesis.candidates[0].publicObservations = [
+    {
+      evidenceId: "O1",
+      sourceRole: "SELLER_CLAIM",
+      reportedAction: "UNKNOWN",
+      supportingExcerpt: "Texto legítimo da oferta comercial",
+      limitation: "Oferta não é relato",
+    },
+  ];
+  assert.throws(
+    () => validateSynthesis(synthesis, context),
+    /O1.*publicEvidence/,
+  );
+});
+
+test("resposta recusada preserva auditoria e tokens sem repetir o modelo", async () => {
+  const context = researchContext();
+  const invalid = validSynthesis();
+  invalid.candidates[0].evidenceIds = ["P1", "P999"];
+  let calls = 0;
+  await assert.rejects(
+    synthesizeMarketCandidates(context, {
+      enabled: true,
+      model: "modelo-auditado",
+      execute: async (_command, args) => {
+        calls += 1;
+        await writeFile(
+          args[args.indexOf("--output-last-message") + 1],
+          JSON.stringify(invalid),
+        );
+        return {
+          stdout:
+            '{"type":"turn.completed","usage":{"input_tokens":130,"cached_input_tokens":20,"output_tokens":45}}\n',
+        };
+      },
+    }),
+    (error) => {
+      assert.equal(
+        JSON.parse(error.analysisAudit.rawResponse).rawResponse,
+        JSON.stringify(invalid),
+      );
+      assert.equal(error.analysisAudit.inputTokens, 130);
+      assert.equal(error.analysisAudit.outputTokens, 45);
+      assert.equal(error.analysisAudit.model, "modelo-auditado");
+      return true;
+    },
+  );
+  assert.equal(calls, 1);
+});
+
+test("dossiê anterior preserva conclusão sem repetir corpus global no prompt", async () => {
+  const context = researchContext();
+  context.job.previousCandidates = [
+    {
+      name: "Caso anterior",
+      evidenceJson: JSON.stringify({
+        candidateEvidence: { rootPain: "CAUSA-PRESERVADA" },
+        candidateReadiness: { decision: "RESEARCH_MORE" },
+        publicEvidence: [{ snippet: "CORPUS-REPETIDO".repeat(1000) }],
+      }),
+    },
+  ];
+  await synthesizeMarketCandidates(context, {
+    enabled: true,
+    execute: async (_command, args, input) => {
+      assert.match(input, /CAUSA-PRESERVADA/);
+      assert.match(input, /RESEARCH_MORE/);
+      assert.doesNotMatch(input, /CORPUS-REPETIDO/);
+      await writeFile(
+        args[args.indexOf("--output-last-message") + 1],
+        JSON.stringify(validSynthesis()),
+      );
+    },
+  });
+});
+
+test("JSON malformado fica no envelope de falha sem derrubar o callback de auditoria", async () => {
+  await assert.rejects(
+    synthesizeMarketCandidates(researchContext(), {
+      enabled: true,
+      execute: async (_cmd, args) => {
+        await writeFile(
+          args[args.indexOf("--output-last-message") + 1],
+          "resposta incompleta {",
+        );
+        return { stdout: "" };
+      },
+    }),
+    (error) => {
+      assert.deepEqual(JSON.parse(error.analysisAudit.rawResponse), {
+        status: "REJECTED",
+        rawResponse: "resposta incompleta {",
+      });
+      return true;
+    },
+  );
+});

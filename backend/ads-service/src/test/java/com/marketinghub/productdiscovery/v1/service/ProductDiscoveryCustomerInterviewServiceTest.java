@@ -79,11 +79,54 @@ class ProductDiscoveryCustomerInterviewServiceTest {
   /** Recusa a alteração de política quando o worker já assumiu a pesquisa. */
   @Test
   void rejectsPolicyChangeOutsideTheWaitingGate() {
-    org.mockito.Mockito.lenient().when(interviewRepository.findAllByCycleIdOrderByIdAsc(65L)).thenReturn(List.of());
+    org.mockito.Mockito.lenient()
+        .when(interviewRepository.findAllByCycleIdOrderByIdAsc(65L))
+        .thenReturn(List.of());
     cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
     assertThatThrownBy(() -> service.adoptPublicEvidence(65L))
         .hasMessageContaining("antes do aprofundamento");
     org.mockito.Mockito.verify(cycleRepository, org.mockito.Mockito.never()).save(any());
+  }
+
+  /** Retoma uma falha pública uma única vez e mantém candidatas, limites e histórico. */
+  @Test
+  void resumesOnlyFailedPublicDeepeningIdempotently() {
+    cycle.setEvidencePolicy("PUBLIC_SOURCES_V1");
+    cycle.setStageCode("candidate-gap-deepening");
+    cycle.setStatus(ProductDiscoveryCycleStatus.FAILED);
+    cycle.setErrorMessage("Falha de integração");
+    when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(65L))
+        .thenReturn(List.of(first, second));
+    var response = service.resumePublicResearch(65L);
+    assertThat(response.cycleStatus()).isEqualTo(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
+    assertThat(response.canResumePublicResearch()).isFalse();
+    assertThat(response.maximumModelInvocations()).isEqualTo(4);
+    assertThat(cycle.getErrorMessage()).isNull();
+    service.resumePublicResearch(65L);
+    org.mockito.Mockito.verify(bpmAuditService, org.mockito.Mockito.times(1))
+        .reopenCandidateGapDeepening(cycle);
+    org.mockito.Mockito.verify(cycleRepository, org.mockito.Mockito.times(1)).save(cycle);
+    org.mockito.Mockito.verify(interviewRepository, org.mockito.Mockito.never()).save(any());
+  }
+
+  /** Resultado concluído ou gate humano não pode ser transformado em nova chamada automática. */
+  @Test
+  void rejectsResumeOutsideFailedPublicDeepening() {
+    org.mockito.Mockito.lenient()
+        .when(interviewRepository.findAllByCycleIdOrderByIdAsc(65L))
+        .thenReturn(List.of());
+    org.mockito.Mockito.lenient()
+        .when(bpmAuditService.supportsCandidateGapDeepening(cycle))
+        .thenReturn(true);
+    assertThatThrownBy(() -> service.resumePublicResearch(65L))
+        .hasMessageContaining("aprofundamento público");
+    cycle.setEvidencePolicy("PUBLIC_SOURCES_V1");
+    cycle.setStageCode("candidate-gap-deepening");
+    cycle.setStatus(ProductDiscoveryCycleStatus.COMPLETED);
+    assertThatThrownBy(() -> service.resumePublicResearch(65L))
+        .hasMessageContaining("Somente falha técnica");
+    org.mockito.Mockito.verify(bpmAuditService, org.mockito.Mockito.never())
+        .reopenCandidateGapDeepening(any());
   }
 
   /** Deve liberar Argos somente com cinco relatos, compra, desistência e todas as candidatas. */

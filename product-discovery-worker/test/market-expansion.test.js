@@ -305,6 +305,65 @@ test("limita configuração e exige novidade mínima na ampliação", () => {
   );
 });
 
+test("preserva observação Meta anterior quando o snapshot da mesma consulta está ausente", async () => {
+  const observed = {
+    query: "categoria 1",
+    country: "BR",
+    publisherPlatform: "INSTAGRAM",
+    sourceStatus: "OBSERVED",
+    collectionMode: "PUBLIC_BROWSER",
+  };
+  const oldAd = {
+    adLibraryId: "ad-original",
+    url: "https://example.test/ad-original",
+    title: "Oferta observada",
+  };
+  const execution = await executeBoundedMarketResearch(
+    {
+      ...discoveryJob(),
+      stageCode: "candidate-gap-deepening",
+      previousEvidenceReportJson: JSON.stringify({
+        publicEvidence: [publicItem(5)],
+        marketplaceOffers: [offer(5)],
+        metaAdEvidence: [oldAd],
+        metaCoverage: [observed],
+      }),
+    },
+    {
+      maxAttempts: 1,
+      planResearch: async () => directed(1),
+      persistPlan: async () => {},
+      collectEvidence: async () => ({
+        ...evidenceBatch(1),
+        metaCoverage: [
+          {
+            ...observed,
+            sourceStatus: "NOT_REQUESTED",
+            collectionMode: "PERSISTED_ONLY",
+          },
+        ],
+      }),
+      synthesize: async () => analysis("INITIAL_SCOPE"),
+      analyze: ({ publicEvidence, marketplaceOffers, metaAdEvidence }) =>
+        report({ publicEvidence, marketplaceOffers, metaAdEvidence }),
+    },
+  );
+  assert.deepEqual(execution.report.evidenceReport.metaCoverage, [
+    observed,
+    {
+      ...observed,
+      sourceStatus: "NOT_REQUESTED",
+      collectionMode: "PERSISTED_ONLY",
+    },
+  ]);
+  assert.equal(execution.report.evidenceReport.metaAdEvidence.length, 1);
+  assert.equal(
+    execution.report.evidenceReport.metaAdEvidence[0].adLibraryId,
+    oldAd.adLibraryId,
+  );
+  assert.equal(execution.report.opportunities[0].decision, "RESEARCH_MORE");
+});
+
 function discoveryJob() {
   return {
     cycleId: 77,

@@ -908,3 +908,49 @@ resultante. JSON técnico pode continuar disponível para auditoria, mas não su
 linguagem de negócio. Uma falha de tentativa superada permanece visível dentro da auditoria da
 respectiva tarefa, mas o resumo da execução só pode expô-la como causa atual enquanto o estado
 funcional vigente for `BLOCKED`.
+
+### Retomada pública e separação de fontes — 24/09/2026
+
+A liberação de `PUBLIC_SOURCES_V1` autoriza pesquisar; não significa que critérios comportamentais
+foram atingidos. A tela deve distinguir esses estados. `publicObservations` aceita somente IDs
+`P...` da lista pública atual. Ofertas `O...` e anúncios `M...` podem sustentar outros campos do
+dossiê, mas não pertencem àquele contrato; vendedor presente na própria busca pública continua
+classificado como vendedor e não conta como comportamento de cliente. Trecho sem suporte literal
+permanece inválido. O schema restringe a família do identificador antes da chamada.
+
+No aprofundamento, as consultas Meta leem snapshots existentes pelo GET canônico e conservam o
+acervo válido da descoberta. Não reiniciam a escada de investigações `(ciclo, tentativa)` nem
+sobrescrevem sua consulta. Snapshot ausente, vencido ou indisponível continua sendo lacuna; essa
+leitura não declara coleta nova nem remove gates de aderência e maturidade. A descoberta inicial
+mantém sua coleta com navegador. Entre renumerar tentativas, versionar toda a persistência por etapa
+e reutilizar o acervo com consulta somente de leitura, adotou-se a terceira alternativa: menor
+escopo e preservação do contrato de aprofundar as mesmas candidatas.
+
+O prompt de síntese preserva conclusão, limitações e identidade do dossiê anterior sem repetir seu
+corpus global em cada candidata. As listas atuais continuam completas nos blocos próprios. Na
+falha de síntese, o callback recebe `analysisAudit` opcional para persistir resposta bruta recusada,
+prompt e consumo disponível, sem materializar candidata ou fabricar conclusão. A resposta pode
+ser JSON inválido: o executor a preserva literalmente dentro de um envelope JSON `REJECTED`,
+sem assumir sucesso nem impedir a persistência da falha.
+
+Matriz de aceite: descoberta inicial sem regressão; aprofundamento com tentativa Meta histórica;
+snapshot ausente/vencido; resposta pública com IDs P válidos e O/M indevidos; trecho fabricado;
+falha com auditoria/tokens e lease divergente; contexto sem corpus duplicado; mensagem de liberação
+em desktop/iPhone/Pixel. Provedores sintéticos ficam locais, sem contato, venda ou consumo real.
+Referências oficiais consultadas em 24/09/2026: [prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering)
+e [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs).
+
+A correção de falha técnica permite **Retomar aprofundamento após correção** pelo POST
+`/api/product-discovery/v1/cycles/{cycleId}/gap-deepening/public-research/resume`. O backend usa lock
+do ciclo, exige política pública/etapa correta/candidatas e status `FAILED`; fila ou execução já
+ativa tornam o retry idempotente. Abre nova ocorrência apenas da tarefa de aprofundamento na
+versão original do processo, preservando a tarefa bloqueada, o mesmo ciclo e os limites existentes.
+Não reinicia a descoberta, não promove candidata e não reabre pesquisa concluída por falta de
+maturidade. A resposta expõe `canResumePublicResearch`; a tela não decide avanço. A retomada é um
+comando explícito após correção, sem loop automático de tentativas pagas.
+A abertura da nova tarefa aceita definição `RETIRED` somente quando a referência e o ID da definição
+coincidem com uma execução independente persistida (ou ficha de produto já congelada). Versão
+arbitrária, outra referência ou definição `DRAFT` continuam recusadas. Isso preserva a execução
+histórica quando o catálogo publica uma versão mais recente durante a pesquisa.
+
+A cobertura da leitura de snapshot permanece separada da observação original: snapshot ausente não apaga a proveniência de anúncio já observado nem comprova nova coleta.

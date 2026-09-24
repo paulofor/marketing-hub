@@ -75,3 +75,8 @@ candidata para buscar relatos de uso/compra, desistência/cancelamento/reclamaç
 atuais. Procure confirmação em domínios independentes e contrapontos; textos de vendedor não contam
 como relato de cliente. Fonte bloqueada, data ausente e comportamento não encontrado são lacunas.
 Reutilize fatos anteriores. Não aumente teto, chamadas ou consultas para preencher uma quota fictícia.
+
+No aprofundamento, `metaAdRequests` consulta somente snapshots já persistidos pelo backend.
+O acervo Meta válido da descoberta inicial continua disponível; não abra outra investigação nem
+reutilize seus números de tentativa. Ausência ou vencimento de snapshot é lacuna, não ausência
+de mercado. As novas buscas públicas devem se concentrar nas perguntas pendentes das candidatas.

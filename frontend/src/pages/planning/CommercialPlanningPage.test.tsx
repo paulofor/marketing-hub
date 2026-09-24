@@ -794,6 +794,13 @@ describe("CommercialPlanningPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Editar plano" }));
 
+    expect(screen.getByLabelText("Nome do plano")).toHaveValue(
+      "Plano sem marcos",
+    );
+    expect(screen.getByLabelText("Nome do plano")).toHaveAttribute(
+      "maxlength",
+      "191",
+    );
     expect(screen.getByLabelText("Status")).toBeTruthy();
     expect(screen.getByLabelText("Prazo da meta")).toBeTruthy();
     expect(screen.getByLabelText("Meta de receita")).toBeTruthy();
@@ -849,6 +856,11 @@ describe("CommercialPlanningPage", () => {
     expect(
       screen.getByRole("button", { name: "Salvar planejamento" }),
     ).toBeTruthy();
+    await user.clear(screen.getByLabelText("Nome do plano"));
+    await user.type(
+      screen.getByLabelText("Nome do plano"),
+      "Plano comercial Instagram Ads",
+    );
     await user.clear(screen.getByLabelText("Oferta principal"));
     await user.type(
       screen.getByLabelText("Oferta principal"),
@@ -861,6 +873,7 @@ describe("CommercialPlanningPage", () => {
       expect.objectContaining({
         id: 1,
         payload: expect.objectContaining({
+          name: "Plano comercial Instagram Ads",
           targetAudience: "Prestadores de serviços locais",
           mainPain: "Improviso no atendimento inicial",
           mainOffer: "Kit manual aprovado por R$ 349",

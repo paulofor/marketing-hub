@@ -1,0 +1,18 @@
+{
+  "cardKey": "ia-gatekeeper-de-compra",
+  "collection": "neuromarketing",
+  "title": "Recomendação de IA precisa sobreviver à verificação do comprador",
+  "finding": "Em pesquisa com 1.181 consumidores dos EUA, 76% usaram IA para compras no último ano, mas 89% não confiam completamente nas recomendações e 33% relataram arrependimento após uma compra recomendada por IA. Entre os elementos desejados para aumentar confiança, 57% citaram explicação do porquê da recomendação, 48% lista de fontes, 45% confirmação de uso de reviews e 41% alerta quando a qualidade da fonte fosse incerta.",
+  "mechanism": "A IA pode entrar na shortlist sem encerrar a due diligence. O comprador tende a verificar a recomendação contra reviews, varejista e pesquisa externa; justificativa, procedência da evidência e incerteza explícita podem tornar a recomendação mais auditável sem transformá-la em garantia.",
+  "commercialApplication": "Evoluir o AgentReadableOfferAudit e os agentes próprios para gerar um RecommendationEvidenceBundle com motivo curto, evidências verificáveis, data/atualidade, fontes quando disponíveis e alerta de incerteza. Garantir que preço, entregáveis, limites, políticas e reviews legítimos tenham origem rastreável.",
+  "evidenceStrength": "Moderada-baixa: pesquisa proprietária, autorrelatada e dos EUA, mas com metodologia declarada e perguntas diretamente ligadas a uso, verificação e confiança em recomendações de IA.",
+  "publishedOn": "2026-09-21",
+  "validUntil": "2027-01-21",
+  "experimentHypothesis": "Recomendações com motivo curto, 2–3 evidências/fontes verificáveis e indicação de incerteza quando aplicável aumentarão continuidade da conversa e confiança percebida em relação a recomendações sem justificativa, sem necessariamente aumentar conversão; CTA, lead, checkout, pagamento, reembolso e correções devem ser medidos separadamente.",
+  "risks": "Fabricar prova social, citar fontes fracas como se fossem confirmação, esconder conflito de interesse, sobrecarregar o usuário com evidência excessiva, criar falsa sensação de certeza ou usar explicabilidade como desculpa para recomendações ruins.",
+  "limits": "A amostra é dos EUA; arrependimento não prova erro factual da IA; preferência declarada por explicações e fontes não demonstra aumento de conversão; reviews e fontes também podem ser manipulados e precisam de verificação independente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-24-ia-gatekeeper-explicacao-fontes.md",
+  "sourceTitle": "Fonte revisada — recomendações de IA precisam de justificativa e fontes verificáveis",
+  "sourceSha256": "6b9f84e66343b66164ccb54e309d5396c32d434e571d3f7f8f4541bdf1ca8909"
+}

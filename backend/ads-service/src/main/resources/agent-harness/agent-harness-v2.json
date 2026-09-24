@@ -937,7 +937,7 @@
           "title": "Observabilidade e saúde",
           "description": "Prontidão, fontes e custo da pesquisa.",
           "items": [
-            { "key": "health", "label": "Health do executor", "value": "heartbeat até 60s · backend · versão · codex login status", "description": "Reporter Node.js dedicado.", "sourceReference": "config/agents/codex-agent-health-compliance.json" },
+            { "key": "health", "label": "Health do executor", "value": "heartbeat até 60s · backend · versão · codex login status · schemas estritos", "description": "Argos v5 valida os contratos antes de iniciar polling ou reportar prontidão.", "sourceReference": "config/agents/codex-agent-health-compliance.json" },
             { "key": "telemetry", "label": "Telemetria", "value": "queries, URLs, provedor, falhas, plano, resposta, tokens, custo e duração", "description": "Credenciais são sanitizadas dos eventos e logs.", "sourceReference": "product-discovery-worker/src/worker.js" }
           ]
         }
@@ -945,12 +945,14 @@
       "artifacts": [
         { "artifactType": "PROMPT", "name": "Sistema do planejador", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/plan/system.md", "description": "Responsabilidade e limites do planejador." },
         { "artifactType": "PROMPT", "name": "Entrada do planejador", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/plan/user.md", "description": "Template de contexto da oportunidade." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do plano de pesquisa", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/plan/plan-schema.json", "description": "Contrato estruturado do plano." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do plano de pesquisa inicial", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/plan/plan-schema.json", "description": "Contrato estrito da atividade inicial, sem lacunas ainda inexistentes." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do aprofundamento de lacunas", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/plan/gap-deepening-schema.json", "description": "Contrato estrito que exige candidatas preservadas, perguntas e limites." },
         { "artifactType": "PROMPT", "name": "Sistema da pesquisa", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/research/system.md", "description": "Regras de coleta, evidência e segurança." },
         { "artifactType": "PROMPT", "name": "Entrada da pesquisa", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/research/user.md", "description": "Template do ciclo dirigido." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da resposta de pesquisa", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/research/response-schema.json", "description": "Contrato estruturado das evidências." },
-        { "artifactType": "RUNTIME_CONFIG", "name": "Planejador Codex de Argos", "version": "v4", "path": "product-discovery-worker/src/argos-codex.js", "description": "Plano, consultas, modelo, sandbox, timeout e telemetria." },
-        { "artifactType": "RUNTIME_CONFIG", "name": "Sintetizador factual de Argos", "version": "v4", "path": "product-discovery-worker/src/argos-research.js", "description": "Valida evidências, candidatas, resposta bruta e degradação explícita." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Planejador Codex de Argos", "version": "v5", "path": "product-discovery-worker/src/argos-codex.js", "description": "Seleciona o schema por atividade e preserva falhas estruturadas sem segredos." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Sintetizador factual de Argos", "version": "v5", "path": "product-discovery-worker/src/argos-research.js", "description": "Valida evidências, candidatas, resposta bruta e contrato estrito." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Validador de contratos estritos", "version": "v5", "path": "product-discovery-worker/src/strict-output-schema.js", "description": "Bloqueia o startup quando prompts e schemas não formam um contrato executável." },
         { "artifactType": "KNOWLEDGE_BASE", "name": "Fonte das pesquisas internas", "version": "v1", "path": "product-discovery-worker/research-library/source-manifest.json", "description": "Contrato versionado que declara /pesquisas como fonte de verdade e o índice gerado usado pelo Argos." },
         { "artifactType": "DEPLOYMENT", "name": "Container do worker", "version": "v1", "path": "product-discovery-worker/Dockerfile", "description": "Imagem reproduzível e isolada." },
         { "artifactType": "WORKFLOW", "name": "CI/CD do worker", "version": "v1", "path": ".github/workflows/product-discovery-worker-ci.yml", "description": "Testes, build e publicação versionados." }

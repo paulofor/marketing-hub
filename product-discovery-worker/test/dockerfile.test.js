@@ -69,8 +69,8 @@ test("reporta a versão corrente de Argos nas duas topologias", () => {
   for (const compose of [localCompose, deployCompose]) {
     assert.match(
       compose,
-      /AGENT_HEALTH_VERSION: \$\{ARGOS_AGENT_VERSION:-4\}/,
-      "[ARQUITETURA] Argos deve reportar por padrão a versão 4 cadastrada no backend.",
+      /AGENT_HEALTH_VERSION: \$\{ARGOS_AGENT_VERSION:-5\}/,
+      "[ARQUITETURA] Argos deve reportar por padrão a versão 5 cadastrada no backend.",
     );
   }
 });

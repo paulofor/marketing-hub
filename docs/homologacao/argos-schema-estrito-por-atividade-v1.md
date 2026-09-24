@@ -8,6 +8,7 @@ Data: 2026-09-23
 - execuções que evidenciaram a falha: #27/ciclo #66/tarefa #477 e #28/ciclo #67/tarefa #478;
 - atividade original: `research` — Reunir evidências factuais e situações de compra;
 - executor: Product Discovery Worker / Argos.
+- versão do executor corrigido: Argos v5.
 
 O provedor recusou o schema antes da inferência porque `candidateGaps` e `researchLimits` estavam
 declarados, mas não constavam em `required`. Nenhuma das duas tarefas registrou tokens ou custo.

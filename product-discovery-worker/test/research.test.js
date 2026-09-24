@@ -1173,6 +1173,39 @@ test("analyzeSearchResults explica falha Meta sem expor códigos técnicos no re
   assert.doesNotMatch(report.opportunities[0].commercialRisk, /UNAVAILABLE/);
 });
 
+test("analyzeSearchResults prioriza a cobertura Meta da rodada atual sobre esperas históricas", () => {
+  const report = analyzeSearchResults(
+    {
+      theme: "beleza e bem-estar",
+      targetAudience: "mulheres 40+",
+      acquisitionChannel: "Instagram",
+      marketType: "B2C",
+    },
+    [
+      {
+        title: "Relato público",
+        url: "https://instagram.com/exemplo",
+        snippet: "dificuldade e alternativa paga",
+      },
+    ],
+    [],
+    {
+      candidateBlueprints: candidateBlueprints(),
+      metaCoverage: [
+        { sourceStatus: "AWAITING_SUPERVISED_OBSERVATION" },
+        { sourceStatus: "OBSERVED" },
+      ],
+      currentMetaCoverage: { sourceStatus: "OBSERVED" },
+    },
+  );
+
+  assert.match(
+    report.decisionSummary,
+    /cobertura Meta\/Instagram observada em 1 tentativa\(s\)/,
+  );
+  assert.doesNotMatch(report.decisionSummary, /aguardando observação/);
+});
+
 test("analyzeSearchResults exige revisão humana sem liberar dossiê sensível", () => {
   const blueprints = candidateBlueprints();
   blueprints[0].maturity = "DOSSIER_READY";

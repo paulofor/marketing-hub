@@ -779,7 +779,9 @@ export function analyzeSearchResults(
   const metaCoverage = Array.isArray(options.metaCoverage)
     ? options.metaCoverage
     : [];
-  const metaCoverageSummary = summarizeMetaCoverage(metaCoverage);
+  const metaCoverageSummary = summarizeMetaCoverage(
+    options.currentMetaCoverage ? [options.currentMetaCoverage] : metaCoverage,
+  );
   const instagramB2cRequired = requiresConsumerInstagramFocus(job);
   const instagramPublicEvidence = evidence.filter((item) => {
     const domain = safeDomain(item.url);
@@ -1108,14 +1110,14 @@ function summarizeMetaCoverage(metaCoverage) {
     .filter(Boolean);
   const attempts = statuses.length;
   if (attempts === 0) return "cobertura Meta/Instagram não solicitada";
+  if (statuses.includes("OBSERVED")) {
+    return `cobertura Meta/Instagram observada em ${attempts} tentativa(s)`;
+  }
   if (statuses.includes("UNAVAILABLE")) {
     return `cobertura Meta/Instagram não executada em ${attempts} tentativa(s) por falha de integração`;
   }
   if (statuses.some((status) => status.startsWith("AWAITING_"))) {
     return `cobertura Meta/Instagram aguardando observação em ${attempts} tentativa(s)`;
-  }
-  if (statuses.includes("OBSERVED")) {
-    return `cobertura Meta/Instagram observada em ${attempts} tentativa(s)`;
   }
   if (
     statuses.every((status) =>

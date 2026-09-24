@@ -982,10 +982,18 @@ somente as fases que realmente chamaram o modelo, preservando em cada fase a com
 terminal for recusado depois da síntese, a falha deve persistir a resposta bruta, o prompt e o
 consumo já produzidos antes de liberar outra tentativa, sem repetir busca Web ou marketplace.
 
+Cada rodada deve persistir em `marketExpansion.attempts[].metaCoverage` a cobertura Meta exata que
+consumiu. O número local da rodada pode reiniciar em uma retomada e não é identidade suficiente
+para correlacionar o acervo acumulado. Na leitura de contratos históricos sem essa projeção, o
+backend usa primeiro o ID da investigação citado pela lente supervisionada e somente depois o
+número ou a posição legados. O resumo corrente deve refletir a cobertura da rodada analisada;
+esperas e falhas antigas permanecem na auditoria, mas não podem mascarar uma observação posterior.
+
 Matriz de prevenção: sessão e lease exatos; consulta planejada divergente; preservação de IDs;
 ausência de busca ampla; callback sem cobertura ou anúncio ativo; retomada após falha; repetição da
 mesma observação; composição do prompt em fluxo determinístico + modelo; preservação da síntese
-quando o callback falha; pesquisa inicial e aprofundamento normais. A versão operacional
+quando o callback falha; números de tentativa repetidos com investigações diferentes; resumo atual
+após espera histórica; pesquisa inicial e aprofundamento normais. A versão operacional
 correspondente é Argos v8, com contrato `EXACT_SESSION_REUSE_V1`.
 
 ### Equivalência HTML sem alterar a fonte — 24/09/2026

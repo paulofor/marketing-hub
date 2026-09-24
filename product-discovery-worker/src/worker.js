@@ -232,6 +232,7 @@ export async function processJob(job, dependencies = {}) {
             minimumComparableOffers: context.plan.minimumComparableOffers,
             metaAdEvidence: context.metaAdEvidence,
             metaCoverage: context.metaCoverage,
+            currentMetaCoverage: context.currentMetaCoverage,
             candidateBlueprints: context.analysis.synthesis.candidates,
             analysisSummary: context.analysis.synthesis.decisionSummary,
             analysisMode: context.analysis.mode,

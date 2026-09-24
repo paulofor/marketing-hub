@@ -52,12 +52,12 @@ public class SafiraCommercialChecks {
    */
   private void journey(SafiraCommercialContext.Scope scope, JsonNode snapshot) {
     var experiment = scope.experiment();
-    boolean direct = experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE;
-    if (!direct) {
-      require(
-          experiment.getInstagramAccount() != null,
-          "Selecione a identidade pública do Instagram que representará esta oferta.");
-    }
+    require(
+        experiment.getPlatform() == ExperimentPlatform.FACEBOOK,
+        "Safira aceita somente aquisição paga no Instagram; crie uma candidata Meta/Instagram.");
+    require(
+        experiment.getInstagramAccount() != null,
+        "Selecione a identidade pública do Instagram que representará esta oferta.");
     require(
         !snapshot.path("singlePain").asText().isBlank()
             && !snapshot.path("funnelPromise").asText().isBlank()
@@ -114,39 +114,17 @@ public class SafiraCommercialChecks {
         snapshot.path("creatives").isArray() && !snapshot.path("creatives").isEmpty(),
         "Aprove ao menos um criativo final fiel à experiência, ao preço e à entrega.");
     gate(scope, "CREATIVE_APPROVED");
-    if (!direct) {
-      require(
-          snapshot.path("savedAudience").isArray() && !snapshot.path("savedAudience").isEmpty(),
-          "Salve o público oficial de Atena no mesmo experimento.");
-    }
+    require(
+        snapshot.path("savedAudience").isArray() && !snapshot.path("savedAudience").isEmpty(),
+        "Salve o público oficial de Atena no mesmo experimento.");
     gate(scope, "TARGETING_READY");
     require(
         scope.commercialPlan() != null
             && scope.commercialPlan().getStatus() != CommercialPlanStatus.CANCELLED,
         "Vincule um plano comercial vigente ao experimento Safira.");
-    if (direct) {
-      require(
-          scope.commercialPlan().getMainChannel() != null
-              && scope
-                  .commercialPlan()
-                  .getMainChannel()
-                  .matches("(?s)^DIRECT_ONE_TO_ONE(?:\\s.*)?$"),
-          "O plano Safira deve declarar DIRECT_ONE_TO_ONE e preservar consentimento individual.");
-      require(
-          !snapshot.path("commercialPlan").path("targetAudience").asText().isBlank()
-              && experiment.getSampleSize() != null
-              && experiment.getSampleSize() > 0,
-          "Defina público elegível e amostra do piloto individual consentido.");
-      require(
-          (experiment.getDailyBudget() == null || experiment.getDailyBudget().signum() == 0)
-              && (experiment.getMediaSpendLimit() == null
-                  || experiment.getMediaSpendLimit().signum() == 0),
-          "O piloto individual consentido deve permanecer sem orçamento de mídia.");
-    } else {
-      require(
-          containsInstagram(scope.commercialPlan().getMainChannel()),
-          "O plano Safira deve declarar literalmente Instagram Ads como canal principal.");
-    }
+    require(
+        containsInstagram(scope.commercialPlan().getMainChannel()),
+        "O plano Safira deve declarar literalmente Instagram Ads como canal principal.");
     require(
         !snapshot.path("commercialPlan").path("mainOffer").asText().isBlank()
             && !snapshot.path("commercialPlan").path("successCriteria").asText().isBlank()

@@ -118,6 +118,21 @@ public class PdeCommercialActivationHumanActivityHandler
             && productionRun.getId() != null
             && productionRun.getRunNumber() != null;
     List<HumanProductProcessActivityRequirement> requirements = new ArrayList<>();
+    boolean paidInstagramPolicy = usesPaidInstagramPolicy(process);
+    if (paidInstagramPolicy) {
+      boolean paidInstagram = experiment.getPlatform() == ExperimentPlatform.FACEBOOK;
+      requirements.add(
+          new HumanProductProcessActivityRequirement(
+              "PAID_INSTAGRAM_CHANNEL",
+              "Aquisição paga no Instagram",
+              paidInstagram,
+              paidInstagram
+                  ? "O experimento usa Meta Ads com identidade e atribuição do Instagram."
+                  : "O experimento ainda usa um canal direto histórico, sem aquisição paga atribuível.",
+              paidInstagram
+                  ? "Preserve campanha, identidade, UTM, teto e janela aprovados."
+                  : "Crie uma candidata de Instagram Ads; convites, listas próprias e divulgação orgânica não são executáveis."));
+    }
     if (opalaRouting != null) {
       learningCycleRepository
           .findByExperimentId(experiment.getId())
@@ -245,9 +260,11 @@ public class PdeCommercialActivationHumanActivityHandler
         ready,
         reason,
         "Li, entendi e autorizo",
-        experiment.getPlatform() == ExperimentPlatform.FACEBOOK
-            ? "A confirmação autoriza a publicação da campanha na Meta e o gasto de mídia até o teto informado, dentro da janela aprovada. O experimento só entra em execução após a confirmação da plataforma."
-            : "Revise o resumo abaixo e autorize com um único comando. O sistema registra as evidências e inicia a janela comercial, sem criar campanha paga.",
+        paidInstagramPolicy && experiment.getPlatform() != ExperimentPlatform.FACEBOOK
+            ? "Este canal permanece apenas como histórico. Crie uma candidata de Instagram Ads para solicitar autorização comercial."
+            : experiment.getPlatform() == ExperimentPlatform.FACEBOOK
+                ? "A confirmação autoriza a publicação da campanha na Meta e o gasto de mídia até o teto informado, dentro da janela aprovada. O experimento só entra em execução após a confirmação da plataforma."
+                : "Revise o resumo abaixo e autorize com um único comando. O sistema registra as evidências e inicia a janela comercial, sem criar campanha paga.",
         "Revise e autorize",
         "O experimento "
             + experiment.getName()
@@ -286,6 +303,11 @@ public class PdeCommercialActivationHumanActivityHandler
       ProductProcessActivityExecutionRequest request) {
     Experiment experiment = referencedExperiment(product, sourceReference);
     if (experiment.getStatus() == ExperimentStatus.RUNNING) return;
+    if (usesPaidInstagramPolicy(process)
+        && experiment.getPlatform() != ExperimentPlatform.FACEBOOK) {
+      throw new IllegalStateException(
+          "O Processo 5 v10 autoriza somente aquisição paga no Instagram via Meta Ads.");
+    }
     if (experiment.getPlatform() == ExperimentPlatform.FACEBOOK) {
       if (facebookAdsCampaignRepository.existsByExperimentId(experiment.getId())) {
         campaignResumptionService.requireCurrentAuthorization(experiment.getId());
@@ -295,6 +317,13 @@ public class PdeCommercialActivationHumanActivityHandler
       return;
     }
     experimentService.updateStatus(experiment.getId(), ExperimentStatus.RUNNING);
+  }
+
+  /** Ativa a política paga somente nas definições que a publicaram explicitamente. */
+  private boolean usesPaidInstagramPolicy(BusinessProcessDefinition process) {
+    return process != null
+        && process.getVersionNumber() != null
+        && process.getVersionNumber() >= 10;
   }
 
   /** Resolve o experimento declarado pela referência sem misturar outro ciclo ou produto. */

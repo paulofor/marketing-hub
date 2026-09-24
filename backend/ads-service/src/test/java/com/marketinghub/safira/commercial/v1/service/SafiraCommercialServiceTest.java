@@ -65,7 +65,7 @@ class SafiraCommercialServiceTest {
     experiment.setProduct(product);
     process.setId(90L);
     process.setProcessCode(SafiraCommercialContext.CODE);
-    process.setVersionNumber(1);
+    process.setVersionNumber(2);
     process.setStatus("PUBLISHED");
     var scope =
         new SafiraCommercialContext.Scope(experiment, product, "public-v1", null, null, null, null);
@@ -117,7 +117,7 @@ class SafiraCommercialServiceTest {
               var review = reviews.get(call.getArgument(2, String.class));
               return review == null ? List.of() : List.of(review);
             });
-    when(processes.findByProcessCodeAndVersionNumber(SafiraCommercialContext.CODE, 1))
+    when(processes.findByProcessCodeAndVersionNumber(SafiraCommercialContext.CODE, 2))
         .thenReturn(Optional.of(process));
   }
 

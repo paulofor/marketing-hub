@@ -122,9 +122,8 @@ public class SafiraCommercialContext {
         experiment.getProductAiSubtype() != null,
         "Prepare e registre o subtipo do Produto IA pela hipótese antes do experimento.");
     require(
-        experiment.getPlatform() == ExperimentPlatform.FACEBOOK
-            || experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE,
-        "Selecione Meta/Instagram ou abordagem individual consentida conforme o plano aprovado.");
+        experiment.getPlatform() == ExperimentPlatform.FACEBOOK,
+        "Safira exige aquisição paga no Instagram; convite individual, lista própria, contato direto e divulgação orgânica não são canais executáveis.");
     if (mutation) {
       require(
           List.of(ExperimentStatus.PLANNED, ExperimentStatus.USER_STOPPED, ExperimentStatus.PAUSED)

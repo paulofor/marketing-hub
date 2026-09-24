@@ -45,6 +45,21 @@
   publicar, ativar campanha ou autorizar orçamento nesse passo.
 - **Prevenção da transição:** regressões cobrem produto Safira com e sem nicho, referência privada,
   ausência total de contexto, motivo específico, destino pré-preenchido e rótulo acionável na tela.
+- **Recorrência de canal inexequível confirmada em 24/09/2026:** o plano #8 e Safira v1 passaram a
+  aceitar `DIRECT_ONE_TO_ONE`, mas a operação não possui lista, convites nem trabalho humano para
+  formar essa amostra. O sistema voltou a orientar uma próxima ação que não podia executar.
+- **Causa-raiz da recorrência:** a decisão de canal ficou restrita ao plano e a desvios condicionais
+  de Safira. As atividades compartilhadas, o cadastro de experimento e o gate final continuaram
+  oferecendo canais contraditórios, sem uma política operacional única.
+- **Alternativas avaliadas:** corrigir apenas o plano é rápido e deixa APIs divergentes; mudar só a
+  cópia oculta a opção sem bloqueá-la; versionar cadeia, contratos, interface e gates exige mais
+  trabalho e fecha a recorrência. Foi escolhida a terceira alternativa.
+- **Correção sistêmica:** cadeia v22, Processo 5 v10 e Safira v2 declaram
+  `PAID_INSTAGRAM_ONLY_V1`. Novas candidatas aceitam apenas Instagram Ads via Meta; registros diretos
+  permanecem históricos e o gasto continua dependente de teto, janela e autorização humana.
+- **Prevenção da recorrência:** regressões de Java, React e MySQL 5.7 cobrem criação, troca de
+  canal, identidade Instagram, público, rota Safira v2, gate do Processo 5, idempotência, rollback e
+  imutabilidade das versões anteriores.
 
 ## LOOP-PDE-PREFLIGHT-REUTILIZA-PUBLICACAO-ANTIGA — estado verde sem versão vigente
 

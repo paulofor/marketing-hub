@@ -119,7 +119,8 @@ no BPM existente (contratos claros e reaproveitamento). Escolhida a terceira.
 
 ## Preparação comercial Safira — decisão de 23/09/2026
 
-O tipo `AI_PRODUCT` (Safira) usa `safira-commercial-preparation-v1` no Processo 5 v9. O percurso
+O tipo `AI_PRODUCT` (Safira) usa `safira-commercial-preparation-v1`: v1 no Processo 5 v9
+histórico e v2 no Processo 5 v10 vigente. O percurso
 exige experimento de venda explícito, subtipo persistido, experiência pública do mesmo experimento,
 demonstração inicial útil, diferença paga clara, checkout, entrega, suporte, reembolso, eventos,
 plano comercial, economia completa e revisões independentes. Custos de IA, infraestrutura,
@@ -133,12 +134,16 @@ falhas e eventos. Somente a decisão humana do Processo 5 autoriza versão, cana
 paradas. Essa separação evita vender uma demonstração ainda sem contrato operacional e evita repetir
 chamadas pagas quando apenas uma evidência material mudou.
 
-O canal deve corresponder ao plano aprovado: Meta/Instagram exige conta e público oficiais;
-`DIRECT_ONE_TO_ONE` exige público elegível, amostra explícita e ausência de verba de mídia.
-A abordagem direta não dispensa comunicação aprovada, oferta, checkout, entrega, economia,
-consentimento, revisões ou decisão humana de início. Mudança de canal, amostra ou limite invalida
-a fotografia da preparação. A aprovação comercial de um piloto não autoriza seu lançamento
-antes de concluir os contratos e gates pertinentes.
+Decisão de 24/09/2026: toda nova divulgação comercial usa **mídia paga no Instagram**, pela
+infraestrutura Meta Ads, com conta, identidade do Instagram, público e atribuição oficiais.
+`DIRECT_ONE_TO_ONE`, convite individual, lista própria, contato direto e divulgação orgânica
+permanecem consultáveis apenas em execuções históricas; não podem criar nova candidata, suprir
+aquisição ou receber autorização no Processo 5 vigente. Essa regra vale também para Safira.
+
+Registrar Instagram Ads no plano não autoriza campanha nem gasto. A preparação deve comprovar
+comunicação, oferta, checkout, entrega, economia, identidade, público, revisões e preflight.
+Versão, teto, janela e condições de parada continuam dependentes de decisão humana explícita.
+Mudança de campanha, público, criativo, versão ou limite invalida somente as evidências afetadas.
 
 ## Gestão das versões PDE Opala — decisão de 16/09/2026
 

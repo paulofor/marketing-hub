@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
@@ -22,7 +23,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Responsabilidade: preservar provas comerciais e limites ao preparar Safira por canal direto. */
+/** Responsabilidade: preservar provas e limites ao preparar Safira para Instagram Ads. */
 class SafiraCommercialChecksTest {
   private final ExperimentReadinessService readiness = mock(ExperimentReadinessService.class);
   private final SafiraCommercialChecks checks = new SafiraCommercialChecks(readiness);
@@ -35,11 +36,12 @@ class SafiraCommercialChecksTest {
   @BeforeEach
   void setup() {
     experiment.setId(710L);
-    experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+    experiment.setInstagramAccount(mock(InstagramAccount.class));
     experiment.setSampleSize(6);
     experiment.setUnitPrice(new BigDecimal("39"));
     plan.setStatus(CommercialPlanStatus.DRAFT);
-    plan.setMainChannel("DIRECT_ONE_TO_ONE — convite consentido");
+    plan.setMainChannel("Instagram Ads (Meta Ads)");
     scope =
         new SafiraCommercialContext.Scope(
             experiment,
@@ -77,12 +79,12 @@ class SafiraCommercialChecksTest {
     snapshot.put("checkoutPriceBrl", new BigDecimal("39"));
     snapshot.put("commercialJourneyIntegrated", true);
     snapshot.putArray("creatives").addObject().put("id", 23);
-    snapshot.putArray("savedAudience");
+    snapshot.putArray("savedAudience").addObject().put("id", 91);
     var commercial = snapshot.putObject("commercialPlan");
     commercial.put("mainOffer", "entrega útil");
     commercial.put("successCriteria", "compra e uso");
     commercial.put("stopCriteria", "falha ou limite");
-    commercial.put("targetAudience", "participantes elegíveis e consentidos");
+    commercial.put("targetAudience", "público salvo e aprovado por Atena");
     var summary = mock(ExperimentReadinessSummaryDto.class);
     when(readiness.summarize(710L)).thenReturn(summary);
     when(summary.runningGateRequirements())
@@ -94,47 +96,41 @@ class SafiraCommercialChecksTest {
                     "TARGETING_READY", "canal", true, "ok", "ok")));
   }
 
-  /** Aceita o canal direto sem inventar conta ou segmentação Meta e preserva estado planejado. */
+  /** Aceita Instagram Ads somente com identidade, público e plano coerentes. */
   @Test
-  void acceptsDirectJourneyWithoutMetaIdentity() {
+  void acceptsPaidInstagramJourneyWithOfficialIdentity() {
     assertThatCode(() -> checks.check("journey", scope, snapshot)).doesNotThrowAnyException();
   }
 
-  /** Não confunde autorização de piloto direto com permissão para verba ou outro canal. */
+  /** Recusa canal direto e rótulos que não declaram literalmente Instagram Ads. */
   @Test
-  void rejectsBudgetAndContradictoryPlan() {
-    for (BigDecimal invalid : List.of(BigDecimal.ONE, BigDecimal.ONE.negate())) {
-      experiment.setDailyBudget(invalid);
-      assertThatThrownBy(() -> checks.check("journey", scope, snapshot))
-          .hasMessageContaining("sem orçamento");
-      experiment.setDailyBudget(null);
-      experiment.setMediaSpendLimit(invalid);
-      assertThatThrownBy(() -> checks.check("journey", scope, snapshot))
-          .hasMessageContaining("sem orçamento");
-      experiment.setMediaSpendLimit(null);
-    }
-    for (String invalidChannel : List.of("Instagram Ads", "DIRECT_ONE_TO_ONE_NOT_APPROVED")) {
+  void rejectsDirectAndContradictoryChannel() {
+    experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    assertThatThrownBy(() -> checks.check("journey", scope, snapshot))
+        .hasMessageContaining("somente aquisição paga no Instagram");
+    experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+    for (String invalidChannel : List.of("Meta", "DIRECT_ONE_TO_ONE_NOT_APPROVED")) {
       plan.setMainChannel(invalidChannel);
       assertThatThrownBy(() -> checks.check("journey", scope, snapshot))
-          .hasMessageContaining("DIRECT_ONE_TO_ONE");
+          .hasMessageContaining("Instagram Ads");
     }
   }
 
-  /** Recusa a ausência de público e amostra mesmo sem compra de mídia. */
+  /** Recusa a ausência da identidade ou do público oficial da campanha. */
   @Test
-  void rejectsMissingParticipantScope() {
-    experiment.setSampleSize(null);
+  void rejectsMissingInstagramIdentityOrSavedAudience() {
+    experiment.setInstagramAccount(null);
     assertThatThrownBy(() -> checks.check("journey", scope, snapshot))
-        .hasMessageContaining("amostra");
-    experiment.setSampleSize(6);
-    ((ObjectNode) snapshot.path("commercialPlan")).remove("targetAudience");
+        .hasMessageContaining("identidade pública do Instagram");
+    experiment.setInstagramAccount(mock(InstagramAccount.class));
+    ((com.fasterxml.jackson.databind.node.ArrayNode) snapshot.path("savedAudience")).removeAll();
     assertThatThrownBy(() -> checks.check("journey", scope, snapshot))
-        .hasMessageContaining("público");
+        .hasMessageContaining("público oficial");
   }
 
   /** Mantém prova pública, checkout, material aprovado e economia obrigatórios. */
   @Test
-  void directChannelDoesNotBypassCommercialGates() {
+  void paidChannelDoesNotBypassCommercialGates() {
     snapshot.put("commercialJourneyIntegrated", false);
     assertThatThrownBy(() -> checks.check("journey", scope, snapshot))
         .hasMessageContaining("Processo 4");
@@ -144,13 +140,5 @@ class SafiraCommercialChecksTest {
         .hasMessageContaining("checkout");
     assertThatThrownBy(() -> checks.check("economics", scope, snapshot))
         .hasMessageContaining("financeiro LIVE");
-  }
-
-  /** A rota paga continua exigindo sua identidade oficial do Instagram. */
-  @Test
-  void retainsPaidChannelIdentityRequirement() {
-    experiment.setPlatform(ExperimentPlatform.FACEBOOK);
-    assertThatThrownBy(() -> checks.check("journey", scope, snapshot))
-        .hasMessageContaining("Instagram");
   }
 }

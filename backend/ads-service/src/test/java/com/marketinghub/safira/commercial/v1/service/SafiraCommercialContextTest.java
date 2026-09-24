@@ -176,12 +176,13 @@ class SafiraCommercialContextTest {
         .isEqualTo(SafiraCommercialContext.activityFingerprint("economics", initial));
   }
 
-  /** Aceita o canal individual e invalida provas ao alterar canal, amostra ou limite. */
+  /** Recusa canal direto e invalida provas ao alterar controles da candidata paga. */
   @Test
-  void scopesDirectPilotAndInvalidatesChangedChannelControls() {
+  void rejectsDirectPilotAndInvalidatesChangedPaidControls() {
     experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
-    experiment.setSampleSize(6);
-    assertThat(context.scope("experiment:301", 10L, true)).isNotNull();
+    assertThatThrownBy(() -> context.scope("experiment:301", 10L, true))
+        .hasMessageContaining("aquisição paga no Instagram");
+    experiment.setPlatform(ExperimentPlatform.FACEBOOK);
     var initial = context.snapshot("experiment:301");
     for (String field : List.of("platform", "sampleSize", "dailyBudgetBrl", "mediaSpendLimitBrl")) {
       var changed = initial.deepCopy();

@@ -111,7 +111,7 @@ class PdeCommercialActivationHumanActivityHandlerTest {
             });
   }
 
-  /** Distingue o consentimento para mídia Meta da operação direta sem disparar a autorização. */
+  /** Explica a mídia paga e bloqueia o canal direto na versão vigente. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.EnumSource(
       com.marketinghub.experiment.ExperimentPlatform.class)
@@ -129,8 +129,15 @@ class PdeCommercialActivationHumanActivityHandlerTest {
           .doesNotContain("sem criar campanha paga");
       assertThat(result.confirmationMessage()).contains("autoriza a publicação na Meta");
     } else {
-      assertThat(result.description()).contains("sem criar campanha paga");
+      assertThat(result.description()).contains("permanece apenas como histórico");
       assertThat(result.confirmationMessage()).doesNotContain("autoriza a publicação na Meta");
+      assertThat(result.ready()).isFalse();
+      assertThat(result.requirements())
+          .anySatisfy(
+              requirement -> {
+                assertThat(requirement.code()).isEqualTo("PAID_INSTAGRAM_CHANNEL");
+                assertThat(requirement.satisfied()).isFalse();
+              });
     }
     org.mockito.Mockito.verifyNoInteractions(experimentService);
     assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
@@ -273,6 +280,32 @@ class PdeCommercialActivationHumanActivityHandlerTest {
     verify(experimentService, never()).updateStatus(89L, ExperimentStatus.RUNNING);
   }
 
+  /** Impede que uma aprovação antiga reative divulgação por convite no Processo 5 v10. */
+  @Test
+  void rejectsDirectApprovalInCurrentProcessVersion() {
+    Product product = Product.builder().id(9L).build();
+    Experiment experiment = experiment(product, ExperimentStatus.PLANNED);
+    experiment.setPlatform(com.marketinghub.experiment.ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    when(experiments.findById(89L)).thenReturn(java.util.Optional.of(experiment));
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () ->
+                handler.approve(
+                    process(),
+                    activity(),
+                    product,
+                    "experiment:89",
+                    new ProductProcessActivityExecutionRequest(
+                        "APPROVE",
+                        "Paulo Operador",
+                        "O canal e os limites foram revisados.",
+                        "experiment-run:12",
+                        "CONFIRM:pde-commercial-homologation-activation:authorization")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("somente aquisição paga no Instagram");
+    verify(experimentService, never()).updateStatus(89L, ExperimentStatus.RUNNING);
+  }
+
   /** Exige autorização financeira estruturada antes de aceitar campanha já publicada. */
   @Test
   void blocksExistingCampaignWithoutCurrentResumptionAuthorization() {
@@ -405,6 +438,7 @@ class PdeCommercialActivationHumanActivityHandlerTest {
   private BusinessProcessDefinition process() {
     BusinessProcessDefinition process = new BusinessProcessDefinition();
     process.setProcessCode("pde-commercial-homologation-activation");
+    process.setVersionNumber(10);
     return process;
   }
 

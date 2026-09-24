@@ -12,6 +12,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import liquibase.Liquibase;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
@@ -31,6 +32,8 @@ class PdeCommercialPrinciplesMysql57Test {
       "db/changelog/changesets/2026-09-23-product-discovery-gap-deepening-v1.yaml";
   private static final String SAFIRA_CHANGE =
       "db/changelog/changesets/2026-09-23-safira-commercial-preparation-v1.yaml";
+  private static final String PAID_INSTAGRAM_CHANGE =
+      "db/changelog/changesets/2026-09-24-paid-instagram-acquisition-v1.yaml";
   private final ObjectMapper mapper = new ObjectMapper();
 
   /** Aplica a revisão, recusa fontes inválidas e conserva toda evidência nas reaplicações. */
@@ -104,8 +107,99 @@ class PdeCommercialPrinciplesMysql57Test {
         verifySafiraMigration(host, productChain);
         exportForBrowser(connection, sources);
         verifyPublicEvidenceMigration(host, productChain);
+        verifyPaidInstagramMigration(host, productChain);
       }
     }
+  }
+
+  /**
+   * Versiona a aquisição paga, preserva os processos anteriores e comprova rollback idempotente.
+   */
+  private void verifyPaidInstagramMigration(String host, String productChain) throws Exception {
+    try (var connection = openConnection(host)) {
+      Map<String, String> historical =
+          Map.of(
+              "pde-commercial-plan-offer:7", diagram(connection, "pde-commercial-plan-offer", 7),
+              "pde-communication-sales-journey:8",
+                  diagram(connection, "pde-communication-sales-journey", 8),
+              "pde-commercial-homologation-activation:9",
+                  diagram(connection, "pde-commercial-homologation-activation", 9),
+              "pde-sales-delivery-learning:9",
+                  diagram(connection, "pde-sales-delivery-learning", 9),
+              "safira-commercial-preparation-v1:1",
+                  diagram(connection, "safira-commercial-preparation-v1", 1));
+      var database =
+          DatabaseFactory.getInstance()
+              .findCorrectDatabaseImplementation(new JdbcConnection(connection));
+      try (var migration =
+          new Liquibase(PAID_INSTAGRAM_CHANGE, new ClassLoaderResourceAccessor(), database)) {
+        migration.update("");
+        verifyPaidInstagramState(connection, productChain, historical);
+        String activityCount =
+            scalar(
+                connection,
+                "SELECT COUNT(*) FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id WHERE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json,'$.commercialAcquisitionPolicyVersion')),'')='PAID_INSTAGRAM_ONLY_V1'");
+        migration.update("");
+        assertThat(
+                scalar(
+                    connection,
+                    "SELECT COUNT(*) FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id WHERE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json,'$.commercialAcquisitionPolicyVersion')),'')='PAID_INSTAGRAM_ONLY_V1'"))
+            .isEqualTo(activityCount);
+
+        migration.rollback(1, "");
+        assertThat(
+                scalar(
+                    connection,
+                    "SELECT CONCAT((SELECT status FROM business_process_definition WHERE process_code='pde-commercial-plan-offer' AND version_number=7),':',(SELECT status FROM business_process_definition WHERE process_code='pde-commercial-plan-offer' AND version_number=8),':',(SELECT status FROM business_process_definition WHERE process_code='safira-commercial-preparation-v1' AND version_number=1),':',(SELECT status FROM business_process_definition WHERE process_code='safira-commercial-preparation-v1' AND version_number=2),':',(SELECT status FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=21),':',(SELECT status FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=22))"))
+            .isEqualTo("PUBLISHED:RETIRED:PUBLISHED:RETIRED:PUBLISHED:RETIRED");
+
+        migration.update("");
+        verifyPaidInstagramState(connection, productChain, historical);
+      }
+    }
+  }
+
+  /** Confere política, atividades, rota Safira v2 e imutabilidade da cadeia v21. */
+  private void verifyPaidInstagramState(
+      Connection connection, String productChain, Map<String, String> historical) throws Exception {
+    assertThat(
+            scalar(
+                connection,
+                "SELECT CONCAT((SELECT status FROM business_process_definition WHERE process_code='pde-commercial-plan-offer' AND version_number=7),':',(SELECT status FROM business_process_definition WHERE process_code='pde-commercial-plan-offer' AND version_number=8),':',(SELECT status FROM business_process_definition WHERE process_code='pde-communication-sales-journey' AND version_number=8),':',(SELECT status FROM business_process_definition WHERE process_code='pde-communication-sales-journey' AND version_number=9),':',(SELECT status FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=9),':',(SELECT status FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=10),':',(SELECT status FROM business_process_definition WHERE process_code='pde-sales-delivery-learning' AND version_number=9),':',(SELECT status FROM business_process_definition WHERE process_code='pde-sales-delivery-learning' AND version_number=10),':',(SELECT status FROM business_process_definition WHERE process_code='safira-commercial-preparation-v1' AND version_number=1),':',(SELECT status FROM business_process_definition WHERE process_code='safira-commercial-preparation-v1' AND version_number=2))"))
+        .isEqualTo(
+            "RETIRED:PUBLISHED:RETIRED:PUBLISHED:RETIRED:PUBLISHED:RETIRED:PUBLISHED:RETIRED:PUBLISHED");
+    assertThat(
+            scalar(
+                connection,
+                "SELECT CONCAT(COUNT(*),':',SUM(CASE WHEN diagram_json LIKE '%DIRECT_ONE_TO_ONE%' THEN 1 ELSE 0 END),':',SUM(CASE WHEN COALESCE(JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.commercialAcquisitionPolicyVersion')),'')='PAID_INSTAGRAM_ONLY_V1' THEN 1 ELSE 0 END)) FROM business_process_definition WHERE (process_code='pde-commercial-plan-offer' AND version_number=8) OR (process_code='pde-communication-sales-journey' AND version_number=9) OR (process_code='pde-commercial-homologation-activation' AND version_number=10) OR (process_code='pde-sales-delivery-learning' AND version_number=10) OR (process_code='safira-commercial-preparation-v1' AND version_number=2)"))
+        .isEqualTo("5:0:5");
+    assertThat(
+            scalar(
+                connection,
+                "SELECT CONCAT((SELECT JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].subprocessRoutes[2].subprocessVersion')) FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=10),':',(SELECT COUNT(*) FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id WHERE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json,'$.commercialAcquisitionPolicyVersion')),'')='PAID_INSTAGRAM_ONLY_V1'))"))
+        .isEqualTo("2:21");
+    assertThat(
+            scalar(
+                connection,
+                "SELECT CONCAT((SELECT status FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=21),':',(SELECT status FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=22),':',(SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=22),':',(SELECT GROUP_CONCAT(CONCAT(item.sequence_number,'=',process.version_number) ORDER BY item.sequence_number SEPARATOR ',') FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id JOIN business_process_definition process ON process.id=item.process_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=22))"))
+        .isEqualTo("RETIRED:PUBLISHED:6:1=8,2=8,3=9,4=9,5=10,6=10");
+    for (var entry : historical.entrySet()) {
+      String[] identity = entry.getKey().split(":");
+      assertThat(diagram(connection, identity[0], Integer.parseInt(identity[1])))
+          .isEqualTo(entry.getValue());
+    }
+    assertThat(scalar(connection, "SELECT chain_definition_id FROM product"))
+        .isEqualTo(productChain);
+  }
+
+  /** Lê o diagrama exato de uma versão para comprovar que a migração não o reescreveu. */
+  private String diagram(Connection connection, String processCode, int version) throws Exception {
+    return scalar(
+        connection,
+        "SELECT diagram_json FROM business_process_definition WHERE process_code='"
+            + processCode
+            + "' AND version_number="
+            + version);
   }
 
   /**
@@ -159,11 +253,16 @@ class PdeCommercialPrinciplesMysql57Test {
   /** Confere política legada, novas versões e rollback sem apagar escolhas ou fontes históricas. */
   private void verifyPublicEvidenceMigration(String host, String productChain) throws Exception {
     try (var connection = openConnection(host)) {
-      execute(connection, "CREATE TABLE IF NOT EXISTS agent(id BIGINT PRIMARY KEY, agent_key VARCHAR(100), current_version INT, status VARCHAR(30), model_name VARCHAR(100))");
-      execute(connection, "CREATE TABLE IF NOT EXISTS agent_version(id BIGINT AUTO_INCREMENT PRIMARY KEY, agent_id BIGINT, version_number INT, contract_snapshot LONGTEXT, created_at DATETIME, UNIQUE KEY uk_av(agent_id,version_number))");
+      execute(
+          connection,
+          "CREATE TABLE IF NOT EXISTS agent(id BIGINT PRIMARY KEY, agent_key VARCHAR(100), current_version INT, status VARCHAR(30), model_name VARCHAR(100))");
+      execute(
+          connection,
+          "CREATE TABLE IF NOT EXISTS agent_version(id BIGINT AUTO_INCREMENT PRIMARY KEY, agent_id BIGINT, version_number INT, contract_snapshot LONGTEXT, created_at DATETIME, UNIQUE KEY uk_av(agent_id,version_number))");
       execute(connection, "DELETE FROM agent_version");
       execute(connection, "DELETE FROM agent");
-      execute(connection, "INSERT INTO agent VALUES(801,'market-radar',6,'ACTIVE','synthetic-model')");
+      execute(
+          connection, "INSERT INTO agent VALUES(801,'market-radar',6,'ACTIVE','synthetic-model')");
       String original =
           scalar(
               connection,
@@ -177,11 +276,17 @@ class PdeCommercialPrinciplesMysql57Test {
               "db/changelog/changesets/2026-09-24-product-discovery-public-evidence-v1.yaml",
               new ClassLoaderResourceAccessor(),
               database)) {
-        var agentMigration = new Liquibase("db/changelog/changesets/2026-09-24-argos-agent-version-v7-public-evidence.yaml", new ClassLoaderResourceAccessor(), database);
+        var agentMigration =
+            new Liquibase(
+                "db/changelog/changesets/2026-09-24-argos-agent-version-v7-public-evidence.yaml",
+                new ClassLoaderResourceAccessor(),
+                database);
         agentMigration.update("");
-        assertThat(scalar(connection, "SELECT current_version FROM agent WHERE id=801")).isEqualTo("7");
+        assertThat(scalar(connection, "SELECT current_version FROM agent WHERE id=801"))
+            .isEqualTo("7");
         agentMigration.rollback(1, "");
-        assertThat(scalar(connection, "SELECT current_version FROM agent WHERE id=801")).isEqualTo("6");
+        assertThat(scalar(connection, "SELECT current_version FROM agent WHERE id=801"))
+            .isEqualTo("6");
         agentMigration.update("");
         migration.update("");
         assertThat(

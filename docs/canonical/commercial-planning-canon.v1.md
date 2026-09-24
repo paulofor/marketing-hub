@@ -85,12 +85,16 @@ produto deve declarar isso de forma literal; escrever apenas `Instagram`, `Meta`
   Direção e briefing: [estratégia de criativo e mídia paga de Mira](../marketing/mira-criativo-midia-paga-2026-09-05.md).
 - Mesmo quando o contrato técnico usar plataforma `FACEBOOK` por representar a infraestrutura do
   Meta Ads, plano, criativo, campanha e relatório devem explicitar o posicionamento no Instagram.
-- Tráfego orgânico, abordagem direta, QA e validação por agentes podem apoiar aprendizado, mas devem
-  ficar
-  segregados do tráfego pago por produto, experimento, campanha, URL, versão e UTM.
+- Tráfego orgânico e abordagem direta anteriores podem apoiar somente leitura histórica; QA e
+  validação por agentes apoiam qualidade interna. Todos ficam segregados do tráfego pago por
+  produto, experimento, campanha, URL, versão e UTM e não iniciam nova divulgação.
 - Registrar Instagram Ads no plano não autoriza publicação nem gasto. Cada experimento continua
   dependente de criativo, destino, checkout, entrega, instrumentação, gate econômico, teto persistido
   e autorização humana explícita antes da ativação.
+- Decisão operacional de 24/09/2026: novas divulgações comerciais usam exclusivamente mídia paga
+  no Instagram. Convite individual, base própria, contato direto e divulgação orgânica permanecem
+  apenas como histórico e não podem ser sugeridos como entrada, canal alternativo ou amostra dos
+  processos vigentes. A regra não transforma custo desconhecido em zero nem autoriza gasto.
 
 Gargalo atual, causa-raiz e próxima ação são contratos operacionais completos, não rótulos curtos. Esses campos devem aceitar contexto longo sem truncamento e permitir que especialistas iterem autonomamente na própria sandbox até devolver `APROVADO`, `BLOQUEADO` ou `AJUSTE_NECESSARIO`. Essa autonomia cobre investigação, produção e homologação local; não autoriza gasto, publicação externa, alteração de preço ou mudança de oferta.
 

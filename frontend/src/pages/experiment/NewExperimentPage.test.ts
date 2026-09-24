@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Product } from "../../api/product/useProducts";
 import {
+  newExperimentAcquisitionOptions,
   persistedProductUnitPrice,
   productsEligibleForNiche,
 } from "./NewExperimentPage";
@@ -65,6 +66,12 @@ describe("persistedProductUnitPrice", () => {
 });
 
 describe("contrato de planejamento do experimento", () => {
+  it("oferece somente Instagram Ads para novas divulgações", () => {
+    expect(newExperimentAcquisitionOptions).toEqual([
+      { value: "FACEBOOK", label: "Instagram Ads (via Meta Ads)" },
+    ]);
+  });
+
   it("permite low-ticket sem transformar um serviço manual em Produto IA", () => {
     expect(productAiSubtypeForExperiment("LOW_TICKET_PRODUCT", "")).toBe(
       undefined,

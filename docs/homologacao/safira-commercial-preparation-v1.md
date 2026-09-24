@@ -1,10 +1,11 @@
-# Homologação — preparação comercial Safira v1
+# Homologação — preparação comercial Safira v1/v2
 
 ## Escopo e identidade
 
 - Produto genérico do tipo `AI_PRODUCT`; Mira #10 é o caso original, nunca uma exceção codificada.
-- Processo pai `pde-commercial-homologation-activation` v9, subprocesso
-  `safira-commercial-preparation-v1` v1 e cadeia PDE v20.
+- Histórico: Processo 5 v9, subprocesso Safira v1 e cadeia PDE v20.
+- Vigente: Processo 5 v10, subprocesso `safira-commercial-preparation-v1` v2 e cadeia PDE v22,
+  com política `PAID_INSTAGRAM_ONLY_V1`.
 - Fonte comercial obrigatória `experiment:<id>`; a referência privada não substitui o experimento.
 
 ## Matriz local
@@ -35,12 +36,11 @@ campanha, orçamento e publicação real só podem ocorrer depois dos contratos 
 O destino de criação do experimento apenas materializa decisões persistidas; campos comerciais ainda
 ausentes exigem decisão explícita e a autorização humana de 5.5 continua sendo o único gate de gasto.
 
-## Piloto direto aprovado — matriz de regressão de 24/09/2026
+## Piloto direto substituído antes do início — registro de 24/09/2026
 
-A aprovação comercial de Mira define `DIRECT_ONE_TO_ONE`, sem transferir orçamento Meta.
-Alternativas: manter Meta contradiz o canal aprovado; dispensar toda a preparação elimina
-proteções; especializar apenas os requisitos do canal preserva oferta, economia e revisões.
-Adotada a terceira opção, sem promover validação privada a prontidão comercial.
+A decisão intermediária permitiu `DIRECT_ONE_TO_ONE`, mas o usuário confirmou depois que não
+existe capacidade de convite individual. Nenhum contato, participante ou resultado foi produzido.
+Os testes abaixo permanecem como evidência histórica da versão v1; não descrevem o caminho atual.
 
 | Caso | Evidência esperada |
 | --- | --- |
@@ -71,5 +71,24 @@ começam apenas após prontidão e início autorizado. Nenhum teste contabiliza 
 - Cadastro real conferido em desktop, iPhone e Pixel sem chamadas de escrita durante a
   verificação; conteúdo do plano preserva limites, hipótese e pendências operacionais.
 
-Essas evidências homologam a adaptação do canal na preparação. Não comprovam lançamento,
-compra real, entrega comercial completa ou consentimento de participantes ainda ausentes.
+Essas evidências homologaram a adaptação histórica do canal. Não comprovam lançamento,
+compra real, entrega comercial completa ou consentimento de participantes.
+
+## Aquisição paga no Instagram — matriz vigente de 24/09/2026
+
+| Dimensão | Caso | Aceite |
+| --- | --- | --- |
+| Nova candidata | Formulário de experimento | Oferece somente Instagram Ads via Meta Ads e informa que cadastro não autoriza gasto |
+| Compatibilidade histórica | Abrir experimento `DIRECT_ONE_TO_ONE` antigo | Mantém leitura auditável e oferece migração para Instagram; não permite selecionar canal direto em candidata nova |
+| API | Criar candidata ou trocar candidata paga para canal direto | Rejeita antes de persistir |
+| Safira | Contexto e jornada v2 | Exigem `FACEBOOK`, identidade Instagram, público salvo e plano que declare Instagram Ads |
+| Processo 5 v10 | Autorização de candidata direta histórica | Gate `PAID_INSTAGRAM_CHANNEL` bloqueado e nenhuma ativação |
+| Economia | Verba ainda não decidida | Permanece ausente/desconhecida; nunca zero por inferência e nenhuma campanha é liberada |
+| Cadeia | Processos 2, 4, 5 e 6 | Entregável, aceite e métrica explicitam aquisição paga e segregação de históricos |
+| MySQL 5.7 | Migração, reaplicação e rollback | Cadeia v22 publicada, cinco definições versionadas e históricos imutáveis |
+| Interface | Desktop, iPhone e Pixel | Canal e orientação legíveis, sem overflow ou opção de convite novo |
+
+O plano #8 e a hipótese de Mira devem ser atualizados pela tela depois da publicação para retirar
+amostra de oito convites e mídia zero. Preço e proposta podem ser preservados, mas amostra, janela,
+teto, CAC e paradas precisam de decisão financeira própria antes da campanha. Testes verdes não
+comprovam utilidade, venda ou lucro.

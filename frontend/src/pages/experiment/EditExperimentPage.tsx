@@ -599,9 +599,7 @@ export default function EditExperimentPage() {
             ? "SALES"
             : "LEADS",
         kpiTarget: parsedKpiTarget,
-        dailyBudget: mediaPlanChanged
-          ? (parsedDailyBudget ?? null)
-          : undefined,
+        dailyBudget: mediaPlanChanged ? (parsedDailyBudget ?? null) : undefined,
         mediaSpendLimit: mediaPlanChanged
           ? (parsedMediaSpendLimit ?? null)
           : undefined,
@@ -766,35 +764,20 @@ export default function EditExperimentPage() {
                       id="platform"
                       className="form-select"
                       {...register("platform")}
-                      onChange={(event) => {
-                        register("platform").onChange(event);
-                        if (event.target.value === "DIRECT_ONE_TO_ONE") {
-                          setValue("dailyBudget", "", { shouldDirty: true });
-                          setValue("mediaSpendLimit", "", {
-                            shouldDirty: true,
-                          });
-                          setValue("kpiTarget", "", { shouldDirty: true });
-                          setValue("metricPresetId", "", {
-                            shouldDirty: true,
-                          });
-                          setValue("facebookPageId", "", {
-                            shouldDirty: true,
-                          });
-                          setValue("instagramAccountId", "", {
-                            shouldDirty: true,
-                          });
-                        }
-                      }}
                     >
-                      <option value="DIRECT_ONE_TO_ONE">
-                        Abordagem individual consentida
+                      {platformValue === "DIRECT_ONE_TO_ONE" && (
+                        <option value="DIRECT_ONE_TO_ONE" disabled>
+                          Histórico — abordagem individual indisponível
+                        </option>
+                      )}
+                      <option value="FACEBOOK">
+                        Instagram Ads (via Meta Ads)
                       </option>
-                      <option value="FACEBOOK">Meta / Facebook Ads</option>
                     </select>
                     <div className="form-text">
                       {platformValue === "DIRECT_ONE_TO_ONE"
-                        ? "Usa uma amostra consentida e não exige campanha, segmentação Meta ou verba de mídia."
-                        : "Exige público aprovado, campanha registrada e orçamento antes da execução."}
+                        ? "Este canal permanece visível apenas para preservar o histórico. Selecione Instagram Ads para uma nova divulgação."
+                        : "Toda divulgação comercial usa mídia paga no Instagram; público, campanha, teto e janela precisam ser aprovados antes da execução."}
                     </div>
                   </div>
                   {isLowTicketProduct && (

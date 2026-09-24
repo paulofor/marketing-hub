@@ -6,7 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
-/** Protege o histórico auditável das versões operacionais v4 e v5 do agente Argos. */
+/** Protege o histórico auditável das versões operacionais v4, v5 e v6 do agente Argos. */
 class ArgosAgentVersionAuditChangelogTest {
 
   /** Exige contrato MySQL 5.7 idempotente sem alterar o changeset já publicado do Argos. */
@@ -44,28 +44,28 @@ class ArgosAgentVersionAuditChangelogTest {
                 + "      relativeToChangelogFile: true");
   }
 
-  /** Exige uma versão v5 reversível que vincule schemas por atividade e diagnóstico de falha. */
+  /** Exige uma versão v6 reversível que preserve a v5 e vincule os contratos estritos. */
   @Test
-  void shouldPersistArgosVersionFiveWithStrictStageContracts() throws Exception {
+  void shouldPersistArgosVersionSixWithStrictStageContracts() throws Exception {
     Path moduleRoot = Path.of("").toAbsolutePath();
     String changelog =
         Files.readString(
             moduleRoot.resolve(
-                "src/main/resources/db/changelog/changesets/2026-09-24-argos-agent-version-v5-strict-contracts.yaml"));
+                "src/main/resources/db/changelog/changesets/2026-09-24-argos-agent-version-v6-strict-contracts.yaml"));
     String master =
         Files.readString(
             moduleRoot.resolve("src/main/resources/db/changelog/db.changelog-master.yaml"));
 
     assertThat(changelog)
         .contains(
-            "logicalFilePath: db/changelog/changesets/2026-09-24-argos-agent-version-v5-strict-contracts.yaml",
+            "logicalFilePath: db/changelog/changesets/2026-09-24-argos-agent-version-v6-strict-contracts.yaml",
             "dbms:",
             "type: mysql",
             "splitStatements: true",
             "stripComments: true",
             "LEFT JOIN agent_version av",
-            "av.version_number = 5",
-            "a.current_version = 4",
+            "av.version_number = 6",
+            "a.current_version IN (4, 5)",
             "av.id IS NULL",
             "STRICT_OUTPUT_BY_ACTIVITY_V1",
             "gap-deepening-schema.json",
@@ -77,7 +77,7 @@ class ArgosAgentVersionAuditChangelogTest {
     assertThat(changelog.split(";")).allSatisfy(this::assertNoMysql1093Pattern);
     assertThat(master)
         .contains(
-            "file: changesets/2026-09-24-argos-agent-version-v5-strict-contracts.yaml\n"
+            "file: changesets/2026-09-24-argos-agent-version-v6-strict-contracts.yaml\n"
                 + "      relativeToChangelogFile: true");
   }
 

@@ -141,15 +141,15 @@ class IrisCommunicationAgentChangelogTest {
             "2026-08-28-iris-communication-agent-v1.yaml",
             "liquibase-argos-agent-version-v4-audit",
             "2026-08-31-argos-agent-version-v4-audit.yaml",
-            "liquibase-argos-agent-version-v5-strict-contracts",
-            "2026-09-24-argos-agent-version-v5-strict-contracts.yaml");
+            "liquibase-argos-agent-version-v6-strict-contracts",
+            "2026-09-24-argos-agent-version-v6-strict-contracts.yaml");
     assertThat(runner)
         .contains(
             "compose run --rm --build liquibase-iris-communication-agent",
             "compose run --rm --build liquibase-argos-agent-version-v4-audit",
-            "compose run --rm --build liquibase-argos-agent-version-v5-strict-contracts",
+            "compose run --rm --build liquibase-argos-agent-version-v6-strict-contracts",
             "a versão autônoma v4 do Argos não possui histórico auditável",
-            "Argos não avançou para a versão v5 com contratos estritos por atividade",
+            "Argos não avançou para a versão v6 com contratos estritos por atividade",
             "HEALTH_CONTRACT=${REPOSITORY_DIR}/config/agents/codex-agent-health-compliance.json",
             "agent['key']}:{agent['expectedVersion']}",
             "as versões implantadas dos nove agentes divergem dos contratos persistidos",

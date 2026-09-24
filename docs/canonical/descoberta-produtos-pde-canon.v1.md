@@ -92,6 +92,12 @@ polling ou reportar prontidão. Incompatibilidade encerra o startup sem consumir
 falhar, a causa estruturada emitida no `stdout` deve chegar ao callback auditável; o código de saída
 isolado não é diagnóstico suficiente.
 
+Antes de criar uma nova `agent_version` de Argos, a implementação deve conferir no banco operacional
+o `current_version` e todas as versões já persistidas, inclusive as criadas pelo Catálogo Vivo. A
+nova revisão usa o próximo número livre sem sobrescrever snapshots existentes; a fixture MySQL 5.7
+reproduz a versão corrente observada e comprova aplicação, reaplicação e rollback preservando esse
+histórico. Estado inferido apenas pelos changelogs do repositório não autoriza reutilizar um número.
+
 Foram comparadas três alternativas: tornar campos de aprofundamento sempre obrigatórios fabricaria
 lacunas antes da coleta; relaxar o modo estrito perderia garantia contratual; separar schemas por
 atividade preserva semântica, falha cedo e custa pouco. A terceira é a regra canônica.

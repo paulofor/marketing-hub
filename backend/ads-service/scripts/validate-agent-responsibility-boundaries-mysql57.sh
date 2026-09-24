@@ -23,6 +23,12 @@ query() {
     -umarketinghub -pmarketinghub-local -Dmarketinghub_local -N -B -e "$1"
 }
 
+execute() {
+  compose exec -T mysql57-agent-responsibility-boundaries \
+    mysql --default-character-set=utf8mb4 \
+    -umarketinghub -pmarketinghub-local -Dmarketinghub_local -e "$1"
+}
+
 assert_equals() {
   local expected=$1
   local actual=$2
@@ -249,47 +255,60 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=4")" \
   "a reaplicação após rollback não recriou o histórico auditável"
 
-compose run --rm --build liquibase-argos-agent-version-v5-strict-contracts
+# Reproduz o histórico real: o Catálogo Vivo já havia materializado a v5 antes do contrato strict.
+execute "INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at) SELECT id, 5, JSON_OBJECT('agentKey', agent_key, 'version', 5, 'source', 'CATALOGO_VIVO'), UTC_TIMESTAMP() FROM agent WHERE agent_key='market-radar' AND current_version=4"
+execute "UPDATE agent SET current_version=5 WHERE agent_key='market-radar' AND current_version=4"
 
 assert_equals \
-  "5" \
+  "5:CATALOGO_VIVO" \
+  "$(query "SELECT CONCAT(a.current_version, ':', JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.source'))) FROM agent a JOIN agent_version av ON av.agent_id=a.id AND av.version_number=5 WHERE a.agent_key='market-radar'")" \
+  "a fixture não reproduziu a versão v5 preexistente de Argos"
+
+compose run --rm --build liquibase-argos-agent-version-v6-strict-contracts
+
+assert_equals \
+  "6" \
   "$(query "SELECT current_version FROM agent WHERE agent_key='market-radar'")" \
-  "Argos não avançou para a versão v5 com contratos estritos por atividade"
+  "Argos não avançou para a versão v6 com contratos estritos por atividade"
 assert_equals \
   "STRICT_OUTPUT_BY_ACTIVITY_V1:true:true" \
-  "$(query "SELECT CONCAT(JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.schemaPolicy')), ':', JSON_EXTRACT(av.contract_snapshot, '$.startupContractValidation'), ':', JSON_EXTRACT(av.contract_snapshot, '$.structuredFailurePreservation')) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=5")" \
-  "a versão v5 do Argos não preservou seus contratos estritos e diagnósticos"
+  "$(query "SELECT CONCAT(JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.schemaPolicy')), ':', JSON_EXTRACT(av.contract_snapshot, '$.startupContractValidation'), ':', JSON_EXTRACT(av.contract_snapshot, '$.structuredFailurePreservation')) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=6")" \
+  "a versão v6 do Argos não preservou seus contratos estritos e diagnósticos"
 
-compose run --rm liquibase-argos-agent-version-v5-strict-contracts
+compose run --rm liquibase-argos-agent-version-v6-strict-contracts
 
 assert_equals \
   "1" \
-  "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=5")" \
-  "a reaplicação do Argos v5 duplicou a versão auditável"
+  "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=6")" \
+  "a reaplicação do Argos v6 duplicou a versão auditável"
 
 # shellcheck disable=SC2016 # A expansão pertence ao shell dentro do container Liquibase.
-compose run --rm liquibase-argos-agent-version-v5-strict-contracts sh -lc \
+compose run --rm liquibase-argos-agent-version-v6-strict-contracts sh -lc \
   'ADS_LIQUIBASE_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "${ADS_LIQUIBASE_CP}" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="${ADS_LIQUIBASE_URL}" --username="${ADS_LIQUIBASE_USERNAME}" --password="${ADS_LIQUIBASE_PASSWORD}" --changeLogFile="${ADS_LIQUIBASE_CHANGELOG_FILE}" rollbackCount 1'
 
 assert_equals \
-  "4" \
-  "$(query "SELECT current_version FROM agent WHERE agent_key='market-radar'")" \
-  "o rollback do Argos v5 não restaurou a versão v4"
-assert_equals \
-  "0" \
-  "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=5")" \
-  "o rollback do Argos v5 preservou a linha criada pelo próprio changeset"
-
-compose run --rm liquibase-argos-agent-version-v5-strict-contracts
-
-assert_equals \
   "5" \
   "$(query "SELECT current_version FROM agent WHERE agent_key='market-radar'")" \
-  "a reaplicação após rollback não restaurou Argos v5"
+  "o rollback do Argos v6 não restaurou a versão v5"
+assert_equals \
+  "0" \
+  "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=6")" \
+  "o rollback do Argos v6 preservou a linha criada pelo próprio changeset"
 assert_equals \
   "1" \
-  "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=5")" \
-  "a reaplicação após rollback não recriou o histórico v5"
+  "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=5 AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.source'))='CATALOGO_VIVO'")" \
+  "o rollback do Argos v6 alterou a versão v5 preexistente"
+
+compose run --rm liquibase-argos-agent-version-v6-strict-contracts
+
+assert_equals \
+  "6" \
+  "$(query "SELECT current_version FROM agent WHERE agent_key='market-radar'")" \
+  "a reaplicação após rollback não restaurou Argos v6"
+assert_equals \
+  "1" \
+  "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='market-radar' AND av.version_number=6")" \
+  "a reaplicação após rollback não recriou o histórico v6"
 
 compose run --rm --build liquibase-customer-agent-visual-composition
 
@@ -309,7 +328,7 @@ PY
   "$(query "SELECT CONCAT(agent_key, ':', current_version) FROM agent ORDER BY agent_key")" \
   "as versões implantadas dos nove agentes divergem dos contratos persistidos"
 assert_equals \
-  "24" \
+  "25" \
   "$(query "SELECT COUNT(*) FROM agent_version")" \
   "a versão estética auditável de Psique não foi criada"
 assert_equals \
@@ -324,7 +343,7 @@ assert_equals \
 compose run --rm liquibase-customer-agent-visual-composition
 
 assert_equals \
-  "24" \
+  "25" \
   "$(query "SELECT COUNT(*) FROM agent_version")" \
   "a reaplicação da Psique v4 duplicou versões"
 assert_equals \
@@ -350,7 +369,7 @@ PY
   "$(query "SELECT CONCAT(agent_key, ':', current_version) FROM agent ORDER BY agent_key")" \
   "as versões implantadas dos nove agentes divergem dos contratos persistidos"
 assert_equals \
-  "25" \
+  "26" \
   "$(query "SELECT COUNT(*) FROM agent_version")" \
   "a política auditável de raciocínio máximo de Psique não foi criada"
 assert_equals \
@@ -361,7 +380,7 @@ assert_equals \
 compose run --rm liquibase-customer-agent-max-reasoning
 
 assert_equals \
-  "25" \
+  "26" \
   "$(query "SELECT COUNT(*) FROM agent_version")" \
   "a reaplicação da política de raciocínio máximo duplicou versões"
 assert_equals \
@@ -393,4 +412,4 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='customer-agent' AND av.version_number=6")" \
   "a reaplicação após rollback não recriou a política auditável"
 
-printf 'Homologação física da matriz dos nove agentes, do Argos v5 e da Psique v6 aprovada no MySQL 5.7.\n'
+printf 'Homologação física da matriz dos nove agentes, do Argos v6 e da Psique v6 aprovada no MySQL 5.7.\n'

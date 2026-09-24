@@ -63,9 +63,11 @@ class PdeCommercialPreparationActivityExecutorTest {
     assertThat(result.reason()).contains("QUARTZ", "não possui percurso");
   }
 
-  /** Orienta Safira ao experimento comercial sem transformar a validação privada em venda. */
+  /**
+   * Orienta Safira ao subprocesso sem iniciar execução nem transformar a prova privada em venda.
+   */
   @Test
-  void guidesSafiraWithoutExecutionContextToCommercialExperiment() {
+  void guidesSafiraWithoutExecutionContextToSubprocess() {
     Product product = product("AI_PRODUCT");
     product.setMarketNiche(MarketNiche.builder().id(34L).name("Pele madura").build());
     BusinessProcessDefinition target = process(93L, "safira-commercial-preparation-v1", 2);
@@ -79,10 +81,12 @@ class PdeCommercialPreparationActivityExecutorTest {
     assertThat(executor.supportsReadinessWithoutExecutionContext()).isTrue();
     assertThat(result.ready()).isFalse();
     assertThat(result.reason()).contains("experimento comercial explícito", "validação privada");
-    assertThat(result.actionLabel()).isEqualTo("Criar experimento comercial");
+    assertThat(result.actionLabel()).isEqualTo("Preparar operação comercial Safira");
+    assertThat(result.targetProcessDefinitionId()).isNull();
     assertThat(result.workspaceCode()).isEqualTo("COMMERCIAL_EXPERIMENT");
     assertThat(result.workspaceReferenceId()).isEqualTo(4L);
-    assertThat(result.navigationUrl()).isEqualTo("/experiments/new?nicheId=34&productId=4");
+    assertThat(result.navigationUrl())
+        .isEqualTo("/products/4/value-chain-history/processes/93/activities");
     assertThat(result.requirements())
         .extracting(requirement -> requirement.code())
         .containsExactly("PRODUCT_TYPE", "TYPE_ROUTE", "MARKET_NICHE", "COMMERCIAL_EXPERIMENT");
@@ -90,7 +94,7 @@ class PdeCommercialPreparationActivityExecutorTest {
     verifyNoInteractions(cycles);
   }
 
-  /** Direciona primeiro ao cadastro quando ainda falta o nicho necessário ao experimento. */
+  /** Mantém a entrada em Safira mesmo sem nicho e informa o requisito ainda pendente. */
   @Test
   void guidesProductWithoutNicheToCommercialRegistration() {
     BusinessProcessDefinition target = process(93L, "safira-commercial-preparation-v1", 2);
@@ -106,8 +110,9 @@ class PdeCommercialPreparationActivityExecutorTest {
 
     assertThat(result.ready()).isFalse();
     assertThat(result.reason()).contains("não possui nicho cadastrado");
-    assertThat(result.actionLabel()).isEqualTo("Completar cadastro comercial");
-    assertThat(result.navigationUrl()).isEqualTo("/products/4/edit");
+    assertThat(result.actionLabel()).isEqualTo("Preparar operação comercial Safira");
+    assertThat(result.navigationUrl())
+        .isEqualTo("/products/4/value-chain-history/processes/93/activities");
   }
 
   /** Cria o contrato versionado mínimo usado pelas duas variações de produto. */

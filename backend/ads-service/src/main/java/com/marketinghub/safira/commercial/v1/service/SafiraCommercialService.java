@@ -13,6 +13,7 @@ import com.marketinghub.businessprocess.execution.service.backendactivity.Backen
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityExecutor;
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityReadiness;
 import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorService;
+import com.marketinghub.experiment.service.CommercialExperimentPreparationEntry;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
@@ -79,7 +80,13 @@ public class SafiraCommercialService
         && REVIEWS.contains(task.getProcessActivityId());
   }
 
-  /** Expõe a causa concreta antes de gravar atividade ou liberar chamada paga. */
+  /** Mantém a orientação de entrada disponível antes de existir experimento comercial. */
+  @Override
+  public boolean supportsReadinessWithoutExecutionContext() {
+    return true;
+  }
+
+  /** Orienta a entrada sem experimento e confere as provas antes de gravar ou liberar revisão. */
   @Override
   @Transactional(readOnly = true)
   public BackendProductProcessActivityReadiness readiness(
@@ -90,6 +97,15 @@ public class SafiraCommercialService
     Long productId = product == null ? null : product.getId();
     try {
       require(productId != null, "Selecione o produto Safira antes da preparação comercial.");
+      require(context.applies(product), "Este subprocesso exige o tipo cadastrado Safira.");
+      if (source == null || source.isBlank() || source.startsWith("product:" + productId + "@")) {
+        if ("journey".equals(activity.getActivityId())) {
+          return CommercialExperimentPreparationEntry.describe(product, process);
+        }
+        return new BackendProductProcessActivityReadiness(
+            false,
+            "Prepare primeiro o experimento comercial na atividade Conferir jornada pública e prova de valor.");
+      }
       var scope = context.scope(source, productId, true);
       var prior = predecessors.readiness(process, activity, source);
       require(prior.ready(), prior.reason());

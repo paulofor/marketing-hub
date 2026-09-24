@@ -70,6 +70,17 @@
 - **Prevenção da leitura histórica:** regressões reproduzem o ciclo legado, comprovam a listagem
   aposentada e exigem que a topologia inválida continue bloqueada em versões operacionais.
 
+- **Recorrência da entrada em 24/09/2026:** banco e tela confirmaram Safira #98/v2 publicada,
+  mas Mira #10 sem experimento recebia `COMMAND` sem destino dentro do subprocesso, apesar de
+  o pai conhecer a transição comercial. A prontidão sem contexto estava habilitada só no roteador.
+- **Correção da entrada:** pai abre Safira como navegação, sem delegar execução privada. O executor
+  Safira projeta a mesma orientação de cadastro por contrato compartilhado e mantém execução,
+  pareceres e consolidação bloqueados até existirem entradas comerciais válidas. Não se cria outro
+  subprocesso nem se muda a versão de uma execução em curso.
+- **Prevenção da entrada:** regressões de pai, filho e interface cobrem nicho ausente, tipo incorreto,
+  referência de outro produto, preservação de cadeia/fonte, recusa de execução sem experimento e
+  ausência de escrita ou chamadas pagas. A matriz Safira cobre desktop e emulação mobile.
+
 ## LOOP-PDE-PREFLIGHT-REUTILIZA-PUBLICACAO-ANTIGA — estado verde sem versão vigente
 
 - **Data e evidência:** em 22/09/2026, Capella/experimento #88 possuía o run produtivo #1 em

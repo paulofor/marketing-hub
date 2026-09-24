@@ -1332,7 +1332,7 @@ export default function NewExperimentPage() {
           <input
             id="sampleSize"
             className="form-control"
-            placeholder="Ex.: 15 contatos qualificados"
+            placeholder="Ex.: 100 visitantes humanos atribuídos"
             type="number"
             min="1"
             step="1"
@@ -1353,7 +1353,7 @@ export default function NewExperimentPage() {
           <input
             id="kpiTarget"
             className="form-control"
-            placeholder="Deixe vazio quando não houver aquisição paga"
+            placeholder="Deixe vazio enquanto a meta de custo estiver pendente"
             type="number"
             min="0.01"
             step="0.01"
@@ -1564,8 +1564,8 @@ export default function NewExperimentPage() {
               ))}
           </select>
           <div className="form-text mb-2">
-            Vincule uma conta antes de publicar na Meta. Validações orgânicas ou
-            individuais podem ser planejadas sem Instagram.
+            O cadastro pode aguardar a definição da conta. Vincule a identidade
+            do Instagram antes da homologação e da publicação paga.
           </div>
           {noInstagramAccounts && (
             <div className="alert alert-info" role="status">

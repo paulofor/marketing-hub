@@ -87,8 +87,9 @@ export default function ProductProcessActivityExecutionPanel({
     const query = subprocessSearch.toString();
     subprocessUrl = `${subprocessPath}${query ? `?${query}` : ""}`;
   } else if (
-    subprocessUrl === subprocessPath ||
-    subprocessUrl.startsWith(`${subprocessPath}?`)
+    new RegExp(
+      `^/products/${productId}/value-chain-history/processes/[1-9][0-9]*/activities(?:[?#]|$)`,
+    ).test(subprocessUrl)
   ) {
     const supplied = new URL(subprocessUrl, window.location.origin);
     subprocessSearch.forEach((value, key) => {
@@ -201,7 +202,7 @@ export default function ProductProcessActivityExecutionPanel({
         ["COMMAND", "WORKSPACE"].includes(control.interactionType) && (
           <a
             className="btn btn-outline-primary mb-2"
-            href={control.navigationUrl}
+            href={subprocessUrl}
             target="_blank"
             rel="noopener noreferrer"
           >

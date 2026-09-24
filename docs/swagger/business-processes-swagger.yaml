@@ -926,7 +926,7 @@ components:
         navigationUrl:
           type: string
           nullable: true
-          description: Destino oficial do subprocesso especializado com produto, cadeia e ciclo preservados. Quando ausente, usar as atividades de targetProcessDefinitionId. Navegar não executa comando.
+          description: Destino oficial do subprocesso especializado com produto, cadeia e ciclo preservados. Quando ausente, usar as atividades de targetProcessDefinitionId. Sem experimento, Safira expõe WORKSPACE com actionAvailable false e navigationUrl para preparar a entrada; targetProcessDefinitionId permanece nulo para impedir delegação automática. A primeira atividade oferece cadastro comercial ou correção do nicho. Navegar não executa comando.
         requirements:
           type: array
           items:

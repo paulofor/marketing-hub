@@ -247,51 +247,25 @@ public class PdeCommercialPreparationActivityExecutor
     return sourceReference != null && sourceReference.matches("experiment:[1-9][0-9]{0,17}");
   }
 
-  /** Expõe a transição segura para um experimento sem promover a validação privada nem gastar. */
+  /** Abre primeiro Safira para preparar suas entradas, preservando o bloqueio da execução. */
   private BackendProductProcessActivityReadiness missingCommercialExperiment(
       Product product, String productTypeCode, BusinessProcessDefinition target) {
-    Long nicheId = product.getMarketNiche() == null ? null : product.getMarketNiche().getId();
-    boolean nicheReady = nicheId != null;
-    String reason =
-        nicheReady
-            ? "A preparação exige um experimento comercial explícito; a validação privada não comprova oferta pública, compra ou utilidade humana."
-            : "A preparação exige um experimento comercial explícito, mas o produto ainda não possui nicho cadastrado.";
-    String navigationUrl =
-        nicheReady
-            ? "/experiments/new?nicheId=" + nicheId + "&productId=" + product.getId()
-            : "/products/" + product.getId() + "/edit";
-    String actionLabel =
-        nicheReady ? "Criar experimento comercial" : "Completar cadastro comercial";
+    var entry = CommercialExperimentPreparationEntry.describe(product, target);
+    if (!"AI_PRODUCT".equals(productTypeCode)) return entry;
     return new BackendProductProcessActivityReadiness(
         false,
-        reason,
-        actionLabel,
-        "Materialize somente as decisões comerciais persistidas; não publique, não ative campanha e não autorize orçamento nesta etapa.",
-        "COMMERCIAL_EXPERIMENT",
-        product.getId(),
-        List.of(
-            requirement(
-                "PRODUCT_TYPE", "Tipo cadastrado", true, productTypeCode, "Preserve o tipo."),
-            requirement(
-                "TYPE_ROUTE",
-                "Percurso do tipo",
-                true,
-                target.getProcessCode() + " v" + target.getVersionNumber(),
-                "Execute somente este subprocesso."),
-            requirement(
-                "MARKET_NICHE",
-                "Nicho comercial",
-                nicheReady,
-                nicheReady ? "Nicho #" + nicheId + " vinculado." : "Nicho ausente.",
-                nicheReady ? "Preserve o nicho." : "Cadastre o nicho antes do experimento."),
-            requirement(
-                "COMMERCIAL_EXPERIMENT",
-                "Experimento comercial",
-                false,
-                "Nenhum experimento foi selecionado para esta execução.",
-                "Crie o experimento com oferta, canal e métricas explícitos; a prova privada permanece apenas como referência.")),
+        entry.reason(),
+        "Preparar operação comercial Safira",
+        "Abra o subprocesso Safira para preparar o contexto comercial e conferir jornada, economia, Psique e Têmis. A navegação não inicia tarefas nem autoriza gasto.",
+        entry.workspaceCode(),
+        entry.workspaceReferenceId(),
+        entry.requirements(),
         null,
-        navigationUrl);
+        "/products/"
+            + product.getId()
+            + "/value-chain-history/processes/"
+            + target.getId()
+            + "/activities");
   }
 
   /** Confere que a referência representa o ciclo e o produto recebidos. */

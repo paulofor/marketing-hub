@@ -65,6 +65,43 @@ describe("ProductProcessActivityExecutionPanel", () => {
     expect(onExecute).not.toHaveBeenCalled();
   });
 
+  it("preserves chain and explicit source when opening preparation before a commercial execution", () => {
+    const activity = blockedHomologation();
+    activity.recoveryAction = null;
+    activity.executionControl = {
+      ...activity.executionControl!,
+      executorType: "BACKEND",
+      interactionType: "WORKSPACE",
+      actionLabel: "Preparar operação comercial Safira",
+      actionAvailable: false,
+      targetProcessDefinitionId: undefined,
+      navigationUrl: "/products/4/value-chain-history/processes/71/activities",
+    };
+    render(
+      <MemoryRouter
+        initialEntries={[
+          "/products/4/value-chain-history/processes/72/activities?chainId=23&sourceReference=product%3A4%40agent-validation-v1",
+        ]}
+      >
+        <ProductProcessActivityExecutionPanel
+          activity={activity}
+          productId={4}
+          pending={false}
+          onExecute={onExecute}
+          processManaged
+        />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole("link", { name: "Preparar operação comercial Safira" }),
+    ).toHaveAttribute(
+      "href",
+      "/products/4/value-chain-history/processes/71/activities?chainId=23&sourceReference=product%3A4%40agent-validation-v1",
+    );
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(onExecute).not.toHaveBeenCalled();
+  });
+
   it("navigates to the recovery activity without creating its task in another card", () => {
     const activity = blockedHomologation();
     renderPanel(activity);

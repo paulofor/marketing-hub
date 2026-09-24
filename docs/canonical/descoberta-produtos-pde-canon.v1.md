@@ -975,10 +975,18 @@ mesma evidência; outra execução exige observação posterior. Entre alterar a
 substituir silenciosamente a consulta e congelar a sessão supervisionada, adotou-se a terceira
 alternativa para preservar auditoria, reduzir consumo e impedir mistura de evidências.
 
+O plano fixo dessa retomada é uma preparação determinística e permanece auditado no `planJson`; ele
+não pode ser apresentado como prompt ou consumo de modelo. A auditoria terminal `MODEL` deve conter
+somente as fases que realmente chamaram o modelo, preservando em cada fase a composição exata
+`agentPromptPart` seguida de `activityPromptPart` e os tokens dessas chamadas. Se o callback
+terminal for recusado depois da síntese, a falha deve persistir a resposta bruta, o prompt e o
+consumo já produzidos antes de liberar outra tentativa, sem repetir busca Web ou marketplace.
+
 Matriz de prevenção: sessão e lease exatos; consulta planejada divergente; preservação de IDs;
 ausência de busca ampla; callback sem cobertura ou anúncio ativo; retomada após falha; repetição da
-mesma observação; pesquisa inicial e aprofundamento normais. A versão operacional correspondente é
-Argos v8, com contrato `EXACT_SESSION_REUSE_V1`.
+mesma observação; composição do prompt em fluxo determinístico + modelo; preservação da síntese
+quando o callback falha; pesquisa inicial e aprofundamento normais. A versão operacional
+correspondente é Argos v8, com contrato `EXACT_SESSION_REUSE_V1`.
 
 ### Equivalência HTML sem alterar a fonte — 24/09/2026
 

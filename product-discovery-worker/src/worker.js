@@ -249,10 +249,17 @@ export async function processJob(job, dependencies = {}) {
       execution.directedAttempts,
       execution.analysisAttempts,
     );
-    await post(
-      `${activeBackendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/${stagePath}/stage-executions/${job.cycleId}/complete`,
-      withExecutionLease(job, execution.report),
-    );
+    try {
+      await post(
+        `${activeBackendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/${stagePath}/stage-executions/${job.cycleId}/complete`,
+        withExecutionLease(job, execution.report),
+      );
+    } catch (error) {
+      const callbackError =
+        error instanceof Error ? error : new Error(String(error));
+      callbackError.analysisAudit = execution.report.analysisAudit;
+      throw callbackError;
+    }
     (dependencies.markCycleCompleted || markCycleCompleted)(
       healthState,
       job,
@@ -286,7 +293,9 @@ export function buildSupervisedMetaReanalysisPlan(job) {
     !context?.country ||
     context?.publisherPlatform !== "INSTAGRAM"
   ) {
-    throw new Error("Contexto da reanálise Meta supervisionada está incompleto");
+    throw new Error(
+      "Contexto da reanálise Meta supervisionada está incompleto",
+    );
   }
   const plan = {
     researchLens: `Reanálise da evidência Meta supervisionada #${context.investigationId}`,
@@ -524,15 +533,16 @@ export function analysisAuditHistoryCallbackPayload(
   if (!directed || !analysis) {
     throw new Error("Auditoria de Argos exige plano e síntese factuais");
   }
+  const phases = analysisExecutionPhases(directedAttempts, analysisAttempts);
+  const modelPhases = phases.filter((phase) => isModelExecution(phase.value));
+  const modelExecution = modelPhases.length > 0;
+  const auditedPhases = modelExecution ? modelPhases : phases;
   const usage = aggregateUsage(
-    ...directedAttempts.map((item) => item.directed.usage),
-    ...analysisAttempts.map((item) => item.analysis.usage),
+    ...auditedPhases.map((phase) => phase.value.usage),
   );
-  const modelExecution =
-    directedAttempts.some((item) => item.directed.mode === "CODEX") ||
-    analysisAttempts.some((item) => item.analysis.mode === "CODEX");
   const singleAttempt =
     directedAttempts.length === 1 && analysisAttempts.length === 1;
+  const latestModelPhase = modelPhases.at(-1)?.value;
   return {
     rawResponse: singleAttempt
       ? analysis.rawResponse
@@ -550,32 +560,19 @@ export function analysisAuditHistoryCallbackPayload(
             ),
           })),
         }),
-    model: analysis.model,
+    model: modelExecution ? latestModelPhase.model : analysis.model,
     executionMode: modelExecution ? "MODEL" : "DETERMINISTIC",
-    promptSent: singleAttempt
-      ? joinAuditParts(directed.prompt, analysis.prompt)
-      : joinAttemptAuditParts(directedAttempts, analysisAttempts, "prompt"),
+    promptSent: joinAnalysisAuditPhases(auditedPhases, "prompt", singleAttempt),
     agentPromptPart: modelExecution
-      ? singleAttempt
-        ? joinAuditParts(directed.agentPromptPart, analysis.agentPromptPart)
-        : joinAttemptAuditParts(
-            directedAttempts,
-            analysisAttempts,
-            "agentPromptPart",
-          )
+      ? joinAnalysisAuditPhases(auditedPhases, "agentPromptPart", singleAttempt)
       : undefined,
-    activityPromptPart: singleAttempt
-      ? joinAuditParts(
-          directed.activityPromptPart || directed.prompt,
-          analysis.activityPromptPart || analysis.prompt,
-        )
-      : joinAttemptAuditParts(
-          directedAttempts,
-          analysisAttempts,
-          "activityPromptPart",
-        ),
+    activityPromptPart: joinAnalysisAuditPhases(
+      auditedPhases,
+      "activityPromptPart",
+      singleAttempt,
+    ),
     reasoningEffort: modelExecution
-      ? analysis.reasoningEffort || directed.reasoningEffort
+      ? latestModelPhase.reasoningEffort
       : "NOT_APPLICABLE",
     inputTokens: usage?.inputTokens,
     cachedInputTokens: usage?.cachedInputTokens,
@@ -703,39 +700,53 @@ function aggregateUsage(...usages) {
   );
 }
 
-/** Separa as duas fases no prompt auditável sem alterar o conteúdo enviado a cada chamada. */
-function joinAuditParts(planPart, analysisPart) {
-  return [
-    planPart ? `--- PLANEJAMENTO ---\n${planPart}` : null,
-    analysisPart ? `--- SÍNTESE FACTUAL ---\n${analysisPart}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+/** Ordena as interações de plano e síntese para auditar somente chamadas realmente executadas. */
+function analysisExecutionPhases(directedAttempts, analysisAttempts) {
+  return directedAttempts.flatMap((item) => {
+    const analysis = analysisAttempts.find(
+      (candidate) => candidate.attemptNumber === item.attemptNumber,
+    )?.analysis;
+    return [
+      {
+        attemptNumber: item.attemptNumber,
+        phaseName: "PLANEJAMENTO",
+        value: item.directed,
+      },
+      analysis
+        ? {
+            attemptNumber: item.attemptNumber,
+            phaseName: "SÍNTESE FACTUAL",
+            value: analysis,
+          }
+        : null,
+    ].filter(Boolean);
+  });
 }
 
-/** Separa no documento auditável os prompts de plano e síntese de cada tentativa. */
-function joinAttemptAuditParts(directedAttempts, analysisAttempts, field) {
-  return directedAttempts
-    .flatMap((item) => {
-      const analysis = analysisAttempts.find(
-        (candidate) => candidate.attemptNumber === item.attemptNumber,
-      )?.analysis;
-      const planPart =
-        item.directed[field] ||
-        (field === "activityPromptPart" ? item.directed.prompt : undefined);
-      const analysisPart =
-        analysis?.[field] ||
-        (field === "activityPromptPart" ? analysis?.prompt : undefined);
-      return [
-        planPart
-          ? `${attemptPhaseHeader(item.attemptNumber, "PLANEJAMENTO")}\n${planPart}`
-          : null,
-        analysisPart
-          ? `${attemptPhaseHeader(item.attemptNumber, "SÍNTESE FACTUAL")}\n${analysisPart}`
-          : null,
-      ];
+/** Distingue chamada real ao modelo de preparação ou fallback puramente determinístico. */
+function isModelExecution(execution) {
+  return ["CODEX", "MODEL"].includes(
+    String(execution?.mode || "").toUpperCase(),
+  );
+}
+
+/** Compõe as mesmas fases no prompt integral e em suas duas partes auditáveis. */
+function joinAnalysisAuditPhases(phases, field, singleAttempt) {
+  return phases
+    .map((phase) => {
+      const value =
+        phase.value?.[field] ||
+        (field === "activityPromptPart" ? phase.value?.prompt : undefined);
+      if (!value) {
+        throw new Error(
+          `Fase ${phase.phaseName} sem ${field} para auditoria de Argos`,
+        );
+      }
+      const header = singleAttempt
+        ? `--- ${phase.phaseName} ---`
+        : attemptPhaseHeader(phase.attemptNumber, phase.phaseName);
+      return `${header}\n${value}`;
     })
-    .filter(Boolean)
     .join("\n\n");
 }
 

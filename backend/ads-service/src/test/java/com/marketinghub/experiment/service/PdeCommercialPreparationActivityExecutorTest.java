@@ -68,13 +68,13 @@ class PdeCommercialPreparationActivityExecutorTest {
   void guidesSafiraWithoutExecutionContextToCommercialExperiment() {
     Product product = product("AI_PRODUCT");
     product.setMarketNiche(MarketNiche.builder().id(34L).name("Pele madura").build());
-    BusinessProcessDefinition target = process(91L, "safira-commercial-preparation-v1", 1);
-    when(processes.findByProcessCodeAndVersionNumber("safira-commercial-preparation-v1", 1))
+    BusinessProcessDefinition target = process(93L, "safira-commercial-preparation-v1", 2);
+    when(processes.findByProcessCodeAndVersionNumber("safira-commercial-preparation-v1", 2))
         .thenReturn(Optional.of(target));
 
     var result =
         executor.readiness(
-            process(92L, "pde-commercial-homologation-activation", 9), activity(), product, null);
+            process(94L, "pde-commercial-homologation-activation", 10), activity(), product, null);
 
     assertThat(executor.supportsReadinessWithoutExecutionContext()).isTrue();
     assertThat(result.ready()).isFalse();
@@ -93,13 +93,13 @@ class PdeCommercialPreparationActivityExecutorTest {
   /** Direciona primeiro ao cadastro quando ainda falta o nicho necessário ao experimento. */
   @Test
   void guidesProductWithoutNicheToCommercialRegistration() {
-    BusinessProcessDefinition target = process(91L, "safira-commercial-preparation-v1", 1);
-    when(processes.findByProcessCodeAndVersionNumber("safira-commercial-preparation-v1", 1))
+    BusinessProcessDefinition target = process(93L, "safira-commercial-preparation-v1", 2);
+    when(processes.findByProcessCodeAndVersionNumber("safira-commercial-preparation-v1", 2))
         .thenReturn(Optional.of(target));
 
     var result =
         executor.readiness(
-            process(92L, "pde-commercial-homologation-activation", 9),
+            process(94L, "pde-commercial-homologation-activation", 10),
             activity(),
             product("AI_PRODUCT"),
             "product:4@agent-validation-v1");
@@ -115,7 +115,7 @@ class PdeCommercialPreparationActivityExecutorTest {
     var activity = new BusinessProcessActivityDefinition();
     activity.setActivityId("commercialPreparation");
     activity.setDefinitionJson(
-        "{\"commercialPreparationRouterVersion\":\"COMMERCIAL_PREPARATION_BY_PRODUCT_TYPE_V1\",\"subprocessRoutes\":[{\"productTypeCode\":\"PDE\",\"productTypeInternalName\":\"Opala\",\"subprocessCode\":\"opala-commercial-preparation-v1\",\"subprocessVersion\":1},{\"productTypeCode\":\"AI_PRODUCT\",\"productTypeInternalName\":\"Safira\",\"subprocessCode\":\"safira-commercial-preparation-v1\",\"subprocessVersion\":1}]}");
+        "{\"commercialPreparationRouterVersion\":\"COMMERCIAL_PREPARATION_BY_PRODUCT_TYPE_V1\",\"subprocessRoutes\":[{\"productTypeCode\":\"PDE\",\"productTypeInternalName\":\"Opala\",\"subprocessCode\":\"opala-commercial-preparation-v1\",\"subprocessVersion\":1},{\"productTypeCode\":\"AI_PRODUCT\",\"productTypeInternalName\":\"Safira\",\"subprocessCode\":\"safira-commercial-preparation-v1\",\"subprocessVersion\":2}]}");
     return activity;
   }
 

@@ -147,9 +147,9 @@ public class PdeCommercialPreparationActivityExecutor
         url += "&chainId=" + scope.chainId() + "&learningCycleId=" + scope.cycleId();
       return new BackendProductProcessActivityReadiness(
           true,
-          "Safira: experiência pública, oferta e economia do experimento selecionado.",
+          "Safira: experiência pública, oferta, Instagram Ads e economia do experimento selecionado.",
           "Abrir subprocesso",
-          "Preparar a venda do Produto IA sem reusar a prova privada como evidência humana nem autorizar mídia.",
+          "Preparar a venda do Produto IA por mídia paga no Instagram, sem reusar prova privada como evidência humana nem autorizar gasto.",
           null,
           null,
           List.of(

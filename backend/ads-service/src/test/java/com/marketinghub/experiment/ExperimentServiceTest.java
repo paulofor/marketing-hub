@@ -1446,9 +1446,9 @@ class ExperimentServiceTest {
         .isEqualTo(ExperimentStatus.PLANNED);
   }
 
-  /** Permite executar amostra individual sem inventar campanha, verba ou custo-alvo de Meta. */
+  /** Recusa novos experimentos que dependeriam de convite individual. */
   @Test
-  void updateStatusRunningAcceptsDirectOneToOneWithoutFacebookCampaignOrBudget() {
+  void createRejectsDirectOneToOneAcquisition() {
     MarketNiche niche =
         nicheRepository.save(MarketNiche.builder().name("Niche Direct Running").build());
     var angle =
@@ -1474,19 +1474,14 @@ class ExperimentServiceTest {
     request.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
     request.setSampleSize(15);
     request.setJourneyTemplateId(createJourneyTemplate().getId());
-    Experiment experiment = service.create(request);
-
-    Experiment running = service.updateStatus(experiment.getId(), ExperimentStatus.RUNNING);
-
-    assertThat(running.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
-    assertThat(running.getPlatform()).isEqualTo(ExperimentPlatform.DIRECT_ONE_TO_ONE);
-    assertThat(running.getDailyBudget()).isNull();
-    assertThat(facebookAdsCampaignRepository.existsByExperimentId(running.getId())).isFalse();
+    assertThatThrownBy(() -> service.create(request))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("exclusivamente mídia paga no Instagram");
   }
 
-  /** Permite corrigir o canal do rascunho sem inventar KPI ou preset de mídia paga. */
+  /** Impede converter uma candidata de mídia paga em convite individual. */
   @Test
-  void updateAcceptsDirectOneToOneWithoutKpiOrMetricPreset() {
+  void updateRejectsSwitchToDirectOneToOne() {
     MarketNiche niche =
         nicheRepository.save(MarketNiche.builder().name("Niche Direct Update").build());
     var angle =
@@ -1520,14 +1515,10 @@ class ExperimentServiceTest {
     updateRequest.setHypothesis(experiment.getHypothesis());
     updateRequest.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
 
-    Experiment updated = service.update(experiment.getId(), updateRequest);
-
-    assertThat(updated.getPlatform()).isEqualTo(ExperimentPlatform.DIRECT_ONE_TO_ONE);
-    assertThat(updated.getKpiTargetCpl()).isNull();
-    assertThat(updated.getMetricPreset()).isNull();
-    assertThat(updated.getStopLossCpl()).isNull();
-    assertThat(updated.getSampleSize()).isEqualTo(15);
-    assertThat(updated.getDailyBudget()).isNull();
+    assertThatThrownBy(() -> service.update(experiment.getId(), updateRequest))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("canal direto permanece apenas no histórico");
+    assertThat(experiment.getPlatform()).isEqualTo(ExperimentPlatform.FACEBOOK);
   }
 
   @Test
@@ -1597,7 +1588,7 @@ class ExperimentServiceTest {
         .isEqualTo(ExperimentStatus.PLANNED);
   }
 
-  /** Ativa run, experimento e produto juntos após homologação da abordagem PDE direta. */
+  /** Preserva a leitura de uma ativação direta histórica sem permitir criá-la novamente. */
   @Test
   void updateStatusRunningActivatesReadyDirectPdeCommercialWindow() {
     MarketNiche niche =
@@ -1628,11 +1619,13 @@ class ExperimentServiceTest {
     request.setName("ExpPdeDirectActivation");
     request.setHypothesis("H");
     request.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
-    request.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    request.setPlatform(ExperimentPlatform.FACEBOOK);
     request.setSampleSize(15);
     request.setFollowUpActionUrl("https://v7.clubemusa.com.br");
     request.setJourneyTemplateId(createJourneyTemplate().getId());
     Experiment experiment = service.create(request);
+    experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    experiment = experimentRepository.saveAndFlush(experiment);
     completeCommercialContract(experiment);
 
     pdeProductionSlotRepository.save(
@@ -1662,6 +1655,7 @@ class ExperimentServiceTest {
                 .build());
 
     Experiment running = service.updateStatus(experiment.getId(), ExperimentStatus.RUNNING);
+    Long experimentId = experiment.getId();
 
     ExperimentRun activatedRun = experimentRunRepository.findById(run.getId()).orElseThrow();
     assertThat(running.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
@@ -1672,7 +1666,7 @@ class ExperimentServiceTest {
     assertThat(experimentStatusChangeRepository.findAll())
         .anySatisfy(
             change -> {
-              assertThat(change.getExperiment().getId()).isEqualTo(experiment.getId());
+              assertThat(change.getExperiment().getId()).isEqualTo(experimentId);
               assertThat(change.getAction()).isEqualTo("START");
               assertThat(change.getChangedBy()).isEqualTo("ADMIN_UI");
             });

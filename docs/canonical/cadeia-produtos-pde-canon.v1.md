@@ -640,6 +640,28 @@ dentro dos limites financeiros, registrando a autorização humana sem antecipar
 | **5.4** | Executar homologação técnica do experimento | Backend usa `experiment-homologation-activation` e as evidências técnicas vigentes para validar superfícies, compra simulada, acesso, entrega, falhas, eventos, segregação e controles de consumo. |
 | **5.5** | Autorizar ativação, orçamento e janela      | Decisão humana aprova a versão exata, canais, teto, período e condições de parada; nenhum parecer técnico autoriza gasto.                                                                          |
 
+### Política de aquisição comercial da cadeia v22
+
+Decisão de 24/09/2026: toda nova divulgação comercial usa **mídia paga no Instagram**,
+operada pela infraestrutura Meta Ads. A cadeia não pode planejar ou executar convite individual,
+lista própria, contato direto ou divulgação orgânica como alternativa. Históricos
+`DIRECT_ONE_TO_ONE` permanecem imutáveis para auditoria, mas não originam candidata, amostra,
+autorização ou métrica de uma nova execução.
+
+| Processo e atividade | Entregável e aceite | Métrica |
+| --- | --- | --- |
+| **2 · Atena / Plutus** | Desejo, público, mensagem e economia declaram Instagram Ads; CAC e mídia desconhecidos não viram zero. | Visitante pago atribuído → primeira interação; CAC projetado e margem por cenário. |
+| **4 · Íris / integração** | Criativo, identidade do Instagram, público salvo, destino, checkout, UTM e eventos pertencem à mesma candidata. | Impressão → visita → benefício → oferta vista → checkout → compra. |
+| **5.1–5.4 · preparação e revisões** | Subprocesso do tipo, Psique, Têmis e preflight recusam canal direto e comprovam a experiência do tráfego pago. | Gates atuais, hashes, versões e custo conhecido da homologação. |
+| **5.5 · autorização** | Operador revisa versão, campanha, teto, janela e paradas; a regra de canal sozinha não concede gasto. | Limite diário, teto acumulado, janela e decisão auditável. |
+| **6 · operação e aprendizado** | Backend concilia somente campanha, criativo, UTM e versão atribuíveis, segregando QA, bots e tráfego histórico. | Compras líquidas, receita, CAC, custo integral, reembolso, contribuição e margem. |
+
+Foram comparadas três alternativas: alterar apenas o plano, que deixaria executores contraditórios;
+alterar somente a cópia da tela, que não bloquearia API ou automação; e versionar atividades,
+contratos e gates preservando o histórico. A terceira foi adotada por alinhar decisão, interface e
+execução sem apagar evidências. A cadeia v22 não define orçamento para Mira nem para outro
+produto; esse valor continua pendente até plano financeiro e autorização próprios.
+
 Para o tipo Opala, **5.1** contém:
 
 | Número    | Atividade                                      | Responsável                        |
@@ -653,7 +675,7 @@ Para o tipo Opala, **5.1** contém:
 | **5.1.7** | Revisar integridade da jornada                 | Têmis                              |
 | **5.1.8** | Consolidar preparação e retornar ao Processo 5 | Backend                            |
 
-Para o tipo Safira, **5.1** chama `safira-commercial-preparation-v1` e contém:
+Para o tipo Safira, **5.1** chama `safira-commercial-preparation-v1` v2 e contém:
 
 | Ordem | Atividade | Responsável |
 | --- | --- | --- |
@@ -762,14 +784,11 @@ clientes em decisão objetiva de continuar, ajustar, escalar ou parar.
 **Trabalho essencial:**
 
 - operar aquisição dentro do teto autorizado;
-- operar e comparar mídia, creators/parceiros e ativos próprios somente nas rotas aprovadas, pagando
-  comissão ou mídia apenas conforme contrato e atribuição auditável;
+- operar e comparar criativos e públicos somente na rota paga do Instagram aprovada, pagando mídia
+  apenas conforme contrato, teto, janela e atribuição auditável;
 - acompanhar o gargalo real do funil;
-- quando o canal for `DIRECT_ONE_TO_ONE`, persistir cada abordagem como registro próprio com
-  identificador pseudonimizado, evidência de consentimento anterior, horário do contato, aderência ao
-  público e operador; visita, clique, sessão e tráfego de QA nunca substituem esse registro;
-- impedir nova revisão automatizada da amostra direta até existir evidência nova e liberar a decisão
-  somente ao atingir o alvo vigente, sem ultrapassá-lo silenciosamente;
+- manter registros `DIRECT_ONE_TO_ONE` anteriores somente como evidência histórica segregada; não
+  reativar a amostra, criar novos contatos nem promovê-la a aquisição da versão vigente;
 - garantir acesso e entrega antes de ampliar aquisição;
 - medir receita, CAC, conversão, primeiro uso, conclusão, satisfação e reembolso;
 - manter a compradora identificada em uma continuidade simples e de baixo atrito para retorno, uso e

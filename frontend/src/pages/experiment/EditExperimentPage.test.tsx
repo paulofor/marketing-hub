@@ -76,6 +76,30 @@ describe("correção da promessa preservando o planejamento pendente", () => {
     vi.clearAllMocks();
     fixture.save.mockResolvedValue(fixture.experiment);
     vi.spyOn(window, "alert").mockImplementation(() => {});
+    fixture.experiment.platform = "FACEBOOK";
+  });
+
+  it("não oferece abordagem individual para uma nova divulgação", () => {
+    render(<EditExperimentPage />);
+    const select = screen.getByLabelText(/Canal de aquisição/);
+    expect(Array.from((select as HTMLSelectElement).options)).toHaveLength(1);
+    expect((select as HTMLSelectElement).options[0].text).toBe(
+      "Instagram Ads (via Meta Ads)",
+    );
+  });
+
+  it("preserva o canal direto histórico como opção desabilitada", () => {
+    fixture.experiment.platform = "DIRECT_ONE_TO_ONE";
+    render(<EditExperimentPage />);
+    const select = screen.getByLabelText(
+      /Canal de aquisição/,
+    ) as HTMLSelectElement;
+    const options = Array.from(select.options);
+    expect(options).toHaveLength(2);
+    expect(select).toHaveValue("DIRECT_ONE_TO_ONE");
+    expect(options[0].disabled).toBe(true);
+    expect(options[0].text).toContain("Histórico");
+    expect(options[1].value).toBe("FACEBOOK");
   });
 
   it("salva o texto sem criar verba, meta de conversão ou reativação", async () => {

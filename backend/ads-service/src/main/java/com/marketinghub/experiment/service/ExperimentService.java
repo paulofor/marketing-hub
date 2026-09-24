@@ -424,7 +424,7 @@ public class ExperimentService {
         HttpStatus.BAD_REQUEST, "Território não pertence ao produto selecionado");
   }
 
-  /** Cria e persiste um novo experimento com o contrato comercial inicial. */
+  /** Cria um experimento de aquisição paga no Instagram com seu contrato comercial inicial. */
   @Transactional
   public Experiment create(Long nicheId, CreateExperimentRequest request) {
     MarketNiche niche = attachNiche(nicheId);
@@ -446,6 +446,7 @@ public class ExperimentService {
     }
     ExperimentType resolvedExperimentType = resolveExperimentType(request.getExperimentType());
     ExperimentPlatform resolvedPlatform = resolveExperimentPlatform(request.getPlatform());
+    requirePaidInstagramForNewCommercialExperiment(resolvedPlatform);
     validateBudgetForPlatform(resolvedPlatform, request.getDailyBudget());
     var resolvedProductAiSubtype =
         resolvedExperimentType == ExperimentType.FAKE_EXPERIMENT
@@ -1221,7 +1222,8 @@ public class ExperimentService {
 
   /**
    * Atualiza os campos mutáveis sem exigir nova autorização de mídia para corrigir apenas conteúdo;
-   * qualquer mudança de canal, verba ou período revalida integralmente o plano de mídia.
+   * qualquer mudança de canal, verba ou período revalida integralmente o plano de mídia. Registros
+   * diretos históricos continuam editáveis, mas uma candidata paga não pode voltar ao canal direto.
    */
   @Transactional
   public Experiment update(Long id, UpdateExperimentRequest request) {
@@ -1280,6 +1282,12 @@ public class ExperimentService {
     exp.setHypothesis(request.getHypothesis());
     if (request.isPlatformPresent()) {
       ExperimentPlatform resolvedPlatform = resolveExperimentPlatform(request.getPlatform());
+      if (resolvedPlatform == ExperimentPlatform.DIRECT_ONE_TO_ONE
+          && exp.getPlatform() != ExperimentPlatform.DIRECT_ONE_TO_ONE) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST,
+            "Novas divulgações usam exclusivamente mídia paga no Instagram; o canal direto permanece apenas no histórico.");
+      }
       if (resolvedPlatform != exp.getPlatform() && exp.getStatus() != ExperimentStatus.PLANNED) {
         throw new ResponseStatusException(
             HttpStatus.CONFLICT,
@@ -1978,6 +1986,15 @@ public class ExperimentService {
   /** Resolve o canal mantendo Facebook como padrão para contratos legados sem o campo. */
   private ExperimentPlatform resolveExperimentPlatform(ExperimentPlatform requestedPlatform) {
     return requestedPlatform != null ? requestedPlatform : ExperimentPlatform.FACEBOOK;
+  }
+
+  /** Impede novos experimentos em canais que dependem de contatos ou audiência própria. */
+  private void requirePaidInstagramForNewCommercialExperiment(ExperimentPlatform platform) {
+    if (platform != ExperimentPlatform.FACEBOOK) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Novas divulgações usam exclusivamente mídia paga no Instagram via Meta Ads.");
+    }
   }
 
   /** Impede que verba de mídia seja registrada em uma validação individual sem campanha. */

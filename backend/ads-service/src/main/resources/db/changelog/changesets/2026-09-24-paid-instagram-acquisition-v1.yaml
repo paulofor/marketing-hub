@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-24-paid-instagram-acquisition-v1-processes
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 5
+            sql: |
+              SELECT COUNT(*)
+              FROM business_process_definition
+              WHERE (process_code='pde-commercial-plan-offer' AND version_number=7)
+                 OR (process_code='pde-communication-sales-journey' AND version_number=8)
+                 OR (process_code='pde-commercial-homologation-activation' AND version_number=9)
+                 OR (process_code='pde-sales-delivery-learning' AND version_number=9)
+                 OR (process_code='safira-commercial-preparation-v1' AND version_number=1)
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=21
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT COUNT(*)
+              FROM business_process_definition
+              WHERE ((process_code='pde-commercial-plan-offer' AND version_number=8)
+                  OR (process_code='pde-communication-sales-journey' AND version_number=9)
+                  OR (process_code='pde-commercial-homologation-activation' AND version_number=10)
+                  OR (process_code='pde-sales-delivery-learning' AND version_number=10)
+                  OR (process_code='safira-commercial-preparation-v1' AND version_number=2))
+                AND COALESCE(JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.commercialAcquisitionPolicyVersion')),'') <> 'PAID_INSTAGRAM_ONLY_V1'
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT IF(COUNT(*)=0,1,0)
+              FROM business_process_chain_definition
+              WHERE chain_code='pde-value-creation-delivery'
+                AND version_number=22
+                AND purpose NOT LIKE '%PAID_INSTAGRAM_ONLY_V1%'
+      changes:
+        - sqlFile:
+            path: 2026-09-24-paid-instagram-acquisition-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-commercial-plan-offer' AND version_number=8;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-communication-sales-journey' AND version_number=9;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-commercial-homologation-activation' AND version_number=10;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-sales-delivery-learning' AND version_number=10;
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='safira-commercial-preparation-v1' AND version_number=2;
+              UPDATE business_process_definition SET status='PUBLISHED' WHERE process_code='pde-commercial-plan-offer' AND version_number=7;
+              UPDATE business_process_definition SET status='PUBLISHED' WHERE process_code='pde-communication-sales-journey' AND version_number=8;
+              UPDATE business_process_definition SET status='PUBLISHED' WHERE process_code='pde-commercial-homologation-activation' AND version_number=9;
+              UPDATE business_process_definition SET status='PUBLISHED' WHERE process_code='pde-sales-delivery-learning' AND version_number=9;
+              UPDATE business_process_definition SET status='PUBLISHED' WHERE process_code='safira-commercial-preparation-v1' AND version_number=1;
+              UPDATE business_process_chain_definition SET status='RETIRED' WHERE chain_code='pde-value-creation-delivery' AND version_number=22;
+              UPDATE business_process_chain_definition SET status='PUBLISHED' WHERE chain_code='pde-value-creation-delivery' AND version_number=21;

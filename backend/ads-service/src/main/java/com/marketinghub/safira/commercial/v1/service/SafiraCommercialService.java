@@ -59,7 +59,7 @@ public class SafiraCommercialService
   private final AgentTaskRepository tasks;
   private final ProductProcessActivityPredecessorService predecessors;
 
-  /** Reconhece somente as três atividades determinísticas do subprocesso Safira v1. */
+  /** Reconhece as atividades determinísticas do subprocesso Safira publicado. */
   @Override
   public boolean supports(
       BusinessProcessDefinition process, BusinessProcessActivityDefinition activity) {
@@ -249,13 +249,13 @@ public class SafiraCommercialService
     validReview(context.read(task.resultJson()));
   }
 
-  /** Resolve somente a definição publicada do subprocesso Safira v1. */
+  /** Resolve somente a definição publicada do subprocesso Safira v2. */
   public BusinessProcessDefinition target() {
     return processes
-        .findByProcessCodeAndVersionNumber(SafiraCommercialContext.CODE, 1)
+        .findByProcessCodeAndVersionNumber(SafiraCommercialContext.CODE, 2)
         .filter(process -> "PUBLISHED".equals(process.getStatus()))
         .orElseThrow(
-            () -> new IllegalStateException("O subprocesso Safira v1 não está publicado."));
+            () -> new IllegalStateException("O subprocesso Safira v2 não está publicado."));
   }
 
   /** Revalida a conclusão integral antes de permitir reutilização no processo pai. */

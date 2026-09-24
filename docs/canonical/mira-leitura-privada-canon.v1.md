@@ -32,7 +32,7 @@ preferência observada, depoimento ou intenção real de compra.
 O briefing comercial existente continua útil como hipótese de criativo, mas toda menção a
 recrutamento ou leitura privada deve ser reinterpretada como histórica e não executável.
 
-## Piloto comercial direto aprovado — 24/09/2026
+## Piloto comercial direto aprovado e posteriormente substituído — 24/09/2026
 
 O usuário aprovou explicitamente o piloto recomendado de Mira. Para **esta nova execução
 comercial**, essa decisão substitui a exigência anterior de primeiro contato exclusivamente
@@ -65,3 +65,24 @@ neste cânone.
 O início comercial permanece bloqueado enquanto faltar qualquer entrada essencial. Registrar a
 aprovação e sua hipótese no cadastro administrativo é preparação, não homologação concluída,
 lançamento, cobrança, venda ou resultado humano.
+
+## Decisão vigente: aquisição paga no Instagram — 24/09/2026
+
+O usuário informou que não existe capacidade operacional para convite individual. Esta decisão
+substitui o piloto `DIRECT_ONE_TO_ONE` acima antes de seu início: nenhuma participante foi
+convidada, nenhum contato foi feito e nenhuma compra foi registrada por esse piloto.
+
+- Mira deve materializar uma nova candidata comercial `FACEBOOK`, posicionada e atribuída a
+  **Instagram Ads**; o rótulo técnico Facebook identifica a infraestrutura Meta, não o canal público.
+- Não presumir rede pessoal, lista própria, contatos consentidos, audiência orgânica ou trabalho
+  humano de recrutamento. Essas rotas não podem ser apresentadas como próxima ação.
+- O preço de R$ 49, o desejo, a demonstração e o CTA continuam hipóteses do produto; amostra,
+  janela, teto, CAC e critérios de parada devem ser recalculados para mídia paga e aprovados antes
+  de qualquer ativação.
+- O plano direto e suas revisões permanecem auditáveis, mas não podem ser vinculados como prova de
+  prontidão, venda ou autorização da nova candidata paga.
+- Suporte, reembolso, checkout, entrega, Psique, Têmis, Plutus e preflight continuam obrigatórios.
+
+Essa mudança define o canal executável; não concede verba. O primeiro resultado comercial válido
+será medido por impressão, visita, uso, checkout, compra, entrega e margem atribuídos ao experimento
+pago, com QA, bots e registros diretos históricos fora dos denominadores.

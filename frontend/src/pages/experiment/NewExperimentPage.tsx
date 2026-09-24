@@ -82,6 +82,10 @@ const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
   AI_REPORT_VISUAL_EVIDENCE: "Relatório com evidência visual IA",
 };
 
+export const newExperimentAcquisitionOptions = [
+  { value: "FACEBOOK" as const, label: "Instagram Ads (via Meta Ads)" },
+];
+
 type FormState = {
   platform: ExperimentPlatform;
   productId: string;
@@ -787,34 +791,19 @@ export default function NewExperimentPage() {
           setForm((current) => ({
             ...current,
             platform: event.target.value as ExperimentPlatform,
-            dailyBudget:
-              event.target.value === "DIRECT_ONE_TO_ONE"
-                ? ""
-                : current.dailyBudget,
-            mediaSpendLimit:
-              event.target.value === "DIRECT_ONE_TO_ONE"
-                ? ""
-                : current.mediaSpendLimit,
-            facebookPageId:
-              event.target.value === "DIRECT_ONE_TO_ONE"
-                ? ""
-                : current.facebookPageId,
-            instagramAccountId:
-              event.target.value === "DIRECT_ONE_TO_ONE"
-                ? ""
-                : current.instagramAccountId,
           }))
         }
       >
-        <option value="DIRECT_ONE_TO_ONE">
-          Abordagem individual consentida
-        </option>
-        <option value="FACEBOOK">Meta / Facebook Ads</option>
+        {newExperimentAcquisitionOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
       </select>
       <div className="form-text mb-3">
-        {form.platform === "DIRECT_ONE_TO_ONE"
-          ? "Valida com uma lista pequena de contatos consentidos, sem campanha, segmentação Meta ou verba de mídia."
-          : "Exige público aprovado, campanha registrada e orçamento antes de entrar em execução."}
+        Toda divulgação comercial usa mídia paga no Instagram. Público,
+        campanha, teto e janela precisam ser aprovados antes da execução; este
+        cadastro não autoriza gasto.
       </div>
       {isLowTicketProduct && (
         <>

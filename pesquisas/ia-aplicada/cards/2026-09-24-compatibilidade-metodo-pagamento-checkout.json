@@ -1,0 +1,18 @@
+{
+  "cardKey": "compatibilidade-metodo-pagamento-checkout",
+  "collection": "neuromarketing",
+  "title": "Método local e one-click podem evitar perda no checkout recorrente",
+  "finding": "Dados operacionais divulgados por EBANX e Kunfupay indicam que, quatro meses após a adoção do Yape On-File no Peru, a solução esteve associada a aumento de 46% na receita relacionada às vendas no país, 67% do volume processado local e 95% de aprovação de pagamentos.",
+  "mechanism": "Quando o método de pagamento preferido pelo público é amplamente adotado e a recorrência exige repetição de etapas, compatibilidade local e credenciais tokenizadas podem reduzir fricção, falhas de autorização, abandono tardio e churn involuntário.",
+  "commercialApplication": "Auditar quais meios de pagamento o público realmente usa por país e segmento e testar, para a mesma oferta, checkout atual contra variante com método local prioritário e fluxo one-click quando apropriado, medindo pagamento reconciliado, renovação, fraude, taxas e margem.",
+  "evidenceStrength": "Moderada: há dados operacionais de quatro meses com receita, participação no volume e aprovação de pagamentos, mas são números divulgados pelas empresas envolvidas, sem experimento randomizado nem auditoria independente.",
+  "publishedOn": "2026-09-24",
+  "validUntil": "2027-03-24",
+  "experimentHypothesis": "Para a mesma oferta e público, oferecer o método local prioritário com menor fricção de pagamento aumentará a taxa entre checkout iniciado e pagamento reconciliado e reduzirá falhas de renovação sem deteriorar fraude ou margem líquida.",
+  "risks": "Adicionar métodos sem demanda real pode aumentar complexidade, custo operacional e exposição a fraude; tokenização e recorrência exigem controles de consentimento, segurança, chargeback e conformidade.",
+  "limits": "O caso é específico do Peru e do Yape; o aumento de 46% não isola o efeito do método local, do one-click ou de mudanças simultâneas de aquisição, mix, preço e sazonalidade. Não extrapolar diretamente para Pix ou para o funil brasileiro sem teste próprio.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-24-compatibilidade-metodo-pagamento-checkout.md",
+  "sourceTitle": "Fonte revisada — Compatibilidade do método de pagamento no checkout",
+  "sourceSha256": "8c72f5a6d166adf5ddc328201fe5ffab2d10b0d370f04a24c1d346433b208324"
+}

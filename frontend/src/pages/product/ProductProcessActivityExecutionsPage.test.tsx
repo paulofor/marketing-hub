@@ -394,6 +394,27 @@ describe("ProductProcessActivityExecutionsPage", () => {
     } as ReturnType<typeof useCycleProcessContext>);
   });
 
+  it("identifica tarefa histórica sem atribuir seu bloqueio à versão atual", async () => {
+    const selectedHistory = structuredClone(history);
+    selectedHistory.selectedProcessDefinitionId = 701;
+    selectedHistory.selectedProcessVersionNumber = 3;
+    const historicalTask = selectedHistory.activities[5].tasks[0];
+    historicalTask.processDefinitionId = 601;
+    historicalTask.processVersionNumber = 2;
+    historicalTask.status = "BLOCKED";
+    vi.mocked(axios.get).mockImplementation(async (url) => ({
+      data: String(url).includes("execution-progress") ? [] : selectedHistory,
+    }));
+
+    renderPage("/products/9/value-chain-history/processes/701/activities");
+
+    expect(
+      await screen.findByText(
+        "Histórico da v2; não determina o estado atual da v3.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("uses the reference in the link without adopting the latest cycle", async () => {
     vi.mocked(useCycleProcessContext).mockReturnValue({
       data: { cycleId: 99, chainDefinitionId: 99 },
@@ -829,7 +850,9 @@ describe("ProductProcessActivityExecutionsPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Atividade 5.2.1")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Copiar contexto da atividade 5.2.1" }),
+      screen.getByRole("button", {
+        name: "Copiar contexto da atividade 5.2.1",
+      }),
     ).toBeInTheDocument();
   });
 
@@ -885,7 +908,9 @@ describe("ProductProcessActivityExecutionsPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Atividade 5.1.1")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Copiar contexto da atividade 5.1.1" }),
+      screen.getByRole("button", {
+        name: "Copiar contexto da atividade 5.1.1",
+      }),
     ).toBeInTheDocument();
   });
 

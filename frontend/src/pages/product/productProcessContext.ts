@@ -226,9 +226,14 @@ export function processContextText(context: ProcessContext, origin: string) {
     }
     lines.push(`Tarefas da atividade: ${activity.taskCount}`);
     for (const task of activity.tasks) {
+      const taskScope =
+        task.processDefinitionId === h.selectedProcessDefinitionId
+          ? "versão selecionada"
+          : `histórico da v${task.processVersionNumber}; não determina o estado atual da v${h.selectedProcessVersionNumber}`;
       lines.push(
         `- Tarefa #${task.taskId}: ${task.title} · ${task.status} · ${value(task.assignedAgentNickname)} (${value(task.assignedAgentKey)})`,
         `  Processo v${task.processVersionNumber} · definição ID ${task.processDefinitionId} · referência: ${value(task.sourceReference)}`,
+        `  Escopo do registro: ${taskScope}`,
         `  Criada: ${value(task.createdAt)} · início: ${value(task.startedAt)} · fim: ${value(task.finishedAt)}`,
         `  Modelo: ${value(task.modelCode)} · modo: ${value(task.executionMode)} · esforço: ${value(task.reasoningEffort)}`,
         `  Custo: ${cost(task.estimatedCostUsd)} · cobertura: ${task.costEstimationStatus}`,

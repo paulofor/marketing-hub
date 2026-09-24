@@ -18,6 +18,7 @@ type BusinessProcessExecutionCardProps = {
   auditRequest?: {
     url: string;
   };
+  contextNotice?: string;
 };
 
 /** Exibe a auditoria completa de uma tarefa real em um cartão reutilizável. */
@@ -27,6 +28,7 @@ export default function BusinessProcessExecutionCard({
   contentHeadingLevel = "h2",
   promptAudit,
   auditRequest,
+  contextNotice,
 }: BusinessProcessExecutionCardProps) {
   const [expanded, setExpanded] = useState(defaultOpen);
   const audit = useProductProcessTaskAudit(auditRequest?.url, expanded);
@@ -49,6 +51,11 @@ export default function BusinessProcessExecutionCard({
             Tarefa #{execution.taskId} · {execution.assignedAgentNickname} · v
             {execution.processVersionNumber} · {execution.status}
           </small>
+          {contextNotice ? (
+            <small className="d-block text-warning-emphasis mt-1">
+              {contextNotice}
+            </small>
+          ) : null}
         </span>
       </summary>
       <div className="card-body">

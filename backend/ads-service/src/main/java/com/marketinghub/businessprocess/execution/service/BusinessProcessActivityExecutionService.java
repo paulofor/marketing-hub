@@ -1643,8 +1643,8 @@ public class BusinessProcessActivityExecutionService {
   }
 
   /**
-   * Projeta estado, especialização da ficha, comando e recuperação preservando a auditoria
-   * histórica.
+   * Projeta o estado pela instância da definição selecionada e preserva outras versões como
+   * auditoria histórica.
    */
   private List<ProductProcessActivityExecutionGroupResponse> activityGroups(
       BusinessProcessDefinition selectedProcess,
@@ -1670,6 +1670,7 @@ public class BusinessProcessActivityExecutionService {
                   task ->
                       currentExecutionReference == null
                           || currentExecutionReference.equals(task.getSourceReference()))
+              .filter(task -> belongsToSelectedProcessState(task, selectedProcess))
               .toList();
       ActivitySituation situation =
           activitySituation(
@@ -1822,6 +1823,21 @@ public class BusinessProcessActivityExecutionService {
         objectMapper,
         selectedProcess.getId(),
         currentExecutionReference);
+  }
+
+  /**
+   * Mantém tarefas legadas sem instância e exclui do estado atual tarefas ligadas a outra versão.
+   */
+  private boolean belongsToSelectedProcessState(
+      AgentTask task, BusinessProcessDefinition selectedProcess) {
+    BusinessProcessActivityInstance instance = task.getActivityInstance();
+    if (instance == null
+        || instance.getActivityDefinition() == null
+        || instance.getActivityDefinition().getProcessDefinition() == null) {
+      return true;
+    }
+    return Objects.equals(
+        selectedProcess.getId(), instance.getActivityDefinition().getProcessDefinition().getId());
   }
 
   /**

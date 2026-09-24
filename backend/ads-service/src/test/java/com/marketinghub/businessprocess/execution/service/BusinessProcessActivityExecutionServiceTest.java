@@ -485,6 +485,128 @@ class BusinessProcessActivityExecutionServiceTest {
         .hasMessageContaining("Referência não encontrada");
   }
 
+  /** Mantém a falha de outra versão no histórico sem usá-la como estado da versão selecionada. */
+  @Test
+  void separatesHistoricalTaskStateFromSelectedProcessVersion() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            null,
+            new ObjectMapper());
+
+    BusinessProcessDefinition selected = selectedProcess();
+    selected.setId(701L);
+    selected.setProcessCode("pde-commercial-homologation-activation");
+    selected.setName("Homologação corrente");
+    selected.setVersionNumber(3);
+    selected.setStatus("PUBLISHED");
+    selected.setDiagramJson("{\"nodes\":[{\"id\":\"humanExperienceReview\",\"type\":\"TASK\"}]}");
+    BusinessProcessActivityDefinition selectedActivity =
+        activity(7001L, selected, "humanExperienceReview", "Validar experiência e valor");
+
+    BusinessProcessDefinition historical = new BusinessProcessDefinition();
+    historical.setId(601L);
+    historical.setProcessCode("pde-commercial-homologation-activation");
+    historical.setVersionNumber(2);
+    BusinessProcessActivityDefinition historicalActivity =
+        activity(6001L, historical, "humanExperienceReview", "Validar experiência humana");
+    AgentTask historicalTask = executionTask(5001L);
+    historicalTask.setProcessDefinition(historical);
+    historicalTask.setProcessActivityId("humanExperienceReview");
+    historicalTask.setProcessActivityName("Validar experiência humana");
+    historicalTask.setSourceReference("experiment:2001");
+    historicalTask.setStatus("BLOCKED");
+    historicalTask.setExecutionError("URL pública ausente na tentativa histórica.");
+    historicalTask.setAssignedAgent(
+        Agent.builder().agentKey("customer-agent").nickname("Psique").build());
+    BusinessProcessActivityInstance historicalInstance =
+        activityInstance(
+            4001L,
+            historicalActivity,
+            "BLOCKED",
+            false,
+            "URL pública ausente na tentativa histórica.",
+            Instant.parse("2026-09-14T10:02:17Z"));
+    historicalInstance.setSourceReference("experiment:2001");
+    historicalTask.setActivityInstance(historicalInstance);
+
+    BusinessProcessActivityInstance selectedCompletion =
+        activityInstance(
+            4002L,
+            selectedActivity,
+            "COMPLETED",
+            true,
+            null,
+            Instant.parse("2026-09-24T17:48:29Z"));
+    selectedCompletion.setSourceReference("experiment:2001");
+    selectedCompletion.setEvidenceQuality("REUSED_DIRECT");
+
+    Product product =
+        Product.builder()
+            .id(3001L)
+            .name("Produto de teste")
+            .internalName("Produto teste")
+            .automaticExecutionEnabled(true)
+            .build();
+    Experiment experiment = new Experiment();
+    experiment.setId(2001L);
+    experiment.setProduct(product);
+
+    when(processes.findById(701L)).thenReturn(Optional.of(selected));
+    when(products.findById(3001L)).thenReturn(Optional.of(product));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(3001L))
+        .thenReturn(List.of(experiment));
+    when(commercialPlans.findByProductId(3001L)).thenReturn(List.of());
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(701L))
+        .thenReturn(List.of(selectedActivity));
+    when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            "experiment:2001", "pde-commercial-homologation-activation"))
+        .thenReturn(List.of(historicalTask));
+    when(coverages.findAllByAgentTaskIdIn(List.of(5001L))).thenReturn(List.of());
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
+                "pde-commercial-homologation-activation", "experiment:2001"))
+        .thenReturn(List.of(historicalInstance), List.of(selectedCompletion, historicalInstance));
+
+    var beforeSelectedInstance = executionService.productProcessExecutions(701L, 3001L);
+    var afterSelectedInstance = executionService.productProcessExecutions(701L, 3001L);
+
+    assertThat(beforeSelectedInstance.operationalState()).isEqualTo("NOT_STARTED");
+    assertThat(beforeSelectedInstance.currentActivityState()).isEqualTo("NOT_STARTED");
+    assertThat(beforeSelectedInstance.activities().getFirst().tasks())
+        .extracting(task -> task.taskId())
+        .containsExactly(5001L);
+    assertThat(
+            beforeSelectedInstance
+                .activities()
+                .getFirst()
+                .tasks()
+                .getFirst()
+                .processVersionNumber())
+        .isEqualTo(2);
+    assertThat(afterSelectedInstance.operationalState()).isEqualTo("COMPLETED");
+    assertThat(afterSelectedInstance.objectiveAchieved()).isTrue();
+    assertThat(afterSelectedInstance.activities().getFirst().stateEvidence())
+        .isEqualTo("REUSED_DIRECT");
+    assertThat(afterSelectedInstance.activities().getFirst().activityInstanceId()).isEqualTo(4002L);
+  }
+
   /** Usa o fluxo do BPM para iniciar pela preparação mesmo quando os IDs vieram fora de ordem. */
   @Test
   void ordersProductActivitiesByCanonicalGraphInsteadOfDatabaseIds() {

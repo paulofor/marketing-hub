@@ -87,6 +87,22 @@ describe("Contexto do processo", () => {
       expect(text).toContain(expected);
   });
 
+  it("distingue tarefa histórica do estado da versão selecionada no contexto do AIHUB", () => {
+    const task = context.history.activities
+      .flatMap((activity) => activity.tasks)
+      .find(Boolean)!;
+    context.history.selectedProcessDefinitionId = 701;
+    context.history.selectedProcessVersionNumber = 3;
+    task.processDefinitionId = 601;
+    task.processVersionNumber = 2;
+
+    const text = processContextText(context, origin);
+
+    expect(text).toContain(
+      "Escopo do registro: histórico da v2; não determina o estado atual da v3",
+    );
+  });
+
   it("copia contagens e ausência de custo oficiais sem deduzir sucesso por quantidade de tarefas", () => {
     context.automation!.completedActivities = 2;
     context.automation!.remainingActivities = 1;

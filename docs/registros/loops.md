@@ -6980,6 +6980,15 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Prevenção:** testes cobrem lease e sessão divergentes, identidade das candidatas, callback sem a
   evidência exigida, retry técnico e proibição de repetir a mesma observação. Argos v8 registra
   `EXACT_SESSION_REUSE_V1`; o cânone detalha os limites comerciais.
+- **Recorrência adicional observada na tarefa #487:** a sessão #43 e o corpus foram reutilizados
+  corretamente, sem busca Web ou marketplace, mas o callback agregou o plano determinístico ao
+  prompt da síntese e não conseguiu recompor `agentPromptPart + activityPromptPart`. O backend
+  bloqueou a conclusão e o callback de falha conservou apenas a auditoria determinística anterior.
+- **Causa e fechamento adicional:** o agregador tratava preparação sem modelo e síntese paga como
+  duas fases da mesma chamada `MODEL`. A auditoria terminal passa a incluir somente fases que
+  realmente invocaram o modelo, agrega apenas seus tokens e anexa a síntese completa ao callback de
+  falha quando a conclusão é recusada. Regressões cobrem a composição aceita pelo backend, consumo
+  do fluxo híbrido e preservação da resposta recusada.
 
 ## LOOP-BPM-VERSAO-HISTORICA-MASCA-ESTADO-ATUAL — 24/09/2026
 

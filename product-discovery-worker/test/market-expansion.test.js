@@ -291,26 +291,7 @@ test("reanálise supervisionada usa uma rodada Meta e não repete buscas gerais"
   const callbacks = [];
   let publicSearchCalls = 0;
   let commercialCalls = 0;
-  const job = {
-    ...discoveryJob(),
-    executionLeaseId: "lease-70",
-    supervisedMetaReanalysis: {
-      investigationId: 43,
-      query: "consultoria imagem encontro",
-      country: "BR",
-      publisherPlatform: "INSTAGRAM",
-    },
-    previousCandidates: [
-      { name: "Perfil para aplicativo" },
-      { name: "Imagem para ocasião" },
-    ],
-    previousEvidenceReportJson: JSON.stringify({
-      publicEvidence: [publicItem(1)],
-      marketplaceOffers: [offer(1)],
-      metaAdEvidence: [],
-      metaCoverage: [],
-    }),
-  };
+  const job = supervisedJob();
 
   await processJob(job, {
     backendBaseUrl: "http://backend.local",
@@ -346,7 +327,8 @@ test("reanálise supervisionada usa uma rodada Meta e não repete buscas gerais"
         ],
       };
     },
-    synthesizeMarketCandidates: async () => analysis("ADJACENT_PAID_ALTERNATIVE"),
+    synthesizeMarketCandidates: async () =>
+      analysis("ADJACENT_PAID_ALTERNATIVE"),
     analyzeSearchResults: (_researchJob, publicEvidence, offers, options) =>
       report({
         publicEvidence,
@@ -368,11 +350,84 @@ test("reanálise supervisionada usa uma rodada Meta e não repete buscas gerais"
     callbacks.filter((item) => item.url.endsWith("/complete")).length,
     1,
   );
+  const planCallback = callbacks.find((item) => item.url.endsWith("/plan"));
+  const completeCallback = callbacks.find((item) =>
+    item.url.endsWith("/complete"),
+  );
   assert.equal(
-    callbacks.find((item) => item.url.endsWith("/complete")).payload
-      .evidenceReport.marketExpansion.maxAttempts,
+    completeCallback.payload.evidenceReport.marketExpansion.maxAttempts,
     1,
   );
+  assert.equal(planCallback.payload.executionMode, "DETERMINISTIC");
+  assert.equal(completeCallback.payload.analysisAudit.executionMode, "MODEL");
+  assert.equal(completeCallback.payload.analysisAudit.inputTokens, 20);
+  assert.equal(completeCallback.payload.analysisAudit.cachedInputTokens, 4);
+  assert.equal(completeCallback.payload.analysisAudit.outputTokens, 5);
+  assert.doesNotMatch(
+    completeCallback.payload.analysisAudit.promptSent,
+    /PRODUCT_DISCOVERY_SUPERVISED_META_REANALYSIS_V1/,
+  );
+  assert.doesNotMatch(
+    completeCallback.payload.analysisAudit.promptSent,
+    /PLANEJAMENTO/,
+  );
+  assert.match(
+    completeCallback.payload.analysisAudit.promptSent,
+    /SÍNTESE FACTUAL/,
+  );
+  assertMatchesBackendPromptComposition(completeCallback.payload.analysisAudit);
+});
+
+test("preserva síntese e consumo quando o callback terminal é recusado", async () => {
+  const callbacks = [];
+  await processJob(supervisedJob("lease-callback-recusado"), {
+    backendBaseUrl: "http://backend.local",
+    logger: { info() {}, error() {} },
+    selectResearchLibraryContext: async () => ({ evidence: [], coverage: [] }),
+    collectMarketplaceEvidence: async () => ({
+      marketplaceOffers: [],
+      metaAdEvidence: [
+        {
+          metaAdId: "ad-43",
+          active: true,
+          publisherPlatforms: ["INSTAGRAM"],
+        },
+      ],
+      metaCoverage: [
+        {
+          investigationId: 43,
+          publisherPlatform: "INSTAGRAM",
+          sourceStatus: "OBSERVED",
+          activeAds: 1,
+        },
+      ],
+    }),
+    synthesizeMarketCandidates: async () =>
+      analysis("ADJACENT_PAID_ALTERNATIVE"),
+    analyzeSearchResults: (_researchJob, publicEvidence, offers, options) =>
+      report({
+        publicEvidence,
+        marketplaceOffers: offers,
+        metaAdEvidence: options.metaAdEvidence,
+      }),
+    postJson: async (url, payload) => {
+      callbacks.push({ url, payload });
+      if (url.endsWith("/complete")) {
+        throw new Error("Callback terminal recusado pelo contrato");
+      }
+    },
+    markCycleCompleted() {},
+    markCycleFailed() {},
+  });
+
+  const failCallback = callbacks.find((item) => item.url.endsWith("/fail"));
+  assert.ok(failCallback, "a falha deve ser reportada ao backend");
+  assert.match(failCallback.payload.errorMessage, /Callback terminal recusado/);
+  assert.equal(failCallback.payload.analysisAudit.executionMode, "MODEL");
+  assert.equal(failCallback.payload.analysisAudit.inputTokens, 20);
+  assert.equal(failCallback.payload.analysisAudit.cachedInputTokens, 4);
+  assert.equal(failCallback.payload.analysisAudit.outputTokens, 5);
+  assertMatchesBackendPromptComposition(failCallback.payload.analysisAudit);
 });
 
 test("limita configuração e exige novidade mínima na ampliação", () => {
@@ -460,6 +515,29 @@ function discoveryJob() {
     acquisitionChannel: "Instagram",
     researchMode: "DISCOVER_MARKETS",
     marketType: "B2C",
+  };
+}
+
+function supervisedJob(executionLeaseId = "lease-70") {
+  return {
+    ...discoveryJob(),
+    executionLeaseId,
+    supervisedMetaReanalysis: {
+      investigationId: 43,
+      query: "consultoria imagem encontro",
+      country: "BR",
+      publisherPlatform: "INSTAGRAM",
+    },
+    previousCandidates: [
+      { name: "Perfil para aplicativo" },
+      { name: "Imagem para ocasião" },
+    ],
+    previousEvidenceReportJson: JSON.stringify({
+      publicEvidence: [publicItem(1)],
+      marketplaceOffers: [offer(1)],
+      metaAdEvidence: [],
+      metaCoverage: [],
+    }),
   };
 }
 

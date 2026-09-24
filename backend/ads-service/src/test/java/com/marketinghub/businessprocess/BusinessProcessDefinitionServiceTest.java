@@ -25,6 +25,54 @@ class BusinessProcessDefinitionServiceTest {
   private final ObjectMapper mapper = new ObjectMapper();
   private final AgentTaskRepository tasks = mock(AgentTaskRepository.class);
 
+  /**
+   * Preserva a leitura de versões aposentadas cujo retorno histórico ainda não declarava REWORK.
+   */
+  @Test
+  void listsRetiredDefinitionWithLegacyCycleInPersistedOrder() throws Exception {
+    BusinessProcessDefinitionRepository repository =
+        mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessActivityDefinitionRepository activities =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    BusinessProcessDefinition retired = entity(1L, 1, "RETIRED", legacyCyclicDiagram().toString());
+    BusinessProcessActivityDefinition second = activity(12L, retired, "second");
+    BusinessProcessActivityDefinition first = activity(11L, retired, "first");
+    when(repository.findAllByOrderByNameAscVersionNumberDesc()).thenReturn(List.of(retired));
+    when(activities.findAllByProcessDefinitionIdOrderByIdAsc(1L))
+        .thenReturn(List.of(first, second));
+    var service =
+        new BusinessProcessDefinitionService(
+            repository, activities, tasks, null, mapper, Clock.systemUTC());
+
+    var result = service.list();
+
+    assertThat(result).hasSize(1);
+    assertThat(result.getFirst().activities())
+        .extracting(BusinessProcessActivityDefinitionResponse::activityId)
+        .containsExactly("first", "second");
+  }
+
+  /** Mantém o bloqueio topológico para versões ainda editáveis ou operacionais. */
+  @Test
+  void rejectsLegacyCycleOutsideRetiredHistory() throws Exception {
+    BusinessProcessDefinitionRepository repository =
+        mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessActivityDefinitionRepository activities =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    BusinessProcessDefinition published =
+        entity(2L, 2, "PUBLISHED", legacyCyclicDiagram().toString());
+    when(repository.findAllByOrderByNameAscVersionNumberDesc()).thenReturn(List.of(published));
+    when(activities.findAllByProcessDefinitionIdOrderByIdAsc(2L))
+        .thenReturn(List.of(activity(21L, published, "first")));
+    var service =
+        new BusinessProcessDefinitionService(
+            repository, activities, tasks, null, mapper, Clock.systemUTC());
+
+    assertThatThrownBy(service::list)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("ciclo sem retorno REWORK");
+  }
+
   /** Materializa cada nó TASK como atividade relacional sem abandonar o grafo versionado. */
   @Test
   void persistsExplicitActivityDefinitionFromDiagram() throws Exception {
@@ -475,6 +523,32 @@ class BusinessProcessDefinitionServiceTest {
   private com.fasterxml.jackson.databind.JsonNode validDiagram() throws Exception {
     return mapper.readTree(
         "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\",\"label\":\"Início\"},{\"id\":\"task\",\"type\":\"TASK\",\"label\":\"Fazer\"},{\"id\":\"end\",\"type\":\"END\",\"label\":\"Fim\"}],\"flows\":[{\"from\":\"start\",\"to\":\"task\"},{\"from\":\"task\",\"to\":\"end\"}]}");
+  }
+
+  /** Reproduz o retorno legado que antecede a classificação explícita como REWORK. */
+  private com.fasterxml.jackson.databind.JsonNode legacyCyclicDiagram() throws Exception {
+    return mapper.readTree(
+        "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\",\"label\":\"Início\"},"
+            + "{\"id\":\"first\",\"type\":\"TASK\",\"label\":\"Primeira\"},"
+            + "{\"id\":\"second\",\"type\":\"TASK\",\"label\":\"Segunda\"},"
+            + "{\"id\":\"end\",\"type\":\"END\",\"label\":\"Fim\"}],"
+            + "\"flows\":[{\"from\":\"start\",\"to\":\"first\"},"
+            + "{\"from\":\"first\",\"to\":\"second\"},"
+            + "{\"from\":\"second\",\"to\":\"first\"},"
+            + "{\"from\":\"second\",\"to\":\"end\"}]}");
+  }
+
+  /** Monta uma atividade persistida para validar a compatibilidade de leitura histórica. */
+  private BusinessProcessActivityDefinition activity(
+      Long id, BusinessProcessDefinition process, String activityId) {
+    BusinessProcessActivityDefinition activity = new BusinessProcessActivityDefinition();
+    activity.setId(id);
+    activity.setProcessDefinition(process);
+    activity.setActivityId(activityId);
+    activity.setName(activityId);
+    activity.setDefinitionJson("{}");
+    activity.setCreatedAt(Instant.now());
+    return activity;
   }
 
   /** Monta um grafo cujo elemento central declara o recurso sob validação. */

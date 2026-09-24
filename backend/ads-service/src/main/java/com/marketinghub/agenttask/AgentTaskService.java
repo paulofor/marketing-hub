@@ -1425,7 +1425,9 @@ public class AgentTaskService {
                 reference, processId));
   }
 
-  /** Valida atividade publicada ou congelada na ficha/execução independente e preserva seus gates. */
+  /**
+   * Valida atividade publicada ou congelada na ficha/execução independente e preserva seus gates.
+   */
   private ProcessBinding validateProcessBinding(CreateAgentTaskRequest request, Agent assignee) {
     if (request.exceptional()) {
       String reason = trimToNull(request.exceptionReason());

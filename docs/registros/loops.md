@@ -60,6 +60,15 @@
 - **Prevenção da recorrência:** regressões de Java, React e MySQL 5.7 cobrem criação, troca de
   canal, identidade Instagram, público, rota Safira v2, gate do Processo 5, idempotência, rollback e
   imutabilidade das versões anteriores.
+- **Recorrência de leitura histórica confirmada em 24/09/2026:** depois de publicar a cadeia v22,
+  `GET /api/business-processes` falhou porque quinze versões aposentadas anteriores ao contrato de
+  topologia possuíam retornos cíclicos sem `kind=REWORK`. O catálogo tentou reaplicar a validação
+  atual durante uma leitura, embora cada registro e suas atividades continuassem íntegros no banco.
+- **Correção da leitura histórica:** somente versões `RETIRED` incompatíveis com a ordenação atual
+  preservam a ordem relacional já auditada; versões `DRAFT` ou `PUBLISHED` continuam falhando diante
+  do mesmo ciclo. A exceção completa é registrada com processo, versão e status para diagnóstico.
+- **Prevenção da leitura histórica:** regressões reproduzem o ciclo legado, comprovam a listagem
+  aposentada e exigem que a topologia inválida continue bloqueada em versões operacionais.
 
 ## LOOP-PDE-PREFLIGHT-REUTILIZA-PUBLICACAO-ANTIGA — estado verde sem versão vigente
 

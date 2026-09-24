@@ -406,11 +406,7 @@ public class BusinessProcessDefinitionService {
       List<BusinessProcessActivityDefinition> persisted =
           activityRepository.findAllByProcessDefinitionIdOrderByIdAsc(process.getId());
       if (!persisted.isEmpty()) {
-        return BusinessProcessGraphTopology.orderActivities(
-                read(process.getDiagramJson()),
-                persisted,
-                BusinessProcessActivityDefinition::getActivityId)
-            .stream()
+        return orderPersistedActivitiesForRead(process, persisted).stream()
             .map(this::activityResponse)
             .toList();
       }
@@ -429,6 +425,32 @@ public class BusinessProcessDefinitionService {
               trimToNull(node.path("subprocessCode").asText(null))));
     }
     return List.copyOf(fallback);
+  }
+
+  /**
+   * Mantém legíveis versões aposentadas anteriores ao contrato de retornos REWORK sem relaxar
+   * versões operacionais.
+   */
+  private List<BusinessProcessActivityDefinition> orderPersistedActivitiesForRead(
+      BusinessProcessDefinition process, List<BusinessProcessActivityDefinition> persisted) {
+    try {
+      return BusinessProcessGraphTopology.orderActivities(
+          read(process.getDiagramJson()),
+          persisted,
+          BusinessProcessActivityDefinition::getActivityId);
+    } catch (IllegalStateException ex) {
+      log.warn(
+          "Falha ao ordenar topologia histórica do processo. operacao=listar-processo processDefinitionId={} processCode={} versionNumber={} status={}",
+          process.getId(),
+          process.getProcessCode(),
+          process.getVersionNumber(),
+          process.getStatus(),
+          ex);
+      if (!"RETIRED".equals(process.getStatus())) {
+        throw ex;
+      }
+      return List.copyOf(persisted);
+    }
   }
 
   /** Converte uma atividade persistida no contrato de leitura do catálogo. */

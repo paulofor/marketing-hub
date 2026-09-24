@@ -7,6 +7,9 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +23,9 @@ import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorReadiness;
 import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorService;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
+import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
@@ -61,6 +66,8 @@ class SafiraCommercialServiceTest {
   /** Monta uma candidata sintética completa, sem depender de Mira ou de IDs de produção. */
   @BeforeEach
   void setup() throws Exception {
+    product.setProductTypeDefinition(ProductTypeDefinition.builder().code("AI_PRODUCT").build());
+    when(context.applies(product)).thenReturn(true);
     experiment.setId(301L);
     experiment.setProduct(product);
     process.setId(90L);
@@ -159,6 +166,64 @@ class SafiraCommercialServiceTest {
 
     snapshot.put("fingerprint", "changed-after-review");
     assertThatThrownBy(() -> service.apply(task, approved)).hasMessageContaining("mudaram");
+  }
+
+  /** Oferece a criação dentro de Safira sem gravar ou chamar agente quando falta experimento. */
+  @Test
+  void preparesMissingCommercialContextWithoutExecution() {
+    product.setMarketNiche(MarketNiche.builder().id(73L).build());
+    assertThat(service.supportsReadinessWithoutExecutionContext()).isTrue();
+    for (String source : new String[] {null, "", "product:10@agent-validation-v1"}) {
+      var entry = service.readiness(process, activities.get("journey"), product, source);
+      assertThat(entry.ready()).isFalse();
+      assertThat(entry.actionLabel()).isEqualTo("Criar experimento comercial");
+      assertThat(entry.navigationUrl()).isEqualTo("/experiments/new?nicheId=73&productId=10");
+      assertThat(entry.targetProcessDefinitionId()).isNull();
+      assertThat(entry.requirements()).hasSize(4);
+      assertThatThrownBy(() -> service.execute(process, activities.get("journey"), product, source))
+          .hasMessageContaining("experimento comercial explícito");
+    }
+    verify(context, never()).scope(any(), any(), any(Boolean.class));
+    verifyNoInteractions(checks, instances, tasks, predecessors);
+  }
+
+  /** Mostra cadastro e pré-requisitos em vez de tentar executar atividades sem identidade. */
+  @Test
+  void guidesMissingNicheAndKeepsLaterActivitiesBlocked() {
+    var entry = service.readiness(process, activities.get("journey"), product, null);
+    assertThat(entry.navigationUrl()).isEqualTo("/products/10/edit");
+    assertThat(entry.actionLabel()).isEqualTo("Completar cadastro comercial");
+    for (String step : List.of("economics", "ready")) {
+      var later = service.readiness(process, activities.get(step), product, null);
+      assertThat(later.ready()).isFalse();
+      assertThat(later.reason()).contains("Prepare primeiro o experimento comercial");
+      assertThat(later.navigationUrl()).isNull();
+    }
+    verifyNoInteractions(checks, instances, tasks, predecessors);
+  }
+
+  /** Recusa produtos de outro tipo antes de projetar um formulário ou consultar o experimento. */
+  @Test
+  void rejectsAnotherTypeWithoutSuggestingSafiraExperiment() {
+    when(context.applies(product)).thenReturn(false);
+    var entry = service.readiness(process, activities.get("journey"), product, null);
+    assertThat(entry.ready()).isFalse();
+    assertThat(entry.reason()).contains("tipo cadastrado Safira");
+    assertThat(entry.navigationUrl()).isEqualTo("/products/10/edit");
+    verify(context, never()).scope(any(), any(), any(Boolean.class));
+    verifyNoInteractions(checks, instances, tasks, predecessors);
+  }
+
+  /** Não converte identidade comercial inválida ou de outro produto em novo cadastro. */
+  @Test
+  void preservesInvalidOrForeignReferenceBlock() {
+    when(context.scope("experiment:404", 10L, true))
+        .thenThrow(new IllegalStateException("O experimento Safira pertence a outro produto."));
+    var entry = service.readiness(process, activities.get("journey"), product, "experiment:404");
+    assertThat(entry.ready()).isFalse();
+    assertThat(entry.reason()).contains("outro produto");
+    assertThat(entry.actionLabel()).isNotEqualTo("Criar experimento comercial");
+    verifyNoInteractions(checks, instances, tasks, predecessors);
   }
 
   /** Persiste um parecer aprovado sintético como se tivesse retornado do agente responsável. */

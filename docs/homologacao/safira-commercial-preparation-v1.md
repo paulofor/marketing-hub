@@ -31,6 +31,27 @@
 
 ## Limites comerciais
 
+### Entrada operacional da preparação — 24/09/2026
+
+Evidência anterior: Mira #10, pai #96/v10, Safira #98/v2, cadeia #22. O pai oferecia cadastro
+de experimento, mas a primeira atividade de Safira respondia `COMMAND` sem ação ou destino,
+pois seu executor não declarava leitura de prontidão sem contexto. Banco e tela confirmaram
+zero tarefas e nenhum experimento comercial; o plano #8 continuava bloqueado.
+
+| Caso local | Critério de aceite |
+| --- | --- |
+| Produto Safira sem experimento | Pai abre a versão exata do subprocesso como navegação; não delega execução |
+| Entrada do subprocesso sem contexto ou com referência privada do produto | Primeira atividade oferece criação vinculada ao produto/nicho; execute continua recusado |
+| Nicho ausente | Cadastro do produto indicado sem inventar segmentação |
+| Tipo ou experimento de outro produto | Contrato recusado; não sugerir uma nova candidata como solução de identidade |
+| Atividades posteriores sem contexto | Aguardar primeira atividade, sem modelo, conclusão ou custo fabricado |
+| Candidata comercial válida | Cinco atividades mantêm validações, callbacks, fingerprint e idempotência |
+| Navegação desktop, iPhone e Pixel | Pai → Safira → cadastro; preservar cadeia/referência explícitas, nenhuma escrita durante navegação |
+
+Os testes usam dependências simuladas e identificadores sintéticos. As capturas de navegação
+não comprovam jornada comercial, checkout, entrega, economia ou utilidade de Mira. O orçamento,
+custos completos e termos operacionais ausentes continuam pendentes; a preparação não os autoriza.
+
 A matriz comprova o mecanismo técnico, não utilidade humana, demanda, venda nem lucro. Modelo,
 campanha, orçamento e publicação real só podem ocorrer depois dos contratos e autorizações próprios.
 O destino de criação do experimento apenas materializa decisões persistidas; campos comerciais ainda
@@ -92,3 +113,20 @@ O plano #8 e a hipótese de Mira devem ser atualizados pela tela depois da publi
 amostra de oito convites e mídia zero. Preço e proposta podem ser preservados, mas amostra, janela,
 teto, CAC e paradas precisam de decisão financeira própria antes da campanha. Testes verdes não
 comprovam utilidade, venda ou lucro.
+
+A orientação do formulário de entrada também preserva Instagram Ads: conta pode permanecer
+pendente no planejamento, mas é exigida para homologação/publicação. A amostra usa visitantes
+humanos atribuídos; a ausência de meta de custo permanece pendência, não divulgação sem mídia.
+
+### Validação local da entrada
+
+- Backend: 3517 casos nos relatórios consolidados, zero falhas/erros e 22 não
+  executados por condições/desabilitações declaradas. A rodada inicial foi interrompida pelo
+  limite de memória (exit 137, `oom_kill=1`); preservadas 163 classes aprovadas e executadas as
+  restantes com cache de contexto reduzido, sem repetir a matriz para somar aprovações.
+- Frontend: 773 testes aprovados; após a revisão textual do cadastro, 11 testes do formulário
+  novamente aprovados. Tipagem, Prettier e build concluídos.
+- Pacote frontend: navegação local pai → Safira → cadastro em desktop, iPhone 15 Pro e Pixel 7,
+  com APIs simuladas, nenhuma escrita, nenhum erro de página e nenhum overflow horizontal.
+  Preço persistido preservado e campos de orçamento continuam vazios.
+- Spotless dos arquivos Java alterados e revisão de diff aprovados. Nenhum changelog alterado.

@@ -690,7 +690,12 @@ mesmo experimento, cinco critérios da oferta, checkout, entrega, criativo, púb
 e economia completa. A validação multiagente privada pode ser referência do produto, mas nunca
 substitui cliente, utilidade humana, venda, plano comercial, experiência pública ou autorização.
 Quando houver validação privada e ainda não existir experimento, a atividade 5.1 deve permanecer
-bloqueada e oferecer a criação comercial já vinculada ao produto e ao nicho. Essa transição não
+bloqueada e abrir a preparação Safira. A primeira atividade do subprocesso oferece a criação
+comercial já vinculada ao produto e ao nicho, ou o cadastro do produto quando faltar nicho.
+Esse destino é navegação, não delegação executável: não cria execução filha, tarefa ou ocorrência
+com referência privada. As atividades seguintes aguardam o contexto comercial. Cadeia, ciclo e
+referência explícitos da navegação são preservados, sem substituir parâmetros fornecidos pelo backend.
+Essa transição não
 promove a prova privada, não preenche escolhas ausentes, não publica experiência, não ativa campanha
 e não concede orçamento; decisões comerciais não persistidas continuam exigindo confirmação humana.
 

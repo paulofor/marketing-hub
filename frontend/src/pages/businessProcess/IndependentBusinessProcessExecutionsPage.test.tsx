@@ -832,15 +832,15 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Registrar situações reais de compra e desistência",
+        name: "Escolher a fonte de evidência comportamental",
       }),
     ).toBeInTheDocument();
     expect(screen.getAllByText("Aguardando entrada")).not.toHaveLength(0);
     expect(
-      screen.getByText(/cinco a oito entrevistas anônimas e consentidas/i),
+      screen.getByText(/cinco a oito entrevistas consentidas/i),
     ).toBeInTheDocument();
     const interviewLink = screen.getByRole("link", {
-      name: "Abrir entrevistas",
+      name: "Abrir aprofundamento",
     });
     expect(interviewLink).toHaveAttribute(
       "href",

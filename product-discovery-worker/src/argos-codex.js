@@ -174,8 +174,7 @@ export function executeCodexWithInput(command, args, input, options = {}) {
     child.on("close", (code, signal) => {
       if (settled) return;
       if (code !== 0) {
-        const detail =
-          parseCodexFailure(stdout) || stderr.trim().slice(-2000);
+        const detail = parseCodexFailure(stdout) || stderr.trim().slice(-2000);
         rejectOnce(
           new Error(
             `Codex encerrou a ${phaseName} de Argos com código ${code ?? "desconhecido"}${signal ? ` e sinal ${signal}` : ""}${detail ? `: ${detail}` : ""}`,
@@ -437,7 +436,7 @@ function deterministicGapDeepeningPlan(job) {
     researchLens: compactQuery(`Lacunas específicas de ${theme}`, 160),
     expansionAxis: "INITIAL_SCOPE",
     expansionRationale:
-      "A pesquisa retoma as candidatas persistidas, as entrevistas consentidas e as perguntas que impedem o handoff.",
+      "A pesquisa retoma as candidatas persistidas, a política de evidências recebida e as perguntas que impedem o handoff.",
     questions: [
       ...candidateGaps.map((gap) => gap.pendingQuestion),
       "Que evidência contrária altera a conclusão anterior sem transformar ausência de fonte em ausência de mercado?",
@@ -705,6 +704,7 @@ async function buildPromptComposition(job) {
       2,
     ),
     stageCode: job.stageCode || "research",
+    evidencePolicy: job.evidencePolicy || "CONSENTED_INTERVIEWS_V1",
     previousCandidates: JSON.stringify(job.previousCandidates || [], null, 2),
     customerInterviews: JSON.stringify(job.customerInterviews || [], null, 2),
     gapResearchPolicy: JSON.stringify(job.gapResearchPolicy || null, null, 2),

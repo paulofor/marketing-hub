@@ -42,6 +42,41 @@ function parseScientificArticles(
   }
 }
 
+type PublicObservation = {
+  evidenceId: string;
+  url: string;
+  sourceRole: string;
+  reportedAction: string;
+  supportingExcerpt: string;
+  retrievedAt: string;
+  limitation: string;
+};
+
+const publicSourceLabels: Record<string, string> = {
+  PUBLIC_CUSTOMER_REPORT: "Relato público de cliente",
+  SELLER_CLAIM: "Afirmação do vendedor",
+  EDITORIAL: "Conteúdo editorial",
+  SCIENTIFIC: "Referência científica",
+  OTHER: "Outra fonte",
+  PURCHASE_REPORTED: "Compra relatada",
+  ABANDONMENT_REPORTED: "Desistência relatada",
+  USE_REPORTED: "Uso relatado",
+  FRUSTRATION_REPORTED: "Dificuldade relatada",
+  UNKNOWN: "Comportamento não identificado",
+};
+
+function parsePublicObservations(
+  opportunity: ProductDiscoveryOpportunity,
+): PublicObservation[] {
+  try {
+    const observations = JSON.parse(opportunity.evidenceJson || "{}")
+      .publicEvidenceAssessment?.observations;
+    return Array.isArray(observations) ? observations : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function ProductDiscoveryCycleDetailPage() {
   const { cycleId } = useParams();
   const query = useProductDiscoveryCycle(parseCycleId(cycleId));
@@ -89,6 +124,7 @@ export default function ProductDiscoveryCycleDetailPage() {
       <section className="d-flex flex-column gap-3">
         {(detail?.opportunities ?? []).map((opportunity) => {
           const scientificArticles = parseScientificArticles(opportunity);
+          const publicObservations = parsePublicObservations(opportunity);
           return (
             <article className="card border-0 shadow-sm" key={opportunity.id}>
               <div className="card-body">
@@ -134,6 +170,42 @@ export default function ProductDiscoveryCycleDetailPage() {
                     <p>{opportunity.commercialRisk || "-"}</p>
                   </div>
                 </div>
+                {publicObservations.length > 0 ? (
+                  <section className="mt-3">
+                    <h3 className="h6">Observações públicas de Argos</h3>
+                    <p className="small text-secondary">
+                      Classificação do modelo com suporte em trechos de busca.
+                      Relatos de terceiros não são entrevistas nem vendas
+                      comprovadas do nosso produto.
+                    </p>
+                    {publicObservations.map((item) => (
+                      <article
+                        key={item.evidenceId}
+                        className="border rounded p-3 mb-2"
+                      >
+                        <a
+                          href={
+                            /^https?:\/\//.test(item.url) ? item.url : undefined
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Fonte {item.evidenceId}
+                        </a>
+                        <p className="small text-secondary">
+                          {publicSourceLabels[item.sourceRole] ||
+                            "Fonte não classificada"}{" "}
+                          ·{" "}
+                          {publicSourceLabels[item.reportedAction] ||
+                            "Ação não classificada"}{" "}
+                          · Coleta: {item.retrievedAt}
+                        </p>
+                        <blockquote>{item.supportingExcerpt}</blockquote>
+                        <p className="small mb-0">{item.limitation}</p>
+                      </article>
+                    ))}
+                  </section>
+                ) : null}
                 {scientificArticles.length > 0 ? (
                   <section className="mt-3">
                     <h3 className="h6">Artigos científicos do mecanismo</h3>

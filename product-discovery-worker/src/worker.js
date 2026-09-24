@@ -373,6 +373,7 @@ export function attachGapDeepeningReport(execution, job) {
   execution.report.evidenceReport ||= {};
   execution.report.evidenceReport.gapDeepening = {
     contractVersion: "CANDIDATE_GAP_DEEPENING_V1",
+    evidencePolicy: job.evidencePolicy || "CONSENTED_INTERVIEWS_V1",
     customerInterviewCount: (job.customerInterviews || []).length,
     candidateCount: (job.previousCandidates || []).length,
     plannedSearchRequests: allPlannedQueries.length,

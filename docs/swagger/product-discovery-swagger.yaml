@@ -4,6 +4,22 @@ info:
   version: 1.5.0
   description: Endpoints administrativos e internos da descoberta de produtos PDE.
 paths:
+  /api/product-discovery/v1/cycles/{cycleId}/gap-deepening/public-research:
+    post:
+      summary: Adota pesquisa pública automatizada no ciclo em espera por entrevistas
+      description: Preserva candidatas, corpus e tarefas. Operação idempotente; não aceita substituir política durante execução ou após conclusão. Mantém limites vigentes e não cria entrevistas.
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Política PUBLIC_SOURCES_V1 persistida; readyForResearch e canAdoptPublicEvidence refletem o estado oficial.
+        '409':
+          description: Ciclo fora da espera permitida ou sem candidatas.
   /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending:
     get:
       tags: [Product Discovery]

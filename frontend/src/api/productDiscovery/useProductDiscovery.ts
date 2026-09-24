@@ -135,6 +135,8 @@ export interface ProductDiscoveryCustomerInterview {
 }
 
 export interface ProductDiscoveryGapDeepening {
+  evidencePolicy: string;
+  canAdoptPublicEvidence: boolean;
   cycleId: number;
   applicable: boolean;
   cycleStatus: ProductDiscoveryCycleStatus;
@@ -235,6 +237,12 @@ export function useProductDiscoveryGapDeepening(cycleId?: number) {
       ? productDiscoveryKeys.gapDeepening(cycleId)
       : ["product-discovery", "gap-deepening", "missing"],
     enabled: cycleId != null,
+    refetchInterval: (query) =>
+      ["READY_FOR_RESEARCH", "RESEARCHING"].includes(
+        query.state.data?.cycleStatus || "",
+      )
+        ? 10000
+        : false,
     queryFn: async () => {
       const response = await fetch(
         buildApiUrl(
@@ -289,6 +297,43 @@ export function useCreateProductDiscoveryCustomerInterview(cycleId: number) {
   });
 }
 
+export function useAdoptProductDiscoveryPublicEvidence(cycleId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch(
+        buildApiUrl(
+          `/api/product-discovery/v1/cycles/${cycleId}/gap-deepening/public-research`,
+        ),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+      return parseJsonResponse<ProductDiscoveryGapDeepening>(
+        response,
+        "Não foi possível adotar pesquisa pública",
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: productDiscoveryKeys.gapDeepening(cycleId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: productDiscoveryKeys.cycle(cycleId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: productDiscoveryKeys.cycles,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["independent-business-process-executions"],
+        }),
+      ]);
+    },
+  });
+}
+
 export function useProductDiscoveryCycles() {
   return useQuery({
     queryKey: productDiscoveryKeys.cycles,
@@ -310,6 +355,12 @@ export function useProductDiscoveryCycle(cycleId?: number) {
       ? productDiscoveryKeys.cycle(cycleId)
       : ["product-discovery", "cycle", "missing"],
     enabled: cycleId != null,
+    refetchInterval: (query) =>
+      ["READY_FOR_RESEARCH", "RESEARCHING"].includes(
+        query.state.data?.cycle.status || "",
+      )
+        ? 10000
+        : false,
     queryFn: async () => {
       const response = await fetch(
         buildApiUrl(`/api/product-discovery/v1/cycles/${cycleId}`),

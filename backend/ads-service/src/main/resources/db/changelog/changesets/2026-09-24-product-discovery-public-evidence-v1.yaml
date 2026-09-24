@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-24-product-discovery-public-evidence-v1-policy
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_cycle
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              SET @argos_policy_ddl = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='product_discovery_cycle' AND COLUMN_NAME='evidence_policy')=0, 'ALTER TABLE product_discovery_cycle ADD COLUMN evidence_policy VARCHAR(40) NOT NULL DEFAULT ''CONSENTED_INTERVIEWS_V1''', 'SELECT 1');
+              PREPARE argos_policy_stmt FROM @argos_policy_ddl;
+              EXECUTE argos_policy_stmt;
+              DEALLOCATE PREPARE argos_policy_stmt;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;
+  - changeSet:
+      id: 2026-09-24-product-discovery-public-evidence-v1-process
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=7
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=20
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=8 AND COALESCE(JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.researchContractVersion')),'') <> 'PUBLIC_SOURCES_V1'
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT IF(COUNT(*) = 0, 1, 0) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=21 AND purpose NOT LIKE '%PUBLIC_SOURCES_V1%'
+      changes:
+        - sqlFile:
+            path: 2026-09-24-product-discovery-public-evidence-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-opportunity-discovery' AND version_number=8;
+              UPDATE business_process_definition SET status='PUBLISHED' WHERE process_code='pde-opportunity-discovery' AND version_number=7;
+              UPDATE business_process_chain_definition SET status='RETIRED' WHERE chain_code='pde-value-creation-delivery' AND version_number=21;
+              UPDATE business_process_chain_definition SET status='PUBLISHED' WHERE chain_code='pde-value-creation-delivery' AND version_number=20;

@@ -126,7 +126,7 @@ public class ProductDiscoveryGapResearchContractService {
     }
   }
 
-  /** Valida que o relatório final prova limites, entrevistas e lacunas tratadas. */
+  /** Valida que o relatório final prova limites, política de evidências e lacunas tratadas. */
   public void validateEvidenceReport(
       ProductDiscoveryCycle cycle,
       ProductDiscoveryResultRequest request,
@@ -135,6 +135,19 @@ public class ProductDiscoveryGapResearchContractService {
       throw new ResponseStatusException(
           HttpStatus.UNPROCESSABLE_ENTITY,
           "O aprofundamento deve entregar um relatório auditável de lacunas e consumo");
+    }
+    if (cycle.usesPublicEvidence()) {
+      if (!cycle
+          .getEvidencePolicy()
+          .equals(request.evidenceReport().path("gapDeepening").path("evidencePolicy").asText())) {
+        throw new ResponseStatusException(
+            HttpStatus.UNPROCESSABLE_ENTITY, "A política do relatório diverge do ciclo");
+      }
+      request
+          .opportunities()
+          .forEach(
+              candidate ->
+                  ProductDiscoveryPublicEvidenceContract.validate(cycle.getId(), candidate));
     }
     JsonNode deepening = request.evidenceReport().path("gapDeepening");
     Set<String> expectedCandidates =
@@ -257,7 +270,7 @@ public class ProductDiscoveryGapResearchContractService {
             .equals(deepening.path("modelCostCoverage").asText())) {
       throw new ResponseStatusException(
           HttpStatus.UNPROCESSABLE_ENTITY,
-          "O relatório de aprofundamento deve vincular entrevistas e lacunas resolvidas ou ainda pendentes");
+          "O relatório de aprofundamento deve vincular fontes e lacunas resolvidas ou ainda pendentes");
     }
     validateReportConsumption(deepening, executedQueries);
   }

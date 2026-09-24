@@ -348,6 +348,15 @@ mas não comprova sozinha uma oportunidade.
   antecipar que kit, webapp ou qualquer outra implementação será a vencedora;
 - comparar de duas a três oportunidades antes de priorizar uma.
 
+### Pesquisa pública automatizada — decisão de 24/09/2026
+
+A descoberta não exige recrutamento nem entrevistas nas novas execuções. Aplicar
+`PUBLIC_SOURCES_V1` de `descoberta-produtos-pde-canon.v1.md`: pesquisa dirigida, relatos públicos
+com suporte rastreável, fontes independentes, alternativas comerciais, contrapontos e limites.
+Execuções anteriores adotam a rota explicitamente, preservando tarefas e candidatas. O gate não
+aprova hipótese sem evidência e não converte relatos de terceiros em vendas do Marketing Hub.
+A regra de entrevistas abaixo documenta o contrato histórico v7, preservado para auditoria.
+
 ### Aprofundamento obrigatório por candidata — decisão de 23/09/2026
 
 O Processo 1 v7 separa a coleta ampla de Argos da atividade **Aprofundar lacunas da candidata**.

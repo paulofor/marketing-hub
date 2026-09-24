@@ -1,0 +1,76 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-09-24-argos-agent-version-v7-public-evidence.yaml
+  - changeSet:
+      id: 2026-09-24-argos-agent-version-v7-public-evidence-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: agent
+        - tableExists:
+            tableName: agent_version
+        - columnExists:
+            tableName: agent
+            columnName: current_version
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM agent a LEFT JOIN agent_version av ON av.agent_id = a.id AND av.version_number = 7 WHERE a.agent_key = 'market-radar' AND a.current_version IN (6, 7) AND (av.id IS NULL OR JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet')) = '2026-09-24-argos-agent-version-v7-public-evidence-001')
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, 7,
+                JSON_OBJECT(
+                  'agentKey', a.agent_key,
+                  'version', 7,
+                  'sourceChangeSet', '2026-09-24-argos-agent-version-v7-public-evidence-001',
+                  'previousCurrentVersion', a.current_version,
+                  'status', a.status,
+                  'model', COALESCE(a.model_name, ''),
+                  'authority', 'MARKET_EVIDENCE',
+                  'schemaPolicy', 'STRICT_OUTPUT_BY_ACTIVITY_V1',
+                  'evidencePolicy', 'PUBLIC_SOURCES_V1',
+                  'publicResearchSchema', 'product-discovery-worker/prompts/productdiscovery.v1/research/public-response-schema.json',
+                  'initialPlanSchema', 'product-discovery-worker/prompts/productdiscovery.v1/plan/plan-schema.json',
+                  'gapDeepeningSchema', 'product-discovery-worker/prompts/productdiscovery.v1/plan/gap-deepening-schema.json',
+                  'researchSchema', 'product-discovery-worker/prompts/productdiscovery.v1/research/response-schema.json',
+                  'startupContractValidation', TRUE,
+                  'structuredFailurePreservation', TRUE
+                ),
+                UTC_TIMESTAMP()
+              FROM agent a
+              LEFT JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = 7
+              WHERE a.agent_key = 'market-radar'
+                AND a.current_version IN (6)
+                AND av.id IS NULL;
+
+              UPDATE agent a
+              JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = 7
+              SET a.current_version = 7
+              WHERE a.agent_key = 'market-radar'
+                AND a.current_version IN (6)
+                AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet'))
+                  = '2026-09-24-argos-agent-version-v7-public-evidence-001';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent a
+              JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = 7
+              SET a.current_version = CAST(
+                JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.previousCurrentVersion'))
+                AS UNSIGNED
+              )
+              WHERE a.agent_key = 'market-radar'
+                AND a.current_version = 7
+                AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet'))
+                  = '2026-09-24-argos-agent-version-v7-public-evidence-001';

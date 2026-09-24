@@ -311,3 +311,37 @@ test("síntese não aceita caixa física mesmo com marcador PDE inconsistente", 
     /entrega física/,
   );
 });
+
+test("rota pública usa schema próprio e preserva candidatas sem exigir entrevistas", async () => {
+  const context = researchContext();
+  context.job.evidencePolicy = "PUBLIC_SOURCES_V1";
+  context.job.stageCode = "candidate-gap-deepening";
+  const expected = validSynthesis();
+  expected.candidates.forEach((candidate) => {
+    candidate.publicObservations = [];
+    candidate.maturity = "RESEARCHABLE";
+  });
+  context.job.previousCandidates = expected.candidates.map((candidate) => ({
+    name: candidate.name,
+  }));
+  const result = await synthesizeMarketCandidates(context, {
+    enabled: true,
+    execute: async (_cmd, args, prompt) => {
+      const schema = JSON.parse(
+        await readFile(args[args.indexOf("--output-schema") + 1], "utf8"),
+      );
+      assert.ok(
+        schema.properties.candidates.items.required.includes(
+          "publicObservations",
+        ),
+      );
+      assert.match(prompt, /PUBLIC_SOURCES_V1/);
+      await writeFile(
+        args[args.indexOf("--output-last-message") + 1],
+        JSON.stringify(expected),
+      );
+    },
+  });
+  assert.equal(result.synthesis.candidates.length, expected.candidates.length);
+  assert.equal(result.synthesis.candidates[0].publicObservations.length, 0);
+});

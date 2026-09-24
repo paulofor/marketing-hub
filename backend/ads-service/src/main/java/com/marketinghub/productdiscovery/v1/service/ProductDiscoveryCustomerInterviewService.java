@@ -23,7 +23,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Responsabilidade: governar a evidência comportamental consentida antes da pesquisa dirigida de
+ * Responsabilidade: governar a política e a evidência comportamental antes da pesquisa dirigida de
  * lacunas.
  */
 @Service
@@ -65,6 +65,31 @@ public class ProductDiscoveryCustomerInterviewService {
   @Transactional(readOnly = true)
   public ProductDiscoveryGapDeepeningResponse get(Long cycleId) {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
+    return response(cycle);
+  }
+
+  /**
+   * Adota explicitamente pesquisa pública, preservando tarefas, entrevistas e candidatas do ciclo.
+   */
+  @Transactional
+  public ProductDiscoveryGapDeepeningResponse adoptPublicEvidence(Long cycleId) {
+    ProductDiscoveryCycle cycle = findCycleForUpdate(cycleId);
+    if (cycle.usesPublicEvidence()) return response(cycle);
+    if (!bpmAuditService.supportsCandidateGapDeepening(cycle)
+        || cycle.getStatus() != ProductDiscoveryCycleStatus.AWAITING_CUSTOMER_EVIDENCE
+        || !WAITING_STAGE_CODE.equals(cycle.getStageCode())
+        || opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycleId).isEmpty()) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "A pesquisa pública só pode substituir a espera por entrevistas antes do aprofundamento");
+    }
+    cycle.setEvidencePolicy("PUBLIC_SOURCES_V1");
+    cycle.setStatus(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
+    cycle.setStageCode(GAP_STAGE_CODE);
+    cycle.setDecisionSummary(
+        "Pesquisa pública automatizada adotada explicitamente; entrevistas históricas preservadas, candidatas e limites mantidos. Relatos públicos não comprovam vendas do nosso produto.");
+    cycle.setErrorMessage(null);
+    cycleRepository.save(cycle);
     return response(cycle);
   }
 
@@ -180,12 +205,13 @@ public class ProductDiscoveryCustomerInterviewService {
             && purchased > 0
             && abandoned > 0
             && missing.isEmpty();
+    if (cycle.usesPublicEvidence()) ready = applicable && !opportunityIds.isEmpty();
     return new ProductDiscoveryGapDeepeningResponse(
         cycle.getId(),
         applicable,
         cycle.getStatus(),
         cycle.getStageCode(),
-        MINIMUM_INTERVIEWS,
+        cycle.usesPublicEvidence() ? 0 : MINIMUM_INTERVIEWS,
         MAXIMUM_INTERVIEWS,
         interviews.size(),
         purchased,
@@ -201,8 +227,16 @@ public class ProductDiscoveryCustomerInterviewService {
         "AGENT_TASK_AUDIT_AFTER_CALLBACK",
         SEARCH_PRICING_SOURCE,
         SEARCH_PRICING_OBSERVED_ON,
-        guidance(applicable, cycle, interviews.size(), purchased, abandoned, missing),
-        interviews.stream().map(this::toResponse).toList());
+        cycle.usesPublicEvidence()
+            ? "Pesquisa automatizada com fontes públicas, relatos e contrapontos por candidata. Sem entrevistas obrigatórias; lacunas sem evidência permanecem abertas. Os limites de consumo continuam vigentes."
+            : guidance(applicable, cycle, interviews.size(), purchased, abandoned, missing),
+        interviews.stream().map(this::toResponse).toList(),
+        cycle.getEvidencePolicy(),
+        applicable
+            && !cycle.usesPublicEvidence()
+            && cycle.getStatus() == ProductDiscoveryCycleStatus.AWAITING_CUSTOMER_EVIDENCE
+            && WAITING_STAGE_CODE.equals(cycle.getStageCode())
+            && !opportunityIds.isEmpty());
   }
 
   /** Confirma o conjunto mínimo sem converter cinco relatos em estimativa estatística. */

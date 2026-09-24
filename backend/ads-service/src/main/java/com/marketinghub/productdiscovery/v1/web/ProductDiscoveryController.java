@@ -194,6 +194,13 @@ public class ProductDiscoveryController {
     return ResponseEntity.ok(customerInterviewService.get(cycleId));
   }
 
+  /** Adota a pesquisa automatizada para um ciclo em espera, sem reiniciar a coleta inicial. */
+  @PostMapping("/product-discovery/v1/cycles/{cycleId}/gap-deepening/public-research")
+  public ResponseEntity<ProductDiscoveryGapDeepeningResponse> adoptPublicEvidence(
+      @PathVariable Long cycleId) {
+    return ResponseEntity.ok(customerInterviewService.adoptPublicEvidence(cycleId));
+  }
+
   /** Registra uma entrevista consentida e anônima sem criar decisão estratégica. */
   @PostMapping("/product-discovery/v1/cycles/{cycleId}/gap-deepening/interviews")
   public ResponseEntity<ProductDiscoveryGapDeepeningResponse> recordCustomerInterview(

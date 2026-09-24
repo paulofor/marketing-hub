@@ -27,7 +27,8 @@ public record ProductDiscoveryPendingResponse(
     List<ProductDiscoveryOpportunityResponse> previousCandidates,
     String previousEvidenceReportJson,
     List<ProductDiscoveryCustomerInterviewResponse> customerInterviews,
-    ProductDiscoveryGapResearchPolicyResponse gapResearchPolicy) {
+    ProductDiscoveryGapResearchPolicyResponse gapResearchPolicy,
+    String evidencePolicy) {
 
   /** Mantém compatibilidade dos produtores e testes da etapa inicial sem contexto de lacunas. */
   public ProductDiscoveryPendingResponse(
@@ -69,6 +70,7 @@ public record ProductDiscoveryPendingResponse(
         List.of(),
         null,
         List.of(),
-        null);
+        null,
+        "CONSENTED_INTERVIEWS_V1");
   }
 }

@@ -103,6 +103,7 @@ class PdeCommercialPrinciplesMysql57Test {
         verifyGapDeepeningMigration(host, productChain);
         verifySafiraMigration(host, productChain);
         exportForBrowser(connection, sources);
+        verifyPublicEvidenceMigration(host, productChain);
       }
     }
   }
@@ -151,6 +152,69 @@ class PdeCommercialPrinciplesMysql57Test {
 
         migration.update("");
         verifyGapDeepeningState(connection, productChain);
+      }
+    }
+  }
+
+  /** Confere política legada, novas versões e rollback sem apagar escolhas ou fontes históricas. */
+  private void verifyPublicEvidenceMigration(String host, String productChain) throws Exception {
+    try (var connection = openConnection(host)) {
+      execute(connection, "CREATE TABLE IF NOT EXISTS agent(id BIGINT PRIMARY KEY, agent_key VARCHAR(100), current_version INT, status VARCHAR(30), model_name VARCHAR(100))");
+      execute(connection, "CREATE TABLE IF NOT EXISTS agent_version(id BIGINT AUTO_INCREMENT PRIMARY KEY, agent_id BIGINT, version_number INT, contract_snapshot LONGTEXT, created_at DATETIME, UNIQUE KEY uk_av(agent_id,version_number))");
+      execute(connection, "DELETE FROM agent_version");
+      execute(connection, "DELETE FROM agent");
+      execute(connection, "INSERT INTO agent VALUES(801,'market-radar',6,'ACTIVE','synthetic-model')");
+      String original =
+          scalar(
+              connection,
+              "SELECT diagram_json FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=7");
+      execute(connection, "INSERT INTO product_discovery_cycle(id) VALUES(987)");
+      var database =
+          DatabaseFactory.getInstance()
+              .findCorrectDatabaseImplementation(new JdbcConnection(connection));
+      try (var migration =
+          new Liquibase(
+              "db/changelog/changesets/2026-09-24-product-discovery-public-evidence-v1.yaml",
+              new ClassLoaderResourceAccessor(),
+              database)) {
+        var agentMigration = new Liquibase("db/changelog/changesets/2026-09-24-argos-agent-version-v7-public-evidence.yaml", new ClassLoaderResourceAccessor(), database);
+        agentMigration.update("");
+        assertThat(scalar(connection, "SELECT current_version FROM agent WHERE id=801")).isEqualTo("7");
+        agentMigration.rollback(1, "");
+        assertThat(scalar(connection, "SELECT current_version FROM agent WHERE id=801")).isEqualTo("6");
+        agentMigration.update("");
+        migration.update("");
+        assertThat(
+                scalar(
+                    connection, "SELECT evidence_policy FROM product_discovery_cycle WHERE id=987"))
+            .isEqualTo("CONSENTED_INTERVIEWS_V1");
+        assertThat(
+                scalar(
+                    connection,
+                    "SELECT COUNT(*) FROM business_process_chain_item i JOIN business_process_chain_definition c ON c.id=i.chain_definition_id WHERE c.version_number=21"))
+            .isEqualTo("6");
+        assertThat(
+                scalar(
+                    connection,
+                    "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='pde-opportunity-discovery' AND p.version_number=8"))
+            .isEqualTo("2");
+        execute(
+            connection,
+            "UPDATE product_discovery_cycle SET evidence_policy='PUBLIC_SOURCES_V1' WHERE id=987");
+        migration.update("");
+        migration.rollback(2, "");
+        assertThat(
+                scalar(
+                    connection, "SELECT evidence_policy FROM product_discovery_cycle WHERE id=987"))
+            .isEqualTo("PUBLIC_SOURCES_V1");
+        migration.update("");
+        assertThat(
+                scalar(
+                    connection,
+                    "SELECT diagram_json FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=7"))
+            .isEqualTo(original);
+        assertThat(scalar(connection, "SELECT chain_definition_id FROM product"))
+            .isEqualTo(productChain);
       }
     }
   }

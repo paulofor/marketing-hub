@@ -57,6 +57,9 @@ public class ProductDiscoveryCycle {
   @Column(name = "market_type", nullable = false, length = 24, columnDefinition = "VARCHAR(24)")
   private ProductDiscoveryMarketType marketType;
 
+  @Column(name = "evidence_policy", nullable = false, length = 40)
+  private String evidencePolicy = "CONSENTED_INTERVIEWS_V1";
+
   @Column(name = "reference_sources", columnDefinition = "LONGTEXT")
   private String referenceSources;
 
@@ -134,6 +137,21 @@ public class ProductDiscoveryCycle {
   @PreUpdate
   public void preUpdate() {
     updatedAt = Instant.now();
+  }
+
+  /** Retorna a política versionada, preservando o contrato dos ciclos históricos. */
+  public String getEvidencePolicy() {
+    return evidencePolicy;
+  }
+
+  /** Registra a política explicitamente adotada pelo ciclo. */
+  public void setEvidencePolicy(String evidencePolicy) {
+    this.evidencePolicy = evidencePolicy;
+  }
+
+  /** Indica a rota de pesquisa pública sem recrutamento. */
+  public boolean usesPublicEvidence() {
+    return "PUBLIC_SOURCES_V1".equals(evidencePolicy);
   }
 
   /** Retorna o identificador do ciclo. */

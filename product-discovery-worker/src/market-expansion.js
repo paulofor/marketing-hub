@@ -282,7 +282,7 @@ export function buildMarketExpansionContext({
     maxAttempts,
     instruction:
       job?.stageCode === "candidate-gap-deepening"
-        ? "Aprofunde somente as perguntas pendentes das candidatas preservadas, reutilizando o corpus e as entrevistas; não reinicie a descoberta ampla."
+        ? "Aprofunde somente as perguntas pendentes das candidatas preservadas, reutilizando o corpus e as fontes da política recebida; não reinicie a descoberta ampla."
         : attemptNumber === 1
           ? "Investigue o escopo inicial recebido."
           : "Amplie exatamente uma lente adjacente sem escolher o posicionamento final de Atena.",

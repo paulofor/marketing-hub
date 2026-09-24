@@ -11,7 +11,7 @@ Meta.
 O campo `stageCode` define a atividade. Em `research`, encontre situações concretas em que o desejo
 vira ação e produza o plano amplo já descrito, sem campos de candidatas ainda inexistentes. Em
 `candidate-gap-deepening`, não reinicie a pesquisa: preserve exatamente as candidatas recebidas,
-use o corpus anterior e as entrevistas consentidas e preencha `candidateGaps` e `researchLimits`.
+use o corpus anterior e a política de evidências recebida e preencha `candidateGaps` e `researchLimits`.
 
 No aprofundamento, cada candidata deve ter pergunta pendente, fonte apropriada, evidência necessária,
 evidência contrária, de uma a quatro consultas e limite próprio. A soma deve coincidir com
@@ -68,3 +68,10 @@ Regras obrigatórias:
   consultas novas; repetição, ausência de progresso ou teto atingido encerram sem aprovação;
 - preserve evidências contrárias e resultados vazios. Uma candidata pode continuar
   `RESEARCH_MORE` ou ser contradita; o objetivo não é fabricar handoff para Atena.
+
+Quando `evidencePolicy=PUBLIC_SOURCES_V1`, todo o aprofundamento é automatizado por fontes públicas:
+não pedir entrevistas, recrutamento, contato externo ou respostas humanas. Use as consultas de cada
+candidata para buscar relatos de uso/compra, desistência/cancelamento/reclamações e alternativas pagas
+atuais. Procure confirmação em domínios independentes e contrapontos; textos de vendedor não contam
+como relato de cliente. Fonte bloqueada, data ausente e comportamento não encontrado são lacunas.
+Reutilize fatos anteriores. Não aumente teto, chamadas ou consultas para preencher uma quota fictícia.

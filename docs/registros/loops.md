@@ -6884,3 +6884,16 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   ponto de coleta é verificada por HTTP e navegador antes de nova avaliação paga.
 - **Limite:** rastreabilidade não comprova exclusividade, venda, entrega operacional
   nem direito sobre material de terceiros; o parecer continua independente.
+
+## LOOP-ARGOS-RECRUTAMENTO-INDISPONIVEL — pesquisa não pode depender de entrevistas inviáveis
+
+- **Confirmado em 24/09/2026:** ciclo 69/tarefa 481 aguardava corretamente o gate de cinco a oito
+  entrevistas; o operador informou que não existe capacidade de recrutamento. Não era falha de fila.
+- **Causa:** o contrato v7 impunha uma única forma de evidência comportamental.
+- **Correção sistêmica:** processo v8 com política pública para novos ciclos e adesão explícita
+  idempotente para esperas legadas. Mesmas candidatas, corpus, tarefas e limites; entrevistas
+  históricas preservadas. Relatos públicos não recebem consentimento nem comprovante de compra fictício.
+- **Prevenção:** conferir fonte, papel, ação relatada, trecho e hash por candidata; dois domínios
+  comportamentais mínimos, sem dispensar gates existentes. Ausência de fonte mantém lacuna.
+- **Contrato/testes:** `descoberta-produtos-pde-canon.v1.md`, `argos-public-evidence-v1.md`,
+  `ProductDiscoveryPublicEvidenceContractTest`, `public-evidence.test.js`.

@@ -60,6 +60,24 @@ class ProductDiscoveryControllerTest {
             .build();
   }
 
+  /** Adota a política pelo endpoint do próprio módulo e devolve o estado sem simular entrevistas. */
+  @Test
+  void adoptsPublicResearchThroughCanonicalEndpoint() throws Exception {
+    when(customerInterviewService.adoptPublicEvidence(901L)).thenReturn(
+        new ProductDiscoveryGapDeepeningResponse(901L, true,
+            ProductDiscoveryCycleStatus.READY_FOR_RESEARCH, "candidate-gap-deepening",
+            0, 8, 0, 0, 0, List.of(), List.of(), true, 12, 2, 4,
+            new BigDecimal("0.12"), "ESTIMATED_SEARCH_ONLY", "AGENT_TASK_AUDIT_AFTER_CALLBACK",
+            "https://brave.com/search/api/", LocalDate.of(2026, 9, 23),
+            "Pesquisa pública sem entrevistas obrigatórias.", List.of(), "PUBLIC_SOURCES_V1", false));
+    mockMvc.perform(post("/api/product-discovery/v1/cycles/901/gap-deepening/public-research"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.evidencePolicy").value("PUBLIC_SOURCES_V1"))
+        .andExpect(jsonPath("$.interviewCount").value(0))
+        .andExpect(jsonPath("$.maximumSearchCostUsd").value(0.12));
+    org.mockito.Mockito.verify(customerInterviewService).adoptPublicEvidence(901L);
+  }
+
   /** Deve expor o gate e rejeitar entrevista sem os dois consentimentos explícitos. */
   @Test
   void exposesGapDeepeningAndValidatesInterviewConsent() throws Exception {
@@ -87,7 +105,9 @@ class ProductDiscoveryControllerTest {
                 "https://brave.com/search/api/",
                 LocalDate.of(2026, 9, 23),
                 "Falta cobrir uma candidata.",
-                List.of()));
+                List.of(),
+                "CONSENTED_INTERVIEWS_V1",
+                true));
 
     mockMvc
         .perform(get("/api/product-discovery/v1/cycles/65/gap-deepening"))

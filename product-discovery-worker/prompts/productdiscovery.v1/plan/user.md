@@ -9,12 +9,13 @@ Crie o plano de pesquisa do ciclo {{cycleId}}.
 - Restrições comerciais: {{commercialConstraints}}
 - Objetivo: {{objective}}
 - Atividade atual: {{stageCode}}
+- Política de evidência: {{evidencePolicy}}
 
 Candidatas preservadas da pesquisa inicial:
 
 {{previousCandidates}}
 
-Entrevistas consentidas e anônimas sobre comportamento passado:
+Entrevistas históricas, somente quando registradas (PUBLIC_SOURCES_V1 não exige entrevistas):
 
 {{customerInterviews}}
 

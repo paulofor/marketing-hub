@@ -248,7 +248,7 @@ async function paste(page) {
         const copied = await paste(page);
         if (aihub) {
           for (const part of [
-            "processo corrente para o produto corrente",
+            "processo corrente no escopo da execução",
             "Product Digital Experience",
             "ambiente local da sandbox",
             "Revise os testes unitários de todos os módulos alterados",

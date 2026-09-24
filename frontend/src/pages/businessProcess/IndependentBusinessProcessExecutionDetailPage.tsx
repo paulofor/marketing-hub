@@ -7,6 +7,7 @@ import {
   useStartIndependentBusinessProcessExecution,
 } from "../../api/businessProcess/useIndependentBusinessProcessExecutions";
 import PageTitle from "../../components/PageTitle";
+import IndependentExecutionAihubPromptCopy from "./IndependentExecutionAihubPromptCopy";
 import {
   createIndependentExecutionRequestKey,
   IndependentBusinessProcessExecutionDetail,
@@ -84,6 +85,15 @@ export default function IndependentBusinessProcessExecutionDetailPage() {
           </p>
         </div>
       </header>
+
+      {query.data && !query.isError && (
+        <IndependentExecutionAihubPromptCopy
+          key={query.data.execution.id}
+          detail={query.data}
+          updatedAt={query.dataUpdatedAt}
+          loading={query.isFetching}
+        />
+      )}
 
       {completedWithGaps ? (
         <section

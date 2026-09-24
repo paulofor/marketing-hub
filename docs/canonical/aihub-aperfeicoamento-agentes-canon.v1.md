@@ -10,6 +10,11 @@ sucesso em testes não demonstra, por si só, aumento de vendas.
 O modelo compartilhado fica em
 `frontend/src/pages/product/prompts/process-aihub-help.v1.md`. O componente
 `ProductProcessContextCopy.tsx` acrescenta a fotografia oficial do processo uma única vez.
+Desde 24/09/2026, `IndependentExecutionAihubPromptCopy.tsx` reutiliza o mesmo template no
+detalhe de execuções independentes, acrescentando sua própria fotografia oficial. O escopo
+é confirmado pela execução e pela referência do backend; produto de entrada não é obrigatório.
+Falha técnica, espera por evidência humana e pesquisa concluída com lacunas são resultados
+distintos, sem aprovação fabricada ou repetição paga automática.
 O botão, a prévia e a cópia manual usam esse mesmo texto. Esta alteração orienta futuras
 solicitações ao AIHUB; não instala novos agentes nem muda pesos, filas ou modelos.
 

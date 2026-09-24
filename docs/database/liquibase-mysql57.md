@@ -112,8 +112,9 @@ assertivas e rollback continuam executados uma única vez e qualquer erro funcio
 A matriz dos nove agentes possui fixture própria e valida incremento dinâmico de `agent_version`,
 onze processos sem coautoria, a inclusão operacional de Íris, gates independentes de Psique e
 Têmis, cadeias de valor v8/v9, paridade entre `agent.current_version` e as versões declaradas pelos
-executores no contrato canônico de health, a evolução estética v4 de Psique com snapshot e paths
-auditáveis e a versão v6 com raciocínio `max`, incluindo rollback e reaplicação sem duplicidade:
+executores no contrato canônico de health, Argos v5 com schemas estritos por atividade e bloqueio
+de startup, a evolução estética v4 de Psique com snapshot e paths auditáveis e a versão v6 com
+raciocínio `max`, incluindo rollback e reaplicação sem duplicidade:
 
 ```bash
 bash backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql57.sh

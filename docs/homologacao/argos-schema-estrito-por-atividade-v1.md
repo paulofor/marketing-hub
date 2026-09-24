@@ -9,6 +9,8 @@ Data: 2026-09-23
 - atividade original: `research` — Reunir evidências factuais e situações de compra;
 - executor: Product Discovery Worker / Argos.
 - versão do executor corrigido: Argos v5.
+- identidade persistida: `agent_version` v5 vincula os três schemas, validação de startup e
+  preservação do erro estruturado; a fixture MySQL 5.7 cobre aplicação, reaplicação e rollback.
 
 O provedor recusou o schema antes da inferência porque `candidateGaps` e `researchLimits` estavam
 declarados, mas não constavam em `required`. Nenhuma das duas tarefas registrou tokens ou custo.
@@ -42,3 +44,13 @@ e celular; testes do worker e do contrato precedem PR e deploy.
 
 A opção 3 foi escolhida. Ela corrige a causa-raiz sem alterar tema, produto, estratégia, orçamento
 ou gates de evidência.
+
+## Evidência local
+
+- 136 testes do Product Discovery Worker aprovados;
+- 23 testes focados do backend aprovados, incluindo catálogo, changelog v5 e fixture declarada;
+- Spotless, validação estática Liquibase, `bash -n` e ShellCheck aprovados;
+- fixture física MySQL 5.7 aprovada com a matriz dos nove agentes, aplicação, reaplicação e rollback
+  do Argos v5;
+- schemas de pesquisa inicial e aprofundamento aceitos pelo executor real e imagem local bloqueando
+  contratos inválidos antes do polling.

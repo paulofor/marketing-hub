@@ -31,3 +31,37 @@ preferência observada, depoimento ou intenção real de compra.
 
 O briefing comercial existente continua útil como hipótese de criativo, mas toda menção a
 recrutamento ou leitura privada deve ser reinterpretada como histórica e não executável.
+
+## Piloto comercial direto aprovado — 24/09/2026
+
+O usuário aprovou explicitamente o piloto recomendado de Mira. Para **esta nova execução
+comercial**, essa decisão substitui a exigência anterior de primeiro contato exclusivamente
+por Instagram Ads. A validação multiagente privada continua preservada, com checkout simulado
+e dados segregados; não deve ser convertida em compra, participante ou utilidade humana.
+
+- Público: mulheres com pele madura e produtos já comprados, conforme o nicho vinculado ao produto.
+- Desejo a investigar: alívio de esforço e clareza para organizar os produtos disponíveis.
+- Hipótese: esse público pagará **R$ 49, em compra única**, por uma rotina individualizada,
+  clara e consultável. Não é diagnóstico, prescrição nem promessa de resultado clínico.
+- Demonstração real antes da compra e CTA **Organizar minha rotina por R$ 49**.
+- Canal: **abordagem individual consentida** (`DIRECT_ONE_TO_ONE`), sem mídia paga.
+- Amostra exploratória: até **oito participantes**, em **sete dias a partir da prontidão
+  comercial e do início autorizado**, sem retroagir a janela por causa da preparação.
+- Mídia: **R$ 0**. O orçamento histórico de recrutamento não é reativado. Mídia zero não significa
+  custo total zero nem autoriza consumo adicional de IA, infraestrutura ou serviços externos.
+- Critério inicial de continuidade: ao menos **duas compras confirmadas e dois primeiros usos**;
+  avaliar também receita líquida, reembolsos, custo completo e contribuição. A amostra não comprova
+  escala, preferência do mercado ou rentabilidade sustentada.
+- Interromper a disponibilização diante de falha de pagamento/entrega, saída insegura, quebra de
+  consentimento ou limite financeiro; não substituir segurança por conversão.
+
+Antes da primeira venda, a preparação deve comprovar entrega comercial, checkout, economia,
+limites de consumo, suporte e reembolso, Psique, Têmis e preflight. O canal e os prazos de suporte
+não faziam parte da recomendação aprovada e continuam pendentes de confirmação operacional.
+A lista de participantes consentidas também não foi fornecida; a aprovação não fabrica contatos
+ou consentimentos nem autoriza mensagens indiscriminadas. Não registrar nomes ou contatos pessoais
+neste cânone.
+
+O início comercial permanece bloqueado enquanto faltar qualquer entrada essencial. Registrar a
+aprovação e sua hipótese no cadastro administrativo é preparação, não homologação concluída,
+lançamento, cobrança, venda ou resultado humano.

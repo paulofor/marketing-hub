@@ -133,6 +133,13 @@ falhas e eventos. Somente a decisão humana do Processo 5 autoriza versão, cana
 paradas. Essa separação evita vender uma demonstração ainda sem contrato operacional e evita repetir
 chamadas pagas quando apenas uma evidência material mudou.
 
+O canal deve corresponder ao plano aprovado: Meta/Instagram exige conta e público oficiais;
+`DIRECT_ONE_TO_ONE` exige público elegível, amostra explícita e ausência de verba de mídia.
+A abordagem direta não dispensa comunicação aprovada, oferta, checkout, entrega, economia,
+consentimento, revisões ou decisão humana de início. Mudança de canal, amostra ou limite invalida
+a fotografia da preparação. A aprovação comercial de um piloto não autoriza seu lançamento
+antes de concluir os contratos e gates pertinentes.
+
 ## Gestão das versões PDE Opala — decisão de 16/09/2026
 
 Todo produto oficialmente vinculado ao tipo `PDE` (nome interno Opala) deve oferecer no card do

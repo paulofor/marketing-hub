@@ -122,8 +122,9 @@ public class SafiraCommercialContext {
         experiment.getProductAiSubtype() != null,
         "Prepare e registre o subtipo do Produto IA pela hipótese antes do experimento.");
     require(
-        experiment.getPlatform() == ExperimentPlatform.FACEBOOK,
-        "O experimento Safira deve preservar o canal Meta/Instagram aprovado no plano.");
+        experiment.getPlatform() == ExperimentPlatform.FACEBOOK
+            || experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE,
+        "Selecione Meta/Instagram ou abordagem individual consentida conforme o plano aprovado.");
     if (mutation) {
       require(
           List.of(ExperimentStatus.PLANNED, ExperimentStatus.USER_STOPPED, ExperimentStatus.PAUSED)
@@ -188,6 +189,9 @@ public class SafiraCommercialContext {
     result.putPOJO("cycleId", scope.cycleId());
     result.put("productAiSubtype", Objects.toString(experiment.getProductAiSubtype(), ""));
     result.put("platform", Objects.toString(experiment.getPlatform(), ""));
+    result.put("sampleSize", experiment.getSampleSize());
+    result.put("dailyBudgetBrl", experiment.getDailyBudget());
+    result.put("mediaSpendLimitBrl", experiment.getMediaSpendLimit());
     result.put("campaignObjective", Objects.toString(experiment.getCampaignObjective(), ""));
     result.put("priceBrl", experiment.getUnitPrice());
     result.put("productPriceBrl", product.getCurrentPriceBrl());
@@ -317,6 +321,10 @@ public class SafiraCommercialContext {
             "productVersion",
             "cycleId",
             "productAiSubtype",
+            "platform",
+            "sampleSize",
+            "dailyBudgetBrl",
+            "mediaSpendLimitBrl",
             "priceBrl",
             "productPriceBrl"));
     if ("journey".equals(activity)) {

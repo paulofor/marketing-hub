@@ -76,6 +76,21 @@ audit_product_discovery_enums_command() {
     'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
 }
 
+audit_argos_supervised_reanalysis_update() {
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-09-24-argos-supervised-meta-reanalysis-v1.yaml \
+    liquibase-product-discovery-bpm-audit
+}
+
+# shellcheck disable=SC2016 # O comando abaixo é expandido deliberadamente pelo shell do container.
+audit_argos_supervised_reanalysis_command() {
+  local command="$1"
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-09-24-argos-supervised-meta-reanalysis-v1.yaml \
+    liquibase-product-discovery-bpm-audit sh -lc \
+    'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
+}
+
 audit_argos_meta_browser_update() {
   audit_compose run --rm \
     -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-08-30-argos-meta-public-browser-v1.yaml \
@@ -1109,6 +1124,80 @@ audit_assert_equal \
     (SELECT status FROM product_discovery_cycle WHERE id = 42), ':',
     (SELECT COUNT(*) FROM DATABASECHANGELOG
       WHERE id = '2026-09-24-product-discovery-enums-varchar-v1-001')
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "UPDATE agent SET current_version = 7 WHERE agent_key = 'market-radar';
+      DELETE FROM DATABASECHANGELOG
+       WHERE ID LIKE '2026-09-24-argos-supervised-meta-reanalysis-v1-%';" \
+  >/dev/null 2>&1
+
+audit_argos_supervised_reanalysis_update
+audit_argos_supervised_reanalysis_update
+audit_assert_equal \
+  "reanálise Meta supervisionada exata e versão Argos v8" \
+  "2:8:1:EXACT_SESSION_REUSE_V1:false:true:datetime" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name IN (
+          'supervised_meta_reanalysis_investigation_id',
+          'last_analyzed_supervised_meta_evidence_at'
+        )), ':',
+    (SELECT current_version FROM agent WHERE agent_key = 'market-radar'), ':',
+    (SELECT COUNT(*) FROM agent_version version
+      JOIN agent ON agent.id = version.agent_id
+      WHERE agent.agent_key = 'market-radar' AND version.version_number = 8), ':',
+    (SELECT JSON_UNQUOTE(JSON_EXTRACT(version.contract_snapshot, '$.supervisedMetaReanalysis'))
+      FROM agent_version version
+      JOIN agent ON agent.id = version.agent_id
+      WHERE agent.agent_key = 'market-radar' AND version.version_number = 8), ':',
+    (SELECT JSON_UNQUOTE(JSON_EXTRACT(version.contract_snapshot, '$.repeatsBroadResearch'))
+      FROM agent_version version
+      JOIN agent ON agent.id = version.agent_id
+      WHERE agent.agent_key = 'market-radar' AND version.version_number = 8), ':',
+    (SELECT JSON_UNQUOTE(JSON_EXTRACT(version.contract_snapshot, '$.preservesCandidateIdentity'))
+      FROM agent_version version
+      JOIN agent ON agent.id = version.agent_id
+      WHERE agent.agent_key = 'market-radar' AND version.version_number = 8), ':',
+    (SELECT data_type FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'last_analyzed_supervised_meta_evidence_at')
+  );")"
+
+audit_argos_supervised_reanalysis_command "rollbackCount 2"
+audit_assert_equal \
+  "rollback isolado da reanálise supervisionada" \
+  "0:7" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name IN (
+          'supervised_meta_reanalysis_investigation_id',
+          'last_analyzed_supervised_meta_evidence_at'
+        )), ':',
+    (SELECT current_version FROM agent WHERE agent_key = 'market-radar')
+  );")"
+
+audit_argos_supervised_reanalysis_update
+audit_assert_equal \
+  "reaplicação da reanálise supervisionada" \
+  "2:8:2" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name IN (
+          'supervised_meta_reanalysis_investigation_id',
+          'last_analyzed_supervised_meta_evidence_at'
+        )), ':',
+    (SELECT current_version FROM agent WHERE agent_key = 'market-radar'), ':',
+    (SELECT COUNT(*) FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-24-argos-supervised-meta-reanalysis-v1-%')
   );")"
 
 echo "Auditoria BPM da descoberta e do retrabalho PDE aprovada no MySQL 5.7."

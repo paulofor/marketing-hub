@@ -312,6 +312,56 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
         .containsExactly("Treino entrevista emprego para jovens");
   }
 
+  /** Deve ignorar a nova consulta do plano e consumir a investigação supervisionada congelada. */
+  @Test
+  void consumesPinnedSupervisedReanalysisWithoutOpeningAnotherInvestigation() {
+    Instant now = Instant.now();
+    insertInvestigation(12L, "BR");
+    insertAsset(
+        12L,
+        "ad-supervised",
+        "Treino Entrevista",
+        "Treino entrevista emprego para jovens",
+        "[\"INSTAGRAM\"]",
+        true,
+        now.minusSeconds(600));
+    insertSupervisedObservation(
+        12L,
+        12L,
+        12L,
+        "ad-supervised",
+        "Treino Entrevista",
+        "Treino entrevista emprego para jovens",
+        "INSTAGRAM",
+        now.minusSeconds(600));
+    MoisMetaAdDtos.InvestigationResponse pinned = investigation(12L, 1);
+    when(sessionLinkService.linkedSupervisedReanalysis(90L, "lease-90"))
+        .thenReturn(Optional.of(pinned));
+
+    ProductDiscoveryMetaAdEvidenceListResponse response =
+        service.requestAndSearch(
+            90L,
+            new ProductDiscoveryMetaAdEvidenceRequest(
+                "lease-90", 1, "outra consulta criada pelo plano", "BR", "INSTAGRAM", 25));
+
+    assertThat(response.investigationId()).isEqualTo(12L);
+    assertThat(response.query()).isEqualTo("treino entrevista emprego");
+    assertThat(response.sourceStatus()).isEqualTo("OBSERVED");
+    assertThat(response.items())
+        .extracting(ProductDiscoveryMetaAdEvidenceResponse::metaAdId)
+        .containsExactly("ad-supervised");
+    Mockito.verify(investigationService, Mockito.never())
+        .ensureForProductDiscovery(
+            Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
+    Mockito.verify(sessionLinkService, Mockito.never())
+        .bindAttemptInvestigation(
+            Mockito.anyLong(),
+            Mockito.anyInt(),
+            Mockito.anyLong(),
+            Mockito.anyString(),
+            Mockito.anyString());
+  }
+
   /** Cria as tabelas mínimas consultadas pelo serviço. */
   private void createSchema() {
     jdbcTemplate.execute(

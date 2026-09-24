@@ -6965,6 +6965,22 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - Prevenção: regressões de detalhe/listagem com gate comercial bloqueado, erro histórico com
   atualização posterior, falha vigente, custos ausentes/zero/parciais e navegação sem escrita.
 
+## LOOP-ARGOS-REANALISE-META-PERDE-IDENTIDADE — 24/09/2026
+
+- **Evidência:** a retomada supervisionada do ciclo #70 abriu a tarefa #486, repetiu pesquisa Web e
+  planejamento amplo e tentou vincular outra consulta Meta às tentativas já congeladas. O backend
+  respondeu que a tentativa pertencia a outra consulta; o worker prosseguiu sem o anúncio observado
+  e a síntese terminou bloqueada por uma referência pública inválida.
+- **Causa-raiz:** o comando de retomada mudava apenas o estado do ciclo. O contrato `pending` não
+  identificava a investigação supervisionada nem devolvia corpus e candidatas anteriores; o executor
+  interpretava a tarefa como nova descoberta.
+- **Correção sistêmica:** o backend congela a investigação exata, o worker executa uma rodada Meta
+  sem buscas gerais, o callback comprova que consumiu essa sessão e atualiza as mesmas candidatas
+  sem trocar IDs. Falha técnica preserva o vínculo; sucesso registra a observação analisada.
+- **Prevenção:** testes cobrem lease e sessão divergentes, identidade das candidatas, callback sem a
+  evidência exigida, retry técnico e proibição de repetir a mesma observação. Argos v8 registra
+  `EXACT_SESSION_REUSE_V1`; o cânone detalha os limites comerciais.
+
 ## LOOP-BPM-VERSAO-HISTORICA-MASCA-ESTADO-ATUAL — 24/09/2026
 
 - **Evidência confirmada:** a execução #20 do Processo 5 v10 de Capella entrou na fila sem instância

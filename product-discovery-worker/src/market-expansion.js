@@ -17,7 +17,9 @@ export async function executeBoundedMarketResearch(job, options) {
     options.maxAttempts,
   );
   const maxAttempts =
-    job.stageCode === "candidate-gap-deepening"
+    job.supervisedMetaReanalysis
+      ? 1
+      : job.stageCode === "candidate-gap-deepening"
       ? Math.min(2, configuredMaxAttempts)
       : job.researchMode === "DISCOVER_MARKETS"
         ? configuredMaxAttempts
@@ -281,7 +283,9 @@ export function buildMarketExpansionContext({
     attemptNumber,
     maxAttempts,
     instruction:
-      job?.stageCode === "candidate-gap-deepening"
+      job?.supervisedMetaReanalysis
+        ? "Reavalie somente as candidatas preservadas com a investigação Meta supervisionada; reutilize o corpus válido e não repita buscas gerais."
+        : job?.stageCode === "candidate-gap-deepening"
         ? "Aprofunde somente as perguntas pendentes das candidatas preservadas, reutilizando o corpus e as fontes da política recebida; não reinicie a descoberta ampla."
         : attemptNumber === 1
           ? "Investigue o escopo inicial recebido."

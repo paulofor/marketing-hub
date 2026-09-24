@@ -28,7 +28,8 @@ public record ProductDiscoveryPendingResponse(
     String previousEvidenceReportJson,
     List<ProductDiscoveryCustomerInterviewResponse> customerInterviews,
     ProductDiscoveryGapResearchPolicyResponse gapResearchPolicy,
-    String evidencePolicy) {
+    String evidencePolicy,
+    ProductDiscoverySupervisedMetaReanalysisContext supervisedMetaReanalysis) {
 
   /** Mantém compatibilidade dos produtores e testes da etapa inicial sem contexto de lacunas. */
   public ProductDiscoveryPendingResponse(
@@ -71,6 +72,7 @@ public record ProductDiscoveryPendingResponse(
         null,
         List.of(),
         null,
-        "CONSENTED_INTERVIEWS_V1");
+        "CONSENTED_INTERVIEWS_V1",
+        null);
   }
 }

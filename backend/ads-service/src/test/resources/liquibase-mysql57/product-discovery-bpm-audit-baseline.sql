@@ -71,9 +71,23 @@ CREATE TABLE business_process_chain_item (
 CREATE TABLE agent (
   id BIGINT NOT NULL AUTO_INCREMENT,
   agent_key VARCHAR(100) NOT NULL,
+  status VARCHAR(50) NOT NULL DEFAULT 'READY',
   current_version INT NOT NULL DEFAULT 3,
+  model_name VARCHAR(255) NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uk_audit_agent_key (agent_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE agent_version (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  agent_id BIGINT NOT NULL,
+  version_number INT NOT NULL,
+  contract_snapshot LONGTEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_audit_agent_version_agent
+    FOREIGN KEY (agent_id) REFERENCES agent(id),
+  UNIQUE KEY uk_audit_agent_version (agent_id, version_number)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE mois_meta_ad_investigation (

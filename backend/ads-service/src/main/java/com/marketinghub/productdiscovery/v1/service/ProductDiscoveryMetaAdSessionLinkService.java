@@ -58,6 +58,27 @@ public class ProductDiscoveryMetaAdSessionLinkService {
   }
 
   /**
+   * Recupera a investigação congelada para a reanálise supervisionada sem alterar a escada de
+   * tentativas da pesquisa original.
+   */
+  public Optional<MoisMetaAdDtos.InvestigationResponse> linkedSupervisedReanalysis(
+      Long cycleId, String executionLeaseId) {
+    ProductDiscoveryCycle cycle =
+        cycleRepository
+            .findById(cycleId)
+            .orElseThrow(() -> new IllegalArgumentException("Ciclo de descoberta não encontrado"));
+    Long investigationId = cycle.getSupervisedMetaReanalysisInvestigationId();
+    if (investigationId == null) return Optional.empty();
+    if (cycle.getStatus() != ProductDiscoveryCycleStatus.RESEARCHING
+        || !StringUtils.hasText(executionLeaseId)
+        || !executionLeaseId.equals(cycle.getExecutionLeaseId())) {
+      throw new IllegalStateException(
+          "Lease da reanálise supervisionada expirou ou foi substituído");
+    }
+    return Optional.of(requiredInvestigation(cycle, investigationId));
+  }
+
+  /**
    * Recupera o último vínculo Instagram persistido sem criar investigação por efeito de leitura.
    */
   public Optional<MoisMetaAdDtos.InvestigationResponse> linkedInvestigation(Long cycleId) {

@@ -47,6 +47,10 @@ class ProductDiscoveryServiceTest {
 
   @Mock private ProductDiscoveryCustomerInterviewService customerInterviewService;
 
+  @Mock private ProductDiscoveryMetaAdSessionLinkService metaAdSessionLinkService;
+
+  @Mock private ProductDiscoverySupervisedMetaSessionService supervisedMetaSessionService;
+
   /** Deve preservar a candidata inicial e abrir o gate comportamental na versão nova. */
   @Test
   void opensCandidateGapDeepeningWithoutSendingPrematureDossierToAtena() {
@@ -103,6 +107,50 @@ class ProductDiscoveryServiceTest {
         .isEqualTo(ProductDiscoveryCustomerInterviewService.GAP_STAGE_CODE);
     verify(bpmAuditService).openCandidateGapDeepening(cycle);
     verify(dossierResearchSyncService, never()).synchronize(eq(40L), any());
+  }
+
+  /** Deve preservar IDs e concluir diretamente a reanálise Meta sem repetir o aprofundamento. */
+  @Test
+  void completesSupervisedMetaReanalysisWithoutReplacingCandidates() throws Exception {
+    ProductDiscoveryCycle cycle = researchCycle(70L, "lease-70", "research");
+    cycle.setResearchMode(ProductDiscoveryResearchMode.DISCOVER_MARKETS);
+    cycle.setSupervisedMetaReanalysisInvestigationId(43L);
+    ProductDiscoveryOpportunity first = opportunity(cycle, 63L, "Perfil para aplicativo");
+    ProductDiscoveryOpportunity second = opportunity(cycle, 64L, "Imagem para ocasião marcada");
+    when(cycleRepository.findById(70L)).thenReturn(Optional.of(cycle));
+    when(cycleRepository.save(cycle)).thenReturn(cycle);
+    when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(70L))
+        .thenReturn(List.of(first, second));
+    org.mockito.Mockito.doAnswer(
+            invocation -> {
+              cycle.setSupervisedMetaReanalysisInvestigationId(null);
+              cycle.setLastAnalyzedSupervisedMetaEvidenceAt(Instant.parse("2026-09-24T19:30:00Z"));
+              return null;
+            })
+        .when(supervisedMetaSessionService)
+        .validateAndCompleteReanalysis(eq(cycle), any());
+    ProductDiscoveryService service = serviceWithCustomerInterviews();
+    var evidenceReport = new ObjectMapper().readTree("{\"metaCoverage\":[]}");
+
+    ProductDiscoveryCycleDetailResponse response =
+        service.complete(
+            70L,
+            new ProductDiscoveryResultRequest(
+                "lease-70",
+                "A nova evidência foi incorporada sem fabricar aprovação.",
+                List.of(
+                    researchableResult(first.getName(), "{}"),
+                    researchableResult(second.getName(), "{}")),
+                evidenceReport,
+                null));
+
+    assertThat(response.cycle().status()).isEqualTo(ProductDiscoveryCycleStatus.COMPLETED);
+    assertThat(cycle.getStageCode()).isEqualTo("opportunity-gate");
+    assertThat(first.getId()).isEqualTo(63L);
+    assertThat(second.getId()).isEqualTo(64L);
+    verify(opportunityRepository, never()).deleteAllByCycleId(70L);
+    verify(bpmAuditService, never()).openCandidateGapDeepening(cycle);
+    verify(supervisedMetaSessionService).validateAndCompleteReanalysis(cycle, evidenceReport);
   }
 
   /** Deve aceitar duas tentativas distintas e preservar seu histórico auditável. */
@@ -1552,6 +1600,10 @@ class ProductDiscoveryServiceTest {
         service,
         "gapResearchContractService",
         new ProductDiscoveryGapResearchContractService(opportunityRepository));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "metaAdSessionLinkService", metaAdSessionLinkService);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "supervisedMetaSessionService", supervisedMetaSessionService);
     return service;
   }
 

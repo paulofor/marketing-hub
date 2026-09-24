@@ -30,12 +30,28 @@ class ProductDiscoveryPublicEvidenceClaimTest {
     expired.setLeaseExpiresAt(Instant.now().minusSeconds(3600));
     entityManager.flush();
     var now = Instant.now();
-    assertThat(repository.findClaimableForUpdate("research", ProductDiscoveryCycleStatus.READY_FOR_RESEARCH,
-        ProductDiscoveryCycleStatus.RESEARCHING, now, now.minusSeconds(3600), false, PageRequest.of(0, 10)))
-        .extracting(ProductDiscoveryCycle::getId).containsExactly(legacy.getId());
-    assertThat(repository.findClaimableForUpdate("research", ProductDiscoveryCycleStatus.READY_FOR_RESEARCH,
-        ProductDiscoveryCycleStatus.RESEARCHING, now, now.minusSeconds(3600), true, PageRequest.of(0, 10)))
-        .extracting(ProductDiscoveryCycle::getId).containsExactlyInAnyOrder(legacy.getId(), publicCycle.getId(), expired.getId());
+    assertThat(
+            repository.findClaimableForUpdate(
+                "research",
+                ProductDiscoveryCycleStatus.READY_FOR_RESEARCH,
+                ProductDiscoveryCycleStatus.RESEARCHING,
+                now,
+                now.minusSeconds(3600),
+                false,
+                PageRequest.of(0, 10)))
+        .extracting(ProductDiscoveryCycle::getId)
+        .containsExactly(legacy.getId());
+    assertThat(
+            repository.findClaimableForUpdate(
+                "research",
+                ProductDiscoveryCycleStatus.READY_FOR_RESEARCH,
+                ProductDiscoveryCycleStatus.RESEARCHING,
+                now,
+                now.minusSeconds(3600),
+                true,
+                PageRequest.of(0, 10)))
+        .extracting(ProductDiscoveryCycle::getId)
+        .containsExactlyInAnyOrder(legacy.getId(), publicCycle.getId(), expired.getId());
   }
 
   /** Persiste um ciclo sintético sem candidata, pessoa ou consumo externos. */

@@ -53,6 +53,26 @@ public class ProductDiscoveryMetaAdEvidenceService {
       Long cycleId, ProductDiscoveryMetaAdEvidenceRequest request) {
     String country = normalizedCountry(request.country());
     String publisherPlatform = normalizedPublisherPlatform(request.publisherPlatform());
+    Optional<MoisMetaAdDtos.InvestigationResponse> supervisedReanalysis =
+        sessionLinkService.linkedSupervisedReanalysis(cycleId, request.executionLeaseId());
+    if (supervisedReanalysis.isPresent()) {
+      MoisMetaAdDtos.InvestigationResponse investigation = supervisedReanalysis.get();
+      validateInvestigationScope(investigation, country, publisherPlatform);
+      String query = normalizedQuery(investigation.searchTerms());
+      if (specificTerms(query).size() < 2 || specificTerms(query).size() > 5) {
+        throw new IllegalStateException(
+            "A investigação supervisionada possui consulta incompatível com Argos");
+      }
+      log.info(
+          "Product Discovery reutilizou evidência Meta supervisionada cycleId={} attemptNumber={} investigationId={} requestedQuery={} pinnedQuery={}",
+          cycleId,
+          request.attemptNumber(),
+          investigation.id(),
+          request.query(),
+          query);
+      return searchInternal(
+          cycleId, query, country, publisherPlatform, request.limit(), investigation, true);
+    }
     Optional<MoisMetaAdDtos.InvestigationResponse> linkedInvestigation =
         sessionLinkService.linkedAttemptInvestigation(cycleId, request.attemptNumber());
     String requestedQuery = normalizedQuery(request.query());
@@ -66,12 +86,7 @@ public class ProductDiscoveryMetaAdEvidenceService {
             () ->
                 investigationService.ensureForProductDiscovery(
                     WORKSPACE_ID, requestedQuery, country, publisherPlatform));
-    if (!WORKSPACE_ID.equals(investigation.workspaceId())
-        || !country.equalsIgnoreCase(investigation.countryCode())
-        || !publisherPlatform.equalsIgnoreCase(investigation.publisherPlatform())) {
-      throw new IllegalStateException(
-          "A investigação Meta vinculada não pertence ao território e plataforma do ciclo");
-    }
+    validateInvestigationScope(investigation, country, publisherPlatform);
     investigation =
         sessionLinkService.bindAttemptInvestigation(
             cycleId,
@@ -104,6 +119,19 @@ public class ProductDiscoveryMetaAdEvidenceService {
         request.limit(),
         investigation,
         linkedInvestigation.isPresent());
+  }
+
+  /** Confirma território, plataforma e workspace antes de expor a investigação a Argos. */
+  private void validateInvestigationScope(
+      MoisMetaAdDtos.InvestigationResponse investigation,
+      String country,
+      String publisherPlatform) {
+    if (!WORKSPACE_ID.equals(investigation.workspaceId())
+        || !country.equalsIgnoreCase(investigation.countryCode())
+        || !publisherPlatform.equalsIgnoreCase(investigation.publisherPlatform())) {
+      throw new IllegalStateException(
+          "A investigação Meta vinculada não pertence ao território e plataforma do ciclo");
+    }
   }
 
   /** Pesquisa somente evidências já persistidas, sem criar acompanhamento por efeito de um GET. */

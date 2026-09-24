@@ -92,8 +92,16 @@ final class ProductDiscoveryPublicEvidenceContract {
         if ("PUBLIC_CUSTOMER_REPORT".equals(role)
             && !"UNKNOWN".equals(action)
             && parts.length >= 2) {
-          int labels = url.getHost().toLowerCase(Locale.ROOT).matches(".*\\.(com|net|org|co|gov|ac|edu)\\.[a-z]{2}$") ? 3 : 2;
-          if (parts.length >= labels) domains.add(String.join(".", java.util.Arrays.copyOfRange(parts, parts.length - labels, parts.length)));
+          int labels =
+              url.getHost()
+                      .toLowerCase(Locale.ROOT)
+                      .matches(".*\\.(com|net|org|co|gov|ac|edu)\\.[a-z]{2}$")
+                  ? 3
+                  : 2;
+          if (parts.length >= labels)
+            domains.add(
+                String.join(
+                    ".", java.util.Arrays.copyOfRange(parts, parts.length - labels, parts.length)));
         }
       }
       boolean ready = domains.size() >= 2;

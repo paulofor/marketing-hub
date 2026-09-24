@@ -62,6 +62,8 @@ public class ProductDiscoveryService {
   @Autowired private ResearchIntelligenceService researchIntelligenceService;
   @Autowired private ProductDiscoveryCustomerInterviewService customerInterviewService;
   @Autowired private ProductDiscoveryGapResearchContractService gapResearchContractService;
+  @Autowired private ProductDiscoveryMetaAdSessionLinkService metaAdSessionLinkService;
+  @Autowired private ProductDiscoverySupervisedMetaSessionService supervisedMetaSessionService;
 
   /** Inicializa o serviço com repositórios canônicos do módulo. */
   public ProductDiscoveryService(
@@ -482,6 +484,7 @@ public class ProductDiscoveryService {
   public ProductDiscoveryCycleDetailResponse complete(
       Long cycleId, ProductDiscoveryResultRequest request) {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
+    boolean supervisedMetaReanalysis = cycle.getSupervisedMetaReanalysisInvestigationId() != null;
     validateExecutionLease(cycle, request.executionLeaseId(), STAGE_CODE);
     validateOpportunityCount(cycle, request);
     recordResearchArtifacts(cycle, request);
@@ -489,10 +492,17 @@ public class ProductDiscoveryService {
     validateMarketplaceEvidenceGate(cycle, request);
     validatePurchaseMomentGate(cycle, request);
     validateInstagramHandoffEvidence(cycle, request);
-    replaceInitialOpportunities(cycle, request);
+    if (supervisedMetaReanalysis) {
+      supervisedMetaSessionService.validateAndCompleteReanalysis(cycle, request.evidenceReport());
+      updateDeepenedOpportunities(cycle, request);
+    } else {
+      replaceInitialOpportunities(cycle, request);
+    }
     cycle.setDecisionSummary(requiredText(request.decisionSummary(), "decisionSummary"));
     boolean requiresDeepening =
-        !request.opportunities().isEmpty() && bpmAuditService.supportsCandidateGapDeepening(cycle);
+        !supervisedMetaReanalysis
+            && !request.opportunities().isEmpty()
+            && bpmAuditService.supportsCandidateGapDeepening(cycle);
     cycle.setStatus(
         requiresDeepening
             ? (cycle.usesPublicEvidence()
@@ -1266,16 +1276,33 @@ public class ProductDiscoveryService {
    */
   private ProductDiscoveryPendingResponse toPendingResponse(ProductDiscoveryCycle cycle) {
     boolean gapDeepening = GAP_STAGE_CODE.equals(cycle.getStageCode());
+    boolean supervisedMetaReanalysis = cycle.getSupervisedMetaReanalysisInvestigationId() != null;
     ProductDiscoveryGapDeepeningResponse gap =
         gapDeepening && customerInterviewService != null
             ? customerInterviewService.get(cycle.getId())
             : null;
     List<ProductDiscoveryOpportunityResponse> previousCandidates =
-        gapDeepening
+        gapDeepening || supervisedMetaReanalysis
             ? opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycle.getId()).stream()
                 .map(this::toOpportunityResponse)
                 .toList()
             : List.of();
+    ProductDiscoverySupervisedMetaReanalysisContext supervisedContext =
+        supervisedMetaReanalysis
+            ? metaAdSessionLinkService
+                .linkedSupervisedReanalysis(cycle.getId(), cycle.getExecutionLeaseId())
+                .map(
+                    investigation ->
+                        new ProductDiscoverySupervisedMetaReanalysisContext(
+                            investigation.id(),
+                            investigation.searchTerms(),
+                            investigation.countryCode(),
+                            investigation.publisherPlatform()))
+                .orElseThrow(
+                    () ->
+                        new IllegalStateException(
+                            "A reanálise supervisionada perdeu sua investigação Meta"))
+            : null;
     return new ProductDiscoveryPendingResponse(
         cycle.getId(),
         PIPELINE_CODE,
@@ -1298,10 +1325,11 @@ public class ProductDiscoveryService {
             : researchIntelligenceService.selectForAgentTask(
                 "market-radar", cycle.getTheme(), cycle.getTargetAudience(), cycle.getObjective()),
         previousCandidates,
-        gapDeepening ? cycle.getResearchEvidenceReportJson() : null,
+        gapDeepening || supervisedMetaReanalysis ? cycle.getResearchEvidenceReportJson() : null,
         gap == null ? List.of() : gap.interviews(),
         gapDeepening ? gapResearchContractService.policy() : null,
-        cycle.getEvidencePolicy());
+        cycle.getEvidencePolicy(),
+        supervisedContext);
   }
 
   /** Impede que uma execução expirada sobrescreva o resultado de uma retomada mais recente. */

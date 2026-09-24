@@ -107,6 +107,12 @@ public class ProductDiscoveryCycle {
   @Column(name = "meta_ad_investigation_id")
   private Long metaAdInvestigationId;
 
+  @Column(name = "supervised_meta_reanalysis_investigation_id")
+  private Long supervisedMetaReanalysisInvestigationId;
+
+  @Column(name = "last_analyzed_supervised_meta_evidence_at")
+  private Instant lastAnalyzedSupervisedMetaEvidenceAt;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
@@ -412,6 +418,28 @@ public class ProductDiscoveryCycle {
   /** Vincula a investigação Meta antes da coleta pública do ciclo. */
   public void setMetaAdInvestigationId(Long metaAdInvestigationId) {
     this.metaAdInvestigationId = metaAdInvestigationId;
+  }
+
+  /** Retorna a investigação supervisionada congelada para a reanálise vigente. */
+  public Long getSupervisedMetaReanalysisInvestigationId() {
+    return supervisedMetaReanalysisInvestigationId;
+  }
+
+  /** Congela ou libera a investigação que a reanálise deve consumir sem abrir outra busca. */
+  public void setSupervisedMetaReanalysisInvestigationId(
+      Long supervisedMetaReanalysisInvestigationId) {
+    this.supervisedMetaReanalysisInvestigationId = supervisedMetaReanalysisInvestigationId;
+  }
+
+  /** Retorna até qual observação supervisionada Argos concluiu uma análise válida. */
+  public Instant getLastAnalyzedSupervisedMetaEvidenceAt() {
+    return lastAnalyzedSupervisedMetaEvidenceAt;
+  }
+
+  /** Registra a observação mais recente efetivamente incorporada a um resultado aceito. */
+  public void setLastAnalyzedSupervisedMetaEvidenceAt(
+      Instant lastAnalyzedSupervisedMetaEvidenceAt) {
+    this.lastAnalyzedSupervisedMetaEvidenceAt = lastAnalyzedSupervisedMetaEvidenceAt;
   }
 
   /** Retorna a data de criação. */

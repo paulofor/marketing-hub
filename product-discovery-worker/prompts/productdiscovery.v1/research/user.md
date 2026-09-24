@@ -15,6 +15,10 @@ preserve os nomes recebidos. Use compra, desistência, ocasião, resultado desej
 gasto conhecido e dificuldade residual das fontes da política recebida; ausência de gasto continua desconhecida.
 Registre a contradição ou a lacuna em `commercialRisk` quando ela não for resolvida.
 
+Quando `job.supervisedMetaReanalysis` estiver presente, preserve exatamente os nomes e a quantidade
+das candidatas anteriores. Reavalie-as somente com o corpus acumulado e a investigação Meta indicada;
+um anúncio observado pode sustentar ou contrariar uma lacuna, mas não comprova venda.
+
 Quando `researchIntelligence` estiver presente no contexto abaixo, use somente a rota
 `market-radar` como referência consultiva. Preserve IDs, fontes, hipóteses e limites
 na evidência relatada; não conte artigo, intenção ou referência como venda observada.

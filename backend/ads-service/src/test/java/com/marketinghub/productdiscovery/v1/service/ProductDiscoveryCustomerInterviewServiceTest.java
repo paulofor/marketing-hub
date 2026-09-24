@@ -58,6 +58,34 @@ class ProductDiscoveryCustomerInterviewServiceTest {
             cycleRepository, opportunityRepository, interviewRepository, bpmAuditService);
   }
 
+  /** Adota a rota pública uma única vez e conserva as mesmas candidatas sem criar entrevistas. */
+  @Test
+  void adoptsPublicResearchWithoutRecreatingCandidatesOrInterviews() {
+    when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(65L))
+        .thenReturn(List.of(first, second));
+    var response = service.adoptPublicEvidence(65L);
+    assertThat(response.evidencePolicy()).isEqualTo("PUBLIC_SOURCES_V1");
+    assertThat(response.readyForResearch()).isTrue();
+    assertThat(response.interviewCount()).isZero();
+    assertThat(response.minimumInterviews()).isZero();
+    assertThat(response.canAdoptPublicEvidence()).isFalse();
+    assertThat(cycle.getStatus()).isEqualTo(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
+    assertThat(cycle.getStageCode()).isEqualTo("candidate-gap-deepening");
+    assertThat(service.adoptPublicEvidence(65L).readyForResearch()).isTrue();
+    org.mockito.Mockito.verify(cycleRepository, org.mockito.Mockito.times(1)).save(cycle);
+    org.mockito.Mockito.verify(interviewRepository, org.mockito.Mockito.never()).save(any());
+  }
+
+  /** Recusa a alteração de política quando o worker já assumiu a pesquisa. */
+  @Test
+  void rejectsPolicyChangeOutsideTheWaitingGate() {
+    org.mockito.Mockito.lenient().when(interviewRepository.findAllByCycleIdOrderByIdAsc(65L)).thenReturn(List.of());
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    assertThatThrownBy(() -> service.adoptPublicEvidence(65L))
+        .hasMessageContaining("antes do aprofundamento");
+    org.mockito.Mockito.verify(cycleRepository, org.mockito.Mockito.never()).save(any());
+  }
+
   /** Deve liberar Argos somente com cinco relatos, compra, desistência e todas as candidatas. */
   @Test
   void releasesGapResearchOnlyWhenEveryBehavioralCriterionIsMet() {

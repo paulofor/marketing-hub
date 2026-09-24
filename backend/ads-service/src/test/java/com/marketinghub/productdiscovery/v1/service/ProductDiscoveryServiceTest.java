@@ -76,6 +76,36 @@ class ProductDiscoveryServiceTest {
     verify(dossierResearchSyncService, never()).synchronize(eq(40L), any());
   }
 
+  /** Deve preservar a candidata inicial e abrir o gate comportamental na versão nova. */
+  @Test
+  void automaticallyQueuesPublicDeepeningWithoutInterviewRecruitment() {
+    ProductDiscoveryCycle cycle = researchCycle(40L, "lease-40", "research");
+    cycle.setEvidencePolicy("PUBLIC_SOURCES_V1");
+    ProductDiscoveryOpportunity persisted =
+        opportunity(cycle, 801L, "Imagem para ocasião especial");
+    when(cycleRepository.findById(40L)).thenReturn(Optional.of(cycle));
+    when(cycleRepository.save(cycle)).thenReturn(cycle);
+    when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(40L))
+        .thenReturn(List.of(persisted));
+    when(bpmAuditService.supportsCandidateGapDeepening(cycle)).thenReturn(true);
+    ProductDiscoveryService service = serviceWithCustomerInterviews();
+
+    ProductDiscoveryCycleDetailResponse response =
+        service.complete(
+            40L,
+            new ProductDiscoveryResultRequest(
+                "lease-40",
+                "Candidata preservada para aprofundar comportamento passado.",
+                List.of(researchableResult("Imagem para ocasião especial", "{}"))));
+
+    assertThat(response.cycle().status())
+        .isEqualTo(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
+    assertThat(cycle.getStageCode())
+        .isEqualTo(ProductDiscoveryCustomerInterviewService.GAP_STAGE_CODE);
+    verify(bpmAuditService).openCandidateGapDeepening(cycle);
+    verify(dossierResearchSyncService, never()).synchronize(eq(40L), any());
+  }
+
   /** Deve aceitar duas tentativas distintas e preservar seu histórico auditável. */
   @Test
   void acceptsBoundedCandidateGapPlanHistory() {
@@ -286,7 +316,7 @@ class ProductDiscoveryServiceTest {
                         evidenceReport,
                         null)))
         .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-        .hasMessageContaining("vincular entrevistas e lacunas");
+        .hasMessageContaining("vincular fontes e lacunas");
     verify(opportunityRepository, never()).save(any(ProductDiscoveryOpportunity.class));
   }
 
@@ -1284,6 +1314,7 @@ class ProductDiscoveryServiceTest {
             eq(ProductDiscoveryCycleStatus.RESEARCHING),
             any(Instant.class),
             any(Instant.class),
+            eq(false),
             page.capture()))
         .thenReturn(List.of(cycle));
     when(cycleRepository.save(cycle)).thenReturn(cycle);
@@ -1643,6 +1674,8 @@ class ProductDiscoveryServiceTest {
         "https://brave.com/search/api/",
         java.time.LocalDate.of(2026, 9, 23),
         "Gate atendido.",
-        List.of());
+        List.of(),
+        "CONSENTED_INTERVIEWS_V1",
+        false);
   }
 }

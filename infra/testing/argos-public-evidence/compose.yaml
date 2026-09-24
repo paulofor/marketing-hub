@@ -1,0 +1,11 @@
+services:
+  argos-contract:
+    build:
+      context: ../../../product-discovery-worker
+    image: argos-public-evidence-local:test
+    network_mode: none
+    entrypoint: ["node", "--input-type=module", "-e"]
+    command: ["import { validateArgosOutputSchemaContracts } from './src/strict-output-schema.js'; console.log(await validateArgosOutputSchemaContracts());"]
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m

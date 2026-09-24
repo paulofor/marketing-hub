@@ -1,3 +1,7 @@
+import {
+  assessPublicEvidence,
+  PUBLIC_EVIDENCE_POLICY,
+} from "./public-evidence.js";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,7 +16,9 @@ export async function synthesizeMarketCandidates(context, options = {}) {
   const prompt = await buildResearchPrompt(context);
   const { contract: schemaContract } = await readStrictOutputSchema(
     new URL(
-      "../prompts/productdiscovery.v1/research/response-schema.json",
+      context.job?.evidencePolicy === PUBLIC_EVIDENCE_POLICY
+        ? "../prompts/productdiscovery.v1/research/public-response-schema.json"
+        : "../prompts/productdiscovery.v1/research/response-schema.json",
       import.meta.url,
     ),
     "síntese factual de Argos",
@@ -187,6 +193,7 @@ export function validateSynthesis(synthesis, context) {
     }
     if (
       gapDeepening &&
+      context.job?.evidencePolicy !== PUBLIC_EVIDENCE_POLICY &&
       !candidate.evidenceIds.some(
         (id) =>
           interviewCandidateNames.get(id) === normalizeIdentity(candidate.name),
@@ -194,6 +201,13 @@ export function validateSynthesis(synthesis, context) {
     ) {
       throw new Error(
         `Candidata ${name} não vinculou entrevista consentida do próprio contexto`,
+      );
+    }
+    if (context.job?.evidencePolicy === PUBLIC_EVIDENCE_POLICY) {
+      assessPublicEvidence(
+        candidate.publicObservations,
+        context.publicEvidence || [],
+        candidate.evidenceIds,
       );
     }
     const pdeFit = candidate.pdeDeliveryFit;
@@ -311,6 +325,7 @@ function compactJob(job = {}) {
     marketType: job.marketType,
     referenceSources: job.referenceSources,
     stageCode: job.stageCode,
+    evidencePolicy: job.evidencePolicy,
     marketExpansionContext: job.marketExpansionContext,
   };
 }

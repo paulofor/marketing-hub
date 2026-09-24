@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-/** Resume o gate humano e os limites da atividade de aprofundamento de lacunas. */
+/** Resume a política de evidências e os limites da atividade de aprofundamento de lacunas. */
 public record ProductDiscoveryGapDeepeningResponse(
     Long cycleId,
     boolean applicable,
@@ -28,4 +28,6 @@ public record ProductDiscoveryGapDeepeningResponse(
     String searchPricingSource,
     LocalDate searchPricingObservedOn,
     String guidance,
-    List<ProductDiscoveryCustomerInterviewResponse> interviews) {}
+    List<ProductDiscoveryCustomerInterviewResponse> interviews,
+    String evidencePolicy,
+    boolean canAdoptPublicEvidence) {}

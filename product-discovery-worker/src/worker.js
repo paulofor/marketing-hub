@@ -104,7 +104,7 @@ async function runCycle() {
     }
     for (const stagePath of [INITIAL_STAGE_PATH, GAP_DEEPENING_STAGE_PATH]) {
       const pending = await getJson(
-        `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/${stagePath}/stage-executions/pending`,
+        `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/${stagePath}/stage-executions/pending?supportedEvidencePolicy=PUBLIC_SOURCES_V1`,
       );
       for (const job of pending) {
         await processJob(job);
@@ -373,6 +373,7 @@ export function attachGapDeepeningReport(execution, job) {
   execution.report.evidenceReport ||= {};
   execution.report.evidenceReport.gapDeepening = {
     contractVersion: "CANDIDATE_GAP_DEEPENING_V1",
+    evidencePolicy: job.evidencePolicy || "CONSENTED_INTERVIEWS_V1",
     customerInterviewCount: (job.customerInterviews || []).length,
     candidateCount: (job.previousCandidates || []).length,
     plannedSearchRequests: allPlannedQueries.length,

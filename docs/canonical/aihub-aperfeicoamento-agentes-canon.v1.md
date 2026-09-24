@@ -104,7 +104,7 @@ edição do prompt. Os resultados externos dos artigos não são resultados medi
 
 Na descoberta de produtos, a memória de Argos deve ser recuperada pela candidata, pergunta
 pendente e estado da etapa. A execução seguinte recebe candidatas e evidências anteriores, relatos
-consentidos, consultas já executadas e limites; não recebe permissão para renomear candidatas,
+consentidos quando existentes, política de evidências, consultas já executadas e limites; não recebe permissão para renomear candidatas,
 reiniciar a pesquisa ampla ou converter entrevista qualitativa em prevalência. Comparar resultado
 anterior, nova evidência, contraponto e ausência de progresso torna a melhoria observável sem criar
 aprendizado automático fictício.
@@ -345,3 +345,17 @@ diferença paga, segurança e uso; Têmis confronta promessa, preço, entrega, i
 Ambas devem distinguir validação privada de evidência humana e deixar compra simulada, entrega,
 falhas e eventos para o preflight. Alteração de fingerprint invalida somente a prova atingida; não
 autoriza repetição cega, publicação ou gasto.
+
+## Argos sem recrutamento — decisão de 24/09/2026
+
+A política `PUBLIC_SOURCES_V1` substitui entrevistas obrigatórias por investigação dirigida na
+Internet. O modelo classifica papel da fonte e comportamento relatado; o executor e o backend
+conferem URL, data, trecho literal e hash do suporte coletado. São trechos de busca, não leitura
+integral da página. Duas fontes comportamentais em domínios distintos são um mínimo de
+triangulação para promover uma candidata, nunca prova de mercado, identidade ou pagamento.
+A classificação continua sendo inferência do modelo; domínio distinto não garante autoria independente.
+Reutilizar corpus, preservar contrapontos e encerrar `RESEARCH_MORE` quando o limite terminar.
+A alteração resolve a dependência de recrutamento constatada no ciclo 69; não demonstra aumento
+de vendas nem justifica ignorar os demais gates comerciais, financeiros ou de alto risco.
+Regressões: política legada, nova política, trecho sem suporte, fonte repetida, vendedor, ausência
+de progresso e retorno único por lease. Comparar custo/latência somente após execução auditada.

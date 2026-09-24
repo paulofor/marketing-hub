@@ -97,7 +97,9 @@ public class ProductDiscoveryBpmAuditService {
             AGENT_KEY,
             "Marketing Hub",
             gapDeepeningTitle(cycle),
-            "Aprofundar perguntas pendentes por candidata, confrontar evidências favoráveis e contrárias e usar de cinco a oito entrevistas consentidas antes do handoff para Atena.",
+            cycle.usesPublicEvidence()
+                ? "Aprofundar perguntas pendentes com fontes públicas verificáveis, relatos e contrapontos por candidata; sem entrevistas obrigatórias, sem inventar compras e preservando limites."
+                : "Aprofundar perguntas pendentes por candidata, confrontar evidências favoráveis e contrárias e usar de cinco a oito entrevistas consentidas antes do handoff para Atena.",
             "HIGH",
             sourceReference(cycle),
             process.getId(),

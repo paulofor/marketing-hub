@@ -4,6 +4,7 @@ import {
   type ProductDiscoveryInterviewOutcome,
   type ProductDiscoveryOpportunity,
   useCreateProductDiscoveryCustomerInterview,
+  useAdoptProductDiscoveryPublicEvidence,
   useProductDiscoveryGapDeepening,
 } from "../../api/productDiscovery/useProductDiscovery";
 
@@ -52,6 +53,7 @@ export default function CandidateGapDeepeningPanel({
 }: Props) {
   const gapQuery = useProductDiscoveryGapDeepening(cycleId);
   const createInterview = useCreateProductDiscoveryCustomerInterview(cycleId);
+  const adoptPublicEvidence = useAdoptProductDiscoveryPublicEvidence(cycleId);
   const [form, setForm] = useState<FormState>(
     initialForm(opportunities[0]?.id),
   );
@@ -69,7 +71,9 @@ export default function CandidateGapDeepeningPanel({
   }
   if (!gap?.applicable) return null;
 
-  const awaitingInterviews = gap.cycleStatus === "AWAITING_CUSTOMER_EVIDENCE";
+  const publicResearch = gap.evidencePolicy === "PUBLIC_SOURCES_V1";
+  const awaitingInterviews =
+    !publicResearch && gap.cycleStatus === "AWAITING_CUSTOMER_EVIDENCE";
   const missingNames = opportunities
     .filter((item) => gap.missingOpportunityIds.includes(item.id))
     .map((item) => item.name);
@@ -113,21 +117,31 @@ export default function CandidateGapDeepeningPanel({
               <p className="text-secondary mb-0">{gap.guidance}</p>
             </div>
             <div className="d-flex flex-wrap gap-2 align-content-start">
-              <span className="badge text-bg-primary">
-                {gap.interviewCount}/{gap.minimumInterviews} entrevistas mínimas
-              </span>
-              <span className="badge text-bg-light">
-                {gap.purchasedCount} compra(s)
-              </span>
-              <span className="badge text-bg-light">
-                {gap.abandonedCount} desistência(s)
-              </span>
+              {publicResearch ? (
+                <span className="badge text-bg-primary">
+                  Pesquisa pública automatizada
+                </span>
+              ) : (
+                <>
+                  <span className="badge text-bg-primary">
+                    {gap.interviewCount}/{gap.minimumInterviews} entrevistas
+                    mínimas
+                  </span>
+                  <span className="badge text-bg-light">
+                    {gap.purchasedCount} compra(s)
+                  </span>
+                  <span className="badge text-bg-light">
+                    {gap.abandonedCount} desistência(s)
+                  </span>
+                </>
+              )}
             </div>
           </div>
           <p className="small text-secondary mt-3 mb-0">
-            Amostra exploratória de {gap.minimumInterviews}–
-            {gap.maximumInterviews} pessoas: orienta hipóteses, mas não estima o
-            mercado. Argos fica limitado a {gap.maximumPublicQueriesPerAttempt}
+            {publicResearch
+              ? "Relatos públicos orientam hipóteses; não são entrevistas nem vendas comprovadas do nosso produto. "
+              : `Amostra exploratória de ${gap.minimumInterviews}–${gap.maximumInterviews} pessoas: orienta hipóteses, mas não estima o mercado. `}
+            Argos fica limitado a {gap.maximumPublicQueriesPerAttempt}
             buscas por tentativa, {gap.maximumAttempts} tentativas e US${" "}
             {Number(gap.maximumSearchCostUsd).toFixed(2)} estimados de busca. O
             aprofundamento aceita no máximo {gap.maximumModelInvocations}
@@ -138,12 +152,43 @@ export default function CandidateGapDeepeningPanel({
             </a>
             , observada em {gap.searchPricingObservedOn}.
           </p>
-          {missingNames.length > 0 ? (
+          {!publicResearch && missingNames.length > 0 ? (
             <div className="alert alert-warning mt-3 mb-0">
               Ainda falta uma situação para: {missingNames.join(", ")}.
             </div>
           ) : null}
         </div>
+
+        {gap.canAdoptPublicEvidence ? (
+          <div className="alert alert-info mb-0">
+            <p>
+              Sem disponibilidade para entrevistas? Argos pode aprofundar as
+              mesmas candidatas com avaliações, reclamações e relatos públicos
+              verificáveis, preservando histórico e limites. Isso inicia a
+              pesquisa dentro dos limites acima; o custo do modelo será auditado
+              separadamente.
+            </p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={adoptPublicEvidence.isPending}
+              onClick={() => adoptPublicEvidence.mutate()}
+            >
+              {adoptPublicEvidence.isPending ? (
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                />
+              ) : null}
+              Usar pesquisa pública automatizada
+            </button>
+            {adoptPublicEvidence.isError ? (
+              <p role="alert" className="text-danger mt-2">
+                {adoptPublicEvidence.error.message}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         {gap.interviews.length > 0 ? (
           <div>
@@ -459,7 +504,9 @@ export default function CandidateGapDeepeningPanel({
           <div className="alert alert-info mb-0">
             {gap.readyForResearch
               ? "Os critérios comportamentais foram atendidos. Argos pode aprofundar as lacunas sem repetir a pesquisa inicial."
-              : "Esta atividade não aceita novas entrevistas no estado atual; o histórico permanece preservado."}
+              : publicResearch
+                ? "Argos pesquisa automaticamente; acompanhe o resultado e as lacunas no relatório do ciclo."
+                : "Esta atividade não aceita novas entrevistas no estado atual; o histórico permanece preservado."}
           </div>
         )}
       </div>

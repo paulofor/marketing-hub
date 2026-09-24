@@ -892,14 +892,9 @@ function PdeOpportunityFlowReport({
           <div>
             <span>Próxima atividade de Argos</span>
             <h4 id="candidate-gap-deepening-title">
-              Registrar situações reais de compra e desistência
+              Escolher a fonte de evidência comportamental
             </h4>
-            <p>
-              Reúna de cinco a oito entrevistas anônimas e consentidas, cobrindo
-              todas as candidatas, ao menos uma compra e uma desistência. O
-              backend libera o aprofundamento dirigido quando o gate estiver
-              completo.
-            </p>
+            <p>{report.privateValidationHandoff.reason}</p>
           </div>
           <Link
             className="btn btn-primary"
@@ -907,7 +902,7 @@ function PdeOpportunityFlowReport({
             target="_blank"
             rel="noreferrer"
           >
-            Abrir entrevistas
+            Abrir aprofundamento
             <ExternalLink size={14} aria-hidden="true" />
           </Link>
         </section>

@@ -1,3 +1,7 @@
+import {
+  assessPublicEvidence,
+  PUBLIC_EVIDENCE_POLICY,
+} from "./public-evidence.js";
 import { readFileSync } from "node:fs";
 import { buildPurchaseMomentResearchGate } from "./purchase-moment-gate.js";
 
@@ -856,7 +860,16 @@ export function analyzeSearchResults(
       100,
       scoreWithoutPdeFit + (candidateHighRiskHits > 0 ? 5 : 25),
     );
+    const publicEvidenceAssessment =
+      job.evidencePolicy === PUBLIC_EVIDENCE_POLICY
+        ? assessPublicEvidence(
+            blueprint.publicObservations,
+            evidence,
+            blueprint.evidenceIds,
+          )
+        : null;
     const candidateEvidenceReady =
+      (!publicEvidenceAssessment || publicEvidenceAssessment.ready) &&
       candidatePublicDomains.size >= 2 &&
       referencedMarketplaceOffers.length > 0 &&
       referencedMetaAdEvidence.some(
@@ -910,6 +923,7 @@ export function analyzeSearchResults(
       commercialRisk:
         `${blueprint.commercialRisk} ${candidateRisk} ${commercialRisk}`.trim(),
       evidenceJson: JSON.stringify({
+        publicEvidenceAssessment,
         candidateEvidence: {
           purchaseSituation: blueprint.purchaseSituation,
           observedLanguage: blueprint.observedLanguage,

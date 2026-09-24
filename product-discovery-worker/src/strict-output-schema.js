@@ -14,6 +14,13 @@ const UNSUPPORTED_STRICT_KEYWORDS = [
 
 const ARGOS_OUTPUT_SCHEMA_RESOURCES = [
   {
+    name: "síntese pública sem entrevistas",
+    url: new URL(
+      "../prompts/productdiscovery.v1/research/public-response-schema.json",
+      import.meta.url,
+    ),
+  },
+  {
     name: "planejamento inicial de Argos",
     url: new URL(
       "../prompts/productdiscovery.v1/plan/plan-schema.json",
@@ -121,10 +128,6 @@ function visitStrictSchemaNode(node, path, schemaName) {
     visitStrictSchemaNode(node.items, `${path}[]`, schemaName);
   }
   for (const [index, alternative] of (node.anyOf || []).entries()) {
-    visitStrictSchemaNode(
-      alternative,
-      `${path}.anyOf[${index}]`,
-      schemaName,
-    );
+    visitStrictSchemaNode(alternative, `${path}.anyOf[${index}]`, schemaName);
   }
 }

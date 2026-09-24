@@ -107,8 +107,9 @@ public class ProductDiscoveryController {
 
   /** Entrega pendências canônicas para o worker de pesquisa. */
   @GetMapping("/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending")
-  public ResponseEntity<List<ProductDiscoveryPendingResponse>> pending() {
-    return ResponseEntity.ok(service.pending());
+  public ResponseEntity<List<ProductDiscoveryPendingResponse>> pending(
+      @RequestParam(required = false) String supportedEvidencePolicy) {
+    return ResponseEntity.ok(service.pending(supportedEvidencePolicy));
   }
 
   /** Persiste o plano de perguntas, fontes e coletores escolhido por Argos. */
@@ -194,6 +195,13 @@ public class ProductDiscoveryController {
     return ResponseEntity.ok(customerInterviewService.get(cycleId));
   }
 
+  /** Adota a pesquisa automatizada para um ciclo em espera, sem reiniciar a coleta inicial. */
+  @PostMapping("/product-discovery/v1/cycles/{cycleId}/gap-deepening/public-research")
+  public ResponseEntity<ProductDiscoveryGapDeepeningResponse> adoptPublicEvidence(
+      @PathVariable Long cycleId) {
+    return ResponseEntity.ok(customerInterviewService.adoptPublicEvidence(cycleId));
+  }
+
   /** Registra uma entrevista consentida e anônima sem criar decisão estratégica. */
   @PostMapping("/product-discovery/v1/cycles/{cycleId}/gap-deepening/interviews")
   public ResponseEntity<ProductDiscoveryGapDeepeningResponse> recordCustomerInterview(
@@ -210,11 +218,12 @@ public class ProductDiscoveryController {
     return ResponseEntity.ok(service.complete(cycleId, request));
   }
 
-  /** Entrega à mesma instância de Argos os ciclos cujo gate de entrevistas foi atendido. */
+  /** Entrega ciclos compatíveis com a política de evidências declarada por Argos. */
   @GetMapping(
       "/internal/product-discovery/productdiscovery/v1/candidate-gap-deepening/stage-executions/pending")
-  public ResponseEntity<List<ProductDiscoveryPendingResponse>> pendingGapDeepening() {
-    return ResponseEntity.ok(service.pendingGapDeepening());
+  public ResponseEntity<List<ProductDiscoveryPendingResponse>> pendingGapDeepening(
+      @RequestParam(required = false) String supportedEvidencePolicy) {
+    return ResponseEntity.ok(service.pendingGapDeepening(supportedEvidencePolicy));
   }
 
   /** Persiste o plano candidato-específico antes da coleta adicional. */

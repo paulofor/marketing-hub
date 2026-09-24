@@ -52,7 +52,9 @@ const agentHarness = JSON.parse(
 );
 
 test("valida certificados raiz da base antes do cliente Codex", () => {
-  const certificates = dockerfile.indexOf("test -s /etc/ssl/certs/ca-certificates.crt");
+  const certificates = dockerfile.indexOf(
+    "test -s /etc/ssl/certs/ca-certificates.crt",
+  );
   const codex = dockerfile.indexOf("npm install -g @openai/codex");
 
   assert.ok(
@@ -69,7 +71,7 @@ test("reporta a versão corrente de Argos nas duas topologias", () => {
   for (const compose of [localCompose, deployCompose]) {
     assert.match(
       compose,
-      /AGENT_HEALTH_VERSION: \$\{ARGOS_AGENT_VERSION:-6\}/,
+      /AGENT_HEALTH_VERSION: \$\{ARGOS_AGENT_VERSION:-7\}/,
       "[ARQUITETURA] Argos deve reportar por padrão a versão 6 cadastrada no backend.",
     );
   }

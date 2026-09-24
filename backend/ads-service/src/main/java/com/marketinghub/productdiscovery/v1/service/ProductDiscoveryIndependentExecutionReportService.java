@@ -159,7 +159,7 @@ public class ProductDiscoveryIndependentExecutionReportService
         return handoffUnavailable(
             cycle.getId(),
             "WAITING_CUSTOMER_EVIDENCE",
-            "Argos aguarda de cinco a oito entrevistas consentidas para aprofundar as lacunas das candidatas.");
+            "Escolha pesquisa pública automatizada para aprofundar as mesmas candidatas sem recrutamento; entrevistas consentidas permanecem como opção histórica.");
       }
       return handoffUnavailable(
           cycle.getId(), "WAITING_RESEARCH", "A pesquisa factual ainda não foi concluída.");

@@ -50,12 +50,13 @@ public interface ProductDiscoveryCycleRepository
   List<ProductDiscoveryIndependentStatusProjection> findIndependentStatusSnapshotsByIds(
       @Param("cycleIds") Collection<Long> cycleIds);
 
-  /** Reserva ciclos novos ou recupera execuções cujo lease expirou sem callback terminal. */
+  /** Reserva somente políticas compatíveis com o executor, inclusive na recuperação de lease. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query(
       """
       SELECT cycle FROM ProductDiscoveryCycle cycle
       WHERE cycle.stageCode = :stageCode
+        AND (cycle.evidencePolicy <> 'PUBLIC_SOURCES_V1' OR :supportsPublicEvidence = true)
         AND (cycle.status = :ready
          OR (cycle.status = :researching
              AND ((cycle.leaseExpiresAt IS NOT NULL AND cycle.leaseExpiresAt <= :now)
@@ -68,5 +69,6 @@ public interface ProductDiscoveryCycleRepository
       @Param("researching") ProductDiscoveryCycleStatus researching,
       @Param("now") Instant now,
       @Param("legacyCutoff") Instant legacyCutoff,
+      @Param("supportsPublicEvidence") boolean supportsPublicEvidence,
       Pageable pageable);
 }

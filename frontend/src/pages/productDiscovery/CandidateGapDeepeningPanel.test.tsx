@@ -120,6 +120,51 @@ describe("CandidateGapDeepeningPanel", () => {
     vi.unstubAllGlobals();
   });
 
+  it("adota pesquisa pública pelo contrato oficial sem fabricar entrevistas", async () => {
+    let adopted = false;
+    fetchMock.mockImplementation(async (input, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        expect(String(input)).toContain("/gap-deepening/public-research");
+        expect(init.body).toBeUndefined();
+        adopted = true;
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          ...gapResponse,
+          canAdoptPublicEvidence: !adopted,
+          evidencePolicy: adopted
+            ? "PUBLIC_SOURCES_V1"
+            : "CONSENTED_INTERVIEWS_V1",
+          cycleStatus: adopted
+            ? "READY_FOR_RESEARCH"
+            : "AWAITING_CUSTOMER_EVIDENCE",
+          minimumInterviews: adopted ? 0 : 5,
+          guidance: adopted
+            ? "Pesquisa pública em andamento"
+            : gapResponse.guidance,
+        }),
+        status: 200,
+      };
+    });
+    const user = userEvent.setup();
+    renderPanel();
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Usar pesquisa pública automatizada",
+      }),
+    );
+    expect(
+      await screen.findByText("Pesquisa pública automatizada"),
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Registrar entrevista" }),
+    ).toBeNull();
+    expect(
+      fetchMock.mock.calls.filter(([, init]) => init?.method === "POST"),
+    ).toHaveLength(1);
+  });
+
   it("registra comportamento passado consentido sem dados de contato", async () => {
     const user = userEvent.setup();
     renderPanel();

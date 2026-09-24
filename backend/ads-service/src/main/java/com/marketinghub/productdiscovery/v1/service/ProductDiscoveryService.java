@@ -79,6 +79,7 @@ public class ProductDiscoveryService {
   @Transactional
   public ProductDiscoveryCycleResponse createCycle(CreateProductDiscoveryCycleRequest request) {
     ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setEvidencePolicy("PUBLIC_SOURCES_V1");
     cycle.setTheme(requiredText(request.theme(), "theme"));
     cycle.setTargetAudience(optionalText(request.targetAudience()));
     cycle.setCountry(defaultText(request.country(), "BR"));
@@ -425,17 +426,29 @@ public class ProductDiscoveryService {
   /** Entrega pendências ao worker e marca ciclos como em pesquisa para evitar consumo duplicado. */
   @Transactional
   public List<ProductDiscoveryPendingResponse> pending() {
-    return pending(STAGE_CODE);
+    return pending(STAGE_CODE, false);
   }
 
-  /** Entrega somente ciclos cujo gate humano liberou a pesquisa candidata-específica. */
+  /** Entrega somente ciclos cuja política de evidências liberou a pesquisa candidata-específica. */
   @Transactional
   public List<ProductDiscoveryPendingResponse> pendingGapDeepening() {
-    return pending(GAP_STAGE_CODE);
+    return pending(GAP_STAGE_CODE, false);
   }
 
-  /** Reserva uma etapa exata para impedir que o endpoint inicial consuma o aprofundamento. */
-  private List<ProductDiscoveryPendingResponse> pending(String stageCode) {
+  /** Reserva pesquisa inicial somente nas políticas declaradas pelo executor. */
+  @Transactional
+  public List<ProductDiscoveryPendingResponse> pending(String supportedEvidencePolicy) {
+    return pending(STAGE_CODE, "PUBLIC_SOURCES_V1".equals(supportedEvidencePolicy));
+  }
+
+  /** Reserva aprofundamento somente nas políticas declaradas pelo executor. */
+  @Transactional
+  public List<ProductDiscoveryPendingResponse> pendingGapDeepening(String supportedEvidencePolicy) {
+    return pending(GAP_STAGE_CODE, "PUBLIC_SOURCES_V1".equals(supportedEvidencePolicy));
+  }
+
+  /** Reserva etapa e política compatíveis antes de conceder lease ou iniciar consumo. */
+  private List<ProductDiscoveryPendingResponse> pending(String stageCode, boolean supportsPublicEvidence) {
     Instant now = Instant.now();
     return cycleRepository
         .findClaimableForUpdate(
@@ -444,6 +457,7 @@ public class ProductDiscoveryService {
             ProductDiscoveryCycleStatus.RESEARCHING,
             now,
             now.minus(EXECUTION_LEASE_DURATION),
+            supportsPublicEvidence,
             PageRequest.of(0, 1))
         .stream()
         .map(
@@ -480,11 +494,15 @@ public class ProductDiscoveryService {
         !request.opportunities().isEmpty() && bpmAuditService.supportsCandidateGapDeepening(cycle);
     cycle.setStatus(
         requiresDeepening
-            ? ProductDiscoveryCycleStatus.AWAITING_CUSTOMER_EVIDENCE
+            ? (cycle.usesPublicEvidence()
+                ? ProductDiscoveryCycleStatus.READY_FOR_RESEARCH
+                : ProductDiscoveryCycleStatus.AWAITING_CUSTOMER_EVIDENCE)
             : ProductDiscoveryCycleStatus.COMPLETED);
     cycle.setStageCode(
         requiresDeepening
-            ? ProductDiscoveryCustomerInterviewService.WAITING_STAGE_CODE
+            ? (cycle.usesPublicEvidence()
+                ? GAP_STAGE_CODE
+                : ProductDiscoveryCustomerInterviewService.WAITING_STAGE_CODE)
             : "opportunity-gate");
     cycle.setErrorMessage(null);
     clearExecutionLease(cycle);
@@ -593,13 +611,14 @@ public class ProductDiscoveryService {
     opportunity.setDecision(item.decision());
   }
 
-  /** Exige que o gate humano tenha sido atendido antes de aceitar outro consumo de Argos. */
+  /**
+   * Exige que a política de evidências do ciclo tenha sido atendida antes de aceitar outro consumo
+   * de Argos.
+   */
   private ProductDiscoveryGapDeepeningResponse requiredGapGate(Long cycleId) {
     ProductDiscoveryGapDeepeningResponse gate = customerInterviewService.get(cycleId);
     if (!gate.readyForResearch()) {
-      throw new ResponseStatusException(
-          HttpStatus.UNPROCESSABLE_ENTITY,
-          "O aprofundamento exige de cinco a oito entrevistas, compra e desistência e cobertura de todas as candidatas");
+      throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, gate.guidance());
     }
     return gate;
   }
@@ -1273,7 +1292,8 @@ public class ProductDiscoveryService {
         previousCandidates,
         gapDeepening ? cycle.getResearchEvidenceReportJson() : null,
         gap == null ? List.of() : gap.interviews(),
-        gapDeepening ? gapResearchContractService.policy() : null);
+        gapDeepening ? gapResearchContractService.policy() : null,
+        cycle.getEvidencePolicy());
   }
 
   /** Impede que uma execução expirada sobrescreva o resultado de uma retomada mais recente. */

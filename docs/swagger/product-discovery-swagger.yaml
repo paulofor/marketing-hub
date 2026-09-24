@@ -4,10 +4,33 @@ info:
   version: 1.5.0
   description: Endpoints administrativos e internos da descoberta de produtos PDE.
 paths:
+  /api/product-discovery/v1/cycles/{cycleId}/gap-deepening/public-research:
+    post:
+      summary: Adota pesquisa pública automatizada no ciclo em espera por entrevistas
+      description: Preserva candidatas, corpus e tarefas. Operação idempotente; não aceita substituir política durante execução ou após conclusão. Mantém limites vigentes e não cria entrevistas.
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Política PUBLIC_SOURCES_V1 persistida; readyForResearch e canAdoptPublicEvidence refletem o estado oficial.
+        '409':
+          description: Ciclo fora da espera permitida ou sem candidatas.
   /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending:
     get:
       tags: [Product Discovery]
       summary: Reserva uma execução nova ou recupera lease expirado
+      parameters:
+        - in: query
+          name: supportedEvidencePolicy
+          required: false
+          description: PUBLIC_SOURCES_V1 habilita a política pública. Ausência ou valor desconhecido reserva somente ciclos legados, inclusive em recuperação de lease.
+          schema:
+            type: string
       responses:
         "200":
           description: Lista com no máximo uma execução e seu lease exclusivo
@@ -85,7 +108,14 @@ paths:
   /api/internal/product-discovery/productdiscovery/v1/candidate-gap-deepening/stage-executions/pending:
     get:
       tags: [Product Discovery]
-      summary: Reserva uma pesquisa de lacunas cujo gate de entrevistas foi atendido
+      summary: Reserva uma pesquisa de lacunas cuja política de evidências foi atendida
+      parameters:
+        - in: query
+          name: supportedEvidencePolicy
+          required: false
+          description: PUBLIC_SOURCES_V1 habilita a política pública. Ausência ou valor desconhecido reserva somente ciclos legados, inclusive em recuperação de lease.
+          schema:
+            type: string
       responses:
         "200":
           description: No máximo uma execução com candidatas, corpus anterior, entrevistas e política de custo

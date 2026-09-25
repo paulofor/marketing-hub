@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-orquestracao-global-multiagente",
+  "collection": "video",
+  "title": "Otimizar o vídeo inteiro com busca criativa e recompensa fatorada",
+  "finding": "O Google Research consolidou Co-Director, CANVAS, A²RD e VQQA em uma arquitetura que trata vídeo longo como otimização global: um orquestrador escolhe configurações criativas, agentes especializados produzem storyboard, keyframes, vídeo e áudio, e um juiz multimodal devolve recompensa fatorada para novas iterações.",
+  "mechanism": "Separar busca criativa global de execução local permite explorar estratégia, estrutura narrativa e estética sem perder continuidade. Memória persistente de personagens/cenários e avaliação multimodal fecham o loop; o histórico de scores orienta a próxima tentativa em vez de regenerar cegamente.",
+  "commercialApplication": "No Marketing Hub, manter um creative_search_state com configuração criativa, invariantes comerciais, estado de cena, candidatos, scores, custo e latência; usar o histórico para escolher a próxima combinação e só então acionar renderers e pós-produção.",
+  "evidenceStrength": "Alta para descrição arquitetural e publicação oficial; moderada para ganhos de qualidade porque os benchmarks são dos autores; baixa para ganho comercial até reprodução no workload do Marketing Hub.",
+  "publishedOn": "2026-09-25",
+  "validUntil": "2026-12-24",
+  "experimentHypothesis": "Em uma campanha com o mesmo orçamento de geração, um orquestrador que explore configurações criativas estruturadas e use recompensa fatorada do revisor reduzirá regenerações sem direção e aumentará a taxa de peças que passam simultaneamente nos gates de continuidade, fidelidade do produto e aderência ao briefing.",
+  "risks": "Loops multiagente podem elevar custo e latência; o juiz pode otimizar estética e ignorar regras comerciais; exploração mal calibrada pode convergir para soluções repetitivas; estado incorreto pode propagar erros entre cenas.",
+  "limits": "Co-Director e os frameworks associados estão em estágio de pesquisa, sem API comercial específica nem preço próprio verificados; resultados precisam ser reproduzidos em produção e fatos comerciais devem continuar em fontes canônicas externas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-25-google-codirector-orquestracao-global.md",
+  "sourceTitle": "Fonte revisada — Google Co-Director e otimização global multiagente",
+  "sourceSha256": "1e3eb25f1e52716ba5f26c03088410cdd8ae7eaaadbf0ea84fdfbc6e0e1c72c3"
+}

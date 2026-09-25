@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class PrivateCommunicationJourney {
   private static final String PROCESS = "pde-communication-sales-journey";
+  private static final String PAID_INSTAGRAM_POLICY = "PAID_INSTAGRAM_ONLY_V1";
   private static final Set<String> TECHNICAL_CHECKS =
       Set.of(
           "sameVersion",
@@ -65,6 +66,26 @@ public class PrivateCommunicationJourney {
   @Transactional(readOnly = true)
   public boolean applies(String reference) {
     return IrisPrivateProductContext.supports(reference) || privateCycle(reference).isPresent();
+  }
+
+  /** Reconhece quando a referência privada não pode comprovar a política comercial publicada. */
+  public boolean incompatibleCommercialPolicy(BusinessProcessDefinition process, String reference) {
+    if (!IrisPrivateProductContext.supports(reference)
+        || process == null
+        || process.getDiagramJson() == null) return false;
+    try {
+      return PAID_INSTAGRAM_POLICY.equals(
+          json.readTree(process.getDiagramJson())
+              .path("commercialAcquisitionPolicyVersion")
+              .asText());
+    } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+      log.error(
+          "Política comercial inválida na jornada privada. processDefinitionId={} sourceReference={}",
+          process.getId(),
+          reference,
+          ex);
+      return true;
+    }
   }
 
   /** Expõe o destino e seus requisitos antes de criar uma tentativa ou consumir modelo. */
@@ -267,6 +288,9 @@ public class PrivateCommunicationJourney {
         PROCESS.equals(process.getProcessCode())
             && Set.of("destination", "integration").contains(activity.getActivityId()),
         "A atividade não pertence à preparação da jornada privada.");
+    require(
+        !incompatibleCommercialPolicy(process, reference),
+        "A validação privada é histórica e não comprova a jornada comercial para Instagram Ads. Use o experimento comercial vigente.");
     var input =
         json.valueToTree(
             (IrisPrivateProductContext.supports(reference)

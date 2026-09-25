@@ -7,6 +7,7 @@ import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,7 +48,10 @@ final class PrivateCommunicationProcessContract {
         || !identity(target)
         || source.getVersionNumber() > target.getVersionNumber()) return false;
     try {
-      return structure(source, objectMapper) && structure(target, objectMapper);
+      return structure(source, objectMapper)
+          && structure(target, objectMapper)
+          && Objects.equals(
+              acquisitionPolicy(source, objectMapper), acquisitionPolicy(target, objectMapper));
     } catch (JsonProcessingException ex) {
       log.error(
           "Contrato da jornada comercial PDE inválido. sourceProcessDefinitionId={} targetProcessDefinitionId={}",
@@ -56,6 +60,15 @@ final class PrivateCommunicationProcessContract {
           ex);
       return false;
     }
+  }
+
+  /** Impede reutilização quando uma revisão altera materialmente o canal comercial executável. */
+  private static String acquisitionPolicy(
+      BusinessProcessDefinition process, ObjectMapper objectMapper) throws JsonProcessingException {
+    return objectMapper
+        .readTree(process.getDiagramJson())
+        .path("commercialAcquisitionPolicyVersion")
+        .asText("");
   }
 
   /** Confere a identidade e a versão mínima que introduziu o contrato privado. */

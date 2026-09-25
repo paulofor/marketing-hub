@@ -33,4 +33,5 @@ public record AgentTaskProcessExecutionListSnapshot(
     String executionMode,
     String executionReasoningEffort,
     String blockerCategory,
-    String blockerAction) {}
+    String blockerAction,
+    Long activityInstanceProcessDefinitionId) {}

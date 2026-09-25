@@ -341,11 +341,17 @@ public class BusinessProcessActivityExecutionService {
             : salesFlowResolver.resolve(productId, selectedProcess, chainId, learningCycleId);
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
     List<Experiment> productExperiments = productExperiments(productId);
-    List<AgentTask> tasks =
-        explicitReference != null && !includePromptAudit
-            ? compactProductProcessTasks(explicitReference, selectedProcess.getProcessCode())
-            : productProcessTasks(
-                productPlans, productExperiments, productId, selectedProcess.getProcessCode());
+    Map<Long, Long> compactTaskStateProcessIds = Map.of();
+    List<AgentTask> tasks;
+    if (explicitReference != null && !includePromptAudit) {
+      var compact = compactProductProcessTasks(explicitReference, selectedProcess.getProcessCode());
+      tasks = compact.tasks();
+      compactTaskStateProcessIds = compact.stateProcessDefinitionIds();
+    } else {
+      tasks =
+          productProcessTasks(
+              productPlans, productExperiments, productId, selectedProcess.getProcessCode());
+    }
     List<BusinessProcessActivityInstance> instances =
         productProcessActivityInstances(
             productPlans, productExperiments, productId, selectedProcess.getProcessCode());
@@ -445,6 +451,7 @@ public class BusinessProcessActivityExecutionService {
     List<ProductProcessActivityExecutionGroupResponse> activities =
         activityGroups(
             selectedProcess,
+            compactTaskStateProcessIds,
             tasksByActivityId,
             selectedByActivityId,
             historicalActivityNames,
@@ -746,11 +753,18 @@ public class BusinessProcessActivityExecutionService {
     }
     List<Experiment> productExperiments = productExperiments(productId);
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
-    List<AgentTask> processTasks =
-        explicitReference == null
-            ? productProcessTasks(
-                productPlans, productExperiments, productId, process.getProcessCode())
-            : compactProductProcessTasks(explicitReference, process.getProcessCode());
+    Map<Long, Long> compactTaskStateProcessIds;
+    List<AgentTask> processTasks;
+    if (explicitReference == null) {
+      compactTaskStateProcessIds = Map.of();
+      processTasks =
+          productProcessTasks(
+              productPlans, productExperiments, productId, process.getProcessCode());
+    } else {
+      var compact = compactProductProcessTasks(explicitReference, process.getProcessCode());
+      processTasks = compact.tasks();
+      compactTaskStateProcessIds = compact.stateProcessDefinitionIds();
+    }
     List<BusinessProcessActivityInstance> processInstances =
         productProcessActivityInstances(
             productPlans, productExperiments, productId, process.getProcessCode());
@@ -781,6 +795,9 @@ public class BusinessProcessActivityExecutionService {
             processTasks.stream()
                 .filter(task -> sourceReference.equals(task.getSourceReference()))
                 .filter(task -> normalizedActivityId.equals(task.getProcessActivityId()))
+                .filter(
+                    task ->
+                        belongsToSelectedProcessState(task, process, compactTaskStateProcessIds))
                 .toList(),
             currentInstancesByActivityId(process.getId(), sourceReference, processInstances)
                 .getOrDefault(normalizedActivityId, List.of()));
@@ -1187,7 +1204,8 @@ public class BusinessProcessActivityExecutionService {
       boolean requestAvailable,
       String requestReason,
       boolean hasExecutionContext,
-      boolean productExecutionEnabled) {
+      boolean productExecutionEnabled,
+      boolean subprocessReady) {
     if (definition == null) {
       return new ProductProcessActivityExecutionControlResponse(
           "HISTORICAL",
@@ -1336,7 +1354,7 @@ public class BusinessProcessActivityExecutionService {
     }
     Optional<BusinessProcessDefinition> subprocess = publishedSubprocess(definition);
     if (subprocess.isPresent()) {
-      boolean navigationAvailable = true;
+      boolean navigationAvailable = subprocessReady;
       String reason =
           navigationAvailable
               ? "Abra o subprocesso oficial; ele preserva tarefas, evidências e custos próprios."
@@ -1523,11 +1541,22 @@ public class BusinessProcessActivityExecutionService {
   }
 
   /** Converte a projeção SQL em tarefas resumidas para não hidratar LOBs na lista da atividade. */
-  private List<AgentTask> compactProductProcessTasks(String sourceReference, String processCode) {
-    return taskRepository.findProcessExecutionListSnapshots(sourceReference, processCode).stream()
-        .map(this::compactTask)
-        .toList();
+  private CompactProductProcessTasks compactProductProcessTasks(
+      String sourceReference, String processCode) {
+    var snapshots = taskRepository.findProcessExecutionListSnapshots(sourceReference, processCode);
+    return new CompactProductProcessTasks(
+        snapshots.stream().map(this::compactTask).toList(),
+        snapshots.stream()
+            .filter(snapshot -> snapshot.activityInstanceProcessDefinitionId() != null)
+            .collect(
+                java.util.stream.Collectors.toUnmodifiableMap(
+                    AgentTaskProcessExecutionListSnapshot::taskId,
+                    AgentTaskProcessExecutionListSnapshot::activityInstanceProcessDefinitionId)));
   }
+
+  /** Mantém tarefas leves e a versão de estado de suas instâncias sem hidratar provas extensas. */
+  private record CompactProductProcessTasks(
+      List<AgentTask> tasks, Map<Long, Long> stateProcessDefinitionIds) {}
 
   /** Reconstrói somente os campos de leitura da tarefa, preservando estado, custo e bloqueio. */
   private AgentTask compactTask(AgentTaskProcessExecutionListSnapshot snapshot) {
@@ -1648,6 +1677,7 @@ public class BusinessProcessActivityExecutionService {
    */
   private List<ProductProcessActivityExecutionGroupResponse> activityGroups(
       BusinessProcessDefinition selectedProcess,
+      Map<Long, Long> compactTaskStateProcessIds,
       Map<String, List<AgentTask>> tasksByActivityId,
       Map<String, BusinessProcessActivityDefinition> selectedByActivityId,
       Map<String, String> historicalActivityNames,
@@ -1670,7 +1700,10 @@ public class BusinessProcessActivityExecutionService {
                   task ->
                       currentExecutionReference == null
                           || currentExecutionReference.equals(task.getSourceReference()))
-              .filter(task -> belongsToSelectedProcessState(task, selectedProcess))
+              .filter(
+                  task ->
+                      belongsToSelectedProcessState(
+                          task, selectedProcess, compactTaskStateProcessIds))
               .toList();
       ActivitySituation situation =
           activitySituation(
@@ -1779,7 +1812,8 @@ public class BusinessProcessActivityExecutionService {
               executionRequestAvailable,
               executionRequestReason,
               hasExecutionContext,
-              productExecutionEnabled);
+              productExecutionEnabled,
+              agentReadiness == null || agentReadiness.ready());
       String activityName =
           definition != null
               ? definition.getName()
@@ -1825,19 +1859,21 @@ public class BusinessProcessActivityExecutionService {
         currentExecutionReference);
   }
 
-  /**
-   * Mantém tarefas legadas sem instância e exclui do estado atual tarefas ligadas a outra versão.
-   */
+  /** Exclui do estado atual tarefas vinculadas por instância a outra versão do processo. */
   private boolean belongsToSelectedProcessState(
-      AgentTask task, BusinessProcessDefinition selectedProcess) {
+      AgentTask task,
+      BusinessProcessDefinition selectedProcess,
+      Map<Long, Long> compactTaskStateProcessIds) {
     BusinessProcessActivityInstance instance = task.getActivityInstance();
-    if (instance == null
-        || instance.getActivityDefinition() == null
-        || instance.getActivityDefinition().getProcessDefinition() == null) {
-      return true;
+    if (instance != null
+        && instance.getActivityDefinition() != null
+        && instance.getActivityDefinition().getProcessDefinition() != null) {
+      return Objects.equals(
+          selectedProcess.getId(), instance.getActivityDefinition().getProcessDefinition().getId());
     }
-    return Objects.equals(
-        selectedProcess.getId(), instance.getActivityDefinition().getProcessDefinition().getId());
+    Long compactStateProcessId = compactTaskStateProcessIds.get(task.getId());
+    return compactStateProcessId == null
+        || Objects.equals(selectedProcess.getId(), compactStateProcessId);
   }
 
   /**

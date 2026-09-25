@@ -201,6 +201,7 @@ class OpalaCommercialGateTest {
         "MODEL",
         null,
         null,
+        null,
         null);
   }
 

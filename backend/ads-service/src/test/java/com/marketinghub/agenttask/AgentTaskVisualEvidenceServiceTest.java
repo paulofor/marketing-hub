@@ -233,6 +233,7 @@ class AgentTaskVisualEvidenceServiceTest {
             taskRepository,
             evidenceRepository,
             targetContextProvider,
+            new com.fasterxml.jackson.databind.ObjectMapper(),
             Clock.fixed(Instant.parse("2026-08-29T10:05:00Z"), ZoneOffset.UTC));
   }
 
@@ -298,6 +299,153 @@ class AgentTaskVisualEvidenceServiceTest {
     assertThatThrownBy(
             () -> service.store("communication-director", 258L, request, png("wrong-size")))
         .hasMessageContaining("PNG inválido");
+  }
+
+  /**
+   * Usa a autorização congelada na tarefa quando o cadastro comercial ainda não possui URL pública.
+   */
+  @Test
+  void storesDerivedCreativeFromFrozenVisualAuthorization() throws Exception {
+    var process = new com.marketinghub.businessprocess.BusinessProcessDefinition();
+    process.setProcessCode("creative-production-approval");
+    task.setProcessDefinition(process);
+    task.setProcessActivityId("nonAudiovisual");
+    task.getAssignedAgent().setAgentKey("communication-director");
+    task.setSourceReference("experiment:9301");
+    task.setEvidenceJson(
+        """
+        {
+          "communicationInputReference": {
+            "visualProofAuthorization": {
+              "contractVersion": "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1",
+              "proofSourceReference": "product:1901@agent-validation-v1",
+              "targetSourceReference": "experiment:9301",
+              "prototypeVersion": "private-v3",
+              "productId": 1901,
+              "publicUrl": "https://private.example/experience",
+              "gateInstanceId": 242
+            },
+            "approvedDestination": {
+              "contractVersion": "PRIVATE_PDE_DESTINATION_V1",
+              "prototypeVersion": "private-v3",
+              "url": "https://private.example/experience"
+            },
+            "validationGate": {
+              "productId": 1901,
+              "prototypeVersion": "private-v3",
+              "publicUrl": "https://private.example/experience",
+              "paymentEnabled": false,
+              "publicationAuthorized": false,
+              "campaignAuthorized": false
+            },
+            "approvedVisualArtifacts": [{
+              "result": {
+                "contractVersion": "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
+                "decision": "APPROVED",
+                "sourceReference": "product:1901@agent-validation-v1",
+                "productId": 1901,
+                "prototypeVersion": "private-v3",
+                "publicUrl": "https://private.example/experience",
+                "artifacts": [{
+                  "artifactId": 951,
+                  "sourceUrl": "https://private.example/experience",
+                  "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                }]
+              }
+            }]
+          }
+        }
+        """);
+    when(taskRepository.findById(258L)).thenReturn(Optional.of(task));
+    when(evidenceRepository.saveAndFlush(any()))
+        .thenAnswer(
+            invocation -> {
+              AgentTaskVisualEvidence image = invocation.getArgument(0);
+              image.setId(910131L);
+              return image;
+            });
+    var pixels =
+        new java.awt.image.BufferedImage(1080, 1350, java.awt.image.BufferedImage.TYPE_INT_RGB);
+    var bytes = new java.io.ByteArrayOutputStream();
+    ImageIO.write(pixels, "png", bytes);
+    var request =
+        new AgentTaskVisualEvidenceRequest(
+            "creative-frozen",
+            "creative-1",
+            "CREATIVE_RENDER",
+            "CREATIVE_1080X1350",
+            1,
+            null,
+            1080,
+            1350,
+            1350,
+            0,
+            "https://private.example/experience",
+            "https://private.example/experience",
+            Instant.parse("2026-09-25T16:00:00Z"));
+
+    var response =
+        service.store(
+            "communication-director",
+            258L,
+            request,
+            new MockMultipartFile("file", "creative.png", "image/png", bytes.toByteArray()));
+
+    assertThat(response.id()).isEqualTo(910131L);
+    verify(targetContextProvider, never())
+        .resolve("experiment:9301", "creative-production-approval");
+  }
+
+  /** Rejeita uma URL que não corresponda à autorização congelada da tarefa criativa. */
+  @Test
+  void rejectsCreativeOutsideFrozenVisualAuthorization() throws Exception {
+    var process = new com.marketinghub.businessprocess.BusinessProcessDefinition();
+    process.setProcessCode("creative-production-approval");
+    task.setProcessDefinition(process);
+    task.setProcessActivityId("nonAudiovisual");
+    task.getAssignedAgent().setAgentKey("communication-director");
+    task.setSourceReference("experiment:9301");
+    task.setEvidenceJson(
+        """
+        {"communicationInputReference":{
+          "visualProofAuthorization":{"contractVersion":"COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1","proofSourceReference":"product:1901@agent-validation-v1","targetSourceReference":"experiment:9301","prototypeVersion":"private-v3","productId":1901,"publicUrl":"https://private.example/experience","gateInstanceId":242},
+          "approvedDestination":{"contractVersion":"PRIVATE_PDE_DESTINATION_V1","prototypeVersion":"private-v3","url":"https://private.example/experience"},
+          "validationGate":{"productId":1901,"prototypeVersion":"private-v3","publicUrl":"https://private.example/experience","paymentEnabled":false,"publicationAuthorized":false,"campaignAuthorized":false},
+          "approvedVisualArtifacts":[{"result":{"contractVersion":"PDE_AGENT_TECHNICAL_HOMOLOGATION_V1","decision":"APPROVED","sourceReference":"product:1901@agent-validation-v1","productId":1901,"prototypeVersion":"private-v3","publicUrl":"https://private.example/experience","artifacts":[{"artifactId":951,"sourceUrl":"https://private.example/experience","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}]}}]
+        }}
+        """);
+    when(taskRepository.findById(258L)).thenReturn(Optional.of(task));
+    var pixels =
+        new java.awt.image.BufferedImage(1080, 1350, java.awt.image.BufferedImage.TYPE_INT_RGB);
+    var bytes = new java.io.ByteArrayOutputStream();
+    ImageIO.write(pixels, "png", bytes);
+    var request =
+        new AgentTaskVisualEvidenceRequest(
+            "creative-frozen",
+            "creative-1",
+            "CREATIVE_RENDER",
+            "CREATIVE_1080X1350",
+            1,
+            null,
+            1080,
+            1350,
+            1350,
+            0,
+            "https://other.example/experience",
+            "https://other.example/experience",
+            Instant.parse("2026-09-25T16:00:00Z"));
+
+    assertThatThrownBy(
+            () ->
+                service.store(
+                    "communication-director",
+                    258L,
+                    request,
+                    new MockMultipartFile(
+                        "file", "creative.png", "image/png", bytes.toByteArray())))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("não pertence ao produto e à versão");
+    verify(s3, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
   }
 
   /** Persiste PNG criptografado e expõe somente a rota governada vinculada à tarefa. */

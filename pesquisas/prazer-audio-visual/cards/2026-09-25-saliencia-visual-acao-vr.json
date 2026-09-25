@@ -1,0 +1,18 @@
+{
+  "cardKey": "saliencia-visual-antes-controle-topdown",
+  "collection": "prazer-audio-visual",
+  "title": "Alinhar saliência inicial ao alvo principal",
+  "finding": "Em VR com 54 adultos, um distrator de cor saliente e irrelevante atrasou a seleção do alvo, desviou mão e olhar e retardou a primeira fixação.",
+  "mechanism": "Saliência física pode capturar rapidamente atenção e preparação motora antes que o controle orientado por objetivo estabilize a seleção.",
+  "commercialApplication": "Em cenas com uma ação principal, concentrar o maior destaque visual no alvo e reduzir elementos cromaticamente únicos e irrelevantes; medir fixação, tempo de seleção, erros e abandono.",
+  "evidenceStrength": "Média-alta para captura atencional e ação em VR; estudo experimental com 54 participantes, eye tracking e rastreamento 3D da mão. Não mede prazer ou resultado comercial.",
+  "publishedOn": "2026-09-24",
+  "validUntil": "2027-03-24",
+  "experimentHypothesis": "A maior saliência coincidente com o alvo principal reduzirá latência de fixação, desvios de ação e erros versus uma versão com singleton cromático irrelevante.",
+  "risks": "Reduzir saliência em excesso pode prejudicar descoberta; atenção capturada não é persuasão, preferência ou venda.",
+  "limits": "Tarefa controlada em VR com objetos simples e amostra majoritariamente jovem; não testa anúncios, memória de marca, retenção ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-25-saliencia-visual-acao-vr.md",
+  "sourceTitle": "Fonte revisada — saliência visual e ação em VR",
+  "sourceSha256": "1d28e30e8555417c8fd3dc7905daccf1a2c861f3d601222b9dbb761b123064d4"
+}

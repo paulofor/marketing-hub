@@ -1,0 +1,18 @@
+{
+  "cardKey": "ai-assistants-product-discovery-intent",
+  "collection": "momentos-de-compra-b2c",
+  "title": "IA vira apoio recorrente na decisão de compra",
+  "finding": "A NielsenIQ informou em 24/09/2026 que 51% dos consumidores dos EUA usaram ao menos uma ferramenta de IA para apoiar compras no mês anterior, ante 42% na leitura publicada em 05/05/2026.",
+  "mechanism": "A IA pode reduzir esforço de comparação e ajudar a filtrar alternativas antes da escolha; a série observada não demonstra efeito causal sobre conversão.",
+  "commercialApplication": "No Marketing Hub, registrar influência de assistentes de IA, manter informações verificáveis da oferta e comparar uma experiência de validação objetiva com uma página genérica.",
+  "evidenceStrength": "Moderada: série mensal primária da NielsenIQ com cerca de 500 consumidores por onda; evidência autorrelatada e não transacional.",
+  "publishedOn": "2026-09-25",
+  "validUntil": "2026-11-24",
+  "experimentHypothesis": "Informações estruturadas e verificáveis para comparação elevarão o avanço no funil em relação a uma página genérica.",
+  "risks": "Confundir uso declarado com influência real, usar informações desatualizadas ou otimizar visibilidade sem benefício mensurável.",
+  "limits": "Não há atribuição individual entre uso de IA e compra, custo de aquisição, margem ou retenção; o comportamento pode variar por categoria e plataforma.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-25-ai-shopping-maioria-eua-niq.md",
+  "sourceTitle": "Fonte revisada — IA como camada recorrente de descoberta e comparação de compra nos EUA",
+  "sourceSha256": "dcebc1f558b2a5f52dcdea17ff39d1a0c50820a1a2162369514044392fe2f20b"
+}

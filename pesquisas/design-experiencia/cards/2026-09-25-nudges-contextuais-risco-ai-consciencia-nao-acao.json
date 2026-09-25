@@ -1,0 +1,18 @@
+{
+  "cardKey": "nudges-contextuais-risco-ai-consciencia-nao-acao",
+  "collection": "neuromarketing",
+  "title": "Nudges contextuais aumentam consciência, mas não garantem ação",
+  "finding": "Em um estudo de campo de duas semanas com 45 usuários frequentes de chatbots, 44 de 45 relataram maior consciência de riscos com nudges contextuais, mas não houve evidência robusta de mudança consistente em comportamentos como verificar ou contestar respostas.",
+  "mechanism": "O nudge torna um risco saliente no momento da interpretação da resposta e pode aumentar a cautela situacional. Porém, saliência não implica ação; sem um próximo passo claro, o usuário pode notar o risco e continuar da mesma forma.",
+  "commercialApplication": "No customer-agent, testar avisos independentes apenas para riscos relevantes, com trecho de evidência e ação concreta como verificar fonte, comparar resposta ou pedir revisão. Informar que ausência de alerta não equivale a resposta correta.",
+  "evidenceStrength": "Estudo de campo de duas semanas com 45 usuários frequentes; evidência forte para percepção e awareness, mas limitada e não conclusiva para mudança comportamental objetiva.",
+  "publishedOn": "2026-09-24",
+  "validUntil": "2026-12-24",
+  "experimentHypothesis": "Nudges contextuais de alto risco com evidência e próximo passo acionável aumentarão verificação ou correção sem elevar abandono, em comparação com ausência de nudge ou aviso genérico.",
+  "risks": "Fadiga de alertas, falsos positivos, latência, exposição adicional de conteúdo ao auditor e falsa tranquilização quando nenhuma questão é detectada.",
+  "limits": "Amostra pequena e auto-selecionada dos EUA, uso em navegador com ChatGPT e Claude, preprint, exposição curta e ausência de prova de redução de erro, conversão ou resultado comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-25-nudges-contextuais-risco-ai-consciencia-nao-acao.md",
+  "sourceTitle": "Safety Nudges: consciência de risco não garante mudança de comportamento",
+  "sourceSha256": "a9d19487740a0ed6fb902e91d3b7e4dfde12ca9044351d151ba5be197bb9bdbb"
+}

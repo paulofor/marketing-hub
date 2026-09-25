@@ -12,9 +12,15 @@ R$ 50 sem resultado ou compra e encerramento em cinco compras.
 | Falha Meta | Meta rejeita orçamento ou readback diverge | callback preserva corpo oficial e compensação confirma campanha pausada |
 | Integração | Destino, Insights e conta Meta simulados | gasto anterior não vira zero; moeda, mínimo, término e URL são confirmados antes da ativação |
 | Observabilidade | Código `100/1885099` | erro permanece auditável sem token e existe teste que rejeita `spend_cap=0` |
+| Observabilidade | Código `100/1885272` | erro permanece auditável e existe teste que rejeita `daily_budget=0` |
+| Migração | Meta não remove orçamento próprio do ad set | releitura bloqueia antes de aplicar o teto e mantém campanha pausada |
 | Segregação | Identificadores sintéticos e servidor local | nenhum ID produtivo, chamada real, campanha ou gasto durante os testes |
 | Produção | Autorização refeita pela tela após deploy | request conclui, Meta confirma campanha ativa, R$ 20/dia e teto R$ 125; backend reconcilia o processo |
 
 Critério final: testes unitários e build do worker aprovados, diff revisado, PR
 integrado, deploy concluído e estado produtivo confirmado na Meta e no backend.
 Ativação técnica não comprova compra, receita ou lucro.
+
+A tentativa real #6 preservou todos os limites, confirmou que a Meta removeu automaticamente o
+orçamento do conjunto ao receber o diário na campanha e foi compensada em `PAUSED` depois que a
+plataforma rejeitou somente o `daily_budget=0` redundante.

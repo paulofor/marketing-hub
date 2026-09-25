@@ -16,8 +16,9 @@ A retomada preserva a campanha e exige um único conjunto em BRL com orçamento
 diário ou vitalício. O teto inclui todo o gasto anterior; no modo diário o worker
 mantém `daily_budget` no conjunto e aplica `spend_cap` na campanha quando o teto
 atende ao mínimo da conta. Se `min_campaign_group_spend_cap` for maior que a
-autorização, a campanha pausada recebe o `daily_budget`, o conjunto fica sem
-orçamento próprio e recebe `lifetime_spend_cap` exatamente igual ao teto, sem
+autorização, a campanha pausada recebe o `daily_budget`; a Meta deve remover o
+orçamento próprio do conjunto, fato confirmado por releitura antes de aplicar
+`lifetime_spend_cap` exatamente igual ao teto, sem enviar `daily_budget=0` nem
 elevar o limite. `daily_budget` e `lifetime_spend_cap` nunca coexistem no mesmo
 conjunto. A fila não entrega o pedido antes da data inicial.
 O worker verifica gasto, destino público, orçamento, teto e término na Meta antes

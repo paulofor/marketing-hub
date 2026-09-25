@@ -29,7 +29,8 @@ class FacebookCampaignResumptionWorkerTest {
       wrongAdSetCap,
       emptyInsights,
       backendUnavailable,
-      rejectSuccessCallback;
+      rejectSuccessCallback,
+      retainAdSetDailyBudgetAfterCampaignBudget;
   private boolean dailyMode;
   private boolean campaignCapUsable = true;
   private String campaignStatus = "PAUSED";
@@ -126,8 +127,16 @@ class FacebookCampaignResumptionWorkerTest {
                       .setBody(
                           "{\"error\":{\"message\":\"Spend limit cannot be"
                               + " zero\",\"code\":100,\"error_subcode\":1885099}}");
+                if (path.endsWith("/adset")
+                    && body.has("daily_budget")
+                    && body.path("daily_budget").asLong() == 0L)
+                  return new MockResponse()
+                      .setResponseCode(400)
+                      .setBody(
+                          "{\"error\":{\"message\":\"Budget too low\",\"code\":100,"
+                              + "\"error_subcode\":1885272}}");
                 if (body.has("lifetime_spend_cap")
-                    && (body.path("daily_budget").asLong(-1L) != 0L || campaignDailyBudget <= 0L))
+                    && (!adSetDailyBudgetCleared || campaignDailyBudget <= 0L))
                   return new MockResponse()
                       .setResponseCode(400)
                       .setBody(
@@ -143,12 +152,12 @@ class FacebookCampaignResumptionWorkerTest {
                   campaignStatus = body.path("status").asText();
                 if (path.endsWith("/campaign") && body.has("spend_cap"))
                   campaignSpendCap = body.path("spend_cap").asLong();
-                if (path.endsWith("/campaign") && body.has("daily_budget"))
+                if (path.endsWith("/campaign") && body.has("daily_budget")) {
                   campaignDailyBudget = body.path("daily_budget").asLong();
+                  if (!retainAdSetDailyBudgetAfterCampaignBudget) adSetDailyBudgetCleared = true;
+                }
                 if (path.endsWith("/adset") && body.has("lifetime_spend_cap"))
                   adSetLifetimeSpendCap = body.path("lifetime_spend_cap").asLong();
-                if (path.endsWith("/adset") && "0".equals(body.path("daily_budget").asText()))
-                  adSetDailyBudgetCleared = true;
                 return ok("{\"success\":true}");
               }
               if (path.endsWith("/insights")) {
@@ -295,7 +304,7 @@ class FacebookCampaignResumptionWorkerTest {
     assertThat(campaignStatus).isEqualTo("ACTIVE");
   }
 
-  /** Migra o diário sem enviar spend_cap zero e aplica teto no conjunto abaixo do mínimo. */
+  /** Migra o diário, relê a remoção automática e aplica teto no conjunto abaixo do mínimo. */
   @Test
   void preservesDailyBudgetWithAdSetLifetimeCapBelowCampaignMinimum() {
     dailyMode = true;
@@ -321,10 +330,27 @@ class FacebookCampaignResumptionWorkerTest {
                     && "PAUSED".equals(n.path("status").asText()));
     assertThat(writes)
         .anyMatch(
-            n ->
-                "0".equals(n.path("daily_budget").asText())
-                    && "12500".equals(n.path("lifetime_spend_cap").asText()));
+            n -> !n.has("daily_budget") && "12500".equals(n.path("lifetime_spend_cap").asText()));
+    assertThat(writes)
+        .noneMatch(n -> n.has("daily_budget") && n.path("daily_budget").asLong() == 0L);
     assertThat(campaignStatus).isEqualTo("ACTIVE");
+  }
+
+  /** Bloqueia antes do teto quando a Meta não remove o orçamento próprio do conjunto. */
+  @Test
+  void retainedAdSetDailyBudgetBlocksCapBeforeSecondMutation() {
+    dailyMode = true;
+    minimumCampaignSpendCap = 30000L;
+    retainAdSetDailyBudgetAfterCampaignBudget = true;
+    task.put("totalLimit", 125);
+
+    worker.poll();
+
+    assertThat(result.path("success").asBoolean()).isFalse();
+    assertThat(result.path("error").asText()).contains("não removeu o orçamento próprio");
+    assertThat(writes).anyMatch(n -> "2000".equals(n.path("daily_budget").asText()));
+    assertThat(writes).noneMatch(n -> n.has("lifetime_spend_cap"));
+    assertThat(campaignStatus).isEqualTo("PAUSED");
   }
 
   /** Bloqueia antes da migração quando existe teto de campanha que não pode ser zerado. */

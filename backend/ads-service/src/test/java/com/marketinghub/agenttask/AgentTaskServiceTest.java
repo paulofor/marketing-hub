@@ -2242,7 +2242,7 @@ class AgentTaskServiceTest {
         .containsExactly(27L);
   }
 
-  /** Persiste saída e evidência antes de concluir a atividade reservada. */
+  /** Persiste saída e evidência e remove o bloqueio superado ao concluir a atividade reservada. */
   @Test
   void completesClaimedTaskWithAuditableResult() {
     AgentTaskRepository repository = mock(AgentTaskRepository.class);
@@ -2253,6 +2253,16 @@ class AgentTaskServiceTest {
             process("PUBLISHED", "Dédalo"),
             "html",
             "IN_PROGRESS");
+    task.setBlockerCategory("TECHNICAL_FAILURE");
+    task.setBlockerAction("Reenviar o callback preservado.");
+    AgentTaskAuditLink blockerLink = new AgentTaskAuditLink();
+    blockerLink.setTask(task);
+    blockerLink.setLinkType("BLOCKER_HELP");
+    blockerLink.setLabel("Abrir tarefa");
+    blockerLink.setUrl("/agent-tasks");
+    blockerLink.setDisplayOrder(0);
+    blockerLink.setCreatedAt(Instant.parse("2026-08-15T12:00:00Z"));
+    task.getAuditLinks().add(blockerLink);
     when(repository.findById(30L)).thenReturn(Optional.of(task));
     when(repository.findLockedById(30L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
@@ -2270,6 +2280,9 @@ class AgentTaskServiceTest {
     assertThat(task.getDeliveredAt()).isEqualTo(delivered);
     assertThat(task.getResultJson()).contains("READY");
     assertThat(task.getEvidenceJson()).contains("htmlVersion");
+    assertThat(task.getBlockerCategory()).isNull();
+    assertThat(task.getBlockerAction()).isNull();
+    assertThat(task.getAuditLinks()).noneMatch(link -> "BLOCKER_HELP".equals(link.getLinkType()));
   }
 
   /** Confirma resposta perdida após commit sem repetir efeitos, tokens ou avanço no BPM. */
@@ -2324,6 +2337,48 @@ class AgentTaskServiceTest {
                         request.executionAudit())))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("não está reservada");
+  }
+
+  /** Limpa o bloqueio residual ao receber o callback exato de uma tarefa já concluída. */
+  @Test
+  void clearsStaleBlockerOnExactCompletedCallbackReplay() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            493L,
+            agent(7L, "landing-generator", "Dédalo"),
+            process("PUBLISHED", "Dédalo"),
+            "productArchitecture",
+            "COMPLETED");
+    task.setResultJson("{\"decision\":\"APPROVE\"}");
+    task.setEvidenceJson("{\"productId\":11}");
+    task.setBlockerCategory("TECHNICAL_FAILURE");
+    task.setBlockerAction("Reenviar o callback preservado.");
+    AgentTaskAuditLink blockerLink = new AgentTaskAuditLink();
+    blockerLink.setTask(task);
+    blockerLink.setLinkType("BLOCKER_HELP");
+    blockerLink.setLabel("Abrir tarefa");
+    blockerLink.setUrl("/agent-tasks");
+    blockerLink.setDisplayOrder(0);
+    blockerLink.setCreatedAt(Instant.parse("2026-09-25T01:30:00Z"));
+    task.getAuditLinks().add(blockerLink);
+    when(repository.findLockedById(493L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    Instant replayedAt = Instant.parse("2026-09-25T09:45:00Z");
+    AgentTaskService service =
+        service(repository, mock(AgentRepository.class), Clock.fixed(replayedAt, ZoneOffset.UTC));
+
+    service.completeClaimedProcessTask(
+        "landing-generator",
+        493L,
+        new CompleteAgentTaskRequest(task.getResultJson(), task.getEvidenceJson(), null, null));
+
+    assertThat(task.getStatus()).isEqualTo("COMPLETED");
+    assertThat(task.getUpdatedAt()).isEqualTo(replayedAt);
+    assertThat(task.getBlockerCategory()).isNull();
+    assertThat(task.getBlockerAction()).isNull();
+    assertThat(task.getAuditLinks()).noneMatch(link -> "BLOCKER_HELP".equals(link.getLinkType()));
+    verify(repository).save(task);
   }
 
   /** Preserva bloqueio funcional e permite confirmar seu callback idêntico após reinício. */

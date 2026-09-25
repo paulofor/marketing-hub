@@ -287,7 +287,7 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
   List<AgentTask> findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
       String agentKey, String taskKind, String status);
 
-  /** Filtra falhas candidatas no banco e mantém a reserva exclusiva antes da validação final. */
+  /** Filtra callbacks e materializações recuperáveis antes da validação final no serviço. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query(
       """
@@ -298,7 +298,8 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
         and task.evidenceJson is not null and task.evidenceJson <> ''
         and (task.executionError like '500 :%'
           or task.executionError like '%Internal Server Error%'
-          or task.executionError like '%HTML integral alterou o destino protegido do checkout%')
+          or task.executionError like '%HTML integral alterou o destino protegido do checkout%'
+          or task.executionError like '%A tarefa não possui uma URL visual congelada e auditável.%')
       order by task.createdAt asc, task.id asc
       """)
   List<AgentTask> findRetryableCallbackCandidates(@Param("agentKey") String agentKey);

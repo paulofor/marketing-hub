@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.net.httpserver.HttpServer;
@@ -213,6 +214,60 @@ class IrisCreativeMaterializerTest {
                 .path("rawModelResponse")
                 .asText())
         .isEqualTo(raw);
+  }
+
+  /** Reaplica a resposta preservada, gera o PNG e conclui sem chamar novamente o modelo. */
+  @Test
+  void replaysPreservedMaterializationWithoutModel() throws Exception {
+    var backend = mock(CommunicationAgentBackendClient.class);
+    var runner = mock(CommunicationAgentCodexRunner.class);
+    var control = mock(AutomaticExecutionControl.class);
+    when(control.allowsAutomaticExecution()).thenReturn(true);
+    var task = task();
+    task.put("retryResultJson", result().toString());
+    task.put("retryEvidenceJson", "{\"modelResponded\":true}");
+    when(backend.claim(anyString(), anyString())).thenReturn(task);
+
+    new CommunicationAgentTaskConsumer(backend, runner, properties(), control, json, materializer)
+        .processOne();
+
+    verifyNoInteractions(runner);
+    var payload = ArgumentCaptor.forClass(Map.class);
+    verify(backend).complete(eq(910403L), payload.capture());
+    verify(backend, never()).fail(anyLong(), anyMap());
+    JsonNode functional = json.readTree(String.valueOf(payload.getValue().get("resultJson")));
+    assertThat(functional.path("functionalOutput").path("renderedAssets")).hasSize(1);
+    JsonNode evidence = json.readTree(String.valueOf(payload.getValue().get("evidenceJson")));
+    assertThat(evidence.path("modelResponded").asBoolean()).isTrue();
+    assertThat(evidence.path("materializationReplay").path("modelInvoked").asBoolean()).isFalse();
+    assertThat(evidence.path("materializationReplay").path("incrementalModelCostUsd").asInt())
+        .isZero();
+  }
+
+  /** Uma segunda falha na reaplicação termina bloqueada e não volta à fila automaticamente. */
+  @Test
+  void blocksFailedMaterializationReplayWithoutModelLoop() throws Exception {
+    rejectUpload = true;
+    var backend = mock(CommunicationAgentBackendClient.class);
+    var runner = mock(CommunicationAgentCodexRunner.class);
+    var control = mock(AutomaticExecutionControl.class);
+    when(control.allowsAutomaticExecution()).thenReturn(true);
+    var task = task();
+    String preserved = result().toString();
+    task.put("retryResultJson", preserved);
+    task.put("retryEvidenceJson", "{\"modelResponded\":true}");
+    when(backend.claim(anyString(), anyString())).thenReturn(task);
+
+    new CommunicationAgentTaskConsumer(backend, runner, properties(), control, json, materializer)
+        .processOne();
+
+    verifyNoInteractions(runner);
+    verify(backend, never()).complete(anyLong(), anyMap());
+    var payload = ArgumentCaptor.forClass(Map.class);
+    verify(backend).fail(eq(910403L), payload.capture());
+    assertThat(String.valueOf(payload.getValue().get("error")))
+        .startsWith("AUTO_RETRY_MATERIALIZATION_ONCE|");
+    assertThat(String.valueOf(payload.getValue().get("resultJson"))).isEqualTo(preserved);
   }
 
   /** Falha de storage preserva o parecer e bloqueia a atividade sem enviar sucesso. */

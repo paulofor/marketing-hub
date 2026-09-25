@@ -100,9 +100,10 @@ public class AgentTaskService {
   private static final String ACCESSED_URL_LINK = "ACCESSED_URL";
   private static final String BLOCKER_HELP_LINK = "BLOCKER_HELP";
   private static final String CUSTOMER_AGENT_KEY = "customer-agent";
+  private static final String COMMUNICATION_AGENT_KEY = "communication-director";
   private static final String LANDING_GENERATOR_AGENT_KEY = "landing-generator";
   private static final Set<String> CALLBACK_REPLAY_CAPABLE_AGENTS =
-      Set.of(CUSTOMER_AGENT_KEY, LANDING_GENERATOR_AGENT_KEY);
+      Set.of(CUSTOMER_AGENT_KEY, COMMUNICATION_AGENT_KEY, LANDING_GENERATOR_AGENT_KEY);
   private static final String CUSTOMER_AGENT_TELEMETRY_TYPE = "CUSTOMER_AGENT";
   private static final String ORPHANED_LEASE_RECOVERY_PREFIX = "ORPHANED_LEASE_RECOVERY_ONCE|";
   private static final String ORPHANED_LEASE_EXHAUSTED_PREFIX =
@@ -1889,8 +1890,9 @@ public class AgentTaskService {
   }
 
   /**
-   * Autoriza retomada automática somente quando o executor sabe reenviar o parecer preservado sem
-   * chamar o modelo; Psique mantém o contrato legado restrito a aprovações.
+   * Autoriza retomada automática somente quando o executor sabe reaplicar a saída preservada sem
+   * chamar o modelo; Psique mantém o contrato legado restrito a aprovações e Íris somente refaz a
+   * materialização não audiovisual.
    */
   private boolean callbackCanReplayWithoutInference(AgentTask task) {
     if (trimToNull(task.getResultJson()) == null || trimToNull(task.getEvidenceJson()) == null) {
@@ -1898,6 +1900,23 @@ public class AgentTaskService {
     }
     String agentKey = task.getAssignedAgent().getAgentKey();
     if (LANDING_GENERATOR_AGENT_KEY.equals(agentKey)) return true;
+    if (COMMUNICATION_AGENT_KEY.equals(agentKey)) {
+      try {
+        return task.getProcessDefinition() != null
+            && "creative-production-approval".equals(task.getProcessDefinition().getProcessCode())
+            && "nonAudiovisual".equals(task.getProcessActivityId())
+            && "COMPLETED"
+                .equals(
+                    objectMapper.readTree(task.getResultJson()).path("executionStatus").asText());
+      } catch (Exception ex) {
+        log.error(
+            "Saída preservada de Íris ilegível; materialização automática recusada. taskId={} agentKey={}",
+            task.getId(),
+            agentKey,
+            ex);
+        return false;
+      }
+    }
     if (!CUSTOMER_AGENT_KEY.equals(agentKey)) return false;
     try {
       return "APPROVED"
@@ -1917,9 +1936,11 @@ public class AgentTaskService {
     return error != null
         && !error.startsWith("AUTO_RETRY_ONCE|")
         && !error.startsWith("AUTO_RETRY_CALLBACK_ONCE|")
+        && !error.startsWith("AUTO_RETRY_MATERIALIZATION_ONCE|")
         && (error.startsWith("500 :")
             || error.contains("Internal Server Error")
-            || error.contains("HTML integral alterou o destino protegido do checkout"));
+            || error.contains("HTML integral alterou o destino protegido do checkout")
+            || error.contains("A tarefa não possui uma URL visual congelada e auditável."));
   }
 
   /** Reexpõe a lease ativa ao mesmo executor para permitir retomada após interrupção. */

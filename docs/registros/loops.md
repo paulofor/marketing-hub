@@ -7202,3 +7202,7 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   gate sem pagamento/publicação/campanha e artefato/hashing homologado diretamente no snapshot da
   tarefa. Um contrato presente e divergente é recusado; o alvo legado é fallback apenas quando o
   snapshot não existe. Testes cobrem sucesso sem URL comercial e rejeição de pixels de outro alvo.
+- **Prevenção de consumo duplicado:** uma saída `COMPLETED` de Íris preservada após falha desse
+  upload pode ser reaplicada uma única vez na mesma tarefa. O worker não chama o modelo, registra
+  custo incremental zero, baixa novamente a prova aprovada e refaz apenas render/upload/callback.
+  Nova falha recebe `AUTO_RETRY_MATERIALIZATION_ONCE` e fica terminal, sem terceira tentativa.

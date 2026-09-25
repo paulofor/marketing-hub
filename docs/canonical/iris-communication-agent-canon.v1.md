@@ -338,6 +338,12 @@ produto ou do experimento. Contrato congelado ausente pode usar o alvo legado so
 anteriores; contrato presente e divergente bloqueia sem fallback. Assim, uma peça produzida depois
 da inferência continua auditável mesmo quando o cadastro comercial ainda não possui destino público.
 
+Se a inferência concluir e a persistência do PNG falhar por divergência já corrigida nesse contrato,
+o backend pode reentregar uma única vez a mesma tarefa com resultado e evidência preservados. Íris
+deve baixar novamente os pixels aprovados, renderizar e enviar o artefato sem chamar o modelo; a
+evidência registra `modelInvoked=false` e custo incremental zero. Falha nessa reaplicação recebe
+marcador terminal e não retorna à fila, impedindo loop e cobrança duplicada.
+
 O `communicationInputHash` cobre planejamento, versão e autorização visual. Mudança material
 reabre `communicationContract`; o callback rejeita resultado produzido sobre entrada substituída.
 Assim, o histórico continua auditável e o pacote atual não conserva silenciosamente uma tela

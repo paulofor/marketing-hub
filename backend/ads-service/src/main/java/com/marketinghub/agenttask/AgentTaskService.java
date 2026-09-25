@@ -100,6 +100,9 @@ public class AgentTaskService {
   private static final String ACCESSED_URL_LINK = "ACCESSED_URL";
   private static final String BLOCKER_HELP_LINK = "BLOCKER_HELP";
   private static final String CUSTOMER_AGENT_KEY = "customer-agent";
+  private static final String LANDING_GENERATOR_AGENT_KEY = "landing-generator";
+  private static final Set<String> CALLBACK_REPLAY_CAPABLE_AGENTS =
+      Set.of(CUSTOMER_AGENT_KEY, LANDING_GENERATOR_AGENT_KEY);
   private static final String CUSTOMER_AGENT_TELEMETRY_TYPE = "CUSTOMER_AGENT";
   private static final String ORPHANED_LEASE_RECOVERY_PREFIX = "ORPHANED_LEASE_RECOVERY_ONCE|";
   private static final String ORPHANED_LEASE_EXHAUSTED_PREFIX =
@@ -1615,8 +1618,10 @@ public class AgentTaskService {
    */
   private Optional<AgentTask> replayInterruptedCallback(
       String agentKey, String processCode, String activityId, String executionResourceCode) {
+    if (!CALLBACK_REPLAY_CAPABLE_AGENTS.contains(agentKey.trim())) return Optional.empty();
     return repository.findReplayableClaimedCallbackCandidates(agentKey.trim()).stream()
         .filter(task -> task.getProcessDefinition() != null)
+        .filter(this::callbackCanReplayWithoutInference)
         .filter(
             task -> matchesExecutionContract(task, processCode, activityId, executionResourceCode))
         .findFirst();
@@ -1863,8 +1868,10 @@ public class AgentTaskService {
    */
   private Optional<AgentTask> recoverInterruptedCallbackOnce(
       String agentKey, String processCode, String activityId, String executionResourceCode) {
+    if (!CALLBACK_REPLAY_CAPABLE_AGENTS.contains(agentKey.trim())) return Optional.empty();
     return repository.findRetryableCallbackCandidates(agentKey.trim()).stream()
         .filter(task -> task.getProcessDefinition() != null)
+        .filter(this::callbackCanReplayWithoutInference)
         .filter(
             task -> matchesExecutionContract(task, processCode, activityId, executionResourceCode))
         .filter(task -> isRetryableCallbackFailure(task.getExecutionError()))
@@ -1879,6 +1886,30 @@ public class AgentTaskService {
               synchronizeActivityInstance(saved, now);
               return saved;
             });
+  }
+
+  /**
+   * Autoriza retomada automática somente quando o executor sabe reenviar o parecer preservado sem
+   * chamar o modelo; Psique mantém o contrato legado restrito a aprovações.
+   */
+  private boolean callbackCanReplayWithoutInference(AgentTask task) {
+    if (trimToNull(task.getResultJson()) == null || trimToNull(task.getEvidenceJson()) == null) {
+      return false;
+    }
+    String agentKey = task.getAssignedAgent().getAgentKey();
+    if (LANDING_GENERATOR_AGENT_KEY.equals(agentKey)) return true;
+    if (!CUSTOMER_AGENT_KEY.equals(agentKey)) return false;
+    try {
+      return "APPROVED"
+          .equals(objectMapper.readTree(task.getResultJson()).path("decision").asText());
+    } catch (Exception ex) {
+      log.error(
+          "Callback preservado ilegível; retomada automática recusada. taskId={} agentKey={}",
+          task.getId(),
+          agentKey,
+          ex);
+      return false;
+    }
   }
 
   /** Distingue indisponibilidade transitória do backend de falha funcional do agente. */

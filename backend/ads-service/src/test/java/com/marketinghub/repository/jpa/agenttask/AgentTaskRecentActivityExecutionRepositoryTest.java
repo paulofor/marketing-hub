@@ -87,6 +87,8 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
       candidate.setTaskKind("WORK");
       candidate.setStatus("BLOCKED");
       candidate.setExecutionError(errors.get(index));
+      candidate.setResultJson("{\"decision\":\"READY\"}");
+      candidate.setEvidenceJson("{\"callbackPreserved\":true}");
       candidates.add(candidate.getId());
     }
     var completed = task(agent, process, "prototypeCorrection", 44, "2026-09-10T08:00:00Z");

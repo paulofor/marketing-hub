@@ -294,6 +294,8 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
       select task from AgentTask task
       where task.assignedAgent.agentKey = :agentKey
         and task.taskKind = 'WORK' and task.status = 'BLOCKED'
+        and task.resultJson is not null and task.resultJson <> ''
+        and task.evidenceJson is not null and task.evidenceJson <> ''
         and (task.executionError like '500 :%'
           or task.executionError like '%Internal Server Error%'
           or task.executionError like '%HTML integral alterou o destino protegido do checkout%')

@@ -23,6 +23,21 @@ e sua entrega completa pelo próprio modelo após validação local. Melhorias a
 ficam como sugestões fundamentadas. Imagens produtivas devem ser produzidas pelos arquivos
 versionados do repositório. Não publicar por SSH nem usar publicação como teste.
 
+## Limite absoluto de retentativa paga — decisão de 25/09/2026
+
+Nenhuma falha ocorrida depois que o modelo já produziu uma saída pode iniciar outra inferência
+automaticamente. O executor deve preservar resultado, evidência, auditoria e consumo no callback
+de falha; o backend só pode reentregar esse callback a um executor que declare e teste replay sem
+modelo. O replay reenvia os mesmos bytes e não reporta tokens novamente. Uma segunda recusa torna
+a tarefa `BLOCKED`, com causa e ação, sem terceira tentativa automática.
+
+Sem resultado e evidência completos, a tarefa permanece bloqueada: correção de integração ou
+retomada humana explícita não autoriza o polling a fabricar outra chamada paga. Campos derivados
+do modelo que alimentam colunas limitadas devem ser validados ou adaptados antes do callback
+terminal, preservando o contrato JSON integral em armazenamento adequado. Testes devem cobrir
+callback aceito, primeira falha com preservação, replay sem custo, segunda falha terminal, payload
+incompleto e executor sem suporte. **STOP** administrativo é contenção, não substitui essa proteção.
+
 ## Cinco pontos em toda oferta — decisão de 22/09/2026
 
 O texto compartilhado dos botões **Prompt para AIHUB**, incluindo prévia e cópia manual,

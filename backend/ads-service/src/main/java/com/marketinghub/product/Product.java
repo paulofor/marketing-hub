@@ -178,7 +178,10 @@ public class Product {
   @Column(name = "primary_cta", length = 191)
   private String primaryCta;
 
+  @Column(name = "niche", length = 255)
   private String niche;
+
+  @Column(name = "avatar", length = 255)
   private String avatar;
 
   /** Asset aprovado ou em revisão para ser a imagem semente canônica dos vídeos do produto. */

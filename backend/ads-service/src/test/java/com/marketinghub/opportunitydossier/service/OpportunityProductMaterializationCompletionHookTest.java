@@ -158,11 +158,19 @@ class OpportunityProductMaterializationCompletionHookTest {
   void limitsProductColumnsGeneratedByAgents() {
     Fixture fixture = new Fixture(ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
     fixture.dossier.setTitle("Mercado ".repeat(30));
+    fixture.strategyTask.setResultJson(
+        fixture
+            .strategyTask
+            .getResultJson()
+            .replace("Moda e bem-estar 40+", "Segmento comercial ".repeat(20))
+            .replace("Mulheres brasileiras de 40 a 55 anos", "Compradora prioritária ".repeat(20)));
     fixture.economicsTask.setResultJson(
         fixture
             .economicsTask
             .getResultJson()
             .replace("Vendas aprovadas", "Métrica privada detalhada ".repeat(20)));
+    when(fixture.marketNicheRepository.findFirstByNameIgnoreCaseOrderByIdAsc(any(String.class)))
+        .thenReturn(Optional.of(MarketNiche.builder().id(601L).name("Nicho persistido").build()));
 
     fixture.hook.apply(
         fixture.architectureTask,
@@ -180,6 +188,8 @@ class OpportunityProductMaterializationCompletionHookTest {
     assertThat(product.getValue().getInternalName()).hasSize(191);
     assertThat(product.getValue().getProductFormat()).hasSize(64);
     assertThat(product.getValue().getValueUnit()).hasSize(191);
+    assertThat(product.getValue().getNiche()).hasSize(255);
+    assertThat(product.getValue().getAvatar()).hasSize(255);
     assertThat(product.getValue().getPdeExperienceJson()).contains("Entregável");
   }
 
@@ -197,6 +207,7 @@ class OpportunityProductMaterializationCompletionHookTest {
     private final OpportunityDossier dossier;
     private final CommercialPlan plan = CommercialPlan.builder().id(801L).build();
     private final Product product = Product.builder().id(901L).build();
+    private final AgentTask strategyTask;
     private final AgentTask economicsTask;
     private final AgentTask architectureTask;
     private final OpportunityProductMaterializationCompletionHook hook;
@@ -231,14 +242,14 @@ class OpportunityProductMaterializationCompletionHookTest {
       Agent atena = Agent.builder().agentKey("experiment-strategist").build();
       Agent plutus = Agent.builder().agentKey("financial-agent").build();
       Agent dedalo = Agent.builder().agentKey("landing-generator").build();
-      AgentTask strategy =
+      strategyTask =
           task(701L, process, atena, "marketStrategy", strategyResult(privateValidationReady));
       economicsTask = task(702L, process, plutus, "economics", economicsResult());
       architectureTask = task(703L, process, dedalo, "productArchitecture", null);
       architectureTask.setStatus("IN_PROGRESS");
       when(taskRepository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
               88L, "product-discovery-cycle:42"))
-          .thenReturn(List.of(strategy, economicsTask, architectureTask));
+          .thenReturn(List.of(strategyTask, economicsTask, architectureTask));
       when(dossierRepository.findById(301L)).thenReturn(Optional.of(dossier));
       when(productTypeRepository.findByCode("PDE"))
           .thenReturn(Optional.of(ProductTypeDefinition.builder().id(7L).code("PDE").build()));

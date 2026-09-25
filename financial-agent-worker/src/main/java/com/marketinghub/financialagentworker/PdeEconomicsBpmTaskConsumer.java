@@ -259,7 +259,7 @@ public class PdeEconomicsBpmTaskConsumer {
           "blockerGuidance",
           Map.of(
               "category",
-              isStrategyContractDrift(ex) ? "CONTRACT_DRIFT" : "TECHNICAL_FAILURE",
+              "TECHNICAL_FAILURE",
               "recommendedAction",
               isStrategyContractDrift(ex)
                   ? "Retome a execução com Atena para gerar MARKET_STRATEGY_V3 antes de reiniciar Plutus."
@@ -529,10 +529,10 @@ public class PdeEconomicsBpmTaskConsumer {
     }
   }
 
-  /** Localiza a estratégia mais recente no envelope real de predecessoras do processo. */
+  /**
+   * Prioriza a estratégia persistida pela predecessora concluída e só então usa o provedor direto.
+   */
   private static JsonNode privateStrategyContract(JsonNode context) {
-    JsonNode direct = context.path("marketStrategicContract");
-    if (direct.isObject()) return direct;
     JsonNode latest = com.fasterxml.jackson.databind.node.MissingNode.getInstance();
     long latestTaskId = Long.MIN_VALUE;
     for (JsonNode completed : context.path("completedActivities")) {
@@ -544,7 +544,12 @@ public class PdeEconomicsBpmTaskConsumer {
         latestTaskId = taskId;
       }
     }
-    return latest;
+    if (!latest.isMissingNode()) return latest;
+
+    JsonNode direct = context.path("marketStrategicContract");
+    if (!direct.isObject()) return direct;
+    JsonNode wrapped = direct.path("contract");
+    return wrapped.isObject() ? wrapped : direct;
   }
 
   /** Confirma os cinco sinais canônicos da validação privada sem aceitar aliases. */
@@ -565,7 +570,7 @@ public class PdeEconomicsBpmTaskConsumer {
         && number.intValue() >= 6;
   }
 
-  /** Distingue incompatibilidade entre etapas de uma falha técnica genérica do executor. */
+  /** Distingue incompatibilidade entre etapas para recomendar a correção operacional adequada. */
   private boolean isStrategyContractDrift(Exception ex) {
     return ex != null
         && ex.getMessage() != null

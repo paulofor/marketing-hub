@@ -116,7 +116,7 @@ class IrisPrivateCommunicationCompletionHookTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
-  /** Aceita o experimento inicial somente enquanto o hash de versão e pixels permanece vigente. */
+  /** Aceita hash legado equivalente e recusa mudança real de versão ou pixels. */
   @Test
   void validatesInitialExperimentInputHash() {
     task.setSourceReference("experiment:93");
@@ -138,6 +138,10 @@ class IrisPrivateCommunicationCompletionHookTest {
         .isEqualTo(AgentTaskCompletionHook.CompletionDisposition.COMPLETE);
 
     input.put("communicationInputHash", "b".repeat(64));
+    assertThat(hook.apply(task, request))
+        .isEqualTo(AgentTaskCompletionHook.CompletionDisposition.COMPLETE);
+
+    input.put("prototypeVersion", "mira-private-v4");
     assertThatThrownBy(() -> hook.apply(task, request))
         .isInstanceOf(IllegalArgumentException.class);
   }

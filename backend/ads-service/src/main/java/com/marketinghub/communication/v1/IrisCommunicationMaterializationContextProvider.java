@@ -208,7 +208,8 @@ public class IrisCommunicationMaterializationContextProvider
       result.put("publicationAuthorized", false);
       result.put("externalMediaSpendAuthorized", false);
       if (initialPrivatePlanning.isPresent()) {
-        result.put("communicationInputHash", sha256(objectMapper.writeValueAsString(result)));
+        result.put(
+            "communicationInputHash", IrisCommunicationInputFingerprint.hash(objectMapper, result));
         result.put("communicationArtifacts", initialCommunicationArtifacts(sourceReference));
       }
       return java.util.Collections.unmodifiableMap(result);

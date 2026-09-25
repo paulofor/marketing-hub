@@ -7212,3 +7212,23 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   upload pode ser reaplicada uma única vez na mesma tarefa. O worker não chama o modelo, registra
   custo incremental zero, baixa novamente a prova aprovada e refaz apenas render/upload/callback.
   Nova falha recebe `AUTO_RETRY_MATERIALIZATION_ONCE` e fica terminal, sem terceira tentativa.
+
+## LOOP-IRIS-HASH-NAO-CANONICO-REABRE-TAREFA-PAGA — 25/09/2026
+
+- **Evidência confirmada:** a tarefa #502 concluiu o contrato de comunicação do experimento #93 e
+  a rota criativa #388 vinculou exatamente essa tarefa. Depois de novos deploys, o Processo 4
+  projetou `communicationContract` como `NOT_STARTED`, embora produto, plano, experimento, gate e
+  predecessores não tivessem sido alterados desde a conclusão.
+- **Causa-raiz:** `communicationInputHash` serializava mapas imutáveis Java sem ordenar suas chaves.
+  A ordem de iteração desses mapas não faz parte do contrato e pode mudar entre processos JVM;
+  bytes diferentes faziam um contexto semanticamente idêntico parecer uma nova entrada.
+- **Alternativas avaliadas:** repetir Íris consumiria novamente o modelo; ignorar o hash removeria a
+  proteção contra mudança material; canonicalizar o JSON e aceitar hashes legados somente quando o
+  snapshot funcional completo for semanticamente igual preserva segurança e custo. A terceira foi
+  adotada.
+- **Prevenção:** a impressão digital ordena recursivamente objetos, normaliza representações
+  numéricas equivalentes, preserva arrays e exclui somente `communicationInputHash` e
+  `communicationArtifacts`, que são autorreferentes. Prontidão e callback comparam o snapshot
+  completo; versão, pixels, gate, estratégia, economia ou produto diferentes continuam reabrindo o
+  contrato. Testes cobrem ordem e tipos numéricos divergentes, hash legado, artefato posterior e
+  mudança funcional, sem criar nova tarefa paga para a mesma entrada.

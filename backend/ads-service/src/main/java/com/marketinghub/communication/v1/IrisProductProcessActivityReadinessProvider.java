@@ -200,12 +200,12 @@ public class IrisProductProcessActivityReadinessProvider
             org.springframework.data.domain.PageRequest.of(0, 1));
     if (latest.isEmpty() || latest.get(0).evidenceJson() == null) return true;
     try {
-      String usedHash =
-          JSON.readTree(latest.get(0).evidenceJson())
-              .path("communicationInputReference")
-              .path("communicationInputHash")
-              .asText();
-      return !expectedHash.equals(usedHash);
+      var usedInput =
+          JSON.readTree(latest.get(0).evidenceJson()).path("communicationInputReference");
+      String usedHash = usedInput.path("communicationInputHash").asText();
+      if (expectedHash.equals(usedHash)) return false;
+      return !usedHash.matches("[0-9a-f]{64}")
+          || !IrisCommunicationInputFingerprint.equivalent(JSON, context, usedInput);
     } catch (Exception ex) {
       log.warn(
           "Entrada auditada da comunicação inicial está inválida. processDefinitionId={} sourceReference={}",

@@ -81,6 +81,22 @@
   referência de outro produto, preservação de cadeia/fonte, recusa de execução sem experimento e
   ausência de escrita ou chamadas pagas. A matriz Safira cobre desktop e emulação mobile.
 
+- **Recorrência de progresso divergente confirmada em 25/09/2026:** Mira #10, Processo 4 #95/v9,
+  exibia três de quatro objetivos no cabeçalho, mas mantinha a integração 4.4 concluída e a execução
+  automática #18 em quatro de quatro. A tarefa #411 e as provas posteriores pertenciam à validação
+  privada v7, anterior à política `PAID_INSTAGRAM_ONLY_V1` da v9.
+- **Causa-raiz do progresso divergente:** a projeção compacta perdia a instância da tarefa e aceitava
+  qualquer tarefa legada como estado da versão selecionada. Além disso, o contrato de
+  compatibilidade conferia grafo e responsáveis, mas não a política material de aquisição; assim,
+  destino e integração privados continuavam verdes depois da mudança para Instagram Ads.
+- **Correção sistêmica do progresso:** a projeção compacta passa a transportar a definição de
+  processo da instância que produziu cada tarefa; políticas de aquisição divergentes impedem
+  reaproveitamento; toda prova privada do pai é reaberta e sua navegação fica bloqueada até existir
+  contexto comercial compatível. Histórico, custo e resultados privados permanecem auditáveis.
+- **Prevenção do progresso divergente:** regressões cobrem tarefa compacta v7 consultada na v9,
+  revisão editorial v7→v8 ainda compatível, mudança v8→v9 incompatível, subprocesso bloqueado pelo
+  gate e revalidação da execução terminal sem somar provas históricas ao cabeçalho.
+
 ## LOOP-PDE-PREFLIGHT-REUTILIZA-PUBLICACAO-ANTIGA — estado verde sem versão vigente
 
 - **Data e evidência:** em 22/09/2026, Capella/experimento #88 possuía o run produtivo #1 em

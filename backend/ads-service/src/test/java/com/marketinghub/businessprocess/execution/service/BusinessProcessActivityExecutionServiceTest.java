@@ -466,7 +466,8 @@ class BusinessProcessActivityExecutionServiceTest {
                     oldTechnicalReview.getExecutionMode(),
                     oldTechnicalReview.getExecutionReasoningEffort(),
                     oldTechnicalReview.getBlockerCategory(),
-                    oldTechnicalReview.getBlockerAction())));
+                    oldTechnicalReview.getBlockerAction(),
+                    null)));
     when(coverages.findAllByAgentTaskIdIn(List.of(242L))).thenReturn(List.of());
     var historical =
         productService.productProcessExecutions(
@@ -605,6 +606,203 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(afterSelectedInstance.activities().getFirst().stateEvidence())
         .isEqualTo("REUSED_DIRECT");
     assertThat(afterSelectedInstance.activities().getFirst().activityInstanceId()).isEqualTo(4002L);
+  }
+
+  /** Mantém a tarefa compacta de outra versão visível sem somá-la ao progresso corrente. */
+  @Test
+  void excludesHistoricalCompactTaskFromExplicitReferenceProgress() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            null,
+            new ObjectMapper());
+    BusinessProcessDefinition selected = selectedProcess();
+    selected.setId(95L);
+    selected.setProcessCode("pde-communication-sales-journey");
+    selected.setName("Comunicação comercial");
+    selected.setVersionNumber(9);
+    selected.setStatus("PUBLISHED");
+    selected.setDiagramJson("{\"nodes\":[{\"id\":\"communicationContract\",\"type\":\"TASK\"}]}");
+    BusinessProcessActivityDefinition communication =
+        activity(907L, selected, "communicationContract", "Materializar contrato de comunicação");
+    Product mira =
+        Product.builder()
+            .id(3001L)
+            .name("Produto de teste")
+            .internalName("Mira sintética")
+            .automaticExecutionEnabled(true)
+            .build();
+    String reference = "product:3001@agent-validation-v1";
+    Instant completedAt = Instant.parse("2026-09-13T06:10:58Z");
+    var historical =
+        new AgentTaskProcessExecutionListSnapshot(
+            411L,
+            63L,
+            "pde-communication-sales-journey",
+            7,
+            "Materializar contrato privado",
+            "COMPLETED",
+            reference,
+            "communication-director",
+            "Íris",
+            "communicationContract",
+            "Materializar contrato de comunicação",
+            null,
+            100L,
+            0L,
+            20L,
+            new BigDecimal("0.285604"),
+            "COMPLETE",
+            completedAt.minusSeconds(60),
+            completedAt.minusSeconds(50),
+            completedAt,
+            completedAt,
+            "gpt-test",
+            "MODEL",
+            "medium",
+            null,
+            null,
+            63L);
+    when(processes.findById(95L)).thenReturn(Optional.of(selected));
+    when(products.findById(3001L)).thenReturn(Optional.of(mira));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(3001L)).thenReturn(List.of());
+    when(commercialPlans.findByProductId(3001L)).thenReturn(List.of());
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(95L))
+        .thenReturn(List.of(communication));
+    when(tasks.findProcessExecutionListSnapshots(reference, "pde-communication-sales-journey"))
+        .thenReturn(List.of(historical));
+    when(coverages.findAllByAgentTaskIdIn(List.of(411L))).thenReturn(List.of());
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
+                "pde-communication-sales-journey", "product:3001@"))
+        .thenReturn(List.of());
+
+    var history =
+        executionService.productProcessExecutions(95L, 3001L, null, null, false, reference);
+
+    assertThat(history.completedActivityCount()).isZero();
+    assertThat(history.remainingActivityCount()).isOne();
+    assertThat(history.objectiveAchieved()).isFalse();
+    assertThat(history.activities())
+        .singleElement()
+        .satisfies(
+            activity -> {
+              assertThat(activity.operationalState()).isEqualTo("NOT_STARTED");
+              assertThat(activity.tasks()).singleElement();
+              assertThat(activity.tasks().getFirst().processVersionNumber()).isEqualTo(7);
+            });
+  }
+
+  /** Bloqueia a chamada do subprocesso quando o gate de contexto reprova sua reutilização. */
+  @Test
+  void blocksSubprocessNavigationWhenAgentReadinessRejectsCurrentContext() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentProductProcessActivityReadinessProvider readiness =
+        mock(AgentProductProcessActivityReadinessProvider.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            null,
+            new ObjectMapper(),
+            List.of(),
+            List.of(readiness));
+    BusinessProcessDefinition selected = selectedProcess();
+    selected.setId(95L);
+    selected.setProcessCode("pde-communication-sales-journey");
+    selected.setVersionNumber(9);
+    selected.setStatus("PUBLISHED");
+    selected.setDiagramJson("{\"nodes\":[{\"id\":\"creatives\",\"type\":\"TASK\"}]}");
+    BusinessProcessActivityDefinition creatives =
+        activity(911L, selected, "creatives", "Executar produção e aprovação de criativos");
+    creatives.setSubprocessCode("creative-production-approval");
+    BusinessProcessDefinition child = selectedProcess();
+    child.setId(64L);
+    child.setProcessCode("creative-production-approval");
+    child.setStatus("PUBLISHED");
+    Product product =
+        Product.builder()
+            .id(3002L)
+            .name("Produto de teste")
+            .internalName("Safira sintética")
+            .automaticExecutionEnabled(true)
+            .build();
+    String reference = "product:3002@agent-validation-v1";
+    BusinessProcessActivityInstance completed = new BusinessProcessActivityInstance();
+    completed.setId(4003L);
+    completed.setActivityDefinition(creatives);
+    completed.setSourceReference(reference);
+    completed.setOccurrenceNumber(1);
+    completed.setStatus("COMPLETED");
+    completed.setObjectiveAchieved(true);
+    completed.setCreatedAt(Instant.parse("2026-09-13T07:00:00Z"));
+    completed.setUpdatedAt(Instant.parse("2026-09-13T07:01:00Z"));
+    when(processes.findById(95L)).thenReturn(Optional.of(selected));
+    when(processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+            "creative-production-approval", "PUBLISHED"))
+        .thenReturn(Optional.of(child));
+    when(products.findById(3002L)).thenReturn(Optional.of(product));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(3002L)).thenReturn(List.of());
+    when(commercialPlans.findByProductId(3002L)).thenReturn(List.of());
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(95L))
+        .thenReturn(List.of(creatives));
+    when(tasks.findProcessExecutionListSnapshots(reference, "pde-communication-sales-journey"))
+        .thenReturn(List.of());
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
+                "pde-communication-sales-journey", "product:3002@"))
+        .thenReturn(List.of(completed));
+    when(readiness.supports(selected, creatives)).thenReturn(true);
+    when(readiness.readiness(selected, creatives, product, reference))
+        .thenReturn(
+            new AgentProductProcessActivityReadiness(
+                false,
+                "A validação privada permanece histórica; use o experimento de Instagram Ads."));
+    when(readiness.requiresFreshExecution(selected, creatives, product, reference))
+        .thenReturn(true);
+
+    var activity =
+        executionService
+            .productProcessExecutions(95L, 3002L, null, null, false, reference)
+            .activities()
+            .getFirst();
+
+    assertThat(activity.operationalState()).isEqualTo("NOT_STARTED");
+    assertThat(activity.objectiveAchieved()).isFalse();
+    assertThat(activity.activityInstanceId()).isNull();
+    assertThat(activity.executionControl().interactionType()).isEqualTo("SUBPROCESS");
+    assertThat(activity.executionControl().actionAvailable()).isFalse();
+    assertThat(activity.executionControl().availabilityReason()).contains("Instagram Ads");
   }
 
   /** Usa o fluxo do BPM para iniciar pela preparação mesmo quando os IDs vieram fora de ordem. */

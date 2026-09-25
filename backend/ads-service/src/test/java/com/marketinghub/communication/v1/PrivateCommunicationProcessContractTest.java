@@ -24,6 +24,21 @@ class PrivateCommunicationProcessContractTest {
         .isTrue();
   }
 
+  /** Rejeita prova privada anterior quando a revisão passa a exigir aquisição paga no Instagram. */
+  @Test
+  void rejectsRevisionWithDifferentCommercialAcquisitionPolicy() throws Exception {
+    var editorial = process(85L, 8);
+    var paidInstagram = process(95L, 9);
+    ObjectNode diagram = (ObjectNode) json.readTree(paidInstagram.getDiagramJson());
+    diagram.put("commercialAcquisitionPolicyVersion", "PAID_INSTAGRAM_ONLY_V1");
+    paidInstagram.setDiagramJson(diagram.toString());
+
+    assertThat(PrivateCommunicationProcessContract.supports(editorial, paidInstagram, json))
+        .isFalse();
+    assertThat(PrivateCommunicationProcessContract.supports(paidInstagram, paidInstagram, json))
+        .isTrue();
+  }
+
   /** Rejeita processos estranhos, regressão de versão e revisão sem marcador explícito. */
   @Test
   void rejectsIdentityAndVersionMismatch() throws Exception {

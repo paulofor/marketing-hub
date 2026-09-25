@@ -515,6 +515,36 @@ class PrivateCommunicationJourneyTest {
     verify(tasks, never()).save(any());
   }
 
+  /**
+   * Preserva as provas privadas, mas as recusa como prontidão da revisão comercial do Instagram.
+   */
+  @Test
+  void rejectsPrivateJourneyAfterPaidInstagramPolicyBecomesCurrent() throws Exception {
+    REFERENCE = "product:" + product.getId() + "@agent-validation-v1";
+    var privateProducts = mock(IrisPrivateProductContext.class);
+    when(privateProducts.resolve(REFERENCE))
+        .thenAnswer(i -> Optional.of(json.convertValue(input, Map.class)));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        journey, "privateProducts", privateProducts);
+    ObjectNode diagram = (ObjectNode) json.readTree(parent.getDiagramJson());
+    diagram.put("commercialAcquisitionPolicyVersion", "PAID_INSTAGRAM_ONLY_V1");
+    parent.setDiagramJson(diagram.toString());
+
+    var readiness = journey.readiness(parent, destinationActivity, product, REFERENCE);
+    var provider = new PrivateCommunicationActivityReadinessProvider(journey);
+
+    assertThat(journey.incompatibleCommercialPolicy(parent, REFERENCE)).isTrue();
+    assertThat(readiness.ready()).isFalse();
+    assertThat(readiness.reason()).contains("histórica", "Instagram Ads");
+    assertThat(provider.supports(parent, activity(parent, 910638L, "communicationContract")))
+        .isTrue();
+    assertThat(provider.supports(parent, activity(parent, 910641L, "creatives"))).isTrue();
+    assertThat(provider.readiness(parent, integrationActivity, product, REFERENCE).ready())
+        .isFalse();
+    assertThat(provider.requiresFreshExecution(parent, integrationActivity, product, REFERENCE))
+        .isTrue();
+  }
+
   /** Cria uma definição isolada mantendo o processo proprietário. */
   private BusinessProcessActivityDefinition activity(
       BusinessProcessDefinition process, long id, String code) {

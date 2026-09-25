@@ -28,6 +28,9 @@
 | Métricas | Resultado, oferta vista, checkout, compra, entrega e aplicação | Eventos separados; nenhum intermediário conta como venda |
 | Dados de teste | Compra e eventos simulados | Identidades segregadas de pessoas, receita e mídia reais |
 | Interface | Desktop, iPhone e Pixel | Processo, subprocesso, bloqueio e próxima ação legíveis |
+| Progresso entre versões | Prova privada v7 aberta no Processo 4 v9 | Histórico visível, zero objetivo comercial contado e execução terminal em revalidação |
+| Política material | Revisão editorial v8 e política paga v9 | v7→v8 pode reutilizar contrato; prova privada não atravessa `PAID_INSTAGRAM_ONLY_V1` |
+| Ordem causal | Integração privada antiga existe sem contrato comercial vigente | Atividades posteriores reabertas e nenhum subprocesso executável até contexto comercial compatível |
 
 ## Limites comerciais
 

@@ -94,10 +94,13 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
         task.estimatedCostUsd, task.costEstimationStatus,
         task.createdAt, task.receivedAt, task.deliveredAt, task.updatedAt,
         task.executionModelCode, task.executionMode, task.executionReasoningEffort,
-        task.blockerCategory, task.blockerAction)
+        task.blockerCategory, task.blockerAction, instanceProcess.id)
       from AgentTask task
       join task.processDefinition process
       join task.assignedAgent agent
+      left join task.activityInstance activityInstance
+      left join activityInstance.activityDefinition instanceActivity
+      left join instanceActivity.processDefinition instanceProcess
       where task.sourceReference = :sourceReference and process.processCode = :processCode
       order by task.createdAt desc, task.id desc
       """)

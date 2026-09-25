@@ -162,4 +162,93 @@ class ExperimentCampaignMetricServiceTest {
     assertThat(saved.getCpc()).isNull();
     assertThat(saved.getCpl()).isNull();
   }
+
+  /** Congela o retrato anterior e concilia somente a diferença confirmada pela Meta. */
+  @Test
+  void activateReplacementPreservesAggregateAndReconcilesSpend() {
+    Experiment experiment = Experiment.builder().id(88L).build();
+    FacebookAdsCampaign source = new FacebookAdsCampaign();
+    source.setId("source");
+    source.setExperiment(experiment);
+    FacebookAdsCampaign replacement = new FacebookAdsCampaign();
+    replacement.setId("replacement");
+    replacement.setExperiment(experiment);
+    ExperimentCampaignMetric metric =
+        ExperimentCampaignMetric.builder()
+            .experiment(experiment)
+            .campaign(source)
+            .reach(619L)
+            .impressions(839L)
+            .clicks(7L)
+            .leads(0L)
+            .spend(new BigDecimal("25.19"))
+            .build();
+    when(repository.findByExperiment(experiment)).thenReturn(Optional.of(metric));
+    when(repository.save(metric)).thenReturn(metric);
+
+    ExperimentCampaignMetric saved =
+        service.activateReplacement(replacement, new BigDecimal("25.26"));
+
+    assertThat(replacement.getPriorReach()).isEqualTo(619L);
+    assertThat(replacement.getPriorImpressions()).isEqualTo(839L);
+    assertThat(replacement.getPriorClicks()).isEqualTo(7L);
+    assertThat(replacement.getPriorLeads()).isZero();
+    assertThat(replacement.getPriorSpendMinor()).isEqualTo(2526L);
+    assertThat(saved.getCampaign()).isSameAs(replacement);
+    assertThat(saved.getSpend()).isEqualByComparingTo("25.26");
+    assertThat(saved.getCpc()).isEqualByComparingTo("3.61");
+    verify(costAttributionService).addCostToExperimentHierarchy(experiment, new BigDecimal("0.07"));
+  }
+
+  /**
+   * Soma os insights da substituta ao retrato imutável sem perder datas nem métricas anteriores.
+   */
+  @Test
+  void upsertAggregatesReplacementMetricsWithoutDoubleCounting() {
+    Experiment experiment = Experiment.builder().id(88L).build();
+    FacebookAdsCampaign replacement = new FacebookAdsCampaign();
+    replacement.setId("replacement");
+    replacement.setExperiment(experiment);
+    replacement.setPriorReach(619L);
+    replacement.setPriorImpressions(839L);
+    replacement.setPriorClicks(7L);
+    replacement.setPriorLeads(0L);
+    replacement.setPriorSpendMinor(2526L);
+    ExperimentCampaignMetric metric =
+        ExperimentCampaignMetric.builder()
+            .experiment(experiment)
+            .campaign(replacement)
+            .reach(619L)
+            .impressions(839L)
+            .clicks(7L)
+            .leads(0L)
+            .spend(new BigDecimal("25.26"))
+            .dateStart(LocalDate.parse("2026-09-07"))
+            .dateStop(LocalDate.parse("2026-09-24"))
+            .build();
+    when(campaignRepository.findById("replacement")).thenReturn(Optional.of(replacement));
+    when(repository.findByExperiment(experiment)).thenReturn(Optional.of(metric));
+    when(repository.save(metric)).thenReturn(metric);
+
+    ExperimentCampaignMetric saved =
+        service.upsert(
+            "replacement",
+            LocalDate.parse("2026-09-25"),
+            LocalDate.parse("2026-09-25"),
+            10L,
+            15L,
+            1L,
+            0L,
+            new BigDecimal("1.25"));
+
+    assertThat(saved.getReach()).isEqualTo(629L);
+    assertThat(saved.getImpressions()).isEqualTo(854L);
+    assertThat(saved.getClicks()).isEqualTo(8L);
+    assertThat(saved.getLeads()).isZero();
+    assertThat(saved.getSpend()).isEqualByComparingTo("26.51");
+    assertThat(saved.getDateStart()).isEqualTo(LocalDate.parse("2026-09-07"));
+    assertThat(saved.getDateStop()).isEqualTo(LocalDate.parse("2026-09-25"));
+    verify(costAttributionService).addCostToExperimentHierarchy(experiment, new BigDecimal("1.25"));
+    verify(runMetricLifecycleService).synchronize(experiment, replacement, 854L);
+  }
 }

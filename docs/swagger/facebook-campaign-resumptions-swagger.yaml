@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Retomada financeira de campanhas Meta
-  version: 2.0.0
-  description: Autoriza orçamento diário, teto acumulado, janela e condições de parada; preserva histórico e confirma Meta antes de RUNNING. Suporta BRL e um conjunto diário ou vitalício.
+  version: 3.0.0
+  description: Autoriza orçamento diário, teto acumulado, janela e condições de parada; preserva histórico e confirma Meta antes de RUNNING. Quando a Meta proíbe converter uma hierarquia diária abaixo do mínimo da conta, cria uma substituta auditada com orçamento vitalício apenas no saldo restante.
 paths:
   /api/facebook-campaign-resumptions/experiments/{id}:
     parameters:
@@ -56,6 +56,18 @@ paths:
       summary: Ponto canônico inicial do executor; até 20 pedidos pendentes ou com reserva expirada
       responses:
         '200': {description: 'Lista de Execution sem leaseToken'}
+  /api/facebook-campaign-resumptions/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      summary: Consulta o estado persistido para desambiguar resposta perdida do callback
+      responses:
+        '200':
+          description: 'Execution atual; COMPLETED confirma que o backend efetivou a ativação'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Execution'}
+        '404': {description: 'Pedido inexistente'}
   /api/facebook-campaign-resumptions/{id}/claim:
     parameters:
       - $ref: '#/components/parameters/Id'
@@ -82,7 +94,12 @@ paths:
                 error: {type: string, nullable: true}
                 evidence:
                   type: object
-                  description: 'Snapshots Meta sem token. Sucesso exige IDs, campanha ACTIVE, budgetMode, orçamento/teto nativos, startDate, endDate e gasto menor que o teto.'
+                  description: 'Snapshots Meta sem token. Sucesso exige IDs, campanha ACTIVE, budgetMode, orçamento/teto nativos, startDate, endDate e gasto acumulado menor que o teto.'
+                replacement:
+                  allOf:
+                    - $ref: '#/components/schemas/CampaignReplacement'
+                  nullable: true
+                  description: 'Obrigatório somente quando a campanha diária é substituída por incompatibilidade do mínimo nativo da conta.'
       responses:
         '200': {description: 'Resultado persistido; callback repetido é idempotente'}
         '409': {description: 'Reserva inválida ou evidência divergente'}
@@ -104,6 +121,7 @@ components:
         status: {type: string, enum: [PENDING, RUNNING, COMPLETED, FAILED]}
         totalLimit: {type: number}
         dailyBudget: {type: number, nullable: true}
+        historicalSpend: {type: number, description: 'Gasto congelado de campanhas físicas anteriores do mesmo experimento; nunca inferido como zero pelo executor'}
         startDate: {type: string, format: date, nullable: true}
         endDate: {type: string, format: date}
         zeroResultSpendLimit: {type: number, nullable: true}
@@ -116,3 +134,23 @@ components:
         leaseToken: {type: string, nullable: true}
         error: {type: string, nullable: true}
         evidence: {type: object, nullable: true}
+    CampaignReplacement:
+      type: object
+      required: [sourceCampaignId, sourceAdSetId, campaignId, adSetId, lifetimeBudgetMinor, confirmedPriorSpend, ads]
+      properties:
+        sourceCampaignId: {type: string, description: 'Campanha original que deve permanecer pausada'}
+        sourceAdSetId: {type: string}
+        campaignId: {type: string, description: 'Campanha substituta confirmada como ACTIVE'}
+        adSetId: {type: string, description: 'Conjunto substituto com orçamento vitalício sobre o saldo restante'}
+        lifetimeBudgetMinor: {type: integer, format: int64, minimum: 1}
+        confirmedPriorSpend: {type: number, minimum: 0, description: 'Gasto acumulado confirmado antes da ativação da substituta'}
+        ads:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/ReplacementAd'}
+    ReplacementAd:
+      type: object
+      required: [sourceAdId, adId]
+      properties:
+        sourceAdId: {type: string}
+        adId: {type: string, description: 'Anúncio substituto que reutiliza o criativo aprovado da origem'}

@@ -1,0 +1,113 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-25-facebook-campaign-replaces-id-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: replaces_campaign_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_ads_campaign ADD COLUMN replaces_campaign_id VARCHAR(36) NULL AFTER lifetime_budget_minor;
+  - changeSet:
+      id: 2026-09-25-facebook-campaign-superseded-id-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: superseded_by_campaign_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_ads_campaign ADD COLUMN superseded_by_campaign_id VARCHAR(36) NULL AFTER replaces_campaign_id;
+  - changeSet:
+      id: 2026-09-25-facebook-campaign-prior-reach-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: prior_reach
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_ads_campaign ADD COLUMN prior_reach BIGINT NULL AFTER superseded_by_campaign_id;
+  - changeSet:
+      id: 2026-09-25-facebook-campaign-prior-impressions-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: prior_impressions
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_ads_campaign ADD COLUMN prior_impressions BIGINT NULL AFTER prior_reach;
+  - changeSet:
+      id: 2026-09-25-facebook-campaign-prior-clicks-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: prior_clicks
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_ads_campaign ADD COLUMN prior_clicks BIGINT NULL AFTER prior_impressions;
+  - changeSet:
+      id: 2026-09-25-facebook-campaign-prior-leads-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: prior_leads
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_ads_campaign ADD COLUMN prior_leads BIGINT NULL AFTER prior_clicks;
+  - changeSet:
+      id: 2026-09-25-facebook-campaign-prior-spend-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: prior_spend_minor
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_ads_campaign ADD COLUMN prior_spend_minor BIGINT NULL AFTER prior_leads;

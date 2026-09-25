@@ -3,13 +3,16 @@ package com.marketinghub.facebookads.resumption.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.funnel.ExperimentFinancialGuardrailPolicy;
+import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.facebookads.*;
 import com.marketinghub.facebookads.resumption.FacebookCampaignResumption;
 import com.marketinghub.facebookads.resumption.service.request.ResumeCampaignRequest;
+import com.marketinghub.facebookads.resumption.service.result.CampaignReplacementResult;
 import com.marketinghub.facebookads.resumption.service.result.ResumeCampaignResult;
 import com.marketinghub.facebookads.resumption.service.summary.ResumeCampaignSummary;
 import com.marketinghub.facebookads.resumption.service.view.ResumeCampaignView;
+import com.marketinghub.facebookads.service.CampaignStrategyService;
 import com.marketinghub.repository.jpa.experiment.*;
 import com.marketinghub.repository.jpa.facebookads.*;
 import java.math.BigDecimal;
@@ -36,7 +39,12 @@ public class FacebookCampaignResumptionService {
   private final FacebookCampaignResumptionRepository requests;
   private final ExperimentRepository experiments;
   private final FacebookAdsCampaignRepository campaigns;
+  private final FacebookAdsAdSetRepository adSets;
+  private final FacebookAdsAdRepository ads;
+  private final FacebookAdsAdTrackingUtmRepository trackingUtms;
   private final ExperimentCampaignMetricRepository metrics;
+  private final ExperimentCampaignMetricService campaignMetrics;
+  private final CampaignStrategyService campaignStrategies;
   private final ExperimentStatusChangeRepository history;
   private final ExperimentReadinessService readiness;
   private final ObjectMapper json;
@@ -46,14 +54,24 @@ public class FacebookCampaignResumptionService {
       FacebookCampaignResumptionRepository requests,
       ExperimentRepository experiments,
       FacebookAdsCampaignRepository campaigns,
+      FacebookAdsAdSetRepository adSets,
+      FacebookAdsAdRepository ads,
+      FacebookAdsAdTrackingUtmRepository trackingUtms,
       ExperimentCampaignMetricRepository metrics,
+      ExperimentCampaignMetricService campaignMetrics,
+      CampaignStrategyService campaignStrategies,
       ExperimentStatusChangeRepository history,
       ExperimentReadinessService readiness,
       ObjectMapper json) {
     this.requests = requests;
     this.experiments = experiments;
     this.campaigns = campaigns;
+    this.adSets = adSets;
+    this.ads = ads;
+    this.trackingUtms = trackingUtms;
     this.metrics = metrics;
+    this.campaignMetrics = campaignMetrics;
+    this.campaignStrategies = campaignStrategies;
     this.history = history;
     this.readiness = readiness;
     this.json = json;
@@ -145,7 +163,7 @@ public class FacebookCampaignResumptionService {
     if (input.purchaseStopCount() != null
         && (input.purchaseStopCount() <= 0 || input.purchaseStopCount() > 100000))
       throw bad("A meta de compras para parada deve ficar entre 1 e 100000.");
-    FacebookAdsCampaign campaign = linked.get(0);
+    FacebookAdsCampaign campaign = currentCampaign(linked).orElseThrow();
     FacebookCampaignResumption r = new FacebookCampaignResumption();
     r.setExperimentId(e.getId());
     r.setCampaignId(campaign.getId());
@@ -222,6 +240,12 @@ public class FacebookCampaignResumptionService {
         .toList();
   }
 
+  /** Expõe o estado persistido para o executor confirmar se um callback foi efetivado. */
+  @Transactional(readOnly = true)
+  public ResumeCampaignView get(Long id) {
+    return view(requests.findById(id).orElseThrow(), false);
+  }
+
   /** Confirma que a campanha existente possui autorização estruturada igual ao plano vigente. */
   @Transactional(readOnly = true)
   public boolean hasCurrentAuthorization(Long experimentId) {
@@ -277,22 +301,32 @@ public class FacebookCampaignResumptionService {
     if (input.evidence() != null && input.evidence().toString().length() > 100000)
       throw bad("Evidência excede limite.");
     Experiment e = experiments.findForFacebookRelease(r.getExperimentId()).orElseThrow();
-    FacebookAdsCampaign campaign = campaigns.findById(r.getCampaignId()).orElseThrow();
+    FacebookAdsCampaign sourceCampaign = campaigns.findById(r.getCampaignId()).orElseThrow();
     if (input.success()) {
       var evidence = input.evidence();
+      CampaignReplacementResult replacement = input.replacement();
+      String effectiveCampaignId =
+          replacement == null ? r.getCampaignId() : replacement.campaignId();
+      String effectiveAdSetId = replacement == null ? r.getAdSetId() : replacement.adSetId();
       if (evidence == null
           || !"ACTIVE".equals(evidence.path("campaignStatus").asText())
-          || !r.getAdSetId().equals(evidence.path("adSetId").asText())
-          || !r.getCampaignId().equals(evidence.path("campaignId").asText())
+          || !effectiveAdSetId.equals(evidence.path("adSetId").asText())
+          || !effectiveCampaignId.equals(evidence.path("campaignId").asText())
           || !evidence.path("spend").isNumber()
-          || !budgetEvidenceMatches(r, evidence)
+          || !budgetEvidenceMatches(r, sourceCampaign, replacement, evidence)
           || !r.getStartDate().toString().equals(evidence.path("startDate").asText())
           || !r.getEndDate().toString().equals(evidence.path("endDate").asText())
           || evidence.path("spend").decimalValue().compareTo(r.getTotalLimit()) >= 0
           || e.getMediaSpendLimit().compareTo(r.getTotalLimit()) != 0)
         throw conflict("A Meta não confirmou teto, prazo e estado autorizados.");
+      FacebookAdsCampaign campaign =
+          replacement == null
+              ? sourceCampaign
+              : materializeReplacement(r, sourceCampaign, replacement, evidence);
       ExperimentStatus previous = e.getStatus();
       e.setStatus(ExperimentStatus.RUNNING);
+      sourceCampaign.setStatus(
+          replacement == null ? FacebookAdStatus.ACTIVE : FacebookAdStatus.PAUSED);
       campaign.setStatus(FacebookAdStatus.ACTIVE);
       campaign.setMetricsFinalSyncedAt(null);
       campaign.setStopReason(null);
@@ -323,8 +357,8 @@ public class FacebookCampaignResumptionService {
   /** Exige campanha pausada, conjunto único e ausência de pausa ainda pendente. */
   private String blocker(
       Experiment e, List<FacebookAdsCampaign> linked, FacebookCampaignResumption latest) {
-    if (e.getPlatform() != ExperimentPlatform.FACEBOOK || linked.size() != 1)
-      return "Retomada exige uma única campanha Facebook publicada.";
+    if (e.getPlatform() != ExperimentPlatform.FACEBOOK || linked.isEmpty())
+      return "Retomada exige uma campanha Facebook publicada.";
     if (latest != null && Set.of("PENDING", "RUNNING").contains(latest.getStatus()))
       return "Retomada aguardando confirmação da Meta.";
     if (!Set.of(
@@ -334,7 +368,10 @@ public class FacebookCampaignResumptionService {
             ExperimentStatus.INCONCLUSIVE)
         .contains(e.getStatus()))
       return "Experimento precisa estar pausado para autorizar uma retomada.";
-    FacebookAdsCampaign c = linked.get(0);
+    Optional<FacebookAdsCampaign> current = currentCampaign(linked);
+    if (current.isEmpty())
+      return "Retomada exige exatamente uma campanha Meta vigente; campanhas substituídas permanecem apenas no histórico.";
+    FacebookAdsCampaign c = current.get();
     if (c.getStatus() != FacebookAdStatus.PAUSED || c.getAdSets().size() != 1)
       return "Campanha deve estar pausada e possuir um único conjunto.";
     if (c.getStopRequestedAt() != null && c.getStopCompletedAt() == null)
@@ -389,32 +426,42 @@ public class FacebookCampaignResumptionService {
 
   /** Aceita somente orçamento e teto nativos confirmados na camada compatível da Meta. */
   private boolean budgetEvidenceMatches(
-      FacebookCampaignResumption r, com.fasterxml.jackson.databind.JsonNode evidence) {
+      FacebookCampaignResumption r,
+      FacebookAdsCampaign sourceCampaign,
+      CampaignReplacementResult replacement,
+      com.fasterxml.jackson.databind.JsonNode evidence) {
     long totalMinor = r.getTotalLimit().movePointRight(2).longValueExact();
+    long historicalMinor =
+        sourceCampaign.getPriorSpendMinor() == null ? 0L : sourceCampaign.getPriorSpendMinor();
     String mode = evidence.path("budgetMode").asText();
+    if ("REPLACEMENT_ADSET_LIFETIME_BELOW_MINIMUM".equals(mode)) {
+      return replacementBudgetEvidenceMatches(r, replacement, evidence, totalMinor);
+    }
+    if (replacement != null) return false;
     if ("LIFETIME".equals(mode)) {
-      return evidence.path("lifetimeBudgetMinor").asLong(-1) == totalMinor;
+      return evidence.path("lifetimeBudgetMinor").asLong(-1) == totalMinor - historicalMinor;
     }
     if (r.getDailyBudget() == null
         || evidence.path("dailyBudgetMinor").asLong(-1)
             != r.getDailyBudget().movePointRight(2).longValueExact()) return false;
     long dailyMinor = r.getDailyBudget().movePointRight(2).longValueExact();
     if ("DAILY_WITH_CAMPAIGN_CAP".equals(mode))
-      return evidence.path("campaignSpendCapMinor").asLong(-1) == totalMinor;
+      return evidence.path("campaignSpendCapMinor").asLong(-1) == totalMinor - historicalMinor;
     if (!"CAMPAIGN_LIFETIME_BELOW_MINIMUM".equals(mode)) return false;
     long nativeLifetimeMinor = evidence.path("campaignLifetimeBudgetMinor").asLong(-1L);
-    long spentMinor =
+    long sourceSpentMinor =
         evidence
-            .path("spend")
+            .path("sourceCampaignSpend")
             .decimalValue()
             .movePointRight(2)
             .setScale(0, RoundingMode.HALF_UP)
             .longValue();
     long remainingDays = evidence.path("remainingDays").asLong(0L);
-    if (remainingDays <= 0L || nativeLifetimeMinor <= spentMinor) return false;
+    if (remainingDays <= 0L || nativeLifetimeMinor <= sourceSpentMinor) return false;
     long calculatedAverage =
-        (nativeLifetimeMinor - spentMinor + remainingDays - 1L) / remainingDays;
-    return nativeLifetimeMinor <= totalMinor
+        (nativeLifetimeMinor - sourceSpentMinor + remainingDays - 1L) / remainingDays;
+    return nativeLifetimeMinor <= totalMinor - historicalMinor
+        && evidence.path("historicalSpendMinor").asLong(-1L) == historicalMinor
         && evidence.path("authorizedDailyBudgetMinor").asLong(-1L) == dailyMinor
         && evidence.path("campaignDailyBudgetMinor").asLong(-1L) == 0L
         && evidence.path("adSetDailyBudgetMinor").asLong(-1L) == 0L
@@ -424,6 +471,209 @@ public class FacebookCampaignResumptionService {
         && evidence.path("effectiveRemainingAverageMinor").asLong(-1L) == calculatedAverage
         && calculatedAverage <= dailyMinor
         && evidence.path("accountMinimumCampaignSpendCapMinor").asLong(-1L) > totalMinor;
+  }
+
+  /** Valida que a substituta limita somente o saldo restante e preserva a origem pausada. */
+  private boolean replacementBudgetEvidenceMatches(
+      FacebookCampaignResumption r,
+      CampaignReplacementResult replacement,
+      com.fasterxml.jackson.databind.JsonNode evidence,
+      long totalMinor) {
+    if (replacement == null
+        || !r.getCampaignId().equals(replacement.sourceCampaignId())
+        || !r.getAdSetId().equals(replacement.sourceAdSetId())
+        || !replacement.campaignId().equals(evidence.path("campaignId").asText())
+        || !replacement.adSetId().equals(evidence.path("adSetId").asText())
+        || replacement.campaignId().equals(replacement.sourceCampaignId())
+        || replacement.adSetId().equals(replacement.sourceAdSetId())
+        || !externalId(replacement.campaignId())
+        || !externalId(replacement.adSetId())
+        || replacement.lifetimeBudgetMinor() == null
+        || replacement.lifetimeBudgetMinor() <= 0L
+        || replacement.confirmedPriorSpend() == null
+        || replacement.confirmedPriorSpend().signum() < 0
+        || replacement.ads() == null
+        || replacement.ads().isEmpty()) return false;
+    long priorMinor;
+    try {
+      priorMinor = replacement.confirmedPriorSpend().movePointRight(2).longValueExact();
+    } catch (ArithmeticException ex) {
+      LOG.warn(
+          "Gasto anterior da substituição não possui precisão monetária: requestId={} campaignId={}",
+          r.getId(),
+          replacement.campaignId(),
+          ex);
+      return false;
+    }
+    long remainingDays = evidence.path("remainingDays").asLong(0L);
+    long lifetime = replacement.lifetimeBudgetMinor();
+    long dailyMinor = r.getDailyBudget().movePointRight(2).longValueExact();
+    long historicalMinor = evidence.path("historicalSpendMinor").asLong(-1L);
+    long expectedAverage =
+        remainingDays <= 0L ? Long.MAX_VALUE : (lifetime + remainingDays - 1L) / remainingDays;
+    return priorMinor < totalMinor
+        && historicalMinor >= 0L
+        && historicalMinor <= priorMinor
+        && priorMinor + lifetime <= totalMinor
+        && evidence.path("confirmedPriorSpendMinor").asLong(-1L) == priorMinor
+        && evidence.path("lifetimeBudgetMinor").asLong(-1L) == lifetime
+        && evidence.path("campaignDailyBudgetMinor").asLong(-1L) == 0L
+        && evidence.path("campaignLifetimeBudgetMinor").asLong(-1L) == 0L
+        && evidence.path("campaignSpendCapMinor").asLong(-1L) == 0L
+        && evidence.path("adSetDailyBudgetMinor").asLong(-1L) == 0L
+        && evidence.path("adSetLifetimeSpendCapMinor").asLong(-1L) == 0L
+        && evidence.path("effectiveRemainingAverageMinor").asLong(-1L) == expectedAverage
+        && expectedAverage <= dailyMinor
+        && evidence.path("accountMinimumCampaignSpendCapMinor").asLong(-1L)
+            > totalMinor - historicalMinor
+        && evidence.path("spend").decimalValue().compareTo(replacement.confirmedPriorSpend()) == 0;
+  }
+
+  /** Materializa no backend a hierarquia substituta já confirmada e mantém a anterior auditável. */
+  private FacebookAdsCampaign materializeReplacement(
+      FacebookCampaignResumption request,
+      FacebookAdsCampaign source,
+      CampaignReplacementResult replacement,
+      com.fasterxml.jackson.databind.JsonNode evidence) {
+    if (campaigns.existsById(replacement.campaignId())
+        || adSets.existsById(replacement.adSetId())) {
+      throw conflict("A hierarquia substituta já pertence a outro callback.");
+    }
+    List<FacebookAdsAdSet> sourceSets = adSets.findDetailedByCampaignIds(List.of(source.getId()));
+    if (sourceSets.size() != 1 || !sourceSets.get(0).getId().equals(request.getAdSetId())) {
+      throw conflict("A campanha de origem não possui o conjunto único autorizado.");
+    }
+    FacebookAdsAdSet sourceSet = sourceSets.get(0);
+    Map<String, FacebookAdsAd> sourceAds = new LinkedHashMap<>();
+    sourceSet.getAds().forEach(ad -> sourceAds.put(ad.getId(), ad));
+    Map<String, String> replacements = new LinkedHashMap<>();
+    for (CampaignReplacementResult.ReplacementAdResult item : replacement.ads()) {
+      if (item == null
+          || !sourceAds.containsKey(item.sourceAdId())
+          || !externalId(item.adId())
+          || item.adId().equals(item.sourceAdId())
+          || replacements.put(item.sourceAdId(), item.adId()) != null) {
+        throw conflict("Mapeamento dos anúncios substitutos é inválido.");
+      }
+    }
+    if (!replacements.keySet().equals(sourceAds.keySet())
+        || replacements.values().stream().distinct().count() != replacements.size()) {
+      throw conflict("Todos os anúncios da origem precisam de um único substituto.");
+    }
+
+    FacebookAdsCampaign target = new FacebookAdsCampaign();
+    target.setId(replacement.campaignId());
+    target.setExternalId(replacement.campaignId());
+    target.setPublicationKey(
+        "FACEBOOK:EXPERIMENT:" + request.getExperimentId() + ":RESUMPTION:" + request.getId());
+    target.setAdAccountId(source.getAdAccountId());
+    target.setExperiment(source.getExperiment());
+    target.setFacebookAccount(source.getFacebookAccount());
+    target.setName(replacementName(source.getName(), request.getId()));
+    target.setObjective(source.getObjective());
+    target.setStatus(FacebookAdStatus.PAUSED);
+    target.setBudgetMode(BudgetMode.ADSET);
+    target.setApiVersion(source.getApiVersion());
+    target.setReplacesCampaignId(source.getId());
+    target.setSpecialAdCategories(new HashSet<>(source.getSpecialAdCategories()));
+    target.setSpecialAdCountries(new HashSet<>(source.getSpecialAdCountries()));
+    target = campaigns.save(target);
+
+    FacebookAdsAdSet targetSet = new FacebookAdsAdSet();
+    targetSet.setId(replacement.adSetId());
+    targetSet.setExternalId(replacement.adSetId());
+    targetSet.setExperimentAdSet(sourceSet.getExperimentAdSet());
+    targetSet.setCampaign(target);
+    targetSet.setName(replacementName(sourceSet.getName(), request.getId()));
+    targetSet.setStatus(FacebookAdStatus.PAUSED);
+    targetSet.setLifetimeBudgetMinor(replacement.lifetimeBudgetMinor());
+    targetSet.setStartTime(request.getStartDate().atStartOfDay());
+    targetSet.setEndTime(request.getEndDate().atTime(23, 59, 59));
+    targetSet.setBillingEvent(sourceSet.getBillingEvent());
+    targetSet.setOptimizationGoal(sourceSet.getOptimizationGoal());
+    targetSet.setBidStrategy(sourceSet.getBidStrategy());
+    targetSet.setBidAmountMinor(sourceSet.getBidAmountMinor());
+    targetSet.setPromotedObjectJson(sourceSet.getPromotedObjectJson());
+    targetSet.setTargetingJson(sourceSet.getTargetingJson());
+    targetSet = adSets.save(targetSet);
+
+    for (Map.Entry<String, FacebookAdsAd> entry : sourceAds.entrySet()) {
+      FacebookAdsAd sourceAd = entry.getValue();
+      FacebookAdsAd targetAd = new FacebookAdsAd();
+      targetAd.setId(replacements.get(entry.getKey()));
+      targetAd.setExternalId(targetAd.getId());
+      targetAd.setAdSet(targetSet);
+      targetAd.setName(replacementAdName(sourceAd.getName(), request.getId(), sourceAd.getId()));
+      targetAd.setCreative(sourceAd.getCreative());
+      targetAd.setStatus(FacebookAdStatus.ACTIVE);
+      targetAd = ads.save(targetAd);
+      cloneTracking(sourceAd, targetAd);
+    }
+
+    source.setSupersededByCampaignId(target.getId());
+    source.setStatus(FacebookAdStatus.PAUSED);
+    source.setMetricsFinalSyncedAt(Instant.now());
+    campaignMetrics.activateReplacement(target, replacement.confirmedPriorSpend());
+    campaignStrategies.ensureDefaultStrategy(target);
+    targetSet.setStatus(FacebookAdStatus.ACTIVE);
+    target.getAdSets().add(targetSet);
+    LOG.info(
+        "Campanha Meta substituída com histórico preservado: requestId={} experimentId={} sourceCampaignId={} replacementCampaignId={} lifetimeBudgetMinor={} priorSpend={}",
+        request.getId(),
+        request.getExperimentId(),
+        source.getId(),
+        target.getId(),
+        replacement.lifetimeBudgetMinor(),
+        replacement.confirmedPriorSpend());
+    return target;
+  }
+
+  /** Copia a atribuição UTM persistida quando o anúncio de origem possui esse contrato. */
+  private void cloneTracking(FacebookAdsAd source, FacebookAdsAd target) {
+    FacebookAdsAdTrackingUtm current = source.getTrackingUtm();
+    if (current == null) return;
+    FacebookAdsAdTrackingUtm copy = new FacebookAdsAdTrackingUtm();
+    copy.setAdId(target.getId());
+    copy.setAd(target);
+    copy.setUtmSource(current.getUtmSource());
+    copy.setUtmMedium(current.getUtmMedium());
+    copy.setUtmCampaign(current.getUtmCampaign());
+    copy.setUtmContent(current.getUtmContent());
+    copy.setUtmTerm(current.getUtmTerm());
+    trackingUtms.save(copy);
+  }
+
+  /** Mantém o nome operacional determinístico dentro do limite aceito pela Meta e pelo banco. */
+  private String replacementName(String sourceName, Long requestId) {
+    String suffix = " · retomada " + requestId;
+    String base = sourceName == null ? "Campanha" : sourceName;
+    return base.substring(0, Math.min(base.length(), 255 - suffix.length())) + suffix;
+  }
+
+  /** Reproduz no backend o nome determinístico usado pelo worker para cada anúncio substituto. */
+  private String replacementAdName(String sourceName, Long requestId, String sourceAdId) {
+    String suffix =
+        " · retomada "
+            + requestId
+            + " · origem "
+            + sourceAdId.substring(Math.max(0, sourceAdId.length() - 8));
+    String base = sourceName == null ? "Anúncio" : sourceName;
+    return base.substring(0, Math.min(base.length(), 255 - suffix.length())) + suffix;
+  }
+
+  /** Aceita somente identificadores numéricos externos que cabem nas chaves persistidas. */
+  private boolean externalId(String value) {
+    return value != null && value.length() <= 36 && value.matches("[0-9]+");
+  }
+
+  /**
+   * Localiza a única campanha vigente e ignora somente antecessoras explicitamente substituídas.
+   */
+  private Optional<FacebookAdsCampaign> currentCampaign(List<FacebookAdsCampaign> linked) {
+    if (linked == null) return Optional.empty();
+    List<FacebookAdsCampaign> current =
+        linked.stream().filter(c -> c.getSupersededByCampaignId() == null).toList();
+    return current.size() == 1 ? Optional.of(current.get(0)) : Optional.empty();
   }
 
   /** Registra autorização e confirmação no histórico já exibido pelo experimento. */
@@ -455,6 +705,11 @@ public class FacebookCampaignResumptionService {
           r.getStatus(),
           r.getTotalLimit(),
           r.getDailyBudget(),
+          campaigns
+              .findById(r.getCampaignId())
+              .map(FacebookAdsCampaign::getPriorSpendMinor)
+              .map(value -> BigDecimal.valueOf(value, 2))
+              .orElse(BigDecimal.ZERO),
           r.getStartDate(),
           r.getEndDate(),
           r.getZeroResultSpendLimit(),

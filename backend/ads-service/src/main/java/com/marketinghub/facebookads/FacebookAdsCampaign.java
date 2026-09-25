@@ -62,6 +62,27 @@ public class FacebookAdsCampaign {
   @Column(name = "lifetime_budget_minor")
   private Long lifetimeBudgetMinor;
 
+  @Column(name = "replaces_campaign_id", length = 36)
+  private String replacesCampaignId;
+
+  @Column(name = "superseded_by_campaign_id", length = 36)
+  private String supersededByCampaignId;
+
+  @Column(name = "prior_reach")
+  private Long priorReach;
+
+  @Column(name = "prior_impressions")
+  private Long priorImpressions;
+
+  @Column(name = "prior_clicks")
+  private Long priorClicks;
+
+  @Column(name = "prior_leads")
+  private Long priorLeads;
+
+  @Column(name = "prior_spend_minor")
+  private Long priorSpendMinor;
+
   @Column(name = "api_version")
   private String apiVersion;
 

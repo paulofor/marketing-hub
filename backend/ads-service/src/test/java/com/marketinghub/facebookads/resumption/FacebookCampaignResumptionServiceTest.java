@@ -6,11 +6,14 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.funnel.ExperimentFinancialGuardrailPolicy;
+import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.facebookads.*;
 import com.marketinghub.facebookads.resumption.service.*;
 import com.marketinghub.facebookads.resumption.service.request.ResumeCampaignRequest;
+import com.marketinghub.facebookads.resumption.service.result.CampaignReplacementResult;
 import com.marketinghub.facebookads.resumption.service.result.ResumeCampaignResult;
+import com.marketinghub.facebookads.service.CampaignStrategyService;
 import com.marketinghub.repository.jpa.experiment.*;
 import com.marketinghub.repository.jpa.facebookads.*;
 import java.math.BigDecimal;
@@ -24,15 +27,33 @@ class FacebookCampaignResumptionServiceTest {
       mock(FacebookCampaignResumptionRepository.class);
   private final ExperimentRepository experiments = mock(ExperimentRepository.class);
   private final FacebookAdsCampaignRepository campaigns = mock(FacebookAdsCampaignRepository.class);
+  private final FacebookAdsAdSetRepository adSets = mock(FacebookAdsAdSetRepository.class);
+  private final FacebookAdsAdRepository ads = mock(FacebookAdsAdRepository.class);
+  private final FacebookAdsAdTrackingUtmRepository trackingUtms =
+      mock(FacebookAdsAdTrackingUtmRepository.class);
   private final ExperimentCampaignMetricRepository metrics =
       mock(ExperimentCampaignMetricRepository.class);
+  private final ExperimentCampaignMetricService campaignMetrics =
+      mock(ExperimentCampaignMetricService.class);
+  private final CampaignStrategyService campaignStrategies = mock(CampaignStrategyService.class);
   private final ExperimentStatusChangeRepository history =
       mock(ExperimentStatusChangeRepository.class);
   private final ExperimentReadinessService readiness = mock(ExperimentReadinessService.class);
   private final ObjectMapper json = new ObjectMapper().findAndRegisterModules();
   private final FacebookCampaignResumptionService service =
       new FacebookCampaignResumptionService(
-          requests, experiments, campaigns, metrics, history, readiness, json);
+          requests,
+          experiments,
+          campaigns,
+          adSets,
+          ads,
+          trackingUtms,
+          metrics,
+          campaignMetrics,
+          campaignStrategies,
+          history,
+          readiness,
+          json);
   private Experiment e;
   private FacebookAdsCampaign c;
   private FacebookCampaignResumption saved;
@@ -72,6 +93,7 @@ class FacebookCampaignResumptionServiceTest {
               saved = inv.getArgument(0);
               saved.setId(1L);
               when(requests.findLocked(1L)).thenReturn(Optional.of(saved));
+              when(requests.findById(1L)).thenReturn(Optional.of(saved));
               return saved;
             });
     end = LocalDate.now(ZoneId.of("America/Sao_Paulo")).plusDays(6);
@@ -130,6 +152,8 @@ class FacebookCampaignResumptionServiceTest {
             .put("lifetimeBudgetMinor", 0)
             .put("adSetLifetimeSpendCapMinor", 0)
             .put("campaignSpendCapMinor", 0)
+            .put("historicalSpendMinor", 0)
+            .put("sourceCampaignSpend", new BigDecimal("27.45"))
             .put("remainingDays", 7)
             .put("effectiveRemainingAverageMinor", 1751)
             .put("spend", new BigDecimal("27.45"))
@@ -142,6 +166,108 @@ class FacebookCampaignResumptionServiceTest {
                 .status())
         .isEqualTo("COMPLETED");
     assertThat(e.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+  }
+
+  /**
+   * Materializa uma nova hierarquia vitalícia quando a Meta proíbe mudar o tipo de orçamento da
+   * campanha diária.
+   */
+  @Test
+  void completesWithAuditableReplacementBelowCampaignMinimum() {
+    c.setId("120000000000000001");
+    c.setExternalId(c.getId());
+    c.setAdAccountId("123456");
+    c.setName("Campanha Capella");
+    c.setObjective("OUTCOME_SALES");
+    c.setBudgetMode(BudgetMode.ADSET);
+    c.setApiVersion("v23.0");
+    FacebookAdsAdSet sourceSet = c.getAdSets().get(0);
+    sourceSet.setId("120000000000000002");
+    sourceSet.setExternalId(sourceSet.getId());
+    sourceSet.setCampaign(c);
+    sourceSet.setName("Conjunto Capella");
+    sourceSet.setBillingEvent("IMPRESSIONS");
+    sourceSet.setOptimizationGoal("OFFSITE_CONVERSIONS");
+    sourceSet.setBidStrategy("LOWEST_COST_WITHOUT_CAP");
+    sourceSet.setTargetingJson("{\"geo_locations\":{\"countries\":[\"BR\"]}}");
+    sourceSet.setPromotedObjectJson(
+        "{\"pixel_id\":\"1272936690700110\",\"custom_event_type\":\"PURCHASE\"}");
+    FacebookAdsAdCreative creative = new FacebookAdsAdCreative();
+    creative.setId("1399338238757778");
+    FacebookAdsAd sourceAd = new FacebookAdsAd();
+    sourceAd.setId("120000000000000003");
+    sourceAd.setAdSet(sourceSet);
+    sourceAd.setName("Criativo Capella");
+    sourceAd.setCreative(creative);
+    sourceAd.setStatus(FacebookAdStatus.ACTIVE);
+    sourceSet.setAds(List.of(sourceAd));
+    c.setAdSets(List.of(sourceSet));
+    when(campaigns.findById(c.getId())).thenReturn(Optional.of(c));
+    when(campaigns.findDetailedByExperimentId(91L)).thenReturn(List.of(c));
+    when(adSets.findDetailedByCampaignIds(List.of(c.getId()))).thenReturn(List.of(sourceSet));
+    when(campaigns.save(any(FacebookAdsCampaign.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(adSets.save(any(FacebookAdsAdSet.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(ads.save(any(FacebookAdsAd.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    service.request(91L, input());
+    var claim = service.claim(1L);
+    String targetCampaignId = "120000000000000011";
+    String targetAdSetId = "120000000000000012";
+    String targetAdId = "120000000000000013";
+    var evidence =
+        json.createObjectNode()
+            .put("campaignId", targetCampaignId)
+            .put("campaignStatus", "ACTIVE")
+            .put("adSetId", targetAdSetId)
+            .put("budgetMode", "REPLACEMENT_ADSET_LIFETIME_BELOW_MINIMUM")
+            .put("accountMinimumCampaignSpendCapMinor", 30000)
+            .put("dailyBudgetMinor", 2000)
+            .put("authorizedDailyBudgetMinor", 2000)
+            .put("campaignDailyBudgetMinor", 0)
+            .put("campaignLifetimeBudgetMinor", 0)
+            .put("campaignSpendCapMinor", 0)
+            .put("adSetDailyBudgetMinor", 0)
+            .put("lifetimeBudgetMinor", 12255)
+            .put("adSetLifetimeSpendCapMinor", 0)
+            .put("confirmedPriorSpendMinor", 2745)
+            .put("historicalSpendMinor", 0)
+            .put("remainingDays", 7)
+            .put("effectiveRemainingAverageMinor", 1751)
+            .put("spend", new BigDecimal("27.45"))
+            .put("startDate", LocalDate.now(ZoneId.of("America/Sao_Paulo")).toString())
+            .put("endDate", end.toString());
+    var replacement =
+        new CampaignReplacementResult(
+            c.getId(),
+            sourceSet.getId(),
+            targetCampaignId,
+            targetAdSetId,
+            12255L,
+            new BigDecimal("27.45"),
+            List.of(
+                new CampaignReplacementResult.ReplacementAdResult(sourceAd.getId(), targetAdId)));
+
+    assertThat(
+            service
+                .result(
+                    1L,
+                    new ResumeCampaignResult(claim.leaseToken(), true, null, evidence, replacement))
+                .status())
+        .isEqualTo("COMPLETED");
+
+    var campaignCaptor = org.mockito.ArgumentCaptor.forClass(FacebookAdsCampaign.class);
+    verify(campaigns).save(campaignCaptor.capture());
+    FacebookAdsCampaign target = campaignCaptor.getValue();
+    assertThat(target.getId()).isEqualTo(targetCampaignId);
+    assertThat(target.getReplacesCampaignId()).isEqualTo(c.getId());
+    assertThat(target.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
+    assertThat(c.getSupersededByCampaignId()).isEqualTo(targetCampaignId);
+    assertThat(c.getStatus()).isEqualTo(FacebookAdStatus.PAUSED);
+    verify(campaignMetrics).activateReplacement(target, new BigDecimal("27.45"));
+    verify(campaignStrategies).ensureDefaultStrategy(target);
+    verify(ads).save(argThat(ad -> targetAdId.equals(ad.getId())));
   }
 
   /** Recusa o vitalício quando o mínimo informado não excede o teto autorizado. */
@@ -164,6 +290,8 @@ class FacebookCampaignResumptionServiceTest {
             .put("lifetimeBudgetMinor", 0)
             .put("adSetLifetimeSpendCapMinor", 0)
             .put("campaignSpendCapMinor", 0)
+            .put("historicalSpendMinor", 0)
+            .put("sourceCampaignSpend", new BigDecimal("27.45"))
             .put("remainingDays", 7)
             .put("effectiveRemainingAverageMinor", 1751)
             .put("spend", new BigDecimal("27.45"))
@@ -198,6 +326,8 @@ class FacebookCampaignResumptionServiceTest {
             .put("lifetimeBudgetMinor", 0)
             .put("adSetLifetimeSpendCapMinor", 0)
             .put("campaignSpendCapMinor", 0)
+            .put("historicalSpendMinor", 0)
+            .put("sourceCampaignSpend", new BigDecimal("27.45"))
             .put("remainingDays", 7)
             .put("effectiveRemainingAverageMinor", 2037)
             .put("spend", new BigDecimal("27.45"))
@@ -396,6 +526,12 @@ class FacebookCampaignResumptionServiceTest {
             org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath(
                     "$[0].campaignId")
                 .value("campaign"));
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                "/api/facebook-campaign-resumptions/1"))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.status")
+                .value("PENDING"));
     String claim =
         mvc.perform(
                 org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(

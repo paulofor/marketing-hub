@@ -2,6 +2,7 @@ package com.marketinghub.facebookadsworker.resumption;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
@@ -11,7 +12,8 @@ import java.net.URI;
 import java.net.http.*;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,7 +23,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 /**
- * Executa retomadas autorizadas e confirma orçamento nativo antes de ativar a campanha existente.
+ * Executa retomadas autorizadas e confirma orçamento nativo antes de ativar a hierarquia vigente.
  */
 @Component
 public class FacebookCampaignResumptionWorker {
@@ -119,15 +121,19 @@ public class FacebookCampaignResumptionWorker {
     }
   }
 
-  /** Aplica a autorização idempotente sem enviar limites nulos e compensa falhas com pausa. */
+  /** Aplica a autorização idempotente sem ampliar limites e compensa falhas com pausa. */
   public void execute(JsonNode task, String token) {
-    String campaignId = task.path("campaignId").asText();
+    String sourceCampaignId = task.path("campaignId").asText();
+    AtomicReference<String> effectiveCampaignId = new AtomicReference<>(sourceCampaignId);
     long requestId = task.path("id").asLong();
     ObjectNode evidence = json.createObjectNode();
     try {
-      String adSetId = task.path("adSetId").asText();
+      String sourceAdSetId = task.path("adSetId").asText();
       BigDecimal cap = task.path("totalLimit").decimalValue();
       BigDecimal dailyBudget = task.path("dailyBudget").decimalValue();
+      if (!task.hasNonNull("historicalSpend") || !task.path("historicalSpend").isNumber())
+        throw new IllegalStateException("Gasto histórico agregado não informado pelo backend");
+      BigDecimal historicalSpend = task.path("historicalSpend").decimalValue();
       LocalDate startDate = LocalDate.parse(task.path("startDate").asText());
       LocalDate endDate = LocalDate.parse(task.path("endDate").asText());
       Instant end = endDate.atTime(23, 59, 59).atZone(ZoneId.of("America/Sao_Paulo")).toInstant();
@@ -136,14 +142,20 @@ public class FacebookCampaignResumptionWorker {
           || today.isAfter(endDate)
           || cap.signum() <= 0
           || dailyBudget.signum() <= 0
+          || historicalSpend.signum() < 0
           || dailyBudget.compareTo(cap) > 0)
         throw new IllegalStateException("Autorização financeira fora da janela ou inválida");
-      long minor = cap.movePointRight(2).longValueExact();
+      long totalMinor = cap.movePointRight(2).longValueExact();
       long dailyMinor = dailyBudget.movePointRight(2).longValueExact();
+      long historicalMinor =
+          historicalSpend
+              .movePointRight(2)
+              .setScale(0, RoundingMode.UNNECESSARY)
+              .longValueExact();
       JsonNode before =
           get(
-              campaignId,
-              "id,status,effective_status,spend_cap,daily_budget,lifetime_budget,can_use_spend_cap,account_id,adsets.limit(2){id,status,effective_status,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time}",
+              sourceCampaignId,
+              "id,name,objective,special_ad_categories,special_ad_category_country,status,effective_status,spend_cap,daily_budget,lifetime_budget,can_use_spend_cap,account_id,adsets.limit(2){id,name,status,effective_status,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time,billing_event,optimization_goal,destination_type,bid_strategy,bid_amount,targeting,promoted_object,attribution_spec,ads.limit(100){id,name,status,effective_status,creative{id}}}",
               token,
               requestId);
       evidence.set("before", before);
@@ -157,7 +169,7 @@ public class FacebookCampaignResumptionWorker {
       if (!"BRL".equals(account.path("currency").asText())
           || !sets.isArray()
           || sets.size() != 1
-          || !adSetId.equals(sets.get(0).path("id").asText()))
+          || !sourceAdSetId.equals(sets.get(0).path("id").asText()))
         throw new IllegalStateException("Retomada exige moeda BRL e um único conjunto autorizado");
       JsonNode beforeAdSet = sets.get(0);
       long campaignDailyBudget = before.path("daily_budget").asLong(0L);
@@ -188,33 +200,45 @@ public class FacebookCampaignResumptionWorker {
           && !"ACTIVE".equals(before.path("status").asText()))
         throw new IllegalStateException("Estado da campanha não permite retomada");
       if ("ACTIVE".equals(before.path("status").asText())) {
-        post(campaignId, Map.of("status", "PAUSED"), token, requestId);
+        post(sourceCampaignId, Map.of("status", "PAUSED"), token, requestId);
       }
-      JsonNode insights = insights(campaignId, token, requestId);
+      JsonNode insights = insights(sourceCampaignId, token, requestId);
       evidence.set("insights", insights);
       JsonNode rows = insights.path("data");
       if (!rows.isArray() || rows.size() != 1 || !rows.get(0).hasNonNull("spend"))
         throw new IllegalStateException("Gasto acumulado não confirmado pela Meta");
-      BigDecimal spend = new BigDecimal(rows.get(0).path("spend").asText());
-      if (spend.compareTo(cap) >= 0)
+      BigDecimal sourceSpend = new BigDecimal(rows.get(0).path("spend").asText());
+      BigDecimal confirmedPriorSpend =
+          historicalSpend.add(sourceSpend).setScale(2, RoundingMode.HALF_UP);
+      if (confirmedPriorSpend.compareTo(cap) >= 0)
         throw new IllegalStateException("Teto autorizado já consumido");
-      long spentMinor =
-          spend.movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact();
+      long sourceSpentMinor =
+          sourceSpend.movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact();
+      long confirmedPriorSpendMinor =
+          confirmedPriorSpend
+              .movePointRight(2)
+              .setScale(0, RoundingMode.HALF_UP)
+              .longValueExact();
+      long sourceLimitMinor = Math.subtractExact(totalMinor, historicalMinor);
+      if (sourceLimitMinor <= sourceSpentMinor)
+        throw new IllegalStateException("Saldo nativo da campanha vigente já foi consumido");
       verifyDestination(task.path("destinationUrl").asText(), requestId);
       String budgetMode;
       long nativeCampaignLifetimeBudgetMinor = 0L;
       long remainingDays = 0L;
       long effectiveRemainingAverageMinor = 0L;
       long minimumCampaignSpendCap = account.path("min_campaign_group_spend_cap").asLong(0L);
+      ReplacementExecution replacement = null;
       if (lifetimeMode) {
         budgetMode = "LIFETIME";
         if (before.path("spend_cap").asLong() > 0)
-          post(campaignId, Map.of("spend_cap", Long.toString(minor)), token, requestId);
+          throw new IllegalStateException(
+              "Campanha vitalícia possui spend_cap concorrente e não pode ser retomada");
         post(
-            adSetId,
+            sourceAdSetId,
             Map.of(
                 "lifetime_budget",
-                Long.toString(minor),
+                Long.toString(sourceLimitMinor),
                 "end_time",
                 end.toString(),
                 "status",
@@ -223,7 +247,7 @@ public class FacebookCampaignResumptionWorker {
             requestId);
       } else {
         boolean belowCampaignMinimum =
-            minimumCampaignSpendCap > 0 && minor < minimumCampaignSpendCap;
+            minimumCampaignSpendCap > 0 && sourceLimitMinor < minimumCampaignSpendCap;
         boolean campaignCapSupported =
             dailyMode
                 && before.path("can_use_spend_cap").asBoolean(false)
@@ -231,9 +255,13 @@ public class FacebookCampaignResumptionWorker {
                 && beforeAdSet.path("lifetime_spend_cap").asLong(0L) == 0L;
         if (campaignCapSupported) {
           budgetMode = "DAILY_WITH_CAMPAIGN_CAP";
-          post(campaignId, Map.of("spend_cap", Long.toString(minor)), token, requestId);
           post(
-              adSetId,
+              sourceCampaignId,
+              Map.of("spend_cap", Long.toString(sourceLimitMinor)),
+              token,
+              requestId);
+          post(
+              sourceAdSetId,
               Map.of(
                   "daily_budget",
                   Long.toString(dailyMinor),
@@ -243,25 +271,50 @@ public class FacebookCampaignResumptionWorker {
                   "ACTIVE"),
               token,
               requestId);
-        } else if (
-            belowCampaignMinimum && (dailyMode || campaignDailyMode || campaignLifetimeMode)) {
+        } else if (belowCampaignMinimum && (dailyMode || campaignDailyMode)) {
           if (before.path("spend_cap").asLong(0L) > 0L)
             throw new IllegalStateException(
-                "A campanha possui spend_cap anterior; remova-o pelo contrato oficial antes da"
-                    + " migração");
+                "A campanha possui spend_cap anterior incompatível com a substituição segura");
+          budgetMode = "REPLACEMENT_ADSET_LIFETIME_BELOW_MINIMUM";
+          remainingDays = ChronoUnit.DAYS.between(today, endDate) + 1L;
+          long dailyWindowLimitMinor = Math.multiplyExact(dailyMinor, remainingDays);
+          long replacementLifetimeBudgetMinor =
+              Math.min(
+                  Math.subtractExact(totalMinor, confirmedPriorSpendMinor),
+                  dailyWindowLimitMinor);
+          if (replacementLifetimeBudgetMinor <= 0L)
+            throw new IllegalStateException(
+                "Janela restante não comporta saldo nativo para uma campanha substituta");
+          effectiveRemainingAverageMinor =
+              (replacementLifetimeBudgetMinor + remainingDays - 1L) / remainingDays;
+          replacement =
+              replaceCampaign(
+                  before,
+                  beforeAdSet,
+                  sourceCampaignId,
+                  sourceAdSetId,
+                  accountId,
+                  requestId,
+                  replacementLifetimeBudgetMinor,
+                  confirmedPriorSpend,
+                  end,
+                  token,
+                  evidence,
+                  effectiveCampaignId::set);
+        } else if (belowCampaignMinimum && campaignLifetimeMode) {
           budgetMode = "CAMPAIGN_LIFETIME_BELOW_MINIMUM";
           remainingDays = ChronoUnit.DAYS.between(today, endDate) + 1L;
           long dailyWindowLimitMinor = Math.multiplyExact(dailyMinor, remainingDays);
           nativeCampaignLifetimeBudgetMinor =
-              Math.min(minor, Math.addExact(spentMinor, dailyWindowLimitMinor));
-          if (nativeCampaignLifetimeBudgetMinor <= spentMinor)
+              Math.min(sourceLimitMinor, Math.addExact(sourceSpentMinor, dailyWindowLimitMinor));
+          if (nativeCampaignLifetimeBudgetMinor <= sourceSpentMinor)
             throw new IllegalStateException(
                 "Janela restante não comporta orçamento nativo acima do gasto confirmado");
           effectiveRemainingAverageMinor =
-              (nativeCampaignLifetimeBudgetMinor - spentMinor + remainingDays - 1L)
+              (nativeCampaignLifetimeBudgetMinor - sourceSpentMinor + remainingDays - 1L)
                   / remainingDays;
           post(
-              campaignId,
+              sourceCampaignId,
               Map.of(
                   "lifetime_budget",
                   Long.toString(nativeCampaignLifetimeBudgetMinor),
@@ -271,39 +324,9 @@ public class FacebookCampaignResumptionWorker {
                   "PAUSED"),
               token,
               requestId);
-          JsonNode migratedCampaign =
-              get(
-                  campaignId,
-                  "id,status,effective_status,spend_cap,daily_budget,lifetime_budget,stop_time",
-                  token,
-                  requestId);
-          evidence.set("migratedCampaign", migratedCampaign);
-          if (migratedCampaign.path("daily_budget").asLong(0L) != 0L
-              || migratedCampaign.path("lifetime_budget").asLong(-1L)
-                  != nativeCampaignLifetimeBudgetMinor
-              || !parseMetaInstant(migratedCampaign.path("stop_time").asText()).equals(end))
-            throw new IllegalStateException(
-                "Meta não confirmou a migração para orçamento vitalício da campanha");
-          JsonNode migratedAdSet =
-              get(
-                  adSetId,
-                  "id,status,effective_status,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time",
-                  token,
-                  requestId);
-          evidence.set("migratedAdSet", migratedAdSet);
-          if (migratedAdSet.path("daily_budget").asLong(0L) != 0L
-              || migratedAdSet.path("lifetime_budget").asLong(0L) != 0L
-              || migratedAdSet.path("daily_spend_cap").asLong(0L) != 0L
-              || migratedAdSet.path("lifetime_spend_cap").asLong(0L) != 0L)
-            throw new IllegalStateException(
-                "Meta não removeu orçamento e limites próprios do conjunto após a migração");
           post(
-              adSetId,
-              Map.of(
-                  "end_time",
-                  end.toString(),
-                  "status",
-                  "ACTIVE"),
+              sourceAdSetId,
+              Map.of("end_time", end.toString(), "status", "ACTIVE"),
               token,
               requestId);
         } else {
@@ -311,29 +334,36 @@ public class FacebookCampaignResumptionWorker {
               "A conta Meta não confirmou um teto nativo compatível com a autorização");
         }
       }
-      JsonNode verified =
-          get(
-              adSetId,
-              "id,status,effective_status,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time",
-              token,
-              requestId);
-      evidence.set("verifiedAdSet", verified);
-      if (!"ACTIVE".equals(verified.path("status").asText())
-          || !parseMetaInstant(verified.path("end_time").asText()).equals(end))
-        throw new IllegalStateException(
-            "Meta não confirmou estado e prazo autorizados do conjunto");
-      JsonNode verifiedCampaign =
-          get(
-              campaignId,
-              "id,status,spend_cap,daily_budget,lifetime_budget,stop_time",
-              token,
-              requestId);
-      evidence.set("verifiedCampaign", verifiedCampaign);
+      JsonNode verified;
+      JsonNode verifiedCampaign;
+      if (replacement != null) {
+        verified = replacement.verifiedAdSet();
+        verifiedCampaign = replacement.verifiedCampaign();
+      } else {
+        verified =
+            get(
+                sourceAdSetId,
+                "id,status,effective_status,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time",
+                token,
+                requestId);
+        evidence.set("verifiedAdSet", verified);
+        if (!"ACTIVE".equals(verified.path("status").asText())
+            || !parseMetaInstant(verified.path("end_time").asText()).equals(end))
+          throw new IllegalStateException(
+              "Meta não confirmou estado e prazo autorizados do conjunto");
+        verifiedCampaign =
+            get(
+                sourceCampaignId,
+                "id,status,spend_cap,daily_budget,lifetime_budget,stop_time",
+                token,
+                requestId);
+        evidence.set("verifiedCampaign", verifiedCampaign);
+      }
       if (lifetimeMode
-          && (verified.path("lifetime_budget").asLong(-1) != minor
+          && (verified.path("lifetime_budget").asLong(-1) != sourceLimitMinor
               || verified.path("daily_budget").asLong() != 0))
         throw new IllegalStateException("Meta não confirmou orçamento vitalício autorizado");
-      if (dailyMode || campaignDailyMode || campaignLifetimeMode) {
+      if (replacement == null && (dailyMode || campaignDailyMode || campaignLifetimeMode)) {
         boolean campaignLifetimeFallback =
             "CAMPAIGN_LIFETIME_BELOW_MINIMUM".equals(budgetMode);
         boolean dailyBudgetConfirmed =
@@ -351,23 +381,27 @@ public class FacebookCampaignResumptionWorker {
                     && verified.path("lifetime_budget").asLong() == 0L;
         boolean nativeCapConfirmed =
             "DAILY_WITH_CAMPAIGN_CAP".equals(budgetMode)
-                ? verifiedCampaign.path("spend_cap").asLong(-1) == minor
+                ? verifiedCampaign.path("spend_cap").asLong(-1) == sourceLimitMinor
                 : verifiedCampaign.path("lifetime_budget").asLong(-1L)
                         == nativeCampaignLifetimeBudgetMinor
-                    && nativeCampaignLifetimeBudgetMinor <= minor
+                    && nativeCampaignLifetimeBudgetMinor <= sourceLimitMinor
                     && effectiveRemainingAverageMinor <= dailyMinor;
         if (!dailyBudgetConfirmed || !nativeCapConfirmed)
           throw new IllegalStateException("Meta não confirmou orçamento e teto acumulado");
       }
-      post(campaignId, Map.of("status", "ACTIVE"), token, requestId);
-      JsonNode active = get(campaignId, "id,status,effective_status", token, requestId);
+      if (replacement == null) {
+        post(sourceCampaignId, Map.of("status", "ACTIVE"), token, requestId);
+      }
+      JsonNode active =
+          get(effectiveCampaignId.get(), "id,status,effective_status", token, requestId);
       evidence.set("after", active);
       if (!"ACTIVE".equals(active.path("status").asText())
           || !"ACTIVE".equals(active.path("effective_status").asText()))
         throw new IllegalStateException("Meta ainda não confirmou campanha ativa");
-      evidence.put("campaignId", campaignId);
+      evidence.put("campaignId", effectiveCampaignId.get());
       evidence.put("campaignStatus", "ACTIVE");
-      evidence.put("adSetId", adSetId);
+      evidence.put(
+          "adSetId", replacement == null ? sourceAdSetId : replacement.adSetId());
       evidence.put("budgetMode", budgetMode);
       evidence.put("accountMinimumCampaignSpendCapMinor", minimumCampaignSpendCap);
       evidence.put("campaignSpendCapMinor", verifiedCampaign.path("spend_cap").asLong());
@@ -381,39 +415,441 @@ public class FacebookCampaignResumptionWorker {
       evidence.put("adSetLifetimeSpendCapMinor", verified.path("lifetime_spend_cap").asLong());
       evidence.put("remainingDays", remainingDays);
       evidence.put("effectiveRemainingAverageMinor", effectiveRemainingAverageMinor);
+      evidence.put("historicalSpendMinor", historicalMinor);
+      evidence.put("sourceCampaignSpend", sourceSpend);
+      evidence.put("confirmedPriorSpendMinor", confirmedPriorSpendMinor);
       evidence.put("startDate", startDate.toString());
       evidence.put("endDate", endDate.toString());
-      evidence.put("spend", spend);
-      result(task, true, null, evidence);
+      evidence.put("spend", confirmedPriorSpend);
+      result(task, true, null, evidence, replacement == null ? null : replacement.callback());
     } catch (Exception ex) {
-      LOG.error("Falha retomando campanha: requestId={} campaignId={}", requestId, campaignId, ex);
+      LOG.error(
+          "Falha retomando campanha: requestId={} sourceCampaignId={} effectiveCampaignId={}",
+          requestId,
+          sourceCampaignId,
+          effectiveCampaignId.get(),
+          ex);
       addFailureEvidence(evidence, ex);
+      if (callbackCompleted(task)) {
+        LOG.info(
+            "Callback de retomada já persistido; preservando campanha ativa: requestId={} campaignId={}",
+            requestId,
+            effectiveCampaignId.get());
+        return;
+      }
       try {
-        ensureCampaignPaused(campaignId, token, requestId);
+        ensureCampaignPaused(effectiveCampaignId.get(), token, requestId);
+        ensureCampaignPaused(sourceCampaignId, token, requestId);
         evidence.put("compensation", "PAUSED");
       } catch (Exception pauseEx) {
         LOG.error(
-            "Falha na pausa compensatória: requestId={} campaignId={} url<=={}/{}",
+            "Falha na pausa compensatória: requestId={} sourceCampaignId={} effectiveCampaignId={} url<=={}/{}",
             requestId,
-            campaignId,
+            sourceCampaignId,
+            effectiveCampaignId.get(),
             metaApiUrl,
-            campaignId,
+            effectiveCampaignId.get(),
             pauseEx);
         evidence.put("compensation", "PAUSE_UNCONFIRMED");
       }
       try {
-        result(task, false, ex.getMessage(), evidence);
+        result(task, false, ex.getMessage(), evidence, null);
       } catch (Exception callbackEx) {
         LOG.error(
-            "Falha registrando resultado: requestId={} campaignId={} url<=={}/{}/result",
+            "Falha registrando resultado: requestId={} sourceCampaignId={} url<=={}/{}/result",
             requestId,
-            campaignId,
+            sourceCampaignId,
             backendApiUrl,
             requestId,
             callbackEx);
       }
     }
   }
+
+  /**
+   * Cria ou recupera uma hierarquia determinística com orçamento vitalício apenas sobre o saldo
+   * restante, sem alterar o tipo de orçamento da campanha anterior.
+   */
+  private ReplacementExecution replaceCampaign(
+      JsonNode sourceCampaign,
+      JsonNode sourceAdSet,
+      String sourceCampaignId,
+      String sourceAdSetId,
+      String accountId,
+      long requestId,
+      long lifetimeBudgetMinor,
+      BigDecimal confirmedPriorSpend,
+      Instant end,
+      String token,
+      ObjectNode evidence,
+      java.util.function.Consumer<String> registerEffectiveCampaign) {
+    JsonNode sourceAds = sourceAdSet.path("ads").path("data");
+    if (sourceCampaign.path("name").asText().isBlank()
+        || sourceCampaign.path("objective").asText().isBlank()
+        || sourceAdSet.path("name").asText().isBlank()
+        || sourceAdSet.path("billing_event").asText().isBlank()
+        || sourceAdSet.path("optimization_goal").asText().isBlank()
+        || !sourceAdSet.path("targeting").isObject()
+        || !sourceAds.isArray()
+        || sourceAds.isEmpty()) {
+      throw new IllegalStateException("Configuração da hierarquia de origem está incompleta");
+    }
+    String campaignName = replacementName(sourceCampaign.path("name").asText(), requestId);
+    JsonNode targetCampaign =
+        findByName(
+                "act_" + accountId,
+                "campaigns",
+                "id,name,status,effective_status,objective,spend_cap,daily_budget,lifetime_budget",
+                campaignName,
+                token,
+                requestId)
+            .orElseGet(
+                () -> {
+                  Map<String, Object> body = new LinkedHashMap<>();
+                  body.put("name", campaignName);
+                  body.put("objective", sourceCampaign.path("objective").asText());
+                  body.put("status", "PAUSED");
+                  body.put(
+                      "special_ad_categories",
+                      sourceCampaign.path("special_ad_categories").isArray()
+                          ? sourceCampaign.path("special_ad_categories")
+                          : json.createArrayNode());
+                  if (sourceCampaign.path("special_ad_category_country").isArray()
+                      && !sourceCampaign.path("special_ad_category_country").isEmpty()) {
+                    body.put(
+                        "special_ad_category_country",
+                        sourceCampaign.path("special_ad_category_country"));
+                  }
+                  body.put("is_adset_budget_sharing_enabled", false);
+                  String id = postForId("act_" + accountId + "/campaigns", body, token, requestId);
+                  return get(
+                      id,
+                      "id,name,status,effective_status,objective,spend_cap,daily_budget,lifetime_budget",
+                      token,
+                      requestId);
+                });
+    String targetCampaignId = targetCampaign.path("id").asText();
+    if (!targetCampaignId.matches("[0-9]+"))
+      throw new IllegalStateException("Campanha substituta não recebeu identificador Meta");
+    registerEffectiveCampaign.accept(targetCampaignId);
+    ensureCampaignPaused(targetCampaignId, token, requestId);
+    targetCampaign =
+        get(
+            targetCampaignId,
+            "id,name,status,effective_status,objective,spend_cap,daily_budget,lifetime_budget",
+            token,
+            requestId);
+    if (!campaignName.equals(targetCampaign.path("name").asText())
+        || !sourceCampaign
+            .path("objective")
+            .asText()
+            .equals(targetCampaign.path("objective").asText())
+        || targetCampaign.path("spend_cap").asLong(0L) != 0L
+        || targetCampaign.path("daily_budget").asLong(0L) != 0L
+        || targetCampaign.path("lifetime_budget").asLong(0L) != 0L) {
+      throw new IllegalStateException("Campanha substituta diverge do contrato sem orçamento CBO");
+    }
+
+    String adSetName = replacementName(sourceAdSet.path("name").asText(), requestId);
+    JsonNode targetAdSet =
+        findByName(
+                targetCampaignId,
+                "adsets",
+                "id,name,status,effective_status,campaign_id,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time",
+                adSetName,
+                token,
+                requestId)
+            .orElseGet(
+                () -> {
+                  Map<String, Object> body = new LinkedHashMap<>();
+                  body.put("name", adSetName);
+                  body.put("campaign_id", targetCampaignId);
+                  body.put("lifetime_budget", Long.toString(lifetimeBudgetMinor));
+                  body.put("end_time", end.toString());
+                  body.put("billing_event", sourceAdSet.path("billing_event").asText());
+                  body.put("optimization_goal", sourceAdSet.path("optimization_goal").asText());
+                  if (!sourceAdSet.path("destination_type").asText().isBlank())
+                    body.put("destination_type", sourceAdSet.path("destination_type").asText());
+                  body.put("targeting", sourceAdSet.path("targeting"));
+                  if (sourceAdSet.path("promoted_object").isObject()
+                      && !sourceAdSet.path("promoted_object").isEmpty())
+                    body.put("promoted_object", sourceAdSet.path("promoted_object"));
+                  if (sourceAdSet.path("attribution_spec").isArray()
+                      && !sourceAdSet.path("attribution_spec").isEmpty())
+                    body.put("attribution_spec", sourceAdSet.path("attribution_spec"));
+                  if (!sourceAdSet.path("bid_strategy").asText().isBlank())
+                    body.put("bid_strategy", sourceAdSet.path("bid_strategy").asText());
+                  if (sourceAdSet.path("bid_amount").asLong(0L) > 0L
+                      && !"LOWEST_COST_WITHOUT_CAP"
+                          .equals(sourceAdSet.path("bid_strategy").asText()))
+                    body.put("bid_amount", sourceAdSet.path("bid_amount").asText());
+                  body.put("status", "PAUSED");
+                  String id = postForId("act_" + accountId + "/adsets", body, token, requestId);
+                  return get(
+                      id,
+                      "id,name,status,effective_status,campaign_id,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time",
+                      token,
+                      requestId);
+                });
+    String targetAdSetId = targetAdSet.path("id").asText();
+    verifyReplacementAdSet(
+        targetAdSet, targetCampaignId, adSetName, lifetimeBudgetMinor, end);
+
+    Map<String, String> targetAds = new LinkedHashMap<>();
+    ArrayNode verifiedAds = evidence.putArray("replacementAds");
+    for (JsonNode sourceAd : sourceAds) {
+      String sourceAdId = sourceAd.path("id").asText();
+      String creativeId = sourceAd.path("creative").path("id").asText();
+      if (!sourceAdId.matches("[0-9]+") || !creativeId.matches("[0-9]+"))
+        throw new IllegalStateException("Anúncio de origem não possui criativo Meta reutilizável");
+      String adName =
+          replacementAdName(sourceAd.path("name").asText(), requestId, sourceAdId);
+      JsonNode targetAd =
+          findByName(
+                  targetAdSetId,
+                  "ads",
+                  "id,name,status,effective_status,adset_id,creative{id}",
+                  adName,
+                  token,
+                  requestId)
+              .orElseGet(
+                  () -> {
+                    Map<String, Object> body = new LinkedHashMap<>();
+                    body.put("name", adName);
+                    body.put("adset_id", targetAdSetId);
+                    body.put("creative", Map.of("creative_id", creativeId));
+                    body.put("status", "ACTIVE");
+                    String id = postForId("act_" + accountId + "/ads", body, token, requestId);
+                    return get(
+                        id,
+                        "id,name,status,effective_status,adset_id,creative{id}",
+                        token,
+                        requestId);
+                  });
+      if (!creativeId.equals(targetAd.path("creative").path("id").asText())
+          || !targetAdSetId.equals(targetAd.path("adset_id").asText()))
+        throw new IllegalStateException("Anúncio substituto diverge do criativo aprovado");
+      if (!"ACTIVE".equals(targetAd.path("status").asText())) {
+        post(targetAd.path("id").asText(), Map.of("status", "ACTIVE"), token, requestId);
+        targetAd =
+            get(
+                targetAd.path("id").asText(),
+                "id,name,status,effective_status,adset_id,creative{id}",
+                token,
+                requestId);
+      }
+      if (!"ACTIVE".equals(targetAd.path("status").asText()))
+        throw new IllegalStateException("Meta não confirmou o anúncio substituto como ativo");
+      targetAds.put(sourceAdId, targetAd.path("id").asText());
+      verifiedAds.add(targetAd);
+    }
+
+    post(targetAdSetId, Map.of("status", "ACTIVE"), token, requestId);
+    targetAdSet =
+        get(
+            targetAdSetId,
+            "id,name,status,effective_status,campaign_id,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time",
+            token,
+            requestId);
+    verifyReplacementAdSet(
+        targetAdSet, targetCampaignId, adSetName, lifetimeBudgetMinor, end);
+    if (!"ACTIVE".equals(targetAdSet.path("status").asText()))
+      throw new IllegalStateException("Meta não confirmou o conjunto substituto como ativo");
+    post(targetCampaignId, Map.of("status", "ACTIVE"), token, requestId);
+    JsonNode activeCampaign =
+        get(
+            targetCampaignId,
+            "id,name,status,effective_status,objective,spend_cap,daily_budget,lifetime_budget",
+            token,
+            requestId);
+    if (!"ACTIVE".equals(activeCampaign.path("status").asText())
+        || !"ACTIVE".equals(activeCampaign.path("effective_status").asText()))
+      throw new IllegalStateException("Meta não confirmou a campanha substituta como ativa");
+    JsonNode sourceAfter =
+        get(sourceCampaignId, "id,status,effective_status", token, requestId);
+    if (!"PAUSED".equals(sourceAfter.path("status").asText()))
+      throw new IllegalStateException("A campanha anterior não permaneceu pausada");
+    evidence.set("replacementCampaign", activeCampaign);
+    evidence.set("verifiedAdSet", targetAdSet);
+    evidence.set("sourceAfter", sourceAfter);
+
+    ObjectNode callback = json.createObjectNode();
+    callback.put("sourceCampaignId", sourceCampaignId);
+    callback.put("sourceAdSetId", sourceAdSetId);
+    callback.put("campaignId", targetCampaignId);
+    callback.put("adSetId", targetAdSetId);
+    callback.put("lifetimeBudgetMinor", lifetimeBudgetMinor);
+    callback.put("confirmedPriorSpend", confirmedPriorSpend);
+    ArrayNode callbackAds = callback.putArray("ads");
+    targetAds.forEach(
+        (sourceAdId, targetAdId) -> {
+          ObjectNode item = callbackAds.addObject();
+          item.put("sourceAdId", sourceAdId);
+          item.put("adId", targetAdId);
+        });
+    return new ReplacementExecution(
+        targetCampaignId,
+        targetAdSetId,
+        lifetimeBudgetMinor,
+        targetAdSet,
+        activeCampaign,
+        callback);
+  }
+
+  /** Confere o teto, o prazo e a filiação do conjunto substituto sem inferir campos ausentes. */
+  private void verifyReplacementAdSet(
+      JsonNode adSet, String campaignId, String name, long lifetimeBudgetMinor, Instant end) {
+    if (!campaignId.equals(adSet.path("campaign_id").asText())
+        || !name.equals(adSet.path("name").asText())
+        || adSet.path("lifetime_budget").asLong(-1L) != lifetimeBudgetMinor
+        || adSet.path("daily_budget").asLong(0L) != 0L
+        || adSet.path("daily_spend_cap").asLong(0L) != 0L
+        || adSet.path("lifetime_spend_cap").asLong(0L) != 0L
+        || !parseMetaInstant(adSet.path("end_time").asText()).equals(end))
+      throw new IllegalStateException(
+          "Meta não confirmou orçamento e prazo do conjunto substituto");
+  }
+
+  /** Recupera um objeto Meta por nome exato e bloqueia ambiguidade em retries. */
+  private Optional<JsonNode> findByName(
+      String parentId,
+      String edge,
+      String fields,
+      String name,
+      String token,
+      long requestId) {
+    JsonNode response = getEdge(parentId, edge, fields, token, requestId);
+    List<JsonNode> matches = new ArrayList<>();
+    response.path("data").forEach(item -> {
+      if (name.equals(item.path("name").asText())) matches.add(item);
+    });
+    if (matches.size() > 1)
+      throw new IllegalStateException("Retry encontrou mais de um objeto Meta com o mesmo nome");
+    return matches.stream().findFirst();
+  }
+
+  /** Consulta aresta Meta limitada para recuperar criações determinísticas após falhas de rede. */
+  private JsonNode getEdge(
+      String parentId, String edge, String fields, String token, long requestId) {
+    String endpoint = metaApiUrl + "/" + parentId + "/" + edge;
+    LOG.info(
+        "Retomada Meta GET: requestId={} url==>{} params={}",
+        requestId,
+        endpoint,
+        JsonLogFormatter.wrap(json, Map.of("fields", fields, "limit", 500)));
+    try {
+      JsonNode response =
+          meta.get()
+              .uri(
+                  b ->
+                      b.path("/" + apiVersion + "/" + parentId + "/" + edge)
+                          .queryParam("fields", "{fields}")
+                          .queryParam("limit", 500)
+                          .build(fields))
+              .headers(h -> h.setBearerAuth(token))
+              .retrieve()
+              .bodyToMono(JsonNode.class)
+              .block(Duration.ofSeconds(30));
+      LOG.info(
+          "Retomada Meta GET: requestId={} url<=={} response={}",
+          requestId,
+          endpoint,
+          JsonLogFormatter.wrap(json, response));
+      return response == null ? json.createObjectNode() : response;
+    } catch (WebClientResponseException ex) {
+      throw metaFailure("GET", endpoint, null, ex, requestId);
+    }
+  }
+
+  /** Cria um objeto Meta e exige o identificador oficial antes de prosseguir. */
+  private String postForId(
+      String path, Map<String, ?> body, String token, long requestId) {
+    String endpoint = metaApiUrl + "/" + path;
+    LOG.info(
+        "Retomada Meta POST: requestId={} url==>{} payload={}",
+        requestId,
+        endpoint,
+        JsonLogFormatter.wrap(json, body));
+    try {
+      JsonNode response =
+          meta.post()
+              .uri("/" + apiVersion + "/" + path)
+              .headers(h -> h.setBearerAuth(token))
+              .bodyValue(body)
+              .retrieve()
+              .bodyToMono(JsonNode.class)
+              .block(Duration.ofSeconds(30));
+      LOG.info(
+          "Retomada Meta POST: requestId={} url<=={} response={}",
+          requestId,
+          endpoint,
+          JsonLogFormatter.wrap(json, response));
+      String id = response == null ? "" : response.path("id").asText();
+      if (!id.matches("[0-9]+"))
+        throw new IllegalStateException("Meta não devolveu o identificador criado");
+      return id;
+    } catch (WebClientResponseException ex) {
+      throw metaFailure("POST", endpoint, body, ex, requestId);
+    }
+  }
+
+  /** Consulta o backend após erro de callback para não pausar uma retomada já confirmada. */
+  private boolean callbackCompleted(JsonNode task) {
+    long requestId = task.path("id").asLong();
+    String endpoint = backendApiUrl + "/" + requestId;
+    try {
+      LOG.info(
+          "Retomada backend GET: url==>{} params={}",
+          endpoint,
+          JsonLogFormatter.wrap(json, Map.of()));
+      JsonNode response =
+          backend
+              .get()
+              .uri("/" + requestId)
+              .retrieve()
+              .bodyToMono(JsonNode.class)
+              .block(Duration.ofSeconds(30));
+      LOG.info(
+          "Retomada backend GET: url<=={} response={}",
+          endpoint,
+          JsonLogFormatter.wrap(json, response));
+      return response != null && "COMPLETED".equals(response.path("status").asText());
+    } catch (Exception ex) {
+      LOG.error(
+          "Falha desambiguando callback da retomada: requestId={} url<=={}",
+          requestId,
+          endpoint,
+          ex);
+      return false;
+    }
+  }
+
+  /** Mantém os nomes de campanha e conjunto determinísticos e dentro do limite da Meta. */
+  private String replacementName(String sourceName, long requestId) {
+    String suffix = " · retomada " + requestId;
+    String base = sourceName == null || sourceName.isBlank() ? "Campanha" : sourceName;
+    return base.substring(0, Math.min(base.length(), 255 - suffix.length())) + suffix;
+  }
+
+  /** Diferencia anúncios substitutos mesmo quando os nomes originais se repetem. */
+  private String replacementAdName(String sourceName, long requestId, String sourceAdId) {
+    String suffix =
+        " · retomada "
+            + requestId
+            + " · origem "
+            + sourceAdId.substring(Math.max(0, sourceAdId.length() - 8));
+    String base = sourceName == null || sourceName.isBlank() ? "Anúncio" : sourceName;
+    return base.substring(0, Math.min(base.length(), 255 - suffix.length())) + suffix;
+  }
+
+  /** Agrupa a hierarquia substituta confirmada e o contrato enviado ao backend. */
+  private record ReplacementExecution(
+      String campaignId,
+      String adSetId,
+      long lifetimeBudgetMinor,
+      JsonNode verifiedAdSet,
+      JsonNode verifiedCampaign,
+      ObjectNode callback) {}
 
   /** Consulta evidência nativa com autenticação em header e auditoria sem token. */
   private JsonNode get(String id, String fields, String token, long requestId) {
@@ -490,7 +926,7 @@ public class FacebookCampaignResumptionWorker {
   }
 
   /** Escreve parâmetros autorizados e exige confirmação explícita da Meta. */
-  private void post(String id, Map<String, String> body, String token, long requestId) {
+  private void post(String id, Map<String, ?> body, String token, long requestId) {
     String endpoint = metaApiUrl + "/" + id;
     LOG.info(
         "Retomada Meta POST: requestId={} url==>{} payload={}",
@@ -617,12 +1053,18 @@ public class FacebookCampaignResumptionWorker {
   }
 
   /** Envia evidência estruturada e mantém correlação exclusiva da autorização. */
-  private void result(JsonNode task, boolean success, String error, ObjectNode evidence) {
+  private void result(
+      JsonNode task,
+      boolean success,
+      String error,
+      ObjectNode evidence,
+      ObjectNode replacement) {
     ObjectNode body = json.createObjectNode();
     body.put("leaseToken", task.path("leaseToken").asText());
     body.put("success", success);
     body.put("error", error);
     body.set("evidence", evidence);
+    if (replacement != null) body.set("replacement", replacement);
     String endpoint = backendApiUrl + "/" + task.path("id").asLong() + "/result";
     LOG.info(
         "Retomada backend POST: url==>{} payload={}", endpoint, JsonLogFormatter.wrap(json, body));

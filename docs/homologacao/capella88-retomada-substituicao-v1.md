@@ -30,12 +30,13 @@ A alternativa 3 é a adotada. A substituta não representa novo experimento nem 
 | Callback | Resposta HTTP perdida antes ou depois do commit | Consulta `GET /api/facebook-campaign-resumptions/{id}`; preserva ativação apenas se `COMPLETED` |
 | Observabilidade | Request/response Meta e callback | Logs incluem requestId, URL, payload seguro, resposta e stack trace; nenhum token é exposto |
 | Métricas | Primeiro sync da substituta | Soma retrato congelado da origem ao insight corrente; somente a campanha vigente entra na fila de sync |
+| Conciliação pós-ativação | Campanha já opera quando o Processo 5 relê suas atividades | Preparação concluída continua legível; nova mutação comercial permanece bloqueada; execução avança para 5/5 |
 | Isolamento | Testes automatizados | IDs, destino e credencial são sintéticos; nenhuma chamada alcança Meta, produção ou analytics reais |
 | Interface | Desktop, iPhone 15 Pro e Pixel 7 | Formulário mantém os valores autorizados e exibe resultado persistido sem overflow ou erro de console |
 
 ## Evidência local
 
-- Backend: 3.521 testes executados, sem falhas ou erros; 22 casos condicionais não aplicáveis foram ignorados.
+- Backend: 3.524 testes executados, sem falhas ou erros; 22 casos condicionais não aplicáveis foram ignorados.
 - Facebook Ads Worker: 151 testes executados, sem falhas ou erros, cobrindo caminho feliz, estratégia de lance CBO → ABO, retry, divergência, erro da Meta, falha depois da ativação e perda de resposta do callback.
 - MySQL 5.7: sete changesets incrementais aplicados; a segunda execução aplicou zero mudanças, sem `TIMESTAMP NOT NULL` e com include relativo explícito.
 
@@ -57,6 +58,22 @@ confirmado.
 
 ## Evidência publicada
 
-A evidência produtiva deve ser anexada ao comentário consolidado do Pull Request após o merge e a execução autorizada, porque seus identificadores só existem depois da publicação. O registro deve vincular PR e SHA, workflows e deploys, pedido de retomada, campanha e conjunto substitutos, gasto anterior, orçamento vitalício confirmado, estado da execução #20 e da atividade 5.5 e verificação em desktop e celular.
+O pedido de retomada #10 terminou `COMPLETED`. A origem `120251282333490326` e a substituta
+incompleta do pedido #9, `120251812602130326`, permaneceram pausadas. A campanha vigente
+`120251812866290326` foi ativada com o conjunto `120251812866410326`, estratégia
+`LOWEST_COST_WITHOUT_CAP`, dois anúncios e os mesmos criativos aprovados. O gasto anterior
+conciliado foi R$ 25,26 e o orçamento vitalício restante ficou em R$ 99,74: a soma é exatamente
+o teto acumulado de R$ 125,00. A média de R$ 19,95 por dia entre 25 e 29/09 permanece abaixo do
+ritmo máximo de R$ 20,00. O primeiro sync registrou exposição real; isso não equivale a compra.
+
+O comentário consolidado do Pull Request deve vincular esses objetos ao SHA publicado, aos
+workflows, ao estado final da execução #20 e à verificação em desktop e celular.
+
+Na primeira conciliação posterior à retomada #10, a campanha já ativa fez a projeção da atividade
+5.1 reaplicar indevidamente a trava de mutação Quartzo. A execução #20 registrou `ERROR` em 4/5,
+apesar de todas as provas anteriores permanecerem válidas. A projeção do roteador passou a resolver
+o contexto somente para leitura; o caminho que realmente inicia nova preparação continua aplicando
+a trava mutável. Assim, ativar uma campanha não invalida retroativamente sua preparação e também não
+abre permissão para alterá-la em operação.
 
 Gates técnicos não comprovam vendas, receita ou lucro. O resultado comercial deve continuar sendo medido por compras líquidas, reembolsos, custo integral e margem.

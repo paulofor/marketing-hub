@@ -22,7 +22,7 @@ import org.springframework.test.util.ReflectionTestUtils;
  * Responsabilidade: prevenir recorrência da exigência de slot Opala no percurso de venda Quartzo.
  */
 class QuartzoCommercialIntegrationTest {
-  /** Roteia o produto sem ciclo mantendo a referência explícita do experimento no link do filho. */
+  /** Roteia o produto sem ciclo por leitura e mantém a referência explícita no link do filho. */
   @Test
   void routesQuartzoWithoutInventingLearningCycle() throws Exception {
     var json = new ObjectMapper();
@@ -39,7 +39,7 @@ class QuartzoCommercialIntegrationTest {
     when(processes.findByProcessCodeAndVersionNumber(QuartzoCommercialContext.CODE, 1))
         .thenReturn(Optional.of(target));
     when(context.applies(product)).thenReturn(true);
-    when(context.scope("experiment:88", 7L, true))
+    when(context.scope("experiment:88", 7L, false))
         .thenReturn(new QuartzoCommercialContext.Scope(null, product, "v1", null, null, null));
     var activity = new BusinessProcessActivityDefinition();
     activity.setActivityId("commercialPreparation");

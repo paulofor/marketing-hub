@@ -6616,6 +6616,24 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   payload omite a estratégia e comprova a herança sem fabricar lance numérico. A tentativa #9 e
   sua campanha substituta sem ad sets permanecem pausadas e auditáveis, sem gasto novo.
 
+## LOOP-PDE-PREPARACAO-REGRESSA-APOS-ATIVACAO — 25/09/2026
+
+- **Histórico confirmado:** a retomada #10 de Capella foi aceita pela Meta, criou a campanha
+  substituta ativa com o saldo vitalício correto e confirmou a primeira impressão. Ao reconciliar a
+  execução #20, o Processo 5 permaneceu em 4/5 e mudou para `ERROR`, embora a preparação Quartzo,
+  Psique, Têmis e o preflight já estivessem concluídos.
+- **Causa-raiz:** a projeção de prontidão do roteador da atividade 5.1 chamava o contexto Quartzo
+  como se fosse iniciar nova mutação. A trava que corretamente proíbe preparar uma campanha em
+  operação foi reaplicada durante uma leitura posterior ao sucesso e transformou o estado válido em
+  falha técnica.
+- **Alternativas avaliadas:** limpar o erro manualmente não impediria recorrência; permitir mutações
+  em campanhas ativas enfraqueceria o gate; separar a leitura da rota da execução mutável preserva a
+  monotonicidade e a segurança. A terceira alternativa foi adotada.
+- **Correção e prevenção:** prontidão do pai resolve Quartzo e Safira em modo somente leitura; uma
+  nova execução continua exigindo explicitamente o contexto mutável e permanece bloqueada quando a
+  campanha já opera. Regressões reproduzem a trava da campanha ativa, exigem que a consulta continue
+  legível e que uma nova preparação continue proibida.
+
 ## LOOP-QUARTZO-HOMOLOGACAO-EXIGE-SLOT-OPALA — 20/09/2026
 
 - **Histórico confirmado:** Capella #7 é Quartzo; experimento #88 tem página

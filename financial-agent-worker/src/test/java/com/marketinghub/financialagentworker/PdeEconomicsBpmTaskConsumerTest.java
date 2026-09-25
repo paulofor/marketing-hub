@@ -155,6 +155,77 @@ class PdeEconomicsBpmTaskConsumerTest {
         .doesNotThrowAnyException();
   }
 
+  /** Não deixa um envelope direto ausente encobrir a estratégia concluída mais recente. */
+  @Test
+  void prefersCompletedAtenaContractOverMissingDirectEnvelope() throws Exception {
+    var context =
+        objectMapper.readTree(
+            """
+            {
+              "marketStrategicContract": {
+                "availability": "MISSING",
+                "reason": "Nenhuma execução legada encontrada."
+              },
+              "completedActivities": [
+                {
+                  "taskId": 496,
+                  "activityId": "marketStrategy",
+                  "result": {
+                    "marketStrategicContract": {
+                      "contractVersion": "MARKET_STRATEGY_V3",
+                      "status": "READY_FOR_PRIVATE_VALIDATION",
+                      "privateValidationPlan": {
+                        "minimumIndependentReadings": 2,
+                        "requiredSignals": [
+                          "EXPERIENCE_STARTED",
+                          "VALUE_MOMENT",
+                          "READY_RESULT_USED",
+                          "PREFERRED_OVER_FREE",
+                          "CHECKOUT_STARTED"
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+            """);
+
+    assertThatCode(() -> PdeEconomicsBpmTaskConsumer.validatePrivateStrategyContract(context))
+        .doesNotThrowAnyException();
+  }
+
+  /** Aceita o contrato vigente quando o provedor direto o entrega dentro de seu envelope. */
+  @Test
+  void acceptsWrappedDirectAtenaContract() throws Exception {
+    var context =
+        objectMapper.readTree(
+            """
+            {
+              "marketStrategicContract": {
+                "availability": "AVAILABLE",
+                "contract": {
+                  "contractVersion": "MARKET_STRATEGY_V3",
+                  "status": "READY_FOR_PRIVATE_VALIDATION",
+                  "privateValidationPlan": {
+                    "minimumIndependentReadings": 2,
+                    "requiredSignals": [
+                      "EXPERIENCE_STARTED",
+                      "VALUE_MOMENT",
+                      "READY_RESULT_USED",
+                      "PREFERRED_OVER_FREE",
+                      "CHECKOUT_STARTED"
+                    ]
+                  }
+                }
+              }
+            }
+            """);
+
+    assertThatCode(() -> PdeEconomicsBpmTaskConsumer.validatePrivateStrategyContract(context))
+        .doesNotThrowAnyException();
+  }
+
   /** Mantém prompt, núcleo financeiro e schema coerentes sobre hipóteses sem gasto. */
   @Test
   void keepsPrivateValidationPromptAndSchemaAligned() throws Exception {

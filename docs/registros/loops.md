@@ -7144,3 +7144,20 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   contratos persistidos; Atena separa descoberta, inicial e sucessor; o worker recusa contexto
   incompleto antes da inferência. Regressões cobrem planejamento inicial, sucessor compatível e
   ausência do contrato. Nenhuma retomada automática é aberta com a mesma entrada defeituosa.
+
+## LOOP-PLUTUS-ENVELOPE-LEGADO-ENCOBRE-CONTRATO-ATUAL — 25/09/2026
+
+- **Evidência confirmada:** a tarefa #497 de Mira recebeu em `completedActivities` o contrato
+  `MARKET_STRATEGY_V3` concluído pela tarefa #496, mas também recebeu do provedor legado um envelope
+  direto com `availability=MISSING`. Plutus recusou a entrada antes de chamar o modelo; custo e
+  tokens da tarefa permaneceram ausentes.
+- **Causa-raiz:** o executor priorizava qualquer objeto direto, mesmo sem contrato, sobre a saída
+  persistida da predecessora. Ao tentar registrar a falha, enviava a categoria não canônica
+  `CONTRACT_DRIFT`; o backend respondeu 400 e a lease permaneceu `IN_PROGRESS`.
+- **Correção sistêmica:** Plutus passa a priorizar a predecessora concluída mais recente, aceita o
+  envelope direto somente como fallback e desembrulha seu campo `contract`. Toda incompatibilidade
+  de integração usa `TECHNICAL_FAILURE`, categoria aceita pelo backend, preservando recomendação
+  específica e impedindo lease sem estado terminal.
+- **Prevenção:** testes unitários cobrem envelope ausente concorrendo com V3, envelope direto
+  válido e rejeição de V2; o smoke da imagem comprova que o caso concorrente chega ao modelo uma
+  única vez e que falhas pré-modelo terminam pelo callback canônico.

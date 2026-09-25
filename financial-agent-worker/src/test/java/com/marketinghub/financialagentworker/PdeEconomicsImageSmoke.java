@@ -18,6 +18,7 @@ public final class PdeEconomicsImageSmoke {
       List.of(
           "successor",
           "discovery",
+          "stale-envelope",
           "later-version",
           "legacy",
           "opala",
@@ -85,6 +86,12 @@ public final class PdeEconomicsImageSmoke {
           .put("activityId", "marketStrategy")
           .putObject("result")
           .set("marketStrategicContract", contract);
+    }
+    if ("stale-envelope".equals(scenario)) {
+      context
+          .putObject("marketStrategicContract")
+          .put("availability", "MISSING")
+          .put("reason", "Nenhuma execução legada encontrada.");
     }
     if (opala) addViableOpalaFinancialPlan(context);
     String source =
@@ -189,7 +196,7 @@ public final class PdeEconomicsImageSmoke {
         require(
             !Files.exists(directory.resolve("prompt.txt")), "Contrato inválido consumiu modelo");
         require(
-            "CONTRACT_DRIFT".equals(callback.path("blockerGuidance").path("category").asText()),
+            "TECHNICAL_FAILURE".equals(callback.path("blockerGuidance").path("category").asText()),
             "Causa do bloqueio perdida");
         return;
       }

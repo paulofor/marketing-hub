@@ -43,6 +43,19 @@ const assert = require("node:assert/strict");
     operationalState: "IN_PROGRESS",
     stateReason: context.nextWork.reason,
   });
+  const vegaCycleStep = structuredClone(vega);
+  vegaCycleStep.processDefinitionId = 97;
+  vegaCycleStep.chainDefinitionId = 22;
+  vegaCycleStep.chainVersion = 22;
+  Object.assign(vegaCycleStep.subprocessPosition.salesFlow, {
+    currentActivityId: "consolidate",
+    currentActivityName: "Consolidar resultado comercial",
+    currentActivitySequenceNumber: 3,
+    currentActivityOwnerName: "Backend",
+    state: "BLOCKED",
+    reason:
+      "Conciliação automática bloqueada: as fontes ainda não mudaram desde a última leitura.",
+  });
   const rigel = {
     ...vega,
     productId: 9,
@@ -277,9 +290,14 @@ const assert = require("node:assert/strict");
           let data;
           if (url.pathname === "/api/products") data = products;
           else if (url.pathname === "/api/products/value-chain-positions")
-            data = [vega, capella, rigel, mira];
+            data = [
+              mode === "cycle-step" ? vegaCycleStep : vega,
+              capella,
+              rigel,
+              mira,
+            ];
           else if (url.pathname === "/api/products/value-chain-positions/4")
-            data = vega;
+            data = mode === "cycle-step" ? vegaCycleStep : vega;
           else if (url.pathname === "/api/products/value-chain-positions/7")
             data = capella;
           else if (url.pathname === "/api/products/value-chain-positions/9")
@@ -669,6 +687,29 @@ const assert = require("node:assert/strict");
         }
         if (variant === "cycle-step") {
           await expect(
+            card("Vega").getByText(
+              "Atividade com pendência: 6.3 — Consolidar resultado comercial",
+              { exact: true },
+            ),
+          ).toBeVisible();
+          await expect(
+            card("Vega").getByText("Responsável: Backend", { exact: true }),
+          ).toBeVisible();
+          await expect(
+            card("Vega").getByText(
+              "Conciliação automática bloqueada: as fontes ainda não mudaram desde a última leitura.",
+              { exact: true },
+            ),
+          ).toBeVisible();
+          await expect(
+            card("Vega").getByRole("link", {
+              name: "Processo 6 · atividade 6.3",
+            }),
+          ).toHaveAttribute(
+            "href",
+            "/products/4/value-chain-history/processes/75/activities?learningCycleId=2&chainId=14#activity-consolidate",
+          );
+          await expect(
             card("Vega").getByRole("link", { name: "Abrir etapa do ciclo" }),
           ).toHaveAttribute("href", context.cycleUrl);
           const link = card("Vega").getByRole("link", {
@@ -678,12 +719,18 @@ const assert = require("node:assert/strict");
             "href",
             "/products/4/value-chain-history/processes/75/activities?learningCycleId=2&chainId=14#process-execution",
           );
+          await card("Vega").screenshot({
+            path: path.join(output, `${device}-cycle-step-6-3-card.png`),
+          });
           await link.click();
           await expect(
             page
               .getByRole("region", { name: "Execução automática do processo" })
               .getByText("Execução do processo", { exact: true }),
           ).toBeInViewport();
+          await page.screenshot({
+            path: path.join(output, `${device}-cycle-step-6-3-destination.png`),
+          });
           results.push({
             device,
             product: "Vega",

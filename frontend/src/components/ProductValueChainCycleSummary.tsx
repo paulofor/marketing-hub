@@ -42,6 +42,10 @@ export default function ProductValueChainCycleSummary({
       context?.previousLearning.map((item) => item.experimentId) ?? [],
     ),
   ];
+  const coordinatorProcessNumber =
+    flow.modelProcessSequenceNumber ?? processNumber;
+  const coordinatorProcessName =
+    flow.modelProcessName || processName || "Coordenação do ciclo de vendas";
   const parentUrl = `/products/${flow.productId}/value-chain-history/processes/${flow.modelProcessDefinitionId}/activities?learningCycleId=${flow.cycleId}&chainId=${flow.chainDefinitionId}${flow.currentActivityId ? `#activity-${flow.currentActivityId}` : ""}`;
 
   return (
@@ -95,15 +99,22 @@ export default function ProductValueChainCycleSummary({
           ) : current ? (
             <>
               <ProductNextProcessLink
-                processNumber={processNumber}
-                processName={processName || "Coordenação do ciclo de vendas"}
+                processNumber={coordinatorProcessNumber}
+                processName={coordinatorProcessName}
+                activityNumber={flow.currentActivitySequenceNumber}
+                activityName={flow.currentActivityName || undefined}
+                responsible={flow.currentActivityOwnerName}
+                state={flow.state}
+                reason={flow.reason}
                 url={parentUrl}
                 cycleProcess
               />
-              <p>
-                A próxima ação está na etapa do ciclo. Consulte os critérios e
-                as decisões.
-              </p>
+              {!flow.currentActivityName ? (
+                <p>
+                  A próxima ação está na etapa do ciclo. Consulte os critérios e
+                  as decisões.
+                </p>
+              ) : null}
             </>
           ) : (
             <p>
@@ -177,11 +188,11 @@ export default function ProductValueChainCycleSummary({
       <small className="product-cycle-summary__coordination">
         Coordenação na cadeia:{" "}
         <Link to={parentUrl}>
-          {processNumber != null
-            ? `Processo ${processNumber}`
+          {coordinatorProcessNumber != null
+            ? `Processo ${coordinatorProcessNumber}`
             : "Processo coordenador"}
           {flow.currentActivitySequenceNumber != null
-            ? ` · atividade ${processNumber != null ? `${processNumber}.` : ""}${flow.currentActivitySequenceNumber}`
+            ? ` · atividade ${coordinatorProcessNumber != null ? `${coordinatorProcessNumber}.` : ""}${flow.currentActivitySequenceNumber}`
             : ""}
         </Link>
         . O ciclo reúne decisões e retornos entre os processos.

@@ -494,7 +494,7 @@ components:
         Leitura comum ao histórico e às atividades do Processo 6, baseada em eventos imutáveis.
         A versão atual do BPM explica caminhos compatíveis de ciclos históricos, sem alterar seus
         vínculos. Não há mutação em GET. A sequência do subprocesso usa a atividade chamadora (6.4).
-      required: [productId, experimentId, cycleId, chainDefinitionId, modelProcessDefinitionId, state, reason, navigationUrl, modelUrl, activities, transitions]
+      required: [productId, experimentId, cycleId, chainDefinitionId, modelProcessDefinitionId, modelProcessSequenceNumber, modelProcessName, state, reason, navigationUrl, modelUrl, activities, transitions]
       properties:
         productId: {type: integer, format: int64}
         experimentId: {type: integer, format: int64}
@@ -502,9 +502,12 @@ components:
         cycleProcessDefinitionId: {type: integer, format: int64}
         chainDefinitionId: {type: integer, format: int64, description: 'Versão original do ciclo'}
         modelProcessDefinitionId: {type: integer, format: int64, description: 'BPM versionado com caminhos e retornos explícitos'}
+        modelProcessSequenceNumber: {type: integer, description: 'Posição do processo coordenador na cadeia original do ciclo'}
+        modelProcessName: {type: string, description: 'Nome do processo coordenador na versão original do ciclo'}
         currentActivityId: {type: string, nullable: true}
         currentActivityName: {type: string, nullable: true}
         currentActivitySequenceNumber: {type: integer, nullable: true}
+        currentActivityOwnerName: {type: string, nullable: true, description: 'Responsável declarado pela atividade no BPM original do ciclo'}
         state: {type: string}
         reason: {type: string}
         navigationUrl: {type: string}

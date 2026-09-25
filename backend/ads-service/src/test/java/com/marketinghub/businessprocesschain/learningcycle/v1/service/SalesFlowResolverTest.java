@@ -153,6 +153,8 @@ class SalesFlowResolverTest {
         .thenReturn(List.of(event(0, "ADOPT_BASELINE", "{}"), measure(0, true)));
     var flow = resolver.resolve(4L, model, null, null);
     assertThat(flow.chainDefinitionId()).isEqualTo(13L);
+    assertThat(flow.modelProcessSequenceNumber()).isEqualTo(6);
+    assertThat(flow.modelProcessName()).isEqualTo("Venda, entrega e aprendizado do PDE");
     assertThat(flow.navigationUrl()).contains("chainId=13", "productId=4", "cycleId=1");
     var operation = new BusinessProcessDefinition();
     operation.setProcessCode(SalesFlowResolver.OPERATION_CODE);
@@ -196,6 +198,8 @@ class SalesFlowResolverTest {
     for (Long explicitCycle : java.util.Arrays.asList(null, 2L)) {
       var flow = resolver.resolve(4L, latest, 15L, explicitCycle);
       assertThat(flow.modelProcessDefinitionId()).isEqualTo(75L);
+      assertThat(flow.modelProcessSequenceNumber()).isEqualTo(6);
+      assertThat(flow.modelProcessName()).isEqualTo("Venda, entrega e aprendizado do PDE");
       assertThat(flow.chainDefinitionId()).isEqualTo(14L);
       assertThat(flow.currentActivitySequenceNumber()).isEqualTo(4);
       assertThat(
@@ -226,6 +230,41 @@ class SalesFlowResolverTest {
     assertThat(
             resolver.resolve(4L, latest, chain.getId(), cycle.getId()).modelProcessDefinitionId())
         .isEqualTo(78L);
+  }
+
+  /** Expõe a atividade bloqueada com numeração, nome e responsável do BPM original do ciclo. */
+  @Test
+  void blockedMeasurementIdentifiesCurrentProcessActivity() throws Exception {
+    var original = model();
+    original.setId(75L);
+    var latest = model();
+    latest.setId(97L);
+    var originalChain = chain(original);
+    originalChain.setId(14L);
+    var latestChain = chain(latest);
+    latestChain.setId(22L);
+    var cycle = cycle();
+    cycle.setId(2L);
+    cycle.setExperimentId(92L);
+    cycle.setChainDefinitionId(14L);
+    cycle.setStage("MEASUREMENT");
+    cycle.setBaseline(false);
+    when(chains.findById(14L)).thenReturn(Optional.of(originalChain));
+    when(chains.findById(22L)).thenReturn(Optional.of(latestChain));
+    when(cycles.findById(2L)).thenReturn(Optional.of(cycle));
+    when(events.findByCycleIdOrderByRevisionAsc(2L))
+        .thenReturn(List.of(event(20, "MEASUREMENT_BLOCKED", "{}")));
+
+    var flow = resolver.resolve(4L, latest, 22L, 2L);
+
+    assertThat(flow.modelProcessDefinitionId()).isEqualTo(75L);
+    assertThat(flow.modelProcessSequenceNumber()).isEqualTo(6);
+    assertThat(flow.modelProcessName()).isEqualTo("Venda, entrega e aprendizado do PDE");
+    assertThat(flow.currentActivityId()).isEqualTo("consolidate");
+    assertThat(flow.currentActivitySequenceNumber()).isEqualTo(3);
+    assertThat(flow.currentActivityName()).isEqualTo("Consolidar resultado comercial");
+    assertThat(flow.currentActivityOwnerName()).isEqualTo("Backend");
+    assertThat(flow.state()).isEqualTo("BLOCKED");
   }
 
   /** Recusa contexto explícito de outro produto antes de usar qualquer evidência. */
@@ -309,6 +348,7 @@ class SalesFlowResolverTest {
     var model = new BusinessProcessDefinition();
     model.setId(74L);
     model.setProcessCode(SalesFlowResolver.PARENT_CODE);
+    model.setName("Venda, entrega e aprendizado do PDE");
     model.setDiagramJson(sql.substring(start, end));
     return model;
   }

@@ -101,6 +101,14 @@ no processo/subprocesso identificado pelo backend; o frontend não procura a pri
 incompleta. Ausência de orientação, consulta em andamento ou falha devem ser explícitas. A
 consulta possui timeout e retentativa visível, sem manter o card carregando indefinidamente.
 
+Decisão de 25/09/2026: quando `nextWork` for nulo porque o trabalho continua dentro do próprio
+Processo 6, o card deve mostrar a atividade corrente completa do `salesFlow`: número hierárquico,
+nome, responsável, estado e motivo. O número e o nome do processo vêm da cadeia original do ciclo,
+mesmo que o produto já esteja posicionado numa versão posterior da cadeia. Assim, uma consolidação
+bloqueada aparece como **6.3 — Consolidar resultado comercial**, sem ser reduzida ao rótulo interno
+“Medir vendas e valor entregue” e sem misturar definições históricas e atuais. Navegar continua
+sem iniciar conciliação, campanha, tarefa ou gasto.
+
 Evoluções do BPM pai e da cadeia criam versões novas. Definições, tarefas e ciclos anteriores
 permanecem auditáveis. Retornos comerciais são registrados no ciclo e não entram como
 predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.

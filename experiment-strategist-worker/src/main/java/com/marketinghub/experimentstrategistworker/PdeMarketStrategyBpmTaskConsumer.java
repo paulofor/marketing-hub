@@ -302,18 +302,34 @@ public class PdeMarketStrategyBpmTaskConsumer {
     return command;
   }
 
-  /** Impede que aprendizado de outro produto ou experimento seja usado para planejar o sucessor. */
+  /** Distingue o primeiro planejamento de um sucessor e impede contexto cruzado ou incompleto. */
   private void validateTaskContext(Map<String, Object> task) throws IOException {
     JsonNode context =
         objectMapper.readTree(String.valueOf(task.getOrDefault("processContextJson", "{}")));
     JsonNode cycle = context.path("learningSalesCycle");
+    JsonNode target = objectMapper.valueToTree(task.get("taskTarget"));
     if (!cycle.isMissingNode() && !cycle.isNull()) {
-      JsonNode target = objectMapper.valueToTree(task.get("taskTarget"));
       if (!sourceReference(task).equals("experiment:" + cycle.path("experimentId").asLong(-1))
           || !cycle.path("productId").canConvertToLong()
           || cycle.path("productId").asLong() != target.path("productId").asLong(-1)) {
         throw new IllegalArgumentException(
             "O ciclo de aprendizado não corresponde ao produto e experimento da tarefa.");
+      }
+      return;
+    }
+    if (sourceReference(task).startsWith("experiment:")) {
+      JsonNode planning = target.path("pdeContext");
+      JsonNode experiment = planning.path("experiment");
+      if (!"PDE_COMMERCIAL_PLANNING_INPUT_V1".equals(planning.path("contractVersion").asText())
+          || !"INITIAL_PLANNED_EXPERIMENT".equals(planning.path("mode").asText())
+          || !sourceReference(task).equals("experiment:" + target.path("experimentId").asLong(-1))
+          || experiment.path("id").asLong(-1) != target.path("experimentId").asLong(-2)
+          || planning.path("product").path("id").asLong(-1) != target.path("productId").asLong(-2)
+          || !experiment.path("sourceExperimentId").isNull()
+          || planning.path("hypothesis").path("id").asText().isBlank()
+          || !planning.path("commercialPlan").path("id").canConvertToLong()) {
+        throw new IllegalArgumentException(
+            "O experimento não possui contexto inicial completo nem ciclo sucessor rastreável.");
       }
     }
   }

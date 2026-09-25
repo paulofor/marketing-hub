@@ -35,6 +35,8 @@ class PdeMarketStrategyDeliveryTest {
   private int auditFailures;
   private int claims;
   private long targetProductId = 4;
+  private boolean initialPlanning;
+  private boolean omitInitialPlanningContext;
 
   /** Inicia backend HTTP e modelo descartáveis, sem qualquer credencial ou conexão produtiva. */
   @BeforeEach
@@ -98,6 +100,36 @@ class PdeMarketStrategyDeliveryTest {
         .isEqualTo(constitution);
     assertThat(Files.exists(temporary.resolve("state/pending.json"))).isFalse();
     assertThat(invocations()).isEqualTo(1);
+  }
+
+  /** O primeiro experimento usa hipótese e plano persistidos sem exigir aprendizado de vendas. */
+  @Test
+  void completesInitialPlanningWithoutFakeLearningCycle() throws Exception {
+    initialPlanning = true;
+
+    consumer().processOne();
+
+    assertThat(invocations()).isEqualTo(1);
+    assertThat(paths).containsExactly("pending", "execution-audit", "result");
+    assertThat(Files.readString(temporary.resolve("prompt.txt")))
+        .contains(
+            "INITIAL_PLANNED_EXPERIMENT",
+            "PDE_COMMERCIAL_PLANNING_INPUT_V1",
+            "Instagram Ads",
+            "Uma referência `experiment:*`, sozinha, não torna a tarefa sucessora");
+  }
+
+  /** Bloqueia contexto inicial incompleto antes do modelo para não cobrar uma análise inútil. */
+  @Test
+  void refusesInitialExperimentWithoutPlanningContractBeforeModel() throws Exception {
+    initialPlanning = true;
+    omitInitialPlanningContext = true;
+
+    consumer().processOne();
+
+    assertThat(invocations()).isZero();
+    assertThat(paths).containsExactly("pending", "failure");
+    assertThat(callbacks.getFirst().path("error").asText()).contains("contexto inicial completo");
   }
 
   /**
@@ -226,11 +258,40 @@ class PdeMarketStrategyDeliveryTest {
       claims++;
       Map<String, Object> task = new LinkedHashMap<>();
       task.put("taskId", 358);
-      task.put("sourceReference", "experiment:92");
-      task.put("taskTarget", Map.of("productId", targetProductId));
-      task.put(
-          "processContextJson",
-          "{\"learningSalesCycle\":{\"productId\":4,\"experimentId\":92,\"productVersion\":\"v8-fixture\"}}");
+      if (initialPlanning) {
+        task.put("sourceReference", "experiment:93");
+        Map<String, Object> target = new LinkedHashMap<>();
+        target.put("experimentId", 93L);
+        target.put("productId", 10L);
+        if (!omitInitialPlanningContext) {
+          Map<String, Object> experiment = new LinkedHashMap<>();
+          experiment.put("id", 93L);
+          experiment.put("sourceExperimentId", null);
+          target.put(
+              "pdeContext",
+              Map.of(
+                  "contractVersion",
+                  "PDE_COMMERCIAL_PLANNING_INPUT_V1",
+                  "mode",
+                  "INITIAL_PLANNED_EXPERIMENT",
+                  "product",
+                  Map.of("id", 10L),
+                  "experiment",
+                  experiment,
+                  "hypothesis",
+                  Map.of("id", "2f458f27-1f6e-4853-a27d-2b6ac1ab0de6"),
+                  "commercialPlan",
+                  Map.of("id", 8L, "mainChannel", "Instagram Ads")));
+        }
+        task.put("taskTarget", target);
+        task.put("processContextJson", "{}");
+      } else {
+        task.put("sourceReference", "experiment:92");
+        task.put("taskTarget", Map.of("productId", targetProductId));
+        task.put(
+            "processContextJson",
+            "{\"learningSalesCycle\":{\"productId\":4,\"experimentId\":92,\"productVersion\":\"v8-fixture\"}}");
+      }
       response = json.writeValueAsBytes(List.of(task));
       status = 200;
     } else if ("execution-audit".equals(operation)) {

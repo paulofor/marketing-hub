@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.marketinghub.FixtureUtils;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
+import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.hypothesis.service.HypothesisService;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.prompt.PromptAttribute;
@@ -37,6 +38,12 @@ class HypothesisServiceTest {
   @Autowired PromptAttributeRepository attributeRepository;
   @Autowired PromptAttributeDescriptionRepository descriptionRepository;
   @Autowired com.marketinghub.repository.jpa.product.ProductRepository productRepository;
+
+  @Autowired
+  com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository
+      deliverablePackageRepository;
+
+  @Autowired HypothesisFrameworkMapperSupport frameworkMapperSupport;
 
   /** Vincula ao pedido um produto de teste pertencente ao nicho informado. */
   private void bindProduct(CreateHypothesisRequest req, MarketNiche niche) {
@@ -193,6 +200,7 @@ class HypothesisServiceTest {
         .contains(desc.getId());
   }
 
+  /** Cria uma versão com linhagem preservada e framework próprio coerente com os novos campos. */
   @Test
   void createVersionPreservesSourceAndCommercialContext() {
     MarketNiche niche = fixtures.createAndSaveNiche();
@@ -205,6 +213,14 @@ class HypothesisServiceTest {
     req.setPrice(new java.math.BigDecimal("27.00"));
     bindProduct(req, niche);
     Hypothesis source = service.create(req);
+    var sourcePackage =
+        deliverablePackageRepository.save(
+            com.marketinghub.deliverable.DeliverablePackage.builder()
+                .hypothesis(source)
+                .name("Pacote da versão de origem")
+                .prompt("Entregar mensagens de confirmação")
+                .build());
+    source.setOfferPackage(sourcePackage);
 
     var versionRequest =
         new com.marketinghub.hypothesis.dto.CreateHypothesisVersionRequest(
@@ -231,6 +247,30 @@ class HypothesisServiceTest {
     assertThat(version.getStatus()).isEqualTo(HypothesisStatus.BACKLOG);
     assertThat(source.getEntrega()).isEqualTo("Mensagens de confirmação");
     assertThat(source.getPrice()).isEqualByComparingTo("27.00");
+    assertThat(source.getOfferPackage().getId()).isEqualTo(sourcePackage.getId());
+    assertThat(version.getOfferPackage()).isNull();
+
+    var versionFramework = frameworkMapperSupport.resolve(version);
+    assertThat(versionFramework.getPain().getSurface()).isEqualTo("Perfil sem identidade visual");
+    assertThat(versionFramework.getPain().getRoot()).isEqualTo("Perfil sem identidade visual");
+    assertThat(versionFramework.getResult().getDesiredResult())
+        .isEqualTo("Um perfil à altura do seu talento");
+    assertThat(versionFramework.getResult().getSuccessSignal())
+        .isEqualTo("Briefing concluído por visitante");
+    assertThat(versionFramework.getMechanism().getCore()).isEqualTo("Kit visual personalizado");
+    assertThat(versionFramework.getMechanism().getUnique())
+        .isEqualTo("Prévia visual antes da compra");
+    assertThat(versionFramework.getProof().getMessage())
+        .isEqualTo("Posts personalizados, imagens e legendas");
+    assertThat(versionFramework.getOffer().getName()).isEqualTo(version.getTitle());
+    assertThat(versionFramework.getOffer().getCorePromise())
+        .isEqualTo("Um perfil à altura do seu talento");
+    assertThat(versionFramework.getOffer().getDeliverables())
+        .isEqualTo("Posts personalizados, imagens e legendas");
+    assertThat(versionFramework.getOffer().getPriceAmount()).isEqualByComparingTo("67.00");
+    assertThat(versionFramework.getOffer().getOfferType()).isEqualTo("TRIPWIRE");
+    assertThat(versionFramework.getChecklist().getApprovedForExperiment()).isFalse();
+    assertThat(version.getFrameworkJson()).isNotEqualTo(source.getFrameworkJson());
 
     Hypothesis third = service.createVersion(version.getId(), versionRequest);
     assertThat(third.getSourceHypothesis().getId()).isEqualTo(version.getId());

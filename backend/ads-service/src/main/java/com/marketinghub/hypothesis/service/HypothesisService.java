@@ -7,6 +7,7 @@ import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.hypothesis.*;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.dto.CreateHypothesisVersionRequest;
+import com.marketinghub.hypothesis.dto.HypothesisFrameworkDto;
 import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.niche.MarketNiche;
@@ -251,8 +252,8 @@ public class HypothesisService {
   }
 
   /**
-   * Cria uma nova hipótese auditável sem alterar a origem, preservando produto, nicho, framework e
-   * metadados técnicos da linhagem.
+   * Cria uma nova hipótese auditável sem alterar a origem, preservando produto, nicho e metadados
+   * técnicos da linhagem e recriando o framework coerente com a nova versão.
    */
   @Transactional
   public Hypothesis createVersion(UUID sourceId, CreateHypothesisVersionRequest req) {
@@ -285,7 +286,6 @@ public class HypothesisService {
             .successRule(req.successRule())
             .imageFilterTitle(source.getImageFilterTitle())
             .prompt(source.getPrompt())
-            .frameworkJson(source.getFrameworkJson())
             .model(source.getModel())
             .promptAttributeDescriptions(new HashSet<>(source.getPromptAttributeDescriptions()))
             .offerType(req.offerType() == null ? null : OfferType.valueOf(req.offerType()))
@@ -295,8 +295,28 @@ public class HypothesisService {
             .status(HypothesisStatus.BACKLOG)
             .generatedAt(Instant.now())
             .build();
-    version.setOfferPackage(source.getOfferPackage());
+    initializeVersionFramework(version);
     return repository.save(version);
+  }
+
+  /** Recria o snapshot do framework sem transportar afirmações comerciais da versão anterior. */
+  private void initializeVersionFramework(Hypothesis version) {
+    HypothesisFrameworkDto framework = new HypothesisFrameworkDto();
+    framework.getPain().setSurface(version.getProblem());
+    framework.getPain().setRoot(version.getProblem());
+    framework.getResult().setDesiredResult(version.getPromise());
+    framework.getResult().setSuccessSignal(version.getSuccessRule());
+    framework.getMechanism().setCore(version.getMechanism());
+    framework.getMechanism().setUnique(version.getUniqueMechanism());
+    framework.getProof().setMessage(version.getEntrega());
+    framework.getOffer().setName(version.getTitle());
+    framework.getOffer().setCorePromise(version.getPromise());
+    framework.getOffer().setDeliverables(version.getEntrega());
+    framework.getOffer().setPriceAmount(version.getPrice());
+    framework
+        .getOffer()
+        .setOfferType(version.getOfferType() == null ? null : version.getOfferType().name());
+    frameworkMapperSupport.storeSnapshot(version, framework, null);
   }
 
   /** Impede que uma nova versão seja criada sem os dados mínimos para um teste comercial. */

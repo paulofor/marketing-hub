@@ -334,6 +334,9 @@ public class CommunicationAgentCodexRunner {
             || output.path("channelBriefings").isEmpty())) {
       throw new IllegalArgumentException("Pacote de comunicação de Íris incompleto.");
     }
+    if ("COMMUNICATION_PACKAGE".equals(outputType)) {
+      validateCommercialCoverage(output.path("messageStrategy").asText());
+    }
     if ("NON_AUDIOVISUAL_PACKAGE".equals(outputType)
         && (output.path("copy").path("headline").asText().isBlank()
             || output.path("staticAssets").isEmpty())) {
@@ -357,6 +360,26 @@ public class CommunicationAgentCodexRunner {
           || !html.toLowerCase(java.util.Locale.ROOT).contains("</html>")) {
         throw new IllegalArgumentException("Íris deve entregar o HTML integral da landing.");
       }
+    }
+  }
+
+  /** Exige a decisão auditável dos cinco pontos comerciais e do uso de vídeo. */
+  private static void validateCommercialCoverage(String messageStrategy) {
+    List<String> requiredMarkers =
+        List.of(
+            "[DESEJO_RECONHECIDO]",
+            "[PRIMEIRO_PASSO_FACIL]",
+            "[VALOR_ANTES_DO_COMPROMISSO]",
+            "[CONTINUIDADE_PAGA]",
+            "[REPETICAO_COM_MARGEM]",
+            "[DECISAO_DE_VIDEO]");
+    List<String> missing =
+        requiredMarkers.stream().filter(marker -> !messageStrategy.contains(marker)).toList();
+    if (!missing.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Pacote de comunicação sem cobertura comercial obrigatória: "
+              + String.join(", ", missing)
+              + ".");
     }
   }
 

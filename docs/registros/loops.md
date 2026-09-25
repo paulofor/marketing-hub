@@ -6572,6 +6572,12 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   migração com a campanha pausada, relê orçamento nos dois níveis, teto, prazo e estados, aceita
   retry de uma migração parcial segura e falha fechado em divergência. Backend rejeita evidência do
   modo intermediário incompatível; status, código, subcódigo e corpo oficial permanecem auditáveis.
+- **Recorrência fechada em 25/09/2026:** a retomada #5 chegou à migração correta, mas enviou
+  `spend_cap=0` para limpar um teto que já estava ausente. A Meta rejeitou com código `100`,
+  subcódigo `1885099`, manteve a campanha pausada e não alterou orçamento. O worker agora omite o
+  campo quando não existe teto anterior e bloqueia antes da primeira mutação quando encontra
+  `spend_cap` positivo, em vez de presumir que zero significa remoção. O simulador passou a
+  reproduzir a rejeição real e os testes cobrem omissão, bloqueio preventivo e retry parcial.
 
 ## LOOP-QUARTZO-HOMOLOGACAO-EXIGE-SLOT-OPALA — 20/09/2026
 

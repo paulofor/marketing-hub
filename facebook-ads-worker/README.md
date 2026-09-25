@@ -36,6 +36,10 @@ Uma segunda tentativa comprovou que a Meta também rejeita orçamento diário e 
 vitalício simultâneos no mesmo conjunto (`100/1885624`). O fallback vigente migra
 R$ 20/dia para a campanha e grava o teto de R$ 125 no único ad set sem orçamento
 próprio; releitura divergente ou migração parcial insegura bloqueia a ativação.
+Na campanha sem teto anterior, a migração omite `spend_cap`: a Graph API rejeita
+`spend_cap=0` (`100/1885099`) em vez de interpretá-lo como remoção. Campanha que
+já possua teto positivo falha antes da primeira mutação até haver remoção oficial
+comprovada, evitando ativação com duas proteções financeiras incompatíveis.
 
 Para sugerir interesses relacionados a um seed, o worker consulta a Graph API
 via `/act_<AD_ACCOUNT_ID>/targetingsuggestions` e envia a lista de seeds no

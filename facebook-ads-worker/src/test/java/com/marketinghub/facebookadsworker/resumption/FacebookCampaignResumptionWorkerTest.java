@@ -118,19 +118,27 @@ class FacebookCampaignResumptionWorkerTest {
               if ("POST".equals(request.getMethod())) {
                 JsonNode body = json.readTree(request.getBody().readUtf8());
                 writes.add(body);
+                if (path.endsWith("/campaign")
+                    && body.has("spend_cap")
+                    && body.path("spend_cap").asLong() == 0L)
+                  return new MockResponse()
+                      .setResponseCode(400)
+                      .setBody(
+                          "{\"error\":{\"message\":\"Spend limit cannot be"
+                              + " zero\",\"code\":100,\"error_subcode\":1885099}}");
                 if (body.has("lifetime_spend_cap")
-                    && (body.path("daily_budget").asLong(-1L) != 0L
-                        || campaignDailyBudget <= 0L))
+                    && (body.path("daily_budget").asLong(-1L) != 0L || campaignDailyBudget <= 0L))
                   return new MockResponse()
                       .setResponseCode(400)
                       .setBody(
-                          "{\"error\":{\"message\":\"spend limits and budget are mutually exclusive\",\"code\":100,\"error_subcode\":1885624}}");
-                if ((body.has("lifetime_budget") || body.has("lifetime_spend_cap"))
-                    && rejectBudget)
+                          "{\"error\":{\"message\":\"spend limits and budget are mutually"
+                              + " exclusive\",\"code\":100,\"error_subcode\":1885624}}");
+                if ((body.has("lifetime_budget") || body.has("lifetime_spend_cap")) && rejectBudget)
                   return new MockResponse()
                       .setResponseCode(400)
                       .setBody(
-                          "{\"error\":{\"message\":\"invalid budget\",\"code\":100,\"error_subcode\":2446307}}");
+                          "{\"error\":{\"message\":\"invalid"
+                              + " budget\",\"code\":100,\"error_subcode\":2446307}}");
                 if (path.endsWith("/campaign") && body.has("status"))
                   campaignStatus = body.path("status").asText();
                 if (path.endsWith("/campaign") && body.has("spend_cap"))
@@ -204,12 +212,12 @@ class FacebookCampaignResumptionWorkerTest {
               if ("id,status,spend_cap,daily_budget,lifetime_budget".equals(fields))
                 return ok(
                     "{\"id\":\"campaign\",\"status\":\"PAUSED\",\"spend_cap\":\""
-                            + campaignSpendCap
-                            + "\",\"daily_budget\":\""
-                            + (wrongCampaignDailyBudget && campaignDailyBudget > 0
-                                ? campaignDailyBudget - 100
-                                : campaignDailyBudget)
-                            + "\",\"lifetime_budget\":\"0\"}");
+                        + campaignSpendCap
+                        + "\",\"daily_budget\":\""
+                        + (wrongCampaignDailyBudget && campaignDailyBudget > 0
+                            ? campaignDailyBudget - 100
+                            : campaignDailyBudget)
+                        + "\",\"lifetime_budget\":\"0\"}");
               return ok(
                   "{\"id\":\"campaign\",\"status\":\""
                       + campaignStatus
@@ -266,8 +274,7 @@ class FacebookCampaignResumptionWorkerTest {
                 .path("lifetime_budget")
                 .asText())
         .isEqualTo("15000");
-    assertThat(writes)
-        .noneMatch(n -> "PAUSED".equals(n.path("status").asText()) && n.size() == 1);
+    assertThat(writes).noneMatch(n -> "PAUSED".equals(n.path("status").asText()) && n.size() == 1);
     assertThat(writes.get(writes.size() - 1).path("status").asText()).isEqualTo("ACTIVE");
     assertThat(probes).isEqualTo(5);
     assertThat(campaignStatus).isEqualTo("ACTIVE");
@@ -288,7 +295,7 @@ class FacebookCampaignResumptionWorkerTest {
     assertThat(campaignStatus).isEqualTo("ACTIVE");
   }
 
-  /** Migra o diário para a campanha e aplica teto no único conjunto abaixo do mínimo da conta. */
+  /** Migra o diário sem enviar spend_cap zero e aplica teto no conjunto abaixo do mínimo. */
   @Test
   void preservesDailyBudgetWithAdSetLifetimeCapBelowCampaignMinimum() {
     dailyMode = true;
@@ -304,14 +311,13 @@ class FacebookCampaignResumptionWorkerTest {
         .isEqualTo(30000L);
     assertThat(result.path("evidence").path("adSetLifetimeSpendCapMinor").asLong())
         .isEqualTo(12500L);
-    assertThat(result.path("evidence").path("campaignDailyBudgetMinor").asLong())
-        .isEqualTo(2000L);
+    assertThat(result.path("evidence").path("campaignDailyBudgetMinor").asLong()).isEqualTo(2000L);
     assertThat(result.path("evidence").path("adSetDailyBudgetMinor").asLong()).isZero();
     assertThat(writes)
         .anyMatch(
             n ->
                 "2000".equals(n.path("daily_budget").asText())
-                    && "0".equals(n.path("spend_cap").asText())
+                    && !n.has("spend_cap")
                     && "PAUSED".equals(n.path("status").asText()));
     assertThat(writes)
         .anyMatch(
@@ -319,6 +325,22 @@ class FacebookCampaignResumptionWorkerTest {
                 "0".equals(n.path("daily_budget").asText())
                     && "12500".equals(n.path("lifetime_spend_cap").asText()));
     assertThat(campaignStatus).isEqualTo("ACTIVE");
+  }
+
+  /** Bloqueia antes da migração quando existe teto de campanha que não pode ser zerado. */
+  @Test
+  void existingCampaignSpendCapBlocksMigrationBeforeMutation() {
+    dailyMode = true;
+    minimumCampaignSpendCap = 30000L;
+    campaignSpendCap = 15000L;
+    task.put("totalLimit", 125);
+
+    worker.poll();
+
+    assertThat(result.path("success").asBoolean()).isFalse();
+    assertThat(result.path("error").asText()).contains("spend_cap anterior");
+    assertThat(writes).isEmpty();
+    assertThat(campaignStatus).isEqualTo("PAUSED");
   }
 
   /** Retoma uma migração interrompida depois de mover o diário, sem duplicar campanha ou gasto. */
@@ -420,8 +442,7 @@ class FacebookCampaignResumptionWorkerTest {
     assertThat(result.path("success").asBoolean()).isFalse();
     assertThat(campaignStatus).isEqualTo("PAUSED");
     assertThat(result.path("error").asText()).contains("code=100");
-    assertThat(result.path("evidence").path("metaError").path("httpStatus").asInt())
-        .isEqualTo(400);
+    assertThat(result.path("evidence").path("metaError").path("httpStatus").asInt()).isEqualTo(400);
     assertThat(
             result
                 .path("evidence")

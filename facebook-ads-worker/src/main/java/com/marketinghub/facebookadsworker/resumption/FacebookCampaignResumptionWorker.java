@@ -112,11 +112,14 @@ public class FacebookCampaignResumptionWorker {
         }
       }
     } catch (Exception ex) {
-      LOG.error("Falha consultando fila de retomadas Facebook: url<=={}/pending", backendApiUrl, ex);
+      LOG.error(
+          "Falha consultando fila de retomadas Facebook: url<=={}/pending", backendApiUrl, ex);
     }
   }
 
-  /** Aplica a autorização idempotente e compensa falhas mantendo a campanha pausada. */
+  /**
+   * Aplica a autorização idempotente sem limpar teto por valor zero e compensa falhas com pausa.
+   */
   public void execute(JsonNode task, String token) {
     String campaignId = task.path("campaignId").asText();
     long requestId = task.path("id").asLong();
@@ -148,11 +151,7 @@ public class FacebookCampaignResumptionWorker {
       if (!accountId.matches("[0-9]+"))
         throw new IllegalStateException("Conta Meta não confirmada");
       JsonNode account =
-          get(
-              "act_" + accountId,
-              "currency,min_campaign_group_spend_cap",
-              token,
-              requestId);
+          get("act_" + accountId, "currency,min_campaign_group_spend_cap", token, requestId);
       evidence.set("account", account);
       JsonNode sets = before.path("adsets").path("data");
       if (!"BRL".equals(account.path("currency").asText())
@@ -235,16 +234,14 @@ public class FacebookCampaignResumptionWorker {
               token,
               requestId);
         } else if (belowCampaignMinimum && (dailyMode || campaignDailyMode)) {
+          if (before.path("spend_cap").asLong(0L) > 0L)
+            throw new IllegalStateException(
+                "A campanha possui spend_cap anterior; remova-o pelo contrato oficial antes da"
+                    + " migração");
           budgetMode = "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP";
           post(
               campaignId,
-              Map.of(
-                  "daily_budget",
-                  Long.toString(dailyMinor),
-                  "spend_cap",
-                  "0",
-                  "status",
-                  "PAUSED"),
+              Map.of("daily_budget", Long.toString(dailyMinor), "status", "PAUSED"),
               token,
               requestId);
           post(
@@ -277,19 +274,14 @@ public class FacebookCampaignResumptionWorker {
         throw new IllegalStateException(
             "Meta não confirmou estado e prazo autorizados do conjunto");
       JsonNode verifiedCampaign =
-          get(
-              campaignId,
-              "id,status,spend_cap,daily_budget,lifetime_budget",
-              token,
-              requestId);
+          get(campaignId, "id,status,spend_cap,daily_budget,lifetime_budget", token, requestId);
       evidence.set("verifiedCampaign", verifiedCampaign);
       if (lifetimeMode
           && (verified.path("lifetime_budget").asLong(-1) != minor
               || verified.path("daily_budget").asLong() != 0))
         throw new IllegalStateException("Meta não confirmou orçamento vitalício autorizado");
       if (dailyMode || campaignDailyMode) {
-        boolean campaignDailyFallback =
-            "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP".equals(budgetMode);
+        boolean campaignDailyFallback = "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP".equals(budgetMode);
         boolean dailyBudgetConfirmed =
             campaignDailyFallback
                 ? verifiedCampaign.path("daily_budget").asLong(-1) == dailyMinor
@@ -323,12 +315,10 @@ public class FacebookCampaignResumptionWorker {
           "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP".equals(budgetMode)
               ? verifiedCampaign.path("daily_budget").asLong()
               : verified.path("daily_budget").asLong());
-      evidence.put(
-          "campaignDailyBudgetMinor", verifiedCampaign.path("daily_budget").asLong());
+      evidence.put("campaignDailyBudgetMinor", verifiedCampaign.path("daily_budget").asLong());
       evidence.put("adSetDailyBudgetMinor", verified.path("daily_budget").asLong());
       evidence.put("lifetimeBudgetMinor", verified.path("lifetime_budget").asLong());
-      evidence.put(
-          "adSetLifetimeSpendCapMinor", verified.path("lifetime_spend_cap").asLong());
+      evidence.put("adSetLifetimeSpendCapMinor", verified.path("lifetime_spend_cap").asLong());
       evidence.put("startDate", startDate.toString());
       evidence.put("endDate", endDate.toString());
       evidence.put("spend", spend);
@@ -573,9 +563,7 @@ public class FacebookCampaignResumptionWorker {
     body.set("evidence", evidence);
     String endpoint = backendApiUrl + "/" + task.path("id").asLong() + "/result";
     LOG.info(
-        "Retomada backend POST: url==>{} payload={}",
-        endpoint,
-        JsonLogFormatter.wrap(json, body));
+        "Retomada backend POST: url==>{} payload={}", endpoint, JsonLogFormatter.wrap(json, body));
     backend
         .post()
         .uri("/" + task.path("id").asLong() + "/result")
@@ -609,7 +597,9 @@ public class FacebookCampaignResumptionWorker {
         String responseBody,
         String detail,
         Throwable cause) {
-      super("Meta " + method + " " + endpoint + " respondeu HTTP " + httpStatus + ": " + detail, cause);
+      super(
+          "Meta " + method + " " + endpoint + " respondeu HTTP " + httpStatus + ": " + detail,
+          cause);
       this.method = method;
       this.endpoint = endpoint;
       this.httpStatus = httpStatus;

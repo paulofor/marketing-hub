@@ -40,7 +40,10 @@ class StatusControllerTest {
                     .containsEntry("providerCostUsd", 0);
             assertThat(pdeAudiovisual(controller.status()))
                     .containsEntry("enabled", true)
-                    .containsEntry("processCode", "pde-construction-approval")
+                    .containsEntry(
+                            "processCodes",
+                            java.util.List.of(
+                                    "pde-construction-approval", "creative-production-approval"))
                     .containsEntry("activityId", "audiovisual")
                     .containsEntry("executionResourceCode", "video-management-service");
         } finally {

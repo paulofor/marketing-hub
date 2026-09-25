@@ -82,6 +82,31 @@ class ApolloPdeAudiovisualFlowTest {
                 .isEqualTo("AUTHORIZATION_REQUIRED");
     }
 
+    /** Bloqueia pela mesma regra o vídeo vindo da produção criativa após consultar ambas as filas. */
+    @Test
+    void shouldReachCreativeProductionQueueAndPreserveGovernedVideoGate() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("[]"));
+        server.enqueue(creativePending(true));
+        server.enqueue(new MockResponse().setResponseCode(204));
+
+        consumer().processOne();
+
+        var constructionClaim = server.takeRequest();
+        var creativeClaim = server.takeRequest();
+        var callback = server.takeRequest();
+        JsonNode payload = objectMapper.readTree(callback.getBody().readUtf8());
+        JsonNode evidence = objectMapper.readTree(payload.path("evidenceJson").asText());
+        assertThat(constructionClaim.getPath()).contains("processCode=pde-construction-approval");
+        assertThat(creativeClaim.getPath()).contains("processCode=creative-production-approval");
+        assertThat(callback.getPath()).endsWith("/stage-executions/504/failure");
+        assertThat(evidence.path("processCode").asText())
+                .isEqualTo("creative-production-approval");
+        assertThat(evidence.path("providerCalls").asInt()).isZero();
+    }
+
     /** Monta o consumidor real mantendo somente o controle PLAY como test double. */
     private ApolloPdeAudiovisualBpmTaskConsumer consumer() {
         VideoManagementProperties properties = new VideoManagementProperties();
@@ -119,6 +144,32 @@ class ApolloPdeAudiovisualFlowTest {
                             "productId":10,
                             "productInternalName":"Mira",
                             "experienceVersion":"private-validation-v1",
+                            "pdeContext":{"harness":{"audiovisualRequired":%s}}
+                          },
+                          "processContextJson":"{}"
+                        }]
+                        """.formatted(required));
+    }
+
+    /** Simula a atividade audiovisual criada pelo subprocesso de produção criativa. */
+    private MockResponse creativePending(boolean required) {
+        return new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        [{
+                          "taskId":504,
+                          "agentKey":"videomaker",
+                          "processCode":"creative-production-approval",
+                          "processVersion":1,
+                          "activityId":"audiovisual",
+                          "activityName":"Materializar peças audiovisuais quando previstas",
+                          "sourceReference":"experiment:93",
+                          "executionResource":{"resourceCode":"video-management-service"},
+                          "taskTarget":{
+                            "productId":10,
+                            "productInternalName":"Mira",
+                            "experienceVersion":"private-v3",
                             "pdeContext":{"harness":{"audiovisualRequired":%s}}
                           },
                           "processContextJson":"{}"

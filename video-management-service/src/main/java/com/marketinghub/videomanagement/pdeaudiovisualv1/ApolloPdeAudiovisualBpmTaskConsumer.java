@@ -93,7 +93,7 @@ public class ApolloPdeAudiovisualBpmTaskConsumer {
                 ? null
                 : task.executionResource().resourceCode();
         if (!ApolloPdeAudiovisualBackendClient.AGENT_KEY.equals(task.agentKey())
-                || !ApolloPdeAudiovisualBackendClient.PROCESS_CODE.equals(task.processCode())
+                || !ApolloPdeAudiovisualBackendClient.PROCESS_CODES.contains(task.processCode())
                 || !ApolloPdeAudiovisualBackendClient.ACTIVITY_ID.equals(task.activityId())
                 || !ApolloPdeAudiovisualBackendClient.EXECUTION_RESOURCE_CODE.equals(resourceCode)) {
             throw new IllegalArgumentException(

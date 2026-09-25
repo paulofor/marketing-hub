@@ -36,7 +36,8 @@ public class StatusController {
                 "batchSize", properties.getJobs().getBatchSize(),
                 "pdeAudiovisual", Map.of(
                         "enabled", properties.getPdeAudiovisual().isEnabled(),
-                        "processCode", "pde-construction-approval",
+                        "processCodes", java.util.List.of(
+                                "pde-construction-approval", "creative-production-approval"),
                         "activityId", "audiovisual",
                         "executionResourceCode", "video-management-service"),
                 "apolloPlanner", Map.of(

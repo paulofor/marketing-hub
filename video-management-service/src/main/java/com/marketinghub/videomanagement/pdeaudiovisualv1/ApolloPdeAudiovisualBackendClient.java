@@ -5,6 +5,7 @@ import io.netty.channel.ChannelOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -24,7 +25,8 @@ import reactor.util.retry.Retry;
 @Component
 public class ApolloPdeAudiovisualBackendClient {
     static final String AGENT_KEY = "videomaker";
-    static final String PROCESS_CODE = "pde-construction-approval";
+    static final List<String> PROCESS_CODES =
+            List.of("pde-construction-approval", "creative-production-approval");
     static final String ACTIVITY_ID = "audiovisual";
     static final String EXECUTION_RESOURCE_CODE = "video-management-service";
     static final String PENDING_ENDPOINT =
@@ -41,6 +43,7 @@ public class ApolloPdeAudiovisualBackendClient {
             };
     private final WebClient backend;
     private final VideoManagementProperties properties;
+    private final AtomicInteger nextProcessIndex = new AtomicInteger();
 
     /** Configura o cliente com a mesma URL e autenticação operacional do executor de vídeo. */
     public ApolloPdeAudiovisualBackendClient(
@@ -56,20 +59,33 @@ public class ApolloPdeAudiovisualBackendClient {
         this.properties = properties;
     }
 
-    /** Reserva no máximo uma tarefa atribuída ao processo, atividade e recurso exatos. */
+    /** Reserva no máximo uma tarefa nas filas audiovisuais canônicas, alternando a prioridade. */
     public ApolloPdeAudiovisualTask claim() {
+        int firstIndex = Math.floorMod(nextProcessIndex.getAndIncrement(), PROCESS_CODES.size());
+        for (int offset = 0; offset < PROCESS_CODES.size(); offset++) {
+            String processCode = PROCESS_CODES.get((firstIndex + offset) % PROCESS_CODES.size());
+            ApolloPdeAudiovisualTask task = claim(processCode);
+            if (task != null) {
+                return task;
+            }
+        }
+        return null;
+    }
+
+    /** Consulta uma única fila exata sem repetir uma reserva cuja resposta possa ter se perdido. */
+    private ApolloPdeAudiovisualTask claim(String processCode) {
         try {
             log.info(
                     "Consultando fila audiovisual BPM de Apolo. url={} processCode={} activityId={} resource={}",
                     PENDING_ENDPOINT,
-                    PROCESS_CODE,
+                    processCode,
                     ACTIVITY_ID,
                     EXECUTION_RESOURCE_CODE);
             List<ApolloPdeAudiovisualTask> pending = authorized(backend.get()
                             .uri(
                                     PENDING_ENDPOINT,
                                     AGENT_KEY,
-                                    PROCESS_CODE,
+                                    processCode,
                                     ACTIVITY_ID,
                                     EXECUTION_RESOURCE_CODE))
                     .retrieve()
@@ -85,7 +101,7 @@ public class ApolloPdeAudiovisualBackendClient {
             log.error(
                     "Falha no video-management-service ao consultar fila audiovisual BPM. url={} processCode={} activityId={}",
                     PENDING_ENDPOINT,
-                    PROCESS_CODE,
+                    processCode,
                     ACTIVITY_ID,
                     ex);
             throw ex;

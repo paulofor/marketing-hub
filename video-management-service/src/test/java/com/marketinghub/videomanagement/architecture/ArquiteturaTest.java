@@ -113,6 +113,7 @@ class ArquiteturaTest {
                 .contains("activityId={activityId}")
                 .contains("executionResourceCode={executionResourceCode}")
                 .contains("pde-construction-approval")
+                .contains("creative-production-approval")
                 .contains("video-management-service")
                 .contains("/stage-executions/{taskId}/result")
                 .contains("/stage-executions/{taskId}/failure");

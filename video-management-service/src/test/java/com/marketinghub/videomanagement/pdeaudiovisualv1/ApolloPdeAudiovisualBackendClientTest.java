@@ -67,6 +67,75 @@ class ApolloPdeAudiovisualBackendClientTest {
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer internal-test-token");
     }
 
+    /** Consulta também a produção criativa quando a construção não possui pendência audiovisual. */
+    @Test
+    void shouldClaimCreativeProductionAfterEmptyConstructionQueue() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("[]"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        [{
+                          "taskId":504,
+                          "agentKey":"videomaker",
+                          "processCode":"creative-production-approval",
+                          "processVersion":1,
+                          "activityId":"audiovisual",
+                          "sourceReference":"experiment:93",
+                          "executionResource":{"resourceCode":"video-management-service"},
+                          "taskTarget":{
+                            "productId":10,
+                            "productInternalName":"Mira",
+                            "pdeContext":{"harness":{"audiovisualRequired":true}}
+                          },
+                          "processContextJson":"{}"
+                        }]
+                        """));
+
+        ApolloPdeAudiovisualTask task = client().claim();
+
+        assertThat(task.taskId()).isEqualTo(504L);
+        assertThat(task.processCode()).isEqualTo("creative-production-approval");
+        assertThat(server.takeRequest().getPath()).isEqualTo(expectedPendingPath());
+        assertThat(server.takeRequest().getPath()).isEqualTo(
+                "/api/internal/agent-tasks/videomaker/stage-executions/pending"
+                        + "?processCode=creative-production-approval&activityId=audiovisual"
+                        + "&executionResourceCode=video-management-service");
+    }
+
+    /** Alterna a primeira fila consultada para uma origem ocupada não bloquear a outra. */
+    @Test
+    void shouldAlternateQueuePriorityBetweenPolls() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("[]"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("[]"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("[]"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("[]"));
+        ApolloPdeAudiovisualBackendClient client = client();
+
+        assertThat(client.claim()).isNull();
+        assertThat(client.claim()).isNull();
+
+        assertThat(server.takeRequest().getPath()).contains("processCode=pde-construction-approval");
+        assertThat(server.takeRequest().getPath()).contains("processCode=creative-production-approval");
+        assertThat(server.takeRequest().getPath()).contains("processCode=creative-production-approval");
+        assertThat(server.takeRequest().getPath()).contains("processCode=pde-construction-approval");
+    }
+
     /** Reporta conclusão e bloqueio somente pelos callbacks oficiais da mesma tarefa. */
     @Test
     void shouldUseCanonicalResultAndFailureCallbacks() throws Exception {

@@ -4948,6 +4948,12 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   `executionResourceCode`; testes funcionais protegem custo zero, nenhuma chamada Runway, ausência de
   tarefa duplicada e avanço decidido somente pelo backend. A rotina possui thread própria no pool
   mínimo para não ficar oculta por integrações longas.
+- **Recorrência em 25/09/2026 — Mira #504:** o consumidor existia, mas consultava exclusivamente
+  `pde-construction-approval/audiovisual`; a peça audiovisual criada pelo subprocesso
+  `creative-production-approval` permanecia `PENDING` enquanto os logs registravam fila vazia. Apolo
+  passa a consultar as duas combinações canônicas separadamente, alternando a prioridade a cada
+  polling e recusando qualquer outro processo ou recurso. Testes cobrem a tarefa criativa, o filtro
+  exato e a ausência de starvation sem remover os gates de orçamento e autorização do Estúdio.
 
 ## LOOP-HARNESS-HTTPS-GETENT-AAAA-FANTASMA — publicação bloqueada sem registro IPv6 real
 

@@ -68,6 +68,43 @@ class ApolloPdeAudiovisualBpmTaskConsumerTest {
         verify(backend, never()).complete(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any());
     }
 
+    /** Aceita a mesma atividade especializada quando ela pertence à produção criativa. */
+    @Test
+    void shouldConsumeCreativeProductionAudiovisualTask() {
+        VideoManagementProperties properties = new VideoManagementProperties();
+        properties.getPdeAudiovisual().setEnabled(true);
+        ApolloPdeAudiovisualTask construction = task(true);
+        ApolloPdeAudiovisualTask creative = new ApolloPdeAudiovisualTask(
+                504L,
+                construction.agentKey(),
+                "creative-production-approval",
+                1,
+                construction.activityId(),
+                construction.activityName(),
+                construction.title(),
+                construction.description(),
+                "experiment:93",
+                construction.receivedAt(),
+                construction.executionResource(),
+                construction.taskTarget(),
+                construction.processContextJson());
+        ApolloPdeAudiovisualDecision decision = new ApolloPdeAudiovisualDecision(
+                ApolloPdeAudiovisualDecision.Outcome.REQUIRES_AUTHORIZATION,
+                "exige vídeo",
+                "autorizar no Estúdio",
+                "AUTHORIZATION_REQUIRED");
+        Map<String, Object> payload = Map.of("error", "exige vídeo");
+        when(automaticExecution.allowsAutomaticExecution()).thenReturn(true);
+        when(backend.claim()).thenReturn(creative);
+        when(evaluator.evaluate(creative)).thenReturn(decision);
+        when(callbackFactory.block(creative, decision)).thenReturn(payload);
+
+        consumer(properties).processOne();
+
+        verify(backend).block(504L, payload);
+        verify(backend, never()).complete(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any());
+    }
+
     /** Mantém a fila intocada quando a rotina local ou o controle global estiver parado. */
     @Test
     void shouldStayIdleWhenDisabledOrStopped() {

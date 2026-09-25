@@ -251,7 +251,7 @@ public class CommunicationAgentCodexRunner {
         throw new IllegalArgumentException(
             "Íris não pode concluir com saída vazia ou prova ausente.");
       }
-      validateActivityOutput(output, contract.outputType());
+      validateActivityOutput(output, contract.outputType(), task);
       validateResearchIntelligence(task, output);
     }
   }
@@ -328,7 +328,8 @@ public class CommunicationAgentCodexRunner {
   }
 
   /** Valida a materialização mínima específica de cada atividade. */
-  private static void validateActivityOutput(JsonNode output, String outputType) {
+  private static void validateActivityOutput(
+      JsonNode output, String outputType, Map<String, Object> task) {
     if ("COMMUNICATION_PACKAGE".equals(outputType)
         && (output.path("messageStrategy").asText().isBlank()
             || output.path("channelBriefings").isEmpty())) {
@@ -336,6 +337,7 @@ public class CommunicationAgentCodexRunner {
     }
     if ("COMMUNICATION_PACKAGE".equals(outputType)) {
       validateCommercialCoverage(output.path("messageStrategy").asText());
+      validateInitialProductVersion(output, task);
     }
     if ("NON_AUDIOVISUAL_PACKAGE".equals(outputType)
         && (output.path("copy").path("headline").asText().isBlank()
@@ -360,6 +362,40 @@ public class CommunicationAgentCodexRunner {
           || !html.toLowerCase(java.util.Locale.ROOT).contains("</html>")) {
         throw new IllegalArgumentException("Íris deve entregar o HTML integral da landing.");
       }
+    }
+  }
+
+  /** Exige que o primeiro experimento comunique exatamente a versão de produto já homologada. */
+  private static void validateInitialProductVersion(JsonNode output, Map<String, Object> task) {
+    try {
+      JsonNode context =
+          new ObjectMapper()
+              .readTree(String.valueOf(task.getOrDefault("processContextJson", "{}")))
+              .path("communicationMaterializationContext");
+      if (!"INITIAL_EXPERIMENT_PRIVATE".equals(context.path("mode").asText())) return;
+      String version = context.path("prototypeVersion").asText();
+      if (version.isBlank()) {
+        throw new IllegalArgumentException(
+            "Íris exige a versão homologada do produto no experimento inicial.");
+      }
+      String auditedCommunication =
+          output.path("messageStrategy").asText()
+              + "\n"
+              + output.path("channelBriefings")
+              + "\n"
+              + output.path("audiovisualBrief");
+      if (!auditedCommunication.contains(version)) {
+        throw new IllegalArgumentException(
+            "Íris deve vincular a comunicação à versão homologada " + version + ".");
+      }
+    } catch (IOException ex) {
+      log.error(
+          "Contexto da versão inicial inválido para Íris. taskId={} sourceReference={}",
+          task.get("taskId"),
+          task.get("sourceReference"),
+          ex);
+      throw new IllegalArgumentException(
+          "Íris não conseguiu auditar a versão homologada do produto.", ex);
     }
   }
 

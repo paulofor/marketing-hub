@@ -19,7 +19,8 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 class IrisPrivateCommunicationCompletionHookTest {
   private final ObjectMapper json = new ObjectMapper();
-  private final IrisPrivateProductContext context = mock(IrisPrivateProductContext.class);
+  private final CommunicationMaterializationContextProvider context =
+      mock(CommunicationMaterializationContextProvider.class);
   private final IrisPrivateCommunicationCompletionHook hook =
       new IrisPrivateCommunicationCompletionHook(context, json);
   private final ObjectNode input = json.createObjectNode();
@@ -111,6 +112,32 @@ class IrisPrivateCommunicationCompletionHookTest {
                 .set("communicationInputReference", input.deepCopy())
                 .toString());
     input.put(key, "alterado");
+    assertThatThrownBy(() -> hook.apply(task, request))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  /** Aceita o experimento inicial somente enquanto o hash de versão e pixels permanece vigente. */
+  @Test
+  void validatesInitialExperimentInputHash() {
+    task.setSourceReference("experiment:93");
+    input
+        .put(
+            "mode", IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE)
+        .put("communicationInputHash", "a".repeat(64));
+    when(context.resolve(task.getSourceReference()))
+        .thenAnswer(i -> Optional.of(json.convertValue(input, Map.class)));
+    var request =
+        new CompleteAgentTaskRequest(
+            "{}",
+            json.createObjectNode()
+                .set("communicationInputReference", input.deepCopy())
+                .toString());
+
+    assertThat(hook.supports(task)).isTrue();
+    assertThat(hook.apply(task, request))
+        .isEqualTo(AgentTaskCompletionHook.CompletionDisposition.COMPLETE);
+
+    input.put("communicationInputHash", "b".repeat(64));
     assertThatThrownBy(() -> hook.apply(task, request))
         .isInstanceOf(IllegalArgumentException.class);
   }

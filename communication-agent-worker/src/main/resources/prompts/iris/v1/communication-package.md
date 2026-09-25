@@ -60,3 +60,10 @@ Em `PRODUCT_PRIVATE`, não exija nem invente experimento, ciclo de aprendizado o
 comercial: a origem é a descoberta auditada e a versão aprovada do próprio produto.
 Use `approvedUpstreamArtifacts` e o gate vigente; eventual necessidade comercial futura
 pertence ao próximo processo e deve aparecer em `nextHandoff`.
+
+Em `INITIAL_EXPERIMENT_PRIVATE`, `prototypeVersion`, `approvedDestination`,
+`visualProofAuthorization` e `approvedVisualArtifacts` identificam a experiência real já
+homologada que este primeiro experimento deve comunicar. Cite a versão exata na decisão de valor
+e no briefing da prova. Não proponha, renomeie ou fabrique uma versão inferior ou futura; uma
+mudança de versão exige novo gate e novas capturas. Use somente os pixels autorizados e mantenha
+o CTA na experiência privada enquanto `paymentEnabled=false`.

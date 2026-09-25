@@ -217,6 +217,38 @@ class CommunicationAgentCodexRunnerTest {
         .hasMessageContaining("[DECISAO_DE_VIDEO]");
   }
 
+  /** Exige que o primeiro experimento cite a versão privada realmente homologada. */
+  @Test
+  void shouldPreserveApprovedProductVersionInInitialExperiment() throws Exception {
+    Map<String, Object> task =
+        new java.util.LinkedHashMap<>(
+            task(
+                "pde-communication-sales-journey",
+                "communicationContract",
+                initialExperimentContext("sandbox-private-v12")));
+    task.put("sourceReference", "experiment:93");
+    JsonNode accepted = result("COMMUNICATION_PACKAGE", "communicationContract", "COMPLETED");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) accepted)
+        .put("sourceReference", "experiment:93");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) accepted.path("functionalOutput"))
+        .put(
+            "messageStrategy",
+            accepted.path("functionalOutput").path("messageStrategy").asText()
+                + " Prova da versão sandbox-private-v12.");
+
+    CommunicationAgentCodexRunner.validate(
+        accepted, task, CommunicationAgentCodexRunner.contractFor(task));
+
+    JsonNode stale = result("COMMUNICATION_PACKAGE", "communicationContract", "COMPLETED");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) stale)
+        .put("sourceReference", "experiment:93");
+    assertThatThrownBy(
+            () ->
+                CommunicationAgentCodexRunner.validate(
+                    stale, task, CommunicationAgentCodexRunner.contractFor(task)))
+        .hasMessageContaining("sandbox-private-v12");
+  }
+
   /** Rejeita tentativa de devolver outro contrato estratégico ou concluir sem artefato. */
   @Test
   void shouldRejectChangedStrategyAndEmptyOutput() throws Exception {
@@ -335,6 +367,28 @@ class CommunicationAgentCodexRunnerTest {
         }
         """
         .formatted(STRATEGY_HASH, readiness, assets);
+  }
+
+  /** Monta a entrada do primeiro experimento com a versão e os pixels já homologados. */
+  private String initialExperimentContext(String version) {
+    return """
+        {
+          "marketStrategicContract":{
+            "availability":"AVAILABLE",
+            "contractVersion":"MARKET_STRATEGY_V3",
+            "contentHash":"%s"
+          },
+          "communicationMaterializationContext":{
+            "availability":"AVAILABLE",
+            "inputReadiness":"READY",
+            "mode":"INITIAL_EXPERIMENT_PRIVATE",
+            "prototypeVersion":"%s",
+            "approvedDestination":{"url":"https://example.test/sandbox-private"},
+            "approvedVisualArtifacts":[{"taskId":371}]
+          }
+        }
+        """
+        .formatted(STRATEGY_HASH, version);
   }
 
   /** Cria uma resposta mínima completa conforme o schema único de Íris. */

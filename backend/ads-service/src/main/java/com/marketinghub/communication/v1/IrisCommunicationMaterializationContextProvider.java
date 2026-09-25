@@ -125,6 +125,10 @@ public class IrisCommunicationMaterializationContextProvider
       }
       Optional<InitialPrivatePlanning> initialPrivatePlanning =
           initialPrivatePlanning(sourceReference);
+      Optional<InitialProductProof> initialProductProof =
+          initialPrivatePlanning.isPresent()
+              ? initialProductProof(product, sourceReference)
+              : Optional.empty();
       java.util.List<Map<String, Object>> upstreamArtifacts =
           initialPrivatePlanning
               .map(InitialPrivatePlanning::artifacts)
@@ -139,6 +143,10 @@ public class IrisCommunicationMaterializationContextProvider
       java.util.List<String> missingPredecessors = new java.util.ArrayList<>();
       if (initialPrivatePlanning.isPresent()) {
         missingPredecessors.addAll(initialPrivatePlanning.get().missingPredecessors());
+        if (initialProductProof.isEmpty()) {
+          missingPredecessors.add(
+              "Versão vigente e capturas aprovadas do produto para a comunicação");
+        }
       } else {
         if (!upstreamAgentKeys.contains("financial-agent")) {
           missingPredecessors.add("Parecer econômico concluído de Plutus");
@@ -164,6 +172,34 @@ public class IrisCommunicationMaterializationContextProvider
             result.put("mode", INITIAL_EXPERIMENT_PRIVATE_MODE);
             result.put("marketStrategicContract", planning.strategyReference());
           });
+      initialProductProof.ifPresent(
+          proof -> {
+            result.put("prototypeVersion", proof.prototypeVersion());
+            result.put("privatePrototypeAcceptance", proof.privatePrototypeAcceptance());
+            result.put("approvedDestination", proof.approvedDestination());
+            result.put("approvedVisualArtifacts", proof.visualArtifacts());
+            result.put("validationGate", proof.validationGate());
+            result.put("gateInstanceId", proof.gateInstanceId());
+            result.put("discoveryLineage", proof.discoveryLineage());
+            result.put(
+                "visualProofAuthorization",
+                Map.of(
+                    "contractVersion",
+                    "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1",
+                    "proofSourceReference",
+                    proof.proofSourceReference(),
+                    "targetSourceReference",
+                    sourceReference,
+                    "productId",
+                    product.getId(),
+                    "prototypeVersion",
+                    proof.prototypeVersion(),
+                    "gateInstanceId",
+                    proof.gateInstanceId(),
+                    "publicUrl",
+                    proof.approvedDestination().path("url").asText()));
+            result.put("paymentEnabled", false);
+          });
       result.put("inputReadiness", missingPredecessors.isEmpty() ? "READY" : "BLOCKED");
       result.put("missingRequiredPredecessors", java.util.List.copyOf(missingPredecessors));
       result.put(
@@ -171,6 +207,10 @@ public class IrisCommunicationMaterializationContextProvider
           "Marca, CNPJ, suporte e políticas; sem razão social completa ou endereço.");
       result.put("publicationAuthorized", false);
       result.put("externalMediaSpendAuthorized", false);
+      if (initialPrivatePlanning.isPresent()) {
+        result.put("communicationInputHash", sha256(objectMapper.writeValueAsString(result)));
+        result.put("communicationArtifacts", initialCommunicationArtifacts(sourceReference));
+      }
       return java.util.Collections.unmodifiableMap(result);
     } catch (Exception ex) {
       log.error(
@@ -180,6 +220,98 @@ public class IrisCommunicationMaterializationContextProvider
           scope.experiment() == null ? null : scope.experiment().getId(),
           ex);
       return unavailable(sourceReference, "A entrada de comunicação não pôde ser consolidada.");
+    }
+  }
+
+  /** Expõe somente a última comunicação concluída sem incluí-la no hash da própria entrada. */
+  private List<Map<String, Object>> initialCommunicationArtifacts(String sourceReference) {
+    var latest =
+        tasks
+            .findFunctionalSnapshots(
+                sourceReference, java.util.Set.of("pde-communication-sales-journey"), null)
+            .stream()
+            .filter(
+                task ->
+                    "communicationContract".equals(task.processActivityId())
+                        && "communication-director".equals(task.agentKey()))
+            .max(java.util.Comparator.comparing(task -> task.id()));
+    if (latest.isEmpty() || !"COMPLETED".equals(latest.get().status())) return List.of();
+    try {
+      return List.of(
+          functionalArtifact(latest.get(), objectMapper.readTree(latest.get().resultJson())));
+    } catch (Exception ex) {
+      log.warn(
+          "Comunicação inicial concluída possui resultado inválido. taskId={} sourceReference={}",
+          latest.get().id(),
+          sourceReference,
+          ex);
+      return List.of();
+    }
+  }
+
+  /**
+   * Reutiliza somente a versão e as capturas do último gate multiagente vigente do mesmo produto.
+   */
+  private Optional<InitialProductProof> initialProductProof(
+      Product product, String targetSourceReference) {
+    if (privateProducts == null || product == null || product.getId() == null) {
+      return Optional.empty();
+    }
+    String proofSourceReference = "product:" + product.getId() + "@agent-validation-v1";
+    try {
+      JsonNode input =
+          objectMapper.valueToTree(privateProducts.resolve(proofSourceReference).orElse(Map.of()));
+      String version = input.path("prototypeVersion").asText();
+      JsonNode acceptance = input.path("privatePrototypeAcceptance");
+      JsonNode destination = input.path("approvedDestination");
+      JsonNode gate = input.path("validationGate");
+      long gateInstanceId = input.path("gateInstanceId").asLong();
+      if (!"AVAILABLE".equals(input.path("availability").asText())
+          || !"READY".equals(input.path("inputReadiness").asText())
+          || !IrisPrivateProductContext.MODE.equals(input.path("mode").asText())
+          || product.getId() != input.path("product").path("id").asLong()
+          || version.isBlank()
+          || !version.equals(acceptance.path("prototypeVersion").asText())
+          || !version.equals(destination.path("prototypeVersion").asText())
+          || destination.path("url").asText().isBlank()
+          || !gate.isObject()
+          || gate.isEmpty()
+          || gateInstanceId < 1) {
+        return Optional.empty();
+      }
+      List<JsonNode> visualArtifacts = new java.util.ArrayList<>();
+      for (JsonNode artifact : input.path("approvedUpstreamArtifacts")) {
+        JsonNode proof = artifact.path("result");
+        if ("technicalHomologation".equals(artifact.path("activityId").asText())
+            && "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1".equals(proof.path("contractVersion").asText())
+            && "APPROVED".equals(proof.path("decision").asText())
+            && proofSourceReference.equals(proof.path("sourceReference").asText())
+            && product.getId() == proof.path("productId").asLong()
+            && version.equals(proof.path("prototypeVersion").asText())
+            && destination.path("url").asText().equals(proof.path("publicUrl").asText())
+            && proof.path("artifacts").isArray()
+            && !proof.path("artifacts").isEmpty()) {
+          visualArtifacts.add(artifact.deepCopy());
+        }
+      }
+      if (visualArtifacts.isEmpty()) return Optional.empty();
+      return Optional.of(
+          new InitialProductProof(
+              proofSourceReference,
+              version,
+              acceptance.deepCopy(),
+              destination.deepCopy(),
+              List.copyOf(visualArtifacts),
+              gate.deepCopy(),
+              gateInstanceId,
+              input.path("discoveryLineage").deepCopy()));
+    } catch (RuntimeException ex) {
+      log.warn(
+          "Prova visual vigente indisponível para o experimento inicial. productId={} sourceReference={}",
+          product.getId(),
+          targetSourceReference,
+          ex);
+      return Optional.empty();
     }
   }
 
@@ -519,4 +651,15 @@ public class IrisCommunicationMaterializationContextProvider
       Map<String, Object> strategyReference,
       List<Map<String, Object>> artifacts,
       List<String> missingPredecessors) {}
+
+  /** Agrupa a versão vigente e as capturas que o gate do produto autorizou reutilizar. */
+  private record InitialProductProof(
+      String proofSourceReference,
+      String prototypeVersion,
+      JsonNode privatePrototypeAcceptance,
+      JsonNode approvedDestination,
+      List<JsonNode> visualArtifacts,
+      JsonNode validationGate,
+      long gateInstanceId,
+      JsonNode discoveryLineage) {}
 }

@@ -16,15 +16,22 @@ import org.springframework.stereotype.Service;
 
 /** Responsabilidade: alinhar o gate operacional da tela aos contratos exigidos por Íris. */
 @Service
+@lombok.extern.slf4j.Slf4j
 public class IrisProductProcessActivityReadinessProvider
     implements AgentProductProcessActivityReadinessProvider {
   private static final String PROCESS_CODE = "pde-communication-sales-journey";
   private static final String ACTIVITY_ID = "communicationContract";
+  private static final com.fasterxml.jackson.databind.ObjectMapper JSON =
+      new com.fasterxml.jackson.databind.ObjectMapper();
   private final MarketStrategicContextProvider marketStrategy;
   private final CommunicationMaterializationContextProvider communicationContext;
 
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.repository.jpa.agenttask.AgentTaskRepository tasks;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository
+      instances;
 
   /** Configura os mesmos contextos estratégicos e funcionais entregues ao worker de Íris. */
   public IrisProductProcessActivityReadinessProvider(
@@ -40,6 +47,8 @@ public class IrisProductProcessActivityReadinessProvider
       BusinessProcessDefinition process, BusinessProcessActivityDefinition activityDefinition) {
     return (PROCESS_CODE.equals(process.getProcessCode())
             && ACTIVITY_ID.equals(activityDefinition.getActivityId()))
+        || ("creative-production-approval".equals(process.getProcessCode())
+            && "route".equals(activityDefinition.getActivityId()))
         || ("landing-page-generation".equals(process.getProcessCode())
             && java.util.Set.of("select", "strategy", "compose", "html")
                 .contains(activityDefinition.getActivityId()));
@@ -112,15 +121,22 @@ public class IrisProductProcessActivityReadinessProvider
       BusinessProcessActivityDefinition activity,
       Product product,
       String reference) {
-    if (tasks == null
-        || !IrisPrivateProductContext.supports(reference)
-        || !ACTIVITY_ID.equals(activity.getActivityId())) return false;
+    if ("creative-production-approval".equals(process.getProcessCode())
+        && "route".equals(activity.getActivityId())) {
+      return creativeRouteInputChanged(activity, reference);
+    }
+    if (tasks == null || !ACTIVITY_ID.equals(activity.getActivityId())) return false;
+    var context = communicationContext.resolve(reference).orElse(Map.of());
+    if (IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE.equals(
+        context.get("mode"))) {
+      return initialExperimentInputChanged(process, reference, context);
+    }
+    if (!IrisPrivateProductContext.supports(reference)) return false;
     var latest =
         tasks.findFunctionalSnapshotsByProcessSince(process.getId(), reference, null).stream()
             .filter(t -> ACTIVITY_ID.equals(t.processActivityId()))
             .max(java.util.Comparator.comparing(t -> t.id()));
     if (latest.isEmpty() || !"COMPLETED".equals(latest.get().status())) return false;
-    var context = communicationContext.resolve(reference).orElse(Map.of());
     if (!"READY".equals(context.get("inputReadiness"))) return true;
     Object artifacts = context.get("communicationArtifacts");
     return !(artifacts instanceof Collection<?> values)
@@ -129,6 +145,75 @@ public class IrisProductProcessActivityReadinessProvider
                 value ->
                     value instanceof Map<?, ?> artifact
                         && latest.get().id().equals(artifact.get("taskId")));
+  }
+
+  /** Reabre a resolução de formatos quando Íris conclui um contrato de comunicação mais novo. */
+  private boolean creativeRouteInputChanged(
+      BusinessProcessActivityDefinition activity, String reference) {
+    if (tasks == null || instances == null) return false;
+    var latestRoute =
+        instances.findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            activity.getId(), reference);
+    if (latestRoute
+        .filter(
+            instance -> "COMPLETED".equals(instance.getStatus()) && instance.isObjectiveAchieved())
+        .isEmpty()) return false;
+    var latestCommunication =
+        tasks
+            .findFunctionalSnapshots(
+                reference, java.util.Set.of("pde-communication-sales-journey"), null)
+            .stream()
+            .filter(
+                task ->
+                    "communicationContract".equals(task.processActivityId())
+                        && "communication-director".equals(task.agentKey()))
+            .max(java.util.Comparator.comparing(task -> task.id()));
+    if (latestCommunication.isEmpty() || !"COMPLETED".equals(latestCommunication.get().status()))
+      return true;
+    try {
+      long routedTaskId =
+          JSON.readTree(latestRoute.orElseThrow().getObjectiveEvidenceJson())
+              .path("communicationTaskId")
+              .asLong();
+      return routedTaskId != latestCommunication.get().id();
+    } catch (Exception ex) {
+      log.warn(
+          "Rota criativa concluída possui prova inválida. activityDefinitionId={} sourceReference={}",
+          activity.getId(),
+          reference,
+          ex);
+      return true;
+    }
+  }
+
+  /** Reabre o contrato quando a versão ou a autorização visual mudou desde a última conclusão. */
+  private boolean initialExperimentInputChanged(
+      BusinessProcessDefinition process, String reference, Map<String, Object> context) {
+    String expectedHash = String.valueOf(context.getOrDefault("communicationInputHash", ""));
+    if (!"READY".equals(context.get("inputReadiness")) || !expectedHash.matches("[0-9a-f]{64}"))
+      return true;
+    var latest =
+        tasks.findCompletedActivitySnapshots(
+            process.getId(),
+            reference,
+            ACTIVITY_ID,
+            org.springframework.data.domain.PageRequest.of(0, 1));
+    if (latest.isEmpty() || latest.get(0).evidenceJson() == null) return true;
+    try {
+      String usedHash =
+          JSON.readTree(latest.get(0).evidenceJson())
+              .path("communicationInputReference")
+              .path("communicationInputHash")
+              .asText();
+      return !expectedHash.equals(usedHash);
+    } catch (Exception ex) {
+      log.warn(
+          "Entrada auditada da comunicação inicial está inválida. processDefinitionId={} sourceReference={}",
+          process.getId(),
+          reference,
+          ex);
+      return true;
+    }
   }
 
   /** Verifica se um valor de contrato possui texto útil. */

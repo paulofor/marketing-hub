@@ -135,12 +135,17 @@ public class CreativeVisualEvidenceService {
     String version = input.path("prototypeVersion").asText();
     if (version.isBlank()) version = input.path("product").path("experienceVersion").asText();
     require(!version.isBlank(), "A versão da prova visual não está identificada.");
+    VisualScope scope = visualScope(task, input, version);
     List<VisualInput> output = new ArrayList<>();
-    for (JsonNode artifact : input.path("approvedUpstreamArtifacts")) {
+    for (JsonNode artifact : scope.artifacts()) {
       JsonNode proof = artifact.path("result");
       if (!"APPROVED".equals(proof.path("decision").asText())
           || !version.equals(proof.path("prototypeVersion").asText())
-          || !task.getSourceReference().equals(proof.path("sourceReference").asText())) continue;
+          || !scope.proofSourceReference().equals(proof.path("sourceReference").asText())) continue;
+      if (scope.reauthorized()
+          && (!"PDE_AGENT_TECHNICAL_HOMOLOGATION_V1".equals(proof.path("contractVersion").asText())
+              || scope.productId() != proof.path("productId").asLong()
+              || !scope.publicUrl().equals(proof.path("publicUrl").asText()))) continue;
       long sourceId = artifact.path("taskId").asLong();
       for (JsonNode image : proof.path("artifacts")) {
         long id = image.path("artifactId").asLong();
@@ -158,6 +163,45 @@ public class CreativeVisualEvidenceService {
         !output.isEmpty(),
         "Não há captura aprovada e persistida da versão atual para produzir a imagem.");
     return List.copyOf(output);
+  }
+
+  /**
+   * Confere a autorização explícita para reutilizar no experimento a prova vigente do mesmo
+   * produto.
+   */
+  private VisualScope visualScope(AgentTask task, JsonNode input, String version) {
+    JsonNode authorization = input.path("visualProofAuthorization");
+    if (authorization.isMissingNode() || authorization.isNull()) {
+      return new VisualScope(
+          task.getSourceReference(), input.path("approvedUpstreamArtifacts"), 0, "", false);
+    }
+    require(
+        "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1"
+            .equals(authorization.path("contractVersion").asText()),
+        "A autorização da prova visual não pertence ao contrato vigente.");
+    require(
+        task.getSourceReference().equals(authorization.path("targetSourceReference").asText()),
+        "A autorização visual pertence a outro experimento.");
+    require(
+        version.equals(authorization.path("prototypeVersion").asText()),
+        "A autorização visual pertence a outra versão.");
+    long productId = authorization.path("productId").asLong();
+    require(
+        productId > 0 && productId == input.path("product").path("id").asLong(),
+        "A autorização visual pertence a outro produto.");
+    String proofSourceReference = authorization.path("proofSourceReference").asText();
+    String publicUrl = input.path("approvedDestination").path("url").asText();
+    require(
+        !proofSourceReference.isBlank()
+            && !publicUrl.isBlank()
+            && publicUrl.equals(authorization.path("publicUrl").asText())
+            && authorization.path("gateInstanceId").asLong() > 0,
+        "A autorização visual não identifica gate, origem e destino aprovados.");
+    JsonNode artifacts = input.path("approvedVisualArtifacts");
+    require(
+        artifacts.isArray() && !artifacts.isEmpty(),
+        "A autorização visual não contém capturas aprovadas.");
+    return new VisualScope(proofSourceReference, artifacts, productId, publicUrl, true);
   }
 
   /**
@@ -206,4 +250,12 @@ public class CreativeVisualEvidenceService {
    */
   public record VisualInput(
       Long sourceTaskId, String prototypeVersion, AgentTaskVisualEvidenceResponse evidence) {}
+
+  /** Representa a origem autorizada dos pixels sem alterar o parecer histórico que os produziu. */
+  private record VisualScope(
+      String proofSourceReference,
+      JsonNode artifacts,
+      long productId,
+      String publicUrl,
+      boolean reauthorized) {}
 }

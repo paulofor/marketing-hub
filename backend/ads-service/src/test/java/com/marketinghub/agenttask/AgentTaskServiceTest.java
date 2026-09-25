@@ -3619,6 +3619,54 @@ class AgentTaskServiceTest {
     verify(repository, never()).save(any());
   }
 
+  /** Entrega à Íris a V3 do experimento inicial em vez do envelope V2 legado ausente. */
+  @Test
+  void deliversInitialPrivateExperimentStrategyToIris() throws Exception {
+    var repository = mock(AgentTaskRepository.class);
+    var agents = mock(AgentRepository.class);
+    var iris = agent(9L, "communication-director", "Íris");
+    var process = process("PUBLISHED", "Íris");
+    process.setProcessCode("pde-communication-sales-journey");
+    var task = processTask(910401L, iris, process, "communicationContract", "IN_PROGRESS");
+    task.setSourceReference("experiment:93");
+    when(repository.findById(910401L)).thenReturn(Optional.of(task));
+    var communication = mock(CommunicationMaterializationContextProvider.class);
+    var strategy =
+        Map.<String, Object>of(
+            "availability",
+            "AVAILABLE",
+            "contractVersion",
+            "MARKET_STRATEGY_V3",
+            "contentHash",
+            "b".repeat(64));
+    when(communication.resolve("experiment:93"))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "mode",
+                    "INITIAL_EXPERIMENT_PRIVATE",
+                    "availability",
+                    "AVAILABLE",
+                    "inputReadiness",
+                    "READY",
+                    "marketStrategicContract",
+                    strategy)));
+    var service = service(repository, agents, Clock.systemUTC());
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "communicationMaterializationContextProvider", communication);
+
+    var pending = service.claimedProcessTask("communication-director", 910401L);
+    var context = new ObjectMapper().readTree(pending.processContextJson());
+
+    assertThat(context.path("marketStrategicContract").path("contractVersion").asText())
+        .isEqualTo("MARKET_STRATEGY_V3");
+    assertThat(context.path("marketStrategicContract").path("contentHash").asText())
+        .isEqualTo("b".repeat(64));
+    assertThat(context.path("communicationMaterializationContext").path("mode").asText())
+        .isEqualTo("INITIAL_EXPERIMENT_PRIVATE");
+    verify(repository, never()).save(any());
+  }
+
   /** Monta o serviço com as dependências do vínculo BPM para testes isolados. */
   private AgentTaskService service(
       AgentTaskRepository repository, AgentRepository agents, Clock clock) {

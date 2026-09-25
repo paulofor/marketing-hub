@@ -1,5 +1,6 @@
 package com.marketinghub.communication.v1;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.CommunicationMaterializationContextProvider;
 import com.marketinghub.experiment.Experiment;
@@ -18,6 +19,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -31,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class IrisCommunicationMaterializationContextProvider
     implements CommunicationMaterializationContextProvider {
+  public static final String INITIAL_EXPERIMENT_PRIVATE_MODE = "INITIAL_EXPERIMENT_PRIVATE";
   private static final Logger log =
       LoggerFactory.getLogger(IrisCommunicationMaterializationContextProvider.class);
   private static final Pattern PLAN_REFERENCE =
@@ -120,18 +123,29 @@ public class IrisCommunicationMaterializationContextProvider
         return unavailable(
             sourceReference, "Plano sem experimento e PDE vinculados para comunicação.");
       }
+      Optional<InitialPrivatePlanning> initialPrivatePlanning =
+          initialPrivatePlanning(sourceReference);
       java.util.List<Map<String, Object>> upstreamArtifacts =
-          upstreamArtifacts(scope.plan().getId(), version.versionNumber(), experiment.getId());
+          initialPrivatePlanning
+              .map(InitialPrivatePlanning::artifacts)
+              .orElseGet(
+                  () ->
+                      upstreamArtifacts(
+                          scope.plan().getId(), version.versionNumber(), experiment.getId()));
       java.util.Set<String> upstreamAgentKeys =
           upstreamArtifacts.stream()
               .map(artifact -> String.valueOf(artifact.get("agentKey")))
               .collect(java.util.stream.Collectors.toUnmodifiableSet());
       java.util.List<String> missingPredecessors = new java.util.ArrayList<>();
-      if (!upstreamAgentKeys.contains("financial-agent")) {
-        missingPredecessors.add("Parecer econômico concluído de Plutus");
-      }
-      if (!upstreamAgentKeys.contains("landing-generator")) {
-        missingPredecessors.add("PDE e prova funcional concluídos de Dédalo");
+      if (initialPrivatePlanning.isPresent()) {
+        missingPredecessors.addAll(initialPrivatePlanning.get().missingPredecessors());
+      } else {
+        if (!upstreamAgentKeys.contains("financial-agent")) {
+          missingPredecessors.add("Parecer econômico concluído de Plutus");
+        }
+        if (!upstreamAgentKeys.contains("landing-generator")) {
+          missingPredecessors.add("PDE e prova funcional concluídos de Dédalo");
+        }
       }
       Map<String, Object> result = new LinkedHashMap<>();
       result.put("availability", "AVAILABLE");
@@ -145,6 +159,11 @@ public class IrisCommunicationMaterializationContextProvider
       result.put("product", productContract(product));
       result.put("approvedLandingAssets", landingAssets.payloadForExperiment(experiment.getId()));
       result.put("approvedUpstreamArtifacts", upstreamArtifacts);
+      initialPrivatePlanning.ifPresent(
+          planning -> {
+            result.put("mode", INITIAL_EXPERIMENT_PRIVATE_MODE);
+            result.put("marketStrategicContract", planning.strategyReference());
+          });
       result.put("inputReadiness", missingPredecessors.isEmpty() ? "READY" : "BLOCKED");
       result.put("missingRequiredPredecessors", java.util.List.copyOf(missingPredecessors));
       result.put(
@@ -162,6 +181,114 @@ public class IrisCommunicationMaterializationContextProvider
           ex);
       return unavailable(sourceReference, "A entrada de comunicação não pôde ser consolidada.");
     }
+  }
+
+  /**
+   * Reconhece o planejamento privado V3 da mesma referência sem aceitar tarefas genéricas ou
+   * versões misturadas.
+   */
+  private Optional<InitialPrivatePlanning> initialPrivatePlanning(String sourceReference)
+      throws Exception {
+    Map<String, com.marketinghub.agenttask.AgentTaskFunctionalSnapshot> latest =
+        new LinkedHashMap<>();
+    tasks
+        .findFunctionalSnapshots(
+            sourceReference, java.util.Set.of("pde-commercial-plan-offer"), null)
+        .forEach(
+            task ->
+                latest.merge(
+                    task.processActivityId(),
+                    task,
+                    (left, right) -> right.id() > left.id() ? right : left));
+    var strategyTask = latest.get("marketStrategy");
+    if (strategyTask == null
+        || !"COMPLETED".equals(strategyTask.status())
+        || !"experiment-strategist".equals(strategyTask.agentKey())) return Optional.empty();
+    JsonNode strategyResult = objectMapper.readTree(strategyTask.resultJson());
+    JsonNode strategy = strategyResult.path("marketStrategicContract");
+    if (!"APPROVE".equals(strategyResult.path("decision").asText())
+        || !"MARKET_STRATEGY_V3".equals(strategy.path("contractVersion").asText())
+        || !"READY_FOR_PRIVATE_VALIDATION".equals(strategy.path("status").asText())) {
+      return Optional.empty();
+    }
+
+    List<Map<String, Object>> artifacts = new java.util.ArrayList<>();
+    artifacts.add(functionalArtifact(strategyTask, strategyResult));
+    List<String> missing = new java.util.ArrayList<>();
+    var economicsTask = latest.get("economics");
+    if (validPrivateEconomics(economicsTask, strategyTask.processDefinitionId())) {
+      artifacts.add(
+          functionalArtifact(economicsTask, objectMapper.readTree(economicsTask.resultJson())));
+    } else {
+      missing.add("Parecer econômico privado V1 concluído de Plutus");
+    }
+    var architectureTask = latest.get("productArchitecture");
+    if (validPrivateArchitecture(architectureTask, strategyTask.processDefinitionId())) {
+      artifacts.add(
+          functionalArtifact(
+              architectureTask, objectMapper.readTree(architectureTask.resultJson())));
+    } else {
+      missing.add("Protótipo e harness privados concluídos de Dédalo");
+    }
+    Map<String, Object> strategyReference = new LinkedHashMap<>();
+    strategyReference.put("availability", "AVAILABLE");
+    strategyReference.put("sourceAgent", "ATENA");
+    strategyReference.put("sourceReference", sourceReference);
+    strategyReference.put("strategistTaskId", strategyTask.id());
+    strategyReference.put("contractVersion", "MARKET_STRATEGY_V3");
+    strategyReference.put("contentHash", sha256(strategy.toString()));
+    strategyReference.put("contract", strategy);
+    return Optional.of(
+        new InitialPrivatePlanning(
+            java.util.Collections.unmodifiableMap(strategyReference),
+            List.copyOf(artifacts),
+            List.copyOf(missing)));
+  }
+
+  /** Confirma a economia privada aprovada, sem orçamento ou autorização de gasto comercial. */
+  private boolean validPrivateEconomics(
+      com.marketinghub.agenttask.AgentTaskFunctionalSnapshot task, Long processDefinitionId)
+      throws Exception {
+    if (task == null
+        || !processDefinitionId.equals(task.processDefinitionId())
+        || !"COMPLETED".equals(task.status())
+        || !"financial-agent".equals(task.agentKey())) return false;
+    JsonNode result = objectMapper.readTree(task.resultJson());
+    JsonNode economics = result.path("economics");
+    return "APPROVE".equals(result.path("decision").asText())
+        && "PDE_PRIVATE_ECONOMICS_V1".equals(result.path("contractVersion").asText())
+        && economics.path("commercialSpendAuthorized").isBoolean()
+        && !economics.path("commercialSpendAuthorized").asBoolean()
+        && economics.path("maxBudgetBrl").isNumber()
+        && economics.path("maxBudgetBrl").decimalValue().signum() == 0;
+  }
+
+  /** Confirma que Dédalo aprovou a arquitetura privada na mesma definição do planejamento. */
+  private boolean validPrivateArchitecture(
+      com.marketinghub.agenttask.AgentTaskFunctionalSnapshot task, Long processDefinitionId)
+      throws Exception {
+    if (task == null
+        || !processDefinitionId.equals(task.processDefinitionId())
+        || !"COMPLETED".equals(task.status())
+        || !"landing-generator".equals(task.agentKey())) return false;
+    JsonNode result = objectMapper.readTree(task.resultJson());
+    return "APPROVE".equals(result.path("decision").asText())
+        && result.path("productArchitecture").isObject()
+        && !result.path("productArchitecture").isEmpty();
+  }
+
+  /** Preserva a saída funcional e sua identidade sem carregar prompt ou auditoria técnica. */
+  private Map<String, Object> functionalArtifact(
+      com.marketinghub.agenttask.AgentTaskFunctionalSnapshot task, JsonNode result) {
+    Map<String, Object> artifact = new LinkedHashMap<>();
+    artifact.put("taskId", task.id());
+    artifact.put("processDefinitionId", task.processDefinitionId());
+    artifact.put("processCode", task.processCode());
+    artifact.put("activityId", task.processActivityId());
+    artifact.put("agentKey", task.agentKey());
+    artifact.put("result", result);
+    artifact.put("resultSha256", sha256(task.resultJson()));
+    return java.util.Collections.unmodifiableMap(artifact);
   }
 
   /** Consolida somente artefatos concluídos dos agentes predecessores no mesmo plano e versão. */
@@ -386,4 +513,10 @@ public class IrisCommunicationMaterializationContextProvider
   /** Representa plano, experimento e versão solicitada dentro do mesmo escopo. */
   private record ResolvedScope(
       CommercialPlan plan, Experiment experiment, Integer requestedPlanVersion) {}
+
+  /** Agrupa os três contratos privados e as lacunas ainda pertencentes aos agentes de origem. */
+  private record InitialPrivatePlanning(
+      Map<String, Object> strategyReference,
+      List<Map<String, Object>> artifacts,
+      List<String> missingPredecessors) {}
 }

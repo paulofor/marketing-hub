@@ -43,6 +43,40 @@ class IrisProductProcessActivityReadinessProviderTest {
     assertThat(readiness.reason()).contains("prontos para Íris");
   }
 
+  /**
+   * Libera Íris com V3 quando o primeiro experimento reutiliza o planejamento privado concluído.
+   */
+  @Test
+  void shouldAllowIrisForInitialPrivateExperiment() {
+    var communication = mock(CommunicationMaterializationContextProvider.class);
+    when(communication.resolve("experiment:93"))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "mode",
+                    IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE,
+                    "availability",
+                    "AVAILABLE",
+                    "inputReadiness",
+                    "READY",
+                    "marketStrategicContract",
+                    Map.of(
+                        "availability",
+                        "AVAILABLE",
+                        "contractVersion",
+                        "MARKET_STRATEGY_V3",
+                        "contentHash",
+                        "a".repeat(64)))));
+    var provider =
+        new IrisProductProcessActivityReadinessProvider(
+            MarketStrategicContextProvider.empty(), communication);
+
+    var readiness = provider.readiness(process(), activity(), null, "experiment:93");
+
+    assertThat(readiness.ready()).isTrue();
+    assertThat(readiness.reason()).contains("prontos para Íris");
+  }
+
   /** Expõe o predecessor exato antes de criar uma tarefa que o worker bloquearia. */
   @Test
   void shouldBlockIrisWithExactMissingPredecessor() {

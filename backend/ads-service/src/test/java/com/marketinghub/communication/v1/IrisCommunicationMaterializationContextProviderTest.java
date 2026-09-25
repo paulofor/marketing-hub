@@ -144,6 +144,71 @@ class IrisCommunicationMaterializationContextProviderTest {
     assertThat(fixture.provider().experimentId("experiment:88")).contains(88L);
   }
 
+  /** Reutiliza estratégia, economia e arquitetura privadas do experimento inicial sem legado. */
+  @Test
+  void shouldResolveInitialPrivateExperimentPlanning() {
+    Fixture fixture = fixture(List.of(), false);
+    when(fixture.plans().findByExperimentReference(88L)).thenReturn(List.of(fixture.plan()));
+    when(fixture.tasks().findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:88"))
+        .thenReturn(
+            List.of(
+                privatePlanningTask(496L, "marketStrategy", "experiment-strategist", strategy()),
+                privatePlanningTask(498L, "economics", "financial-agent", economics()),
+                privatePlanningTask(
+                    499L, "productArchitecture", "landing-generator", architecture())));
+    when(fixture
+            .tasks()
+            .findFunctionalSnapshots(
+                "experiment:88", java.util.Set.of("pde-commercial-plan-offer"), null))
+        .thenReturn(
+            List.of(
+                snapshot(496L, "marketStrategy", "experiment-strategist", strategy()),
+                snapshot(498L, "economics", "financial-agent", economics()),
+                snapshot(499L, "productArchitecture", "landing-generator", architecture())));
+
+    Map<String, Object> context = fixture.provider().resolve("experiment:88").orElseThrow();
+
+    assertThat(context)
+        .containsEntry("availability", "AVAILABLE")
+        .containsEntry("inputReadiness", "READY")
+        .containsEntry(
+            "mode",
+            IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE);
+    assertThat(context.get("marketStrategicContract").toString())
+        .contains("MARKET_STRATEGY_V3", "strategistTaskId=496", "contentHash");
+    assertThat(context.get("approvedUpstreamArtifacts").toString())
+        .contains("experiment-strategist", "financial-agent", "landing-generator")
+        .doesNotContain("FINANCIAL_AGENT_EXECUTION");
+  }
+
+  /** Mantém o modo V3 bloqueado quando Plutus ainda não concluiu, sem voltar ao contrato legado. */
+  @Test
+  void shouldExposeMissingInitialPrivateEconomicsWithoutLegacyFallback() {
+    Fixture fixture = fixture(List.of(), true);
+    when(fixture.plans().findByExperimentReference(88L)).thenReturn(List.of(fixture.plan()));
+    when(fixture
+            .tasks()
+            .findFunctionalSnapshots(
+                "experiment:88", java.util.Set.of("pde-commercial-plan-offer"), null))
+        .thenReturn(
+            List.of(
+                snapshot(496L, "marketStrategy", "experiment-strategist", strategy()),
+                snapshot(499L, "productArchitecture", "landing-generator", architecture())));
+
+    Map<String, Object> context = fixture.provider().resolve("experiment:88").orElseThrow();
+
+    assertThat(context)
+        .containsEntry(
+            "mode", IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE)
+        .containsEntry("inputReadiness", "BLOCKED");
+    assertThat(context.get("missingRequiredPredecessors").toString()).contains("Plutus");
+    assertThat(context.get("marketStrategicContract").toString())
+        .contains("MARKET_STRATEGY_V3")
+        .doesNotContain("MARKET_STRATEGY_V2");
+    assertThat(context.get("approvedUpstreamArtifacts").toString())
+        .doesNotContain("FINANCIAL_AGENT_EXECUTION");
+  }
+
   /** Monta as dependências e entidades mínimas de um plano Rigel segregado. */
   private Fixture fixture(List<AgentTask> upstream, boolean financialReady) {
     CommercialPlanRepository plans = mock(CommercialPlanRepository.class);
@@ -200,7 +265,55 @@ class IrisCommunicationMaterializationContextProviderTest {
     IrisCommunicationMaterializationContextProvider provider =
         new IrisCommunicationMaterializationContextProvider(
             plans, versions, assets, tasks, financialExecutions, new ObjectMapper());
-    return new Fixture(provider, plans, plan);
+    return new Fixture(provider, plans, plan, tasks);
+  }
+
+  /** Cria uma tarefa privada com a definição compartilhada do planejamento v8. */
+  private AgentTask privatePlanningTask(
+      Long id, String activityId, String agentKey, String resultJson) {
+    AgentTask task = task(id, agentKey);
+    task.setProcessActivityId(activityId);
+    task.setResultJson(resultJson);
+    task.getProcessDefinition().setId(94L);
+    task.getProcessDefinition().setProcessCode("pde-commercial-plan-offer");
+    task.getProcessDefinition().setVersionNumber(8);
+    return task;
+  }
+
+  /** Projeta a saída funcional mínima usada pelo provedor sem carregar auditoria técnica. */
+  private com.marketinghub.agenttask.AgentTaskFunctionalSnapshot snapshot(
+      Long id, String activityId, String agentKey, String resultJson) {
+    return new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+        id,
+        94L,
+        "pde-commercial-plan-offer",
+        activityId,
+        agentKey,
+        "COMPLETED",
+        Instant.parse("2026-09-25T14:00:00Z"),
+        Instant.parse("2026-09-25T14:05:00Z"),
+        resultJson);
+  }
+
+  /** Monta o Contrato Estratégico de Mercado V3 aprovado por Atena. */
+  private String strategy() {
+    return """
+        {"decision":"APPROVE","marketStrategicContract":{"contractVersion":"MARKET_STRATEGY_V3","status":"READY_FOR_PRIVATE_VALIDATION","privateValidationPlan":{"minimumIndependentReadings":2}}}
+        """;
+  }
+
+  /** Monta a economia privada sem autorização de gasto comercial. */
+  private String economics() {
+    return """
+        {"decision":"APPROVE","contractVersion":"PDE_PRIVATE_ECONOMICS_V1","economics":{"commercialSpendAuthorized":false,"maxBudgetBrl":0}}
+        """;
+  }
+
+  /** Monta a arquitetura privada aprovada por Dédalo. */
+  private String architecture() {
+    return """
+        {"decision":"APPROVE","productArchitecture":{"format":"Wizard progressivo","privatePrototype":{"version":"mira-private-v2"}}}
+        """;
   }
 
   /** Cria um artefato predecessor concluído e atribuído a uma identidade canônica. */
@@ -237,5 +350,6 @@ class IrisCommunicationMaterializationContextProviderTest {
   private record Fixture(
       IrisCommunicationMaterializationContextProvider provider,
       CommercialPlanRepository plans,
-      CommercialPlan plan) {}
+      CommercialPlan plan,
+      AgentTaskRepository tasks) {}
 }

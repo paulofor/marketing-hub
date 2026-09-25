@@ -6578,6 +6578,13 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   campo quando não existe teto anterior e bloqueia antes da primeira mutação quando encontra
   `spend_cap` positivo, em vez de presumir que zero significa remoção. O simulador passou a
   reproduzir a rejeição real e os testes cobrem omissão, bloqueio preventivo e retry parcial.
+- **Segunda recorrência fechada em 25/09/2026:** na retomada #6, a Meta aceitou
+  `daily_budget=2000` na campanha e removeu automaticamente o orçamento próprio do ad set, mas
+  rejeitou o envio redundante de `daily_budget=0` com `100/1885272` (`O orçamento é muito baixo`).
+  O worker agora relê o conjunto depois da migração, bloqueia se ainda houver orçamento próprio e,
+  quando a remoção estiver confirmada, aplica apenas `lifetime_spend_cap`, término e estado. O
+  simulador rejeita qualquer retorno de `daily_budget=0` e cobre também a ausência da remoção
+  automática, mantendo a campanha pausada nos dois cenários.
 
 ## LOOP-QUARTZO-HOMOLOGACAO-EXIGE-SLOT-OPALA — 20/09/2026
 

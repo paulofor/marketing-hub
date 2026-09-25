@@ -117,9 +117,7 @@ public class FacebookCampaignResumptionWorker {
     }
   }
 
-  /**
-   * Aplica a autorização idempotente sem limpar teto por valor zero e compensa falhas com pausa.
-   */
+  /** Aplica a autorização idempotente sem enviar limites nulos e compensa falhas com pausa. */
   public void execute(JsonNode task, String token) {
     String campaignId = task.path("campaignId").asText();
     long requestId = task.path("id").asLong();
@@ -244,11 +242,20 @@ public class FacebookCampaignResumptionWorker {
               Map.of("daily_budget", Long.toString(dailyMinor), "status", "PAUSED"),
               token,
               requestId);
+          JsonNode migratedAdSet =
+              get(
+                  adSetId,
+                  "id,status,effective_status,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time",
+                  token,
+                  requestId);
+          evidence.set("migratedAdSet", migratedAdSet);
+          if (migratedAdSet.path("daily_budget").asLong(0L) != 0L
+              || migratedAdSet.path("lifetime_budget").asLong(0L) != 0L)
+            throw new IllegalStateException(
+                "Meta não removeu o orçamento próprio do conjunto após migrá-lo para a campanha");
           post(
               adSetId,
               Map.of(
-                  "daily_budget",
-                  "0",
                   "lifetime_spend_cap",
                   Long.toString(minor),
                   "end_time",

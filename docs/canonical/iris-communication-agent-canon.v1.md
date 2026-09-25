@@ -299,3 +299,21 @@ os pixels de uma peça com ADJUST bloqueia a materialização antes da revisão 
 
 Confirmação: Mira #412/413 e evento de execução #123, comparados a Vega #406–408.
 Matriz e regressões: `docs/homologacao/mira-criativos-retorno-parecer-v1.md`.
+
+### Cobertura comercial e decisão audiovisual — 2026-09-25
+
+Todo novo `COMMUNICATION_PACKAGE` registra em `messageStrategy`, pelos marcadores canônicos, as
+decisões de desejo reconhecido, primeiro passo fácil, valor antes do compromisso, continuidade paga,
+repetição com margem e uso ou não de vídeo. Os marcadores tornam a cobertura verificável sem
+ampliar o schema nem criar um processo paralelo; cada decisão conserva fonte, evidência e métrica.
+O worker rejeita deterministicamente um pacote concluído que omita qualquer marcador.
+
+Em Instagram Ads, Íris compara peça estática, demonstração curta do produto real e narrativa
+audiovisual. Vídeo escolhido produz somente `audiovisualBrief` para Apolo, com prova, versão, cena,
+legenda, CTA, medição e limites; renderização, custo, aprovação e publicação permanecem em seus
+gates próprios. Vídeo rejeitado usa `null` e registra a causa. Avatar, depoimento, antes/depois ou
+resultado sintético nunca pode ser apresentado como evidência humana.
+
+Em preparação pública, ausência de suporte, reembolso, economia ou outra condição essencial fica
+como bloqueio acionável, sem invenção. A exceção privada permanece: dependências comerciais futuras
+são encaminhadas pelo handoff e não invalidam a prova técnica já homologada.

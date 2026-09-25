@@ -86,3 +86,18 @@ convidada, nenhum contato foi feito e nenhuma compra foi registrada por esse pil
 Essa mudança define o canal executável; não concede verba. O primeiro resultado comercial válido
 será medido por impressão, visita, uso, checkout, compra, entrega e margem atribuídos ao experimento
 pago, com QA, bots e registros diretos históricos fora dos denominadores.
+
+## Comunicação comercial e vídeo — 25/09/2026
+
+A comunicação comercial de Mira deve explicitar os cinco pontos da cadeia: alívio de esforço e
+clareza como desejo reconhecido; primeira ação simples e mobile; demonstração real antes do
+checkout; diferença paga de R$ 49 com entrega, acesso, suporte e reembolso; e aprendizado por
+compras líquidas, CAC, custo integral, reembolso, contribuição e margem. A validação privada e os
+testes de agentes permanecem fora dos denominadores humanos.
+
+Foram comparados cartão estático, avatar/depoimento sintético e demonstração curta da interface
+real com legenda e fallback estático. A terceira alternativa é a candidata preferencial porque
+tangibiliza a redução de esforço sem fabricar pessoa, antes/depois ou resultado. Íris deve produzir
+o briefing auditável; Apolo, Plutus, Psique e Têmis mantêm produção, custo, qualidade e integridade.
+Esta decisão não cria vídeo, campanha nem gasto e pode ser revertida se o briefing ou a economia
+não passar nos gates.

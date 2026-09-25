@@ -41,7 +41,13 @@ class CommunicationAgentCodexRunnerTest {
             "`nextHandoff`")
         .doesNotContain("atividades posteriores em `evidenceGaps`");
     assertThat(prompt.activityPromptPart())
-        .contains("executionStatus=COMPLETED", "gate vigente", "checkout canônico posterior");
+        .contains(
+            "executionStatus=COMPLETED",
+            "gate vigente",
+            "checkout canônico posterior",
+            "[DESEJO_RECONHECIDO]",
+            "[REPETICAO_COM_MARGEM]",
+            "[DECISAO_DE_VIDEO]");
     assertThat(prompt.fullPrompt())
         .startsWith(prompt.agentPromptPart() + "\n\n")
         .contains(json.writeValueAsString(input));
@@ -193,6 +199,24 @@ class CommunicationAgentCodexRunnerTest {
         result, task, CommunicationAgentCodexRunner.contractFor(task));
   }
 
+  /** Rejeita contrato que omite um dos cinco pontos ou deixa a decisão de vídeo implícita. */
+  @Test
+  void shouldRejectCommunicationWithoutCommercialCoverage() throws Exception {
+    Map<String, Object> task =
+        task("pde-communication-sales-journey", "communicationContract", context("READY", true));
+    JsonNode result = result("COMMUNICATION_PACKAGE", "communicationContract", "COMPLETED");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result.path("functionalOutput"))
+        .put("messageStrategy", "Mensagem sem os marcadores obrigatórios.");
+
+    assertThatThrownBy(
+            () ->
+                CommunicationAgentCodexRunner.validate(
+                    result, task, CommunicationAgentCodexRunner.contractFor(task)))
+        .hasMessageContaining("cobertura comercial obrigatória")
+        .hasMessageContaining("[DESEJO_RECONHECIDO]")
+        .hasMessageContaining("[DECISAO_DE_VIDEO]");
+  }
+
   /** Rejeita tentativa de devolver outro contrato estratégico ou concluir sem artefato. */
   @Test
   void shouldRejectChangedStrategyAndEmptyOutput() throws Exception {
@@ -331,7 +355,7 @@ class CommunicationAgentCodexRunnerTest {
           ],
           "chosenAlternative":"A",
           "functionalOutput":{
-            "messageStrategy":"Demonstrar o valor cotidiano do PDE.",
+            "messageStrategy":"[DESEJO_RECONHECIDO] Desejo, fonte e métrica preservados. [PRIMEIRO_PASSO_FACIL] Ação mobile e conclusão mensuráveis. [VALOR_ANTES_DO_COMPROMISSO] Demonstração real separada de compra. [CONTINUIDADE_PAGA] Entregáveis, preço, acesso, suporte e reembolso coerentes. [REPETICAO_COM_MARGEM] Compras líquidas, CAC, custo integral e margem com uma mudança. [DECISAO_DE_VIDEO] Vídeo rejeitado neste caso porque o contrato não o exige; manter prova estática.",
             "copy":{"primaryText":"Experiência simples.","headline":"Valor real","description":"Sem complexidade","ctaText":"Conhecer"},
             "channelBriefings":["Landing e Meta"],
             "staticAssets":[{"type":"SVG","format":"1080x1080","content":"Artefato estruturado","proofReference":"asset:7@v2"}],

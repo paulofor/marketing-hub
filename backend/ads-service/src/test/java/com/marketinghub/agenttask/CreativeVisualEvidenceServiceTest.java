@@ -83,6 +83,111 @@ class CreativeVisualEvidenceServiceTest {
         .hasMessageContaining("não foi persistida");
   }
 
+  /** Reutiliza pixels do gate do produto somente com autorização exata para o experimento. */
+  @Test
+  void acceptsExplicitReauthorizationOfCurrentProductProof() {
+    String proofReference = "product:91010@agent-validation-v1";
+    var proof =
+        Map.ofEntries(
+            Map.entry("contractVersion", "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1"),
+            Map.entry("decision", "APPROVED"),
+            Map.entry("prototypeVersion", "sandbox-v12"),
+            Map.entry("sourceReference", proofReference),
+            Map.entry("productId", 91010L),
+            Map.entry("publicUrl", "https://example.test/private"),
+            Map.entry(
+                "artifacts", List.of(Map.of("artifactId", 910118L, "sha256", "a".repeat(64)))));
+    Map<String, Object> authorized = new LinkedHashMap<>();
+    authorized.put("inputReadiness", "READY");
+    authorized.put("prototypeVersion", "sandbox-v12");
+    authorized.put("product", Map.of("id", 91010L));
+    authorized.put(
+        "approvedDestination",
+        Map.of("url", "https://example.test/private", "prototypeVersion", "sandbox-v12"));
+    authorized.put(
+        "visualProofAuthorization",
+        Map.of(
+            "contractVersion",
+            "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1",
+            "proofSourceReference",
+            proofReference,
+            "targetSourceReference",
+            task.getSourceReference(),
+            "productId",
+            91010L,
+            "prototypeVersion",
+            "sandbox-v12",
+            "gateInstanceId",
+            91002L,
+            "publicUrl",
+            "https://example.test/private"));
+    authorized.put("approvedVisualArtifacts", List.of(Map.of("taskId", 910395L, "result", proof)));
+    when(context.resolve(task.getSourceReference())).thenReturn(Optional.of(authorized));
+
+    assertThat(service.inputs("communication-director", task.getId())).hasSize(1);
+    assertThatCode(() -> service.validateCompletion(task, result())).doesNotThrowAnyException();
+
+    authorized.put(
+        "visualProofAuthorization",
+        Map.of(
+            "contractVersion",
+            "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1",
+            "proofSourceReference",
+            proofReference,
+            "targetSourceReference",
+            "experiment:99999",
+            "productId",
+            91010L,
+            "prototypeVersion",
+            "sandbox-v12",
+            "gateInstanceId",
+            91002L,
+            "publicUrl",
+            "https://example.test/private"));
+    assertThatThrownBy(() -> service.inputs("communication-director", task.getId()))
+        .hasMessageContaining("outro experimento");
+
+    authorized.put(
+        "visualProofAuthorization",
+        Map.of(
+            "contractVersion",
+            "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1",
+            "proofSourceReference",
+            proofReference,
+            "targetSourceReference",
+            task.getSourceReference(),
+            "productId",
+            99999L,
+            "prototypeVersion",
+            "sandbox-v12",
+            "gateInstanceId",
+            91002L,
+            "publicUrl",
+            "https://example.test/private"));
+    assertThatThrownBy(() -> service.inputs("communication-director", task.getId()))
+        .hasMessageContaining("outro produto");
+
+    authorized.put(
+        "visualProofAuthorization",
+        Map.of(
+            "contractVersion",
+            "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1",
+            "proofSourceReference",
+            proofReference,
+            "targetSourceReference",
+            task.getSourceReference(),
+            "productId",
+            91010L,
+            "prototypeVersion",
+            "sandbox-v12",
+            "gateInstanceId",
+            91002L,
+            "publicUrl",
+            "https://example.test/foreign"));
+    assertThatThrownBy(() -> service.inputs("communication-director", task.getId()))
+        .hasMessageContaining("origem e destino");
+  }
+
   /** Mantém o bloqueio para briefing sem arquivo e pacote de outra referência. */
   @Test
   void rejectsBriefOnlyAndCrossProductPayload() throws Exception {

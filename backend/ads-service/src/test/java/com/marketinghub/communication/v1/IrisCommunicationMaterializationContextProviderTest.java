@@ -148,6 +148,12 @@ class IrisCommunicationMaterializationContextProviderTest {
   @Test
   void shouldResolveInitialPrivateExperimentPlanning() {
     Fixture fixture = fixture(List.of(), false);
+    var privateProducts = mock(IrisPrivateProductContext.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        fixture.provider(), "privateProducts", privateProducts);
+    when(privateProducts.resolve("experiment:88")).thenReturn(Optional.empty());
+    when(privateProducts.resolve("product:7@agent-validation-v1"))
+        .thenReturn(Optional.of(privateProductProof()));
     when(fixture.plans().findByExperimentReference(88L)).thenReturn(List.of(fixture.plan()));
     when(fixture.tasks().findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:88"))
         .thenReturn(
@@ -165,6 +171,11 @@ class IrisCommunicationMaterializationContextProviderTest {
                 snapshot(496L, "marketStrategy", "experiment-strategist", strategy()),
                 snapshot(498L, "economics", "financial-agent", economics()),
                 snapshot(499L, "productArchitecture", "landing-generator", architecture())));
+    when(fixture
+            .tasks()
+            .findFunctionalSnapshots(
+                "experiment:88", java.util.Set.of("pde-communication-sales-journey"), null))
+        .thenReturn(List.of(communicationSnapshot(500L)));
 
     Map<String, Object> context = fixture.provider().resolve("experiment:88").orElseThrow();
 
@@ -172,8 +183,21 @@ class IrisCommunicationMaterializationContextProviderTest {
         .containsEntry("availability", "AVAILABLE")
         .containsEntry("inputReadiness", "READY")
         .containsEntry(
-            "mode",
-            IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE);
+            "mode", IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE)
+        .containsEntry("prototypeVersion", "rigel-private-v3")
+        .containsEntry("paymentEnabled", false);
+    assertThat(context.get("communicationInputHash").toString()).matches("[0-9a-f]{64}");
+    assertThat(context.get("approvedDestination").toString())
+        .contains("rigel-private-v3", "https://example.test/rigel-private");
+    assertThat(context.get("visualProofAuthorization").toString())
+        .contains(
+            "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1",
+            "product:7@agent-validation-v1",
+            "experiment:88");
+    assertThat(context.get("approvedVisualArtifacts").toString())
+        .contains("\"artifactId\":95", "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1");
+    assertThat(context.get("communicationArtifacts").toString())
+        .contains("taskId=500", "COMMUNICATION_PACKAGE");
     assertThat(context.get("marketStrategicContract").toString())
         .contains("MARKET_STRATEGY_V3", "strategistTaskId=496", "contentHash");
     assertThat(context.get("approvedUpstreamArtifacts").toString())
@@ -185,6 +209,12 @@ class IrisCommunicationMaterializationContextProviderTest {
   @Test
   void shouldExposeMissingInitialPrivateEconomicsWithoutLegacyFallback() {
     Fixture fixture = fixture(List.of(), true);
+    var privateProducts = mock(IrisPrivateProductContext.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        fixture.provider(), "privateProducts", privateProducts);
+    when(privateProducts.resolve("experiment:88")).thenReturn(Optional.empty());
+    when(privateProducts.resolve("product:7@agent-validation-v1"))
+        .thenReturn(Optional.of(privateProductProof()));
     when(fixture.plans().findByExperimentReference(88L)).thenReturn(List.of(fixture.plan()));
     when(fixture
             .tasks()
@@ -207,6 +237,28 @@ class IrisCommunicationMaterializationContextProviderTest {
         .doesNotContain("MARKET_STRATEGY_V2");
     assertThat(context.get("approvedUpstreamArtifacts").toString())
         .doesNotContain("FINANCIAL_AGENT_EXECUTION");
+  }
+
+  /** Bloqueia o experimento inicial quando a versão vigente não possui pixels homologados. */
+  @Test
+  void shouldBlockInitialExperimentWithoutCurrentProductProof() {
+    Fixture fixture = fixture(List.of(), false);
+    when(fixture.plans().findByExperimentReference(88L)).thenReturn(List.of(fixture.plan()));
+    when(fixture
+            .tasks()
+            .findFunctionalSnapshots(
+                "experiment:88", java.util.Set.of("pde-commercial-plan-offer"), null))
+        .thenReturn(
+            List.of(
+                snapshot(496L, "marketStrategy", "experiment-strategist", strategy()),
+                snapshot(498L, "economics", "financial-agent", economics()),
+                snapshot(499L, "productArchitecture", "landing-generator", architecture())));
+
+    Map<String, Object> context = fixture.provider().resolve("experiment:88").orElseThrow();
+
+    assertThat(context).containsEntry("inputReadiness", "BLOCKED");
+    assertThat(context.get("missingRequiredPredecessors").toString())
+        .contains("Versão vigente e capturas aprovadas");
   }
 
   /** Monta as dependências e entidades mínimas de um plano Rigel segregado. */
@@ -295,6 +347,20 @@ class IrisCommunicationMaterializationContextProviderTest {
         resultJson);
   }
 
+  /** Projeta a comunicação concluída sem torná-la parte do hash da própria entrada. */
+  private com.marketinghub.agenttask.AgentTaskFunctionalSnapshot communicationSnapshot(Long id) {
+    return new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+        id,
+        95L,
+        "pde-communication-sales-journey",
+        "communicationContract",
+        "communication-director",
+        "COMPLETED",
+        Instant.parse("2026-09-25T14:10:00Z"),
+        Instant.parse("2026-09-25T14:15:00Z"),
+        "{\"contractVersion\":\"IRIS_COMMUNICATION_V1\",\"outputType\":\"COMMUNICATION_PACKAGE\"}");
+  }
+
   /** Monta o Contrato Estratégico de Mercado V3 aprovado por Atena. */
   private String strategy() {
     return """
@@ -314,6 +380,44 @@ class IrisCommunicationMaterializationContextProviderTest {
     return """
         {"decision":"APPROVE","productArchitecture":{"format":"Wizard progressivo","privatePrototype":{"version":"mira-private-v2"}}}
         """;
+  }
+
+  /** Monta a prova V3 aprovada do produto que pode ser reautorizada no experimento inicial. */
+  private Map<String, Object> privateProductProof() {
+    Map<String, Object> result = new java.util.LinkedHashMap<>();
+    result.put("availability", "AVAILABLE");
+    result.put("inputReadiness", "READY");
+    result.put("mode", IrisPrivateProductContext.MODE);
+    result.put("product", Map.of("id", 7L));
+    result.put("prototypeVersion", "rigel-private-v3");
+    result.put("privatePrototypeAcceptance", Map.of("prototypeVersion", "rigel-private-v3"));
+    result.put(
+        "approvedDestination",
+        Map.of(
+            "prototypeVersion", "rigel-private-v3", "url", "https://example.test/rigel-private"));
+    result.put("validationGate", Map.of("decision", "APPROVED"));
+    result.put("gateInstanceId", 342L);
+    result.put("discoveryLineage", Map.of("source", "cycle:70"));
+    result.put(
+        "approvedUpstreamArtifacts",
+        List.of(
+            Map.of(
+                "taskId",
+                371L,
+                "activityId",
+                "technicalHomologation",
+                "result",
+                Map.ofEntries(
+                    Map.entry("contractVersion", "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1"),
+                    Map.entry("decision", "APPROVED"),
+                    Map.entry("sourceReference", "product:7@agent-validation-v1"),
+                    Map.entry("productId", 7L),
+                    Map.entry("prototypeVersion", "rigel-private-v3"),
+                    Map.entry("publicUrl", "https://example.test/rigel-private"),
+                    Map.entry(
+                        "artifacts",
+                        List.of(Map.of("artifactId", 95L, "sha256", "a".repeat(64))))))));
+    return result;
   }
 
   /** Cria um artefato predecessor concluído e atribuído a uma identidade canônica. */

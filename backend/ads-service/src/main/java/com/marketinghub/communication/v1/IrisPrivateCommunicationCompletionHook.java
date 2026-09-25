@@ -8,25 +8,38 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * Responsabilidade: impedir aprovação de comunicação privada com entradas substituídas durante a
- * tarefa.
+ * Responsabilidade: impedir aprovação de comunicação privada ou inicial com entradas substituídas
+ * durante a tarefa.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class IrisPrivateCommunicationCompletionHook implements AgentTaskCompletionHook {
-  private final IrisPrivateProductContext context;
+  private final CommunicationMaterializationContextProvider context;
   private final ObjectMapper json;
 
   /** Protege a mensagem privada; a produção visual conserva seu próprio handler de conclusão. */
   @Override
   public boolean supports(AgentTask task) {
-    return IrisPrivateProductContext.supports(task.getSourceReference())
-        && task.getProcessDefinition() != null
+    return task.getProcessDefinition() != null
         && "pde-communication-sales-journey".equals(task.getProcessDefinition().getProcessCode())
         && "communicationContract".equals(task.getProcessActivityId())
         && task.getAssignedAgent() != null
-        && "communication-director".equals(task.getAssignedAgent().getAgentKey());
+        && "communication-director".equals(task.getAssignedAgent().getAgentKey())
+        && (IrisPrivateProductContext.supports(task.getSourceReference())
+            || isInitialExperiment(task.getSourceReference()));
+  }
+
+  /** Distingue o primeiro experimento dos demais contratos comerciais com a mesma referência. */
+  private boolean isInitialExperiment(String sourceReference) {
+    if (sourceReference == null || !sourceReference.matches("experiment:[1-9][0-9]*")) return false;
+    return context
+        .resolve(sourceReference)
+        .map(
+            value ->
+                IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE
+                    .equals(value.get("mode")))
+        .orElse(false);
   }
 
   /**
@@ -42,6 +55,23 @@ public class IrisPrivateCommunicationCompletionHook implements AgentTaskCompleti
       if (!"READY".equals(current.path("inputReadiness").asText()) || !supplied.isObject())
         throw new IllegalArgumentException(
             "A comunicação privada não possui entrada aprovada auditável.");
+      String currentMode = current.path("mode").asText();
+      String suppliedMode = supplied.path("mode").asText();
+      if (IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE.equals(
+              currentMode)
+          || IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE.equals(
+              suppliedMode)) {
+        String currentHash = current.path("communicationInputHash").asText();
+        if (!currentHash.matches("[0-9a-f]{64}")
+            || !currentHash.equals(supplied.path("communicationInputHash").asText())) {
+          throw new IllegalArgumentException(
+              "A versão ou a autorização visual mudou durante a comunicação inicial.");
+        }
+        return CompletionDisposition.COMPLETE;
+      }
+      if (!IrisPrivateProductContext.supports(task.getSourceReference())) {
+        return CompletionDisposition.COMPLETE;
+      }
       for (String key :
           List.of(
               "sourceReference",

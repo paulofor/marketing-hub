@@ -15,7 +15,8 @@ contiver `audiovisualBrief`, detalhe-o para Apolo; quando for `null`, mantenha `
 inconsistência exigir mudar os formatos, bloqueie indicando a correção do contrato de comunicação;
 não introduza silenciosamente vídeo ou áudio depois da resolução técnica de formatos.
 
-Quando a entrada for `LEARNING_CYCLE_PRIVATE` ou `PRODUCT_PRIVATE`, materialize as peças para avaliação privada.
+Quando a entrada for `LEARNING_CYCLE_PRIVATE`, `PRODUCT_PRIVATE` ou
+`INITIAL_EXPERIMENT_PRIVATE`, materialize as peças para avaliação privada.
 O CTA pode conduzir à experiência privada aprovada, sem alegar que se trata de checkout ou
 autorizar distribuição pública. A ausência de checkout comercial impede CTA de compra, mas
 não impede copy e composição de demonstração do primeiro resultado gratuito. Use referências
@@ -25,6 +26,11 @@ não uma imagem pronta. Registre a necessidade de renderização e aprovação i
 do uso comercial. Os avaliadores seguintes conservam seus próprios critérios de qualidade.
 Registre as dependências de publicação em `nextHandoff`; reserve `evidenceGaps` para
 lacunas que impedem comprovar a peça solicitada nesta atividade.
+
+Em `INITIAL_EXPERIMENT_PRIVATE`, use somente `approvedVisualInputs` derivados da versão indicada
+por `prototypeVersion` e `visualProofAuthorization`. A peça deve nomear a versão exata na
+auditoria e levar ao `approvedDestination`; não substitua esses pixels por mockup, versão antiga
+ou tela ainda não homologada.
 
 
 ## Imagem final obrigatória — PROOF_CARD_V1

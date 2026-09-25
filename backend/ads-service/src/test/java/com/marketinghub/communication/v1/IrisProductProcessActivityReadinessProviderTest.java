@@ -112,7 +112,7 @@ class IrisProductProcessActivityReadinessProviderTest {
     assertThat(readiness.reason()).contains("Plutus").doesNotContain("Dédalo");
   }
 
-  /** Reconhece a comunicação e a landing, sem assumir a produção de criativos. */
+  /** Reconhece a comunicação, a rota criativa e a landing sem assumir produção de peças. */
   @Test
   void shouldSupportOnlyIrisCommunicationContract() {
     IrisProductProcessActivityReadinessProvider provider =
@@ -124,6 +124,11 @@ class IrisProductProcessActivityReadinessProviderTest {
     BusinessProcessActivityDefinition anotherActivity = activity();
     anotherActivity.setActivityId("creatives");
     assertThat(provider.supports(process(), anotherActivity)).isFalse();
+    var creative = process();
+    creative.setProcessCode("creative-production-approval");
+    var route = activity();
+    route.setActivityId("route");
+    assertThat(provider.supports(creative, route)).isTrue();
   }
 
   /** Explica o destino privado antes de criar uma tarefa de landing que não pertence ao ciclo. */
@@ -204,6 +209,124 @@ class IrisProductProcessActivityReadinessProviderTest {
     when(communication.resolve(reference))
         .thenReturn(Optional.of(Map.of("inputReadiness", "BLOCKED")));
     assertThat(provider.requiresFreshExecution(process, activity(), null, reference)).isTrue();
+  }
+
+  /** Reabre o experimento inicial quando a versão ou os pixels mudam após a comunicação. */
+  @Test
+  void refreshesInitialCommunicationWhenInputHashChanges() {
+    String reference = "experiment:93";
+    String currentHash = "a".repeat(64);
+    var communication = mock(CommunicationMaterializationContextProvider.class);
+    var repository = mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class);
+    var provider =
+        new IrisProductProcessActivityReadinessProvider(
+            MarketStrategicContextProvider.empty(), communication);
+    org.springframework.test.util.ReflectionTestUtils.setField(provider, "tasks", repository);
+    var process = process();
+    process.setId(900063L);
+    when(communication.resolve(reference))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "mode",
+                    IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE,
+                    "inputReadiness",
+                    "READY",
+                    "communicationInputHash",
+                    currentHash)));
+    when(repository.findCompletedActivitySnapshots(
+            org.mockito.ArgumentMatchers.eq(process.getId()),
+            org.mockito.ArgumentMatchers.eq(reference),
+            org.mockito.ArgumentMatchers.eq("communicationContract"),
+            org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class)))
+        .thenReturn(
+            List.of(
+                new com.marketinghub.agenttask.AgentTaskActivityCompletionSnapshot(
+                    900500L,
+                    "{\"communicationInputReference\":{\"communicationInputHash\":\""
+                        + currentHash
+                        + "\"}}",
+                    "{}")));
+
+    assertThat(provider.requiresFreshExecution(process, activity(), null, reference)).isFalse();
+
+    when(communication.resolve(reference))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "mode",
+                    IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE,
+                    "inputReadiness",
+                    "READY",
+                    "communicationInputHash",
+                    "b".repeat(64))));
+    assertThat(provider.requiresFreshExecution(process, activity(), null, reference)).isTrue();
+  }
+
+  /** Reabre os formatos quando a rota ainda aponta para uma comunicação substituída. */
+  @Test
+  void refreshesCreativeRouteWhenCommunicationChanges() {
+    String reference = "experiment:93";
+    var communication = mock(CommunicationMaterializationContextProvider.class);
+    var tasks = mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class);
+    var instances =
+        mock(
+            com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository
+                .class);
+    var provider =
+        new IrisProductProcessActivityReadinessProvider(
+            MarketStrategicContextProvider.empty(), communication);
+    org.springframework.test.util.ReflectionTestUtils.setField(provider, "tasks", tasks);
+    org.springframework.test.util.ReflectionTestUtils.setField(provider, "instances", instances);
+    var creative = process();
+    creative.setId(900064L);
+    creative.setProcessCode("creative-production-approval");
+    var route = activity();
+    route.setId(900641L);
+    route.setActivityId("route");
+    var routed = new com.marketinghub.agenttask.BusinessProcessActivityInstance();
+    routed.setStatus("COMPLETED");
+    routed.setObjectiveAchieved(true);
+    routed.setObjectiveEvidenceJson("{\"communicationTaskId\":500}");
+    when(instances.findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            route.getId(), reference))
+        .thenReturn(Optional.of(routed));
+    when(tasks.findFunctionalSnapshots(
+            org.mockito.ArgumentMatchers.eq(reference),
+            org.mockito.ArgumentMatchers.eq(java.util.Set.of("pde-communication-sales-journey")),
+            org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(
+            List.of(
+                new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+                    500L,
+                    95L,
+                    "pde-communication-sales-journey",
+                    "communicationContract",
+                    "communication-director",
+                    "COMPLETED",
+                    null,
+                    null,
+                    "{}")));
+
+    assertThat(provider.requiresFreshExecution(creative, route, null, reference)).isFalse();
+
+    when(tasks.findFunctionalSnapshots(
+            org.mockito.ArgumentMatchers.eq(reference),
+            org.mockito.ArgumentMatchers.eq(java.util.Set.of("pde-communication-sales-journey")),
+            org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(
+            List.of(
+                new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+                    502L,
+                    95L,
+                    "pde-communication-sales-journey",
+                    "communicationContract",
+                    "communication-director",
+                    "COMPLETED",
+                    null,
+                    null,
+                    "{}")));
+    assertThat(provider.requiresFreshExecution(creative, route, null, reference)).isTrue();
   }
 
   /** Cria a atividade mínima de materialização do contrato. */

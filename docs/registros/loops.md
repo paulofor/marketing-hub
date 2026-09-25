@@ -7176,3 +7176,21 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Prevenção:** regressões cobrem consolidação dos três artefatos, prontidão do Processo 4 e o
   contexto congelado do worker. Tarefa financeira genérica continua proibida e nenhuma publicação,
   campanha ou gasto é autorizado pelo handoff.
+
+## LOOP-IRIS-EXPERIMENTO-INICIAL-SEM-PROVA-VISUAL-VERSIONADA — 25/09/2026
+
+- **Evidência confirmada:** a tarefa #500 concluiu a comunicação do experimento #93 com o
+  planejamento V3, mas propôs versões privadas antigas; em seguida, a tarefa visual #501 bloqueou
+  antes do modelo porque não recebeu `prototypeVersion`. Mira já possuía a versão
+  `mira-private-v3`, destino público e capturas aprovadas nas tarefas #371–#374.
+- **Causa-raiz:** o handoff inicial preservava estratégia, economia e arquitetura, porém não
+  transportava a identidade nem os pixels do gate vigente do produto. A validação visual só
+  aceitava provas cuja referência fosse idêntica à do experimento, embora a prova legítima tivesse
+  sido produzida na referência canônica do produto.
+- **Alternativas avaliadas:** reutilizar V1 manteria comunicação obsoleta; fabricar V2 criaria
+  prova inexistente; reautorizar explicitamente os pixels V3 do mesmo produto preserva fidelidade e
+  auditoria. A terceira alternativa foi adotada.
+- **Prevenção:** o backend entrega versão, destino, gate, hashes e autorização cruzada tipada; o
+  worker exige a versão exata; mudança material altera `communicationInputHash` e reabre o
+  contrato. Regressões recusam outro produto, experimento, URL ou versão e nenhuma mídia ou gasto é
+  liberado.

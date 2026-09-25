@@ -317,3 +317,21 @@ resultado sintético nunca pode ser apresentado como evidência humana.
 Em preparação pública, ausência de suporte, reembolso, economia ou outra condição essencial fica
 como bloqueio acionável, sem invenção. A exceção privada permanece: dependências comerciais futuras
 são encaminhadas pelo handoff e não invalidam a prova técnica já homologada.
+
+### Primeiro experimento e prova visual vigente — 2026-09-25
+
+No modo `INITIAL_EXPERIMENT_PRIVATE`, o planejamento de Atena, Plutus e Dédalo não substitui a
+versão real já homologada do produto. O backend deve entregar `prototypeVersion`, destino privado,
+aceite, gate e capturas do contrato `PDE_AGENT_TECHNICAL_HOMOLOGATION_V1` vigente. Íris cita a
+versão exata na estratégia e no briefing; não pode propor versão anterior, futura ou mockup.
+
+A reutilização dos pixels entre a referência do produto e a do primeiro experimento exige o
+contrato `COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1`, contendo produto, origem, destino, versão,
+gate e referência-alvo. O arquivo permanece ligado à tarefa, hash e parecer originais. A
+autorização não copia aprovação para outro produto, URL ou versão e não permite publicação,
+cobrança ou mídia.
+
+O `communicationInputHash` cobre planejamento, versão e autorização visual. Mudança material
+reabre `communicationContract`; o callback rejeita resultado produzido sobre entrada substituída.
+Assim, o histórico continua auditável e o pacote atual não conserva silenciosamente uma tela
+obsoleta.

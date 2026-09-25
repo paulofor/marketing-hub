@@ -1,0 +1,18 @@
+{
+  "cardKey": "prova-humana-em-recomendacao-ia",
+  "collection": "neuromarketing",
+  "title": "Credibilidade de creator depende de contexto e vínculo",
+  "finding": "A pesquisa #Publi 2026 do IAB Brasil com Offerwise indica que participantes que acompanham creators valorizam contexto, vínculo e autenticidade, enquanto comunidades menores também têm presença relevante na jornada de descoberta de produtos.",
+  "mechanism": "A credibilidade percebida pode depender de contexto, experiência e transparência comercial, e não apenas do tamanho da audiência.",
+  "commercialApplication": "Em Meta Ads, landing pages e experiências com IA, registrar a origem da prova social, o contexto de uso e eventual relação comercial, comparando formatos de prova com a mesma oferta e mensagem.",
+  "evidenceStrength": "Moderada: survey brasileiro com 1.512 participantes que acompanham creators, com margem de erro reportada de 3 p.p.; autorrelatado e sem teste causal.",
+  "publishedOn": "2026-09-18",
+  "validUntil": "2027-03-18",
+  "experimentHypothesis": "Prova humana contextualizada e transparente pode aumentar a confiança percebida em comparação com prova social genérica baseada apenas em alcance.",
+  "risks": "Não apresentar conteúdo patrocinado como independente, não usar depoimentos sem procedência e não tratar número de seguidores como sinônimo de expertise.",
+  "limits": "Os participantes já acompanham creators; os resultados não demonstram causalidade nem garantem efeito em CTR, CPL ou vendas do Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-25-prova-humana-microcreators-brasil.md",
+  "sourceTitle": "Fonte revisada — Prova humana, microcreators e autenticidade no Brasil",
+  "sourceSha256": "4f8036ba045aeb27e0b5550eaa8c11b26a6c9ea719618e4936ef12330468a87f"
+}

@@ -2314,6 +2314,7 @@ public class AgentTaskService {
     applyModelUsage(task, request.modelUsages());
     requireTerminalExecutionAudit(task, true);
     task.setExecutionError(null);
+    clearBlockerGuidance(task);
     AgentTaskCompletionHook.CompletionDisposition disposition = applyCompletionHooks(task, request);
     if (AgentTaskCompletionHook.CompletionDisposition.DEFERRED.equals(disposition)) {
       task.setUpdatedAt(now);
@@ -2328,11 +2329,27 @@ public class AgentTaskService {
     synchronizeActivityInstance(saved, now);
   }
 
-  /** Reconhece o reenvio exato de uma conclusão já confirmada sem exigir auditoria duplicada. */
+  /** Reconhece o reenvio exato e remove uma orientação de bloqueio superada sem repetir efeitos. */
   private boolean completedCallbackReplay(AgentTask task, CompleteAgentTaskRequest request) {
-    return "COMPLETED".equals(task.getStatus())
-        && Objects.equals(task.getResultJson(), request.resultJson())
-        && Objects.equals(task.getEvidenceJson(), request.evidenceJson());
+    boolean exactReplay =
+        "COMPLETED".equals(task.getStatus())
+            && Objects.equals(task.getResultJson(), request.resultJson())
+            && Objects.equals(task.getEvidenceJson(), request.evidenceJson());
+    if (!exactReplay) return false;
+    if (hasBlockerGuidance(task)) {
+      clearBlockerGuidance(task);
+      task.setUpdatedAt(Instant.now(clock));
+      repository.save(task);
+    }
+    return true;
+  }
+
+  /** Informa se a tarefa ainda expõe uma orientação incompatível com sua conclusão. */
+  private boolean hasBlockerGuidance(AgentTask task) {
+    return trimToNull(task.getBlockerCategory()) != null
+        || trimToNull(task.getBlockerAction()) != null
+        || task.getAuditLinks().stream()
+            .anyMatch(link -> "BLOCKER_HELP".equals(link.getLinkType()));
   }
 
   /** Executa no máximo um efeito especializado antes da mudança final de status. */
@@ -2367,6 +2384,7 @@ public class AgentTaskService {
     requireTerminalExecutionAudit(task, true);
     task.setEvidenceJson(mergeEvidence(task.getEvidenceJson(), technicalEvidenceJson));
     task.setExecutionError(null);
+    clearBlockerGuidance(task);
     task.setStatus("COMPLETED");
     task.setDeliveredAt(now);
     task.setUpdatedAt(now);
@@ -2709,6 +2727,13 @@ public class AgentTaskService {
     task.setBlockerCategory(category);
     task.setBlockerAction(action);
     replaceHelpLinks(task, links);
+  }
+
+  /** Remove a orientação superada quando a mesma tarefa volta a produzir resultado válido. */
+  private void clearBlockerGuidance(AgentTask task) {
+    task.setBlockerCategory(null);
+    task.setBlockerAction(null);
+    replaceHelpLinks(task, List.of());
   }
 
   /** Extrai a mudança pedida pelo parecer e mantém fallback técnico simples. */

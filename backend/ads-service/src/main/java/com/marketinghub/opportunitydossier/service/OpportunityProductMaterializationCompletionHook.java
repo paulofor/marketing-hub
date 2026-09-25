@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 /** Responsabilidade: criar plano e produto planejado após os três gates comerciais aprovados. */
 @Service
 public class OpportunityProductMaterializationCompletionHook implements AgentTaskCompletionHook {
+  private static final int PRODUCT_CLASSIFICATION_MAX_LENGTH = 255;
   private static final Logger log =
       LoggerFactory.getLogger(OpportunityProductMaterializationCompletionHook.class);
   private static final String PROCESS_CODE = "pde-commercial-plan-offer";
@@ -209,8 +210,8 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
             + " Não está publicado nem autorizado para contato, campanha, pagamento ou gasto.");
     product.setSevenDayJourney(objectMapper.writeValueAsString(architecture.path("valueJourney")));
     product.setTargetAudience(firstText(text(strategy, "buyer"), dossier.getTargetAudience()));
-    product.setNiche(text(strategy, "segment"));
-    product.setAvatar(text(strategy, "buyer"));
+    product.setNiche(limit(text(strategy, "segment"), PRODUCT_CLASSIFICATION_MAX_LENGTH));
+    product.setAvatar(limit(text(strategy, "buyer"), PRODUCT_CLASSIFICATION_MAX_LENGTH));
     product.setExplicitPain(firstText(text(strategy, "problem"), dossier.getMainPain()));
     product.setPromise(text(strategy, "desiredOutcome"));
     product.setUniqueMechanism(text(strategy, "valueMechanism"));

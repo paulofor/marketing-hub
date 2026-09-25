@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +22,89 @@ import org.springframework.core.io.ClassPathResource;
 /** Responsabilidade: proteger os contratos BPM de construção do PDE executados por Dédalo. */
 class PdeConstructionBpmTaskConsumerTest {
   private final ObjectMapper json = new ObjectMapper();
+
+  /** Reconhece o parecer preservado que deve ser reenviado antes de qualquer nova inferência. */
+  @Test
+  void restoresCompleteCallbackWithoutModelInput() throws Exception {
+    String result = validProductArchitectureResult();
+    var callback =
+        PdeConstructionBpmTaskConsumer.preservedCallback(
+            json,
+            Map.of("retryResultJson", result, "retryEvidenceJson", "{\"proof\":true}"),
+            new PdeConstructionBpmTaskConsumer.BpmContract(
+                "pde-commercial-plan-offer",
+                "productArchitecture",
+                "prompt",
+                "schema",
+                "v6",
+                "APPROVE"));
+
+    assertThat(callback).isNotNull();
+    assertThat(callback.result().path("decision").asText()).isEqualTo("APPROVE");
+    assertThat(callback.resultJson()).isEqualTo(result);
+    assertThat(callback.evidenceJson()).isEqualTo("{\"proof\":true}");
+  }
+
+  /** Falha antes do modelo quando o backend entrega somente parte do callback preservado. */
+  @Test
+  void rejectsPartialPreservedCallbackBeforeModel() {
+    var contract =
+        new PdeConstructionBpmTaskConsumer.BpmContract(
+            "pde-commercial-plan-offer",
+            "productArchitecture",
+            "prompt",
+            "schema",
+            "v6",
+            "APPROVE");
+
+    assertThatThrownBy(
+            () ->
+                PdeConstructionBpmTaskConsumer.preservedCallback(
+                    json, Map.of("retryResultJson", validProductArchitectureResult()), contract))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("nova inferência");
+  }
+
+  /** Preserva resultado, prova, auditoria e consumo quando apenas o callback inicial falha. */
+  @Test
+  void preservesCompletedInferenceWhenResultCallbackFails() throws Exception {
+    PdeConstructionBpmTaskConsumer consumer = consumer();
+    Map<String, Object> task = productArchitectureTask();
+    JsonNode result = json.readTree(validProductArchitectureResult());
+    var execution =
+        new PdeConstructionBpmTaskConsumer.BpmExecution(
+            result,
+            new PdeConstructionBpmTaskConsumer.TokenUsage(120L, 20L, 40L),
+            "prompt completo",
+            "núcleo",
+            "atividade");
+
+    Map<String, Object> failure =
+        consumer.failureBody(
+            task, new IllegalStateException("500 Internal Server Error"), execution);
+
+    assertThat(failure.get("resultJson")).isEqualTo(json.writeValueAsString(result));
+    assertThat(failure.get("evidenceJson")).asString().contains("product-discovery-cycle:71");
+    assertThat(failure).containsKeys("modelUsages", "executionAudit");
+  }
+
+  /** Torna a segunda falha do mesmo callback terminal sem somar novo uso de modelo. */
+  @Test
+  void blocksSecondCallbackFailureWithoutRepeatedUsage() throws Exception {
+    PdeConstructionBpmTaskConsumer consumer = consumer();
+    Map<String, Object> task = new HashMap<>(productArchitectureTask());
+    task.put("retryResultJson", validProductArchitectureResult());
+    task.put("retryEvidenceJson", "{\"proof\":true}");
+
+    Map<String, Object> failure =
+        consumer.failureBody(task, new IllegalStateException("500 Internal Server Error"), null);
+
+    assertThat(failure.get("error")).asString().startsWith("AUTO_RETRY_CALLBACK_ONCE|");
+    assertThat(failure)
+        .containsEntry("resultJson", validProductArchitectureResult())
+        .containsEntry("evidenceJson", "{\"proof\":true}")
+        .doesNotContainKeys("modelUsages", "executionAudit");
+  }
 
   /** Resolve prompts e schemas específicos sem misturar contratos entre atividades. */
   @Test
@@ -800,6 +884,43 @@ class PdeConstructionBpmTaskConsumerTest {
         }
         """
         .formatted(previousVersion, correctedVersion);
+  }
+
+  /** Cria o consumidor sem acesso externo para validar envelopes de falha e replay. */
+  private PdeConstructionBpmTaskConsumer consumer() {
+    LandingGeneratorAgentProperties properties = new LandingGeneratorAgentProperties();
+    properties.setBackendUrl("http://localhost:1");
+    return new PdeConstructionBpmTaskConsumer(
+        properties, json, mock(AutomaticExecutionControl.class));
+  }
+
+  /** Monta a identidade mínima da tarefa real sem fixar o conteúdo comercial do produto. */
+  private Map<String, Object> productArchitectureTask() {
+    return Map.of(
+        "taskId",
+        493L,
+        "processCode",
+        "pde-commercial-plan-offer",
+        "activityId",
+        "productArchitecture",
+        "sourceReference",
+        "product-discovery-cycle:71");
+  }
+
+  /** Retorna uma arquitetura genérica completa usada para comprovar replay sem inferência. */
+  private String validProductArchitectureResult() {
+    return """
+        {"decision":"APPROVE","rationale":"Arquitetura privada, limitada e auditável.",
+         "selectedApproach":"Experiência guiada com resultado pessoal pronto e verificável.",
+         "alternatives":[{},{},{}],"productArchitecture":{"format":"PDE",
+           "privatePrototype":{"scope":"Uma decisão privada completa.",
+             "simpleInput":"Contexto em linguagem comum.",
+             "readyResult":"Resultado pessoal pronto.","maxValueTimeMinutes":8,
+             "instrumentationEvents":["EXPERIENCE_STARTED","VALUE_MOMENT",
+               "READY_RESULT_USED","PREFERRED_OVER_FREE","CHECKOUT_STARTED"],
+             "checkoutMode":"SIMULATED_NO_CHARGE",
+             "excludedFromPrototype":["Pagamento real"]}}}
+        """;
   }
 
   /** Lê um prompt do classpath com a mesma codificação usada em produção. */

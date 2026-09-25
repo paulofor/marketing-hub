@@ -1897,9 +1897,9 @@ class AgentTaskServiceTest {
     assertThat(recovered.retryEvidenceJson()).isEqualTo(blocked.getEvidenceJson());
   }
 
-  /** Retoma uma vez a candidata bloqueada pelo contrato de checkout corrigido no backend. */
+  /** Não repete inferência quando a falha antiga de callback não preservou o parecer. */
   @Test
-  void retriesCorrectedCheckoutValidationOnlyOnce() {
+  void doesNotRetryCallbackWithoutPreservedPayload() {
     AgentTaskRepository repository = mock(AgentTaskRepository.class);
     AgentRepository agents = mock(AgentRepository.class);
     Agent dedalo = agent(7L, "landing-generator", "Dédalo");
@@ -1910,16 +1910,55 @@ class AgentTaskServiceTest {
     when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
     when(repository.findRetryableCallbackCandidates("landing-generator"))
         .thenReturn(List.of(blocked));
-    when(repository.save(blocked)).thenReturn(blocked);
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask("landing-generator", "landing-page-generation", "html"))
+        .isEmpty();
+    assertThat(blocked.getStatus()).isEqualTo("BLOCKED");
+    verify(repository, never()).save(any());
+  }
 
-    AgentTaskPendingResponse recovered =
-        service(repository, agents, Clock.systemUTC())
-            .claimEligibleProcessTask("landing-generator", "landing-page-generation", "html")
-            .orElseThrow();
+  /** Não entrega callback a executor que ainda não declarou replay sem modelo. */
+  @Test
+  void doesNotRetryPreservedCallbackForUnsupportedAgent() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent atena = agent(5L, "experiment-strategist", "Atena");
+    AgentTask blocked =
+        processTask(31L, atena, process("PUBLISHED", "Atena"), "marketStrategy", "BLOCKED");
+    blocked.setExecutionError("500 : Internal Server Error");
+    blocked.setResultJson("{\"decision\":\"APPROVE\"}");
+    blocked.setEvidenceJson("{\"proof\":true}");
+    when(agents.findByAgentKey("experiment-strategist")).thenReturn(Optional.of(atena));
 
-    assertThat(recovered.taskId()).isEqualTo(30L);
-    assertThat(blocked.getStatus()).isEqualTo("IN_PROGRESS");
-    assertThat(blocked.getExecutionError()).startsWith("AUTO_RETRY_ONCE|");
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask("experiment-strategist"))
+        .isEmpty();
+    verify(repository, never()).findRetryableCallbackCandidates("experiment-strategist");
+    verify(repository, never()).save(any());
+  }
+
+  /** Mantém parecer bloqueante de Psique fora do replay legado que aceita apenas aprovações. */
+  @Test
+  void doesNotRetryUnsupportedCustomerBlockDecision() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(8L, "customer-agent", "Psique");
+    AgentTask blocked =
+        processTask(
+            32L, psique, process("PUBLISHED", "Psique"), "humanExperienceReview", "BLOCKED");
+    blocked.setExecutionError("500 : Internal Server Error");
+    blocked.setResultJson("{\"decision\":\"BLOCKED\"}");
+    blocked.setEvidenceJson("{\"proof\":true}");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findRetryableCallbackCandidates("customer-agent")).thenReturn(List.of(blocked));
+
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask("customer-agent"))
+        .isEmpty();
+    verify(repository, never()).save(any());
   }
 
   /** A filtragem SQL não permite repetir a recuperação nem aceitar erro funcional. */
@@ -1937,6 +1976,8 @@ class AgentTaskServiceTest {
     Agent dedalo = agent(7L, "landing-generator", "Dédalo");
     AgentTask blocked = processTask(30L, dedalo, process("PUBLISHED", "Dédalo"), "html", "BLOCKED");
     blocked.setExecutionError(error);
+    blocked.setResultJson("{\"decision\":\"APPROVED\"}");
+    blocked.setEvidenceJson("{\"proof\":true}");
     when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
     when(repository.findRetryableCallbackCandidates("landing-generator"))
         .thenReturn(List.of(blocked));

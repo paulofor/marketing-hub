@@ -1362,6 +1362,17 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
 
 ## LOOP-AGENT-RUNNING-WITHOUT-PROGRESS — Agentes Codex
 
+- Recorrência Dédalo/ciclo #71, tarefa #493 (2026-09-25): o modelo concluiu a arquitetura,
+  mas o hook tentou gravar o segmento de 263 caracteres em `product.niche`, limitado a 255, e
+  recebeu HTTP 500. O callback de falha descartava o resultado; o backend marcava a falha como
+  transitória e Dédalo executava o mesmo prompt novamente. Foram observadas 25 sessões entre
+  23:39 e 01:30, 763.924 tokens de entrada, 288.768 em cache, 310.703 de saída e custo acumulado
+  de US$ 8,2301912. A correção limita os campos classificatórios no adaptador de materialização,
+  preserva resultado/evidência/consumo após a primeira falha, reenvia o mesmo callback sem modelo
+  e torna a segunda recusa terminal. O backend só recupera payload completo para executores com
+  replay comprovado; ausência de payload ou executor incompatível permanece bloqueada. Testes de
+  backend, hook e worker cobrem o limite e impedem cobrança repetida.
+
 - Fechamento complementar em Psique/Vega #447 (2026-09-18): o callback inicialmente encontrou
   contenção de banco e depois foi recusado porque os ativos comerciais haviam mudado. A recusa
   funcional saía como HTTP 500, era classificada novamente como transitória e o marcador de retry

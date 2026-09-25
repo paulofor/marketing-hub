@@ -139,6 +139,11 @@ public class PdeConstructionBpmTaskConsumer {
       task = claimNext();
       if (task == null) return;
       BpmContract contract = contractFor(task);
+      PreservedCallback callback = preservedCallback(json, task, contract);
+      if (callback != null) {
+        replay(task, contract, callback);
+        return;
+      }
       validateTaskContext(task, contract, json);
       execution = execute(task);
       validate(execution.result(), contract);
@@ -174,6 +179,57 @@ public class PdeConstructionBpmTaskConsumer {
       if (pending != null && !pending.isEmpty()) return pending.get(0);
     }
     return null;
+  }
+
+  /**
+   * Reenvia o resultado já pago para o endpoint terminal correto sem executar o modelo novamente.
+   */
+  private void replay(Map<String, Object> task, BpmContract contract, PreservedCallback callback) {
+    JsonNode result = callback.result();
+    boolean completed = contract.successDecision().equals(result.path("decision").asText());
+    Map<String, Object> body = new HashMap<>();
+    body.put("resultJson", callback.resultJson());
+    body.put("evidenceJson", callback.evidenceJson());
+    if (!completed) {
+      body.put("error", "Dédalo bloqueou a construção: " + result.path("rationale").asText());
+      body.put("blockerGuidance", functionalGuidance(result));
+    }
+    log.info(
+        "Reenviando callback preservado de Dédalo sem nova chamada ao modelo. taskId={} operation={}",
+        taskId(task),
+        completed ? "result" : "failure");
+    backend
+        .post()
+        .uri(
+            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/{operation}",
+            AGENT_KEY,
+            taskId(task),
+            completed ? "result" : "failure")
+        .body(body)
+        .retrieve()
+        .toBodilessEntity();
+  }
+
+  /** Lê o callback preservado e falha fechado quando apenas metade do envelope foi recebida. */
+  static PreservedCallback preservedCallback(
+      ObjectMapper json, Map<String, Object> task, BpmContract contract) throws IOException {
+    String resultJson = normalizedText(task.get("retryResultJson"));
+    String evidenceJson = normalizedText(task.get("retryEvidenceJson"));
+    if (resultJson == null && evidenceJson == null) return null;
+    if (resultJson == null || evidenceJson == null) {
+      throw new IllegalArgumentException(
+          "Callback preservado incompleto; nova inferência de Dédalo foi recusada.");
+    }
+    JsonNode result = json.readTree(resultJson);
+    validate(result, contract);
+    return new PreservedCallback(result, resultJson, evidenceJson);
+  }
+
+  /** Normaliza texto opcional recebido no envelope interno. */
+  private static String normalizedText(Object value) {
+    if (value == null) return null;
+    String original = String.valueOf(value);
+    return original.isBlank() ? null : original;
   }
 
   /** Executa o prompt específico da atividade e preserva os contadores oficiais do Codex. */
@@ -337,26 +393,7 @@ public class PdeConstructionBpmTaskConsumer {
   private void fail(Map<String, Object> task, Exception ex, BpmExecution execution) {
     if (task == null) return;
     try {
-      BpmExecutionException bpm = ex instanceof BpmExecutionException value ? value : null;
-      TokenUsage usage = execution != null ? execution.usage() : bpm == null ? null : bpm.usage();
-      String promptSent =
-          execution != null ? execution.promptSent() : bpm == null ? null : bpm.promptSent();
-      String agentPromptPart =
-          execution != null
-              ? execution.agentPromptPart()
-              : bpm == null ? null : bpm.agentPromptPart();
-      String activityPromptPart =
-          execution != null
-              ? execution.activityPromptPart()
-              : bpm == null ? null : bpm.activityPromptPart();
-      Map<String, Object> body = new HashMap<>();
-      body.put("error", ex.toString());
-      body.put("evidenceJson", evidence(task));
-      putModelUsage(body, usage);
-      if (promptSent != null) {
-        body.put("executionAudit", executionAudit(promptSent, agentPromptPart, activityPromptPart));
-      }
-      body.put("blockerGuidance", technicalGuidance());
+      Map<String, Object> body = failureBody(task, ex, execution);
       backend
           .post()
           .uri(
@@ -370,6 +407,45 @@ public class PdeConstructionBpmTaskConsumer {
       log.error(
           "Falha ao registrar bloqueio da construção do PDE. taskId={}", taskId(task), callbackEx);
     }
+  }
+
+  /**
+   * Monta o bloqueio preservando a saída produzida e tornando a segunda falha de callback terminal.
+   */
+  Map<String, Object> failureBody(Map<String, Object> task, Exception ex, BpmExecution execution)
+      throws IOException {
+    BpmExecutionException bpm = ex instanceof BpmExecutionException value ? value : null;
+    TokenUsage usage = execution != null ? execution.usage() : bpm == null ? null : bpm.usage();
+    String promptSent =
+        execution != null ? execution.promptSent() : bpm == null ? null : bpm.promptSent();
+    String agentPromptPart =
+        execution != null
+            ? execution.agentPromptPart()
+            : bpm == null ? null : bpm.agentPromptPart();
+    String activityPromptPart =
+        execution != null
+            ? execution.activityPromptPart()
+            : bpm == null ? null : bpm.activityPromptPart();
+    Map<String, Object> body = new HashMap<>();
+    String retryResult = normalizedText(task.get("retryResultJson"));
+    String retryEvidence = normalizedText(task.get("retryEvidenceJson"));
+    boolean retryCallback = retryResult != null || retryEvidence != null;
+    body.put("error", retryCallback ? "AUTO_RETRY_CALLBACK_ONCE|" + ex : ex.toString());
+    if (execution != null) {
+      body.put("resultJson", json.writeValueAsString(execution.result()));
+      body.put("evidenceJson", evidence(task));
+    } else if (retryResult != null && retryEvidence != null) {
+      body.put("resultJson", retryResult);
+      body.put("evidenceJson", retryEvidence);
+    } else {
+      body.put("evidenceJson", evidence(task));
+    }
+    putModelUsage(body, usage);
+    if (promptSent != null) {
+      body.put("executionAudit", executionAudit(promptSent, agentPromptPart, activityPromptPart));
+    }
+    body.put("blockerGuidance", technicalGuidance());
+    return body;
   }
 
   /** Monta a auditoria integral da chamada executada por Dédalo. */
@@ -921,6 +997,9 @@ public class PdeConstructionBpmTaskConsumer {
       String promptSent,
       String agentPromptPart,
       String activityPromptPart) {}
+
+  /** Preserva o envelope terminal que deve ser reenviado sem inferência. */
+  record PreservedCallback(JsonNode result, String resultJson, String evidenceJson) {}
 
   /** Representa as duas partes e a composição exata enviada ao modelo. */
   private record PromptComposition(

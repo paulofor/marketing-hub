@@ -54,25 +54,29 @@ public class IrisProductProcessActivityReadinessProvider
       String sourceReference) {
     List<String> missing = new ArrayList<>();
     Map<String, Object> context = communicationContext.resolve(sourceReference).orElse(Map.of());
-    boolean cycle =
+    boolean approvedPrivateDestination =
         Set.of(IrisLearningCycleContext.MODE, IrisPrivateProductContext.MODE)
             .contains(context.getOrDefault("mode", ""));
+    boolean privateStrategy =
+        approvedPrivateDestination
+            || IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE
+                .equals(context.getOrDefault("mode", ""));
     boolean landing = process != null && "landing-page-generation".equals(process.getProcessCode());
-    if (cycle && landing) {
+    if (approvedPrivateDestination && landing) {
       return new AgentProductProcessActivityReadiness(
           false,
           "Esta preparação usa a experiência privada já homologada como destino. Retome o processo de comunicação; uma landing comercial separada não faz parte do contrato aprovado.");
     }
     Map<?, ?> strategy =
-        cycle
+        privateStrategy
             ? (context.get("marketStrategicContract") instanceof Map<?, ?> value ? value : Map.of())
             : marketStrategy.resolve(sourceReference).orElse(Map.of());
     if (!"AVAILABLE".equals(strategy.get("availability"))
-        || !(cycle ? "MARKET_STRATEGY_V3" : "MARKET_STRATEGY_V2")
+        || !(privateStrategy ? "MARKET_STRATEGY_V3" : "MARKET_STRATEGY_V2")
             .equals(strategy.get("contractVersion"))
         || !hasText(strategy.get("contentHash"))) {
       missing.add(
-          cycle
+          privateStrategy
               ? "Contrato Estratégico de Mercado V3 aprovado na origem deste contexto"
               : "Contrato Estratégico de Mercado v2 concluído de Atena");
     }

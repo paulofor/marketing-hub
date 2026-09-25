@@ -7161,3 +7161,18 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Prevenção:** testes unitários cobrem envelope ausente concorrendo com V3, envelope direto
   válido e rejeição de V2; o smoke da imagem comprova que o caso concorrente chega ao modelo uma
   única vez e que falhas pré-modelo terminam pelo callback canônico.
+
+## LOOP-IRIS-EXPERIMENTO-INICIAL-IGNORA-PLANEJAMENTO-V3 — 25/09/2026
+
+- **Evidência confirmada:** Mira concluiu no experimento #93 as tarefas #496 de Atena, #498 de
+  Plutus e #499 de Dédalo, todas na definição 94 v8. Mesmo assim, o Processo 4 exigia o contrato
+  legado `MARKET_STRATEGY_V2` e uma execução financeira externa, mantendo Íris indisponível.
+- **Causa-raiz:** o contexto de comunicação distinguia ciclo sucessor e produto privado validado,
+  mas não o primeiro experimento planejado. As tarefas financeiras privadas eram descartadas e o
+  contexto estratégico V3 não substituía o envelope legado entregue ao worker.
+- **Correção sistêmica:** o backend reconhece o trio privado somente quando referência, definição,
+  agentes, decisões e contratos correspondem; preserva o V3 com hash, aceita a economia V1 apenas
+  sem orçamento ou gasto e entrega a mesma estratégia à prontidão da tela e à fila de Íris.
+- **Prevenção:** regressões cobrem consolidação dos três artefatos, prontidão do Processo 4 e o
+  contexto congelado do worker. Tarefa financeira genérica continua proibida e nenhuma publicação,
+  campanha ou gasto é autorizado pelo handoff.

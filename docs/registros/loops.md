@@ -7194,3 +7194,11 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   worker exige a versão exata; mudança material altera `communicationInputHash` e reabre o
   contrato. Regressões recusam outro produto, experimento, URL ou versão e nenhuma mídia ou gasto é
   liberado.
+- **Recorrência adicional na tarefa #503:** Íris baixou e validou os pixels V3 autorizados, chamou o
+  modelo uma vez e renderizou a peça, mas o upload consultou o alvo comercial vivo do experimento,
+  ainda sem URL pública, em vez da autorização congelada que já estava na própria tarefa. A tarefa
+  terminou bloqueada com custo preservado, sem repetição automática.
+- **Fechamento adicional:** `CREATIVE_RENDER` passa a validar produto, referência-alvo, URL, versão,
+  gate sem pagamento/publicação/campanha e artefato/hashing homologado diretamente no snapshot da
+  tarefa. Um contrato presente e divergente é recusado; o alvo legado é fallback apenas quando o
+  snapshot não existe. Testes cobrem sucesso sem URL comercial e rejeição de pixels de outro alvo.

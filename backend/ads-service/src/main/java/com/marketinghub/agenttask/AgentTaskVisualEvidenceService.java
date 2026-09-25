@@ -1,5 +1,7 @@
 package com.marketinghub.agenttask;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.customeragent.memory.CustomerAgentMemoryProperties;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskVisualEvidenceRepository;
@@ -17,6 +19,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -69,6 +72,7 @@ public class AgentTaskVisualEvidenceService {
   private final AgentTaskRepository taskRepository;
   private final AgentTaskVisualEvidenceRepository evidenceRepository;
   private final AgentTaskTargetContextProvider targetContextProvider;
+  private final ObjectMapper objectMapper;
   private final Clock clock;
 
   /** Inicializa o armazenamento privado com as fontes canônicas de tarefa e configuração. */
@@ -78,13 +82,15 @@ public class AgentTaskVisualEvidenceService {
       @Qualifier("customerAgentMemoryS3Client") S3Client s3,
       AgentTaskRepository taskRepository,
       AgentTaskVisualEvidenceRepository evidenceRepository,
-      AgentTaskTargetContextProvider targetContextProvider) {
+      AgentTaskTargetContextProvider targetContextProvider,
+      ObjectMapper objectMapper) {
     this(
         properties,
         s3,
         taskRepository,
         evidenceRepository,
         targetContextProvider,
+        objectMapper,
         Clock.systemUTC());
   }
 
@@ -95,12 +101,14 @@ public class AgentTaskVisualEvidenceService {
       AgentTaskRepository taskRepository,
       AgentTaskVisualEvidenceRepository evidenceRepository,
       AgentTaskTargetContextProvider targetContextProvider,
+      ObjectMapper objectMapper,
       Clock clock) {
     this.properties = properties;
     this.s3 = s3;
     this.taskRepository = taskRepository;
     this.evidenceRepository = evidenceRepository;
     this.targetContextProvider = targetContextProvider;
+    this.objectMapper = objectMapper;
     this.clock = clock;
   }
 
@@ -291,13 +299,16 @@ public class AgentTaskVisualEvidenceService {
           "A revisão comercial admite somente a experiência e o checkout oficiais.");
     }
     String expectedUrl =
-        targetContextProvider
-            .resolve(task.getSourceReference(), processCode)
-            .map(
-                target ->
-                    commercialReview && pageNumber == 2
-                        ? target.commercialCheckoutUrl()
-                        : target.publicUrl())
+        frozenCreativeTarget(task)
+            .or(
+                () ->
+                    targetContextProvider
+                        .resolve(task.getSourceReference(), processCode)
+                        .map(
+                            target ->
+                                commercialReview && pageNumber == 2
+                                    ? target.commercialCheckoutUrl()
+                                    : target.publicUrl()))
             .filter(value -> !value.isBlank())
             .map(value -> publicUrl(value, "URL congelada da tarefa"))
             .orElseThrow(
@@ -309,6 +320,93 @@ public class AgentTaskVisualEvidenceService {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
           "O snapshot não pertence ao produto e à versão congelados na tarefa.");
+    }
+  }
+
+  /**
+   * Recupera a URL congelada na autorização visual da própria tarefa de Íris, sem consultar um
+   * cadastro comercial mutável depois que a execução começou.
+   */
+  private Optional<String> frozenCreativeTarget(AgentTask task) {
+    if (task.getProcessDefinition() == null
+        || !"creative-production-approval".equals(task.getProcessDefinition().getProcessCode())
+        || !"nonAudiovisual".equals(task.getProcessActivityId())
+        || task.getAssignedAgent() == null
+        || !"communication-director".equals(task.getAssignedAgent().getAgentKey())
+        || task.getEvidenceJson() == null
+        || task.getEvidenceJson().isBlank()) {
+      return Optional.empty();
+    }
+    try {
+      JsonNode input =
+          objectMapper.readTree(task.getEvidenceJson()).path("communicationInputReference");
+      if (!input.isObject()) return Optional.empty();
+      JsonNode authorization = input.path("visualProofAuthorization");
+      JsonNode destination = input.path("approvedDestination");
+      JsonNode gate = input.path("validationGate");
+      String prototypeVersion = authorization.path("prototypeVersion").asText();
+      String authorizedUrl = authorization.path("publicUrl").asText();
+      long productId = authorization.path("productId").asLong();
+      boolean approvedArtifact =
+          java.util.stream.StreamSupport.stream(
+                  input.path("approvedVisualArtifacts").spliterator(), false)
+              .map(item -> item.path("result"))
+              .anyMatch(
+                  result ->
+                      "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1"
+                              .equals(result.path("contractVersion").asText())
+                          && "APPROVED".equals(result.path("decision").asText())
+                          && productId == result.path("productId").asLong()
+                          && prototypeVersion.equals(result.path("prototypeVersion").asText())
+                          && authorizedUrl.equals(result.path("publicUrl").asText())
+                          && authorization
+                              .path("proofSourceReference")
+                              .asText()
+                              .equals(result.path("sourceReference").asText())
+                          && java.util.stream.StreamSupport.stream(
+                                  result.path("artifacts").spliterator(), false)
+                              .anyMatch(
+                                  artifact ->
+                                      authorizedUrl.equals(artifact.path("sourceUrl").asText())
+                                          && artifact.path("artifactId").asLong() > 0
+                                          && artifact.path("sha256").asText().length() == 64));
+      boolean valid =
+          "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1"
+                  .equals(authorization.path("contractVersion").asText())
+              && task.getSourceReference()
+                  .equals(authorization.path("targetSourceReference").asText())
+              && productId > 0
+              && authorization.path("gateInstanceId").asLong() > 0
+              && !prototypeVersion.isBlank()
+              && !authorizedUrl.isBlank()
+              && "PRIVATE_PDE_DESTINATION_V1".equals(destination.path("contractVersion").asText())
+              && prototypeVersion.equals(destination.path("prototypeVersion").asText())
+              && authorizedUrl.equals(destination.path("url").asText())
+              && productId == gate.path("productId").asLong()
+              && prototypeVersion.equals(gate.path("prototypeVersion").asText())
+              && authorizedUrl.equals(gate.path("publicUrl").asText())
+              && !gate.path("paymentEnabled").asBoolean(true)
+              && !gate.path("publicationAuthorized").asBoolean(true)
+              && !gate.path("campaignAuthorized").asBoolean(true)
+              && approvedArtifact;
+      if (!valid) {
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT,
+            "A autorização visual congelada da tarefa não corresponde à prova aprovada.");
+      }
+      return Optional.of(authorizedUrl);
+    } catch (ResponseStatusException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao validar autorização visual congelada. taskId={} sourceReference={} errorType={} errorMessage={}",
+          task.getId(),
+          task.getSourceReference(),
+          ex.getClass().getName(),
+          ex.getMessage(),
+          ex);
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A autorização visual congelada da tarefa está ilegível.", ex);
     }
   }
 

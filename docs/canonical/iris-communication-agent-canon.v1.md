@@ -331,6 +331,13 @@ gate e referência-alvo. O arquivo permanece ligado à tarefa, hash e parecer or
 autorização não copia aprovação para outro produto, URL ou versão e não permite publicação,
 cobrança ou mídia.
 
+A tarefa filha de materialização congela essa autorização em sua própria evidência antes do
+modelo. O upload de `CREATIVE_RENDER` deve validar URL, versão, produto, gate e ao menos um
+artefato/hashing aprovado contra esse snapshot; não pode depender da URL comercial mutável do
+produto ou do experimento. Contrato congelado ausente pode usar o alvo legado somente para tarefas
+anteriores; contrato presente e divergente bloqueia sem fallback. Assim, uma peça produzida depois
+da inferência continua auditável mesmo quando o cadastro comercial ainda não possui destino público.
+
 O `communicationInputHash` cobre planejamento, versão e autorização visual. Mudança material
 reabre `communicationContract`; o callback rejeita resultado produzido sobre entrada substituída.
 Assim, o histórico continua auditável e o pacote atual não conserva silenciosamente uma tela

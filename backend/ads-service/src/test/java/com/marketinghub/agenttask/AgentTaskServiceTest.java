@@ -436,7 +436,6 @@ class AgentTaskServiceTest {
             new ObjectMapper(),
             null,
             Clock.fixed(now, ZoneOffset.UTC));
-
     AgentTaskResponse created =
         service.createByHuman(
             new CreateAgentTaskRequest(
@@ -1864,6 +1863,29 @@ class AgentTaskServiceTest {
             new ObjectMapper(),
             null,
             Clock.fixed(now, ZoneOffset.UTC));
+    var projector = mock(ApolloAudiovisualTaskTargetProjector.class);
+    var projectedTarget =
+        new AgentTaskTargetResponse(
+            "experiment:93",
+            93L,
+            10L,
+            "mira",
+            "Mira",
+            "Mira",
+            "mira-private-v3",
+            null,
+            null,
+            null,
+            null,
+            new BigDecimal("49.00"),
+            new ObjectMapper()
+                .createObjectNode()
+                .set(
+                    "communicationMaterialization",
+                    new ObjectMapper().createObjectNode().put("audiovisualRequired", true)));
+    when(projector.project(eq(orphan), org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(projectedTarget);
+    ReflectionTestUtils.setField(service, "apolloAudiovisualTaskTargetProjector", projector);
 
     AgentTaskPendingResponse recovered =
         service
@@ -1877,12 +1899,21 @@ class AgentTaskServiceTest {
 
     assertThat(recovered.taskId()).isEqualTo(504L);
     assertThat(recovered.processContextJson()).isNull();
+    assertThat(
+            recovered
+                .taskTarget()
+                .pdeContext()
+                .path("communicationMaterialization")
+                .path("audiovisualRequired")
+                .asBoolean())
+        .isTrue();
     assertThat(recovered.researchIntelligence()).isNull();
     assertThat(recovered.catalogPrompt()).isNull();
     assertThat(orphan.getExecutionError())
         .startsWith("DETERMINISTIC_RESOURCE_LEASE_RECOVERY_ONCE|");
     assertThat(orphan.getStatus()).isEqualTo("IN_PROGRESS");
     verify(repository).save(orphan);
+    verify(projector).project(orphan, null);
   }
 
   /** Não reserva trabalho para uma imagem antiga que não declarou o handshake seguro. */

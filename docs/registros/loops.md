@@ -4964,6 +4964,23 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   consumo após dois minutos. Segunda interrupção bloqueia tecnicamente, sem terceira tentativa.
   Testes cobrem payload acima de 256 KB, resposta mínima, imagem antiga sem permissão de claim,
   recuperação única e encerramento da reincidência.
+- **Recorrência de contrato confirmada após a recuperação da #504:** a fila mínima chegou a Apolo,
+  mas o alvo de `experiment:93` não carregava `pdeContext`. Reutilizar
+  `harness.audiovisualRequired=false` também estaria errado: esse campo declara que a entrega de Mira
+  funciona sem vídeo, enquanto `COMMUNICATION_FORMATS_V1` #388 exige a demonstração curta na
+  comunicação. A tarefa terminou `BLOCKED/MISSING_CONTRACT`, com zero tokens, zero provider e custo
+  zero.
+- **Causa-raiz complementar:** a regra de Apolo tratava construção de produto e produção criativa
+  como se compartilhassem a mesma fonte de decisão audiovisual. A rota criativa persistia o
+  booleano correto e a tarefa era criada por ele, mas o contrato especializado transportava somente
+  o alvo genérico do produto.
+- **Correção e prevenção complementares:** o backend projeta para tarefas criativas apenas a última
+  ocorrência concluída de `route` da mesma definição e referência, exigindo
+  `COMMUNICATION_FORMATS_V1`, IDs de origem, booleano real e ausência de autorização de gasto ou
+  publicação. Apolo lê `communicationMaterialization.audiovisualRequired` no fluxo criativo e mantém
+  `harness.audiovisualRequired` apenas na construção. Testes cruzados cobrem produto sem vídeo e
+  comunicação com vídeo, rota histórica, rota incompleta, payload mínimo, auditoria do caminho e
+  bloqueio sem chamada externa.
 
 ## LOOP-HARNESS-HTTPS-GETENT-AAAA-FANTASMA — publicação bloqueada sem registro IPv6 real
 

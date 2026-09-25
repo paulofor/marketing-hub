@@ -105,6 +105,9 @@ class ApolloPdeAudiovisualFlowTest {
         assertThat(callback.getPath()).endsWith("/stage-executions/504/failure");
         assertThat(evidence.path("processCode").asText())
                 .isEqualTo("creative-production-approval");
+        assertThat(evidence.path("contractField").asText())
+                .isEqualTo("taskTarget.pdeContext.communicationMaterialization.audiovisualRequired");
+        assertThat(evidence.path("contractValue").asBoolean()).isTrue();
         assertThat(evidence.path("providerCalls").asInt()).isZero();
     }
 
@@ -171,7 +174,8 @@ class ApolloPdeAudiovisualFlowTest {
                             "productId":10,
                             "productInternalName":"Mira",
                             "experienceVersion":"private-v3",
-                            "pdeContext":{"harness":{"audiovisualRequired":%s}}
+                            "pdeContext":{"contractVersion":"APOLLO_COMMUNICATION_AUDIOVISUAL_INPUT_V1",
+                              "communicationMaterialization":{"audiovisualRequired":%s}}
                           },
                           "processContextJson":"{}"
                         }]

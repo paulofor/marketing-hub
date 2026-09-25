@@ -314,6 +314,12 @@ legenda, CTA, medição e limites; renderização, custo, aprovação e publica�
 gates próprios. Vídeo rejeitado usa `null` e registra a causa. Avatar, depoimento, antes/depois ou
 resultado sintético nunca pode ser apresentado como evidência humana.
 
+Apolo deve consumir a atividade `audiovisual` tanto em `pde-construction-approval` quanto em
+`creative-production-approval`, sempre pelo recurso especializado `video-management-service`. As
+duas filas permanecem filtradas separadamente e alternam prioridade para evitar starvation; tarefa
+de outro processo, atividade ou recurso é recusada. O subprocesso criativo não pode ficar pendente
+apenas porque o consumidor também atende a construção PDE.
+
 Em preparação pública, ausência de suporte, reembolso, economia ou outra condição essencial fica
 como bloqueio acionável, sem invenção. A exceção privada permanece: dependências comerciais futuras
 são encaminhadas pelo handoff e não invalidam a prova técnica já homologada.

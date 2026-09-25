@@ -29,10 +29,12 @@ public class ApolloPdeAudiovisualBackendClient {
             List.of("pde-construction-approval", "creative-production-approval");
     static final String ACTIVITY_ID = "audiovisual";
     static final String EXECUTION_RESOURCE_CODE = "video-management-service";
+    static final String WORKER_CONTRACT = "APOLLO_AUDIOVISUAL_V1";
     static final String PENDING_ENDPOINT =
             "/api/internal/agent-tasks/{agent}/stage-executions/pending"
                     + "?processCode={processCode}&activityId={activityId}"
-                    + "&executionResourceCode={executionResourceCode}";
+                    + "&executionResourceCode={executionResourceCode}"
+                    + "&workerContract={workerContract}";
     static final String RESULT_ENDPOINT =
             "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/result";
     static final String FAILURE_ENDPOINT =
@@ -45,7 +47,7 @@ public class ApolloPdeAudiovisualBackendClient {
     private final VideoManagementProperties properties;
     private final AtomicInteger nextProcessIndex = new AtomicInteger();
 
-    /** Configura o cliente com a mesma URL e autenticação operacional do executor de vídeo. */
+    /** Configura URL, autenticação, timeout e limite de resposta do executor audiovisual. */
     public ApolloPdeAudiovisualBackendClient(
             WebClient.Builder builder, VideoManagementProperties properties) {
         long timeoutMillis = properties.getPdeAudiovisual().getBackendTimeout().toMillis();
@@ -54,6 +56,8 @@ public class ApolloPdeAudiovisualBackendClient {
                 .responseTimeout(properties.getPdeAudiovisual().getBackendTimeout());
         this.backend = builder
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .codecs(configurer -> configurer.defaultCodecs()
+                        .maxInMemorySize(properties.getPdeAudiovisual().getMaxResponseBytes()))
                 .baseUrl(properties.getBackendBaseUrl().toString())
                 .build();
         this.properties = properties;
@@ -87,7 +91,8 @@ public class ApolloPdeAudiovisualBackendClient {
                                     AGENT_KEY,
                                     processCode,
                                     ACTIVITY_ID,
-                                    EXECUTION_RESOURCE_CODE))
+                                    EXECUTION_RESOURCE_CODE,
+                                    WORKER_CONTRACT))
                     .retrieve()
                     .bodyToMono(TASK_LIST_TYPE)
                     .blockOptional()

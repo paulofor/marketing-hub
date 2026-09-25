@@ -63,7 +63,8 @@ class ApolloPdeAudiovisualBackendClientTest {
         assertThat(request.getPath()).isEqualTo(
                 "/api/internal/agent-tasks/videomaker/stage-executions/pending"
                         + "?processCode=pde-construction-approval&activityId=audiovisual"
-                        + "&executionResourceCode=video-management-service");
+                        + "&executionResourceCode=video-management-service"
+                        + "&workerContract=APOLLO_AUDIOVISUAL_V1");
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer internal-test-token");
     }
 
@@ -103,7 +104,8 @@ class ApolloPdeAudiovisualBackendClientTest {
         assertThat(server.takeRequest().getPath()).isEqualTo(
                 "/api/internal/agent-tasks/videomaker/stage-executions/pending"
                         + "?processCode=creative-production-approval&activityId=audiovisual"
-                        + "&executionResourceCode=video-management-service");
+                        + "&executionResourceCode=video-management-service"
+                        + "&workerContract=APOLLO_AUDIOVISUAL_V1");
     }
 
     /** Alterna a primeira fila consultada para uma origem ocupada não bloquear a outra. */
@@ -169,6 +171,35 @@ class ApolloPdeAudiovisualBackendClientTest {
         assertThat(server.getRequestCount()).isEqualTo(1);
     }
 
+    /** Lê defensivamente uma resposta acima do limite padrão sem deixar a lease órfã. */
+    @Test
+    void shouldReadResponseLargerThanDefaultWebClientBuffer() {
+        String oversizedContext = "x".repeat(300_000);
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        [{
+                          "taskId":504,
+                          "agentKey":"videomaker",
+                          "processCode":"creative-production-approval",
+                          "processVersion":1,
+                          "activityId":"audiovisual",
+                          "sourceReference":"experiment:93",
+                          "executionResource":{"resourceCode":"video-management-service"},
+                          "taskTarget":{"productId":10,"pdeContext":{"harness":{"audiovisualRequired":true}}},
+                          "processContextJson":"%s"
+                        }]
+                        """.formatted(oversizedContext)));
+        VideoManagementProperties properties = properties();
+        properties.getPdeAudiovisual().setMaxResponseBytes(512 * 1024);
+
+        ApolloPdeAudiovisualTask task = client(properties).claim();
+
+        assertThat(task.taskId()).isEqualTo(504L);
+        assertThat(task.processContextJson()).hasSize(300_000);
+    }
+
     /** Repete callback transitório cuja transação foi rejeitada antes de concluir a tarefa. */
     @Test
     void shouldRetryTransientResultCallback() throws Exception {
@@ -185,10 +216,20 @@ class ApolloPdeAudiovisualBackendClientTest {
 
     /** Cria o cliente apontado somente para o servidor do teste. */
     private ApolloPdeAudiovisualBackendClient client() {
+        return client(properties());
+    }
+
+    /** Monta as propriedades comuns com autenticação interna simulada. */
+    private VideoManagementProperties properties() {
         VideoManagementProperties properties = new VideoManagementProperties();
         properties.setBackendBaseUrl(URI.create(server.url("/").toString()));
         properties.setAuthToken("internal-test-token");
         properties.getJobs().setBackendCallBackoff(java.time.Duration.ofMillis(1));
+        return properties;
+    }
+
+    /** Cria o cliente apontado para o backend efêmero com limites controlados pelo cenário. */
+    private ApolloPdeAudiovisualBackendClient client(VideoManagementProperties properties) {
         return new ApolloPdeAudiovisualBackendClient(WebClient.builder(), properties);
     }
 
@@ -196,6 +237,7 @@ class ApolloPdeAudiovisualBackendClientTest {
     private String expectedPendingPath() {
         return "/api/internal/agent-tasks/videomaker/stage-executions/pending"
                 + "?processCode=pde-construction-approval&activityId=audiovisual"
-                + "&executionResourceCode=video-management-service";
+                + "&executionResourceCode=video-management-service"
+                + "&workerContract=APOLLO_AUDIOVISUAL_V1";
     }
 }

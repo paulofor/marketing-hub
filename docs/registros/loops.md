@@ -4954,6 +4954,16 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   passa a consultar as duas combinações canônicas separadamente, alternando a prioridade a cada
   polling e recusando qualquer outro processo ou recurso. Testes cobrem a tarefa criativa, o filtro
   exato e a ausência de starvation sem remover os gates de orçamento e autorização do Estúdio.
+- **Recorrência adicional na tarefa #504:** ao alcançar a segunda fila, o backend reservou a tarefa,
+  mas a resposta de 269.292 bytes excedeu o buffer HTTP padrão de 256 KB do worker. A maior parte era
+  contexto histórico que a regra determinística não usa; a conexão falhou depois do commit e deixou
+  a lease `IN_PROGRESS`, sem tokens, custo, saída ou provider. O contrato
+  `APOLLO_AUDIOVISUAL_V1` passa a devolver somente alvo e identidade necessários, com limite de
+  leitura explícito como defesa. O backend não reserva trabalho audiovisual para imagem antiga;
+  apenas um worker que declara esse handshake pode recuperar uma vez uma lease sem auditoria ou
+  consumo após dois minutos. Segunda interrupção bloqueia tecnicamente, sem terceira tentativa.
+  Testes cobrem payload acima de 256 KB, resposta mínima, imagem antiga sem permissão de claim,
+  recuperação única e encerramento da reincidência.
 
 ## LOOP-HARNESS-HTTPS-GETENT-AAAA-FANTASMA — publicação bloqueada sem registro IPv6 real
 

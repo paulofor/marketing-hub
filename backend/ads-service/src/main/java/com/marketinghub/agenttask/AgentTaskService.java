@@ -102,12 +102,21 @@ public class AgentTaskService {
   private static final String CUSTOMER_AGENT_KEY = "customer-agent";
   private static final String COMMUNICATION_AGENT_KEY = "communication-director";
   private static final String LANDING_GENERATOR_AGENT_KEY = "landing-generator";
+  private static final String VIDEO_MAKER_AGENT_KEY = "videomaker";
+  private static final String VIDEO_MANAGEMENT_RESOURCE_CODE = "video-management-service";
+  static final String APOLLO_AUDIOVISUAL_WORKER_CONTRACT = "APOLLO_AUDIOVISUAL_V1";
+  private static final Set<String> APOLLO_AUDIOVISUAL_PROCESS_CODES =
+      Set.of("pde-construction-approval", "creative-production-approval");
   private static final Set<String> CALLBACK_REPLAY_CAPABLE_AGENTS =
       Set.of(CUSTOMER_AGENT_KEY, COMMUNICATION_AGENT_KEY, LANDING_GENERATOR_AGENT_KEY);
   private static final String CUSTOMER_AGENT_TELEMETRY_TYPE = "CUSTOMER_AGENT";
   private static final String ORPHANED_LEASE_RECOVERY_PREFIX = "ORPHANED_LEASE_RECOVERY_ONCE|";
   private static final String ORPHANED_LEASE_EXHAUSTED_PREFIX =
       "ORPHANED_LEASE_RECOVERY_EXHAUSTED|";
+  private static final String DETERMINISTIC_RESOURCE_RECOVERY_PREFIX =
+      "DETERMINISTIC_RESOURCE_LEASE_RECOVERY_ONCE|";
+  private static final String DETERMINISTIC_RESOURCE_EXHAUSTED_PREFIX =
+      "DETERMINISTIC_RESOURCE_LEASE_RECOVERY_EXHAUSTED|";
   private static final Duration ORPHANED_LEASE_GRACE = Duration.ofMinutes(2);
   private static final Pattern PROMPT_PHASE_HEADER =
       Pattern.compile("(?m)^--- ([^\\r\\n]+) ---\\r?$");
@@ -1586,16 +1595,43 @@ public class AgentTaskService {
   @Transactional
   public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(
       String agentKey, String processCode, String activityId, String executionResourceCode) {
+    return claimEligibleProcessTask(agentKey, processCode, activityId, executionResourceCode, null);
+  }
+
+  /** Reserva trabalho usando um contrato versionado que limita contexto e recuperação do worker. */
+  @Transactional
+  public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(
+      String agentKey,
+      String processCode,
+      String activityId,
+      String executionResourceCode,
+      String workerContract) {
     agent(agentKey);
+    boolean apolloAudiovisualContract =
+        validateApolloAudiovisualWorkerContract(
+            agentKey, processCode, activityId, executionResourceCode, workerContract);
+    if (isApolloAudiovisualQueue(agentKey, processCode, activityId, executionResourceCode)
+        && !apolloAudiovisualContract) {
+      return Optional.empty();
+    }
     Optional<AgentTask> replayable =
         replayInterruptedCallback(agentKey, processCode, activityId, executionResourceCode);
-    if (replayable.isPresent()) return Optional.of(pendingResponse(replayable.get()));
+    if (replayable.isPresent())
+      return Optional.of(pendingResponse(replayable.get(), apolloAudiovisualContract));
     Optional<AgentTask> orphaned =
         recoverOrphanedCustomerAgentLease(agentKey, processCode, activityId, executionResourceCode);
-    if (orphaned.isPresent()) return Optional.of(pendingResponse(orphaned.get()));
+    if (orphaned.isPresent())
+      return Optional.of(pendingResponse(orphaned.get(), apolloAudiovisualContract));
+    Optional<AgentTask> deterministicResourceOrphan =
+        recoverOrphanedDeterministicResourceLease(
+            agentKey, processCode, activityId, executionResourceCode, apolloAudiovisualContract);
+    if (deterministicResourceOrphan.isPresent())
+      return Optional.of(
+          pendingResponse(deterministicResourceOrphan.get(), apolloAudiovisualContract));
     Optional<AgentTask> recovered =
         recoverInterruptedCallbackOnce(agentKey, processCode, activityId, executionResourceCode);
-    if (recovered.isPresent()) return Optional.of(pendingResponse(recovered.get()));
+    if (recovered.isPresent())
+      return Optional.of(pendingResponse(recovered.get(), apolloAudiovisualContract));
     for (AgentTask task :
         repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
             agentKey.trim(), "WORK", "PENDING")) {
@@ -1608,9 +1644,126 @@ public class AgentTaskService {
       task.setUpdatedAt(now);
       AgentTask saved = repository.save(task);
       synchronizeActivityInstance(saved, now);
-      return Optional.of(pendingResponse(task));
+      return Optional.of(pendingResponse(task, apolloAudiovisualContract));
     }
     return Optional.empty();
+  }
+
+  /** Valida o handshake que habilita a entrada mínima e a retomada segura de Apolo. */
+  private boolean validateApolloAudiovisualWorkerContract(
+      String agentKey,
+      String processCode,
+      String activityId,
+      String executionResourceCode,
+      String workerContract) {
+    String normalizedContract = trimToNull(workerContract);
+    if (normalizedContract == null) return false;
+    boolean valid =
+        APOLLO_AUDIOVISUAL_WORKER_CONTRACT.equals(normalizedContract)
+            && VIDEO_MAKER_AGENT_KEY.equals(agentKey.trim())
+            && APOLLO_AUDIOVISUAL_PROCESS_CODES.contains(trimToNull(processCode))
+            && "audiovisual".equals(trimToNull(activityId))
+            && VIDEO_MANAGEMENT_RESOURCE_CODE.equals(trimToNull(executionResourceCode));
+    if (!valid) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Contrato versionado do worker incompatível com a fila solicitada.");
+    }
+    return true;
+  }
+
+  /** Reconhece a fila que exige handshake para impedir claims por uma imagem antiga do worker. */
+  private boolean isApolloAudiovisualQueue(
+      String agentKey, String processCode, String activityId, String executionResourceCode) {
+    return VIDEO_MAKER_AGENT_KEY.equals(agentKey.trim())
+        && APOLLO_AUDIOVISUAL_PROCESS_CODES.contains(trimToNull(processCode))
+        && "audiovisual".equals(trimToNull(activityId))
+        && VIDEO_MANAGEMENT_RESOURCE_CODE.equals(trimToNull(executionResourceCode));
+  }
+
+  /**
+   * Reentrega uma única lease determinística de Apolo cuja resposta HTTP não chegou ao worker
+   * versionado, sem liberar modelo ou provider.
+   */
+  private Optional<AgentTask> recoverOrphanedDeterministicResourceLease(
+      String agentKey,
+      String processCode,
+      String activityId,
+      String executionResourceCode,
+      boolean apolloAudiovisualContract) {
+    if (!apolloAudiovisualContract) return Optional.empty();
+    Instant now = Instant.now(clock);
+    List<AgentTask> inProgress =
+        repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            VIDEO_MAKER_AGENT_KEY, "WORK", "IN_PROGRESS");
+    if (inProgress == null) return Optional.empty();
+    for (AgentTask task : inProgress) {
+      if (task.getProcessDefinition() == null
+          || !matchesExecutionContract(task, processCode, activityId, executionResourceCode)) {
+        continue;
+      }
+      if (isRecoveredDeterministicResourceLease(task)) {
+        if (deterministicResourceLeaseIsStale(task, now)) {
+          blockExhaustedDeterministicResourceLease(task, now);
+        }
+        continue;
+      }
+      if (!canRecoverDeterministicResourceLease(task, now)) continue;
+      task.setExecutionError(
+          DETERMINISTIC_RESOURCE_RECOVERY_PREFIX
+              + "A reserva foi persistida, mas o worker não recebeu o contrato antes da interrupção.");
+      task.setUpdatedAt(now);
+      AgentTask saved = repository.save(task);
+      synchronizeActivityInstance(saved, now);
+      return Optional.of(saved);
+    }
+    return Optional.empty();
+  }
+
+  /** Confirma ausência de saída, auditoria, consumo e progresso antes da retomada de custo zero. */
+  private boolean canRecoverDeterministicResourceLease(AgentTask task, Instant now) {
+    if (trimToNull(task.getExecutionError()) != null
+        || trimToNull(task.getResultJson()) != null
+        || trimToNull(task.getEvidenceJson()) != null
+        || trimToNull(task.getExecutionMode()) != null
+        || trimToNull(task.getExecutionModelCode()) != null
+        || trimToNull(task.getExecutionPrompt()) != null
+        || task.getInputTokens() != null
+        || task.getCachedInputTokens() != null
+        || task.getOutputTokens() != null
+        || task.getEstimatedCostUsd() != null
+        || task.getModelUsageUpdatedAt() != null
+        || task.getDeliveredAt() != null) {
+      return false;
+    }
+    return deterministicResourceLeaseIsStale(task, now);
+  }
+
+  /** Reconhece a única retomada já concedida ao contrato determinístico especializado. */
+  private boolean isRecoveredDeterministicResourceLease(AgentTask task) {
+    return task.getExecutionError() != null
+        && task.getExecutionError().startsWith(DETERMINISTIC_RESOURCE_RECOVERY_PREFIX);
+  }
+
+  /** Mede a ausência de progresso pelo instante mais recente persistido na própria lease. */
+  private boolean deterministicResourceLeaseIsStale(AgentTask task, Instant now) {
+    Instant lastProgress = task.getUpdatedAt() == null ? task.getReceivedAt() : task.getUpdatedAt();
+    return lastProgress != null && lastProgress.plus(ORPHANED_LEASE_GRACE).isBefore(now);
+  }
+
+  /** Encerra a segunda interrupção sem oferecer uma terceira retomada ou chamar provider. */
+  private void blockExhaustedDeterministicResourceLease(AgentTask task, Instant now) {
+    String error =
+        DETERMINISTIC_RESOURCE_EXHAUSTED_PREFIX
+            + "Apolo foi interrompido novamente após a única retomada segura; nenhum modelo ou provider foi chamado.";
+    task.setExecutionError(error);
+    ensurePreModelFailureAudit(task, null, null);
+    applyBlockerGuidance(task, null, error, null);
+    requireTerminalExecutionAudit(task, false);
+    task.setStatus("BLOCKED");
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
   }
 
   /**
@@ -1951,12 +2104,19 @@ public class AgentTaskService {
 
   /** Entrega tarefa, pesquisa do executor e versão textual fixada para atividades migradas. */
   private AgentTaskPendingResponse pendingResponse(AgentTask task) {
+    return pendingResponse(task, false);
+  }
+
+  /**
+   * Entrega somente o alvo necessário quando o worker versionado executa uma regra determinística.
+   */
+  private AgentTaskPendingResponse pendingResponse(AgentTask task, boolean targetOnly) {
     BusinessProcessDefinition process = task.getProcessDefinition();
     AgentTaskTargetResponse taskTarget =
         taskTargetContextProvider
             .resolve(task.getSourceReference(), process.getProcessCode())
             .orElse(null);
-    String processContextJson = processContext(task);
+    String processContextJson = targetOnly ? null : processContext(task);
     return new AgentTaskPendingResponse(
         task.getId(),
         task.getAssignedAgent().getAgentKey(),
@@ -1971,7 +2131,7 @@ public class AgentTaskService {
         executionResource(task),
         taskTarget,
         processContextJson,
-        researchIntelligenceService == null
+        targetOnly || researchIntelligenceService == null
             ? null
             : researchIntelligenceService.selectForAgentTask(
                 task.getAssignedAgent().getAgentKey(),
@@ -1982,7 +2142,7 @@ public class AgentTaskService {
                 task.getSourceReference(),
                 processContextJson,
                 String.valueOf(taskTarget)),
-        catalogoVivo == null ? null : catalogoVivo.prompt(task),
+        targetOnly || catalogoVivo == null ? null : catalogoVivo.prompt(task),
         retryResultJson(task),
         retryEvidenceJson(task));
   }

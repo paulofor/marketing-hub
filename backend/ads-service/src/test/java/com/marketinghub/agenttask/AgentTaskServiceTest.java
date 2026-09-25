@@ -1830,6 +1830,135 @@ class AgentTaskServiceTest {
     verify(repository).save(exhausted);
   }
 
+  /** Reentrega uma vez a lease determinística de Apolo somente ao worker versionado. */
+  @Test
+  void recoversStaleApolloLeaseWithMinimalTargetOnlyContract() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessExecutionResourceRepository resources =
+        mock(BusinessProcessExecutionResourceRepository.class);
+    Agent apollo = agent(18L, "videomaker", "Apolo");
+    Instant now = Instant.parse("2026-09-25T19:00:00Z");
+    BusinessProcessDefinition process = process("PUBLISHED", "Apolo");
+    process.setProcessCode("creative-production-approval");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"audiovisual\",\"type\":\"TASK\","
+            + "\"owner\":\"Apolo\",\"executionResourceCode\":\"video-management-service\"}],"
+            + "\"flows\":[]}");
+    AgentTask orphan = processTask(504L, apollo, process, "audiovisual", "IN_PROGRESS");
+    orphan.setReceivedAt(now.minusSeconds(600));
+    orphan.setUpdatedAt(now.minusSeconds(300));
+    when(agents.findByAgentKey("videomaker")).thenReturn(Optional.of(apollo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "videomaker", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(orphan));
+    when(repository.save(orphan)).thenReturn(orphan);
+    when(resources.findByResourceCodeAndActiveTrue("video-management-service"))
+        .thenReturn(Optional.of(videoManagementResource()));
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            agents,
+            mock(BusinessProcessDefinitionRepository.class),
+            resources,
+            new ObjectMapper(),
+            null,
+            Clock.fixed(now, ZoneOffset.UTC));
+
+    AgentTaskPendingResponse recovered =
+        service
+            .claimEligibleProcessTask(
+                "videomaker",
+                "creative-production-approval",
+                "audiovisual",
+                "video-management-service",
+                AgentTaskService.APOLLO_AUDIOVISUAL_WORKER_CONTRACT)
+            .orElseThrow();
+
+    assertThat(recovered.taskId()).isEqualTo(504L);
+    assertThat(recovered.processContextJson()).isNull();
+    assertThat(recovered.researchIntelligence()).isNull();
+    assertThat(recovered.catalogPrompt()).isNull();
+    assertThat(orphan.getExecutionError())
+        .startsWith("DETERMINISTIC_RESOURCE_LEASE_RECOVERY_ONCE|");
+    assertThat(orphan.getStatus()).isEqualTo("IN_PROGRESS");
+    verify(repository).save(orphan);
+  }
+
+  /** Não reserva trabalho para uma imagem antiga que não declarou o handshake seguro. */
+  @Test
+  void doesNotClaimApolloTaskWithoutVersionedWorkerContract() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent apollo = agent(18L, "videomaker", "Apolo");
+    AgentTask pending =
+        processTask(504L, apollo, process("PUBLISHED", "Apolo"), "audiovisual", "PENDING");
+    when(agents.findByAgentKey("videomaker")).thenReturn(Optional.of(apollo));
+
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask(
+                    "videomaker",
+                    "creative-production-approval",
+                    "audiovisual",
+                    "video-management-service"))
+        .isEmpty();
+
+    verify(repository, never())
+        .findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "videomaker", "WORK", "IN_PROGRESS");
+    verify(repository, never())
+        .findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "videomaker", "WORK", "PENDING");
+    assertThat(pending.getExecutionError()).isNull();
+  }
+
+  /** Bloqueia a segunda interrupção determinística em vez de iniciar uma terceira repetição. */
+  @Test
+  void blocksApolloLeaseAfterSingleSafeRecoveryExpires() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent apollo = agent(18L, "videomaker", "Apolo");
+    Instant now = Instant.parse("2026-09-25T20:00:00Z");
+    BusinessProcessDefinition process = process("PUBLISHED", "Apolo");
+    process.setProcessCode("creative-production-approval");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"audiovisual\",\"type\":\"TASK\","
+            + "\"owner\":\"Apolo\",\"executionResourceCode\":\"video-management-service\"}],"
+            + "\"flows\":[]}");
+    AgentTask exhausted = processTask(504L, apollo, process, "audiovisual", "IN_PROGRESS");
+    exhausted.setReceivedAt(now.minusSeconds(900));
+    exhausted.setUpdatedAt(now.minusSeconds(300));
+    exhausted.setExecutionError(
+        "DETERMINISTIC_RESOURCE_LEASE_RECOVERY_ONCE|Primeira retomada interrompida.");
+    when(agents.findByAgentKey("videomaker")).thenReturn(Optional.of(apollo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "videomaker", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(exhausted));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "videomaker", "WORK", "PENDING"))
+        .thenReturn(List.of());
+    when(repository.save(exhausted)).thenReturn(exhausted);
+
+    assertThat(
+            service(repository, agents, Clock.fixed(now, ZoneOffset.UTC))
+                .claimEligibleProcessTask(
+                    "videomaker",
+                    "creative-production-approval",
+                    "audiovisual",
+                    "video-management-service",
+                    AgentTaskService.APOLLO_AUDIOVISUAL_WORKER_CONTRACT))
+        .isEmpty();
+
+    assertThat(exhausted.getStatus()).isEqualTo("BLOCKED");
+    assertThat(exhausted.getExecutionError())
+        .startsWith("DETERMINISTIC_RESOURCE_LEASE_RECOVERY_EXHAUSTED|")
+        .contains("nenhum modelo ou provider");
+    assertThat(exhausted.getBlockerCategory()).isEqualTo("TECHNICAL_FAILURE");
+    assertThat(exhausted.getExecutionMode()).isEqualTo("NOT_STARTED");
+    verify(repository).save(exhausted);
+  }
+
   /** Mantém protegida a segunda tentativa enquanto o heartbeat ainda comprova atividade. */
   @Test
   void preservesRecoveredCustomerAgentLeaseWhileItsHeartbeatIsRecent() {
@@ -3570,6 +3699,19 @@ class AgentTaskServiceTest {
     resource.setResponsibleAgentKey("meta-ad-approver");
     resource.setExecutorReference("themis-image-studio");
     resource.setUsageInstructions("Consumir o endpoint pending do backend.");
+    resource.setActive(true);
+    return resource;
+  }
+
+  /** Monta o recurso especializado de Apolo usado pelo contrato audiovisual mínimo. */
+  private BusinessProcessExecutionResource videoManagementResource() {
+    BusinessProcessExecutionResource resource = new BusinessProcessExecutionResource();
+    resource.setResourceCode("video-management-service");
+    resource.setName("Estúdio de Vídeo de Apolo");
+    resource.setResourceType("CONTAINER");
+    resource.setResponsibleAgentKey("videomaker");
+    resource.setExecutorReference("video-management-service");
+    resource.setUsageInstructions("Consumir a fila audiovisual pelo handshake versionado.");
     resource.setActive(true);
     return resource;
   }

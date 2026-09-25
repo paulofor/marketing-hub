@@ -45,7 +45,9 @@ class StatusControllerTest {
                             java.util.List.of(
                                     "pde-construction-approval", "creative-production-approval"))
                     .containsEntry("activityId", "audiovisual")
-                    .containsEntry("executionResourceCode", "video-management-service");
+                    .containsEntry("executionResourceCode", "video-management-service")
+                    .containsEntry("workerContract", "APOLLO_AUDIOVISUAL_V1")
+                    .containsEntry("maxResponseBytes", 4 * 1024 * 1024);
         } finally {
             Files.deleteIfExists(secret);
             Files.deleteIfExists(directory);

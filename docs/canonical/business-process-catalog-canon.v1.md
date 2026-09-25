@@ -917,7 +917,10 @@ No subprocesso de criativos, `route` resolve formatos usando o último `COMMUNIC
 concluído na referência atual. Ausência de briefing audiovisual significa que esse formato
 condicional não está previsto: o backend persiste `NOT_APPLICABLE`, motivo e tarefa fonte,
 sem alegar produção ou aprovação de vídeo. Leitura, fila e avanço reconhecem a mesma dispensa
-auditável. Havendo briefing, o trabalho de Apolo continua obrigatório.
+auditável. Havendo briefing, o trabalho de Apolo continua obrigatório. A fila especializada recebe
+uma projeção mínima do `COMMUNICATION_FORMATS_V1` da mesma definição, referência e ocorrência de
+`route`; não usa o campo audiovisual do harness de entrega para decidir a comunicação comercial.
+Essa projeção transporta decisão e IDs de origem, sempre com publicação e gasto falsos.
 
 A decisão de 12/09/2026 substitui o disparo individual de atividades automatizáveis na tela do
 produto. Os endpoints de atividade continuam como contratos de domínio usados pelo coordenador;

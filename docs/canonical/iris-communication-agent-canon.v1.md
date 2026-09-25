@@ -320,6 +320,12 @@ duas filas permanecem filtradas separadamente e alternam prioridade para evitar 
 de outro processo, atividade ou recurso é recusada. O subprocesso criativo não pode ficar pendente
 apenas porque o consumidor também atende a construção PDE.
 
+No subprocesso criativo, a necessidade audiovisual vem exclusivamente da atividade determinística
+`route`, que registra `COMMUNICATION_FORMATS_V1` após validar o pacote de Íris. O backend projeta o
+booleano e sua linhagem em `communicationMaterialization`; Apolo não lê o campo homônimo do harness
+de entrega, porque um produto que funciona sem vídeo ainda pode exigir vídeo em sua comunicação.
+Essa projeção não autoriza geração, publicação ou gasto.
+
 Em preparação pública, ausência de suporte, reembolso, economia ou outra condição essencial fica
 como bloqueio acionável, sem invenção. A exceção privada permanece: dependências comerciais futuras
 são encaminhadas pelo handoff e não invalidam a prova técnica já homologada.

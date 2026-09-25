@@ -45,6 +45,37 @@ class ApolloPdeAudiovisualRequirementEvaluatorTest {
         assertThat(decision.recommendedAction()).contains("Estúdio", "Plutus", "autorização humana");
     }
 
+    /** Usa a decisão de formatos da comunicação sem confundi-la com o harness do produto. */
+    @Test
+    void shouldUseCommunicationDecisionForCreativeProduction() throws Exception {
+        JsonNode context = objectMapper.readTree("""
+                {
+                  "harness": {"audiovisualRequired": false},
+                  "communicationMaterialization": {"audiovisualRequired": true}
+                }
+                """);
+        ApolloPdeAudiovisualTask base = task(context);
+        ApolloPdeAudiovisualTask creative = new ApolloPdeAudiovisualTask(
+                504L,
+                base.agentKey(),
+                "creative-production-approval",
+                8,
+                base.activityId(),
+                base.activityName(),
+                base.title(),
+                base.description(),
+                "experiment:93",
+                base.receivedAt(),
+                base.executionResource(),
+                base.taskTarget(),
+                null);
+
+        ApolloPdeAudiovisualDecision decision = evaluator.evaluate(creative);
+
+        assertThat(decision.outcome())
+                .isEqualTo(ApolloPdeAudiovisualDecision.Outcome.REQUIRES_AUTHORIZATION);
+    }
+
     /** Rejeita campo ausente ou textual sem converter ambiguidade em decisão. */
     @Test
     void shouldBlockMissingOrNonBooleanContract() throws Exception {

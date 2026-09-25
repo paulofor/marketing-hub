@@ -169,6 +169,9 @@ public class AgentTaskService {
   @Autowired(required = false)
   private CodexAgentExecutionTelemetryService codexTelemetry;
 
+  @Autowired(required = false)
+  private ApolloAudiovisualTaskTargetProjector apolloAudiovisualTaskTargetProjector;
+
   /** Configura persistência, catálogo e relógio operacional. */
   @Autowired
   public AgentTaskService(
@@ -2116,6 +2119,9 @@ public class AgentTaskService {
         taskTargetContextProvider
             .resolve(task.getSourceReference(), process.getProcessCode())
             .orElse(null);
+    if (targetOnly && apolloAudiovisualTaskTargetProjector != null) {
+      taskTarget = apolloAudiovisualTaskTargetProjector.project(task, taskTarget);
+    }
     String processContextJson = targetOnly ? null : processContext(task);
     return new AgentTaskPendingResponse(
         task.getId(),

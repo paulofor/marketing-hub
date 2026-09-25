@@ -94,12 +94,13 @@ public class ApolloPdeAudiovisualCallbackFactory {
         evidence.put("processVersion", task.processVersion());
         evidence.put("activityId", task.activityId());
         evidence.put("executionResourceCode", "video-management-service");
-        evidence.put("contractField", "taskTarget.pdeContext.harness.audiovisualRequired");
+        String contractField = contractField(task);
+        evidence.put("contractField", contractField);
         if (task.taskTarget() != null && task.taskTarget().pdeContext() != null) {
             putBooleanOrNull(
                     evidence,
                     "contractValue",
-                    task.taskTarget().pdeContext().path("harness").path("audiovisualRequired"));
+                    contractValue(task));
             evidence.put("productId", task.taskTarget().productId());
         } else {
             evidence.putNull("contractValue");
@@ -109,6 +110,23 @@ public class ApolloPdeAudiovisualCallbackFactory {
         evidence.put("creditsConsumed", 0);
         evidence.put("externalSideEffects", false);
         return evidence;
+    }
+
+    /** Informa o caminho auditável conforme a fronteira entre produto e comunicação comercial. */
+    private String contractField(ApolloPdeAudiovisualTask task) {
+        return "creative-production-approval".equals(task.processCode())
+                ? "taskTarget.pdeContext.communicationMaterialization.audiovisualRequired"
+                : "taskTarget.pdeContext.harness.audiovisualRequired";
+    }
+
+    /** Lê o mesmo valor usado pelo avaliador sem converter texto ou campo ausente. */
+    private JsonNode contractValue(ApolloPdeAudiovisualTask task) {
+        return "creative-production-approval".equals(task.processCode())
+                ? task.taskTarget()
+                        .pdeContext()
+                        .path("communicationMaterialization")
+                        .path("audiovisualRequired")
+                : task.taskTarget().pdeContext().path("harness").path("audiovisualRequired");
     }
 
     /** Declara execução determinística com a entrada integral usada na decisão. */

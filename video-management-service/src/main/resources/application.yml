@@ -58,6 +58,7 @@ video:
   pde-audiovisual:
     enabled: ${VIDEO_PDE_AUDIOVISUAL_ENABLED:false}
     backend-timeout: ${VIDEO_PDE_AUDIOVISUAL_BACKEND_TIMEOUT:PT10S}
+    max-response-bytes: ${VIDEO_PDE_AUDIOVISUAL_MAX_RESPONSE_BYTES:4194304}
   providers:
     luma:
       enabled: false

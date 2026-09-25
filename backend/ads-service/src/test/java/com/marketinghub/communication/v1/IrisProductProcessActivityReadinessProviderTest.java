@@ -263,6 +263,52 @@ class IrisProductProcessActivityReadinessProviderTest {
     assertThat(provider.requiresFreshExecution(process, activity(), null, reference)).isTrue();
   }
 
+  /** Preserva a conclusão quando apenas a ordem dos mapas alterou o hash legado após o deploy. */
+  @Test
+  void preservesInitialCommunicationWhenLegacyHashHasEquivalentSemanticInput() {
+    String reference = "experiment:93";
+    var communication = mock(CommunicationMaterializationContextProvider.class);
+    var repository = mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class);
+    var provider =
+        new IrisProductProcessActivityReadinessProvider(
+            MarketStrategicContextProvider.empty(), communication);
+    org.springframework.test.util.ReflectionTestUtils.setField(provider, "tasks", repository);
+    var process = process();
+    process.setId(900063L);
+    when(communication.resolve(reference))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "mode",
+                    IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE,
+                    "inputReadiness",
+                    "READY",
+                    "prototypeVersion",
+                    "mira-private-v3",
+                    "communicationInputHash",
+                    "b".repeat(64),
+                    "communicationArtifacts",
+                    List.of(Map.of("taskId", 502L)))));
+    when(repository.findCompletedActivitySnapshots(
+            org.mockito.ArgumentMatchers.eq(process.getId()),
+            org.mockito.ArgumentMatchers.eq(reference),
+            org.mockito.ArgumentMatchers.eq("communicationContract"),
+            org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class)))
+        .thenReturn(
+            List.of(
+                new com.marketinghub.agenttask.AgentTaskActivityCompletionSnapshot(
+                    502L,
+                    """
+                    {"communicationInputReference":{"prototypeVersion":"mira-private-v3",
+                    "inputReadiness":"READY","mode":"INITIAL_EXPERIMENT_PRIVATE",
+                    "communicationArtifacts":[],
+                    "communicationInputHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}
+                    """,
+                    "{}")));
+
+    assertThat(provider.requiresFreshExecution(process, activity(), null, reference)).isFalse();
+  }
+
   /** Reabre os formatos quando a rota ainda aponta para uma comunicação substituída. */
   @Test
   void refreshesCreativeRouteWhenCommunicationChanges() {

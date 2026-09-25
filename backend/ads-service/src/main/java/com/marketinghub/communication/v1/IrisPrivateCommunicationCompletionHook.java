@@ -63,7 +63,8 @@ public class IrisPrivateCommunicationCompletionHook implements AgentTaskCompleti
               suppliedMode)) {
         String currentHash = current.path("communicationInputHash").asText();
         if (!currentHash.matches("[0-9a-f]{64}")
-            || !currentHash.equals(supplied.path("communicationInputHash").asText())) {
+            || !supplied.path("communicationInputHash").asText().matches("[0-9a-f]{64}")
+            || !IrisCommunicationInputFingerprint.equivalent(json, current, supplied)) {
           throw new IllegalArgumentException(
               "A versão ou a autorização visual mudou durante a comunicação inicial.");
         }

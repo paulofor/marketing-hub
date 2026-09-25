@@ -49,7 +49,8 @@ class ApolloPdeAudiovisualFlowTest {
         JsonNode evidence = objectMapper.readTree(payload.path("evidenceJson").asText());
         assertThat(claim.getPath()).endsWith(
                 "?processCode=pde-construction-approval&activityId=audiovisual"
-                        + "&executionResourceCode=video-management-service");
+                        + "&executionResourceCode=video-management-service"
+                        + "&workerContract=APOLLO_AUDIOVISUAL_V1");
         assertThat(callback.getPath()).endsWith("/stage-executions/336/result");
         assertThat(result.path("audiovisualRequirement").asText()).isEqualTo("NOT_REQUIRED");
         assertThat(result.path("artifactIds")).isEmpty();

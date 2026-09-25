@@ -54,6 +54,8 @@ public class VideoManagementProperties {
         private boolean enabled = false;
         @NotNull
         private Duration backendTimeout = Duration.ofSeconds(10);
+        @Min(262144)
+        private int maxResponseBytes = 4 * 1024 * 1024;
     }
 
     /** Configura a etapa v1 que transforma vídeos de referência em receitas executáveis por Apolo. */

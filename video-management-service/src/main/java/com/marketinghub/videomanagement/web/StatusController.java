@@ -39,7 +39,9 @@ public class StatusController {
                         "processCodes", java.util.List.of(
                                 "pde-construction-approval", "creative-production-approval"),
                         "activityId", "audiovisual",
-                        "executionResourceCode", "video-management-service"),
+                        "executionResourceCode", "video-management-service",
+                        "workerContract", "APOLLO_AUDIOVISUAL_V1",
+                        "maxResponseBytes", properties.getPdeAudiovisual().getMaxResponseBytes()),
                 "apolloPlanner", Map.of(
                         "enabled", properties.getApolloPlanner().isEnabled(),
                         "model", properties.getApolloPlanner().getModel(),

@@ -112,6 +112,8 @@ class ArquiteturaTest {
                 .contains("processCode={processCode}")
                 .contains("activityId={activityId}")
                 .contains("executionResourceCode={executionResourceCode}")
+                .contains("workerContract={workerContract}")
+                .contains("APOLLO_AUDIOVISUAL_V1")
                 .contains("pde-construction-approval")
                 .contains("creative-production-approval")
                 .contains("video-management-service")

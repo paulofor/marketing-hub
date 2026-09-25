@@ -22,15 +22,17 @@ public class InternalAgentTaskExecutionController {
     this.visualEvidenceService = visualEvidenceService;
   }
 
-  /** Reserva no máximo uma atividade cuja predecessora já foi concluída. */
+  /** Reserva no máximo uma atividade e aplica o contrato versionado declarado pelo worker. */
   @GetMapping("/pending")
   public List<AgentTaskPendingResponse> pending(
       @PathVariable String agentKey,
       @RequestParam(required = false) String processCode,
       @RequestParam(required = false) String activityId,
-      @RequestParam(required = false) String executionResourceCode) {
+      @RequestParam(required = false) String executionResourceCode,
+      @RequestParam(required = false) String workerContract) {
     return service
-        .claimEligibleProcessTask(agentKey, processCode, activityId, executionResourceCode)
+        .claimEligibleProcessTask(
+            agentKey, processCode, activityId, executionResourceCode, workerContract)
         .map(List::of)
         .orElseGet(List::of);
   }

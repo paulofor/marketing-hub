@@ -64,7 +64,7 @@ public class PdeCommercialPreparationActivityExecutor
     return true;
   }
 
-  /** Resolve a rota exata; Quartzo pode preparar a primeira venda antes de existir ciclo. */
+  /** Projeta a rota exata sem reaplicar uma trava de mutação durante leituras do processo. */
   @Override
   @Transactional(readOnly = true)
   public BackendProductProcessActivityReadiness readiness(
@@ -111,7 +111,7 @@ public class PdeCommercialPreparationActivityExecutor
       return missingCommercialExperiment(product, productTypeCode, target);
     }
     if (quartzoContext != null && quartzoContext.applies(product)) {
-      var scope = quartzoContext.scope(sourceReference, product.getId(), true);
+      var scope = quartzoContext.scope(sourceReference, product.getId(), false);
       String url =
           "/products/"
               + product.getId()
@@ -134,7 +134,7 @@ public class PdeCommercialPreparationActivityExecutor
           url);
     }
     if (safiraContext != null && safiraContext.applies(product)) {
-      var scope = safiraContext.scope(sourceReference, product.getId(), true);
+      var scope = safiraContext.scope(sourceReference, product.getId(), false);
       String url =
           "/products/"
               + product.getId()
@@ -198,13 +198,14 @@ public class PdeCommercialPreparationActivityExecutor
         navigationUrl);
   }
 
-  /** Mantém segura uma chamada direta; a automação normal delega pelo controle SUBPROCESS. */
+  /** Revalida as travas de mutação antes de executar a delegação ao subprocesso comercial. */
   @Override
   public BackendProductProcessActivityExecutionResult execute(
       BusinessProcessDefinition process,
       BusinessProcessActivityDefinition activity,
       Product product,
       String sourceReference) {
+    requireMutableCommercialScope(product, sourceReference);
     var readiness = readiness(process, activity, product, sourceReference);
     if (!readiness.ready()) throw new IllegalStateException(readiness.reason());
     return new BackendProductProcessActivityExecutionResult(
@@ -212,6 +213,17 @@ public class PdeCommercialPreparationActivityExecutor
         "PENDING",
         false,
         "Abra e conclua o subprocesso selecionado; o backend conciliará seu objetivo no Processo 5.");
+  }
+
+  /** Aplica a trava operacional somente quando uma nova preparação será realmente executada. */
+  private void requireMutableCommercialScope(Product product, String sourceReference) {
+    if (quartzoContext != null && quartzoContext.applies(product)) {
+      quartzoContext.scope(sourceReference, product.getId(), true);
+      return;
+    }
+    if (safiraContext != null && safiraContext.applies(product)) {
+      safiraContext.scope(sourceReference, product.getId(), true);
+    }
   }
 
   /** Localiza a rota cujo código corresponde exatamente ao tipo persistido. */

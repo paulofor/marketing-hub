@@ -21,6 +21,7 @@ A alternativa 3 é a adotada. A substituta não representa novo experimento nem 
 | Dimensão | Cenário | Critério de aceite |
 |---|---|---|
 | Caminho feliz | Origem diária, conta BRL e mínimo acima do teto | Origem pausada; substituta sem CBO; único ad set vitalício limitado ao saldo; anúncios com os mesmos criativos; callback completo |
+| Lance CBO → ABO | Campanha informa `LOWEST_COST_WITHOUT_CAP`, mas ad set de origem omite `bid_strategy` | Novo ad set recebe a estratégia da campanha, não envia `bid_amount` e a releitura coincide |
 | Limites | Gasto anterior conciliado | `gasto anterior + lifetime_budget <= R$ 125`; média restante arredondada para cima `<= R$ 20/dia` |
 | Validação | Teto anterior, múltiplos conjuntos, moeda divergente ou gasto ausente | Falha fechada antes da ativação e sem inferir gasto zero |
 | Falha Meta | Criação ou mutação retorna erro HTTP | Corpo/código/subcódigo auditáveis; origem e objeto substituto conhecido permanecem pausados |
@@ -35,8 +36,24 @@ A alternativa 3 é a adotada. A substituta não representa novo experimento nem 
 ## Evidência local
 
 - Backend: 3.521 testes executados, sem falhas ou erros; 22 casos condicionais não aplicáveis foram ignorados.
-- Facebook Ads Worker: 149 testes executados, sem falhas ou erros, cobrindo caminho feliz, retry, divergência, erro da Meta, falha depois da ativação e perda de resposta do callback.
+- Facebook Ads Worker: 151 testes executados, sem falhas ou erros, cobrindo caminho feliz, estratégia de lance CBO → ABO, retry, divergência, erro da Meta, falha depois da ativação e perda de resposta do callback.
 - MySQL 5.7: sete changesets incrementais aplicados; a segunda execução aplicou zero mudanças, sem `TIMESTAMP NOT NULL` e com include relativo explícito.
+
+## Evidência da primeira execução publicada
+
+O pedido de retomada #9 preservou os limites humanos e chegou à criação da hierarquia
+substituta. A Meta criou a campanha `120251812602130326`, mas recusou o novo ad set com
+HTTP 400, código `100` e subcódigo `2490487`, porque o payload não informou uma estratégia
+de lance. O executor confirmou a compensação: campanha original e substituta permaneceram
+pausadas, a substituta não recebeu ad set, anúncio ou gasto e o pedido terminou `FAILED`.
+
+A causa foi confirmada na resposta real da Graph API: a campanha CBO de origem expõe
+`bid_strategy=LOWEST_COST_WITHOUT_CAP`, enquanto seu ad set não repete o campo. Foram
+comparadas três alternativas: inventar um lance numérico, confiar no default que a Meta já
+rejeitou ou copiar a estratégia observada no nível da campanha e validá-la no readback. A
+terceira preserva o comportamento aprovado sem acrescentar teto ou custo e foi adotada.
+Estratégias limitadas continuam bloqueadas quando o `bid_amount` da origem não puder ser
+confirmado.
 
 ## Evidência publicada
 

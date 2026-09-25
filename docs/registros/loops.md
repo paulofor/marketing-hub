@@ -6606,6 +6606,15 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   mesmos objetos por nome, callback com resposta perdida consulta o estado persistido e qualquer
   falha não confirmada pausa as duas campanhas. Testes cobrem sucesso, retry sem duplicidade,
   divergência, falha Meta, erro depois da ativação e callback já efetivado.
+- **Quinta recorrência fechada em 25/09/2026:** a retomada #9 criou a campanha substituta pausada,
+  mas a Meta recusou o novo ad set com `100/2490487` por ausência de lance. A campanha CBO de
+  origem expunha `LOWEST_COST_WITHOUT_CAP` somente no nível da campanha; o ad set omitia
+  `bid_strategy`, e o conversor ABO consultava apenas o segundo nível. O worker passa a herdar a
+  estratégia confirmada da campanha quando o conjunto não a repetir, envia `bid_amount` somente
+  para estratégia limitada e exige seu valor positivo antes de qualquer criação. Readback de
+  estratégia e lance integra o gate anterior à ativação. O teste reproduz o erro real quando o
+  payload omite a estratégia e comprova a herança sem fabricar lance numérico. A tentativa #9 e
+  sua campanha substituta sem ad sets permanecem pausadas e auditáveis, sem gasto novo.
 
 ## LOOP-QUARTZO-HOMOLOGACAO-EXIGE-SLOT-OPALA — 20/09/2026
 

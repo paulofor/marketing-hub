@@ -155,7 +155,7 @@ public class FacebookCampaignResumptionWorker {
       JsonNode before =
           get(
               sourceCampaignId,
-              "id,name,objective,special_ad_categories,special_ad_category_country,status,effective_status,spend_cap,daily_budget,lifetime_budget,can_use_spend_cap,account_id,adsets.limit(2){id,name,status,effective_status,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time,billing_event,optimization_goal,destination_type,bid_strategy,bid_amount,targeting,promoted_object,attribution_spec,ads.limit(100){id,name,status,effective_status,creative{id}}}",
+              "id,name,objective,special_ad_categories,special_ad_category_country,status,effective_status,spend_cap,daily_budget,lifetime_budget,bid_strategy,can_use_spend_cap,account_id,adsets.limit(2){id,name,status,effective_status,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time,billing_event,optimization_goal,destination_type,bid_strategy,bid_amount,targeting,promoted_object,attribution_spec,ads.limit(100){id,name,status,effective_status,creative{id}}}",
               token,
               requestId);
       evidence.set("before", before);
@@ -494,6 +494,18 @@ public class FacebookCampaignResumptionWorker {
         || sourceAds.isEmpty()) {
       throw new IllegalStateException("Configuração da hierarquia de origem está incompleta");
     }
+    String replacementBidStrategy = sourceAdSet.path("bid_strategy").asText();
+    if (replacementBidStrategy.isBlank())
+      replacementBidStrategy = sourceCampaign.path("bid_strategy").asText();
+    if (replacementBidStrategy.isBlank())
+      throw new IllegalStateException("Estratégia de lance da hierarquia de origem não confirmada");
+    long replacementBidAmount = sourceAdSet.path("bid_amount").asLong(0L);
+    if (!"LOWEST_COST_WITHOUT_CAP".equals(replacementBidStrategy)
+        && replacementBidAmount <= 0L)
+      throw new IllegalStateException(
+          "Estratégia de lance limitada não possui valor de lance confirmado");
+    final String confirmedBidStrategy = replacementBidStrategy;
+    final long confirmedBidAmount = replacementBidAmount;
     String campaignName = replacementName(sourceCampaign.path("name").asText(), requestId);
     JsonNode targetCampaign =
         findByName(
@@ -555,7 +567,7 @@ public class FacebookCampaignResumptionWorker {
         findByName(
                 targetCampaignId,
                 "adsets",
-                "id,name,status,effective_status,campaign_id,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time",
+                "id,name,status,effective_status,campaign_id,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time,bid_strategy,bid_amount",
                 adSetName,
                 token,
                 requestId)
@@ -577,23 +589,27 @@ public class FacebookCampaignResumptionWorker {
                   if (sourceAdSet.path("attribution_spec").isArray()
                       && !sourceAdSet.path("attribution_spec").isEmpty())
                     body.put("attribution_spec", sourceAdSet.path("attribution_spec"));
-                  if (!sourceAdSet.path("bid_strategy").asText().isBlank())
-                    body.put("bid_strategy", sourceAdSet.path("bid_strategy").asText());
-                  if (sourceAdSet.path("bid_amount").asLong(0L) > 0L
-                      && !"LOWEST_COST_WITHOUT_CAP"
-                          .equals(sourceAdSet.path("bid_strategy").asText()))
-                    body.put("bid_amount", sourceAdSet.path("bid_amount").asText());
+                  body.put("bid_strategy", confirmedBidStrategy);
+                  if (confirmedBidAmount > 0L
+                      && !"LOWEST_COST_WITHOUT_CAP".equals(confirmedBidStrategy))
+                    body.put("bid_amount", Long.toString(confirmedBidAmount));
                   body.put("status", "PAUSED");
                   String id = postForId("act_" + accountId + "/adsets", body, token, requestId);
                   return get(
                       id,
-                      "id,name,status,effective_status,campaign_id,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time",
+                      "id,name,status,effective_status,campaign_id,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time,bid_strategy,bid_amount",
                       token,
                       requestId);
                 });
     String targetAdSetId = targetAdSet.path("id").asText();
     verifyReplacementAdSet(
-        targetAdSet, targetCampaignId, adSetName, lifetimeBudgetMinor, end);
+        targetAdSet,
+        targetCampaignId,
+        adSetName,
+        lifetimeBudgetMinor,
+        end,
+        confirmedBidStrategy,
+        confirmedBidAmount);
 
     Map<String, String> targetAds = new LinkedHashMap<>();
     ArrayNode verifiedAds = evidence.putArray("replacementAds");
@@ -648,11 +664,17 @@ public class FacebookCampaignResumptionWorker {
     targetAdSet =
         get(
             targetAdSetId,
-            "id,name,status,effective_status,campaign_id,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time",
+            "id,name,status,effective_status,campaign_id,lifetime_budget,lifetime_spend_cap,daily_budget,daily_spend_cap,end_time,bid_strategy,bid_amount",
             token,
             requestId);
     verifyReplacementAdSet(
-        targetAdSet, targetCampaignId, adSetName, lifetimeBudgetMinor, end);
+        targetAdSet,
+        targetCampaignId,
+        adSetName,
+        lifetimeBudgetMinor,
+        end,
+        confirmedBidStrategy,
+        confirmedBidAmount);
     if (!"ACTIVE".equals(targetAdSet.path("status").asText()))
       throw new IllegalStateException("Meta não confirmou o conjunto substituto como ativo");
     post(targetCampaignId, Map.of("status", "ACTIVE"), token, requestId);
@@ -696,18 +718,26 @@ public class FacebookCampaignResumptionWorker {
         callback);
   }
 
-  /** Confere o teto, o prazo e a filiação do conjunto substituto sem inferir campos ausentes. */
+  /** Confere teto, prazo, lance e filiação do conjunto substituto sem inferir campos ausentes. */
   private void verifyReplacementAdSet(
-      JsonNode adSet, String campaignId, String name, long lifetimeBudgetMinor, Instant end) {
+      JsonNode adSet,
+      String campaignId,
+      String name,
+      long lifetimeBudgetMinor,
+      Instant end,
+      String bidStrategy,
+      long bidAmount) {
     if (!campaignId.equals(adSet.path("campaign_id").asText())
         || !name.equals(adSet.path("name").asText())
         || adSet.path("lifetime_budget").asLong(-1L) != lifetimeBudgetMinor
         || adSet.path("daily_budget").asLong(0L) != 0L
         || adSet.path("daily_spend_cap").asLong(0L) != 0L
         || adSet.path("lifetime_spend_cap").asLong(0L) != 0L
+        || !bidStrategy.equals(adSet.path("bid_strategy").asText())
+        || (bidAmount > 0L && adSet.path("bid_amount").asLong(-1L) != bidAmount)
         || !parseMetaInstant(adSet.path("end_time").asText()).equals(end))
       throw new IllegalStateException(
-          "Meta não confirmou orçamento e prazo do conjunto substituto");
+          "Meta não confirmou orçamento, prazo ou lance do conjunto substituto");
   }
 
   /** Recupera um objeto Meta por nome exato e bloqueia ambiguidade em retries. */

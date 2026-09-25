@@ -76,15 +76,16 @@ public class SalesFlowResolver {
             : chains
                 .findById(cycle.getChainDefinitionId())
                 .orElseThrow(() -> conflict("Cadeia original do ciclo não encontrada."));
-    var model =
+    var modelItem =
         originalChain.getItems().stream()
-            .map(
-                com.marketinghub.businessprocesschain.BusinessProcessChainItem
-                    ::getProcessDefinition)
-            .filter(process -> PARENT_CODE.equals(process.getProcessCode()))
+            .filter(item -> PARENT_CODE.equals(item.getProcessDefinition().getProcessCode()))
             .findFirst()
             .orElseThrow(() -> conflict("Processo de vendas ausente da cadeia original do ciclo."));
-    return describe(cycle, model, events.findByCycleIdOrderByRevisionAsc(cycle.getId()));
+    return describe(
+        cycle,
+        modelItem.getProcessDefinition(),
+        modelItem.getSequenceNumber(),
+        events.findByCycleIdOrderByRevisionAsc(cycle.getId()));
   }
 
   /** Impede que uma tarefa antiga reabra operação fora da fase e do experimento do fluxo atual. */
@@ -140,6 +141,15 @@ public class SalesFlowResolver {
   SalesFlowResponse describe(
       LearningSalesCycle cycle,
       BusinessProcessDefinition model,
+      List<LearningSalesCycleEvent> history) {
+    return describe(cycle, model, null, history);
+  }
+
+  /** Consolida o fluxo preservando também a posição do processo na cadeia original do ciclo. */
+  private SalesFlowResponse describe(
+      LearningSalesCycle cycle,
+      BusinessProcessDefinition model,
+      Integer modelProcessSequenceNumber,
       List<LearningSalesCycleEvent> history) {
     var diagram = json.read(model.getDiagramJson());
     var adoption =
@@ -316,9 +326,12 @@ public class SalesFlowResolver {
         cycle.getProcessDefinitionId(),
         cycle.getChainDefinitionId(),
         model.getId(),
+        modelProcessSequenceNumber,
+        model.getName(),
         current,
         active == null ? null : active.name(),
         active == null ? null : active.sequenceNumber(),
+        current == null ? null : nodeOwner(diagram, current),
         active == null ? "COMPLETED" : active.state(),
         active == null ? "Ciclo encerrado; evidências preservadas." : active.reason(),
         workspace,
@@ -420,6 +433,13 @@ public class SalesFlowResolver {
     for (var node : diagram.path("nodes"))
       if (id.equals(node.path("id").asText())) return node.path("label").asText(id);
     return id;
+  }
+
+  /** Lê o responsável declarado na mesma versão do BPM usada para resolver a atividade. */
+  private String nodeOwner(JsonNode diagram, String id) {
+    for (var node : diagram.path("nodes"))
+      if (id.equals(node.path("id").asText())) return node.path("owner").asText(null);
+    return null;
   }
 
   /** Reporta contexto incompatível sem selecionar silenciosamente outro produto ou ciclo. */

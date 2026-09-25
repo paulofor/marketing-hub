@@ -5,9 +5,12 @@ export type SalesFlow = {
   cycleProcessDefinitionId?: number;
   chainDefinitionId: number;
   modelProcessDefinitionId: number;
+  modelProcessSequenceNumber?: number | null;
+  modelProcessName?: string | null;
   currentActivityId?: string | null;
   currentActivityName?: string | null;
   currentActivitySequenceNumber?: number | null;
+  currentActivityOwnerName?: string | null;
   state: string;
   reason: string;
   navigationUrl: string;

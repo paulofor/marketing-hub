@@ -153,9 +153,15 @@ describe("Card do produto com ciclo", () => {
     renderCard();
     expect(await screen.findByText("Decisão comercial")).toBeVisible();
     expect(
-      screen.getByText(/A próxima ação está na etapa do ciclo/),
+      screen.queryByText(/A próxima ação está na etapa do ciclo/),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/Atividade em andamento:/)).toBeVisible();
+    expect(
+      screen.getByText(/6\.4 — Conduzir o ciclo de aprendizado e vendas/),
     ).toBeVisible();
-    expect(screen.queryByText(/Próxima atividade/)).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Responsável: Operador responsável pelo produto"),
+    ).toBeVisible();
     expect(
       screen.getByRole("link", { name: "Abrir processo do ciclo" }),
     ).toHaveAttribute(
@@ -165,6 +171,51 @@ describe("Card do produto com ciclo", () => {
     expect(
       screen.getByRole("link", { name: "Abrir etapa do ciclo" }),
     ).toHaveAttribute("href", contextFixture.cycleUrl);
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("mostra a atividade 6.3 do ciclo original quando a cadeia atual já evoluiu", async () => {
+    const position = structuredClone(positionFixture) as Position;
+    position.processDefinitionId = 97;
+    position.chainDefinitionId = 22;
+    const flow = position.subprocessPosition!.salesFlow!;
+    flow.currentActivityId = "consolidate";
+    flow.currentActivityName = "Consolidar resultado comercial";
+    flow.currentActivitySequenceNumber = 3;
+    flow.currentActivityOwnerName = "Backend";
+    flow.state = "BLOCKED";
+    flow.reason =
+      "Conciliação automática bloqueada: as fontes ainda não mudaram desde a última leitura.";
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...contextFixture,
+        stageLabel: "Medir vendas e valor entregue",
+        nextWork: null,
+      },
+    });
+
+    renderCard(position);
+
+    expect(await screen.findByText(/Atividade com pendência:/)).toBeVisible();
+    expect(
+      screen.getByText(/6\.3 — Consolidar resultado comercial/),
+    ).toBeVisible();
+    expect(screen.getByText("Responsável: Backend")).toBeVisible();
+    expect(
+      screen.getByText(/as fontes ainda não mudaram desde a última leitura/),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Abrir processo do ciclo" }),
+    ).toHaveAttribute(
+      "href",
+      "/products/4/value-chain-history/processes/75/activities?learningCycleId=2&chainId=14#process-execution",
+    );
+    expect(
+      screen.getByRole("link", { name: "Processo 6 · atividade 6.3" }),
+    ).toHaveAttribute(
+      "href",
+      "/products/4/value-chain-history/processes/75/activities?learningCycleId=2&chainId=14#activity-consolidate",
+    );
     expect(axios.post).not.toHaveBeenCalled();
   });
 

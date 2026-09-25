@@ -5479,6 +5479,17 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   Regressões cobrem os contratos, navegação com ciclo/cadeia, bloqueios, cache, isolamento,
   início e catálogo em desktop/mobile. Evidências: `docs/homologacao/vega-card-ciclo-atual-v1.md`.
 
+- **Recorrência no card em 25/09/2026:** o backend já identificava Vega na atividade bloqueada
+  **6.3 — Consolidar resultado comercial**, mas `process-context.nextWork` era nulo porque o
+  trabalho permanecia no processo coordenador. A interface exibia apenas “a próxima ação está na
+  etapa do ciclo” e “Medir vendas e valor entregue”. A causa foi a queda para um fallback que
+  descartava `salesFlow.currentActivity*`; usar a numeração do processo da cadeia atual também
+  misturaria a v22 com o ciclo histórico v14. O `salesFlow` agora expõe número/nome do processo e
+  responsável a partir da cadeia e do BPM originais, e o card apresenta atividade, bloqueio e
+  motivo completos. Regressões Java e React reproduzem definição atual #97, modelo histórico #75,
+  cadeia original #14 e destino 6.3 sem qualquer escrita. Evidências:
+  `docs/homologacao/vega-card-atividade-6-3-v1.md`.
+
 - **Continuidade em 10/09/2026:** a conclusão do Processo 2 no segundo ciclo não indicava o
   trabalho seguinte; o ciclo ainda apontava à arquitetura já concluída. A orientação passa a
   consultar a mesma situação oficial das atividades, com ciclo, experimento, número da passagem,

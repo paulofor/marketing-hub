@@ -12,15 +12,16 @@ condições de parada por ausência ou meta de compras. O executor consome
 `GET /api/facebook-campaign-resumptions/pending`, reserva cada pedido por `claim`
 e confirma o resultado por `result`, sem consultar o banco diretamente.
 
-A retomada preserva a campanha e exige um único conjunto em BRL com orçamento
-diário ou vitalício. O teto inclui todo o gasto anterior; no modo diário o worker
+A retomada preserva o histórico e exige uma única campanha vigente com um único
+conjunto em BRL de orçamento diário ou vitalício. O teto inclui todo o gasto anterior; no modo diário o worker
 mantém `daily_budget` no conjunto e aplica `spend_cap` na campanha quando o teto
 atende ao mínimo da conta. Se `min_campaign_group_spend_cap` for maior que a
-autorização, a campanha pausada migra para `lifetime_budget`, limitado ao teto e
-ao gasto confirmado somado à capacidade diária dos dias restantes. A Meta deve
-remover orçamento e limites próprios do conjunto; campanha e conjunto recebem o
-mesmo término. A média restante arredondada para cima não supera o valor diário
-autorizado. A fila não entrega o pedido antes da data inicial.
+autorização, a campanha original continua pausada: o worker cria ou recupera uma
+substituta determinística sem orçamento CBO, com um único conjunto de
+`lifetime_budget` limitado ao saldo acumulado restante e à capacidade diária dos
+dias restantes. Os anúncios reutilizam os criativos aprovados. A média restante
+arredondada para cima não supera o valor diário autorizado. A fila não entrega o
+pedido antes da data inicial.
 O worker verifica gasto, destino público, orçamento, teto e término na Meta antes
 de ativar. Uma falha confirma a campanha pausada e registra status, endpoint e
 resposta oficial no backend sem credencial. O experimento só fica RUNNING depois
@@ -36,14 +37,17 @@ acima do teto humano de R$ 125. A retomada anterior falhou sem ativar a campanha
 Uma segunda tentativa comprovou que a Meta também rejeita orçamento diário e teto
 vitalício simultâneos no mesmo conjunto (`100/1885624`). Depois de mover o diário
 para a campanha, a Meta rejeitou ainda o teto vitalício no conjunto por incompatibilidade
-entre tipos (`100/1885652`). O fallback vigente usa orçamento vitalício nativo na
-campanha, no máximo R$ 125 e com média restante de até R$ 20/dia; o único ad set
-fica sem orçamento e sem limite próprios. Releitura divergente ou migração parcial
-insegura bloqueia a ativação.
-Na campanha sem teto anterior, a migração omite `spend_cap`: a Graph API rejeita
+entre tipos (`100/1885652`). A tentativa seguinte comprovou que a campanha existente
+também não pode trocar de diário para vitalício (`100/1885630`). O fallback vigente
+mantém a origem pausada e cria uma campanha substituta sem orçamento CBO; seu único
+ad set recebe orçamento vitalício apenas sobre o saldo restante, preservando teto de
+R$ 125 e média de até R$ 20/dia. Releitura divergente ou hierarquia parcial insegura
+pausa origem e substituta.
+Na campanha sem teto anterior, a substituição omite `spend_cap`: a Graph API rejeita
 `spend_cap=0` (`100/1885099`) em vez de interpretá-lo como remoção. Campanha que
-já possua teto positivo falha antes da primeira mutação até haver remoção oficial
-comprovada, evitando ativação com duas proteções financeiras incompatíveis.
+já possua teto positivo falha antes da primeira mutação. O backend vincula as duas
+campanhas, congela o retrato anterior e agrega as novas métricas; somente a substituta
+vigente volta ao sync. Retries recuperam os mesmos objetos por nomes determinísticos.
 
 Para sugerir interesses relacionados a um seed, o worker consulta a Graph API
 via `/act_<AD_ACCOUNT_ID>/targetingsuggestions` e envia a lista de seeds no

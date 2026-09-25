@@ -6595,6 +6595,17 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   e conjunto recebem término idêntico. Readback divergente, média restante acima do diário ou
   estado parcial mantêm a campanha pausada. O simulador reproduz os três subcódigos reais e cobre
   migração completa, retry, prazo divergente, orçamento residual e callback com compensação.
+- **Quarta recorrência fechada em 25/09/2026:** a retomada #8 chegou à tentativa de converter a
+  campanha diária existente para `lifetime_budget`, mas a Meta rejeitou a mudança do tipo de
+  orçamento com `100/1885630`. A causa sistêmica era pressupor que uma combinação final válida
+  poderia ser atingida por mutação de uma hierarquia já veiculada. A solução mantém a origem
+  pausada e auditável e cria uma substituta determinística sem orçamento CBO, com um único ad set
+  vitalício limitado ao saldo acumulado restante e à capacidade diária da janela. Os criativos
+  aprovados são reutilizados; origem e substituta são vinculadas; métricas anteriores são
+  congeladas e agregadas às novas; somente a campanha vigente entra no sync. Retries recuperam os
+  mesmos objetos por nome, callback com resposta perdida consulta o estado persistido e qualquer
+  falha não confirmada pausa as duas campanhas. Testes cobrem sucesso, retry sem duplicidade,
+  divergência, falha Meta, erro depois da ativação e callback já efetivado.
 
 ## LOOP-QUARTZO-HOMOLOGACAO-EXIGE-SLOT-OPALA — 20/09/2026
 

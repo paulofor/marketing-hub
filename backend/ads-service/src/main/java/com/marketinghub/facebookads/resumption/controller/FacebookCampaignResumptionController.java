@@ -38,6 +38,12 @@ public class FacebookCampaignResumptionController {
     return service.pending();
   }
 
+  /** Consulta o estado persistido para desambiguar callbacks cujo retorno HTTP foi perdido. */
+  @GetMapping("/{id}")
+  public ResumeCampaignView get(@PathVariable Long id) {
+    return service.get(id);
+  }
+
   /** Reserva uma única execução antes de qualquer chamada de escrita na Meta. */
   @PostMapping("/{id}/claim")
   public ResumeCampaignView claim(@PathVariable Long id) {

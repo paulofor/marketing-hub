@@ -33,7 +33,7 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
             where c.id is not null
               and c.id <> ''
               and (
-                  e.status = :runningStatus
+                  (e.status = :runningStatus and c.status = com.marketinghub.facebookads.FacebookAdStatus.ACTIVE)
                or (
                    e.status in :settlementStatuses
                    and c.metricsFinalSyncedAt is null

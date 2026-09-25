@@ -14,6 +14,7 @@ public record ResumeCampaignView(
     String status,
     BigDecimal totalLimit,
     BigDecimal dailyBudget,
+    BigDecimal historicalSpend,
     LocalDate startDate,
     LocalDate endDate,
     BigDecimal zeroResultSpendLimit,

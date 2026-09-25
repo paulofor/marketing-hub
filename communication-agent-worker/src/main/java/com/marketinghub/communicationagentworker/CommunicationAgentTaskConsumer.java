@@ -58,7 +58,13 @@ public class CommunicationAgentTaskConsumer {
       task = claimNext();
       if (task == null) return;
       task = new LinkedHashMap<>(task);
+      JsonNode preservedMaterialization = preservedMaterialization(task);
       visual = creatives.prepare(task);
+      if (preservedMaterialization != null) {
+        JsonNode materialized = creatives.materialize(task, preservedMaterialization, visual);
+        backend.complete(taskId(task), replayPayload(task, materialized));
+        return;
+      }
       execution = runner.run(task, visual.paths());
       if ("COMPLETED".equals(execution.result().path("executionStatus").asText())) {
         JsonNode materialized = creatives.materialize(task, execution.result(), visual);
@@ -129,6 +135,57 @@ public class CommunicationAgentTaskConsumer {
     return payload;
   }
 
+  /** Recupera somente a saída completa da peça não audiovisual cuja inferência já foi auditada. */
+  private JsonNode preservedMaterialization(Map<String, Object> task) throws Exception {
+    String resultJson = retryText(task.get("retryResultJson"));
+    String evidenceJson = retryText(task.get("retryEvidenceJson"));
+    if (resultJson == null && evidenceJson == null) return null;
+    if (resultJson == null || evidenceJson == null) {
+      throw new IllegalArgumentException(
+          "Retomada de Íris incompleta; uma nova inferência foi recusada.");
+    }
+    if (!"creative-production-approval".equals(task.get("processCode"))
+        || !"nonAudiovisual".equals(task.get("activityId"))) {
+      throw new IllegalArgumentException(
+          "A saída preservada de Íris não pertence à materialização não audiovisual.");
+    }
+    JsonNode result = json.readTree(resultJson);
+    if (!"COMPLETED".equals(result.path("executionStatus").asText())
+        || !String.valueOf(task.get("sourceReference"))
+            .equals(result.path("sourceReference").asText())
+        || result.path("functionalOutput").path("staticAssets").isEmpty()) {
+      throw new IllegalArgumentException(
+          "A saída preservada de Íris não comprova uma peça completa do mesmo escopo.");
+    }
+    return result;
+  }
+
+  /** Reaplica a peça preservando auditoria e declarando custo incremental de modelo zero. */
+  private Map<String, Object> replayPayload(Map<String, Object> task, JsonNode materialized)
+      throws Exception {
+    String evidenceJson = retryText(task.get("retryEvidenceJson"));
+    JsonNode original = json.readTree(evidenceJson);
+    if (!(original instanceof com.fasterxml.jackson.databind.node.ObjectNode evidence)) {
+      throw new IllegalArgumentException("A evidência preservada de Íris não é um objeto JSON.");
+    }
+    var replay = evidence.putObject("materializationReplay");
+    replay.put("replayedAt", Instant.now().toString());
+    replay.put("modelInvoked", false);
+    replay.put("incrementalModelCostUsd", 0);
+    replay.put("taskId", taskId(task));
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("resultJson", json.writeValueAsString(materialized));
+    payload.put("evidenceJson", json.writeValueAsString(evidence));
+    return payload;
+  }
+
+  /** Normaliza os campos opcionais de retomada sem transformar ausência no texto `null`. */
+  private String retryText(Object value) {
+    if (value == null) return null;
+    String text = String.valueOf(value);
+    return text.isBlank() ? null : text;
+  }
+
   /** Monta o callback de bloqueio preservando o parecer recebido do modelo. */
   private Map<String, Object> failurePayload(
       String error,
@@ -149,6 +206,9 @@ public class CommunicationAgentTaskConsumer {
       Instant startedAt,
       Exception ex) {
     try {
+      String retryResult = retryText(task.get("retryResultJson"));
+      String retryEvidence = retryText(task.get("retryEvidenceJson"));
+      boolean materializationReplay = retryResult != null || retryEvidence != null;
       CommunicationAgentCodexRunner.TokenUsage usage =
           execution != null
               ? execution.usage()
@@ -174,9 +234,13 @@ public class CommunicationAgentTaskConsumer {
                   ? failure.activityPromptPart()
                   : null;
       Map<String, Object> payload = new LinkedHashMap<>();
-      payload.put("error", ex.toString());
+      payload.put(
+          "error", materializationReplay ? "AUTO_RETRY_MATERIALIZATION_ONCE|" + ex : ex.toString());
       if (execution != null) payload.put("resultJson", execution.rawResponse());
-      payload.put("evidenceJson", evidence(task, startedAt, Instant.now(), false));
+      else if (retryResult != null) payload.put("resultJson", retryResult);
+      payload.put(
+          "evidenceJson",
+          retryEvidence != null ? retryEvidence : evidence(task, startedAt, Instant.now(), false));
       putUsage(payload, usage);
       if (prompt != null) {
         payload.put("executionAudit", executionAudit(prompt, agentPromptPart, activityPromptPart));

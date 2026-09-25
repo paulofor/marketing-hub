@@ -1897,6 +1897,38 @@ class AgentTaskServiceTest {
     assertThat(recovered.retryEvidenceJson()).isEqualTo(blocked.getEvidenceJson());
   }
 
+  /** Retoma a materialização de Íris sem repetir a inferência cuja saída já foi preservada. */
+  @Test
+  void retriesFrozenVisualMaterializationWithoutNewInference() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent iris = agent(12L, "communication-director", "Íris");
+    BusinessProcessDefinition process = process("PUBLISHED", "Íris");
+    process.setProcessCode("creative-production-approval");
+    AgentTask blocked = processTask(503L, iris, process, "nonAudiovisual", "BLOCKED");
+    blocked.setExecutionError(
+        "409 Conflict: A tarefa não possui uma URL visual congelada e auditável.");
+    blocked.setResultJson(
+        "{\"executionStatus\":\"COMPLETED\",\"sourceReference\":\"commercial-plan:2@v4\",\"functionalOutput\":{\"staticAssets\":[{}]}}");
+    blocked.setEvidenceJson("{\"modelResponded\":true}");
+    when(agents.findByAgentKey("communication-director")).thenReturn(Optional.of(iris));
+    when(repository.findRetryableCallbackCandidates("communication-director"))
+        .thenReturn(List.of(blocked));
+    when(repository.save(blocked)).thenReturn(blocked);
+
+    AgentTaskPendingResponse recovered =
+        service(repository, agents, Clock.systemUTC())
+            .claimEligibleProcessTask(
+                "communication-director", "creative-production-approval", "nonAudiovisual")
+            .orElseThrow();
+
+    assertThat(recovered.taskId()).isEqualTo(503L);
+    assertThat(blocked.getStatus()).isEqualTo("IN_PROGRESS");
+    assertThat(blocked.getExecutionError()).startsWith("AUTO_RETRY_ONCE|");
+    assertThat(recovered.retryResultJson()).isEqualTo(blocked.getResultJson());
+    assertThat(recovered.retryEvidenceJson()).isEqualTo(blocked.getEvidenceJson());
+  }
+
   /** Não repete inferência quando a falha antiga de callback não preservou o parecer. */
   @Test
   void doesNotRetryCallbackWithoutPreservedPayload() {
@@ -1967,6 +1999,7 @@ class AgentTaskServiceTest {
       strings = {
         "AUTO_RETRY_ONCE|500 : Internal Server Error",
         "AUTO_RETRY_CALLBACK_ONCE|Internal Server Error",
+        "AUTO_RETRY_MATERIALIZATION_ONCE|A tarefa não possui uma URL visual congelada e auditável.",
         "internal server error",
         "Protótipo precisa de correção funcional."
       })

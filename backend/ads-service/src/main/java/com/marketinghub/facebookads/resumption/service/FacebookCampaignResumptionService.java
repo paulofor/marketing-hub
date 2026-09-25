@@ -13,6 +13,7 @@ import com.marketinghub.facebookads.resumption.service.view.ResumeCampaignView;
 import com.marketinghub.repository.jpa.experiment.*;
 import com.marketinghub.repository.jpa.facebookads.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.*;
 import java.util.*;
 import org.slf4j.Logger;
@@ -283,10 +284,10 @@ public class FacebookCampaignResumptionService {
           || !"ACTIVE".equals(evidence.path("campaignStatus").asText())
           || !r.getAdSetId().equals(evidence.path("adSetId").asText())
           || !r.getCampaignId().equals(evidence.path("campaignId").asText())
+          || !evidence.path("spend").isNumber()
           || !budgetEvidenceMatches(r, evidence)
           || !r.getStartDate().toString().equals(evidence.path("startDate").asText())
           || !r.getEndDate().toString().equals(evidence.path("endDate").asText())
-          || !evidence.path("spend").isNumber()
           || evidence.path("spend").decimalValue().compareTo(r.getTotalLimit()) >= 0
           || e.getMediaSpendLimit().compareTo(r.getTotalLimit()) != 0)
         throw conflict("A Meta não confirmou teto, prazo e estado autorizados.");
@@ -386,7 +387,7 @@ public class FacebookCampaignResumptionService {
         && reason.trim().equals(latest.getReason());
   }
 
-  /** Aceita orçamento vitalício ou diário com teto nativo confirmado na camada compatível. */
+  /** Aceita somente orçamento e teto nativos confirmados na camada compatível da Meta. */
   private boolean budgetEvidenceMatches(
       FacebookCampaignResumption r, com.fasterxml.jackson.databind.JsonNode evidence) {
     long totalMinor = r.getTotalLimit().movePointRight(2).longValueExact();
@@ -397,15 +398,32 @@ public class FacebookCampaignResumptionService {
     if (r.getDailyBudget() == null
         || evidence.path("dailyBudgetMinor").asLong(-1)
             != r.getDailyBudget().movePointRight(2).longValueExact()) return false;
+    long dailyMinor = r.getDailyBudget().movePointRight(2).longValueExact();
     if ("DAILY_WITH_CAMPAIGN_CAP".equals(mode))
       return evidence.path("campaignSpendCapMinor").asLong(-1) == totalMinor;
-    return "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP".equals(mode)
-        && evidence.path("campaignDailyBudgetMinor").asLong(-1)
-            == r.getDailyBudget().movePointRight(2).longValueExact()
-        && evidence.path("adSetDailyBudgetMinor").asLong(-1) == 0L
-        && evidence.path("campaignSpendCapMinor").asLong(-1) == 0L
-        && evidence.path("adSetLifetimeSpendCapMinor").asLong(-1) == totalMinor
-        && evidence.path("accountMinimumCampaignSpendCapMinor").asLong(-1) > totalMinor;
+    if (!"CAMPAIGN_LIFETIME_BELOW_MINIMUM".equals(mode)) return false;
+    long nativeLifetimeMinor = evidence.path("campaignLifetimeBudgetMinor").asLong(-1L);
+    long spentMinor =
+        evidence
+            .path("spend")
+            .decimalValue()
+            .movePointRight(2)
+            .setScale(0, RoundingMode.HALF_UP)
+            .longValue();
+    long remainingDays = evidence.path("remainingDays").asLong(0L);
+    if (remainingDays <= 0L || nativeLifetimeMinor <= spentMinor) return false;
+    long calculatedAverage =
+        (nativeLifetimeMinor - spentMinor + remainingDays - 1L) / remainingDays;
+    return nativeLifetimeMinor <= totalMinor
+        && evidence.path("authorizedDailyBudgetMinor").asLong(-1L) == dailyMinor
+        && evidence.path("campaignDailyBudgetMinor").asLong(-1L) == 0L
+        && evidence.path("adSetDailyBudgetMinor").asLong(-1L) == 0L
+        && evidence.path("lifetimeBudgetMinor").asLong(-1L) == 0L
+        && evidence.path("adSetLifetimeSpendCapMinor").asLong(-1L) == 0L
+        && evidence.path("campaignSpendCapMinor").asLong(-1L) == 0L
+        && evidence.path("effectiveRemainingAverageMinor").asLong(-1L) == calculatedAverage
+        && calculatedAverage <= dailyMinor
+        && evidence.path("accountMinimumCampaignSpendCapMinor").asLong(-1L) > totalMinor;
   }
 
   /** Registra autorização e confirmação no histórico já exibido pelo experimento. */

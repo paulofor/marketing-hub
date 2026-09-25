@@ -6563,15 +6563,15 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   O contrato confundiu a existência tipada de `lifetime_spend_cap` no SDK com compatibilidade
   desse campo com `daily_budget` no mesmo objeto. A Meta também rejeitou, em validação sem efeito,
   converter o conjunto recorrente diretamente para `lifetime_budget` (`100/1885257`).
-- **Alternativas avaliadas:** elevar para R$ 300 violaria a autorização; converter o conjunto para
-  orçamento vitalício foi rejeitado pela API e perderia o ritmo diário; migrar R$ 20/dia para a
-  campanha pausada e aplicar R$ 125 como `lifetime_spend_cap` no único conjunto sem orçamento
-  próprio preserva as duas travas. A terceira foi adotada após a Meta aceitar em `validate_only` a
-  atualização do diário na campanha.
-- **Prevenção:** o worker nunca combina orçamento e teto vitalício no mesmo ad set. Ele executa a
-  migração com a campanha pausada, relê orçamento nos dois níveis, teto, prazo e estados, aceita
-  retry de uma migração parcial segura e falha fechado em divergência. Backend rejeita evidência do
-  modo intermediário incompatível; status, código, subcódigo e corpo oficial permanecem auditáveis.
+- **Alternativas avaliadas:** elevar para R$ 300 violaria a autorização; depender somente da pausa
+  posterior do backend deixaria uma janela de ultrapassagem; usar orçamento vitalício nativo na
+  campanha mantém o teto no provedor e limita a média restante ao diário autorizado. A terceira é
+  a solução final. A tentativa intermediária de diário na campanha com teto vitalício no conjunto
+  foi preservada no histórico e depois descartada pela resposta real `100/1885652`.
+- **Prevenção:** o worker nunca combina tipos diário e vitalício entre campanha e ad set. Ele
+  executa a migração com tudo pausado, relê orçamento nos dois níveis, teto, prazo e estados,
+  aceita retry de migração parcial segura e falha fechado em divergência. Backend rejeita evidência
+  incompatível; status, código, subcódigo e corpo oficial permanecem auditáveis.
 - **Recorrência fechada em 25/09/2026:** a retomada #5 chegou à migração correta, mas enviou
   `spend_cap=0` para limpar um teto que já estava ausente. A Meta rejeitou com código `100`,
   subcódigo `1885099`, manteve a campanha pausada e não alterou orçamento. O worker agora omite o
@@ -6581,10 +6581,20 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Segunda recorrência fechada em 25/09/2026:** na retomada #6, a Meta aceitou
   `daily_budget=2000` na campanha e removeu automaticamente o orçamento próprio do ad set, mas
   rejeitou o envio redundante de `daily_budget=0` com `100/1885272` (`O orçamento é muito baixo`).
-  O worker agora relê o conjunto depois da migração, bloqueia se ainda houver orçamento próprio e,
-  quando a remoção estiver confirmada, aplica apenas `lifetime_spend_cap`, término e estado. O
-  simulador rejeita qualquer retorno de `daily_budget=0` e cobre também a ausência da remoção
-  automática, mantendo a campanha pausada nos dois cenários.
+  O worker passou a reler o conjunto depois da migração e a omitir o campo zero. Essa correção
+  isolada foi necessária, mas ainda insuficiente: a tentativa seguinte revelou a incompatibilidade
+  temporal entre o diário da campanha e o teto vitalício do conjunto. O simulador conserva a
+  regressão de `daily_budget=0` para impedir sua reintrodução.
+- **Terceira recorrência fechada em 25/09/2026:** a retomada #7 omitiu corretamente os campos
+  zero, mas a Meta rejeitou `lifetime_spend_cap=12500` no ad set depois de receber orçamento diário
+  na campanha, com `100/1885652`: limites de gasto do conjunto precisam ter o mesmo tipo temporal
+  do orçamento da campanha. A correção anterior validava cada transição isoladamente, mas não a
+  compatibilidade final entre os dois níveis. O fallback agora migra a campanha pausada para
+  `lifetime_budget`, limitado ao menor valor entre o teto e o gasto confirmado somado à capacidade
+  diária da janela restante. O ad set precisa ficar sem orçamento e sem limites próprios; campanha
+  e conjunto recebem término idêntico. Readback divergente, média restante acima do diário ou
+  estado parcial mantêm a campanha pausada. O simulador reproduz os três subcódigos reais e cobre
+  migração completa, retry, prazo divergente, orçamento residual e callback com compensação.
 
 ## LOOP-QUARTZO-HOMOLOGACAO-EXIGE-SLOT-OPALA — 20/09/2026
 

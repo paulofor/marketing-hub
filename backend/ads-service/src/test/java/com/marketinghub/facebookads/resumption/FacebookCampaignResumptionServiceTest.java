@@ -110,9 +110,9 @@ class FacebookCampaignResumptionServiceTest {
     verify(metrics, never()).save(any());
   }
 
-  /** Aceita diário na campanha e teto no único conjunto quando o mínimo da conta é maior. */
+  /** Aceita vitalício na campanha quando o mínimo do teto diário da conta é maior. */
   @Test
-  void completesWithCampaignDailyBudgetAndAdSetLifetimeCapBelowMinimum() {
+  void completesWithCampaignLifetimeBudgetBelowMinimum() {
     service.request(91L, input());
     var claim = service.claim(1L);
     var evidence =
@@ -120,13 +120,18 @@ class FacebookCampaignResumptionServiceTest {
             .put("campaignId", "campaign")
             .put("campaignStatus", "ACTIVE")
             .put("adSetId", "adset")
-            .put("budgetMode", "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP")
-            .put("adSetLifetimeSpendCapMinor", 15000)
+            .put("budgetMode", "CAMPAIGN_LIFETIME_BELOW_MINIMUM")
+            .put("campaignLifetimeBudgetMinor", 15000)
             .put("accountMinimumCampaignSpendCapMinor", 30000)
             .put("dailyBudgetMinor", 2000)
-            .put("campaignDailyBudgetMinor", 2000)
+            .put("authorizedDailyBudgetMinor", 2000)
+            .put("campaignDailyBudgetMinor", 0)
             .put("adSetDailyBudgetMinor", 0)
+            .put("lifetimeBudgetMinor", 0)
+            .put("adSetLifetimeSpendCapMinor", 0)
             .put("campaignSpendCapMinor", 0)
+            .put("remainingDays", 7)
+            .put("effectiveRemainingAverageMinor", 1751)
             .put("spend", new BigDecimal("27.45"))
             .put("startDate", LocalDate.now(ZoneId.of("America/Sao_Paulo")).toString())
             .put("endDate", end.toString());
@@ -139,9 +144,9 @@ class FacebookCampaignResumptionServiceTest {
     assertThat(e.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
   }
 
-  /** Recusa a migração quando o mínimo informado não excede o teto autorizado. */
+  /** Recusa o vitalício quando o mínimo informado não excede o teto autorizado. */
   @Test
-  void rejectsUnjustifiedAdSetLifetimeCapFallback() {
+  void rejectsUnjustifiedCampaignLifetimeFallback() {
     service.request(91L, input());
     var claim = service.claim(1L);
     var evidence =
@@ -149,13 +154,52 @@ class FacebookCampaignResumptionServiceTest {
             .put("campaignId", "campaign")
             .put("campaignStatus", "ACTIVE")
             .put("adSetId", "adset")
-            .put("budgetMode", "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP")
-            .put("adSetLifetimeSpendCapMinor", 15000)
+            .put("budgetMode", "CAMPAIGN_LIFETIME_BELOW_MINIMUM")
+            .put("campaignLifetimeBudgetMinor", 15000)
             .put("accountMinimumCampaignSpendCapMinor", 10000)
             .put("dailyBudgetMinor", 2000)
-            .put("campaignDailyBudgetMinor", 2000)
+            .put("authorizedDailyBudgetMinor", 2000)
+            .put("campaignDailyBudgetMinor", 0)
             .put("adSetDailyBudgetMinor", 0)
+            .put("lifetimeBudgetMinor", 0)
+            .put("adSetLifetimeSpendCapMinor", 0)
             .put("campaignSpendCapMinor", 0)
+            .put("remainingDays", 7)
+            .put("effectiveRemainingAverageMinor", 1751)
+            .put("spend", new BigDecimal("27.45"))
+            .put("startDate", LocalDate.now(ZoneId.of("America/Sao_Paulo")).toString())
+            .put("endDate", end.toString());
+
+    assertThatThrownBy(
+            () ->
+                service.result(
+                    1L, new ResumeCampaignResult(claim.leaseToken(), true, null, evidence)))
+        .hasMessageContaining("não confirmou");
+    assertThat(e.getStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
+  }
+
+  /** Recusa orçamento vitalício acima do teto ou da capacidade diária restante aprovada. */
+  @Test
+  void rejectsCampaignLifetimeAboveAuthorizedLimits() {
+    service.request(91L, input());
+    var claim = service.claim(1L);
+    var evidence =
+        json.createObjectNode()
+            .put("campaignId", "campaign")
+            .put("campaignStatus", "ACTIVE")
+            .put("adSetId", "adset")
+            .put("budgetMode", "CAMPAIGN_LIFETIME_BELOW_MINIMUM")
+            .put("campaignLifetimeBudgetMinor", 17000)
+            .put("accountMinimumCampaignSpendCapMinor", 30000)
+            .put("dailyBudgetMinor", 2000)
+            .put("authorizedDailyBudgetMinor", 2000)
+            .put("campaignDailyBudgetMinor", 0)
+            .put("adSetDailyBudgetMinor", 0)
+            .put("lifetimeBudgetMinor", 0)
+            .put("adSetLifetimeSpendCapMinor", 0)
+            .put("campaignSpendCapMinor", 0)
+            .put("remainingDays", 7)
+            .put("effectiveRemainingAverageMinor", 2037)
             .put("spend", new BigDecimal("27.45"))
             .put("startDate", LocalDate.now(ZoneId.of("America/Sao_Paulo")).toString())
             .put("endDate", end.toString());

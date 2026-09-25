@@ -6,9 +6,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.*;
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -174,7 +176,12 @@ public class FacebookCampaignResumptionWorker {
           campaignDailyBudget == dailyMinor
               && campaignLifetimeBudget == 0L
               && beforeAdSet.path("lifetime_budget").asLong() == 0L;
-      if (!lifetimeMode && !dailyMode && !campaignDailyMode)
+      boolean campaignLifetimeMode =
+          campaignDailyBudget == 0L
+              && campaignLifetimeBudget > 0L
+              && beforeAdSet.path("daily_budget").asLong() == 0L
+              && beforeAdSet.path("lifetime_budget").asLong() == 0L;
+      if (!lifetimeMode && !dailyMode && !campaignDailyMode && !campaignLifetimeMode)
         throw new IllegalStateException(
             "Modo de orçamento do conjunto não permite retomada segura");
       if (!"PAUSED".equals(before.path("status").asText())
@@ -191,8 +198,13 @@ public class FacebookCampaignResumptionWorker {
       BigDecimal spend = new BigDecimal(rows.get(0).path("spend").asText());
       if (spend.compareTo(cap) >= 0)
         throw new IllegalStateException("Teto autorizado já consumido");
+      long spentMinor =
+          spend.movePointRight(2).setScale(0, RoundingMode.HALF_UP).longValueExact();
       verifyDestination(task.path("destinationUrl").asText(), requestId);
       String budgetMode;
+      long nativeCampaignLifetimeBudgetMinor = 0L;
+      long remainingDays = 0L;
+      long effectiveRemainingAverageMinor = 0L;
       long minimumCampaignSpendCap = account.path("min_campaign_group_spend_cap").asLong(0L);
       if (lifetimeMode) {
         budgetMode = "LIFETIME";
@@ -231,17 +243,47 @@ public class FacebookCampaignResumptionWorker {
                   "ACTIVE"),
               token,
               requestId);
-        } else if (belowCampaignMinimum && (dailyMode || campaignDailyMode)) {
+        } else if (
+            belowCampaignMinimum && (dailyMode || campaignDailyMode || campaignLifetimeMode)) {
           if (before.path("spend_cap").asLong(0L) > 0L)
             throw new IllegalStateException(
                 "A campanha possui spend_cap anterior; remova-o pelo contrato oficial antes da"
                     + " migração");
-          budgetMode = "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP";
+          budgetMode = "CAMPAIGN_LIFETIME_BELOW_MINIMUM";
+          remainingDays = ChronoUnit.DAYS.between(today, endDate) + 1L;
+          long dailyWindowLimitMinor = Math.multiplyExact(dailyMinor, remainingDays);
+          nativeCampaignLifetimeBudgetMinor =
+              Math.min(minor, Math.addExact(spentMinor, dailyWindowLimitMinor));
+          if (nativeCampaignLifetimeBudgetMinor <= spentMinor)
+            throw new IllegalStateException(
+                "Janela restante não comporta orçamento nativo acima do gasto confirmado");
+          effectiveRemainingAverageMinor =
+              (nativeCampaignLifetimeBudgetMinor - spentMinor + remainingDays - 1L)
+                  / remainingDays;
           post(
               campaignId,
-              Map.of("daily_budget", Long.toString(dailyMinor), "status", "PAUSED"),
+              Map.of(
+                  "lifetime_budget",
+                  Long.toString(nativeCampaignLifetimeBudgetMinor),
+                  "stop_time",
+                  end.toString(),
+                  "status",
+                  "PAUSED"),
               token,
               requestId);
+          JsonNode migratedCampaign =
+              get(
+                  campaignId,
+                  "id,status,effective_status,spend_cap,daily_budget,lifetime_budget,stop_time",
+                  token,
+                  requestId);
+          evidence.set("migratedCampaign", migratedCampaign);
+          if (migratedCampaign.path("daily_budget").asLong(0L) != 0L
+              || migratedCampaign.path("lifetime_budget").asLong(-1L)
+                  != nativeCampaignLifetimeBudgetMinor
+              || !parseMetaInstant(migratedCampaign.path("stop_time").asText()).equals(end))
+            throw new IllegalStateException(
+                "Meta não confirmou a migração para orçamento vitalício da campanha");
           JsonNode migratedAdSet =
               get(
                   adSetId,
@@ -250,14 +292,14 @@ public class FacebookCampaignResumptionWorker {
                   requestId);
           evidence.set("migratedAdSet", migratedAdSet);
           if (migratedAdSet.path("daily_budget").asLong(0L) != 0L
-              || migratedAdSet.path("lifetime_budget").asLong(0L) != 0L)
+              || migratedAdSet.path("lifetime_budget").asLong(0L) != 0L
+              || migratedAdSet.path("daily_spend_cap").asLong(0L) != 0L
+              || migratedAdSet.path("lifetime_spend_cap").asLong(0L) != 0L)
             throw new IllegalStateException(
-                "Meta não removeu o orçamento próprio do conjunto após migrá-lo para a campanha");
+                "Meta não removeu orçamento e limites próprios do conjunto após a migração");
           post(
               adSetId,
               Map.of(
-                  "lifetime_spend_cap",
-                  Long.toString(minor),
                   "end_time",
                   end.toString(),
                   "status",
@@ -281,29 +323,41 @@ public class FacebookCampaignResumptionWorker {
         throw new IllegalStateException(
             "Meta não confirmou estado e prazo autorizados do conjunto");
       JsonNode verifiedCampaign =
-          get(campaignId, "id,status,spend_cap,daily_budget,lifetime_budget", token, requestId);
+          get(
+              campaignId,
+              "id,status,spend_cap,daily_budget,lifetime_budget,stop_time",
+              token,
+              requestId);
       evidence.set("verifiedCampaign", verifiedCampaign);
       if (lifetimeMode
           && (verified.path("lifetime_budget").asLong(-1) != minor
               || verified.path("daily_budget").asLong() != 0))
         throw new IllegalStateException("Meta não confirmou orçamento vitalício autorizado");
-      if (dailyMode || campaignDailyMode) {
-        boolean campaignDailyFallback = "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP".equals(budgetMode);
+      if (dailyMode || campaignDailyMode || campaignLifetimeMode) {
+        boolean campaignLifetimeFallback =
+            "CAMPAIGN_LIFETIME_BELOW_MINIMUM".equals(budgetMode);
         boolean dailyBudgetConfirmed =
-            campaignDailyFallback
-                ? verifiedCampaign.path("daily_budget").asLong(-1) == dailyMinor
-                    && verifiedCampaign.path("lifetime_budget").asLong() == 0L
+            campaignLifetimeFallback
+                ? verifiedCampaign.path("daily_budget").asLong() == 0L
+                    && verifiedCampaign.path("lifetime_budget").asLong(-1L)
+                        == nativeCampaignLifetimeBudgetMinor
                     && verifiedCampaign.path("spend_cap").asLong() == 0L
                     && verified.path("daily_budget").asLong() == 0L
                     && verified.path("lifetime_budget").asLong() == 0L
+                    && verified.path("daily_spend_cap").asLong() == 0L
+                    && verified.path("lifetime_spend_cap").asLong() == 0L
+                    && parseMetaInstant(verifiedCampaign.path("stop_time").asText()).equals(end)
                 : verified.path("daily_budget").asLong(-1) == dailyMinor
                     && verified.path("lifetime_budget").asLong() == 0L;
         boolean nativeCapConfirmed =
             "DAILY_WITH_CAMPAIGN_CAP".equals(budgetMode)
                 ? verifiedCampaign.path("spend_cap").asLong(-1) == minor
-                : verified.path("lifetime_spend_cap").asLong(-1) == minor;
+                : verifiedCampaign.path("lifetime_budget").asLong(-1L)
+                        == nativeCampaignLifetimeBudgetMinor
+                    && nativeCampaignLifetimeBudgetMinor <= minor
+                    && effectiveRemainingAverageMinor <= dailyMinor;
         if (!dailyBudgetConfirmed || !nativeCapConfirmed)
-          throw new IllegalStateException("Meta não confirmou orçamento diário e teto acumulado");
+          throw new IllegalStateException("Meta não confirmou orçamento e teto acumulado");
       }
       post(campaignId, Map.of("status", "ACTIVE"), token, requestId);
       JsonNode active = get(campaignId, "id,status,effective_status", token, requestId);
@@ -317,15 +371,16 @@ public class FacebookCampaignResumptionWorker {
       evidence.put("budgetMode", budgetMode);
       evidence.put("accountMinimumCampaignSpendCapMinor", minimumCampaignSpendCap);
       evidence.put("campaignSpendCapMinor", verifiedCampaign.path("spend_cap").asLong());
-      evidence.put(
-          "dailyBudgetMinor",
-          "CAMPAIGN_DAILY_WITH_ADSET_LIFETIME_CAP".equals(budgetMode)
-              ? verifiedCampaign.path("daily_budget").asLong()
-              : verified.path("daily_budget").asLong());
+      evidence.put("dailyBudgetMinor", dailyMinor);
+      evidence.put("authorizedDailyBudgetMinor", dailyMinor);
       evidence.put("campaignDailyBudgetMinor", verifiedCampaign.path("daily_budget").asLong());
+      evidence.put(
+          "campaignLifetimeBudgetMinor", verifiedCampaign.path("lifetime_budget").asLong());
       evidence.put("adSetDailyBudgetMinor", verified.path("daily_budget").asLong());
       evidence.put("lifetimeBudgetMinor", verified.path("lifetime_budget").asLong());
       evidence.put("adSetLifetimeSpendCapMinor", verified.path("lifetime_spend_cap").asLong());
+      evidence.put("remainingDays", remainingDays);
+      evidence.put("effectiveRemainingAverageMinor", effectiveRemainingAverageMinor);
       evidence.put("startDate", startDate.toString());
       evidence.put("endDate", endDate.toString());
       evidence.put("spend", spend);

@@ -38,7 +38,8 @@ class FacebookCampaignResumptionWorkerTest {
       rejectSuccessCallback,
       successCallbackCommittedDespiteFailure,
       wrongReplacementReadback,
-      sourcePauseDivergesAfterReplacementActivation;
+      sourcePauseDivergesAfterReplacementActivation,
+      sourceAdSetBidStrategyMissing;
   private boolean dailyMode;
   private boolean campaignCapUsable = true;
   private String campaignStatus = "PAUSED";
@@ -176,6 +177,12 @@ class FacebookCampaignResumptionWorkerTest {
                   return ok("{\"id\":\"" + REPLACEMENT_CAMPAIGN_ID + "\"}");
                 }
                 if (path.endsWith("/act_123456/adsets")) {
+                  if (!body.has("bid_strategy"))
+                    return new MockResponse()
+                        .setResponseCode(400)
+                        .setBody(
+                            "{\"error\":{\"message\":\"Invalid parameter\",\"code\":100,"
+                                + "\"error_subcode\":2490487}}");
                   replacementAdSetCreated = true;
                   replacementLifetimeBudget = body.path("lifetime_budget").asLong();
                   replacementAdSetStatus = body.path("status").asText();
@@ -413,6 +420,30 @@ class FacebookCampaignResumptionWorkerTest {
     assertThat(result.path("replacement").path("campaignId").asText())
         .isEqualTo(REPLACEMENT_CAMPAIGN_ID);
     assertThat(result.path("replacement").path("ads")).hasSize(1);
+  }
+
+  /** Herda o lance sem limite da campanha CBO quando o conjunto de origem não o repete. */
+  @Test
+  void copiesCampaignBidStrategyToReplacementAdSetWhenSourceAdSetOmitsIt() {
+    dailyMode = true;
+    campaignDailyBudget = 2000L;
+    adSetDailyBudgetCleared = true;
+    minimumCampaignSpendCap = 30000L;
+    sourceAdSetBidStrategyMissing = true;
+    task.put("totalLimit", 125);
+
+    worker.poll();
+
+    assertThat(result.path("success").asBoolean()).isTrue();
+    JsonNode adSetCreation =
+        java.util.stream.IntStream.range(0, writePaths.size())
+            .filter(i -> writePaths.get(i).endsWith("/act_123456/adsets"))
+            .mapToObj(writes::get)
+            .findFirst()
+            .orElseThrow();
+    assertThat(adSetCreation.path("bid_strategy").asText())
+        .isEqualTo("LOWEST_COST_WITHOUT_CAP");
+    assertThat(adSetCreation.has("bid_amount")).isFalse();
   }
 
   /** Compara o mínimo da Meta ao limite da campanha física, descontando histórico anterior. */
@@ -658,6 +689,7 @@ class FacebookCampaignResumptionWorkerTest {
         wrongCampaignLifetimeBudget && campaignLifetimeBudget > 0
             ? campaignLifetimeBudget - 100
             : campaignLifetimeBudget);
+    campaign.put("bid_strategy", "LOWEST_COST_WITHOUT_CAP");
     campaign.put("can_use_spend_cap", campaignCapUsable);
     campaign.put("account_id", "123456");
     ObjectNode adSet = json.createObjectNode();
@@ -673,7 +705,8 @@ class FacebookCampaignResumptionWorkerTest {
     adSet.put("billing_event", "IMPRESSIONS");
     adSet.put("optimization_goal", "OFFSITE_CONVERSIONS");
     adSet.put("destination_type", "WEBSITE");
-    adSet.put("bid_strategy", "LOWEST_COST_WITHOUT_CAP");
+    if (!sourceAdSetBidStrategyMissing)
+      adSet.put("bid_strategy", "LOWEST_COST_WITHOUT_CAP");
     ObjectNode targeting = adSet.putObject("targeting");
     targeting.putObject("geo_locations").putArray("countries").add("BR");
     targeting.putArray("publisher_platforms").add("instagram");
@@ -722,7 +755,7 @@ class FacebookCampaignResumptionWorkerTest {
         + readbackBudget
         + "\",\"daily_spend_cap\":\"0\",\"lifetime_spend_cap\":\"0\",\"end_time\":\""
         + finalEnd
-        + "\"}";
+        + "\",\"bid_strategy\":\"LOWEST_COST_WITHOUT_CAP\"}";
   }
 
   /** Monta a releitura do anúncio substituto que reutiliza o criativo aprovado. */

@@ -43,6 +43,12 @@ mantém a origem pausada e cria uma campanha substituta sem orçamento CBO; seu 
 ad set recebe orçamento vitalício apenas sobre o saldo restante, preservando teto de
 R$ 125 e média de até R$ 20/dia. Releitura divergente ou hierarquia parcial insegura
 pausa origem e substituta.
+Ao converter a continuação física de CBO para ABO, o worker também copia para o novo
+ad set a estratégia de lance confirmada na origem. A Graph API pode omitir
+`bid_strategy` no ad set diário e expor `LOWEST_COST_WITHOUT_CAP` somente na campanha;
+deixar o campo ausente na criação é rejeitado com `100/2490487`. Estratégias com teto
+exigem ainda um `bid_amount` positivo confirmado. Estratégia e valor aplicável são
+relidos antes da ativação, sem inventar lance ou ampliar orçamento.
 Na campanha sem teto anterior, a substituição omite `spend_cap`: a Graph API rejeita
 `spend_cap=0` (`100/1885099`) em vez de interpretá-lo como remoção. Campanha que
 já possua teto positivo falha antes da primeira mutação. O backend vincula as duas

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agenttask.AgentTaskTargetContextProvider;
 import com.marketinghub.agenttask.AgentTaskTargetResponse;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver;
 import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver.CanonicalCheckout;
@@ -285,7 +286,7 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
                 .map(CanonicalCheckout::checkoutUrl)
                 .orElse(experiment == null ? null : experiment.getCommercialCheckoutUrl()),
             commercialPrice(experiment, product, canonicalCheckout),
-            pdeContext(product, processCode)));
+            pdeContext(experiment, product, processCode)));
   }
 
   /**
@@ -317,7 +318,10 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
   }
 
   /** Entrega o contrato privado reconciliado com a versão aceita e sua evidência de implantação. */
-  private JsonNode pdeContext(Product product, String processCode) {
+  private JsonNode pdeContext(Experiment experiment, Product product, String processCode) {
+    if ("pde-commercial-plan-offer".equals(processCode) && experiment != null) {
+      return commercialPlanningContext(experiment, product);
+    }
     if (!isPrivateValidation(product, processCode) || blank(product.getPdeExperienceJson())) {
       return null;
     }
@@ -364,6 +368,149 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
           processCode,
           ex);
       return null;
+    }
+  }
+
+  /**
+   * Entrega à Atena a entrada persistida do primeiro planejamento sem fabricar um ciclo de vendas.
+   */
+  private JsonNode commercialPlanningContext(Experiment experiment, Product product) {
+    CommercialPlan plan =
+        commercialPlans == null
+            ? null
+            : Optional.ofNullable(commercialPlans.findByExperimentReference(experiment.getId()))
+                .orElseGet(List::of)
+                .stream()
+                .findFirst()
+                .orElse(null);
+    Hypothesis hypothesis = experiment.getHypothesisRef();
+    boolean successor = experiment.getSourceExperiment() != null;
+    String mode =
+        successor
+            ? "SUCCESSOR_REQUIRES_LEARNING_CYCLE"
+            : plan != null
+                    && plan.getId() != null
+                    && hypothesis != null
+                    && hypothesis.getId() != null
+                ? "INITIAL_PLANNED_EXPERIMENT"
+                : "INITIAL_CONTEXT_INCOMPLETE";
+
+    ObjectNode context = objectMapper.createObjectNode();
+    context.put("contractVersion", "PDE_COMMERCIAL_PLANNING_INPUT_V1");
+    context.put("mode", mode);
+    context.put("commercialEvidenceStatus", "NOT_MEASURED");
+    context.put("publicationAuthorized", false);
+    context.put("mediaSpendAuthorized", false);
+
+    ObjectNode productNode = context.putObject("product");
+    productNode.put("id", product.getId());
+    productNode.put("internalName", product.getInternalName());
+    productNode.put("commercialName", product.getName());
+    productNode.put("type", product.getProductType());
+    productNode.put("format", product.getProductFormat());
+    productNode.put("deliveryMode", product.getDeliveryMode());
+    productNode.put("revenueModel", product.getRevenueModel());
+    productNode.put("validationDefinitionVersion", product.getValidationDefinitionVersion());
+    productNode.put("targetAudience", product.getTargetAudience());
+    productNode.put("languageStyle", product.getLanguageStyle());
+    productNode.put("explicitPain", product.getExplicitPain());
+    productNode.put("promise", product.getPromise());
+    productNode.put("uniqueMechanism", product.getUniqueMechanism());
+    productNode.put("primaryCta", product.getPrimaryCta());
+    productNode.put("currentPriceBrl", product.getCurrentPriceBrl());
+    productNode.put("riskReversal", product.getRiskReversal());
+    productNode.put("funnel", product.getFunnel());
+    productNode.put("storytelling", product.getStorytelling());
+    setStructuredJson(
+        productNode,
+        "desireAssociationMap",
+        product.getDesireAssociationMapJson(),
+        "mapa de desejo",
+        product.getId());
+    setStructuredJson(
+        productNode,
+        "pdeExperience",
+        product.getPdeExperienceJson(),
+        "experiência PDE",
+        product.getId());
+
+    ObjectNode experimentNode = context.putObject("experiment");
+    experimentNode.put("id", experiment.getId());
+    experimentNode.put(
+        "sourceExperimentId",
+        experiment.getSourceExperiment() == null ? null : experiment.getSourceExperiment().getId());
+    experimentNode.put(
+        "status", experiment.getStatus() == null ? null : experiment.getStatus().name());
+    experimentNode.put(
+        "platform", experiment.getPlatform() == null ? null : experiment.getPlatform().name());
+    experimentNode.put("commercialObjective", experiment.getCommercialObjective());
+    experimentNode.put("singlePain", experiment.getSinglePain());
+    experimentNode.put("proofPreview", experiment.getFreeReward());
+    experimentNode.put("funnelPromise", experiment.getFunnelPromise());
+    experimentNode.put("primaryCta", experiment.getPrimaryCta());
+    experimentNode.put("primaryMetric", experiment.getPrimaryMetric());
+    experimentNode.put("sampleSize", experiment.getSampleSize());
+    experimentNode.put("targetCvr", experiment.getTargetCvr());
+    experimentNode.put("unitPriceBrl", experiment.getUnitPrice());
+    experimentNode.put("dailyBudgetBrl", experiment.getDailyBudget());
+    experimentNode.put("mediaSpendLimitBrl", experiment.getMediaSpendLimit());
+
+    ObjectNode hypothesisNode = context.putObject("hypothesis");
+    if (hypothesis != null) {
+      hypothesisNode.put("id", hypothesis.getId() == null ? null : hypothesis.getId().toString());
+      hypothesisNode.put("title", hypothesis.getTitle());
+      hypothesisNode.put("versionNumber", hypothesis.getVersionNumber());
+      hypothesisNode.put("persona", hypothesis.getPersona());
+      hypothesisNode.put("problem", hypothesis.getProblem());
+      hypothesisNode.put("promise", hypothesis.getPromise());
+      hypothesisNode.put("mechanism", hypothesis.getMechanism());
+      hypothesisNode.put("delivery", hypothesis.getEntrega());
+      hypothesisNode.put("successRule", hypothesis.getSuccessRule());
+      hypothesisNode.put("priceBrl", hypothesis.getPrice());
+      setStructuredJson(
+          hypothesisNode,
+          "framework",
+          hypothesis.getFrameworkJson(),
+          "framework da hipótese",
+          product.getId());
+    }
+
+    ObjectNode planNode = context.putObject("commercialPlan");
+    if (plan != null) {
+      planNode.put("id", plan.getId());
+      planNode.put("name", plan.getName());
+      planNode.put("commercialObjective", plan.getCommercialObjective());
+      planNode.put("targetAudience", plan.getTargetAudience());
+      planNode.put("mainPain", plan.getMainPain());
+      planNode.put("mainOffer", plan.getMainOffer());
+      planNode.put("mainLeadMagnet", plan.getMainLeadMagnet());
+      planNode.put("mainChannel", plan.getMainChannel());
+      planNode.put("mainMetric", plan.getMainMetric());
+      planNode.put("successCriteria", plan.getSuccessCriteria());
+      planNode.put("stopCriteria", plan.getStopCriteria());
+      planNode.put("offerPriceBrl", plan.getOfferPriceBrl());
+      planNode.put("maxBudgetBrl", plan.getMaxBudget());
+      planNode.put("expectedCacBrl", plan.getExpectedCacBrl());
+      planNode.put("variableCostPerSaleBrl", plan.getVariableCostPerSaleBrl());
+      planNode.put("fixedOperationalCostBrl", plan.getFixedOperationalCostBrl());
+      planNode.put("nextAction", plan.getNextAction());
+      planNode.put("currentBlocker", plan.getCurrentBlocker());
+    }
+    return context;
+  }
+
+  /** Converte contratos JSON persistidos em objetos estruturados e registra qualquer corrupção. */
+  private void setStructuredJson(
+      ObjectNode target, String field, String raw, String contractName, Long productId) {
+    if (blank(raw)) return;
+    try {
+      target.set(field, objectMapper.readTree(raw));
+    } catch (Exception ex) {
+      log.error(
+          "Contrato JSON inválido ao montar contexto comercial. productId={} contract={}",
+          productId,
+          contractName,
+          ex);
     }
   }
 

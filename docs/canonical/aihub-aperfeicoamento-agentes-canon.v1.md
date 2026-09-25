@@ -56,6 +56,20 @@ cadastro são sinais intermediários, não vendas rentáveis; custos ou métrica
 permanecem desconhecidos. Os critérios orientam criação e avaliação, sem alegar eficácia
 causal comprovada pelo experimento que motivou o aprendizado.
 
+## Primeiro experimento não é sucessor — decisão de 25/09/2026
+
+Uma referência `experiment:*` identifica o alvo da tarefa, mas não comprova retorno de um ciclo de
+vendas. Atena deve classificar separadamente descoberta, primeiro experimento planejado e sucessor.
+Somente `learningSalesCycle` persistido e compatível autoriza exigir `brief`, aprendizado herdado e
+decisão de ajuste. O primeiro planejamento recebe contrato versionado com produto, hipótese,
+experimento e plano comercial; ausência desse contrato bloqueia antes da chamada paga.
+
+No primeiro planejamento, vendas, CAC, custo e margem ainda desconhecidos permanecem hipóteses para
+Plutus, sem virar zero nem impedir o desenho privado quando a oferta é coerente. Produtos em
+`PDE_AGENT_VALIDATION_V1` ou `PDE_AGENT_VALIDATED_V1` não podem ganhar recrutamento ou contato
+humano por inferência do agente; prova multiagente continua técnica, não comercial. Testes devem
+cobrir os três modos, identidade cruzada e contexto incompleto sem invocação de modelo.
+
 ## Autonomia até o objetivo do processo — decisão de 21/09/2026
 
 O prompt autoriza explicitamente o modelo a criar ou atualizar manualmente os PRs necessários

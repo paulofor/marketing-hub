@@ -7127,3 +7127,20 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   tela e o contexto copiado para o AIHUB identificam explicitamente registros históricos e informam
   que eles não determinam o estado atual. Matriz em
   `docs/homologacao/capella-processo96-projecao-versao-v1.md`.
+
+## LOOP-ATENA-EXPERIMENTO-INICIAL-TRATADO-COMO-SUCESSOR — 25/09/2026
+
+- **Evidência confirmada:** a tarefa #495 recebeu o primeiro experimento planejado #93 de Mira,
+  mas bloqueou pedindo `learningSalesCycle`, `brief`, `inheritedLearning` e `currentDecisions`.
+  Não havia experimento de origem nem ciclo de vendas; a única inferência custou US$ 0,187532.
+- **Causa-raiz:** o prompt reconhecia corretamente um sucessor pela combinação de referência e
+  ciclo, porém não declarava o terceiro modo — primeiro experimento já ligado a produto, hipótese e
+  plano. O alvo também não entregava esses contratos, permitindo que `experiment:*` dominasse a
+  classificação feita pelo modelo.
+- **Alternativas avaliadas:** fabricar ciclo produziria história falsa; relaxar apenas o prompt
+  manteria entrada pobre; publicar um contrato inicial tipado e validá-lo antes do modelo preserva
+  a origem dos dados e impede cobrança inútil. A terceira alternativa foi adotada.
+- **Prevenção:** o backend entrega `PDE_COMMERCIAL_PLANNING_INPUT_V1` com modo, identidades e
+  contratos persistidos; Atena separa descoberta, inicial e sucessor; o worker recusa contexto
+  incompleto antes da inferência. Regressões cobrem planejamento inicial, sucessor compatível e
+  ausência do contrato. Nenhuma retomada automática é aberta com a mesma entrada defeituosa.

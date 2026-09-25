@@ -7,6 +7,9 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentPlatform;
+import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver;
@@ -18,12 +21,95 @@ import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /** Responsabilidade: impedir que tarefas comerciais percam ou misturem a identidade do PDE. */
 class ExperimentAgentTaskTargetContextProviderTest {
+
+  /** O primeiro experimento recebe hipótese e plano rastreáveis sem fingir um ciclo de vendas. */
+  @Test
+  void resolvesInitialCommercialPlanningContextWithoutFakeLearningCycle() {
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    CommercialPlanRepository plans = mock(CommercialPlanRepository.class);
+    UUID hypothesisId = UUID.fromString("2f458f27-1f6e-4853-a27d-2b6ac1ab0de6");
+    Product product =
+        Product.builder()
+            .id(10L)
+            .slug("mira")
+            .name("Orientação individualizada")
+            .internalName("Mira")
+            .productType("AI_PRODUCT")
+            .validationDefinitionVersion("PDE_AGENT_VALIDATED_V1")
+            .targetAudience("Mulheres de 35 a 60 anos")
+            .desireAssociationMapJson("{\"version\":\"v2\"}")
+            .pdeExperienceJson(
+                "{\"experienceVersion\":\"mira-private-v2\",\"validationMode\":\"MULTI_AGENT_V1\"}")
+            .currentPriceBrl(new BigDecimal("49"))
+            .build();
+    Hypothesis hypothesis =
+        Hypothesis.builder()
+            .id(hypothesisId)
+            .product(product)
+            .title("MD3A-H003")
+            .versionNumber(3)
+            .persona("Mulheres com produtos já comprados")
+            .problem("Não conseguem organizar a rotina")
+            .promise("Rotina clara em até dez minutos")
+            .mechanism("Organização documentada e segura")
+            .frameworkJson("{\"offer\":{\"name\":\"MD3A-H003\"}}")
+            .price(new BigDecimal("49"))
+            .build();
+    Experiment experiment =
+        Experiment.builder()
+            .id(93L)
+            .product(product)
+            .hypothesisRef(hypothesis)
+            .status(ExperimentStatus.PLANNED)
+            .platform(ExperimentPlatform.FACEBOOK)
+            .commercialObjective("Validar os cinco pontos da comunicação sem autorizar mídia.")
+            .freeReward("Vídeo curto da interface real ou cartão estático.")
+            .unitPrice(new BigDecimal("49"))
+            .build();
+    CommercialPlan plan =
+        CommercialPlan.builder()
+            .id(8L)
+            .name("Mira · piloto Instagram Ads")
+            .experiment(experiment)
+            .hypothesis(hypothesis)
+            .commercialObjective("Comunicar desejo, facilidade, valor, continuidade e margem.")
+            .mainChannel("Instagram Ads")
+            .mainMetric("Compras líquidas e margem")
+            .offerPriceBrl(new BigDecimal("49"))
+            .build();
+    when(experiments.findById(93L)).thenReturn(Optional.of(experiment));
+    when(plans.findByExperimentReference(93L)).thenReturn(java.util.List.of(plan));
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(
+            experiments, products, new ObjectMapper(), null, plans);
+
+    var target = provider.resolve("experiment:93", "pde-commercial-plan-offer").orElseThrow();
+
+    assertThat(target.pdeContext().path("contractVersion").asText())
+        .isEqualTo("PDE_COMMERCIAL_PLANNING_INPUT_V1");
+    assertThat(target.pdeContext().path("mode").asText()).isEqualTo("INITIAL_PLANNED_EXPERIMENT");
+    assertThat(target.pdeContext().path("experiment").path("sourceExperimentId").isNull()).isTrue();
+    assertThat(target.pdeContext().path("hypothesis").path("id").asText())
+        .isEqualTo(hypothesisId.toString());
+    assertThat(target.pdeContext().path("commercialPlan").path("id").asLong()).isEqualTo(8L);
+    assertThat(
+            target
+                .pdeContext()
+                .path("product")
+                .path("pdeExperience")
+                .path("validationMode")
+                .asText())
+        .isEqualTo("MULTI_AGENT_V1");
+    assertThat(target.pdeContext().path("mediaSpendAuthorized").asBoolean()).isFalse();
+  }
 
   /** A construção de sucessor usa o contexto do ciclo antes do cadastro comercial legado. */
   @Test

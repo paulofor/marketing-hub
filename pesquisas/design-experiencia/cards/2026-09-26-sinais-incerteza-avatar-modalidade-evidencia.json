@@ -1,0 +1,18 @@
+{
+  "cardKey": "sinais-incerteza-avatar-modalidade-evidencia",
+  "collection": "prazer-audio-visual",
+  "title": "Cues de incerteza em avatares devem equilibrar imersão e verificabilidade",
+  "finding": "Em estudo within-subjects com 24 participantes, sinais incorporados ao avatar, ícones e texto com citações melhoraram a identificação de conteúdo potencialmente incorreto frente ao baseline. Gestos preservaram mais confiança e imersão; texto foi mais interpretável e menos exigente mentalmente; ícones ofereceram um meio-termo.",
+  "mechanism": "A modalidade do cue distribui a atenção entre presença social e análise. Gestos humanizados parecem naturais e preservam fluxo, mas podem ser menos explícitos; sinais persistentes e inspecionáveis tornam incerteza e proveniência mais fáceis de verificar.",
+  "commercialApplication": "Em experiências audiovisuais do Marketing Hub com avatar ou agente de voz visual, combinar sinal não verbal leve com ícone persistente e acesso à fonte ou evidência. Para claims de maior consequência, priorizar cues verificáveis em vez de depender só de gesto, postura ou entonação.",
+  "evidenceStrength": "Moderada: estudo within-subjects com N=24, publicado no ISMAR 2026/TVCG Special Issue. O contexto foi VR e exposição curta, portanto a transferência para vídeo comercial ou agentes em tela comum exige teste.",
+  "publishedOn": "2026-09-23",
+  "validUntil": "2027-03-23",
+  "experimentHypothesis": "Um cue multimodal que combina presença do avatar com ícone persistente e fonte inspecionável aumentará a detecção de informação problemática e preservará a imersão melhor que gesto isolado ou ausência de cue.",
+  "risks": "A presença do cue pode aumentar confiança apenas por sinalizar aparente controle; excesso de sinais pode quebrar imersão, gerar fadiga, falsos positivos ou problemas de acessibilidade.",
+  "limits": "N=24, cenário VR e agente incorporado. O estudo mediu identificação, confiança, imersão e carga, não vendas, CTA, retenção comercial ou comportamento de compra.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-26-sinais-incerteza-avatar-modalidade-evidencia.md",
+  "sourceTitle": "Sinais de incerteza e proveniência em agentes audiovisuais",
+  "sourceSha256": "8d35b22a44d58a47d86452e4904db73e0ada97b5fa197f00e12d5a6f61459fe0"
+}

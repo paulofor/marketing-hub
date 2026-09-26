@@ -1,0 +1,18 @@
+{
+  "cardKey": "feedback-metacognitivo-reduz-offloading-ai",
+  "collection": "neuromarketing",
+  "title": "Fricção cognitiva ajuda quando informa; pode falhar quando bloqueia",
+  "finding": "Evidência experimental sugere que um feedback metacognitivo curto pode reduzir delegação integral e preservar desempenho posterior, enquanto um RCT com 132 estudantes mostrou que uma configuração Socrática rígida com contexto completo foi percebida como menos útil para concluir a tarefa e apresentou sinais descritivos de maior bypass para outro LLM.",
+  "mechanism": "Hipótese interpretativa: tornar visível o custo da delegação pode ativar autorregulação sem impedir ajuda, enquanto fricção rígida e repetitiva aumenta custo de interação e pode incentivar abandono ou bypass. A distinção é entre fricção informativa e fricção obstrutiva.",
+  "commercialApplication": "No Marketing Hub, quando houver motivo para preservar julgamento humano, usar assistência em camadas: orientação breve, feedback metacognitivo opcional e rota clara para resposta ou execução direta. Evitar modo Socrático obrigatório como padrão.",
+  "evidenceStrength": "Moderada: combina experimento pré-registrado com N=704 e RCT 2x2 com N=132; ambos em contextos educacionais. A pior avaliação do Socrático + Contexto Completo foi significativa para suporte à conclusão, mas diferenças de uso de LLM externo e compreensão foram descritivas ou não significativas.",
+  "publishedOn": "2026-09-24",
+  "validUntil": "2027-03-24",
+  "experimentHypothesis": "Feedback metacognitivo breve e escapável antes de delegação integral preservará mais revisão humana e reduzirá offloading sem elevar bypass ou retrabalho, em comparação com ajuda direta e com um gate Socrático rígido.",
+  "risks": "Fricção excessiva pode frustrar, aumentar turnos, provocar uso de ferramentas externas e reduzir conversão em tarefas nas quais o usuário quer delegar legitimamente. Não moralizar nem bloquear ajuda necessária.",
+  "limits": "Os estudos não mediram vendas, CTA ou produtividade no Marketing Hub; foram realizados em frações e programação. O mecanismo conjunto proposto é interpretação e precisa de validação no contexto real.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-26-feedback-metacognitivo-friccao-calibrada.md",
+  "sourceTitle": "Feedback metacognitivo e fricção calibrada em assistência por IA",
+  "sourceSha256": "31a0087223818c79c659a04918f020d7aefc25feb7ce53bbb1c6f53b67d2c196"
+}

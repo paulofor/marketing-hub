@@ -1208,6 +1208,7 @@ public class SalesVideoJobService {
                   target.put(field, source.get(field));
                 }
               });
+      normalizeEditorialMotionGovernance(source, target);
       reconcilePostProductionTechnicalGate(source, target);
     } catch (JsonProcessingException ex) {
       log.error(
@@ -1218,6 +1219,18 @@ public class SalesVideoJobService {
           VideoModuleErrorCode.BAD_REQUEST,
           "Metadata do vídeo fonte não permite preservar a linhagem do experimento.");
     }
+  }
+
+  /** Remove a falsa classificação de apresentadora em prova editorial composta só pela tela. */
+  private void normalizeEditorialMotionGovernance(JsonNode source, Map<String, Object> target) {
+    if (!"DETERMINISTIC_EDITORIAL_MOTION_FROM_APPROVED_PRODUCT_PROOF"
+        .equalsIgnoreCase(source.path("generation_strategy").asText())) return;
+    ObjectNode governance =
+        source.path("referenceGovernance").isObject()
+            ? ((ObjectNode) source.path("referenceGovernance")).deepCopy()
+            : objectMapper.createObjectNode();
+    governance.put("presenterIsSynthetic", false);
+    target.put("referenceGovernance", governance);
   }
 
   /** Faz o contrato filho refletir a estabilidade já auditada no arquivo Product UGC fonte. */

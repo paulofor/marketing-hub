@@ -7,17 +7,24 @@ import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
 import com.marketinghub.experiment.video.dto.RequestExperimentVideoPostProductionRequest;
 import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
+import com.marketinghub.experiment.video.dto.UploadExperimentAdVideoRequest;
 import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import com.marketinghub.experiment.video.service.ExperimentVideoPerformanceDashboardService;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /** Expõe vídeos de experimento para planejamento, revisão e liberação do funil. */
 @RestController
@@ -53,6 +60,37 @@ public class ExperimentVideoAssetController {
       @PathVariable Long experimentId,
       @Valid @RequestBody CreateExperimentVideoAssetRequest request) {
     return service.create(experimentId, request);
+  }
+
+  /** Recebe um MP4 vertical finalizado e o mantém pendente de revisão antes de virar anúncio. */
+  @PostMapping(value = "/ad-uploads", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @ResponseStatus(HttpStatus.CREATED)
+  public ExperimentVideoAssetDto uploadAdVideo(
+      @PathVariable Long experimentId,
+      @RequestParam("file") MultipartFile file,
+      @RequestParam String objective,
+      @RequestParam String primaryMetric,
+      @RequestParam String script,
+      @RequestParam Integer durationSeconds,
+      @RequestParam Boolean hasAudio,
+      @RequestParam String visualSourceKey,
+      @RequestParam String visualSourceDescription,
+      @RequestParam String productionReference,
+      @RequestParam(defaultValue = "true") boolean requiredForRelease)
+      throws IOException {
+    return service.uploadUserAdVideo(
+        experimentId,
+        file,
+        new UploadExperimentAdVideoRequest(
+            objective,
+            primaryMetric,
+            script,
+            durationSeconds,
+            hasAudio,
+            visualSourceKey,
+            visualSourceDescription,
+            productionReference,
+            requiredForRelease));
   }
 
   /** Cria perfil, script, job VEO e vínculo obrigatório de vídeo para o experimento. */

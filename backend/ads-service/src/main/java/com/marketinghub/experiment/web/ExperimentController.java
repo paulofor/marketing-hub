@@ -32,6 +32,7 @@ import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.experiment.service.cockpit.ExperimentCockpitDto;
 import com.marketinghub.experiment.service.construction.ExperimentConstructionDto;
+import com.marketinghub.experiment.service.createFacebookSuccessor.AdoptFacebookSuccessorRequest;
 import com.marketinghub.experiment.service.createFacebookSuccessor.CreateFacebookSuccessorRequest;
 import com.marketinghub.experiment.service.createFacebookSuccessor.FacebookSuccessorReadinessResponse;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
@@ -130,6 +131,17 @@ public class ExperimentController {
   @GetMapping("/{id}/facebook-successor-readiness")
   public FacebookSuccessorReadinessResponse facebookSuccessorReadiness(@PathVariable Long id) {
     return service.facebookSuccessorReadiness(id);
+  }
+
+  /** Adota uma origem Facebook auditada em um sucessor planejado já criado pela interface. */
+  @Operation(
+      summary = "Vincular sucessor Facebook planejado à origem auditada",
+      description =
+          "Copia somente página e checkout quando produto, hipótese, oferta e identidades Meta coincidem, sem herdar execução.")
+  @PostMapping("/{id}/facebook-successor-adoption")
+  public ExperimentDto adoptFacebookSuccessor(
+      @PathVariable Long id, @Valid @RequestBody AdoptFacebookSuccessorRequest request) {
+    return mapper.toDto(service.adoptFacebookSuccessor(id, request));
   }
 
   /** Cria um experimento comercial limpo a partir de uma homologação fake aprovada. */

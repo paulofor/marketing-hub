@@ -7327,3 +7327,22 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
 - Homologação local concluída com testes backend/worker/frontend, MySQL 5.7 real e desktop/mobile.
   PR #5270 registra a entrega; a retomada operacional será executada pela tela após a publicação.
   [Matriz, limites e evidências](../homologacao/vega91-retomada-financeira-v1.md).
+
+## 2026-09-26 — Capella #94: sucessor com vídeo e margem controlada
+
+- O sucessor foi criado pela interface como #94, mas o contrato anterior só permitia reaproveitar
+  página e checkout na criação automática de um sucessor direto; um experimento já planejado não
+  tinha adoção auditável da origem #88.
+- A correção adiciona vínculo idempotente que copia somente página, checkout, origem e plano
+  comercial quando produto, hipótese, oferta, território e identidades Meta coincidem. Campanha,
+  métricas, público e criativos continuam segregados.
+- Os limites de parada passaram a fazer parte da criação/edição: teto de R$ 100, interrupção sem
+  compra em R$ 50 e encerramento para conciliação em duas compras. Repetição depende de contribuição
+  positiva, venda líquida e entrega confirmada.
+- A aba Vídeo agora recebe MP4 vertical finalizado com assinatura, duração, áudio, proveniência e
+  processo versionado; o upload custa zero, permanece pendente de revisão e não publica mídia.
+- A peça de 18 segundos é reproduzível por
+  `scripts/marketing/create-capella-successor-video-v1.sh` e usa somente os criativos aprovados
+  #522/#523. Desejo, prova antes da compra, pacote pago, preço e prazo ficam explícitos sem inventar
+  depoimentos, antes/depois ou receita.
+- Matriz e critérios: [Capella sucessor em vídeo v1](../homologacao/capella-facebook-successor-video-v1.md).

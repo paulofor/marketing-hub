@@ -31,6 +31,7 @@ import {
   parseOptionalPositiveAmount,
   productAiSubtypeForExperiment,
 } from "./experimentPlanningContract";
+import ExperimentFacebookSuccessorAdoptionPanel from "./ExperimentFacebookSuccessorAdoptionPanel";
 
 const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
   AI_VISUAL_PREVIEW: "Prévia visual IA",
@@ -49,6 +50,8 @@ interface FormData {
   targetCvr: string;
   dailyBudget: string;
   mediaSpendLimit: string;
+  zeroPurchaseSpendLimit: string;
+  purchaseStopCount: string;
   unitPrice: string;
   followUpActionUrl: string;
   startDate: string;
@@ -113,6 +116,8 @@ export default function EditExperimentPage() {
       targetCvr: "",
       dailyBudget: "",
       mediaSpendLimit: "",
+      zeroPurchaseSpendLimit: "",
+      purchaseStopCount: "",
       unitPrice: "",
       followUpActionUrl: "",
       startDate: "",
@@ -164,6 +169,16 @@ export default function EditExperimentPage() {
           data.mediaSpendLimit != null && data.mediaSpendLimit > 0
             ? String(data.mediaSpendLimit)
             : "",
+        zeroPurchaseSpendLimit:
+          data.campaignObjective === "SALES"
+            ? data.zeroPurchaseSpendLimit != null
+              ? String(data.zeroPurchaseSpendLimit)
+              : ""
+            : data.zeroResultSpendLimit != null
+              ? String(data.zeroResultSpendLimit)
+              : "",
+        purchaseStopCount:
+          data.purchaseStopCount != null ? String(data.purchaseStopCount) : "",
         unitPrice: data.unitPrice != null ? String(data.unitPrice) : "",
         followUpActionUrl: data.followUpActionUrl ?? "",
         startDate: toDateInputValue(data.startDate),
@@ -496,6 +511,49 @@ export default function EditExperimentPage() {
         );
         return;
       }
+      const parsedZeroPurchaseSpendLimit = parseOptionalPositiveAmount(
+        values.zeroPurchaseSpendLimit,
+      );
+      if (parsedZeroPurchaseSpendLimit === null) {
+        alert("Informe uma parada sem compra válida ou deixe o campo vazio");
+        return;
+      }
+      const parsedPurchaseStopCount = parseOptionalPositiveAmount(
+        values.purchaseStopCount,
+      );
+      if (
+        parsedPurchaseStopCount === null ||
+        (parsedPurchaseStopCount != null &&
+          !Number.isInteger(parsedPurchaseStopCount))
+      ) {
+        alert("Informe uma meta inteira de compras ou deixe o campo vazio");
+        return;
+      }
+      const stopPolicyChanged =
+        Boolean(dirtyFields.zeroPurchaseSpendLimit) ||
+        Boolean(dirtyFields.purchaseStopCount);
+      const resolvedMediaSpendLimit =
+        parsedMediaSpendLimit ?? data.mediaSpendLimit ?? undefined;
+      if (
+        stopPolicyChanged &&
+        (resolvedMediaSpendLimit == null ||
+          parsedZeroPurchaseSpendLimit == null ||
+          parsedZeroPurchaseSpendLimit < 25 ||
+          parsedZeroPurchaseSpendLimit > resolvedMediaSpendLimit)
+      ) {
+        alert(
+          "A parada sem compra deve ficar entre R$ 25 e o teto total de mídia",
+        );
+        return;
+      }
+      if (
+        stopPolicyChanged &&
+        isSalesObjectiveExperiment &&
+        parsedPurchaseStopCount == null
+      ) {
+        alert("Informe a quantidade de compras que encerra a coleta");
+        return;
+      }
       const parsedKpiTarget = parseOptionalPositiveAmount(values.kpiTarget);
       if (parsedKpiTarget === null) {
         alert("Informe uma meta de KPI válida ou deixe o campo vazio");
@@ -603,6 +661,17 @@ export default function EditExperimentPage() {
         mediaSpendLimit: mediaPlanChanged
           ? (parsedMediaSpendLimit ?? null)
           : undefined,
+        zeroResultSpendLimit: stopPolicyChanged
+          ? (parsedZeroPurchaseSpendLimit ?? null)
+          : undefined,
+        zeroPurchaseSpendLimit:
+          stopPolicyChanged && isSalesObjectiveExperiment
+            ? (parsedZeroPurchaseSpendLimit ?? null)
+            : undefined,
+        purchaseStopCount:
+          stopPolicyChanged && isSalesObjectiveExperiment
+            ? (parsedPurchaseStopCount ?? null)
+            : undefined,
         unitPrice: parsedUnitPrice,
         metricPresetId: values.metricPresetId || undefined,
         sampleSize: data.sampleSize ?? undefined,
@@ -1062,6 +1131,50 @@ export default function EditExperimentPage() {
                       </div>
                     </div>
                   )}
+                  {platformValue === "FACEBOOK" && (
+                    <div>
+                      <label
+                        className="form-label"
+                        htmlFor="zeroPurchaseSpendLimit"
+                      >
+                        Parar sem compra/resultado em (R$)
+                      </label>
+                      <input
+                        id="zeroPurchaseSpendLimit"
+                        className="form-control"
+                        type="number"
+                        min="25"
+                        step="0.01"
+                        {...register("zeroPurchaseSpendLimit")}
+                      />
+                      <div className="form-text">
+                        Deve ficar entre R$ 25 e o teto total autorizado.
+                      </div>
+                    </div>
+                  )}
+                  {platformValue === "FACEBOOK" &&
+                    isSalesObjectiveExperiment && (
+                      <div>
+                        <label
+                          className="form-label"
+                          htmlFor="purchaseStopCount"
+                        >
+                          Parar ao atingir compras
+                        </label>
+                        <input
+                          id="purchaseStopCount"
+                          className="form-control"
+                          type="number"
+                          min="1"
+                          step="1"
+                          {...register("purchaseStopCount")}
+                        />
+                        <div className="form-text">
+                          Encerra a coleta para conciliar receita, entrega e
+                          margem antes de repetir.
+                        </div>
+                      </div>
+                    )}
                   <div>
                     <label className="form-label" htmlFor="unitPrice">
                       Preço unitário (R$) <span className="text-danger">*</span>
@@ -1183,6 +1296,14 @@ export default function EditExperimentPage() {
                         Não foi possível criar o checkout. Confirme que a área
                         PDE está ativa e validada.
                       </div>
+                    ) : null}
+                    {data.platform === "FACEBOOK" &&
+                    data.status === "PLANNED" &&
+                    !data.sourceExperimentId &&
+                    !data.commercialCheckoutUrl ? (
+                      <ExperimentFacebookSuccessorAdoptionPanel
+                        targetExperimentId={expId}
+                      />
                     ) : null}
                   </div>
                   <div>

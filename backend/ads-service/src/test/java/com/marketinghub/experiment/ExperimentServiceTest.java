@@ -18,6 +18,7 @@ import com.marketinghub.experiment.run.ExperimentRunMode;
 import com.marketinghub.experiment.run.ExperimentRunStatus;
 import com.marketinghub.experiment.run.ExperimentRunStopPolicy;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.experiment.service.createFacebookSuccessor.AdoptFacebookSuccessorRequest;
 import com.marketinghub.experiment.service.createFacebookSuccessor.CreateFacebookSuccessorRequest;
 import com.marketinghub.facebookads.BudgetMode;
 import com.marketinghub.facebookads.FacebookAdStatus;
@@ -607,6 +608,182 @@ class ExperimentServiceTest {
     assertThat(successor.getMediaSpendLimit()).isEqualByComparingTo("100.00");
     assertThat(successor.getEndDate()).isEqualTo(LocalDate.of(2026, 9, 6));
   }
+
+  /** Reutiliza página e checkout entre experimentos Facebook equivalentes sem herdar execução. */
+  @Test
+  void adoptFacebookSuccessorCopiesOnlyAuditedCommercialSurface() {
+    FacebookSuccessorPair pair = createFacebookSuccessorPair("67.00", "67.0");
+
+    Experiment adopted =
+        service.adoptFacebookSuccessor(
+            pair.target().getId(), new AdoptFacebookSuccessorRequest(pair.source().getId()));
+
+    assertThat(adopted.getSourceExperiment().getId()).isEqualTo(pair.source().getId());
+    assertThat(adopted.getFollowUpActionUrl()).isEqualTo(pair.source().getFollowUpActionUrl());
+    assertThat(adopted.getCommercialCheckoutUrl())
+        .isEqualTo(pair.source().getCommercialCheckoutUrl());
+    assertThat(adopted.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
+    assertThat(adopted.getCampaignMetric()).isNull();
+    assertThat(adopted.getFacebookReleaseRequestedAt()).isNull();
+    assertThat(facebookAdsCampaignRepository.existsByExperimentId(adopted.getId())).isFalse();
+
+    Experiment repeated =
+        service.adoptFacebookSuccessor(
+            pair.target().getId(), new AdoptFacebookSuccessorRequest(pair.source().getId()));
+    assertThat(repeated.getId()).isEqualTo(adopted.getId());
+  }
+
+  /** Bloqueia a reutilização de checkout quando o preço do sucessor diverge da origem. */
+  @Test
+  void adoptFacebookSuccessorRejectsDifferentCommercialContract() {
+    FacebookSuccessorPair pair = createFacebookSuccessorPair("67.00", "68.00");
+
+    assertThatThrownBy(
+            () ->
+                service.adoptFacebookSuccessor(
+                    pair.target().getId(),
+                    new AdoptFacebookSuccessorRequest(pair.source().getId())))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("mesmo produto, hipótese, oferta e identidades Meta");
+
+    Experiment unchanged = experimentRepository.findById(pair.target().getId()).orElseThrow();
+    assertThat(unchanged.getSourceExperiment()).isNull();
+    assertThat(unchanged.getCommercialCheckoutUrl()).isNull();
+  }
+
+  /** Persiste no planejamento as duas paradas que protegem margem em campanha de vendas. */
+  @Test
+  void updatePersistsSalesFinancialStopPolicy() {
+    FacebookSuccessorPair pair = createFacebookSuccessorPair("67.00", "67.00");
+    UpdateExperimentRequest request = financialStopPolicyUpdate(pair.target(), "50.00", 2);
+
+    service.update(pair.target().getId(), request);
+
+    Experiment saved = experimentRepository.findById(pair.target().getId()).orElseThrow();
+    assertThat(saved.getZeroResultSpendLimit()).isEqualByComparingTo("50.00");
+    assertThat(saved.getZeroPurchaseSpendLimit()).isEqualByComparingTo("50.00");
+    assertThat(saved.getPurchaseStopCount()).isEqualTo(2);
+  }
+
+  /** Rejeita parada sem compra acima do teto total antes de qualquer liberação de mídia. */
+  @Test
+  void updateRejectsFinancialStopAboveMediaCap() {
+    FacebookSuccessorPair pair = createFacebookSuccessorPair("67.00", "67.00");
+    UpdateExperimentRequest request = financialStopPolicyUpdate(pair.target(), "101.00", 2);
+
+    assertThatThrownBy(() -> service.update(pair.target().getId(), request))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("teto total autorizado");
+
+    Experiment unchanged = experimentRepository.findById(pair.target().getId()).orElseThrow();
+    assertThat(unchanged.getZeroPurchaseSpendLimit()).isNull();
+    assertThat(unchanged.getPurchaseStopCount()).isNull();
+  }
+
+  /** Monta a edição mínima que define parada sem compra e meta de compras. */
+  private UpdateExperimentRequest financialStopPolicyUpdate(
+      Experiment experiment, String stopSpend, int purchaseGoal) {
+    UpdateExperimentRequest request = new UpdateExperimentRequest();
+    request.setName(experiment.getName());
+    request.setHypothesis("Mostrar o capricho da nail designer");
+    request.setStage(ExperimentStage.AD);
+    request.setPrimaryVariable("Vídeo vertical vs imagem estática");
+    request.setPrimaryMetric("Compras líquidas e contribuição");
+    request.setStartDate(experiment.getStartDate());
+    request.setEndDate(experiment.getEndDate());
+    request.setZeroResultSpendLimit(new BigDecimal(stopSpend));
+    request.setZeroPurchaseSpendLimit(new BigDecimal(stopSpend));
+    request.setPurchaseStopCount(purchaseGoal);
+    return request;
+  }
+
+  /** Monta origem e sucessor Facebook equivalentes, variando apenas o preço sob validação. */
+  private FacebookSuccessorPair createFacebookSuccessorPair(
+      String sourcePrice, String targetPrice) {
+    MarketNiche niche =
+        nicheRepository.save(
+            MarketNiche.builder().name("Capella sucessor " + UUID.randomUUID()).build());
+    Product product = productRepository.findById(testProductId).orElseThrow();
+    product.setMarketNiche(niche);
+    productRepository.save(product);
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder()
+                .name("Orgulho profissional " + UUID.randomUUID())
+                .build());
+    var hypothesis =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .product(product)
+                .title("CAPELLA-H002")
+                .premiseAngle(angle)
+                .promise("Mostrar o capricho do trabalho")
+                .problem("O perfil não comunica o valor")
+                .persona("Nail designer")
+                .offerType(com.marketinghub.hypothesis.OfferType.TRIPWIRE)
+                .kpiTargetCpl(BigDecimal.ONE)
+                .build());
+    FacebookAccount account =
+        facebookAccountRepository.save(
+            FacebookAccount.builder()
+                .name("Conta Capella")
+                .adAccountId("act_capella_" + UUID.randomUUID())
+                .build());
+    FacebookPage page =
+        facebookPageRepository.save(
+            FacebookPage.builder()
+                .account(account)
+                .pageId("page-capella-" + UUID.randomUUID())
+                .name("Capella")
+                .build());
+    InstagramAccount instagram = createInstagramAccount();
+    Experiment source =
+        experimentRepository.save(
+            Experiment.builder()
+                .niche(niche)
+                .product(product)
+                .name("CAPELLA-H002-E001-" + UUID.randomUUID())
+                .hypothesisRef(hypothesis)
+                .desireTerritoryCode("PROFESSIONAL_PRIDE")
+                .experimentType(ExperimentType.LOW_TICKET_PRODUCT)
+                .campaignObjective(ExperimentCampaignObjective.SALES)
+                .unitPrice(new BigDecimal(sourcePrice))
+                .followUpActionUrl("https://capella.example/oferta")
+                .commercialCheckoutUrl("https://checkout.example/capella")
+                .facebookPage(page)
+                .instagramAccount(instagram)
+                .status(ExperimentStatus.INVALIDATED)
+                .platform(ExperimentPlatform.FACEBOOK)
+                .stage(ExperimentStage.AD)
+                .build());
+    Experiment target =
+        experimentRepository.save(
+            Experiment.builder()
+                .niche(niche)
+                .product(product)
+                .name("CAPELLA-H002-E002-" + UUID.randomUUID())
+                .hypothesisRef(hypothesis)
+                .desireTerritoryCode("PROFESSIONAL_PRIDE")
+                .experimentType(ExperimentType.LOW_TICKET_PRODUCT)
+                .campaignObjective(ExperimentCampaignObjective.SALES)
+                .unitPrice(new BigDecimal(targetPrice))
+                .dailyBudget(new BigDecimal("20.00"))
+                .mediaSpendLimit(new BigDecimal("100.00"))
+                .startDate(LocalDate.of(2026, 9, 28))
+                .endDate(LocalDate.of(2026, 10, 2))
+                .followUpActionUrl("https://capella.example/oferta")
+                .facebookPage(page)
+                .instagramAccount(instagram)
+                .status(ExperimentStatus.PLANNED)
+                .platform(ExperimentPlatform.FACEBOOK)
+                .stage(ExperimentStage.AD)
+                .build());
+    return new FacebookSuccessorPair(source, target);
+  }
+
+  /** Agrupa os dois experimentos usados nos cenários de adoção da superfície comercial. */
+  private record FacebookSuccessorPair(Experiment source, Experiment target) {}
 
   @Test
   void requestPipelineCreativesRejectsMissingPipelineAssets() {

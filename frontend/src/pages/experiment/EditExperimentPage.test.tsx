@@ -18,6 +18,7 @@ const fixture = vi.hoisted(() => ({
     platform: "FACEBOOK",
     status: "USER_STOPPED",
     experimentType: "LOW_TICKET_PRODUCT",
+    campaignObjective: "SALES",
     stage: "AD",
     primaryVariable: "Promessa",
     primaryMetric: "Compra",
@@ -49,6 +50,9 @@ vi.mock("../../api/experiment/useUpdateExperiment", () => ({
 vi.mock("../../api/experiment/useCommercialCheckout", () => ({
   useCommercialCheckout: () => ({}),
 }));
+vi.mock("./ExperimentFacebookSuccessorAdoptionPanel", () => ({
+  default: () => <div>Vínculo de sucessor isolado neste teste</div>,
+}));
 vi.mock("../../api/experiment/useMetricPresets", () => ({
   useMetricPresets: () => ({ data: [] }),
 }));
@@ -77,6 +81,8 @@ describe("correção da promessa preservando o planejamento pendente", () => {
     fixture.save.mockResolvedValue(fixture.experiment);
     vi.spyOn(window, "alert").mockImplementation(() => {});
     fixture.experiment.platform = "FACEBOOK";
+    fixture.experiment.status = "USER_STOPPED";
+    fixture.experiment.mediaSpendLimit = 0;
   });
 
   it("não oferece abordagem individual para uma nova divulgação", () => {
@@ -158,5 +164,27 @@ describe("correção da promessa preservando o planejamento pendente", () => {
       ),
     );
     expect(fixture.save).not.toHaveBeenCalled();
+  });
+
+  it("salva as paradas financeiras que protegem margem", async () => {
+    fixture.experiment.status = "PLANNED";
+    fixture.experiment.mediaSpendLimit = 100;
+    const { container } = render(<EditExperimentPage />);
+    fireEvent.change(
+      container.querySelector('[name="zeroPurchaseSpendLimit"]')!,
+      { target: { value: "50" } },
+    );
+    fireEvent.change(container.querySelector('[name="purchaseStopCount"]')!, {
+      target: { value: "2" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+
+    await waitFor(() => expect(fixture.save).toHaveBeenCalledOnce());
+    expect(fixture.save.mock.calls[0][0]).toMatchObject({
+      zeroResultSpendLimit: 50,
+      zeroPurchaseSpendLimit: 50,
+      purchaseStopCount: 2,
+    });
   });
 });

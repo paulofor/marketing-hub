@@ -536,6 +536,68 @@ describe("CriativosTab", () => {
     );
   });
 
+  it("versiona criativo de vídeo preservando a mídia audiovisual aprovada", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
+        return Promise.resolve({
+          data: [
+            {
+              id: 534,
+              experimentId: 1,
+              format: "VIDEO",
+              headline: "Seu Instagram mostra seu capricho?",
+              primaryText: "Veja amostras antes de decidir.",
+              imageUrl: "",
+              videoUrl: "https://cdn.example.test/capella-v2.mp4",
+              destinationUrl: "https://agenda-cheia.test/venda",
+              status: "DRAFT",
+              agentReviewStatus: "FAILED",
+            },
+          ],
+        });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({ data: { creativesToGenerate: 0 } });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    (axios.post as any).mockResolvedValue({
+      data: { id: 535, sourceCreativeId: 534, status: "DRAFT" },
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Editar" }),
+    );
+
+    const videoUrl = screen.getByLabelText("URL do vídeo aprovado");
+    expect(videoUrl).toHaveValue("https://cdn.example.test/capella-v2.mp4");
+    expect(videoUrl).toHaveAttribute("readonly");
+    expect(
+      screen.getByRole("button", { name: "Salvar nova versão" }),
+    ).toBeEnabled();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Salvar nova versão" }),
+    );
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/creatives/534/versions",
+        expect.objectContaining({
+          imageUrl: "",
+          videoUrl: "https://cdn.example.test/capella-v2.mp4",
+          status: "DRAFT",
+        }),
+      ),
+    );
+  });
+
   it("exige ajustar também a descrição antes de criar uma versão publicável", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/products/experiments/1/ads-in-use")) {
@@ -571,13 +633,18 @@ describe("CriativosTab", () => {
     await userEvent.click(
       await screen.findByRole("button", { name: "Editar" }),
     );
-    expect(screen.getByText("26/25 caracteres para publicação.")).toBeInTheDocument();
+    expect(
+      screen.getByText("26/25 caracteres para publicação."),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Salvar nova versão" }),
     ).toBeDisabled();
 
     await userEvent.clear(screen.getByLabelText("Headline"));
-    await userEvent.type(screen.getByLabelText("Headline"), "Ajuste de estilo agora");
+    await userEvent.type(
+      screen.getByLabelText("Headline"),
+      "Ajuste de estilo agora",
+    );
     await userEvent.clear(screen.getByLabelText("Texto principal"));
     await userEvent.type(
       screen.getByLabelText("Texto principal"),
@@ -588,7 +655,10 @@ describe("CriativosTab", () => {
     ).toBeDisabled();
 
     await userEvent.clear(screen.getByLabelText("Descrição"));
-    await userEvent.type(screen.getByLabelText("Descrição"), "7 dias por R$ 67");
+    await userEvent.type(
+      screen.getByLabelText("Descrição"),
+      "7 dias por R$ 67",
+    );
     await userEvent.click(
       screen.getByRole("button", { name: "Salvar nova versão" }),
     );
@@ -598,7 +668,8 @@ describe("CriativosTab", () => {
         "/api/creatives/528/versions",
         expect.objectContaining({
           headline: "Ajuste de estilo agora",
-          primaryText: "Receba um primeiro ajuste gratuito usando o que você já tem.",
+          primaryText:
+            "Receba um primeiro ajuste gratuito usando o que você já tem.",
           description: "7 dias por R$ 67",
           status: "DRAFT",
         }),

@@ -44,3 +44,15 @@ operacional conservador: US$ 15,38 (o quociente integral é US$ 15,387278...). F
 
 Dados de QA, agentes, bots e duplicidades não contam como cliente, compra ou receita. O aceite
 técnico desta matriz não comprova vendas nem lucro.
+
+## Evidência operacional da primeira tentativa
+
+- Perfil #61, projeto #6 e ciclo #23 foram criados pela interface com teto original de R$ 80,
+  PTAX de R$ 5,199100 e limite operacional conservador de US$ 15,38.
+- Plutus aprovou a rota `LOCAL_EDITORIAL:editorial_motion@v1`; o job #21245 foi criado somente
+  depois da aprovação do roteiro #562.
+- O job falhou antes de materializar um ativo porque o descritor isolado de produção não habilitava
+  o bean `EDITORIAL_MOTION`. O ledger liquidou a reserva com zero crédito e US$ 0 de custo.
+- A correção adiciona a variável ao Compose efetivamente usado no host e um teste de contrato que
+  renderiza esse descritor. Uma nova tentativa deve referenciar o ciclo #23, preservar o mesmo teto
+  agregado de R$ 80 e não interpretar a falha técnica como aprendizado comercial.

@@ -7260,3 +7260,22 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   completo; versão, pixels, gate, estratégia, economia ou produto diferentes continuam reabrindo o
   contrato. Testes cobrem ordem e tipos numéricos divergentes, hash legado, artefato posterior e
   mudança funcional, sem criar nova tarefa paga para a mesma entrada.
+
+## LOOP-TEMIS-SUCESSOR-AUDITADO-PARECE-DIVERGENCIA — 26/09/2026
+
+- **Evidência confirmada:** o criativo #531 do sucessor Capella #94 reutilizou pela operação oficial
+  o criativo aprovado #523 do experimento #88. Página e checkout também foram adotados pelo vínculo
+  `source_experiment_id=88`, mas Têmis recebeu apenas os IDs e URLs finais, classificou `exp-88` como
+  divergência e abriu correção automática. A landing exibia sete CTAs para o Mercado Pago, enquanto
+  o coletor reportou checkout ausente porque procurava somente `commercialCheckout` em JSON de rede.
+- **Causa-raiz:** o snapshot de revisão omitia a linhagem comercial já persistida, a montagem local
+  não tinha fontes tipadas nem hash calculado pelo backend, e a inspeção da landing ignorava links
+  reais do DOM. O revisor não conseguia distinguir herança autorizada de ativo trocado.
+- **Alternativas avaliadas:** aceitar descrições livres reduziria segurança; gerar outro vídeo por
+  provedor pago descartaria ativos aprovados; transportar e conferir a linhagem, fontes, SHA-256 e
+  checkout real preserva o gate sem gasto. A terceira alternativa foi adotada.
+- **Prevenção:** `commercialLineageEvidence` exige produto, hipótese, landing e checkout idênticos e
+  confirma o criativo de origem aprovado; uploads locais exigem IDs de fontes aprovadas, script
+  versionado e SHA-256 calculado pelo backend; o MCP inspeciona vídeo, fontes e checkout ligado no
+  DOM. Testes de contrato mantêm divergência sem prova como bloqueante e reconhecem somente a
+  sucessão direta verificada.

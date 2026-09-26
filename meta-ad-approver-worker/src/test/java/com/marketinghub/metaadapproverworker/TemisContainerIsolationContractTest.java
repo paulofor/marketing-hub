@@ -91,6 +91,8 @@ class TemisContainerIsolationContractTest {
         .contains(
             "captureCommercialLanding",
             "commercialCheckout",
+            "findExpectedCheckoutLinks",
+            "checkoutLinkedFromLanding",
             "mh_preview",
             "pde_analytics",
             "interactionPerformed: false");

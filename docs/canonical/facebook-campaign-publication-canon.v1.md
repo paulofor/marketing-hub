@@ -137,6 +137,21 @@ Decisão canônica de 2026-08-14: o detalhe do experimento deve exibir um gate c
      a referência sintética, os direitos e a licença comercial do provedor convergirem. Evidência
      incompleta ou associada a outra URL permanece bloqueante; texto de direitos nunca deve ser
      inserido nos campos públicos do anúncio para contornar o gate.
+   - Montagens locais reproduzíveis de criativos já aprovados usam o contrato
+     `VERSIONED_APPROVED_CREATIVE_MONTAGE`: o backend calcula o SHA-256 do MP4 final, valida os IDs,
+     experimento, produto, hipótese, aprovação técnica e revisão humana de cada fonte, e preserva a
+     referência do script versionado. Essa rota não exige licença de provedor ou consentimento de
+     apresentador quando não houve geração externa nem pessoa de referência; descrição livre não
+     substitui as fontes estruturadas.
+   - Quando um experimento adota formalmente página e checkout de seu antecessor, Têmis deve receber
+     `commercialLineageEvidence`. Somente `VERIFIED` autoriza reconhecer identificadores da origem
+     em URLs ou mídias reutilizadas; a prova exige produto, hipótese, destino e checkout idênticos e,
+     para criativo reutilizado, a versão de origem já aprovada. Sem essa prova, a divergência continua
+     bloqueante.
+   - A inspeção da landing deve comparar `commercialCheckoutUrl` do backend aos links reais do DOM e
+     abrir o checkout apenas em modo de leitura. Checkout só é comprovado quando está ligado na página
+     e seu conteúdo é capturado; ausência de contrato JSON de rede, isoladamente, não significa
+     ausência de CTA.
    - A aprovação do agente não substitui a aprovação humana: ela apenas habilita a decisão humana final. Alterar mídia, copy, CTA ou destino invalida o parecer anterior e abre nova revisão.
    - `experiment.creative_approved = true` e pelo menos um registro em `creative` do experimento com `status = 'READY'` e asset visual publicável.
    - Para criativos de formato `IMAGE`, `READY` só é válido quando `creative.image_url` estiver preenchido com uma URL real. Criativo `IMAGE` sem `image_url` deve permanecer bloqueado, não pode contar na prontidão e não pode aparecer como aprovado publicável na UI.

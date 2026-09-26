@@ -7,6 +7,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.marketinghub.creative.Creative;
+import com.marketinghub.creative.CreativeAgentReviewStatus;
+import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.LandingPage;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
@@ -20,12 +23,14 @@ import com.marketinghub.experiment.video.dto.RequestExperimentVideoPostProductio
 import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
 import com.marketinghub.experiment.video.dto.UploadExperimentAdVideoRequest;
+import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.LandingPageRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
@@ -74,6 +79,7 @@ class ExperimentVideoAssetServiceTest {
   @Mock private LandingPageRepository landingPageRepository;
   @Mock private SalesVideoService salesVideoService;
   @Mock private SalesVideoJobService salesVideoJobService;
+  @Mock private CreativeRepository creativeRepository;
 
   private ExperimentVideoAssetService service;
 
@@ -92,7 +98,8 @@ class ExperimentVideoAssetServiceTest {
             landingPageRepository,
             salesVideoService,
             salesVideoJobService,
-            new SalesVideoProductionCostCalculator());
+            new SalesVideoProductionCostCalculator(),
+            creativeRepository);
   }
 
   /** Garante que um vídeo novo recebe estados padrão quando criado para o experimento. */
@@ -149,7 +156,27 @@ class ExperimentVideoAssetServiceTest {
   /** Vincula um MP4 vertical sem custo e mantém a aprovação humana separada do upload. */
   @Test
   void shouldUploadVersionedVerticalAdVideoForExperiment() throws Exception {
-    Experiment experiment = Experiment.builder().id(94L).build();
+    Product product = Product.builder().id(7L).build();
+    Hypothesis hypothesis = Hypothesis.builder().id(java.util.UUID.randomUUID()).build();
+    Experiment sourceExperiment =
+        Experiment.builder().id(88L).product(product).hypothesisRef(hypothesis).build();
+    Experiment experiment =
+        Experiment.builder()
+            .id(94L)
+            .product(product)
+            .hypothesisRef(hypothesis)
+            .sourceExperiment(sourceExperiment)
+            .build();
+    Creative sourceCreative =
+        Creative.builder()
+            .id(522L)
+            .experiment(sourceExperiment)
+            .format("IMAGE")
+            .imageUrl("https://cdn.test/capella-post.png")
+            .status(CreativeStatus.READY)
+            .agentReviewStatus(CreativeAgentReviewStatus.APPROVED)
+            .reviewedAt(java.time.Instant.parse("2026-09-24T12:00:00Z"))
+            .build();
     Asset storedAsset =
         Asset.builder()
             .id(2100L)
@@ -170,8 +197,10 @@ class ExperimentVideoAssetServiceTest {
             "capella-exp88-approved-assets-v1",
             "Posts e stories aprovados do experimento 88.",
             "scripts/marketing/create-capella-successor-video-v1.sh",
+            List.of(522L),
             true);
     given(experimentRepository.findById(94L)).willReturn(Optional.of(experiment));
+    given(creativeRepository.findByIdWithExperiment(522L)).willReturn(Optional.of(sourceCreative));
     given(
             salesVideoService.storeAsset(
                 any(), eq(AssetType.VIDEO), eq(MediaProvider.USER_UPLOAD), any()))
@@ -195,7 +224,10 @@ class ExperimentVideoAssetServiceTest {
     assertThat(dto.assetId()).isEqualTo(2100L);
     assertThat(dto.cost()).isZero();
     assertThat(dto.requestJson())
-        .contains("experiment.userAdVideoUpload.v1", "capella-exp88-approved-assets-v1");
+        .contains(
+            "experiment.userAdVideoUpload.v2",
+            "capella-exp88-approved-assets-v1",
+            "approvedSourceCreatives");
     verify(salesVideoService)
         .storeAsset(any(), eq(AssetType.VIDEO), eq(MediaProvider.USER_UPLOAD), any());
   }
@@ -216,6 +248,7 @@ class ExperimentVideoAssetServiceTest {
             "capella-v1",
             "Ativos aprovados.",
             "script-versionado.sh",
+            List.of(522L),
             true);
     given(experimentRepository.findById(94L)).willReturn(Optional.of(experiment));
 
@@ -225,6 +258,73 @@ class ExperimentVideoAssetServiceTest {
 
     assertThat(error.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     assertThat(error.getReason()).contains("valid MP4");
+  }
+
+  /** Rejeita referência de produção que não possa apontar para código versionado do repositório. */
+  @Test
+  void shouldRejectUnsafeProductionReferenceBeforeStorage() {
+    Experiment experiment = Experiment.builder().id(94L).build();
+    byte[] mp4Bytes = new byte[] {0, 0, 0, 24, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm'};
+    MockMultipartFile file = new MockMultipartFile("file", "capella-v1.mp4", "video/mp4", mp4Bytes);
+    UploadExperimentAdVideoRequest request =
+        new UploadExperimentAdVideoRequest(
+            "Comparar formatos",
+            "Compras",
+            "Roteiro auditável",
+            18,
+            true,
+            "capella-v1",
+            "Ativos aprovados.",
+            "../../tmp/render.sh",
+            List.of(522L),
+            true);
+    given(experimentRepository.findById(94L)).willReturn(Optional.of(experiment));
+
+    ResponseStatusException error =
+        assertThrows(
+            ResponseStatusException.class, () -> service.uploadUserAdVideo(94L, file, request));
+
+    assertThat(error.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(error.getReason()).contains("safe versioned repository script path");
+  }
+
+  /** Retorna erro de contrato quando a fonte visual informada não existe. */
+  @Test
+  void shouldRejectMissingVisualSourceBeforeStorage() {
+    Product product = Product.builder().id(7L).build();
+    Hypothesis hypothesis = Hypothesis.builder().id(java.util.UUID.randomUUID()).build();
+    Experiment sourceExperiment =
+        Experiment.builder().id(88L).product(product).hypothesisRef(hypothesis).build();
+    Experiment experiment =
+        Experiment.builder()
+            .id(94L)
+            .product(product)
+            .hypothesisRef(hypothesis)
+            .sourceExperiment(sourceExperiment)
+            .build();
+    byte[] mp4Bytes = new byte[] {0, 0, 0, 24, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm'};
+    MockMultipartFile file = new MockMultipartFile("file", "capella-v1.mp4", "video/mp4", mp4Bytes);
+    UploadExperimentAdVideoRequest request =
+        new UploadExperimentAdVideoRequest(
+            "Comparar formatos",
+            "Compras",
+            "Roteiro auditável",
+            18,
+            true,
+            "capella-v1",
+            "Ativos aprovados.",
+            "scripts/marketing/create-capella-successor-video-v1.sh",
+            List.of(999L),
+            true);
+    given(experimentRepository.findById(94L)).willReturn(Optional.of(experiment));
+    given(creativeRepository.findByIdWithExperiment(999L)).willReturn(Optional.empty());
+
+    ResponseStatusException error =
+        assertThrows(
+            ResponseStatusException.class, () -> service.uploadUserAdVideo(94L, file, request));
+
+    assertThat(error.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(error.getReason()).contains("was not found");
   }
 
   /** Garante que o Hub cria o fluxo VEO curto completo a partir do experimento. */

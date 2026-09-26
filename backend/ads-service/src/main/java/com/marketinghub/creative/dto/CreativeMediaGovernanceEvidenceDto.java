@@ -1,6 +1,7 @@
 package com.marketinghub.creative.dto;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Responsabilidade: transportar a linhagem e os direitos da mídia exata submetida à revisão
@@ -12,6 +13,8 @@ public record CreativeMediaGovernanceEvidenceDto(
     Long experimentVideoAssetId,
     Long salesVideoJobId,
     String generationStrategy,
+    String productionReference,
+    List<ApprovedCreativeSource> approvedCreativeSources,
     MediaArtifact finalArtifact,
     MediaArtifact generatedSourceArtifact,
     MediaReference presenterReference,
@@ -25,6 +28,16 @@ public record CreativeMediaGovernanceEvidenceDto(
     ProviderLicense providerLicense,
     String approvedBy,
     Instant approvedAt) {
+
+  /** Responsabilidade: identificar um criativo previamente aprovado usado na montagem final. */
+  public record ApprovedCreativeSource(
+      Long creativeId,
+      Long experimentId,
+      String format,
+      String mediaUrl,
+      String status,
+      String agentReviewStatus,
+      String reviewedAt) {}
 
   /** Responsabilidade: identificar um arquivo de vídeo por origem, tarefa e conteúdo imutável. */
   public record MediaArtifact(

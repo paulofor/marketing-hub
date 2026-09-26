@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.dto.CreativeMediaGovernanceEvidenceDto;
+import com.marketinghub.creative.dto.CreativeMediaGovernanceEvidenceDto.ApprovedCreativeSource;
 import com.marketinghub.creative.dto.CreativeMediaGovernanceEvidenceDto.MediaArtifact;
 import com.marketinghub.creative.dto.CreativeMediaGovernanceEvidenceDto.MediaReference;
 import com.marketinghub.creative.dto.CreativeMediaGovernanceEvidenceDto.ProviderLicense;
@@ -12,6 +13,7 @@ import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.media.Asset;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoProviderModelRepository;
@@ -32,9 +34,11 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class CreativeMediaGovernanceEvidenceService {
   static final String CONTRACT_VERSION = "CREATIVE_MEDIA_GOVERNANCE_V2";
+  static final String VERSIONED_MONTAGE_CONTRACT_VERSION = "CREATIVE_MEDIA_GOVERNANCE_V3";
   static final String EXPLICIT_REFERENCE = "EXPLICIT_REFERENCE";
   static final String PROMPT_ONLY_SYNTHETIC = "PROMPT_ONLY_SYNTHETIC";
   static final String UNRESOLVED_REFERENCE = "UNRESOLVED";
+  static final String APPROVED_PRODUCT_ASSETS = "APPROVED_PRODUCT_ASSETS";
   private static final Set<String> PROMPT_ONLY_INPUT_FIELDS =
       Set.of("promptText", "duration", "aspectRatio", "resolution", "audio");
   static final String RUNWAY_COMMERCIAL_USE_POLICY_URL =
@@ -44,6 +48,7 @@ public class CreativeMediaGovernanceEvidenceService {
   private final VideoProjectRepository videoProjects;
   private final AssetRepository assets;
   private final SalesVideoProviderModelRepository providerModels;
+  private final CreativeRepository creatives;
   private final ObjectMapper objectMapper;
 
   /** Monta evidência estruturada sem alterar o criativo e sinaliza qualquer lacuna ao revisor. */
@@ -82,6 +87,9 @@ public class CreativeMediaGovernanceEvidenceService {
       Creative creative, ExperimentVideoAsset video, String mediaUrl)
       throws JsonProcessingException {
     JsonNode request = readObject(video.getRequestJson());
+    if ("experiment.userAdVideoUpload.v2".equals(text(request, "artifactType"))) {
+      return resolvedVersionedUpload(creative, video, mediaUrl, request);
+    }
     JsonNode lineage = nestedObject(request, "postProductionMetadataJson");
     JsonNode governance = lineage.path("referenceGovernance");
     Long projectId = positiveLong(lineage.path("videoProjectId"));
@@ -139,6 +147,8 @@ public class CreativeMediaGovernanceEvidenceService {
         video.getId(),
         video.getSalesVideoJob() == null ? null : video.getSalesVideoJob().getId(),
         text(lineage, "generation_strategy"),
+        null,
+        List.of(),
         finalArtifact,
         generatedSource,
         presenterReference,
@@ -153,6 +163,116 @@ public class CreativeMediaGovernanceEvidenceService {
         trimToNull(video.getReviewedBy()),
         video.getReviewedAt());
   }
+
+  /**
+   * Resolve uma montagem local somente a partir de fontes já aprovadas e do arquivo final exato.
+   */
+  private CreativeMediaGovernanceEvidenceDto resolvedVersionedUpload(
+      Creative creative, ExperimentVideoAsset video, String mediaUrl, JsonNode request)
+      throws JsonProcessingException {
+    Asset finalAsset = video.getAsset();
+    MediaArtifact finalArtifact = artifact(finalAsset, mediaUrl, video.getProvider(), null);
+    String productionReference = text(request, "productionReference");
+    ResolvedApprovedSources sources =
+        resolveApprovedSources(request.path("approvedSourceCreatives"), creative);
+    String generationStrategy = text(request, "generationStrategy");
+    boolean verified =
+        video.getStatus() == ExperimentVideoStatus.READY
+            && video.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED
+            && "VERSIONED_FFMPEG_MONTAGE_V1".equals(video.getModel())
+            && "VERSIONED_APPROVED_CREATIVE_MONTAGE".equals(generationStrategy)
+            && hasSha256(finalArtifact)
+            && isVersionedProductionReference(productionReference)
+            && sources.complete();
+    return new CreativeMediaGovernanceEvidenceDto(
+        VERSIONED_MONTAGE_CONTRACT_VERSION,
+        verified ? "VERIFIED" : "INCOMPLETE",
+        video.getId(),
+        null,
+        generationStrategy,
+        productionReference,
+        sources.sources(),
+        finalArtifact,
+        null,
+        null,
+        null,
+        null,
+        "APPROVED_SOURCE_CREATIVES",
+        false,
+        APPROVED_PRODUCT_ASSETS,
+        false,
+        false,
+        null,
+        trimToNull(video.getReviewedBy()),
+        video.getReviewedAt());
+  }
+
+  /** Confere novamente no banco cada criativo registrado no snapshot do upload. */
+  private ResolvedApprovedSources resolveApprovedSources(JsonNode nodes, Creative target) {
+    if (!nodes.isArray() || nodes.isEmpty() || nodes.size() > 10) {
+      return new ResolvedApprovedSources(List.of(), false);
+    }
+    Long permittedExperimentId =
+        target.getExperiment().getSourceExperiment() == null
+            ? target.getExperiment().getId()
+            : target.getExperiment().getSourceExperiment().getId();
+    List<ApprovedCreativeSource> resolved = new java.util.ArrayList<>();
+    Set<Long> seenCreativeIds = new java.util.HashSet<>();
+    boolean complete = true;
+    for (JsonNode node : nodes) {
+      Long creativeId = positiveLong(node.path("creativeId"));
+      Long experimentId = positiveLong(node.path("experimentId"));
+      ApprovedCreativeSource snapshot =
+          new ApprovedCreativeSource(
+              creativeId,
+              experimentId,
+              text(node, "format"),
+              text(node, "mediaUrl"),
+              text(node, "status"),
+              text(node, "agentReviewStatus"),
+              text(node, "reviewedAt"));
+      resolved.add(snapshot);
+      Creative source =
+          creativeId == null ? null : creatives.findByIdWithExperiment(creativeId).orElse(null);
+      String actualMediaUrl =
+          source == null
+              ? null
+              : "VIDEO".equalsIgnoreCase(source.getFormat())
+                  ? trimToNull(source.getVideoUrl())
+                  : trimToNull(source.getImageUrl());
+      complete =
+          complete
+              && creativeId != null
+              && seenCreativeIds.add(creativeId)
+              && source != null
+              && Objects.equals(experimentId, permittedExperimentId)
+              && source.getExperiment() != null
+              && Objects.equals(source.getExperiment().getId(), permittedExperimentId)
+              && Objects.equals(trimToNull(source.getFormat()), snapshot.format())
+              && Objects.equals(actualMediaUrl, snapshot.mediaUrl())
+              && source.getStatus() != null
+              && Objects.equals(source.getStatus().name(), snapshot.status())
+              && "READY".equals(snapshot.status())
+              && source.getAgentReviewStatus() != null
+              && Objects.equals(source.getAgentReviewStatus().name(), snapshot.agentReviewStatus())
+              && "APPROVED".equals(snapshot.agentReviewStatus())
+              && source.getReviewedAt() != null
+              && Objects.equals(source.getReviewedAt().toString(), snapshot.reviewedAt());
+    }
+    return new ResolvedApprovedSources(List.copyOf(resolved), complete);
+  }
+
+  /** Aceita apenas um caminho versionável do repositório, sem URL ou travessia de diretório. */
+  private boolean isVersionedProductionReference(String value) {
+    return value != null
+        && !value.startsWith("/")
+        && !value.contains("..")
+        && !value.contains("://")
+        && value.matches("[A-Za-z0-9._/-]+\\.(sh|js|mjs|ts|py)");
+  }
+
+  /** Responsabilidade: agrupar as fontes resolvidas e o resultado da verificação cruzada. */
+  private record ResolvedApprovedSources(List<ApprovedCreativeSource> sources, boolean complete) {}
 
   /** Converte o payload persistido de um asset em identidade imutável de arquivo. */
   private MediaArtifact artifact(
@@ -361,6 +481,8 @@ public class CreativeMediaGovernanceEvidenceService {
         null,
         null,
         null,
+        null,
+        List.of(),
         mediaUrl == null ? null : new MediaArtifact(null, mediaUrl, null, null, null, null),
         null,
         null,

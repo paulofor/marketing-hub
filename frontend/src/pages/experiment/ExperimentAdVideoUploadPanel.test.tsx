@@ -45,6 +45,10 @@ function fillCommercialEvidence() {
     screen.getByLabelText("Chave dos ativos visuais de origem"),
     { target: { value: "capella-exp88-approved-assets-v1" } },
   );
+  fireEvent.change(
+    screen.getByLabelText("IDs dos criativos aprovados usados no vídeo"),
+    { target: { value: "522, 523" } },
+  );
   fireEvent.change(screen.getByLabelText("Evidência dos ativos usados"), {
     target: { value: "Posts e stories aprovados do experimento #88." },
   });
@@ -99,6 +103,7 @@ describe("upload governado de vídeo do experimento", () => {
         durationSeconds: 18,
         hasAudio: true,
         visualSourceKey: "capella-exp88-approved-assets-v1",
+        visualSourceCreativeIds: [522, 523],
         requiredForRelease: true,
       }),
     );

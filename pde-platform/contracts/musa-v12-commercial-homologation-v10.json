@@ -197,9 +197,9 @@
     },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/creative/service/CreativeMediaGovernanceEvidenceService.java",
-      "sha256": "fbc821a0e7af9825c4bd7383a0e7a1a6a41f3127f0688b1f9eb8fb9c5488b56f",
+      "sha256": "4caa4f515d51c1cd51e2195c5ba82264e68ff4b46919108148c3f914fabd8366",
       "promptMode": "ATTESTED_REFERENCE",
-      "reviewSummary": "Resolve a mídia do criativo pela URL exata e só marca VERIFIED com asset aprovado, hashes, tarefas do provedor, origem sintética ou referência autorizada e licença comercial vigente."
+      "reviewSummary": "Resolve a mídia do criativo pela URL exata e só marca VERIFIED com asset aprovado e hash; preserva a rota externa com tarefas, origem e licença e reconhece montagem local somente com script versionado e fontes criativas aprovadas."
     },
     {
       "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/controller/AccessController.java",
@@ -228,7 +228,7 @@
     },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/creative/service/CreativeMediaGovernanceEvidenceServiceTest.java",
-      "sha256": "883fb3a0565be3fc68ef1ce61f2eda12cf0888f61e0cc311775fa37e8d3324b4",
+      "sha256": "5878cde81008e5f319bbce83fd1720865afa4fd3f82d48a287f0d3a36510088d",
       "promptMode": "FULL"
     },
     {

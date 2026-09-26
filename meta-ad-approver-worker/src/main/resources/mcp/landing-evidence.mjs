@@ -1,11 +1,14 @@
 const MAX_JSON_BYTES = 2 * 1024 * 1024;
 const LANDING_TIMEOUT_MS = 120000;
+const MOBILE_SAFARI_USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1';
 
 /** Captura landing e checkout em modo somente leitura, sem clicar ou enviar formulários. */
-export async function captureCommercialLanding(browser, destinationUrl) {
+export async function captureCommercialLanding(browser, destinationUrl, expectedCheckoutUrl) {
   const landingUrl = inspectionUrl(destinationUrl);
+  const expectedCheckout = optionalHttpUrl(expectedCheckoutUrl);
   const screenshots = [];
   const offers = [];
+  const linkedCheckoutUrls = [];
   for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
     const page = await browser.newPage({ viewport });
     const responseTasks = observeCommercialOffers(page, landingUrl);
@@ -14,15 +17,49 @@ export async function captureCommercialLanding(browser, destinationUrl) {
       await waitForCommercialLanding(page);
       await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
       await page.evaluate(() => document.fonts?.ready);
+      linkedCheckoutUrls.push(...(await findExpectedCheckoutLinks(page, expectedCheckout)));
       screenshots.push(await page.screenshot({ fullPage: true, type: 'jpeg', quality: 82 }));
       offers.push(...(await resolveOffers(responseTasks)));
     } finally {
       await page.close();
     }
   }
-  const offer = uniqueOffers(offers)[0] ?? null;
+  const uniqueNetworkOffers = uniqueOffers(offers);
+  const checkoutLinkedFromLanding = Boolean(expectedCheckout)
+    && linkedCheckoutUrls.includes(expectedCheckout);
+  const offer = expectedCheckout
+    ? uniqueNetworkOffers.find(candidate => candidate.checkoutUrl === expectedCheckout)
+      ?? (checkoutLinkedFromLanding ? domLinkedOffer(expectedCheckout, landingUrl) : null)
+    : uniqueNetworkOffers[0] ?? null;
   const checkout = offer ? await captureCheckout(browser, offer) : null;
-  return { landingUrl, screenshots, checkout };
+  return {
+    landingUrl,
+    screenshots,
+    expectedCheckoutUrl: expectedCheckout,
+    checkoutLinkedFromLanding,
+    checkout
+  };
+}
+
+/** Localiza somente o checkout canônico informado pelo backend entre os links reais da página. */
+async function findExpectedCheckoutLinks(page, expectedCheckoutUrl) {
+  if (!expectedCheckoutUrl) return [];
+  return page.locator('a[href]').evaluateAll((anchors, expected) => anchors
+    .map(anchor => anchor.href)
+    .filter(href => href === expected), expectedCheckoutUrl);
+}
+
+/** Monta a oferta mínima quando o checkout foi comprovado diretamente no DOM renderizado. */
+function domLinkedOffer(checkoutUrl, landingUrl) {
+  return {
+    sourceUrl: landingUrl,
+    provider: null,
+    checkoutUrl,
+    offerReference: null,
+    priceBrl: null,
+    currency: null,
+    billingModel: null,
+  };
 }
 
 /** Acrescenta marcadores neutros de QA para que a inspeção não contamine métricas comerciais. */
@@ -115,7 +152,14 @@ function uniqueOffers(offers) {
 
 /** Abre a oferta sem interação e captura exatamente o conteúdo visível do checkout. */
 async function captureCheckout(browser, offer) {
-  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const page = await browser.newPage({
+    viewport: { width: 390, height: 844 },
+    userAgent: MOBILE_SAFARI_USER_AGENT,
+    deviceScaleFactor: 3,
+    isMobile: true,
+    hasTouch: true,
+    locale: 'pt-BR'
+  });
   try {
     const response = await page.goto(offer.checkoutUrl, {
       waitUntil: 'domcontentloaded',
@@ -163,4 +207,15 @@ function numberValue(value) {
   if (value === null || value === undefined || value === '') return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** Normaliza uma URL HTTP opcional sem transformar texto inválido em evidência. */
+function optionalHttpUrl(value) {
+  if (typeof value !== 'string' || value.trim() === '') return null;
+  try {
+    const url = new URL(value.trim());
+    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : null;
+  } catch {
+    return null;
+  }
 }

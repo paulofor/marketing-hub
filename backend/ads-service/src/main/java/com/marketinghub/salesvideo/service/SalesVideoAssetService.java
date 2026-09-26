@@ -14,6 +14,10 @@ import com.marketinghub.storage.AssetStorageService;
 import com.marketinghub.storage.AssetUploadCategory;
 import com.marketinghub.storage.AssetUploadContext;
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.stereotype.Component;
@@ -48,6 +52,7 @@ public class SalesVideoAssetService {
       throw VideoModuleException.badRequest(
           VideoModuleErrorCode.BAD_REQUEST, "Arquivo obrigatório para upload de asset");
     }
+    String sha256 = sha256(file);
     AssetUploadContext context =
         new AssetUploadContext(AssetUploadCategory.SALES_VIDEO, null, null, null);
     AssetStorageService.StoredObject storedObject = storageService.storeInBucketOnly(file, context);
@@ -58,13 +63,14 @@ public class SalesVideoAssetService {
             .status(AssetStatus.READY)
             .url(storedObject.publicUrl())
             .externalId(storedObject.storedFileName())
-            .payload(buildPayload(storedObject, metadataJson))
+            .payload(buildPayload(storedObject, metadataJson, sha256))
             .build();
     return assetRepository.save(asset);
   }
 
   /** Monta o payload auditável do asset gravado no R2. */
-  private String buildPayload(AssetStorageService.StoredObject storedObject, String metadataJson) {
+  private String buildPayload(
+      AssetStorageService.StoredObject storedObject, String metadataJson, String sha256) {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("category", AssetUploadCategory.SALES_VIDEO.name());
     payload.put("stored_file_name", storedObject.storedFileName());
@@ -72,9 +78,12 @@ public class SalesVideoAssetService {
     payload.put("storage_medium", storedObject.storedInBucket() ? "CLOUDFLARE_R2" : "LOCAL_FS");
     payload.put("content_type", storedObject.contentType());
     payload.put("size_bytes", storedObject.sizeBytes());
-    if (StringUtils.hasText(metadataJson)) {
-      payload.put("metadata", parseMetadata(metadataJson));
-    }
+    Map<String, Object> metadata =
+        StringUtils.hasText(metadataJson)
+            ? new LinkedHashMap<>(parseMetadata(metadataJson))
+            : new LinkedHashMap<>();
+    metadata.put("sha256", sha256);
+    payload.put("metadata", metadata);
     try {
       return objectMapper.writeValueAsString(payload);
     } catch (JsonProcessingException ex) {
@@ -83,6 +92,25 @@ public class SalesVideoAssetService {
           VideoModuleErrorCode.INTERNAL_ERROR,
           "Falha ao serializar metadata de asset",
           ex);
+    }
+  }
+
+  /** Calcula a identidade imutável do arquivo antes de enviá-lo ao storage. */
+  private String sha256(MultipartFile file) throws IOException {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      try (InputStream input = file.getInputStream()) {
+        byte[] buffer = new byte[8192];
+        int read;
+        while ((read = input.read(buffer)) >= 0) {
+          if (read > 0) {
+            digest.update(buffer, 0, read);
+          }
+        }
+      }
+      return HexFormat.of().formatHex(digest.digest());
+    } catch (NoSuchAlgorithmException ex) {
+      throw new IllegalStateException("SHA-256 indisponível na JVM", ex);
     }
   }
 

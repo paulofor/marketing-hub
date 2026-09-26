@@ -6,6 +6,8 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.creative.Creative;
+import com.marketinghub.creative.CreativeAgentReviewStatus;
+import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
@@ -15,6 +17,7 @@ import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoProviderModelRepository;
@@ -41,6 +44,7 @@ class CreativeMediaGovernanceEvidenceServiceTest {
   @Mock VideoProjectRepository videoProjects;
   @Mock AssetRepository assets;
   @Mock SalesVideoProviderModelRepository providerModels;
+  @Mock CreativeRepository creatives;
 
   private CreativeMediaGovernanceEvidenceService service;
 
@@ -49,7 +53,7 @@ class CreativeMediaGovernanceEvidenceServiceTest {
   void setup() {
     service =
         new CreativeMediaGovernanceEvidenceService(
-            videoAssets, videoProjects, assets, providerModels, new ObjectMapper());
+            videoAssets, videoProjects, assets, providerModels, creatives, new ObjectMapper());
   }
 
   /** Expõe a cadeia completa somente quando arquivo, projeto, referência e licença convergem. */
@@ -124,6 +128,7 @@ class CreativeMediaGovernanceEvidenceServiceTest {
 
     var evidence = service.resolve(creative);
 
+    assertThat(evidence.contractVersion()).isEqualTo("CREATIVE_MEDIA_GOVERNANCE_V2");
     assertThat(evidence.verificationStatus()).isEqualTo("VERIFIED");
     assertThat(evidence.experimentVideoAssetId()).isEqualTo(38L);
     assertThat(evidence.salesVideoJobId()).isEqualTo(21234L);
@@ -139,6 +144,119 @@ class CreativeMediaGovernanceEvidenceServiceTest {
     assertThat(evidence.providerLicense().commercialLicenseVerified()).isTrue();
     assertThat(evidence.providerLicense().evidenceUrl())
         .isEqualTo(CreativeMediaGovernanceEvidenceService.RUNWAY_COMMERCIAL_USE_POLICY_URL);
+  }
+
+  /** Aprova montagem versionada somente quando o arquivo e todas as fontes convergem no banco. */
+  @Test
+  void resolvesVersionedMontageFromApprovedCreativeSources() throws Exception {
+    Experiment sourceExperiment = Experiment.builder().id(88L).build();
+    Experiment experiment = Experiment.builder().id(94L).sourceExperiment(sourceExperiment).build();
+    String finalUrl = "https://cdn.test/capella-montage.mp4";
+    Creative creative =
+        Creative.builder()
+            .id(532L)
+            .experiment(experiment)
+            .format("VIDEO")
+            .videoUrl(finalUrl)
+            .build();
+    Asset finalAsset =
+        asset(
+            2824L,
+            finalUrl,
+            MediaProvider.USER_UPLOAD,
+            "{\"metadata\":{\"sha256\":\"" + "c".repeat(64) + "\"}}");
+    Instant reviewedAt = Instant.parse("2026-09-24T12:00:00Z");
+    Creative sourceCreative =
+        Creative.builder()
+            .id(522L)
+            .experiment(sourceExperiment)
+            .format("IMAGE")
+            .imageUrl("https://cdn.test/capella-post.png")
+            .status(CreativeStatus.READY)
+            .agentReviewStatus(CreativeAgentReviewStatus.APPROVED)
+            .reviewedAt(reviewedAt)
+            .build();
+    ExperimentVideoAsset video =
+        ExperimentVideoAsset.builder()
+            .id(44L)
+            .experiment(experiment)
+            .provider("USER_UPLOAD")
+            .model("VERSIONED_FFMPEG_MONTAGE_V1")
+            .status(ExperimentVideoStatus.READY)
+            .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+            .assetUrl(finalUrl)
+            .asset(finalAsset)
+            .requestJson(
+                """
+                {"artifactType":"experiment.userAdVideoUpload.v2",
+                 "generationStrategy":"VERSIONED_APPROVED_CREATIVE_MONTAGE",
+                 "productionReference":"scripts/marketing/create-capella-successor-video-v1.sh",
+                 "approvedSourceCreatives":[{"creativeId":522,"experimentId":88,
+                   "format":"IMAGE","mediaUrl":"https://cdn.test/capella-post.png",
+                   "status":"READY","agentReviewStatus":"APPROVED",
+                   "reviewedAt":"2026-09-24T12:00:00Z"}]}
+                """)
+            .reviewedBy("time@marketinghub.io")
+            .reviewedAt(Instant.parse("2026-09-26T03:00:00Z"))
+            .build();
+    when(videoAssets.findFirstByExperimentIdAndAssetUrlOrderByIdDesc(94L, finalUrl))
+        .thenReturn(Optional.of(video));
+    when(creatives.findByIdWithExperiment(522L)).thenReturn(Optional.of(sourceCreative));
+
+    var evidence = service.resolve(creative);
+
+    assertThat(evidence.contractVersion()).isEqualTo("CREATIVE_MEDIA_GOVERNANCE_V3");
+    assertThat(evidence.verificationStatus()).isEqualTo("VERIFIED");
+    assertThat(evidence.generationStrategy()).isEqualTo("VERSIONED_APPROVED_CREATIVE_MONTAGE");
+    assertThat(evidence.productionReference())
+        .isEqualTo("scripts/marketing/create-capella-successor-video-v1.sh");
+    assertThat(evidence.finalArtifact().sha256()).isEqualTo("c".repeat(64));
+    assertThat(evidence.presenterReferenceMode()).isEqualTo("APPROVED_PRODUCT_ASSETS");
+    assertThat(evidence.approvedCreativeSources())
+        .singleElement()
+        .satisfies(source -> assertThat(source.creativeId()).isEqualTo(522L));
+    assertThat(evidence.providerLicense()).isNull();
+  }
+
+  /** Mantém a montagem bloqueada quando a fonte aprovada não pode ser confirmada novamente. */
+  @Test
+  void keepsVersionedMontageIncompleteWhenSourceSnapshotDoesNotMatch() throws Exception {
+    Experiment sourceExperiment = Experiment.builder().id(88L).build();
+    Experiment experiment = Experiment.builder().id(94L).sourceExperiment(sourceExperiment).build();
+    String finalUrl = "https://cdn.test/capella-montage.mp4";
+    Creative creative =
+        Creative.builder().experiment(experiment).format("VIDEO").videoUrl(finalUrl).build();
+    Asset finalAsset =
+        asset(
+            2824L,
+            finalUrl,
+            MediaProvider.USER_UPLOAD,
+            "{\"metadata\":{\"sha256\":\"" + "c".repeat(64) + "\"}}");
+    ExperimentVideoAsset video =
+        ExperimentVideoAsset.builder()
+            .id(44L)
+            .experiment(experiment)
+            .model("VERSIONED_FFMPEG_MONTAGE_V1")
+            .status(ExperimentVideoStatus.READY)
+            .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+            .assetUrl(finalUrl)
+            .asset(finalAsset)
+            .requestJson(
+                """
+                {"artifactType":"experiment.userAdVideoUpload.v2",
+                 "generationStrategy":"VERSIONED_APPROVED_CREATIVE_MONTAGE",
+                 "productionReference":"scripts/marketing/create-capella-successor-video-v1.sh",
+                 "approvedSourceCreatives":[{"creativeId":522,"experimentId":88,
+                   "format":"IMAGE","mediaUrl":"https://cdn.test/forged.png",
+                   "status":"READY","agentReviewStatus":"APPROVED",
+                   "reviewedAt":"2026-09-24T12:00:00Z"}]}
+                """)
+            .build();
+    when(videoAssets.findFirstByExperimentIdAndAssetUrlOrderByIdDesc(94L, finalUrl))
+        .thenReturn(Optional.of(video));
+    when(creatives.findByIdWithExperiment(522L)).thenReturn(Optional.empty());
+
+    assertThat(service.resolve(creative).verificationStatus()).isEqualTo("INCOMPLETE");
   }
 
   /** Aprova vídeo sintético por texto sem inventar consentimento ou referência inexistente. */

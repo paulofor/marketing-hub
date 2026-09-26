@@ -1,0 +1,18 @@
+{
+  "cardKey": "ia-assistiva-controle-humano-compra",
+  "collection": "momentos-de-compra-b2c",
+  "title": "IA ajuda melhor quando preserva o controle da compra",
+  "finding": "Tráfego referido por IA já mostra alta intenção comercial em dados observacionais, mas consumidores ainda preferem IA para pesquisar, comparar e economizar, mantendo confirmação humana antes da etapa final.",
+  "mechanism": "A assistência reduz custo cognitivo na pesquisa e comparação; a confirmação explícita preserva sensação de controle e pode reduzir barreiras de confiança.",
+  "commercialApplication": "Testar um copiloto de compra que pesquisa, compara, resume diferenças e alerta preços, mas exige confirmação clara antes de checkout.",
+  "evidenceStrength": "Moderada: combina análise comportamental em grande escala da Adobe com pesquisa de 3.000 consumidores da ACI/YouGov, sem experimento causal randomizado.",
+  "publishedOn": "2026-09-26",
+  "validUntil": "2027-03-31",
+  "experimentHypothesis": "Uma jornada assistiva com shortlist e confirmação humana elevará CTA e conversão reconciliada e/ou reduzirá abandono em relação a uma jornada com automação mais agressiva da decisão de compra.",
+  "risks": "Confundir tráfego de maior intenção com efeito causal da IA; generalizar moda do Reino Unido/EUA para outros mercados; adicionar confirmações demais e recriar atrito.",
+  "limits": "Adobe mede associação observacional e a pesquisa ACI é declarativa e setorial. Não há prova de impacto em consumidores brasileiros nem em produtos digitais específicos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-26-ia-assistiva-controle-humano-compra.md",
+  "sourceTitle": "IA assistiva com controle humano na jornada de compra",
+  "sourceSha256": "71f9f2d182d3b426a510a6e8fca2bc34aa9255e3b924434b9315b240bc72ebf0"
+}

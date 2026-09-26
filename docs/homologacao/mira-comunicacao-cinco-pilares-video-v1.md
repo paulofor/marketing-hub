@@ -36,6 +36,7 @@ operacional conservador: US$ 15,38 (o quociente integral é US$ 15,387278...). F
 | Movimento editorial local | preflight `LOCAL_EDITORIAL`, reserva e custo visual zero, sem chamada de storyboard por IA |
 | Prova privada homologada | leitura pelo backend com tenant e SHA-256; divergência bloqueia antes do ffmpeg |
 | Ciclo concluído da mesma versão | recibo mínimo retorna à tarefa #505; Apolo não regenera a peça |
+| Referência de experimento com contrato geral V2 e protótipo aceito V3 | comunicação usa versão, URL e contexto V3; checkout histórico não é exposto |
 | Rota ausente, incompleta, histórica ou de outra definição | `MISSING_CONTRACT`; nenhuma inferência |
 | Resposta especializada de Apolo | somente identidade e decisão mínima; sem contexto histórico amplo |
 | Callback BPM | caminho do contrato, IDs e custo conhecido do ciclo; nenhuma nova chamada externa durante o callback |
@@ -56,3 +57,16 @@ técnico desta matriz não comprova vendas nem lucro.
 - A correção adiciona a variável ao Compose efetivamente usado no host e um teste de contrato que
   renderiza esse descritor. Uma nova tentativa deve referenciar o ciclo #23, preservar o mesmo teto
   agregado de R$ 80 e não interpretar a falha técnica como aprendizado comercial.
+
+## Evidência operacional do ativo final e retorno à cadeia
+
+- O ciclo substituto #24 preservou o teto de R$ 80, a PTAX registrada e a rota editorial local. O
+  job fonte #21246 e o acabamento final #21249 produziram o ativo #47, aprovado por revisão humana,
+  sem nova geração visual externa.
+- O vídeo final tem 24 segundos, 1080 × 1920, H.264/AAC, legendas VTT e HLS. A comunicação começa
+  pelo desejo de organizar os produtos já disponíveis, mostra a tela real antes da oferta e explica
+  o pacote individualizado de R$ 49, suporte e uma correção técnica.
+- A tarefa #521 expôs uma falha de identidade antes do retorno: a comunicação do experimento ainda
+  recebia `mira-private-v2`, enquanto projeto, prova e vídeo pertenciam a `mira-private-v3`. A
+  correção faz os processos pré-comerciais partirem do protótipo privado aceito e recusa o checkout
+  histórico até sua homologação.

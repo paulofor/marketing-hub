@@ -7341,3 +7341,21 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Prevenção audiovisual:** correções `CREATIVE_MEDIA` de criativos com formato, ID ou URL de vídeo
   recebem `DELEGATED` e nunca entram na fila de imagens de Íris. O teste de contrato exige fila vazia
   e zero jobs de imagem para esse cenário.
+- **Recorrência de persistência confirmada:** o callback de Têmis para o criativo #535 retornou HTTP
+  500 com `Data truncated for column 'agent_improvement_status'`. O Liquibase havia criado a coluna
+  como `VARCHAR(24)`, mas o `ddl-auto=update` do Hibernate a converteu em ENUM físico antes da inclusão
+  de `DELEGATED`; o teste isolado do service não exercitava o schema MySQL real.
+- **Correção e prevenção de persistência:** a entidade fixa `@JdbcTypeCode(SqlTypes.VARCHAR)` e
+  `VARCHAR(24)`, enquanto o changelog converte o ENUM legado de volta ao tipo extensível. Testes
+  protegem o include relativo, o SQL MySQL e o mapeamento JPA, impedindo que uma nova inicialização
+  volte a estreitar a coluna e que outro estado Java seja publicado sem contrato físico compatível.
+- **Falso bloqueio de linhagem confirmado:** a versão #535 apontava para a #534, ambas do sucessor
+  #94, e a prova tratava esse parentesco técnico de revisão como adoção comercial do antecessor #88.
+  A resolução agora ignora versões internas do experimento-alvo, percorre a cadeia com proteção de
+  ciclo e só exige aprovação quando encontra um criativo realmente externo adotado. Testes cobrem
+  vídeo original revisado, adoção atrás de revisão interna e cadeia cíclica.
+- **Falso vazio visual confirmado:** o capturador full-page de Têmis não percorria a landing; por
+  isso o carregamento preguiçoso deixava as amostras reais vazias no screenshot mobile, embora elas
+  aparecessem ao scroll humano. A inspeção agora percorre a página em modo somente leitura, força
+  imagens para `eager`, aguarda decodificação e volta ao topo antes da captura. O teste de contrato
+  protege esse comportamento sem alterar a landing usada como controle comercial.

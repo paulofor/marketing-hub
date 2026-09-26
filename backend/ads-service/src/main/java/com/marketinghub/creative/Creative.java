@@ -8,6 +8,8 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /** Responsabilidade: representar um criativo vinculado a um experimento. */
 @Entity
@@ -130,7 +132,8 @@ public class Creative {
 
   /** Estado do ciclo automático de correção solicitado pelo agente. */
   @Enumerated(EnumType.STRING)
-  @Column(name = "agent_improvement_status", length = 24)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "agent_improvement_status", columnDefinition = "VARCHAR(24)", length = 24)
   private CreativeImprovementStatus agentImprovementStatus;
 
   /** Quantidade de correções automáticas já realizadas nesta linhagem. */

@@ -60,7 +60,11 @@ class MetaAdApproverCodexRunnerTest {
           .contains("/usr/local/bin/ffmpeg", "/usr/local/bin/ffprobe", "createHash('sha256')");
       assertThat(Files.readString(server.getParent().resolve("landing-evidence.mjs")))
           .contains(
-              "captureCommercialLanding", "commercialCheckout", "interactionPerformed: false");
+              "captureCommercialLanding",
+              "materializeLazyVisuals",
+              "image.loading = 'eager'",
+              "commercialCheckout",
+              "interactionPerformed: false");
       assertThat(Files.isSymbolicLink(server.getParent().resolve("node_modules"))).isTrue();
       Path dependencies = Files.readSymbolicLink(server.getParent().resolve("node_modules"));
       assertThat(dependencies.resolve("@modelcontextprotocol/sdk")).isDirectory();

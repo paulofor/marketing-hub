@@ -99,4 +99,147 @@ class CreativeCommercialLineageEvidenceServiceTest {
     assertThat(evidence.verificationStatus()).isEqualTo("INCOMPLETE");
     assertThat(evidence.checkoutUrlMatched()).isFalse();
   }
+
+  /** Não confunde uma revisão interna do sucessor com reutilização de criativo do antecessor. */
+  @Test
+  void ignoresInternalRevisionWhenResolvingCommercialSource() {
+    Product product = Product.builder().id(7L).build();
+    Hypothesis hypothesis = Hypothesis.builder().id(UUID.randomUUID()).build();
+    Experiment sourceExperiment =
+        Experiment.builder()
+            .id(88L)
+            .product(product)
+            .hypothesisRef(hypothesis)
+            .followUpActionUrl("https://shop.test/flows/exp-88")
+            .commercialCheckoutUrl("https://checkout.test/capella")
+            .build();
+    Experiment targetExperiment =
+        Experiment.builder()
+            .id(94L)
+            .product(product)
+            .hypothesisRef(hypothesis)
+            .sourceExperiment(sourceExperiment)
+            .commercialCheckoutUrl("https://checkout.test/capella")
+            .build();
+    Creative firstVersion =
+        Creative.builder()
+            .id(534L)
+            .experiment(targetExperiment)
+            .format("VIDEO")
+            .videoUrl("https://cdn.test/capella-video.mp4")
+            .destinationUrl("https://shop.test/flows/exp-88")
+            .build();
+    Creative revisedVersion =
+        Creative.builder()
+            .id(535L)
+            .experiment(targetExperiment)
+            .sourceCreative(firstVersion)
+            .format("VIDEO")
+            .videoUrl("https://cdn.test/capella-video.mp4")
+            .destinationUrl("https://shop.test/flows/exp-88")
+            .build();
+
+    var evidence = service.resolve(revisedVersion, revisedVersion.getDestinationUrl());
+
+    assertThat(evidence.verificationStatus()).isEqualTo("VERIFIED");
+    assertThat(evidence.reusedCreative()).isFalse();
+    assertThat(evidence.sourceCreativeId()).isNull();
+    assertThat(evidence.mediaUrlMatched()).isNull();
+  }
+
+  /** Percorre revisões internas até encontrar o criativo realmente adotado do antecessor. */
+  @Test
+  void resolvesAdoptedSourceBehindInternalRevision() {
+    Product product = Product.builder().id(7L).build();
+    Hypothesis hypothesis = Hypothesis.builder().id(UUID.randomUUID()).build();
+    Experiment sourceExperiment =
+        Experiment.builder()
+            .id(88L)
+            .product(product)
+            .hypothesisRef(hypothesis)
+            .followUpActionUrl("https://shop.test/flows/exp-88")
+            .commercialCheckoutUrl("https://checkout.test/capella")
+            .build();
+    Experiment targetExperiment =
+        Experiment.builder()
+            .id(94L)
+            .product(product)
+            .hypothesisRef(hypothesis)
+            .sourceExperiment(sourceExperiment)
+            .commercialCheckoutUrl("https://checkout.test/capella")
+            .build();
+    Creative adoptedSource =
+        Creative.builder()
+            .id(523L)
+            .experiment(sourceExperiment)
+            .format("IMAGE")
+            .imageUrl("https://cdn.test/exp-88-story.png")
+            .destinationUrl("https://shop.test/flows/exp-88")
+            .status(CreativeStatus.READY)
+            .agentReviewStatus(CreativeAgentReviewStatus.APPROVED)
+            .reviewedAt(Instant.parse("2026-09-24T12:00:00Z"))
+            .build();
+    Creative firstTargetVersion =
+        Creative.builder()
+            .id(531L)
+            .experiment(targetExperiment)
+            .sourceCreative(adoptedSource)
+            .format("IMAGE")
+            .imageUrl("https://cdn.test/exp-88-story.png")
+            .destinationUrl("https://shop.test/flows/exp-88")
+            .build();
+    Creative revisedVersion =
+        Creative.builder()
+            .id(536L)
+            .experiment(targetExperiment)
+            .sourceCreative(firstTargetVersion)
+            .format("IMAGE")
+            .imageUrl("https://cdn.test/exp-88-story.png")
+            .destinationUrl("https://shop.test/flows/exp-88")
+            .build();
+
+    var evidence = service.resolve(revisedVersion, revisedVersion.getDestinationUrl());
+
+    assertThat(evidence.verificationStatus()).isEqualTo("VERIFIED");
+    assertThat(evidence.reusedCreative()).isTrue();
+    assertThat(evidence.sourceCreativeId()).isEqualTo(523L);
+    assertThat(evidence.mediaUrlMatched()).isTrue();
+  }
+
+  /** Bloqueia evidência quando a cadeia de revisões internas contém ciclo. */
+  @Test
+  void keepsLineageIncompleteWhenInternalRevisionChainCycles() {
+    Product product = Product.builder().id(7L).build();
+    Hypothesis hypothesis = Hypothesis.builder().id(UUID.randomUUID()).build();
+    Experiment sourceExperiment =
+        Experiment.builder()
+            .id(88L)
+            .product(product)
+            .hypothesisRef(hypothesis)
+            .followUpActionUrl("https://shop.test/flows/exp-88")
+            .commercialCheckoutUrl("https://checkout.test/capella")
+            .build();
+    Experiment targetExperiment =
+        Experiment.builder()
+            .id(94L)
+            .product(product)
+            .hypothesisRef(hypothesis)
+            .sourceExperiment(sourceExperiment)
+            .commercialCheckoutUrl("https://checkout.test/capella")
+            .build();
+    Creative first =
+        Creative.builder().id(534L).experiment(targetExperiment).format("VIDEO").build();
+    Creative second =
+        Creative.builder()
+            .id(535L)
+            .experiment(targetExperiment)
+            .sourceCreative(first)
+            .format("VIDEO")
+            .build();
+    first.setSourceCreative(second);
+
+    var evidence = service.resolve(second, "https://shop.test/flows/exp-88");
+
+    assertThat(evidence.verificationStatus()).isEqualTo("INCOMPLETE");
+  }
 }

@@ -31,6 +31,9 @@ export interface UpdateExperiment {
   mde?: number;
   dailyBudget?: number | null;
   mediaSpendLimit?: number | null;
+  zeroResultSpendLimit?: number | null;
+  zeroPurchaseSpendLimit?: number | null;
+  purchaseStopCount?: number | null;
   unitPrice?: number | null;
   cost?: number | null;
   expense?: number | null;

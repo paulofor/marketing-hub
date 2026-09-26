@@ -51,6 +51,9 @@ public class CreateExperimentRequest {
 
   private BigDecimal dailyBudget;
   private BigDecimal mediaSpendLimit;
+  private BigDecimal zeroResultSpendLimit;
+  private BigDecimal zeroPurchaseSpendLimit;
+  private Integer purchaseStopCount;
   private BigDecimal unitPrice;
   private BigDecimal cost;
   private BigDecimal expense;

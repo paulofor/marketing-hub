@@ -17,6 +17,10 @@ export interface CreateFacebookSuccessorRequest {
   instagramAccountId: number;
 }
 
+export interface AdoptFacebookSuccessorRequest {
+  sourceExperimentId: number;
+}
+
 export function useFacebookSuccessorReadiness(experimentId?: string | number) {
   return useQuery({
     queryKey: ["experiment-facebook-successor-readiness", experimentId],
@@ -30,7 +34,9 @@ export function useFacebookSuccessorReadiness(experimentId?: string | number) {
   });
 }
 
-export function useCreateFacebookSuccessor(sourceExperimentId: string | number) {
+export function useCreateFacebookSuccessor(
+  sourceExperimentId: string | number,
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (request: CreateFacebookSuccessorRequest) => {
@@ -49,6 +55,27 @@ export function useCreateFacebookSuccessor(sourceExperimentId: string | number) 
             sourceExperimentId,
           ],
         }),
+      ]);
+    },
+  });
+}
+
+export function useAdoptFacebookSuccessor(targetExperimentId: string | number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: AdoptFacebookSuccessorRequest) => {
+      const { data } = await axios.post<Experiment>(
+        `/api/experiments/${targetExperimentId}/facebook-successor-adoption`,
+        request,
+      );
+      return data;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["experiment", String(targetExperimentId)],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["experiments"] }),
       ]);
     },
   });

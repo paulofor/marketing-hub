@@ -363,6 +363,92 @@ class ExperimentControllerTest {
         .isEqualTo(ExperimentStatus.RUNNING);
   }
 
+  /** Vincula pela API um sucessor Facebook planejado à superfície comercial da mesma oferta. */
+  @Test
+  void facebookSuccessorAdoptionEndpointKeepsExecutionSegregated() throws Exception {
+    MarketNiche niche = nicheRepo.findById(nicheId).orElseThrow();
+    var product =
+        productRepository.save(
+            com.marketinghub.product.Product.builder()
+                .slug("capella-adoption-" + UUID.randomUUID())
+                .name("Capella")
+                .marketNiche(niche)
+                .desireAssociationMapVersion("v1")
+                .desireAssociationMapJson(
+                    "{\"territories\":[{\"code\":\"PROFESSIONAL_PRIDE\",\"name\":\"Orgulho\"}]}")
+                .build());
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("Orgulho profissional").build());
+    var hypothesis =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .product(product)
+                .title("CAPELLA-H002")
+                .premiseAngle(angle)
+                .promise("Mostrar o capricho")
+                .problem("Perfil improvisado")
+                .persona("Nail designer")
+                .offerType(com.marketinghub.hypothesis.OfferType.TRIPWIRE)
+                .kpiTargetCpl(BigDecimal.ONE)
+                .build());
+    FacebookAccount account =
+        facebookAccountRepository.save(
+            FacebookAccount.builder().name("Conta Capella").adAccountId("act_capella").build());
+    FacebookPage page =
+        facebookPageRepository.save(
+            FacebookPage.builder().account(account).pageId("page-capella").name("Capella").build());
+    var instagram = fixtures.createAndSaveInstagramAccount();
+    Experiment source =
+        repository.save(
+            Experiment.builder()
+                .niche(niche)
+                .product(product)
+                .name("CAPELLA-H002-E001")
+                .hypothesisRef(hypothesis)
+                .desireTerritoryCode("PROFESSIONAL_PRIDE")
+                .experimentType(ExperimentType.LOW_TICKET_PRODUCT)
+                .campaignObjective(ExperimentCampaignObjective.SALES)
+                .unitPrice(new BigDecimal("67.00"))
+                .followUpActionUrl("https://capella.example/oferta")
+                .commercialCheckoutUrl("https://checkout.example/capella")
+                .facebookPage(page)
+                .instagramAccount(instagram)
+                .status(ExperimentStatus.INVALIDATED)
+                .platform(ExperimentPlatform.FACEBOOK)
+                .build());
+    Experiment target =
+        repository.save(
+            Experiment.builder()
+                .niche(niche)
+                .product(product)
+                .name("CAPELLA-H002-E002")
+                .hypothesisRef(hypothesis)
+                .desireTerritoryCode("PROFESSIONAL_PRIDE")
+                .experimentType(ExperimentType.LOW_TICKET_PRODUCT)
+                .campaignObjective(ExperimentCampaignObjective.SALES)
+                .unitPrice(new BigDecimal("67"))
+                .followUpActionUrl("https://capella.example/oferta")
+                .facebookPage(page)
+                .instagramAccount(instagram)
+                .status(ExperimentStatus.PLANNED)
+                .platform(ExperimentPlatform.FACEBOOK)
+                .build());
+
+    mockMvc
+        .perform(
+            post("/api/experiments/" + target.getId() + "/facebook-successor-adoption")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    mapper.writeValueAsString(
+                        java.util.Map.of("sourceExperimentId", source.getId()))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.sourceExperimentId").value(source.getId()))
+        .andExpect(jsonPath("$.commercialCheckoutUrl").value("https://checkout.example/capella"))
+        .andExpect(jsonPath("$.status").value("PLANNED"));
+  }
+
   /** Garante que a construção do experimento manual é exposta como verdade do backend. */
   @Test
   void constructionEndpointExplainsManualExperimentBuild() throws Exception {

@@ -20,6 +20,7 @@ import { useTenantContext } from "../../utils/tenantContext";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { AdaptiveVideoPlayer } from "../../components/AdaptiveVideoPlayer";
 import ApprovedVideoCreativeAction from "./ApprovedVideoCreativeAction";
+import ExperimentAdVideoUploadPanel from "./ExperimentAdVideoUploadPanel";
 import "./ExperimentVideoTab.css";
 
 interface ExperimentVideoTabProps {
@@ -341,6 +342,12 @@ export default function ExperimentVideoTab({
 
   return (
     <div className="d-flex flex-column gap-3">
+      {!isPdeExperiment ? (
+        <ExperimentAdVideoUploadPanel
+          experiment={experiment}
+          locked={alterationLocked}
+        />
+      ) : null}
       <div className="card experiment-video-performance-card">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">

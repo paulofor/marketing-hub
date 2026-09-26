@@ -250,6 +250,99 @@ paths:
                 $ref: '#/components/schemas/Experiment'
         '409':
           description: Origem incompleta ou sucessor já existente
+  /api/experiments/{id}/facebook-successor-adoption:
+    post:
+      tags: [Experiments]
+      summary: Vincular sucessor Facebook planejado à origem auditada
+      description: Reutiliza somente página e checkout quando produto, hipótese, oferta e identidades Meta coincidem; campanhas, métricas, público e criativos não são copiados.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Identificador do sucessor já criado e ainda planejado.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdoptFacebookSuccessorRequest'
+      responses:
+        '200':
+          description: Sucessor vinculado à superfície comercial da origem, sem execução herdada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Experiment'
+        '409':
+          description: Contrato divergente, destino já executado ou origem já vinculada a outro sucessor
+  /api/experiments/{experimentId}/video-assets/ad-uploads:
+    post:
+      tags: [Experiments]
+      summary: Anexar MP4 vertical finalizado ao experimento
+      description: Armazena um anúncio 9:16 produzido por processo versionado, sem acionar geração paga nem publicar campanha; o ativo permanece pendente de revisão humana.
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - objective
+                - primaryMetric
+                - script
+                - durationSeconds
+                - hasAudio
+                - visualSourceKey
+                - visualSourceDescription
+                - productionReference
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: MP4 9:16 de 6 a 60 segundos e até 50 MB.
+                objective:
+                  type: string
+                primaryMetric:
+                  type: string
+                script:
+                  type: string
+                durationSeconds:
+                  type: integer
+                  minimum: 6
+                  maximum: 60
+                hasAudio:
+                  type: boolean
+                  const: true
+                visualSourceKey:
+                  type: string
+                visualSourceDescription:
+                  type: string
+                productionReference:
+                  type: string
+                  description: Caminho ou identificação versionada do processo que gerou o arquivo.
+                requiredForRelease:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          description: Vídeo armazenado como READY e pendente de revisão humana
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentVideoAsset'
+        '400':
+          description: Arquivo ou metadados comerciais inválidos
   /api/experiments/{id}/costs/reset:
     post:
       tags: [Experiments]
@@ -1623,7 +1716,7 @@ components:
           description: CTA principal do funil.
         campaignObjective:
           type: string
-          enum: [LEADS, TRAFFIC]
+          enum: [LEADS, TRAFFIC, SALES]
           description: Objetivo operacional de campanha; use LEADS quando houver recompensa gratuita.
         kpiTarget:
           type: number
@@ -1646,6 +1739,20 @@ components:
           type: number
           format: decimal
           description: Teto total autorizado para gasto de mídia do experimento.
+        zeroResultSpendLimit:
+          type: number
+          format: decimal
+          minimum: 25
+          description: Gasto que interrompe a campanha sem resultado primário, limitado pelo teto total.
+        zeroPurchaseSpendLimit:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Gasto que interrompe uma campanha SALES sem compra atribuída.
+        purchaseStopCount:
+          type: integer
+          minimum: 1
+          description: Compras conciliadas que encerram a coleta como sucesso.
         journeyTemplateId:
           type: integer
           format: int64
@@ -1683,7 +1790,7 @@ components:
           description: Síntese comercial das lições aprendidas com o experimento.
         campaignObjective:
           type: string
-          enum: [LEADS, TRAFFIC]
+          enum: [LEADS, TRAFFIC, SALES]
         status:
           type: string
         reactivationAvailable:
@@ -1704,6 +1811,68 @@ components:
           type: number
           format: decimal
           nullable: true
+        zeroResultSpendLimit:
+          type: number
+          format: decimal
+          nullable: true
+        zeroPurchaseSpendLimit:
+          type: number
+          format: decimal
+          nullable: true
+        purchaseStopCount:
+          type: integer
+          nullable: true
+    ExperimentVideoAsset:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        experimentId:
+          type: integer
+          format: int64
+        slot:
+          type: string
+          enum: [AD, LANDING_HERO, FORM_EXPLAINER, PRE_CHECKOUT]
+        objective:
+          type: string
+        primaryMetric:
+          type: string
+        script:
+          type: string
+        provider:
+          type: string
+        model:
+          type: string
+        status:
+          type: string
+          enum: [PLANNED, GENERATING, READY, FAILED]
+        assetUrl:
+          type: string
+          format: uri
+        durationSeconds:
+          type: integer
+        hasAudio:
+          type: boolean
+        aspectRatio:
+          type: string
+        visualSourceType:
+          type: string
+        visualSourceKey:
+          type: string
+        visualSourceDescription:
+          type: string
+        cost:
+          type: number
+          format: decimal
+        reviewStatus:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+        requiredForRelease:
+          type: boolean
+        assetId:
+          type: integer
+          format: int64
     CreateFacebookSuccessorRequest:
       type: object
       required:
@@ -1734,6 +1903,15 @@ components:
         instagramAccountId:
           type: integer
           format: int64
+    AdoptFacebookSuccessorRequest:
+      type: object
+      required: [sourceExperimentId]
+      properties:
+        sourceExperimentId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Experimento Facebook anterior com página e checkout auditados.
     FacebookSuccessorReadinessResponse:
       type: object
       required: [available, blockers]

@@ -34,6 +34,11 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
   @Query("select e from Experiment e where e.id = :id")
   Optional<Experiment> findForFacebookRelease(@Param("id") Long id);
 
+  /** Serializa o vínculo de origem para impedir dois sucessores Facebook concorrentes. */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query("select e from Experiment e where e.id = :id")
+  Optional<Experiment> findForFacebookSuccessorAdoption(@Param("id") Long id);
+
   /** Serializa comandos de geração e recuperação da página no mesmo experimento. */
   @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
   @Query("select e from Experiment e where e.id = :id")

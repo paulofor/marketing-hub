@@ -15,7 +15,10 @@ import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
 import com.marketinghub.experiment.video.dto.RequestExperimentVideoPostProductionRequest;
 import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
+import com.marketinghub.experiment.video.dto.UploadExperimentAdVideoRequest;
 import com.marketinghub.media.Asset;
+import com.marketinghub.media.AssetType;
+import com.marketinghub.media.MediaProvider;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.LandingPageRepository;
@@ -44,22 +47,31 @@ import com.marketinghub.salesvideo.service.SalesVideoJobService;
 import com.marketinghub.salesvideo.service.SalesVideoProductionCostCalculator;
 import com.marketinghub.salesvideo.service.SalesVideoProviderDurationPolicy;
 import com.marketinghub.salesvideo.service.SalesVideoService;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Gerencia vídeos como ativos comerciais rastreáveis dentro de um experimento. */
 @Service
 public class ExperimentVideoAssetService {
   private static final int LANDING_HERO_LUMA_TARGET_SECONDS = 30;
+  private static final int MIN_USER_AD_DURATION_SECONDS = 6;
+  private static final int MAX_USER_AD_DURATION_SECONDS = 60;
+  private static final long MAX_USER_AD_FILE_SIZE_BYTES = 50L * 1024L * 1024L;
+  private static final String USER_UPLOAD_PROVIDER = "USER_UPLOAD";
+  private static final String VERSIONED_MONTAGE_MODEL = "VERSIONED_FFMPEG_MONTAGE_V1";
   private static final String POST_PRODUCTION_PROVIDER = "MUSA_POST_PRODUCTION";
   private static final String MUSA_STABLE_VISUAL_DIRECTIVES =
       """
@@ -185,6 +197,46 @@ public class ExperimentVideoAssetService {
       validateApprovalRequirements(videoAsset);
       validateVisualSourceDiversityForApproval(videoAsset);
     }
+    return toDto(repository.save(videoAsset));
+  }
+
+  /**
+   * Armazena um vídeo vertical finalizado, preserva sua proveniência e o deixa pendente de revisão
+   * humana antes de qualquer uso em anúncio.
+   */
+  @Transactional
+  public ExperimentVideoAssetDto uploadUserAdVideo(
+      Long experimentId, MultipartFile file, UploadExperimentAdVideoRequest request)
+      throws IOException {
+    Experiment experiment = ensureExperiment(experimentId);
+    validateUserAdVideoUpload(file, request);
+    String uploadMetadata = buildUserAdVideoUploadMetadata(experimentId, file, request);
+    Asset asset =
+        salesVideoService.storeAsset(
+            file, AssetType.VIDEO, MediaProvider.USER_UPLOAD, uploadMetadata);
+    ExperimentVideoAsset videoAsset =
+        ExperimentVideoAsset.builder()
+            .experiment(experiment)
+            .slot(ExperimentVideoSlot.AD)
+            .objective(request.objective().trim())
+            .primaryMetric(request.primaryMetric().trim())
+            .script(request.script().trim())
+            .provider(USER_UPLOAD_PROVIDER)
+            .model(VERSIONED_MONTAGE_MODEL)
+            .status(ExperimentVideoStatus.READY)
+            .assetUrl(asset.getUrl())
+            .durationSeconds(request.durationSeconds())
+            .hasAudio(true)
+            .aspectRatio("9:16")
+            .visualSourceType("APPROVED_PRODUCT_ASSETS")
+            .visualSourceKey(normalizeVisualSourceKey(request.visualSourceKey()))
+            .visualSourceDescription(request.visualSourceDescription().trim())
+            .requestJson(uploadMetadata)
+            .cost(BigDecimal.ZERO)
+            .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+            .requiredForRelease(request.requiredForRelease())
+            .asset(asset)
+            .build();
     return toDto(repository.save(videoAsset));
   }
 
@@ -370,6 +422,80 @@ public class ExperimentVideoAssetService {
   /** Normaliza texto livre para comparações determinísticas de contrato. */
   private String normalizeText(String value) {
     return StringUtils.hasText(value) ? value.trim() : null;
+  }
+
+  /** Valida arquivo, duração, áudio e proveniência antes de armazenar o vídeo comercial. */
+  private void validateUserAdVideoUpload(MultipartFile file, UploadExperimentAdVideoRequest request)
+      throws IOException {
+    if (file == null || file.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "video file is required");
+    }
+    if (file.getSize() > MAX_USER_AD_FILE_SIZE_BYTES) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "video file must not exceed 50 MB");
+    }
+    String filename = Optional.ofNullable(file.getOriginalFilename()).orElse("");
+    if (!filename.toLowerCase(Locale.ROOT).endsWith(".mp4") || !hasMp4Signature(file)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "video file must be a valid MP4");
+    }
+    if (request == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "video metadata is required");
+    }
+    if (!StringUtils.hasText(request.objective())
+        || !StringUtils.hasText(request.primaryMetric())
+        || !StringUtils.hasText(request.script())
+        || !StringUtils.hasText(request.visualSourceKey())
+        || !StringUtils.hasText(request.visualSourceDescription())
+        || !StringUtils.hasText(request.productionReference())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "commercial metadata and provenance are required");
+    }
+    if (request.durationSeconds() == null
+        || request.durationSeconds() < MIN_USER_AD_DURATION_SECONDS
+        || request.durationSeconds() > MAX_USER_AD_DURATION_SECONDS) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "vertical ad duration must be between 6 and 60 seconds");
+    }
+    if (!Boolean.TRUE.equals(request.hasAudio())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "audio review must be confirmed before upload");
+    }
+  }
+
+  /** Confirma a assinatura ISO Base Media usada por arquivos MP4 sem confiar apenas no MIME. */
+  private boolean hasMp4Signature(MultipartFile file) throws IOException {
+    try (InputStream input = file.getInputStream()) {
+      byte[] header = input.readNBytes(12);
+      return header.length >= 8
+          && header[4] == 'f'
+          && header[5] == 't'
+          && header[6] == 'y'
+          && header[7] == 'p';
+    }
+  }
+
+  /** Monta o snapshot auditável da origem e dos critérios comerciais do upload. */
+  private String buildUserAdVideoUploadMetadata(
+      Long experimentId, MultipartFile file, UploadExperimentAdVideoRequest request) {
+    Map<String, Object> metadata = new LinkedHashMap<>();
+    metadata.put("artifactType", "experiment.userAdVideoUpload.v1");
+    metadata.put("experimentId", experimentId);
+    metadata.put("originalFilename", file.getOriginalFilename());
+    metadata.put("contentType", file.getContentType());
+    metadata.put("sizeBytes", file.getSize());
+    metadata.put("durationSeconds", request.durationSeconds());
+    metadata.put("aspectRatio", "9:16");
+    metadata.put("hasAudio", true);
+    metadata.put("objective", request.objective().trim());
+    metadata.put("primaryMetric", request.primaryMetric().trim());
+    metadata.put("visualSourceKey", request.visualSourceKey().trim());
+    metadata.put("visualSourceDescription", request.visualSourceDescription().trim());
+    metadata.put("productionReference", request.productionReference().trim());
+    try {
+      return OBJECT_MAPPER.writeValueAsString(metadata);
+    } catch (JsonProcessingException ex) {
+      throw new ResponseStatusException(
+          HttpStatus.INTERNAL_SERVER_ERROR, "video upload metadata serialization failed", ex);
+    }
   }
 
   /** Aplica os campos opcionais enviados na atualização do ativo de vídeo. */

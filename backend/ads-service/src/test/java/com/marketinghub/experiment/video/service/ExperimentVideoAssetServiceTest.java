@@ -3,6 +3,7 @@ package com.marketinghub.experiment.video.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -18,7 +19,11 @@ import com.marketinghub.experiment.video.dto.RequestExperimentVeoVideoRequest;
 import com.marketinghub.experiment.video.dto.RequestExperimentVideoPostProductionRequest;
 import com.marketinghub.experiment.video.dto.RequestPlannedExperimentVideoRenderRequest;
 import com.marketinghub.experiment.video.dto.UpdateExperimentVideoAssetRequest;
+import com.marketinghub.experiment.video.dto.UploadExperimentAdVideoRequest;
 import com.marketinghub.media.Asset;
+import com.marketinghub.media.AssetStatus;
+import com.marketinghub.media.AssetType;
+import com.marketinghub.media.MediaProvider;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -52,6 +57,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Valida o registro de vídeos como ativos comerciais vinculados ao experimento. */
@@ -137,6 +144,87 @@ class ExperimentVideoAssetServiceTest {
     assertThat(dto.status()).isEqualTo(ExperimentVideoStatus.PLANNED);
     assertThat(dto.reviewStatus()).isEqualTo(ExperimentVideoReviewStatus.PENDING);
     assertThat(dto.requiredForRelease()).isTrue();
+  }
+
+  /** Vincula um MP4 vertical sem custo e mantém a aprovação humana separada do upload. */
+  @Test
+  void shouldUploadVersionedVerticalAdVideoForExperiment() throws Exception {
+    Experiment experiment = Experiment.builder().id(94L).build();
+    Asset storedAsset =
+        Asset.builder()
+            .id(2100L)
+            .type(AssetType.VIDEO)
+            .provider(MediaProvider.USER_UPLOAD)
+            .status(AssetStatus.READY)
+            .url("https://cdn.test/capella-video-v1.mp4")
+            .build();
+    byte[] mp4Bytes = new byte[] {0, 0, 0, 24, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm'};
+    MockMultipartFile file = new MockMultipartFile("file", "capella-v1.mp4", "video/mp4", mp4Bytes);
+    UploadExperimentAdVideoRequest request =
+        new UploadExperimentAdVideoRequest(
+            "Comparar demonstração em vídeo com imagem estática",
+            "Compras líquidas e contribuição após mídia (R$)",
+            "Seu trabalho é caprichado. Seu Instagram mostra isso?",
+            18,
+            true,
+            "capella-exp88-approved-assets-v1",
+            "Posts e stories aprovados do experimento 88.",
+            "scripts/marketing/create-capella-successor-video-v1.sh",
+            true);
+    given(experimentRepository.findById(94L)).willReturn(Optional.of(experiment));
+    given(
+            salesVideoService.storeAsset(
+                any(), eq(AssetType.VIDEO), eq(MediaProvider.USER_UPLOAD), any()))
+        .willReturn(storedAsset);
+    given(repository.save(any(ExperimentVideoAsset.class)))
+        .willAnswer(
+            invocation -> {
+              ExperimentVideoAsset saved = invocation.getArgument(0);
+              saved.setId(81L);
+              return saved;
+            });
+
+    ExperimentVideoAssetDto dto = service.uploadUserAdVideo(94L, file, request);
+
+    assertThat(dto.id()).isEqualTo(81L);
+    assertThat(dto.slot()).isEqualTo(ExperimentVideoSlot.AD);
+    assertThat(dto.status()).isEqualTo(ExperimentVideoStatus.READY);
+    assertThat(dto.reviewStatus()).isEqualTo(ExperimentVideoReviewStatus.PENDING);
+    assertThat(dto.provider()).isEqualTo("USER_UPLOAD");
+    assertThat(dto.model()).isEqualTo("VERSIONED_FFMPEG_MONTAGE_V1");
+    assertThat(dto.assetId()).isEqualTo(2100L);
+    assertThat(dto.cost()).isZero();
+    assertThat(dto.requestJson())
+        .contains("experiment.userAdVideoUpload.v1", "capella-exp88-approved-assets-v1");
+    verify(salesVideoService)
+        .storeAsset(any(), eq(AssetType.VIDEO), eq(MediaProvider.USER_UPLOAD), any());
+  }
+
+  /** Rejeita arquivo apenas renomeado como MP4 antes de gravar qualquer asset. */
+  @Test
+  void shouldRejectInvalidMp4SignatureBeforeStorage() {
+    Experiment experiment = Experiment.builder().id(94L).build();
+    MockMultipartFile file =
+        new MockMultipartFile("file", "capella-v1.mp4", "video/mp4", "not-a-video".getBytes());
+    UploadExperimentAdVideoRequest request =
+        new UploadExperimentAdVideoRequest(
+            "Comparar formatos",
+            "Compras",
+            "Roteiro auditável",
+            18,
+            true,
+            "capella-v1",
+            "Ativos aprovados.",
+            "script-versionado.sh",
+            true);
+    given(experimentRepository.findById(94L)).willReturn(Optional.of(experiment));
+
+    ResponseStatusException error =
+        assertThrows(
+            ResponseStatusException.class, () -> service.uploadUserAdVideo(94L, file, request));
+
+    assertThat(error.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(error.getReason()).contains("valid MP4");
   }
 
   /** Garante que o Hub cria o fluxo VEO curto completo a partir do experimento. */

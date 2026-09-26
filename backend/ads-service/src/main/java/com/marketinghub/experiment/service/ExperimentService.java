@@ -10,7 +10,9 @@ import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.ReactivateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
+import com.marketinghub.experiment.funnel.ExperimentFinancialGuardrailPolicy;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStandbyService;
+import com.marketinghub.experiment.service.createFacebookSuccessor.AdoptFacebookSuccessorRequest;
 import com.marketinghub.experiment.service.createFacebookSuccessor.CreateFacebookSuccessorRequest;
 import com.marketinghub.experiment.service.createFacebookSuccessor.FacebookSuccessorReadinessResponse;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
@@ -464,6 +466,18 @@ public class ExperimentService {
         request.getMediaSpendLimit(),
         request.getStartDate(),
         request.getEndDate());
+    validateFinancialStopPolicy(
+        resolvedPlatform,
+        resolveCampaignObjective(
+            request.getCampaignObjective(), request.getFreeReward(), resolvedExperimentType),
+        request.getMediaSpendLimit(),
+        request.getZeroResultSpendLimit(),
+        request.getZeroPurchaseSpendLimit(),
+        request.getPurchaseStopCount(),
+        hasFinancialStopPolicy(
+            request.getZeroResultSpendLimit(),
+            request.getZeroPurchaseSpendLimit(),
+            request.getPurchaseStopCount()));
     String automaticName = buildAutomaticExperimentName(niche, hyp);
     if (repository.existsByNicheAndName(niche, automaticName)) {
       throw new ResponseStatusException(
@@ -547,6 +561,9 @@ public class ExperimentService {
             .mdePercent(request.getMdePercent())
             .dailyBudget(request.getDailyBudget())
             .mediaSpendLimit(request.getMediaSpendLimit())
+            .zeroResultSpendLimit(request.getZeroResultSpendLimit())
+            .zeroPurchaseSpendLimit(request.getZeroPurchaseSpendLimit())
+            .purchaseStopCount(request.getPurchaseStopCount())
             .unitPrice(unitPrice)
             .cost(request.getCost())
             .totalCost(initialTotalCost)
@@ -853,6 +870,122 @@ public class ExperimentService {
             });
     promptSchemaUsageService.linkHypothesisTemplates(saved.getId());
     return saved;
+  }
+
+  /**
+   * Vincula um experimento Facebook planejado a uma origem Facebook auditada, copiando somente a
+   * superfície comercial e preservando a execução isolada.
+   */
+  @Transactional
+  public Experiment adoptFacebookSuccessor(
+      Long targetExperimentId, AdoptFacebookSuccessorRequest request) {
+    if (Objects.equals(targetExperimentId, request.sourceExperimentId())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "O experimento não pode ser sucessor de si mesmo");
+    }
+    Experiment source =
+        repository
+            .findForFacebookSuccessorAdoption(request.sourceExperimentId())
+            .orElseThrow(EntityNotFoundException::new);
+    Experiment target =
+        repository
+            .findForFacebookSuccessorAdoption(targetExperimentId)
+            .orElseThrow(EntityNotFoundException::new);
+    if (target.getSourceExperiment() != null
+        && Objects.equals(target.getSourceExperiment().getId(), source.getId())) {
+      return target;
+    }
+
+    validateFacebookSuccessorAdoption(source, target);
+    target.setSourceExperiment(source);
+    target.setFollowUpActionUrl(source.getFollowUpActionUrl());
+    target.setCommercialCheckoutUrl(source.getCommercialCheckoutUrl());
+    Experiment saved = repository.save(target);
+    commercialPlanRepository
+        .findByExperimentReference(source.getId())
+        .forEach(
+            plan -> {
+              if (plan.getExperiments().add(saved)) {
+                commercialPlanRepository.save(plan);
+              }
+            });
+    return saved;
+  }
+
+  /** Valida que origem e sucessor compartilham o mesmo contrato, sem execução prévia no destino. */
+  private void validateFacebookSuccessorAdoption(Experiment source, Experiment target) {
+    if (source.getPlatform() != ExperimentPlatform.FACEBOOK
+        || target.getPlatform() != ExperimentPlatform.FACEBOOK) {
+      throw successorAdoptionConflict("Origem e sucessor precisam usar Facebook");
+    }
+    if (target.getStatus() != ExperimentStatus.PLANNED) {
+      throw successorAdoptionConflict("O sucessor precisa permanecer em PLANNED");
+    }
+    if (target.getSourceExperiment() != null) {
+      throw successorAdoptionConflict("O experimento já possui outra origem");
+    }
+    Optional<Experiment> existing =
+        repository.findFirstBySourceExperimentIdAndPlatformOrderByCreatedAtDesc(
+            source.getId(), ExperimentPlatform.FACEBOOK);
+    if (existing.isPresent() && !Objects.equals(existing.get().getId(), target.getId())) {
+      throw successorAdoptionConflict(
+          "A origem já possui o sucessor Facebook " + existing.get().getId());
+    }
+    if (target.getFacebookReleaseRequestedAt() != null
+        || target.getCampaignMetric() != null
+        || facebookAdsCampaignRepository.existsByExperimentId(target.getId())) {
+      throw successorAdoptionConflict("O sucessor já possui execução operacional");
+    }
+    if (!StringUtils.hasText(source.getFollowUpActionUrl())
+        || !StringUtils.hasText(source.getCommercialCheckoutUrl())) {
+      throw successorAdoptionConflict(
+          "A origem precisa ter página e checkout comerciais aprovados");
+    }
+    if (!sameCommercialContract(source, target)) {
+      throw successorAdoptionConflict(
+          "Origem e sucessor precisam ter o mesmo produto, hipótese, oferta e identidades Meta");
+    }
+    if (StringUtils.hasText(target.getFollowUpActionUrl())
+        && !Objects.equals(target.getFollowUpActionUrl(), source.getFollowUpActionUrl())) {
+      throw successorAdoptionConflict("A página do sucessor diverge da origem auditada");
+    }
+    if (StringUtils.hasText(target.getCommercialCheckoutUrl())
+        && !Objects.equals(target.getCommercialCheckoutUrl(), source.getCommercialCheckoutUrl())) {
+      throw successorAdoptionConflict("O checkout do sucessor diverge da origem auditada");
+    }
+  }
+
+  /** Compara as identidades e condições imutáveis que autorizam reutilizar página e checkout. */
+  private boolean sameCommercialContract(Experiment source, Experiment target) {
+    return sameReference(source.getProduct(), target.getProduct())
+        && sameReference(source.getNiche(), target.getNiche())
+        && sameReference(source.getHypothesisRef(), target.getHypothesisRef())
+        && sameReference(source.getFacebookPage(), target.getFacebookPage())
+        && sameReference(source.getInstagramAccount(), target.getInstagramAccount())
+        && Objects.equals(source.getDesireTerritoryCode(), target.getDesireTerritoryCode())
+        && source.getExperimentType() == target.getExperimentType()
+        && source.getProductAiSubtype() == target.getProductAiSubtype()
+        && source.getCampaignObjective() == target.getCampaignObjective()
+        && sameAmount(source.getUnitPrice(), target.getUnitPrice());
+  }
+
+  /**
+   * Compara referências JPA pela identidade persistida, sem depender da classe concreta do proxy.
+   */
+  private boolean sameReference(Object first, Object second) {
+    if (first == null || second == null) {
+      return first == second;
+    }
+    Object firstId =
+        entityManager.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(first);
+    Object secondId =
+        entityManager.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(second);
+    return firstId != null && Objects.equals(firstId, secondId);
+  }
+
+  /** Padroniza conflitos funcionais do vínculo de sucessor para consumo seguro pela interface. */
+  private ResponseStatusException successorAdoptionConflict(String reason) {
+    return new ResponseStatusException(HttpStatus.CONFLICT, reason);
   }
 
   /** Retorna a decisão persistível que orienta a ação de sucessor Facebook na interface. */
@@ -1229,6 +1362,7 @@ public class ExperimentService {
   public Experiment update(Long id, UpdateExperimentRequest request) {
     Experiment exp = repository.findById(id).orElseThrow();
     boolean mediaPlanChanged = mediaSpendPlanChanged(exp, request);
+    boolean financialStopPolicyChanged = financialStopPolicyChanged(request);
 
     if (request.getName() == null || request.getHypothesis() == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "required fields missing");
@@ -1297,6 +1431,9 @@ public class ExperimentService {
       if (resolvedPlatform == ExperimentPlatform.DIRECT_ONE_TO_ONE) {
         exp.setDailyBudget(null);
         exp.setMediaSpendLimit(null);
+        exp.setZeroResultSpendLimit(null);
+        exp.setZeroPurchaseSpendLimit(null);
+        exp.setPurchaseStopCount(null);
         exp.setFacebookPage(null);
         exp.setFacebookInstantForm(null);
         exp.setInstagramAccount(null);
@@ -1356,6 +1493,15 @@ public class ExperimentService {
     if (request.isMediaSpendLimitPresent()) {
       exp.setMediaSpendLimit(request.getMediaSpendLimit());
     }
+    if (request.isZeroResultSpendLimitPresent() && request.getZeroResultSpendLimit() != null) {
+      exp.setZeroResultSpendLimit(request.getZeroResultSpendLimit());
+    }
+    if (request.isZeroPurchaseSpendLimitPresent() && request.getZeroPurchaseSpendLimit() != null) {
+      exp.setZeroPurchaseSpendLimit(request.getZeroPurchaseSpendLimit());
+    }
+    if (request.isPurchaseStopCountPresent() && request.getPurchaseStopCount() != null) {
+      exp.setPurchaseStopCount(request.getPurchaseStopCount());
+    }
     if (request.isUnitPricePresent()) {
       exp.setUnitPrice(normalizeUnitPrice(request.getUnitPrice()));
     }
@@ -1399,6 +1545,21 @@ public class ExperimentService {
           exp.getMediaSpendLimit(),
           exp.getStartDate(),
           exp.getEndDate());
+    }
+    if (financialStopPolicyChanged
+        || (mediaPlanChanged
+            && hasFinancialStopPolicy(
+                exp.getZeroResultSpendLimit(),
+                exp.getZeroPurchaseSpendLimit(),
+                exp.getPurchaseStopCount()))) {
+      validateFinancialStopPolicy(
+          exp.getPlatform(),
+          exp.getCampaignObjective(),
+          exp.getMediaSpendLimit(),
+          exp.getZeroResultSpendLimit(),
+          exp.getZeroPurchaseSpendLimit(),
+          exp.getPurchaseStopCount(),
+          true);
     }
     if (request.getCreativesToGenerate() != null) {
       exp.setCreativesToGenerate(request.getCreativesToGenerate());
@@ -2020,9 +2181,88 @@ public class ExperimentService {
         || !Objects.equals(request.getEndDate(), experiment.getEndDate());
   }
 
+  /** Identifica edição explícita das condições automáticas de parada financeira. */
+  private boolean financialStopPolicyChanged(UpdateExperimentRequest request) {
+    return (request.isZeroResultSpendLimitPresent() && request.getZeroResultSpendLimit() != null)
+        || (request.isZeroPurchaseSpendLimitPresent()
+            && request.getZeroPurchaseSpendLimit() != null)
+        || (request.isPurchaseStopCountPresent() && request.getPurchaseStopCount() != null);
+  }
+
+  /** Informa se ao menos uma condição financeira de parada foi definida. */
+  private boolean hasFinancialStopPolicy(
+      BigDecimal zeroResultSpendLimit,
+      BigDecimal zeroPurchaseSpendLimit,
+      Integer purchaseStopCount) {
+    return zeroResultSpendLimit != null
+        || zeroPurchaseSpendLimit != null
+        || purchaseStopCount != null;
+  }
+
   /** Compara valores monetários sem tratar diferenças de escala decimal como nova verba. */
   private boolean sameAmount(BigDecimal first, BigDecimal second) {
     return first == null ? second == null : second != null && first.compareTo(second) == 0;
+  }
+
+  /**
+   * Valida as paradas automáticas contra o teto e exige o contrato completo quando ele foi
+   * informado.
+   */
+  private void validateFinancialStopPolicy(
+      ExperimentPlatform platform,
+      ExperimentCampaignObjective campaignObjective,
+      BigDecimal mediaSpendLimit,
+      BigDecimal zeroResultSpendLimit,
+      BigDecimal zeroPurchaseSpendLimit,
+      Integer purchaseStopCount,
+      boolean requireComplete) {
+    if (platform == ExperimentPlatform.DIRECT_ONE_TO_ONE) {
+      if (hasFinancialStopPolicy(zeroResultSpendLimit, zeroPurchaseSpendLimit, purchaseStopCount)) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "Condições de parada não se aplicam ao canal direto");
+      }
+      return;
+    }
+    if (!requireComplete
+        && !hasFinancialStopPolicy(
+            zeroResultSpendLimit, zeroPurchaseSpendLimit, purchaseStopCount)) {
+      return;
+    }
+    if (mediaSpendLimit == null || mediaSpendLimit.signum() <= 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Defina o teto total antes das condições de parada");
+    }
+    validateStopSpendLimit(
+        zeroResultSpendLimit,
+        mediaSpendLimit,
+        ExperimentFinancialGuardrailPolicy.zeroPrimaryResultMinimumSpend(),
+        "A parada sem resultado");
+    if (campaignObjective == ExperimentCampaignObjective.SALES) {
+      validateStopSpendLimit(
+          zeroPurchaseSpendLimit, mediaSpendLimit, BigDecimal.ZERO, "A parada sem compra");
+      if (purchaseStopCount == null || purchaseStopCount <= 0 || purchaseStopCount > 100000) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "A meta de compras deve ficar entre 1 e 100000");
+      }
+    } else if (zeroPurchaseSpendLimit != null || purchaseStopCount != null) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Parada sem compra e meta de compras exigem objetivo de campanha SALES");
+    }
+  }
+
+  /** Valida um limite monetário positivo, com centavos e contido no teto autorizado. */
+  private void validateStopSpendLimit(
+      BigDecimal value, BigDecimal mediaSpendLimit, BigDecimal minimum, String label) {
+    if (value == null
+        || value.signum() <= 0
+        || value.stripTrailingZeros().scale() > 2
+        || value.compareTo(minimum) < 0
+        || value.compareTo(mediaSpendLimit) > 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          label + " deve respeitar o mínimo financeiro e o teto total autorizado");
+    }
   }
 
   /** Valida orçamento diário, teto absoluto e período sem confundir ritmo com gasto máximo. */

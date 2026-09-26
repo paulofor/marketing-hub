@@ -103,6 +103,8 @@ type FormState = {
   mde: string;
   dailyBudget: string;
   mediaSpendLimit: string;
+  zeroPurchaseSpendLimit: string;
+  purchaseStopCount: string;
   unitPrice: string;
   startDate: string;
   endDate: string;
@@ -154,6 +156,8 @@ export default function NewExperimentPage() {
     mde: "",
     dailyBudget: "",
     mediaSpendLimit: "",
+    zeroPurchaseSpendLimit: "",
+    purchaseStopCount: "",
     unitPrice: "",
     startDate: "",
     endDate: "",
@@ -531,6 +535,24 @@ export default function NewExperimentPage() {
         alert("Informe um teto total de mídia válido ou deixe o campo vazio");
         return;
       }
+      const parsedZeroPurchaseSpendLimit = parseOptionalPositiveAmount(
+        form.zeroPurchaseSpendLimit,
+      );
+      if (parsedZeroPurchaseSpendLimit === null) {
+        alert("Informe uma parada sem compra válida ou deixe o campo vazio");
+        return;
+      }
+      const parsedPurchaseStopCount = parseOptionalPositiveAmount(
+        form.purchaseStopCount,
+      );
+      if (
+        parsedPurchaseStopCount === null ||
+        (parsedPurchaseStopCount != null &&
+          !Number.isInteger(parsedPurchaseStopCount))
+      ) {
+        alert("Informe uma meta inteira de compras ou deixe o campo vazio");
+        return;
+      }
       if (
         form.platform === "FACEBOOK" &&
         (parsedDailyBudget == null) !== (parsedMediaSpendLimit == null)
@@ -538,6 +560,25 @@ export default function NewExperimentPage() {
         alert(
           "Orçamento diário e teto total de mídia devem ser informados juntos",
         );
+        return;
+      }
+      if (
+        parsedMediaSpendLimit != null &&
+        (parsedZeroPurchaseSpendLimit == null ||
+          parsedZeroPurchaseSpendLimit < 25 ||
+          parsedZeroPurchaseSpendLimit > parsedMediaSpendLimit)
+      ) {
+        alert(
+          "A parada sem compra deve ficar entre R$ 25 e o teto total de mídia",
+        );
+        return;
+      }
+      if (
+        isSalesObjectiveExperiment &&
+        parsedMediaSpendLimit != null &&
+        parsedPurchaseStopCount == null
+      ) {
+        alert("Informe a quantidade de compras que encerra a coleta");
         return;
       }
       const parsedKpiTarget = parseOptionalPositiveAmount(form.kpiTarget);
@@ -616,6 +657,13 @@ export default function NewExperimentPage() {
         mde: form.mde ? Number(form.mde) : undefined,
         dailyBudget: parsedDailyBudget,
         mediaSpendLimit: parsedMediaSpendLimit,
+        zeroResultSpendLimit: parsedZeroPurchaseSpendLimit,
+        zeroPurchaseSpendLimit: isSalesObjectiveExperiment
+          ? parsedZeroPurchaseSpendLimit
+          : undefined,
+        purchaseStopCount: isSalesObjectiveExperiment
+          ? parsedPurchaseStopCount
+          : undefined,
         unitPrice: parsedUnitPrice,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
@@ -662,6 +710,8 @@ export default function NewExperimentPage() {
         mde: "",
         dailyBudget: "",
         mediaSpendLimit: "",
+        zeroPurchaseSpendLimit: "",
+        purchaseStopCount: "",
         unitPrice: "",
         startDate: "",
         endDate: "",
@@ -1473,6 +1523,54 @@ export default function NewExperimentPage() {
           <div className="form-text mb-2">
             Obrigatório junto do orçamento diário antes de liberar a campanha.
           </div>
+          <label className="form-label" htmlFor="zeroPurchaseSpendLimit">
+            Parar sem compra/resultado em (R$)
+          </label>
+          <input
+            id="zeroPurchaseSpendLimit"
+            className="form-control mb-2"
+            placeholder="Entre R$ 25 e o teto total"
+            type="number"
+            min="25"
+            step="0.01"
+            value={form.zeroPurchaseSpendLimit}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                zeroPurchaseSpendLimit: event.target.value,
+              }))
+            }
+          />
+          <div className="form-text mb-2">
+            Interrompe a mídia antes do teto quando o resultado principal ainda
+            não apareceu.
+          </div>
+          {isSalesObjectiveExperiment ? (
+            <>
+              <label className="form-label" htmlFor="purchaseStopCount">
+                Parar ao atingir compras
+              </label>
+              <input
+                id="purchaseStopCount"
+                className="form-control mb-2"
+                placeholder="Quantidade de compras conciliadas"
+                type="number"
+                min="1"
+                step="1"
+                value={form.purchaseStopCount}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    purchaseStopCount: event.target.value,
+                  }))
+                }
+              />
+              <div className="form-text mb-2">
+                Encerra a coleta como sucesso para conciliar receita, entrega e
+                margem antes de repetir.
+              </div>
+            </>
+          ) : null}
         </>
       )}
       <label className="form-label" htmlFor="unitPrice">

@@ -52,6 +52,12 @@ public class UpdateExperimentRequest {
   private BigDecimal dailyBudget;
   private BigDecimal mediaSpendLimit;
   @JsonIgnore private boolean mediaSpendLimitPresent;
+  private BigDecimal zeroResultSpendLimit;
+  @JsonIgnore private boolean zeroResultSpendLimitPresent;
+  private BigDecimal zeroPurchaseSpendLimit;
+  @JsonIgnore private boolean zeroPurchaseSpendLimitPresent;
+  private Integer purchaseStopCount;
+  @JsonIgnore private boolean purchaseStopCountPresent;
   private BigDecimal unitPrice;
   @JsonIgnore private boolean unitPricePresent;
   private BigDecimal cost;
@@ -225,6 +231,27 @@ public class UpdateExperimentRequest {
   public void setMediaSpendLimit(BigDecimal mediaSpendLimit) {
     this.mediaSpendLimit = mediaSpendLimit;
     this.mediaSpendLimitPresent = true;
+  }
+
+  /** Registra a presença do limite sem resultado primário no payload de atualização. */
+  @JsonSetter(value = "zeroResultSpendLimit", nulls = Nulls.SET)
+  public void setZeroResultSpendLimit(BigDecimal zeroResultSpendLimit) {
+    this.zeroResultSpendLimit = zeroResultSpendLimit;
+    this.zeroResultSpendLimitPresent = true;
+  }
+
+  /** Registra a presença do limite sem compra no payload de atualização. */
+  @JsonSetter(value = "zeroPurchaseSpendLimit", nulls = Nulls.SET)
+  public void setZeroPurchaseSpendLimit(BigDecimal zeroPurchaseSpendLimit) {
+    this.zeroPurchaseSpendLimit = zeroPurchaseSpendLimit;
+    this.zeroPurchaseSpendLimitPresent = true;
+  }
+
+  /** Registra a presença da quantidade de compras que encerra a coleta. */
+  @JsonSetter(value = "purchaseStopCount", nulls = Nulls.SET)
+  public void setPurchaseStopCount(Integer purchaseStopCount) {
+    this.purchaseStopCount = purchaseStopCount;
+    this.purchaseStopCountPresent = true;
   }
 
   @JsonSetter(value = "unitPrice", nulls = Nulls.SET)

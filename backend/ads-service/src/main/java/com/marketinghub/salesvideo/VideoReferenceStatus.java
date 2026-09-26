@@ -5,5 +5,6 @@ public enum VideoReferenceStatus {
   QUEUED,
   ANALYZING,
   ANALYZED,
+  FAILED,
   REJECTED
 }

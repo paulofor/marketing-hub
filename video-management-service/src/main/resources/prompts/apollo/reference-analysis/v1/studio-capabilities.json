@@ -1,0 +1,25 @@
+{
+  "version": "2026-09-26",
+  "available": [
+    "inspecao deterministica de codec, duracao, formato, cenas, loudness, true peak e hashes",
+    "transcricao auditavel da faixa falada antes da leitura multimodal",
+    "planejamento de ate 48 beats editoriais com biblias de personagem, ambiente, objetos e continuidade",
+    "geracao texto-para-video e imagem-para-video por adapters isolados, sujeita ao catalogo ativo e ao preflight",
+    "geracao cena a cena e montagem vertical de multiplos clipes por ate 600 segundos",
+    "locucao em portugues, legenda queimada, VTT, CTA deterministico e prova real de produto",
+    "preservacao do audio da fonte, transicao sonora na montagem e reducao automatica sob locucao",
+    "ledger, teto financeiro, direitos, revisao humana e bloqueio de publicacao"
+  ],
+  "conditional": [
+    "identidade consistente entre muitas cenas depende de imagens mestre aprovadas e QA humano",
+    "performance corporal ou facial e lip-sync dependem de rota homologada, consentimento, direitos e duracao medida",
+    "musica reconhecivel exige asset licenciado; audio gerado pelo provider precisa de direitos e revisao auditados",
+    "reconstrucao historica ou jornalistica exige verificacao factual e fontes visuais licenciadas ou geradas com rotulagem adequada",
+    "provider, modelo, preco, quota e licença comercial precisam estar ativos no preflight da execucao"
+  ],
+  "forbidden": [
+    "copiar pessoa publica, artista, voz, letra, musica, marca, emissora, uniforme ou gravacao reconhecivel",
+    "declarar que qualidade, views ou semelhanca estetica comprovam compra, receita ou margem",
+    "iniciar render pago, publicacao ou campanha apenas porque a referencia foi analisada"
+  ]
+}

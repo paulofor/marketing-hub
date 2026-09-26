@@ -511,7 +511,7 @@ describe("audio video studio navigation", () => {
             id: 22,
             title: "Rio Antigo",
             sourceUrl: "https://cdn.example/rio-antigo.mp4",
-            status: "REJECTED",
+            status: "FAILED",
           },
         });
       }

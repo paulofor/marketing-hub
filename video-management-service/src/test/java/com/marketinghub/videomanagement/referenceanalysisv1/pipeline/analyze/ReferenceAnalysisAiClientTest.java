@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.referenceanalysisv1.pipeline.ReferenceAnalysisStageContext;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.List;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -50,9 +51,18 @@ class ReferenceAnalysisAiClientTest {
                 objectMapper.readTree("{\"title\":\"Referência de teste\"}"), Instant.now());
         ObjectNode artifacts = objectMapper.createObjectNode().put("sha256", "abc");
         ReferenceMediaInspector.Evidence evidence = new ReferenceMediaInspector.Evidence(
-                artifacts, List.of("data:image/jpeg;base64,AA==", "data:image/jpeg;base64,AQ=="));
+                artifacts, List.of("data:image/jpeg;base64,AA==", "data:image/jpeg;base64,AQ=="), null);
+        var transcription = new ReferenceAudioTranscriptionClient.TranscriptionInteraction(
+                "A fala começa pelo desejo e termina com uma chamada clara.",
+                objectMapper.createObjectNode().put("model", "gpt-transcribe"),
+                objectMapper.createObjectNode().put("text", "fala"),
+                new BigDecimal("0.001000"),
+                20L,
+                5L,
+                "COMPLETED");
 
-        ReferenceAnalysisAiClient.AiInteraction interaction = client.analyze(context, evidence);
+        ReferenceAnalysisAiClient.AiInteraction interaction =
+                client.analyze(context, evidence, transcription);
 
         RecordedRequest request = server.takeRequest();
         JsonNode payload = objectMapper.readTree(request.getBody().readUtf8());
@@ -64,6 +74,11 @@ class ReferenceAnalysisAiClientTest {
         assertThat(payload.path("store").asBoolean()).isFalse();
         assertThat(payload.path("max_output_tokens").asLong()).isEqualTo(4000);
         assertThat(payload.path("input").get(0).path("content")).hasSize(3);
+        assertThat(payload.at("/input/0/content/0/text").asText())
+                .contains(
+                        "A fala começa pelo desejo",
+                        "planejamento de ate 48 beats editoriais",
+                        "Catálogo versionado");
         assertThat(payload.path("text").path("format").path("type").asText()).isEqualTo("json_schema");
         assertThat(payload.path("text").path("format").path("strict").asBoolean()).isTrue();
         assertThat(interaction.request()).isEqualTo(payload);

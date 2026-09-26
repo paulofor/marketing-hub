@@ -86,3 +86,23 @@ custo desconhecido, ausência de consentimento ou falta de atribuição mensurá
 - cálculo conservador: tarifa padrão integral do GPT-5.6, sem descontar cache ou Flex;
 - primeiro render original: ciclo separado de até US$ 2,00, bloqueado por Plutus e limitado a dez segundos;
 - teto total: US$ 2,75, sem campanha, publicação, contato ou registro de venda.
+
+## Reauditoria de 2026-09-26
+
+Os mesmos três arquivos foram baixados novamente e os hashes, durações e características visuais
+permaneceram iguais. A inspeção comparou também os vídeos prontos recentes do Estúdio com as
+referências: as peças atuais demonstram geração, tela real, locução e legenda, mas ainda entregam
+menos variedade de planos e progressão audiovisual do que os exemplos #1 e #2.
+
+A causa-raiz operacional encontrada não foi falta de mais um provider. A análise automática enviava
+somente métricas e contact sheets ao modelo, apesar de pedir conclusões sobre narração, áudio e CTA;
+além disso, a pós-produção descartava o áudio da fonte e um caminho antigo adicionava tom senoidal
+como trilha. Falhas técnicas da análise também marcavam a referência como `REJECTED`, levando a tela
+a sugerir problema de direitos ou relevância quando a causa registrada era credencial ausente.
+
+Foram comparados três caminhos: repetir a análise atual preservaria a lacuna auditiva; adicionar
+outro gerador aumentaria custo sem melhorar direção; fortalecer transcrição, capacidade factual,
+status e acabamento sonoro corrige a causa com os providers existentes. A terceira alternativa foi
+selecionada. O aceite exige transcrição auditável, catálogo de capacidade versionado, estado
+`FAILED` distinto de reprovação, áudio fonte preservado/atenuado sob voz e ausência de trilha
+sintética fictícia.

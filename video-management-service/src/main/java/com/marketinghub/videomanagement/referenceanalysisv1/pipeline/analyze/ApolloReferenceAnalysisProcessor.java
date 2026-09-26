@@ -23,16 +23,19 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
     private final VideoManagementProperties properties;
     private final ObjectMapper objectMapper;
     private final ReferenceMediaInspector inspector;
+    private final ReferenceAudioTranscriptionClient transcriptionClient;
     private final ReferenceAnalysisAiClient aiClient;
 
     /** Inicializa a etapa concreta com inspeção local e integração multimodal isoladas. */
     public ApolloReferenceAnalysisProcessor(VideoManagementProperties properties,
                                             ObjectMapper objectMapper,
                                             ReferenceMediaInspector inspector,
+                                            ReferenceAudioTranscriptionClient transcriptionClient,
                                             ReferenceAnalysisAiClient aiClient) {
         this.properties = properties;
         this.objectMapper = objectMapper;
         this.inspector = inspector;
+        this.transcriptionClient = transcriptionClient;
         this.aiClient = aiClient;
     }
 
@@ -40,19 +43,37 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
     @Override
     public ReferenceAnalysisStageResult process(ReferenceAnalysisStageContext context) {
         ReferenceMediaInspector.Evidence evidence = inspector.inspect(context);
+        ReferenceAudioTranscriptionClient.TranscriptionInteraction transcription;
+        try {
+            transcription = transcriptionClient.transcribe(context, evidence);
+        } catch (ReferenceAudioTranscriptionClient.TranscriptionFailure ex) {
+            log.error("Falha de transcrição de Apolo; executionId={} referenceId={}",
+                    context.executionId(), context.referenceId(), ex);
+            ObjectNode artifacts = evidence.artifacts().deepCopy();
+            artifacts.putObject("audioTranscription")
+                    .put("status", "FAILED")
+                    .put("model", properties.getReferenceAnalysis().getTranscriptionModel());
+            throw new ReferenceAnalysisFailureException(
+                    "A transcrição auditiva de Apolo falhou",
+                    ex,
+                    artifacts,
+                    envelope("transcription", ex.request()),
+                    envelope("transcription", ex.response()),
+                    properties.getReferenceAnalysis().getTranscriptionModel());
+        }
         ReferenceAnalysisAiClient.AiInteraction interaction;
         try {
-            interaction = aiClient.analyze(context, evidence);
+            interaction = aiClient.analyze(context, evidence, transcription);
         } catch (ReferenceAnalysisAiClient.AiFailure ex) {
             log.error("Falha multimodal de Apolo; executionId={} referenceId={}",
                     context.executionId(), context.referenceId(), ex);
             throw new ReferenceAnalysisFailureException(
                     "A leitura multimodal de Apolo falhou",
                     ex,
-                    evidence.artifacts(),
-                    ex.request(),
-                    ex.response(),
-                    properties.getReferenceAnalysis().getModel());
+                    withTranscription(evidence, transcription),
+                    combinedAudit(transcription.request(), ex.request()),
+                    combinedAudit(transcription.response(), ex.response()),
+                    modelLabel(transcription));
         }
         JsonNode output;
         try {
@@ -64,34 +85,98 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
             throw new ReferenceAnalysisFailureException(
                     "A resposta multimodal de Apolo não cumpriu o contrato",
                     ex,
-                    evidence.artifacts(),
-                    interaction.request(),
-                    interaction.response(),
-                    properties.getReferenceAnalysis().getModel());
+                    withTranscription(evidence, transcription),
+                    combinedAudit(transcription.request(), interaction.request()),
+                    combinedAudit(transcription.response(), interaction.response()),
+                    modelLabel(transcription));
         }
         JsonNode usage = interaction.response().path("usage");
         Long inputTokens = requiredUsage(usage, "input_tokens");
         Long outputTokens = requiredUsage(usage, "output_tokens");
-        BigDecimal costUsd = conservativeCost(inputTokens, outputTokens);
-        ObjectNode auditArtifacts = evidence.artifacts().deepCopy();
+        BigDecimal reasoningCostUsd = conservativeCost(inputTokens, outputTokens);
+        BigDecimal costUsd = reasoningCostUsd.add(transcription.estimatedCostUsd());
+        ObjectNode auditArtifacts = withTranscription(evidence, transcription);
         ObjectNode costEvidence = auditArtifacts.putObject("costEstimate");
         costEvidence.put("usd", costUsd);
-        costEvidence.put("method", "GPT_5_6_STANDARD_UPPER_BOUND");
+        costEvidence.put("method", "REASONING_UPPER_BOUND_PLUS_TRANSCRIPTION_DURATION");
         costEvidence.put("serviceTier", "flex");
         costEvidence.put("inputTokensChargedAtFullRate", inputTokens);
         costEvidence.put("outputTokens", outputTokens);
+        costEvidence.put("reasoningUsd", reasoningCostUsd);
+        costEvidence.put("transcriptionUsd", transcription.estimatedCostUsd());
         return new ReferenceAnalysisStageResult(
                 summary(context, auditArtifacts, output),
                 output,
                 auditArtifacts,
-                interaction.request(),
-                interaction.response(),
-                properties.getReferenceAnalysis().getModel(),
+                combinedAudit(transcription.request(), interaction.request()),
+                combinedAudit(transcription.response(), interaction.response()),
+                modelLabel(transcription),
                 inputTokens,
                 nullableLong(usage.path("input_tokens_details"), "cached_tokens"),
                 outputTokens,
                 costUsd,
                 output.path("operationalDecision").asText());
+    }
+
+    /** Acrescenta evidência da transcrição sem expor seu texto no relatório público. */
+    private ObjectNode withTranscription(
+            ReferenceMediaInspector.Evidence evidence,
+            ReferenceAudioTranscriptionClient.TranscriptionInteraction transcription) {
+        ObjectNode artifacts = evidence.artifacts().deepCopy();
+        ObjectNode audio = artifacts.putObject("audioTranscription");
+        audio.put("status", transcription.status());
+        if (!"NOT_APPLICABLE".equals(transcription.status())) {
+            audio.put("model", properties.getReferenceAnalysis().getTranscriptionModel());
+            audio.put("sourceAudioSha256", evidence.audioTrack().sha256());
+            audio.put("sourceAudioBytes", evidence.audioTrack().bytes());
+            audio.put("textCharacters", transcription.text().length());
+            audio.put("estimatedCostUsd", transcription.estimatedCostUsd());
+            audio.put("costMethod", "DURATION_SECONDS_X_CONFIGURED_PRICE_PER_MINUTE");
+            audio.put("serviceTier", "NOT_SUPPORTED_BY_AUDIO_TRANSCRIPTIONS_API");
+            putNullable(audio, "inputTokens", transcription.inputTokens());
+            putNullable(audio, "outputTokens", transcription.outputTokens());
+            if ("NO_SPEECH_DETECTED".equals(transcription.status())) {
+                audio.put("reason", "AUDIO_STREAM_WITHOUT_IDENTIFIED_SPEECH");
+            }
+        } else {
+            audio.put("reason", "NO_AUDIO_STREAM");
+            audio.put("estimatedCostUsd", BigDecimal.ZERO);
+        }
+        return artifacts;
+    }
+
+    /** Agrupa as duas interações externas na ordem em que ocorreram. */
+    private ObjectNode combinedAudit(JsonNode transcription, JsonNode analysis) {
+        ObjectNode audit = objectMapper.createObjectNode();
+        audit.set("transcription", transcription == null ? objectMapper.nullNode() : transcription);
+        audit.set("analysis", analysis == null ? objectMapper.nullNode() : analysis);
+        return audit;
+    }
+
+    /** Cria um envelope parcial quando a execução falha antes da leitura multimodal. */
+    private ObjectNode envelope(String field, JsonNode value) {
+        ObjectNode audit = objectMapper.createObjectNode();
+        audit.set(field, value == null ? objectMapper.nullNode() : value);
+        return audit;
+    }
+
+    /** Identifica os modelos efetivamente usados na execução. */
+    private String modelLabel(
+            ReferenceAudioTranscriptionClient.TranscriptionInteraction transcription) {
+        if ("NOT_APPLICABLE".equals(transcription.status())) {
+            return properties.getReferenceAnalysis().getModel();
+        }
+        return properties.getReferenceAnalysis().getModel()
+                + " + " + properties.getReferenceAnalysis().getTranscriptionModel();
+    }
+
+    /** Registra uma contagem opcional somente quando o endpoint a devolveu. */
+    private void putNullable(ObjectNode target, String field, Long value) {
+        if (value == null) {
+            target.putNull(field);
+        } else {
+            target.put(field, value);
+        }
     }
 
     /** Calcula um teto conservador sem descontar cache ou Flex, evitando subestimar o gasto. */
@@ -136,6 +221,7 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
         if (!StringUtils.hasText(output.path("commercialDiagnosis").asText())
                 || output.path("sequence").size() < 4
                 || output.path("reusableLearnings").size() < 3
+                || !output.path("studioCapabilityAssessment").path("verdict").isTextual()
                 || output.path("productionBlueprint").path("scenePlan").size() < 4) {
             throw new IllegalStateException("Análise não contém evidência e receita suficientes para produção");
         }
@@ -155,7 +241,7 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
                 - Arquivo SHA-256: %s
                 - Duração: %.2f segundos; resolução: %sx%s; codec: %s; áudio: %s.
                 - %s mudanças visuais no limiar %s; loudness integrado: %s LUFS; true peak: %s dBFS.
-                - Dois contact sheets, 24 frames-chave e leitura multimodal auditável.
+                - Dois contact sheets, 24 frames-chave e transcrição: %s.
 
                 **Diagnóstico comercial**
                 %s
@@ -180,6 +266,9 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
                 **Capacidade de Apolo**
                 %s. Lacunas condicionais: %s
 
+                **Capacidade atual do Estúdio**
+                %s. %s
+
                 Analisado por: Apolo / reference-analysis-v1; execução #%s.
                 """.formatted(
                 artifacts.path("sha256").asText(),
@@ -192,6 +281,7 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
                 artifacts.path("sceneChangeThreshold").asText(),
                 artifacts.path("integratedLoudnessLufs").asText(),
                 artifacts.path("truePeakDbfs").asText(),
+                artifacts.path("audioTranscription").path("status").asText(),
                 output.path("commercialDiagnosis").asText(),
                 sequenceText(output.path("sequence")),
                 lines(output.path("reusableLearnings")),
@@ -202,6 +292,8 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
                 output.path("operationalDecision").asText(),
                 output.path("productionBlueprint").path("apolloCapability").asText(),
                 lines(output.path("productionBlueprint").path("capabilityGaps")),
+                output.path("studioCapabilityAssessment").path("verdict").asText(),
+                output.path("studioCapabilityAssessment").path("commercialUseRecommendation").asText(),
                 context.executionId());
     }
 

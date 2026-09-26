@@ -57,7 +57,7 @@ function formatDate(value?: string | null) {
   }).format(new Date(value));
 }
 
-function getStatusLearningAction(status: string) {
+export function getStatusLearningAction(status: string) {
   if (status === "ANALYZED") {
     return "Aprendizado pronto para reaproveitar em roteiro, gancho e CTA.";
   }
@@ -68,6 +68,10 @@ function getStatusLearningAction(status: string) {
 
   if (status === "REJECTED") {
     return "Referencia bloqueada; revisar URL, direitos de uso ou relevancia.";
+  }
+
+  if (status === "FAILED") {
+    return "Falha tecnica auditada; abra a analise para ver a causa e tentar novamente.";
   }
 
   return "Na fila para extrair gancho, ritmo, prova, objecoes e CTA.";

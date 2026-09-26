@@ -558,7 +558,7 @@ export interface VideoProjectPayload {
 }
 
 export type VideoReferenceStatus =
-  "QUEUED" | "ANALYZING" | "ANALYZED" | "REJECTED";
+  "QUEUED" | "ANALYZING" | "ANALYZED" | "FAILED" | "REJECTED";
 
 export interface VideoReference {
   id: number;
@@ -662,6 +662,13 @@ export interface VideoReferenceAnalysisOutput {
     organic: string;
   };
   rightsRisks: string[];
+  studioCapabilityAssessment: {
+    verdict: "READY" | "READY_WITH_LIMITS" | "NOT_READY";
+    currentCapabilities: string[];
+    gaps: string[];
+    safeOriginalAdaptation: string;
+    commercialUseRecommendation: string;
+  };
   productionBlueprint: VideoReferenceProductionBlueprint;
   operationalDecision:
     "APOLLO_READY" | "NEEDS_PROVIDER_HOMOLOGATION" | "BLOCKED_BY_RIGHTS";
@@ -686,12 +693,26 @@ export interface VideoReferenceAnalysisExecution {
     truePeakDbfs?: number;
     sceneChangeCount?: number;
     sceneChangeThreshold?: number;
+    hasAudio?: boolean;
+    audioTranscription?: {
+      status?: "COMPLETED" | "NO_SPEECH_DETECTED" | "NOT_APPLICABLE" | "FAILED";
+      model?: string;
+      sourceAudioSha256?: string;
+      sourceAudioBytes?: number;
+      textCharacters?: number;
+      estimatedCostUsd?: number;
+      costMethod?: string;
+      serviceTier?: string;
+      inputTokens?: number;
+      outputTokens?: number;
+    };
     costEstimate?: {
       usd?: number;
       method?: string;
       serviceTier?: string;
       inputTokensChargedAtFullRate?: number;
       outputTokens?: number;
+      transcriptionUsd?: number;
     };
   } | null;
   model?: string | null;

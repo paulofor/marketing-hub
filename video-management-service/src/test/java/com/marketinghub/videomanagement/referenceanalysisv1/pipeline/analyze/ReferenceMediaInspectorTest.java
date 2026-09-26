@@ -65,7 +65,46 @@ class ReferenceMediaInspectorTest {
         assertThat(evidence.artifacts().path("width").asInt()).isEqualTo(320);
         assertThat(evidence.artifacts().path("height").asInt()).isEqualTo(568);
         assertThat(evidence.artifacts().path("sha256").asText()).hasSize(64);
+        assertThat(evidence.artifacts().path("hasAudio").asBoolean()).isTrue();
+        assertThat(evidence.audioTrack()).isNotNull();
+        assertThat(evidence.audioTrack().content()).isNotEmpty();
+        assertThat(evidence.audioTrack().bytes()).isLessThanOrEqualTo(25L * 1024L * 1024L);
+        assertThat(evidence.audioTrack().sha256()).hasSize(64);
         assertThat(evidence.contactSheetDataUrls()).hasSize(2).allMatch(value -> value.startsWith("data:image/jpeg;base64,"));
+    }
+
+    /** Marca vídeo sem faixa de áudio sem fabricar binário para transcrição. */
+    @Test
+    void shouldInspectSilentVideoWithoutAudioTrack() throws Exception {
+        Path silentVideo = Files.createTempFile("reference-inspector-silent-", ".mp4");
+        try {
+            Process process = new ProcessBuilder("ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                    "-f", "lavfi", "-i", "testsrc2=duration=2:size=320x568:rate=30",
+                    "-c:v", "mpeg4", silentVideo.toString()).start();
+            assertThat(process.waitFor()).isZero();
+            byte[] payload = Files.readAllBytes(silentVideo);
+            server.createContext("/silent.mp4", exchange -> {
+                exchange.getResponseHeaders().add("Content-Type", "video/mp4");
+                exchange.sendResponseHeaders(200, payload.length);
+                exchange.getResponseBody().write(payload);
+                exchange.close();
+            });
+            VideoManagementProperties properties = new VideoManagementProperties();
+            properties.getReferenceAnalysis().setAllowPrivateSourceUrls(true);
+            ReferenceMediaInspector inspector = new ReferenceMediaInspector(properties, objectMapper);
+            String url = "http://127.0.0.1:" + server.getAddress().getPort() + "/silent.mp4";
+            ReferenceAnalysisStageContext context = new ReferenceAnalysisStageContext(
+                    23L, 4L, "test", 1, "producer-23",
+                    objectMapper.readTree("{\"sourceUrl\":\"" + url + "\"}"), Instant.now());
+
+            var evidence = inspector.inspect(context);
+
+            assertThat(evidence.artifacts().path("hasAudio").asBoolean()).isFalse();
+            assertThat(evidence.artifacts().path("integratedLoudnessLufs").isNull()).isTrue();
+            assertThat(evidence.audioTrack()).isNull();
+        } finally {
+            Files.deleteIfExists(silentVideo);
+        }
     }
 
     /** Bloqueia origens locais por padrão para impedir acesso indevido à rede do executor. */

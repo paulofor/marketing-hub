@@ -164,6 +164,14 @@ ausente ou maior que o vídeo bloqueia a finalização em vez de inventar timest
 O primeiro Product UGC usa voz limpa sem o antigo tom senoidal sintético; música só pode voltar com
 um asset licenciado e auditável.
 
+Por decisão de 2026-09-26, a pós-produção não pode descartar uma faixa de áudio válida da fonte nem
+fabricar um tom senoidal para simular trilha. Quando a origem possuir áudio com direitos auditáveis,
+o executor deve preservá-lo, normalizá-lo e reduzi-lo automaticamente sob a locução; quando não
+possuir, a saída permanece com voz limpa ou sem áudio. Montagens de múltiplas cenas devem normalizar
+todas as fontes para uma faixa de áudio compatível, usando silêncio apenas nas cenas realmente sem
+áudio, e aplicar transição sonora junto da transição visual. O relatório do job deve distinguir
+áudio preservado, silêncio normalizado, voz sintética e música licenciada.
+
 Como Product UGC é uma chamada paga e o criativo depende de voz natural para ficar utilizável, o
 preflight deve verificar a capacidade completa de pós-produção antes de reservar créditos: serviço
 habilitado, modelo e voz versionados e credencial TTS disponível. Essa verificação confirma apenas
@@ -202,7 +210,9 @@ Cada video de referencia deve registrar, no minimo:
 - objetivo de aprendizado, como gancho, ritmo, prova, objecao, CTA, edicao, promessa ou retencao;
 - evidencia de sucesso percebida ou medida, como views, comentarios, criativo vencedor, vendas,
   retencao, compartilhamentos ou observacao comercial do operador;
-- status da analise, preservando fila, analise em andamento, analisado ou rejeitado.
+- status da analise, preservando fila, analise em andamento, analisado, falha tecnica ou rejeicao
+  editorial/direitos. Falha de credencial, rede, ferramenta ou contrato nunca pode aparecer como
+  reprovação do conteúdo enviado.
 
 Essa fila deve alimentar aprendizados reutilizaveis para novos roteiros, criativos, ofertas,
 storyboards, cortes e criterios de revisao comercial. Videos de referencia nao devem ser
@@ -229,7 +239,12 @@ modelo, tokens, custo quando reportado, erro e decisao. O `video-management-serv
 nenhum frontend analisa o arquivo nem decide o proximo estado.
 
 A analise automatica deve combinar evidencias deterministicas (`ffprobe`, deteccao de cenas,
-loudness, true peak e hashes) com leitura multimodal de contact sheets. O resultado minimo inclui:
+loudness, true peak e hashes), transcricao da faixa falada quando houver e leitura multimodal de
+contact sheets. O áudio deve ser extraído em formato comprimido abaixo do limite do endpoint, com
+hash e tamanho auditados; vídeo sem faixa de áudio deve ser marcado como `NOT_APPLICABLE`, sem
+chamada externa fictícia. A transcrição bruta fica na auditoria interna e alimenta a análise, mas o
+relatório público deve resumir mecanismos e não reproduzir letra, roteiro ou obra protegida. O
+resultado minimo inclui:
 
 - decupagem temporal e funcao comercial de cada bloco;
 - gancho, narrativa, direcao visual, continuidade, audio, legenda e ritmo;
@@ -239,11 +254,22 @@ loudness, true peak e hashes) com leitura multimodal de contact sheets. O result
   edicao, qualidade e lacunas de capacidade;
 - decisao explicita entre prontidao de Apolo, homologacao de provider ou bloqueio de direitos.
 
+O diagnóstico de capacidade deve comparar a referência com um catálogo versionado das capacidades
+reais do Estúdio e devolver `READY`, `READY_WITH_LIMITS` ou `NOT_READY`, listando o que já existe, as
+lacunas e a adaptação original segura. Acabamento visual ou transcrição não comprovam venda; toda
+receita deve indicar uso em campanha, dentro do produto e orgânico, preservando compra e margem como
+critérios posteriores de repetição.
+
 O executor deve nascer com `VIDEO_REFERENCE_ANALYSIS_ENABLED=false`. A ativacao produtiva exige
 decisao explicita porque cada referencia consome leitura multimodal; homologacoes locais usam API
 simulada. A request usa Flex, schema estrito e `store=false`, enquanto request e response brutos
 ficam auditados no backend. Resposta ausente, JSON invalido ou quebra do contrato funcional deve
 persistir como falha com toda a evidencia disponivel, nunca como analise concluida.
+
+A transcrição usa o endpoint de arquivos de áudio, que não oferece `service_tier: flex`; essa exceção
+deve ficar explícita no artefato de custo. Modelo, duração, tarifa versionada, custo estimado,
+request sanitizado e response bruto são somados à auditoria da leitura multimodal. A estimativa não
+substitui a reconciliação do débito real pelo ledger.
 
 Apolo permanece o diretor audiovisual dessas receitas. Um estilo novo pode exigir extensao tecnica
 do Estudio ou de um adapter, mas nao justifica por si so criar outro agente. Novo agente exige uma

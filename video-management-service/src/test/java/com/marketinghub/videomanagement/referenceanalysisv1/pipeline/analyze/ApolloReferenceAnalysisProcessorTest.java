@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.referenceanalysisv1.pipeline.ReferenceAnalysisStageContext;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test;
 class ApolloReferenceAnalysisProcessorTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private ReferenceMediaInspector inspector;
+    private ReferenceAudioTranscriptionClient transcriptionClient;
     private ReferenceAnalysisAiClient aiClient;
     private ApolloReferenceAnalysisProcessor processor;
 
@@ -27,8 +29,10 @@ class ApolloReferenceAnalysisProcessorTest {
     void setUp() {
         VideoManagementProperties properties = new VideoManagementProperties();
         inspector = mock(ReferenceMediaInspector.class);
+        transcriptionClient = mock(ReferenceAudioTranscriptionClient.class);
         aiClient = mock(ReferenceAnalysisAiClient.class);
-        processor = new ApolloReferenceAnalysisProcessor(properties, objectMapper, inspector, aiClient);
+        processor = new ApolloReferenceAnalysisProcessor(
+                properties, objectMapper, inspector, transcriptionClient, aiClient);
     }
 
     /** Converte evidência e resposta válida em resultado importável e auditável. */
@@ -36,21 +40,29 @@ class ApolloReferenceAnalysisProcessorTest {
     void shouldBuildImportableApolloRecipe() throws Exception {
         ReferenceAnalysisStageContext context = context();
         ObjectNode artifacts = artifacts();
-        ReferenceMediaInspector.Evidence evidence =
-                new ReferenceMediaInspector.Evidence(artifacts, List.of("data:image/jpeg;base64,AA=="));
+        ReferenceMediaInspector.Evidence evidence = evidence(artifacts);
+        var transcription = transcription();
         ObjectNode request = objectMapper.createObjectNode().put("service_tier", "flex");
         JsonNode response = response(output("EXTEND_APOLLO"));
         given(inspector.inspect(context)).willReturn(evidence);
-        given(aiClient.analyze(context, evidence))
+        given(transcriptionClient.transcribe(context, evidence)).willReturn(transcription);
+        given(aiClient.analyze(context, evidence, transcription))
                 .willReturn(new ReferenceAnalysisAiClient.AiInteraction(request, response));
 
         var result = processor.process(context);
 
         assertThat(result.decision()).isEqualTo("NEEDS_PROVIDER_HOMOLOGATION");
-        assertThat(result.costUsd()).isEqualByComparingTo("0.010000");
+        assertThat(result.costUsd()).isEqualByComparingTo("0.010005");
         assertThat(result.artifacts().path("costEstimate").path("method").asText())
-                .isEqualTo("GPT_5_6_STANDARD_UPPER_BOUND");
-        assertThat(result.summaryMarkdown()).contains("24 frames-chave", "EXTEND_APOLLO", "execução #").doesNotContain("NEW_AGENT");
+                .isEqualTo("REASONING_UPPER_BOUND_PLUS_TRANSCRIPTION_DURATION");
+        assertThat(result.artifacts().path("audioTranscription").path("status").asText())
+                .isEqualTo("COMPLETED");
+        assertThat(result.rawRequest().path("transcription").path("model").asText())
+                .isEqualTo("gpt-transcribe");
+        assertThat(result.model()).isEqualTo("gpt-5.6 + gpt-transcribe");
+        assertThat(result.summaryMarkdown())
+                .contains("24 frames-chave", "transcrição: COMPLETED", "EXTEND_APOLLO", "execução #")
+                .doesNotContain("NEW_AGENT");
         assertThat(result.output().path("productionBlueprint").path("scenePlan")).hasSize(4);
     }
 
@@ -58,10 +70,11 @@ class ApolloReferenceAnalysisProcessorTest {
     @Test
     void shouldRejectNewAgentDecisionForStyleOnly() throws Exception {
         ReferenceAnalysisStageContext context = context();
-        ReferenceMediaInspector.Evidence evidence =
-                new ReferenceMediaInspector.Evidence(artifacts(), List.of("data:image/jpeg;base64,AA=="));
+        ReferenceMediaInspector.Evidence evidence = evidence(artifacts());
+        var transcription = transcription();
         given(inspector.inspect(context)).willReturn(evidence);
-        given(aiClient.analyze(context, evidence)).willReturn(
+        given(transcriptionClient.transcribe(context, evidence)).willReturn(transcription);
+        given(aiClient.analyze(context, evidence, transcription)).willReturn(
                 new ReferenceAnalysisAiClient.AiInteraction(objectMapper.createObjectNode(), response(output("NEW_AGENT"))));
 
         assertThatThrownBy(() -> processor.process(context))
@@ -74,21 +87,23 @@ class ApolloReferenceAnalysisProcessorTest {
     void shouldPreserveAvailableAuditOnAiFailure() throws Exception {
         ReferenceAnalysisStageContext context = context();
         ObjectNode artifacts = artifacts();
-        ReferenceMediaInspector.Evidence evidence =
-                new ReferenceMediaInspector.Evidence(artifacts, List.of("data:image/jpeg;base64,AA=="));
+        ReferenceMediaInspector.Evidence evidence = evidence(artifacts);
+        var transcription = transcription();
         ObjectNode request = objectMapper.createObjectNode().put("service_tier", "flex");
         ObjectNode response = objectMapper.createObjectNode().put("status", 429);
         given(inspector.inspect(context)).willReturn(evidence);
-        given(aiClient.analyze(context, evidence)).willThrow(
+        given(transcriptionClient.transcribe(context, evidence)).willReturn(transcription);
+        given(aiClient.analyze(context, evidence, transcription)).willThrow(
                 new ReferenceAnalysisAiClient.AiFailure(
                         "limite externo", new IllegalStateException("429"), request, response));
 
         assertThatThrownBy(() -> processor.process(context))
                 .isInstanceOfSatisfying(ReferenceAnalysisFailureException.class, failure -> {
-                    assertThat(failure.artifacts()).isSameAs(artifacts);
-                    assertThat(failure.rawRequest()).isSameAs(request);
-                    assertThat(failure.rawResponse()).isSameAs(response);
-                    assertThat(failure.model()).isEqualTo("gpt-5.6");
+                    assertThat(failure.artifacts().path("audioTranscription").path("status").asText())
+                            .isEqualTo("COMPLETED");
+                    assertThat(failure.rawRequest().path("analysis")).isSameAs(request);
+                    assertThat(failure.rawResponse().path("analysis")).isSameAs(response);
+                    assertThat(failure.model()).isEqualTo("gpt-5.6 + gpt-transcribe");
                 });
     }
 
@@ -97,22 +112,46 @@ class ApolloReferenceAnalysisProcessorTest {
     void shouldPreserveAuditWhenStructuredOutputIsInvalid() throws Exception {
         ReferenceAnalysisStageContext context = context();
         ObjectNode artifacts = artifacts();
-        ReferenceMediaInspector.Evidence evidence =
-                new ReferenceMediaInspector.Evidence(artifacts, List.of("data:image/jpeg;base64,AA=="));
+        ReferenceMediaInspector.Evidence evidence = evidence(artifacts);
+        var transcription = transcription();
         ObjectNode request = objectMapper.createObjectNode().put("service_tier", "flex");
         JsonNode rawResponse = objectMapper.readTree("""
                 {"output":[{"content":[{"type":"output_text","text":"{json-invalido"}]}]}
                 """);
         given(inspector.inspect(context)).willReturn(evidence);
-        given(aiClient.analyze(context, evidence)).willReturn(
+        given(transcriptionClient.transcribe(context, evidence)).willReturn(transcription);
+        given(aiClient.analyze(context, evidence, transcription)).willReturn(
                 new ReferenceAnalysisAiClient.AiInteraction(request, rawResponse));
 
         assertThatThrownBy(() -> processor.process(context))
                 .isInstanceOfSatisfying(ReferenceAnalysisFailureException.class, failure -> {
-                    assertThat(failure.artifacts()).isSameAs(artifacts);
-                    assertThat(failure.rawRequest()).isSameAs(request);
-                    assertThat(failure.rawResponse()).isSameAs(rawResponse);
-                    assertThat(failure.model()).isEqualTo("gpt-5.6");
+                    assertThat(failure.artifacts().path("audioTranscription").path("status").asText())
+                            .isEqualTo("COMPLETED");
+                    assertThat(failure.rawRequest().path("analysis")).isSameAs(request);
+                    assertThat(failure.rawResponse().path("analysis")).isSameAs(rawResponse);
+                    assertThat(failure.model()).isEqualTo("gpt-5.6 + gpt-transcribe");
+                });
+    }
+
+    /** Preserva a tentativa auditiva quando a transcrição falha antes da leitura visual. */
+    @Test
+    void shouldPreserveTranscriptionAuditOnFailure() throws Exception {
+        ReferenceAnalysisStageContext context = context();
+        ReferenceMediaInspector.Evidence evidence = evidence(artifacts());
+        ObjectNode request = objectMapper.createObjectNode().put("model", "gpt-transcribe");
+        ObjectNode response = objectMapper.createObjectNode().put("status", 429);
+        given(inspector.inspect(context)).willReturn(evidence);
+        given(transcriptionClient.transcribe(context, evidence)).willThrow(
+                new ReferenceAudioTranscriptionClient.TranscriptionFailure(
+                        "limite externo", new IllegalStateException("429"), request, response));
+
+        assertThatThrownBy(() -> processor.process(context))
+                .isInstanceOfSatisfying(ReferenceAnalysisFailureException.class, failure -> {
+                    assertThat(failure.artifacts().path("audioTranscription").path("status").asText())
+                            .isEqualTo("FAILED");
+                    assertThat(failure.rawRequest().path("transcription")).isSameAs(request);
+                    assertThat(failure.rawResponse().path("transcription")).isSameAs(response);
+                    assertThat(failure.model()).isEqualTo("gpt-transcribe");
                 });
     }
 
@@ -137,6 +176,26 @@ class ApolloReferenceAnalysisProcessorTest {
         value.put("integratedLoudnessLufs", -14.1);
         value.put("truePeakDbfs", -0.6);
         return value;
+    }
+
+    /** Monta evidência com faixa de áudio efêmera para testar a auditoria completa. */
+    private ReferenceMediaInspector.Evidence evidence(ObjectNode artifacts) {
+        var audio = new ReferenceMediaInspector.AudioTrack(
+                new byte[] {1, 2, 3}, "reference-91.mp3", "audio/mpeg", "audio-sha", 3);
+        return new ReferenceMediaInspector.Evidence(
+                artifacts, List.of("data:image/jpeg;base64,AA=="), audio);
+    }
+
+    /** Monta uma transcrição concluída sem realizar consumo externo. */
+    private ReferenceAudioTranscriptionClient.TranscriptionInteraction transcription() {
+        return new ReferenceAudioTranscriptionClient.TranscriptionInteraction(
+                "Fala original usada somente como evidência interna.",
+                objectMapper.createObjectNode().put("model", "gpt-transcribe"),
+                objectMapper.createObjectNode().put("text", "fala"),
+                new BigDecimal("0.000005"),
+                20L,
+                5L,
+                "COMPLETED");
     }
 
     /** Monta response da API com usage e texto estruturado. */
@@ -167,6 +226,13 @@ class ApolloReferenceAnalysisProcessorTest {
                   "reusableLearnings":["Alternar plano geral e detalhe.","Manter recompensa visual progressiva.","Usar legenda sincronizada original."],
                   "salesApplications":{"campaign":"Criativo de atenção com produto original.","product":"Abertura premium de uma aula ou entrega.","organic":"Conteúdo narrativo seriado e autoral."},
                   "rightsRisks":["Não copiar artista, voz, música, letra ou gravação da referência."],
+                  "studioCapabilityAssessment":{
+                    "verdict":"READY_WITH_LIMITS",
+                    "currentCapabilities":["Montagem de cenas, locução e legenda auditáveis."],
+                    "gaps":["Performance depende de provider, direitos e revisão humana."],
+                    "safeOriginalAdaptation":"Criar uma personagem, música e direção visual próprias sem reproduzir identidade reconhecível.",
+                    "commercialUseRecommendation":"Testar primeiro uma peça curta de campanha e medir compras com margem."
+                  },
                   "productionBlueprint":{
                     "archetype":"Performance narrativa original","targetDurationSeconds":60,"format":"VERTICAL_9_16",
                     "hook":"Ação visual original","story":"Uma personagem fictícia progride por quatro atos até uma recompensa coerente.",

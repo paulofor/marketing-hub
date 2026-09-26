@@ -1,6 +1,8 @@
 package com.marketinghub.videomanagement.config;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -71,6 +73,12 @@ public class VideoManagementProperties {
         private String apiKey;
         private String apiKeyFile;
         private String model = "gpt-5.6";
+        @NotBlank
+        private String transcriptionModel = "gpt-transcribe";
+        @DecimalMin(value = "0.0", inclusive = false)
+        private BigDecimal transcriptionPricePerMinuteUsd = new BigDecimal("0.0045");
+        @Min(1)
+        private long maxTranscriptionBytes = 25L * 1024L * 1024L;
         @Min(1)
         private int maxOutputTokens = 4000;
         private BigDecimal budgetLimitUsd = new BigDecimal("0.75");

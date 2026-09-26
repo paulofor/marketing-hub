@@ -19,7 +19,10 @@ import {
   useRetryVideoReferenceAnalysis,
   useVideoReference,
 } from "../../api/salesVideo/useVideoReferences";
-import type { VideoReference } from "../../api/salesVideo/types";
+import type {
+  VideoReference,
+  VideoReferenceAnalysisExecution,
+} from "../../api/salesVideo/types";
 import PageTitle from "../../components/PageTitle";
 import { getStudioCommercialLabel } from "./audioVideoStudioLabels";
 import "./AudioVideoStudioPage.css";
@@ -168,7 +171,17 @@ function buildStages(reference: VideoReference): AnalysisStage[] {
   }));
 }
 
-function getReferenceSummary(reference: VideoReference) {
+export function getReferenceSummary(
+  reference: VideoReference,
+  automaticAnalysis?: VideoReferenceAnalysisExecution,
+) {
+  if (
+    automaticAnalysis?.status === "COMPLETED" &&
+    automaticAnalysis.output?.commercialDiagnosis
+  ) {
+    return automaticAnalysis.output.commercialDiagnosis;
+  }
+
   if (reference.analysisNotes) {
     return "Resultado de analise disponível para transformar vídeo vencedor em padrão reutilizável de criativo, roteiro e CTA.";
   }
@@ -178,6 +191,26 @@ function getReferenceSummary(reference: VideoReference) {
   }
 
   return "O resultado aparecerá aqui quando a análise comercial do vídeo for registrada pelo sistema.";
+}
+
+export function getCapabilityVerdictLabel(verdict?: string) {
+  if (verdict === "READY") return "Pronto com a capacidade atual";
+  if (verdict === "READY_WITH_LIMITS") return "Pronto com limites explícitos";
+  if (verdict === "NOT_READY") return "Ainda não está pronto";
+  return "Capacidade não avaliada";
+}
+
+export function getAudioAnalysisLabel(
+  artifacts?: VideoReferenceAnalysisExecution["artifacts"],
+) {
+  const status = artifacts?.audioTranscription?.status;
+  if (status === "COMPLETED") return "fala transcrita e auditada";
+  if (status === "NO_SPEECH_DETECTED") return "áudio sem fala identificada";
+  if (status === "NOT_APPLICABLE" || artifacts?.hasAudio === false) {
+    return "sem faixa de áudio";
+  }
+  if (status === "FAILED") return "transcrição falhou";
+  return "transcrição não disponível";
 }
 
 export default function AudioVideoStudioVideoAnalysisResultPage() {
@@ -235,7 +268,7 @@ export default function AudioVideoStudioVideoAnalysisResultPage() {
                 Video de referencia #{reference.id}
               </p>
               <h2>{reference.title}</h2>
-              <p>{getReferenceSummary(reference)}</p>
+              <p>{getReferenceSummary(reference, automaticAnalysis.data)}</p>
             </div>
             <article
               className="audio-video-studio-page__status"
@@ -371,6 +404,10 @@ export default function AudioVideoStudioVideoAnalysisResultPage() {
                       {automaticAnalysis.data.artifacts?.integratedLoudnessLufs}{" "}
                       LUFS
                     </p>
+                    <p>
+                      Áudio:{" "}
+                      {getAudioAnalysisLabel(automaticAnalysis.data.artifacts)}
+                    </p>
                   </article>
                   <article className="audio-video-studio-page__project-card">
                     <span>Receita de produção</span>
@@ -401,6 +438,24 @@ export default function AudioVideoStudioVideoAnalysisResultPage() {
                       }
                     </p>
                   </article>
+                  {automaticAnalysis.data.output.studioCapabilityAssessment ? (
+                    <article className="audio-video-studio-page__project-card">
+                      <span>Capacidade do Estúdio</span>
+                      <strong>
+                        {getCapabilityVerdictLabel(
+                          automaticAnalysis.data.output
+                            .studioCapabilityAssessment.verdict,
+                        )}
+                      </strong>
+                      <p>
+                        {
+                          automaticAnalysis.data.output
+                            .studioCapabilityAssessment
+                            .commercialUseRecommendation
+                        }
+                      </p>
+                    </article>
+                  ) : null}
                 </div>
 
                 <div className="audio-video-studio-page__stage-grid">
@@ -451,6 +506,27 @@ export default function AudioVideoStudioVideoAnalysisResultPage() {
                       ))}
                     </ul>
                   </article>
+                  {automaticAnalysis.data.output.studioCapabilityAssessment ? (
+                    <article className="audio-video-studio-page__stage-card">
+                      <h3>Como adaptar com segurança</h3>
+                      <p>
+                        {
+                          automaticAnalysis.data.output
+                            .studioCapabilityAssessment.safeOriginalAdaptation
+                        }
+                      </p>
+                      {automaticAnalysis.data.output.studioCapabilityAssessment
+                        .gaps.length > 0 ? (
+                        <ul className="audio-video-studio-page__analysis-list">
+                          {automaticAnalysis.data.output.studioCapabilityAssessment.gaps.map(
+                            (gap) => (
+                              <li key={gap}>{gap}</li>
+                            ),
+                          )}
+                        </ul>
+                      ) : null}
+                    </article>
+                  ) : null}
                 </div>
               </>
             ) : null}

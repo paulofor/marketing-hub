@@ -1296,6 +1296,23 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
 - **Correção sistêmica:** a homologação final passa a selecionar pelo mesmo `frontend_version` somente os testes de renderização, diagnóstico e consistência pertencentes à superfície publicada; `all` continua validando todas. CTA, preço e checkout passam a ser lidos da oferta pública canônica durante o smoke.
 - **Prevenção:** testes com executores falsos exigem isolamento para `kit-whatsapp` e v5, cobertura completa para `all`, rejeição de versão desconhecida e ausência de CTA comercial duplicado no contrato estático. A saúde básica das rotas compartilhadas continua sendo verificada antes do smoke direcionado.
 
+## LOOP-PDE-ATESTACAO-REESCRITA-ACIONA-DEPLOY — evidência técnica promove experimento invalidado
+
+- **Data:** 26/09/2026. Vega #92, workflow
+  [36217710486](https://github.com/paulofor/marketing-hub/actions/runs/36217710486).
+- **Sintoma confirmado:** a revalidação de um serviço compartilhado para o sucessor de Capella
+  atualizou hashes dentro do manifesto Vega v10. O resolvedor interpretou a alteração como nova
+  autorização, republicou a superfície v8 e o smoke recebeu HTTP 412 porque o experimento #92 já
+  estava `INVALIDATED`.
+- **Causa-raiz:** o workflow tratava inclusão e modificação de manifesto da mesma forma, apesar de o
+  contrato canônico exigir atestações históricas imutáveis. `automaticDeployOnMerge=true` continuava
+  presente na revisão antiga e transformava manutenção de evidência em intenção de publicação.
+- **Correção sistêmica:** a compatibilidade atual passa para uma nova revisão de evidência sem deploy;
+  o resolvedor consome `name-status`, seleciona frontend somente por arquivo adicionado e bloqueia a
+  reescrita de manifesto versionado já existente.
+- **Prevenção:** testes de contrato cobrem modificação rejeitada, nova revisão sem publicação e nova
+  publicação explícita. Experimento terminal não é reativado para satisfazer smoke de infraestrutura.
+
 ## LOOP-EXPERIMENT-TERMINAL-STATE-DIVERGENCE — campanha pausada com run e agente ativos
 
 - **Sintoma confirmado em 2026-08-23:** o experimento #88 ficou `USER_STOPPED` e a campanha `PAUSED` após R$ 25,24 sem resultado primário, mas o run #6 permaneceu `RUNNING` e a tarefa de Hermes #188 ficou `PENDING`.

@@ -38,6 +38,69 @@ function authorizedManifestPath(value) {
     : null;
 }
 
+function isVersionedEvidenceManifest(contract) {
+  const hasRevision = ["contractVersion", "evidenceVersion"].some((field) =>
+    /(?:^|[.-])v[1-9][0-9]*$/.test(contract[field] ?? ""),
+  );
+  const hasEvidence = [
+    "homologationEvidence",
+    "implementationEvidence",
+    "executableEvidence",
+  ].some((field) => Array.isArray(contract[field]) && contract[field].length > 0);
+  return hasRevision && (hasEvidence || typeof contract.publicationContract === "object");
+}
+
+/** Interpreta a saída name-status do Git sem transformar alteração em inclusão. */
+export function parseChangedPathEntries(content) {
+  const changedPaths = [];
+  const addedPaths = [];
+  for (const line of String(content).split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    const fields = line.split("\t");
+    if (fields.length < 2) {
+      throw new Error(`Entrada Git sem status explícito: ${line}`);
+    }
+    const status = fields[0];
+    const relativePath = fields.at(-1);
+    changedPaths.push(relativePath);
+    if (status === "A") addedPaths.push(relativePath);
+  }
+  return { changedPaths, addedPaths };
+}
+
+/** Bloqueia reescrita de uma atestação versionada que já pertence ao histórico. */
+export async function validateImmutableVersionedManifests(
+  repositoryRoot,
+  changedPaths,
+  addedPaths,
+) {
+  const additions = new Set(addedPaths.map((value) => String(value).replaceAll("\\", "/")));
+  for (const changedPath of changedPaths) {
+    const relativePath = authorizedManifestPath(changedPath);
+    if (!relativePath || additions.has(relativePath)) continue;
+    let contract;
+    try {
+      contract = JSON.parse(
+        await fs.readFile(path.join(repositoryRoot, relativePath), "utf8"),
+      );
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        throw new Error(
+          `Contrato PDE histórico foi removido: ${relativePath}. ` +
+            "Crie uma nova revisão e preserve o arquivo anterior.",
+        );
+      }
+      throw error;
+    }
+    if (isVersionedEvidenceManifest(contract)) {
+      throw new Error(
+        `Manifesto versionado imutável foi alterado: ${relativePath}. ` +
+          "Crie uma nova revisão para preservar o histórico.",
+      );
+    }
+  }
+}
+
 async function fileSha256(file) {
   return createHash("sha256").update(await fs.readFile(file)).digest("hex");
 }
@@ -234,11 +297,12 @@ export async function resolveDeploymentPlan(
     manualFrontend = "",
     manualSharedComponent = "",
     fingerprintResolver = sourceFingerprint,
+    addedPaths = changedPaths,
   } = {},
 ) {
   const frontend = manualFrontend
     ? await selectManualFrontend(repositoryRoot, manualFrontend, fingerprintResolver)
-    : await resolveDeploySelection(repositoryRoot, changedPaths, fingerprintResolver);
+    : await resolveDeploySelection(repositoryRoot, addedPaths, fingerprintResolver);
   const shared = resolveSharedComponents(changedPaths, manualSharedComponent);
   return {
     frontend,
@@ -264,12 +328,16 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (!changedPathsFile || !output) {
     throw new Error("Informe --changed-paths-file e --output.");
   }
-  const changedPaths = (await fs.readFile(changedPathsFile, "utf8"))
-    .split(/\r?\n/)
-    .filter(Boolean);
-  const plan = await resolveDeploymentPlan(repositoryRoot, changedPaths, {
+  const changes = parseChangedPathEntries(await fs.readFile(changedPathsFile, "utf8"));
+  await validateImmutableVersionedManifests(
+    repositoryRoot,
+    changes.changedPaths,
+    changes.addedPaths,
+  );
+  const plan = await resolveDeploymentPlan(repositoryRoot, changes.changedPaths, {
     manualFrontend: argument("--manual-frontend") ?? "",
     manualSharedComponent: argument("--manual-shared-component") ?? "",
+    addedPaths: changes.addedPaths,
   });
   const lines = [
     `frontend-version=${plan.frontend.target}`,

@@ -216,6 +216,14 @@ Para cada publicação de frontend, o pipeline deve:
 7. diante de falha posterior à troca, restaurar a imagem e a identidade exatas observadas antes dela,
    validar o rollback também pela URL pública e manter as demais superfícies e componentes intactos.
 
+Complemento canônico de 26/09/2026: manifesto versionado de evidência é imutável depois de entrar no
+histórico. Mudança em código compartilhado deve criar outra revisão, nunca atualizar hashes da revisão
+anterior. O deploy automático de frontend só pode ser selecionado pela inclusão de um novo manifesto
+que declare explicitamente `automaticDeployOnMerge=true`; alteração de arquivo existente é bloqueada.
+Atestação criada apenas para revalidar compatibilidade deve declarar
+`automaticDeployOnMerge=false` e não pode publicar frontend, reativar experimento terminal nem exigir
+oferta comercial de um experimento invalidado.
+
 Backend, worker de IA e worker de retenção são componentes compartilhados, porém possuem targets de
 publicação separados. Publicar frontend não os recria. Publicar um deles não recria os demais nem os
 frontends. Mudança de backend exige antes uma matriz local de compatibilidade com todas as superfícies

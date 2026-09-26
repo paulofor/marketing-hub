@@ -121,9 +121,9 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${BASE_SHA}" ] || [ "${BASE_SHA}" = "0000000000000000000000000000000000000000" ]; then
-            git diff-tree --root --no-commit-id --name-only -r "${GITHUB_SHA}" > /tmp/pde-changed-paths.txt
+            git diff-tree --root --no-commit-id --name-status -r "${GITHUB_SHA}" > /tmp/pde-changed-paths.txt
           else
-            git diff --name-only --diff-filter=ACMR "${BASE_SHA}" "${GITHUB_SHA}" > /tmp/pde-changed-paths.txt
+            git diff --name-status --diff-filter=ACMRD "${BASE_SHA}" "${GITHUB_SHA}" > /tmp/pde-changed-paths.txt
           fi
           node scripts/resolve-pde-frontend-deploy-target.mjs \
             --repository-root . \

@@ -7307,3 +7307,27 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   versionado e SHA-256 calculado pelo backend; o MCP inspeciona vídeo, fontes e checkout ligado no
   DOM. Testes de contrato mantêm divergência sem prova como bloqueante e reconhecem somente a
   sucessão direta verificada.
+
+## LOOP-IRIS-RETRABALHO-REPROVADO-SEM-CONTAR-TENTATIVA — 26/09/2026
+
+- **Evidência confirmada:** os criativos #531, #532 e #533 do experimento Capella #94 acumularam
+  114 jobs concluídos do Estúdio de Íris e US$ 13,5787 de custo registrado até a contenção em
+  `2026-09-26T05:49:03Z`. Cada peça reprovada pela revisão independente voltava a `PENDING`,
+  enquanto `agent_improvement_attempts` permanecia zero.
+- **Causa-raiz:** o contador avançava somente quando a Biblioteca aprovava a imagem e uma nova versão
+  do criativo era criada. Uma imagem efetivamente gerada, paga e reprovada não era reconhecida como
+  tentativa; por isso o limite de oito nunca era alcançado.
+- **Efeito financeiro:** os jobs preservavam `cost_usd`, mas a reconciliação auditável do experimento
+  somava pipeline, landing, publicação e vídeo sem incluir o Estúdio de Íris. Uma arte reprovada
+  consumia caixa e ainda assim não aparecia no total usado para avaliar margem.
+- **Alternativas avaliadas:** ampliar o polling apenas reduziria a velocidade do desperdício;
+  encerrar manualmente os três registros não preveniria outros produtos; contar todo job materializado
+  e bloquear a reserva/reabertura ao atingir o teto preserva auditoria e fecha a causa sistêmica. A
+  terceira alternativa foi adotada.
+- **Correção sistêmica:** o backend reconcilia tentativas com os jobs persistidos antes de reservar
+  trabalho, contabiliza o artefato assim que o upload termina, trata o mesmo `producerExecutionId`
+  como callback idempotente, encerra também reservas `PROCESSING` antigas que já ultrapassaram o
+  teto e impede que um novo parecer `ADJUST` reabra o ciclo após oito gerações.
+- **Prevenção:** testes de contrato reproduzem histórico legado no contador zero, reabertura pela
+  Biblioteca, callback duplicado e reconciliação financeira, exigindo `LIMIT_REACHED` antes de
+  qualquer nova geração e a soma integral do custo visual mesmo quando a peça é reprovada.

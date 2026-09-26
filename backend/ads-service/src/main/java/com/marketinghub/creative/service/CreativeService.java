@@ -587,57 +587,71 @@ public class CreativeService {
   /** Lista e assume correções pendentes, mantendo o backend como controlador do ciclo. */
   @Transactional
   public List<CreativeImprovementPendingDto> claimAgentImprovementQueue(int limit) {
-    return repository.findAgentImprovementQueue(CreativeImprovementStatus.PENDING).stream()
-        .limit(Math.max(1, limit))
-        .map(
-            creative -> {
-              creative.setAgentImprovementStatus(CreativeImprovementStatus.PROCESSING);
-              repository.save(creative);
-              JsonNode correction = readImprovementJson(creative);
-              com.marketinghub.planning.CommercialPlan plan =
-                  commercialPlanRepository
-                      .findByExperimentReference(creative.getExperiment().getId())
-                      .stream()
-                      .findFirst()
-                      .orElseThrow(
-                          () ->
-                              new IllegalStateException(
-                                  "Retrabalho visual exige plano comercial vinculado"));
-              String size =
-                  Objects.toString(creative.getFormat(), "")
-                          .toLowerCase(java.util.Locale.ROOT)
-                          .contains("story")
-                      ? "1152x2048"
-                      : "2048x2048";
-              TemisVisualPlaybookDto playbook =
-                  temisVisualPlaybookService.resolve(
-                      plan, creative.getFormat(), List.of("ADS"), size);
-              if (correction instanceof com.fasterxml.jackson.databind.node.ObjectNode object) {
-                object.put("playbookVersion", playbook.version());
-                object.put("playbookContextKey", playbook.contextKey());
-                object.set("visualPlaybook", objectMapper.valueToTree(playbook));
-                creative.setAgentImprovementJson(object.toString());
-                repository.save(creative);
-              }
-              return new CreativeImprovementPendingDto(
-                  creative.getId(),
-                  creative.getExperiment().getId(),
-                  Objects.requireNonNullElse(creative.getVersionNumber(), 1) + 1,
-                  creative.getFormat(),
-                  correction.path("headline").asText(),
-                  correction.path("primaryText").asText(),
-                  correction.path("description").asText(),
-                  correction.path("cta").asText(),
-                  creative.getDestinationUrl(),
-                  correction.path("imagePrompt").asText(),
-                  stringList(correction.path("mandatoryVisualRequirements")),
-                  stringList(correction.path("forbiddenVisualElements")),
-                  stringList(correction.path("visualAcceptanceCriteria")),
-                  approvedCreativeReferenceUrls(creative.getExperiment().getId()),
-                  creative.getAgentReviewJson(),
-                  playbook);
-            })
-        .toList();
+    int requestedLimit = Math.max(1, limit);
+    List<CreativeImprovementPendingDto> claimed = new ArrayList<>();
+    for (Creative creative :
+        repository.findAgentImprovementQueue(
+            java.util.Set.of(
+                CreativeImprovementStatus.PENDING, CreativeImprovementStatus.PROCESSING))) {
+      int attempts = synchronizeAgentImprovementAttempts(creative);
+      if (attempts >= MAX_AGENT_IMPROVEMENT_ATTEMPTS) {
+        stopAgentImprovementAtLimit(creative, creative.getAgentImprovementError());
+        continue;
+      }
+      if (creative.getAgentImprovementStatus() != CreativeImprovementStatus.PENDING
+          || claimed.size() >= requestedLimit) {
+        continue;
+      }
+      creative.setAgentImprovementStatus(CreativeImprovementStatus.PROCESSING);
+      repository.save(creative);
+      claimed.add(toAgentImprovementPending(creative));
+    }
+    return claimed;
+  }
+
+  /** Monta o contrato executável após o backend reservar a correção visual. */
+  private CreativeImprovementPendingDto toAgentImprovementPending(Creative creative) {
+    JsonNode correction = readImprovementJson(creative);
+    com.marketinghub.planning.CommercialPlan plan =
+        commercialPlanRepository
+            .findByExperimentReference(creative.getExperiment().getId())
+            .stream()
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException("Retrabalho visual exige plano comercial vinculado"));
+    String size =
+        Objects.toString(creative.getFormat(), "")
+                .toLowerCase(java.util.Locale.ROOT)
+                .contains("story")
+            ? "1152x2048"
+            : "2048x2048";
+    TemisVisualPlaybookDto playbook =
+        temisVisualPlaybookService.resolve(plan, creative.getFormat(), List.of("ADS"), size);
+    if (correction instanceof com.fasterxml.jackson.databind.node.ObjectNode object) {
+      object.put("playbookVersion", playbook.version());
+      object.put("playbookContextKey", playbook.contextKey());
+      object.set("visualPlaybook", objectMapper.valueToTree(playbook));
+      creative.setAgentImprovementJson(object.toString());
+      repository.save(creative);
+    }
+    return new CreativeImprovementPendingDto(
+        creative.getId(),
+        creative.getExperiment().getId(),
+        Objects.requireNonNullElse(creative.getVersionNumber(), 1) + 1,
+        creative.getFormat(),
+        correction.path("headline").asText(),
+        correction.path("primaryText").asText(),
+        correction.path("description").asText(),
+        correction.path("cta").asText(),
+        creative.getDestinationUrl(),
+        correction.path("imagePrompt").asText(),
+        stringList(correction.path("mandatoryVisualRequirements")),
+        stringList(correction.path("forbiddenVisualElements")),
+        stringList(correction.path("visualAcceptanceCriteria")),
+        approvedCreativeReferenceUrls(creative.getExperiment().getId()),
+        creative.getAgentReviewJson(),
+        playbook);
   }
 
   /**
@@ -723,7 +737,20 @@ public class CreativeService {
   /** Cria a nova versão gerada e a devolve automaticamente ao gate do agente. */
   @Transactional
   public Creative completeAgentImprovement(Long id, CreativeImprovementResultRequest result) {
+    return completeAgentImprovement(id, result, true);
+  }
+
+  /** Conclui a melhoria distinguindo callbacks diretos de arte já contabilizada na Biblioteca. */
+  private Creative completeAgentImprovement(
+      Long id, CreativeImprovementResultRequest result, boolean recordAttempt) {
     Creative source = repository.findByIdWithExperiment(id).orElseThrow();
+    if (source.getAgentImprovementStatus() != CreativeImprovementStatus.PROCESSING) {
+      log.warn(
+          "Callback de retrabalho visual ignorado sem reserva vigente. creativeId={} status={}",
+          id,
+          source.getAgentImprovementStatus());
+      return source;
+    }
     if (!StringUtils.hasText(result.imageUrl())) {
       source.setAgentImprovementStatus(CreativeImprovementStatus.FAILED);
       source.setAgentImprovementError(
@@ -743,8 +770,12 @@ public class CreativeService {
     request.setImageUrl(result.imageUrl());
     request.setCostUsd(result.costUsd());
     Creative revision = createVersion(id, request);
-    revision.setAgentImprovementAttempts(
-        Objects.requireNonNullElse(source.getAgentImprovementAttempts(), 0) + 1);
+    int attempts = Objects.requireNonNullElse(source.getAgentImprovementAttempts(), 0);
+    if (recordAttempt) {
+      attempts++;
+      source.setAgentImprovementAttempts(attempts);
+    }
+    revision.setAgentImprovementAttempts(attempts);
     source.setAgentImprovementStatus(CreativeImprovementStatus.COMPLETED);
     source.setAgentImprovementError(null);
     repository.save(source);
@@ -773,6 +804,15 @@ public class CreativeService {
                         "Retrabalho visual exige plano comercial vinculado ao experimento"));
     if (!StringUtils.hasText(producerExecutionId)) {
       throw new IllegalArgumentException("Retrabalho visual exige execução produtora de Íris");
+    }
+    String normalizedProducerExecutionId = producerExecutionId.trim();
+    if (commercialPlanImageStudioJobRepository.existsBySourceCreative_IdAndProducerExecutionId(
+        id, normalizedProducerExecutionId)) {
+      return source;
+    }
+    if (source.getAgentImprovementStatus() != CreativeImprovementStatus.PROCESSING) {
+      throw new IllegalStateException(
+          "Retrabalho visual não possui reserva PROCESSING vigente para o criativo #" + id);
     }
     AssetUploadResponse asset =
         uploadImage(
@@ -841,14 +881,15 @@ public class CreativeService {
                 temisVisualPlaybookService.contextKey(
                     plan, source.getFormat(), List.of("ADS"), improvementSize)));
     job.setPlaybookJson(frozenCorrection.path("visualPlaybook").toString());
-    job.setProducerExecutionId(producerExecutionId.trim());
+    job.setProducerExecutionId(normalizedProducerExecutionId);
     job.setRequestJson(requestJson);
     job.setResponseJson(responseJson);
     job.setUsageJson(usageJson);
     job.setCostUsd(costUsd);
     job.setStartedAt(Instant.now());
     job.setFinishedAt(Instant.now());
-    commercialPlanImageStudioJobRepository.save(job);
+    commercialPlanImageStudioJobRepository.saveAndFlush(job);
+    synchronizeAgentImprovementAttempts(source);
     repository.save(source);
     return source;
   }
@@ -873,7 +914,7 @@ public class CreativeService {
       CreativeImprovementResultRequest result,
       String usageJson,
       String reviewSummary) {
-    Creative revision = completeAgentImprovement(creativeId, result);
+    Creative revision = completeAgentImprovement(creativeId, result, false);
     Creative source = repository.findByIdWithExperiment(creativeId).orElseThrow();
     source.setAgentImprovementJson(
         improvementAuditJson(
@@ -886,6 +927,11 @@ public class CreativeService {
   @Transactional
   public void requeueLibraryImprovement(Long creativeId, String reviewSummary) {
     Creative source = repository.findByIdWithExperiment(creativeId).orElseThrow();
+    int attempts = synchronizeAgentImprovementAttempts(source);
+    if (attempts >= MAX_AGENT_IMPROVEMENT_ATTEMPTS) {
+      stopAgentImprovementAtLimit(source, reviewSummary);
+      return;
+    }
     JsonNode correction = readImprovementJson(source);
     if (correction instanceof com.fasterxml.jackson.databind.node.ObjectNode object) {
       String prior = correction.path("imagePrompt").asText("");
@@ -897,6 +943,31 @@ public class CreativeService {
     source.setAgentImprovementStatus(CreativeImprovementStatus.PENDING);
     source.setAgentImprovementError(reviewSummary);
     repository.save(source);
+  }
+
+  /**
+   * Reconcilia o contador com os jobs persistidos, inclusive ciclos criados por versões antigas.
+   */
+  private int synchronizeAgentImprovementAttempts(Creative creative) {
+    long materialized =
+        commercialPlanImageStudioJobRepository.countBySourceCreative_Id(creative.getId());
+    int materializedAttempts =
+        materialized > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) materialized;
+    int attempts =
+        Math.max(
+            Objects.requireNonNullElse(creative.getAgentImprovementAttempts(), 0),
+            materializedAttempts);
+    creative.setAgentImprovementAttempts(attempts);
+    return attempts;
+  }
+
+  /** Encerra o ciclo no teto seguro preservando o último parecer que impediu aprovação. */
+  private void stopAgentImprovementAtLimit(Creative creative, String reviewSummary) {
+    creative.setAgentImprovementStatus(CreativeImprovementStatus.LIMIT_REACHED);
+    creative.setAgentImprovementError(
+        "Limite seguro de oito correções automáticas atingido. Último parecer: "
+            + Objects.toString(reviewSummary, "não informado"));
+    repository.save(creative);
   }
 
   /** Encerra uma revisão técnica falha sem liberar o criativo ou apagar o diagnóstico. */

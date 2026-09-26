@@ -32,4 +32,17 @@ public class ExperimentVideoAssetApprovalChecker
                 videoAsset.getStatus() != ExperimentVideoStatus.READY
                     || videoAsset.getReviewStatus() != ExperimentVideoReviewStatus.APPROVED);
   }
+
+  /** Exige ao menos um ativo e reprovação humana explícita em todos os vínculos do acabamento. */
+  @Override
+  public boolean isRejectedForReplacement(Long salesVideoJobId) {
+    if (salesVideoJobId == null) {
+      return false;
+    }
+    List<ExperimentVideoAsset> videoAssets = repository.findBySalesVideoJobId(salesVideoJobId);
+    return !videoAssets.isEmpty()
+        && videoAssets.stream()
+            .allMatch(
+                videoAsset -> videoAsset.getReviewStatus() == ExperimentVideoReviewStatus.REJECTED);
+  }
 }

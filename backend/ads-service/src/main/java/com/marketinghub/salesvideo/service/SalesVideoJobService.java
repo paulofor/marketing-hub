@@ -705,12 +705,20 @@ public class SalesVideoJobService {
 
   private com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository
       productionCycleRepository;
+  private SalesVideoExperimentAssetApprovalChecker experimentAssetApprovalChecker;
 
   /** Conecta a referência persistida do ciclo ao job que está realmente em acabamento. */
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   public void setProductionCycleRepository(
       com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository repository) {
     this.productionCycleRepository = repository;
+  }
+
+  /** Conecta as decisões humanas dos ativos comerciais ao controle de nova finalização. */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  public void setExperimentAssetApprovalChecker(
+      SalesVideoExperimentAssetApprovalChecker approvalChecker) {
+    this.experimentAssetApprovalChecker = approvalChecker;
   }
 
   /**
@@ -742,18 +750,26 @@ public class SalesVideoJobService {
             });
   }
 
-  /** Só substitui o filho falho cuja origem é exatamente o bruto reaproveitado. */
+  /** Só substitui o filho falho ou humanamente reprovado da mesma fonte bruta. */
   private boolean canTrackFinalization(Long currentJobId, SalesVideoJob source) {
     if (java.util.Objects.equals(currentJobId, source.getId())) return true;
     if (currentJobId == null) return false;
     return jobRepository
         .findById(currentJobId)
         .filter(current -> current.getJobType() == SalesVideoJobType.POST_PRODUCTION)
-        .filter(current -> current.getStatus() == SalesVideoStatus.VIDEO_FAILED)
         .filter(current -> current.getRetryOfJob() != null)
         .filter(
             current -> java.util.Objects.equals(current.getRetryOfJob().getId(), source.getId()))
+        .filter(this::isReplaceableFinalization)
         .isPresent();
+  }
+
+  /** Permite nova finalização somente após falha técnica ou reprovação humana persistida. */
+  private boolean isReplaceableFinalization(SalesVideoJob current) {
+    if (current.getStatus() == SalesVideoStatus.VIDEO_FAILED) return true;
+    if (current.getStatus() != SalesVideoStatus.VIDEO_READY
+        || experimentAssetApprovalChecker == null) return false;
+    return experimentAssetApprovalChecker.isRejectedForReplacement(current.getId());
   }
 
   /**

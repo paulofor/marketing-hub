@@ -48,10 +48,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SalesVideoJobServiceTest {
 
-  /** Retoma só o filho falho da fonte atual e rejeita fontes de tentativas posteriores. */
+  /** Retoma filho falho ou reprovado da fonte atual e rejeita trabalho ainda válido. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(
-      strings = {"FAILED_SAME", "FAILED_OTHER", "READY_SAME"})
+      strings = {"FAILED_SAME", "FAILED_OTHER", "READY_SAME", "READY_REJECTED"})
   void shouldCorrelateFinalizationRecoveryWithoutOverwritingNewerWork(String scenario) {
     var source = VideoFinalDeliveryContractTest.source();
     source.setJobType(SalesVideoJobType.RENDER);
@@ -65,7 +65,7 @@ class SalesVideoJobServiceTest {
             .profile(source.getProfile())
             .jobType(SalesVideoJobType.POST_PRODUCTION)
             .status(
-                scenario.equals("READY_SAME")
+                scenario.startsWith("READY_")
                     ? SalesVideoStatus.VIDEO_READY
                     : SalesVideoStatus.VIDEO_FAILED)
             .retryOfJob(
@@ -83,6 +83,13 @@ class SalesVideoJobServiceTest {
         org.mockito.Mockito.mock(
             com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository.class);
     service.setProductionCycleRepository(cycles);
+    if (scenario.startsWith("READY_")) {
+      var approvalChecker =
+          org.mockito.Mockito.mock(SalesVideoExperimentAssetApprovalChecker.class);
+      service.setExperimentAssetApprovalChecker(approvalChecker);
+      given(approvalChecker.isRejectedForReplacement(current.getId()))
+          .willReturn(scenario.equals("READY_REJECTED"));
+    }
     given(cycles.findById(91022L)).willReturn(Optional.of(cycle));
     given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
     given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
@@ -91,7 +98,7 @@ class SalesVideoJobServiceTest {
     request.setRequestedBy("fixture@sandbox.local");
     request.setCaptionText("Copy menor");
     request.setVoiceOverScript("Copy menor");
-    if (scenario.equals("FAILED_SAME")) {
+    if (scenario.equals("FAILED_SAME") || scenario.equals("READY_REJECTED")) {
       given(jobRepository.save(any()))
           .willAnswer(
               i -> {
@@ -105,7 +112,11 @@ class SalesVideoJobServiceTest {
       assertThat(result.getMetadataJson()).contains("91022", "91004", "91001", "Copy menor");
       assertThat(cycle.getSalesVideoJobId()).isEqualTo(91011L);
       assertThat(cycle.getStatus()).isEqualTo("QUEUED_FOR_APOLLO");
-      assertThat(current.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_FAILED);
+      assertThat(current.getStatus())
+          .isEqualTo(
+              scenario.equals("FAILED_SAME")
+                  ? SalesVideoStatus.VIDEO_FAILED
+                  : SalesVideoStatus.VIDEO_READY);
       verify(cycles).save(cycle);
     } else {
       assertThrows(

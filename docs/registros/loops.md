@@ -4878,6 +4878,11 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Prevenção:** testes ligam ciclo, projeto, experimento, job, asset, áudio e proporção 9:16 e
   comprovam que a conclusão não gera autoaprovação. O worker registra `has_audio` e a quantidade de
   streams para o gate não depender de inferência textual.
+- **Recorrência fechada em 2026-09-26:** a proteção contra sobrescrever uma finalização pronta também
+  bloqueava a correção depois de uma reprovação humana persistida. O ciclo agora aceita nova
+  pós-produção somente quando o filho atual falhou ou todos os seus ativos comerciais foram
+  explicitamente reprovados, sempre exigindo a mesma fonte bruta e preservando as tentativas. O teste
+  mantém o bloqueio para peça pronta pendente e para fonte divergente, e libera apenas a reprovada.
 
 ## LOOP-VIDEO-QA-TEXTO-TREMOR-REFERENCIA — arquivo técnico chega à revisão com falhas perceptíveis
 

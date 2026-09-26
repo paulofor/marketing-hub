@@ -1019,6 +1019,13 @@ public class CreativeService {
       creative.setAgentImprovementStatus(CreativeImprovementStatus.FAILED);
       return;
     }
+    if (hasCorrectionTarget(request, "CREATIVE_MEDIA") && isVideoCreative(creative)) {
+      creative.setAgentImprovementStatus(CreativeImprovementStatus.DELEGATED);
+      creative.setAgentImprovementError(
+          "Correção de mídia de vídeo exige nova versão no fluxo audiovisual; "
+              + "o Estúdio de Imagens de Íris não substitui arquivos de vídeo.");
+      return;
+    }
     int attempts = Objects.requireNonNullElse(creative.getAgentImprovementAttempts(), 0);
     if (attempts >= MAX_AGENT_IMPROVEMENT_ATTEMPTS) {
       creative.setAgentImprovementStatus(CreativeImprovementStatus.LIMIT_REACHED);
@@ -1040,6 +1047,15 @@ public class CreativeService {
     creative.setAgentImprovementJson(toImprovementJson(creative, request));
     creative.setAgentImprovementStatus(CreativeImprovementStatus.PENDING);
     creative.setAgentImprovementError(null);
+  }
+
+  /** Identifica mídia audiovisual sem depender apenas de um campo legado do criativo. */
+  private boolean isVideoCreative(Creative creative) {
+    return creative != null
+        && ((StringUtils.hasText(creative.getFormat())
+                && "VIDEO".equalsIgnoreCase(creative.getFormat().trim()))
+            || StringUtils.hasText(creative.getVideoId())
+            || StringUtils.hasText(creative.getVideoUrl()));
   }
 
   /** Serializa o briefing de Íris sem converter o parecer de Têmis em conteúdo substituto. */

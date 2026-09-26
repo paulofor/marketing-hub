@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,11 +25,16 @@ import org.springframework.web.client.RestClient;
 @Component
 public class PdeMarketStrategyBpmTaskConsumer {
   private static final Logger log = LoggerFactory.getLogger(PdeMarketStrategyBpmTaskConsumer.class);
+  private static final ObjectMapper CONTRACT_MAPPER = new ObjectMapper();
   private static final String AGENT_KEY = "experiment-strategist";
   private static final String PROCESS_CODE = "pde-commercial-plan-offer";
   private static final String ACTIVITY_ID = "marketStrategy";
-  private static final String PROMPT = "prompts/pde-commercial-plan/v8/market-strategy.md";
-  private static final String SCHEMA = "prompts/pde-commercial-plan/v7/market-strategy-schema.json";
+  private static final String LEGACY_PROMPT = "prompts/pde-commercial-plan/v8/market-strategy.md";
+  private static final String LEGACY_SCHEMA =
+      "prompts/pde-commercial-plan/v7/market-strategy-schema.json";
+  private static final String IDENTITY_PROMPT = "prompts/pde-commercial-plan/v9/market-strategy.md";
+  private static final String IDENTITY_SCHEMA =
+      "prompts/pde-commercial-plan/v9/market-strategy-schema.json";
   private static final String READY_FOR_PRIVATE_VALIDATION = "READY_FOR_PRIVATE_VALIDATION";
   private static final String INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE";
   private static final List<String> REQUIRED_PRIVATE_SIGNALS =
@@ -123,7 +129,11 @@ public class PdeMarketStrategyBpmTaskConsumer {
       Execution execution;
       try {
         execution = execute(task, prompt);
-        validate(execution.result(), sourceReference(task));
+        validate(
+            execution.result(),
+            sourceReference(task),
+            requiresProductIdentity(task),
+            objectMapper.valueToTree(task));
       } catch (Exception ex) {
         log.error(
             "Falha na inferência de Atena. taskId={} sourceReference={}",
@@ -242,7 +252,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
       throws IOException, InterruptedException {
     Path output = outbox.output();
     Path processLog = outbox.events();
-    Path schema = materialize(SCHEMA, ".json");
+    Path schema = materialize(schemaResource(task), ".json");
     Process process = null;
     try {
       process =
@@ -308,6 +318,28 @@ public class PdeMarketStrategyBpmTaskConsumer {
         objectMapper.readTree(String.valueOf(task.getOrDefault("processContextJson", "{}")));
     JsonNode cycle = context.path("learningSalesCycle");
     JsonNode target = objectMapper.valueToTree(task.get("taskTarget"));
+    if (requiresProductIdentity(task)
+        && !sourceReference(task).startsWith("product-discovery-cycle:")) {
+      JsonNode product = target.path("pdeContext").path("product");
+      if (!hasText(target, "productInternalName")
+          || !hasText(product, "productTypeCode")
+          || !hasText(product, "productTypeInternalName")) {
+        throw new IllegalArgumentException(
+            "O produto existente não possui identidade catalogada suficiente para preservação.");
+      }
+    }
+    if (requiresProductIdentity(task)
+        && sourceReference(task).startsWith("product-discovery-cycle:")) {
+      JsonNode policy = productIdentityPolicy(objectMapper.valueToTree(task));
+      if (!"PRODUCT_IDENTITY_V1".equals(policy.path("contractVersion").asText())
+          || !"STAR".equals(policy.path("internalNameUniverse").asText())
+          || !policy.path("reservedInternalNames").isArray()
+          || !policy.path("activeProductTypes").isArray()
+          || policy.path("activeProductTypes").isEmpty()) {
+        throw new IllegalArgumentException(
+            "A descoberta não recebeu catálogo e nomes reservados para decidir a identidade.");
+      }
+    }
     if (!cycle.isMissingNode() && !cycle.isNull()) {
       if (!sourceReference(task).equals("experiment:" + cycle.path("experimentId").asLong(-1))
           || !cycle.path("productId").canConvertToLong()
@@ -338,7 +370,8 @@ public class PdeMarketStrategyBpmTaskConsumer {
   private PromptComposition prompt(Map<String, Object> task) throws IOException {
     String agent = read("prompts/experiment-strategist/v1/agent-core.md");
     String activity =
-        read(PROMPT).replace("{{TASK_CONTEXT}}", objectMapper.writeValueAsString(task));
+        read(promptResource(task))
+            .replace("{{TASK_CONTEXT}}", objectMapper.writeValueAsString(task));
     return new PromptComposition(agent + "\n\n" + activity, agent, activity);
   }
 
@@ -373,7 +406,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
             "agent",
             "Atena",
             "promptVersion",
-            "pde-commercial-plan-v8",
+            requiresProductIdentity(task) ? "pde-commercial-plan-v9" : "pde-commercial-plan-v8",
             "sourceReference",
             sourceReference(task),
             "processCode",
@@ -390,11 +423,17 @@ public class PdeMarketStrategyBpmTaskConsumer {
 
   /** Rejeita estratégia sem comparação, contrato versionado ou justificativa. */
   static void validate(JsonNode result) {
-    validate(result, "product-discovery-cycle:test");
+    validate(result, "product-discovery-cycle:test", false, null);
   }
 
   /** Valida seleção factual e o plano privado sem antecipar prontidão comercial. */
   static void validate(JsonNode result, String sourceReference) {
+    validate(result, sourceReference, false, null);
+  }
+
+  /** Valida também a identidade obrigatória nas execuções da versão 9 do Processo 2. */
+  static void validate(
+      JsonNode result, String sourceReference, boolean requiresProductIdentity, JsonNode task) {
     JsonNode contract = result.path("marketStrategicContract");
     JsonNode validationPlan = contract.path("privateValidationPlan");
     String decision = result.path("decision").asText();
@@ -443,6 +482,120 @@ public class PdeMarketStrategyBpmTaskConsumer {
       throw new IllegalArgumentException(
           "Atena aprovou sem um plano completo de duas leituras privadas.");
     }
+    if (requiresProductIdentity) {
+      validateProductIdentity(result.path("productIdentity"), decision, sourceReference, task);
+    }
+  }
+
+  /** Confirma criação única na descoberta e preservação exata para produtos já cadastrados. */
+  private static void validateProductIdentity(
+      JsonNode identity, String decision, String sourceReference, JsonNode task) {
+    String expectedMode =
+        "APPROVE".equals(decision)
+            ? sourceReference != null && sourceReference.startsWith("product-discovery-cycle:")
+                ? "CREATE"
+                : "PRESERVE"
+            : "NOT_APPLICABLE";
+    if (!identity.isObject()
+        || !"PRODUCT_IDENTITY_V1".equals(identity.path("contractVersion").asText())
+        || !expectedMode.equals(identity.path("mode").asText())) {
+      throw new IllegalArgumentException(
+          "Atena não devolveu a identidade PRODUCT_IDENTITY_V1 no modo esperado.");
+    }
+    if (!"APPROVE".equals(decision)) return;
+    if (!hasText(identity, "internalName")
+        || !hasText(identity, "productTypeCode")
+        || !hasText(identity, "productTypeInternalName")
+        || !hasText(identity, "classificationRationale")
+        || provisionalInternalName(identity.path("internalName").asText())) {
+      throw new IllegalArgumentException(
+          "Atena aprovou sem nome interno estável e tipo catalogado.");
+    }
+    if ("CREATE".equals(expectedMode)) {
+      validateCreatedIdentityAgainstPolicy(identity, task);
+    }
+    if (!"PRESERVE".equals(expectedMode) || task == null) return;
+    JsonNode target = task.path("taskTarget");
+    JsonNode product = target.path("pdeContext").path("product");
+    if (!identity.path("internalName").asText().equals(target.path("productInternalName").asText())
+        || !identity
+            .path("productTypeCode")
+            .asText()
+            .equals(product.path("productTypeCode").asText())
+        || !identity
+            .path("productTypeInternalName")
+            .asText()
+            .equals(product.path("productTypeInternalName").asText())) {
+      throw new IllegalArgumentException(
+          "Atena tentou alterar a identidade de um produto já cadastrado.");
+    }
+  }
+
+  /** Bloqueia nome ocupado ou classificação que não pertença ao catálogo entregue a Atena. */
+  private static void validateCreatedIdentityAgainstPolicy(JsonNode identity, JsonNode task) {
+    JsonNode policy = productIdentityPolicy(task);
+    String requestedName = canonicalIdentity(identity.path("internalName").asText());
+    boolean occupied = false;
+    for (JsonNode reserved : policy.path("reservedInternalNames")) {
+      if (requestedName.equals(canonicalIdentity(reserved.asText()))) {
+        occupied = true;
+        break;
+      }
+    }
+    if (occupied) {
+      throw new IllegalArgumentException("Atena escolheu um nome interno já ocupado.");
+    }
+    boolean catalogedType = false;
+    for (JsonNode type : policy.path("activeProductTypes")) {
+      if (identity.path("productTypeCode").asText().equals(type.path("code").asText())
+          && identity
+              .path("productTypeInternalName")
+              .asText()
+              .equals(type.path("internalName").asText())) {
+        catalogedType = true;
+        break;
+      }
+    }
+    if (!catalogedType) {
+      throw new IllegalArgumentException("Atena escolheu um tipo fora do catálogo ativo.");
+    }
+  }
+
+  /** Recupera o contrato estruturado anexado à descrição da tarefa de descoberta. */
+  private static JsonNode productIdentityPolicy(JsonNode task) {
+    String description = task == null ? "" : task.path("description").asText("");
+    int marker = description.indexOf("Contexto: ");
+    if (marker < 0) {
+      throw new IllegalArgumentException(
+          "A tarefa não contém o contexto de identidade do produto.");
+    }
+    try {
+      return CONTRACT_MAPPER
+          .readTree(description.substring(marker + "Contexto: ".length()))
+          .path("productIdentityPolicy");
+    } catch (IOException ex) {
+      log.error("Falha ao ler a política de identidade anexada à tarefa de Atena.", ex);
+      throw new IllegalArgumentException("O contexto de identidade do produto está inválido.", ex);
+    }
+  }
+
+  /** Canonicaliza o codinome para comparar caixa, acentos e espaços como o backend. */
+  private static String canonicalIdentity(String value) {
+    String decomposed =
+        Normalizer.normalize(value == null ? "" : value.trim(), Normalizer.Form.NFD);
+    return decomposed
+        .replaceAll("\\p{M}", "")
+        .replaceAll("\\s+", " ")
+        .toLowerCase(java.util.Locale.ROOT);
+  }
+
+  /** Reconhece rótulos temporários que não podem voltar como nome interno oficial. */
+  private static boolean provisionalInternalName(String value) {
+    String normalized = value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT);
+    return normalized.contains("planejado")
+        || normalized.contains("rascunho")
+        || normalized.startsWith("pde ")
+        || normalized.startsWith("produto #");
   }
 
   /** Confirma os cinco sinais canônicos sem aceitar um subconjunto conveniente. */
@@ -494,6 +647,22 @@ public class PdeMarketStrategyBpmTaskConsumer {
   /** Verifica texto obrigatório em um objeto estruturado. */
   private static boolean hasText(JsonNode node, String field) {
     return node.isObject() && !node.path(field).asText("").trim().isBlank();
+  }
+
+  /** Seleciona o prompt compatível com a versão persistida da definição BPM. */
+  private String promptResource(Map<String, Object> task) {
+    return requiresProductIdentity(task) ? IDENTITY_PROMPT : LEGACY_PROMPT;
+  }
+
+  /** Seleciona o schema compatível com a versão persistida da definição BPM. */
+  private String schemaResource(Map<String, Object> task) {
+    return requiresProductIdentity(task) ? IDENTITY_SCHEMA : LEGACY_SCHEMA;
+  }
+
+  /** Reconhece a versão do Processo 2 que tornou a identidade parte do contrato. */
+  private static boolean requiresProductIdentity(Map<String, Object> task) {
+    Object value = task == null ? null : task.get("processVersion");
+    return value instanceof Number number && number.intValue() >= 9;
   }
 
   /** Lê o último total cumulativo de tokens realmente informado. */

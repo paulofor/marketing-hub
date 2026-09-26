@@ -27,6 +27,7 @@ on:
       - "backend/ads-service/Dockerfile.mysql57-product-process"
       - "backend/ads-service/Dockerfile.mysql57-activity-instances"
       - "backend/ads-service/Dockerfile.mysql57-product-discovery-bpm-audit"
+      - "backend/ads-service/Dockerfile.mysql57-process2-product-identity"
       - "backend/ads-service/Dockerfile.mysql57-financial-agent-task-audit"
       - "backend/ads-service/Dockerfile.mysql57-agent-task-actionable-audit-v2"
       - "backend/ads-service/Dockerfile.mysql57-agent-responsibility-boundaries"
@@ -40,6 +41,7 @@ on:
       - "backend/ads-service/docker-compose.product-process-mysql57.yml"
       - "backend/ads-service/docker-compose.activity-instances-mysql57.yml"
       - "backend/ads-service/docker-compose.product-discovery-bpm-audit-mysql57.yml"
+      - "backend/ads-service/docker-compose.process2-product-identity-mysql57.yml"
       - "backend/ads-service/docker-compose.financial-agent-task-audit-mysql57.yml"
       - "backend/ads-service/docker-compose.agent-task-actionable-audit-v2-mysql57.yml"
       - "backend/ads-service/docker-compose.agent-responsibility-boundaries-mysql57.yml"
@@ -50,6 +52,7 @@ on:
       - "backend/ads-service/docker-compose.runway-plutus-provider-preflight-mysql57.yml"
       - "backend/ads-service/scripts/validate-business-process-activity-instances-mysql57.sh"
       - "backend/ads-service/scripts/validate-product-discovery-bpm-audit-mysql57.sh"
+      - "backend/ads-service/scripts/validate-process2-product-identity-mysql57.sh"
       - "backend/ads-service/scripts/validate-financial-agent-task-audit-mysql57.sh"
       - "backend/ads-service/scripts/validate-agent-task-actionable-audit-v2-mysql57.sh"
       - "backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql57.sh"
@@ -371,6 +374,23 @@ jobs:
         env:
           PRODUCT_DISCOVERY_BPM_COMPOSE_PROJECT: liquibase-product-discovery-bpm-${{ github.run_id }}
         run: bash backend/ads-service/scripts/validate-product-discovery-bpm-audit-mysql57.sh
+
+  validate-process2-product-identity:
+    name: Validar identidade do produto no Processo 2
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Preparar imagem MySQL 5.7
+        run: bash scripts/docker-pull-with-transient-retry.sh mysql:5.7
+
+      - name: Validar versão, reparo, idempotência e rollback no MySQL 5.7
+        env:
+          PROCESS2_IDENTITY_COMPOSE_PROJECT: liquibase-process2-identity-${{ github.run_id }}
+        run: bash backend/ads-service/scripts/validate-process2-product-identity-mysql57.sh
 
   validate-financial-agent-task-audit:
     name: Validar auditoria da tarefa financeira

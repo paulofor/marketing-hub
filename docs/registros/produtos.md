@@ -1,5 +1,25 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-09-26 — Processo 2 passa a decidir identidade; produto 11 recebe Alcyone/Safira
+
+- Evidência: a execução independente #32 concluiu Atena, Plutus e Dédalo, mas o produto #11 nasceu
+  com o título provisório repetido em `internal_name` e com `PDE`/Opala fixo, apesar de a
+  personalização por IA ser seu mecanismo de valor. O mesmo defeito já havia exigido a correção
+  manual de Mira em 03/09.
+- Alternativas: corrigir apenas o registro preservaria a recorrência; fechar tipos e nomes em código
+  reduziria a exploração; foi escolhido um contrato versionado que entrega a Atena nomes ocupados e
+  o catálogo ativo, enquanto o backend valida e materializa a escolha.
+- Decisão: no Processo 2 v9, Atena registra `PRODUCT_IDENTITY_V1` antes de Plutus e Dédalo. Para o
+  produto #11, Maia era curta mas ambígua, Bellatrix era distinta mas carregava associação cultural
+  forte e **Alcyone** foi escolhida por ser estrela inequívoca, livre e separada da comunicação
+  pública. Opala descrevia apenas a categoria genérica, Turmalina confundiria formato web com tipo e
+  **Safira (`AI_PRODUCT`)** corresponde ao mecanismo de personalização por IA.
+- Correção auditável: o produto #11 mantém seu título comercial e slug, recebe `internal_name`
+  Alcyone e tipo Safira, com snapshot da decisão nos contratos de validação e experiência. A tela da
+  execução passa a exibir as duas identidades.
+- Métrica: identidade correta reduz retrabalho e alinha economia, construção e comunicação; não
+  constitui compra, receita nem margem comprovada.
+
 ## 2026-09-07 — Mira e Vega passam a ter superfícies operacionais isoladas
 
 - Evidência produtiva: a rota privada de Mira era entregue pelo mesmo bundle, imagem e container

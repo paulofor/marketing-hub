@@ -312,7 +312,7 @@ function detail(execution = summary): ExecutionDetailFixture {
   return {
     execution,
     processReport: {
-      reportType: "PDE_OPPORTUNITY_TO_PRIVATE_VALIDATION_V2",
+      reportType: "PDE_OPPORTUNITY_TO_PRIVATE_VALIDATION_V3",
       status: execution.status,
       headline: "Uma candidata factual está pronta para priorização.",
       acquisitionChannel: "Instagram",
@@ -758,6 +758,9 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
       ...completedDetail.processReport.candidates[0],
       productId: 901,
       productName: "Cápsula sensorial PDE",
+      productInternalName: "Alcyone",
+      productTypeCode: "AI_PRODUCT",
+      productTypeInternalName: "Safira",
       productStatus: "PLANNED",
       commercialPlanId: 801,
       nextAction:
@@ -802,6 +805,17 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     expect(
       screen.getByText("Produto #901 criado sem publicação ou gasto."),
     ).toBeInTheDocument();
+    expect(screen.getByText(/Nome interno: Alcyone/)).toHaveTextContent(
+      "Tipo interno: Safira (AI_PRODUCT)",
+    );
+    const context = independentExecutionAihubContext(
+      completedDetail,
+      "http://admin.test",
+      "2026-09-24T10:00:00Z",
+    );
+    expect(context).toContain(
+      "Produto derivado: 901 · Cápsula sensorial PDE · nome interno Alcyone · tipo interno Safira (AI_PRODUCT) · PLANNED",
+    );
   });
 
   it("leva a execução em espera ao registro auditável das entrevistas", async () => {

@@ -24,6 +24,16 @@ Executar `scripts/validate-liquibase-mysql57.sh` para verificar includes relativ
 
 A etapa estática não inicia MySQL nem executa `liquibase:update`. Os jobs físicos usam bancos descartáveis e credenciais sintéticas, sem dados de produção, para conferir as migrações cobertas por suas fixtures antes da publicação.
 
+## Identidade do produto no Processo 2
+
+O job `validate-process2-product-identity` aplica o Processo 2 v9 e o reparo direcionado da
+execução independente #32 em um MySQL 5.7 sintético. Ele comprova a escolha de nome e tipo antes de
+Plutus e Dédalo, a correção para `Alcyone`/`AI_PRODUCT`/`Safira`, idempotência, rollback e
+reaplicação sem usar dados reais.
+
+Localmente, defina `PROCESS2_IDENTITY_COMPOSE_PROJECT` com o projeto exclusivo autorizado e execute
+`bash backend/ads-service/scripts/validate-process2-product-identity-mysql57.sh`.
+
 ## Catálogo Vivo — Piloto Opala
 
 O job `validate-catalogo-vivo-opala` executa

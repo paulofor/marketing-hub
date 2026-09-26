@@ -993,6 +993,15 @@ instrumentação e exclusões. O produto resultante nasce `PLANNED`, em `STOP`, 
 pela tela para `pde-construction-approval` v8, nunca apresentado como pronto para operação. A v7
 permanece somente como histórico das execuções anteriores à rota explícita de retrabalho.
 
+Por decisão de 2026-09-26, `pde-commercial-plan-offer` v9 acrescenta o contrato ortogonal
+`PRODUCT_IDENTITY_V1` à atividade de Atena. Na descoberta autônoma, Atena escolhe um codinome de
+estrela ainda livre e um tipo ativo do catálogo antes de Plutus avaliar a economia e Dédalo definir
+o formato. O backend materializa exatamente essa identidade; não pode voltar a derivar
+`internal_name` do título do dossiê nem fixar `PDE` por padrão. Plutus usa a classificação na conta
+e Dédalo comprova coerência entre mecanismo e formato, sem redefini-la. Em retornos de produto já
+cadastrado, a identidade é preservada. A escolha organiza o ativo, mas não conta como venda,
+receita, validação de demanda ou margem.
+
 O estado `STOP` permite liberar a construção e a validação interna sem publicar. Como ainda não
 existe experimento comercial, as novas tarefas usam a referência
 `product:<id>@agent-validation-v1` e o contexto PDE versionado do produto. Essa liberação não

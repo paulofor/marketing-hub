@@ -16,6 +16,7 @@ import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityDecision;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
+import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.opportunitydossier.OpportunityDossierRepository;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
@@ -140,6 +141,12 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
                 Product.builder()
                     .id(901L)
                     .name("Cápsula sensorial PDE")
+                    .internalName("Alcyone")
+                    .productTypeDefinition(
+                        ProductTypeDefinition.builder()
+                            .code("AI_PRODUCT")
+                            .internalName("Safira")
+                            .build())
                     .commercialStatus("PLANNED")
                     .build())
             .build();
@@ -186,6 +193,7 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
 
     var report = service.report("product-discovery-cycle:42");
 
+    assertThat(report.reportType()).isEqualTo("PDE_OPPORTUNITY_TO_PRIVATE_VALIDATION_V3");
     assertThat(report.status()).isEqualTo("COMPLETED");
     assertThat(report.candidateCount()).isEqualTo(2);
     assertThat(report.dossierReadyCount()).isEqualTo(2);
@@ -206,6 +214,9 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
         .isEqualTo("NO_MATCHING_ACTIVE_ADS");
     var winner = report.candidates().get(0);
     assertThat(winner.productId()).isEqualTo(901L);
+    assertThat(winner.productInternalName()).isEqualTo("Alcyone");
+    assertThat(winner.productTypeCode()).isEqualTo("AI_PRODUCT");
+    assertThat(winner.productTypeInternalName()).isEqualTo("Safira");
     assertThat(winner.nextAction()).contains("Abrir a cadeia de valor", "duas leituras");
     assertThat(winner.stages())
         .filteredOn(item -> "PURCHASE_MOMENT".equals(item.stageCode()))

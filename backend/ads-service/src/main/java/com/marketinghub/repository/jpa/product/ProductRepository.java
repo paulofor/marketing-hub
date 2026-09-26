@@ -101,6 +101,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
   long countIdentityOnAnotherProduct(
       @Param("productId") Long productId, @Param("identity") String identity);
 
+  /** Lista os nomes internos já atribuídos para Atena não propor uma estrela ocupada. */
+  @Query(
+      """
+      SELECT product.internalName
+      FROM Product product
+      WHERE product.internalName IS NOT NULL
+        AND TRIM(product.internalName) <> ''
+      ORDER BY product.id ASC
+      """)
+  List<String> findAllAssignedInternalNames();
+
   /** Atualiza somente o nome interno sem regravar os demais campos comerciais do produto. */
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query(

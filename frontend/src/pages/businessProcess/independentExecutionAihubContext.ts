@@ -104,6 +104,12 @@ export function independentExecutionAihubContext(
     }
   }
   for (const candidate of report.candidates) {
+    const productIdentity =
+      candidate.productInternalName ||
+      candidate.productTypeInternalName ||
+      candidate.productTypeCode
+        ? ` · nome interno ${value(candidate.productInternalName)} · tipo interno ${value(candidate.productTypeInternalName)} (${value(candidate.productTypeCode)})`
+        : "";
     lines.push(
       "",
       `Candidata #${candidate.opportunityId}: ${candidate.name}`,
@@ -115,7 +121,7 @@ export function independentExecutionAihubContext(
       `Risco comercial: ${value(candidate.commercialRisk)}`,
       `Dossiê: ${value(candidate.dossierId)} · situação: ${value(candidate.dossierStatus)}`,
       `Plano comercial: ${value(candidate.commercialPlanId)}`,
-      `Produto derivado: ${value(candidate.productId)} · ${value(candidate.productName)} · ${value(candidate.productStatus)}`,
+      `Produto derivado: ${value(candidate.productId)} · ${value(candidate.productName)}${productIdentity} · ${value(candidate.productStatus)}`,
       `Próxima ação registrada: ${value(candidate.nextAction)}`,
     );
     for (const stage of candidate.stages) {

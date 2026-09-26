@@ -2162,3 +2162,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-26-video-cycle-original-budget-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-26-processo2-identidade-produto-v1.yaml
+      relativeToChangelogFile: true

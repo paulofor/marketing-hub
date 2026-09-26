@@ -15,6 +15,7 @@ import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
+import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
@@ -43,6 +44,8 @@ class ExperimentAgentTaskTargetContextProviderTest {
             .name("Orientação individualizada")
             .internalName("Mira")
             .productType("AI_PRODUCT")
+            .productTypeDefinition(
+                ProductTypeDefinition.builder().code("AI_PRODUCT").internalName("Safira").build())
             .validationDefinitionVersion("PDE_AGENT_VALIDATED_V1")
             .targetAudience("Mulheres de 35 a 60 anos")
             .desireAssociationMapJson("{\"version\":\"v2\"}")
@@ -100,6 +103,10 @@ class ExperimentAgentTaskTargetContextProviderTest {
     assertThat(target.pdeContext().path("hypothesis").path("id").asText())
         .isEqualTo(hypothesisId.toString());
     assertThat(target.pdeContext().path("commercialPlan").path("id").asLong()).isEqualTo(8L);
+    assertThat(target.pdeContext().path("product").path("productTypeCode").asText())
+        .isEqualTo("AI_PRODUCT");
+    assertThat(target.pdeContext().path("product").path("productTypeInternalName").asText())
+        .isEqualTo("Safira");
     assertThat(
             target
                 .pdeContext()

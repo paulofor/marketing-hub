@@ -2150,3 +2150,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-25-facebook-campaign-replacement-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-26-creative-agent-improvement-status-varchar-v1.yaml
+      relativeToChangelogFile: true

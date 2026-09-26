@@ -93,6 +93,10 @@ class TemisContainerIsolationContractTest {
             "commercialCheckout",
             "findExpectedCheckoutLinks",
             "checkoutLinkedFromLanding",
+            "materializeLazyVisuals",
+            "image.loading = 'eager'",
+            "window.scrollTo(0, scrollY)",
+            "image.decode?.()",
             "mh_preview",
             "pde_analytics",
             "interactionPerformed: false");

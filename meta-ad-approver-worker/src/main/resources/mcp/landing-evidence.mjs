@@ -17,6 +17,7 @@ export async function captureCommercialLanding(browser, destinationUrl, expected
       await waitForCommercialLanding(page);
       await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
       await page.evaluate(() => document.fonts?.ready);
+      await materializeLazyVisuals(page);
       linkedCheckoutUrls.push(...(await findExpectedCheckoutLinks(page, expectedCheckout)));
       screenshots.push(await page.screenshot({ fullPage: true, type: 'jpeg', quality: 82 }));
       offers.push(...(await resolveOffers(responseTasks)));
@@ -39,6 +40,31 @@ export async function captureCommercialLanding(browser, destinationUrl, expected
     checkoutLinkedFromLanding,
     checkout
   };
+}
+
+/** Percorre a página sem interagir com a oferta para materializar imagens carregadas sob demanda. */
+async function materializeLazyVisuals(page) {
+  await page.evaluate(async () => {
+    const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+    for (const image of document.images) image.loading = 'eager';
+    const pageHeight = Math.max(
+      document.documentElement?.scrollHeight ?? 0,
+      document.body?.scrollHeight ?? 0,
+    );
+    const step = Math.max(window.innerHeight, 1);
+    for (let scrollY = 0; scrollY <= pageHeight; scrollY += step) {
+      window.scrollTo(0, scrollY);
+      await delay(40);
+    }
+    window.scrollTo(0, pageHeight);
+    await delay(100);
+    await Promise.race([
+      Promise.all(Array.from(document.images, image => image.decode?.().catch(() => {}))),
+      delay(10000),
+    ]);
+    window.scrollTo(0, 0);
+    await delay(100);
+  });
 }
 
 /** Localiza somente o checkout canônico informado pelo backend entre os links reais da página. */

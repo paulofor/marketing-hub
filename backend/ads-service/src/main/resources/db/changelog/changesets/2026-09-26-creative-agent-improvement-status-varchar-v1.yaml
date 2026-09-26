@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-26-creative-agent-improvement-status-varchar-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: creative
+        - columnExists:
+            tableName: creative
+            columnName: agent_improvement_status
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT COUNT(*)
+                FROM creative
+               WHERE agent_improvement_status IS NOT NULL
+                 AND CHAR_LENGTH(agent_improvement_status) > 24
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE creative
+                MODIFY COLUMN agent_improvement_status VARCHAR(24) NULL;
+      rollback:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE creative
+                MODIFY COLUMN agent_improvement_status ENUM(
+                  'PENDING',
+                  'PROCESSING',
+                  'COMPLETED',
+                  'DELEGATED',
+                  'FAILED',
+                  'LIMIT_REACHED'
+                ) NULL;

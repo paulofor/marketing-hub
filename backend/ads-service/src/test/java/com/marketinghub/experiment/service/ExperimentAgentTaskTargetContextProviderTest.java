@@ -571,6 +571,60 @@ class ExperimentAgentTaskTargetContextProviderTest {
     org.mockito.Mockito.verifyNoInteractions(experiments);
   }
 
+  /**
+   * Usa no experimento a versão privada aceita, mesmo quando o contrato geral ainda aponta para a
+   * versão anterior.
+   */
+  @Test
+  void resolvesAcceptedPrivateVersionForExperimentCommunication() {
+    var experiments = mock(ExperimentRepository.class);
+    var products = mock(ProductRepository.class);
+    var product =
+        Product.builder()
+            .id(10L)
+            .slug("orientacao-digital-rotina-pele-madura")
+            .name("Sua rotina, organizada com calma")
+            .internalName("Mira")
+            .validationDefinitionVersion("PDE_AGENT_VALIDATED_V1")
+            .validationDefinitionJson(
+                """
+                {"privatePrototypeAcceptance":{"status":"READY",
+                  "prototypeVersion":"mira-private-v3",
+                  "privateAccessUrl":"https://v7.clubemusa.com.br/mira-private"}}
+                """)
+            .pdeExperienceJson(
+                """
+                {"experienceVersion":"mira-private-v2","validationMode":"MULTI_AGENT_V1"}
+                """)
+            .publicUrl("https://commercial.example/mira")
+            .build();
+    var experiment =
+        Experiment.builder()
+            .id(93L)
+            .product(product)
+            .unitPrice(new BigDecimal("49.00"))
+            .commercialCheckoutUrl("https://checkout.example/historical")
+            .build();
+    when(experiments.findById(93L)).thenReturn(Optional.of(experiment));
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(experiments, products, new ObjectMapper());
+
+    var target = provider.resolve("experiment:93", "creative-production-approval").orElseThrow();
+
+    assertThat(target.experimentId()).isEqualTo(93L);
+    assertThat(target.experienceVersion()).isEqualTo("mira-private-v3");
+    assertThat(target.publicUrl()).isEqualTo("https://v7.clubemusa.com.br/mira-private");
+    assertThat(target.commercialCheckoutUrl()).isNull();
+    assertThat(target.pdeContext().path("experienceVersion").asText()).isEqualTo("mira-private-v3");
+    assertThat(
+            target
+                .pdeContext()
+                .path("privatePrototypeAcceptance")
+                .path("prototypeVersion")
+                .asText())
+        .isEqualTo("mira-private-v3");
+  }
+
   /** Bloqueia uma revisão que combine o checkout versionado com preço de outro experimento. */
   @Test
   void rejectsVersionedCheckoutWithDivergentExperimentPrice() {

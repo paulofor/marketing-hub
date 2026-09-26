@@ -7399,3 +7399,21 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Correção e prevenção da recorrência:** o descritor produtivo habilita explicitamente o provider
   local por padrão, e o teste do Compose isolado exige o valor renderizado antes do deploy. Assim,
   catálogo, preflight e runtime não podem mais divergir silenciosamente para essa rota.
+- **Recorrência de identidade confirmada em produção:** depois de o ciclo #24 concluir e o ativo
+  final #47 ser aprovado, a retomada criou a tarefa #521, que repetiu
+  `AUTHORIZATION_REQUIRED`. O projeto #6 pertencia a `mira-private-v3`, versão aceita no contrato
+  `privatePrototypeAcceptance`, mas a referência `experiment:93` ainda entregava ao projetor a
+  versão geral histórica `mira-private-v2`; a proteção de linhagem rejeitou corretamente a mistura.
+- **Causa-raiz complementar:** a resolução da versão privada aceita cobria a construção e a
+  referência legada do produto, porém não a referência do experimento usada pela comunicação,
+  produção criativa e landing. Ao corrigir essa identidade, o mesmo caminho ainda herdava o
+  checkout histórico do experimento, embora a experiência privada não tivesse checkout homologado.
+- **Alternativas avaliadas:** atualizar só o JSON de Mira ocultaria o defeito para os próximos
+  produtos; retirar a igualdade de versão aceitaria vídeo de outra experiência; resolver a versão
+  privada aprovada no alvo do experimento e bloquear o checkout histórico preserva linhagem e gates.
+  A terceira alternativa foi adotada.
+- **Correção e prevenção de identidade:** produtos em `PDE_AGENT_VALIDATED_V1` usam a versão, URL e
+  contexto de `privatePrototypeAcceptance` também nos três processos pré-comerciais, qualquer que
+  seja a forma da referência, e não recebem fallback de checkout do experimento. O teste de contrato
+  reproduz exatamente contrato geral V2, protótipo aceito V3 e `experiment:93`; combinado ao teste
+  do projetor, exige que somente projeto e job da V3 retornem à atividade audiovisual.

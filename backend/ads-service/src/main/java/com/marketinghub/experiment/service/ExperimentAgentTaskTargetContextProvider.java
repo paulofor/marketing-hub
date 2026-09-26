@@ -46,6 +46,11 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
           "pde-commercial-homologation-activation",
           "opala-commercial-preparation-v1",
           "pde-construction-approval");
+  private static final List<String> ACCEPTED_PRIVATE_PROTOTYPE_PROCESSES =
+      List.of(
+          "pde-communication-sales-journey",
+          "creative-production-approval",
+          "landing-page-generation");
   private final ExperimentRepository experiments;
   private final ProductRepository products;
   private final PdeProductionSlotRepository productionSlots;
@@ -268,6 +273,7 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
     }
     String experienceVersion = experienceVersion(product, processCode);
     if (blank(experienceVersion)) return Optional.empty();
+    boolean privateValidation = isPrivateValidation(product, processCode);
     Optional<CanonicalCheckout> canonicalCheckout =
         canonicalCheckout(experiment, product, processCode);
     return Optional.of(
@@ -284,7 +290,10 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
             canonicalCheckout.map(CanonicalCheckout::offerReference).orElse(null),
             canonicalCheckout
                 .map(CanonicalCheckout::checkoutUrl)
-                .orElse(experiment == null ? null : experiment.getCommercialCheckoutUrl()),
+                .orElse(
+                    privateValidation || experiment == null
+                        ? null
+                        : experiment.getCommercialCheckoutUrl()),
             commercialPrice(experiment, product, canonicalCheckout),
             pdeContext(experiment, product, processCode)));
   }
@@ -574,12 +583,19 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
     return blank(product.getPublicUrl()) ? null : product.getPublicUrl().trim();
   }
 
-  /** Identifica a homologação pré-comercial para impedir uso de slot ou checkout real. */
+  /**
+   * Identifica a homologação ou comunicação do protótipo aceito para impedir versão, slot ou
+   * checkout históricos.
+   */
   private boolean isPrivateValidation(Product product, String processCode) {
-    return "pde-construction-approval".equals(processCode)
-        && product.getValidationDefinitionVersion() != null
-        && ("PDE_PRIVATE_VALIDATION_V1".equals(product.getValidationDefinitionVersion())
-            || usesPdeAgentValidationV1(product));
+    if ("pde-construction-approval".equals(processCode)) {
+      return product.getValidationDefinitionVersion() != null
+          && ("PDE_PRIVATE_VALIDATION_V1".equals(product.getValidationDefinitionVersion())
+              || usesPdeAgentValidationV1(product));
+    }
+    return "PDE_AGENT_VALIDATED_V1".equals(product.getValidationDefinitionVersion())
+        && ACCEPTED_PRIVATE_PROTOTYPE_PROCESSES.contains(
+            Objects.requireNonNullElse(processCode, ""));
   }
 
   /** Reconhece apenas os estados previstos pelo contrato multiagente v1. */

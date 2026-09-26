@@ -36,6 +36,10 @@ public class ProofCardRenderer {
         || (long) x + width > original.getWidth()
         || (long) y + height > original.getHeight())
       throw new IllegalArgumentException("O recorte está fora dos pixels aprovados.");
+    double cropAspectRatio = (double) width / height;
+    if (cropAspectRatio < 1.2 || cropAspectRatio > 2.2)
+      throw new IllegalArgumentException(
+          "O recorte não ocupa a área de prova com legibilidade; use proporção entre 1,2:1 e 2,2:1.");
     BufferedImage canvas = new BufferedImage(1080, 1350, BufferedImage.TYPE_INT_RGB);
     Graphics2D g = canvas.createGraphics();
     try {
@@ -49,15 +53,7 @@ public class ProofCardRenderer {
       g.fillRect(0, 0, 1080, 1350);
       g.setColor(accent);
       text(g, spec.path("brandLabel").asText(), 64, 66, 952, 42, 28, Font.BOLD);
-      text(
-          g,
-          privateValidation ? "EXPERIÊNCIA PRIVADA" : spec.path("eyebrow").asText(),
-          64,
-          123,
-          952,
-          40,
-          25,
-          Font.PLAIN);
+      text(g, eyebrow(spec, privateValidation), 64, 123, 952, 40, 25, Font.PLAIN);
       g.setColor(new Color(35, 32, 34));
       text(g, spec.path("headline").asText(), 64, 183, 952, 152, 64, Font.BOLD);
       text(g, spec.path("body").asText(), 64, 351, 952, 115, 33, Font.PLAIN);
@@ -103,6 +99,11 @@ public class ProofCardRenderer {
     var output = new ByteArrayOutputStream();
     ImageIO.write(canvas, "png", output);
     return output.toByteArray();
+  }
+
+  /** Nomeia explicitamente a aplicação privada sem esconder o formato real da entrega. */
+  static String eyebrow(JsonNode spec, boolean privateValidation) {
+    return privateValidation ? "APLICAÇÃO WEB PRIVADA" : spec.path("eyebrow").asText();
   }
 
   /** Exige coordenadas inteiras para registrar um recorte reproduzível. */

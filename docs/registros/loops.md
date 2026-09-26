@@ -7417,3 +7417,13 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   seja a forma da referência, e não recebem fallback de checkout do experimento. O teste de contrato
   reproduz exatamente contrato geral V2, protótipo aceito V3 e `experiment:93`; combinado ao teste
   do projetor, exige que somente projeto e job da V3 retornem à atividade audiovisual.
+- **Recorrência de comunicação confirmada no gate:** após o vídeo V3 retornar, Psique bloqueou a
+  peça estática #405 por não identificar o formato da entrega. Íris gerou a correção #406 com
+  `eyebrow=APLICAÇÃO WEB PRIVADA`, mas o renderizador determinístico sobrescreveu o campo por
+  “EXPERIÊNCIA PRIVADA”; o recorte desktop ultralargo também reduziu a prova no feed. Portanto,
+  repetir somente a copy não poderia encerrar o gate.
+- **Correção e prevenção do criativo:** o template privado passa a imprimir
+  “APLICAÇÃO WEB PRIVADA”, o prompt declara o mesmo contrato e o renderizador recusa recortes fora
+  da proporção 1,2:1 a 2,2:1. Testes protegem o rótulo nos modos privado e não privado e a área útil
+  da prova. A peça corrigida deve ser regenerada pelo fluxo oficial, conferida em 393 px e novamente
+  submetida a Psique e Têmis, sem substituição manual de artefato.

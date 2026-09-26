@@ -70,3 +70,18 @@ técnico desta matriz não comprova vendas nem lucro.
   recebia `mira-private-v2`, enquanto projeto, prova e vídeo pertenciam a `mira-private-v3`. A
   correção faz os processos pré-comerciais partirem do protótipo privado aceito e recusa o checkout
   histórico até sua homologação.
+
+## Ajuste do criativo estático após revisão independente
+
+- Psique pediu que o cartão diga explicitamente “aplicação web privada”, apresente a entrega como
+  rotina digital consultável e preserve legibilidade no feed móvel. A correção automática #524
+  aplicou copy e fonte visual novas, mas o renderizador publicado ainda substituía o rótulo correto
+  por “experiência privada”.
+- Foram comparadas três opções: trocar somente a copy, com risco de o template repetir o erro;
+  substituir o PNG manualmente, quebrando a linhagem; ou corrigir o template determinístico e
+  regenerar pelo processo oficial. A terceira foi escolhida por eliminar a causa-raiz, preservar
+  hash, origem e revisão independente e não exigir nova geração audiovisual paga.
+- O contrato do renderizador e o prompt passam a declarar “APLICAÇÃO WEB PRIVADA” e a recusar
+  recortes ultralargos que reduzem a prova a uma faixa pequena cercada por espaço vazio. A nova
+  peça precisa continuar mostrando pixels autorizados de `mira-private-v3`, ser conferida em
+  393 px e voltar aos gates de Psique e Têmis antes de qualquer publicação.

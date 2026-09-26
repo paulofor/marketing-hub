@@ -1,0 +1,18 @@
+{
+  "cardKey": "delegacao-agente-com-controle-humano",
+  "collection": "neuromarketing",
+  "title": "Reduza esforço do agente sem retirar controle do usuário",
+  "finding": "No Agentic Commerce Report 2026, o Brasil aparece entre os mercados mais abertos ao uso de agentes de IA em jornadas de compra: 72% responderam sim, 22% talvez e 6% nunca. Entre consumidores abertos a esse uso nos sete mercados, 59% ainda querem aprovar cada decisão final individualmente; confirmação, suporte humano e possibilidade de desfazer aparecem como salvaguardas recorrentes.",
+  "mechanism": "A aceitação da autonomia parece variar com risco e reversibilidade. O agente pode reduzir esforço em busca e comparação, enquanto confirmação e reversão preservam sensação de controle quando a decisão produz consequências.",
+  "commercialApplication": "No Marketing Hub, usar agentes para pesquisar, comparar, resumir e recomendar; tornar claros o escopo da ajuda e os pontos que exigem decisão do usuário; oferecer revisão, correção, cancelamento e handoff humano fáceis.",
+  "evidenceStrength": "Moderada: pesquisa proprietária com 8.027 consumidores em sete mercados e comparação anual, incluindo Brasil. Há recorte brasileiro de abertura ao uso, mas os dados são autorrelatados.",
+  "publishedOn": "2026-09-23",
+  "validUntil": "2027-03-23",
+  "experimentHypothesis": "Um agente que reduz trabalho de pesquisa e comparação, mas preserva decisão explícita nos pontos de maior consequência, reduzirá esforço e abandono sem piorar confiança ou qualidade do lead.",
+  "risks": "Ocultar o escopo do agente, dificultar correção ou cancelamento, tratar silêncio como consentimento ou transformar intenção declarada em prova de comportamento real.",
+  "limits": "O indicador de 59% refere-se ao subconjunto aberto ao uso de agentes em compras. A pesquisa não prova efeito causal em conversão ou satisfação, e formulações sobre autonomia diferem entre estudos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-26-delegacao-agente-controle-limitado.md",
+  "sourceTitle": "Fonte revisada — Autonomia de agentes com limites, confirmação e reversão",
+  "sourceSha256": "22c4c74bf6f2fe1d51246b58918387ba38f73fa235a690e5429e50897b807731"
+}

@@ -1313,6 +1313,17 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
 - **Prevenção:** testes de contrato cobrem modificação rejeitada, nova revisão sem publicação e nova
   publicação explícita. Experimento terminal não é reativado para satisfazer smoke de infraestrutura.
 
+### Recorrência prevenida pelo fluxo imutável — 26/09/2026 (Capella #94)
+
+- **Evidência:** os checks dos workers recusaram a V11 após uma correção no serviço compartilhado de
+  governança de mídia, antes de qualquer deploy ou efeito externo.
+- **Causa confirmada:** a atestação vigente ainda descrevia o hash anterior do serviço; os testes dos
+  workers estavam aprovados e não havia regressão funcional de Vega.
+- **Tratamento correto:** foi criada a V12 `EVIDENCE_COMPATIBILITY_ONLY`, referenciando a V11
+  imutável e os novos hashes, com `automaticDeployOnMerge=false`.
+- **Resultado preventivo:** a evolução de Capella pode seguir auditável sem reativar o experimento
+  Vega #92, promover sua candidata ou publicar novamente a superfície v8.
+
 ## LOOP-EXPERIMENT-TERMINAL-STATE-DIVERGENCE — campanha pausada com run e agente ativos
 
 - **Sintoma confirmado em 2026-08-23:** o experimento #88 ficou `USER_STOPPED` e a campanha `PAUSED` após R$ 25,24 sem resultado primário, mas o run #6 permaneceu `RUNNING` e a tarefa de Hermes #188 ficou `PENDING`.

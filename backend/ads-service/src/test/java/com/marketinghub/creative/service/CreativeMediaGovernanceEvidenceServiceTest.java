@@ -194,7 +194,7 @@ class CreativeMediaGovernanceEvidenceServiceTest {
                  "approvedSourceCreatives":[{"creativeId":522,"experimentId":88,
                    "format":"IMAGE","mediaUrl":"https://cdn.test/capella-post.png",
                    "status":"READY","agentReviewStatus":"APPROVED",
-                   "reviewedAt":"2026-09-24T12:00:00Z"}]}
+                   "reviewedAt":1790251200.000000000}]}
                 """)
             .reviewedBy("time@marketinghub.io")
             .reviewedAt(Instant.parse("2026-09-26T03:00:00Z"))
@@ -216,6 +216,8 @@ class CreativeMediaGovernanceEvidenceServiceTest {
         .singleElement()
         .satisfies(source -> assertThat(source.creativeId()).isEqualTo(522L));
     assertThat(evidence.providerLicense()).isNull();
+    assertThat(evidence.approvedCreativeSources().get(0).reviewedAt())
+        .isEqualTo("2026-09-24T12:00:00Z");
   }
 
   /** Mantém a montagem bloqueada quando a fonte aprovada não pode ser confirmada novamente. */

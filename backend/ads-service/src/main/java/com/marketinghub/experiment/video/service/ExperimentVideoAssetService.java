@@ -536,7 +536,7 @@ public class ExperimentVideoAssetService {
               evidence.put("mediaUrl", mediaUrl);
               evidence.put("status", source.getStatus().name());
               evidence.put("agentReviewStatus", source.getAgentReviewStatus().name());
-              evidence.put("reviewedAt", source.getReviewedAt());
+              evidence.put("reviewedAt", source.getReviewedAt().toString());
               return evidence;
             })
         .toList();

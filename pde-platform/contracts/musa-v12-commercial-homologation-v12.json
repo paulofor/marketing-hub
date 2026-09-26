@@ -1,0 +1,127 @@
+{
+  "contractVersion": "musa-v12-commercial-homologation.v12",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 6,
+  "activityId": "pdeGate",
+  "sourceReference": "product:4@musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  "experimentId": 92,
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "commercialPlanId": 3,
+    "publicUrl": "https://v8.clubemusa.com.br/"
+  },
+  "status": "EVIDENCE_COMPATIBILITY_ONLY",
+  "boundary": "Revalida código compartilhado sem autorizar campanha, gasto, cobrança, contato, publicação ou promoção da candidata. O experimento 92 permanece INVALIDATED.",
+  "operationalState": {
+    "verifiedAt": "2026-09-26",
+    "experimentStatus": "INVALIDATED",
+    "commercialOfferExpected": false,
+    "deploymentAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/musa-v12-commercial-homologation-v11.json",
+    "reason": "Reatestar a compatibilidade da governança de mídia compartilhada após normalizar timestamps de aprovação legados para o vídeo sucessor de Capella, sem reescrever a v11 nem publicar Vega.",
+    "includedChanges": [
+      "Governança externa de Vega preservada com URL, hash, tarefa do provedor, origem e licença",
+      "Snapshots numéricos legados de aprovação normalizados para o mesmo instante auditável",
+      "Novos snapshots de fontes aprovadas persistidos em ISO-8601",
+      "Separação explícita entre atestação de evidência e intenção de deploy"
+    ],
+    "excludedChanges": [
+      "Produto, experiência, oferta, preço, checkout, público e condições comerciais de Vega",
+      "Promoção da candidata, campanha, tráfego, gasto, cobrança e acesso real",
+      "Reativação do experimento 92 ou interpretação de disponibilidade comercial"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br/",
+    "requiredFrontendSourceSha256": "09e282435e2496f1a4fc96c1fbd90dbb8c368a3b87114a9b3af8899c3f10ef42"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_CHROMIUM",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "requiredFirstFoldCtas": [
+      "Começar meu ajuste gratuito"
+    ],
+    "requiredVisibleTexts": [
+      "4 escolhas rápidas, sem compra de roupa.",
+      "Continuação de 7 dias por R$ 67, pagamento único.",
+      "Acesso por 90 dias, sem assinatura ou renovação."
+    ],
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "09e282435e2496f1a4fc96c1fbd90dbb8c368a3b87114a9b3af8899c3f10ef42"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v11.json",
+      "sha256": "1631a4a09264181e0c644c9bf62acf0531a8bda06812ab7afa09c499113e4499",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialContext.java",
+      "sha256": "67da5e6efcc04c29f846f14c6a50a62fdc56a580c9802ccf2675ca53c95eb4ad",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/creative/service/CreativeMediaGovernanceEvidenceService.java",
+      "sha256": "fe8185ddbe4eb2d689517e8fb022ed561a44d294305a6c96cd0046c172fd788d",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva a governança externa de Vega e normaliza timestamps ISO ou numéricos somente para conferir a aprovação original da fonte criativa."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/controller/AccessController.java",
+      "sha256": "4863d97ab4c374ab23aebee094e187ed2d8c0e2afe95824b5af5599f584948f3",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva a rota autenticada de suporte da candidata histórica."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
+      "sha256": "ab97b31a9f6cfda17aad2b5edccf348de31e22271b7015abb4c397bf46ffd4b6",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva validação, persistência e retomada do suporte já homologado."
+    },
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "78f5d14b213c5d342868f441cf458150987515cfdf64f57c954d26c8b862a211",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva a experiência visual v12 sem promover sua oferta."
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialContextTest.java",
+      "sha256": "688a6dc85ff2705256bbcddd8af949af499254931defddbdeed4b7ef34d7e9c8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/creative/service/CreativeMediaGovernanceEvidenceServiceTest.java",
+      "sha256": "129dda26e606785726b04d3c43c8f988f840a932a4624ef93b4107c8751417ae",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/controller/AccessControllerPublicSurfaceTest.java",
+      "sha256": "05cfff7b78d3b50590ab702a714b6fbc749e221b1636a7a52cb3b26db0710caa",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/MusaV12SupportContractTest.java",
+      "sha256": "f2e7593aff2f7089b3e219be364da6ef7698af97d5fe4d0770106bf3108ba6a4",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/pde-atestacao-evidencia-capella-timestamp-v12-2026-09-26.md"
+}

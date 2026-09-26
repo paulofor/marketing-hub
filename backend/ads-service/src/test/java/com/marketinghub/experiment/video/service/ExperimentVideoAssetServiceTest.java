@@ -227,7 +227,8 @@ class ExperimentVideoAssetServiceTest {
         .contains(
             "experiment.userAdVideoUpload.v2",
             "capella-exp88-approved-assets-v1",
-            "approvedSourceCreatives");
+            "approvedSourceCreatives",
+            "\"reviewedAt\":\"2026-09-24T12:00:00Z\"");
     verify(salesVideoService)
         .storeAsset(any(), eq(AssetType.VIDEO), eq(MediaProvider.USER_UPLOAD), any());
   }

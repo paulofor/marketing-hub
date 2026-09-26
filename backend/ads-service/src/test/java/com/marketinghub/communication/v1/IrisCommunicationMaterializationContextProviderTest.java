@@ -85,6 +85,13 @@ class IrisCommunicationMaterializationContextProviderTest {
         .contains("FINANCIAL_AGENT_EXECUTION", "financial-agent", "landing-generator")
         .doesNotContain("another-plan");
     assertThat(context.get("approvedLandingAssets").toString()).contains("assetUrl");
+    assertThat(context.get("landingInstrumentationContract").toString())
+        .contains(
+            "IRIS_LANDING_INSTRUMENTATION_V1",
+            "data-track-section",
+            "checkout_click",
+            "mh_test=1",
+            "mh_internal_test");
     assertThat(context.get("product").toString())
         .contains("Rigel", "pdeExperience")
         .doesNotContain("address", "legalName");

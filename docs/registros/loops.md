@@ -7294,6 +7294,25 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   contrato. Testes cobrem ordem e tipos numéricos divergentes, hash legado, artefato posterior e
   mudança funcional, sem criar nova tarefa paga para a mesma entrada.
 
+## LOOP-IRIS-HTML-DESCOBRE-CONTRATO-AUSENTE-DEPOIS-DO-MODELO — 26/09/2026
+
+- **Evidência confirmada:** a tarefa #533 de Mira recebeu 178.316 tokens de entrada e custo estimado
+  de US$ 0,756964 para concluir `BLOCKED`, embora o experimento #93 já registrasse checkout nulo. A
+  resposta também exigiu detalhes de tracking que o runtime publicador já é responsável por
+  injetar.
+- **Causa-raiz:** o gate de prontidão exigia prova visual para todas as atividades da landing, mas
+  não validava checkout especificamente em `html`; o contexto também não declarava a fronteira
+  entre os hooks semânticos do HTML e o coletor do backend. O prompt pedia JavaScript enquanto o
+  aplicador governado o proibia. Além disso, checkout e HTML corrente participavam do hash da
+  mensagem e poderiam reabrir uma tarefa já concluída após cada avanço do funil.
+- **Alternativas avaliadas:** repetir Íris conserva o desperdício; liberar HTML com URL ou script
+  inferidos cria risco comercial e métricas falsas; bloquear antes do modelo e congelar o contrato
+  declarativo de tracking remove o custo sem reduzir o gate. A terceira alternativa foi adotada.
+- **Prevenção:** backend e worker exigem checkout e `IRIS_LANDING_INSTRUMENTATION_V1` antes do HTML;
+  Íris entrega apenas `data-track-section` e marcadores do CTA, e o publicador injeta o coletor com
+  segregação `mh_test=1`. Checkout, HTML e infraestrutura de tracking ficam fora do hash da
+  mensagem, enquanto preço, CTA, produto, versão, gate e provas continuam protegidos.
+
 ## LOOP-TEMIS-SUCESSOR-AUDITADO-PARECE-DIVERGENCIA — 26/09/2026
 
 - **Evidência confirmada:** o criativo #531 do sucessor Capella #94 reutilizou pela operação oficial

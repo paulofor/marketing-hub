@@ -188,6 +188,24 @@ class CommunicationAgentCodexRunnerTest {
     CommunicationAgentCodexRunner.validateInput(withEvidence);
   }
 
+  /** Recusa HTML sem checkout ou tracking ainda no worker, antes de iniciar o modelo. */
+  @Test
+  void shouldRequireCheckoutAndInstrumentationForLandingHtmlAtZeroModelCost() {
+    Map<String, Object> missingCheckout =
+        task("landing-page-generation", "html", htmlContext(null, true));
+    Map<String, Object> missingInstrumentation =
+        task(
+            "landing-page-generation", "html", htmlContext("https://checkout.example/mira", false));
+    Map<String, Object> ready =
+        task("landing-page-generation", "html", htmlContext("https://checkout.example/mira", true));
+
+    assertThatThrownBy(() -> CommunicationAgentCodexRunner.validateInput(missingCheckout))
+        .hasMessageContaining("checkout comercial canônico");
+    assertThatThrownBy(() -> CommunicationAgentCodexRunner.validateInput(missingInstrumentation))
+        .hasMessageContaining("contrato canônico de instrumentação");
+    CommunicationAgentCodexRunner.validateInput(ready);
+  }
+
   /** Aceita pacote completo que preserva identidade, hash e todos os guardrails. */
   @Test
   void shouldAcceptCompleteCommunicationPackage() throws Exception {
@@ -300,6 +318,7 @@ class CommunicationAgentCodexRunnerTest {
   @Test
   void shouldVersionBehaviorAndStrictSchema() throws Exception {
     String behavior = read("prompts/iris/v1/behavioral-core.md");
+    String landingHtml = read("prompts/iris/v1/landing-html.md");
     JsonNode schema = json.readTree(read("prompts/iris/v1/output-schema.json"));
 
     assertThat(behavior)
@@ -316,6 +335,9 @@ class CommunicationAgentCodexRunnerTest {
             "sensorial",
             "HARNESS_RESEARCH_INTELLIGENCE_V1",
             "functionalOutput.evidenceSelection");
+    assertThat(landingHtml)
+        .contains("landingInstrumentationContract", "Não inclua `<script>`", "runtime publicador")
+        .doesNotContain("JavaScript estritamente necessários");
     assertThat(schema.path("additionalProperties").asBoolean()).isFalse();
     assertThat(schema.path("required")).hasSize(16);
     assertThat(schema.toString())
@@ -389,6 +411,45 @@ class CommunicationAgentCodexRunnerTest {
         }
         """
         .formatted(STRATEGY_HASH, version);
+  }
+
+  /** Monta o contrato específico da materialização final da landing. */
+  private String htmlContext(String checkoutUrl, boolean withInstrumentation) {
+    String checkout = checkoutUrl == null ? "null" : "\"" + checkoutUrl + "\"";
+    String instrumentation =
+        withInstrumentation
+            ? """
+              ,"landingInstrumentationContract":{
+                "contractVersion":"IRIS_LANDING_INSTRUMENTATION_V1",
+                "collectorOwner":"BACKEND_PUBLICATION_RUNTIME",
+                "runtimeInjectionRequired":true,
+                "inlineScriptAllowed":false,
+                "sectionAttribute":"data-track-section",
+                "primaryCheckoutSelectors":["#checkout-cta-primary","[data-analytics-role=\\\"primary-checkout\\\"]"],
+                "events":["page_view","page_load_metric","section_view_time","checkout_click"],
+                "internalTrafficQueryParameter":"mh_test=1",
+                "internalTrafficSessionMarker":"mh_internal_test",
+                "persistenceSource":"landing-page-analytics"
+              }
+              """
+            : "";
+    return """
+        {
+          "marketStrategicContract":{
+            "availability":"AVAILABLE",
+            "contractVersion":"MARKET_STRATEGY_V3",
+            "contentHash":"%s"
+          },
+          "communicationMaterializationContext":{
+            "availability":"AVAILABLE",
+            "inputReadiness":"READY",
+            "approvedLandingAssets":[{"assetId":311,"assetUrl":"https://example.test/mira.png","version":1}],
+            "experiment":{"id":93,"checkoutUrl":%s}
+            %s
+          }
+        }
+        """
+        .formatted(STRATEGY_HASH, checkout, instrumentation);
   }
 
   /** Cria uma resposta mínima completa conforme o schema único de Íris. */

@@ -70,8 +70,8 @@ public class IrisCommunicationMaterializationContextProvider
   }
 
   /**
-   * Resolve preparação privada por produto ou ciclo e conserva o contrato comercial dos demais
-   * casos.
+   * Resolve preparação privada por produto ou ciclo, incluindo o contrato declarativo de tracking,
+   * e conserva o contrato comercial dos demais casos.
    */
   @Override
   @Transactional(readOnly = true)
@@ -166,6 +166,7 @@ public class IrisCommunicationMaterializationContextProvider
       result.put("experiment", experimentContract(experiment));
       result.put("product", productContract(product));
       result.put("approvedLandingAssets", landingAssets.payloadForExperiment(experiment.getId()));
+      result.put("landingInstrumentationContract", IrisLandingInstrumentationContract.payload());
       result.put("approvedUpstreamArtifacts", upstreamArtifacts);
       initialPrivatePlanning.ifPresent(
           planning -> {

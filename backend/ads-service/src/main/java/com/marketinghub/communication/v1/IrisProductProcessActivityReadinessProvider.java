@@ -54,7 +54,10 @@ public class IrisProductProcessActivityReadinessProvider
                 .contains(activityDefinition.getActivityId()));
   }
 
-  /** Exige os contratos aprovados do produto privado, ciclo ou plano, preservando cada regime. */
+  /**
+   * Exige os contratos aprovados do produto privado, ciclo ou plano e antecipa o gate comercial do
+   * HTML.
+   */
   @Override
   public AgentProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,
@@ -104,6 +107,15 @@ public class IrisProductProcessActivityReadinessProvider
         && (!(context.get("approvedLandingAssets") instanceof Collection<?> assets)
             || assets.isEmpty())) {
       missing.add("Provas visuais aprovadas e rastreáveis para a landing");
+    }
+    if (landing && "html".equals(activityDefinition.getActivityId())) {
+      if (!hasCommercialCheckout(context)) {
+        missing.add("Checkout comercial canônico vinculado ao experimento");
+      }
+      if (!IrisLandingInstrumentationContract.valid(
+          context.get("landingInstrumentationContract"))) {
+        missing.add("Contrato canônico de instrumentação da landing");
+      }
     }
     List<String> uniqueMissing = missing.stream().distinct().toList();
     if (!uniqueMissing.isEmpty()) {
@@ -219,5 +231,11 @@ public class IrisProductProcessActivityReadinessProvider
   /** Verifica se um valor de contrato possui texto útil. */
   private boolean hasText(Object value) {
     return value != null && !String.valueOf(value).isBlank();
+  }
+
+  /** Exige a URL de pagamento persistida no contrato do experimento antes de solicitar HTML. */
+  private boolean hasCommercialCheckout(Map<String, Object> context) {
+    Object experiment = context.get("experiment");
+    return experiment instanceof Map<?, ?> values && hasText(values.get("checkoutUrl"));
   }
 }

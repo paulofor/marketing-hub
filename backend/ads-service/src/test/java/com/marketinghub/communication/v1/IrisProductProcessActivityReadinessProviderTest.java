@@ -131,6 +131,37 @@ class IrisProductProcessActivityReadinessProviderTest {
     assertThat(provider.supports(creative, route)).isTrue();
   }
 
+  /** Bloqueia somente o HTML antes do modelo quando checkout ou tracking ainda não existem. */
+  @Test
+  void blocksLandingHtmlBeforeModelWithoutCommercialContracts() {
+    var communication = mock(CommunicationMaterializationContextProvider.class);
+    var provider =
+        new IrisProductProcessActivityReadinessProvider(
+            MarketStrategicContextProvider.empty(), communication);
+    var landing = process();
+    landing.setProcessCode("landing-page-generation");
+    var select = activity();
+    select.setActivityId("select");
+    var html = activity();
+    html.setActivityId("html");
+
+    when(communication.resolve("experiment:93"))
+        .thenReturn(Optional.of(landingContext(null, false)));
+    assertThat(provider.readiness(landing, select, null, "experiment:93").ready()).isTrue();
+    assertThat(provider.readiness(landing, html, null, "experiment:93").reason())
+        .contains("Checkout comercial canônico", "instrumentação da landing");
+
+    when(communication.resolve("experiment:93"))
+        .thenReturn(Optional.of(landingContext("https://checkout.example/mira", false)));
+    assertThat(provider.readiness(landing, html, null, "experiment:93").reason())
+        .contains("instrumentação da landing")
+        .doesNotContain("Checkout comercial canônico");
+
+    when(communication.resolve("experiment:93"))
+        .thenReturn(Optional.of(landingContext("https://checkout.example/mira", true)));
+    assertThat(provider.readiness(landing, html, null, "experiment:93").ready()).isTrue();
+  }
+
   /** Explica o destino privado antes de criar uma tarefa de landing que não pertence ao ciclo. */
   @Test
   void blocksSeparateLandingForApprovedPrivateDestination() {
@@ -380,5 +411,32 @@ class IrisProductProcessActivityReadinessProviderTest {
     BusinessProcessActivityDefinition activity = new BusinessProcessActivityDefinition();
     activity.setActivityId("communicationContract");
     return activity;
+  }
+
+  /** Monta o contexto comercial mínimo das quatro atividades da landing. */
+  private Map<String, Object> landingContext(String checkoutUrl, boolean withInstrumentation) {
+    Map<String, Object> context = new java.util.LinkedHashMap<>();
+    context.put(
+        "mode", IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE);
+    context.put("availability", "AVAILABLE");
+    context.put("inputReadiness", "READY");
+    context.put(
+        "marketStrategicContract",
+        Map.of(
+            "availability",
+            "AVAILABLE",
+            "contractVersion",
+            "MARKET_STRATEGY_V3",
+            "contentHash",
+            "a".repeat(64)));
+    context.put("approvedLandingAssets", List.of(Map.of("assetId", 311L)));
+    Map<String, Object> experiment = new java.util.LinkedHashMap<>();
+    experiment.put("id", 93L);
+    experiment.put("checkoutUrl", checkoutUrl);
+    context.put("experiment", experiment);
+    if (withInstrumentation) {
+      context.put("landingInstrumentationContract", IrisLandingInstrumentationContract.payload());
+    }
+    return context;
   }
 }

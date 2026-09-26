@@ -360,3 +360,22 @@ O `communicationInputHash` cobre planejamento, versão e autorização visual. M
 reabre `communicationContract`; o callback rejeita resultado produzido sobre entrada substituída.
 Assim, o histórico continua auditável e o pacote atual não conserva silenciosamente uma tela
 obsoleta.
+
+### Preflight do HTML e instrumentação declarativa — 2026-09-26
+
+`landing-page-generation/html` só pode criar tarefa de Íris quando o experimento possuir checkout
+comercial canônico e o backend entregar `IRIS_LANDING_INSTRUMENTATION_V1`. O gate da tela e o
+worker conferem os dois contratos antes do modelo; seleção de provas, estratégia e composição
+continuam permitidas sem checkout porque não materializam cobrança. Uma tentativa prematura deve
+ficar bloqueada no backend com a ação faltante, sem tokens nem custo de inferência.
+
+Íris produz HTML declarativo: seções usam `data-track-section` e o CTA canônico usa
+`#checkout-cta-primary` ou `data-analytics-role="primary-checkout"`. `<script>`, handlers inline,
+endpoints inferidos e chamadas de rede permanecem proibidos. O runtime publicador injeta o coletor
+de `page_view`, `page_load_metric`, `section_view_time` e `checkout_click`, persiste com origem
+`landing-page-analytics` e exclui navegação marcada por `mh_test=1`/`mh_internal_test`.
+
+Checkout, HTML corrente e esse contrato técnico são saídas de etapas posteriores e não alteram a
+mensagem, o produto nem a prova visual já aprovados. Por isso ficam fora de
+`communicationInputHash`; preço, CTA, versão, estratégia, economia, gate e pixels continuam dentro
+da impressão digital e qualquer mudança neles reabre o contrato de comunicação.

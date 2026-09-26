@@ -108,6 +108,7 @@ public class CreativeService {
   private final TemisVisualPlaybookService temisVisualPlaybookService;
   private final TemisVisualLearningService temisVisualLearningService;
   private final CreativeMediaGovernanceEvidenceService mediaGovernanceEvidenceService;
+  private final CreativeCommercialLineageEvidenceService commercialLineageEvidenceService;
 
   /** Cria e persiste um criativo para o experimento informado. */
   @Transactional
@@ -462,6 +463,7 @@ public class CreativeService {
             ? creative.getVideoUrl()
             : creative.getImageUrl();
     Product desireMapProduct = niche == null ? null : uniqueProductForDesireMap(niche.getId());
+    String destinationUrl = resolveAgentReviewDestinationUrl(creative, experiment);
     return new CreativeAgentReviewPendingDto(
         creative.getId(),
         experiment.getId(),
@@ -473,8 +475,10 @@ public class CreativeService {
         creative.getPrimaryText(),
         creative.getDescription(),
         creative.getCta(),
-        resolveAgentReviewDestinationUrl(creative, experiment),
+        destinationUrl,
+        experiment.getCommercialCheckoutUrl(),
         mediaUrl,
+        commercialLineageEvidenceService.resolve(creative, destinationUrl),
         mediaGovernanceEvidenceService.resolve(creative),
         desireMapProduct != null ? desireMapProduct.getDesireAssociationMapVersion() : null,
         desireMapProduct != null ? desireMapProduct.getDesireAssociationMapJson() : null);

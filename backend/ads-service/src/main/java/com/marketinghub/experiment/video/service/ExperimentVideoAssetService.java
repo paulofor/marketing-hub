@@ -3,6 +3,9 @@ package com.marketinghub.experiment.video.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.marketinghub.creative.Creative;
+import com.marketinghub.creative.CreativeAgentReviewStatus;
+import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.LandingPage;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
@@ -20,6 +23,7 @@ import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
 import com.marketinghub.product.Product;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.LandingPageRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
@@ -55,6 +59,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -103,6 +108,7 @@ public class ExperimentVideoAssetService {
   private final SalesVideoService salesVideoService;
   private final SalesVideoJobService salesVideoJobService;
   private final SalesVideoProductionCostCalculator costCalculator;
+  private final CreativeRepository creativeRepository;
 
   /** Inicializa o serviço com os repositórios dos vínculos de experimento e vídeo. */
   public ExperimentVideoAssetService(
@@ -116,7 +122,8 @@ public class ExperimentVideoAssetService {
       LandingPageRepository landingPageRepository,
       SalesVideoService salesVideoService,
       SalesVideoJobService salesVideoJobService,
-      SalesVideoProductionCostCalculator costCalculator) {
+      SalesVideoProductionCostCalculator costCalculator,
+      CreativeRepository creativeRepository) {
     this.repository = repository;
     this.experimentRepository = experimentRepository;
     this.profileRepository = profileRepository;
@@ -128,6 +135,7 @@ public class ExperimentVideoAssetService {
     this.salesVideoService = salesVideoService;
     this.salesVideoJobService = salesVideoJobService;
     this.costCalculator = costCalculator;
+    this.creativeRepository = creativeRepository;
   }
 
   /** Lista todos os vídeos registrados para um experimento. */
@@ -210,7 +218,10 @@ public class ExperimentVideoAssetService {
       throws IOException {
     Experiment experiment = ensureExperiment(experimentId);
     validateUserAdVideoUpload(file, request);
-    String uploadMetadata = buildUserAdVideoUploadMetadata(experimentId, file, request);
+    List<Map<String, Object>> approvedSources =
+        resolveApprovedVisualSources(experiment, request.visualSourceCreativeIds());
+    String uploadMetadata =
+        buildUserAdVideoUploadMetadata(experimentId, file, request, approvedSources);
     Asset asset =
         salesVideoService.storeAsset(
             file, AssetType.VIDEO, MediaProvider.USER_UPLOAD, uploadMetadata);
@@ -445,7 +456,9 @@ public class ExperimentVideoAssetService {
         || !StringUtils.hasText(request.script())
         || !StringUtils.hasText(request.visualSourceKey())
         || !StringUtils.hasText(request.visualSourceDescription())
-        || !StringUtils.hasText(request.productionReference())) {
+        || !StringUtils.hasText(request.productionReference())
+        || request.visualSourceCreativeIds() == null
+        || request.visualSourceCreativeIds().isEmpty()) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "commercial metadata and provenance are required");
     }
@@ -459,6 +472,91 @@ public class ExperimentVideoAssetService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "audio review must be confirmed before upload");
     }
+    long distinctSources =
+        request.visualSourceCreativeIds().stream().filter(Objects::nonNull).distinct().count();
+    boolean invalidSourceId =
+        request.visualSourceCreativeIds().stream()
+            .anyMatch(creativeId -> creativeId == null || creativeId < 1);
+    if (invalidSourceId
+        || distinctSources != request.visualSourceCreativeIds().size()
+        || distinctSources > 10) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "visual source creative ids must be unique and limited to 10");
+    }
+    if (!isVersionedProductionReference(request.productionReference().trim())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "production reference must be a safe versioned repository script path");
+    }
+  }
+
+  /** Confirma que cada fonte visual foi aprovada e pertence ao experimento adotado. */
+  private List<Map<String, Object>> resolveApprovedVisualSources(
+      Experiment target, List<Long> creativeIds) {
+    Experiment permittedSource =
+        target.getSourceExperiment() == null ? target : target.getSourceExperiment();
+    return creativeIds.stream()
+        .map(
+            creativeId -> {
+              Creative source =
+                  creativeRepository
+                      .findByIdWithExperiment(creativeId)
+                      .orElseThrow(
+                          () ->
+                              new ResponseStatusException(
+                                  HttpStatus.BAD_REQUEST, "visual source creative was not found"));
+              boolean sameProduct =
+                  source.getExperiment().getProduct() != null
+                      && target.getProduct() != null
+                      && Objects.equals(
+                          source.getExperiment().getProduct().getId(), target.getProduct().getId());
+              boolean sameHypothesis =
+                  target.getHypothesisRefIdForPending() != null
+                      && Objects.equals(
+                          source.getExperiment().getHypothesisRefIdForPending(),
+                          target.getHypothesisRefIdForPending());
+              boolean approved =
+                  source.getStatus() == CreativeStatus.READY
+                      && source.getAgentReviewStatus() == CreativeAgentReviewStatus.APPROVED
+                      && source.getReviewedAt() != null;
+              String mediaUrl = resolveCreativeMediaUrl(source);
+              if (!Objects.equals(source.getExperiment().getId(), permittedSource.getId())
+                  || !sameProduct
+                  || !sameHypothesis
+                  || !approved
+                  || mediaUrl == null) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "visual source creative must be approved and belong to the adopted experiment");
+              }
+              Map<String, Object> evidence = new LinkedHashMap<>();
+              evidence.put("creativeId", source.getId());
+              evidence.put("experimentId", source.getExperiment().getId());
+              evidence.put("format", source.getFormat());
+              evidence.put("mediaUrl", mediaUrl);
+              evidence.put("status", source.getStatus().name());
+              evidence.put("agentReviewStatus", source.getAgentReviewStatus().name());
+              evidence.put("reviewedAt", source.getReviewedAt());
+              return evidence;
+            })
+        .toList();
+  }
+
+  /** Aceita somente um script versionável do repositório, sem URL ou travessia de diretório. */
+  private boolean isVersionedProductionReference(String value) {
+    return !value.startsWith("/")
+        && !value.contains("..")
+        && !value.contains("://")
+        && value.matches("[A-Za-z0-9._/-]+\\.(sh|js|mjs|ts|py)");
+  }
+
+  /** Resolve a URL visual efetivamente aprovada na fonte informada. */
+  private String resolveCreativeMediaUrl(Creative creative) {
+    String value =
+        "VIDEO".equalsIgnoreCase(creative.getFormat())
+            ? creative.getVideoUrl()
+            : creative.getImageUrl();
+    return StringUtils.hasText(value) ? value.trim() : null;
   }
 
   /** Confirma a assinatura ISO Base Media usada por arquivos MP4 sem confiar apenas no MIME. */
@@ -475,9 +573,13 @@ public class ExperimentVideoAssetService {
 
   /** Monta o snapshot auditável da origem e dos critérios comerciais do upload. */
   private String buildUserAdVideoUploadMetadata(
-      Long experimentId, MultipartFile file, UploadExperimentAdVideoRequest request) {
+      Long experimentId,
+      MultipartFile file,
+      UploadExperimentAdVideoRequest request,
+      List<Map<String, Object>> approvedSources) {
     Map<String, Object> metadata = new LinkedHashMap<>();
-    metadata.put("artifactType", "experiment.userAdVideoUpload.v1");
+    metadata.put("artifactType", "experiment.userAdVideoUpload.v2");
+    metadata.put("generationStrategy", "VERSIONED_APPROVED_CREATIVE_MONTAGE");
     metadata.put("experimentId", experimentId);
     metadata.put("originalFilename", file.getOriginalFilename());
     metadata.put("contentType", file.getContentType());
@@ -490,6 +592,7 @@ public class ExperimentVideoAssetService {
     metadata.put("visualSourceKey", request.visualSourceKey().trim());
     metadata.put("visualSourceDescription", request.visualSourceDescription().trim());
     metadata.put("productionReference", request.productionReference().trim());
+    metadata.put("approvedSourceCreatives", approvedSources);
     try {
       return OBJECT_MAPPER.writeValueAsString(metadata);
     } catch (JsonProcessingException ex) {

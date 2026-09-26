@@ -306,6 +306,7 @@ paths:
                 - visualSourceKey
                 - visualSourceDescription
                 - productionReference
+                - visualSourceCreativeIds
               properties:
                 file:
                   type: string
@@ -331,6 +332,16 @@ paths:
                 productionReference:
                   type: string
                   description: Caminho ou identificação versionada do processo que gerou o arquivo.
+                visualSourceCreativeIds:
+                  type: array
+                  minItems: 1
+                  maxItems: 10
+                  uniqueItems: true
+                  items:
+                    type: integer
+                    format: int64
+                    minimum: 1
+                  description: IDs dos criativos já aprovados que compõem visualmente o vídeo.
                 requiredForRelease:
                   type: boolean
                   default: true

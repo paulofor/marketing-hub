@@ -76,6 +76,7 @@ public class ExperimentVideoAssetController {
       @RequestParam String visualSourceKey,
       @RequestParam String visualSourceDescription,
       @RequestParam String productionReference,
+      @RequestParam List<Long> visualSourceCreativeIds,
       @RequestParam(defaultValue = "true") boolean requiredForRelease)
       throws IOException {
     return service.uploadUserAdVideo(
@@ -90,6 +91,7 @@ public class ExperimentVideoAssetController {
             visualSourceKey,
             visualSourceDescription,
             productionReference,
+            visualSourceCreativeIds,
             requiredForRelease));
   }
 

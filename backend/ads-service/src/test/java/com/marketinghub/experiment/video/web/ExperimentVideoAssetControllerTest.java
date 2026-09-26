@@ -48,6 +48,7 @@ class ExperimentVideoAssetControllerTest {
                 .param("visualSourceDescription", "Posts e stories aprovados do #88")
                 .param(
                     "productionReference", "scripts/marketing/create-capella-successor-video-v1.sh")
+                .param("visualSourceCreativeIds", "522", "523")
                 .param("requiredForRelease", "true"))
         .andExpect(status().isCreated());
 
@@ -57,5 +58,6 @@ class ExperimentVideoAssetControllerTest {
     assertThat(request.getValue().durationSeconds()).isEqualTo(18);
     assertThat(request.getValue().hasAudio()).isTrue();
     assertThat(request.getValue().visualSourceKey()).isEqualTo("capella-exp88-approved-assets-v1");
+    assertThat(request.getValue().visualSourceCreativeIds()).containsExactly(522L, 523L);
   }
 }

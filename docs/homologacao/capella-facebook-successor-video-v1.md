@@ -23,6 +23,10 @@ Criar o experimento sucessor do #88 mantendo produto, preço de R$ 67, página, 
 | Criativo controle | Reutilizar a peça vertical #523 | Nova cópia pertence ao #94 e volta aos gates de revisão |
 | Criativo variante | Produzir vídeo vertical de 15–20 segundos com posts e stories reais | Vídeo explicita desejo, prova, pacote pago, preço e prazo, sem depoimento ou antes/depois inventado |
 | Upload governado | Anexar o MP4 pela aba Vídeos do #94 | Backend valida assinatura MP4, 9:16, duração, áudio, origem e referência versionada; grava custo zero e mantém revisão `PENDING` |
+| Fontes do vídeo | Informar #522 e #523 no upload | Backend confirma que ambos pertencem ao #88, estão aprovados técnica e humanamente e preserva suas URLs no snapshot |
+| Integridade do arquivo | Revisar o criativo em vídeo | SHA-256 calculado pelo backend coincide com o arquivo decodificado pelo MCP; fontes visuais também são inspecionadas |
+| Linhagem do sucessor | Revisar o controle #531 e a variante em vídeo | Têmis recebe #88 como origem verificada e não trata URLs herdadas como divergência isolada |
+| Checkout observável | Inspecionar a landing herdada | O coletor encontra o checkout canônico nos links reais do DOM, abre-o sem interação e comprova `checkoutLinkedFromLanding=true` |
 | Arquivo inválido | Renomear outro arquivo para `.mp4`, usar horizontal, exceder 50 MB ou omitir áudio/proveniência | Interface ou backend bloqueia antes de disponibilizar a peça |
 | Observabilidade | Abrir detalhe e cockpit do #94 | Orçamento, funil, compras, receita e contribuição ficam separados do #88 |
 | Falha comercial | Atingir R$ 50 sem compra líquida | Campanha deve ser interrompida e a hipótese não pode ser escalada |

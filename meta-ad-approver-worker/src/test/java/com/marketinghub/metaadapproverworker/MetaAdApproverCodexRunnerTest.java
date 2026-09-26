@@ -172,11 +172,14 @@ class MetaAdApproverCodexRunnerTest {
             "MCP_EXPERIMENT_ID",
             "StdioServerTransport",
             "/agent-review/context?experimentId=",
-            "captureCommercialLanding(browser, url)",
+            "captureCommercialLanding(browser, url, creative.commercialCheckoutUrl)",
+            "checkoutLinkedFromLanding: evidence.checkoutLinkedFromLanding",
             "checkoutObserved: Boolean(checkout)",
             "extractRemoteVideoFrames(url, {",
             "decoder: 'FFMPEG_7_1_1'",
             "sha256MatchesGovernance",
+            "approvedSourceCreativeCount",
+            "inspectApprovedSourceMedia",
             "readOnlyHint: true",
             "openWorldHint: true",
             "destructiveHint: false");
@@ -217,6 +220,22 @@ class MetaAdApproverCodexRunnerTest {
             "licença comercial do provedor",
             "`UNRESOLVED`",
             "ligada a outra mídia mantém o gate fechado");
+  }
+
+  /** Reconhece sucessão auditada e montagem local sem exigir provas externas inaplicáveis. */
+  @Test
+  void recognizesAuditedSuccessorAndVersionedMontage() throws Exception {
+    String prompt = resource("prompts/meta-ad-approver/v2/review.md");
+
+    assertThat(prompt)
+        .contains(
+            "VERSIONED_APPROVED_CREATIVE_MONTAGE",
+            "approvedCreativeSources",
+            "productionReference",
+            "commercialLineageEvidence",
+            "adoptedSourceExperimentId",
+            "checkoutLinkedFromLanding",
+            "constituem divergência por si só");
   }
 
   /** Impede que Têmis exija consentimento humano para pessoa e voz criadas somente por IA. */

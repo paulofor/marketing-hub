@@ -95,6 +95,8 @@ async function inspectMedia(creative, toolName, startedAt) {
     experimentId
   });
   const governedSha256 = creative.mediaGovernanceEvidence?.finalArtifact?.sha256 ?? null;
+  const approvedSources = creative.mediaGovernanceEvidence?.approvedCreativeSources ?? [];
+  const sourceContent = await inspectApprovedSourceMedia(approvedSources, toolName, startedAt);
   return [
     text({
       audit: audit(toolName, startedAt),
@@ -105,26 +107,61 @@ async function inspectMedia(creative, toolName, startedAt) {
       byteLength: evidence.byteLength,
       sha256: evidence.sha256,
       governedSha256,
-      sha256MatchesGovernance: Boolean(governedSha256) && evidence.sha256 === governedSha256
+      sha256MatchesGovernance: Boolean(governedSha256) && evidence.sha256 === governedSha256,
+      approvedSourceCreativeCount: approvedSources.length
     }),
     ...evidence.frames.map(frame => ({
       type: 'image',
       data: frame.toString('base64'),
       mimeType: 'image/jpeg'
-    }))
+    })),
+    ...sourceContent
   ];
+}
+
+async function inspectApprovedSourceMedia(sources, toolName, startedAt) {
+  const content = [];
+  for (const source of sources.slice(0, 10)) {
+    const url = httpUrl(source.mediaUrl, 'mídia visual de origem');
+    if (String(source.format ?? '').toUpperCase() === 'VIDEO') {
+      const evidence = await extractRemoteVideoFrames(url, {
+        tool: `${toolName}_source`, creativeId: source.creativeId, experimentId: source.experimentId
+      });
+      content.push(text({
+        audit: audit(toolName, startedAt), sourceCreativeId: source.creativeId,
+        sourceExperimentId: source.experimentId, mediaType: 'VIDEO_SOURCE', source: url,
+        sha256: evidence.sha256
+      }));
+      content.push({ type: 'image', data: evidence.frames[0].toString('base64'), mimeType: 'image/jpeg' });
+      continue;
+    }
+    const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+    if (!response.ok) throw new Error(`Mídia visual de origem respondeu HTTP ${response.status}`);
+    const mimeType = response.headers.get('content-type')?.split(';')[0] ?? 'image/jpeg';
+    if (!mimeType.startsWith('image/')) throw new Error('Mídia visual de origem não é uma imagem.');
+    content.push(text({
+      audit: audit(toolName, startedAt), sourceCreativeId: source.creativeId,
+      sourceExperimentId: source.experimentId, mediaType: 'IMAGE_SOURCE', source: url
+    }));
+    content.push({
+      type: 'image', data: Buffer.from(await response.arrayBuffer()).toString('base64'), mimeType
+    });
+  }
+  return content;
 }
 
 async function inspectLanding(creative, toolName, startedAt) {
   const url = httpUrl(creative.destinationUrl, 'URL de destino');
   return withBrowser(async browser => {
-    const evidence = await captureCommercialLanding(browser, url);
+    const evidence = await captureCommercialLanding(browser, url, creative.commercialCheckoutUrl);
     const checkout = evidence.checkout ? { ...evidence.checkout, screenshot: undefined } : null;
     const result = [text({
       audit: audit(toolName, startedAt),
       source: url,
       inspectedSource: evidence.landingUrl,
       views: ['mobile', 'desktop'],
+      expectedCheckoutUrl: evidence.expectedCheckoutUrl,
+      checkoutLinkedFromLanding: evidence.checkoutLinkedFromLanding,
       checkoutObserved: Boolean(checkout),
       checkout
     })];

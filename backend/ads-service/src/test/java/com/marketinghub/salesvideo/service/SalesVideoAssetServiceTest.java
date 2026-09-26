@@ -73,7 +73,13 @@ class SalesVideoAssetServiceTest {
     verify(assetRepository).save(assetCaptor.capture());
     assertThat(assetCaptor.getValue().getPayload()).contains("quality");
     assertThat(assetCaptor.getValue().getPayload())
-        .contains("\"storage_medium\":\"CLOUDFLARE_R2\"");
+        .contains("\"storage_medium\":\"CLOUDFLARE_R2\"", "\"sha256\":");
+    String storedSha =
+        new ObjectMapper()
+            .readTree(assetCaptor.getValue().getPayload())
+            .at("/metadata/sha256")
+            .asText();
+    assertThat(storedSha).matches("[0-9a-f]{64}");
   }
 
   @Test

@@ -7345,4 +7345,8 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
   `scripts/marketing/create-capella-successor-video-v1.sh` e usa somente os criativos aprovados
   #522/#523. Desejo, prova antes da compra, pacote pago, preço e prazo ficam explícitos sem inventar
   depoimentos, antes/depois ou receita.
+- A primeira revisão automática do controle #531 expôs um falso bloqueio: Têmis não recebia a
+  linhagem #88→#94 e o coletor ignorava os links de checkout existentes no DOM. A correção passa a
+  entregar linhagem comercial estruturada, SHA-256 do MP4 calculado no backend, IDs validados das
+  fontes #522/#523 e captura somente leitura do checkout realmente ligado à página.
 - Matriz e critérios: [Capella sucessor em vídeo v1](../homologacao/capella-facebook-successor-video-v1.md).

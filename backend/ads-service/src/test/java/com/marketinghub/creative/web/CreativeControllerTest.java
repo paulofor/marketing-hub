@@ -145,6 +145,7 @@ class CreativeControllerTest {
                 .build());
     experiment.setLeadPortalFlow(flow);
     experiment.setFollowUpActionUrl("https://landing.test/experimento");
+    experiment.setCommercialCheckoutUrl("https://checkout.test/oferta");
     experimentRepository.save(experiment);
     CreateCreativeRequest req = new CreateCreativeRequest();
     req.setHeadline("Criativo sem destino legado");
@@ -159,7 +160,8 @@ class CreativeControllerTest {
     mockMvc
         .perform(get("/api/internal/creatives/agent-review/stage-executions/pending"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].destinationUrl").value("https://landing.test/experimento"));
+        .andExpect(jsonPath("$[0].destinationUrl").value("https://landing.test/experimento"))
+        .andExpect(jsonPath("$[0].commercialCheckoutUrl").value("https://checkout.test/oferta"));
 
     Long creativeId = repository.findAll().getLast().getId();
     mockMvc
@@ -169,7 +171,8 @@ class CreativeControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.creativeId").value(creativeId))
         .andExpect(jsonPath("$.experimentId").value(expId))
-        .andExpect(jsonPath("$.destinationUrl").value("https://landing.test/experimento"));
+        .andExpect(jsonPath("$.destinationUrl").value("https://landing.test/experimento"))
+        .andExpect(jsonPath("$.commercialCheckoutUrl").value("https://checkout.test/oferta"));
   }
 
   /**

@@ -21,6 +21,19 @@ Para vídeo, valide `mediaGovernanceEvidence`: o status precisa ser `VERIFIED`, 
 do `finalArtifact` precisam identificar a mídia inspecionada e a linhagem deve comprovar a geração,
 a origem sintética, o consentimento aplicável e a licença comercial do provedor.
 
+Quando `generationStrategy` for `VERSIONED_APPROVED_CREATIVE_MONTAGE`, não existe geração por
+provedor externo nem apresentador sintético. Nesse caso, exija o SHA-256 do arquivo final, a
+`productionReference` versionada, todas as `approvedCreativeSources` aprovadas técnica e
+humanamente e a inspeção visual tanto do vídeo quanto das fontes retornadas pelo MCP. Não exija
+licença de provedor, referência de apresentador ou disclosure sintético que não se aplicam a essa
+montagem. A descrição livre das fontes nunca substitui essa evidência estruturada.
+
+Valide também `commercialLineageEvidence` quando o experimento for sucessor. Status `VERIFIED`
+comprova que produto, hipótese, landing e checkout foram adotados do `adoptedSourceExperimentId` e,
+quando `reusedCreative` for verdadeiro, que a mídia veio do `sourceCreativeId` aprovado. Nessa
+situação, identificadores do experimento de origem presentes em URL ou mídia são esperados e não
+constituem divergência por si só. Status ausente ou `INCOMPLETE` não autoriza essa conclusão.
+
 No Marketing Hub, imagens, personagens, apresentadores e vozes produzidos somente por prompt são
 criados integralmente por IA e não representam uma pessoa real. Nesse caso
 `PROMPT_ONLY_SYNTHETIC`, a ausência de referência humana, autorização de imagem, consentimento de
@@ -37,8 +50,10 @@ declaração isolados não substituem a correspondência com o arquivo final. Ev
 incompleta, `UNRESOLVED` ou ligada a outra mídia mantém o gate fechado.
 
 Se uma ferramenta falhar, a mídia não puder ser vista, o destino não abrir, os identificadores
-divergirem ou CTA/URL estiverem ausentes, mantenha o gate fechado. Nunca aprove por descrição
-textual de um ativo que não foi inspecionado.
+divergirem sem uma `commercialLineageEvidence` verificada ou CTA/URL estiverem ausentes, mantenha o
+gate fechado. Em `inspecionar_landing`, exija `checkoutLinkedFromLanding` e `checkoutObserved`
+verdadeiros para tratar o checkout como comprovado. Nunca aprove por descrição textual de um ativo
+que não foi inspecionado.
 
 ## Pergunta exclusiva de Têmis
 

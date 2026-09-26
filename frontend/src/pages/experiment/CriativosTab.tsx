@@ -60,6 +60,16 @@ const hasPublicationCopyViolation = (creative: Creative) =>
   publicationCopyLength(creative.description) >
     PUBLICATION_COPY_LIMITS.description;
 
+/** Identifica anúncios cuja mídia canônica é o vídeo aprovado. */
+const isVideoCreative = (creative: Creative) =>
+  creative.format?.trim().toUpperCase() === "VIDEO";
+
+/** Exige a mídia correspondente ao formato antes de criar uma revisão. */
+const hasVersionableMedia = (creative: Creative) =>
+  isVideoCreative(creative)
+    ? Boolean(creative.videoUrl?.trim())
+    : Boolean(creative.imageUrl?.trim());
+
 type FeedbackVariant = "success" | "warning" | "error";
 
 interface FeedbackState {
@@ -1603,7 +1613,8 @@ export default function CriativosTab({
                   />
                   <small className="text-muted">
                     {publicationCopyLength(versioning.headline)}/
-                    {PUBLICATION_COPY_LIMITS.headline} caracteres para publicação.
+                    {PUBLICATION_COPY_LIMITS.headline} caracteres para
+                    publicação.
                   </small>
                 </label>
                 <label className="form-label">
@@ -1646,14 +1657,38 @@ export default function CriativosTab({
                   </small>
                 </label>
                 <label className="form-label">
-                  URL da imagem
+                  {isVideoCreative(versioning)
+                    ? "URL do vídeo aprovado"
+                    : "URL da imagem"}
                   <input
                     className="form-control"
-                    value={versioning.imageUrl}
-                    onChange={(e) =>
-                      setVersioning({ ...versioning, imageUrl: e.target.value })
+                    type="url"
+                    aria-label={
+                      isVideoCreative(versioning)
+                        ? "URL do vídeo aprovado"
+                        : "URL da imagem"
                     }
+                    value={
+                      isVideoCreative(versioning)
+                        ? versioning.videoUrl || ""
+                        : versioning.imageUrl || ""
+                    }
+                    readOnly={isVideoCreative(versioning)}
+                    onChange={(e) => {
+                      if (!isVideoCreative(versioning)) {
+                        setVersioning({
+                          ...versioning,
+                          imageUrl: e.target.value,
+                        });
+                      }
+                    }}
                   />
+                  {isVideoCreative(versioning) && (
+                    <small className="text-muted">
+                      Para trocar o arquivo, crie uma nova versão pelo fluxo
+                      audiovisual governado.
+                    </small>
+                  )}
                 </label>
                 <label className="form-label">
                   CTA
@@ -1694,7 +1729,7 @@ export default function CriativosTab({
                   onClick={saveVersion}
                   disabled={
                     createVersion.isPending ||
-                    !versioning.imageUrl.trim() ||
+                    !hasVersionableMedia(versioning) ||
                     !versioning.destinationUrl?.trim() ||
                     hasPublicationCopyViolation(versioning)
                   }

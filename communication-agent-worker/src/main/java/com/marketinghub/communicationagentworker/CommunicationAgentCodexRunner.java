@@ -304,6 +304,18 @@ public class CommunicationAgentCodexRunner {
         throw new IllegalArgumentException(
             "Íris exige prova visual aprovada e rastreável antes de materializar a landing.");
       }
+      if ("landing-page-generation".equals(processCode)
+          && "html".equals(String.valueOf(task.getOrDefault("activityId", "")))) {
+        JsonNode checkoutUrl = communication.path("experiment").path("checkoutUrl");
+        if (!checkoutUrl.isTextual() || checkoutUrl.asText().isBlank()) {
+          throw new IllegalArgumentException(
+              "Íris exige checkout comercial canônico antes de gerar o HTML da landing.");
+        }
+        if (!validLandingInstrumentation(communication.path("landingInstrumentationContract"))) {
+          throw new IllegalArgumentException(
+              "Íris exige contrato canônico de instrumentação antes de gerar o HTML da landing.");
+        }
+      }
     } catch (IOException ex) {
       log.error(
           "Contexto congelado inválido para Íris. taskId={} sourceReference={}",
@@ -312,6 +324,30 @@ public class CommunicationAgentCodexRunner {
           ex);
       throw new IllegalArgumentException("Contexto congelado de Íris não contém JSON válido.", ex);
     }
+  }
+
+  /**
+   * Confere a fronteira entre os marcadores produzidos por Íris e o coletor injetado no runtime.
+   */
+  private static boolean validLandingInstrumentation(JsonNode contract) {
+    if (!"IRIS_LANDING_INSTRUMENTATION_V1".equals(contract.path("contractVersion").asText())
+        || !contract.path("runtimeInjectionRequired").asBoolean(false)
+        || contract.path("inlineScriptAllowed").asBoolean(true)
+        || !"data-track-section".equals(contract.path("sectionAttribute").asText())
+        || !"mh_test=1".equals(contract.path("internalTrafficQueryParameter").asText())
+        || !"mh_internal_test".equals(contract.path("internalTrafficSessionMarker").asText())
+        || !"landing-page-analytics".equals(contract.path("persistenceSource").asText())) {
+      return false;
+    }
+    java.util.Set<String> selectors = new java.util.HashSet<>();
+    contract.path("primaryCheckoutSelectors").forEach(value -> selectors.add(value.asText()));
+    java.util.Set<String> events = new java.util.HashSet<>();
+    contract.path("events").forEach(value -> events.add(value.asText()));
+    return selectors.containsAll(
+            java.util.Set.of("#checkout-cta-primary", "[data-analytics-role=\"primary-checkout\"]"))
+        && events.containsAll(
+            java.util.Set.of(
+                "page_view", "page_load_metric", "section_view_time", "checkout_click"));
   }
 
   /** Expõe no bloqueio os contratos exatos que o backend marcou como ausentes. */

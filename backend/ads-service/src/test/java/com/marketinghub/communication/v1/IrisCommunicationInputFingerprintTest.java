@@ -29,7 +29,7 @@ class IrisCommunicationInputFingerprintTest {
     assertThat(IrisCommunicationInputFingerprint.equivalent(json, first, second)).isTrue();
   }
 
-  /** Ignora somente hash e artefatos autorreferentes, preservando toda mudança funcional. */
+  /** Ignora autorreferência e saídas posteriores, preservando toda mudança de comunicação. */
   @Test
   void ignoresSelfReferencesButDetectsFunctionalChanges() throws Exception {
     var current =
@@ -52,5 +52,33 @@ class IrisCommunicationInputFingerprintTest {
     ((com.fasterxml.jackson.databind.node.ObjectNode) current)
         .put("prototypeVersion", "mira-private-v4");
     assertThat(IrisCommunicationInputFingerprint.equivalent(json, current, audited)).isFalse();
+  }
+
+  /**
+   * Não reabre a mensagem quando checkout, HTML ou contrato técnico surgem em etapas posteriores.
+   */
+  @Test
+  void ignoresDownstreamLandingInfrastructure() throws Exception {
+    var before =
+        json.readTree(
+            """
+            {"mode":"INITIAL_EXPERIMENT_PRIVATE","prototypeVersion":"mira-private-v3",
+             "experiment":{"id":93,"primaryCta":"Comprar","unitPriceBrl":49,
+               "checkoutUrl":null,"currentLandingHtml":null}}
+            """);
+    var after =
+        json.readTree(
+            """
+            {"landingInstrumentationContract":{"contractVersion":"IRIS_LANDING_INSTRUMENTATION_V1"},
+             "experiment":{"currentLandingHtml":"<!doctype html><html></html>","checkoutUrl":"https://checkout.test/mira",
+               "unitPriceBrl":49,"primaryCta":"Comprar","id":93},
+             "prototypeVersion":"mira-private-v3","mode":"INITIAL_EXPERIMENT_PRIVATE"}
+            """);
+
+    assertThat(IrisCommunicationInputFingerprint.equivalent(json, before, after)).isTrue();
+
+    ((com.fasterxml.jackson.databind.node.ObjectNode) after.path("experiment"))
+        .put("unitPriceBrl", 59);
+    assertThat(IrisCommunicationInputFingerprint.equivalent(json, before, after)).isFalse();
   }
 }

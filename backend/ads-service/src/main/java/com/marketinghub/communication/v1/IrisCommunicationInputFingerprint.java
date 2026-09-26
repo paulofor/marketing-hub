@@ -16,7 +16,9 @@ import java.util.List;
  */
 final class IrisCommunicationInputFingerprint {
   private static final List<String> VOLATILE_ROOT_FIELDS =
-      List.of("communicationInputHash", "communicationArtifacts");
+      List.of("communicationInputHash", "communicationArtifacts", "landingInstrumentationContract");
+  private static final List<String> DOWNSTREAM_EXPERIMENT_FIELDS =
+      List.of("checkoutUrl", "currentLandingHtml");
 
   /** Impede instanciação; a utilidade mantém somente operações determinísticas. */
   private IrisCommunicationInputFingerprint() {}
@@ -44,7 +46,12 @@ final class IrisCommunicationInputFingerprint {
   /** Remove campos voláteis da raiz antes de ordenar o documento completo. */
   private static JsonNode canonical(ObjectMapper json, Object input) {
     JsonNode root = input instanceof JsonNode node ? node.deepCopy() : json.valueToTree(input);
-    if (root instanceof ObjectNode object) object.remove(VOLATILE_ROOT_FIELDS);
+    if (root instanceof ObjectNode object) {
+      object.remove(VOLATILE_ROOT_FIELDS);
+      if (object.path("experiment") instanceof ObjectNode experiment) {
+        experiment.remove(DOWNSTREAM_EXPERIMENT_FIELDS);
+      }
+    }
     return sorted(json, root);
   }
 

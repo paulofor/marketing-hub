@@ -120,6 +120,11 @@ public class PostProductionVideoProvider implements VideoProvider {
             preparedSource = overlay.videoFile();
             productReferenceAudit = overlay.audit();
             double durationSeconds = probeDurationSeconds(preparedSource, metadata, job.id());
+            boolean sourceAudioAvailable = hasAudioStream(preparedSource, job.id());
+            boolean sourceAudioPreserved = sourceAudioAvailable && sourceAudioUseAllowed(metadata);
+            if (sourceAudioAvailable && !sourceAudioPreserved) {
+                log.warn("Áudio fonte omitido por falta de linhagem auditável; jobId={}", job.id());
+            }
             CaptionTimeline captionTimeline;
             VoiceOverAudio voiceOverAudio = null;
             Map<String, Object> audioReview = Map.of("mode", "CAPTION_ONLY", "status", "NOT_REQUESTED");
@@ -160,11 +165,11 @@ public class PostProductionVideoProvider implements VideoProvider {
                         caption,
                         output,
                         durationSeconds,
-                        !captionNarrationTimingRequired(metadata));
+                        sourceAudioPreserved);
                 audioReview = reviewAudio(output, voiceOverScript, voiceOverAudio);
             } else {
                 progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda grande sem voz off");
-                runFfmpegCaptionOnly(preparedSource, caption, output);
+                runFfmpegCaptionOnly(preparedSource, caption, output, sourceAudioPreserved);
             }
             ProviderFile video = new ProviderFile(
                     "sales-video-" + job.id() + "-musa-final.mp4",
@@ -187,7 +192,8 @@ public class PostProductionVideoProvider implements VideoProvider {
                     textSyncReview,
                     captionTimeline,
                     ttsInteractions,
-                    productReferenceAudit);
+                    productReferenceAudit,
+                    sourceAudioPreserved);
             progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Vídeo finalizado para venda");
             return new ProviderArtifacts(
                     "post-production-" + job.id(), video, null, captions, resultMetadata, ttsAuditFiles);
@@ -550,32 +556,43 @@ public class PostProductionVideoProvider implements VideoProvider {
         }
     }
 
-    /** Compõe o MP4 final apenas com legenda queimada, preservando o vídeo fonte. */
-    private void runFfmpegCaptionOnly(Path source, Path caption, Path output) {
+    /** Compõe o MP4 com legenda e preserva áudio real quando a fonte o possuir. */
+    private void runFfmpegCaptionOnly(
+            Path source, Path caption, Path output, boolean sourceHasAudio) {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
         String videoFilter = captionSubtitles(caption);
-        runProcess(List.of(
+        List<String> command = new ArrayList<>(List.of(
                 config.getFfmpegPath(),
                 "-y",
                 "-i", source.toAbsolutePath().toString(),
                 "-vf", videoFilter,
+                "-map", "0:v:0",
                 "-c:v", "libx264",
                 "-preset", "veryfast",
                 "-crf", "20",
-                "-pix_fmt", "yuv420p",
-                "-an",
+                "-pix_fmt", "yuv420p"));
+        if (sourceHasAudio) {
+            command.addAll(List.of(
+                    "-map", "0:a:0",
+                    "-af", "loudnorm=I=-17:TP=-2:LRA=7",
+                    "-c:a", "aac"));
+        } else {
+            command.add("-an");
+        }
+        command.addAll(List.of(
                 "-movflags", "+faststart",
-                output.toAbsolutePath().toString()),
+                output.toAbsolutePath().toString()));
+        runProcess(command,
                 "ffmpeg falhou ao aplicar legenda no vídeo");
     }
 
-    /** Compõe o MP4 final com legenda queimada, voz e trilha discreta. */
+    /** Compõe o MP4 com voz e reduz o áudio real da fonte sem fabricar trilha. */
     private void runFfmpegWithVoice(Path source,
                                     Path voice,
                                     Path caption,
                                     Path output,
                                     double durationSeconds,
-                                    boolean includeSyntheticBed) {
+                                    boolean sourceHasAudio) {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
         String videoFilter = captionSubtitles(caption);
         String audioFilter;
@@ -584,13 +601,10 @@ public class PostProductionVideoProvider implements VideoProvider {
                 "-y",
                 "-i", source.toAbsolutePath().toString(),
                 "-i", voice.toAbsolutePath().toString()));
-        if (includeSyntheticBed) {
-            command.addAll(List.of(
-                    "-f", "lavfi",
-                    "-i", "sine=frequency=220:sample_rate=44100:duration=" + durationSeconds));
-            audioFilter = "[2:a]volume=0.018,afade=t=in:st=0:d=1,afade=t=out:st="
-                    + Math.max(1, durationSeconds - 1) + ":d=1[music];[1:a]volume=1.0[voice];"
-                    + "[voice][music]amix=inputs=2:duration=longest:dropout_transition=0[mixed];"
+        if (sourceHasAudio) {
+            audioFilter = "[0:a]volume=0.30[bed];[1:a]volume=1.0,asplit=2[voice_sc][voice_mix];"
+                    + "[bed][voice_sc]sidechaincompress=threshold=0.03:ratio=8:attack=20:release=400[ducked];"
+                    + "[ducked][voice_mix]amix=inputs=2:duration=longest:dropout_transition=0[mixed];"
                     + "[mixed]loudnorm=I=-17:TP=-2:LRA=7[aout];";
         } else {
             audioFilter = "[1:a]volume=1.0,loudnorm=I=-17:TP=-2:LRA=7[aout];";
@@ -609,6 +623,30 @@ public class PostProductionVideoProvider implements VideoProvider {
                 "-movflags", "+faststart",
                 output.toAbsolutePath().toString()));
         runProcess(command, "ffmpeg falhou ao finalizar vídeo para venda");
+    }
+
+    /** Detecta uma faixa de áudio real antes de escolher o contrato de mixagem. */
+    private boolean hasAudioStream(Path source, Long jobId) {
+        try {
+            String result = runProcess(List.of(
+                    properties.getProviders().getPostProduction().getFfprobePath(),
+                    "-v", "error",
+                    "-select_streams", "a:0",
+                    "-show_entries", "stream=index",
+                    "-of", "csv=p=0",
+                    source.toAbsolutePath().toString()),
+                    "ffprobe falhou ao inspecionar áudio da fonte").trim();
+            return StringUtils.hasText(result);
+        } catch (RuntimeException ex) {
+            log.warn("Áudio da fonte não pôde ser confirmado; jobId={}", jobId, ex);
+            return false;
+        }
+    }
+
+    /** Exige job e provider de origem para não reutilizar áudio de URL avulsa sem linhagem. */
+    private boolean sourceAudioUseAllowed(JsonNode metadata) {
+        return metadata.path("sourceJobId").asLong(0) > 0
+                && StringUtils.hasText(metadata.path("sourceProviderName").asText(null));
     }
 
     /** Formata a duração limite usada para impedir que filtros de áudio mantenham o render aberto. */
@@ -1039,30 +1077,34 @@ public class PostProductionVideoProvider implements VideoProvider {
                                                Map<String, Object> textSyncReview,
                                                CaptionTimeline captionTimeline,
                                                List<Map<String, Object>> ttsInteractions,
-                                               Map<String, Object> productReferenceAudit) {
+                                               Map<String, Object> productReferenceAudit,
+                                               boolean sourceAudioPreserved) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("provider", "MUSA_POST_PRODUCTION");
         metadata.put("provider_job_id", "post-production-" + job.id());
         metadata.put("post_production_mode", StringUtils.hasText(voiceOverScript) ? "VOICE_AND_CAPTION" : "CAPTION_ONLY");
         metadata.put("duration_seconds", captionTimeline.durationSeconds());
-        boolean hasAudio = StringUtils.hasText(voiceOverScript);
-        String disclosureText = aiDisclosureText(sourceMetadata, hasAudio);
+        boolean hasVoice = StringUtils.hasText(voiceOverScript);
+        boolean hasAudio = hasVoice || sourceAudioPreserved;
+        String disclosureText = aiDisclosureText(sourceMetadata, hasVoice);
         metadata.put("has_audio", hasAudio);
         metadata.put("audio_streams", hasAudio ? 1 : 0);
         metadata.put("audio", Map.of(
-                "voice_over", StringUtils.hasText(voiceOverScript),
+                "voice_over", hasVoice,
+                "source_audio_preserved", sourceAudioPreserved,
                 "language", "pt-BR",
                 "ai_generated_disclosure", StringUtils.hasText(disclosureText),
                 "ai_generated_disclosure_text", disclosureText,
-                "music", "SEGMENT_AUDIO_DURATION".equals(textSyncReview.get("timing_method"))
-                        ? "none"
-                        : StringUtils.hasText(voiceOverScript) ? "synthetic_light_bed" : "none",
+                "mix", hasVoice && sourceAudioPreserved
+                        ? "SOURCE_DUCKED_UNDER_VOICE"
+                        : sourceAudioPreserved ? "SOURCE_PRESERVED" : hasVoice ? "VOICE_ONLY" : "NONE",
+                "music", sourceAudioPreserved ? "not_classified_source_audio" : "none",
                 "review", audioReview));
         metadata.put("synthetic_media_disclosure", Map.of(
                 "required", StringUtils.hasText(disclosureText),
                 "text", disclosureText,
                 "presenter_synthetic", syntheticPresenterDisclosureRequired(sourceMetadata),
-                "voice_synthetic", hasAudio));
+                "voice_synthetic", hasVoice));
         metadata.put("captions", Map.of(
                 "burned_in", true,
                 "vtt_asset", true,

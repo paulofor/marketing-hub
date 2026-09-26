@@ -144,7 +144,7 @@ public class VideoReferenceAnalysisService implements VideoReferenceAnalysisPort
     execution.setFinishedAt(Instant.now());
     executionRepository.save(execution);
     VideoReference reference = reference(execution.getReferenceId());
-    reference.setStatus(VideoReferenceStatus.REJECTED);
+    reference.setStatus(VideoReferenceStatus.FAILED);
     referenceRepository.save(reference);
     log.warn(
         "Análise bloqueada antes de gasto; executionId={} referenceId={} detalhe={}",
@@ -189,7 +189,7 @@ public class VideoReferenceAnalysisService implements VideoReferenceAnalysisPort
     execution.setStatus(VideoReferenceAnalysisStatus.FAILED);
     execution.setFinishedAt(Instant.now());
     VideoReference reference = reference(execution.getReferenceId());
-    reference.setStatus(VideoReferenceStatus.REJECTED);
+    reference.setStatus(VideoReferenceStatus.FAILED);
     referenceRepository.save(reference);
     return response(executionRepository.save(execution));
   }

@@ -82,16 +82,24 @@ public class VideoMontageProvider implements VideoProvider {
             progressCallback.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING,
                     "Baixando clipes para montagem");
             List<Path> normalizedClips = new ArrayList<>();
+            int sourceAudioCount = 0;
             for (int index = 0; index < sources.size(); index++) {
                 SourceVideo sourceVideo = sources.get(index);
                 Path source = downloadSourceVideo(job, sourceVideo.url(), index + 1);
                 Path normalized = Files.createTempFile("sales-video-" + job.id() + "-clip-" + (index + 1), ".mp4");
                 temporaryFiles.add(source);
                 temporaryFiles.add(normalized);
+                boolean sourceHasAudio = hasAudioStream(source);
+                if (sourceHasAudio) sourceAudioCount++;
                 int progress = 20 + Math.min(40, (index + 1) * 40 / sources.size());
                 progressCallback.onProgress(progress, SalesVideoStatus.VIDEO_PROCESSING,
                         "Normalizando clipe " + (index + 1) + " de " + sources.size());
-                normalizeClip(source, normalized, targetShotSeconds);
+                normalizeClip(
+                        source,
+                        normalized,
+                        targetShotSeconds,
+                        probeDurationSeconds(source),
+                        sourceHasAudio);
                 normalizedClips.add(normalized);
             }
             Path output = Files.createTempFile("sales-video-" + job.id() + "-montage", ".mp4");
@@ -111,7 +119,7 @@ public class VideoMontageProvider implements VideoProvider {
             progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING,
                     "Montagem finalizada para revisão");
             return new ProviderArtifacts("montage-" + job.id(), video, null, null,
-                    resultMetadata(job, sources, durationSeconds));
+                    resultMetadata(job, sources, durationSeconds, sourceAudioCount));
         } catch (IOException ex) {
             log.error("Falha de arquivo na montagem de vídeo do job {}", job.id(), ex);
             throw new VideoProviderException("VIDEO_MONTAGE_FAILED", "Falha de arquivo na montagem de vídeo", ex);
@@ -138,17 +146,32 @@ public class VideoMontageProvider implements VideoProvider {
         return source;
     }
 
-    /** Normaliza e corta o clipe no ritmo alvo antes da composição cinematográfica. */
-    private void normalizeClip(Path source, Path output, double targetShotSeconds) {
+    /** Normaliza vídeo e áudio, preenchendo somente cenas realmente mudas com silêncio. */
+    private void normalizeClip(Path source,
+                               Path output,
+                               double targetShotSeconds,
+                               double sourceDurationSeconds,
+                               boolean sourceHasAudio) {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
+        double duration = targetShotSeconds > 0
+                ? Math.min(targetShotSeconds, sourceDurationSeconds)
+                : sourceDurationSeconds;
         List<String> command = new ArrayList<>(List.of(
                 config.getFfmpegPath(), "-y", "-i", source.toAbsolutePath().toString()));
-        if (targetShotSeconds > 0) {
-            command.addAll(List.of("-t", String.format(Locale.ROOT, "%.3f", targetShotSeconds)));
+        if (!sourceHasAudio) {
+            command.addAll(List.of(
+                    "-f", "lavfi",
+                    "-t", String.format(Locale.ROOT, "%.3f", duration),
+                    "-i", "anullsrc=r=48000:cl=stereo"));
         }
         command.addAll(List.of(
+                "-t", String.format(Locale.ROOT, "%.3f", duration),
+                "-map", "0:v:0",
+                "-map", sourceHasAudio ? "0:a:0" : "1:a:0",
                 "-vf", "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,fps=30,setsar=1",
-                "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
+                "-af", "aresample=48000:async=1:first_pts=0,apad",
+                "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
+                "-c:a", "aac", "-ar", "48000", "-ac", "2",
                 output.toAbsolutePath().toString()));
         runProcess(command,
                 "ffmpeg falhou ao normalizar clipe para montagem");
@@ -164,23 +187,30 @@ public class VideoMontageProvider implements VideoProvider {
             command.add("-i");
             command.add(clip.toAbsolutePath().toString());
         });
-        StringBuilder filter = new StringBuilder();
+        StringBuilder videoFilter = new StringBuilder();
+        StringBuilder audioFilter = new StringBuilder();
         double accumulatedDuration = durations.getFirst();
         for (int index = 1; index < clips.size(); index++) {
-            String previous = index == 1 ? "[0:v]" : "[v" + (index - 1) + "]";
+            String previousVideo = index == 1 ? "[0:v]" : "[v" + (index - 1) + "]";
+            String previousAudio = index == 1 ? "[0:a]" : "[a" + (index - 1) + "]";
             double offset = Math.max(0.01, accumulatedDuration - TRANSITION_SECONDS);
-            filter.append(previous).append("[").append(index).append(":v]")
+            videoFilter.append(previousVideo).append("[").append(index).append(":v]")
                     .append("xfade=transition=fade:duration=")
                     .append(TRANSITION_SECONDS)
                     .append(":offset=").append(String.format(Locale.ROOT, "%.3f", offset))
                     .append("[v").append(index).append("];");
+            audioFilter.append(previousAudio).append("[").append(index).append(":a]")
+                    .append("acrossfade=d=").append(TRANSITION_SECONDS)
+                    .append(":c1=tri:c2=tri[a").append(index).append("];");
             accumulatedDuration += durations.get(index) - TRANSITION_SECONDS;
         }
-        filter.setLength(filter.length() - 1);
+        String filter = videoFilter.append(audioFilter).toString();
+        filter = filter.substring(0, filter.length() - 1);
         command.addAll(List.of(
-                "-filter_complex", filter.toString(),
+                "-filter_complex", filter,
                 "-map", "[v" + (clips.size() - 1) + "]",
-                "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
+                "-map", "[a" + (clips.size() - 1) + "]",
+                "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30", "-c:a", "aac",
                 "-movflags", "+faststart", output.toAbsolutePath().toString()));
         runProcess(command, "ffmpeg falhou ao compor a montagem cinematográfica");
     }
@@ -202,6 +232,20 @@ public class VideoMontageProvider implements VideoProvider {
             throw new VideoProviderException("VIDEO_MONTAGE_FAILED",
                     "ffprobe retornou duração inválida para montagem", ex);
         }
+    }
+
+    /** Verifica se o clipe possui áudio antes de decidir entre preservação e silêncio. */
+    private boolean hasAudioStream(Path source) {
+        VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
+        String result = runProcessOutput(List.of(
+                config.getFfprobePath(),
+                "-v", "error",
+                "-select_streams", "a:0",
+                "-show_entries", "stream=index",
+                "-of", "csv=p=0",
+                source.toAbsolutePath().toString()),
+                "ffprobe falhou ao inspecionar áudio do clipe");
+        return StringUtils.hasText(result);
     }
 
     /** Bloqueia montagens sem ritmo mínimo ou fora do limite operacional. */
@@ -274,11 +318,17 @@ public class VideoMontageProvider implements VideoProvider {
         for (JsonNode source : sources) {
             long sourceJobId = source.path("sourceJobId").asLong();
             String sourceVideoUrl = source.path("sourceVideoUrl").asText(null);
+            String sourceProviderName = source.path("sourceProviderName").asText(null);
+            if (sourceJobId <= 0 || !StringUtils.hasText(sourceProviderName)) {
+                throw new VideoProviderException("VIDEO_MONTAGE_FAILED",
+                        "Clipe fonte sem linhagem auditável de job e provider");
+            }
             if (!StringUtils.hasText(sourceVideoUrl)) {
                 throw new VideoProviderException("VIDEO_MONTAGE_FAILED",
                         "Clipe fonte sem URL de vídeo");
             }
-            result.add(new SourceVideo(sourceJobId, sourceVideoUrl.trim()));
+            result.add(new SourceVideo(
+                    sourceJobId, sourceVideoUrl.trim(), sourceProviderName.trim()));
         }
         return result;
     }
@@ -294,11 +344,15 @@ public class VideoMontageProvider implements VideoProvider {
 
     /** Consolida metadados de saída da montagem. */
     private Map<String, Object> resultMetadata(
-            SalesVideoJob job, List<SourceVideo> sources, double durationSeconds) {
+            SalesVideoJob job,
+            List<SourceVideo> sources,
+            double durationSeconds,
+            int sourceAudioCount) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("provider", PROVIDER_NAME);
         metadata.put("provider_job_id", "montage-" + job.id());
         metadata.put("source_job_ids", sources.stream().map(SourceVideo::jobId).toList());
+        metadata.put("source_provider_names", sources.stream().map(SourceVideo::providerName).toList());
         metadata.put("source_count", sources.size());
         metadata.put("resolution", "720x1280");
         metadata.put("duration_seconds", Math.round(durationSeconds));
@@ -310,7 +364,12 @@ public class VideoMontageProvider implements VideoProvider {
                 "scene_count", sources.size(),
                 "mobile_resolution", "APPROVED"));
         metadata.put("max_duration_seconds", (int) MAX_MONTAGE_DURATION_SECONDS);
-        metadata.put("audio", Map.of("preserved", false, "reason", "montagem preparada para voz off final"));
+        metadata.put("audio", Map.of(
+                "preserved", sourceAudioCount > 0,
+                "normalized", true,
+                "source_audio_count", sourceAudioCount,
+                "silent_scene_count", sources.size() - sourceAudioCount,
+                "transition", "ACROSSFADE"));
         metadata.put("finished_at", Instant.now().toString());
         return metadata;
     }
@@ -334,6 +393,6 @@ public class VideoMontageProvider implements VideoProvider {
     }
 
     /** Representa um clipe fonte selecionado para montagem. */
-    private record SourceVideo(long jobId, String url) {
+    private record SourceVideo(long jobId, String url, String providerName) {
     }
 }

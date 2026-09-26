@@ -30,6 +30,7 @@ class PostProductionVideoProviderTest {
     private MockWebServer server;
     private Path ffmpegArguments;
     private double narrationSegmentDurationSeconds = 4.0;
+    private boolean sourceHasAudio = true;
 
     /** Inicializa o servidor HTTP usado para entregar o MP4 fonte. */
     @BeforeEach
@@ -73,14 +74,21 @@ class PostProductionVideoProviderTest {
         assertThat(artifacts.metadata().get("captions").toString())
                 .contains("cue_count=2", "timed=true");
         assertThat(artifacts.metadata().get("audio").toString())
-                .contains("BLOCKED_FOR_CAMPAIGN", "synthetic_local");
+                .contains(
+                        "BLOCKED_FOR_CAMPAIGN",
+                        "synthetic_local",
+                        "source_audio_preserved=true",
+                        "mix=SOURCE_DUCKED_UNDER_VOICE")
+                .doesNotContain("synthetic_light_bed");
         assertThat(Files.readString(ffmpegArguments))
                 .contains(
                         "-t\n24\n",
                         "-preset\nveryfast\n",
                         "-movflags\n+faststart\n",
-                        "loudnorm=I=-17:TP=-2:LRA=7")
-                .doesNotContain("apad");
+                        "loudnorm=I=-17:TP=-2:LRA=7",
+                        "asplit=2[voice_sc][voice_mix]",
+                        "sidechaincompress")
+                .doesNotContain("sine=frequency=220", "apad");
         assertThat(server.takeRequest().getPath()).isEqualTo("/source/musa.mp4");
     }
 
@@ -167,7 +175,7 @@ class PostProductionVideoProviderTest {
         assertThat(server.getRequestCount()).isEqualTo(2);
     }
 
-    /** Deve aplicar legenda sem exigir TTS quando a pós-produção não pedir voz off. */
+    /** Deve aplicar legenda e preservar o áudio fonte sem exigir TTS. */
     @Test
     void shouldPostProduceCaptionOnlyVideoWithoutVoiceOver() throws Exception {
         server.enqueue(mp4Response());
@@ -182,11 +190,16 @@ class PostProductionVideoProviderTest {
         assertThat(new String(artifacts.captionFile().content())).contains("WEBVTT", "Legenda grande");
         assertThat(artifacts.metadata())
                 .containsEntry("post_production_mode", "CAPTION_ONLY")
-                .containsEntry("has_audio", false)
-                .containsEntry("audio_streams", 0)
+                .containsEntry("has_audio", true)
+                .containsEntry("audio_streams", 1)
                 .containsKey("audio");
         assertThat(artifacts.metadata().get("audio").toString())
-                .contains("voice_over=false", "mode=CAPTION_ONLY", "NOT_REQUESTED")
+                .contains(
+                        "voice_over=false",
+                        "source_audio_preserved=true",
+                        "mix=SOURCE_PRESERVED",
+                        "mode=CAPTION_ONLY",
+                        "NOT_REQUESTED")
                 .doesNotContain("OPENAI_TTS", "ESPEAK_NG");
         assertThat(server.getRequestCount()).isEqualTo(1);
         assertThat(server.takeRequest().getPath()).isEqualTo("/source/musa.mp4");
@@ -263,7 +276,7 @@ class PostProductionVideoProviderTest {
         assertThat(secondSegment.getPath()).isEqualTo("/audio/speech");
         assertThat(secondSegment.getBody().readUtf8()).contains("Faça o diagnóstico gratuito");
         assertThat(artifacts.metadata().get("audio").toString())
-                .contains("OPENAI_TTS", "music=none");
+                .contains("OPENAI_TTS", "music=not_classified_source_audio");
         assertThat(artifacts.auditFiles())
                 .extracting(ProviderFile::fileName)
                 .containsExactly(
@@ -332,6 +345,23 @@ class PostProductionVideoProviderTest {
                     assertThat(ex.auditArtifacts().metadata().toString()).contains("PENDING_PROVIDER_RECONCILIATION");
                 });
         assertThat(server.getRequestCount()).isEqualTo(2);
+    }
+
+    /** Mantém voz limpa e não inventa trilha quando a fonte não possui áudio. */
+    @Test
+    void shouldUseVoiceOnlyWhenSourceHasNoAudio() throws Exception {
+        sourceHasAudio = false;
+        server.enqueue(mp4Response());
+        PostProductionVideoProvider provider =
+                new PostProductionVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        ProviderArtifacts artifacts = provider.render(job(), profile(), (percent, status, message) -> { });
+
+        assertThat(artifacts.metadata().get("audio").toString())
+                .contains("source_audio_preserved=false", "mix=VOICE_ONLY", "music=none")
+                .doesNotContain("synthetic_light_bed");
+        assertThat(Files.readString(ffmpegArguments))
+                .doesNotContain("sidechaincompress", "sine=frequency=220");
     }
 
     /** Cria uma resposta MP4 mínima para o download fonte. */
@@ -403,12 +433,22 @@ class PostProductionVideoProviderTest {
         Files.writeString(script, """
                 #!/bin/sh
                 source=""
-                for argument in "$@"; do source="$argument"; done
+                audio_probe="false"
+                for argument in "$@"; do
+                  source="$argument"
+                  if [ "$argument" = "stream=index" ]; then audio_probe="true"; fi
+                done
+                if [ "$audio_probe" = "true" ]; then
+                  %s
+                  exit 0
+                fi
                 case "$source" in
                   *voiceover*) printf '%f\n' ;;
                   *) printf '24.000000\n' ;;
                 esac
-                """.formatted(narrationSegmentDurationSeconds));
+                """.formatted(
+                sourceHasAudio ? "printf '0\\n'" : ":",
+                narrationSegmentDurationSeconds));
         script.toFile().setExecutable(true);
         return script;
     }
@@ -444,6 +484,8 @@ class PostProductionVideoProviderTest {
                         {
                           "artifactType": "experiment.videoPostProductionRequest.v1",
                           "experimentVideoAssetId": 5,
+                          "sourceJobId": 41,
+                          "sourceProviderName": "RUNWAY_GEN_4_5",
                           "sourceVideoUrl": "/source/musa.mp4",
                           "voiceOverScript": "Você se arruma e sente que falta presença. Veja seu plano MUSA.",
                           "captionText": "Pare de se sentir comum no espelho. | Veja seu plano MUSA de 7 dias.",
@@ -487,6 +529,8 @@ class PostProductionVideoProviderTest {
                 null,
                 """
                         {
+                          "sourceJobId": 42,
+                          "sourceProviderName": "RUNWAY_GEN_4_5",
                           "sourceVideoUrl": "/source/musa.mp4",
                           "captionText": "Legenda grande para mobile sem depender de voz off."
                         }
@@ -503,6 +547,8 @@ class PostProductionVideoProviderTest {
                 : "Você se arruma e compre um produto diferente.";
         String metadata = """
                 {
+                  "sourceJobId":41,
+                  "sourceProviderName":"RUNWAY_GEN_4_5",
                   "sourceVideoUrl":"/source/musa.mp4",
                   "captionText":"Você se arruma, mas falta presença | Faça o diagnóstico gratuito",
                   "voiceOverScript":"%s",

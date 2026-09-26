@@ -49,7 +49,7 @@ public class ReferenceMediaInspector {
         this.objectMapper = objectMapper;
     }
 
-    /** Baixa, inspeciona e remove o vídeo, devolvendo somente métricas e contact sheets compactos. */
+    /** Baixa, inspeciona e remove o vídeo, devolvendo métricas, áudio comprimido e contact sheets. */
     public Evidence inspect(ReferenceAnalysisStageContext context) {
         Path directory = null;
         try {
@@ -60,11 +60,18 @@ public class ReferenceMediaInspector {
             JsonNode probe = probe(context.executionId(), video);
             double durationSeconds = duration(probe);
             List<Double> scenes = detectScenes(context.executionId(), video);
-            AudioMetrics audio = analyzeAudio(context.executionId(), video);
+            boolean hasAudio = !firstStream(probe, "audio").isEmpty();
+            AudioMetrics audio = hasAudio
+                    ? analyzeAudio(context.executionId(), video)
+                    : new AudioMetrics(Double.NaN, Double.NaN);
+            AudioTrack audioTrack = hasAudio
+                    ? extractAudio(context.executionId(), video, directory)
+                    : null;
             List<Path> sheets = createContactSheets(context.executionId(), video, directory, durationSeconds);
-            ObjectNode artifacts = artifacts(video, probe, durationSeconds, scenes, audio, sheets);
+            ObjectNode artifacts = artifacts(
+                    video, probe, durationSeconds, scenes, audio, audioTrack, sheets);
             List<String> images = sheets.stream().map(this::dataUrl).toList();
-            return new Evidence(artifacts, images);
+            return new Evidence(artifacts, images, audioTrack);
         } catch (IOException ex) {
             log.error("Falha de I/O ao inspecionar vídeo de referência; executionId={}", context.executionId(), ex);
             throw new IllegalStateException("Não foi possível inspecionar o arquivo de referência", ex);
@@ -179,6 +186,27 @@ public class ReferenceMediaInspector {
         return new AudioMetrics(lastNumber(INTEGRATED_LOUDNESS, output), lastNumber(TRUE_PEAK, output));
     }
 
+    /** Extrai uma faixa mono compacta, abaixo do limite oficial da API de transcrição. */
+    private AudioTrack extractAudio(Long executionId, Path video, Path directory)
+            throws IOException, InterruptedException {
+        Path audio = directory.resolve("reference-audio.mp3");
+        command(executionId, List.of(
+                properties.getReferenceAnalysis().getFfmpegPath(), "-hide_banner", "-y",
+                "-i", video.toString(), "-map", "0:a:0", "-vn", "-ac", "1", "-ar", "16000",
+                "-b:a", "48k", audio.toString()));
+        long bytes = Files.size(audio);
+        if (bytes <= 0 || bytes > properties.getReferenceAnalysis().getMaxTranscriptionBytes()) {
+            throw new IllegalArgumentException(
+                    "Faixa de áudio fora do limite configurado para transcrição: " + bytes + " bytes");
+        }
+        return new AudioTrack(
+                Files.readAllBytes(audio),
+                "reference-" + executionId + ".mp3",
+                "audio/mpeg",
+                sha256(audio),
+                bytes);
+    }
+
     /** Cria dois painéis de doze frames para leitura visual multimodal com custo previsível. */
     private List<Path> createContactSheets(Long executionId, Path video, Path directory, double duration)
             throws IOException, InterruptedException {
@@ -199,7 +227,8 @@ public class ReferenceMediaInspector {
 
     /** Consolida evidências técnicas e hashes sem persistir cópias binárias no banco. */
     private ObjectNode artifacts(Path video, JsonNode probe, double duration, List<Double> scenes,
-                                 AudioMetrics audio, List<Path> sheets) throws IOException {
+                                 AudioMetrics audio, AudioTrack audioTrack, List<Path> sheets)
+            throws IOException {
         ObjectNode result = objectMapper.createObjectNode();
         JsonNode videoStream = firstStream(probe, "video");
         JsonNode audioStream = firstStream(probe, "audio");
@@ -211,6 +240,13 @@ public class ReferenceMediaInspector {
         result.put("videoCodec", videoStream.path("codec_name").asText());
         result.put("frameRate", videoStream.path("avg_frame_rate").asText());
         result.put("audioCodec", audioStream.path("codec_name").asText());
+        result.put("hasAudio", audioTrack != null);
+        if (audioTrack != null) {
+            ObjectNode sourceAudio = result.putObject("sourceAudio");
+            sourceAudio.put("sha256", audioTrack.sha256());
+            sourceAudio.put("bytes", audioTrack.bytes());
+            sourceAudio.put("contentType", audioTrack.contentType());
+        }
         putFinite(result, "integratedLoudnessLufs", audio.integratedLoudness());
         putFinite(result, "truePeakDbfs", audio.truePeak());
         result.put("sceneChangeThreshold", properties.getReferenceAnalysis().getSceneThreshold());
@@ -335,8 +371,13 @@ public class ReferenceMediaInspector {
         }
     }
 
-    /** Evidência técnica acompanhada das imagens efêmeras enviadas à IA. */
-    public record Evidence(ObjectNode artifacts, List<String> contactSheetDataUrls) { }
+    /** Evidência técnica acompanhada das entradas efêmeras enviadas às integrações de IA. */
+    public record Evidence(
+            ObjectNode artifacts, List<String> contactSheetDataUrls, AudioTrack audioTrack) { }
+
+    /** Faixa comprimida mantida em memória somente durante a execução da análise. */
+    public record AudioTrack(
+            byte[] content, String filename, String contentType, String sha256, long bytes) { }
 
     /** Métricas objetivas da faixa de áudio do arquivo. */
     private record AudioMetrics(double integratedLoudness, double truePeak) { }

@@ -14,6 +14,7 @@ import com.marketinghub.salesvideo.VideoReferenceAnalysisExecution;
 import com.marketinghub.salesvideo.VideoReferenceAnalysisStatus;
 import com.marketinghub.salesvideo.VideoReferenceStatus;
 import com.marketinghub.salesvideo.referenceanalysis.v1.service.complete.CompleteRequest;
+import com.marketinghub.salesvideo.referenceanalysis.v1.service.fail.FailureRequest;
 import com.marketinghub.salesvideo.tenant.TenantContext;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import java.math.BigDecimal;
@@ -104,7 +105,7 @@ class VideoReferenceAnalysisServiceTest {
     assertThat(pending).isEmpty();
     assertThat(execution.getStatus()).isEqualTo(VideoReferenceAnalysisStatus.BUDGET_BLOCKED);
     assertThat(execution.getError()).contains("limite US$ 0.75");
-    assertThat(reference.getStatus()).isEqualTo(VideoReferenceStatus.REJECTED);
+    assertThat(reference.getStatus()).isEqualTo(VideoReferenceStatus.FAILED);
   }
 
   /** Persiste resultado e libera o aprendizado apenas com UUID da execução ativa. */
@@ -140,6 +141,32 @@ class VideoReferenceAnalysisServiceTest {
     assertThat(response.costUsd()).isEqualByComparingTo("0.010000");
     assertThat(reference.getStatus()).isEqualTo(VideoReferenceStatus.ANALYZED);
     assertThat(reference.getAnalysisNotes()).contains("Receita aprovada");
+  }
+
+  /** Distingue falha técnica de rejeição editorial e preserva a auditoria recebida. */
+  @Test
+  void shouldMarkReferenceAsFailedWhenAutomaticAnalysisFails() {
+    saveReturnsArgument();
+    VideoReference reference = reference();
+    VideoReferenceAnalysisExecution execution = execution(VideoReferenceAnalysisStatus.RUNNING);
+    execution.setProducerExecutionId("producer-31");
+    given(executionRepository.findById(81L)).willReturn(Optional.of(execution));
+    given(referenceRepository.findById(31L)).willReturn(Optional.of(reference));
+
+    var response =
+        service.fail(
+            81L,
+            new FailureRequest(
+                "producer-31",
+                "Falha de credencial",
+                objectMapper.createObjectNode().put("sha256", "abc"),
+                objectMapper.createObjectNode().put("request", true),
+                objectMapper.createObjectNode().put("status", 401),
+                "gpt-transcribe"));
+
+    assertThat(response.status()).isEqualTo(VideoReferenceAnalysisStatus.FAILED);
+    assertThat(reference.getStatus()).isEqualTo(VideoReferenceStatus.FAILED);
+    assertThat(response.error()).isEqualTo("Falha de credencial");
   }
 
   /** Rejeita callback antigo para não sobrescrever a execução recuperada pelo lease. */

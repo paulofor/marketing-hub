@@ -27,6 +27,8 @@ public class ReferenceAnalysisAiClient {
     private static final Logger log = LoggerFactory.getLogger(ReferenceAnalysisAiClient.class);
     private static final String PROMPT_PATH = "prompts/apollo/reference-analysis/v1/analyze.md";
     private static final String SCHEMA_PATH = "prompts/apollo/reference-analysis/v1/analyze-schema.json";
+    private static final String CAPABILITIES_PATH =
+            "prompts/apollo/reference-analysis/v1/studio-capabilities.json";
     private final VideoManagementProperties properties;
     private final ObjectMapper objectMapper;
     private final WebClient openAi;
@@ -40,14 +42,15 @@ public class ReferenceAnalysisAiClient {
         this.openAi = builder.baseUrl(properties.getReferenceAnalysis().getOpenAiBaseUrl().toString()).build();
     }
 
-    /** Envia métricas e contact sheets no modo Flex e devolve request e response brutos. */
+    /** Envia métricas, transcrição, capacidades e contact sheets no modo Flex. */
     public AiInteraction analyze(ReferenceAnalysisStageContext context,
-                                 ReferenceMediaInspector.Evidence evidence) {
+                                 ReferenceMediaInspector.Evidence evidence,
+                                 ReferenceAudioTranscriptionClient.TranscriptionInteraction transcription) {
         String key = resolveApiKey();
         if (!StringUtils.hasText(key)) {
             throw new IllegalStateException("Credencial OpenAI ausente para análise de referência");
         }
-        ObjectNode request = request(context, evidence);
+        ObjectNode request = request(context, evidence, transcription);
         String url = "/responses";
         try {
             log.info("Request OpenAI análise de referência; executionId={} url={} payload={}",
@@ -72,7 +75,8 @@ public class ReferenceAnalysisAiClient {
 
     /** Monta o contrato multimodal com raciocínio máximo, prompt e schema versionados. */
     private ObjectNode request(ReferenceAnalysisStageContext context,
-                               ReferenceMediaInspector.Evidence evidence) {
+                               ReferenceMediaInspector.Evidence evidence,
+                               ReferenceAudioTranscriptionClient.TranscriptionInteraction transcription) {
         ObjectNode request = objectMapper.createObjectNode();
         request.put("model", properties.getReferenceAnalysis().getModel());
         request.put("service_tier", "flex");
@@ -87,7 +91,9 @@ public class ReferenceAnalysisAiClient {
         text.put("type", "input_text");
         text.put("text", resource(PROMPT_PATH)
                 .replace("{{REFERENCE}}", context.input().toPrettyString())
-                .replace("{{TECHNICAL_EVIDENCE}}", evidence.artifacts().toPrettyString()));
+                .replace("{{TECHNICAL_EVIDENCE}}", evidence.artifacts().toPrettyString())
+                .replace("{{AUDIO_TRANSCRIPT}}", transcriptOrAbsence(transcription))
+                .replace("{{STUDIO_CAPABILITIES}}", resource(CAPABILITIES_PATH)));
         for (String dataUrl : evidence.contactSheetDataUrls()) {
             ObjectNode image = content.addObject();
             image.put("type", "input_image");
@@ -105,6 +111,17 @@ public class ReferenceAnalysisAiClient {
                 "executionId", String.valueOf(context.executionId()),
                 "referenceId", String.valueOf(context.referenceId()))));
         return request;
+    }
+
+    /** Explicita ausência de áudio para impedir inferência de fala ou trilha inexistente. */
+    private String transcriptOrAbsence(
+            ReferenceAudioTranscriptionClient.TranscriptionInteraction transcription) {
+        if ("NO_SPEECH_DETECTED".equals(transcription.status())) {
+            return "FAIXA_DE_AUDIO_SEM_FALA_IDENTIFICADA";
+        }
+        return StringUtils.hasText(transcription.text())
+                ? transcription.text()
+                : "SEM_FAIXA_DE_AUDIO";
     }
 
     /** Resolve a credencial direta ou montada em arquivo sem registrá-la. */

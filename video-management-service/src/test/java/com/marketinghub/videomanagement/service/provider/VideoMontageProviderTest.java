@@ -1,6 +1,7 @@
 package com.marketinghub.videomanagement.service.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.videomanagement.client.dto.AssetType;
@@ -27,6 +28,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 /** Responsabilidade: validar a montagem local de múltiplos clipes de venda. */
 class VideoMontageProviderTest {
     private MockWebServer server;
+    private Path ffmpegArguments;
+    private boolean sourceHasAudio = true;
 
     /** Inicializa o servidor HTTP usado para entregar clipes fonte. */
     @BeforeEach
@@ -61,8 +64,61 @@ class VideoMontageProviderTest {
                 .containsEntry("source_count", 2)
                 .containsEntry("resolution", "720x1280")
                 .containsKey("audio");
+        assertThat(artifacts.metadata().get("audio").toString())
+                .contains(
+                        "preserved=true",
+                        "normalized=true",
+                        "source_audio_count=2",
+                        "silent_scene_count=0",
+                        "transition=ACROSSFADE");
+        assertThat(Files.readString(ffmpegArguments))
+                .contains("acrossfade=d=0.18", "-c:a", "aac")
+                .doesNotContain("-an");
         assertThat(server.takeRequest().getPath()).isEqualTo("/source/scene-1.mp4");
         assertThat(server.takeRequest().getPath()).isEqualTo("/source/scene-2.mp4");
+    }
+
+    /** Normaliza cenas mudas com silêncio para manter a montagem previsível. */
+    @Test
+    void shouldNormalizeSilentSourcesWithoutInventingMusic() throws Exception {
+        sourceHasAudio = false;
+        server.enqueue(mp4Response());
+        server.enqueue(mp4Response());
+        VideoMontageProvider provider =
+                new VideoMontageProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        ProviderArtifacts artifacts = provider.render(job(), profile(), (percent, status, message) -> { });
+
+        assertThat(artifacts.metadata().get("audio").toString())
+                .contains(
+                        "preserved=false",
+                        "source_audio_count=0",
+                        "silent_scene_count=2",
+                        "transition=ACROSSFADE");
+        assertThat(Files.readString(ffmpegArguments))
+                .contains("anullsrc=r=48000:cl=stereo", "acrossfade=d=0.18");
+    }
+
+    /** Bloqueia áudio de URL avulsa quando a cena não possui linhagem de provider. */
+    @Test
+    void shouldRejectSourcesWithoutAuditableProviderLineage() throws Exception {
+        server.enqueue(mp4Response());
+        VideoMontageProvider provider =
+                new VideoMontageProvider(properties(), new ObjectMapper(), WebClient.builder());
+        SalesVideoJob job = jobWithMetadata("""
+                {
+                  "sourceJobIds": [10, 11],
+                  "sourceVideos": [
+                    {"sourceJobId": 10, "sourceVideoUrl": "/source/scene-1.mp4"},
+                    {"sourceJobId": 11, "sourceVideoUrl": "/source/scene-2.mp4"}
+                  ]
+                }
+                """);
+
+        assertThatThrownBy(() -> provider.render(job, profile(), (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasMessageContaining("linhagem auditável");
+        assertThat(server.getRequestCount()).isZero();
     }
 
     /** Cria uma resposta MP4 mínima para o download fonte. */
@@ -87,16 +143,18 @@ class VideoMontageProviderTest {
 
     /** Cria um script executável que simula normalização e concatenação por ffmpeg. */
     private Path fakeFfmpeg() throws Exception {
+        ffmpegArguments = Files.createTempFile("fake-ffmpeg-montage-arguments", ".txt");
         Path script = Files.createTempFile("fake-ffmpeg-montage", ".sh");
         Files.writeString(script, """
                 #!/bin/sh
+                printf '%%s\\n' "$@" >> '%s'
                 output=""
                 for arg in "$@"; do
                   output="$arg"
                 done
                 printf '\\000\\000\\000\\040ftypisom\\000\\000\\002\\000' > "$output"
                 exit 0
-                """);
+                """.formatted(ffmpegArguments));
         script.toFile().setExecutable(true);
         return script;
     }
@@ -106,15 +164,36 @@ class VideoMontageProviderTest {
         Path script = Files.createTempFile("fake-ffprobe-montage", ".sh");
         Files.writeString(script, """
                 #!/bin/sh
+                audio_probe="false"
+                for argument in "$@"; do
+                  if [ "$argument" = "stream=index" ]; then audio_probe="true"; fi
+                done
+                if [ "$audio_probe" = "true" ]; then
+                  %s
+                  exit 0
+                fi
                 printf '20.000000\\n'
                 exit 0
-                """);
+                """.formatted(sourceHasAudio ? "printf '0\\n'" : ":"));
         script.toFile().setExecutable(true);
         return script;
     }
 
     /** Cria um job de montagem com dois clipes fonte. */
     private SalesVideoJob job() {
+        return jobWithMetadata("""
+                {
+                  "sourceJobIds": [10, 11],
+                  "sourceVideos": [
+                    {"sourceJobId": 10, "sourceVideoUrl": "/source/scene-1.mp4", "sourceProviderName": "RUNWAY_GEN_4_5"},
+                    {"sourceJobId": 11, "sourceVideoUrl": "/source/scene-2.mp4", "sourceProviderName": "RUNWAY_GEN_4_5"}
+                  ]
+                }
+                """);
+    }
+
+    /** Cria um job mínimo com metadata variável para validar contratos de origem. */
+    private SalesVideoJob jobWithMetadata(String metadataJson) {
         return new SalesVideoJob(
                 77L,
                 2L,
@@ -140,15 +219,7 @@ class VideoMontageProviderTest {
                 null,
                 null,
                 null,
-                """
-                        {
-                          "sourceJobIds": [10, 11],
-                          "sourceVideos": [
-                            {"sourceJobId": 10, "sourceVideoUrl": "/source/scene-1.mp4"},
-                            {"sourceJobId": 11, "sourceVideoUrl": "/source/scene-2.mp4"}
-                          ]
-                        }
-                        """,
+                metadataJson,
                 Instant.now(),
                 Instant.now());
     }

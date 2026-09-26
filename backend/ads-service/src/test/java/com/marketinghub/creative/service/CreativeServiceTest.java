@@ -31,6 +31,9 @@ import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.CommercialPlanStatus;
 import com.marketinghub.planning.CommercialPlanVisualAsset;
 import com.marketinghub.planning.CommercialPlanVisualAssetStatus;
+import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioJob;
+import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioOperation;
+import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioStatus;
 import com.marketinghub.planning.imagestudio.v1.CommercialPlanVisualAssetReviewStatus;
 import com.marketinghub.planning.imagestudio.v1.service.CommercialPlanImageStudioService;
 import com.marketinghub.planning.imagestudio.v1.service.CommercialPlanVisualAssetReviewResultRequest;
@@ -146,6 +149,7 @@ class CreativeServiceTest {
   void routesIrisImprovementThroughCommercialPlanLibrary() throws Exception {
     MarketNiche niche = fixtures.createAndSaveNiche();
     Experiment experiment = fixtures.createAndSaveExperiment(niche);
+    Experiment originalPlanExperiment = fixtures.createAndSaveExperiment(niche);
     Creative source = fixtures.createAndSaveCreative(experiment);
     source.setImageUrl("https://cdn.test/assets/original.png");
     source.setAgentImprovementStatus(
@@ -162,7 +166,9 @@ class CreativeServiceTest {
     CommercialPlan plan = new CommercialPlan();
     plan.setName("Agenda Cheia");
     plan.setStatus(CommercialPlanStatus.IN_PROGRESS);
-    plan.setExperiment(experiment);
+    plan.setExperiment(originalPlanExperiment);
+    plan.getExperiments().add(originalPlanExperiment);
+    plan.getExperiments().add(experiment);
     commercialPlanRepository.saveAndFlush(plan);
     MultipartFile file =
         new org.springframework.mock.web.MockMultipartFile(
@@ -198,6 +204,29 @@ class CreativeServiceTest {
     var job = commercialPlanImageStudioJobRepository.findAll().getFirst();
     assertThat(job.getSourceCreative().getId()).isEqualTo(source.getId());
     assertThat(job.getProducerExecutionId()).isEqualTo("producer-88");
+    assertThat(repository.findById(source.getId()).orElseThrow().getAgentImprovementAttempts())
+        .isEqualTo(1);
+
+    Creative duplicate =
+        service.uploadAgentImprovementArtifact(
+            source.getId(),
+            file,
+            "gpt-image-2",
+            "producer-88",
+            "{\"prompt\":\"produto real\"}",
+            "{\"data\":[{\"b64_json\":\"auditado\"}]}",
+            "{\"input_tokens\":12}",
+            new java.math.BigDecimal("0.15"));
+
+    assertThat(duplicate.getId()).isEqualTo(source.getId());
+    assertThat(commercialPlanImageStudioJobRepository.count()).isEqualTo(1);
+    assertThat(commercialPlanVisualAssetRepository.count()).isEqualTo(1);
+    assertThat(commercialPlanImageStudioJobRepository.sumCostUsdByExperimentId(experiment.getId()))
+        .isEqualByComparingTo("0.15");
+    assertThat(
+            commercialPlanImageStudioJobRepository.sumCostUsdByExperimentId(
+                originalPlanExperiment.getId()))
+        .isEqualByComparingTo("0");
 
     imageStudioService.review(
         draft.getId(),
@@ -215,6 +244,110 @@ class CreativeServiceTest {
     assertThat(repository.count()).isEqualTo(creativeCountBeforeArtifact + 1);
     assertThat(repository.findById(source.getId()).orElseThrow().getAgentImprovementStatus())
         .isEqualTo(com.marketinghub.creative.CreativeImprovementStatus.COMPLETED);
+    assertThat(repository.findById(source.getId()).orElseThrow().getAgentImprovementAttempts())
+        .isEqualTo(1);
+    assertThat(
+            repository.findAll().stream()
+                .filter(
+                    creative ->
+                        creative.getSourceCreative() != null
+                            && source.getId().equals(creative.getSourceCreative().getId()))
+                .findFirst()
+                .orElseThrow()
+                .getAgentImprovementAttempts())
+        .isEqualTo(1);
+  }
+
+  /** Reconcilia também uma reserva órfã cujo histórico já consumiu o teto seguro. */
+  @Test
+  void stopsHistoricImprovementLoopBeforeClaimingAnotherGeneration() {
+    repository
+        .findAll()
+        .forEach(
+            existing -> {
+              existing.setAgentImprovementStatus(null);
+              repository.save(existing);
+            });
+    repository.flush();
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment experiment = fixtures.createAndSaveExperiment(niche);
+    Creative source = fixtures.createAndSaveCreative(experiment);
+    source.setAgentImprovementStatus(CreativeImprovementStatus.PROCESSING);
+    source.setAgentImprovementAttempts(0);
+    repository.saveAndFlush(source);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setName("Agenda Cheia");
+    plan.setStatus(CommercialPlanStatus.IN_PROGRESS);
+    plan.setExperiment(experiment);
+    commercialPlanRepository.saveAndFlush(plan);
+    for (int attempt = 1; attempt <= 8; attempt++) {
+      commercialPlanImageStudioJobRepository.save(
+          completedImprovementJob(plan, source, "producer-historic-" + attempt));
+    }
+    commercialPlanImageStudioJobRepository.flush();
+    assertThat(commercialPlanImageStudioJobRepository.countBySourceCreative_Id(source.getId()))
+        .isEqualTo(8);
+
+    var claimed = service.claimAgentImprovementQueue(1);
+
+    assertThat(claimed).isEmpty();
+    Creative stopped = repository.findById(source.getId()).orElseThrow();
+    assertThat(stopped.getAgentImprovementStatus())
+        .isEqualTo(CreativeImprovementStatus.LIMIT_REACHED);
+    assertThat(stopped.getAgentImprovementAttempts()).isEqualTo(8);
+    assertThat(stopped.getAgentImprovementError()).contains("Limite seguro de oito");
+  }
+
+  /** Impede que um parecer de ajuste reabra o ciclo depois da oitava arte materializada. */
+  @Test
+  void stopsLibraryRequeueWhenMaterializedAttemptLimitWasReached() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment experiment = fixtures.createAndSaveExperiment(niche);
+    Creative source = fixtures.createAndSaveCreative(experiment);
+    source.setAgentImprovementStatus(CreativeImprovementStatus.PROCESSING);
+    source.setAgentImprovementAttempts(0);
+    repository.saveAndFlush(source);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setName("Agenda Cheia");
+    plan.setStatus(CommercialPlanStatus.IN_PROGRESS);
+    plan.setExperiment(experiment);
+    commercialPlanRepository.saveAndFlush(plan);
+    for (int attempt = 1; attempt <= 8; attempt++) {
+      commercialPlanImageStudioJobRepository.save(
+          completedImprovementJob(plan, source, "producer-review-" + attempt));
+    }
+    commercialPlanImageStudioJobRepository.flush();
+
+    service.requeueLibraryImprovement(source.getId(), "Produto real ainda não demonstrado");
+
+    Creative stopped = repository.findById(source.getId()).orElseThrow();
+    assertThat(stopped.getAgentImprovementStatus())
+        .isEqualTo(CreativeImprovementStatus.LIMIT_REACHED);
+    assertThat(stopped.getAgentImprovementAttempts()).isEqualTo(8);
+    assertThat(stopped.getAgentImprovementError()).contains("Produto real ainda não demonstrado");
+  }
+
+  /** Preserva uma decisão terminal quando chega callback tardio de uma execução já supersedida. */
+  @Test
+  void ignoresStaleImprovementCallbackWithoutProcessingLease() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment experiment = fixtures.createAndSaveExperiment(niche);
+    Creative source = fixtures.createAndSaveCreative(experiment);
+    source.setAgentImprovementStatus(CreativeImprovementStatus.LIMIT_REACHED);
+    source.setAgentImprovementAttempts(8);
+    repository.saveAndFlush(source);
+    long creativeCount = repository.count();
+
+    Creative preserved =
+        service.completeAgentImprovement(
+            source.getId(),
+            new com.marketinghub.creative.dto.CreativeImprovementResultRequest(
+                "https://cdn.test/stale.png", java.math.BigDecimal.ONE, "{}", "{}", null));
+
+    assertThat(preserved.getAgentImprovementStatus())
+        .isEqualTo(CreativeImprovementStatus.LIMIT_REACHED);
+    assertThat(preserved.getAgentImprovementAttempts()).isEqualTo(8);
+    assertThat(repository.count()).isEqualTo(creativeCount);
   }
 
   /** Recupera revisão órfã, preserva auditoria e entrega um novo lease ao worker. */
@@ -712,6 +845,25 @@ class CreativeServiceTest {
     assertThatThrownBy(() -> service.applyAgentReview(creative.getId(), oversized))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("sem criar conteúdo substituto");
+  }
+
+  /** Monta um job concluído que representa uma geração visual já consumida. */
+  private CommercialPlanImageStudioJob completedImprovementJob(
+      CommercialPlan plan, Creative source, String producerExecutionId) {
+    CommercialPlanImageStudioJob job = new CommercialPlanImageStudioJob();
+    job.setCommercialPlan(plan);
+    job.setSourceCreative(source);
+    job.setOperation(CommercialPlanImageStudioOperation.EDIT);
+    job.setStatus(CommercialPlanImageStudioStatus.COMPLETED);
+    job.setLabel("Correção automática de criativo");
+    job.setPrompt("Demonstrar o produto real");
+    job.setPurposesJson("[\"ADS\"]");
+    job.setSize("1152x2048");
+    job.setQuality("high");
+    job.setProducerExecutionId(producerExecutionId);
+    job.setStartedAt(Instant.now());
+    job.setFinishedAt(Instant.now());
+    return job;
   }
 
   /** Monta um parecer de ajuste completo para os testes do contrato de correção. */

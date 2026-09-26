@@ -4,6 +4,7 @@ import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioJob;
 import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioStatus;
 import com.marketinghub.repository.jpa.agentlearning.TemisVisualLearningAssetHistory;
 import jakarta.persistence.LockModeType;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -75,6 +76,25 @@ public interface CommercialPlanImageStudioJobRepository
 
   /** Informa se o asset foi materializado por uma execução governada do estúdio. */
   boolean existsByResultVisualAssetId(Long assetId);
+
+  /** Conta as materializações já consumidas por um retrabalho de criativo. */
+  long countBySourceCreative_Id(Long sourceCreativeId);
+
+  /** Reconhece o reenvio idempotente do mesmo produtor para o mesmo criativo. */
+  boolean existsBySourceCreative_IdAndProducerExecutionId(
+      Long sourceCreativeId, String producerExecutionId);
+
+  /** Soma custos do estúdio associados direta ou indiretamente ao experimento. */
+  @Query(
+      "select coalesce(sum(j.costUsd), 0) from CommercialPlanImageStudioJob j "
+          + "where (j.sourceCreative is not null "
+          + "and j.sourceCreative.experiment.id = :experimentId) "
+          + "or (j.sourceCreative is null and ("
+          + "j.commercialPlan.experiment.id = :experimentId "
+          + "or (j.commercialPlan.experiment is null and exists ("
+          + "select e.id from CommercialPlan p join p.experiments e "
+          + "where p.id = j.commercialPlan.id and e.id = :experimentId))))")
+  BigDecimal sumCostUsdByExperimentId(@Param("experimentId") Long experimentId);
 
   /** Localiza o job produtor pela peça comercial resultante. */
   Optional<CommercialPlanImageStudioJob> findByResultVisualAssetId(Long assetId);

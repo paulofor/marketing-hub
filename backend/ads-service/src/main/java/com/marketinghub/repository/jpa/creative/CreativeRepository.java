@@ -135,15 +135,16 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
   List<Creative> findExpiredAgentReviewLeases(
       @Param("status") CreativeAgentReviewStatus status, @Param("cutoff") Instant cutoff);
 
-  /** Lista correções decididas pelo agente que aguardam geração de uma nova versão. */
+  /** Lista correções pendentes ou em curso para reserva e reconciliação do teto. */
   @Query(
       """
             select c from Creative c
               join fetch c.experiment e
-             where c.agentImprovementStatus = :status
+             where c.agentImprovementStatus in :statuses
              order by c.id
             """)
-  List<Creative> findAgentImprovementQueue(@Param("status") CreativeImprovementStatus status);
+  List<Creative> findAgentImprovementQueue(
+      @Param("statuses") java.util.Set<CreativeImprovementStatus> statuses);
 
   /** Lista criativos de vídeo com o contexto comercial necessário para revisão. */
   @Query(

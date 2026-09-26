@@ -7,6 +7,7 @@ import com.marketinghub.repository.jpa.experiment.pipeline.ExperimentPipelineGen
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationStageAuditRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanImageStudioJobRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class ExperimentCostReconciliationService {
   private final GeraSalesPagePublicationStageAuditRepository
       geraSalesPagePublicationStageAuditRepository;
   private final ExperimentVideoAssetRepository experimentVideoAssetRepository;
+  private final CommercialPlanImageStudioJobRepository imageStudioJobRepository;
 
   /** Inicializa o serviço com fontes auditáveis de custo técnico e financeiro. */
   public ExperimentCostReconciliationService(
@@ -27,13 +29,15 @@ public class ExperimentCostReconciliationService {
       ExperimentPipelineGenerationJobRepository pipelineJobRepository,
       GeraLandingStageExecutionRepository geraLandingStageExecutionRepository,
       GeraSalesPagePublicationStageAuditRepository geraSalesPagePublicationStageAuditRepository,
-      ExperimentVideoAssetRepository experimentVideoAssetRepository) {
+      ExperimentVideoAssetRepository experimentVideoAssetRepository,
+      CommercialPlanImageStudioJobRepository imageStudioJobRepository) {
     this.currencyConversionService = currencyConversionService;
     this.pipelineJobRepository = pipelineJobRepository;
     this.geraLandingStageExecutionRepository = geraLandingStageExecutionRepository;
     this.geraSalesPagePublicationStageAuditRepository =
         geraSalesPagePublicationStageAuditRepository;
     this.experimentVideoAssetRepository = experimentVideoAssetRepository;
+    this.imageStudioJobRepository = imageStudioJobRepository;
   }
 
   /** Preenche no DTO o total rastreável e a diferença frente ao legado persistido. */
@@ -76,7 +80,8 @@ public class ExperimentCostReconciliationService {
             money(
                 geraSalesPagePublicationStageAuditRepository.sumCostUsdByExperimentId(
                     experimentId)))
-        .add(money(experimentVideoAssetRepository.sumCostUsdByExperimentId(experimentId)));
+        .add(money(experimentVideoAssetRepository.sumCostUsdByExperimentId(experimentId)))
+        .add(money(imageStudioJobRepository.sumCostUsdByExperimentId(experimentId)));
   }
 
   /** Converte valores nulos para zero para permitir soma segura. */

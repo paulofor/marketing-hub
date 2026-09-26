@@ -4,8 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
+  parseChangedPathEntries,
   resolveDeploymentPlan,
   resolveDeployTarget,
+  validateImmutableVersionedManifests,
 } from "./resolve-pde-frontend-deploy-target.mjs";
 
 async function fixture(t, contracts) {
@@ -58,6 +60,91 @@ test("seleciona v8 quando a atestação pronta solicita essa superfície", async
 test("não publica frontend quando o diff não contém candidata explícita", async (t) => {
   const root = await fixture(t, { "vega-v5.json": contract() });
   assert.equal(await resolveDeployTarget(root, ["pde-platform/frontend/README.md"]), "none");
+});
+
+test("separa inclusões de alterações na saída name-status do Git", () => {
+  assert.deepEqual(
+    parseChangedPathEntries(
+      "A\tpde-platform/contracts/vega-v11.json\n" +
+        "M\tpde-platform/contracts/vega-v10.json\n" +
+        "R100\tantigo.json\tnovo.json\n",
+    ),
+    {
+      changedPaths: [
+        "pde-platform/contracts/vega-v11.json",
+        "pde-platform/contracts/vega-v10.json",
+        "novo.json",
+      ],
+      addedPaths: ["pde-platform/contracts/vega-v11.json"],
+    },
+  );
+});
+
+test("recusa reescrever manifesto versionado de evidência", async (t) => {
+  const root = await fixture(t, {
+    "vega-v10.json": {
+      ...versionedContract(10),
+      implementationEvidence: [
+        { path: "codigo.java", sha256: "a".repeat(64) },
+      ],
+    },
+  });
+  await assert.rejects(
+    validateImmutableVersionedManifests(
+      root,
+      ["pde-platform/contracts/vega-v10.json"],
+      [],
+    ),
+    /Manifesto versionado imutável.*Crie uma nova revisão/,
+  );
+});
+
+test("recusa remover contrato histórico", async (t) => {
+  const root = await fixture(t, {});
+  await assert.rejects(
+    validateImmutableVersionedManifests(
+      root,
+      ["pde-platform/contracts/vega-v10.json"],
+      [],
+    ),
+    /Contrato PDE histórico foi removido.*preserve o arquivo anterior/,
+  );
+});
+
+test("permite atualizar inventário não versionado como atestação", async (t) => {
+  const root = await fixture(t, {
+    "product-runtime-isolation-v1.json": { products: [] },
+  });
+  await validateImmutableVersionedManifests(
+    root,
+    ["pde-platform/contracts/product-runtime-isolation-v1.json"],
+    [],
+  );
+});
+
+test("nova atestação sem autorização de publicação não seleciona frontend", async (t) => {
+  const evidenceOnly = versionedContract(11);
+  evidenceOnly.status = "EVIDENCE_COMPATIBILITY_ONLY";
+  evidenceOnly.publicationContract.automaticDeployOnMerge = false;
+  evidenceOnly.implementationEvidence = [
+    { path: "codigo.java", sha256: "a".repeat(64) },
+  ];
+  const root = await fixture(t, { "vega-v11.json": evidenceOnly });
+  await validateImmutableVersionedManifests(
+    root,
+    ["pde-platform/contracts/vega-v11.json"],
+    ["pde-platform/contracts/vega-v11.json"],
+  );
+  const plan = await resolveDeploymentPlan(
+    root,
+    ["pde-platform/contracts/vega-v11.json"],
+    {
+      addedPaths: ["pde-platform/contracts/vega-v11.json"],
+      fingerprintResolver: async () => "a".repeat(64),
+    },
+  );
+  assert.equal(plan.frontend.target, "none");
+  assert.equal(plan.hasDeployment, false);
 });
 
 test("recusa fingerprint diferente entre publicação e revisão visual", async (t) => {
@@ -235,6 +322,8 @@ test("workflow usa o alvo resolvido sem fallback fixo para v7", async () => {
     "utf8",
   );
   assert.match(workflow, /Resolve frontend deployment scope/);
+  assert.match(workflow, /git diff .*--name-status --diff-filter=ACMRD/);
+  assert.doesNotMatch(workflow, /git diff .*--name-only --diff-filter=ACMR/);
   assert.match(
     workflow,
     /PDE_DEPLOY_FRONTEND_VERSION: \$\{\{ needs\.deployment_scope\.outputs\.frontend-version \}\}/,

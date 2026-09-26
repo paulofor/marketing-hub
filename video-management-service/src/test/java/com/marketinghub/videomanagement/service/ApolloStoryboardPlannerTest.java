@@ -249,6 +249,41 @@ class ApolloStoryboardPlannerTest {
         verifyNoInteractions(aiClient);
     }
 
+    /** Aprova o plano editorial local com prova real sem chamar o planejador de IA. */
+    @Test
+    void shouldApproveEditorialMotionWithoutCallingPlanningAi() throws Exception {
+        String metadata = """
+                {"videoProductionCycleId":93,"budgetLimitUsd":15.38,
+                 "providerReservedCredits":0,"providerReservedCostUsd":0,
+                 "generation_strategy":"DETERMINISTIC_EDITORIAL_MOTION_FROM_APPROVED_PRODUCT_PROOF",
+                 "publicationAllowed":false,"targetDurationSeconds":15,"sceneCount":1,
+                 "assemblyRequired":false,
+                 "post_production":{"product_proof":{
+                   "contractVersion":"PDE_PRIVATE_VIDEO_PROOF_V1",
+                   "contentPath":"/api/sales-videos/projects/61/product-proof",
+                   "sha256":"%s","commercialEvidenceClaimed":false}},
+                 "cut_plan":[
+                   {"duration_seconds":3,"role":"HOOK_DOR"},
+                   {"duration_seconds":3,"role":"MECANISMO"},
+                   {"duration_seconds":3,"role":"RESULTADO"},
+                   {"duration_seconds":3,"role":"PROVA"},
+                   {"duration_seconds":3,"role":"CTA"}],
+                 "premiumFinalization":{"enabled":true,
+                   "captionText":"Organize o que você já tem | Veja sua rotina completa",
+                   "voiceOverScript":"Organize o que você já tem Veja sua rotina completa",
+                   "requiredReviewers":["Psique","Temis","HUMAN"]}}
+                """.formatted("a".repeat(64));
+
+        SalesVideoJob result = planner.planAndApprove(
+                editorialJob(metadata), mock(SalesVideoProfile.class), mock(ProgressCallback.class));
+
+        JsonNode persisted = objectMapper.readTree(result.metadataJson());
+        assertThat(persisted.path("apollo_planner_status").asText())
+                .isEqualTo("APPROVED_LOCAL_EDITORIAL");
+        assertThat(persisted.path("expectedCostUsd").decimalValue()).isZero();
+        verifyNoInteractions(aiClient);
+    }
+
     /** Monta o contexto financeiro e editorial já aprovado no backend. */
     private JsonNode metadata(String budget) throws Exception {
         return objectMapper.readTree("""
@@ -322,6 +357,39 @@ class ApolloStoryboardPlannerTest {
                 null,
                 null,
                 "Apolo",
+                now,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                metadata,
+                now,
+                now);
+    }
+
+    /** Cria um job da rota editorial governada sem depender de integração externa. */
+    private SalesVideoJob editorialJob(String metadata) {
+        Instant now = Instant.parse("2026-09-26T12:00:00Z");
+        return new SalesVideoJob(
+                93L,
+                57L,
+                14L,
+                "default",
+                SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
+                "EDITORIAL_MOTION",
+                null,
+                SalesVideoJobType.RENDER,
+                SalesVideoStatus.VIDEO_REQUESTED,
+                0,
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                "time@marketinghub.io",
                 now,
                 null,
                 null,

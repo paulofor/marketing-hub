@@ -65,6 +65,48 @@ class ApolloPdeAudiovisualCallbackFactoryTest {
         assertThat(payload.get("modelUsages")).isEqualTo(List.of());
     }
 
+    /** Devolve IDs e custo do ativo já materializado para a cadeia concluir a atividade. */
+    @Test
+    void shouldBuildMaterializedCompletionReceipt() throws Exception {
+        JsonNode context = objectMapper.readTree("""
+                {
+                  "communicationMaterialization":{"audiovisualRequired":true},
+                  "audiovisualMaterialization":{
+                    "contractVersion":"APOLLO_COMMUNICATION_AUDIOVISUAL_MATERIALIZATION_V1",
+                    "sourceReference":"experiment:93",
+                    "videoProductionCycleId":51,"videoProjectId":61,"salesVideoJobId":71,
+                    "status":"VIDEO_READY_FOR_REVIEW","financialDecision":"APPROVED",
+                    "authorizedBy":"time@marketinghub.io","budgetLimitUsd":15.38,
+                    "actualCostUsd":0.42,"publicationAuthorized":false,"spendAuthorized":true,
+                    "artifactIds":[81,82]
+                  }
+                }
+                """);
+        ApolloPdeAudiovisualTask task = new ApolloPdeAudiovisualTask(
+                505L, "videomaker", "creative-production-approval", 8, "audiovisual",
+                "Produzir audiovisual", "Audiovisual", "Contrato materializado",
+                "experiment:93", null,
+                new ApolloPdeAudiovisualTask.ExecutionResource(
+                        "video-management-service", "Estúdio", "MODULE", null, null),
+                new ApolloPdeAudiovisualTask.TaskTarget(
+                        "experiment:93", 93L, 10L, "mira", "Mira", "Mira",
+                        "mira-private-v3", null, context),
+                "{}");
+        ApolloPdeAudiovisualDecision decision =
+                new ApolloPdeAudiovisualRequirementEvaluator().evaluate(task);
+
+        Map<String, Object> payload = factory.complete(task, decision);
+        JsonNode result = objectMapper.readTree((String) payload.get("resultJson"));
+        JsonNode evidence = objectMapper.readTree((String) payload.get("evidenceJson"));
+
+        assertThat(result.path("decision").asText()).isEqualTo("READY");
+        assertThat(result.path("audiovisualRequirement").asText()).isEqualTo("MATERIALIZED");
+        assertThat(result.path("artifactIds")).hasSize(2);
+        assertThat(result.path("providerCostUsd").decimalValue()).isEqualByComparingTo("0.42");
+        assertThat(evidence.path("artifactCreated").asBoolean()).isTrue();
+        assertThat(evidence.path("videoProductionCycleId").asLong()).isEqualTo(51L);
+    }
+
     /** Não afirma necessidade de vídeo quando o próprio contrato canônico está ausente. */
     @Test
     void shouldKeepMissingRequirementAsNull() throws Exception {

@@ -34,6 +34,7 @@ import com.marketinghub.salesvideo.service.SalesVideoService;
 import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightService;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,6 +82,9 @@ class VideoProductionCycleServiceTest {
         .when(financialAgentService.intelligence(any()))
         .thenReturn(java.util.Map.of("coverage", "COMPLETE"));
     lenient().when(providerPreflightService.financialContext(any())).thenReturn(java.util.Map.of());
+    VideoProviderPreflight pending = new VideoProviderPreflight();
+    pending.setStatus("PENDING");
+    lenient().when(providerPreflightService.open(any(), any(), any())).thenReturn(pending);
     lenient()
         .when(repository.save(any(VideoProductionCycle.class)))
         .thenAnswer(
@@ -103,14 +107,19 @@ class VideoProductionCycleServiceTest {
                 "DRAFT_INSTAGRAM",
                 "Validar gancho",
                 "Retencao superior",
-                "usuario@mkt"));
+                "usuario@mkt",
+                null,
+                null,
+                null,
+                null,
+                null));
 
     assertThat(result.status()).isEqualTo("PENDING_PROVIDER_PREFLIGHT");
     assertThat(result.learningObjective()).isEqualTo("Validar gancho");
     assertThat(result.successCriterion()).isEqualTo("Retencao superior");
     assertThat(result.financialSnapshot()).contains("incrementalLedger", "segregated");
     assertThat(result.salesVideoJobId()).isNull();
-    verify(providerPreflightService).open(result.id(), "DRAFT_INSTAGRAM");
+    verify(providerPreflightService).open(result.id(), "DRAFT_INSTAGRAM", null);
     verify(taskService, never()).createGateByAgent(any(), any());
     verify(salesVideoService, never()).requestRender(any(), any());
   }
@@ -127,7 +136,12 @@ class VideoProductionCycleServiceTest {
                 "FINAL_CAMPAIGN",
                 "Confirmar configuração Runway",
                 "Saldo, quota e custo estimado visíveis",
-                "usuario@mkt"));
+                "usuario@mkt",
+                null,
+                null,
+                null,
+                null,
+                null));
     VideoProductionCycle cycle = cycle();
     cycle.setId(opened.id());
     cycle.setStatus("PENDING_PROVIDER_PREFLIGHT_ONLY");
@@ -143,10 +157,75 @@ class VideoProductionCycleServiceTest {
 
     assertThat(opened.status()).isEqualTo("PENDING_PROVIDER_PREFLIGHT_ONLY");
     assertThat(completed.status()).isEqualTo("PROVIDER_PREFLIGHT_ONLY_COMPLETED");
-    verify(providerPreflightService).open(opened.id(), "FINAL_CAMPAIGN");
+    verify(providerPreflightService).open(opened.id(), "FINAL_CAMPAIGN", null);
     verify(providerPreflightService, never()).reserve(any());
     verify(taskService, never()).createGateByAgent(any(), any());
     verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Encaminha a rota local diretamente a Plutus sem criar dry run ou job externo. */
+  @Test
+  void shouldOpenLocalEditorialCycleAtFinancialReview() {
+    VideoProject project = project();
+    project.setProviderPlan(
+        "Provider escolhido no Estudio: Movimento editorial local (EDITORIAL_MOTION).");
+    VideoProviderPreflight local = new VideoProviderPreflight();
+    local.setStatus("READY");
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
+    when(providerPreflightService.open(any(), any(), any())).thenReturn(local);
+    when(taskService.createGateByAgent(any(), any())).thenReturn(financialGateTask());
+
+    var result =
+        service.create(
+            new VideoProductionCycleContracts.CreateRequest(
+                7L,
+                new BigDecimal("15.38"),
+                "FINAL_CAMPAIGN",
+                "Comparar demonstração real com o cartão estático",
+                "Gerar compra líquida com contribuição positiva",
+                "time@marketinghub.io",
+                new BigDecimal("80.00"),
+                "BRL",
+                new BigDecimal("5.199100"),
+                "Banco Central do Brasil PTAX",
+                LocalDate.of(2026, 9, 25)));
+
+    assertThat(result.status()).isEqualTo("PENDING_FINANCIAL_REVIEW");
+    assertThat(result.agentTaskId()).isEqualTo(99L);
+    assertThat(result.authorizedBudgetAmount()).isEqualByComparingTo("80.00");
+    assertThat(result.authorizedBudgetCurrency()).isEqualTo("BRL");
+    assertThat(result.budgetLimitUsd()).isEqualByComparingTo("15.38");
+    assertThat(result.financialSnapshot())
+        .contains("Banco Central do Brasil PTAX", "5.199100", "80.00");
+    verify(providerPreflightService).reserve(any(VideoProductionCycle.class));
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Impede que arredondamento ou entrada manual ampliem o teto originalmente autorizado. */
+  @Test
+  void shouldRejectOperationalBudgetAboveOriginalBrlAuthorization() {
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project()));
+
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    new VideoProductionCycleContracts.CreateRequest(
+                        7L,
+                        new BigDecimal("15.39"),
+                        "FINAL_CAMPAIGN",
+                        "Validar prova",
+                        "Preservar margem",
+                        "time@marketinghub.io",
+                        new BigDecimal("80.00"),
+                        "BRL",
+                        new BigDecimal("5.199100"),
+                        "Banco Central do Brasil PTAX",
+                        LocalDate.of(2026, 9, 25))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("excede a autorização");
+
+    verify(repository, never()).save(any());
+    verify(providerPreflightService, never()).open(any(), any(), any());
   }
 
   /** Mantém falha de autenticação visível sem transformar preflight isolado em produção. */
@@ -186,7 +265,12 @@ class VideoProductionCycleServiceTest {
                 "FINAL_CAMPAIGN",
                 "Validar prova",
                 "Prova compreensivel",
-                "usuario@mkt"));
+                "usuario@mkt",
+                null,
+                null,
+                null,
+                null,
+                null));
 
     assertThat(result.commercialPlanId()).isNull();
     assertThat(result.financialSnapshot()).contains("PARTIAL");
@@ -532,10 +616,15 @@ class VideoProductionCycleServiceTest {
                         "FINAL_CAMPAIGN",
                         "Validar UGC",
                         "Ativo estável",
-                        "usuario@mkt")))
+                        "usuario@mkt",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null)))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("direitos auditáveis");
-    verify(providerPreflightService, never()).open(any(), any());
+    verify(providerPreflightService, never()).open(any(), any(), any());
   }
 
   /** Bloqueia um job pago falho para impedir nova geração sem preflight e reserva novos. */
@@ -764,7 +853,12 @@ class VideoProductionCycleServiceTest {
                         "FINAL_CAMPAIGN",
                         "Teste",
                         "Validar",
-                        "fixture@sandbox.local")))
+                        "fixture@sandbox.local",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null)))
         .hasMessageContaining("canal único");
     verify(providerPreflightService, never()).open(any(), any());
     verify(taskService, never()).createGateByAgent(any(), any());

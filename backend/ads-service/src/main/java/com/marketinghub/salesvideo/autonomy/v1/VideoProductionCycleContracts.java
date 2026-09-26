@@ -10,6 +10,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 /** Responsabilidade: concentrar os contratos da API de ciclos autônomos de vídeo v1. */
@@ -24,7 +25,12 @@ public final class VideoProductionCycleContracts {
       String productionProfile,
       @NotBlank String learningObjective,
       @NotBlank String successCriterion,
-      @NotBlank String requestedBy) {}
+      @NotBlank String requestedBy,
+      @PositiveOrZero BigDecimal authorizedBudgetAmount,
+      @Size(max = 3) String authorizedBudgetCurrency,
+      @PositiveOrZero BigDecimal usdBrlExchangeRate,
+      @Size(max = 500) String exchangeRateSource,
+      LocalDate exchangeRateDate) {}
 
   /** Registra a decisão independente de Plutus. */
   public record FinancialDecisionRequest(
@@ -54,6 +60,11 @@ public final class VideoProductionCycleContracts {
       Long experimentId,
       String status,
       BigDecimal budgetLimitUsd,
+      BigDecimal authorizedBudgetAmount,
+      String authorizedBudgetCurrency,
+      BigDecimal usdBrlExchangeRate,
+      String exchangeRateSource,
+      LocalDate exchangeRateDate,
       BigDecimal knownCostUsd,
       String financialSnapshot,
       Long agentTaskId,
@@ -68,6 +79,11 @@ public final class VideoProductionCycleContracts {
       Long experimentId,
       String status,
       BigDecimal budgetLimitUsd,
+      BigDecimal authorizedBudgetAmount,
+      String authorizedBudgetCurrency,
+      BigDecimal usdBrlExchangeRate,
+      String exchangeRateSource,
+      LocalDate exchangeRateDate,
       BigDecimal knownCostUsd,
       String learningObjective,
       String successCriterion,

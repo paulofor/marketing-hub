@@ -6,6 +6,11 @@ export type VideoProductionCycle = {
   videoProjectId: number;
   status: string;
   budgetLimitUsd: number;
+  authorizedBudgetAmount?: number;
+  authorizedBudgetCurrency?: "BRL" | "USD";
+  usdBrlExchangeRate?: number;
+  exchangeRateSource?: string;
+  exchangeRateDate?: string;
   knownCostUsd: number;
   learningObjective: string;
   successCriterion: string;
@@ -99,6 +104,11 @@ export function useCreateVideoProductionCycle(projectId?: number) {
       learningObjective: string;
       successCriterion: string;
       requestedBy: string;
+      authorizedBudgetAmount?: number;
+      authorizedBudgetCurrency?: "BRL" | "USD";
+      usdBrlExchangeRate?: number;
+      exchangeRateSource?: string;
+      exchangeRateDate?: string;
     }) => {
       const { data } = await axios.post<VideoProductionCycle>(
         "/api/sales-videos/autonomy/v1/cycles",
@@ -123,6 +133,11 @@ export function useCreateVideoProviderPreflight(projectId?: number) {
       learningObjective: string;
       successCriterion: string;
       requestedBy: string;
+      authorizedBudgetAmount?: number;
+      authorizedBudgetCurrency?: "BRL" | "USD";
+      usdBrlExchangeRate?: number;
+      exchangeRateSource?: string;
+      exchangeRateDate?: string;
     }) => {
       const { data } = await axios.post<VideoProductionCycle>(
         "/api/sales-videos/autonomy/v1/provider-preflights",

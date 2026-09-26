@@ -10,6 +10,7 @@ public record ApolloPdeAudiovisualDecision(
     /** Responsabilidade: enumerar os únicos desfechos aceitos pelo contrato audiovisual v1. */
     public enum Outcome {
         NOT_REQUIRED,
+        MATERIALIZED,
         REQUIRES_AUTHORIZATION,
         MISSING_CONTRACT,
         TECHNICAL_FAILURE
@@ -17,6 +18,6 @@ public record ApolloPdeAudiovisualDecision(
 
     /** Informa se o contrato permite concluir a atividade sem materialização audiovisual. */
     public boolean canComplete() {
-        return Outcome.NOT_REQUIRED.equals(outcome);
+        return Outcome.NOT_REQUIRED.equals(outcome) || Outcome.MATERIALIZED.equals(outcome);
     }
 }

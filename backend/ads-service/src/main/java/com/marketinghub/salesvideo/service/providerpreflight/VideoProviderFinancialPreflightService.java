@@ -46,6 +46,8 @@ public class VideoProviderFinancialPreflightService {
   private static final Logger log =
       LoggerFactory.getLogger(VideoProviderFinancialPreflightService.class);
   private static final String RUNWAY_ACCOUNT_KEY = "RUNWAY_PRIMARY";
+  private static final String LOCAL_EDITORIAL_ACCOUNT_KEY = "LOCAL_EDITORIAL";
+  private static final String LOCAL_EDITORIAL_CONFIG = "editorial_motion@v1";
   private static final Duration SNAPSHOT_TTL = Duration.ofMinutes(5);
   private static final Duration EXPECTED_EXECUTOR_CLOCK_SKEW = Duration.ofSeconds(60);
   private static final Duration MAX_EXECUTOR_CLOCK_SKEW = Duration.ofMinutes(5);
@@ -99,10 +101,19 @@ public class VideoProviderFinancialPreflightService {
   /** Abre o preflight idempotente do ciclo sem consultar ou consumir o agregador. */
   @Transactional
   public VideoProviderPreflight open(Long cycleId, String requestedProfile) {
+    return open(cycleId, requestedProfile, null);
+  }
+
+  /** Abre preflight externo ou registra a rota editorial local de custo conhecido igual a zero. */
+  @Transactional
+  public VideoProviderPreflight open(Long cycleId, String requestedProfile, String providerPlan) {
     return preflightRepository
         .findByVideoProductionCycleId(cycleId)
         .orElseGet(
             () -> {
+              if (isLocalEditorial(providerPlan)) {
+                return openLocalEditorial(cycleId, requestedProfile);
+              }
               VideoProviderAccount account = account(RUNWAY_ACCOUNT_KEY);
               Instant now = Instant.now(clock);
               VideoProviderPreflight preflight = new VideoProviderPreflight();
@@ -115,6 +126,58 @@ public class VideoProviderFinancialPreflightService {
               preflight.setUpdatedAt(now);
               return preflightRepository.save(preflight);
             });
+  }
+
+  /** Persiste um preflight local completo sem simular saldo, quota ou cobrança externa. */
+  private VideoProviderPreflight openLocalEditorial(Long cycleId, String requestedProfile) {
+    VideoProviderAccount account = account(LOCAL_EDITORIAL_ACCOUNT_KEY);
+    Instant now = Instant.now(clock);
+    Instant expiresAt = now.plus(SNAPSHOT_TTL);
+    String executionRequests =
+        "[{\"provider\":\"EDITORIAL_MOTION\",\"mode\":\"LOCAL_DETERMINISTIC\"}]";
+    String selectedRoutes =
+        "[{\"manufacturer\":\"Marketing Hub\",\"model\":\"editorial-motion-v1\","
+            + "\"aggregator\":\"Marketing Hub local\",\"accountKey\":\"LOCAL_EDITORIAL\","
+            + "\"routerConfigId\":\"editorial_motion@v1\","
+            + "\"batchRouteId\":\"LOCAL_EDITORIAL:editorial_motion@v1\","
+            + "\"optimizeFor\":\"MARGIN\",\"estimatedCredits\":0,"
+            + "\"priceCeilingCredits\":0}]";
+    VideoProviderPreflight preflight = new VideoProviderPreflight();
+    preflight.setVideoProductionCycleId(cycleId);
+    preflight.setProviderAccountId(account.getId());
+    preflight.setStatus("READY");
+    preflight.setProductionProfile(profile(requestedProfile));
+    preflight.setRouterConfigId(LOCAL_EDITORIAL_CONFIG);
+    preflight.setPayloadSha256(sha256(executionRequests));
+    preflight.setExecutionRequestsJson(executionRequests);
+    preflight.setOrganizationSnapshotJson(
+        "{\"execution\":\"LOCAL\",\"creditBalance\":0,\"externalBilling\":false}");
+    preflight.setRoutingResponseJson(
+        "[{\"dryRun\":true,\"provider\":\"EDITORIAL_MOTION\",\"estimatedCostUsd\":0}]");
+    preflight.setSelectedRoutesJson(selectedRoutes);
+    preflight.setEstimatedCredits(BigDecimal.ZERO);
+    preflight.setEstimatedCostUsd(BigDecimal.ZERO);
+    preflight.setOfficialBalanceCredits(BigDecimal.ZERO);
+    preflight.setReservedCreditsSnapshot(BigDecimal.ZERO);
+    preflight.setAvailableCreditsSnapshot(BigDecimal.ZERO);
+    preflight.setMaxMonthlyCreditSpend(0L);
+    preflight.setQuotaSnapshotJson("{\"externalQuotaRequired\":false,\"providerCostUsd\":0}");
+    preflight.setSourceUrl(account.getSourceUrl());
+    preflight.setObservedAt(now);
+    preflight.setExpiresAt(expiresAt);
+    preflight.setCreatedAt(now);
+    preflight.setUpdatedAt(now);
+    account.setOfficialBalanceCredits(BigDecimal.ZERO);
+    account.setReservedCredits(BigDecimal.ZERO);
+    account.setMaxMonthlyCreditSpend(0L);
+    account.setQuotaSnapshotJson(preflight.getQuotaSnapshotJson());
+    account.setUsageSnapshotJson("{\"providerCalls\":0,\"costUsd\":0}");
+    account.setSnapshotStatus("READY");
+    account.setSnapshotObservedAt(now);
+    account.setSnapshotExpiresAt(expiresAt);
+    account.setUpdatedAt(now);
+    accountRepository.save(account);
+    return preflightRepository.save(preflight);
   }
 
   /** Lista a fila canônica de preflight que o executor de vídeo pode consumir. */
@@ -878,8 +941,11 @@ public class VideoProviderFinancialPreflightService {
       JsonNode routes = objectMapper.readTree(selectedRoutesJson);
       BigDecimal maximum = BigDecimal.ZERO;
       for (JsonNode route : routes) {
+        boolean localEditorial = route.path("batchRouteId").asText().startsWith("LOCAL_EDITORIAL:");
         if (!route.path("priceCeilingCredits").isNumber()
-            || route.path("priceCeilingCredits").decimalValue().signum() <= 0) {
+            || route.path("priceCeilingCredits").decimalValue().signum() < 0
+            || (!localEditorial
+                && route.path("priceCeilingCredits").decimalValue().signum() == 0)) {
           throw conflict("Rota persistida não possui teto de créditos válido.");
         }
         maximum = maximum.add(route.path("priceCeilingCredits").decimalValue());
@@ -1043,8 +1109,15 @@ public class VideoProviderFinancialPreflightService {
         && providerPlan.toUpperCase(Locale.ROOT).contains("(RUNWAY_PRODUCT_UGC)");
   }
 
+  /** Reconhece somente o identificador técnico explícito da rota editorial local. */
+  private boolean isLocalEditorial(String providerPlan) {
+    return providerPlan != null
+        && providerPlan.toUpperCase(Locale.ROOT).contains("(EDITORIAL_MOTION)");
+  }
+
   /** Resolve o prefixo financeiro da rota pinada ou do Model Router. */
   private String routePrefix(String configId) {
+    if (LOCAL_EDITORIAL_CONFIG.equals(configId)) return "LOCAL_EDITORIAL:";
     return configId != null && configId.startsWith("product_ugc@")
         ? "RUNWAY_PRODUCT_UGC:"
         : "RUNWAY_ROUTER:";

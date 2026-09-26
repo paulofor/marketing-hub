@@ -28,10 +28,12 @@ import com.marketinghub.salesvideo.service.SalesVideoService;
 import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightData;
 import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightService;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +50,7 @@ public class VideoProductionCycleService {
   private static final String APOLLO_KEY = "videomaker";
   private static final String RUNWAY_ROUTER = "RUNWAY_ROUTER";
   private static final String RUNWAY_PRODUCT_UGC = "RUNWAY_PRODUCT_UGC";
+  private static final String EDITORIAL_MOTION = "EDITORIAL_MOTION";
   private static final String APOLLO_BLOCKED = "APOLLO_BLOCKED";
   private static final String EXPIRED_FINANCIAL_REVIEW_REASON =
       "A reserva preventiva expirou antes da aplicação do parecer de Plutus; abra um novo ciclo para renovar saldo, custo e autorização sem reutilizar o preflight antigo.";
@@ -136,14 +139,78 @@ public class VideoProductionCycleService {
     cycle.setRequestedBy(request.requestedBy().trim());
     cycle.setStatus(initialStatus);
     cycle.setBudgetLimitUsd(request.budgetLimitUsd());
+    applyBudgetAuthorization(cycle, request);
     cycle.setKnownCostUsd(BigDecimal.ZERO);
     cycle.setLearningObjective(request.learningObjective().trim());
     cycle.setSuccessCriterion(request.successCriterion().trim());
     cycle.setCreatedAt(now);
     cycle.setUpdatedAt(now);
     cycle = repository.save(cycle);
-    providerPreflightService.open(cycle.getId(), request.productionProfile());
+    VideoProviderPreflight preflight =
+        providerPreflightService.open(
+            cycle.getId(), request.productionProfile(), project.getProviderPlan());
+    if ("READY".equals(preflight.getStatus())) {
+      if ("PENDING_PROVIDER_PREFLIGHT_ONLY".equals(initialStatus)) {
+        cycle.setStatus("PROVIDER_PREFLIGHT_ONLY_COMPLETED");
+      } else {
+        providerPreflightService.reserve(cycle);
+        cycle.setAgentTaskId(createFinancialGate(cycle, project).id());
+        cycle.setStatus("PENDING_FINANCIAL_REVIEW");
+      }
+      cycle.setUpdatedAt(Instant.now());
+    }
     return response(repository.save(cycle));
+  }
+
+  /** Preserva a autorização original e impede que a conversão amplie o teto concedido. */
+  private void applyBudgetAuthorization(
+      VideoProductionCycle cycle, VideoProductionCycleContracts.CreateRequest request) {
+    boolean informed =
+        request.authorizedBudgetAmount() != null
+            || request.authorizedBudgetCurrency() != null
+            || request.usdBrlExchangeRate() != null
+            || request.exchangeRateSource() != null
+            || request.exchangeRateDate() != null;
+    if (!informed) return;
+    if (request.authorizedBudgetAmount() == null
+        || request.authorizedBudgetAmount().signum() <= 0
+        || request.authorizedBudgetCurrency() == null
+        || request.authorizedBudgetCurrency().isBlank()) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "A autorização financeira original está incompleta.");
+    }
+    String currency = request.authorizedBudgetCurrency().trim().toUpperCase(Locale.ROOT);
+    BigDecimal maximumUsd;
+    if ("BRL".equals(currency)) {
+      if (request.usdBrlExchangeRate() == null
+          || request.usdBrlExchangeRate().signum() <= 0
+          || request.exchangeRateSource() == null
+          || request.exchangeRateSource().isBlank()
+          || request.exchangeRateDate() == null) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "A autorização em BRL exige cotação USD/BRL, fonte e data.");
+      }
+      maximumUsd =
+          request
+              .authorizedBudgetAmount()
+              .divide(request.usdBrlExchangeRate(), 4, RoundingMode.DOWN);
+    } else if ("USD".equals(currency)) {
+      maximumUsd = request.authorizedBudgetAmount().setScale(4, RoundingMode.DOWN);
+    } else {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "A moeda da autorização deve ser BRL ou USD.");
+    }
+    if (cycle.getBudgetLimitUsd().compareTo(maximumUsd) > 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "O teto operacional em USD excede a autorização financeira original.");
+    }
+    cycle.setAuthorizedBudgetAmount(request.authorizedBudgetAmount());
+    cycle.setAuthorizedBudgetCurrency(currency);
+    cycle.setUsdBrlExchangeRate(request.usdBrlExchangeRate());
+    cycle.setExchangeRateSource(
+        request.exchangeRateSource() == null ? null : request.exchangeRateSource().trim());
+    cycle.setExchangeRateDate(request.exchangeRateDate());
   }
 
   /** Lista os ciclos cujo saldo, quota e payload ainda precisam de dry run no executor. */
@@ -373,14 +440,17 @@ public class VideoProductionCycleService {
   private void queueApollo(
       VideoProductionCycle cycle, VideoProject project, SalesVideoJob previous) {
     providerPreflightService.requireActiveReservation(cycle.getId());
-    String provider = isProductUgc(project.getProviderPlan()) ? RUNWAY_PRODUCT_UGC : RUNWAY_ROUTER;
+    String provider =
+        isProductUgc(project.getProviderPlan())
+            ? RUNWAY_PRODUCT_UGC
+            : isEditorialMotion(project.getProviderPlan()) ? EDITORIAL_MOTION : RUNWAY_ROUTER;
     RequestVideoRenderRequest render = new RequestVideoRenderRequest();
     render.setRequestedBy("Apolo");
     render.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
     render.setProviderName(provider);
     render.setExecutionMode(SalesVideoExecutionMode.TEST);
     render.setTargetDurationSeconds(
-        RUNWAY_PRODUCT_UGC.equals(provider)
+        RUNWAY_PRODUCT_UGC.equals(provider) || EDITORIAL_MOTION.equals(provider)
             ? project.getTargetDurationSeconds()
             : Math.min(10, project.getTargetDurationSeconds()));
     render.setMetadataJson(metadata(cycle, project, previous));
@@ -425,6 +495,7 @@ public class VideoProductionCycleService {
           providerPreflightService.requireActiveReservation(cycle.getId());
       int duration = project.getTargetDurationSeconds();
       boolean productUgc = isProductUgc(project.getProviderPlan());
+      boolean editorialMotion = isEditorialMotion(project.getProviderPlan());
       int providerClipDuration =
           SalesVideoProviderDurationPolicy.maxClipSecondsForPlan(project.getProviderPlan());
       List<LinkedHashMap<String, Object>> cuts =
@@ -453,15 +524,20 @@ public class VideoProductionCycleService {
       metadata.put("providerClipDurationSeconds", providerClipDuration);
       metadata.put(
           "sceneCount",
-          productUgc ? 1 : (duration + providerClipDuration - 1) / providerClipDuration);
+          productUgc || editorialMotion
+              ? 1
+              : (duration + providerClipDuration - 1) / providerClipDuration);
       metadata.put(
           "cutCount", productUgc ? captionSegments(project.getCaptionPlan()) : cuts.size());
-      metadata.put("assemblyRequired", !productUgc && duration > providerClipDuration);
+      metadata.put(
+          "assemblyRequired", !productUgc && !editorialMotion && duration > providerClipDuration);
       metadata.put(
           "generation_strategy",
           productUgc
               ? "RUNWAY_PRODUCT_UGC_WITH_DETERMINISTIC_POST_PRODUCTION"
-              : "PROVIDER_CLIPS_WITH_POST_PRODUCTION_CUTS");
+              : editorialMotion
+                  ? "DETERMINISTIC_EDITORIAL_MOTION_FROM_APPROVED_PRODUCT_PROOF"
+                  : "PROVIDER_CLIPS_WITH_POST_PRODUCTION_CUTS");
       if (researchIntelligenceMapper != null) {
         metadata.put(
             "researchIntelligence",
@@ -585,6 +661,12 @@ public class VideoProductionCycleService {
   private boolean isProductUgc(String providerPlan) {
     return providerPlan != null
         && providerPlan.toUpperCase(java.util.Locale.ROOT).contains("(RUNWAY_PRODUCT_UGC)");
+  }
+
+  /** Identifica a rota local somente pelo código técnico salvo no plano do projeto. */
+  private boolean isEditorialMotion(String providerPlan) {
+    return providerPlan != null
+        && providerPlan.toUpperCase(java.util.Locale.ROOT).contains("(EDITORIAL_MOTION)");
   }
 
   /** Confirma referência pública HTTPS antes de entregar o contrato ao executor. */
@@ -820,6 +902,7 @@ public class VideoProductionCycleService {
     VideoProject project = project(cycle.getVideoProjectId());
     int duration = project.getTargetDurationSeconds();
     boolean productUgc = isProductUgc(project.getProviderPlan());
+    boolean editorialMotion = isEditorialMotion(project.getProviderPlan());
     int providerClipDuration =
         SalesVideoProviderDurationPolicy.maxClipSecondsForPlan(project.getProviderPlan());
     return new VideoProductionCycleContracts.Response(
@@ -830,6 +913,11 @@ public class VideoProductionCycleService {
         cycle.getExperimentId(),
         cycle.getStatus(),
         cycle.getBudgetLimitUsd(),
+        cycle.getAuthorizedBudgetAmount(),
+        cycle.getAuthorizedBudgetCurrency(),
+        cycle.getUsdBrlExchangeRate(),
+        cycle.getExchangeRateSource(),
+        cycle.getExchangeRateDate(),
         cycle.getKnownCostUsd(),
         cycle.getLearningObjective(),
         cycle.getSuccessCriterion(),
@@ -856,9 +944,11 @@ public class VideoProductionCycleService {
         cycle.getBudgetAlertDetail(),
         cycle.getBudgetAlertAt(),
         providerClipDuration,
-        productUgc ? 1 : (duration + providerClipDuration - 1) / providerClipDuration,
+        productUgc || editorialMotion
+            ? 1
+            : (duration + providerClipDuration - 1) / providerClipDuration,
         productUgc ? captionSegments(project.getCaptionPlan()) : cutPlan(project, duration).size(),
-        !productUgc && duration > providerClipDuration,
+        !productUgc && !editorialMotion && duration > providerClipDuration,
         cycle.getAgentTaskId(),
         cycle.getCreatedAt(),
         cycle.getUpdatedAt());
@@ -875,6 +965,11 @@ public class VideoProductionCycleService {
         cycle.getExperimentId(),
         cycle.getStatus(),
         cycle.getBudgetLimitUsd(),
+        cycle.getAuthorizedBudgetAmount(),
+        cycle.getAuthorizedBudgetCurrency(),
+        cycle.getUsdBrlExchangeRate(),
+        cycle.getExchangeRateSource(),
+        cycle.getExchangeRateDate(),
         cycle.getKnownCostUsd(),
         financialSnapshot(cycle),
         cycle.getAgentTaskId(),
@@ -893,6 +988,12 @@ public class VideoProductionCycleService {
                   : financialAgentService.intelligence(cycle.getCommercialPlanId()));
       snapshot.put("learningObjective", cycle.getLearningObjective());
       snapshot.put("successCriterion", cycle.getSuccessCriterion());
+      snapshot.put("authorizedBudgetAmount", cycle.getAuthorizedBudgetAmount());
+      snapshot.put("authorizedBudgetCurrency", cycle.getAuthorizedBudgetCurrency());
+      snapshot.put("usdBrlExchangeRate", cycle.getUsdBrlExchangeRate());
+      snapshot.put("exchangeRateSource", cycle.getExchangeRateSource());
+      snapshot.put("exchangeRateDate", cycle.getExchangeRateDate());
+      snapshot.put("operationalBudgetLimitUsd", cycle.getBudgetLimitUsd());
       snapshot.put("incrementalLedger", studioCostLedgerService.cycleLedger(cycle.getId()));
       snapshot.putAll(providerPreflightService.financialContext(cycle.getId()));
       return objectMapper.writeValueAsString(snapshot);

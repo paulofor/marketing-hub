@@ -14,7 +14,10 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.net.URI;
+import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.HexFormat;
 import javax.imageio.ImageIO;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -66,6 +69,44 @@ class EditorialMotionVideoProviderTest {
         assertThat(server.getRequestCount()).isEqualTo(2);
     }
 
+    /** Deve usar a prova privada reautorizada e preservar tenant e hash no download interno. */
+    @Test
+    void shouldRenderFromGovernedPrivateProductProof() throws Exception {
+        byte[] image = imageBytes(new Color(36, 74, 122));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "image/png")
+                .setBody(new Buffer().write(image)));
+        VideoManagementProperties properties = properties();
+        properties.setBackendBaseUrl(URI.create(baseUrl()));
+        String sha256 = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(image));
+        EditorialMotionVideoProvider provider = new EditorialMotionVideoProvider(
+                properties, new ObjectMapper(), WebClient.builder());
+        SalesVideoJob job = job("""
+                {
+                  "tenantId":"default",
+                  "post_production":{"product_proof":{
+                    "contractVersion":"PDE_PRIVATE_VIDEO_PROOF_V1",
+                    "tenantId":"default",
+                    "evidenceId":96,
+                    "contentPath":"/api/sales-videos/projects/61/product-proof",
+                    "sha256":"%s"
+                  }},
+                  "cut_plan":[
+                    {"duration_seconds":3,"role":"MECANISMO"},
+                    {"duration_seconds":3,"role":"CTA"}
+                  ]
+                }
+                """.formatted(sha256));
+
+        ProviderArtifacts artifacts = provider.render(job, profile(), (percent, status, message) -> { });
+
+        assertThat(artifacts.videoFile().content()).hasSizeGreaterThan(10_000);
+        var request = server.takeRequest();
+        assertThat(request.getPath()).isEqualTo("/api/sales-videos/projects/61/product-proof");
+        assertThat(request.getHeader("X-Tenant-ID")).isEqualTo("default");
+    }
+
     /** Deve bloquear antes do ffmpeg quando não houver imagem aprovada. */
     @Test
     void shouldRejectMissingApprovedSource() {
@@ -90,6 +131,14 @@ class EditorialMotionVideoProviderTest {
 
     /** Cria uma resposta PNG vertical pequena e válida. */
     private MockResponse imageResponse(Color color) throws Exception {
+        return new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "image/png")
+                .setBody(new Buffer().write(imageBytes(color)));
+    }
+
+    /** Produz pixels PNG determinísticos para validar identidade e transporte privado. */
+    private byte[] imageBytes(Color color) throws Exception {
         BufferedImage image = new BufferedImage(180, 320, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = image.createGraphics();
         graphics.setColor(color);
@@ -97,10 +146,7 @@ class EditorialMotionVideoProviderTest {
         graphics.dispose();
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ImageIO.write(image, "png", output);
-        return new MockResponse()
-                .setResponseCode(200)
-                .setHeader("Content-Type", "image/png")
-                .setBody(new Buffer().write(output.toByteArray()));
+        return output.toByteArray();
     }
 
     /** Cria um job com duas imagens versionadas e dois cortes comerciais. */

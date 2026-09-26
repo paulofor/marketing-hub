@@ -12,6 +12,12 @@ public interface VideoProductProofSource {
   /** Lê somente os pixels da captura já validada pelo contexto de vídeo. */
   byte[] read(Long taskId, Long evidenceId);
 
+  /** Confirma a reautorização explícita da prova do produto para o experimento informado. */
+  default boolean isAuthorizedFor(
+      Proof proof, String targetSourceReference, Long productId, String prototypeVersion) {
+    return false;
+  }
+
   /**
    * Transporta identidade e resultado persistidos sem depender das entidades do módulo de agentes.
    */

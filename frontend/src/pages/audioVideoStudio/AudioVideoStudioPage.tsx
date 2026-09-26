@@ -1172,7 +1172,11 @@ export default function AudioVideoStudioPage() {
     useCreateVideoProductionCycle(editableProjectId);
   const createProviderPreflight =
     useCreateVideoProviderPreflight(editableProjectId);
-  const [cycleBudgetUsd, setCycleBudgetUsd] = useState("");
+  const [cycleAuthorizedBudgetBrl, setCycleAuthorizedBudgetBrl] = useState("");
+  const [cycleExchangeRateBrlPerUsd, setCycleExchangeRateBrlPerUsd] =
+    useState("");
+  const [cycleExchangeRateSource, setCycleExchangeRateSource] = useState("");
+  const [cycleExchangeRateDate, setCycleExchangeRateDate] = useState("");
   const [cycleProductionProfile, setCycleProductionProfile] = useState<
     "DRAFT_INSTAGRAM" | "FINAL_CAMPAIGN"
   >("FINAL_CAMPAIGN");
@@ -1196,6 +1200,15 @@ export default function AudioVideoStudioPage() {
   const targetDurationSeconds = parsePositiveInteger(
     briefing.targetDurationSeconds,
   );
+  const authorizedBudgetBrl = Number(cycleAuthorizedBudgetBrl);
+  const exchangeRateBrlPerUsd = Number(cycleExchangeRateBrlPerUsd);
+  const cycleBudgetUsd =
+    Number.isFinite(authorizedBudgetBrl) &&
+    authorizedBudgetBrl > 0 &&
+    Number.isFinite(exchangeRateBrlPerUsd) &&
+    exchangeRateBrlPerUsd > 0
+      ? Math.floor((authorizedBudgetBrl / exchangeRateBrlPerUsd) * 100) / 100
+      : Number.NaN;
 
   useEffect(() => {
     if (selectedProject) {
@@ -2715,18 +2728,60 @@ export default function AudioVideoStudioPage() {
                 {selectedProject ? (
                   <div className="audio-video-studio-page__cycle-form">
                     <label>
-                      Teto do ciclo em USD *
+                      Teto autorizado em BRL *
                       <input
-                        aria-label="Teto do ciclo em USD"
+                        aria-label="Teto autorizado em BRL"
                         min="0.01"
                         step="0.01"
                         type="number"
-                        value={cycleBudgetUsd}
+                        value={cycleAuthorizedBudgetBrl}
                         onChange={(event) =>
-                          setCycleBudgetUsd(event.target.value)
+                          setCycleAuthorizedBudgetBrl(event.target.value)
                         }
                       />
                     </label>
+                    <label>
+                      Cotação BRL por USD *
+                      <input
+                        aria-label="Cotação BRL por USD"
+                        min="0.000001"
+                        step="0.000001"
+                        type="number"
+                        value={cycleExchangeRateBrlPerUsd}
+                        onChange={(event) =>
+                          setCycleExchangeRateBrlPerUsd(event.target.value)
+                        }
+                      />
+                    </label>
+                    <label>
+                      Fonte da cotação *
+                      <input
+                        aria-label="Fonte da cotação"
+                        value={cycleExchangeRateSource}
+                        onChange={(event) =>
+                          setCycleExchangeRateSource(event.target.value)
+                        }
+                      />
+                    </label>
+                    <label>
+                      Data da cotação *
+                      <input
+                        aria-label="Data da cotação"
+                        type="date"
+                        value={cycleExchangeRateDate}
+                        onChange={(event) =>
+                          setCycleExchangeRateDate(event.target.value)
+                        }
+                      />
+                    </label>
+                    <p role="status">
+                      Teto operacional conservador: US${" "}
+                      {Number.isFinite(cycleBudgetUsd)
+                        ? cycleBudgetUsd.toFixed(2)
+                        : "—"}
+                      . A conversão arredonda para baixo e não amplia a
+                      autorização.
+                    </p>
                     <label>
                       Perfil de produção *
                       <select
@@ -2775,19 +2830,27 @@ export default function AudioVideoStudioPage() {
                           disabled={
                             createProviderPreflight.isPending ||
                             createProductionCycle.isPending ||
-                            !Number.isFinite(Number(cycleBudgetUsd)) ||
-                            Number(cycleBudgetUsd) <= 0 ||
+                            !Number.isFinite(cycleBudgetUsd) ||
+                            cycleBudgetUsd <= 0 ||
+                            !cycleExchangeRateSource.trim() ||
+                            !cycleExchangeRateDate ||
                             !cycleLearningObjective.trim() ||
                             !cycleSuccessCriterion.trim() ||
                             Boolean(providerConfigurationIssue)
                           }
                           onClick={() =>
                             createProviderPreflight.mutate({
-                              budgetLimitUsd: Number(cycleBudgetUsd),
+                              budgetLimitUsd: cycleBudgetUsd,
                               productionProfile: cycleProductionProfile,
                               learningObjective: cycleLearningObjective.trim(),
                               successCriterion: cycleSuccessCriterion.trim(),
-                              requestedBy: "Usuário do Marketing Hub",
+                              requestedBy: tenantContext.userEmail,
+                              authorizedBudgetAmount: authorizedBudgetBrl,
+                              authorizedBudgetCurrency: "BRL",
+                              usdBrlExchangeRate: exchangeRateBrlPerUsd,
+                              exchangeRateSource:
+                                cycleExchangeRateSource.trim(),
+                              exchangeRateDate: cycleExchangeRateDate,
                             })
                           }
                         >
@@ -2815,19 +2878,27 @@ export default function AudioVideoStudioPage() {
                           disabled={
                             createProductionCycle.isPending ||
                             createProviderPreflight.isPending ||
-                            !Number.isFinite(Number(cycleBudgetUsd)) ||
-                            Number(cycleBudgetUsd) <= 0 ||
+                            !Number.isFinite(cycleBudgetUsd) ||
+                            cycleBudgetUsd <= 0 ||
+                            !cycleExchangeRateSource.trim() ||
+                            !cycleExchangeRateDate ||
                             !cycleLearningObjective.trim() ||
                             !cycleSuccessCriterion.trim() ||
                             Boolean(providerConfigurationIssue)
                           }
                           onClick={() =>
                             createProductionCycle.mutate({
-                              budgetLimitUsd: Number(cycleBudgetUsd),
+                              budgetLimitUsd: cycleBudgetUsd,
                               productionProfile: cycleProductionProfile,
                               learningObjective: cycleLearningObjective.trim(),
                               successCriterion: cycleSuccessCriterion.trim(),
-                              requestedBy: "Usuário do Marketing Hub",
+                              requestedBy: tenantContext.userEmail,
+                              authorizedBudgetAmount: authorizedBudgetBrl,
+                              authorizedBudgetCurrency: "BRL",
+                              usdBrlExchangeRate: exchangeRateBrlPerUsd,
+                              exchangeRateSource:
+                                cycleExchangeRateSource.trim(),
+                              exchangeRateDate: cycleExchangeRateDate,
                             })
                           }
                         >
@@ -3085,6 +3156,10 @@ export default function AudioVideoStudioPage() {
                           US$ {productionCycles.data[0].knownCostUsd.toFixed(2)}{" "}
                           / US${" "}
                           {productionCycles.data[0].budgetLimitUsd.toFixed(2)}
+                          {productionCycles.data[0].authorizedBudgetAmount !=
+                          null
+                            ? ` · autorizado ${productionCycles.data[0].authorizedBudgetCurrency} ${productionCycles.data[0].authorizedBudgetAmount.toFixed(2)} com câmbio ${productionCycles.data[0].usdBrlExchangeRate?.toFixed(6)} em ${productionCycles.data[0].exchangeRateDate}`
+                            : ""}
                           {productionCycles.data[0].budgetAlertDetail
                             ? ` · ${productionCycles.data[0].budgetAlertDetail}`
                             : " · Aguardando a primeira task do provider."}

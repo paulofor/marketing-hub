@@ -76,6 +76,45 @@ class ApolloPdeAudiovisualRequirementEvaluatorTest {
                 .isEqualTo(ApolloPdeAudiovisualDecision.Outcome.REQUIRES_AUTHORIZATION);
     }
 
+    /** Conclui a atividade após o Estúdio devolver o ativo autorizado dentro do teto. */
+    @Test
+    void shouldCompleteRequiredAudiovisualAfterGovernedMaterialization() throws Exception {
+        JsonNode context = objectMapper.readTree("""
+                {
+                  "communicationMaterialization": {"audiovisualRequired": true},
+                  "audiovisualMaterialization": {
+                    "contractVersion":"APOLLO_COMMUNICATION_AUDIOVISUAL_MATERIALIZATION_V1",
+                    "sourceReference":"experiment:93",
+                    "videoProductionCycleId":51,
+                    "videoProjectId":61,
+                    "salesVideoJobId":71,
+                    "status":"VIDEO_READY_FOR_REVIEW",
+                    "financialDecision":"APPROVED",
+                    "authorizedBy":"time@marketinghub.io",
+                    "budgetLimitUsd":15.38,
+                    "actualCostUsd":0.42,
+                    "publicationAuthorized":false,
+                    "spendAuthorized":true,
+                    "artifactIds":[81,82]
+                  }
+                }
+                """);
+        ApolloPdeAudiovisualTask base = task(context);
+        ApolloPdeAudiovisualTask creative = new ApolloPdeAudiovisualTask(
+                505L, base.agentKey(), "creative-production-approval", 8,
+                base.activityId(), base.activityName(), base.title(), base.description(),
+                "experiment:93", base.receivedAt(), base.executionResource(),
+                new ApolloPdeAudiovisualTask.TaskTarget(
+                        "experiment:93", 93L, 10L, "mira", "Mira", "Mira",
+                        "mira-private-v3", null, context),
+                null);
+
+        ApolloPdeAudiovisualDecision decision = evaluator.evaluate(creative);
+
+        assertThat(decision.outcome()).isEqualTo(ApolloPdeAudiovisualDecision.Outcome.MATERIALIZED);
+        assertThat(decision.canComplete()).isTrue();
+    }
+
     /** Rejeita campo ausente ou textual sem converter ambiguidade em decisão. */
     @Test
     void shouldBlockMissingOrNonBooleanContract() throws Exception {

@@ -74,6 +74,20 @@ class VideoProductProofServiceTest {
         .containsEntry("crop", java.util.List.of(10, 20, 300, 400));
   }
 
+  /** Aceita pixels do produto somente quando o contrato autoriza o experimento e a mesma versão. */
+  @Test
+  void resolvesProductProofExplicitlyReauthorizedForExperiment() {
+    task.setSourceReference("product:91002@agent-validation-v1");
+    when(repository.isAuthorizedFor(
+            any(VideoProductProofSource.Proof.class),
+            eq("experiment:91003"),
+            eq(91002L),
+            eq("pde-v12")))
+        .thenReturn(true);
+
+    assertThat(service.resolve(project)).containsEntry("sha256", "abc");
+  }
+
   /** Bloqueia mistura de versão, produto, experimento, status e resultado reprovado. */
   @ParameterizedTest
   @ValueSource(

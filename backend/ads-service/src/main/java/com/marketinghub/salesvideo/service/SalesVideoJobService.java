@@ -539,7 +539,8 @@ public class SalesVideoJobService {
     if (job.getStatus() != SalesVideoStatus.VIDEO_READY
         || !("MUSA_VIDEO_MONTAGE".equalsIgnoreCase(job.getProviderName())
             || "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(job.getProviderName())
-            || "RUNWAY_ROUTER".equalsIgnoreCase(job.getProviderName()))
+            || "RUNWAY_ROUTER".equalsIgnoreCase(job.getProviderName())
+            || "EDITORIAL_MOTION".equalsIgnoreCase(job.getProviderName()))
         || !StringUtils.hasText(requestedJobMetadata)) {
       return;
     }
@@ -1042,11 +1043,12 @@ public class SalesVideoJobService {
     return source;
   }
 
-  /** Reconhece a rota genérica somente quando a prova final confere com o hash solicitado. */
+  /** Reconhece a rota visual somente quando a prova final confere com o hash solicitado. */
   private boolean isVerifiedPrivatePdeSource(SalesVideoJob sourceJob, JsonNode metadata) {
     JsonNode expected = readJobMetadata(sourceJob).at("/post_production/product_proof");
     JsonNode actual = metadata.path("product_reference_overlay");
-    return "RUNWAY_ROUTER".equalsIgnoreCase(sourceJob.getProviderName())
+    return ("RUNWAY_ROUTER".equalsIgnoreCase(sourceJob.getProviderName())
+            || "EDITORIAL_MOTION".equalsIgnoreCase(sourceJob.getProviderName()))
         && "PDE_PRIVATE_VIDEO_PROOF_V1".equals(expected.path("contractVersion").asText())
         && "APPLIED".equals(actual.path("status").asText())
         && !expected.path("sha256").asText().isBlank()

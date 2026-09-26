@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-26-video-cycle-original-budget-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: video_production_cycle
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE video_production_cycle
+                ADD COLUMN authorized_budget_amount DECIMAL(12,4) NULL AFTER budget_limit_usd,
+                ADD COLUMN authorized_budget_currency VARCHAR(3) NULL AFTER authorized_budget_amount,
+                ADD COLUMN usd_brl_exchange_rate DECIMAL(12,6) NULL AFTER authorized_budget_currency,
+                ADD COLUMN exchange_rate_source VARCHAR(500) NULL AFTER usd_brl_exchange_rate,
+                ADD COLUMN exchange_rate_date DATE NULL AFTER exchange_rate_source;

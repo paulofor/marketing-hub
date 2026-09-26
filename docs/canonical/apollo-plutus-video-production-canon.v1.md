@@ -33,6 +33,21 @@ não deve receber segredo nem chamar o provider de render diretamente. Falta de 
 recomendação de recarga ao usuário, mas nunca compra automática, autobilling ou criação antecipada
 de job pago.
 
+Uma rota determinística local, como `EDITORIAL_MOTION`, continua sujeita ao mesmo ciclo governado:
+preflight persistido, teto explícito, parecer de Plutus, autorização humana, ledger, QA e proibição
+de publicação automática. Ela pode registrar saldo, reserva e custo de provider iguais a zero
+somente quando o identificador técnico da rota for `LOCAL_EDITORIAL:` e o render visual não fizer
+chamada externa. Locução ou outro acabamento externo continuam no ledger separado e nunca herdam
+o custo zero do render. O planejamento deve validar localmente prova real homologada, SHA-256,
+narrativa, duração, legenda, locução e revisores, sem chamar modelo apenas para aprovar uma montagem
+determinística.
+
+Quando a autorização humana for concedida em BRL, o ciclo deve preservar o valor e a moeda
+originais, a cotação BRL por USD, sua fonte e data, além do teto operacional em USD usado pelo
+ledger. A conversão arredonda para baixo e o backend bloqueia qualquer teto operacional superior ao
+valor autorizado. O teto continua sendo limite, nunca meta de gasto; custo zero não dispensa o
+registro da autorização.
+
 O payload faturável deve ser estruturalmente equivalente ao payload do dry run, exceto pela ausência de
 `dryRun`. Receitas oficiais que não documentem `dryRun` só podem entrar pelo mesmo fluxo quando a
 versão estiver fixada, o payload exato estiver congelado e o custo máximo puder ser recalculado
@@ -145,6 +160,13 @@ Referência: [continuidade após preflight](../homologacao/vega-producao-apos-pr
 O parecer de Plutus deve registrar prompt, resposta bruta, modelo e uso antes do callback funcional.
 Se o callback falhar, a próxima leitura reutiliza a resposta auditada e não consome uma segunda
 interação de IA.
+
+Quando um ciclo do Estúdio ligado ao mesmo produto, experimento e versão alcançar
+`VIDEO_READY_FOR_REVIEW`, com decisão financeira aprovada, custo dentro do teto e ativo final
+persistido, o backend deve projetar um recibo mínimo de materialização para a atividade audiovisual
+da produção criativa. Apolo conclui a atividade usando esse recibo, sem regenerar a peça; Psique,
+Têmis e a decisão humana permanecem gates independentes e o backend continua sendo o único
+responsável pelo avanço da cadeia.
 
 A identidade da recomendação não é texto livre do modelo: o executor financeiro deve copiar
 `recommendedAggregator` do agregador persistido no preflight e `recommendedRoute` do `batchRouteId`

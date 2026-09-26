@@ -7382,3 +7382,15 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   amplie o teto; testes cruzados cobrem preflight local, autorização de prova, storyboard sem IA,
   download privado, hash divergente, acabamento, prontidão comercial, materialização BPM e callback
   com IDs/custo. Referência: `docs/homologacao/mira-comunicacao-cinco-pilares-video-v1.md`.
+- **Recorrência de configuração confirmada em produção:** o ciclo #23 aprovou a rota
+  `EDITORIAL_MOTION`, mas o job #21245 terminou em `VIDEO_PROVIDER_ERROR` antes de gerar ativo. A
+  imagem publicada continha o provider e o Compose local o habilitava; o descritor isolado usado no
+  host de vídeo omitia `VIDEO_PROVIDERS_EDITORIAL_MOTION_ENABLED`, portanto o Spring não registrava
+  o bean em produção. Reserva, ledger e banco confirmaram custo efetivo zero nessa tentativa.
+- **Alternativas avaliadas:** injetar a variável manualmente no host seria rápido e não versionado;
+  habilitar o provider globalmente em `application.yml` reduziria a diferença, mas apagaria a
+  decisão explícita de cada ambiente; declarar a variável no Compose produtivo e testá-la preserva
+  configuração por ambiente, auditoria e repetibilidade. A terceira alternativa foi adotada.
+- **Correção e prevenção da recorrência:** o descritor produtivo habilita explicitamente o provider
+  local por padrão, e o teste do Compose isolado exige o valor renderizado antes do deploy. Assim,
+  catálogo, preflight e runtime não podem mais divergir silenciosamente para essa rota.

@@ -74,7 +74,7 @@ const legacyPrivateValidation = {
 function detail(execution) {
   const processReport = [92, 93].includes(execution.id)
     ? {
-        reportType: "PDE_OPPORTUNITY_TO_PRIVATE_VALIDATION_V2",
+        reportType: "PDE_OPPORTUNITY_TO_PRIVATE_VALIDATION_V3",
         status: execution.status,
         headline: "Duas candidatas factuais aguardam priorização de Atena.",
         acquisitionChannel: "Instagram",

@@ -18,6 +18,7 @@ import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.service.ProductService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
 import com.marketinghub.producttype.ProductTypeDefinition;
+import com.marketinghub.producttype.ProductTypeStatus;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.opportunitydossier.OpportunityDossierRepository;
@@ -26,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -93,6 +95,7 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
       OpportunityDossier dossier =
           requiredSelectedDossier(task.getSourceReference(), strategyResult);
       if (dossier.getCreatedProduct() != null) return CompletionDisposition.COMPLETE;
+      ProductIdentity productIdentity = resolveProductIdentity(task, dossier, strategyResult);
       JsonNode strategy = strategyResult.path("marketStrategicContract");
       requirePrivateValidationReadiness(strategy);
       JsonNode economicsResult = completedResult(tasks, "economics");
@@ -106,7 +109,14 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
       CommercialPlan plan = createPlan(dossier, strategy, economics, metrics);
       Product product =
           createProduct(
-              dossier, plan, strategy, economics, metrics, architecture, architectureResult);
+              dossier,
+              plan,
+              productIdentity,
+              strategy,
+              economics,
+              metrics,
+              architecture,
+              architectureResult);
       dossier.setConvertedPlan(plan);
       dossier.setCreatedProduct(product);
       dossier.setProposedOffer(text(strategy, "offerThesis"));
@@ -166,27 +176,24 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
             limit(dossier.getKnownRisks(), 512)));
   }
 
-  /** Cria o cadastro PDE planejado com a linhagem factual, estratégica e econômica completa. */
+  /** Cria o produto planejado com a identidade escolhida e a linhagem comercial completa. */
   private Product createProduct(
       OpportunityDossier dossier,
       CommercialPlan plan,
+      ProductIdentity productIdentity,
       JsonNode strategy,
       JsonNode economics,
       JsonNode metrics,
       JsonNode architecture,
       JsonNode architectureResult)
       throws JsonProcessingException {
-    ProductTypeDefinition pdeType =
-        productTypeRepository
-            .findByCode("PDE")
-            .orElseThrow(() -> new IllegalStateException("Tipo canônico PDE não foi encontrado."));
     MarketNiche marketNiche = resolveMarketNiche(dossier, strategy);
     CreateProductRequest product = new CreateProductRequest();
     String plannedName = dossier.getTitle() + " · PDE planejado #" + dossier.getId();
     product.setSlug("pde-planejado-" + dossier.getId());
     product.setName(limit(plannedName, 191));
-    product.setInternalName(limit(plannedName, 191));
-    product.setProductTypeId(pdeType.getId());
+    product.setInternalName(productIdentity.internalName());
+    product.setProductTypeId(productIdentity.type().getId());
     product.setMarketNicheId(marketNiche.getId());
     product.setProductFormat(limit(text(architecture, "format"), 64));
     product.setDeliveryMode("EXPERIÊNCIA_PERSONALIZADA_POR_IA");
@@ -197,7 +204,7 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
     product.setValidationDefinitionVersion("PDE_PRIVATE_VALIDATION_V1");
     product.setValidationDefinitionJson(
         objectMapper.writeValueAsString(
-            validationDefinition(strategy, economics, metrics, architecture)));
+            validationDefinition(productIdentity, strategy, economics, metrics, architecture)));
     product.setCommercialStatus("PLANNED");
     product.setCurrentPriceBrl(decimal(economics, "offerPriceBrl"));
     product.setPrimaryHypothesis(text(strategy, "causalHypothesis"));
@@ -206,6 +213,13 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
             + dossier.getId()
             + " e plano #"
             + plan.getId()
+            + ". Identidade interna "
+            + productIdentity.internalName()
+            + " e tipo "
+            + productIdentity.type().getInternalName()
+            + " ("
+            + productIdentity.type().getCode()
+            + ") escolhidos por Atena"
             + ". Próximo gate: construir o protótipo privado e obter duas leituras independentes."
             + " Não está publicado nem autorizado para contato, campanha, pagamento ou gasto.");
     product.setSevenDayJourney(objectMapper.writeValueAsString(architecture.path("valueJourney")));
@@ -217,7 +231,8 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
     product.setUniqueMechanism(text(strategy, "valueMechanism"));
     product.setPdeExperienceJson(
         objectMapper.writeValueAsString(
-            pdeExperience(dossier, plan, strategy, economics, metrics, architectureResult)));
+            pdeExperience(
+                dossier, plan, productIdentity, strategy, economics, metrics, architectureResult)));
     product.setCheckoutMonetization(objectMapper.writeValueAsString(economics));
     product.setFunnel("Instagram → experiência PDE → checkout governado");
     Product saved = productService.createProduct(product);
@@ -251,7 +266,11 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
 
   /** Monta a definição de construção e validação privada que governa o produto planejado. */
   private ObjectNode validationDefinition(
-      JsonNode strategy, JsonNode economics, JsonNode metrics, JsonNode architecture) {
+      ProductIdentity productIdentity,
+      JsonNode strategy,
+      JsonNode economics,
+      JsonNode metrics,
+      JsonNode architecture) {
     Instant frozenAt = Instant.now();
     ObjectNode definition = objectMapper.createObjectNode();
     definition.set("problem", valueNode(strategy, "problem"));
@@ -269,6 +288,7 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
     definition.set("economics", economics.deepCopy());
     definition.set("successEvidence", metrics.path("delivery").deepCopy());
     definition.set("decisionRules", metrics.deepCopy());
+    definition.set("productIdentity", productIdentity.contract().deepCopy());
     return definition;
   }
 
@@ -276,6 +296,7 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
   private ObjectNode pdeExperience(
       OpportunityDossier dossier,
       CommercialPlan plan,
+      ProductIdentity productIdentity,
       JsonNode strategy,
       JsonNode economics,
       JsonNode metrics,
@@ -294,10 +315,80 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
     experience.set("metrics", metrics.deepCopy());
     experience.set("harness", architectureResult.path("productArchitecture").deepCopy());
     experience.set("privateValidationPlan", strategy.path("privateValidationPlan").deepCopy());
+    experience.set("productIdentity", productIdentity.contract().deepCopy());
     experience.put(
         "publicationBoundary",
         "Planejamento e construção privada sem autorização de contato, publicação, campanha, pagamento, orçamento ou gasto.");
     return experience;
+  }
+
+  /** Resolve a identidade nova de Atena e preserva somente o fallback das versões históricas. */
+  private ProductIdentity resolveProductIdentity(
+      AgentTask task, OpportunityDossier dossier, JsonNode strategyResult) {
+    Integer processVersion = task.getProcessDefinition().getVersionNumber();
+    if (processVersion == null || processVersion < 9) {
+      ProductTypeDefinition legacyType =
+          productTypeRepository
+              .findByCode("PDE")
+              .orElseThrow(
+                  () -> new IllegalStateException("Tipo canônico PDE não foi encontrado."));
+      String plannedName = limit(dossier.getTitle() + " · PDE planejado #" + dossier.getId(), 191);
+      ObjectNode legacyContract = objectMapper.createObjectNode();
+      legacyContract.put("contractVersion", "LEGACY_PRODUCT_IDENTITY_FALLBACK_V1");
+      legacyContract.put("mode", "LEGACY");
+      legacyContract.put("internalName", plannedName);
+      legacyContract.put("productTypeCode", legacyType.getCode());
+      legacyContract.put("productTypeInternalName", legacyType.getInternalName());
+      legacyContract.put(
+          "classificationRationale",
+          "Compatibilidade com execução anterior ao contrato de identidade do Processo 2.");
+      return new ProductIdentity(plannedName, legacyType, legacyContract);
+    }
+
+    JsonNode contract = strategyResult.path("productIdentity");
+    String internalName = requiredText(contract, "internalName");
+    String typeCode = requiredText(contract, "productTypeCode");
+    String typeInternalName = requiredText(contract, "productTypeInternalName");
+    if (!"PRODUCT_IDENTITY_V1".equals(contract.path("contractVersion").asText())
+        || !"CREATE".equals(contract.path("mode").asText())
+        || requiredText(contract, "classificationRationale").isBlank()
+        || internalName.length() > 191
+        || isProvisionalInternalName(internalName)) {
+      throw new IllegalArgumentException(
+          "Atena não definiu nome interno estável e classificação PRODUCT_IDENTITY_V1.");
+    }
+    ProductTypeDefinition type =
+        productTypeRepository
+            .findByCode(typeCode)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "O tipo escolhido por Atena não existe no catálogo ativo."));
+    if (type.getStatus() != ProductTypeStatus.ACTIVE
+        || type.getInternalName() == null
+        || !type.getInternalName().equals(typeInternalName)) {
+      throw new IllegalArgumentException(
+          "O tipo escolhido por Atena não corresponde a uma classificação ativa do catálogo.");
+    }
+    return new ProductIdentity(internalName, type, contract.deepCopy());
+  }
+
+  /** Rejeita rótulos de descoberta usados anteriormente como se fossem identidade estável. */
+  private boolean isProvisionalInternalName(String value) {
+    String normalized = value.toLowerCase(Locale.ROOT);
+    return normalized.contains("planejado")
+        || normalized.contains("rascunho")
+        || normalized.startsWith("pde ")
+        || normalized.startsWith("produto #");
+  }
+
+  /** Exige texto real no contrato de identidade sem aceitar nulo ou espaços. */
+  private String requiredText(JsonNode node, String field) {
+    String value = node.path(field).asText("").trim();
+    if (value.isBlank()) {
+      throw new IllegalArgumentException("Atena não informou " + field + " na identidade.");
+    }
+    return value;
   }
 
   /** Exige que Atena tenha liberado somente o protótipo, nunca a operação comercial. */
@@ -498,4 +589,8 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
   private String limit(String value, int maxLength) {
     return value == null || value.length() <= maxLength ? value : value.substring(0, maxLength);
   }
+
+  /** Agrupa o nome interno, o tipo catalogado e o snapshot exato escolhido por Atena. */
+  private record ProductIdentity(
+      String internalName, ProductTypeDefinition type, JsonNode contract) {}
 }

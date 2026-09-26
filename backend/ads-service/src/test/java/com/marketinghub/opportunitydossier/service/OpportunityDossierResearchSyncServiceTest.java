@@ -14,14 +14,19 @@ import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskRequest;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.opportunitydossier.OpportunityDossier;
+import com.marketinghub.product.Product;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityDecision;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
+import com.marketinghub.producttype.ProductTypeDefinition;
+import com.marketinghub.producttype.ProductTypeStatus;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.opportunitydossier.OpportunityDossierRepository;
 import com.marketinghub.repository.jpa.opportunitydossier.OpportunityEvidenceRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
+import com.marketinghub.repository.jpa.producttype.ProductTypeDefinitionRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -58,12 +63,19 @@ class OpportunityDossierResearchSyncServiceTest {
         .extracting(CreateAgentTaskRequest::sourceReference)
         .containsOnly("product-discovery-cycle:42");
     assertThat(tasks.getAllValues().get(0).description())
-        .contains("Guarda-roupa cápsula 40+", "Viagem solo 40+", "DOSSIER_READY");
+        .contains(
+            "Guarda-roupa cápsula 40+",
+            "Viagem solo 40+",
+            "DOSSIER_READY",
+            "PRODUCT_IDENTITY_V1",
+            "\"reservedInternalNames\":[\"Mira\"]",
+            "\"code\":\"AI_PRODUCT\"",
+            "\"internalName\":\"Safira\"");
     assertThat(tasks.getAllValues().get(1).description())
-        .contains("MARKET_STRATEGY_V3", "contexto do processo")
+        .contains("MARKET_STRATEGY_V3", "PRODUCT_IDENTITY_V1", "contexto do processo")
         .doesNotContain("Guarda-roupa cápsula 40+");
     assertThat(tasks.getAllValues().get(2).description())
-        .contains("economia aprovada por Plutus", "contexto do processo")
+        .contains("economia aprovada por Plutus", "PRODUCT_IDENTITY_V1", "contexto do processo")
         .doesNotContain("Viagem solo 40+");
   }
 
@@ -93,7 +105,7 @@ class OpportunityDossierResearchSyncServiceTest {
     verify(fixture.agentTaskService)
         .cancelActiveTasksBySourceReference(
             "product-discovery-cycle:42",
-            "Cadeia reiniciada porque a estratégia concluída usa contrato anterior ao MARKET_STRATEGY_V3.");
+            "Cadeia reiniciada porque Atena não registrou a identidade PRODUCT_IDENTITY_V1 exigida pelo Processo 2.");
     verify(fixture.agentTaskService, times(3)).createByHuman(any(CreateAgentTaskRequest.class));
     verify(fixture.agentTaskService, never()).retryBlockedByHumanOrRefreshPending(any());
   }
@@ -128,6 +140,14 @@ class OpportunityDossierResearchSyncServiceTest {
                             "CHECKOUT_STARTED"
                           ]
                         }
+                      },
+                      "productIdentity":{
+                        "contractVersion":"PRODUCT_IDENTITY_V1",
+                        "mode":"CREATE",
+                        "internalName":"Alcyone",
+                        "productTypeCode":"AI_PRODUCT",
+                        "productTypeInternalName":"Safira",
+                        "classificationRationale":"Personalização por IA é o mecanismo de valor."
                       }
                     }
                     """)));
@@ -151,6 +171,27 @@ class OpportunityDossierResearchSyncServiceTest {
 
     verify(fixture.dossiers).save(any(OpportunityDossier.class));
     verify(fixture.agentTaskService, never()).retryBlockedByHumanOrRefreshPending(any());
+  }
+
+  /** Não reabre Atena nem consome modelo quando o dossiê pronto já originou um produto. */
+  @Test
+  void doesNotReopenCommercialChainForMaterializedDossier() {
+    Fixture fixture = new Fixture();
+    ProductDiscoveryOpportunity candidate =
+        opportunity(
+            18L, "Decisão de look para ocasião", ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
+    OpportunityDossier existing =
+        OpportunityDossier.builder()
+            .id(118L)
+            .createdProduct(Product.builder().id(11L).internalName("Alcyone").build())
+            .build();
+    when(fixture.dossiers.findByProductDiscoveryOpportunityId(18L))
+        .thenReturn(Optional.of(existing));
+
+    fixture.service().synchronize(42L, List.of(candidate));
+
+    verify(fixture.agentTaskService, never()).retryBlockedByHumanOrRefreshPending(any());
+    verify(fixture.agentTaskService, never()).createByHuman(any());
   }
 
   /** Reutiliza o dossiê já vinculado à candidata durante uma reanálise do mesmo ciclo. */
@@ -243,15 +284,30 @@ class OpportunityDossierResearchSyncServiceTest {
     private final BusinessProcessDefinitionRepository processes =
         mock(BusinessProcessDefinitionRepository.class);
     private final AgentTaskService agentTaskService = mock(AgentTaskService.class);
+    private final ProductRepository products = mock(ProductRepository.class);
+    private final ProductTypeDefinitionRepository productTypes =
+        mock(ProductTypeDefinitionRepository.class);
 
     /** Prepara IDs estáveis e o processo comercial publicado. */
     private Fixture() {
       BusinessProcessDefinition process = new BusinessProcessDefinition();
       process.setId(88L);
-      process.setVersionNumber(6);
+      process.setVersionNumber(9);
       when(processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
               "pde-commercial-plan-offer", "PUBLISHED"))
           .thenReturn(Optional.of(process));
+      when(products.findAllAssignedInternalNames()).thenReturn(List.of("Mira"));
+      when(productTypes.findAllByStatusOrderByNameAsc(ProductTypeStatus.ACTIVE))
+          .thenReturn(
+              List.of(
+                  ProductTypeDefinition.builder()
+                      .id(3L)
+                      .code("AI_PRODUCT")
+                      .name("Produto IA")
+                      .internalName("Safira")
+                      .description("Valor depende de geração ou personalização por IA.")
+                      .status(ProductTypeStatus.ACTIVE)
+                      .build()));
       when(dossiers.findByProductDiscoveryOpportunityId(any())).thenReturn(Optional.empty());
       when(dossiers.findFirstByProductDiscoveryCycleIdAndTitleIgnoreCase(any(), any()))
           .thenReturn(Optional.empty());
@@ -269,7 +325,14 @@ class OpportunityDossierResearchSyncServiceTest {
     /** Monta o serviço com um serializador real e integrações isoladas. */
     private OpportunityDossierResearchSyncService service() {
       return new OpportunityDossierResearchSyncService(
-          dossiers, evidence, taskRepository, processes, agentTaskService, new ObjectMapper());
+          dossiers,
+          evidence,
+          taskRepository,
+          processes,
+          agentTaskService,
+          products,
+          productTypes,
+          new ObjectMapper());
     }
   }
 }

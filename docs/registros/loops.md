@@ -1,5 +1,22 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-PRODUTO-MATERIALIZADO-COM-IDENTIDADE-PROVISORIA — 26/09/2026
+
+- **Evidência confirmada:** o produto #10 precisou ser corrigido manualmente para Mira/Safira em
+  03/09. A execução independente #32 repetiu a falha no produto #11: Atena aprovou a estratégia sem
+  campos de identidade e a materialização gravou o título “PDE planejado #46” como nome interno e
+  fixou PDE/Opala, embora o mecanismo aprovado fosse personalização por IA.
+- **Causa-raiz:** o Processo 2 não possuía contrato para nome interno e tipo. O backend substituía a
+  decisão ausente por duas conveniências técnicas hardcoded, e Plutus e Dédalo avançavam sem uma
+  classificação explícita para orientar custo e formato.
+- **Alternativas avaliadas:** reparar somente o produto é rápido e recorrente; fechar identidades em
+  enum reduz flexibilidade; expor nomes ocupados e tipos ativos a um contrato versionado de Atena,
+  validado novamente pelo backend, preserva exploração e fecha a origem. A terceira foi adotada.
+- **Prevenção:** `pde-commercial-plan-offer` v9 exige `PRODUCT_IDENTITY_V1`; nomes provisórios,
+  colisões, tipos inativos e divergência código/mineral bloqueiam a materialização. Produtos
+  existentes usam `PRESERVE`. Testes cobrem prompt/schema, handoff, materialização, relatório, tela,
+  migração MySQL 5.7 e o reparo Alcyone/Safira do produto #11.
+
 ## LOOP-SAFIRA-SEM-PERCURSO-COMERCIAL — validação privada não inicia o Processo 5
 
 - **Data e evidência:** em 23/09/2026, Mira #10 concluiu o Processo 4 por referência privada

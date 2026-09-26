@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskCompletionHook;
@@ -27,6 +28,7 @@ import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
 import com.marketinghub.producttype.ProductTypeDefinition;
+import com.marketinghub.producttype.ProductTypeStatus;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.opportunitydossier.OpportunityDossierRepository;
@@ -57,6 +59,8 @@ class OpportunityProductMaterializationCompletionHookTest {
     verify(fixture.productService).createProduct(product.capture());
     verify(fixture.productService).updateAutomaticExecution(901L, false, "pde-discovery-handoff");
     assertThat(product.getValue().getCommercialStatus()).isEqualTo("PLANNED");
+    assertThat(product.getValue().getInternalName()).isEqualTo("Alcyone");
+    assertThat(product.getValue().getProductTypeId()).isEqualTo(3L);
     assertThat(product.getValue().getMarketNicheId()).isEqualTo(601L);
     assertThat(product.getValue().getDeliveryMode()).isEqualTo("EXPERIÊNCIA_PERSONALIZADA_POR_IA");
     assertThat(product.getValue().getValidationDefinitionVersion())
@@ -66,6 +70,9 @@ class OpportunityProductMaterializationCompletionHookTest {
             "WAITING_PRIVATE_PROTOTYPE",
             "privateValidationPlan",
             "privatePrototype",
+            "PRODUCT_IDENTITY_V1",
+            "Alcyone",
+            "Safira",
             "minimumIndependentReadings");
     assertThat(product.getValue().getPdeExperienceJson())
         .contains(
@@ -73,6 +80,7 @@ class OpportunityProductMaterializationCompletionHookTest {
             "private-validation-v1",
             "publicationBoundary",
             "privateValidationPlan",
+            "productIdentity",
             "dossierId");
     assertThat(fixture.dossier.getStatus()).isEqualTo(OpportunityDossierStatus.CONVERTED_TO_PLAN);
     assertThat(fixture.dossier.getCreatedProduct()).isSameAs(fixture.product);
@@ -143,6 +151,50 @@ class OpportunityProductMaterializationCompletionHookTest {
     verify(fixture.productService, never()).createProduct(any());
   }
 
+  /** Bloqueia classificação cujo mineral não corresponde ao tipo ativo escolhido. */
+  @Test
+  void rejectsMismatchedProductTypeIdentity() {
+    Fixture fixture = new Fixture(ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
+    fixture.strategyTask.setResultJson(
+        fixture.strategyTask.getResultJson().replace("\"Safira\"", "\"Opala\""));
+
+    assertThatThrownBy(
+            () -> fixture.hook.apply(fixture.architectureTask, fixture.architectureRequest()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("não puderam materializar");
+    verify(fixture.productService, never()).createProduct(any());
+  }
+
+  /** Mantém executável uma tarefa histórica v8 que nasceu antes do contrato de identidade. */
+  @Test
+  void preservesLegacyMaterializationForVersionEight() throws Exception {
+    Fixture fixture = new Fixture(ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
+    fixture.architectureTask.getProcessDefinition().setVersionNumber(8);
+    ObjectNode strategy =
+        (ObjectNode) fixture.objectMapper.readTree(fixture.strategyTask.getResultJson());
+    strategy.remove("productIdentity");
+    fixture.strategyTask.setResultJson(fixture.objectMapper.writeValueAsString(strategy));
+    when(fixture.productTypeRepository.findByCode("PDE"))
+        .thenReturn(
+            Optional.of(
+                ProductTypeDefinition.builder()
+                    .id(7L)
+                    .code("PDE")
+                    .name("Produto Digital Estruturado")
+                    .internalName("Opala")
+                    .build()));
+
+    fixture.hook.apply(fixture.architectureTask, fixture.architectureRequest());
+
+    ArgumentCaptor<CreateProductRequest> product =
+        ArgumentCaptor.forClass(CreateProductRequest.class);
+    verify(fixture.productService).createProduct(product.capture());
+    assertThat(product.getValue().getInternalName()).contains("PDE planejado #301");
+    assertThat(product.getValue().getProductTypeId()).isEqualTo(7L);
+    assertThat(product.getValue().getValidationDefinitionJson())
+        .contains("LEGACY_PRODUCT_IDENTITY_FALLBACK_V1");
+  }
+
   /** Reconhece somente a atividade final canônica de Dédalo na cadeia autônoma. */
   @Test
   void supportsOnlyCanonicalAutonomousArchitectureTask() {
@@ -185,7 +237,7 @@ class OpportunityProductMaterializationCompletionHookTest {
     assertThat(plan.getValue().name()).hasSize(191);
     assertThat(plan.getValue().mainMetric()).hasSize(191);
     assertThat(product.getValue().getName()).hasSize(191);
-    assertThat(product.getValue().getInternalName()).hasSize(191);
+    assertThat(product.getValue().getInternalName()).isEqualTo("Alcyone");
     assertThat(product.getValue().getProductFormat()).hasSize(64);
     assertThat(product.getValue().getValueUnit()).hasSize(191);
     assertThat(product.getValue().getNiche()).hasSize(255);
@@ -239,6 +291,7 @@ class OpportunityProductMaterializationCompletionHookTest {
       BusinessProcessDefinition process = new BusinessProcessDefinition();
       process.setId(88L);
       process.setProcessCode("pde-commercial-plan-offer");
+      process.setVersionNumber(9);
       Agent atena = Agent.builder().agentKey("experiment-strategist").build();
       Agent plutus = Agent.builder().agentKey("financial-agent").build();
       Agent dedalo = Agent.builder().agentKey("landing-generator").build();
@@ -251,8 +304,16 @@ class OpportunityProductMaterializationCompletionHookTest {
               88L, "product-discovery-cycle:42"))
           .thenReturn(List.of(strategyTask, economicsTask, architectureTask));
       when(dossierRepository.findById(301L)).thenReturn(Optional.of(dossier));
-      when(productTypeRepository.findByCode("PDE"))
-          .thenReturn(Optional.of(ProductTypeDefinition.builder().id(7L).code("PDE").build()));
+      when(productTypeRepository.findByCode("AI_PRODUCT"))
+          .thenReturn(
+              Optional.of(
+                  ProductTypeDefinition.builder()
+                      .id(3L)
+                      .code("AI_PRODUCT")
+                      .name("Produto IA")
+                      .internalName("Safira")
+                      .status(ProductTypeStatus.ACTIVE)
+                      .build()));
       when(marketNicheRepository.findFirstByNameIgnoreCaseOrderByIdAsc("Moda e bem-estar 40+"))
           .thenReturn(
               Optional.of(MarketNiche.builder().id(601L).name("Moda e bem-estar 40+").build()));
@@ -303,6 +364,14 @@ class OpportunityProductMaterializationCompletionHookTest {
             "decision":"APPROVE",
             "selectedDossierId":301,
             "selectedOpportunityId":501,
+            "productIdentity":{
+              "contractVersion":"PRODUCT_IDENTITY_V1",
+              "mode":"CREATE",
+              "internalName":"Alcyone",
+              "productTypeCode":"AI_PRODUCT",
+              "productTypeInternalName":"Safira",
+              "classificationRationale":"A personalização por IA é o mecanismo de valor; a web é o formato."
+            },
             "marketStrategicContract":{
               "contractVersion":"MARKET_STRATEGY_V3",
               "status":"READY_FOR_PRIVATE_VALIDATION",

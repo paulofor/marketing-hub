@@ -1,0 +1,151 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-26-processo2-identidade-produto-v1-process
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-commercial-plan-offer' AND version_number=8 AND status='PUBLISHED'
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=22 AND status='PUBLISHED'
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT IF(
+                COUNT(*)=0 OR (
+                  COUNT(*)=1
+                  AND SUM(status='RETIRED')=1
+                  AND SUM(technical_reference='docs/canonical/cadeia-produtos-pde-canon.v1.md / product-identity-v1')=1
+                ),
+                1,
+                0
+              )
+              FROM business_process_definition
+              WHERE process_code='pde-commercial-plan-offer' AND version_number=9
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT IF(
+                COUNT(*)=0 OR (COUNT(*)=1 AND SUM(status='RETIRED')=1),
+                1,
+                0
+              )
+              FROM business_process_chain_definition
+              WHERE chain_code='pde-value-creation-delivery' AND version_number=23
+      changes:
+        - sqlFile:
+            path: 2026-09-26-processo2-identidade-produto-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_definition SET status='RETIRED' WHERE process_code='pde-commercial-plan-offer' AND version_number=9;
+              UPDATE business_process_definition SET status='PUBLISHED' WHERE process_code='pde-commercial-plan-offer' AND version_number=8;
+              UPDATE business_process_chain_definition SET status='RETIRED' WHERE chain_code='pde-value-creation-delivery' AND version_number=23;
+              UPDATE business_process_chain_definition SET status='PUBLISHED' WHERE chain_code='pde-value-creation-delivery' AND version_number=22;
+
+  - changeSet:
+      id: 2026-09-26-processo2-identidade-produto-v1-repair-product-11
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT IF(
+                (
+                  SELECT COUNT(*)
+                  FROM business_process_independent_execution execution_record
+                  JOIN opportunity_dossier dossier
+                    ON dossier.product_discovery_cycle_id=71
+                   AND dossier.created_product_id=11
+                  WHERE execution_record.id=32
+                    AND execution_record.source_reference='product-discovery-cycle:71'
+                    AND dossier.id=46
+                )=0,
+                1,
+                IF(
+                  (
+                    SELECT COUNT(*)
+                    FROM product product_record
+                    JOIN product_type_definition type_definition
+                      ON type_definition.id=product_record.product_type_id
+                    WHERE product_record.id=11
+                      AND JSON_VALID(product_record.validation_definition_json)=1
+                      AND JSON_VALID(product_record.pde_experience_json)=1
+                      AND (
+                        (
+                          product_record.internal_name='Decisão de look para uma ocasião específica · PDE planejado #46'
+                          AND type_definition.code='PDE'
+                        )
+                        OR (
+                          product_record.internal_name='Alcyone'
+                          AND type_definition.code='AI_PRODUCT'
+                          AND type_definition.internal_name='Safira'
+                          AND JSON_UNQUOTE(JSON_EXTRACT(product_record.validation_definition_json,'$.productIdentity.contractVersion'))='PRODUCT_IDENTITY_V1'
+                          AND JSON_UNQUOTE(JSON_EXTRACT(product_record.pde_experience_json,'$.productIdentity.contractVersion'))='PRODUCT_IDENTITY_V1'
+                        )
+                      )
+                  )=1
+                  AND (
+                    SELECT COUNT(*)
+                    FROM product_type_definition
+                    WHERE code='AI_PRODUCT' AND internal_name='Safira' AND status='ACTIVE'
+                  )=1
+                  AND (
+                    SELECT COUNT(DISTINCT product_record.id)
+                    FROM product product_record
+                    LEFT JOIN product_alias alias_record ON alias_record.product_id=product_record.id
+                    WHERE product_record.id<>11
+                      AND (
+                        LOWER(COALESCE(product_record.name,''))=LOWER('Alcyone')
+                        OR LOWER(COALESCE(product_record.internal_name,''))=LOWER('Alcyone')
+                        OR LOWER(COALESCE(product_record.slug,''))=LOWER('Alcyone')
+                        OR LOWER(COALESCE(alias_record.alias,''))=LOWER('Alcyone')
+                      )
+                  )=0,
+                  1,
+                  0
+                )
+              )
+      changes:
+        - sqlFile:
+            path: 2026-09-26-processo2-identidade-produto-11-repair.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product product_record
+              JOIN product_type_definition current_type
+                ON current_type.id=product_record.product_type_id
+               AND current_type.code='AI_PRODUCT'
+               AND current_type.internal_name='Safira'
+              JOIN product_type_definition legacy_type
+                ON legacy_type.code='PDE'
+              SET product_record.internal_name='Decisão de look para uma ocasião específica · PDE planejado #46',
+                  product_record.product_type_id=legacy_type.id,
+                  product_record.product_type=legacy_type.name,
+                  product_record.validation_definition_json=JSON_REMOVE(product_record.validation_definition_json,'$.productIdentity'),
+                  product_record.pde_experience_json=JSON_REMOVE(product_record.pde_experience_json,'$.productIdentity'),
+                  product_record.commercial_notes=TRIM(REPLACE(product_record.commercial_notes,'[PRODUCT_IDENTITY_V1] Execucao independente #32 corrigida: nome interno Alcyone e tipo AI_PRODUCT/Safira; titulo comercial preservado.','')),
+                  product_record.updated_at=UTC_TIMESTAMP(6)
+              WHERE product_record.id=11
+                AND product_record.internal_name='Alcyone'
+                AND JSON_UNQUOTE(JSON_EXTRACT(product_record.validation_definition_json,'$.productIdentity.contractVersion'))='PRODUCT_IDENTITY_V1'
+                AND JSON_UNQUOTE(JSON_EXTRACT(product_record.pde_experience_json,'$.productIdentity.contractVersion'))='PRODUCT_IDENTITY_V1';

@@ -225,9 +225,19 @@ public class ProductDiscoveryIndependentExecutionReportService
     JsonNode contract =
         read(task.getResultJson(), "resultado", task.getId()).path("marketStrategicContract");
     JsonNode plan = contract.path("privateValidationPlan");
-    return "MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
-        && "READY_FOR_PRIVATE_VALIDATION".equals(contract.path("status").asText())
-        && plan.path("minimumIndependentReadings").asInt(0) == 2;
+    boolean currentStrategy =
+        "MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
+            && "READY_FOR_PRIVATE_VALIDATION".equals(contract.path("status").asText())
+            && plan.path("minimumIndependentReadings").asInt(0) == 2;
+    Integer processVersion = task.getProcessDefinition().getVersionNumber();
+    if (!currentStrategy || processVersion == null || processVersion < 9) return currentStrategy;
+    JsonNode identity =
+        read(task.getResultJson(), "resultado", task.getId()).path("productIdentity");
+    return "PRODUCT_IDENTITY_V1".equals(identity.path("contractVersion").asText())
+        && "CREATE".equals(identity.path("mode").asText())
+        && !identity.path("internalName").asText("").isBlank()
+        && !identity.path("productTypeCode").asText("").isBlank()
+        && !identity.path("productTypeInternalName").asText("").isBlank();
   }
 
   /**
@@ -415,6 +425,19 @@ public class ProductDiscoveryIndependentExecutionReportService
         dossier == null || dossier.getCreatedProduct() == null
             ? null
             : dossier.getCreatedProduct().getName(),
+        dossier == null || dossier.getCreatedProduct() == null
+            ? null
+            : dossier.getCreatedProduct().getInternalName(),
+        dossier == null
+                || dossier.getCreatedProduct() == null
+                || dossier.getCreatedProduct().getProductTypeDefinition() == null
+            ? null
+            : dossier.getCreatedProduct().getProductTypeDefinition().getCode(),
+        dossier == null
+                || dossier.getCreatedProduct() == null
+                || dossier.getCreatedProduct().getProductTypeDefinition() == null
+            ? null
+            : dossier.getCreatedProduct().getProductTypeDefinition().getInternalName(),
         dossier == null || dossier.getCreatedProduct() == null
             ? null
             : dossier.getCreatedProduct().getCommercialStatus(),

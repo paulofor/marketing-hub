@@ -1,0 +1,40 @@
+services:
+  mysql57-process2-product-identity:
+    build:
+      context: .
+      dockerfile: Dockerfile.mysql57-process2-product-identity
+    image: marketing-hub/ads-service-mysql57-process2-product-identity:validation
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: marketinghub_local
+      MYSQL_USER: marketinghub
+      MYSQL_PASSWORD: marketinghub-local
+      MYSQL_ROOT_PASSWORD: marketinghub-root-local
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "127.0.0.1",
+          "-u",
+          "marketinghub",
+          "-pmarketinghub-local",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  liquibase-process2-product-identity:
+    build:
+      context: .
+      dockerfile: Dockerfile.liquibase-mysql57
+    environment:
+      ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-process2-product-identity:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      ADS_LIQUIBASE_USERNAME: marketinghub
+      ADS_LIQUIBASE_PASSWORD: marketinghub-local
+      ADS_LIQUIBASE_CHANGELOG_FILE: db/changelog/changesets/2026-09-26-processo2-identidade-produto-v1.yaml
+    depends_on:
+      mysql57-process2-product-identity:
+        condition: service_healthy

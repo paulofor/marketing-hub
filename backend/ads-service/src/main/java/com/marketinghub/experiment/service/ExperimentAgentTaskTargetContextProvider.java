@@ -416,6 +416,16 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
     productNode.put("internalName", product.getInternalName());
     productNode.put("commercialName", product.getName());
     productNode.put("type", product.getProductType());
+    productNode.put(
+        "productTypeCode",
+        product.getProductTypeDefinition() == null
+            ? null
+            : product.getProductTypeDefinition().getCode());
+    productNode.put(
+        "productTypeInternalName",
+        product.getProductTypeDefinition() == null
+            ? null
+            : product.getProductTypeDefinition().getInternalName());
     productNode.put("format", product.getProductFormat());
     productNode.put("deliveryMode", product.getDeliveryMode());
     productNode.put("revenueModel", product.getRevenueModel());

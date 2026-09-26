@@ -85,3 +85,18 @@ técnico desta matriz não comprova vendas nem lucro.
   recortes ultralargos que reduzem a prova a uma faixa pequena cercada por espaço vazio. A nova
   peça precisa continuar mostrando pixels autorizados de `mira-private-v3`, ser conferida em
   393 px e voltar aos gates de Psique e Têmis antes de qualquer publicação.
+
+## Matriz de homologação — transporte da aprovação ao plano comercial
+
+| Dimensão | Cenário | Critério de aceite |
+|---|---|---|
+| Caminho feliz | Íris produz PNG, Psique e Têmis aprovam o mesmo SHA-256 e o operador aprova o uso | O mesmo arquivo entra como `APPROVED` no plano #8 com finalidades `ADS` e `LANDING`, sem repetir agentes |
+| Validações | Parecer ausente, reprovado, com ajustes ou hash divergente | O backend responde conflito e não copia o arquivo nem libera a landing |
+| Falhas e idempotência | O comando é repetido ou a persistência falha depois do upload | A repetição reutiliza o mesmo pacote; uma tentativa incompleta remove o objeto criado e registra a exceção |
+| Integrações e observabilidade | BPM, prova privada, storage público e biblioteca do plano | IDs de produtor/revisores, origem, hash, pareceres e decisão permanecem correlacionados e consultáveis |
+| Métricas e segregação | Operação executada antes da campanha | `published=false`, `externalMediaSpendAuthorized=false`; QA, bots e agentes não contam como visita, compra ou receita |
+| Desktop e mobile | Tela do plano no Chromium desktop, iPhone 15 Pro e Pixel 7 | Comando, carregamento, sucesso/erro e peça vinculada permanecem legíveis e operáveis |
+| Continuidade | A biblioteca passa a satisfazer o gate do subprocesso de landing | A retomada usa o ativo aprovado, mas checkout, tracking, publicação e mídia continuam sujeitos aos próprios gates |
+
+Esta matriz precisa passar localmente antes do PR e novamente na interface publicada antes de
+retomar a landing. Aprovação técnica não equivale a venda, CAC ou margem comprovada.

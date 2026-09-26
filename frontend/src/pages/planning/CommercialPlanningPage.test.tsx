@@ -191,6 +191,7 @@ const requestCommercialAssumptionsMutate = vi.fn();
 const requestJourneyHomologationMutate = vi.fn();
 const createVisualAssetMutate = vi.fn();
 const importCreativePackageMutate = vi.fn();
+const importApprovedProcessMutate = vi.fn();
 const createImageStudioJobMutate = vi.fn();
 let mockVisualAssets: unknown[] = [];
 
@@ -427,6 +428,12 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isSuccess: false,
       isError: false,
     }),
+    useImportApprovedProcessVisualAssets: () => ({
+      mutate: importApprovedProcessMutate,
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+    }),
     useUpdateCommercialPlanVisualAssetStatus: () => ({
       mutate: vi.fn(),
       isPending: false,
@@ -512,6 +519,7 @@ afterEach(() => {
   updatePlanMutate.mockReset();
   createVisualAssetMutate.mockReset();
   importCreativePackageMutate.mockReset();
+  importApprovedProcessMutate.mockReset();
   createImageStudioJobMutate.mockReset();
   mockVisualAssets = [];
   mockPlans = defaultPlans;
@@ -770,6 +778,20 @@ describe("CommercialPlanningPage", () => {
       file,
       expect.any(Object),
     );
+  });
+
+  it("vincula de forma idempotente uma decisão criativa já concluída", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(
+      screen.getByRole("button", { name: "Vincular processo aprovado" }),
+    );
+
+    expect(importApprovedProcessMutate).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByText(/sem repetir agentes, publicar campanha/i),
+    ).toBeTruthy();
   });
 
   it("permite editar as decisoes comerciais do plano pela tela", async () => {

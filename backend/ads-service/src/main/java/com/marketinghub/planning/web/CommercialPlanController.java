@@ -21,6 +21,7 @@ import com.marketinghub.planning.dto.UpdateCommercialPlanWeekCommitmentStatusReq
 import com.marketinghub.planning.dto.UpdateCommercialPlanWeekObjectivesRequest;
 import com.marketinghub.planning.mapper.CommercialPlanMapper;
 import com.marketinghub.planning.service.CommercialPlanAgentActivityService;
+import com.marketinghub.planning.service.CommercialPlanApprovedProcessAssetService;
 import com.marketinghub.planning.service.CommercialPlanJourneyHomologationService;
 import com.marketinghub.planning.service.CommercialPlanOperationalFlowService;
 import com.marketinghub.planning.service.CommercialPlanService;
@@ -53,6 +54,7 @@ public class CommercialPlanController {
   private final CommercialPlanJourneyHomologationService journeyHomologationService;
   private final CommercialPlanOperationalFlowService operationalFlowService;
   private final CommercialPlanVisualAssetService visualAssetService;
+  private final CommercialPlanApprovedProcessAssetService approvedProcessAssetService;
 
   /** Configura os serviços responsáveis pelos contratos do planejamento comercial. */
   public CommercialPlanController(
@@ -63,7 +65,8 @@ public class CommercialPlanController {
       CommercialPlanAgentActivityService agentActivityService,
       CommercialPlanJourneyHomologationService journeyHomologationService,
       CommercialPlanOperationalFlowService operationalFlowService,
-      CommercialPlanVisualAssetService visualAssetService) {
+      CommercialPlanVisualAssetService visualAssetService,
+      CommercialPlanApprovedProcessAssetService approvedProcessAssetService) {
     this.service = service;
     this.weeklyExperimentService = weeklyExperimentService;
     this.mapper = mapper;
@@ -72,6 +75,7 @@ public class CommercialPlanController {
     this.journeyHomologationService = journeyHomologationService;
     this.operationalFlowService = operationalFlowService;
     this.visualAssetService = visualAssetService;
+    this.approvedProcessAssetService = approvedProcessAssetService;
   }
 
   /** Lista o kit visual versionado do plano comercial. */
@@ -94,6 +98,12 @@ public class CommercialPlanController {
   public List<CommercialPlanVisualAssetDto> importApprovedCreativePackage(
       @PathVariable Long id, @RequestPart("file") MultipartFile file) throws java.io.IOException {
     return visualAssetService.importApprovedPackage(id, file.getBytes());
+  }
+
+  /** Vincula peças de uma decisão humana já concluída sem repetir produção ou revisão. */
+  @PostMapping("/{id}/visual-assets/approved-process")
+  public List<CommercialPlanVisualAssetDto> importApprovedProcess(@PathVariable Long id) {
+    return approvedProcessAssetService.importPreviouslyApproved(id).assets();
   }
 
   /** Aprova ou retira uma referência visual sem apagar seu histórico. */

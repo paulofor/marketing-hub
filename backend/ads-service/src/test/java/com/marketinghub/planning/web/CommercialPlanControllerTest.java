@@ -5,10 +5,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.marketinghub.planning.mapper.CommercialPlanMapper;
 import com.marketinghub.planning.service.CommercialPlanAgentActivityService;
+import com.marketinghub.planning.service.CommercialPlanApprovedProcessAssetService;
 import com.marketinghub.planning.service.CommercialPlanJourneyHomologationService;
 import com.marketinghub.planning.service.CommercialPlanOperationalFlowService;
 import com.marketinghub.planning.service.CommercialPlanService;
@@ -37,6 +39,7 @@ class CommercialPlanControllerTest {
   @Mock private CommercialPlanJourneyHomologationService journeyHomologationService;
   @Mock private CommercialPlanOperationalFlowService operationalFlowService;
   @Mock private CommercialPlanVisualAssetService visualAssetService;
+  @Mock private CommercialPlanApprovedProcessAssetService approvedProcessAssetService;
 
   private MockMvc mockMvc;
 
@@ -53,7 +56,8 @@ class CommercialPlanControllerTest {
                     agentActivityService,
                     journeyHomologationService,
                     operationalFlowService,
-                    visualAssetService))
+                    visualAssetService,
+                    approvedProcessAssetService))
             .build();
   }
 
@@ -71,5 +75,20 @@ class CommercialPlanControllerTest {
         .andExpect(status().isOk());
 
     verify(visualAssetService).importApprovedPackage(eq(4L), aryEq(archive));
+  }
+
+  /** Reaplica uma decisão já aprovada sem exigir upload ou repetir os agentes. */
+  @Test
+  void importsPreviouslyApprovedProcess() throws Exception {
+    when(approvedProcessAssetService.importPreviouslyApproved(4L))
+        .thenReturn(
+            new CommercialPlanApprovedProcessAssetService.ImportResult(
+                4L, "experiment:89", "package-id", List.of()));
+
+    mockMvc
+        .perform(post("/api/planning/commercial-plans/4/visual-assets/approved-process"))
+        .andExpect(status().isOk());
+
+    verify(approvedProcessAssetService).importPreviouslyApproved(4L);
   }
 }

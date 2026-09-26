@@ -27,6 +27,7 @@ import {
   useCommercialPlanVisualAssets,
   useCreateCommercialPlanVisualAsset,
   useImportCommercialPlanCreativePackage,
+  useImportApprovedProcessVisualAssets,
   useUpdateCommercialPlanVisualAssetStatus,
   useCommercialPlanImageStudioJobs,
   useCreateCommercialPlanImageStudioJob,
@@ -44,6 +45,7 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
   const query = useCommercialPlanVisualAssets(planId);
   const createAsset = useCreateCommercialPlanVisualAsset(planId);
   const importCreativePackage = useImportCommercialPlanCreativePackage(planId);
+  const importApprovedProcess = useImportApprovedProcessVisualAssets(planId);
   const updateStatus = useUpdateCommercialPlanVisualAssetStatus(planId);
   const imageStudioJobs = useCommercialPlanImageStudioJobs(planId);
   const createImageStudioJob = useCreateCommercialPlanImageStudioJob(planId);
@@ -232,6 +234,44 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
           {importCreativePackage.isError && (
             <div className="alert alert-danger mt-3 mb-0" role="alert">
               O pacote foi rejeitado. Confira integridade, contrato e pareceres.
+            </div>
+          )}
+          <div className="border-top mt-3 pt-3 d-flex flex-column flex-lg-row gap-2 align-items-lg-center justify-content-between">
+            <div>
+              <strong className="small d-block">
+                Decisão já concluída no processo
+              </strong>
+              <span className="small text-body-secondary">
+                Vincula a peça, os hashes e os pareceres já aprovados, sem
+                repetir agentes, publicar campanha ou gerar gasto.
+              </span>
+            </div>
+            <button
+              className="btn btn-outline-primary flex-shrink-0"
+              type="button"
+              disabled={importApprovedProcess.isPending}
+              onClick={() => importApprovedProcess.mutate()}
+            >
+              {importApprovedProcess.isPending && (
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  aria-hidden="true"
+                />
+              )}
+              {importApprovedProcess.isPending
+                ? "Vinculando..."
+                : "Vincular processo aprovado"}
+            </button>
+          </div>
+          {importApprovedProcess.isSuccess && (
+            <div className="alert alert-success mt-3 mb-0" role="status">
+              Peças aprovadas vinculadas ao plano com auditoria preservada.
+            </div>
+          )}
+          {importApprovedProcess.isError && (
+            <div className="alert alert-danger mt-3 mb-0" role="alert">
+              O processo ainda não possui peça, Psique, Têmis e decisão humana
+              aprovados sobre o mesmo arquivo.
             </div>
           )}
         </div>

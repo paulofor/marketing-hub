@@ -239,6 +239,9 @@ export type IndependentBusinessProcessCandidate = {
   commercialPlanId?: number;
   productId?: number;
   productName?: string;
+  productInternalName?: string;
+  productTypeCode?: string;
+  productTypeInternalName?: string;
   productStatus?: string;
   nextAction: string;
   sources: IndependentBusinessProcessCandidateSource[];

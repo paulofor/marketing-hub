@@ -114,8 +114,7 @@ export function formatCost(value?: number | null, coverage?: string) {
 export function independentExecutionRequestError(error: unknown) {
   if (!axios.isAxiosError(error)) return "Não foi possível iniciar o processo.";
   const data = error.response?.data as
-    | { detail?: string; message?: string; error?: string }
-    | undefined;
+    { detail?: string; message?: string; error?: string } | undefined;
   return (
     data?.detail ??
     data?.message ??
@@ -1254,6 +1253,15 @@ function PdeOpportunityFlowReport({
                   <div className="independent-process-candidate__product">
                     <small>
                       {candidate.productName} · {candidate.productStatus}
+                    </small>
+                    <small>
+                      Nome interno:{" "}
+                      {candidate.productInternalName ?? "Não definido"} · Tipo
+                      interno:{" "}
+                      {candidate.productTypeInternalName ?? "Não definido"}
+                      {candidate.productTypeCode
+                        ? ` (${candidate.productTypeCode})`
+                        : ""}
                     </small>
                     <a
                       className="btn btn-sm btn-outline-primary"

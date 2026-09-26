@@ -29,6 +29,15 @@ propagar o codinome ou os apelidos automaticamente para superfícies públicas.
 O nome interno deve poder ser atualizado isoladamente em produtos legados ainda sem tipo, sem
 regravar oferta, entrega, preço, classificação ou os demais campos comerciais.
 
+Para produtos novos originados pela descoberta autônoma, a identidade deixa de ser um efeito da
+materialização. No **Processo 2 — Estratégia, economia e protótipo privado**, Atena deve registrar
+`PRODUCT_IDENTITY_V1` antes de Plutus e Dédalo, contendo `internalName`, `productTypeCode`,
+`productTypeInternalName` e a justificativa da classificação. O contexto deve expor os nomes
+internos já ocupados e somente tipos `ACTIVE`. O backend deve rejeitar colisão, rótulo provisório,
+tipo ausente/inativo ou mineral divergente. Tipo descreve o mecanismo de valor; webapp, página,
+aplicativo e interface continuam sendo formatos. Em ciclos de produto já existente, Atena preserva
+a identidade vigente e não pode renomear ou reclassificar como efeito lateral do planejamento.
+
 Mapa inicial aprovado em 2026-08-23:
 
 - produto `1`, rascunho Personal Trainer: Antares;
@@ -45,6 +54,12 @@ Atribuição posterior aprovada em 2026-09-03:
 
 - produto `10`, orientação digital individualizada de rotina para pele madura: Mira; tipo
   `AI_PRODUCT`, internamente Safira. A aplicação web privada é formato de validação, não um tipo PWA.
+
+Atribuição corretiva aprovada em 2026-09-26:
+
+- produto `11`, decisão personalizada de look para uma ocasião específica: Alcyone; tipo
+  `AI_PRODUCT`, internamente Safira. A personalização por IA é o mecanismo de valor; a experiência
+  web móvel é o formato. A formulação comercial provisória permanece preservada sem virar codinome.
 
 ## Classificação extensível por tipo
 

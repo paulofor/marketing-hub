@@ -1184,7 +1184,7 @@ components:
         ]
       properties:
         reportType:
-          { type: string, enum: [PDE_OPPORTUNITY_TO_PRIVATE_VALIDATION_V2] }
+          { type: string, enum: [PDE_OPPORTUNITY_TO_PRIVATE_VALIDATION_V3] }
         status:
           type: string
           enum: [PENDING, IN_PROGRESS, BLOCKED, COMPLETED]
@@ -1353,6 +1353,18 @@ components:
         commercialPlanId: { type: integer, format: int64, nullable: true }
         productId: { type: integer, format: int64, nullable: true }
         productName: { type: string, nullable: true }
+        productInternalName:
+          type: string
+          nullable: true
+          description: Codinome interno estável escolhido no Processo 2.
+        productTypeCode:
+          type: string
+          nullable: true
+          description: Código estável do tipo escolhido no catálogo ativo.
+        productTypeInternalName:
+          type: string
+          nullable: true
+          description: Mineral interno correspondente ao mesmo tipo catalogado.
         productStatus: { type: string, nullable: true }
         nextAction: { type: string }
         sources:

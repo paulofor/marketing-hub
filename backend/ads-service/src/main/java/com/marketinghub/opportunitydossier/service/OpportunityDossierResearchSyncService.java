@@ -12,10 +12,14 @@ import com.marketinghub.opportunitydossier.OpportunityDossierStatus;
 import com.marketinghub.opportunitydossier.OpportunityEvidence;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
+import com.marketinghub.producttype.ProductTypeDefinition;
+import com.marketinghub.producttype.ProductTypeStatus;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.opportunitydossier.OpportunityDossierRepository;
 import com.marketinghub.repository.jpa.opportunitydossier.OpportunityEvidenceRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
+import com.marketinghub.repository.jpa.producttype.ProductTypeDefinitionRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -46,6 +50,8 @@ public class OpportunityDossierResearchSyncService {
   private final AgentTaskRepository taskRepository;
   private final BusinessProcessDefinitionRepository processRepository;
   private final AgentTaskService agentTaskService;
+  private final ProductRepository productRepository;
+  private final ProductTypeDefinitionRepository productTypeRepository;
   private final ObjectMapper objectMapper;
 
   /** Configura as fontes que preservam dossiê, evidência e tarefas sequenciais. */
@@ -55,17 +61,21 @@ public class OpportunityDossierResearchSyncService {
       AgentTaskRepository taskRepository,
       BusinessProcessDefinitionRepository processRepository,
       AgentTaskService agentTaskService,
+      ProductRepository productRepository,
+      ProductTypeDefinitionRepository productTypeRepository,
       ObjectMapper objectMapper) {
     this.dossierRepository = dossierRepository;
     this.evidenceRepository = evidenceRepository;
     this.taskRepository = taskRepository;
     this.processRepository = processRepository;
     this.agentTaskService = agentTaskService;
+    this.productRepository = productRepository;
+    this.productTypeRepository = productTypeRepository;
     this.objectMapper = objectMapper;
   }
 
   /**
-   * Cria um dossiê por candidata e libera a cadeia apenas quando Argos informa prontidão factual.
+   * Cria um dossiê por candidata e libera a cadeia somente para prontidão ainda não materializada.
    */
   @Transactional
   public void synchronize(Long cycleId, List<ProductDiscoveryOpportunity> opportunities) {
@@ -80,7 +90,8 @@ public class OpportunityDossierResearchSyncService {
         .anyMatch(
             candidate ->
                 candidate.opportunity().getMaturity()
-                    == ProductDiscoveryOpportunityMaturity.DOSSIER_READY)) {
+                        == ProductDiscoveryOpportunityMaturity.DOSSIER_READY
+                    && candidate.dossier().getCreatedProduct() == null)) {
       openCommercialTasks(cycleId, candidates);
     }
   }
@@ -287,15 +298,22 @@ public class OpportunityDossierResearchSyncService {
     if (restartFromAtena) {
       agentTaskService.cancelActiveTasksBySourceReference(
           sourceReference,
-          "Cadeia reiniciada porque a estratégia concluída usa contrato anterior ao MARKET_STRATEGY_V3.");
+          process.getVersionNumber() != null && process.getVersionNumber() >= 9
+              ? "Cadeia reiniciada porque Atena não registrou a identidade PRODUCT_IDENTITY_V1 exigida pelo Processo 2."
+              : "Cadeia reiniciada porque a estratégia concluída usa contrato anterior ao MARKET_STRATEGY_V3.");
     }
+    boolean productIdentityRequired =
+        process.getVersionNumber() != null && process.getVersionNumber() >= 9;
     createTask(
         process,
         sourceReference,
         "experiment-strategist",
         "marketStrategy",
         "Atena · selecionar protótipo privado do ciclo #" + cycleId,
-        "Escolha no máximo um dossiê factual para prototipação privada, predeclare duas leituras e preserve os fatos de Argos. A falta dessas leituras ainda não bloqueia esta atividade. Contexto: "
+        (productIdentityRequired
+                ? "Escolha no máximo um dossiê factual para prototipação privada, defina PRODUCT_IDENTITY_V1 com um nome interno de estrela ainda livre e classifique o mecanismo em um tipo ACTIVE do catálogo. Compare três identidades possíveis e três classificações plausíveis antes de escolher. "
+                : "Escolha no máximo um dossiê factual para prototipação privada. ")
+            + "Predeclare duas leituras e preserve os fatos de Argos. A falta dessas leituras ainda não bloqueia esta atividade. Contexto: "
             + context,
         restartFromAtena);
     createTask(
@@ -304,7 +322,11 @@ public class OpportunityDossierResearchSyncService {
         "financial-agent",
         "economics",
         "Plutus · validar economia do ciclo #" + cycleId,
-        "Use somente a seleção MARKET_STRATEGY_V3 mais recente de Atena, entregue pelo contexto do processo. Valide preço de checkout simulado como hipótese, custo e travas da validação privada; não autorize campanha, gasto, pagamento ou venda.",
+        "Use somente a seleção MARKET_STRATEGY_V3 mais recente de Atena, entregue pelo contexto do processo. Valide preço de checkout simulado como hipótese, custo e travas da validação privada"
+            + (productIdentityRequired
+                ? ", respeitando o tipo escolhido em PRODUCT_IDENTITY_V1 sem redefinir a identidade"
+                : "")
+            + "; não autorize campanha, gasto, pagamento ou venda.",
         restartFromAtena);
     createTask(
         process,
@@ -312,7 +334,11 @@ public class OpportunityDossierResearchSyncService {
         "landing-generator",
         "productArchitecture",
         "Dédalo · projetar protótipo e harness do ciclo #" + cycleId,
-        "Use a estratégia vigente de Atena e a economia aprovada por Plutus, entregues pelo contexto do processo. Projete somente o protótipo privado instrumentado e o harness PDE da candidata escolhida.",
+        "Use a estratégia vigente de Atena e a economia aprovada por Plutus, entregues pelo contexto do processo. Projete somente o protótipo privado instrumentado e o harness PDE da candidata escolhida"
+            + (productIdentityRequired
+                ? ", coerentes com o tipo registrado em PRODUCT_IDENTITY_V1"
+                : "")
+            + ".",
         restartFromAtena);
   }
 
@@ -358,10 +384,19 @@ public class OpportunityDossierResearchSyncService {
       JsonNode result = objectMapper.readTree(latestStrategy.getResultJson());
       JsonNode contract = result.path("marketStrategicContract");
       JsonNode plan = contract.path("privateValidationPlan");
-      return !"MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
-          || !"READY_FOR_PRIVATE_VALIDATION".equals(contract.path("status").asText())
-          || plan.path("minimumIndependentReadings").asInt(0) != 2
-          || !hasExactPrivateSignals(plan.path("requiredSignals"));
+      boolean staleStrategy =
+          !"MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
+              || !"READY_FOR_PRIVATE_VALIDATION".equals(contract.path("status").asText())
+              || plan.path("minimumIndependentReadings").asInt(0) != 2
+              || !hasExactPrivateSignals(plan.path("requiredSignals"));
+      if (staleStrategy || process.getVersionNumber() < 9) return staleStrategy;
+      JsonNode identity = result.path("productIdentity");
+      return !"PRODUCT_IDENTITY_V1".equals(identity.path("contractVersion").asText())
+          || !"CREATE".equals(identity.path("mode").asText())
+          || !hasText(identity, "internalName")
+          || !hasText(identity, "productTypeCode")
+          || !hasText(identity, "productTypeInternalName")
+          || !hasText(identity, "classificationRationale");
     } catch (Exception ex) {
       log.error(
           "Falha ao validar contrato concluído de Atena. taskId={} sourceReference={}",
@@ -385,6 +420,7 @@ public class OpportunityDossierResearchSyncService {
   private String taskContext(Long cycleId, List<CandidateHandoff> candidates) {
     Map<String, Object> context = new LinkedHashMap<>();
     context.put("cycleId", cycleId);
+    context.put("productIdentityPolicy", productIdentityPolicy());
     context.put(
         "candidates",
         candidates.stream()
@@ -414,6 +450,36 @@ public class OpportunityDossierResearchSyncService {
           ex);
       throw new IllegalStateException("Não foi possível montar o contexto do handoff PDE.", ex);
     }
+  }
+
+  /** Expõe nomes ocupados e tipos ativos para Atena decidir sem texto livre ou colisão. */
+  private Map<String, Object> productIdentityPolicy() {
+    Map<String, Object> policy = new LinkedHashMap<>();
+    policy.put("contractVersion", "PRODUCT_IDENTITY_V1");
+    policy.put("internalNameUniverse", "STAR");
+    policy.put("reservedInternalNames", productRepository.findAllAssignedInternalNames());
+    policy.put(
+        "activeProductTypes",
+        productTypeRepository.findAllByStatusOrderByNameAsc(ProductTypeStatus.ACTIVE).stream()
+            .map(this::productTypePolicy)
+            .toList());
+    return policy;
+  }
+
+  /** Reduz o tipo ativo aos campos necessários para classificar o mecanismo de valor. */
+  private Map<String, Object> productTypePolicy(ProductTypeDefinition type) {
+    Map<String, Object> policy = new LinkedHashMap<>();
+    policy.put("id", type.getId());
+    policy.put("code", type.getCode());
+    policy.put("name", type.getName());
+    policy.put("internalName", type.getInternalName());
+    policy.put("description", type.getDescription());
+    return policy;
+  }
+
+  /** Verifica texto obrigatório sem aceitar espaços como conteúdo de contrato. */
+  private boolean hasText(JsonNode node, String field) {
+    return node.isObject() && !node.path(field).asText("").trim().isBlank();
   }
 
   /** Marca a pesquisa manual como ativa quando o executor reserva o ciclo. */

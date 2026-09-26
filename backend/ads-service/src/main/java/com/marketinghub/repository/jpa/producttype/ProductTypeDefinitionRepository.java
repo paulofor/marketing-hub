@@ -1,6 +1,7 @@
 package com.marketinghub.repository.jpa.producttype;
 
 import com.marketinghub.producttype.ProductTypeDefinition;
+import com.marketinghub.producttype.ProductTypeStatus;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,6 +18,9 @@ public interface ProductTypeDefinitionRepository
 
   /** Lista o catálogo em ordem estável e legível. */
   List<ProductTypeDefinition> findAllByOrderByNameAsc();
+
+  /** Lista somente os tipos que Atena pode escolher para um produto novo. */
+  List<ProductTypeDefinition> findAllByStatusOrderByNameAsc(ProductTypeStatus status);
 
   /** Localiza um tipo pelo código estável usado pelas materializações automáticas. */
   Optional<ProductTypeDefinition> findByCode(String code);

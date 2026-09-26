@@ -1,5 +1,17 @@
 # Registro operacional — Sales Video
 
+## 2026-09-26 — Falha paga deve permanecer visível e não pode ser repetida pelo lease
+
+- Evidência produtiva: a reanálise #4 transcreveu a referência e consumiu 5.465 tokens de entrada e
+  4.000 de saída, mas terminou `incomplete` por `max_output_tokens`; o callback `FAILED` foi desfeito
+  porque o banco mantinha `video_reference.status` como `ENUM` legado sem esse valor.
+- Causa-raiz: divergência entre Liquibase/JPA e schema físico, somada a raciocínio `max` dentro de um
+  envelope de saída curto; a recuperação automática do lease ainda poderia repetir o gasto.
+- Correção: ambos os status passam a `VARCHAR` explícito, a análise usa raciocínio `medium`, baixa
+  verbosidade e 8.000 tokens totais, e falhas persistem usage/custo conhecido.
+- Prevenção: lease expirado encerra a tentativa e exige retry explícito; testes cobrem schema,
+  callback financeiro, saída incompleta e migração/rollback no MySQL 5.7.
+
 ## 2026-08-25 — Teto da homologação multimodal
 
 - Gargalo confirmado: a análise de referências persistia tokens, mas concluía com custo nulo e podia continuar consumindo a fila sem envelope financeiro bloqueante.

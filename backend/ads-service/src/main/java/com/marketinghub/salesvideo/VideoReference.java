@@ -14,7 +14,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 /** Vídeo externo de sucesso enviado pelo usuário para análise e aprendizado comercial. */
 @Entity
@@ -58,7 +60,8 @@ public class VideoReference {
 
   @Builder.Default
   @Enumerated(EnumType.STRING)
-  @Column(name = "status", nullable = false, length = 64)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "status", nullable = false, length = 64, columnDefinition = "VARCHAR(64)")
   private VideoReferenceStatus status = VideoReferenceStatus.QUEUED;
 
   @Column(name = "created_by", length = 191)

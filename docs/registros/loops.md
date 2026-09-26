@@ -7057,6 +7057,28 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   include relativo e contratos MySQL 5.7; a matriz física começa no `ENUM` legado, grava
   `AWAITING_CUSTOMER_EVIDENCE`, faz rollback e reaplica sem perder o estado.
 
+### Recorrência fechada em vídeo de referência — 2026-09-26
+
+- **Sintoma:** a análise produtiva #4 terminou sem JSON funcional e o callback de falha recebeu erro
+  MySQL 1265 ao tentar gravar `FAILED`; referência e execução permaneceram aparentando atividade.
+- **Causa confirmada:** `video_reference.status` e `video_reference_analysis_execution.status`
+  estavam como `ENUM` físico, apesar dos changelogs canônicos criarem `VARCHAR`.
+- **Correção e prevenção:** migração dos dois campos, `@JdbcTypeCode(SqlTypes.VARCHAR)` nas entidades,
+  teste contratual e matriz física MySQL 5.7 com aplicação, rollback e reaplicação.
+
+## LOOP-VIDEO-ANALISE-SAIDA-CONSUMIDA-PELO-RACIOCINIO — gasto sem relatório funcional
+
+- **Data:** 2026-09-26.
+- **Sintoma:** a Responses API consumiu todo o limite de 4.000 tokens de saída em raciocínio e
+  devolveu `status=incomplete`, `reason=max_output_tokens`, sem a análise estruturada esperada.
+- **Causa-raiz:** o contrato combinava `reasoning=max` com um schema extenso dentro de limite curto;
+  a falha não persistia usage/custo e um lease expirado podia ser reclamado automaticamente.
+- **Correção sistêmica:** raciocínio `medium`, baixa verbosidade e 8.000 tokens totais; detecção
+  explícita de `incomplete`; callback de falha com tokens/custo; lease expirado vira falha e exige
+  retry explícito.
+- **Prevenção:** testes verificam request efetivo, custo de resposta incompleta, payload do callback,
+  persistência backend e ausência de repetição automática.
+
 ## LOOP-ARGOS-ENTREVISTAS-EXIBIDAS-COMO-FILA — gate humano parece trabalho executável
 
 - **Data:** 2026-09-24.

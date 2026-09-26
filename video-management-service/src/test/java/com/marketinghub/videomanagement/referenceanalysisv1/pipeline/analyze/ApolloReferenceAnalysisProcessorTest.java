@@ -133,6 +133,44 @@ class ApolloReferenceAnalysisProcessorTest {
                 });
     }
 
+    /** Explica limite de saída e preserva custo quando o raciocínio consome a resposta funcional. */
+    @Test
+    void shouldPersistKnownUsageWhenResponseEndsIncomplete() throws Exception {
+        ReferenceAnalysisStageContext context = context();
+        ReferenceMediaInspector.Evidence evidence = evidence(artifacts());
+        var transcription = transcription();
+        ObjectNode request = objectMapper.createObjectNode().put("service_tier", "flex");
+        JsonNode rawResponse = objectMapper.readTree("""
+                {
+                  "status":"incomplete",
+                  "incomplete_details":{"reason":"max_output_tokens"},
+                  "usage":{
+                    "input_tokens":1000,
+                    "input_tokens_details":{"cached_tokens":200},
+                    "output_tokens":4000
+                  },
+                  "output":[]
+                }
+                """);
+        given(inspector.inspect(context)).willReturn(evidence);
+        given(transcriptionClient.transcribe(context, evidence)).willReturn(transcription);
+        given(aiClient.analyze(context, evidence, transcription)).willReturn(
+                new ReferenceAnalysisAiClient.AiInteraction(request, rawResponse));
+
+        assertThatThrownBy(() -> processor.process(context))
+                .isInstanceOfSatisfying(ReferenceAnalysisFailureException.class, failure -> {
+                    assertThat(failure.getMessage()).contains("max_output_tokens");
+                    assertThat(failure).hasRootCauseMessage(
+                            "Apolo não concluiu a saída estruturada: max_output_tokens");
+                    assertThat(failure.inputTokens()).isEqualTo(1000L);
+                    assertThat(failure.cachedInputTokens()).isEqualTo(200L);
+                    assertThat(failure.outputTokens()).isEqualTo(4000L);
+                    assertThat(failure.costUsd()).isEqualByComparingTo("0.084005");
+                    assertThat(failure.artifacts().path("costEstimate").path("method").asText())
+                            .isEqualTo("KNOWN_USAGE_UPPER_BOUND_PLUS_TRANSCRIPTION_DURATION");
+                });
+    }
+
     /** Preserva a tentativa auditiva quando a transcrição falha antes da leitura visual. */
     @Test
     void shouldPreserveTranscriptionAuditOnFailure() throws Exception {

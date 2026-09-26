@@ -14,7 +14,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 /** Persiste fila, auditoria, artefatos e resultado da análise automática de uma referência. */
 @Entity
@@ -34,7 +36,8 @@ public class VideoReferenceAnalysisExecution {
   private String tenantId;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "status", nullable = false, length = 32)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "status", nullable = false, length = 32, columnDefinition = "VARCHAR(32)")
   private VideoReferenceAnalysisStatus status;
 
   @Column(name = "attempt_number", nullable = false)

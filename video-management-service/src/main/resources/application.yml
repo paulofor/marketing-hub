@@ -48,7 +48,8 @@ video:
     transcription-model: ${VIDEO_REFERENCE_TRANSCRIPTION_MODEL:gpt-transcribe}
     transcription-price-per-minute-usd: ${VIDEO_REFERENCE_TRANSCRIPTION_PRICE_PER_MINUTE_USD:0.0045}
     max-transcription-bytes: ${VIDEO_REFERENCE_TRANSCRIPTION_MAX_BYTES:26214400}
-    max-output-tokens: ${VIDEO_REFERENCE_ANALYSIS_MAX_OUTPUT_TOKENS:4000}
+    max-output-tokens: ${VIDEO_REFERENCE_ANALYSIS_MAX_OUTPUT_TOKENS:8000}
+    reasoning-effort: ${VIDEO_REFERENCE_ANALYSIS_REASONING_EFFORT:medium}
     budget-limit-usd: ${VIDEO_REFERENCE_ANALYSIS_BUDGET_LIMIT_USD:0.75}
     reservation-usd: ${VIDEO_REFERENCE_ANALYSIS_RESERVATION_USD:0.25}
     input-price-per-million-usd: ${VIDEO_REFERENCE_ANALYSIS_INPUT_PRICE_PER_MILLION_USD:4.00}

@@ -11,12 +11,12 @@ tenant e IDs de teste; metricas humanas, gasto e vendas devem permanecer em zero
 | Bloco | Caminho feliz | Validacoes e falhas obrigatorias |
 |---|---|---|
 | Ingestao | upload cria referencia e tentativa `QUEUED` | arquivo vazio, extensao invalida, URL nao HTTP(S), HTTP de origem nao 2xx e tamanho acima do limite |
-| Fila | `pending` entrega uma execucao e marca referencia `ANALYZING` | polling sobreposto, lease abandonado e callback UUID antigo |
+| Fila | `pending` entrega uma execucao e marca referencia `ANALYZING` | polling sobreposto, lease abandonado encerrado sem nova chamada e callback UUID antigo |
 | Midia | ffprobe mede streams; ffmpeg detecta cenas, loudness, extrai MP3 mono e cria 24 frames | arquivo invalido, duracao ausente, video sem audio e falha de ferramenta |
 | Transcricao | faixa falada usa prompt versionado, hash, request/response e custo por duracao | binario acima de 25 MB, audio sem fala, HTTP externo falho e video sem audio sem chamada externa |
-| IA | request Flex usa prompt/schema versionados, transcricao, catalogo real de capacidades, dois contact sheets e no maximo 4.000 tokens de saida | credencial ausente, HTTP externo falho, response sem output, usage ausente e JSON invalido |
+| IA | request Flex usa prompt/schema versionados, transcricao, catalogo real de capacidades, dois contact sheets, raciocinio `medium`, baixa verbosidade e ate 8.000 tokens totais | credencial ausente, HTTP externo falho, response `incomplete` por limite, usage ausente e JSON invalido |
 | Contrato | saida possui sequencia, aprendizados, direitos, capacidade do Estudio e receita | menos de quatro blocos/cenas, direitos ausentes, capacidade sem evidencia e sugestao injustificada de novo agente |
-| Auditoria | backend persiste input/output, artefatos, request/response, modelo, tokens e custo conservador | nenhuma conclusao aceita custo nulo; cache/Flex nao reduzem o valor reservado |
+| Auditoria | backend persiste input/output, artefatos, request/response, modelo, tokens e custo conservador em sucesso ou falha com uso conhecido | nenhuma conclusao aceita custo nulo; falha paga nao vira custo zero; cache/Flex nao reduzem o valor reservado |
 | Tela | resultado acompanha fila, diferencia falha de reprovacao, mostra evidencia e oferece retry/importacao | loading explicito, falha visivel e nenhuma verdade recomputada no frontend |
 | Projeto | importacao preenche receita sem trocar produto, oferta ou CTA | produto obrigatorio, duracao/categoria coerentes e render bloqueado antes de salvar |
 | Apolo | storyboard aceita ate 48 beats e preserva cenas persistidas | texto no video, retrocesso narrativo, duplicacao, custo acima do teto e provider nao homologado |
@@ -49,6 +49,22 @@ segundos, sem publicacao ou campanha.
 | Container local | Imagem do `video-management-service` construida pelo Compose versionado e iniciada com `/actuator/health` em `UP`; FFmpeg 8.0.1 disponivel. |
 | Pacotes de aplicacao | JAR do backend verificado com 4.168 classes, 661 recursos e 437 cartoes do catalogo; o JAR dentro da imagem teve hash identico. Imagem do frontend iniciou e respondeu `/healthz` dentro da topologia isolada. |
 | Segregacao comercial | Nenhuma campanha, publicacao, contato, venda ou render pago foi iniciado na rodada local. |
+
+## Evidencia corretiva de 26/09/2026
+
+A primeira reanalise produtiva revelou duas lacunas que os doubles locais nao reproduziam: o schema
+operacional ainda possuia `ENUM` fisico sem `FAILED`, e o modelo encerrou em `incomplete` depois de
+usar 4.000 tokens de saida sem entregar o JSON. A matriz corretiva exige migracao e rollback fisicos
+no MySQL 5.7, mapeamento Hibernate `VARCHAR`, persistencia de custo na falha, encerramento seguro de
+lease e resposta funcional com raciocinio `medium`, baixa verbosidade e limite de 8.000 tokens.
+
+| Validacao corretiva | Resultado |
+|---|---|
+| Backend completo | 3.609 testes, zero falhas e zero erros; 22 cenarios condicionais ignorados. |
+| Executor audiovisual completo | 244 testes, zero falhas e zero erros; um cenario condicional ignorado. |
+| MySQL 5.7 fisico | `ENUM` legado migrou para `VARCHAR(64/32)`, aceitou `FAILED` e `BUDGET_BLOCKED`, preservou ambos no rollback e reaplicou uma unica vez. |
+| Contratos operacionais | Validador Liquibase, Compose isolado, `bash -n` e ShellCheck aprovados. |
+| Empacotamento | Imagens locais do backend e do `video-management-service` construidas pelos Dockerfiles versionados. |
 
 A navegacao final em desktop, iPhone 15 Pro e Pixel 7 e a reanalise das referencias #1, #2 e #3
 permanecem como validacao pos-deploy. Elas devem confirmar o contrato publicado e nao substituem os

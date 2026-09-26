@@ -67,13 +67,13 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
         } catch (ReferenceAnalysisAiClient.AiFailure ex) {
             log.error("Falha multimodal de Apolo; executionId={} referenceId={}",
                     context.executionId(), context.referenceId(), ex);
-            throw new ReferenceAnalysisFailureException(
+            throw failureWithKnownUsage(
                     "A leitura multimodal de Apolo falhou",
                     ex,
-                    withTranscription(evidence, transcription),
-                    combinedAudit(transcription.request(), ex.request()),
-                    combinedAudit(transcription.response(), ex.response()),
-                    modelLabel(transcription));
+                    evidence,
+                    transcription,
+                    ex.request(),
+                    ex.response());
         }
         JsonNode output;
         try {
@@ -82,13 +82,13 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
         } catch (RuntimeException ex) {
             log.error("Resposta multimodal inválida de Apolo; executionId={} referenceId={}",
                     context.executionId(), context.referenceId(), ex);
-            throw new ReferenceAnalysisFailureException(
+            throw failureWithKnownUsage(
                     "A resposta multimodal de Apolo não cumpriu o contrato",
                     ex,
-                    withTranscription(evidence, transcription),
-                    combinedAudit(transcription.request(), interaction.request()),
-                    combinedAudit(transcription.response(), interaction.response()),
-                    modelLabel(transcription));
+                    evidence,
+                    transcription,
+                    interaction.request(),
+                    interaction.response());
         }
         JsonNode usage = interaction.response().path("usage");
         Long inputTokens = requiredUsage(usage, "input_tokens");
@@ -145,6 +145,47 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
         return artifacts;
     }
 
+    /** Preserva tokens e custo conhecidos quando a chamada termina sem resultado funcional. */
+    private ReferenceAnalysisFailureException failureWithKnownUsage(
+            String message,
+            RuntimeException cause,
+            ReferenceMediaInspector.Evidence evidence,
+            ReferenceAudioTranscriptionClient.TranscriptionInteraction transcription,
+            JsonNode analysisRequest,
+            JsonNode analysisResponse) {
+        JsonNode usage = analysisResponse == null ? objectMapper.missingNode() : analysisResponse.path("usage");
+        Long inputTokens = nullableLong(usage, "input_tokens");
+        Long cachedInputTokens = nullableLong(usage.path("input_tokens_details"), "cached_tokens");
+        Long outputTokens = nullableLong(usage, "output_tokens");
+        BigDecimal reasoningCostUsd = conservativeKnownCost(inputTokens, outputTokens);
+        BigDecimal costUsd = transcription.estimatedCostUsd().add(reasoningCostUsd);
+        ObjectNode artifacts = withTranscription(evidence, transcription);
+        ObjectNode costEvidence = artifacts.putObject("costEstimate");
+        costEvidence.put("usd", costUsd);
+        costEvidence.put("method", "KNOWN_USAGE_UPPER_BOUND_PLUS_TRANSCRIPTION_DURATION");
+        costEvidence.put("serviceTier", "flex");
+        putNullable(costEvidence, "inputTokensChargedAtFullRate", inputTokens);
+        putNullable(costEvidence, "outputTokens", outputTokens);
+        costEvidence.put("reasoningUsd", reasoningCostUsd);
+        costEvidence.put("transcriptionUsd", transcription.estimatedCostUsd());
+        return new ReferenceAnalysisFailureException(
+                failureMessage(message, cause),
+                cause,
+                artifacts,
+                combinedAudit(transcription.request(), analysisRequest),
+                combinedAudit(transcription.response(), analysisResponse),
+                modelLabel(transcription),
+                inputTokens,
+                cachedInputTokens,
+                outputTokens,
+                costUsd);
+    }
+
+    /** Acrescenta a causa funcional ao erro persistido sem depender da stack trace técnica. */
+    private String failureMessage(String message, RuntimeException cause) {
+        return StringUtils.hasText(cause.getMessage()) ? message + ": " + cause.getMessage() : message;
+    }
+
     /** Agrupa as duas interações externas na ordem em que ocorreram. */
     private ObjectNode combinedAudit(JsonNode transcription, JsonNode analysis) {
         ObjectNode audit = objectMapper.createObjectNode();
@@ -188,6 +229,19 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
         return input.add(output).divide(BigDecimal.valueOf(1_000_000), 6, RoundingMode.HALF_UP);
     }
 
+    /** Soma somente as parcelas de uso reportadas, sem declarar como zero o que estiver ausente. */
+    private BigDecimal conservativeKnownCost(Long inputTokens, Long outputTokens) {
+        BigDecimal input = inputTokens == null
+                ? BigDecimal.ZERO
+                : properties.getReferenceAnalysis().getInputPricePerMillionUsd()
+                        .multiply(BigDecimal.valueOf(inputTokens));
+        BigDecimal output = outputTokens == null
+                ? BigDecimal.ZERO
+                : properties.getReferenceAnalysis().getOutputPricePerMillionUsd()
+                        .multiply(BigDecimal.valueOf(outputTokens));
+        return input.add(output).divide(BigDecimal.valueOf(1_000_000), 6, RoundingMode.HALF_UP);
+    }
+
     /** Exige usage para que nenhuma análise concluída permaneça com custo desconhecido. */
     private Long requiredUsage(JsonNode usage, String field) {
         Long value = nullableLong(usage, field);
@@ -199,6 +253,10 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
 
     /** Extrai o texto estruturado da Responses API e rejeita resposta incompleta. */
     private JsonNode extractOutput(JsonNode response) {
+        if (response != null && "incomplete".equals(response.path("status").asText())) {
+            String reason = response.path("incomplete_details").path("reason").asText("desconhecido");
+            throw new IllegalStateException("Apolo não concluiu a saída estruturada: " + reason);
+        }
         if (response != null) {
             for (JsonNode output : response.path("output")) {
                 for (JsonNode content : output.path("content")) {

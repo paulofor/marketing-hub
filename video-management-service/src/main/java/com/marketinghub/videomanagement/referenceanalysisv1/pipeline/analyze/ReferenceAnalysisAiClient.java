@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
-import com.marketinghub.videomanagement.config.ApolloReasoningPolicy;
 import com.marketinghub.videomanagement.referenceanalysisv1.pipeline.ReferenceAnalysisStageContext;
 import java.io.IOException;
 import java.io.InputStream;
@@ -73,14 +72,14 @@ public class ReferenceAnalysisAiClient {
         }
     }
 
-    /** Monta o contrato multimodal com raciocínio máximo, prompt e schema versionados. */
+    /** Monta o contrato multimodal com raciocínio limitado, prompt e schema versionados. */
     private ObjectNode request(ReferenceAnalysisStageContext context,
                                ReferenceMediaInspector.Evidence evidence,
                                ReferenceAudioTranscriptionClient.TranscriptionInteraction transcription) {
         ObjectNode request = objectMapper.createObjectNode();
         request.put("model", properties.getReferenceAnalysis().getModel());
         request.put("service_tier", "flex");
-        request.putObject("reasoning").put("effort", ApolloReasoningPolicy.MAXIMUM);
+        request.putObject("reasoning").put("effort", properties.getReferenceAnalysis().getReasoningEffort());
         request.put("store", false);
         request.put("max_output_tokens", properties.getReferenceAnalysis().getMaxOutputTokens());
         ArrayNode input = request.putArray("input");
@@ -100,7 +99,9 @@ public class ReferenceAnalysisAiClient {
             image.put("image_url", dataUrl);
             image.put("detail", "high");
         }
-        ObjectNode format = request.putObject("text").putObject("format");
+        ObjectNode textConfiguration = request.putObject("text");
+        textConfiguration.put("verbosity", "low");
+        ObjectNode format = textConfiguration.putObject("format");
         format.put("type", "json_schema");
         format.put("name", "apollo_reference_analysis_v1");
         format.put("strict", true);

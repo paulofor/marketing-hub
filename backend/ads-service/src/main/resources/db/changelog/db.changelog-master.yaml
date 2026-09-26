@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-09-26-video-reference-status-varchar-v1.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-09-01-experiment-media-spend-limit-v1.yaml
       relativeToChangelogFile: true
   - include:

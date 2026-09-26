@@ -108,6 +108,27 @@ class VideoReferenceAnalysisServiceTest {
     assertThat(reference.getStatus()).isEqualTo(VideoReferenceStatus.FAILED);
   }
 
+  /** Encerra lease expirado sem repetir automaticamente uma chamada que pode ter sido cobrada. */
+  @Test
+  void shouldCloseExpiredLeaseAndRequireExplicitRetry() {
+    saveReturnsArgument();
+    VideoReference reference = reference();
+    VideoReferenceAnalysisExecution execution = execution(VideoReferenceAnalysisStatus.RUNNING);
+    execution.setWorkerId("worker-interrompido");
+    execution.setClaimedAt(Instant.now().minusSeconds(1800));
+    given(executionRepository.findClaimable(any(), any(), any(), any()))
+        .willReturn(List.of(execution));
+    given(referenceRepository.findById(31L)).willReturn(Optional.of(reference));
+
+    var pending =
+        service.claimPending("worker-novo", new BigDecimal("0.75"), new BigDecimal("0.25"));
+
+    assertThat(pending).isEmpty();
+    assertThat(execution.getStatus()).isEqualTo(VideoReferenceAnalysisStatus.FAILED);
+    assertThat(execution.getError()).contains("retry explícito");
+    assertThat(reference.getStatus()).isEqualTo(VideoReferenceStatus.FAILED);
+  }
+
   /** Persiste resultado e libera o aprendizado apenas com UUID da execução ativa. */
   @Test
   void shouldCompleteCorrelatedExecutionAndReference() {
@@ -162,11 +183,19 @@ class VideoReferenceAnalysisServiceTest {
                 objectMapper.createObjectNode().put("sha256", "abc"),
                 objectMapper.createObjectNode().put("request", true),
                 objectMapper.createObjectNode().put("status", 401),
-                "gpt-transcribe"));
+                "gpt-transcribe",
+                100L,
+                20L,
+                30L,
+                new BigDecimal("0.010000")));
 
     assertThat(response.status()).isEqualTo(VideoReferenceAnalysisStatus.FAILED);
     assertThat(reference.getStatus()).isEqualTo(VideoReferenceStatus.FAILED);
     assertThat(response.error()).isEqualTo("Falha de credencial");
+    assertThat(response.inputTokens()).isEqualTo(100L);
+    assertThat(response.cachedInputTokens()).isEqualTo(20L);
+    assertThat(response.outputTokens()).isEqualTo(30L);
+    assertThat(response.costUsd()).isEqualByComparingTo("0.010000");
   }
 
   /** Rejeita callback antigo para não sobrescrever a execução recuperada pelo lease. */

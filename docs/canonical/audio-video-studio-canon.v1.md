@@ -266,6 +266,14 @@ simulada. A request usa Flex, schema estrito e `store=false`, enquanto request e
 ficam auditados no backend. Resposta ausente, JSON invalido ou quebra do contrato funcional deve
 persistir como falha com toda a evidencia disponivel, nunca como analise concluida.
 
+A leitura multimodal usa esforco de raciocinio `medium`, verbosidade baixa e ate 8.000 tokens totais
+para preservar espaco para a saida estruturada sem ultrapassar a reserva conservadora de US$ 0,25.
+Resposta `incomplete`, inclusive por `max_output_tokens`, deve persistir motivo, tokens e custo
+conhecidos. Uma execucao `RUNNING` cujo lease expirou deve terminar em falha visivel e exigir retry
+explicito; ela nunca pode ser reclamada automaticamente, pois a chamada externa anterior pode ter
+sido cobrada. Os campos de status da referencia e de sua execucao permanecem `VARCHAR` explicito no
+Liquibase e no Hibernate para aceitar novos estados sem recriar `ENUM` fisico.
+
 A transcrição usa o endpoint de arquivos de áudio, que não oferece `service_tier: flex`; essa exceção
 deve ficar explícita no artefato de custo. Modelo, duração, tarifa versionada, custo estimado,
 request sanitizado e response bruto são somados à auditoria da leitura multimodal. A estimativa não

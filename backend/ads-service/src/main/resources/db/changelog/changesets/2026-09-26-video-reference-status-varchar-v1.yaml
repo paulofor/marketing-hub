@@ -1,0 +1,65 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-09-26-video-reference-status-varchar-v1.yaml
+  - changeSet:
+      id: 2026-09-26-video-reference-status-varchar-v1-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: video_reference
+        - columnExists:
+            tableName: video_reference
+            columnName: status
+        - tableExists:
+            tableName: video_reference_analysis_execution
+        - columnExists:
+            tableName: video_reference_analysis_execution
+            columnName: status
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT
+                (SELECT COUNT(*)
+                   FROM video_reference
+                  WHERE status IS NULL OR CHAR_LENGTH(status) > 64)
+                +
+                (SELECT COUNT(*)
+                   FROM video_reference_analysis_execution
+                  WHERE status IS NULL OR CHAR_LENGTH(status) > 32)
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE video_reference
+                MODIFY COLUMN status VARCHAR(64) NOT NULL DEFAULT 'QUEUED';
+
+              ALTER TABLE video_reference_analysis_execution
+                MODIFY COLUMN status VARCHAR(32) NOT NULL;
+      rollback:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE video_reference
+                MODIFY COLUMN status ENUM(
+                  'QUEUED',
+                  'ANALYZING',
+                  'ANALYZED',
+                  'FAILED',
+                  'REJECTED'
+                ) NOT NULL DEFAULT 'QUEUED';
+
+              ALTER TABLE video_reference_analysis_execution
+                MODIFY COLUMN status ENUM(
+                  'QUEUED',
+                  'RUNNING',
+                  'COMPLETED',
+                  'FAILED',
+                  'BUDGET_BLOCKED'
+                ) NOT NULL;

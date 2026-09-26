@@ -87,6 +87,10 @@ public class ReferenceAnalysisBackendClient {
             payload.put("rawRequest", failure.rawRequest());
             payload.put("rawResponse", failure.rawResponse());
             payload.put("model", failure.model());
+            payload.put("inputTokens", failure.inputTokens());
+            payload.put("cachedInputTokens", failure.cachedInputTokens());
+            payload.put("outputTokens", failure.outputTokens());
+            payload.put("costUsd", failure.costUsd());
         }
         post(url, payload, context.executionId(), "falhar");
     }

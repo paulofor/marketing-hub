@@ -36,6 +36,8 @@ Antes de publicar ou recriar containers, consulte o inventário central de secre
 | `VIDEO_PDE_AUDIOVISUAL_ENABLED` | Ativa o consumidor BPM de Apolo; decisões sem vídeo custam zero e produção paga continua governada pelo Estúdio | `true` no deploy de vídeo |
 | `VIDEO_REFERENCE_ANALYSIS_POLL_INTERVAL` | Intervalo do polling da fila de análise de referências | `PT30S` |
 | `VIDEO_REFERENCE_ANALYSIS_MODEL` | Modelo multimodal usado na análise auditável de referências | `gpt-5.6` |
+| `VIDEO_REFERENCE_ANALYSIS_MAX_OUTPUT_TOKENS` | Limite que inclui raciocínio e saída estruturada da análise | `8000` |
+| `VIDEO_REFERENCE_ANALYSIS_REASONING_EFFORT` | Esforço limitado para preservar espaço e custo da saída funcional | `medium` |
 | `VIDEO_PROVIDERS_VEO_ENABLED` | Habilita o adapter direto VEO/Gemini no módulo de vídeo | `true` |
 | `VIDEO_PROVIDERS_VEO_API_KEY` | Chave Gemini usada pelo adapter VEO; pode vir de `GEMINI_API_KEY` | vazio |
 | `VIDEO_PROVIDERS_VEO_MODEL` | Modelo VEO usado no render | `veo-3.1-generate-preview` |

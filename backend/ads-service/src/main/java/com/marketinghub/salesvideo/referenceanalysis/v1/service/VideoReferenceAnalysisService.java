@@ -74,7 +74,7 @@ public class VideoReferenceAnalysisService implements VideoReferenceAnalysisPort
     return response(createExecution(reference, nextAttempt(referenceId)));
   }
 
-  /** Entrega uma única pendência com lease, recuperando execuções abandonadas sem sobreposição. */
+  /** Entrega uma pendência e encerra lease expirado sem repetir consumo externo automaticamente. */
   @Transactional
   public List<Pending> claimPending(
       String workerId, BigDecimal budgetLimitUsd, BigDecimal reservationUsd) {
@@ -90,15 +90,17 @@ public class VideoReferenceAnalysisService implements VideoReferenceAnalysisPort
       return List.of();
     }
     VideoReferenceAnalysisExecution execution = claimable.getFirst();
+    if (execution.getStatus() == VideoReferenceAnalysisStatus.RUNNING) {
+      closeExpiredLease(execution);
+      return List.of();
+    }
     BigDecimal knownCost = executionRepository.sumKnownCostUsd();
     if (knownCost == null) {
       knownCost = BigDecimal.ZERO;
     }
     long activeExecutions = executionRepository.countByStatus(VideoReferenceAnalysisStatus.RUNNING);
     BigDecimal reservedCost = reservation.multiply(BigDecimal.valueOf(activeExecutions));
-    if (execution.getStatus() == VideoReferenceAnalysisStatus.QUEUED) {
-      reservedCost = reservedCost.add(reservation);
-    }
+    reservedCost = reservedCost.add(reservation);
     if (knownCost.add(reservedCost).compareTo(limit) > 0) {
       blockByBudget(execution, knownCost, reservedCost, limit);
       return List.of();
@@ -124,6 +126,24 @@ public class VideoReferenceAnalysisService implements VideoReferenceAnalysisPort
             saved.getProducerExecutionId(),
             readJson(saved.getInputJson()),
             saved.getClaimedAt()));
+  }
+
+  /** Fecha lease abandonado como falha auditável e exige retry humano para novo consumo. */
+  private void closeExpiredLease(VideoReferenceAnalysisExecution execution) {
+    String detail =
+        "Lease expirou após possível chamada externa; consumo pode ter ocorrido e retry explícito é necessário";
+    execution.setStatus(VideoReferenceAnalysisStatus.FAILED);
+    execution.setError(detail);
+    execution.setFinishedAt(Instant.now());
+    executionRepository.save(execution);
+    VideoReference reference = reference(execution.getReferenceId());
+    reference.setStatus(VideoReferenceStatus.FAILED);
+    referenceRepository.save(reference);
+    log.warn(
+        "Lease de análise encerrado sem repetição automática; executionId={} referenceId={} workerId={}",
+        execution.getId(),
+        execution.getReferenceId(),
+        execution.getWorkerId());
   }
 
   /** Bloqueia a tentativa antes da chamada externa quando o envelope financeiro acabou. */
@@ -185,6 +205,10 @@ public class VideoReferenceAnalysisService implements VideoReferenceAnalysisPort
     execution.setRawRequestJson(writeNullable(request.rawRequest()));
     execution.setRawResponseJson(writeNullable(request.rawResponse()));
     execution.setModel(request.model());
+    execution.setInputTokens(request.inputTokens());
+    execution.setCachedInputTokens(request.cachedInputTokens());
+    execution.setOutputTokens(request.outputTokens());
+    execution.setCostUsd(request.costUsd());
     execution.setError(request.error());
     execution.setStatus(VideoReferenceAnalysisStatus.FAILED);
     execution.setFinishedAt(Instant.now());

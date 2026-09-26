@@ -36,7 +36,7 @@ class ReferenceAnalysisAiClientTest {
         server.shutdown();
     }
 
-    /** Envia imagens, raciocínio máximo, Flex e schema estrito sem armazenamento remoto. */
+    /** Envia imagens, raciocínio limitado, Flex e schema estrito sem armazenamento remoto. */
     @Test
     void shouldSendVersionedMultimodalContractWithoutRemoteStorage() throws Exception {
         server.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
@@ -70,9 +70,10 @@ class ReferenceAnalysisAiClientTest {
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer openai-test-key");
         assertThat(payload.path("model").asText()).isEqualTo("gpt-5.6");
         assertThat(payload.path("service_tier").asText()).isEqualTo("flex");
-        assertThat(payload.at("/reasoning/effort").asText()).isEqualTo("max");
+        assertThat(payload.at("/reasoning/effort").asText()).isEqualTo("medium");
         assertThat(payload.path("store").asBoolean()).isFalse();
-        assertThat(payload.path("max_output_tokens").asLong()).isEqualTo(4000);
+        assertThat(payload.path("max_output_tokens").asLong()).isEqualTo(8000);
+        assertThat(payload.at("/text/verbosity").asText()).isEqualTo("low");
         assertThat(payload.path("input").get(0).path("content")).hasSize(3);
         assertThat(payload.at("/input/0/content/0/text").asText())
                 .contains(

@@ -29,6 +29,14 @@ class ProofCardRendererTest {
     assertThat(IrisCreativeMaterializer.sha(output)).hasSize(64);
   }
 
+  /** Explicita o formato da aplicação privada e preserva o rótulo recebido fora desse modo. */
+  @Test
+  void identifiesPrivateWebApplication() throws Exception {
+    var spec = spec().put("eyebrow", "Demonstração");
+    assertThat(ProofCardRenderer.eyebrow(spec, true)).isEqualTo("APLICAÇÃO WEB PRIVADA");
+    assertThat(ProofCardRenderer.eyebrow(spec, false)).isEqualTo("Demonstração");
+  }
+
   /** Recusa coordenadas, escala ilegível e textos que seriam truncados. */
   @Test
   void rejectsOutOfBoundsAndUnreadableContent() throws Exception {
@@ -43,6 +51,10 @@ class ProofCardRendererTest {
     ((ObjectNode) fractional.path("crop")).put("x", 0.5);
     assertThatThrownBy(() -> renderer.render(fractional, source(), true))
         .hasMessageContaining("Coordenada");
+    var ultraWide = spec();
+    ((ObjectNode) ultraWide.path("crop")).put("width", 800).put("height", 180);
+    assertThatThrownBy(() -> renderer.render(ultraWide, source(), true))
+        .hasMessageContaining("proporção entre 1,2:1 e 2,2:1");
   }
 
   /** Gera uma prévia privada a partir dos bytes aprovados quando a homologação fornece a origem. */

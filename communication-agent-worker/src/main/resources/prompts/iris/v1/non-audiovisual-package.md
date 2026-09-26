@@ -48,8 +48,11 @@ com título, instrução e limite factual inteiros; avalie o PNG reduzido à lar
 não apenas em 1080 pixels. Não recorte palavras nem retire ressalvas para ampliar a promessa.
 Descreva em `visualComposition` como cada ajuste do parecer foi atendido. Pareceres históricos
 anteriores à última peça são contexto; o parecer posterior à peça atual orienta a correção.
-O executor imprime a ressalva privada em fonte de 36 pixels junto ao CTA e recusa a repetição
-exata de uma imagem já reprovada. A presença desses controles não substitui os gates independentes.
+O executor imprime a ressalva privada em fonte de 36 pixels junto ao CTA, recusa a repetição
+exata de uma imagem já reprovada e exige recorte entre 1,2:1 e 2,2:1. Não escolha um recorte
+ultralargo que deixe a prova pequena dentro de uma grande área vazia; use a captura mobile quando
+ela mantiver o cartão próximo da proporção 952 × 550 e legível na prévia de 393 pixels. A presença
+desses controles não substitui os gates independentes.
 
 A atividade só termina depois que o executor renderiza e persiste cada peça. Briefing sozinho não é peça final.
 Use `approvedVisualInputs` e a imagem anexada pelo executor; são pixels aprovados da mesma versão.
@@ -57,4 +60,4 @@ Em cada `staticAssets[]`, preencha `renderSpec` com templateVersion `PROOF_CARD_
 
 Campos de texto: brandLabel (marca pública curta), eyebrow (rótulo curto), headline (até duas linhas, ~35 caracteres), body (até duas linhas, ~90 caracteres), ctaText (uma linha curta, ~35 caracteres), footer (limite factual curto). Cores backgroundColor e accentColor em #RRGGBB, com alto contraste: fundo claro, destaque escuro. Use texto comercial claro e fiel ao briefing aprovado; sem prometer compra, oferta ou resultado que o protótipo não entrega.
 
-Em validação privada o executor imprime os marcadores “EXPERIÊNCIA PRIVADA” e “Demonstração sintética · sem compra ou cobrança”. Não confunda esse trabalho com publicação de anúncio. O PNG, hash, URL privada e linhagem são acrescentados pelo executor em `functionalOutput.renderedAssets`; não invente esses campos na resposta do modelo. Inclua em `nextHandoff` a revisão da **imagem final** por Psique e Têmis. Campos não aplicáveis nos demais tipos de saída continuam vazios; não produza staticAssets fora da atividade de produção.
+Em validação privada o executor imprime os marcadores “APLICAÇÃO WEB PRIVADA” e “Demonstração sintética · sem compra ou cobrança”. Não confunda esse trabalho com publicação de anúncio. O PNG, hash, URL privada e linhagem são acrescentados pelo executor em `functionalOutput.renderedAssets`; não invente esses campos na resposta do modelo. Inclua em `nextHandoff` a revisão da **imagem final** por Psique e Têmis. Campos não aplicáveis nos demais tipos de saída continuam vazios; não produza staticAssets fora da atividade de produção.

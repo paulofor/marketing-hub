@@ -1,0 +1,18 @@
+{
+  "cardKey": "interpretacao-atencao-eye-tracking",
+  "collection": "neuromarketing",
+  "title": "Visibilidade, atenção ativa e compreensão são sinais diferentes",
+  "finding": "Em 69 vídeos de oito anunciantes avaliados em quatro canais sociais, a Amplified reportou 2,4 a 2,8 segundos de atenção ativa média e tempo visível 1,5 a 2,5 vezes maior que a atenção ativa estimada. Dentro do mesmo placement, peças específicas da plataforma não mostraram diferença significativa de atenção ativa frente a peças reaproveitadas. Evidência acadêmica complementar mostra que maior atenção visual também não garante compreensão.",
+  "mechanism": "Há uma cadeia distinta entre oportunidade de ver, atenção ativa, compreensão e ação. Placement e ambiente limitam a janela de atenção; saliência ou duração de exposição não substituem compreensão nem resposta real.",
+  "commercialApplication": "No Marketing Hub, interpretar métricas de visualização e scores previstos de atenção dentro do placement. Revisar os primeiros segundos e a legibilidade da proposta, mas combinar atenção com compreensão, retenção, CTA, lead, checkout e pagamento; não aprovar criativo apenas por score visual alto.",
+  "evidenceStrength": "Moderada: combina estudo acadêmico de atenção visual em e-commerce com estudo proprietário recente de 69 ativos em quatro plataformas. O estudo de plataforma não é peer-reviewed e usa modelagem.",
+  "publishedOn": "2026-09-25",
+  "validUntil": "2027-03-25",
+  "experimentHypothesis": "Variantes avaliadas pela cadeia placement para atenção para compreensão para evento real produzirão escolhas de criativo mais confiáveis do que seleção por visibilidade ou score de atenção isolado.",
+  "risks": "Confundir visibilidade com atenção, atenção com preferência, usar modelo proprietário como verdade causal, comparar plataformas sem controle adequado ou otimizar segundos de atenção sem resultado humano mensurável.",
+  "limits": "A pesquisa da Amplified cobre oito anunciantes australianos, usa modelagem e inclui parceria com Snapchat; não prova desempenho em Meta Ads brasileiros. O estudo acadêmico complementar usa e-commerce simulado e não mediu vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-26-atencao-ativa-placement.md",
+  "sourceTitle": "Fonte revisada — Visibilidade, atenção ativa e compreensão",
+  "sourceSha256": "afb9f8f53bf8a35afa567ee78bb18db81bb3473cf930049b4c62884ce17c444b"
+}

@@ -1198,9 +1198,9 @@ class SalesVideoJobServiceTest {
     verify(completedRenderAssetSync).syncFailedRender(job, request);
   }
 
-  /** Cria job de pós-produção preservando origem e textos comerciais do vídeo final. */
+  /** Preserva origem e copy, mas corrige disclosure editorial que inventava apresentadora. */
   @Test
-  void shouldRequestPostProductionFromReadyVideoJob() {
+  void shouldRequestPostProductionFromReadyVideoJob() throws Exception {
     TenantContextHolder.set(new TenantContext("tenant-a", "seller@example.com", false));
     SalesVideoProfile profile =
         SalesVideoProfile.builder()
@@ -1221,8 +1221,9 @@ class SalesVideoJobServiceTest {
             .streamPlaybackUrl("https://cdn.example.com/source.mp4")
             .metadataJson(
                 "{\"videoProductionCycleId\":7,\"videoProjectId\":3,\"experimentId\":91,"
-                    + "\"generation_strategy\":\"DETERMINISTIC_EDITORIAL_MOTION_FROM_APPROVED_ASSETS\","
+                    + "\"generation_strategy\":\"DETERMINISTIC_EDITORIAL_MOTION_FROM_APPROVED_PRODUCT_PROOF\","
                     + "\"cut_plan\":[{\"role\":\"HOOK_DOR\"}],"
+                    + "\"referenceGovernance\":{\"presenterIsSynthetic\":true,\"productIsDigitalExperience\":true},"
                     + "\"post_production\":{\"cta_text\":\"Ver meu plano\"}}")
             .requestedAt(Instant.parse("2026-07-24T10:00:00Z"))
             .build();
@@ -1257,6 +1258,12 @@ class SalesVideoJobServiceTest {
               "\"videoProjectId\":3",
               "\"experimentId\":91",
               "\"cut_plan\"");
+      assertThat(
+              new ObjectMapper()
+                  .readTree(result.getMetadataJson())
+                  .at("/referenceGovernance/presenterIsSynthetic")
+                  .asBoolean())
+          .isFalse();
       assertThat(result.getAuditSnapshotJson()).contains("\"sourceJobId\":20432");
     } finally {
       TenantContextHolder.clear();

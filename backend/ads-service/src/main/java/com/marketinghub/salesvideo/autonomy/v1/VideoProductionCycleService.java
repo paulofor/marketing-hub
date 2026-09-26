@@ -587,7 +587,8 @@ public class VideoProductionCycleService {
         metadata.put("technicalQualityGate", java.util.Map.of("captionMustMatchNarration", true));
         metadata.put(
             "referenceGovernance",
-            java.util.Map.of("presenterIsSynthetic", true, "productIsDigitalExperience", true));
+            java.util.Map.of(
+                "presenterIsSynthetic", !editorialMotion, "productIsDigitalExperience", true));
         metadata.put(
             "premiumFinalization",
             java.util.Map.of(

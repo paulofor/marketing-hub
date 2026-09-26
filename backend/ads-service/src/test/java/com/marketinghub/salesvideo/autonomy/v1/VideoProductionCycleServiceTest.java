@@ -201,6 +201,51 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 
+  /** Identifica prova editorial de tela sem inventar uma apresentadora sintética. */
+  @Test
+  void shouldQueueEditorialProofWithoutSyntheticPresenter() throws Exception {
+    VideoProductionCycle cycle = cycle();
+    cycle.setExperimentId(93L);
+    VideoProject project = project();
+    project.setProviderPlan(
+        "Provider escolhido no Estudio: Movimento editorial local (EDITORIAL_MOTION).");
+    project.setReferencePerformanceUri("internal://agent-tasks/371/visual-evidence/96");
+    project.setCaptionPlan("Veja a tela real | Conheça a rotina individualizada");
+    var proofService =
+        org.mockito.Mockito.mock(
+            com.marketinghub.salesvideo.service.VideoProductProofService.class);
+    when(proofService.resolve(project))
+        .thenReturn(
+            java.util.Map.of(
+                "contractVersion",
+                "PDE_PRIVATE_VIDEO_PROOF_V1",
+                "sha256",
+                "mira-proof-sha",
+                "contentPath",
+                "/api/sales-videos/projects/7/product-proof"));
+    service.setProductProofService(proofService);
+    SalesVideoJobDto job = new SalesVideoJobDto();
+    job.setId(21246L);
+    when(repository.findById(11L)).thenReturn(Optional.of(cycle));
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
+    when(salesVideoService.requestRender(any(), any())).thenReturn(job);
+    VideoCreditReservation reservation = activeReservation();
+    when(providerPreflightService.reserve(cycle)).thenReturn(reservation);
+    when(providerPreflightService.requireActiveReservation(11L)).thenReturn(reservation);
+
+    service.decide(
+        11L, financialDecision("APPROVED", "Rota editorial local autorizada.", "financial-agent"));
+
+    ArgumentCaptor<RequestVideoRenderRequest> render =
+        ArgumentCaptor.forClass(RequestVideoRenderRequest.class);
+    verify(salesVideoService).requestRender(org.mockito.ArgumentMatchers.eq(13L), render.capture());
+    var metadata = new ObjectMapper().readTree(render.getValue().getMetadataJson());
+    assertThat(metadata.path("generation_strategy").asText())
+        .isEqualTo("DETERMINISTIC_EDITORIAL_MOTION_FROM_APPROVED_PRODUCT_PROOF");
+    assertThat(metadata.at("/referenceGovernance/presenterIsSynthetic").asBoolean()).isFalse();
+    assertThat(metadata.at("/referenceGovernance/productIsDigitalExperience").asBoolean()).isTrue();
+  }
+
   /** Impede que arredondamento ou entrada manual ampliem o teto originalmente autorizado. */
   @Test
   void shouldRejectOperationalBudgetAboveOriginalBrlAuthorization() {

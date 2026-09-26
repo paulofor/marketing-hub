@@ -145,6 +145,21 @@ paths:
       responses:
         '200': { description: Ativos aprovados importados de forma idempotente }
         '400': { description: Pacote, hashes, contrato ou pareceres inválidos }
+  /api/planning/commercial-plans/{id}/visual-assets/approved-process:
+    post:
+      summary: Vincula ao plano as peças de um processo criativo já aprovado
+      description: >-
+        Reaplica de forma idempotente uma decisão humana já concluída, preservando os hashes e os
+        pareceres de Psique e Têmis. Não publica campanha nem autoriza gasto de mídia.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: Ativos aprovados vinculados ao plano de forma idempotente }
+        '404': { description: Plano comercial não encontrado }
+        '409': { description: Processo, decisão, artefato, hash ou parecer incompatível }
   /api/planning/commercial-plans/{id}/visual-assets/{assetId}/status:
     patch:
       summary: Aprova ou retira uma referência do Kit Visual

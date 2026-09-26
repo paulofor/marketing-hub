@@ -493,6 +493,29 @@ export function useImportCommercialPlanCreativePackage(planId?: number | null) {
   });
 }
 
+/** Vincula pela tela as peças de um processo que já recebeu os dois pareceres e decisão humana. */
+export function useImportApprovedProcessVisualAssets(planId?: number | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await axios.post<CommercialPlanVisualAsset[]>(
+        `/api/planning/commercial-plans/${planId}/visual-assets/approved-process`,
+      );
+      return data;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["commercial-plan-visual-assets", planId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["products", "value-chain-positions"],
+        }),
+      ]);
+    },
+  });
+}
+
 /** Aprova ou retira uma referência sem apagar o histórico. */
 export function useUpdateCommercialPlanVisualAssetStatus(
   planId?: number | null,

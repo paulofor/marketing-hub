@@ -7427,3 +7427,15 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   da proporção 1,2:1 a 2,2:1. Testes protegem o rótulo nos modos privado e não privado e a área útil
   da prova. A peça corrigida deve ser regenerada pelo fluxo oficial, conferida em 393 px e novamente
   submetida a Psique e Têmis, sem substituição manual de artefato.
+- **Recorrência de transporte confirmada:** a peça #407 foi aprovada por Psique #527, Têmis #528 e
+  pela decisão humana do processo #64, mas o subprocesso de landing continuou bloqueado porque o
+  plano #8 só consultava sua biblioteca visual e nenhum contrato transportava a seleção aprovada.
+  Reexecutar produção ou enviar um ZIP manual quebraria a linhagem e desperdiçaria custo já pago.
+- **Alternativas avaliadas para o transporte:** criar um pacote manual seria rápido, mas duplicaria
+  a autoridade; aceitar qualquer URL ampliaria o gate e permitiria pixels sem revisão; vincular no
+  efeito da própria decisão humana, com comando idempotente para decisões históricas, preserva a
+  fronteira entre aprovação e publicação. A terceira alternativa foi adotada.
+- **Correção e prevenção do transporte:** o handler humano valida produtor, atividades, agentes,
+  decisões e SHA-256 do mesmo PNG antes de materializá-lo como ativo aprovado do plano. O endpoint
+  documentado permite reaplicar decisões anteriores pela interface, sem nova inferência, agente,
+  publicação ou autorização de mídia; testes cobrem caminho feliz, hash divergente e idempotência.

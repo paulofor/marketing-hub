@@ -743,6 +743,33 @@ class CreativeServiceTest {
             "https://cdn.test/product-proof.png", "https://cdn.test/story-product-proof.png");
   }
 
+  /** Delega correção audiovisual sem transformar um vídeo reprovado em geração de imagem. */
+  @Test
+  void delegatesVideoMediaCorrectionWithoutImageGeneration() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
+    CreateCreativeRequest create = new CreateCreativeRequest();
+    create.setFormat("VIDEO");
+    create.setVideoUrl("https://cdn.test/capella-v2.mp4");
+    Creative creative = service.create(exp.getId(), create);
+
+    Creative reviewed =
+        service.applyAgentReview(
+            creative.getId(),
+            adjustmentReview(
+                java.util.List.of("Demonstração legível"),
+                java.util.List.of("Mockup inventado"),
+                java.util.List.of("Amostras aprovadas visíveis em mobile")));
+
+    assertThat(reviewed.getAgentImprovementStatus()).isEqualTo(CreativeImprovementStatus.DELEGATED);
+    assertThat(reviewed.getAgentImprovementError())
+        .contains("fluxo audiovisual", "não substitui arquivos de vídeo");
+    assertThat(service.claimAgentImprovementQueue(1)).isEmpty();
+    assertThat(commercialPlanImageStudioJobRepository.count()).isZero();
+    reviewed.setStatus(CreativeStatus.REJECTED);
+    repository.saveAndFlush(reviewed);
+  }
+
   /** Bloqueia correção vaga antes de consumir geração visual. */
   @Test
   void rejectsImprovementWithoutVerifiableVisualContract() {

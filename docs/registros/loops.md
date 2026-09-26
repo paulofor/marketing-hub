@@ -7331,3 +7331,13 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Prevenção:** testes de contrato reproduzem histórico legado no contador zero, reabertura pela
   Biblioteca, callback duplicado e reconciliação financeira, exigindo `LIMIT_REACHED` antes de
   qualquer nova geração e a soma integral do custo visual mesmo quando a peça é reprovada.
+- **Causa complementar confirmada:** #532 e #533 eram criativos `VIDEO`, mas seus contratos de
+  melhoria pediam literalmente a materialização de uma nova imagem. Íris não conseguiria corrigir
+  o MP4 reprovado; cada tentativa trocava a tecnologia e criava outra peça inadequada.
+- **Alternativas avaliadas:** manter até oito imagens apenas limitaria a perda; iniciar Apolo
+  automaticamente poderia gerar novo gasto sem orçamento audiovisual aprovado; delegar a correção
+  ao fluxo audiovisual e aceitar somente nova versão governada preserva tecnologia, autorização e
+  auditoria. A terceira foi adotada.
+- **Prevenção audiovisual:** correções `CREATIVE_MEDIA` de criativos com formato, ID ou URL de vídeo
+  recebem `DELEGATED` e nunca entram na fila de imagens de Íris. O teste de contrato exige fila vazia
+  e zero jobs de imagem para esse cenário.

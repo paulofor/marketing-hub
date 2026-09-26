@@ -20,6 +20,9 @@ import com.marketinghub.repository.jpa.salesvideo.SalesVideoProviderModelReposit
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.SalesVideoProviderModel;
 import com.marketinghub.salesvideo.VideoProject;
+import java.math.BigDecimal;
+import java.time.DateTimeException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -222,6 +225,7 @@ public class CreativeMediaGovernanceEvidenceService {
     for (JsonNode node : nodes) {
       Long creativeId = positiveLong(node.path("creativeId"));
       Long experimentId = positiveLong(node.path("experimentId"));
+      Instant snapshotReviewedAt = reviewedInstant(node.path("reviewedAt"));
       ApprovedCreativeSource snapshot =
           new ApprovedCreativeSource(
               creativeId,
@@ -230,7 +234,7 @@ public class CreativeMediaGovernanceEvidenceService {
               text(node, "mediaUrl"),
               text(node, "status"),
               text(node, "agentReviewStatus"),
-              text(node, "reviewedAt"));
+              snapshotReviewedAt == null ? null : snapshotReviewedAt.toString());
       resolved.add(snapshot);
       Creative source =
           creativeId == null ? null : creatives.findByIdWithExperiment(creativeId).orElse(null);
@@ -257,7 +261,7 @@ public class CreativeMediaGovernanceEvidenceService {
               && Objects.equals(source.getAgentReviewStatus().name(), snapshot.agentReviewStatus())
               && "APPROVED".equals(snapshot.agentReviewStatus())
               && source.getReviewedAt() != null
-              && Objects.equals(source.getReviewedAt().toString(), snapshot.reviewedAt());
+              && Objects.equals(source.getReviewedAt(), snapshotReviewedAt);
     }
     return new ResolvedApprovedSources(List.copyOf(resolved), complete);
   }
@@ -443,6 +447,25 @@ public class CreativeMediaGovernanceEvidenceService {
   private String text(JsonNode parent, String field) {
     JsonNode value = parent.path(field);
     return value.isTextual() ? trimToNull(value.asText()) : null;
+  }
+
+  /** Normaliza datas ISO e snapshots numéricos legados do Jackson para o mesmo instante. */
+  private Instant reviewedInstant(JsonNode value) {
+    try {
+      if (value.isTextual()) {
+        String normalized = trimToNull(value.asText());
+        return normalized == null ? null : Instant.parse(normalized);
+      }
+      if (value.isNumber()) {
+        BigDecimal[] parts = value.decimalValue().divideAndRemainder(BigDecimal.ONE);
+        long seconds = parts[0].longValueExact();
+        int nanos = parts[1].movePointRight(9).intValueExact();
+        return Instant.ofEpochSecond(seconds, nanos);
+      }
+      return null;
+    } catch (ArithmeticException | DateTimeException ex) {
+      return null;
+    }
   }
 
   /** Retorna o primeiro texto não vazio dentre as fontes auditáveis informadas. */

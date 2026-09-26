@@ -21,9 +21,9 @@ Criar o experimento sucessor do #88 mantendo produto, preço de R$ 67, página, 
 | Validação financeira | Informar parada menor que R$ 25, acima de R$ 100 ou sem meta de compras | Backend e interface bloqueiam o planejamento inconsistente |
 | Concorrência | Repetir o mesmo comando de vínculo | Operação é idempotente e não cria outro experimento |
 | Criativo controle | Reutilizar a peça vertical #523 | Nova cópia pertence ao #94 e volta aos gates de revisão |
-| Criativo variante | Produzir vídeo vertical de 15–20 segundos com posts e stories reais | Vídeo explicita desejo, prova, pacote pago, preço e prazo, sem depoimento ou antes/depois inventado |
+| Criativo variante | Produzir vídeo vertical de 15–20 segundos com os posts e stories aprovados do produto | Vídeo explicita desejo, prova, pacote pago, preço e prazo, sem sugerir trabalhos de clientes, depoimento ou antes/depois inventado |
 | Upload governado | Anexar o MP4 pela aba Vídeos do #94 | Backend valida assinatura MP4, 9:16, duração, áudio, origem e referência versionada; grava custo zero e mantém revisão `PENDING` |
-| Fontes do vídeo | Informar #522 e #523 no upload | Backend confirma que ambos pertencem ao #88, estão aprovados técnica e humanamente e preserva suas URLs no snapshot |
+| Fontes do vídeo | Informar #522 e #523 no upload | Backend confirma que ambos pertencem ao #88, estão aprovados técnica e humanamente e preserva URLs e instantes de aprovação em formato ISO no snapshot; snapshots numéricos legados continuam verificáveis |
 | Integridade do arquivo | Revisar o criativo em vídeo | SHA-256 calculado pelo backend coincide com o arquivo decodificado pelo MCP; fontes visuais também são inspecionadas |
 | Linhagem do sucessor | Revisar o controle #531 e a variante em vídeo | Têmis recebe #88 como origem verificada e não trata URLs herdadas como divergência isolada |
 | Checkout observável | Inspecionar a landing herdada | O coletor encontra o checkout canônico nos links reais do DOM, abre-o sem interação e comprova `checkoutLinkedFromLanding=true` |
@@ -36,9 +36,9 @@ Criar o experimento sucessor do #88 mantendo produto, preço de R$ 67, página, 
 ## Copy do vídeo
 
 1. Desejo: “Seu trabalho é caprichado. Seu Instagram mostra isso?”
-2. Primeiro passo: “Veja quatro peças reais do kit em poucos segundos.”
+2. Primeiro passo: “Veja amostras do kit em poucos segundos.”
 3. Prova: mostrar dois posts e dois stories aprovados do Capella.
 4. Continuidade paga: “Por R$ 67: 10 posts, 10 stories, 10 legendas, 5 mensagens e calendário personalizado, em até 3 dias úteis.”
 5. Margem: “Repetir somente com duas compras líquidas, entrega confirmada e contribuição positiva dentro do teto de R$ 100.”
 
-O quinto ponto é um gate interno do experimento, não uma promessa exibida à cliente. A peça é montada de forma reproduzível por `scripts/marketing/create-capella-successor-video-v1.sh`, que valida os hashes dos criativos aprovados #522 e #523 antes de gerar o MP4.
+O quinto ponto é um gate interno do experimento, não uma promessa exibida à cliente. A primeira montagem permanece reproduzível em `scripts/marketing/create-capella-successor-video-v1.sh`; a candidata comercial revisada usa `scripts/marketing/create-capella-successor-video-v2.sh`, que mantém os mesmos hashes dos criativos aprovados #522 e #523 e chama as peças de amostras do kit, sem sugerir trabalhos de clientes.

@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-26-local-editorial-video-account-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: video_provider_account
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO video_provider_account
+                (aggregator_name, account_key, display_name, credit_unit_usd,
+                 official_balance_credits, reserved_credits, max_monthly_credit_spend,
+                 quota_snapshot_json, usage_snapshot_json, snapshot_status,
+                 snapshot_observed_at, snapshot_expires_at, source_url, recharge_url,
+                 created_at, updated_at)
+              VALUES
+                ('Marketing Hub local', 'LOCAL_EDITORIAL', 'Movimento editorial local',
+                 0.000000, 0, 0, 0,
+                 '{"externalQuotaRequired":false,"providerCostUsd":0}',
+                 '{"providerCalls":0,"costUsd":0}', 'READY',
+                 NOW(), DATE_ADD(NOW(), INTERVAL 5 MINUTE),
+                 'internal://video-management-service/editorial-motion-v1', NULL,
+                 NOW(), NOW())
+              ON DUPLICATE KEY UPDATE
+                aggregator_name = VALUES(aggregator_name),
+                display_name = VALUES(display_name),
+                credit_unit_usd = VALUES(credit_unit_usd),
+                official_balance_credits = VALUES(official_balance_credits),
+                max_monthly_credit_spend = VALUES(max_monthly_credit_spend),
+                quota_snapshot_json = VALUES(quota_snapshot_json),
+                usage_snapshot_json = VALUES(usage_snapshot_json),
+                source_url = VALUES(source_url),
+                updated_at = VALUES(updated_at);

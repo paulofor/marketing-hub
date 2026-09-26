@@ -568,15 +568,21 @@ class SalesVideoJobServiceTest {
 
   /** Exige prova íntegra, voz, sincronismo e decisão humana também na rota genérica. */
   @org.junit.jupiter.params.ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(strings = {"complete", "hash", "audio", "human"})
-  void shouldGatePrivatePdePostProduction(String scenario) throws Exception {
+  @org.junit.jupiter.params.provider.CsvSource({
+    "RUNWAY_ROUTER,complete",
+    "EDITORIAL_MOTION,complete",
+    "RUNWAY_ROUTER,hash",
+    "RUNWAY_ROUTER,audio",
+    "RUNWAY_ROUTER,human"
+  })
+  void shouldGatePrivatePdePostProduction(String sourceProvider, String scenario) throws Exception {
     SalesVideoProfile profile = SalesVideoProfile.builder().id(10L).build();
     if (!"human".equals(scenario))
       profile.setHumanReviewApprovedAt(Instant.parse("2026-09-13T12:00:00Z"));
     SalesVideoJob source =
         SalesVideoJob.builder()
             .id(91010L)
-            .providerName("RUNWAY_ROUTER")
+            .providerName(sourceProvider)
             .metadataJson(
                 "{\"post_production\":{\"product_proof\":{\"contractVersion\":\"PDE_PRIVATE_VIDEO_PROOF_V1\",\"sha256\":\"fixture-hash\"}}}")
             .build();
@@ -620,7 +626,8 @@ class SalesVideoJobServiceTest {
 
   /** Encadeia fontes governadas na pós-produção preservando os gates técnicos de Apolo. */
   @org.junit.jupiter.params.ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(strings = {"RUNWAY_PRODUCT_UGC", "RUNWAY_ROUTER"})
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"RUNWAY_PRODUCT_UGC", "RUNWAY_ROUTER", "EDITORIAL_MOTION"})
   void shouldEnqueuePremiumFinalizationForGovernedSource(String sourceProvider) {
     TenantContextHolder.set(new TenantContext("tenant-a", "operator@tenant.io", false));
     SalesVideoProfile profile =

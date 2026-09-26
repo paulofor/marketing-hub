@@ -55,37 +55,53 @@ public class ApolloPdeAudiovisualCallbackFactory {
             ApolloPdeAudiovisualTask task, ApolloPdeAudiovisualDecision decision) {
         String input = objectMapper.valueToTree(task).toString();
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("resultJson", result(decision).toString());
-        payload.put("evidenceJson", evidence(task).toString());
+        payload.put("resultJson", result(task, decision).toString());
+        payload.put("evidenceJson", evidence(task, decision).toString());
         payload.put("modelUsages", List.of());
         payload.put("executionAudit", audit(input));
         return payload;
     }
 
     /** Registra o desfecho sem declarar uma próxima etapa local. */
-    private ObjectNode result(ApolloPdeAudiovisualDecision decision) {
+    private ObjectNode result(
+            ApolloPdeAudiovisualTask task, ApolloPdeAudiovisualDecision decision) {
         ObjectNode result = objectMapper.createObjectNode();
         result.put("decision", decision.canComplete() ? "READY" : "BLOCKED");
         result.put("audiovisualRequirement", decision.outcome().name());
         if (ApolloPdeAudiovisualDecision.Outcome.NOT_REQUIRED.equals(decision.outcome())) {
             result.put("audiovisualRequired", false);
-        } else if (ApolloPdeAudiovisualDecision.Outcome.REQUIRES_AUTHORIZATION.equals(decision.outcome())) {
+        } else if (ApolloPdeAudiovisualDecision.Outcome.REQUIRES_AUTHORIZATION.equals(decision.outcome())
+                || ApolloPdeAudiovisualDecision.Outcome.MATERIALIZED.equals(decision.outcome())) {
             result.put("audiovisualRequired", true);
         } else {
             result.putNull("audiovisualRequired");
         }
         result.put("rationale", decision.rationale());
         result.put("recommendedAction", decision.recommendedAction());
-        result.putArray("artifactIds");
+        var artifactIds = result.putArray("artifactIds");
+        JsonNode materialization = materialization(task);
+        if (ApolloPdeAudiovisualDecision.Outcome.MATERIALIZED.equals(decision.outcome())) {
+            materialization.path("artifactIds").forEach(value -> artifactIds.add(value.asLong()));
+            result.put("videoProductionCycleId", materialization.path("videoProductionCycleId").asLong());
+            result.put("videoProjectId", materialization.path("videoProjectId").asLong());
+            result.put("salesVideoJobId", materialization.path("salesVideoJobId").asLong());
+            result.put("authorizedBy", materialization.path("authorizedBy").asText());
+            result.put("budgetLimitUsd", materialization.path("budgetLimitUsd").decimalValue());
+        }
         result.put("providerCalls", 0);
         result.put("creditsConsumed", 0);
-        result.put("providerCostUsd", 0);
+        result.put(
+                "providerCostUsd",
+                ApolloPdeAudiovisualDecision.Outcome.MATERIALIZED.equals(decision.outcome())
+                        ? materialization.path("actualCostUsd").decimalValue()
+                        : java.math.BigDecimal.ZERO);
         result.put("externalSideEffects", false);
         return result;
     }
 
     /** Preserva a origem exata do booleano e a ausência de efeitos externos. */
-    private ObjectNode evidence(ApolloPdeAudiovisualTask task) {
+    private ObjectNode evidence(
+            ApolloPdeAudiovisualTask task, ApolloPdeAudiovisualDecision decision) {
         ObjectNode evidence = objectMapper.createObjectNode();
         evidence.put("agent", "Apolo");
         evidence.put("ruleVersion", RULE_VERSION);
@@ -105,11 +121,28 @@ public class ApolloPdeAudiovisualCallbackFactory {
         } else {
             evidence.putNull("contractValue");
         }
-        evidence.put("artifactCreated", false);
+        boolean materialized =
+                ApolloPdeAudiovisualDecision.Outcome.MATERIALIZED.equals(decision.outcome());
+        evidence.put("artifactCreated", materialized);
+        if (materialized) {
+            JsonNode materialization = materialization(task);
+            evidence.put(
+                    "videoProductionCycleId",
+                    materialization.path("videoProductionCycleId").asLong());
+            evidence.set("artifactIds", materialization.path("artifactIds").deepCopy());
+        }
         evidence.put("providerCalls", 0);
         evidence.put("creditsConsumed", 0);
         evidence.put("externalSideEffects", false);
         return evidence;
+    }
+
+    /** Lê o recibo mínimo já validado pelo avaliador sem buscar estado fora da tarefa. */
+    private JsonNode materialization(ApolloPdeAudiovisualTask task) {
+        if (task == null || task.taskTarget() == null || task.taskTarget().pdeContext() == null) {
+            return objectMapper.missingNode();
+        }
+        return task.taskTarget().pdeContext().path("audiovisualMaterialization");
     }
 
     /** Informa o caminho auditável conforme a fronteira entre produto e comunicação comercial. */

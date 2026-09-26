@@ -7359,3 +7359,26 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   aparecessem ao scroll humano. A inspeção agora percorre a página em modo somente leitura, força
   imagens para `eager`, aguarda decodificação e volta ao topo antes da captura. O teste de contrato
   protege esse comportamento sem alterar a landing usada como controle comercial.
+
+## LOOP-MIRA-VIDEO-AUTORIZADO-SEM-RETORNO-BPM — 26/09/2026
+
+- **Evidência confirmada:** a tarefa audiovisual #505 de Mira bloqueou corretamente com
+  `AUTHORIZATION_REQUIRED`, custo e provider zero. Após a autorização humana de R$ 80, porém, o
+  Estúdio ainda oferecia `EDITORIAL_MOTION` apenas na tela: o ciclo autônomo forçava Runway, exigia
+  créditos positivos e a atividade BPM não reconhecia um vídeo concluído pelo Estúdio.
+- **Causa-raiz histórica e sistêmica:** a prova real V3 já estava homologada na tarefa #371 e
+  autorizada para `experiment:93`, mas o leitor aceitava apenas a mesma referência de origem; o
+  planejador chamava IA para uma montagem determinística; e não existia recibo de volta entre ciclo,
+  job final e tarefa #505. Repetir a tarefa preservaria o bloqueio sem aproximar Mira de venda.
+- **Alternativas avaliadas:** gerar externamente até R$ 80 aumenta riqueza, custo e risco de
+  distorção; manter só o estático custa zero, mas demonstra pior o mecanismo e não cumpre o contrato
+  audiovisual; animar os pixels reais preserva fidelidade, margem e uma comparação comercial limpa.
+  A terceira alternativa foi adotada.
+- **Correção sistêmica:** a rota local recebe preflight, reserva e ledger de custo externo zero,
+  permanece sob Plutus e autorização humana, valida a prova privada por destino, versão e SHA-256,
+  monta localmente e devolve o ativo da mesma versão à atividade audiovisual. O backend continua
+  decidindo o avanço; publicação e mídia permanecem proibidas.
+- **Prevenção:** o ciclo registra valor/moeda originais, cotação, fonte e data e rejeita conversão que
+  amplie o teto; testes cruzados cobrem preflight local, autorização de prova, storyboard sem IA,
+  download privado, hash divergente, acabamento, prontidão comercial, materialização BPM e callback
+  com IDs/custo. Referência: `docs/homologacao/mira-comunicacao-cinco-pilares-video-v1.md`.

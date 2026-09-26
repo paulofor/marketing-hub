@@ -3,6 +3,7 @@ package com.marketinghub.salesvideo;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -36,6 +37,21 @@ public class VideoProductionCycle {
 
   @Column(name = "budget_limit_usd", nullable = false, precision = 12, scale = 4)
   private BigDecimal budgetLimitUsd;
+
+  @Column(name = "authorized_budget_amount", precision = 12, scale = 4)
+  private BigDecimal authorizedBudgetAmount;
+
+  @Column(name = "authorized_budget_currency", length = 3)
+  private String authorizedBudgetCurrency;
+
+  @Column(name = "usd_brl_exchange_rate", precision = 12, scale = 6)
+  private BigDecimal usdBrlExchangeRate;
+
+  @Column(name = "exchange_rate_source", length = 500)
+  private String exchangeRateSource;
+
+  @Column(name = "exchange_rate_date")
+  private LocalDate exchangeRateDate;
 
   @Column(name = "known_cost_usd", nullable = false, precision = 12, scale = 4)
   private BigDecimal knownCostUsd;

@@ -140,6 +140,8 @@ class FinancialCodexRunnerTest {
             "preflight READY e reserva preventiva ainda vigente",
             "RUNWAY_ROUTER:<routerConfigId>",
             "RUNWAY_PRODUCT_UGC:<routerConfigId>",
+            "LOCAL_EDITORIAL:<routerConfigId>",
+            "execução determinística sem saldo, quota, compra de créditos ou custo de provider",
             "batchRouteId",
             "recarga mínima");
     String schema =
@@ -258,5 +260,42 @@ class FinancialCodexRunnerTest {
         .containsEntry("recommendedAggregator", "Runway")
         .containsEntry("recommendedRoute", "RUNWAY_PRODUCT_UGC:product_ugc@2026-06")
         .containsEntry("estimatedCostUsd", new BigDecimal("6.48"));
+  }
+
+  /** Fixa a decisão de Plutus na rota editorial local persistida, sem inventar recarga. */
+  @Test
+  void deveVincularParecerPersistidoARotaEditorialLocal() throws Exception {
+    FinancialCodexRunner runner =
+        new FinancialCodexRunner(new FinancialAgentProperties(), new ObjectMapper());
+    VideoProductionCycleReview cycle =
+        new VideoProductionCycleReview(
+            51L,
+            61L,
+            10L,
+            8L,
+            93L,
+            "PENDING_FINANCIAL_REVIEW",
+            new BigDecimal("15.38"),
+            BigDecimal.ZERO,
+            "{\"providerPreflight\":{\"aggregatorName\":\"Marketing Hub local\","
+                + "\"selectedRoutesJson\":\"[{\\\"batchRouteId\\\":\\\"LOCAL_EDITORIAL:editorial_motion@v1\\\"}]\"}}",
+            506L,
+            null);
+
+    var decision =
+        runner.videoDecision(
+            "{\"decision\":\"APPROVED\",\"reason\":\"Rota local dentro do teto.\","
+                + "\"recommendedAggregator\":\"Runway\","
+                + "\"recommendedRoute\":\"RUNWAY_ROUTER:editorial_motion@v1\","
+                + "\"estimatedCostUsd\":0,"
+                + "\"costBenefitBasis\":\"Prova real com custo externo zero.\","
+                + "\"creditAction\":\"NO_PURCHASE\","
+                + "\"recommendedRechargeCredits\":null,\"rechargeUrl\":null}",
+            cycle);
+
+    assertThat(decision)
+        .containsEntry("recommendedAggregator", "Marketing Hub local")
+        .containsEntry("recommendedRoute", "LOCAL_EDITORIAL:editorial_motion@v1")
+        .containsEntry("estimatedCostUsd", BigDecimal.ZERO);
   }
 }

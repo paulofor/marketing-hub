@@ -1413,8 +1413,13 @@ describe("AudioVideoStudioPage", () => {
       screen.getByRole("link", { name: /abrir conta indicada por Plutus/i }),
     ).toHaveAttribute("target", "_blank");
 
-    await user.clear(screen.getByLabelText("Teto do ciclo em USD"));
-    await user.type(screen.getByLabelText("Teto do ciclo em USD"), "2");
+    await user.type(screen.getByLabelText("Teto autorizado em BRL"), "10");
+    await user.type(screen.getByLabelText("Cotação BRL por USD"), "5");
+    await user.type(
+      screen.getByLabelText("Fonte da cotação"),
+      "Banco Central do Brasil PTAX",
+    );
+    await user.type(screen.getByLabelText("Data da cotação"), "2026-09-25");
     await user.selectOptions(
       screen.getByLabelText("Perfil de produção do ciclo"),
       "DRAFT_INSTAGRAM",
@@ -1439,6 +1444,11 @@ describe("AudioVideoStudioPage", () => {
         expect.objectContaining({
           videoProjectId: 1,
           budgetLimitUsd: 2,
+          authorizedBudgetAmount: 10,
+          authorizedBudgetCurrency: "BRL",
+          usdBrlExchangeRate: 5,
+          exchangeRateSource: "Banco Central do Brasil PTAX",
+          exchangeRateDate: "2026-09-25",
           productionProfile: "DRAFT_INSTAGRAM",
           learningObjective: "Validar novo gancho",
           successCriterion: "Aumentar retenção",
@@ -1457,6 +1467,11 @@ describe("AudioVideoStudioPage", () => {
         expect.objectContaining({
           videoProjectId: 1,
           budgetLimitUsd: 2,
+          authorizedBudgetAmount: 10,
+          authorizedBudgetCurrency: "BRL",
+          usdBrlExchangeRate: 5,
+          exchangeRateSource: "Banco Central do Brasil PTAX",
+          exchangeRateDate: "2026-09-25",
           productionProfile: "DRAFT_INSTAGRAM",
           learningObjective: "Validar novo gancho",
           successCriterion: "Aumentar retenção",

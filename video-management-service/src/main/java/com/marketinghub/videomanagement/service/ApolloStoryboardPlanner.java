@@ -64,6 +64,9 @@ public class ApolloStoryboardPlanner {
         if (isProductUgc(job, metadata)) {
             return approveProductUgc(job, metadata, progressCallback);
         }
+        if (isEditorialMotion(job, metadata)) {
+            return approveEditorialMotion(job, metadata, progressCallback);
+        }
         if (!properties.getApolloPlanner().isEnabled()) {
             throw blocked("Planejador de IA de Apolo está desabilitado; provider pago não foi chamado.");
         }
@@ -141,6 +144,86 @@ public class ApolloStoryboardPlanner {
         return withMetadata(job, enriched.toString());
     }
 
+    /** Aprova a montagem editorial de pixels reais sem IA nem chamada a provider externo. */
+    private SalesVideoJob approveEditorialMotion(
+            SalesVideoJob job, JsonNode metadata, ProgressCallback progressCallback) {
+        progressCallback.onProgress(
+                5,
+                SalesVideoStatus.VIDEO_PROCESSING,
+                "Apolo está validando a prova real, o plano editorial e o teto financeiro");
+        String issue = editorialMotionIssue(metadata);
+        if (issue != null) throw blocked("Movimento editorial bloqueado: " + issue);
+        ObjectNode audit = objectMapper.createObjectNode();
+        audit.put("mode", "DETERMINISTIC_APPROVED_PRODUCT_PROOF");
+        audit.put("provider", "EDITORIAL_MOTION");
+        audit.put("externalProviderCalls", 0);
+        audit.put("providerCostUsd", 0);
+        audit.put(
+                "rationale",
+                "Animar somente os pixels homologados demonstra o produto antes da compra e preserva margem.");
+        ObjectNode enriched = metadata.deepCopy();
+        enriched.set("apollo_planner_request", audit);
+        enriched.set("apollo_planner_response", audit.deepCopy());
+        enriched.put("apollo_planner_model", "DETERMINISTIC_EDITORIAL_MOTION_V1");
+        enriched.put("apollo_planner_status", "APPROVED_LOCAL_EDITORIAL");
+        enriched.put("expectedCredits", 0);
+        enriched.put("expectedCostUsd", 0);
+        enriched.put("budgetGate", "APPROVED_DETERMINISTICALLY");
+        progressCallback.onProgress(
+                10,
+                SalesVideoStatus.VIDEO_PROCESSING,
+                "Apolo aprovou o movimento editorial local com custo de provider US$ 0");
+        return withMetadata(job, enriched.toString());
+    }
+
+    /** Confere prova, narrativa, finalização e reserva local antes de iniciar o ffmpeg. */
+    private String editorialMotionIssue(JsonNode metadata) {
+        if (!"DETERMINISTIC_EDITORIAL_MOTION_FROM_APPROVED_PRODUCT_PROOF"
+                        .equals(metadata.path("generation_strategy").asText())
+                || metadata.path("targetDurationSeconds").asInt() < 6
+                || metadata.path("targetDurationSeconds").asInt() > 60
+                || metadata.path("sceneCount").asInt() != 1
+                || metadata.path("assemblyRequired").asBoolean(true)
+                || metadata.path("publicationAllowed").asBoolean(true)) {
+            return "receita, duração ou proteção de publicação divergentes";
+        }
+        if (metadata.path("providerReservedCredits").decimalValue().signum() != 0
+                || metadata.path("providerReservedCostUsd").decimalValue().signum() != 0
+                || metadata.path("budgetLimitUsd").decimalValue().signum() <= 0) {
+            return "reserva local ou teto financeiro divergentes";
+        }
+        JsonNode proof = metadata.at("/post_production/product_proof");
+        if (!"PDE_PRIVATE_VIDEO_PROOF_V1".equals(proof.path("contractVersion").asText())
+                || !StringUtils.hasText(proof.path("contentPath").asText())
+                || !proof.path("sha256").asText().matches("[0-9a-f]{64}")
+                || proof.path("commercialEvidenceClaimed").asBoolean(true)) {
+            return "prova privada homologada ausente ou mutável";
+        }
+        JsonNode cuts = metadata.path("cut_plan");
+        int totalDuration = 0;
+        Set<String> roles = new HashSet<>();
+        if (!cuts.isArray() || cuts.size() < 5) return "plano editorial incompleto";
+        for (JsonNode cut : cuts) {
+            int seconds = cut.path("duration_seconds").asInt();
+            if (seconds <= 0) return "duração de corte inválida";
+            totalDuration += seconds;
+            roles.add(cut.path("role").asText());
+        }
+        if (totalDuration != metadata.path("targetDurationSeconds").asInt()
+                || !roles.containsAll(REQUIRED_ROLES)) {
+            return "duração ou funções comerciais do plano editorial incompletas";
+        }
+        JsonNode finalization = metadata.path("premiumFinalization");
+        if (!finalization.path("enabled").asBoolean(false)
+                || !sameSpokenText(
+                        finalization.path("captionText").asText(),
+                        finalization.path("voiceOverScript").asText())
+                || !reviewersComplete(finalization.path("requiredReviewers"))) {
+            return "narração, legenda ou revisores obrigatórios divergentes";
+        }
+        return null;
+    }
+
     /** Confere a receita, os cortes limitados, as referências, a copy única e as revisões exigidas. */
     private String productUgcIssue(JsonNode metadata) {
         if (!"product_ugc@2026-06".equals(metadata.path("runwayRouterConfigId").asText())
@@ -211,6 +294,13 @@ public class ApolloStoryboardPlanner {
     private boolean isProductUgc(SalesVideoJob job, JsonNode metadata) {
         return "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(job.providerName())
                 && "RUNWAY_PRODUCT_UGC_WITH_DETERMINISTIC_POST_PRODUCTION"
+                        .equals(metadata.path("generation_strategy").asText());
+    }
+
+    /** Reconhece a rota editorial somente quando provider e estratégia técnica coincidem. */
+    private boolean isEditorialMotion(SalesVideoJob job, JsonNode metadata) {
+        return "EDITORIAL_MOTION".equalsIgnoreCase(job.providerName())
+                && "DETERMINISTIC_EDITORIAL_MOTION_FROM_APPROVED_PRODUCT_PROOF"
                         .equals(metadata.path("generation_strategy").asText());
     }
 

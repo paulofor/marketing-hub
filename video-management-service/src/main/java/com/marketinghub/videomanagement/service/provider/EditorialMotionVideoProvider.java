@@ -150,7 +150,12 @@ public class EditorialMotionVideoProvider implements VideoProvider {
             for (JsonNode source : sourceArray) {
                 String url = firstText(source, "url", "source_image_url");
                 if (StringUtils.hasText(url)) {
-                    result.add(new SourceImage(source.path("assetId").asLong(0), validateSourceUri(url).toString()));
+                    result.add(new SourceImage(
+                            source.path("assetId").asLong(0),
+                            validateSourceUri(url).toString(),
+                            source.path("sha256").asText(null),
+                            null,
+                            false));
                 }
             }
         }
@@ -160,7 +165,27 @@ public class EditorialMotionVideoProvider implements VideoProvider {
             if (StringUtils.hasText(url)) {
                 result.add(new SourceImage(
                         imageToVideo.path("source_asset_id").asLong(0),
-                        validateSourceUri(url).toString()));
+                        validateSourceUri(url).toString(),
+                        imageToVideo.path("source_sha256").asText(null),
+                        null,
+                        false));
+            }
+        }
+        if (result.isEmpty()) {
+            JsonNode proof = metadata.at("/post_production/product_proof");
+            String path = proof.path("contentPath").asText();
+            String tenantId = metadata.path("tenantId").asText();
+            if ("PDE_PRIVATE_VIDEO_PROOF_V1".equals(proof.path("contractVersion").asText())
+                    && path.startsWith("/api/sales-videos/projects/")
+                    && StringUtils.hasText(tenantId)
+                    && tenantId.equals(proof.path("tenantId").asText())) {
+                URI backendUri = properties.getBackendBaseUrl().resolve(path);
+                result.add(new SourceImage(
+                        proof.path("evidenceId").asLong(0),
+                        validateSourceUri(backendUri.toString()).toString(),
+                        proof.path("sha256").asText(null),
+                        tenantId,
+                        true));
             }
         }
         if (result.isEmpty()) {
@@ -218,9 +243,14 @@ public class EditorialMotionVideoProvider implements VideoProvider {
                                           SourceImage source,
                                           List<Path> temporaryFiles) {
         try {
-            ResponseEntity<byte[]> response = downloadWebClient.get()
-                    .uri(URI.create(source.url()))
-                    .retrieve()
+            var request = downloadWebClient.get().uri(URI.create(source.url()));
+            if (source.privateBackend()) {
+                request.header("X-Tenant-ID", source.tenantId());
+                if (StringUtils.hasText(properties.getAuthToken())) {
+                    request.header("Authorization", "Bearer " + properties.getAuthToken());
+                }
+            }
+            ResponseEntity<byte[]> response = request.retrieve()
                     .toEntity(byte[].class)
                     .block();
             byte[] content = response == null ? null : response.getBody();
@@ -236,6 +266,12 @@ public class EditorialMotionVideoProvider implements VideoProvider {
             Files.write(file, content);
             temporaryFiles.add(file);
             String sha256 = sha256(content);
+            if (StringUtils.hasText(source.expectedSha256())
+                    && !source.expectedSha256().equalsIgnoreCase(sha256)) {
+                throw new VideoProviderException(
+                        "EDITORIAL_MOTION_INVALID_REQUEST",
+                        "A imagem editorial mudou depois da aprovação.");
+            }
             log.info("Imagem editorial carregada; jobId={} assetId={} url={} status={} mediaType={} bytes={} sha256={}",
                     job.id(), source.assetId(), source.url(), response.getStatusCode().value(), mediaType,
                     content.length, sha256);
@@ -422,7 +458,12 @@ public class EditorialMotionVideoProvider implements VideoProvider {
     }
 
     /** Identifica uma imagem aprovada usada como fonte do movimento editorial. */
-    private record SourceImage(long assetId, String url) { }
+    private record SourceImage(
+            long assetId,
+            String url,
+            String expectedSha256,
+            String tenantId,
+            boolean privateBackend) { }
 
     /** Preserva o arquivo temporário e sua identidade auditável durante o render. */
     private record DownloadedImage(Path file, String sha256, int bytes) { }

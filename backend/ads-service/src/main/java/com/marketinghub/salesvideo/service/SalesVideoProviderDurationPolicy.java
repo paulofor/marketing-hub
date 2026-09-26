@@ -16,6 +16,7 @@ public final class SalesVideoProviderDurationPolicy {
   private static final int RUNWAY_GROK_IMAGINE_1_5_MAX_SECONDS = 10;
   private static final int VEO_MAX_SECONDS = 8;
   private static final int HEYGEN_MAX_SECONDS = 600;
+  private static final int EDITORIAL_MOTION_MAX_SECONDS = 60;
 
   /** Impede instância de uma política puramente estática. */
   private SalesVideoProviderDurationPolicy() {}
@@ -47,6 +48,9 @@ public final class SalesVideoProviderDurationPolicy {
     if (plan.contains("(RUNWAY_PRODUCT_UGC)")) {
       return maxSeconds("RUNWAY_PRODUCT_UGC");
     }
+    if (plan.contains("(EDITORIAL_MOTION)")) {
+      return maxSeconds("EDITORIAL_MOTION");
+    }
     var selected = RUNWAY_PLAN_SELECTION.matcher(plan);
     if (selected.find()) {
       return Optional.ofNullable(maxSeconds(selected.group(1))).orElse(RUNWAY_MAX_SECONDS);
@@ -73,6 +77,9 @@ public final class SalesVideoProviderDurationPolicy {
     if (normalized.contains("LUMA") || normalized.contains("RAY_3_2")) return null;
     if (normalized.contains("KLING")) {
       return new ProviderLimit("Kling", KLING_MAX_SECONDS);
+    }
+    if (normalized.contains("EDITORIAL_MOTION") || normalized.contains("LOCAL_EDITORIAL")) {
+      return new ProviderLimit("Movimento editorial local", EDITORIAL_MOTION_MAX_SECONDS);
     }
     if (normalized.contains("RUNWAY_PRODUCT_UGC") || normalized.contains("PRODUCT_UGC")) {
       return new ProviderLimit("Runway Product UGC", RUNWAY_PRODUCT_UGC_MAX_SECONDS);

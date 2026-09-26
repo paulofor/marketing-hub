@@ -19,6 +19,7 @@ class SalesVideoProviderDurationPolicyTest {
     "(RUNWAY_SEEDANCE_2),15",
     "(RUNWAY_VEO_3_1_FAST),8",
     "(RUNWAY_PRODUCT_UGC),15",
+    "Provider escolhido no Estudio: Movimento editorial local (EDITORIAL_MOTION).,60",
     "(RUNWAY) no histórico; escolha premium (RUNWAY_PRODUCT_UGC),15",
     "(RUNWAY_HAILUO_3),10",
     "LUMA_RAY_3_2 como principal no plano legado.,15",

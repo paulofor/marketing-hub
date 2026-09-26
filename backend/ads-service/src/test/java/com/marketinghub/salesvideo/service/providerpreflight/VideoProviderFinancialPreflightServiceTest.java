@@ -85,6 +85,52 @@ class VideoProviderFinancialPreflightServiceTest {
         .thenReturn(java.util.List.of());
   }
 
+  /** Registra e reserva a rota editorial local com custo de provider rigorosamente zero. */
+  @Test
+  void shouldOpenAndReserveLocalEditorialRouteWithoutExternalCredits() {
+    VideoProviderAccount local = new VideoProviderAccount();
+    local.setId(6L);
+    local.setAggregatorName("Marketing Hub local");
+    local.setAccountKey("LOCAL_EDITORIAL");
+    local.setDisplayName("Movimento editorial local");
+    local.setCreditUnitUsd(BigDecimal.ZERO);
+    local.setReservedCredits(BigDecimal.ZERO);
+    local.setSourceUrl("internal://video-management-service/editorial-motion-v1");
+    when(preflightRepository.findByVideoProductionCycleId(12L)).thenReturn(Optional.empty());
+    when(accountRepository.findByAccountKey("LOCAL_EDITORIAL")).thenReturn(Optional.of(local));
+    when(preflightRepository.save(any(VideoProviderPreflight.class)))
+        .thenAnswer(
+            invocation -> {
+              VideoProviderPreflight value = invocation.getArgument(0);
+              value.setId(32L);
+              return value;
+            });
+
+    VideoProviderPreflight opened =
+        service.open(
+            12L,
+            "FINAL_CAMPAIGN",
+            "Provider escolhido: Movimento editorial local (EDITORIAL_MOTION).");
+    VideoProductionCycle localCycle = new VideoProductionCycle();
+    localCycle.setId(12L);
+    localCycle.setBudgetLimitUsd(new BigDecimal("15.38"));
+    when(accountRepository.findByVideoProductionCycleIdForUpdate(12L))
+        .thenReturn(Optional.of(local));
+    when(preflightRepository.findByVideoProductionCycleId(12L)).thenReturn(Optional.of(opened));
+    when(reservationRepository.findByVideoProductionCycleIdForUpdate(12L))
+        .thenReturn(Optional.empty());
+    when(reservationRepository.save(any(VideoCreditReservation.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    VideoCreditReservation reservation = service.reserve(localCycle);
+
+    assertThat(opened.getStatus()).isEqualTo("READY");
+    assertThat(opened.getEstimatedCostUsd()).isEqualByComparingTo(BigDecimal.ZERO);
+    assertThat(opened.getSelectedRoutesJson()).contains("LOCAL_EDITORIAL:editorial_motion@v1");
+    assertThat(reservation.getReservedCredits()).isEqualByComparingTo(BigDecimal.ZERO);
+    assertThat(reservation.getReservedCostUsd()).isEqualByComparingTo(BigDecimal.ZERO);
+  }
+
   /** Persiste saldo e custo oficiais e desconta reservas concorrentes do saldo utilizável. */
   @Test
   void shouldCompleteReadyPreflightWithAvailableCredits() {

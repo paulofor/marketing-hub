@@ -96,7 +96,7 @@ public class VideoProductProofService {
   }
 
   /**
-   * Exige resultado técnico aprovado da mesma versão, experimento e produto, sem prova comercial.
+   * Exige resultado técnico aprovado da mesma versão e produto, com origem ou reautorização exata.
    */
   private void validateOwnership(VideoProject project, VideoProductProofSource.Proof evidence) {
     try {
@@ -107,13 +107,22 @@ public class VideoProductProofService {
         if (artifact.path("artifactId").asLong() == evidence.evidenceId()
             && evidence.sha256().equals(artifact.path("sha256").asText())) listed = true;
       }
+      boolean sameSource =
+          project.getExperimentId() != null
+              && ("experiment:" + project.getExperimentId()).equals(evidence.sourceReference());
+      boolean reauthorized =
+          project.getExperimentId() != null
+              && source.isAuthorizedFor(
+                  evidence,
+                  "experiment:" + project.getExperimentId(),
+                  project.getProductId(),
+                  project.getCampaignKey());
       if (!"COMPLETED".equals(evidence.status())
           || !"PDE_AGENT_TECHNICAL_HOMOLOGATION_V1".equals(result.path("contractVersion").asText())
           || !"APPROVED".equals(result.path("decision").asText())
           || project.getProductId() == null
           || result.path("productId").asLong() != project.getProductId()
-          || project.getExperimentId() == null
-          || !("experiment:" + project.getExperimentId()).equals(evidence.sourceReference())
+          || (!sameSource && !reauthorized)
           || project.getCampaignKey() == null
           || !project.getCampaignKey().equals(result.path("prototypeVersion").asText())
           || !"AGENT_VALIDATION".equals(result.path("trafficClass").asText())

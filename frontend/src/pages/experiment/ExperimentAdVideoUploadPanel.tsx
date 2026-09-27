@@ -47,16 +47,12 @@ function isVerticalNineBySixteen(metadata: VideoMetadata) {
   return Math.abs(metadata.width / metadata.height - 9 / 16) <= 0.03;
 }
 
-function parseCreativeIds(value: string) {
+function parseSourceIds(value: string) {
   const parts = value
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
-  if (
-    parts.length === 0 ||
-    parts.length > 10 ||
-    parts.some((item) => !/^\d+$/.test(item))
-  ) {
+  if (parts.length > 10 || parts.some((item) => !/^\d+$/.test(item))) {
     return undefined;
   }
   const ids = parts.map(Number);
@@ -86,12 +82,20 @@ export default function ExperimentAdVideoUploadPanel({
   const [script, setScript] = useState("");
   const [visualSourceKey, setVisualSourceKey] = useState("");
   const [visualSourceCreativeIds, setVisualSourceCreativeIds] = useState("");
+  const [visualSourceVideoAssetIds, setVisualSourceVideoAssetIds] =
+    useState("");
   const [visualSourceDescription, setVisualSourceDescription] = useState("");
   const [productionReference, setProductionReference] = useState("");
   const [audioConfirmed, setAudioConfirmed] = useState(false);
 
-  const canSubmit = useMemo(
-    () =>
+  const canSubmit = useMemo(() => {
+    const creativeIds = parseSourceIds(visualSourceCreativeIds);
+    const videoAssetIds = parseSourceIds(visualSourceVideoAssetIds);
+    const sourceCount =
+      creativeIds && videoAssetIds
+        ? creativeIds.length + videoAssetIds.length
+        : 0;
+    return (
       !locked &&
       !upload.isPending &&
       Boolean(file) &&
@@ -102,25 +106,27 @@ export default function ExperimentAdVideoUploadPanel({
       Boolean(primaryMetric.trim()) &&
       Boolean(script.trim()) &&
       Boolean(visualSourceKey.trim()) &&
-      Boolean(parseCreativeIds(visualSourceCreativeIds)) &&
+      sourceCount > 0 &&
+      sourceCount <= 10 &&
       Boolean(visualSourceDescription.trim()) &&
-      Boolean(productionReference.trim()),
-    [
-      audioConfirmed,
-      file,
-      fileError,
-      locked,
-      metadata,
-      objective,
-      primaryMetric,
-      productionReference,
-      script,
-      upload.isPending,
-      visualSourceCreativeIds,
-      visualSourceDescription,
-      visualSourceKey,
-    ],
-  );
+      Boolean(productionReference.trim())
+    );
+  }, [
+    audioConfirmed,
+    file,
+    fileError,
+    locked,
+    metadata,
+    objective,
+    primaryMetric,
+    productionReference,
+    script,
+    upload.isPending,
+    visualSourceCreativeIds,
+    visualSourceVideoAssetIds,
+    visualSourceDescription,
+    visualSourceKey,
+  ]);
 
   async function selectFile(selected?: File) {
     setFile(undefined);
@@ -159,8 +165,15 @@ export default function ExperimentAdVideoUploadPanel({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit || !file || !metadata) return;
-    const sourceCreativeIds = parseCreativeIds(visualSourceCreativeIds);
-    if (!sourceCreativeIds) return;
+    const sourceCreativeIds = parseSourceIds(visualSourceCreativeIds);
+    const sourceVideoAssetIds = parseSourceIds(visualSourceVideoAssetIds);
+    if (
+      !sourceCreativeIds ||
+      !sourceVideoAssetIds ||
+      sourceCreativeIds.length + sourceVideoAssetIds.length === 0
+    ) {
+      return;
+    }
     try {
       await upload.mutateAsync({
         file,
@@ -171,6 +184,7 @@ export default function ExperimentAdVideoUploadPanel({
         hasAudio: true,
         visualSourceKey: visualSourceKey.trim(),
         visualSourceCreativeIds: sourceCreativeIds,
+        visualSourceVideoAssetIds: sourceVideoAssetIds,
         visualSourceDescription: visualSourceDescription.trim(),
         productionReference: productionReference.trim(),
         requiredForRelease: true,
@@ -265,13 +279,30 @@ export default function ExperimentAdVideoUploadPanel({
             placeholder="522, 523"
             aria-describedby="video-source-creative-ids-help"
             value={visualSourceCreativeIds}
-            onChange={(event) =>
-              setVisualSourceCreativeIds(event.target.value)
-            }
+            onChange={(event) => setVisualSourceCreativeIds(event.target.value)}
           />
           <span id="video-source-creative-ids-help" className="form-text">
-            Informe de 1 a 10 IDs, separados por vírgula. O backend confirma
-            aprovação, produto e experimento de origem.
+            Opcional quando a montagem usa um vídeo já aprovado. Separe os IDs
+            por vírgula.
+          </span>
+          <label className="form-label" htmlFor="video-source-asset-ids">
+            IDs dos vídeos aprovados usados como fonte
+          </label>
+          <input
+            id="video-source-asset-ids"
+            className="form-control"
+            inputMode="numeric"
+            placeholder="47"
+            aria-describedby="video-source-asset-ids-help"
+            value={visualSourceVideoAssetIds}
+            onChange={(event) =>
+              setVisualSourceVideoAssetIds(event.target.value)
+            }
+          />
+          <span id="video-source-asset-ids-help" className="form-text">
+            Informe ao menos uma fonte aprovada entre criativos e vídeos, com no
+            máximo 10 IDs no total. O backend confirma aprovação, produto e
+            experimento de origem.
           </span>
           <label className="form-label">
             Evidência dos ativos usados

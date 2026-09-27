@@ -7543,3 +7543,23 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   com descarte das respostas falhas e erro contendo tentativas e último HTTP. Testes reproduzem
   recuperação após 503/502 e indisponibilidade 503 persistente; os demais contratos continuam sem
   tolerância adicional.
+
+## LOOP-CHECKOUT-CRIADO-SEM-VINCULO — provedor conclui após timeout do backend
+
+- **Evidência confirmada em 27/09/2026:** ao criar o checkout de R$ 49 de Mira #93 pela tela, o
+  backend expirou a leitura em cinco segundos e respondeu HTTP 500. Os logs do serviço de pagamentos
+  provaram que a mesma solicitação criou, com HTTP 201, uma preferência do Mercado Pago protegida
+  por chave idempotente; o experimento permaneceu sem `commercial_checkout_url`.
+- **Causa-raiz:** a janela do consumidor era menor que a latência ponta a ponta entre proxy, serviço
+  de pagamentos e provedor. A criação já era idempotente, mas o backend encerrava antes de receber e
+  persistir o resultado.
+- **Alternativas avaliadas:** repetir sem correção manteria a falha; transformar checkout em fluxo
+  assíncrono ampliaria muito o escopo; elevar a leitura para 20 segundos e reutilizar a mesma chave
+  reconcilia a preferência já criada com a menor mudança segura. A terceira alternativa foi adotada.
+- **Correção e prevenção:** configuração e valor padrão Java passam a 20 segundos, com teste de
+  contrato protegendo a janela. O retry continua usando a chave derivada de experimento, produto,
+  preço e entrega, impedindo uma segunda preferência para o mesmo contrato.
+- **Lacuna audiovisual fechada no mesmo gate:** a montagem canônica de Mira deriva do vídeo #47 já
+  aprovado, não de um criativo intermediário. O upload governado passa a aceitar criativo aprovado
+  ou vídeo aprovado como fonte, valida experimento, produto, hipótese e revisão e persiste ambos em
+  metadados separados. Testes backend e frontend impedem publicar uma montagem sem linhagem.

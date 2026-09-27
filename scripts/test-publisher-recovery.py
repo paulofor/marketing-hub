@@ -20,6 +20,51 @@ from deploy_publisher_recovery import APP, POLICY, PublisherRecovery
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def workflow_dispatch_inputs(workflow):
+    """Lê o subconjunto simples de inputs do workflow sem reinterpretar expressões YAML."""
+    contracts = {}
+    current = None
+    inside_dispatch = False
+    inside_inputs = False
+    inside_options = False
+    for line in (ROOT / ".github/workflows" / workflow).read_text().splitlines():
+        indent = len(line) - len(line.lstrip())
+        stripped = line.strip()
+        if line == "  workflow_dispatch:":
+            inside_dispatch = True
+            continue
+        if inside_dispatch and indent == 2 and stripped and stripped != "workflow_dispatch:":
+            break
+        if not inside_dispatch:
+            continue
+        if line == "    inputs:":
+            inside_inputs = True
+            continue
+        if not inside_inputs:
+            continue
+        match = re.fullmatch(r"      ([A-Za-z_][A-Za-z0-9_-]*):", line)
+        if match:
+            current = match.group(1)
+            contracts[current] = {"options": []}
+            inside_options = False
+            continue
+        if current is None:
+            continue
+        property_match = re.fullmatch(r"        (required|default|type):\s*(.*)", line)
+        if property_match:
+            key, value = property_match.groups()
+            contracts[current][key] = value.strip('"\'')
+            inside_options = False
+            continue
+        if line == "        options:":
+            inside_options = True
+            continue
+        option_match = re.fullmatch(r"          -\s*(.*)", line)
+        if inside_options and option_match:
+            contracts[current]["options"].append(option_match.group(1).strip('"\''))
+    return contracts
+
+
 def load(name, file):
     """Carrega contratos CLI sem executá-los como comandos operacionais."""
     spec = importlib.util.spec_from_file_location(name, ROOT / "scripts" / file)
@@ -44,6 +89,7 @@ class RecoveryGitHub(base.FakeGitHub):
         self.jobs = {}
         self.dispatches = []
         self.lose_receipt = False
+        self.reject_dispatch_status = None
         self.missing_commits = []
 
     def api(self, path, method="GET", payload=None):
@@ -59,6 +105,11 @@ class RecoveryGitHub(base.FakeGitHub):
             assert method == "POST" and payload["ref"] == "main"
             assert payload["inputs"]["recovery_sha"] == self.sha
             name = next(k for k, w in self.workflows.items() if str(w["id"]) == path.split("/")[2])
+            if self.reject_dispatch_status:
+                raise module.GitHubApiError(
+                    f"Dispatch recusado (HTTP {self.reject_dispatch_status}).",
+                    status=self.reject_dispatch_status,
+                )
             run = self.add_run(name, status="queued", conclusion=None, event="workflow_dispatch")
             self.dispatches.append((name, copy.deepcopy(payload)))
             if self.lose_receipt:
@@ -255,7 +306,8 @@ class AutomaticRecoveryTest(unittest.TestCase):
         self.assertNotIn("recover-public-proxy.yml", names)
         self.assertEqual(self.github.workflows["customer-agent-worker-ci.yml"]["state"], "disabled_manually")
         pde = next(payload for name, payload in self.github.dispatches if name.startswith("pde-platform"))
-        self.assertEqual(pde["inputs"]["frontend_version"], "all")
+        self.assertNotIn("frontend_version", pde["inputs"])
+        self.assertEqual(pde["inputs"]["recovery_base_sha"], SHA)
 
     def test_app_first_then_agents_with_same_revision_and_successful_jobs(self):
         self.prepare(["app"])
@@ -274,6 +326,22 @@ class AutomaticRecoveryTest(unittest.TestCase):
     def test_existing_success_is_reused_without_dispatch(self):
         self.prepare()
         self.github.add_run("communication-agent-worker-ci.yml")
+        self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
+        self.assertEqual(self.github.dispatches, [])
+
+    def test_pde_noop_push_is_not_mistaken_for_publication(self):
+        self.prepare(["pde"])
+        self.github.add_run("pde-platform-metodo-musa-ci.yml")
+        self.assertEqual(self.recovery.reconcile()["status"], "WAITING")
+        self.assertEqual(len(self.github.dispatches), 1)
+
+    def test_pde_push_with_publication_job_is_reused(self):
+        self.prepare(["pde"])
+        run = self.github.add_run("pde-platform-metodo-musa-ci.yml")
+        self.github.jobs[run["id"]] = [{
+            "name": POLICY["pde-platform-metodo-musa-ci.yml"]["publication_job"],
+            "conclusion": "success",
+        }]
         self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
         self.assertEqual(self.github.dispatches, [])
 
@@ -316,6 +384,46 @@ class AutomaticRecoveryTest(unittest.TestCase):
         self.github.completed_runs["communication-agent-worker-ci.yml"] = hidden
         self.recovery.reconcile()
         self.assertEqual(len(self.github.dispatches), 1)
+
+    def test_confirmed_422_blocks_same_revision_and_new_main_retries_exact_diff(self):
+        self.prepare(["pde"])
+        self.github.reject_dispatch_status = 422
+        with self.assertRaises(module.GitHubApiError):
+            self.recovery.reconcile()
+        saved = self.store.load()
+        entry = saved["recovery"]["publications"]["pde-platform-metodo-musa-ci.yml"]
+        self.assertEqual(entry["status"], "REJECTED")
+        self.assertEqual(entry["dispatch_rejected_http_status"], 422)
+        self.assertNotIn("dispatch_requested_at", entry)
+        dispatch_calls = sum(method == "POST" and path.endswith("/dispatches")
+                             for method, path in self.github.calls)
+        self.assertEqual(self.recovery.reconcile()["status"], "BLOCKED")
+        self.assertEqual(sum(method == "POST" and path.endswith("/dispatches")
+                             for method, path in self.github.calls), dispatch_calls)
+        self.github.reject_dispatch_status = None
+        self.github.sha = "c" * 40
+        self.assertEqual(self.recovery.reconcile()["status"], "WAITING")
+        self.assertEqual(len(self.github.dispatches), 1)
+        _, payload = self.github.dispatches[0]
+        self.assertEqual(payload["inputs"]["recovery_base_sha"], SHA)
+        self.assertNotIn("frontend_version", payload["inputs"])
+
+    def test_legacy_unconfirmed_422_is_reconciled_but_timeout_remains_uncertain(self):
+        self.prepare(["pde"])
+        self.github.lose_receipt = True
+        with self.assertRaises(module.CoordinationError):
+            self.recovery.reconcile()
+        self.github.completed_runs.pop("pde-platform-metodo-musa-ci.yml")
+        state = self.store.load()
+        state["history"][-1]["error"] = "GitHub recusou dispatch (HTTP 422)."
+        self.store.save(state)
+        self.github.lose_receipt = False
+        self.github.sha = "c" * 40
+        self.assertEqual(self.recovery.reconcile()["status"], "WAITING")
+        self.assertEqual(len(self.github.dispatches), 2)
+        saved = self.store.load()
+        self.assertTrue(any(event["event"] == "publisher_dispatch_rejection_reconciled"
+                            for event in saved["history"]))
 
     def test_api_outage_does_not_release_or_dispatch(self):
         self.prepare()
@@ -476,6 +584,36 @@ class RecoveryContractsTest(unittest.TestCase):
         github.completed_runs.clear()
         github.add_run(APP)
         guard.validate(github, env)
+
+    def test_pde_guard_requires_ancestor_recovery_base(self):
+        github = RecoveryGitHub()
+        workflow = "pde-platform-metodo-musa-ci.yml"
+        environment = {**self.environment(workflow), "RECOVERY_BASE_SHA": VALIDATED}
+        guard.validate(github, environment)
+        for base in ("", "main", "f" * 39):
+            with self.subTest(base=base), self.assertRaisesRegex(ValueError, "base protegida"):
+                guard.validate(github, {**environment, "RECOVERY_BASE_SHA": base})
+        github.integrated = False
+        with self.assertRaisesRegex(ValueError, "não pertence ao histórico"):
+            guard.validate(github, environment)
+
+    def test_recovery_policy_inputs_match_real_workflow_dispatch_contracts(self):
+        for workflow, policy in POLICY.items():
+            contracts = workflow_dispatch_inputs(workflow)
+            self.assertIn("recovery_sha", contracts, workflow)
+            for name, value in policy.get("inputs", {}).items():
+                self.assertIn(name, contracts, f"{workflow}: {name}")
+                if contracts[name].get("type") == "choice":
+                    self.assertIn(value, contracts[name]["options"], f"{workflow}: {name}={value}")
+            recovery_base_input = policy.get("recovery_base_input")
+            if recovery_base_input:
+                self.assertIn(recovery_base_input, contracts, workflow)
+                self.assertEqual(contracts[recovery_base_input].get("type"), "string")
+        pde = POLICY["pde-platform-metodo-musa-ci.yml"]
+        self.assertNotIn("frontend_version", pde["inputs"])
+        self.assertEqual(pde["recovery_base_input"], "recovery_base_sha")
+        self.assertIn(f"name: {pde['publication_job']}",
+                      (ROOT / ".github/workflows/pde-platform-metodo-musa-ci.yml").read_text())
 
     def test_all_publication_checkouts_guard_recovery_before_mutations(self):
         for name in POLICY:

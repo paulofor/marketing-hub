@@ -603,6 +603,27 @@
 - **Prevenção:** testes reproduzem as quatro falhas, rejeitam outras referências e impedem
   liberar agentes durante uma retomada pendente ou falha. Publicação depende de PR.
   Procedimento e matriz: `docs/canonical/deploy-aplicacao-retomada-canon.v1.md`.
+- **Recorrência em 27/09/2026:** depois do merge #5386 (`365f2dc8445c`), o reconciliador
+  `36287130835` restaurou os publicadores e iniciou o APP `36287170229`, mas o GitHub recusou
+  o PDE com HTTP 422. O catálogo enviava `frontend_version=all`, valor que nunca pertenceu às
+  opções do workflow e que também violaria a publicação independente das superfícies PDE.
+  O teste anterior simulava a API sem confrontar inputs e choices reais. Além disso, o
+  reconciliador classificava qualquer erro posterior ao pedido como aceite incerto, embora 422
+  seja rejeição confirmada e não possa ter criado run.
+- **Alternativas avaliadas:** fixar `mira-commercial` recuperaria somente esta entrega e deixaria
+  o defeito para o produto seguinte; aceitar `all` republicaria runtimes isolados, ampliando
+  custo e risco; reconstruir o diff desde o SHA protegido recupera apenas frontend e componentes
+  realmente perdidos. A terceira foi adotada.
+- **Correção sistêmica:** a política informa `recovery_base_sha`; o workflow valida sua
+  ancestralidade, ignora seletores manuais durante recuperação e resolve o diff completo até a
+  `main`. HTTP 422 fica auditado como rejeição, bloqueia repetição na mesma revisão e permite
+  nova tentativa somente após correção integrada. Um run PDE verde só comprova recuperação
+  quando o job `Deploy production to PDE host` terminou com sucesso; testes sem deploy não
+  encerram a retomada. Timeout continua sem repetição automática.
+- **Prevenção ampliada:** teste confronta cada input estático da política com o contrato
+  `workflow_dispatch` real, reproduz o 422 atual e o estado legado persistido, exige base ancestral
+  e comprova nova tentativa no SHA corrigido sem duplicar solicitação incerta. Evidências em
+  `docs/homologacao/publicadores-automaticos-2026-09-12.md`.
 
 ## LOOP-VEGA-RETOMADA-CONTEXTO-DE-PILOTO — operação repete premissa histórica
 

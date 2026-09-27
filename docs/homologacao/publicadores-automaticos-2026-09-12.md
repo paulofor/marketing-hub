@@ -91,6 +91,42 @@ Ed25519 fixada do host administrativo, conferida pelo helper autorizado. O recon
 executa somente o armazenamento de coordenação no host; imagens continuam no fluxo versionado
 de PR/Actions. Não instala daemon, cron ou scripts de publicação pelo SSH.
 
+## Recorrência PDE e matriz corretiva — 27/09/2026
+
+O run `36287130835` restaurou os workflows e iniciou corretamente o APP, mas recebeu HTTP 422
+ao despachar o PDE do merge #5386. A comparação entre código, estado persistido e histórico
+confirmou dois defeitos no contrato: `frontend_version=all` não existe no workflow e o 422 foi
+retido como se o aceite fosse incerto. Nenhuma execução PDE foi criada por esse pedido recusado.
+
+| Alternativa | Benefício | Risco/custo | Decisão |
+| --- | --- | --- | --- |
+| Trocar `all` por `mira-commercial` | Correção curta para Mira | Acopla a recuperação ao produto atual e repete o defeito em outro escopo | Rejeitada |
+| Implementar publicação global `all` | Recupera tudo sem calcular diff | Contraria isolamento PDE, republica versões sem atestação e amplia custo/risco | Rejeitada |
+| Resolver o diff desde o SHA protegido | Recupera exatamente o que perdeu o evento | Exige base dinâmica e validação adicional | Adotada |
+
+A matriz foi definida antes da validação final e usa GitHub/SSH simulados; nenhum dado de
+produto, campanha, pagamento, mídia ou serviço produtivo é alterado pelos testes locais.
+
+| Área | Critério de aceite |
+| --- | --- |
+| Caminho feliz | Base protegida + revisão atual selecionam o manifesto e os componentes alterados |
+| Validações | Base ausente, malformada ou não ancestral é recusada antes de build |
+| Falha confirmada | HTTP 422 não deixa intenção incerta, não repete no mesmo SHA e permite o SHA corrigido |
+| Falha incerta | Timeout após pedido continua sem segundo dispatch |
+| Compatibilidade | Estado legado com 422 textual é reconciliado uma vez; outros erros permanecem fechados |
+| Integração | Inputs da política existem no YAML e valores `choice` pertencem às opções reais |
+| Isolamento | Recuperação ignora seletores manuais e não introduz `all` ou alvo fixo |
+| Recibo | Run PDE verde sem job produtivo não vale como deploy; o job produtivo verde é reutilizado |
+| Observabilidade | Base, SHA, workflow, status 422 e decisão permanecem no registro auditável |
+
+Duas rodadas locais consecutivas após a última correção aprovaram, em cada uma, **48 testes
+Python** da retomada e **21 testes Node** do resolvedor PDE. A rodada final aprovou também os
+**34 testes** do coordenador, o contrato de isolamento PDE (6 contratos Node e 9 Python),
+Actionlint, compilação Python, JSON e `git diff --check`. O replay do diff real entre
+`82c95a8a53d9` e a candidata corrigida selecionou somente `mira-commercial` e backend, com
+workers desmarcados e `full-compatibility=true`. A publicação produtiva continua dependente de
+PR, checks e merge.
+
 ## Ativação
 
 A mudança permanece na sandbox e será ativada ao integrar seu PR. Intervenções históricas

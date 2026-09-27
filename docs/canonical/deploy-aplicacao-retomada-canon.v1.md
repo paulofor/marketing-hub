@@ -50,6 +50,24 @@ workflow, sem reexecutar runs antigos, duplicar solicitações incertas ou repet
 Agentes dependentes exigem publicação bem-sucedida da aplicação na mesma revisão. Comandos
 emergenciais como recuperação de proxy não são publicadores automáticos de código.
 
+Quando um publicador possui alvos independentes, como as superfícies e componentes PDE, a
+retomada não pode usar um alvo global `all`, fixar o produto corrente nem republicar todos os
+runtimes. O reconciliador envia o SHA inicial protegido como `recovery_base_sha`; o workflow
+comprova que essa base pertence ao histórico da revisão recuperada e reconstrói o diff entre
+ambos. Durante essa recuperação, os defaults de seleção manual são ignorados. Assim, somente a
+superfície explicitamente atestada e os componentes compartilhados realmente alterados entram
+na publicação, preservando contratos, rollback e isolamento por produto.
+
+Uma resposta HTTP 422 do endpoint de dispatch confirma que o GitHub recusou o pedido e não criou
+run. O reconciliador deve persistir essa rejeição, remover a intenção pendente e bloquear nova
+tentativa na mesma revisão; uma correção posterior integrada à `main` autoriza reconciliar o novo
+SHA. Timeout, desconexão ou falha sem resposta conclusiva continuam sendo aceitação incerta e
+nunca autorizam um segundo dispatch. A política versionada precisa ser conferida por teste contra
+os nomes, tipos e choices reais de `workflow_dispatch` antes do merge.
+Para workflows que podem terminar verdes sem mutação, o catálogo deve declarar o nome do job
+produtivo. Somente esse job concluído com sucesso comprova a publicação; testes, builds ou um
+deploy pulado não encerram a recuperação.
+
 Esta coordenação é um comando operacional, não uma autorização adicional para publicar código.
 O fluxo normal continua passando por PR; exceções exigem a autorização explícita do usuário.
 O histórico do Vega (run `34592882916`) confirmou que filas exclusivas dos Actions não coordenam

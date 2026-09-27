@@ -7,6 +7,7 @@ MODULE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 REPOSITORY_ROOT="$(cd "${MODULE_ROOT}/.." && pwd)"
 DOCKERFILE="${MODULE_ROOT}/Dockerfile"
 COMPOSE_FILE="${MODULE_ROOT}/docker-compose.deploy.yml"
+HOMOLOGATION_COMPOSE_FILE="${MODULE_ROOT}/docker-compose.homologation.yml"
 WORKFLOW_FILE="${REPOSITORY_ROOT}/.github/workflows/harness-library-api-ci.yml"
 PUBLICATION_WORKFLOW_FILE="${REPOSITORY_ROOT}/.github/workflows/harness-library-api-publication.yml"
 SECRET_RUNTIME_TEST="${MODULE_ROOT}/scripts/validate-secret-file-runtime.sh"
@@ -33,8 +34,12 @@ grep -Fq 'user: "10001:10001"' "${COMPOSE_FILE}" \
   || fail 'o teste executável de leitura dos secrets no runtime está ausente.'
 grep -Fq 'validate-secret-file-runtime.sh harness-library-api:test' "${WORKFLOW_FILE}" \
   || fail 'o CI deve iniciar a imagem com os mesmos arquivos protegidos da produção.'
+# O contrato deve procurar a expressão literal do Compose.
+# shellcheck disable=SC2016
 grep -Fq '127.0.0.1:${HARNESS_LIBRARY_API_PORT:-8103}:8103' "${COMPOSE_FILE}" \
   || fail 'a API deve permanecer publicada somente em loopback antes do domínio TLS.'
+# O contrato deve procurar a expressão literal do Compose.
+# shellcheck disable=SC2016
 grep -Fq 'name: ${HARNESS_LIBRARY_PUBLIC_NETWORK:-public-net}' "${COMPOSE_FILE}" \
   || fail 'a API deve compartilhar somente a rede privada do proxy público.'
 if grep -Eq '(^|[[:space:]-])9103:9103([[:space:]]|$)' "${COMPOSE_FILE}"; then
@@ -50,6 +55,8 @@ for secret_file in api_key internal_signing_key; do
   grep -Fq "chmod 0400 /root/infra/harness-library/secrets/${secret_file}" "${WORKFLOW_FILE}" \
     || fail "o secret ${secret_file} deve ser somente leitura para seu proprietário."
 done
+# O contrato deve procurar a expressão literal do workflow.
+# shellcheck disable=SC2016
 grep -Fq 'ghcr.io/${{ github.repository }}/harness-library-api:sha-${{ github.sha }}' "${WORKFLOW_FILE}" \
   || fail 'publicação e deploy devem usar imagem imutável identificada pelo commit.'
 grep -Fq "if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'" "${WORKFLOW_FILE}" \
@@ -89,8 +96,16 @@ grep -Fq 'location ^~ /actuator' "${PUBLIC_PROXY_CONFIG}" \
   || fail 'proxy público deve bloquear o Actuator.'
 grep -Fq 'client_max_body_size 32k;' "${PUBLIC_PROXY_CONFIG}" \
   || fail 'proxy público deve preservar o limite físico do JSON.'
+while IFS= read -r tls_domain; do
+  grep -Fq "${tls_domain}" "${HOMOLOGATION_COMPOSE_FILE}" \
+    || fail "a homologação deve gerar certificado temporário para o domínio TLS ${tls_domain}."
+done < <(sed -n \
+  's#.*ssl_certificate[[:space:]]\+/etc/nginx/certs/live/\([^/]*\)/fullchain.pem;#\1#p' \
+  "${PUBLIC_PROXY_CONFIG}" | sort -u)
 grep -Fq 'a API precisa estar em execução e saudável antes do HTTPS' "${PUBLICATION_SCRIPT}" \
   || fail 'publicação deve falhar antes do TLS quando a API estiver indisponível.'
+# O contrato deve procurar a expressão literal do script publicado.
+# shellcheck disable=SC2016
 grep -Fq 'docker exec "${PROXY_CONTAINER}" nginx -t' "${PUBLICATION_SCRIPT}" \
   || fail 'publicação deve validar o Nginx antes de recarregar a rota.'
 grep -Fq 'restore_proxy_configuration' "${PUBLICATION_SCRIPT}" \

@@ -78,7 +78,7 @@ services:
     environment:
       SSL_DOMAINS: >-
         pagamentopalf.site vitrineproduto.online digicomdigital.com.br clubemusa.com.br
-        kit-whatsapp-pronto.digicomdigital.com.br mkthub.api.br
+        kit-whatsapp-pronto.digicomdigital.com.br mira.digicomdigital.com.br mkthub.api.br
     depends_on:
       harness-library-api:
         condition: service_healthy

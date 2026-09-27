@@ -1,0 +1,18 @@
+{
+  "cardKey": "cor-semantica-conceitos-comunicacao",
+  "collection": "prazer-audio-visual",
+  "title": "Usar cor como pista semântica, não apenas estética",
+  "finding": "Quatro experimentos indicam que associações entre cores e conceitos formam um espaço semântico estruturado e distinto do espaço perceptual de cores e de semânticas afetivas ou literais.",
+  "mechanism": "Associações aprendidas entre cor e conceito podem ajudar a restringir a interpretação não verbal e organizar significados compatíveis com o contexto.",
+  "commercialApplication": "Comparar em interface, vídeo ou criativo uma paleta semanticamente compatível com os conceitos centrais da mensagem e uma paleta perceptualmente semelhante, mas semanticamente menos compatível.",
+  "evidenceStrength": "Média-alta: artigo revisado por pares em PNAS com quatro experimentos; o estudo não testa resultado comercial.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2026-12-26",
+  "experimentHypothesis": "A paleta semanticamente compatível aumentará interpretações espontâneas alinhadas à mensagem e reduzirá erros de categorização.",
+  "risks": "Associações médias não são um dicionário universal de cores; cultura, contexto e alternativas podem mudar o significado.",
+  "limits": "O estudo mede associações cor-conceito e julgamentos semânticos, não atenção, prazer ou métricas comerciais.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-27-cor-semantica-conceitos.md",
+  "sourceTitle": "Fonte revisada — cor como espaço semântico conceitual",
+  "sourceSha256": "a778dc1e7c45abce33eb91c9af48f563fe41f758a88435466b4a78b55cf57beb"
+}

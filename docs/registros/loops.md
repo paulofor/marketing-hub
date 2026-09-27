@@ -6247,6 +6247,13 @@ Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
   leitura HLS por JavaScript mesmo com MP4 público. A matriz deve reproduzir
   aplicativo e mídia em origens diferentes; configuração de leitura é incremental,
   somente para origens operacionais/aprovadas, com conferência e rollback.
+- **Extensão Mira/#93 — 27/09/2026:** o vídeo comercial determinístico tinha MP4
+  versionado e aprovado, mas a publicação pública do PDE exige HLS e o upload
+  governado não registrava a playlist no mesmo contrato do ativo. O pipeline agora
+  gera e valida manifesto VOD, segmentos independentes e hashes; a landing prioriza
+  HLS com fallback MP4, e o upload registra `hlsPlaybackUrl` junto da proveniência.
+  Testes de backend, frontend, proxy e Playwright impedem aprovar/publicar novamente
+  uma demonstração pública sem HLS auditável.
 
 ## LOOP-VIDEO-NARRACAO-FALHA-SEM-AUDITORIA-E-RETORNO — 2026-09-14
 

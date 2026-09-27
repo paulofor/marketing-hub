@@ -62,7 +62,7 @@ public class ExperimentVideoAssetController {
     return service.create(experimentId, request);
   }
 
-  /** Recebe um MP4 vertical finalizado e o mantém pendente de revisão antes de virar anúncio. */
+  /** Recebe um MP4 vertical, sua entrega HLS opcional e mantém a peça pendente de revisão. */
   @PostMapping(value = "/ad-uploads", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public ExperimentVideoAssetDto uploadAdVideo(
@@ -76,6 +76,7 @@ public class ExperimentVideoAssetController {
       @RequestParam String visualSourceKey,
       @RequestParam String visualSourceDescription,
       @RequestParam String productionReference,
+      @RequestParam(required = false) String hlsPlaybackUrl,
       @RequestParam(required = false) List<Long> visualSourceCreativeIds,
       @RequestParam(required = false) List<Long> visualSourceVideoAssetIds,
       @RequestParam(defaultValue = "true") boolean requiredForRelease)
@@ -94,6 +95,7 @@ public class ExperimentVideoAssetController {
             productionReference,
             visualSourceCreativeIds,
             visualSourceVideoAssetIds,
+            hlsPlaybackUrl,
             requiredForRelease));
   }
 

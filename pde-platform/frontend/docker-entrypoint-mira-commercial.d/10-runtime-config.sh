@@ -44,8 +44,8 @@ cat > "${ROOT}/pde-health-contract.json" <<EOF
   "commercialOfferPath": "/api/pde/products/$(json_escape "${PRODUCT_SLUG}")/commercial-offer?slotCode=v1",
   "integrationContractPath": "/api/pde/products/$(json_escape "${PRODUCT_SLUG}")/integration-contract?slotCode=v1&experienceVersion=$(json_escape "${EXPERIENCE_VERSION}")",
   "requiredTexts": ["Cuide de você com mais clareza", "duas organizações incluídas por R$ 49"],
-  "requiredHlsStreams": [],
-  "requiredAssets": ["/media/mira-commercial-demo-v1.mp4", "/media/mira-commercial-demo-v1-poster.jpg"],
+  "requiredHlsStreams": ["/media/mira-commercial-demo-v1-hls/index.m3u8"],
+  "requiredAssets": ["/media/mira-commercial-demo-v1.mp4", "/media/mira-commercial-demo-v1-poster.jpg", "/media/mira-commercial-demo-v1-hls/index.m3u8", "/media/mira-commercial-demo-v1-hls/segment-000.ts"],
   "forbiddenTexts": ["acesso privado", "SIMULATED_NO_CHARGE", "Clube MUSA", "Método MUSA", "Homologação interna", "evidência sintética", "Voz gerada por IA"]
 }
 EOF

@@ -80,5 +80,9 @@ local/
 /pde-platform/frontend/public-mira-commercial/media/*
 !/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1.mp4
 !/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1-poster.jpg
+!/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1-hls/
+!/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1-hls/index.m3u8
+!/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1-hls/segment-*.ts
+!/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1-hls/checksums.sha256
 
 __pycache__/

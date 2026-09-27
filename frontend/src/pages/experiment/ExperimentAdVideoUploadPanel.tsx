@@ -86,6 +86,7 @@ export default function ExperimentAdVideoUploadPanel({
     useState("");
   const [visualSourceDescription, setVisualSourceDescription] = useState("");
   const [productionReference, setProductionReference] = useState("");
+  const [hlsPlaybackUrl, setHlsPlaybackUrl] = useState("");
   const [audioConfirmed, setAudioConfirmed] = useState(false);
 
   const canSubmit = useMemo(() => {
@@ -187,6 +188,7 @@ export default function ExperimentAdVideoUploadPanel({
         visualSourceVideoAssetIds: sourceVideoAssetIds,
         visualSourceDescription: visualSourceDescription.trim(),
         productionReference: productionReference.trim(),
+        hlsPlaybackUrl: hlsPlaybackUrl.trim(),
         requiredForRelease: true,
       });
       toast.success("Vídeo enviado e mantido pendente de revisão humana.");
@@ -324,6 +326,22 @@ export default function ExperimentAdVideoUploadPanel({
               onChange={(event) => setProductionReference(event.target.value)}
             />
           </label>
+          <label className="form-label" htmlFor="video-hls-playback-url">
+            HLS público do vídeo
+          </label>
+          <input
+            id="video-hls-playback-url"
+            aria-describedby="video-hls-playback-url-help"
+            className="form-control"
+            type="url"
+            placeholder="https://.../index.m3u8"
+            value={hlsPlaybackUrl}
+            onChange={(event) => setHlsPlaybackUrl(event.target.value)}
+          />
+          <span className="form-text" id="video-hls-playback-url-help">
+            Opcional para anúncio e obrigatório quando a peça será usada em uma
+            experiência PDE pública.
+          </span>
           <label className="form-check">
             <input
               className="form-check-input"

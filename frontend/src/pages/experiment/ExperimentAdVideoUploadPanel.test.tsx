@@ -105,6 +105,7 @@ describe("upload governado de vídeo do experimento", () => {
         visualSourceKey: "capella-exp88-approved-assets-v1",
         visualSourceCreativeIds: [522, 523],
         visualSourceVideoAssetIds: [],
+        hlsPlaybackUrl: "",
         requiredForRelease: true,
       }),
     );
@@ -146,6 +147,12 @@ describe("upload governado de vídeo do experimento", () => {
       screen.getByLabelText("Referência versionada da produção"),
       { target: { value: "scripts/marketing/create-mira-video-v1.sh" } },
     );
+    fireEvent.change(screen.getByLabelText("HLS público do vídeo"), {
+      target: {
+        value:
+          "https://mira.digicomdigital.com.br/media/mira-commercial-demo-v1-hls/index.m3u8",
+      },
+    });
     fireEvent.click(
       screen.getByLabelText(
         "Confirmei a reprodução e o arquivo possui áudio utilizável.",
@@ -162,6 +169,8 @@ describe("upload governado de vídeo do experimento", () => {
       expect.objectContaining({
         visualSourceCreativeIds: [],
         visualSourceVideoAssetIds: [47],
+        hlsPlaybackUrl:
+          "https://mira.digicomdigital.com.br/media/mira-commercial-demo-v1-hls/index.m3u8",
       }),
     );
   });

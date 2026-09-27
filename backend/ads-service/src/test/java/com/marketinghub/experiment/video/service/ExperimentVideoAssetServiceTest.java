@@ -225,7 +225,7 @@ class ExperimentVideoAssetServiceTest {
     assertThat(dto.cost()).isZero();
     assertThat(dto.requestJson())
         .contains(
-            "experiment.userAdVideoUpload.v3",
+            "experiment.userAdVideoUpload.v4",
             "capella-exp88-approved-assets-v1",
             "approvedSourceCreatives",
             "\"reviewedAt\":\"2026-09-24T12:00:00Z\"");
@@ -272,6 +272,7 @@ class ExperimentVideoAssetServiceTest {
             "scripts/marketing/create-mira-commercial-video-v1.sh",
             List.of(),
             List.of(47L),
+            "https://mira.digicomdigital.com.br/media/mira-commercial-demo-v1-hls/index.m3u8",
             true);
     given(experimentRepository.findById(93L)).willReturn(Optional.of(experiment));
     given(repository.findById(47L)).willReturn(Optional.of(sourceVideo));
@@ -291,12 +292,48 @@ class ExperimentVideoAssetServiceTest {
 
     assertThat(dto.id()).isEqualTo(48L);
     assertThat(dto.reviewStatus()).isEqualTo(ExperimentVideoReviewStatus.PENDING);
+    assertThat(dto.hlsPlaybackUrl())
+        .isEqualTo(
+            "https://mira.digicomdigital.com.br/media/mira-commercial-demo-v1-hls/index.m3u8");
     assertThat(dto.requestJson())
         .contains(
-            "experiment.userAdVideoUpload.v3",
+            "experiment.userAdVideoUpload.v4",
             "approvedSourceVideos",
             "\"videoAssetId\":47",
-            "https://cdn.test/mira-approved-v3.mp4");
+            "https://cdn.test/mira-approved-v3.mp4",
+            "mira-commercial-demo-v1-hls/index.m3u8");
+  }
+
+  /** Rejeita HLS inválido antes de armazenar o MP4 e deixar uma gravação parcial. */
+  @Test
+  void shouldRejectInvalidHlsBeforeStorage() throws Exception {
+    Experiment experiment = Experiment.builder().id(93L).build();
+    byte[] mp4Bytes = new byte[] {0, 0, 0, 24, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm'};
+    MockMultipartFile file = new MockMultipartFile("file", "mira-v1.mp4", "video/mp4", mp4Bytes);
+    UploadExperimentAdVideoRequest request =
+        new UploadExperimentAdVideoRequest(
+            "Demonstrar a rotina",
+            "Compras líquidas",
+            "Sua rotina pode ser mais simples.",
+            15,
+            true,
+            "mira-video-47-approved-v1",
+            "Recorte fiel do vídeo aprovado #47.",
+            "scripts/marketing/create-mira-commercial-video-v1.sh",
+            List.of(),
+            List.of(47L),
+            "https://mira.digicomdigital.com.br/media/mira-commercial-demo-v1.mp4",
+            true);
+    given(experimentRepository.findById(93L)).willReturn(Optional.of(experiment));
+
+    ResponseStatusException error =
+        assertThrows(
+            ResponseStatusException.class, () -> service.uploadUserAdVideo(93L, file, request));
+
+    assertThat(error.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(error.getReason()).contains("HLS .m3u8");
+    verify(salesVideoService, org.mockito.Mockito.never())
+        .storeAsset(any(), eq(AssetType.VIDEO), eq(MediaProvider.USER_UPLOAD), any());
   }
 
   /** Rejeita arquivo apenas renomeado como MP4 antes de gravar qualquer asset. */

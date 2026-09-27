@@ -104,8 +104,12 @@ mira_commercial_bundle="$(curl_mira_commercial "${mira_commercial_asset}")"
 grep -q 'Cuide de você com mais clareza' <<<"${mira_commercial_bundle}"
 mira_commercial_contract="$(curl_mira_commercial /pde-health-contract.json)"
 grep -q '/media/mira-commercial-demo-v1.mp4' <<<"${mira_commercial_contract}"
+grep -q '/media/mira-commercial-demo-v1-hls/index.m3u8' <<<"${mira_commercial_contract}"
 curl_mira_commercial /media/mira-commercial-demo-v1.mp4 >/dev/null
 curl_mira_commercial /media/mira-commercial-demo-v1-poster.jpg >/dev/null
+curl_mira_commercial /media/mira-commercial-demo-v1-hls/index.m3u8 \
+  | grep -q '^#EXTM3U'
+curl_mira_commercial /media/mira-commercial-demo-v1-hls/segment-000.ts >/dev/null
 mira_commercial_diagnostics="$(curl_mira_commercial /version-diagnostics.json)"
 grep -q '"surface": "pde-platform-frontend-mira-commercial"' \
   <<<"${mira_commercial_diagnostics}"
@@ -146,6 +150,8 @@ curl_v7 /mira-private/version-diagnostics.json | grep -q '"productId": 10'
 curl_mira_commercial /version-diagnostics.json \
   | grep -q '"experienceVersion": "mira-commercial-v1"'
 curl_mira_commercial /media/mira-commercial-demo-v1.mp4 >/dev/null
+curl_mira_commercial /media/mira-commercial-demo-v1-hls/index.m3u8 \
+  | grep -q '^#EXTM3U'
 curl_v8 /version-diagnostics.json \
   | grep -q '"experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"'
 

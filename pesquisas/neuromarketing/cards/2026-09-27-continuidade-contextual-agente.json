@@ -1,0 +1,18 @@
+{
+  "cardKey": "continuidade-contextual-agente",
+  "collection": "neuromarketing",
+  "title": "Preserve contexto, mas reutilize só memórias que pertencem à tarefa",
+  "finding": "Perda de contexto gera repetição e abandono percebido, mas seis experimentos controlados com 2.140 participantes mostraram que referências a memória relevante para a tarefa receberam resultados de confiança mais favoráveis do que referências intrusivas ou cross-contextuais; efeitos sobre intenção de compra/transação não foram consistentes.",
+  "mechanism": "Continuidade pode reduzir esforço quando evita que o usuário reconstrua intenção e decisões já informadas. Porém, quando o agente traz detalhes sensíveis ou de outro contexto, a mesma memória pode sinalizar monitoramento e ultrapassar a fronteira contextual esperada.",
+  "commercialApplication": "No Click-to-WhatsApp e agentes do Marketing Hub, transferir um resumo mínimo de intenção, fatos fornecidos, oferta, dúvidas resolvidas e permissões. Reutilizar automaticamente apenas fatos claramente ligados à tarefa atual; detalhes sensíveis ou cross-contextuais devem exigir confirmação explícita ou ficar fora da resposta.",
+  "evidenceStrength": "Moderada: combina survey global com 7.652 consumidores e seis experimentos controlados N=2.140. O padrão relevante-versus-intrusivo foi consistente para confiança e resultados relacionais, mas memória era simulada, o estudo experimental ocorreu em um único contexto cultural e não mostrou efeito transacional consistente.",
+  "publishedOn": "2026-09-27",
+  "validUntil": "2027-03-27",
+  "experimentHypothesis": "Um fluxo com continuidade mínima e memória estritamente relevante reduzirá repetição e abandono e elevará confiança e compartilhamento voluntário de dados, sem piorar CTA ou handoff, em comparação com fluxo sem contexto; reutilização cross-contextual deverá aumentar sinais de intrusão.",
+  "risks": "Transformar memória em vigilância; inferir ou expor dados sensíveis; reutilizar informação fora da finalidade esperada; apresentar memória incorreta como fato; esconder controles de correção; violar LGPD ou políticas do canal.",
+  "limits": "A evidência não prova aumento de conversão, CPL ou receita. O estudo experimental usou memórias fictícias e condições que diferiam em vários atributos ao mesmo tempo; efeitos em compra foram nulos ou inconsistentes. O Marketing Hub deve validar com repetição de perguntas, abandono, confiança, handoff, CTA e pagamento reconciliado.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-27-continuidade-contextual-agente-memoria-boundary-fit.md",
+  "sourceTitle": "Fonte revisada — Continuidade contextual e limites de memória em agentes",
+  "sourceSha256": "328b2cec69bb6cb6bdbc1c621990821200e5627dba43ab58f3050e07b45550ec"
+}

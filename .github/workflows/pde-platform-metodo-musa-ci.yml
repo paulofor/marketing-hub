@@ -30,6 +30,10 @@ on:
         description: "Revisão esperada pelo reconciliador automático; vazio preserva a execução normal"
         required: false
         type: string
+      recovery_base_sha:
+        description: "Base protegida usada para reconstruir somente o escopo perdido durante a pausa"
+        required: false
+        type: string
       target_environment:
         description: "Ambiente a publicar"
         required: true
@@ -107,6 +111,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         env:
           RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          RECOVERY_BASE_SHA: ${{ inputs.recovery_base_sha }}
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/validate-publisher-recovery.py
       - uses: actions/setup-node@v7
@@ -117,9 +122,9 @@ jobs:
       - name: Resolve declared frontend target
         id: resolve
         env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          MANUAL_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.frontend_version || '' }}
-          MANUAL_SHARED_COMPONENT: ${{ github.event_name == 'workflow_dispatch' && inputs.shared_component || '' }}
+          BASE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.recovery_sha != '' && inputs.recovery_base_sha || github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          MANUAL_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.recovery_sha == '' && inputs.frontend_version || '' }}
+          MANUAL_SHARED_COMPONENT: ${{ github.event_name == 'workflow_dispatch' && inputs.recovery_sha == '' && inputs.shared_component || '' }}
         run: |
           set -euo pipefail
           if [ -z "${BASE_SHA}" ] || [ "${BASE_SHA}" = "0000000000000000000000000000000000000000" ]; then
@@ -148,6 +153,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         env:
           RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          RECOVERY_BASE_SHA: ${{ inputs.recovery_base_sha }}
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/validate-publisher-recovery.py
 
@@ -198,6 +204,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         env:
           RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          RECOVERY_BASE_SHA: ${{ inputs.recovery_base_sha }}
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/validate-publisher-recovery.py
 
@@ -252,6 +259,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         env:
           RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          RECOVERY_BASE_SHA: ${{ inputs.recovery_base_sha }}
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/validate-publisher-recovery.py
 
@@ -275,6 +283,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         env:
           RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          RECOVERY_BASE_SHA: ${{ inputs.recovery_base_sha }}
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/validate-publisher-recovery.py
 
@@ -307,6 +316,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         env:
           RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          RECOVERY_BASE_SHA: ${{ inputs.recovery_base_sha }}
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/validate-publisher-recovery.py
 
@@ -586,6 +596,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         env:
           RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          RECOVERY_BASE_SHA: ${{ inputs.recovery_base_sha }}
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/validate-publisher-recovery.py
 

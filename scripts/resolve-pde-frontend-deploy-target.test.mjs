@@ -377,6 +377,19 @@ test("workflow usa o alvo resolvido sem fallback fixo para v7", async () => {
   );
   assert.match(workflow, /PDE_DEPLOY_BACKEND:/);
   assert.match(workflow, /shared_component/);
+  assert.match(workflow, /recovery_base_sha:/);
+  assert.match(
+    workflow,
+    /BASE_SHA: .*inputs\.recovery_sha != '' && inputs\.recovery_base_sha/,
+  );
+  assert.match(
+    workflow,
+    /MANUAL_TARGET: .*inputs\.recovery_sha == '' && inputs\.frontend_version/,
+  );
+  assert.match(
+    workflow,
+    /MANUAL_SHARED_COMPONENT: .*inputs\.recovery_sha == '' && inputs\.shared_component/,
+  );
   assert.match(
     workflow,
     /REMOTE_FRONTEND_CONTRACT_PATH="\$\{PDE_FRONTEND_CONTRACT_PATH#pde-platform\/\}"/,

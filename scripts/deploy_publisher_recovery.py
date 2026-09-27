@@ -112,6 +112,50 @@ class PublisherRecovery:
                                                 expected_sha=recovery["sha"], observed_sha=run["head_sha"])
         return observed
 
+    def reconcile_confirmed_rejections(self, state):
+        """Libera apenas intenções que o GitHub comprovadamente recusou com HTTP 422."""
+        recovery = state.get("recovery", {})
+        publications = recovery.get("publications", {})
+        for name, entry in publications.items():
+            requested_at = entry.get("dispatch_requested_at")
+            if not requested_at or entry.get("run_id") or entry.get("dispatch_run_id"):
+                continue
+            rejection = next((event for event in reversed(state.get("history", []))
+                              if event.get("workflow") == name
+                              and event.get("at", "") >= requested_at
+                              and event.get("event") in {
+                                  "publisher_dispatch_accepted",
+                                  "publisher_dispatch_rejected",
+                                  "publisher_dispatch_unconfirmed",
+                              }), None)
+            if not rejection or rejection["event"] == "publisher_dispatch_accepted":
+                continue
+            confirmed_422 = (rejection.get("http_status") == 422
+                             or (rejection["event"] == "publisher_dispatch_unconfirmed"
+                                 and "HTTP 422" in rejection.get("error", "")))
+            if not confirmed_422:
+                continue
+            entry.pop("dispatch_requested_at", None)
+            entry["status"] = "REJECTED"
+            entry["dispatch_rejected_sha"] = recovery.get("sha")
+            entry["dispatch_rejected_http_status"] = 422
+            self.coordinator.checkpoint(
+                state,
+                "publisher_dispatch_rejection_reconciled",
+                workflow=name,
+                sha=recovery.get("sha"),
+                http_status=422,
+            )
+
+    def dispatch_inputs(self, state, name, sha):
+        """Monta o contrato do workflow e injeta a base protegida sem fixar produto ou versão."""
+        policy = POLICY[name]
+        inputs = {**policy.get("inputs", {}), "recovery_sha": sha}
+        recovery_base_input = policy.get("recovery_base_input")
+        if recovery_base_input:
+            inputs[recovery_base_input] = state["initial_sha"]
+        return inputs
+
     def reconcile(self):
         """Executa uma passagem curta, retomável e sem espera bloqueante pela fila dos Actions."""
         state = self.coordinator.store.load()
@@ -123,6 +167,7 @@ class PublisherRecovery:
             return self.outcome(state, "COMPLETE", "Publicações recuperadas; próximos merges seguem os gatilhos normais.")
 
         prepared = state["automatic_resume"]
+        self.reconcile_confirmed_rejections(state)
         if state["phase"] in {"RESUMING", "DRAINING"}:
             state = self.coordinator.protect(state["id"])
             if state["phase"] != "ACTIVE":
@@ -217,9 +262,10 @@ class PublisherRecovery:
                 if current.get("conclusion") != "success":
                     entry["status"] = "FAILED"
                     return self.outcome(state, "BLOCKED", f"{name} falhou; corrigir a causa antes de nova publicação.")
+                publication_job = POLICY[name].get("publication_job")
                 if POLICY[name].get("requires_app"):
                     jobs = self.github.pages(f"actions/runs/{current['id']}/jobs", "jobs")
-                    published = any(j["name"] == POLICY[name]["publication_job"]
+                    published = any(j["name"] == publication_job
                                     and j.get("conclusion") == "success" for j in jobs)
                     if published:
                         entry["status"] = "COMPLETE"
@@ -238,9 +284,28 @@ class PublisherRecovery:
                     if current["event"] == "workflow_dispatch":
                         entry["status"] = "FAILED"
                         return self.outcome(state, "BLOCKED", f"{name} encerrou sem executar o job de publicação.")
+                elif publication_job:
+                    jobs = self.github.pages(f"actions/runs/{current['id']}/jobs", "jobs")
+                    if any(j["name"] == publication_job and j.get("conclusion") == "success"
+                           for j in jobs):
+                        entry["status"] = "COMPLETE"
+                        continue
+                    if current["event"] == "workflow_dispatch":
+                        entry["status"] = "FAILED"
+                        return self.outcome(
+                            state,
+                            "BLOCKED",
+                            f"{name} encerrou sem executar o job de publicação.",
+                        )
                 else:
                     entry["status"] = "COMPLETE"
                     continue
+            if entry.get("dispatch_rejected_sha") == sha:
+                return self.outcome(
+                    state,
+                    "BLOCKED",
+                    f"{name} recusou o dispatch com HTTP 422; corrigir o contrato em nova revisão antes de repetir.",
+                )
             if entry.get("dispatch_requested_at"):
                 entry["status"] = "AWAITING_RECEIPT"
                 continue
@@ -256,10 +321,31 @@ class PublisherRecovery:
             # A intenção vai ao disco antes da API: desconexão após aceite nunca duplica dispatch.
             entry["dispatch_requested_at"] = self.coordinator.store.load()["updated_at"]
             self.coordinator.checkpoint(state, "publisher_dispatch_requested", workflow=name, sha=sha)
-            inputs = {**POLICY[name].get("inputs", {}), "recovery_sha": sha}
+            inputs = self.dispatch_inputs(state, name, sha)
             try:
                 receipt = self.github.api(f"actions/workflows/{workflow['id']}/dispatches", "POST",
                                           {"ref": "main", "inputs": inputs})
+            except GitHubApiError as error:
+                if error.status == 422:
+                    entry.pop("dispatch_requested_at", None)
+                    entry["status"] = "REJECTED"
+                    entry["dispatch_rejected_sha"] = sha
+                    entry["dispatch_rejected_http_status"] = 422
+                    self.coordinator.checkpoint(
+                        state,
+                        "publisher_dispatch_rejected",
+                        workflow=name,
+                        sha=sha,
+                        http_status=422,
+                    )
+                else:
+                    self.coordinator.checkpoint(
+                        state,
+                        "publisher_dispatch_unconfirmed",
+                        workflow=name,
+                        error=str(error),
+                    )
+                raise
             except RuntimeError as error:
                 self.coordinator.checkpoint(state, "publisher_dispatch_unconfirmed", workflow=name, error=str(error))
                 raise

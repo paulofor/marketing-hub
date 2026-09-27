@@ -1,7 +1,9 @@
 {
   "deploy-containers.yml": {},
   "pde-platform-metodo-musa-ci.yml": {
-    "inputs": {"target_environment": "production", "frontend_version": "all", "mira_proxy_mode": "isolated"}
+    "inputs": {"target_environment": "production", "mira_proxy_mode": "isolated"},
+    "recovery_base_input": "recovery_base_sha",
+    "publication_job": "Deploy production to PDE host"
   },
   "product-discovery-worker-ci.yml": {"requires_app": true, "publication_job": "deploy"},
   "customer-agent-worker-ci.yml": {"requires_app": true, "publication_job": "Deploy worker"},

@@ -48,12 +48,30 @@ grep -Fq 'https://kit-whatsapp-pronto.digicomdigital.com.br' "${workflow}" || {
   echo '[ARQUITETURA] deploy deve validar o destino público do Kit WhatsApp' >&2
   exit 1
 }
+for commercial_mira_contract in \
+  'issue_mira_certificate' \
+  'mira.digicomdigital.com.br' \
+  'TLS público de Mira confirmado; a saúde funcional será exigida pelo deploy proprietário do PDE.'; do
+  grep -Fq "${commercial_mira_contract}" "${workflow}" || {
+    echo "[ARQUITETURA] deploy do proxy deve preparar o TLS comercial de Mira: ${commercial_mira_contract}" >&2
+    exit 1
+  }
+done
 for mira_contract in \
   'https://v7.clubemusa.com.br/mira-private/version-diagnostics.json' \
   'pde-platform-frontend-mira' \
   'pde-planejado-36'; do
   grep -Fq "${mira_contract}" "${workflow}" || {
     echo "[ARQUITETURA] deploy do proxy não valida o isolamento de Mira: ${mira_contract}" >&2
+    exit 1
+  }
+done
+
+for proxy_contract in \
+  'mira.digicomdigital.com.br pde-platform-frontend-mira-commercial:80' \
+  '/etc/nginx/certs/live/mira.digicomdigital.com.br/fullchain.pem'; do
+  grep -Fq "${proxy_contract}" "${module_dir}/nginx.conf" || {
+    echo "[ARQUITETURA] proxy público sem contrato comercial de Mira: ${proxy_contract}" >&2
     exit 1
   }
 done

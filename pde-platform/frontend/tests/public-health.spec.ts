@@ -6,6 +6,7 @@ type PublicHealthContract = {
   commercialOfferPath?: string;
   integrationContractPath?: string;
   requiredTexts?: string[];
+  requiredAssets?: string[];
   forbiddenTexts?: string[];
 };
 
@@ -61,6 +62,7 @@ const defaultContract: Required<PublicHealthContract> = {
   commercialOfferPath: "",
   integrationContractPath: "",
   requiredTexts: ["Seu primeiro ajuste MUSA"],
+  requiredAssets: [],
   forbiddenTexts: [
     "Application error",
     "Cannot find module",
@@ -110,6 +112,8 @@ async function loadContract(request: APIRequestContext) {
       envRequiredTexts.length > 0
         ? envRequiredTexts
         : fileContract.requiredTexts || defaultContract.requiredTexts,
+    requiredAssets:
+      fileContract.requiredAssets || defaultContract.requiredAssets,
     forbiddenTexts:
       envForbiddenTexts.length > 0
         ? envForbiddenTexts
@@ -246,6 +250,18 @@ test("health publico renderiza app, javascript e texto comercial", async ({
   const staticHealth = await request.get("/healthz");
   expect(staticHealth.ok()).toBeTruthy();
   expect(await staticHealth.text()).toContain('"status":"UP"');
+  for (const assetPath of contract.requiredAssets) {
+    const asset = await request.get(assetPath);
+    expect(
+      asset.ok(),
+      `Ativo público obrigatório indisponível: ${assetPath}`,
+    ).toBeTruthy();
+    const contentType = asset.headers()["content-type"] || "";
+    expect(
+      contentType.startsWith("video/") || contentType.startsWith("image/"),
+      `Ativo público obrigatório com Content-Type inválido: ${assetPath}`,
+    ).toBeTruthy();
+  }
 
   const versionDiagnostics = await request.get("/version-diagnostics.json");
   expect(versionDiagnostics.ok()).toBeTruthy();

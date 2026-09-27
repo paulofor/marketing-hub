@@ -79,6 +79,102 @@ const kitWhatsAppOffer = {
   refundPolicyUrl:
     "https://kit-whatsapp-pronto.digicomdigital.com.br/refund-policy",
 };
+const miraProductSlug = "pde-planejado-36";
+const miraExperienceVersion = "mira-commercial-v1";
+const miraProduct = {
+  slug: miraProductSlug,
+  experienceVersion: miraExperienceVersion,
+  layoutKey: "mira-routine-v1",
+  funnelVersion: "mira-commercial-funnel-v1",
+  name: "Mira",
+  promise: "Organize sua rotina de cuidados usando o que você já tem.",
+  audience: "Mulheres maduras que querem uma rotina simples de autocuidado",
+  priceLabel: "R$49",
+  theme: {
+    primary: "#51283f",
+    accent: "#c77b61",
+    background: "#fffaf7",
+    imageUrl: "/media/mira-commercial-demo-v1-poster.jpg",
+  },
+  diagnostic: {
+    title: "Sua rotina organizada",
+    intro: "Informe os produtos e as orientações documentadas nos rótulos.",
+    questions: [],
+  },
+  missions: [],
+  supportMaterials: [],
+  heroVideos: [],
+  publicDiagnosticQuestions: [],
+  publicFirstFold: {
+    headline: "Cuide de você com mais clareza, usando o que já tem.",
+    supportingText:
+      "Mira organiza uma ordem prática sem diagnóstico, prescrição ou indicação de novas compras.",
+    videoCtaLabel: "Quero organizar minha rotina por R$ 49",
+  },
+  scientificEvidencePack: null,
+  completionOffer: "Duas organizações incluídas em pagamento único",
+  serviceScope: {
+    includedItems: [
+      "Entrada guiada com os produtos já possuídos",
+      "Duas organizações de rotina",
+      "Resultado retomável",
+    ],
+    excludedItems: [
+      "Diagnóstico",
+      "Prescrição",
+      "Recomendação de novos cosméticos",
+    ],
+    deadlineStartsWhen: "Pagamento aprovado",
+  },
+  publicProofs: [],
+  commercialProcess: [],
+  commercialBinding: {
+    experimentId: 93,
+    primaryCta: "Quero organizar minha rotina por R$ 49",
+    priceBrl: 49,
+    billingModel: "ONE_TIME",
+  },
+  commercialCheckout: {
+    provider: "MERCADO_PAGO",
+    checkoutUrl: "https://checkout.example/mira",
+    offerReference: "experiment:93",
+    priceBrl: 49,
+    currency: "BRL",
+    billingModel: "ONE_TIME",
+  },
+  commercialAccess: {
+    experienceVersion: miraExperienceVersion,
+    accessDays: 3650,
+    renewal: false,
+    activationTrigger: "PAYMENT_APPROVED",
+    scope: "Duas organizações de rotina e retomada do resultado",
+  },
+};
+const miraOffer = {
+  productSlug: miraProductSlug,
+  experienceVersion: miraExperienceVersion,
+  layoutKey: "mira-routine-v1",
+  experimentId: 93,
+  experimentStatus: "PLANNED",
+  acquisitionChannel: "DIRECT",
+  pain: "Produtos acumulados e dúvida sobre a ordem documentada de uso.",
+  proof: "Demonstração em vídeo da entrada e do resultado antes da compra.",
+  promise: miraProduct.promise,
+  primaryCta: "Quero organizar minha rotina por R$ 49",
+  priceBrl: 49,
+  checkoutUrl: "https://checkout.example/mira",
+  salesPageUrl: "https://mira.digicomdigital.com.br",
+  targetAudience: miraProduct.audience,
+  productFormat: "ROTINA_DIGITAL_AUTOGUIADA",
+  deliveryMode: "DIGITAL_AUTOGUIADA",
+  valueUnit: "Duas organizações de rotina com os produtos já possuídos",
+  supplierDisplayName: "Digicom Digital",
+  supplierRegistrationNumber: "25.215.414/0001-69",
+  supportEmail: "contato@digicomdigital.com.br",
+  termsUrl: "https://mira.digicomdigital.com.br/terms",
+  privacyUrl: "https://mira.digicomdigital.com.br/privacy",
+  refundPolicyUrl: "https://mira.digicomdigital.com.br/refund-policy",
+};
 
 const baseProduct = {
   slug: productSlug,
@@ -253,6 +349,28 @@ const server = http.createServer(async (request, response) => {
       "Cache-Control": "no-store",
     });
     response.end(JSON.stringify(kitWhatsAppOffer));
+    return;
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === `/api/products/public/${miraProductSlug}/pde-experience`
+  ) {
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    });
+    response.end(JSON.stringify(miraProduct));
+    return;
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === `/api/products/public/${miraProductSlug}/commercial-offer`
+  ) {
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    });
+    response.end(JSON.stringify(miraOffer));
     return;
   }
   if (

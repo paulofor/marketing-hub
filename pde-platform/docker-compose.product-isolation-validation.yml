@@ -132,6 +132,35 @@ services:
       timeout: 2s
       retries: 20
 
+  pde-platform-frontend-mira-commercial:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.mira-commercial
+      args:
+        PDE_FRONTEND_VERSION_ID: mira-commercial-v1
+    environment:
+      PDE_PRODUCT_ID: "10"
+      VITE_PDE_PRODUCT_SLUG: pde-planejado-36
+      PDE_EXPERIENCE_VERSION: mira-commercial-v1
+      PDE_FRONTEND_VERSION: mira-commercial-v1
+      PDE_FRONTEND_PUBLIC_URL: https://mira.digicomdigital.com.br
+      PDE_FRONTEND_IMAGE: pde-platform-frontend-mira-commercial:validation
+      PDE_FRONTEND_VERSION_ID: mira-commercial-v1
+      PDE_DEPLOY_IMAGE_TAG: local-product-isolation
+      PDE_BACKEND_UPSTREAM: pde-platform-backend:80
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1/version-diagnostics.json | grep -q 'pde-platform-frontend-mira-commercial'",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
   lead-portal-payments-service:
     image: nginx:1.27-alpine
     healthcheck:
@@ -156,6 +185,8 @@ services:
       pde-platform-frontend-v8:
         condition: service_healthy
       pde-platform-frontend-mira:
+        condition: service_healthy
+      pde-platform-frontend-mira-commercial:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "nginx -t -q"]

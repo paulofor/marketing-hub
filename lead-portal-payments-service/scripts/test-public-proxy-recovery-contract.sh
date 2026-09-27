@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016 # Os padrões abaixo validam expressões literais de outros scripts/YAML.
 set -euo pipefail
 
 module_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -39,9 +40,11 @@ grep -Fq '< lead-portal-payments-service/scripts/recover-public-proxy.sh' "${wor
 }
 for probe in \
   'https://kit-whatsapp-pronto.digicomdigital.com.br' \
+  'https://mira.digicomdigital.com.br' \
   '/healthz' \
   '/pde-health-contract.json' \
-  'kit-whatsapp-pronto'; do
+  'kit-whatsapp-pronto' \
+  'pde-planejado-36'; do
   grep -Fq "${probe}" "${workflow}" || {
     echo "[ARQUITETURA] sonda obrigatória ausente: ${probe}" >&2
     exit 1
@@ -55,7 +58,7 @@ fi
 
 recovery_step="$(awk '
   /- name: Recover fixed public proxy/ { in_step = 1 }
-  in_step && /- name: Validate HTTPS health and PDE contract/ { exit }
+  in_step && /- name: Validate HTTPS health and PDE contracts/ { exit }
   in_step { print }
 ' "${workflow}")"
 if rg -n '(^|[[:space:]])(docker[[:space:]]+(compose[[:space:]]+)?(build|pull)|rsync|git[[:space:]]+(push|commit)|docker[[:space:]].*prune)' <<<"${recovery_step}"; then

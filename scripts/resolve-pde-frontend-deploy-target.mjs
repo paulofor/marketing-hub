@@ -12,10 +12,15 @@ const TARGETS = new Set([
   "v7",
   "v8",
   "mira",
+  "mira-commercial",
   "kit-whatsapp",
 ]);
 const SHA256 = /^[a-f0-9]{64}$/;
-const NON_MUSA_MANUAL_TARGETS = new Set(["mira", "kit-whatsapp"]);
+const NON_MUSA_MANUAL_TARGETS = new Set([
+  "mira",
+  "mira-commercial",
+  "kit-whatsapp",
+]);
 const SHARED_COMPONENTS = new Set([
   "none",
   "backend",

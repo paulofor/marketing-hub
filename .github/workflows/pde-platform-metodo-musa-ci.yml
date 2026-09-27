@@ -49,6 +49,7 @@ on:
           - v7
           - v8
           - mira
+          - mira-commercial
           - kit-whatsapp
       shared_component:
         description: "Componente compartilhado a publicar separadamente"
@@ -78,6 +79,7 @@ env:
   FRONTEND_V7_IMAGE_NAME: pde-platform-frontend-v7
   FRONTEND_V8_IMAGE_NAME: pde-platform-frontend-v8
   FRONTEND_MIRA_IMAGE_NAME: pde-platform-frontend-mira
+  FRONTEND_MIRA_COMMERCIAL_IMAGE_NAME: pde-platform-frontend-mira-commercial
   FRONTEND_KIT_WHATSAPP_IMAGE_NAME: pde-platform-frontend-kit-whatsapp
   AI_WORKER_IMAGE_NAME: pde-ai-worker
   RETENTION_WORKER_IMAGE_NAME: pde-retention-worker
@@ -221,10 +223,14 @@ jobs:
         run: npm run build
       - name: Build isolated Mira surface
         run: npm run build:mira
+      - name: Build commercial Mira surface
+        run: npm run build:mira-commercial
       - name: Install Chromium for isolated Mira contract
         run: npx playwright install --with-deps chromium
       - name: Validate Mira correction in desktop and mobile
         run: npm run test:mira-private:local
+      - name: Validate commercial Mira journey in desktop and mobile
+        run: npm run test:mira-commercial:local
       - name: Validate product-exclusive build artifacts
         run: node ../scripts/test-product-build-artifacts.mjs
       - name: Validate backend replacement through published proxies
@@ -340,6 +346,10 @@ jobs:
             echo "${IMAGE_NAMESPACE}/${FRONTEND_MIRA_IMAGE_NAME}:latest"
             echo "${IMAGE_NAMESPACE}/${FRONTEND_MIRA_IMAGE_NAME}:${GITHUB_SHA}"
             echo "EOF"
+            echo "frontend_mira_commercial_tags<<EOF"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_MIRA_COMMERCIAL_IMAGE_NAME}:latest"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_MIRA_COMMERCIAL_IMAGE_NAME}:${GITHUB_SHA}"
+            echo "EOF"
             echo "frontend_kit_whatsapp_tags<<EOF"
             echo "${IMAGE_NAMESPACE}/${FRONTEND_KIT_WHATSAPP_IMAGE_NAME}:latest"
             echo "${IMAGE_NAMESPACE}/${FRONTEND_KIT_WHATSAPP_IMAGE_NAME}:${GITHUB_SHA}"
@@ -449,6 +459,22 @@ jobs:
             PDE_FRONTEND_VERSION_ID=mira-private-v3
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_MIRA_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_MIRA_IMAGE_NAME }}:buildcache,mode=max
+      - name: Build and push commercial Mira frontend image
+        if: needs.deployment_scope.outputs.frontend-version == 'mira-commercial'
+        uses: docker/build-push-action@v6
+        with:
+          context: pde-platform/frontend
+          file: pde-platform/frontend/Dockerfile.mira-commercial
+          push: true
+          tags: ${{ steps.image_metadata.outputs.frontend_mira_commercial_tags }}
+          labels: |
+            ${{ steps.image_metadata.outputs.labels }}
+            com.marketinghub.pde.product-id=10
+            com.marketinghub.pde.product-slug=pde-planejado-36
+          build-args: |
+            PDE_FRONTEND_VERSION_ID=mira-commercial-v1
+          cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_MIRA_COMMERCIAL_IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_MIRA_COMMERCIAL_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push Kit WhatsApp frontend image
         if: needs.deployment_scope.outputs.frontend-version == 'kit-whatsapp'
         uses: docker/build-push-action@v6
@@ -534,6 +560,7 @@ jobs:
       PDE_PLATFORM_FRONTEND_V7_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V7_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V7_PORT || '5178' }}
       PDE_PLATFORM_FRONTEND_V8_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V8_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V8_PORT || '5181' }}
       PDE_PLATFORM_FRONTEND_MIRA_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_MIRA_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_MIRA_PORT || '5180' }}
+      PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT || '5182' }}
       PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT || '5179' }}
       PDE_PLATFORM_BACKEND_PORT: ${{ secrets.PDE_PLATFORM_BACKEND_PORT != '' && secrets.PDE_PLATFORM_BACKEND_PORT || '8096' }}
       AWS_REGION: ${{ secrets.PDE_MAIL_AWS_REGION != '' && secrets.PDE_MAIL_AWS_REGION || 'us-east-1' }}
@@ -650,6 +677,7 @@ jobs:
             v7) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_V7_IMAGE_NAME}:${IMAGE_TAG}" ;;
             v8) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_V8_IMAGE_NAME}:${IMAGE_TAG}" ;;
             mira) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_MIRA_IMAGE_NAME}:${IMAGE_TAG}" ;;
+            mira-commercial) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_MIRA_COMMERCIAL_IMAGE_NAME}:${IMAGE_TAG}" ;;
             kit-whatsapp) SELECTED_FRONTEND_IMAGE="${IMAGE_NAMESPACE}/${FRONTEND_KIT_WHATSAPP_IMAGE_NAME}:${IMAGE_TAG}" ;;
             none) ;;
             *) echo "Target frontend inválido: ${PDE_DEPLOY_FRONTEND_VERSION}" >&2; exit 1 ;;
@@ -666,6 +694,7 @@ jobs:
             && export PDE_PLATFORM_FRONTEND_V7_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_V7_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_FRONTEND_V8_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_V8_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_FRONTEND_MIRA_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_MIRA_IMAGE_NAME}:${IMAGE_TAG}' \
+            && export PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_MIRA_COMMERCIAL_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_KIT_WHATSAPP_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_AI_WORKER_IMAGE='${IMAGE_NAMESPACE}/${AI_WORKER_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_RETENTION_WORKER_IMAGE='${IMAGE_NAMESPACE}/${RETENTION_WORKER_IMAGE_NAME}:${IMAGE_TAG}' \
@@ -675,6 +704,7 @@ jobs:
             && export PDE_PLATFORM_FRONTEND_V7_PORT='${PDE_PLATFORM_FRONTEND_V7_PORT}' \
             && export PDE_PLATFORM_FRONTEND_V8_PORT='${PDE_PLATFORM_FRONTEND_V8_PORT}' \
             && export PDE_PLATFORM_FRONTEND_MIRA_PORT='${PDE_PLATFORM_FRONTEND_MIRA_PORT}' \
+            && export PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT='${PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT}' \
             && export PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT='${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}' \
             && export PDE_PLATFORM_BACKEND_PORT='${PDE_PLATFORM_BACKEND_PORT}' \
             && export PDE_DEPLOY_ENVIRONMENT=production \
@@ -792,6 +822,13 @@ jobs:
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_PORT}/version-diagnostics.json" | grep -q '"productSlug": "pde-planejado-36"'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "mira-private-v3"'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_PORT}/version-diagnostics.json" | grep -q 'pde-platform-frontend-mira'
+          fi
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "mira-commercial" ]; then
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT}/" > /dev/null
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT}/healthz" | grep -q '"productId":10'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT}/pde-health-contract.json" | grep -q '"slug": "pde-planejado-36"'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT}/version-diagnostics.json" | grep -q '"surface": "pde-platform-frontend-mira-commercial"'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "mira-commercial-v1"'
           fi
           if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "kit-whatsapp" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}/" > /dev/null
@@ -920,6 +957,13 @@ jobs:
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://kit-whatsapp-pronto.digicomdigital.com.br/pde-health-contract.json | grep -q '"slug": "kit-whatsapp-pronto"'
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://kit-whatsapp-pronto.digicomdigital.com.br/version-diagnostics.json | grep -q '"experienceVersion": "kit-whatsapp-pronto-pde-v2"'
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused --output /dev/null https://kit-whatsapp-pronto.digicomdigital.com.br/
+          fi
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "mira-commercial" ] || [ "${PDE_DEPLOY_BACKEND}" = "true" ]; then
+            validate_dns_points_to_deploy_host mira.digicomdigital.com.br
+            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://mira.digicomdigital.com.br/healthz | grep -q '"status":"UP"'
+            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://mira.digicomdigital.com.br/pde-health-contract.json | grep -q '"slug": "pde-planejado-36"'
+            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://mira.digicomdigital.com.br/version-diagnostics.json | grep -q '"experienceVersion": "mira-commercial-v1"'
+            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused --output /dev/null https://mira.digicomdigital.com.br/
           fi
       - name: Set up Node for production rendering smoke
         if: env.PDE_DEPLOY_FRONTEND_VERSION != 'none' || env.PDE_DEPLOY_BACKEND == 'true'

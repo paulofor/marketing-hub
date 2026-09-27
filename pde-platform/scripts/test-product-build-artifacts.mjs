@@ -22,8 +22,12 @@ async function filesInside(directory) {
 async function compiledSurface(relativeDirectory) {
   const directory = path.join(repositoryRoot, relativeDirectory);
   const files = await filesInside(directory);
-  const textFiles = files.filter((file) => /\.(?:css|html|js|json|svg|txt)$/i.test(file));
-  const contents = await Promise.all(textFiles.map((file) => readFile(file, "utf8")));
+  const textFiles = files.filter((file) =>
+    /\.(?:css|html|js|json|svg|txt)$/i.test(file),
+  );
+  const contents = await Promise.all(
+    textFiles.map((file) => readFile(file, "utf8")),
+  );
   return {
     names: files.map((file) => path.relative(directory, file)).join("\n"),
     text: contents.join("\n"),
@@ -47,5 +51,31 @@ test("o bundle de Mira não contém a superfície de Vega", async () => {
     `${mira.names}\n${mira.text}`,
     /Clube MUSA|metodo-musa-7-dias|musa-pde-entry|logo-musa|musa-product/i,
     "[ARQUITETURA] A imagem compilada de Mira contém artefato de Vega.",
+  );
+});
+
+test("o bundle comercial de Mira não contém a pesquisa privada nem Vega", async () => {
+  const commercialHtml = await readFile(
+    path.join(
+      repositoryRoot,
+      "pde-platform/frontend/dist-mira-commercial/mira-commercial.html",
+    ),
+    "utf8",
+  );
+  const commercial = await compiledSurface(
+    "pde-platform/frontend/dist-mira-commercial",
+  );
+  assert.match(commercial.names, /mira-commercial\.html/);
+  assert.match(commercial.text, /Cuide de você com mais clareza/);
+  assert.match(commercialHtml, /(?:src|href)="\/assets\//);
+  assert.doesNotMatch(
+    commercialHtml,
+    /(?:src|href)="\/assets\/assets\//,
+    "[ARQUITETURA] O HTML comercial de Mira duplicou o prefixo público /assets/.",
+  );
+  assert.doesNotMatch(
+    `${commercial.names}\n${commercial.text}`,
+    /mira-private|acesso privado|Clube MUSA|metodo-musa-7-dias|musa-pde-entry/i,
+    "[ARQUITETURA] A imagem comercial de Mira contém artefato privado ou de Vega.",
   );
 });

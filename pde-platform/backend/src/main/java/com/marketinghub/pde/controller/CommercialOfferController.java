@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Expõe ao frontend PDE a oferta canônica obtida exclusivamente pelo backend principal. */
@@ -23,7 +24,8 @@ public class CommercialOfferController {
     @GetMapping("/{productSlug}/commercial-offer")
     public CommercialOfferResponse getOffer(
             @PathVariable("productSlug") String productSlug,
-            @RequestHeader(value = "Host", required = false) String host) {
-        return service.getOffer(productSlug, host);
+            @RequestHeader(value = "Host", required = false) String host,
+            @RequestParam(value = "slotCode", required = false) String slotCode) {
+        return service.getOffer(productSlug, host, slotCode);
     }
 }

@@ -3,20 +3,30 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const SOURCE_DIRECTORIES = ["docker-entrypoint.d", "public", "scripts", "src"];
+const SOURCE_DIRECTORIES = [
+  "docker-entrypoint.d",
+  "docker-entrypoint-mira-commercial.d",
+  "public",
+  "scripts",
+  "src",
+];
 const SOURCE_FILES = [
   ".npmrc",
   "Dockerfile",
+  "Dockerfile.mira-commercial",
   "index.html",
   "mira.html",
+  "mira-commercial.html",
   "nginx.conf",
   "nginx.mira.conf",
+  "nginx.mira-commercial.conf",
   "package-lock.json",
   "package.json",
   "tsconfig.json",
   "tsconfig.vega.json",
   "vite.config.ts",
   "vite.mira.config.ts",
+  "vite.mira-commercial.config.ts",
   "vite.vega.config.ts",
 ];
 

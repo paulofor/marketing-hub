@@ -3,6 +3,7 @@ package com.marketinghub.pde.mira.privatevalidation.v1;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.pde.dto.FunnelEventRequest;
+import com.marketinghub.pde.mira.common.v1.MiraRoutinePolicy;
 import com.marketinghub.pde.service.AccessService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -19,8 +20,6 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -148,20 +147,20 @@ public class MiraPrivatePrototypeService {
         if (session.products == null || session.products.isEmpty()) {
             throw new IllegalArgumentException("Informe ao menos um produto e a orientação documentada do rótulo.");
         }
-        String objective = normalized(session.objective);
-        if (List.of("diagnost", "trat", "cur", "prescre", "doenca", "doença").stream().anyMatch(objective::contains)) {
-            return blocked(session, "O objetivo pede conclusão clínica. Reformule como organização de autocuidado ou procure avaliação profissional.");
-        }
-        List<RoutineCard> cards = new ArrayList<>();
-        for (ProductInput product : session.products) {
-            Integer order = documentedOrder(product.labelDirections());
-            if (order == null) {
-                return blocked(session, "Falta orientação documental suficiente para ordenar " + product.name() + ". Informe o rótulo ou fabricante.");
-            }
-            cards.add(new RoutineCard(product.name(), order, product.labelDirections(), "Ordem limitada ao texto documentado informado; não é prescrição."));
-        }
-        cards.sort(Comparator.comparingInt(RoutineCard::order));
-        session.routine = List.copyOf(cards);
+        var decision = MiraRoutinePolicy.organize(
+                session.objective,
+                session.products.stream()
+                        .map(product -> new MiraRoutinePolicy.ProductInput(
+                                product.name(), product.labelDirections()))
+                        .toList());
+        if (decision.blocked()) return blocked(session, decision.blocker());
+        session.routine = decision.routine().stream()
+                .map(card -> new RoutineCard(
+                        card.productName(),
+                        card.order(),
+                        card.documentedDirection(),
+                        card.safetyNote()))
+                .toList();
         session.status = "READY";
         session.blocker = null;
         recordOnce(session, "VALUE_MOMENT");
@@ -291,15 +290,6 @@ public class MiraPrivatePrototypeService {
         return response(session);
     }
 
-    /** Classifica somente usos explicitamente descritos no rótulo informado. */
-    private Integer documentedOrder(String directions) {
-        String value = normalized(directions);
-        if (value.contains("apos a limpeza") || value.contains("hidrat")) return 20;
-        if (value.contains("limpar") || value.contains("enxagu")) return 10;
-        if (value.contains("protetor") || value.contains("protecao solar") || value.contains("proteção solar")) return 30;
-        return null;
-    }
-
     /** Registra cada evento uma vez, mantendo a versão do contrato que originou a sessão. */
     private void recordOnce(StoredSession session, String eventType) {
         if (session.events.contains(eventType)) return;
@@ -396,12 +386,6 @@ public class MiraPrivatePrototypeService {
             log.error("Falha ao calcular hash de acesso privado de Mira", ex);
             throw new IllegalStateException("Não foi possível validar o acesso privado.", ex);
         }
-    }
-
-    /** Normaliza texto exclusivamente para gates determinísticos de segurança. */
-    private String normalized(String value) {
-        return value == null ? "" : java.text.Normalizer.normalize(value.toLowerCase(), java.text.Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");
     }
 
     /** Carrega checkpoints e mantém detalhes internos somente no log de uma falha de recuperação. */

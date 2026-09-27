@@ -17,7 +17,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
-/** Valida a fronteira HTTP autenticada usada pelo webhook financeiro do Kit. */
+/** Valida a fronteira HTTP autenticada usada pelo webhook financeiro dos PDEs pagos. */
 class MercadoPagoEntitlementControllerTest {
 
     /** Aceita o segredo exato e encaminha o pagamento sem alterar seu contrato. */
@@ -65,7 +65,10 @@ class MercadoPagoEntitlementControllerTest {
         controller.reconcile("Bearer payment-test-secret", request);
 
         verify(accessService).revokeMercadoPagoPaidAccess(
-                "buyer@sandbox.local", "mp-271", "refunded");
+                RigelPaidEntitlementService.PRODUCT_SLUG,
+                "buyer@sandbox.local",
+                "mp-271",
+                "refunded");
     }
 
     /** Bloqueia cabeçalho ausente antes de permitir qualquer escrita financeira. */

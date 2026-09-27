@@ -135,6 +135,21 @@
           "publicUrl": "https://v7.clubemusa.com.br/mira-private",
           "backendProbePath": "/api/pde/mira/private/v1/contract",
           "historicalPrivateRoute": true
+        },
+        {
+          "deployTarget": "mira-commercial",
+          "versionId": "mira-commercial-v1",
+          "experienceVersion": "mira-commercial-v1",
+          "lifecycleStatus": "SUPPORTED",
+          "watchdogRequired": true,
+          "serviceName": "pde-platform-frontend-mira-commercial",
+          "containerName": "pde-platform-frontend-mira-commercial",
+          "imageName": "pde-platform-frontend-mira-commercial",
+          "imageVariable": "PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_IMAGE",
+          "portVariable": "PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT",
+          "hostPort": 5182,
+          "publicUrl": "https://mira.digicomdigital.com.br",
+          "backendProbePath": "/api/pde/mira/commercial/v1/contract"
         }
       ]
     }

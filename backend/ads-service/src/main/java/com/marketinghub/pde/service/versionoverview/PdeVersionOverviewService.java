@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -32,13 +33,20 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-/** Responsabilidade: consolidar a trajetória de negócio das versões PDE de produtos Opala. */
+/** Responsabilidade: consolidar a trajetória de negócio das versões PDE de produtos suportados. */
 @Service
 @Slf4j
 public class PdeVersionOverviewService {
 
   private static final String OPALA_PRODUCT_TYPE_CODE = "PDE";
   private static final String OPALA_PRODUCT_TYPE_INTERNAL_NAME = "OPALA";
+  private static final String SAFIRA_PRODUCT_TYPE_CODE = "AI_PRODUCT";
+  private static final String SAFIRA_PRODUCT_TYPE_INTERNAL_NAME = "SAFIRA";
+  private static final Set<String> SUPPORTED_PRODUCT_TYPE_CODES =
+      Set.of(OPALA_PRODUCT_TYPE_CODE, SAFIRA_PRODUCT_TYPE_CODE);
+  private static final Set<String> SUPPORTED_PRODUCT_TYPE_INTERNAL_NAMES =
+      Set.of(OPALA_PRODUCT_TYPE_INTERNAL_NAME, SAFIRA_PRODUCT_TYPE_INTERNAL_NAME);
+  private static final String GENERIC_HOMOLOGATION_PENDING = "Concluir a homologação comercial.";
   private static final String STEP_DONE = "DONE";
   private static final String STEP_CURRENT = "CURRENT";
   private static final String STEP_PENDING = "PENDING";
@@ -64,10 +72,10 @@ public class PdeVersionOverviewService {
     this.objectMapper = objectMapper;
   }
 
-  /** Lista versões do produto Opala sem criar uma identidade privada paralela para homologação. */
+  /** Lista versões PDE sem criar uma identidade privada paralela para homologação. */
   @Transactional(readOnly = true)
   public List<ProductPdeVersionOverviewDto> list(Product product) {
-    validateOpalaProduct(product);
+    validateSupportedProduct(product);
     List<PdeProductionSlot> slots =
         slotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug());
     Map<Long, Experiment> experiments = loadExperiments(slots);
@@ -92,8 +100,8 @@ public class PdeVersionOverviewService {
         .toList();
   }
 
-  /** Impede que a tela específica de Opala seja alimentada por outro tipo de produto. */
-  private void validateOpalaProduct(Product product) {
+  /** Impede que a tela PDE seja alimentada por um tipo sem contrato produtivo suportado. */
+  private void validateSupportedProduct(Product product) {
     String typeCode =
         product.getProductTypeDefinition() == null
             ? null
@@ -102,13 +110,19 @@ public class PdeVersionOverviewService {
         product.getProductTypeDefinition() == null
             ? null
             : product.getProductTypeDefinition().getInternalName();
-    boolean opala =
-        OPALA_PRODUCT_TYPE_CODE.equalsIgnoreCase(typeCode)
-            || OPALA_PRODUCT_TYPE_INTERNAL_NAME.equalsIgnoreCase(internalName);
-    if (!opala) {
+    boolean supported =
+        containsIgnoreCase(SUPPORTED_PRODUCT_TYPE_CODES, typeCode)
+            || containsIgnoreCase(SUPPORTED_PRODUCT_TYPE_INTERNAL_NAMES, internalName);
+    if (!supported) {
       throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "Versões PDE estão disponíveis somente para produtos Opala.");
+          HttpStatus.CONFLICT,
+          "Versões PDE estão disponíveis somente para produtos Opala ou Safira.");
     }
+  }
+
+  /** Compara códigos canônicos sem depender da capitalização persistida em cadastros legados. */
+  private boolean containsIgnoreCase(Set<String> supportedValues, String value) {
+    return value != null && supportedValues.stream().anyMatch(item -> item.equalsIgnoreCase(value));
   }
 
   /** Carrega em lote os experimentos que contextualizam as versões cadastradas. */
@@ -133,8 +147,13 @@ public class PdeVersionOverviewService {
       Experiment experiment,
       PdeProductionSlotVideoPanelDto videoPanel) {
     JsonNode contract = readContract(slot);
-    int videoCount = videoPanel == null ? 0 : videoPanel.videos().size();
-    int approvedVideoCount =
+    List<ExperimentVideoAsset> experimentVideos =
+        slot.getSourceExperimentId() == null
+            ? List.of()
+            : videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(
+                slot.getSourceExperimentId());
+    int panelVideoCount = videoPanel == null ? 0 : videoPanel.videos().size();
+    int panelApprovedVideoCount =
         videoPanel == null
             ? 0
             : (int)
@@ -144,6 +163,10 @@ public class PdeVersionOverviewService {
                             video.status() == ExperimentVideoStatus.READY
                                 && video.reviewStatus() == ExperimentVideoReviewStatus.APPROVED)
                     .count();
+    int contractVideoCount = contractVideoIds(contract).size();
+    int contractApprovedVideoCount = approvedContractVideoCount(contract, experimentVideos);
+    int videoCount = Math.max(panelVideoCount, contractVideoCount);
+    int approvedVideoCount = Math.max(panelApprovedVideoCount, contractApprovedVideoCount);
     String hypothesis =
         firstText(
             experiment == null ? null : experiment.getHypothesis(), product.getPrimaryHypothesis());
@@ -162,14 +185,12 @@ public class PdeVersionOverviewService {
             videoCount,
             approvedVideoCount,
             contract,
-            slot.getSourceExperimentId() == null
-                ? List.of()
-                : videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(
-                    slot.getSourceExperimentId()));
+            experimentVideos);
     boolean canPreparePublication =
-        PdeV12PublicationPolicy.appliesTo(slot)
-            && slot.getStatus() == PdeProductionSlotStatus.CANDIDATE
-            && pendingItems.stream().allMatch("Concluir a homologação comercial da v12."::equals);
+        slot.getStatus() == PdeProductionSlotStatus.CANDIDATE
+            && pendingItems.size() == 1
+            && ("Concluir a homologação comercial da v12.".equals(pendingItems.get(0))
+                || GENERIC_HOMOLOGATION_PENDING.equals(pendingItems.get(0)));
     boolean canPublishContract =
         pendingItems.isEmpty()
             && (slot.getStatus() == PdeProductionSlotStatus.READY
@@ -279,8 +300,32 @@ public class PdeVersionOverviewService {
     }
     if (slot.getStatus() != PdeProductionSlotStatus.READY
         && slot.getStatus() != PdeProductionSlotStatus.ACTIVE) {
-      pending.add("Concluir a homologação comercial.");
+      pending.add(GENERIC_HOMOLOGATION_PENDING);
     }
+  }
+
+  /** Lista os ativos que o contrato candidato vincula explicitamente à experiência exibida. */
+  private Set<Long> contractVideoIds(JsonNode contract) {
+    if (contract == null || !contract.path("heroVideos").isArray()) return Set.of();
+    java.util.LinkedHashSet<Long> ids = new java.util.LinkedHashSet<>();
+    for (JsonNode video : contract.path("heroVideos")) {
+      if (video.path("experimentVideoAssetId").canConvertToLong()) {
+        ids.add(video.path("experimentVideoAssetId").longValue());
+      }
+    }
+    return Set.copyOf(ids);
+  }
+
+  /** Conta somente vídeos do experimento que o contrato vincula e a revisão aprovou. */
+  private int approvedContractVideoCount(
+      JsonNode contract, List<ExperimentVideoAsset> experimentVideos) {
+    Set<Long> ids = contractVideoIds(contract);
+    return (int)
+        experimentVideos.stream()
+            .filter(video -> ids.contains(video.getId()))
+            .filter(video -> video.getStatus() == ExperimentVideoStatus.READY)
+            .filter(video -> video.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED)
+            .count();
   }
 
   /** Monta a trajetória ordenada e destaca a primeira etapa ainda não comprovada. */

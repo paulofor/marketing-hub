@@ -192,6 +192,31 @@ test("workflow, proxy e smoke publicam Mira sem operar Vega", async () => {
   assert.match(proxyValidation, /force-recreate --no-deps --wait pde-platform-frontend-mira/);
 });
 
+test("Mira comercial possui imagem, rota e smoke próprios", async () => {
+  const [workflow, proxy, smoke, smokeTest, reload] = await Promise.all([
+    source(".github/workflows/pde-platform-metodo-musa-ci.yml"),
+    source("lead-portal-payments-service/nginx.conf"),
+    source("pde-platform/scripts/run-targeted-production-smokes.sh"),
+    source("pde-platform/scripts/test-targeted-production-smokes.sh"),
+    source("pde-platform/scripts/reload-published-frontend-proxies.sh"),
+  ]);
+
+  for (const marker of [
+    "FRONTEND_MIRA_COMMERCIAL_IMAGE_NAME: pde-platform-frontend-mira-commercial",
+    "PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT",
+    "Dockerfile.mira-commercial",
+    "mira-commercial-v1",
+    "https://mira.digicomdigital.com.br",
+  ]) {
+    assert.ok(workflow.includes(marker), `[ARQUITETURA] Workflow sem ${marker}`);
+  }
+  assert.match(proxy, /mira\.digicomdigital\.com\.br/);
+  assert.match(proxy, /pde-platform-frontend-mira-commercial:80/);
+  assert.match(smoke, /validate_mira_commercial/);
+  assert.match(smokeTest, /run_target mira-commercial/);
+  assert.match(reload, /pde-platform-frontend-mira-commercial/);
+});
+
 test("a regra está na fonte canônica e na homologação técnica", async () => {
   const [platformCanon, chainCanon, validationCanon] = await Promise.all([
     source("docs/canonical/pde-platform-canon.v1.md"),

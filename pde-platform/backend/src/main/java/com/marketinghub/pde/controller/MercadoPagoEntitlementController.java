@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Recebe do serviço oficial a aprovação ou revogação financeira do Kit WhatsApp Pronto. */
+/** Recebe do serviço oficial a aprovação ou revogação financeira de PDEs pagos. */
 @RestController
 @RequestMapping("/api/internal/pde/mercado-pago/entitlements")
 public class MercadoPagoEntitlementController {
@@ -21,7 +21,7 @@ public class MercadoPagoEntitlementController {
     private final RigelPaidEntitlementService entitlementService;
     private final AccessService accessService;
 
-    /** Configura a autenticação interna e a guarda financeira única do produto Rigel. */
+    /** Configura a autenticação interna e a guarda financeira dos produtos suportados. */
     public MercadoPagoEntitlementController(
             MercadoPagoEntitlementAuthorizer authorizer,
             RigelPaidEntitlementService entitlementService,
@@ -43,7 +43,10 @@ public class MercadoPagoEntitlementController {
         if ("refunded".equalsIgnoreCase(result.paymentStatus())
                 || "charged_back".equalsIgnoreCase(result.paymentStatus())) {
             accessService.revokeMercadoPagoPaidAccess(
-                    request.buyerEmail(), result.transactionId(), result.paymentStatus());
+                    request.externalReference(),
+                    request.buyerEmail(),
+                    result.transactionId(),
+                    result.paymentStatus());
         }
         return result;
     }

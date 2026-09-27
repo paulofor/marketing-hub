@@ -18,6 +18,7 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.net.http.HttpClient;
+import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Instant;
@@ -227,6 +228,140 @@ class PdeProductionSlotServiceTest {
     assertThat(slot.getStatus()).isEqualTo(PdeProductionSlotStatus.READY);
   }
 
+  /** Deve homologar Mira somente com oferta, checkout, vídeo e validação da mesma candidata. */
+  @Test
+  void preparesAlignedMiraCommercialCandidateWithoutActivatingIt() {
+    PdeProductionSlot slot = miraSlot(PdeProductionSlotStatus.CANDIDATE, false);
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, experimentRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("pde-planejado-36", "v1"))
+        .thenReturn(Optional.of(slot));
+    when(experimentRepository.findById(93L)).thenReturn(Optional.of(miraExperiment()));
+    when(videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(93L))
+        .thenReturn(List.of(miraVideo()));
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var result = service.prepareProductionSlotForPublication("pde-planejado-36", "v1");
+
+    assertThat(result.status()).isEqualTo(PdeProductionSlotStatus.READY);
+    assertThat(result.publishedExperienceJson()).isNull();
+  }
+
+  /** Deve ativar Mira somente depois que o contrato homologado foi publicado. */
+  @Test
+  void activatesPublishedMiraWithoutCreatingMediaCampaign() {
+    PdeProductionSlot slot = miraSlot(PdeProductionSlotStatus.READY, true);
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, experimentRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("pde-planejado-36", "v1"))
+        .thenReturn(Optional.of(slot));
+    when(experimentRepository.findById(93L)).thenReturn(Optional.of(miraExperiment()));
+    when(videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(93L))
+        .thenReturn(List.of(miraVideo()));
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var result = service.activateProductionSlot("pde-planejado-36", "v1");
+
+    assertThat(result.status()).isEqualTo(PdeProductionSlotStatus.ACTIVE);
+    assertThat(result.sourceExperimentId()).isEqualTo(93L);
+  }
+
+  /** Deve bloquear a homologação quando o vídeo do contrato não é o ativo aprovado. */
+  @Test
+  void blocksMiraPreparationWithUnapprovedVideo() {
+    PdeProductionSlot slot = miraSlot(PdeProductionSlotStatus.CANDIDATE, false);
+    ExperimentVideoAsset rejected = miraVideo();
+    rejected.setReviewStatus(ExperimentVideoReviewStatus.REJECTED);
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, experimentRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("pde-planejado-36", "v1"))
+        .thenReturn(Optional.of(slot));
+    when(experimentRepository.findById(93L)).thenReturn(Optional.of(miraExperiment()));
+    when(videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(93L))
+        .thenReturn(List.of(rejected));
+
+    assertThatThrownBy(() -> service.prepareProductionSlotForPublication("pde-planejado-36", "v1"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("vídeo aprovado exato");
+  }
+
+  /**
+   * Deve impedir que Mira pule o preflight ao tentar salvar a candidata diretamente como pronta.
+   */
+  @Test
+  void blocksDirectMiraReadyTransitionWithoutValidation() {
+    PdeProductionSlot slot = miraSlot(PdeProductionSlotStatus.CANDIDATE, false);
+    slot.setValidationStatus(null);
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, experimentRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("pde-planejado-36", "v1"))
+        .thenReturn(Optional.of(slot));
+    when(experimentRepository.findById(93L)).thenReturn(Optional.of(miraExperiment()));
+    when(videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(93L))
+        .thenReturn(List.of(miraVideo()));
+
+    assertThatThrownBy(
+            () ->
+                service.saveProductionSlot(
+                    "pde-planejado-36",
+                    93L,
+                    new PostDeployPdeProductionSlotRequestDto(
+                        "v1",
+                        null,
+                        "mira.digicomdigital.com.br",
+                        "https://mira.digicomdigital.com.br",
+                        "https://mira.digicomdigital.com.br/api",
+                        "mira-commercial-v1",
+                        "mira-routine-v1",
+                        "production-v1",
+                        PdeProductionSlotStatus.READY,
+                        93L,
+                        "Mira comercial",
+                        miraContract(),
+                        null)))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Validar a URL e a jornada pública");
+  }
+
+  /** Deve preservar versões legadas fora do gate comercial exclusivo de Mira. */
+  @Test
+  void keepsLegacyPublicationBehaviorOutsideGovernedCommercialVersions() {
+    PdeProductionSlot slot =
+        PdeProductionSlot.builder()
+            .id(11L)
+            .slotCode("v1")
+            .productSlug("produto-legado")
+            .domain("produto-legado.digicomdigital.com.br")
+            .publicUrl("https://produto-legado.digicomdigital.com.br")
+            .experienceVersion("produto-legado-v1")
+            .layoutKey("legacy-layout")
+            .status(PdeProductionSlotStatus.ACTIVE)
+            .sourceExperimentId(71L)
+            .build();
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, experimentRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("produto-legado", "v1"))
+        .thenReturn(Optional.of(slot));
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var result =
+        service.publishProductionSlotContract(
+            "produto-legado",
+            "v1",
+            new PublishPdeProductionSlotContractRequest(
+                "{\"slug\":\"produto-legado\"}", "Marketing Hub"));
+
+    assertThat(result.publishedExperienceJson()).contains("produto-legado-v1");
+  }
+
   /** Deve exigir nova homologação quando o rascunho validado da v12 for alterado. */
   @Test
   void clearsV12ValidationEvidenceWhenCandidateArtifactChanges() {
@@ -390,6 +525,63 @@ class PdeProductionSlotServiceTest {
           "commercialCheckout":{"provider":"PEPPER","checkoutUrl":"https://go.pepper.com.br/owm6x","priceBrl":67,"currency":"BRL","billingModel":"ONE_TIME"},
           "supportMaterials":[{"url":"/materials/musa-v12/mapa-dos-7-sinais.html"}],
           "heroVideos":[{"experimentVideoAssetId":42,"experienceVersion":"musa-pde-entry-v12-primeiro-ajuste-aplicavel","status":"READY","reviewStatus":"APPROVED","hlsPlaybackUrl":"https://cdn.example/hero-v12.m3u8"}]
+        }
+        """;
+  }
+
+  /** Monta o slot comercial de Mira com o mesmo contrato usado na oferta do experimento 93. */
+  private PdeProductionSlot miraSlot(PdeProductionSlotStatus status, boolean published) {
+    return PdeProductionSlot.builder()
+        .id(10L)
+        .slotCode("v1")
+        .productSlug("pde-planejado-36")
+        .domain("mira.digicomdigital.com.br")
+        .publicUrl("https://mira.digicomdigital.com.br")
+        .backendUrl("https://mira.digicomdigital.com.br/api")
+        .experienceVersion("mira-commercial-v1")
+        .layoutKey("mira-routine-v1")
+        .targetEnvironment("production-v1")
+        .status(status)
+        .sourceExperimentId(93L)
+        .draftExperienceJson(miraContract())
+        .publishedExperienceJson(published ? miraContract() : null)
+        .validationStatus("OK")
+        .build();
+  }
+
+  /** Monta a oferta persistida de Mira que o contrato candidato precisa reproduzir. */
+  private Experiment miraExperiment() {
+    return Experiment.builder()
+        .id(93L)
+        .product(com.marketinghub.product.Product.builder().slug("pde-planejado-36").build())
+        .unitPrice(new java.math.BigDecimal("49"))
+        .primaryCta("Organizar minha rotina por R$ 49")
+        .commercialCheckoutUrl("https://checkout.example/mira")
+        .build();
+  }
+
+  /** Monta o vídeo vertical aprovado e vinculado à oferta de Mira. */
+  private ExperimentVideoAsset miraVideo() {
+    return ExperimentVideoAsset.builder()
+        .id(47L)
+        .slot(ExperimentVideoSlot.AD)
+        .status(ExperimentVideoStatus.READY)
+        .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+        .assetUrl("https://cdn.example/mira-v1.mp4")
+        .hlsPlaybackUrl("https://cdn.example/mira-v1.m3u8")
+        .build();
+  }
+
+  /** Declara a identidade, oferta e prova audiovisual mínimas da candidata comercial de Mira. */
+  private String miraContract() {
+    return """
+        {
+          "slug":"pde-planejado-36",
+          "experienceVersion":"mira-commercial-v1",
+          "layoutKey":"mira-routine-v1",
+          "commercialBinding":{"experimentId":93,"primaryCta":"Organizar minha rotina por R$ 49","priceBrl":49,"billingModel":"ONE_TIME"},
+          "commercialCheckout":{"provider":"PEPPER","checkoutUrl":"https://checkout.example/mira","priceBrl":49,"currency":"BRL","billingModel":"ONE_TIME"},
+          "heroVideos":[{"experimentVideoAssetId":47,"experienceVersion":"mira-commercial-v1","playbackUrl":"https://cdn.example/mira-v1.mp4","hlsPlaybackUrl":"https://cdn.example/mira-v1.m3u8","status":"READY","reviewStatus":"APPROVED"}]
         }
         """;
   }
@@ -650,6 +842,66 @@ class PdeProductionSlotServiceTest {
             org.mockito.ArgumentMatchers.any());
   }
 
+  /** Deve validar a entrega candidata sem consultar a oferta que ainda aguarda o checkout. */
+  @Test
+  void recordsDeliveryReadyBeforeCommercialCheckoutExists() throws Exception {
+    PdeProductionSlot slot =
+        PdeProductionSlot.builder()
+            .id(10L)
+            .slotCode("v1")
+            .productSlug("pde-planejado-36")
+            .domain("mira.digicomdigital.com.br")
+            .publicUrl("https://mira.digicomdigital.com.br")
+            .experienceVersion("mira-commercial-v1")
+            .targetEnvironment("production-mira-commercial")
+            .status(PdeProductionSlotStatus.CANDIDATE)
+            .sourceExperimentId(93L)
+            .build();
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("pde-planejado-36", "v1"))
+        .thenReturn(Optional.of(slot));
+    HttpResponse<String> healthResponse = response(200, "{\"status\":\"UP\"}");
+    HttpResponse<String> contractResponse =
+        response(
+            200,
+            "{\"slug\":\"pde-planejado-36\",\"healthPath\":\"/\",\"commercialOfferPath\":\"/api/pde/products/pde-planejado-36/commercial-offer\",\"integrationContractPath\":\"/api/pde/products/pde-planejado-36/integration-contract\",\"requiredTexts\":[\"Organize sua rotina\"],\"requiredAssets\":[\"/media/mira-commercial-demo-v1.mp4\",\"/media/mira-commercial-demo-v1-poster.jpg\"]}");
+    HttpResponse<String> integrationResponse =
+        response(
+            200,
+            "{\"productSlug\":\"pde-planejado-36\",\"experienceVersion\":\"mira-commercial-v1\",\"contractVersion\":\"PDE_COMMERCIAL_JOURNEY_EVENTS_V1\",\"eventsPath\":\"/api/pde/access/events\",\"analyticsSummaryPath\":\"/api/pde/access/analytics/{productSlug}/summary\",\"loginPath\":\"/api/pde/access/login-link\",\"workspacePathTemplate\":\"/api/pde/access/workspace\",\"missionCompletionPathTemplate\":\"/api/pde/access/missions/{missionId}/complete\",\"requiredEventTypes\":[\"PAGE_VIEW\",\"VALUE_MOMENT\",\"CTA_VIEWED\",\"CHECKOUT_STARTED\",\"PURCHASE_COMPLETED\",\"ACCESS_RELEASED\",\"MISSION_COMPLETED\",\"FIRST_USE\",\"REFUND_CONFIRMED\"],\"correlationKeys\":[\"eventId\",\"productSlug\",\"experienceVersion\",\"sessionId\",\"visitorId\",\"accessReferenceHash\"],\"sourceOfTruth\":\"pde_funnel_event\",\"testTrafficPolicy\":\"trafficQuality=INTERNAL_QA\"}");
+    HttpResponse<String> pageResponse =
+        response(
+            200,
+            "<html><body><div id=\"root\"></div><script type=\"module\" src=\"/assets/mira.js\"></script></body></html>");
+    HttpResponse<String> scriptResponse = response(200, "const headline = 'Organize sua rotina';");
+    HttpResponse<String> videoResponse = response(200, "", "video/mp4");
+    HttpResponse<String> posterResponse = response(200, "", "image/jpeg");
+    org.mockito.Mockito.doReturn(healthResponse)
+        .doReturn(contractResponse)
+        .doReturn(integrationResponse)
+        .doReturn(pageResponse)
+        .doReturn(scriptResponse)
+        .doReturn(videoResponse)
+        .doReturn(posterResponse)
+        .when(httpClient)
+        .send(
+            org.mockito.ArgumentMatchers.any(HttpRequest.class),
+            org.mockito.ArgumentMatchers.any());
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var response = service.validateDeliveryCandidate("pde-planejado-36", "v1");
+
+    assertThat(response.validationStatus()).isEqualTo("DELIVERY_READY");
+    assertThat(response.validationSummary()).isEqualTo("Entrega candidata pronta para checkout");
+    org.mockito.Mockito.verify(httpClient, org.mockito.Mockito.times(7))
+        .send(
+            org.mockito.ArgumentMatchers.any(HttpRequest.class),
+            org.mockito.ArgumentMatchers.any());
+  }
+
   /** Deve rejeitar contrato público que exponha token bruto como chave de correlação. */
   @Test
   void rejectsCommercialPdeThatDeclaresRawAccessToken() throws Exception {
@@ -868,6 +1120,19 @@ class PdeProductionSlotServiceTest {
     HttpResponse<String> response = org.mockito.Mockito.mock(HttpResponse.class);
     org.mockito.Mockito.lenient().when(response.statusCode()).thenReturn(statusCode);
     org.mockito.Mockito.lenient().when(response.body()).thenReturn(body);
+    return response;
+  }
+
+  /** Cria resposta HTTP textual com Content-Type para validar mídia pública obrigatória. */
+  @SuppressWarnings("unchecked")
+  private HttpResponse<String> response(int statusCode, String body, String contentType) {
+    HttpResponse<String> response = org.mockito.Mockito.mock(HttpResponse.class);
+    org.mockito.Mockito.lenient().when(response.statusCode()).thenReturn(statusCode);
+    org.mockito.Mockito.lenient().when(response.body()).thenReturn(body);
+    org.mockito.Mockito.lenient()
+        .when(response.headers())
+        .thenReturn(
+            HttpHeaders.of(java.util.Map.of("content-type", List.of(contentType)), (a, b) -> true));
     return response;
   }
 }

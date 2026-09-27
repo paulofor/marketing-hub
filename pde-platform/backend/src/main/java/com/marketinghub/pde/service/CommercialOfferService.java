@@ -46,7 +46,15 @@ public class CommercialOfferService {
 
     /** Encaminha o slot derivado do host para manter a oferta atribuída à versão exibida. */
     public CommercialOfferResponse getOffer(String productSlug, String host) {
-        String slotCode = resolveSlotCode(host);
+        return getOffer(productSlug, host, "");
+    }
+
+    /** Usa o slot explícito do contrato quando o domínio comercial não carrega um número. */
+    public CommercialOfferResponse getOffer(
+            String productSlug, String host, String requestedSlotCode) {
+        String slotCode = StringUtils.hasText(requestedSlotCode)
+                ? requestedSlotCode.trim().toLowerCase()
+                : resolveSlotCode(host);
         for (String baseUrl : marketingHubBaseUrls) {
             try {
                 CommercialOfferResponse offer = restClientBuilder.clone()

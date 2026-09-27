@@ -78,6 +78,8 @@ for required_contract in \
   'FRONTEND_V8_IMAGE_NAME' \
   'PDE_PLATFORM_FRONTEND_MIRA_IMAGE=' \
   'PDE_PLATFORM_FRONTEND_MIRA_PORT=' \
+  'PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_IMAGE=' \
+  'PDE_PLATFORM_FRONTEND_MIRA_COMMERCIAL_PORT=' \
   'bootstrap-legacy-route' \
   'PDE_MIRA_PROXY_MODE' \
   'run-targeted-production-smokes.sh "${TARGETED_FRONTEND_VERSION}"'; do
@@ -118,6 +120,7 @@ for image_repository in \
   pde-platform-frontend-v7 \
   pde-platform-frontend-v8 \
   pde-platform-frontend-mira \
+  pde-platform-frontend-mira-commercial \
   pde-platform-frontend-kit-whatsapp \
   pde-ai-worker \
   pde-retention-worker; do
@@ -181,7 +184,8 @@ for chromium_mobile_config in \
   "${repository_root}/pde-platform/frontend/playwright.public.config.ts" \
   "${repository_root}/pde-platform/frontend/playwright.container-integration.config.ts" \
   "${repository_root}/pde-platform/frontend/playwright.local-integration.config.ts" \
-  "${repository_root}/pde-platform/frontend/playwright.mira.config.ts"; do
+  "${repository_root}/pde-platform/frontend/playwright.mira.config.ts" \
+  "${repository_root}/pde-platform/frontend/playwright.mira-commercial.config.ts"; do
   if ! grep -Eq "devices\[['\"]iPhone 15 Pro['\"]\], browserName: ['\"]chromium['\"]" \
     "${chromium_mobile_config}"; then
     echo "Erro: ${chromium_mobile_config} deve emular iPhone no Chromium, sem combinar WebKit com executável Chromium." >&2

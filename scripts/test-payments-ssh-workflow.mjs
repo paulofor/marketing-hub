@@ -42,27 +42,45 @@ for (const [program, args] of [['bash', ['-n']], ['shellcheck', ['-s', 'bash', '
   const check = spawnSync(program, args, { input: targetScript, encoding: 'utf8' });
   assert.equal(check.status, 0, check.stdout + check.stderr);
 }
-for (const [target, club, kit, success] of [
-  ['pde', 'false', 'false', true], ['public_payments', 'false', 'false', true],
-  ['public_payments', 'true', 'false', false], ['public_payments', 'false', 'true', false],
-  ['unknown', 'false', 'false', false],
+for (const [target, club, institutional, kit, mira, success] of [
+  ['pde', 'false', 'false', 'false', 'false', true],
+  ['pde', 'false', 'false', 'false', 'true', true],
+  ['public_payments', 'false', 'false', 'false', 'false', true],
+  ['public_payments', 'true', 'false', 'false', 'false', false],
+  ['public_payments', 'false', 'false', 'true', 'false', false],
+  ['public_payments', 'false', 'false', 'false', 'true', false],
+  ['pde', 'true', 'false', 'false', 'true', false],
+  ['unknown', 'false', 'false', 'false', 'false', false],
 ]) {
   const result = spawnSync('bash', ['-e'], {input: targetScript, encoding: 'utf8', env: {...process.env,
-    DEPLOYMENT_TARGET: target, ISSUE_CLUBEMUSA: club, ISSUE_KIT_WHATSAPP: kit}});
-  assert.equal(result.status === 0, success, `${target}/${club}/${kit}: ${result.stderr}`);
+    DEPLOYMENT_TARGET: target,
+    ISSUE_CLUBEMUSA: club,
+    ISSUE_DIGICOMDIGITAL: institutional,
+    ISSUE_KIT_WHATSAPP: kit,
+    ISSUE_MIRA: mira,
+  }});
+  assert.equal(
+    result.status === 0,
+    success,
+    `${target}/${club}/${institutional}/${kit}/${mira}: ${result.stderr}`,
+  );
 }
-console.log('Seleção de destino executada localmente: 5 casos, bash -n e ShellCheck.');
+console.log('Seleção de destino executada localmente: 8 casos, bash -n e ShellCheck.');
 
 // Um serviço de pagamentos pode responder 404 na raiz e servir o pós-compra corretamente.
 const publicStep = steps.find(step => step.includes('Validate public HTTPS proxy'));
-const probeLogic = publicStep.slice(publicStep.indexOf('          if [ "${{ inputs.deployment_target }}"')).split('          curl --fail')[0];
-for (const [target, institutional, expected] of [
-  ['public_payments', 'false', 'https://pagamentopalf.site/agenda-cheia/obrigado.html'],
-  ['pde', 'true', 'https://www.digicomdigital.com.br/'],
-  ['pde', 'false', 'https://kit-whatsapp-pronto.digicomdigital.com.br/'],
+const probeLogic = publicStep
+  .slice(publicStep.indexOf('          if [ "${{ inputs.deployment_target }}"'))
+  .split('          if [ "${{ inputs.issue_mira_certificate }}" = "true" ]; then')[0];
+for (const [target, institutional, mira, expected] of [
+  ['public_payments', 'false', 'false', 'https://pagamentopalf.site/agenda-cheia/obrigado.html'],
+  ['pde', 'true', 'false', 'https://www.digicomdigital.com.br/'],
+  ['pde', 'false', 'true', 'https://mira.digicomdigital.com.br/'],
+  ['pde', 'false', 'false', 'https://kit-whatsapp-pronto.digicomdigital.com.br/'],
 ]) {
   const script = probeLogic.replaceAll('${{ inputs.deployment_target }}', target)
-    .replaceAll('${{ inputs.issue_digicomdigital_certificate }}', institutional) + '\nprintf "%s" "$public_probe"\n';
+    .replaceAll('${{ inputs.issue_digicomdigital_certificate }}', institutional)
+    .replaceAll('${{ inputs.issue_mira_certificate }}', mira) + '\nprintf "%s" "$public_probe"\n';
   const result = spawnSync('bash', ['-e'], {input: script, encoding: 'utf8'});
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout, expected);

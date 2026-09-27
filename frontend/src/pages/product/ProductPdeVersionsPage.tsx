@@ -3,10 +3,12 @@ import { useQueries } from "@tanstack/react-query";
 import axios from "axios";
 import { Link, useParams } from "react-router-dom";
 import {
+  useActivateProductPdeProductionSlot,
   usePrepareProductPdeProductionSlot,
   useProductPdeProductionSlots,
   usePublishProductPdeProductionSlot,
   useSaveProductPdeProductionSlot,
+  useValidateProductPdeDeliveryCandidate,
   useValidateProductPdeProductionSlot,
 } from "../../api/product/usePdeProductionSlots";
 import {
@@ -37,6 +39,10 @@ const money = new Intl.NumberFormat("pt-BR", {
 });
 
 const layoutOptions = [
+  {
+    value: "mira-routine-v1",
+    label: "Mira · rotina comercial",
+  },
   {
     value: "assisted-service-v1",
     label: "Serviço assistido",
@@ -91,6 +97,18 @@ export function defaultPdeSlotForm(product?: {
       sourceExperimentId: "",
       status: "PLANNED",
       notes: "",
+    };
+  }
+  if (product.slug === "pde-planejado-36") {
+    return {
+      slotCode: "v1",
+      domain: "mira.digicomdigital.com.br",
+      experienceVersion: "mira-commercial-v1",
+      layoutKey: "mira-routine-v1",
+      sourceExperimentId: "93",
+      status: "CANDIDATE",
+      notes:
+        "Entrega comercial de Mira por R$ 49; mídia permanece desligada até autorização específica.",
     };
   }
   let layoutKey = "assisted-service-v1";
@@ -254,12 +272,14 @@ function isPausedSlot(slot: PostDeployPdeProductionSlot) {
 
 function validationBadgeClass(status?: string | null) {
   if (status === "OK") return "text-bg-success";
+  if (status === "DELIVERY_READY") return "text-bg-info";
   if (status === "FAILED") return "text-bg-danger";
   return "text-bg-secondary";
 }
 
 function validationLabel(status?: string | null) {
   if (status === "OK") return "Entrega OK";
+  if (status === "DELIVERY_READY") return "Pronta para checkout";
   if (status === "FAILED") return "Falhou";
   return "Não testada";
 }
@@ -288,8 +308,10 @@ export default function ProductPdeVersionsPage() {
   const versionsQuery = useProductPdeVersions(productId);
   const saveSlot = useSaveProductPdeProductionSlot(productId);
   const publishSlot = usePublishProductPdeProductionSlot(productId);
+  const activateSlot = useActivateProductPdeProductionSlot(productId);
   const preparePublication = usePrepareProductPdeProductionSlot(productId);
   const validateSlot = useValidateProductPdeProductionSlot(productId);
+  const validateDelivery = useValidateProductPdeDeliveryCandidate(productId);
   const product = productQuery.data;
   const slots = slotsQuery.data ?? [];
   const sourceExperimentIds = Array.from(
@@ -669,8 +691,13 @@ export default function ProductPdeVersionsPage() {
                 slots={activeSlots}
                 monitorsByExperimentId={monitorsByExperimentId}
                 onValidate={(slot) => validateSlot.mutate(slot.slotCode)}
+                onValidateDelivery={(slot) =>
+                  validateDelivery.mutate(slot.slotCode)
+                }
                 validatingSlotCode={validateSlot.variables}
                 isValidating={validateSlot.isPending}
+                validatingDeliverySlotCode={validateDelivery.variables}
+                isValidatingDelivery={validateDelivery.isPending}
               />
               <SlotTable
                 title="Versões pausadas ou encerradas"
@@ -678,8 +705,13 @@ export default function ProductPdeVersionsPage() {
                 slots={pausedSlots}
                 monitorsByExperimentId={monitorsByExperimentId}
                 onValidate={(slot) => validateSlot.mutate(slot.slotCode)}
+                onValidateDelivery={(slot) =>
+                  validateDelivery.mutate(slot.slotCode)
+                }
                 validatingSlotCode={validateSlot.variables}
                 isValidating={validateSlot.isPending}
+                validatingDeliverySlotCode={validateDelivery.variables}
+                isValidatingDelivery={validateDelivery.isPending}
               />
             </>
           )}
@@ -805,6 +837,21 @@ export default function ProductPdeVersionsPage() {
                 >
                   {publishSlot.isPending ? "Publicando..." : "Publicar no slot"}
                 </button>
+                {selectedVersion?.publishedContract &&
+                  selectedVersion.operationalStatus === "READY" && (
+                    <button
+                      type="button"
+                      className="btn btn-success btn-sm"
+                      onClick={() =>
+                        activateSlot.mutate(selectedVersion.slotCode)
+                      }
+                      disabled={activateSlot.isPending}
+                    >
+                      {activateSlot.isPending
+                        ? "Ativando..."
+                        : "Ativar versão pública"}
+                    </button>
+                  )}
                 <a
                   className="btn btn-outline-secondary btn-sm"
                   href={selectedEditorSlot?.publicUrl || "#"}
@@ -1080,16 +1127,22 @@ function SlotTable({
   slots,
   monitorsByExperimentId,
   onValidate,
+  onValidateDelivery,
   validatingSlotCode,
   isValidating,
+  validatingDeliverySlotCode,
+  isValidatingDelivery,
 }: {
   title: string;
   emptyMessage: string;
   slots: PostDeployPdeProductionSlot[];
   monitorsByExperimentId: Map<number, PostDeployMonitorResponse>;
   onValidate: (slot: PostDeployPdeProductionSlot) => void;
+  onValidateDelivery: (slot: PostDeployPdeProductionSlot) => void;
   validatingSlotCode?: string;
   isValidating: boolean;
+  validatingDeliverySlotCode?: string;
+  isValidatingDelivery: boolean;
 }) {
   return (
     <section className="mb-4">
@@ -1207,6 +1260,20 @@ function SlotTable({
                             {formatDate(slot.validationCheckedAt)}
                           </span>
                         )}
+                        <button
+                          type="button"
+                          className="btn btn-outline-info btn-sm"
+                          onClick={() => onValidateDelivery(slot)}
+                          disabled={
+                            isValidatingDelivery &&
+                            validatingDeliverySlotCode === slot.slotCode
+                          }
+                        >
+                          {isValidatingDelivery &&
+                          validatingDeliverySlotCode === slot.slotCode
+                            ? "Validando entrega..."
+                            : "Validar antes do checkout"}
+                        </button>
                         <button
                           type="button"
                           className="btn btn-outline-primary btn-sm"

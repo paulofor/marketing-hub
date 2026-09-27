@@ -1,0 +1,157 @@
+{
+  "contractVersion": "mira-commercial-homologation.v1",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 1,
+  "activityId": "pdeGate",
+  "sourceReference": "product:10@mira-commercial-v1",
+  "experimentId": 93,
+  "product": {
+    "id": 10,
+    "internalName": "Mira",
+    "commercialName": "Mira · sua rotina organizada",
+    "slug": "pde-planejado-36",
+    "experienceVersion": "mira-commercial-v1",
+    "commercialPlanId": 8,
+    "publicUrl": "https://mira.digicomdigital.com.br/"
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "boundary": "Autoriza publicar a entrega e a landing comercial de Mira sem criar campanha, verba, anúncio, compra de homologação ou autorização de mídia.",
+  "operationalState": {
+    "verifiedAt": "2026-09-27",
+    "experimentStatus": "PLANNED",
+    "commercialOfferExpected": true,
+    "deploymentAuthorized": true,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "reason": "Materializar a oferta de R$ 49 em uma superfície comercial isolada, com entrega comprovada antes do checkout e promoção governada pelo backend.",
+    "includedChanges": [
+      "Landing e área paga de Mira em imagem, container, porta, domínio e deploy próprios",
+      "Vídeo vertical determinístico de demonstração gerado no build versionado",
+      "Checkout Mercado Pago de R$ 49 correlacionado ao produto 10 e experimento 93",
+      "Preflight de entrega, validação comercial completa, publicação e ativação auditáveis",
+      "Persistência retomável, telemetria segregada, privacidade e revogação por reembolso"
+    ],
+    "excludedChanges": [
+      "Criação ou ativação de campanha, conjunto, anúncio, público ou orçamento de mídia",
+      "Compra real de homologação, venda declarada, receita ou margem presumida",
+      "Alteração da pesquisa privada Mira v3 ou das superfícies de Vega e Rigel"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "mira-commercial",
+    "publicUrl": "https://mira.digicomdigital.com.br/",
+    "requiredFrontendSourceSha256": "c32558dfd8437639e965e8744959e332a33075ac9eab1f396874c5620b3addfa"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_CHROMIUM",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "requiredFirstFoldCtas": [
+      "Quero organizar minha rotina por R$ 49"
+    ],
+    "requiredVisibleTexts": [
+      "Cuide de você com mais clareza, usando o que já tem.",
+      "duas organizações incluídas por R$ 49",
+      "Seu primeiro passo leva menos de um minuto."
+    ],
+    "runtimeIdentity": {
+      "version": "mira-commercial-v1",
+      "experienceVersion": "mira-commercial-v1",
+      "frontendSourceSha256": "c32558dfd8437639e965e8744959e332a33075ac9eab1f396874c5620b3addfa"
+    }
+  },
+  "mediaContract": {
+    "videoPath": "/media/mira-commercial-demo-v1.mp4",
+    "videoSha256": "2cc1063c4e07e11703ee2bcdbc544f05d27f404c9277a320799f8360b39393ae",
+    "posterPath": "/media/mira-commercial-demo-v1-poster.jpg",
+    "posterSha256": "7964614ac7a5c7e42006473be7c0deabff17f45281bd39ec05f30e9ab6d9a081",
+    "durationSeconds": 18,
+    "width": 1080,
+    "height": 1920,
+    "externalGenerationCostUsd": 0
+  },
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/frontend/src/MiraCommercialApp.tsx",
+      "sha256": "dfeaae14fb448c3c5eed2493515a4d9aa4fb38309389a0a62747fc612dc4fcc9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/generate-mira-commercial-video.sh",
+      "sha256": "aadafb04b45ad3bd43dff46b639ebf11cf5c6e63883d2f1b2ddd39c4c92163f9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/Dockerfile.mira-commercial",
+      "sha256": "6159fd00b0cae077b1c3d9b33f5207dd01066ca8d2420300084b457fd215210e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/mira/commercial/v1/MiraCommercialService.java",
+      "sha256": "f2cd423631c61322b90ee1ba81411d5251570539ffdc25ec92aa1372daaa6a29",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/mira/common/v1/MiraRoutinePolicy.java",
+      "sha256": "fab55d165932ae0014c0553983b48b04dfe6e0f54ab5d6641f8defb20853c90a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
+      "sha256": "f2667c4aea4bd5162454d72c5ea66abb7a9d54cedde9e1387a01ae2d2bd9ef14",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelPaidEntitlementService.java",
+      "sha256": "ad1516727bf3bd366e6c4aeb53f93e2ed4f18c4c66d4fa35f2e362f085be8d01",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/service/promotion/PdeCommercialPublicationPolicy.java",
+      "sha256": "13d2e3ec92e740be8721adc0b9ad6b823bb074ec4e65c7b75c4a6d66b597b485",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentCommercialCheckoutService.java",
+      "sha256": "eaa5cc3f72a9f173bdd2b455897229c276ddfc40f7249483890549d97cbb2724",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "lead-portal-payments-service/src/main/java/com/marketinghub/payments/service/PdePaymentEntitlementClient.java",
+      "sha256": "185fdac91df468281c3f4a00e4387c0205aae5dc5a3fecfd5237ba78272020ee",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/frontend/tests/mira-commercial-local.spec.ts",
+      "sha256": "c10864ff14c1c69f7ab7876e3d520ad3d6d47525ca2b840ed97d3417c499c10d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/mira/commercial/v1/MiraCommercialServiceTest.java",
+      "sha256": "0467e05f30cdd7934c4c82b7820159c08a91f1c0ffa8a56671c863d63981f2e9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/service/PdeProductionSlotServiceTest.java",
+      "sha256": "a4e5364f4b1110530f54d088aec963c3168cfa4896b38e67fbb70483eb201e92",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/experiment/service/ExperimentCommercialCheckoutServiceTest.java",
+      "sha256": "0de75d2bede20a8ad65a81af1991bbaf9be5b8d2d142d9d29347582b6ec02ef9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "lead-portal-payments-service/src/test/java/com/marketinghub/payments/service/PdePaymentEntitlementClientTest.java",
+      "sha256": "51b2f2079ad0a3f0c4d5e69110fd0db3b2b753b338d16770263408b00826e6d7",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/mira-commercial-v1.md"
+}

@@ -77,5 +77,6 @@ local/
 # Dependências e bundles locais do protótipo privado
 /customer-agent-worker/node_modules/
 /pde-platform/frontend/dist-vega/
+/pde-platform/frontend/public-mira-commercial/media/
 
 __pycache__/

@@ -11,6 +11,7 @@ import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.promotion.PdeCommercialPublicationPolicy;
 import com.marketinghub.pde.service.promotion.PdeV12PublicationPolicy;
 import com.marketinghub.pde.service.publishslotcontract.PublishPdeProductionSlotContractRequest;
 import com.marketinghub.pde.service.versionvideos.PdeProductionSlotVideoAssetDto;
@@ -49,6 +50,7 @@ public class PdeProductionSlotService {
   private static final String DEFAULT_PDE_PRODUCT_SLUG = "metodo-musa-7-dias";
   private static final Duration VALIDATION_TIMEOUT = Duration.ofSeconds(12);
   private static final String VALIDATION_OK = "OK";
+  private static final String VALIDATION_DELIVERY_READY = "DELIVERY_READY";
   private static final String VALIDATION_FAILED = "FAILED";
   private static final String DEFAULT_LAYOUT_KEY = "video-explicativo";
   private static final String JOURNEY_EVENT_CONTRACT_VERSION = "PDE_COMMERCIAL_JOURNEY_EVENTS_V1";
@@ -136,7 +138,7 @@ public class PdeProductionSlotService {
         repository
             .findByProductSlugAndSlotCode(resolvedProductSlug, slotCode)
             .orElseGet(PdeProductionSlot::new);
-    V12ValidationFingerprint previousFingerprint = V12ValidationFingerprint.from(slot);
+    ValidationFingerprint previousFingerprint = ValidationFingerprint.from(slot);
     slot.setSlotCode(slotCode);
     slot.setProductSlug(resolvedProductSlug);
     slot.setDomain(domain);
@@ -157,13 +159,13 @@ public class PdeProductionSlotService {
             ? request.sourceExperimentId()
             : defaultSourceExperimentId);
     slot.setNotes(StringUtils.hasText(request.notes()) ? request.notes().trim() : null);
-    slot.setDraftExperienceJson(normalizeOptionalJson(request.draftExperienceJson()));
-    if (slot.getId() != null
-        && PdeV12PublicationPolicy.appliesTo(slot)
-        && !previousFingerprint.equals(V12ValidationFingerprint.from(slot))) {
+    if (request.draftExperienceJson() != null) {
+      slot.setDraftExperienceJson(normalizeOptionalJson(request.draftExperienceJson()));
+    }
+    if (slot.getId() != null && !previousFingerprint.equals(ValidationFingerprint.from(slot))) {
       clearValidationEvidence(slot);
     }
-    validateV12StatusTransition(slot);
+    validateGovernedStatusTransition(slot);
     return toProductionSlotDto(repository.save(slot));
   }
 
@@ -189,7 +191,7 @@ public class PdeProductionSlotService {
             slot.getExperienceVersion(),
             slot.getLayoutKey());
     validatePublishedContractIdentity(slot, normalizedContract);
-    validateV12Publication(slot, normalizedContract);
+    validateCommercialPublication(slot, normalizedContract);
     slot.setDraftExperienceJson(normalizedContract);
     slot.setPublishedExperienceJson(normalizedContract);
     slot.setPublishedBy(
@@ -198,7 +200,7 @@ public class PdeProductionSlotService {
     return toProductionSlotDto(repository.save(slot));
   }
 
-  /** Promove a candidata v12 a homologada somente quando todos os vínculos já foram comprovados. */
+  /** Promove uma candidata a homologada somente quando todos os vínculos já foram comprovados. */
   public PostDeployPdeProductionSlotDto prepareProductionSlotForPublication(
       String productSlug, String slotCode) {
     String resolvedProductSlug = resolveProductSlug(productSlug);
@@ -209,45 +211,103 @@ public class PdeProductionSlotService {
             .findByProductSlugAndSlotCode(resolvedProductSlug, normalizedSlotCode)
             .orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Slot PDE não encontrado"));
-    if (!PdeV12PublicationPolicy.appliesTo(slot)) {
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "A preparação automática está disponível somente para a Vega v12");
-    }
     if (slot.getStatus() == PdeProductionSlotStatus.ACTIVE
         || slot.getStatus() == PdeProductionSlotStatus.READY) {
       return toProductionSlotDto(slot);
     }
     if (slot.getStatus() != PdeProductionSlotStatus.CANDIDATE) {
       throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "Somente a candidata v12 pode concluir a preparação comercial");
+          HttpStatus.CONFLICT, "Somente uma candidata pode concluir a preparação comercial");
     }
-    rejectV12Blockers(
-        v12Blockers(slot, readPublicationContract(slot, slot.getDraftExperienceJson()), false));
+    JsonNode contract = readPublicationContract(slot, slot.getDraftExperienceJson());
+    if (PdeV12PublicationPolicy.appliesTo(slot)) {
+      rejectV12Blockers(v12Blockers(slot, contract, false));
+    } else if (PdeCommercialPublicationPolicy.appliesTo(slot)) {
+      rejectCommercialBlockers(commercialBlockers(slot, contract, false));
+    } else {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A preparação automática não está disponível para esta versão PDE");
+    }
     slot.setStatus(PdeProductionSlotStatus.READY);
     return toProductionSlotDto(repository.save(slot));
   }
 
-  /** Bloqueia a homologação ou ativação da v12 enquanto algum vínculo comercial divergir. */
-  private void validateV12StatusTransition(PdeProductionSlot slot) {
-    if (!PdeV12PublicationPolicy.appliesTo(slot)
-        || (slot.getStatus() != PdeProductionSlotStatus.READY
-            && slot.getStatus() != PdeProductionSlotStatus.ACTIVE)) {
+  /** Ativa uma versão pronta somente depois da publicação e da validação comercial completas. */
+  public PostDeployPdeProductionSlotDto activateProductionSlot(
+      String productSlug, String slotCode) {
+    String resolvedProductSlug = resolveProductSlug(productSlug);
+    String normalizedSlotCode =
+        normalizeRequired(slotCode, "Código do slot PDE obrigatório").toLowerCase(Locale.ROOT);
+    PdeProductionSlot slot =
+        repository
+            .findByProductSlugAndSlotCode(resolvedProductSlug, normalizedSlotCode)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Slot PDE não encontrado"));
+    if (slot.getStatus() == PdeProductionSlotStatus.ACTIVE) {
+      return toProductionSlotDto(slot);
+    }
+    if (slot.getStatus() != PdeProductionSlotStatus.READY) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Somente uma versão homologada pode ser ativada");
+    }
+    String publishedContract =
+        normalizeRequired(
+            slot.getPublishedExperienceJson(), "Publique o contrato homologado antes de ativar");
+    validatePublishedContractIdentity(slot, publishedContract);
+    JsonNode contract = readPublicationContract(slot, publishedContract);
+    if (PdeV12PublicationPolicy.appliesTo(slot)) {
+      rejectV12Blockers(v12Blockers(slot, contract, true));
+    } else if (PdeCommercialPublicationPolicy.appliesTo(slot)) {
+      rejectCommercialBlockers(commercialBlockers(slot, contract, true));
+    } else {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A ativação automática não está disponível para esta versão PDE");
+    }
+    slot.setStatus(PdeProductionSlotStatus.ACTIVE);
+    return toProductionSlotDto(repository.save(slot));
+  }
+
+  /** Bloqueia promoção direta de versões governadas quando os vínculos comerciais divergem. */
+  private void validateGovernedStatusTransition(PdeProductionSlot slot) {
+    if (slot.getStatus() != PdeProductionSlotStatus.READY
+        && slot.getStatus() != PdeProductionSlotStatus.ACTIVE) {
       return;
     }
-    JsonNode contract = readPublicationContract(slot, slot.getDraftExperienceJson());
-    List<String> blockers = v12Blockers(slot, contract, false);
+    String contractJson =
+        slot.getStatus() == PdeProductionSlotStatus.ACTIVE
+            ? slot.getPublishedExperienceJson()
+            : slot.getDraftExperienceJson();
+    JsonNode contract = readPublicationContract(slot, contractJson);
+    if (PdeV12PublicationPolicy.appliesTo(slot)) {
+      List<String> blockers = v12Blockers(slot, contract, false);
+      if (slot.getStatus() == PdeProductionSlotStatus.ACTIVE
+          && !StringUtils.hasText(slot.getPublishedExperienceJson())) {
+        blockers = new java.util.ArrayList<>(blockers);
+        blockers.add("Publicar o contrato homologado da própria v12 antes de ativar o slot.");
+      }
+      rejectV12Blockers(blockers);
+      return;
+    }
+    if (!PdeCommercialPublicationPolicy.appliesTo(slot)) return;
+    List<String> blockers = commercialBlockers(slot, contract, false);
     if (slot.getStatus() == PdeProductionSlotStatus.ACTIVE
         && !StringUtils.hasText(slot.getPublishedExperienceJson())) {
       blockers = new java.util.ArrayList<>(blockers);
-      blockers.add("Publicar o contrato homologado da própria v12 antes de ativar o slot.");
+      blockers.add("Publicar o contrato homologado da própria versão antes de ativar o slot.");
     }
-    rejectV12Blockers(blockers);
+    rejectCommercialBlockers(blockers);
   }
 
-  /** Impede publicar um snapshot v12 antes da homologação e da coerência ponta a ponta. */
-  private void validateV12Publication(PdeProductionSlot slot, String contractJson) {
-    if (!PdeV12PublicationPolicy.appliesTo(slot)) return;
-    rejectV12Blockers(v12Blockers(slot, readPublicationContract(slot, contractJson), true));
+  /** Impede publicar um snapshot antes da homologação e da coerência ponta a ponta. */
+  private void validateCommercialPublication(PdeProductionSlot slot, String contractJson) {
+    JsonNode contract = readPublicationContract(slot, contractJson);
+    if (PdeV12PublicationPolicy.appliesTo(slot)) {
+      rejectV12Blockers(v12Blockers(slot, contract, true));
+      return;
+    }
+    if (PdeCommercialPublicationPolicy.appliesTo(slot)) {
+      rejectCommercialBlockers(commercialBlockers(slot, contract, true));
+    }
   }
 
   /** Reúne experimento e mídias persistidos para avaliar a mesma candidata. */
@@ -263,6 +323,19 @@ public class PdeProductionSlotService {
         slot, experiment, videos, contract, requireHomologation);
   }
 
+  /** Reúne experimento e vídeo para avaliar uma candidata comercial genérica. */
+  private List<String> commercialBlockers(
+      PdeProductionSlot slot, JsonNode contract, boolean requireHomologation) {
+    if (experimentRepository == null || slot.getSourceExperimentId() == null) {
+      return List.of("Vincular contrato, slot e oferta ao mesmo experimento.");
+    }
+    var experiment = experimentRepository.findById(slot.getSourceExperimentId()).orElse(null);
+    List<ExperimentVideoAsset> videos =
+        videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(slot.getSourceExperimentId());
+    return PdeCommercialPublicationPolicy.blockers(
+        slot, experiment, videos, contract, requireHomologation);
+  }
+
   /** Lê o contrato candidato e falha fechado quando o JSON não representa um objeto. */
   private JsonNode readPublicationContract(PdeProductionSlot slot, String contractJson) {
     if (!StringUtils.hasText(contractJson)) return objectMapper.createObjectNode();
@@ -270,12 +343,12 @@ public class PdeProductionSlotService {
       return objectMapper.readTree(contractJson);
     } catch (IOException ex) {
       log.error(
-          "Falha ao validar contrato candidato da Vega v12: productSlug={}, slotCode={}, experienceVersion={}",
+          "Falha ao validar contrato candidato PDE: productSlug={}, slotCode={}, experienceVersion={}",
           slot.getProductSlug(),
           slot.getSlotCode(),
           slot.getExperienceVersion(),
           ex);
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "Contrato da v12 inválido", ex);
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Contrato da versão PDE inválido", ex);
     }
   }
 
@@ -284,6 +357,14 @@ public class PdeProductionSlotService {
     if (blockers.isEmpty()) return;
     throw new ResponseStatusException(
         HttpStatus.CONFLICT, "A v12 ainda não pode ser publicada: " + String.join(" ", blockers));
+  }
+
+  /** Retorna todas as causas comerciais genéricas sem promover parcialmente a versão. */
+  private void rejectCommercialBlockers(List<String> blockers) {
+    if (blockers.isEmpty()) return;
+    throw new ResponseStatusException(
+        HttpStatus.CONFLICT,
+        "A versão ainda não pode ser publicada: " + String.join(" ", blockers));
   }
 
   /** Invalida a homologação quando URL, versão, artefato ou vínculo comercial da v12 muda. */
@@ -417,6 +498,18 @@ public class PdeProductionSlotService {
   /** Valida por HTTP se a URL produtiva entrega o contrato público declarado para o PDE. */
   public PostDeployPdeProductionSlotDto validateProductionSlot(
       String productSlug, String slotCode) {
+    return validateProductionSlot(productSlug, slotCode, ValidationMode.COMMERCIAL_COMPLETE);
+  }
+
+  /** Valida a entrega candidata antes de existir checkout, sem publicar ou ativar o slot. */
+  public PostDeployPdeProductionSlotDto validateDeliveryCandidate(
+      String productSlug, String slotCode) {
+    return validateProductionSlot(productSlug, slotCode, ValidationMode.DELIVERY_CANDIDATE);
+  }
+
+  /** Executa o modo de validação solicitado e persiste toda a evidência observada. */
+  private PostDeployPdeProductionSlotDto validateProductionSlot(
+      String productSlug, String slotCode, ValidationMode mode) {
     String resolvedProductSlug = resolveProductSlug(productSlug);
     String normalizedSlotCode =
         normalizeRequired(slotCode, "Código do slot PDE obrigatório").toLowerCase(Locale.ROOT);
@@ -426,7 +519,7 @@ public class PdeProductionSlotService {
             .orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Slot PDE não encontrado"));
     try {
-      ValidationResult result = validateSlotDelivery(slot);
+      ValidationResult result = validateSlotDelivery(slot, mode);
       applyValidationResult(slot, result);
       return toProductionSlotDto(repository.save(slot));
     } catch (IOException ex) {
@@ -720,7 +813,7 @@ public class PdeProductionSlotService {
   }
 
   /** Executa as chamadas HTTP mínimas que provam a entrega pública do slot. */
-  private ValidationResult validateSlotDelivery(PdeProductionSlot slot)
+  private ValidationResult validateSlotDelivery(PdeProductionSlot slot, ValidationMode mode)
       throws IOException, InterruptedException {
     HttpResponse<String> health = get(slot.getPublicUrl() + "/healthz");
     if (!isSuccess(health) || !health.body().contains("UP")) {
@@ -780,7 +873,7 @@ public class PdeProductionSlotService {
           healthPath,
           null);
     }
-    if (StringUtils.hasText(commercialOfferPath)) {
+    if (StringUtils.hasText(commercialOfferPath) && mode == ValidationMode.COMMERCIAL_COMPLETE) {
       Optional<ValidationResult> commercialOfferFailure =
           validateCommercialOffer(slot, contractSlug, healthPath, commercialOfferPath);
       if (commercialOfferFailure.isPresent()) {
@@ -827,6 +920,18 @@ public class PdeProductionSlotService {
           healthPath,
           resolvedUrl);
     }
+    Optional<AssetValidationResult> requiredAssetFailure =
+        validateRequiredAssets(slot.getPublicUrl(), contract);
+    if (requiredAssetFailure.isPresent()) {
+      AssetValidationResult failure = requiredAssetFailure.get();
+      return ValidationResult.failed(
+          failure.httpStatus(),
+          "Ativo público obrigatório da versão não foi entregue",
+          failure.detail(),
+          contractSlug,
+          healthPath,
+          resolvedUrl);
+    }
     String expectedStream = expectedHlsStream(slot.getExperienceVersion());
     if (StringUtils.hasText(expectedStream)) {
       AssetValidationResult stream = validateHlsStream(slot.getPublicUrl(), expectedStream);
@@ -840,10 +945,19 @@ public class PdeProductionSlotService {
             resolvedUrl);
       }
     }
+    if (mode == ValidationMode.DELIVERY_CANDIDATE) {
+      return ValidationResult.deliveryReady(
+          page.statusCode(),
+          "Entrega candidata pronta para checkout",
+          "Health, identidade, integração da jornada, entrada do produto, copy e ativos públicos responderam; oferta e checkout serão validados após a criação da preferência.",
+          contractSlug,
+          healthPath,
+          resolvedUrl);
+    }
     return ValidationResult.ok(
         page.statusCode(),
         "URL produtiva validada",
-        "Health, contrato público, oferta comercial, integração da jornada, entrada do funil, copy pública e HLS versionado responderam.",
+        "Health, contrato público, oferta comercial, integração da jornada, entrada do funil, copy, ativos públicos e HLS versionado responderam.",
         contractSlug,
         healthPath,
         resolvedUrl);
@@ -992,6 +1106,58 @@ public class PdeProductionSlotService {
     HttpRequest request =
         HttpRequest.newBuilder(URI.create(url)).timeout(VALIDATION_TIMEOUT).GET().build();
     return httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+  }
+
+  /**
+   * Confirma que cada mídia estática declarada no contrato público existe e tem tipo compatível.
+   */
+  private Optional<AssetValidationResult> validateRequiredAssets(
+      String publicUrl, JsonNode contract) throws IOException, InterruptedException {
+    for (JsonNode asset : contract.withArray("requiredAssets")) {
+      String path = asset.asText("").trim();
+      if (!StringUtils.hasText(path)) {
+        return Optional.of(AssetValidationResult.failed(null, "requiredAssets contém item vazio"));
+      }
+      String url = resolveUrl(publicUrl, path);
+      HttpResponse<Void> response = getWithoutBody(url);
+      int statusCode = response.statusCode();
+      String contentType = response.headers().firstValue("content-type").orElse("");
+      if (!isSuccess(statusCode)) {
+        return Optional.of(
+            AssetValidationResult.failed(
+                statusCode, "Ativo " + path + " respondeu HTTP " + statusCode));
+      }
+      if (!isCompatibleAssetType(path, contentType)) {
+        return Optional.of(
+            AssetValidationResult.failed(
+                statusCode,
+                "Ativo "
+                    + path
+                    + " respondeu Content-Type "
+                    + (StringUtils.hasText(contentType) ? contentType : "ausente")));
+      }
+    }
+    return Optional.empty();
+  }
+
+  /** Valida o tipo MIME mínimo de vídeos e imagens sem depender de nomes internos do provedor. */
+  private boolean isCompatibleAssetType(String path, String contentType) {
+    String normalizedPath = URI.create(path).getPath().toLowerCase(Locale.ROOT);
+    String normalizedContentType = contentType == null ? "" : contentType.toLowerCase(Locale.ROOT);
+    if (normalizedPath.endsWith(".mp4")) {
+      return normalizedContentType.startsWith("video/mp4")
+          || normalizedContentType.contains("octet-stream");
+    }
+    if (normalizedPath.endsWith(".jpg") || normalizedPath.endsWith(".jpeg")) {
+      return normalizedContentType.startsWith("image/jpeg")
+          || normalizedContentType.contains("octet-stream");
+    }
+    if (normalizedPath.endsWith(".png")) {
+      return normalizedContentType.startsWith("image/png")
+          || normalizedContentType.contains("octet-stream");
+    }
+    return StringUtils.hasText(normalizedContentType)
+        && !normalizedContentType.startsWith("text/html");
   }
 
   /** Carrega os bundles JavaScript referenciados pela entrada SPA para validar copy renderizada. */
@@ -1290,6 +1456,24 @@ public class PdeProductionSlotService {
           resolvedUrl);
     }
 
+    /** Cria resultado de preflight que autoriza somente a criação do checkout da versão exata. */
+    private static ValidationResult deliveryReady(
+        Integer httpStatus,
+        String summary,
+        String detail,
+        String contractSlug,
+        String contractHealthPath,
+        String resolvedUrl) {
+      return new ValidationResult(
+          VALIDATION_DELIVERY_READY,
+          httpStatus,
+          summary,
+          detail,
+          contractSlug,
+          contractHealthPath,
+          resolvedUrl);
+    }
+
     /** Cria resultado de validação reprovada sem dados de contrato. */
     private static ValidationResult failed(Integer httpStatus, String summary, String detail) {
       return failed(httpStatus, summary, detail, null, null, null);
@@ -1328,8 +1512,14 @@ public class PdeProductionSlotService {
     }
   }
 
+  /** Distingue o preflight sem checkout da validação comercial final do mesmo slot. */
+  private enum ValidationMode {
+    DELIVERY_CANDIDATE,
+    COMMERCIAL_COMPLETE
+  }
+
   /** Captura os campos que precisam continuar idênticos à evidência de homologação da v12. */
-  private record V12ValidationFingerprint(
+  private record ValidationFingerprint(
       String domain,
       String publicUrl,
       String backendUrl,
@@ -1340,8 +1530,8 @@ public class PdeProductionSlotService {
       String draftExperienceJson) {
 
     /** Cria a impressão comparável sem depender da identidade JPA da entidade. */
-    private static V12ValidationFingerprint from(PdeProductionSlot slot) {
-      return new V12ValidationFingerprint(
+    private static ValidationFingerprint from(PdeProductionSlot slot) {
+      return new ValidationFingerprint(
           slot.getDomain(),
           slot.getPublicUrl(),
           slot.getBackendUrl(),

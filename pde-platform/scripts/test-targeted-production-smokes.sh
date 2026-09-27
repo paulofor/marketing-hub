@@ -115,6 +115,14 @@ if grep -Fq 'test:public-health' "${invocation_log}" || grep -Fq 'test:public-di
   exit 1
 fi
 
+run_target mira-commercial
+grep -Fqx $'npm\t\t\t\tMIRA_COMMERCIAL_PUBLIC_URL=https://mira.digicomdigital.com.br run test:mira-commercial:public' "${invocation_log}" || \
+  grep -Fqx $'npm\t\t\t\trun test:mira-commercial:public' "${invocation_log}"
+if grep -Fq 'test:mira-private:public' "${invocation_log}" || grep -Fq 'kit-whatsapp-pronto' "${invocation_log}" || grep -q '^consistency' "${invocation_log}"; then
+  echo '[ARQUITETURA] O deploy direcionado a Mira comercial validou outra superfície.' >&2
+  exit 1
+fi
+
 if PDE_SMOKE_NPM_COMMAND="${fake_npm}" \
   PDE_SMOKE_CONSISTENCY_SCRIPT="${fake_consistency}" \
   PDE_SMOKE_RIGEL_CONSISTENCY_SCRIPT="${fake_rigel_consistency}" \
@@ -128,6 +136,7 @@ run_target all v8
 test "$(grep -c $'npm\t.*\t/?mh_preview=qa&pde_analytics=off\t\trun test:public-health' "${invocation_log}")" -eq 5
 test "$(grep -c $'npm\t.*\t\t.*\trun test:public-diagnostic-smoke' "${invocation_log}")" -eq 4
 test "$(grep -c $'npm\t.*\t\t\trun test:mira-private:public' "${invocation_log}")" -eq 1
+test "$(grep -c 'run test:mira-commercial:public' "${invocation_log}")" -eq 1
 for expected_diagnostic in \
   $'https://v5.clubemusa.com.br\t\tmusa-pde-entry-v5-video-explicativo' \
   $'https://v6.clubemusa.com.br\t\tmusa-pde-entry-v6-video-motivacional' \

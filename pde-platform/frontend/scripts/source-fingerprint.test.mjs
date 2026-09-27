@@ -8,22 +8,32 @@ import { sourceFingerprint } from "./source-fingerprint.mjs";
 async function fixture(t) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "pde-source-fingerprint-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
-  for (const directory of ["docker-entrypoint.d", "public", "scripts", "src"]) {
+  for (const directory of [
+    "docker-entrypoint.d",
+    "docker-entrypoint-mira-commercial.d",
+    "public",
+    "scripts",
+    "src",
+  ]) {
     await fs.mkdir(path.join(root, directory), { recursive: true });
   }
   for (const file of [
     ".npmrc",
     "Dockerfile",
+    "Dockerfile.mira-commercial",
     "index.html",
     "mira.html",
+    "mira-commercial.html",
     "nginx.conf",
     "nginx.mira.conf",
+    "nginx.mira-commercial.conf",
     "package-lock.json",
     "package.json",
     "tsconfig.json",
     "tsconfig.vega.json",
     "vite.config.ts",
     "vite.mira.config.ts",
+    "vite.mira-commercial.config.ts",
     "vite.vega.config.ts",
   ]) {
     await fs.writeFile(path.join(root, file), `${file}\n`);

@@ -56,6 +56,14 @@ on:
         options:
           - "false"
           - "true"
+      issue_mira_certificate:
+        description: "Emitir/renovar certificado de Mira depois que o DNS apontar para o VPS PDE"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 jobs:
   test:
@@ -159,23 +167,31 @@ jobs:
         env:
           DEPLOYMENT_TARGET: ${{ inputs.deployment_target || 'pde' }}
           ISSUE_CLUBEMUSA: ${{ inputs.issue_clubemusa_certificate }}
+          ISSUE_DIGICOMDIGITAL: ${{ inputs.issue_digicomdigital_certificate }}
           ISSUE_KIT_WHATSAPP: ${{ inputs.issue_kit_whatsapp_certificate }}
+          ISSUE_MIRA: ${{ inputs.issue_mira_certificate }}
         run: |
+          certificate_targets=0
+          for requested in "$ISSUE_CLUBEMUSA" "$ISSUE_DIGICOMDIGITAL" "$ISSUE_KIT_WHATSAPP" "$ISSUE_MIRA"; do
+            if [ "$requested" = true ]; then
+              certificate_targets=$((certificate_targets + 1))
+            fi
+          done
+          if [ "$certificate_targets" -gt 1 ]; then
+            echo 'Selecione apenas um domínio por execução para impedir emissão no host incorreto.' >&2
+            exit 1
+          fi
           case "$DEPLOYMENT_TARGET" in
             pde) ;;
             public_payments)
-              if [ "$ISSUE_CLUBEMUSA" = true ] || [ "$ISSUE_KIT_WHATSAPP" = true ]; then
+              if [ "$ISSUE_CLUBEMUSA" = true ] || [ "$ISSUE_DIGICOMDIGITAL" = true ] \
+                || [ "$ISSUE_KIT_WHATSAPP" = true ] || [ "$ISSUE_MIRA" = true ]; then
                 echo 'Certificados de PDE não podem ser emitidos no destino de pagamentos.' >&2
                 exit 1
               fi
               ;;
             *) echo 'Destino de publicação desconhecido.' >&2; exit 1 ;;
           esac
-      - name: Validate certificate target
-        if: (inputs.issue_clubemusa_certificate == 'true' && inputs.issue_digicomdigital_certificate == 'true') || (inputs.issue_clubemusa_certificate == 'true' && inputs.issue_kit_whatsapp_certificate == 'true') || (inputs.issue_digicomdigital_certificate == 'true' && inputs.issue_kit_whatsapp_certificate == 'true')
-        run: |
-          echo "Selecione apenas um domínio por execução para impedir emissão no host incorreto." >&2
-          exit 1
       - name: Validate payments authentication secret
         env:
           PAYMENTS_AUTH_TOKEN: ${{ secrets.LEAD_PORTAL_PAYMENTS_AUTH_TOKEN }}
@@ -252,6 +268,7 @@ jobs:
           PAYMENTS_AUTH_TOKEN: ${{ secrets.LEAD_PORTAL_PAYMENTS_AUTH_TOKEN }}
           AGENDA_CHEIA_OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY }}
         run: |
+          # shellcheck disable=SC2029,SC2086
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
             && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
@@ -312,6 +329,23 @@ jobs:
             && export CERTBOT_INCLUDE_WWW=false \
             && docker compose -f docker-compose.deploy.yml --profile certbot run --rm certbot-pagamentos \
             && docker compose -f docker-compose.deploy.yml up -d --force-recreate --no-deps proxy"
+      - name: Issue Mira certificate
+        if: github.event_name == 'workflow_dispatch' && inputs.issue_mira_certificate == 'true'
+        env:
+          PAYMENTS_AUTH_TOKEN: ${{ secrets.LEAD_PORTAL_PAYMENTS_AUTH_TOKEN }}
+          AGENDA_CHEIA_OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY }}
+        run: |
+          # shellcheck disable=SC2029,SC2086
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
+            && cd ${REMOTE_PATH} \
+            && export LEAD_PORTAL_PAYMENTS_IMAGE='${IMAGE_NAMESPACE}/lead-portal-payments-service:${IMAGE_TAG}' \
+            && export LEAD_PORTAL_PAYMENTS_NETWORK='${LEAD_PORTAL_PAYMENTS_NETWORK}' \
+            && export LEAD_PORTAL_PAYMENTS_AUTH_TOKEN='${PAYMENTS_AUTH_TOKEN}' \
+            && export OPENAI_API_KEY='${AGENDA_CHEIA_OPENAI_API_KEY}' \
+            && export CERTBOT_PRIMARY_DOMAIN=mira.digicomdigital.com.br \
+            && export CERTBOT_INCLUDE_WWW=false \
+            && docker compose -f docker-compose.deploy.yml --profile certbot run --rm certbot-pagamentos \
+            && docker compose -f docker-compose.deploy.yml up -d --force-recreate --no-deps proxy"
       - name: Validate public HTTPS proxy
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
@@ -323,6 +357,8 @@ jobs:
             public_url="https://pagamentopalf.site"
           elif [ "${{ inputs.issue_digicomdigital_certificate }}" = "true" ]; then
             public_url="https://www.digicomdigital.com.br"
+          elif [ "${{ inputs.issue_mira_certificate }}" = "true" ]; then
+            public_url="https://mira.digicomdigital.com.br"
           else
             public_url="https://kit-whatsapp-pronto.digicomdigital.com.br"
           fi
@@ -330,10 +366,19 @@ jobs:
           if [ "${{ inputs.deployment_target }}" = "public_payments" ]; then
             public_probe="${public_url}/agenda-cheia/obrigado.html"
           fi
-          curl --fail --show-error --silent \
-            --retry 12 --retry-delay 10 --retry-connrefused \
-            "$public_probe" >/dev/null
-          if [ "${{ inputs.deployment_target }}" != "public_payments" ] && [ "${{ inputs.issue_digicomdigital_certificate }}" != "true" ]; then
+          if [ "${{ inputs.issue_mira_certificate }}" = "true" ]; then
+            curl --show-error --silent \
+              --retry 12 --retry-delay 10 --retry-connrefused \
+              "$public_probe" >/dev/null
+            echo 'TLS público de Mira confirmado; a saúde funcional será exigida pelo deploy proprietário do PDE.'
+          else
+            curl --fail --show-error --silent \
+              --retry 12 --retry-delay 10 --retry-connrefused \
+              "$public_probe" >/dev/null
+          fi
+          if [ "${{ inputs.deployment_target }}" != "public_payments" ] \
+            && [ "${{ inputs.issue_digicomdigital_certificate }}" != "true" ] \
+            && [ "${{ inputs.issue_mira_certificate }}" != "true" ]; then
             curl --fail --show-error --silent \
               --retry 12 --retry-delay 10 --retry-connrefused \
               "${public_url}/healthz" | grep -q '"status":"UP"'

@@ -1,0 +1,83 @@
+{
+  "contractVersion": "musa-v12-commercial-homologation.v13",
+  "processCode": "pde-commercial-compatibility-attestation",
+  "processVersion": 1,
+  "activityId": "pdeCompatibilityGate",
+  "sourceReference": "product:4@musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  "experimentId": 92,
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "publicUrl": "https://v8.clubemusa.com.br/"
+  },
+  "status": "EVIDENCE_COMPATIBILITY_ONLY",
+  "boundary": "Revalida Vega contra a generalização compartilhada de acesso pago necessária a Mira, sem reativar o experimento 92, publicar sua candidata, criar checkout, contato, campanha ou gasto.",
+  "operationalState": {
+    "verifiedAt": "2026-09-27",
+    "experimentStatus": "INVALIDATED",
+    "commercialOfferExpected": false,
+    "deploymentAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/musa-v12-commercial-homologation-v12.json",
+    "reason": "Comprovar que o entitlement multi-produto e a área comercial isolada de Mira não cruzam acesso, runtime ou identidade com Vega.",
+    "includedChanges": [
+      "Guarda compartilhada de acesso pago selecionada pelo slug e pela versão exatos",
+      "Teste local de proxy que preserva Vega v5–v8 ao reiniciar Mira comercial",
+      "Reexecução dos contratos e testes do backend PDE"
+    ],
+    "excludedChanges": [
+      "Oferta, preço, checkout, copy, vídeos e experiência de Vega",
+      "Promoção ou publicação do experimento 92",
+      "Campanha, tráfego, gasto, cobrança ou contato"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br/",
+    "requiredFrontendSourceSha256": "c32558dfd8437639e965e8744959e332a33075ac9eab1f396874c5620b3addfa"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "c32558dfd8437639e965e8744959e332a33075ac9eab1f396874c5620b3addfa"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v12.json",
+      "sha256": "f0d32724291bc9cf047623e4cbd3aaedea916915ef8a7a8adbced57a03df3f8e",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
+      "sha256": "f2667c4aea4bd5162454d72c5ea66abb7a9d54cedde9e1387a01ae2d2bd9ef14",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelPaidEntitlementService.java",
+      "sha256": "ad1516727bf3bd366e6c4aeb53f93e2ed4f18c4c66d4fa35f2e362f085be8d01",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/AccessServiceTest.java",
+      "sha256": "0270e51b4d566f176e15f7904a1f294f916ee09adb0999d2fe0d7149476ff8dc",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test-product-runtime-proxy-local.sh",
+      "sha256": "463e845b55fbfd86ca93b2868f653f834bb8a58d5e6544a423c3648f483483f9",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/mira-commercial-v1.md"
+}

@@ -1,5 +1,18 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-PDE-HLS-BLOQUEADO-POR-ALIAS-MP4 — 27/09/2026
+
+- **Evidência confirmada:** a candidata comercial de Mira possuía vídeo #48 `READY`/`APPROVED`,
+  playlist HLS pública e contrato pronto para publicação, mas o gate comparava `playbackUrl` com o
+  MP4 de origem do ativo. O cânone PDE exige a playlist `.m3u8` tanto em `playbackUrl` quanto em
+  `hlsPlaybackUrl` para novas versões.
+- **Causa-raiz:** a política nova reutilizou a identidade do arquivo enviado como se fosse a URL
+  canônica de reprodução, misturando artefato de origem com distribuição pública adaptativa.
+- **Correção sistêmica:** o gate passa a exigir que o HLS aprovado do ativo seja não vazio,
+  contenha `.m3u8` e corresponda aos dois aliases publicados no contrato.
+- **Prevenção:** regressão Java aceita somente o HLS aprovado nos dois campos e recusa MP4 como
+  reprodução principal, mantendo o contrato alinhado a `docs/canonical/pde-platform-canon.v1.md`.
+
 ## LOOP-PRODUTO-MATERIALIZADO-COM-IDENTIDADE-PROVISORIA — 26/09/2026
 
 - **Evidência confirmada:** o produto #10 precisou ser corrigido manualmente para Mira/Safira em

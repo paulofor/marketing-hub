@@ -290,6 +290,29 @@ class PdeProductionSlotServiceTest {
         .hasMessageContaining("vídeo aprovado exato");
   }
 
+  /** Deve bloquear Mira quando o contrato tenta publicar MP4 como reprodução principal. */
+  @Test
+  void blocksMiraPreparationWithMp4PrimaryPlayback() {
+    PdeProductionSlot slot = miraSlot(PdeProductionSlotStatus.CANDIDATE, false);
+    slot.setDraftExperienceJson(
+        miraContract()
+            .replace(
+                "\"playbackUrl\":\"https://cdn.example/mira-v1.m3u8\"",
+                "\"playbackUrl\":\"https://cdn.example/mira-v1.mp4\""));
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, experimentRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("pde-planejado-36", "v1"))
+        .thenReturn(Optional.of(slot));
+    when(experimentRepository.findById(93L)).thenReturn(Optional.of(miraExperiment()));
+    when(videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(93L))
+        .thenReturn(List.of(miraVideo()));
+
+    assertThatThrownBy(() -> service.prepareProductionSlotForPublication("pde-planejado-36", "v1"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("vídeo aprovado exato");
+  }
+
   /**
    * Deve impedir que Mira pule o preflight ao tentar salvar a candidata diretamente como pronta.
    */
@@ -581,7 +604,7 @@ class PdeProductionSlotServiceTest {
           "layoutKey":"mira-routine-v1",
           "commercialBinding":{"experimentId":93,"primaryCta":"Organizar minha rotina por R$ 49","priceBrl":49,"billingModel":"ONE_TIME"},
           "commercialCheckout":{"provider":"PEPPER","checkoutUrl":"https://checkout.example/mira","priceBrl":49,"currency":"BRL","billingModel":"ONE_TIME"},
-          "heroVideos":[{"experimentVideoAssetId":47,"experienceVersion":"mira-commercial-v1","playbackUrl":"https://cdn.example/mira-v1.mp4","hlsPlaybackUrl":"https://cdn.example/mira-v1.m3u8","status":"READY","reviewStatus":"APPROVED"}]
+          "heroVideos":[{"experimentVideoAssetId":47,"experienceVersion":"mira-commercial-v1","playbackUrl":"https://cdn.example/mira-v1.m3u8","hlsPlaybackUrl":"https://cdn.example/mira-v1.m3u8","status":"READY","reviewStatus":"APPROVED"}]
         }
         """;
   }

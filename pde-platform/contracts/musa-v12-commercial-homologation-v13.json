@@ -53,9 +53,34 @@
       "path": "pde-platform/contracts/musa-v12-commercial-homologation-v12.json",
       "sha256": "f0d32724291bc9cf047623e4cbd3aaedea916915ef8a7a8adbced57a03df3f8e",
       "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v11.json",
+      "sha256": "1631a4a09264181e0c644c9bf62acf0531a8bda06812ab7afa09c499113e4499",
+      "promptMode": "FULL"
     }
   ],
   "implementationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialContext.java",
+      "sha256": "67da5e6efcc04c29f846f14c6a50a62fdc56a580c9802ccf2675ca53c95eb4ad",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/creative/service/CreativeMediaGovernanceEvidenceService.java",
+      "sha256": "fe8185ddbe4eb2d689517e8fb022ed561a44d294305a6c96cd0046c172fd788d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/controller/AccessController.java",
+      "sha256": "4863d97ab4c374ab23aebee094e187ed2d8c0e2afe95824b5af5599f584948f3",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "78f5d14b213c5d342868f441cf458150987515cfdf64f57c954d26c8b862a211",
+      "promptMode": "FULL"
+    },
     {
       "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
       "sha256": "f2667c4aea4bd5162454d72c5ea66abb7a9d54cedde9e1387a01ae2d2bd9ef14",
@@ -68,6 +93,26 @@
     }
   ],
   "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/opala/commercial/v1/service/OpalaCommercialContextTest.java",
+      "sha256": "688a6dc85ff2705256bbcddd8af949af499254931defddbdeed4b7ef34d7e9c8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/creative/service/CreativeMediaGovernanceEvidenceServiceTest.java",
+      "sha256": "129dda26e606785726b04d3c43c8f988f840a932a4624ef93b4107c8751417ae",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/controller/AccessControllerPublicSurfaceTest.java",
+      "sha256": "05cfff7b78d3b50590ab702a714b6fbc749e221b1636a7a52cb3b26db0710caa",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/MusaV12SupportContractTest.java",
+      "sha256": "f2e7593aff2f7089b3e219be364da6ef7698af97d5fe4d0770106bf3108ba6a4",
+      "promptMode": "FULL"
+    },
     {
       "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/AccessServiceTest.java",
       "sha256": "0270e51b4d566f176e15f7904a1f294f916ee09adb0999d2fe0d7149476ff8dc",

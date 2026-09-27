@@ -1,0 +1,18 @@
+{
+  "cardKey": "rotulo-recomendacao-ai-personalizacao-privacidade",
+  "collection": "neuromarketing",
+  "title": "Rótulos de recomendação por IA podem elevar personalização percebida, com limite de privacidade",
+  "finding": "Em três experimentos, rótulos explícitos de recomendação por IA elevaram a personalização percebida; o modelo relatado pelos autores relaciona essa percepção a atitude publicitária mais positiva. O efeito variou com o encaixe da recomendação e enfraqueceu quando preocupações de privacidade eram altas.",
+  "mechanism": "A explicitação pode tornar a personalização mais saliente e aumentar a percepção de congruência entre mensagem e contexto. Quando a privacidade domina a avaliação, esse ganho de relevância pode perder força. Essa é uma interpretação do padrão observado, não prova de efeito em compra.",
+  "commercialApplication": "Testar rótulo explícito de recomendação por IA contra rótulo implícito ou ausência de rótulo, mantendo oferta e recomendação constantes e medindo personalização percebida, atitude, CTR, checkout e pagamento reconciliado.",
+  "evidenceStrength": "Artigo peer-reviewed com três experimentos; evidência de percepção de personalização e atitude publicitária, sem demonstração de aumento de conversão, receita ou retenção.",
+  "publishedOn": "2026-09-02",
+  "validUntil": "2027-03-02",
+  "experimentHypothesis": "Quando a recomendação tiver encaixe real e a experiência não elevar preocupação de privacidade, um rótulo explícito de recomendação por IA aumentará relevância percebida e poderá elevar CTR sem reduzir checkout ou pagamento.",
+  "risks": "O rótulo pode aumentar preocupação de privacidade, sensação de vigilância ou reactância. Não deve sugerir personalização inexistente nem precisão que o sistema não possui.",
+  "limits": "O material revisado disponível é o resumo do artigo; não contém aqui tamanhos de efeito completos, composição detalhada das amostras ou métricas de vendas. O resultado precisa ser validado no público, canal e oferta reais.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-27-rotulo-recomendacao-ai-personalizacao-privacidade.md",
+  "sourceTitle": "Fonte revisada — Rótulos de recomendação por IA e personalização percebida",
+  "sourceSha256": "e4af7db5c893654b43a4900c44ae7a1398cf9f8cea61515bec19895df3c13913"
+}

@@ -106,7 +106,7 @@ public final class PdeCommercialPublicationPolicy {
     }
   }
 
-  /** Exige que o vídeo declarado no hero seja o ativo aprovado do mesmo experimento. */
+  /** Exige que o vídeo HLS declarado no hero seja o ativo aprovado do mesmo experimento. */
   private static void validateVideo(
       PdeProductionSlot slot,
       List<ExperimentVideoAsset> videos,
@@ -129,10 +129,15 @@ public final class PdeCommercialPublicationPolicy {
               .findFirst()
               .orElse(null);
       if (approved == null) continue;
+      String approvedHlsPlaybackUrl = approved.getHlsPlaybackUrl();
+      String playbackUrl = text(hero, "playbackUrl");
+      String hlsPlaybackUrl = text(hero, "hlsPlaybackUrl");
       boolean identityMatches =
           Objects.equals(slot.getExperienceVersion(), text(hero, "experienceVersion"))
-              && Objects.equals(approved.getAssetUrl(), text(hero, "playbackUrl"))
-              && Objects.equals(approved.getHlsPlaybackUrl(), text(hero, "hlsPlaybackUrl"));
+              && StringUtils.hasText(approvedHlsPlaybackUrl)
+              && approvedHlsPlaybackUrl.contains(".m3u8")
+              && Objects.equals(approvedHlsPlaybackUrl, playbackUrl)
+              && Objects.equals(approvedHlsPlaybackUrl, hlsPlaybackUrl);
       if (identityMatches) return;
     }
     blockers.add("Vincular ao contrato o vídeo aprovado exato da própria oferta.");

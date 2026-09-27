@@ -1,0 +1,18 @@
+{
+  "cardKey": "ai-assistants-product-discovery-intent",
+  "collection": "momentos-de-compra-b2c",
+  "title": "IA pesa na comparação, mas raramente inicia a busca",
+  "finding": "No Brasil, pesquisa Nuvemshop/Opinion Box divulgada em 26/09/2026 informa que 46% dos consumidores online já usaram IA para ajudar em uma compra, mas apenas 1,3% começam a busca de produtos nessas ferramentas; entre usuários de IA, 48,19% a usam para comparar produtos e 46,89% para tirar dúvidas técnicas.",
+  "mechanism": "A IA parece atuar principalmente como camada intermediária de avaliação e shortlist. Como a compra pode terminar por busca, acesso direto ou marketplace, parte dessa influência pode desaparecer da atribuição tradicional de último clique.",
+  "commercialApplication": "No Marketing Hub, separar origem do clique de influência por IA, manter dados verificáveis da oferta e testar atribuição simples pós-checkout ou por links/códigos quando houver encaminhamento mensurável.",
+  "evidenceStrength": "Moderada: pesquisa brasileira autorrelatada da Nuvemshop/Opinion Box complementada pelo Global Digital Shopping Index 2026 da Visa/PYMNTS; não há experimento causal nem atribuição transacional individual.",
+  "publishedOn": "2026-09-27",
+  "validUntil": "2026-11-26",
+  "experimentHypothesis": "Ofertas com dados estruturados e verificáveis, combinadas a uma medição explícita de influência por IA, permitirão identificar jornadas hoje invisíveis e melhorar decisões de mensagem e canal sem depender apenas do último clique.",
+  "risks": "Confundir influência declarada com causalidade, superestimar IA como canal de descoberta, coletar atribuição pós-compra de forma enviesada ou otimizar presença em assistentes sem impacto comercial.",
+  "limits": "A reportagem da rodada Nuvemshop/Opinion Box não detalha a metodologia completa da amostra; a pesquisa Visa/PYMNTS é declarativa. Não há evidência de uplift causal em conversão, CAC, receita, margem ou retenção.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-27-ai-meio-funil-atribuicao-brasil.md",
+  "sourceTitle": "Fonte revisada — IA entra no meio do funil e cria lacuna de atribuição no varejo brasileiro",
+  "sourceSha256": "a8f1676cee3e459f021c1742dce484f9833e912440948aa2b9931888e5fe8780"
+}

@@ -60,6 +60,10 @@ a imagem de produção.
 - o player Chromium reproduziu vídeo e áudio em desktop, iPhone 15 Pro e Pixel 7;
 - quinze jornadas comerciais locais aprovaram valor, preço, HLS com fallback MP4, acesso pago e
   políticas nos três perfis;
+- a atestação imutável v3 de Mira e a atestação de compatibilidade v14 de Vega preservam as provas
+  anteriores e vinculam os hashes atuais sem liberar mídia ou republicar Vega;
+- o pacote compartilhado conferiu 223 arquivos em 36 manifestos; 142 testes de Psique e 105 de
+  Têmis passaram com as novas atestações;
 - nove testes do smoke público aprovaram recuperação transitória, falha persistente e a rota pública
   de Vega v7 nos três perfis;
 - contratos de release, seleção de deploy e pacote independente de revisão comercial foram

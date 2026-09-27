@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-gateway-multimodelo-provider-portavel",
+  "collection": "video",
+  "title": "Separar o pipeline audiovisual do provedor de inferência",
+  "finding": "O Comfy Router colocou modelos de vídeo como Seedance 2.5, MiniMax H3, Kling e Wan atrás de uma API comum e, para parte do catálogo, permite trocar o provedor de execução sem trocar SDK, chave ou ciclo de job.",
+  "mechanism": "Uma camada de gateway mantém a intenção da tarefa separada de modelo e provedor; o harness pode escolher a rota conforme requisitos, custo, latência, disponibilidade e limites, registrando qual combinação realmente executou o job.",
+  "commercialApplication": "No Marketing Hub, Apolo pode chamar um gateway de mídia com um contrato interno estável e manter políticas próprias de roteamento/fallback, evitando acoplamento direto a fal, Runware, WaveSpeed, Higgsfield ou a um único fabricante de modelo.",
+  "evidenceStrength": "Alta para a disponibilidade do Comfy Router e troca explícita de provedor, confirmadas pela documentação oficial; moderada para ganhos de custo e resiliência, que dependem da cobertura multi-provedor e precisam ser medidos.",
+  "publishedOn": "2026-09-27",
+  "validUntil": "2026-11-26",
+  "experimentHypothesis": "Uma camada de gateway multimodelo com roteamento explícito e telemetria reduzirá tempo de integração e falhas por rate limit ou indisponibilidade sem aumentar divergências de parâmetros ou custo por vídeo aprovado.",
+  "risks": "Compatibilidade pode esconder diferenças de parâmetros; preços e limites mudam rapidamente; uma camada adicional pode dificultar debugging; licenças comerciais continuam variando por modelo e provedor.",
+  "limits": "O Router está em beta. No lançamento, políticas automáticas como lowest_cost/reliable e fallback ordenado ainda estão no roadmap, e somente parte do catálogo oferece múltiplos provedores.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-27-comfy-router-gateway-multimodelo.md",
+  "sourceTitle": "Fonte revisada — Comfy Router unifica acesso a modelos e provedores de mídia",
+  "sourceSha256": "9f83272cdda61925ecd88f658f772990bf1f28c5cc028097fab6e6d7805a9e1f"
+}

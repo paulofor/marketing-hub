@@ -1,0 +1,18 @@
+{
+  "contractVersion": "mira-approved-voice-asset-47.v1",
+  "sourceAssetId": 47,
+  "sourceVideoSha256": "3c88b39b8057c1d59a05a22c3704bb434381149cb86ec16a424776c784731b90",
+  "sourceAudioSha256": "19be7c4776e20dae6ed783264495e85d97ee2156fc67075e85f79af639e0ef63",
+  "sourceWindowSeconds": {
+    "start": 0,
+    "end": 11.3
+  },
+  "transcript": [
+    "Quer uma rotina de pele madura simples, usando o que já tem?",
+    "Em três passos, Mira organiza seus produtos e mostra a ordem de uso.",
+    "Veja a tela real."
+  ],
+  "excludedClaim": "Por R$ 49, receba a rotina individualizada, suporte e uma correção técnica.",
+  "exclusionReason": "O trecho não integra a narração publicada porque a oferta canônica promete duas organizações e não uma correção técnica.",
+  "externalGenerationCostUsd": 0
+}

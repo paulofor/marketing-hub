@@ -1,0 +1,157 @@
+{
+  "contractVersion": "mira-commercial-homologation.v2",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 2,
+  "activityId": "pdeGate",
+  "sourceReference": "product:10@mira-commercial-v1-audio",
+  "experimentId": 93,
+  "product": {
+    "id": 10,
+    "internalName": "Mira",
+    "commercialName": "Mira · sua rotina organizada",
+    "slug": "pde-planejado-36",
+    "experienceVersion": "mira-commercial-v1",
+    "commercialPlanId": 8,
+    "publicUrl": "https://mira.digicomdigital.com.br/"
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "boundary": "Autoriza republicar a entrega e a landing comercial de Mira com narração auditável e readiness tolerante ao aquecimento, sem criar campanha, verba, anúncio, compra de homologação ou autorização de mídia.",
+  "operationalState": {
+    "verifiedAt": "2026-09-27",
+    "experimentStatus": "PLANNED",
+    "commercialOfferExpected": true,
+    "deploymentAuthorized": true,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/mira-commercial-homologation-v1.json",
+    "reason": "Corrigir o vídeo silencioso antes do cadastro oficial e impedir que o smoke confunda aquecimento transitório do backend com falha permanente da oferta.",
+    "includedChanges": [
+      "Narração proveniente do ativo 47 já aprovado, limitada a desejo, mecanismo e prova real",
+      "Remoção do trecho que prometia correção técnica fora do contrato canônico",
+      "Vídeo vertical determinístico de 15 segundos com H.264, áudio AAC e oferta exata de duas organizações por R$ 49",
+      "Retry limitado a 60 segundos somente para a oferta comercial pública durante o smoke"
+    ],
+    "excludedChanges": [
+      "Geração externa adicional, consumo de créditos ou ampliação do teto audiovisual",
+      "Criação ou ativação de campanha, conjunto, anúncio, público ou orçamento de mídia",
+      "Compra real de homologação, venda declarada, receita ou margem presumida"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "mira-commercial",
+    "publicUrl": "https://mira.digicomdigital.com.br/",
+    "requiredFrontendSourceSha256": "f55d889c7772c4722150c99a745508455398be24192d083520e8cf64fb08d572"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_CHROMIUM",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "requiredFirstFoldCtas": [
+      "Quero organizar minha rotina por R$ 49"
+    ],
+    "requiredVisibleTexts": [
+      "Cuide de você com mais clareza, usando o que já tem.",
+      "duas organizações incluídas por R$ 49",
+      "Seu primeiro passo leva menos de um minuto."
+    ],
+    "runtimeIdentity": {
+      "version": "mira-commercial-v1",
+      "experienceVersion": "mira-commercial-v1",
+      "frontendSourceSha256": "f55d889c7772c4722150c99a745508455398be24192d083520e8cf64fb08d572"
+    }
+  },
+  "mediaContract": {
+    "videoPath": "/media/mira-commercial-demo-v1.mp4",
+    "videoSha256": "d28f786b4d4ce3da3c2f8e0576974bcbddcfc61cb171057f8094067f1067b3b6",
+    "posterPath": "/media/mira-commercial-demo-v1-poster.jpg",
+    "posterSha256": "0765609b03abb364c2d562f700506541f3eafcb88f487c82fde4148547fb5637",
+    "durationSeconds": 15,
+    "width": 1080,
+    "height": 1920,
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "audioSourceAssetId": 47,
+    "audioSourceSha256": "19be7c4776e20dae6ed783264495e85d97ee2156fc67075e85f79af639e0ef63",
+    "externalGenerationCostUsd": 0
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/mira-commercial-homologation-v1.json",
+      "sha256": "8f78b5c036320feeb1f788fbb4bbc5af276d8ec5a5c5f1bac67ba281ebdb0c62",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva a entrega, checkout, segregação, privacidade e ausência de mídia já homologados na primeira publicação."
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/frontend/.dockerignore",
+      "sha256": "9fba4b9bc00cf4cd748facdf47f179928355a03d2eca33067349931eff57b630",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/Dockerfile.mira-commercial",
+      "sha256": "1094e23fd672cf36f7253aed5c2d0c3a3be3ca555901515e701db5c7b42f1164",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/package.json",
+      "sha256": "8a6204c59fc68f73b1748b8da73edaeba078cb61383e0d31e4f410eda4eb0ac5",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/generate-mira-commercial-video.sh",
+      "sha256": "84944c67eb9930ad99782c9b7c9f794c3941fe4909082d47296e7a16ed572fa0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/validate-mira-commercial-video.sh",
+      "sha256": "f9b92efc6307129955d0794b7bc9af134de13f2db334ffb8ac48c2e80ee058e5",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/source-fingerprint.mjs",
+      "sha256": "1b360323b48ba9515499a4ba4a99330beea004346aa0d4ef1948e5c1f199efec",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/media/mira-approved-voice-asset-47-v1.m4a",
+      "sha256": "19be7c4776e20dae6ed783264495e85d97ee2156fc67075e85f79af639e0ef63",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Trecho de voz do ativo audiovisual 47 aprovado, recortado antes da promessa de correção técnica e sem novo custo externo."
+    },
+    {
+      "path": "pde-platform/frontend/scripts/media/mira-approved-voice-asset-47-v1.json",
+      "sha256": "ac5ace6e2732fc0ccd5d88259a346c7c042497f7652add361b95702fbd50666c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1.mp4",
+      "sha256": "d28f786b4d4ce3da3c2f8e0576974bcbddcfc61cb171057f8094067f1067b3b6",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "MP4 canônico produzido pelo gerador versionado e preservado byte a byte no build de produção."
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1-poster.jpg",
+      "sha256": "0765609b03abb364c2d562f700506541f3eafcb88f487c82fde4148547fb5637",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Poster canônico produzido pelo gerador versionado e preservado byte a byte no build de produção."
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/frontend/tests/public-health.spec.ts",
+      "sha256": "5e3d223aa52560e7ab85c7be71f030ff3ed8292453be654306e6ee6a31d2920c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/source-fingerprint.test.mjs",
+      "sha256": "27b90e48a2532c4d98fa2f16e2e88591f74707803f98215fadcc2864ed3b788c",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/mira-commercial-v2.md"
+}

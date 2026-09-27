@@ -7,10 +7,12 @@ const SOURCE_DIRECTORIES = [
   "docker-entrypoint.d",
   "docker-entrypoint-mira-commercial.d",
   "public",
+  "public-mira-commercial",
   "scripts",
   "src",
 ];
 const SOURCE_FILES = [
+  ".dockerignore",
   ".npmrc",
   "Dockerfile",
   "Dockerfile.mira-commercial",

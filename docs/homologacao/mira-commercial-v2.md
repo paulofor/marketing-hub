@@ -29,6 +29,7 @@ até 60 segundos e continua falhando com o último HTTP observado quando a indis
 | Área | Cenário | Aceite |
 |---|---|---|
 | Vídeo | build versionado | 15 segundos, 1080×1920, H.264, AAC e `faststart` |
+| Streaming | HLS canônico | VOD com manifesto finalizado, segmentos independentes, H.264/AAC e fallback MP4 |
 | Linhagem | narração do ativo 47 | SHA-256 fixo, transcrição versionada e custo externo zero |
 | Promessa | trecho excluído | nenhuma menção a suporte ou correção técnica no vídeo publicado |
 | Oferta | quadro final | duas organizações incluídas por R$ 49, pagamento único |
@@ -39,19 +40,30 @@ até 60 segundos e continua falhando com o último HTTP observado quando a indis
 
 ## Evidência determinística
 
-- vídeo: `d28f786b4d4ce3da3c2f8e0576974bcbddcfc61cb171057f8094067f1067b3b6`;
-- poster: `0765609b03abb364c2d562f700506541f3eafcb88f487c82fde4148547fb5637`;
+- vídeo: `e1123f4bf456dcfb459bc2709c5db7800c742178fc6f2b8db165ab552abb6b43`;
+- poster: `7964614ac7a5c7e42006473be7c0deabff17f45281bd39ec05f30e9ab6d9a081`;
+- manifesto HLS: `a3d3041da52212c9657784ffb440818f994ac04548b84e9d3c703ee0705c64b8`;
+- segmentos HLS: `fe9b831708d1561f9abec01705dc42106b9dce54dc2777e1f0a250a5ec0049b1`,
+  `cd4e1fdac720cbda99a749d74df4e81ecee4316a32f0ac86a416de179b1dace8` e
+  `89df0ef96996105f951691f0768d3144172eabaf1438bada1769a023146bd058`;
 - fonte de áudio aprovada: `19be7c4776e20dae6ed783264495e85d97ee2156fc67075e85f79af639e0ef63`;
-- fingerprint da fonte frontend: `f55d889c7772c4722150c99a745508455398be24192d083520e8cf64fb08d572`.
+- fingerprint da fonte frontend: `51b3c454839d49c01147c98d58956326012f0de37572659296c1c25a824d5e52`.
 
-O MP4 e o poster canônicos ficam versionados e o build apenas valida e copia os mesmos bytes. Isso
-evita que versões distintas do FFmpeg alterem os hashes entre a sandbox e a imagem de produção.
+O MP4, o poster, o manifesto e os segmentos HLS canônicos ficam versionados; o build apenas valida e
+copia os mesmos bytes. Isso evita que versões distintas do FFmpeg alterem os hashes entre a sandbox e
+a imagem de produção.
 
 ## Evidências locais concluídas
 
-- build Vite e imagem Docker de Mira aprovaram os hashes, codecs, resolução, duração e fingerprint;
+- build Vite aprovou hashes, codecs, resolução, duração, HLS e fingerprint; a imagem Docker integra a
+  validação completa antes do PR;
 - o player Chromium reproduziu vídeo e áudio em desktop, iPhone 15 Pro e Pixel 7;
-- nove jornadas comerciais locais aprovaram valor, preço, acesso pago e políticas nos três perfis;
+- quinze jornadas comerciais locais aprovaram valor, preço, HLS com fallback MP4, acesso pago e
+  políticas nos três perfis;
+- a atestação imutável v3 de Mira e a atestação de compatibilidade v14 de Vega preservam as provas
+  anteriores e vinculam os hashes atuais sem liberar mídia ou republicar Vega;
+- o pacote compartilhado conferiu 223 arquivos em 36 manifestos; 142 testes de Psique e 105 de
+  Têmis passaram com as novas atestações;
 - nove testes do smoke público aprovaram recuperação transitória, falha persistente e a rota pública
   de Vega v7 nos três perfis;
 - contratos de release, seleção de deploy e pacote independente de revisão comercial foram

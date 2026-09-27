@@ -87,6 +87,9 @@ class ExperimentVideoAssetControllerTest {
                 .param("visualSourceDescription", "Recorte fiel do vídeo aprovado #47.")
                 .param(
                     "productionReference", "scripts/marketing/create-mira-commercial-video-v1.sh")
+                .param(
+                    "hlsPlaybackUrl",
+                    "https://mira.digicomdigital.com.br/media/mira-commercial-demo-v1-hls/index.m3u8")
                 .param("visualSourceVideoAssetIds", "47")
                 .param("requiredForRelease", "true"))
         .andExpect(status().isCreated());
@@ -96,5 +99,8 @@ class ExperimentVideoAssetControllerTest {
     verify(service).uploadUserAdVideo(eq(93L), any(), request.capture());
     assertThat(request.getValue().visualSourceCreativeIds()).isNull();
     assertThat(request.getValue().visualSourceVideoAssetIds()).containsExactly(47L);
+    assertThat(request.getValue().hlsPlaybackUrl())
+        .isEqualTo(
+            "https://mira.digicomdigital.com.br/media/mira-commercial-demo-v1-hls/index.m3u8");
   }
 }

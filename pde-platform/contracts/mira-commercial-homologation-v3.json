@@ -1,0 +1,228 @@
+{
+  "contractVersion": "mira-commercial-homologation.v3",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 3,
+  "activityId": "pdeGate",
+  "sourceReference": "product:10@mira-commercial-v1-hls",
+  "experimentId": 93,
+  "product": {
+    "id": 10,
+    "internalName": "Mira",
+    "commercialName": "Mira · sua rotina organizada",
+    "slug": "pde-planejado-36",
+    "experienceVersion": "mira-commercial-v1",
+    "commercialPlanId": 8,
+    "publicUrl": "https://mira.digicomdigital.com.br/"
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "boundary": "Autoriza publicar a landing comercial e cadastrar o vídeo governado de Mira com HLS e fallback MP4, sem criar campanha, verba, anúncio, compra de homologação ou autorização de mídia.",
+  "operationalState": {
+    "verifiedAt": "2026-09-27",
+    "experimentStatus": "PLANNED",
+    "commercialOfferExpected": true,
+    "deploymentAuthorized": true,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/mira-commercial-homologation-v2.json",
+    "reason": "Entregar o vídeo comercial aprovado no formato HLS exigido pela superfície pública, preservar fallback MP4 e registrar a mesma URL no ativo governado do experimento 93.",
+    "includedChanges": [
+      "Manifesto HLS VOD e segmentos independentes gerados e validados de forma determinística",
+      "Player HLS com fallback MP4 para indisponibilidade de suporte ou erro fatal de reprodução",
+      "Health contract que bloqueia publicação quando playlist ou segmento canônico estiver ausente",
+      "Upload governado que registra hlsPlaybackUrl junto da proveniência e da revisão humana",
+      "Vídeo vertical de 15 segundos com H.264, áudio AAC e oferta exata de duas organizações por R$ 49"
+    ],
+    "excludedChanges": [
+      "Geração externa adicional, consumo de créditos ou ampliação do teto audiovisual",
+      "Criação ou ativação de campanha, conjunto, anúncio, público ou orçamento de mídia",
+      "Compra real de homologação, venda declarada, receita ou margem presumida"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "mira-commercial",
+    "publicUrl": "https://mira.digicomdigital.com.br/",
+    "requiredFrontendSourceSha256": "51b3c454839d49c01147c98d58956326012f0de37572659296c1c25a824d5e52"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_CHROMIUM",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "requiredFirstFoldCtas": [
+      "Quero organizar minha rotina por R$ 49"
+    ],
+    "requiredVisibleTexts": [
+      "Cuide de você com mais clareza, usando o que já tem.",
+      "duas organizações incluídas por R$ 49",
+      "Seu primeiro passo leva menos de um minuto."
+    ],
+    "runtimeIdentity": {
+      "version": "mira-commercial-v1",
+      "experienceVersion": "mira-commercial-v1",
+      "frontendSourceSha256": "51b3c454839d49c01147c98d58956326012f0de37572659296c1c25a824d5e52"
+    }
+  },
+  "mediaContract": {
+    "hlsPlaybackPath": "/media/mira-commercial-demo-v1-hls/index.m3u8",
+    "hlsPlaylistSha256": "a3d3041da52212c9657784ffb440818f994ac04548b84e9d3c703ee0705c64b8",
+    "hlsChecksumsPath": "/media/mira-commercial-demo-v1-hls/checksums.sha256",
+    "hlsChecksumsSha256": "215fcc351f952b006de9a924cd0563fd0a26c33a60d8516a7f29c8588f5805e0",
+    "hlsSegments": [
+      {
+        "path": "/media/mira-commercial-demo-v1-hls/segment-000.ts",
+        "sha256": "fe9b831708d1561f9abec01705dc42106b9dce54dc2777e1f0a250a5ec0049b1"
+      },
+      {
+        "path": "/media/mira-commercial-demo-v1-hls/segment-001.ts",
+        "sha256": "cd4e1fdac720cbda99a749d74df4e81ecee4316a32f0ac86a416de179b1dace8"
+      },
+      {
+        "path": "/media/mira-commercial-demo-v1-hls/segment-002.ts",
+        "sha256": "89df0ef96996105f951691f0768d3144172eabaf1438bada1769a023146bd058"
+      }
+    ],
+    "fallbackVideoPath": "/media/mira-commercial-demo-v1.mp4",
+    "videoPath": "/media/mira-commercial-demo-v1.mp4",
+    "videoSha256": "e1123f4bf456dcfb459bc2709c5db7800c742178fc6f2b8db165ab552abb6b43",
+    "posterPath": "/media/mira-commercial-demo-v1-poster.jpg",
+    "posterSha256": "7964614ac7a5c7e42006473be7c0deabff17f45281bd39ec05f30e9ab6d9a081",
+    "durationSeconds": 15,
+    "width": 1080,
+    "height": 1920,
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "audioSourceAssetId": 47,
+    "audioSourceSha256": "19be7c4776e20dae6ed783264495e85d97ee2156fc67075e85f79af639e0ef63",
+    "externalGenerationCostUsd": 0
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/mira-commercial-homologation-v2.json",
+      "sha256": "39365ee6ca21cf273526f37e860581433f9defe35df1684dd7d89eb57a7bdde6",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/experiment/video/dto/UploadExperimentAdVideoRequest.java",
+      "sha256": "45aa884838b750456cb48f08a6681271eb2c60bea94a1172d376606c3edd3f41",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/experiment/video/service/ExperimentVideoAssetService.java",
+      "sha256": "8183f2ed68ee53e3b4bb27906ca9280beb04d6613d82967dc3ded5fc0dcc5237",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/experiment/video/web/ExperimentVideoAssetController.java",
+      "sha256": "5b1cfa0d62b6098f4b369c565ef7d7a40df8a3757110ee12600f74072a0f8f31",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/api/experiment/useUploadExperimentAdVideo.ts",
+      "sha256": "434cf2d8ec997876b4cd9ea0a142a7cef1bb0c025be5852a4ff2ffd41d72ba54",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/experiment/ExperimentAdVideoUploadPanel.tsx",
+      "sha256": "c21153bbaca776ed7d42864b25de647150d854b6104feabea12c087946bcf567",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/docker-entrypoint-mira-commercial.d/10-runtime-config.sh",
+      "sha256": "942e900cf84fe340187b0fff885a84826d9454163adab0e77a161e3cfc8695d5",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/AdaptiveVideoPlayer.tsx",
+      "sha256": "0cddc54e92e1553c351a36a7d2d2f171cfe415eab7797be17b07ae5bc82d3714",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MiraCommercialApp.tsx",
+      "sha256": "e630631cbe85cf261ec503967c713254b48c1817a392ff971aa1de54d6953d7d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/generate-mira-commercial-video.sh",
+      "sha256": "efd5213c71201614cb5d58ddf6e8245a68c68000ef15b2857ea484f37d11eeb9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/validate-mira-commercial-video.sh",
+      "sha256": "dee7640bc739baebfd420f7002c994fc935a3512b4d9f64a55e7f3cf8ddfaa15",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1.mp4",
+      "sha256": "e1123f4bf456dcfb459bc2709c5db7800c742178fc6f2b8db165ab552abb6b43",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "MP4 canônico de fallback produzido pelo gerador versionado, reproduzido com áudio e preservado byte a byte."
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1-poster.jpg",
+      "sha256": "7964614ac7a5c7e42006473be7c0deabff17f45281bd39ec05f30e9ab6d9a081",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Poster canônico extraído do vídeo final e preservado byte a byte."
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1-hls/index.m3u8",
+      "sha256": "a3d3041da52212c9657784ffb440818f994ac04548b84e9d3c703ee0705c64b8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1-hls/checksums.sha256",
+      "sha256": "215fcc351f952b006de9a924cd0563fd0a26c33a60d8516a7f29c8588f5805e0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1-hls/segment-000.ts",
+      "sha256": "fe9b831708d1561f9abec01705dc42106b9dce54dc2777e1f0a250a5ec0049b1",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Primeiro segmento do HLS canônico, decodificado e conferido contra o manifesto de hashes."
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1-hls/segment-001.ts",
+      "sha256": "cd4e1fdac720cbda99a749d74df4e81ecee4316a32f0ac86a416de179b1dace8",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Segundo segmento do HLS canônico, decodificado e conferido contra o manifesto de hashes."
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1-hls/segment-002.ts",
+      "sha256": "89df0ef96996105f951691f0768d3144172eabaf1438bada1769a023146bd058",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Segmento final do HLS canônico, decodificado e conferido contra o manifesto de hashes."
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/experiment/video/service/ExperimentVideoAssetServiceTest.java",
+      "sha256": "699d8faad82e177a8eaaceecba00d2c77fa0bf21a251bbedee262be6a7558a52",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/experiment/video/web/ExperimentVideoAssetControllerTest.java",
+      "sha256": "6f4783b5d70106df09fd60a81dac77a203f063d74493dd23da61895e54bdb92b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/experiment/ExperimentAdVideoUploadPanel.test.tsx",
+      "sha256": "439b9e109d6e9433e6665f7f5bb468ec6b847caa2cb3deaa2378315a3a6801a1",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/mira-commercial.spec.ts",
+      "sha256": "9eb581ebcc629ec8cdc78054ad7fa714131a8c1064e8a2eceb8c01d2a611cebc",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test-product-runtime-proxy-local.sh",
+      "sha256": "97377d6f2c8ac10cd7063e5567fc30bf3ccbad114a49f402fe5862a723eb34da",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/mira-commercial-v2.md"
+}

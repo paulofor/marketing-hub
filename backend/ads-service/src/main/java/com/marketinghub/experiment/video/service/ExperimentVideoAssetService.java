@@ -209,8 +209,8 @@ public class ExperimentVideoAssetService {
   }
 
   /**
-   * Armazena um vídeo vertical finalizado, preserva sua proveniência e o deixa pendente de revisão
-   * humana antes de qualquer uso em anúncio.
+   * Armazena um vídeo vertical finalizado, registra sua entrega HLS e o deixa pendente de revisão
+   * humana antes de qualquer uso comercial.
    */
   @Transactional
   public ExperimentVideoAssetDto uploadUserAdVideo(
@@ -218,6 +218,7 @@ public class ExperimentVideoAssetService {
       throws IOException {
     Experiment experiment = ensureExperiment(experimentId);
     validateUserAdVideoUpload(file, request);
+    String hlsPlaybackUrl = normalizeHlsPlaybackUrl(request.hlsPlaybackUrl());
     List<Map<String, Object>> approvedCreativeSources =
         resolveApprovedVisualSources(experiment, request.visualSourceCreativeIds());
     List<Map<String, Object>> approvedVideoSources =
@@ -239,6 +240,7 @@ public class ExperimentVideoAssetService {
             .model(VERSIONED_MONTAGE_MODEL)
             .status(ExperimentVideoStatus.READY)
             .assetUrl(asset.getUrl())
+            .hlsPlaybackUrl(hlsPlaybackUrl)
             .durationSeconds(request.durationSeconds())
             .hasAudio(true)
             .aspectRatio("9:16")
@@ -479,6 +481,7 @@ public class ExperimentVideoAssetService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "audio review must be confirmed before upload");
     }
+    normalizeHlsPlaybackUrl(request.hlsPlaybackUrl());
     validateVisualSourceIds(creativeIds, videoAssetIds);
     if (!isVersionedProductionReference(request.productionReference().trim())) {
       throw new ResponseStatusException(
@@ -648,7 +651,7 @@ public class ExperimentVideoAssetService {
       List<Map<String, Object>> approvedCreativeSources,
       List<Map<String, Object>> approvedVideoSources) {
     Map<String, Object> metadata = new LinkedHashMap<>();
-    metadata.put("artifactType", "experiment.userAdVideoUpload.v3");
+    metadata.put("artifactType", "experiment.userAdVideoUpload.v4");
     metadata.put("generationStrategy", "VERSIONED_APPROVED_ASSET_MONTAGE");
     metadata.put("experimentId", experimentId);
     metadata.put("originalFilename", file.getOriginalFilename());
@@ -662,6 +665,7 @@ public class ExperimentVideoAssetService {
     metadata.put("visualSourceKey", request.visualSourceKey().trim());
     metadata.put("visualSourceDescription", request.visualSourceDescription().trim());
     metadata.put("productionReference", request.productionReference().trim());
+    metadata.put("hlsPlaybackUrl", normalizeHlsPlaybackUrl(request.hlsPlaybackUrl()));
     metadata.put("approvedSourceCreatives", approvedCreativeSources);
     metadata.put("approvedSourceVideos", approvedVideoSources);
     try {

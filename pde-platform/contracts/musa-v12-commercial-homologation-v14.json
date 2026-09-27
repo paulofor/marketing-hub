@@ -1,0 +1,88 @@
+{
+  "contractVersion": "musa-v12-commercial-homologation.v14",
+  "processCode": "pde-commercial-compatibility-attestation",
+  "processVersion": 1,
+  "activityId": "pdeCompatibilityGate",
+  "sourceReference": "product:4@musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  "experimentId": 92,
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "publicUrl": "https://v8.clubemusa.com.br/"
+  },
+  "status": "EVIDENCE_COMPATIBILITY_ONLY",
+  "boundary": "Revalida o isolamento de Vega após a inclusão do HLS comercial de Mira no teste compartilhado de proxy, sem reativar o experimento 92, publicar Vega, criar checkout, campanha ou gasto.",
+  "operationalState": {
+    "verifiedAt": "2026-09-27",
+    "experimentStatus": "INVALIDATED",
+    "commercialOfferExpected": false,
+    "deploymentAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/musa-v12-commercial-homologation-v13.json",
+    "reason": "Comprovar que a validação HLS de Mira não altera o runtime, a identidade nem o roteamento de Vega v8.",
+    "includedChanges": [
+      "Teste compartilhado confirma playlist e primeiro segmento HLS apenas no domínio comercial de Mira",
+      "Teste compartilhado preserva identidade, assets e roteamento de Vega v5–v8",
+      "Reinício isolado de Mira comercial continua sem reiniciar ou substituir Vega"
+    ],
+    "excludedChanges": [
+      "Oferta, preço, checkout, copy, vídeos e experiência de Vega",
+      "Promoção ou publicação do experimento 92",
+      "Campanha, tráfego, gasto, cobrança ou contato"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br/",
+    "requiredFrontendSourceSha256": "c32558dfd8437639e965e8744959e332a33075ac9eab1f396874c5620b3addfa"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "c32558dfd8437639e965e8744959e332a33075ac9eab1f396874c5620b3addfa"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v13.json",
+      "sha256": "6bbcd63dc5030817568e6af059b55718ab1dc1b152ffc8d813c731e1ce643b2a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v12.json",
+      "sha256": "f0d32724291bc9cf047623e4cbd3aaedea916915ef8a7a8adbced57a03df3f8e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v11.json",
+      "sha256": "1631a4a09264181e0c644c9bf62acf0531a8bda06812ab7afa09c499113e4499",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/contracts/product-runtime-isolation-v1.json",
+      "sha256": "eeadc4e841eb202a84c1338f00c0bc9d78ef528cce8f8a261db9573a01810535",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "78f5d14b213c5d342868f441cf458150987515cfdf64f57c954d26c8b862a211",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/scripts/test-product-runtime-proxy-local.sh",
+      "sha256": "97377d6f2c8ac10cd7063e5567fc30bf3ccbad114a49f402fe5862a723eb34da",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/mira-commercial-v2.md"
+}

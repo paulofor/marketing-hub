@@ -6,6 +6,8 @@ FRONTEND_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OUTPUT_DIR="${MIRA_COMMERCIAL_MEDIA_DIR:-${FRONTEND_DIR}/public-mira-commercial/media}"
 VIDEO_FILE="${OUTPUT_DIR}/mira-commercial-demo-v1.mp4"
 POSTER_FILE="${OUTPUT_DIR}/mira-commercial-demo-v1-poster.jpg"
+HLS_DIR="${OUTPUT_DIR}/mira-commercial-demo-v1-hls"
+HLS_PLAYLIST="${HLS_DIR}/index.m3u8"
 AUDIO_SOURCE="${SCRIPT_DIR}/media/mira-approved-voice-asset-47-v1.m4a"
 AUDIO_SOURCE_SHA256="19be7c4776e20dae6ed783264495e85d97ee2156fc67075e85f79af639e0ef63"
 
@@ -145,5 +147,24 @@ fi
 ffmpeg -hide_banner -loglevel error -y \
   -ss 1.6 -i "${VIDEO_FILE}" -frames:v 1 -q:v 2 "${POSTER_FILE}"
 
+mkdir -p "${HLS_DIR}"
+find "${HLS_DIR}" -maxdepth 1 -type f \
+  \( -name 'index.m3u8' -o -name 'segment-*.ts' -o -name 'checksums.sha256' \) \
+  -delete
+ffmpeg -hide_banner -loglevel error -y \
+  -i "${VIDEO_FILE}" \
+  -map 0:v:0 -map 0:a:0 \
+  -c:v libx264 -preset medium -crf 19 -profile:v high -level 4.1 \
+  -g 150 -keyint_min 150 -sc_threshold 0 \
+  -c:a aac -b:a 128k -ar 48000 -ac 1 \
+  -hls_time 5 -hls_playlist_type vod -hls_flags independent_segments \
+  -hls_segment_filename "${HLS_DIR}/segment-%03d.ts" \
+  "${HLS_PLAYLIST}"
+(
+  cd "${HLS_DIR}"
+  sha256sum index.m3u8 segment-*.ts > checksums.sha256
+)
+
 printf 'Vídeo comercial de Mira gerado em %s\n' "${VIDEO_FILE}"
 printf 'Poster comercial de Mira gerado em %s\n' "${POSTER_FILE}"
+printf 'HLS comercial de Mira gerado em %s\n' "${HLS_PLAYLIST}"

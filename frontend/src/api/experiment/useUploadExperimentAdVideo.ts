@@ -12,6 +12,7 @@ export interface UploadExperimentAdVideoInput {
   visualSourceKey: string;
   visualSourceDescription: string;
   productionReference: string;
+  hlsPlaybackUrl: string;
   visualSourceCreativeIds: number[];
   visualSourceVideoAssetIds: number[];
   requiredForRelease: boolean;
@@ -32,6 +33,9 @@ export function useUploadExperimentAdVideo(experimentId: string | number) {
       form.append("visualSourceKey", input.visualSourceKey);
       form.append("visualSourceDescription", input.visualSourceDescription);
       form.append("productionReference", input.productionReference);
+      if (input.hlsPlaybackUrl.trim()) {
+        form.append("hlsPlaybackUrl", input.hlsPlaybackUrl.trim());
+      }
       input.visualSourceCreativeIds.forEach((creativeId) =>
         form.append("visualSourceCreativeIds", String(creativeId)),
       );

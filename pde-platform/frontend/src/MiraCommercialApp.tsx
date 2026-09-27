@@ -1,8 +1,10 @@
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { AdaptiveVideoPlayer } from "./AdaptiveVideoPlayer";
 
 const productSlug = "pde-planejado-36";
 const endpoint = "/api/pde/mira/commercial/v1";
 const commercialVideo = "/media/mira-commercial-demo-v1.mp4";
+const commercialVideoHls = "/media/mira-commercial-demo-v1-hls/index.m3u8";
 const commercialVideoPoster = "/media/mira-commercial-demo-v1-poster.jpg";
 
 type ProductInput = { name: string; labelDirections: string };
@@ -263,31 +265,31 @@ export function MiraCommercialApp() {
             Mira lê as orientações que você informa e organiza uma ordem
             prática, sem diagnóstico, prescrição ou empurrar novos cosméticos.
           </p>
-          <video
+          <AdaptiveVideoPlayer
+            src={commercialVideoHls}
+            fallbackSrc={commercialVideo}
             controls
             playsInline
             preload="metadata"
             poster={commercialVideoPoster}
-            aria-label="Demonstração de Mira"
-            onPlay={() => {
-              if (videoPlayed.current) return;
-              videoPlayed.current = true;
-              void trackPublicEvent("VIDEO_PLAY", {
-                experimentId: 93,
-                creativeVariant: "mira-commercial-demo-v1",
-              });
+            ariaLabel="Demonstração de Mira"
+            onPlaybackEvent={(event) => {
+              if (event.type === "play" && !videoPlayed.current) {
+                videoPlayed.current = true;
+                void trackPublicEvent("VIDEO_PLAY", {
+                  experimentId: 93,
+                  creativeVariant: "mira-commercial-demo-v1",
+                });
+              }
+              if (event.type === "ended" && !videoCompleted.current) {
+                videoCompleted.current = true;
+                void trackPublicEvent("VIDEO_COMPLETED", {
+                  experimentId: 93,
+                  creativeVariant: "mira-commercial-demo-v1",
+                });
+              }
             }}
-            onEnded={() => {
-              if (videoCompleted.current) return;
-              videoCompleted.current = true;
-              void trackPublicEvent("VIDEO_COMPLETED", {
-                experimentId: 93,
-                creativeVariant: "mira-commercial-demo-v1",
-              });
-            }}
-          >
-            <source src={commercialVideo} type="video/mp4" />
-          </video>
+          />
           <div className="mira-commercial-proof">
             <strong>Veja antes de decidir:</strong> entrada guiada, resultado
             claro e duas organizações incluídas por R$ 49, em pagamento único.

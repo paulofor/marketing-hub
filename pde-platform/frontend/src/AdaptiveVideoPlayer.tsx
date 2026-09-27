@@ -1,9 +1,11 @@
-import { type CSSProperties, useEffect, useRef } from 'react';
-import Hls from 'hls.js';
+import { type CSSProperties, useEffect, useRef } from "react";
+import Hls from "hls.js";
 
 type AdaptiveVideoPlayerProps = {
   src: string;
+  fallbackSrc?: string;
   poster?: string;
+  ariaLabel?: string;
   className?: string;
   style?: CSSProperties;
   controls?: boolean;
@@ -11,22 +13,25 @@ type AdaptiveVideoPlayerProps = {
   muted?: boolean;
   loop?: boolean;
   playsInline?: boolean;
-  preload?: 'none' | 'metadata' | 'auto';
+  preload?: "none" | "metadata" | "auto";
   onPlaybackEvent?: (event: VideoPlaybackEvent) => void;
 };
 
 export type VideoPlaybackEvent = {
-  type: 'play' | 'progress' | 'ended' | 'error';
+  type: "play" | "progress" | "ended" | "error";
   currentTime: number;
   duration: number;
   percent?: number;
 };
 
 function isHlsSource(src: string) {
-  return src.includes('.m3u8');
+  return src.includes(".m3u8");
 }
 
-function readPlaybackState(video: HTMLVideoElement, percent?: number): Omit<VideoPlaybackEvent, 'type'> {
+function readPlaybackState(
+  video: HTMLVideoElement,
+  percent?: number,
+): Omit<VideoPlaybackEvent, "type"> {
   return {
     currentTime: Number.isFinite(video.currentTime) ? video.currentTime : 0,
     duration: Number.isFinite(video.duration) ? video.duration : 0,
@@ -36,7 +41,9 @@ function readPlaybackState(video: HTMLVideoElement, percent?: number): Omit<Vide
 
 export function AdaptiveVideoPlayer({
   src,
+  fallbackSrc,
   poster,
+  ariaLabel,
   className,
   style,
   controls = false,
@@ -44,10 +51,12 @@ export function AdaptiveVideoPlayer({
   muted = false,
   loop = false,
   playsInline = true,
-  preload = 'metadata',
+  preload = "metadata",
   onPlaybackEvent,
 }: AdaptiveVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const fallbackAppliedRef = useRef(false);
   const playbackEventRef = useRef(onPlaybackEvent);
   const progressMarksRef = useRef(new Set<number>());
 
@@ -61,6 +70,7 @@ export function AdaptiveVideoPlayer({
       return undefined;
     }
     progressMarksRef.current.clear();
+    fallbackAppliedRef.current = false;
 
     if (!isHlsSource(src)) {
       video.src = src;
@@ -70,7 +80,7 @@ export function AdaptiveVideoPlayer({
       return undefined;
     }
 
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = src;
       if (autoPlay) {
         video.play().catch(() => undefined);
@@ -84,6 +94,7 @@ export function AdaptiveVideoPlayer({
         enableWorker: true,
         lowLatencyMode: false,
       });
+      hlsRef.current = hls;
       hls.loadSource(src);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -93,25 +104,53 @@ export function AdaptiveVideoPlayer({
       });
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
-          playbackEventRef.current?.({ type: 'error', ...readPlaybackState(video) });
+          playbackEventRef.current?.({
+            type: "error",
+            ...readPlaybackState(video),
+          });
           hls.destroy();
+          if (hlsRef.current === hls) {
+            hlsRef.current = null;
+          }
           destroyed = true;
+          if (fallbackSrc && !fallbackAppliedRef.current) {
+            fallbackAppliedRef.current = true;
+            video.src = fallbackSrc;
+            if (autoPlay) {
+              video.play().catch(() => undefined);
+            }
+          }
         }
       });
       return () => {
         if (!destroyed) {
           hls.destroy();
         }
+        if (hlsRef.current === hls) {
+          hlsRef.current = null;
+        }
       };
     }
 
-    playbackEventRef.current?.({ type: 'error', ...readPlaybackState(video) });
+    if (fallbackSrc) {
+      fallbackAppliedRef.current = true;
+      video.src = fallbackSrc;
+      if (autoPlay) {
+        video.play().catch(() => undefined);
+      }
+    } else {
+      playbackEventRef.current?.({
+        type: "error",
+        ...readPlaybackState(video),
+      });
+    }
     return undefined;
-  }, [autoPlay, src]);
+  }, [autoPlay, fallbackSrc, src]);
 
   return (
     <video
       ref={videoRef}
+      aria-label={ariaLabel}
       className={className}
       style={style}
       poster={poster}
@@ -122,26 +161,51 @@ export function AdaptiveVideoPlayer({
       playsInline={playsInline}
       preload={preload}
       onPlay={(event) => {
-        onPlaybackEvent?.({ type: 'play', ...readPlaybackState(event.currentTarget) });
+        onPlaybackEvent?.({
+          type: "play",
+          ...readPlaybackState(event.currentTarget),
+        });
       }}
       onTimeUpdate={(event) => {
         const video = event.currentTarget;
         if (!Number.isFinite(video.duration) || video.duration <= 0) {
           return;
         }
-        const percent = Math.min(100, Math.floor((video.currentTime / video.duration) * 100));
+        const percent = Math.min(
+          100,
+          Math.floor((video.currentTime / video.duration) * 100),
+        );
         [25, 50, 75, 95].forEach((mark) => {
           if (percent >= mark && !progressMarksRef.current.has(mark)) {
             progressMarksRef.current.add(mark);
-            onPlaybackEvent?.({ type: 'progress', ...readPlaybackState(video, mark) });
+            onPlaybackEvent?.({
+              type: "progress",
+              ...readPlaybackState(video, mark),
+            });
           }
         });
       }}
       onEnded={(event) => {
-        onPlaybackEvent?.({ type: 'ended', ...readPlaybackState(event.currentTarget, 100) });
+        onPlaybackEvent?.({
+          type: "ended",
+          ...readPlaybackState(event.currentTarget, 100),
+        });
       }}
       onError={(event) => {
-        onPlaybackEvent?.({ type: 'error', ...readPlaybackState(event.currentTarget) });
+        if (fallbackSrc && !fallbackAppliedRef.current) {
+          fallbackAppliedRef.current = true;
+          hlsRef.current?.destroy();
+          hlsRef.current = null;
+          event.currentTarget.src = fallbackSrc;
+          if (autoPlay) {
+            event.currentTarget.play().catch(() => undefined);
+          }
+          return;
+        }
+        onPlaybackEvent?.({
+          type: "error",
+          ...readPlaybackState(event.currentTarget),
+        });
       }}
     />
   );

@@ -35,6 +35,12 @@ const readySession = {
 test("mostra valor, preço e primeiro passo antes do compromisso", async ({
   page,
 }) => {
+  const mediaRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("mira-commercial-demo-v1-hls")) {
+      mediaRequests.push(request.url());
+    }
+  });
   const events: Array<{
     eventType: string;
     source: string;
@@ -87,9 +93,19 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
   await expect(
     page.getByText(/duas organizações incluídas por R\$ 49/i),
   ).toBeVisible();
-  await expect(
-    page.getByLabel("Demonstração de Mira").locator("source"),
-  ).toHaveAttribute("src", "/media/mira-commercial-demo-v1.mp4");
+  await expect(page.getByLabel("Demonstração de Mira")).toBeVisible();
+  await expect
+    .poll(() => mediaRequests.some((url) => url.endsWith("/index.m3u8")))
+    .toBe(true);
+  const hlsManifest = await page.request.get(
+    "/media/mira-commercial-demo-v1-hls/index.m3u8",
+  );
+  expect(hlsManifest.ok()).toBe(true);
+  expect(await hlsManifest.text()).toContain("#EXT-X-ENDLIST");
+  const hlsSegment = await page.request.get(
+    "/media/mira-commercial-demo-v1-hls/segment-000.ts",
+  );
+  expect(hlsSegment.ok()).toBe(true);
   await expect(
     page.getByRole("link", { name: /Quero organizar/i }),
   ).toHaveAttribute("href", "https://checkout.example/mira");
@@ -116,6 +132,65 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
   expect(
     events.every((event) => event.metadata.trafficQuality === "INTERNAL_QA"),
   ).toBe(true);
+});
+
+test("usa o MP4 canônico quando o navegador não oferece HLS", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    ["MediaSource", "WebKitMediaSource", "SourceBuffer"].forEach((name) =>
+      Object.defineProperty(window, name, {
+        configurable: true,
+        value: undefined,
+      }),
+    );
+    const canPlayType = HTMLMediaElement.prototype.canPlayType;
+    HTMLMediaElement.prototype.canPlayType = function (type) {
+      return type === "application/vnd.apple.mpegurl"
+        ? ""
+        : canPlayType.call(this, type);
+    };
+  });
+  await page.route(
+    "**/api/pde/products/pde-planejado-36/commercial-offer?slotCode=v1",
+    async (route) => route.fulfill({ status: 503 }),
+  );
+
+  await page.goto("/?mh_test=1");
+
+  await expect
+    .poll(() =>
+      page
+        .getByLabel("Demonstração de Mira")
+        .evaluate((video: HTMLVideoElement) => video.currentSrc),
+    )
+    .toMatch(/mira-commercial-demo-v1[.]mp4$/);
+});
+
+test("troca para o MP4 canônico quando o HLS falha em reprodução", async ({
+  page,
+}) => {
+  await page.route(
+    "**/api/pde/products/pde-planejado-36/commercial-offer?slotCode=v1",
+    async (route) => route.fulfill({ status: 503 }),
+  );
+  await page.goto("/?mh_test=1");
+  const video = page.getByLabel("Demonstração de Mira");
+  await expect
+    .poll(() =>
+      video.evaluate((element: HTMLVideoElement) => element.currentSrc),
+    )
+    .toMatch(/mira-commercial-demo-v1-hls\/index[.]m3u8$/);
+
+  await video.evaluate((element) =>
+    element.dispatchEvent(new Event("error", { bubbles: false })),
+  );
+
+  await expect
+    .poll(() =>
+      video.evaluate((element: HTMLVideoElement) => element.currentSrc),
+    )
+    .toMatch(/mira-commercial-demo-v1[.]mp4$/);
 });
 
 test("retoma a rotina paga sem expor o bearer na URL", async ({ page }) => {

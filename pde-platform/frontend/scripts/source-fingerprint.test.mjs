@@ -12,12 +12,14 @@ async function fixture(t) {
     "docker-entrypoint.d",
     "docker-entrypoint-mira-commercial.d",
     "public",
+    "public-mira-commercial",
     "scripts",
     "src",
   ]) {
     await fs.mkdir(path.join(root, directory), { recursive: true });
   }
   for (const file of [
+    ".dockerignore",
     ".npmrc",
     "Dockerfile",
     "Dockerfile.mira-commercial",
@@ -40,6 +42,13 @@ async function fixture(t) {
   }
   await fs.writeFile(path.join(root, "src", "App.tsx"), "candidata");
   await fs.writeFile(path.join(root, "public", "contract.json"), "{}\n");
+  await fs.mkdir(path.join(root, "public-mira-commercial", "media"), {
+    recursive: true,
+  });
+  await fs.writeFile(
+    path.join(root, "public-mira-commercial", "media", "demo.mp4"),
+    "video canônico",
+  );
   return root;
 }
 
@@ -57,6 +66,16 @@ test("muda a identidade quando pixels ou contrato público mudam", async (t) => 
   const afterSource = await sourceFingerprint(root);
   await fs.writeFile(path.join(root, "public", "contract.json"), '{"version":2}\n');
   assert.notEqual(await sourceFingerprint(root), afterSource);
+});
+
+test("muda a identidade quando o vídeo comercial canônico muda", async (t) => {
+  const root = await fixture(t);
+  const original = await sourceFingerprint(root);
+  await fs.writeFile(
+    path.join(root, "public-mira-commercial", "media", "demo.mp4"),
+    "outro vídeo",
+  );
+  assert.notEqual(await sourceFingerprint(root), original);
 });
 
 test("recusa links na árvore de fontes", async (t) => {

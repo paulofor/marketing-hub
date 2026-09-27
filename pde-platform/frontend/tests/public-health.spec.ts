@@ -56,6 +56,20 @@ type PublicJourneyIntegration = {
   testTrafficPolicy?: string;
 };
 
+type ReadinessResponse = {
+  ok(): boolean;
+  status(): number;
+  dispose?(): Promise<void>;
+};
+
+type ReadinessRetryOptions = {
+  timeoutMs: number;
+  intervalMs: number;
+  description: string;
+  now?: () => number;
+  pause?: (durationMs: number) => Promise<void>;
+};
+
 const defaultContract: Required<PublicHealthContract> = {
   slug: "metodo-musa-7-dias",
   healthPath: "/",
@@ -72,6 +86,40 @@ const defaultContract: Required<PublicHealthContract> = {
     "Slots versionados do Clube MUSA",
   ],
 };
+
+async function waitForReadyResponse<T extends ReadinessResponse>(
+  load: () => Promise<T>,
+  options: ReadinessRetryOptions,
+) {
+  const now = options.now ?? Date.now;
+  const pause =
+    options.pause ??
+    ((durationMs: number) =>
+      new Promise<void>((resolve) => setTimeout(resolve, durationMs)));
+  const startedAt = now();
+  let attempts = 0;
+  let lastStatus = 0;
+
+  while (true) {
+    const response = await load();
+    attempts += 1;
+    lastStatus = response.status();
+    if (response.ok()) {
+      return response;
+    }
+
+    await response.dispose?.();
+    const elapsedMs = now() - startedAt;
+    if (elapsedMs >= options.timeoutMs) {
+      throw new Error(
+        `${options.description} após ${attempts} tentativas; último HTTP ${lastStatus}`,
+      );
+    }
+    await pause(
+      Math.min(options.intervalMs, options.timeoutMs - elapsedMs),
+    );
+  }
+}
 
 function parseList(value: string | undefined) {
   return value
@@ -144,11 +192,14 @@ async function loadCommercialOffer(
     return null;
   }
 
-  const response = await request.get(commercialOfferPath);
-  expect(
-    response.ok(),
-    `Oferta comercial publica indisponivel: ${commercialOfferPath}`,
-  ).toBeTruthy();
+  const response = await waitForReadyResponse(
+    () => request.get(commercialOfferPath),
+    {
+      timeoutMs: 60_000,
+      intervalMs: 2_000,
+      description: `Oferta comercial pública indisponível: ${commercialOfferPath}`,
+    },
+  );
   const offer = (await response.json()) as PublicCommercialOffer;
   expect(
     offer.primaryCta?.trim(),
@@ -163,6 +214,56 @@ async function loadCommercialOffer(
   ).toBeTruthy();
   return offer;
 }
+
+test("readiness comercial tolera aquecimento transitório", async () => {
+  const statuses = [503, 502, 200];
+  let attempts = 0;
+  const response = await waitForReadyResponse(
+    async () => {
+      const status = statuses[attempts] ?? 200;
+      attempts += 1;
+      return {
+        ok: () => status === 200,
+        status: () => status,
+      };
+    },
+    {
+      timeoutMs: 10,
+      intervalMs: 1,
+      description: "Oferta em aquecimento",
+      pause: async () => undefined,
+    },
+  );
+
+  expect(response.status()).toBe(200);
+  expect(attempts).toBe(3);
+});
+
+test("readiness comercial preserva falha persistente", async () => {
+  let clock = 0;
+  let attempts = 0;
+  await expect(
+    waitForReadyResponse(
+      async () => {
+        attempts += 1;
+        return {
+          ok: () => false,
+          status: () => 503,
+        };
+      },
+      {
+        timeoutMs: 4,
+        intervalMs: 2,
+        description: "Oferta indisponível",
+        now: () => clock,
+        pause: async (durationMs) => {
+          clock += durationMs;
+        },
+      },
+    ),
+  ).rejects.toThrow(/Oferta indisponível.*3 tentativas.*HTTP 503/);
+  expect(attempts).toBe(3);
+});
 
 function formatBrl(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -231,6 +332,7 @@ test("health publico renderiza app, javascript e texto comercial", async ({
   page,
   request,
 }) => {
+  test.setTimeout(120_000);
   const pageErrors: string[] = [];
   const analyticsRequests: string[] = [];
   const contract = await loadContract(request);

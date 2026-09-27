@@ -7518,3 +7518,28 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   decisões e SHA-256 do mesmo PNG antes de materializá-lo como ativo aprovado do plano. O endpoint
   documentado permite reaplicar decisões anteriores pela interface, sem nova inferência, agente,
   publicação ou autorização de mídia; testes cobrem caminho feliz, hash divergente e idempotência.
+- **Recorrência audiovisual antes da publicação:** o vídeo público determinístico comunicava sem
+  áudio, enquanto a tela oficial de cadastro do experimento exige confirmação de áudio utilizável.
+  Marcar a confirmação seria falso; reutilizar todo o ativo 47 também levaria para produção o texto
+  interno de homologação e a promessa não canônica de “correção técnica”. A correção versiona apenas
+  os 11,3 segundos fiéis da voz aprovada, fixa seu SHA-256, exclui a promessa divergente e faz o build
+  recusar fonte alterada ou saída que não seja H.264/AAC, 1080×1920 e 15 segundos. Assim, a prova
+  audiovisual pode entrar no experimento sem novo custo e sem ampliar a oferta silenciosamente.
+
+## LOOP-PDE-PUBLIC-SMOKE-BACKEND-WARMUP — troca saudável falha antes da oferta ficar pronta
+
+- **Evidência confirmada em 27/09/2026:** o run PDE `36288596852` publicou backend e frontend de
+  Mira, passou portas, HTTPS e recibos, mas falhou no smoke porque a oferta comercial de Vega v7
+  respondeu transitoriamente sem sucesso durante o aquecimento. Minutos depois, a mesma rota
+  respondeu HTTP 200 e o mesmo `test:public-health` aprovou desktop, iPhone 15 Pro e Pixel 7 sem
+  nova publicação.
+- **Causa-raiz:** o health estático do proxy ficava pronto antes da rota de oferta dependente do
+  backend, e o smoke fazia uma única consulta imediata. O histórico posterior contradisse uma
+  regressão funcional: identidade, imagem e conteúdo permaneceram corretos e a rota se recuperou.
+- **Alternativas avaliadas:** aumentar apenas o atraso fixo amplia toda publicação; ignorar a oferta
+  enfraquece o gate de checkout; tentar somente a rota dinâmica dentro de uma janela limitada
+  absorve o aquecimento e ainda detecta falha persistente. A terceira alternativa foi adotada.
+- **Correção e prevenção:** a oferta comercial recebe retry de dois segundos por até 60 segundos,
+  com descarte das respostas falhas e erro contendo tentativas e último HTTP. Testes reproduzem
+  recuperação após 503/502 e indisponibilidade 503 persistente; os demais contratos continuam sem
+  tolerância adicional.

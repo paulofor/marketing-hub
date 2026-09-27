@@ -2,6 +2,5 @@ node_modules
 dist
 dist-mira
 dist-mira-commercial
-public-mira-commercial
 test-results
 playwright-report

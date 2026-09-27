@@ -218,10 +218,13 @@ public class ExperimentVideoAssetService {
       throws IOException {
     Experiment experiment = ensureExperiment(experimentId);
     validateUserAdVideoUpload(file, request);
-    List<Map<String, Object>> approvedSources =
+    List<Map<String, Object>> approvedCreativeSources =
         resolveApprovedVisualSources(experiment, request.visualSourceCreativeIds());
+    List<Map<String, Object>> approvedVideoSources =
+        resolveApprovedVideoSources(experiment, request.visualSourceVideoAssetIds());
     String uploadMetadata =
-        buildUserAdVideoUploadMetadata(experimentId, file, request, approvedSources);
+        buildUserAdVideoUploadMetadata(
+            experimentId, file, request, approvedCreativeSources, approvedVideoSources);
     Asset asset =
         salesVideoService.storeAsset(
             file, AssetType.VIDEO, MediaProvider.USER_UPLOAD, uploadMetadata);
@@ -456,11 +459,15 @@ public class ExperimentVideoAssetService {
         || !StringUtils.hasText(request.script())
         || !StringUtils.hasText(request.visualSourceKey())
         || !StringUtils.hasText(request.visualSourceDescription())
-        || !StringUtils.hasText(request.productionReference())
-        || request.visualSourceCreativeIds() == null
-        || request.visualSourceCreativeIds().isEmpty()) {
+        || !StringUtils.hasText(request.productionReference())) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "commercial metadata and provenance are required");
+    }
+    List<Long> creativeIds = safeSourceIds(request.visualSourceCreativeIds());
+    List<Long> videoAssetIds = safeSourceIds(request.visualSourceVideoAssetIds());
+    if (creativeIds.isEmpty() && videoAssetIds.isEmpty()) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "at least one approved visual source is required");
     }
     if (request.durationSeconds() == null
         || request.durationSeconds() < MIN_USER_AD_DURATION_SECONDS
@@ -472,17 +479,7 @@ public class ExperimentVideoAssetService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "audio review must be confirmed before upload");
     }
-    long distinctSources =
-        request.visualSourceCreativeIds().stream().filter(Objects::nonNull).distinct().count();
-    boolean invalidSourceId =
-        request.visualSourceCreativeIds().stream()
-            .anyMatch(creativeId -> creativeId == null || creativeId < 1);
-    if (invalidSourceId
-        || distinctSources != request.visualSourceCreativeIds().size()
-        || distinctSources > 10) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST, "visual source creative ids must be unique and limited to 10");
-    }
+    validateVisualSourceIds(creativeIds, videoAssetIds);
     if (!isVersionedProductionReference(request.productionReference().trim())) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
@@ -495,7 +492,7 @@ public class ExperimentVideoAssetService {
       Experiment target, List<Long> creativeIds) {
     Experiment permittedSource =
         target.getSourceExperiment() == null ? target : target.getSourceExperiment();
-    return creativeIds.stream()
+    return safeSourceIds(creativeIds).stream()
         .map(
             creativeId -> {
               Creative source =
@@ -542,6 +539,78 @@ public class ExperimentVideoAssetService {
         .toList();
   }
 
+  /** Confirma que cada vídeo-fonte foi aprovado e pertence ao experimento adotado. */
+  private List<Map<String, Object>> resolveApprovedVideoSources(
+      Experiment target, List<Long> videoAssetIds) {
+    Experiment permittedSource =
+        target.getSourceExperiment() == null ? target : target.getSourceExperiment();
+    return safeSourceIds(videoAssetIds).stream()
+        .map(
+            videoAssetId -> {
+              ExperimentVideoAsset source =
+                  repository
+                      .findById(videoAssetId)
+                      .orElseThrow(
+                          () ->
+                              new ResponseStatusException(
+                                  HttpStatus.BAD_REQUEST, "visual source video was not found"));
+              boolean sameProduct =
+                  source.getExperiment().getProduct() != null
+                      && target.getProduct() != null
+                      && Objects.equals(
+                          source.getExperiment().getProduct().getId(), target.getProduct().getId());
+              boolean sameHypothesis =
+                  target.getHypothesisRefIdForPending() != null
+                      && Objects.equals(
+                          source.getExperiment().getHypothesisRefIdForPending(),
+                          target.getHypothesisRefIdForPending());
+              boolean approved =
+                  source.getStatus() == ExperimentVideoStatus.READY
+                      && source.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED
+                      && source.getReviewedAt() != null;
+              if (!Objects.equals(source.getExperiment().getId(), permittedSource.getId())
+                  || !sameProduct
+                  || !sameHypothesis
+                  || !approved
+                  || !StringUtils.hasText(source.getAssetUrl())) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "visual source video must be approved and belong to the adopted experiment");
+              }
+              Map<String, Object> evidence = new LinkedHashMap<>();
+              evidence.put("videoAssetId", source.getId());
+              evidence.put("experimentId", source.getExperiment().getId());
+              evidence.put("slot", source.getSlot().name());
+              evidence.put("assetUrl", source.getAssetUrl().trim());
+              evidence.put("status", source.getStatus().name());
+              evidence.put("reviewStatus", source.getReviewStatus().name());
+              evidence.put("reviewedAt", source.getReviewedAt().toString());
+              return evidence;
+            })
+        .toList();
+  }
+
+  /** Converte uma coleção ausente de fontes em lista vazia imutável. */
+  private List<Long> safeSourceIds(List<Long> sourceIds) {
+    return sourceIds == null ? List.of() : sourceIds;
+  }
+
+  /** Valida unicidade e limite conjunto das fontes visuais declaradas. */
+  private void validateVisualSourceIds(List<Long> creativeIds, List<Long> videoAssetIds) {
+    boolean invalidSourceId =
+        creativeIds.stream().anyMatch(id -> id == null || id < 1)
+            || videoAssetIds.stream().anyMatch(id -> id == null || id < 1);
+    long distinctCreativeIds = creativeIds.stream().filter(Objects::nonNull).distinct().count();
+    long distinctVideoIds = videoAssetIds.stream().filter(Objects::nonNull).distinct().count();
+    if (invalidSourceId
+        || distinctCreativeIds != creativeIds.size()
+        || distinctVideoIds != videoAssetIds.size()
+        || creativeIds.size() + videoAssetIds.size() > 10) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "visual source ids must be unique and limited to 10");
+    }
+  }
+
   /** Aceita somente um script versionável do repositório, sem URL ou travessia de diretório. */
   private boolean isVersionedProductionReference(String value) {
     return !value.startsWith("/")
@@ -576,10 +645,11 @@ public class ExperimentVideoAssetService {
       Long experimentId,
       MultipartFile file,
       UploadExperimentAdVideoRequest request,
-      List<Map<String, Object>> approvedSources) {
+      List<Map<String, Object>> approvedCreativeSources,
+      List<Map<String, Object>> approvedVideoSources) {
     Map<String, Object> metadata = new LinkedHashMap<>();
-    metadata.put("artifactType", "experiment.userAdVideoUpload.v2");
-    metadata.put("generationStrategy", "VERSIONED_APPROVED_CREATIVE_MONTAGE");
+    metadata.put("artifactType", "experiment.userAdVideoUpload.v3");
+    metadata.put("generationStrategy", "VERSIONED_APPROVED_ASSET_MONTAGE");
     metadata.put("experimentId", experimentId);
     metadata.put("originalFilename", file.getOriginalFilename());
     metadata.put("contentType", file.getContentType());
@@ -592,7 +662,8 @@ public class ExperimentVideoAssetService {
     metadata.put("visualSourceKey", request.visualSourceKey().trim());
     metadata.put("visualSourceDescription", request.visualSourceDescription().trim());
     metadata.put("productionReference", request.productionReference().trim());
-    metadata.put("approvedSourceCreatives", approvedSources);
+    metadata.put("approvedSourceCreatives", approvedCreativeSources);
+    metadata.put("approvedSourceVideos", approvedVideoSources);
     try {
       return OBJECT_MAPPER.writeValueAsString(metadata);
     } catch (JsonProcessingException ex) {

@@ -16,4 +16,32 @@ public record UploadExperimentAdVideoRequest(
     String visualSourceDescription,
     String productionReference,
     List<Long> visualSourceCreativeIds,
-    boolean requiredForRelease) {}
+    List<Long> visualSourceVideoAssetIds,
+    boolean requiredForRelease) {
+
+  /** Mantém compatibilidade com uploads que declaravam somente criativos como fonte visual. */
+  public UploadExperimentAdVideoRequest(
+      String objective,
+      String primaryMetric,
+      String script,
+      Integer durationSeconds,
+      Boolean hasAudio,
+      String visualSourceKey,
+      String visualSourceDescription,
+      String productionReference,
+      List<Long> visualSourceCreativeIds,
+      boolean requiredForRelease) {
+    this(
+        objective,
+        primaryMetric,
+        script,
+        durationSeconds,
+        hasAudio,
+        visualSourceKey,
+        visualSourceDescription,
+        productionReference,
+        visualSourceCreativeIds,
+        List.of(),
+        requiredForRelease);
+  }
+}

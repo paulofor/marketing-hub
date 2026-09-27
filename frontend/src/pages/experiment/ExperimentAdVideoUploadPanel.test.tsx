@@ -104,7 +104,64 @@ describe("upload governado de vídeo do experimento", () => {
         hasAudio: true,
         visualSourceKey: "capella-exp88-approved-assets-v1",
         visualSourceCreativeIds: [522, 523],
+        visualSourceVideoAssetIds: [],
         requiredForRelease: true,
+      }),
+    );
+  });
+
+  it("aceita um vídeo aprovado como única fonte visual", async () => {
+    const file = new File(["mp4"], "mira-v1.mp4", { type: "video/mp4" });
+    render(
+      <ExperimentAdVideoUploadPanel
+        experiment={{ ...experiment, id: "93", productId: 10 }}
+        locked={false}
+        metadataReader={async () => ({
+          durationSeconds: 15,
+          width: 1080,
+          height: 1920,
+        })}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Arquivo MP4"), {
+      target: { files: [file] },
+    });
+    await screen.findByText(/1080×1920 · 15s/);
+    fireEvent.change(screen.getByLabelText("Roteiro exibido no vídeo"), {
+      target: { value: "Sua rotina de pele pode ser mais simples." },
+    });
+    fireEvent.change(
+      screen.getByLabelText("Chave dos ativos visuais de origem"),
+      { target: { value: "mira-video-47-approved-v1" } },
+    );
+    fireEvent.change(
+      screen.getByLabelText("IDs dos vídeos aprovados usados como fonte"),
+      { target: { value: "47" } },
+    );
+    fireEvent.change(screen.getByLabelText("Evidência dos ativos usados"), {
+      target: { value: "Recorte fiel do vídeo aprovado #47." },
+    });
+    fireEvent.change(
+      screen.getByLabelText("Referência versionada da produção"),
+      { target: { value: "scripts/marketing/create-mira-video-v1.sh" } },
+    );
+    fireEvent.click(
+      screen.getByLabelText(
+        "Confirmei a reprodução e o arquivo possui áudio utilizável.",
+      ),
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Enviar para revisão do experimento",
+      }),
+    );
+
+    await waitFor(() => expect(fixture.mutateAsync).toHaveBeenCalledTimes(1));
+    expect(fixture.mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        visualSourceCreativeIds: [],
+        visualSourceVideoAssetIds: [47],
       }),
     );
   });

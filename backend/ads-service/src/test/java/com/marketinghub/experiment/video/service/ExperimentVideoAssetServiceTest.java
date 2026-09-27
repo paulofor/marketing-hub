@@ -225,12 +225,78 @@ class ExperimentVideoAssetServiceTest {
     assertThat(dto.cost()).isZero();
     assertThat(dto.requestJson())
         .contains(
-            "experiment.userAdVideoUpload.v2",
+            "experiment.userAdVideoUpload.v3",
             "capella-exp88-approved-assets-v1",
             "approvedSourceCreatives",
             "\"reviewedAt\":\"2026-09-24T12:00:00Z\"");
     verify(salesVideoService)
         .storeAsset(any(), eq(AssetType.VIDEO), eq(MediaProvider.USER_UPLOAD), any());
+  }
+
+  /** Usa um vídeo aprovado do próprio experimento como origem auditável de uma nova montagem. */
+  @Test
+  void shouldUploadVersionedVideoFromApprovedVideoSource() throws Exception {
+    Product product = Product.builder().id(10L).build();
+    Hypothesis hypothesis = Hypothesis.builder().id(java.util.UUID.randomUUID()).build();
+    Experiment experiment =
+        Experiment.builder().id(93L).product(product).hypothesisRef(hypothesis).build();
+    ExperimentVideoAsset sourceVideo =
+        ExperimentVideoAsset.builder()
+            .id(47L)
+            .experiment(experiment)
+            .slot(ExperimentVideoSlot.AD)
+            .status(ExperimentVideoStatus.READY)
+            .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+            .reviewedAt(java.time.Instant.parse("2026-09-26T22:00:00Z"))
+            .assetUrl("https://cdn.test/mira-approved-v3.mp4")
+            .build();
+    Asset storedAsset =
+        Asset.builder()
+            .id(2200L)
+            .type(AssetType.VIDEO)
+            .provider(MediaProvider.USER_UPLOAD)
+            .status(AssetStatus.READY)
+            .url("https://cdn.test/mira-commercial-v1.mp4")
+            .build();
+    byte[] mp4Bytes = new byte[] {0, 0, 0, 24, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm'};
+    MockMultipartFile file = new MockMultipartFile("file", "mira-v1.mp4", "video/mp4", mp4Bytes);
+    UploadExperimentAdVideoRequest request =
+        new UploadExperimentAdVideoRequest(
+            "Demonstrar a rotina antes da compra",
+            "Compras líquidas e contribuição após mídia (R$)",
+            "Sua rotina de pele pode ser mais simples.",
+            15,
+            true,
+            "mira-video-47-approved-v1",
+            "Recorte fiel do vídeo aprovado #47.",
+            "scripts/marketing/create-mira-commercial-video-v1.sh",
+            List.of(),
+            List.of(47L),
+            true);
+    given(experimentRepository.findById(93L)).willReturn(Optional.of(experiment));
+    given(repository.findById(47L)).willReturn(Optional.of(sourceVideo));
+    given(
+            salesVideoService.storeAsset(
+                any(), eq(AssetType.VIDEO), eq(MediaProvider.USER_UPLOAD), any()))
+        .willReturn(storedAsset);
+    given(repository.save(any(ExperimentVideoAsset.class)))
+        .willAnswer(
+            invocation -> {
+              ExperimentVideoAsset saved = invocation.getArgument(0);
+              saved.setId(48L);
+              return saved;
+            });
+
+    ExperimentVideoAssetDto dto = service.uploadUserAdVideo(93L, file, request);
+
+    assertThat(dto.id()).isEqualTo(48L);
+    assertThat(dto.reviewStatus()).isEqualTo(ExperimentVideoReviewStatus.PENDING);
+    assertThat(dto.requestJson())
+        .contains(
+            "experiment.userAdVideoUpload.v3",
+            "approvedSourceVideos",
+            "\"videoAssetId\":47",
+            "https://cdn.test/mira-approved-v3.mp4");
   }
 
   /** Rejeita arquivo apenas renomeado como MP4 antes de gravar qualquer asset. */

@@ -13,6 +13,7 @@ export interface UploadExperimentAdVideoInput {
   visualSourceDescription: string;
   productionReference: string;
   visualSourceCreativeIds: number[];
+  visualSourceVideoAssetIds: number[];
   requiredForRelease: boolean;
 }
 
@@ -33,6 +34,9 @@ export function useUploadExperimentAdVideo(experimentId: string | number) {
       form.append("productionReference", input.productionReference);
       input.visualSourceCreativeIds.forEach((creativeId) =>
         form.append("visualSourceCreativeIds", String(creativeId)),
+      );
+      input.visualSourceVideoAssetIds.forEach((videoAssetId) =>
+        form.append("visualSourceVideoAssetIds", String(videoAssetId)),
       );
       form.append("requiredForRelease", String(input.requiredForRelease));
       const { data } = await axios.post<ExperimentVideoAsset>(

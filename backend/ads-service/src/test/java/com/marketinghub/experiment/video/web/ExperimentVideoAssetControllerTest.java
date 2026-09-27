@@ -59,5 +59,42 @@ class ExperimentVideoAssetControllerTest {
     assertThat(request.getValue().hasAudio()).isTrue();
     assertThat(request.getValue().visualSourceKey()).isEqualTo("capella-exp88-approved-assets-v1");
     assertThat(request.getValue().visualSourceCreativeIds()).containsExactly(522L, 523L);
+    assertThat(request.getValue().visualSourceVideoAssetIds()).isNull();
+  }
+
+  /** Encaminha vídeos aprovados como fonte quando não existem criativos intermediários. */
+  @Test
+  void uploadsAdVideoWithApprovedVideoSource() throws Exception {
+    MockMultipartFile file =
+        new MockMultipartFile(
+            "file",
+            "mira-v1.mp4",
+            "video/mp4",
+            new byte[] {0, 0, 0, 24, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm'});
+    when(service.uploadUserAdVideo(eq(93L), any(), any())).thenReturn(null);
+
+    mockMvc
+        .perform(
+            multipart("/api/experiments/93/video-assets/ad-uploads")
+                .file(file)
+                .header("X-Tenant-ID", "default")
+                .param("objective", "Demonstrar a rotina")
+                .param("primaryMetric", "Compras líquidas")
+                .param("script", "Sua rotina de pele pode ser mais simples.")
+                .param("durationSeconds", "15")
+                .param("hasAudio", "true")
+                .param("visualSourceKey", "mira-video-47-approved-v1")
+                .param("visualSourceDescription", "Recorte fiel do vídeo aprovado #47.")
+                .param(
+                    "productionReference", "scripts/marketing/create-mira-commercial-video-v1.sh")
+                .param("visualSourceVideoAssetIds", "47")
+                .param("requiredForRelease", "true"))
+        .andExpect(status().isCreated());
+
+    ArgumentCaptor<UploadExperimentAdVideoRequest> request =
+        ArgumentCaptor.forClass(UploadExperimentAdVideoRequest.class);
+    verify(service).uploadUserAdVideo(eq(93L), any(), request.capture());
+    assertThat(request.getValue().visualSourceCreativeIds()).isNull();
+    assertThat(request.getValue().visualSourceVideoAssetIds()).containsExactly(47L);
   }
 }

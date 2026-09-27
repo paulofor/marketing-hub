@@ -44,6 +44,9 @@ assert_proxy() {
   compose exec -T proxy wget -qO- --no-check-certificate \
     --header='Host: kit-whatsapp-pronto.digicomdigital.com.br' \
     https://127.0.0.1/ | grep -Fq 'Welcome to nginx!'
+  compose exec -T proxy wget -qO- --no-check-certificate \
+    --header='Host: mira.digicomdigital.com.br' \
+    https://127.0.0.1/ | grep -Fq 'Welcome to nginx!'
 }
 
 cleanup

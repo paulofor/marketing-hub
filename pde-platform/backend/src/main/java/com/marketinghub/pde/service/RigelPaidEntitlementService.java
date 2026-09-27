@@ -23,19 +23,42 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-/** Controla o entitlement pago do Rigel a partir da auditoria autoritativa do Mercado Pago. */
+/** Controla entitlements pagos de PDEs a partir da auditoria autoritativa do Mercado Pago. */
 @Service
 public class RigelPaidEntitlementService {
     public static final String PRODUCT_SLUG = "kit-whatsapp-pronto";
     public static final String EXPERIENCE_VERSION = "kit-whatsapp-pronto-pde-v2";
     public static final String PAID_SOURCE = "MERCADO_PAGO";
     public static final String REFUNDED_SOURCE = "MERCADO_PAGO_REFUNDED";
+    public static final String MIRA_PRODUCT_SLUG = "pde-planejado-36";
+    public static final String MIRA_EXPERIENCE_VERSION = "mira-commercial-v1";
     private static final String PROVIDER = "MERCADO_PAGO";
     private static final String OFFER_REFERENCE = "experiment:89";
     private static final long PRODUCT_ID = 9L;
     private static final long EXPERIMENT_ID = 89L;
     private static final int AMOUNT_CENTS = 34_900;
     private static final String CURRENCY = "BRL";
+    private static final Map<String, PaidProductPolicy> POLICIES = Map.of(
+            PRODUCT_SLUG,
+            new PaidProductPolicy(
+                    PRODUCT_SLUG,
+                    EXPERIENCE_VERSION,
+                    OFFER_REFERENCE,
+                    PRODUCT_ID,
+                    EXPERIMENT_ID,
+                    AMOUNT_CENTS,
+                    CURRENCY,
+                    "Kit WhatsApp Pronto"),
+            MIRA_PRODUCT_SLUG,
+            new PaidProductPolicy(
+                    MIRA_PRODUCT_SLUG,
+                    MIRA_EXPERIENCE_VERSION,
+                    "experiment:93",
+                    10L,
+                    93L,
+                    4_900,
+                    CURRENCY,
+                    "Mira"));
     private static final Logger log = LoggerFactory.getLogger(RigelPaidEntitlementService.class);
 
     private final String jdbcUrl;
@@ -91,7 +114,8 @@ public class RigelPaidEntitlementService {
                 ? recordDatabasePayment(candidate)
                 : recordInMemoryPayment(candidate);
         log.info(
-                "Entitlement financeiro do Rigel reconciliado; transactionId={}, status={}, result={}",
+                "Entitlement financeiro PDE reconciliado; productSlug={}, transactionId={}, status={}, result={}",
+                candidate.productSlug(),
                 candidate.transactionId(),
                 candidate.paymentStatus(),
                 result.created() ? "RECORDED" : "DUPLICATE_OR_UPDATED");
@@ -104,39 +128,54 @@ public class RigelPaidEntitlementService {
 
     /** Localiza uma compra aprovada, vincula-a ao token uma única vez e devolve sua referência. */
     public PaidClaim claimApprovedPayment(String email, String accessToken) {
-        PaymentEntitlement payment = approvedPayment(email);
+        return claimApprovedPayment(PRODUCT_SLUG, email, accessToken);
+    }
+
+    /** Vincula a compra aprovada do produto informado a um único token de acesso. */
+    public PaidClaim claimApprovedPayment(String productSlug, String email, String accessToken) {
+        PaidProductPolicy policy = policy(productSlug);
+        PaymentEntitlement payment = approvedPayment(policy, email);
         String accessHash = sha256(required(accessToken, "Token de acesso não informado"));
         PaymentEntitlement claimed = payment.accessReferenceHash() == null
                 ? linkAccess(payment, accessHash)
                 : payment;
         if (!accessHash.equals(claimed.accessReferenceHash())) {
-            throw new SecurityException("Pagamento já vinculado a outro acesso do Kit WhatsApp Pronto");
+            throw new SecurityException("Pagamento já vinculado a outro acesso de " + policy.displayName());
         }
-        return toPaidClaim(claimed);
+        return toPaidClaim(policy, claimed);
     }
 
     /** Confirma a compra antes de qualquer grant ser criado, sem reservar ou expor um token. */
     public PaidClaim requireApprovedPayment(String email) {
-        PaymentEntitlement payment = approvedPayment(email);
-        return toPaidClaim(payment);
+        return requireApprovedPayment(PRODUCT_SLUG, email);
     }
 
-    /** Exige compra aprovada, versão exata e vínculo com o token em toda fronteira paga do Rigel. */
+    /** Confirma a compra aprovada do produto antes de criar ou reutilizar um grant. */
+    public PaidClaim requireApprovedPayment(String productSlug, String email) {
+        PaidProductPolicy policy = policy(productSlug);
+        PaymentEntitlement payment = approvedPayment(policy, email);
+        return toPaidClaim(policy, payment);
+    }
+
+    /** Exige compra aprovada, versão exata e vínculo com o token em toda fronteira paga. */
     public void requireActiveAccess(AccessGrant grant) {
-        requireExactExperience(grant.getExperienceVersion());
+        PaidProductPolicy policy = policy(grant.getProductSlug());
+        requireExactExperience(policy.productSlug(), grant.getExperienceVersion());
         if ("INTERNAL_QA".equalsIgnoreCase(grant.getSource())) {
             return;
         }
         if (!PAID_SOURCE.equalsIgnoreCase(grant.getSource())
                 && !REFUNDED_SOURCE.equalsIgnoreCase(grant.getSource())) {
-            throw new SecurityException("Acesso do Kit não foi originado por pagamento confirmado");
+            throw new SecurityException(
+                    "Acesso de " + policy.displayName() + " não foi originado por pagamento confirmado");
         }
-        PaymentEntitlement payment = latestPayment(grant.getEmail())
+        PaymentEntitlement payment = latestPayment(policy, grant.getEmail())
                 .orElseThrow(() -> new SecurityException(
-                        "Pagamento vigente do Kit WhatsApp Pronto não encontrado"));
-        requireApproved(payment);
+                        "Pagamento vigente de " + policy.displayName() + " não encontrado"));
+        requireApproved(policy, payment);
         if (!sha256(grant.getToken()).equals(payment.accessReferenceHash())) {
-            throw new SecurityException("Pagamento não corresponde ao token desta área do Kit");
+            throw new SecurityException(
+                    "Pagamento não corresponde ao token desta área de " + policy.displayName());
         }
     }
 
@@ -148,7 +187,14 @@ public class RigelPaidEntitlementService {
     /** Retorna o reembolso exato e seus campos comerciais quando ele pertence ao acesso atual. */
     public Optional<RefundClaim> findConfirmedRefund(
             String email, String transactionId, String accessToken) {
-        PaymentEntitlement latest = latestPayment(email)
+        return findConfirmedRefund(PRODUCT_SLUG, email, transactionId, accessToken);
+    }
+
+    /** Retorna o reembolso confirmado do produto e token exatos. */
+    public Optional<RefundClaim> findConfirmedRefund(
+            String productSlug, String email, String transactionId, String accessToken) {
+        PaidProductPolicy policy = policy(productSlug);
+        PaymentEntitlement latest = latestPayment(policy, email)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Pagamento do reembolso não encontrado para esta compradora"));
         if (!latest.transactionId().equals(required(
@@ -170,31 +216,60 @@ public class RigelPaidEntitlementService {
                 latest.transactionId(),
                 BigDecimal.valueOf(latest.amountCents(), 2),
                 latest.currency(),
-                EXPERIMENT_ID,
+                policy.experimentId(),
                 latest.paymentStatus(),
                 latest.refundedAt() == null ? latest.verifiedAt() : latest.refundedAt()));
     }
 
     /** Converte o registro financeiro aprovado nos correlatores exigidos pelos eventos comerciais. */
-    private PaidClaim toPaidClaim(PaymentEntitlement payment) {
+    private PaidClaim toPaidClaim(PaidProductPolicy policy, PaymentEntitlement payment) {
         return new PaidClaim(
                 payment.transactionId(),
                 payment.verifiedAt(),
                 BigDecimal.valueOf(payment.amountCents(), 2),
                 payment.currency(),
-                EXPERIMENT_ID);
+                policy.experimentId());
     }
 
-    /** Informa se o produto informado usa a guarda comercial específica do Rigel. */
+    /** Informa se o produto informado usa a guarda comercial do Mercado Pago. */
     public boolean supports(String productSlug) {
-        return PRODUCT_SLUG.equals(productSlug);
+        return POLICIES.containsKey(productSlug);
     }
 
     /** Confere a versão comercial imutável aprovada para o Kit. */
     public void requireExactExperience(String experienceVersion) {
-        if (!EXPERIENCE_VERSION.equals(experienceVersion)) {
-            throw new SecurityException("A compra não corresponde à versão paga vigente do Kit WhatsApp Pronto");
+        requireExactExperience(PRODUCT_SLUG, experienceVersion);
+    }
+
+    /** Confere a versão comercial imutável do produto pago informado. */
+    public void requireExactExperience(String productSlug, String experienceVersion) {
+        PaidProductPolicy policy = policy(productSlug);
+        if (!policy.experienceVersion().equals(experienceVersion)) {
+            throw new SecurityException(
+                    "A compra não corresponde à versão paga vigente de " + policy.displayName());
         }
+    }
+
+    /** Retorna a versão comercial congelada do produto pago. */
+    public String experienceVersion(String productSlug) {
+        return policy(productSlug).experienceVersion();
+    }
+
+    /** Acrescenta correlação financeira segura aos eventos do acesso pago. */
+    public Map<String, Object> enrichAccessMetadata(
+            AccessGrant grant, Map<String, Object> source) {
+        if (!supports(grant.getProductSlug())) {
+            return source == null ? Map.of() : Map.copyOf(source);
+        }
+        PaidProductPolicy policy = policy(grant.getProductSlug());
+        Map<String, Object> metadata = new java.util.LinkedHashMap<>();
+        if (source != null) metadata.putAll(source);
+        metadata.remove("accessToken");
+        metadata.put("productSlug", policy.productSlug());
+        metadata.put("experimentId", policy.experimentId());
+        metadata.put("experienceVersion", policy.experienceVersion());
+        metadata.put("accessReferenceHash", sha256(grant.getToken()));
+        return Map.copyOf(metadata);
     }
 
     /** Grava ou atualiza o estado financeiro local preservando idempotência da transação. */
@@ -237,10 +312,11 @@ public class RigelPaidEntitlementService {
                 return updateDatabasePayment(concurrent, candidate);
             }
             log.error(
-                    "Falha ao persistir pagamento do Rigel; transactionId={}",
+                    "Falha ao persistir pagamento PDE; productSlug={}, transactionId={}",
+                    candidate.productSlug(),
                     candidate.transactionId(),
                     ex);
-            throw new IllegalStateException("Não foi possível registrar o pagamento do Rigel", ex);
+            throw new IllegalStateException("Não foi possível registrar o pagamento PDE", ex);
         }
     }
 
@@ -261,7 +337,7 @@ public class RigelPaidEntitlementService {
             statement.setString(4, PROVIDER);
             statement.setString(5, candidate.transactionId());
             if (statement.executeUpdate() != 1) {
-                throw new IllegalStateException("Pagamento do Rigel desapareceu durante a atualização");
+                throw new IllegalStateException("Pagamento PDE desapareceu durante a atualização");
             }
             return new PaymentWriteResult(
                     existing.withStatus(
@@ -269,20 +345,21 @@ public class RigelPaidEntitlementService {
                     false);
         } catch (SQLException ex) {
             log.error(
-                    "Falha ao atualizar pagamento do Rigel; transactionId={}",
+                    "Falha ao atualizar pagamento PDE; productSlug={}, transactionId={}",
+                    candidate.productSlug(),
                     candidate.transactionId(),
                     ex);
-            throw new IllegalStateException("Não foi possível atualizar o pagamento do Rigel", ex);
+            throw new IllegalStateException("Não foi possível atualizar o pagamento PDE", ex);
         }
     }
 
     /** Localiza o estado financeiro mais recente do e-mail sem persistir a PII na auditoria. */
-    private Optional<PaymentEntitlement> latestPayment(String email) {
+    private Optional<PaymentEntitlement> latestPayment(PaidProductPolicy policy, String email) {
         String buyerHash = sha256(normalizeEmail(email));
         if (!usesJdbcStorage()) {
             return inMemoryPayments.values().stream()
-                    .filter(payment -> PRODUCT_SLUG.equals(payment.productSlug()))
-                    .filter(payment -> EXPERIENCE_VERSION.equals(payment.experienceVersion()))
+                    .filter(payment -> policy.productSlug().equals(payment.productSlug()))
+                    .filter(payment -> policy.experienceVersion().equals(payment.experienceVersion()))
                     .filter(payment -> buyerHash.equals(payment.buyerReferenceHash()))
                     .max(Comparator.comparing(PaymentEntitlement::verifiedAt));
         }
@@ -292,24 +369,27 @@ public class RigelPaidEntitlementService {
                 + "AND buyer_reference_hash = ? ORDER BY verified_at DESC, id DESC LIMIT 1";
         try (Connection connection = openConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, PROVIDER);
-            statement.setString(2, PRODUCT_SLUG);
-            statement.setString(3, EXPERIENCE_VERSION);
+            statement.setString(2, policy.productSlug());
+            statement.setString(3, policy.experienceVersion());
             statement.setString(4, buyerHash);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next() ? Optional.of(readPayment(resultSet)) : Optional.empty();
             }
         } catch (SQLException ex) {
-            log.error("Falha ao consultar entitlement pago do Rigel; productSlug={}", PRODUCT_SLUG, ex);
-            throw new IllegalStateException("Não foi possível confirmar o pagamento do Kit", ex);
+            log.error(
+                    "Falha ao consultar entitlement pago; productSlug={}", policy.productSlug(), ex);
+            throw new IllegalStateException(
+                    "Não foi possível confirmar o pagamento de " + policy.displayName(), ex);
         }
     }
 
     /** Localiza e valida o pagamento vigente associado ao e-mail informado. */
-    private PaymentEntitlement approvedPayment(String email) {
-        PaymentEntitlement payment = latestPayment(email)
+    private PaymentEntitlement approvedPayment(PaidProductPolicy policy, String email) {
+        PaymentEntitlement payment = latestPayment(policy, email)
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Compra confirmada do Kit WhatsApp Pronto não encontrada para este e-mail"));
-        requireApproved(payment);
+                        "Compra confirmada de " + policy.displayName()
+                                + " não encontrada para este e-mail"));
+        requireApproved(policy, payment);
         return payment;
     }
 
@@ -326,8 +406,8 @@ public class RigelPaidEntitlementService {
             }
         } catch (SQLException ex) {
             log.error(
-                    "Falha ao consultar pagamento do Rigel; transactionId={}", transactionId, ex);
-            throw new IllegalStateException("Não foi possível consultar o pagamento do Kit", ex);
+                    "Falha ao consultar pagamento PDE; transactionId={}", transactionId, ex);
+            throw new IllegalStateException("Não foi possível consultar o pagamento PDE", ex);
         }
     }
 
@@ -350,12 +430,13 @@ public class RigelPaidEntitlementService {
                     .orElseThrow(() -> new IllegalStateException(
                             "Pagamento desapareceu durante o vínculo do acesso"));
             if (!accessHash.equals(linked.accessReferenceHash())) {
-                throw new SecurityException("Pagamento já vinculado a outro acesso do Kit WhatsApp Pronto");
+                throw new SecurityException("Pagamento já vinculado a outro acesso deste produto");
             }
             return linked;
         } catch (SQLException ex) {
             log.error(
-                    "Falha ao vincular acesso ao pagamento do Rigel; transactionId={}",
+                    "Falha ao vincular acesso ao pagamento PDE; productSlug={}, transactionId={}",
+                    payment.productSlug(),
                     payment.transactionId(),
                     ex);
             throw new IllegalStateException("Não foi possível vincular o acesso à compra", ex);
@@ -363,25 +444,28 @@ public class RigelPaidEntitlementService {
     }
 
     /** Rejeita pagamento não aprovado e apresenta reembolso como causa funcional específica. */
-    private void requireApproved(PaymentEntitlement payment) {
+    private void requireApproved(PaidProductPolicy policy, PaymentEntitlement payment) {
         if (isRefunded(payment.paymentStatus())) {
             throw new SecurityException("O pagamento foi reembolsado e o acesso pago foi encerrado");
         }
         if (!"approved".equals(payment.paymentStatus())) {
-            throw new SecurityException("O pagamento do Kit ainda não está aprovado");
+            throw new SecurityException(
+                    "O pagamento de " + policy.displayName() + " ainda não está aprovado");
         }
-        validateCanonicalContract(payment);
+        validateCanonicalContract(policy, payment);
     }
 
     /** Confere que o registro corresponde ao produto, oferta, valor e moeda aprovados. */
-    private void validateCanonicalContract(PaymentEntitlement payment) {
-        boolean valid = PRODUCT_SLUG.equals(payment.productSlug())
-                && EXPERIENCE_VERSION.equals(payment.experienceVersion())
-                && OFFER_REFERENCE.equals(payment.offerHash())
-                && AMOUNT_CENTS == payment.amountCents()
-                && CURRENCY.equals(payment.currency());
+    private void validateCanonicalContract(
+            PaidProductPolicy policy, PaymentEntitlement payment) {
+        boolean valid = policy.productSlug().equals(payment.productSlug())
+                && policy.experienceVersion().equals(payment.experienceVersion())
+                && policy.offerReference().equals(payment.offerHash())
+                && policy.amountCents() == payment.amountCents()
+                && policy.currency().equals(payment.currency());
         if (!valid) {
-            throw new SecurityException("Pagamento diverge do contrato comercial do Kit WhatsApp Pronto");
+            throw new SecurityException(
+                    "Pagamento diverge do contrato comercial de " + policy.displayName());
         }
     }
 
@@ -419,22 +503,23 @@ public class RigelPaidEntitlementService {
             throw new IllegalArgumentException("Pagamento Mercado Pago não informado");
         }
         String productSlug = required(request.externalReference(), "Produto do pagamento não informado");
-        if (!PRODUCT_SLUG.equals(productSlug)) {
-            throw new IllegalArgumentException("Pagamento não pertence ao Kit WhatsApp Pronto");
-        }
+        PaidProductPolicy policy = policy(productSlug);
         long experimentId = metadataLong(request.metadata(), "experimentId");
         long productId = metadataLong(request.metadata(), "productId");
         String metadataProduct = metadataText(request.metadata(), "productKey");
-        if (experimentId != EXPERIMENT_ID
-                || productId != PRODUCT_ID
-                || !PRODUCT_SLUG.equals(metadataProduct)) {
-            throw new IllegalArgumentException("Metadados do pagamento divergem do contrato comercial do Kit");
+        if (experimentId != policy.experimentId()
+                || productId != policy.productId()
+                || !policy.productSlug().equals(metadataProduct)) {
+            throw new IllegalArgumentException(
+                    "Metadados do pagamento divergem do contrato comercial de "
+                            + policy.displayName());
         }
         int amountCents = cents(request.amount());
         String currency = required(request.currency(), "Moeda do pagamento não informada")
                 .toUpperCase(Locale.ROOT);
-        if (amountCents != AMOUNT_CENTS || !CURRENCY.equals(currency)) {
-            throw new IllegalArgumentException("Valor ou moeda divergem da oferta aprovada do Kit");
+        if (amountCents != policy.amountCents() || !policy.currency().equals(currency)) {
+            throw new IllegalArgumentException(
+                    "Valor ou moeda divergem da oferta aprovada de " + policy.displayName());
         }
         String status = normalizePaymentStatus(request.paymentStatus());
         if ("approved".equals(status) && request.dateApproved() == null) {
@@ -443,9 +528,9 @@ public class RigelPaidEntitlementService {
         Instant verifiedAt = request.dateApproved() == null ? Instant.now() : request.dateApproved();
         return new PaymentEntitlement(
                 required(request.paymentId(), "Pagamento Mercado Pago sem identificador"),
-                PRODUCT_SLUG,
-                EXPERIENCE_VERSION,
-                OFFER_REFERENCE,
+                policy.productSlug(),
+                policy.experienceVersion(),
+                policy.offerReference(),
                 amountCents,
                 currency,
                 status,
@@ -467,7 +552,7 @@ public class RigelPaidEntitlementService {
         try {
             return value instanceof Number number ? number.longValue() : Long.parseLong(value.toString());
         } catch (RuntimeException ex) {
-            log.error("Metadado financeiro inválido no entitlement do Rigel; field={}", field, ex);
+            log.error("Metadado financeiro inválido no entitlement PDE; field={}", field, ex);
             throw new IllegalArgumentException("Metadado financeiro inválido: " + field, ex);
         }
     }
@@ -492,7 +577,7 @@ public class RigelPaidEntitlementService {
         try {
             return amount.movePointRight(2).intValueExact();
         } catch (ArithmeticException ex) {
-            log.error("Valor monetário inválido no entitlement do Rigel; amount={}", amount, ex);
+            log.error("Valor monetário inválido no entitlement PDE; amount={}", amount, ex);
             throw new IllegalArgumentException("Valor monetário do pagamento é inválido", ex);
         }
     }
@@ -558,6 +643,15 @@ public class RigelPaidEntitlementService {
         return value.trim();
     }
 
+    /** Resolve o contrato financeiro imutável do produto sem aceitar fallback entre ofertas. */
+    private PaidProductPolicy policy(String productSlug) {
+        PaidProductPolicy policy = POLICIES.get(required(productSlug, "Produto pago não informado"));
+        if (policy == null) {
+            throw new IllegalArgumentException("Produto não usa entitlement Mercado Pago: " + productSlug);
+        }
+        return policy;
+    }
+
     /** Calcula uma referência irreversível compatível com a auditoria do backend principal. */
     private String sha256(String value) {
         try {
@@ -565,7 +659,7 @@ public class RigelPaidEntitlementService {
                     .digest(value.trim().toLowerCase().getBytes(StandardCharsets.UTF_8));
             return java.util.HexFormat.of().formatHex(digest);
         } catch (NoSuchAlgorithmException ex) {
-            log.error("Algoritmo de hash indisponível no entitlement pago do Rigel", ex);
+            log.error("Algoritmo de hash indisponível no entitlement pago PDE", ex);
             throw new IllegalStateException("Não foi possível proteger a referência financeira", ex);
         }
     }
@@ -638,6 +732,17 @@ public class RigelPaidEntitlementService {
                     refundedAt);
         }
     }
+
+    /** Congela produto, versão, oferta e preço aceitos para uma liberação paga. */
+    private record PaidProductPolicy(
+            String productSlug,
+            String experienceVersion,
+            String offerReference,
+            long productId,
+            long experimentId,
+            int amountCents,
+            String currency,
+            String displayName) {}
 
     /** Retorna a compra aprovada com os correlatores exigidos pela telemetria comercial. */
     public record PaidClaim(

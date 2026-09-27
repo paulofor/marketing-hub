@@ -136,6 +136,80 @@ class ExperimentCommercialCheckoutServiceTest {
     verify(experimentRepository).save(experiment);
   }
 
+  /** Deve criar o checkout da candidata exata após o preflight sem exigir ativação circular. */
+  @Test
+  void createsCheckoutFromDeliveryReadyCandidateOfSameExperiment() {
+    Product product = Product.builder().id(10L).slug("pde-planejado-36").name("Mira").build();
+    Experiment experiment =
+        Experiment.builder()
+            .id(93L)
+            .product(product)
+            .status(ExperimentStatus.PLANNED)
+            .unitPrice(new BigDecimal("49.00"))
+            .build();
+    PdeProductionSlot slot =
+        PdeProductionSlot.builder()
+            .productSlug(product.getSlug())
+            .slotCode("v1")
+            .publicUrl("https://mira.digicomdigital.com.br")
+            .status(PdeProductionSlotStatus.CANDIDATE)
+            .validationStatus("DELIVERY_READY")
+            .sourceExperimentId(93L)
+            .build();
+    when(experimentRepository.findById(93L)).thenReturn(Optional.of(experiment));
+    when(pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
+        .thenReturn(List.of(slot));
+    when(paymentsClient.createCommercialProductCheckout(any()))
+        .thenReturn(
+            new LeadPortalPaymentsClient.CommercialProductCheckoutResponse(
+                product.getSlug(),
+                product.getId(),
+                experiment.getId(),
+                "pref-93",
+                "https://checkout.mercadopago.com.br/pref-93",
+                experiment.getUnitPrice(),
+                "BRL",
+                slot.getPublicUrl()));
+
+    var response = service.create(93L);
+
+    assertThat(response.amount()).isEqualByComparingTo("49.00");
+    assertThat(experiment.getCommercialCheckoutUrl()).isEqualTo(response.checkoutUrl());
+    assertThat(product.getPublicUrl()).isEqualTo(slot.getPublicUrl());
+    verify(productRepository).save(product);
+    verify(experimentRepository).save(experiment);
+  }
+
+  /** Deve rejeitar candidata preflightada que pertence a outro experimento. */
+  @Test
+  void blocksDeliveryReadyCandidateFromAnotherExperiment() {
+    Product product = Product.builder().id(10L).slug("pde-planejado-36").name("Mira").build();
+    Experiment experiment =
+        Experiment.builder()
+            .id(93L)
+            .product(product)
+            .status(ExperimentStatus.PLANNED)
+            .unitPrice(new BigDecimal("49.00"))
+            .build();
+    PdeProductionSlot slot =
+        PdeProductionSlot.builder()
+            .productSlug(product.getSlug())
+            .slotCode("v1")
+            .publicUrl("https://mira.digicomdigital.com.br")
+            .status(PdeProductionSlotStatus.CANDIDATE)
+            .validationStatus("DELIVERY_READY")
+            .sourceExperimentId(92L)
+            .build();
+    when(experimentRepository.findById(93L)).thenReturn(Optional.of(experiment));
+    when(pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
+        .thenReturn(List.of(slot));
+
+    assertThatThrownBy(() -> service.create(93L))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("área de entrega PDE");
+    verify(paymentsClient, never()).createCommercialProductCheckout(any());
+  }
+
   /** Deve rejeitar checkout antes da entrega para não vender um produto indisponível. */
   @Test
   void blocksCheckoutWithoutValidatedDelivery() {

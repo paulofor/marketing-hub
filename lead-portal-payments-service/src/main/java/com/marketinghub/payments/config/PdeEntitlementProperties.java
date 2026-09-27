@@ -1,9 +1,11 @@
 package com.marketinghub.payments.config;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-/** Configura a publicação de pagamentos do Kit para a fonte de entitlement do PDE. */
+/** Configura a publicação de pagamentos dos produtos comerciais para o entitlement do PDE. */
 @Component
 @ConfigurationProperties(prefix = "pde.entitlement")
 public class PdeEntitlementProperties {
@@ -12,6 +14,8 @@ public class PdeEntitlementProperties {
     private String notificationPath = "/api/internal/pde/mercado-pago/entitlements";
     private String internalToken;
     private String productSlug = "kit-whatsapp-pronto";
+    private Set<String> productSlugs =
+            new LinkedHashSet<>(Set.of("kit-whatsapp-pronto", "pde-planejado-36"));
 
     /** Informa se a publicação do estado financeiro está ativa. */
     public boolean isEnabled() {
@@ -61,5 +65,15 @@ public class PdeEntitlementProperties {
     /** Define o produto cujo pagamento deve gerar entitlement. */
     public void setProductSlug(String productSlug) {
         this.productSlug = productSlug;
+    }
+
+    /** Retorna todos os produtos comerciais aceitos pelo publicador de entitlement. */
+    public Set<String> getProductSlugs() {
+        return productSlugs;
+    }
+
+    /** Define a lista explícita de produtos comerciais aceitos. */
+    public void setProductSlugs(Set<String> productSlugs) {
+        this.productSlugs = productSlugs == null ? new LinkedHashSet<>() : new LinkedHashSet<>(productSlugs);
     }
 }

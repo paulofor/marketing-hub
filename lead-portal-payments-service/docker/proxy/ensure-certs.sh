@@ -1,8 +1,8 @@
 #!/bin/sh
-set -euo pipefail
+set -eu
 
 PRIMARY_DOMAIN="${CERTBOT_DOMAIN:-pagamentopalf.site}"
-SSL_DOMAINS="${SSL_DOMAINS:-${PRIMARY_DOMAIN} vitrineproduto.online digicomdigital.com.br clubemusa.com.br kit-whatsapp-pronto.digicomdigital.com.br mkthub.api.br}"
+SSL_DOMAINS="${SSL_DOMAINS:-${PRIMARY_DOMAIN} vitrineproduto.online digicomdigital.com.br clubemusa.com.br kit-whatsapp-pronto.digicomdigital.com.br mira.digicomdigital.com.br mkthub.api.br}"
 
 for DOMAIN in $SSL_DOMAINS; do
   TARGET_CERT_DIR="/etc/nginx/certs/live/${DOMAIN}"

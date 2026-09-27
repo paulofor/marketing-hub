@@ -21,7 +21,21 @@ public class ProductJourneyIntegrationContractService {
 
     /** Usa a versão servida no host para que eventos e oferta compartilhem a mesma identidade. */
     public ProductJourneyIntegrationContractResponse get(String productSlug, String host) {
-        ProductExperienceResponse product = productCatalogService.getProductForHost(productSlug, host);
+        return build(productCatalogService.getProductForHost(productSlug, host));
+    }
+
+    /** Resolve uma candidata explícita sem depender do formato do hostname público. */
+    public ProductJourneyIntegrationContractResponse get(
+            String productSlug,
+            String host,
+            String slotCode,
+            String experienceVersion) {
+        return build(productCatalogService.getProductForRequest(
+                productSlug, host, slotCode, experienceVersion));
+    }
+
+    /** Monta o contrato estável a partir da identidade de produto já resolvida. */
+    private ProductJourneyIntegrationContractResponse build(ProductExperienceResponse product) {
         if (!FunnelEventCatalog.supportsRequiredCommercialJourney()) {
             throw new IllegalStateException("Catálogo PDE não suporta a jornada comercial obrigatória");
         }

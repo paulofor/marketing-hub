@@ -24,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class ExperimentCommercialCheckoutService {
 
   private static final String VALIDATION_OK = "OK";
+  private static final String VALIDATION_DELIVERY_READY = "DELIVERY_READY";
   private final ExperimentRepository experimentRepository;
   private final ProductRepository productRepository;
   private final PdeProductionSlotRepository pdeProductionSlotRepository;
@@ -112,10 +113,9 @@ public class ExperimentCommercialCheckoutService {
 
   /** Resolve a entrega pela URL do experimento e bloqueia seleção ambígua entre versões ativas. */
   private PdeProductionSlot resolveDeliverySlot(Experiment experiment, String productSlug) {
-    List<PdeProductionSlot> activeSlots =
+    List<PdeProductionSlot> eligibleSlots =
         pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(productSlug).stream()
-            .filter(slot -> slot.getStatus() == PdeProductionSlotStatus.ACTIVE)
-            .filter(slot -> VALIDATION_OK.equals(slot.getValidationStatus()))
+            .filter(slot -> isCheckoutEligible(experiment, slot))
             .filter(slot -> StringUtils.hasText(slot.getPublicUrl()))
             .toList();
     Optional<String> destinationDomain = normalizeDomain(experiment.getFollowUpActionUrl());
@@ -123,7 +123,7 @@ public class ExperimentCommercialCheckoutService {
         destinationDomain
             .map(
                 domain ->
-                    activeSlots.stream()
+                    eligibleSlots.stream()
                         .filter(
                             slot ->
                                 normalizeDomain(slot.getPublicUrl())
@@ -135,18 +135,31 @@ public class ExperimentCommercialCheckoutService {
       return destinationMatches.get(0);
     }
     List<PdeProductionSlot> experimentMatches =
-        activeSlots.stream()
+        eligibleSlots.stream()
             .filter(slot -> experiment.getId().equals(slot.getSourceExperimentId()))
             .toList();
     if (experimentMatches.size() == 1) {
       return experimentMatches.get(0);
     }
-    if (activeSlots.size() == 1) {
-      return activeSlots.get(0);
+    if (eligibleSlots.size() == 1) {
+      return eligibleSlots.get(0);
     }
     throw new ResponseStatusException(
         HttpStatus.CONFLICT,
         "Publique, valide e ative uma única área de entrega PDE correspondente ao destino do experimento antes de criar o checkout");
+  }
+
+  /** Aceita entrega ativa completa ou candidata preflightada do próprio experimento. */
+  private boolean isCheckoutEligible(Experiment experiment, PdeProductionSlot slot) {
+    boolean complete =
+        slot.getStatus() == PdeProductionSlotStatus.ACTIVE
+            && VALIDATION_OK.equals(slot.getValidationStatus());
+    boolean deliveryCandidate =
+        (slot.getStatus() == PdeProductionSlotStatus.CANDIDATE
+                || slot.getStatus() == PdeProductionSlotStatus.READY)
+            && VALIDATION_DELIVERY_READY.equals(slot.getValidationStatus())
+            && experiment.getId().equals(slot.getSourceExperimentId());
+    return complete || deliveryCandidate;
   }
 
   /** Extrai o domínio de uma URL para comparar a landing com seu slot PDE versionado. */

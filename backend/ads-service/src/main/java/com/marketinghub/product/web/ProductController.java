@@ -212,7 +212,7 @@ public class ProductController {
     return pdeProductionSlotService.listProductionSlotsForProduct(product.getSlug());
   }
 
-  /** Lista a trajetória comercial consolidada das versões PDE de um produto Opala. */
+  /** Lista a trajetória comercial consolidada das versões PDE de um produto suportado. */
   @GetMapping("/{id}/pde-versions")
   public List<ProductPdeVersionOverviewDto> listPdeVersions(@PathVariable Long id) {
     return pdeVersionOverviewService.list(service.getProduct(id));
@@ -242,13 +242,29 @@ public class ProductController {
     return pdeProductionSlotService.validateProductionSlot(product.getSlug(), slotCode);
   }
 
-  /** Conclui a preparação da candidata v12 sem publicar contrato, imagem ou campanha. */
+  /** Valida a entrega candidata sem exigir antecipadamente o checkout comercial. */
+  @PostMapping("/{id}/pde-production-slots/{slotCode}/validate-delivery")
+  public PostDeployPdeProductionSlotDto validatePdeDeliveryCandidate(
+      @PathVariable Long id, @PathVariable String slotCode) {
+    Product product = service.getProduct(id);
+    return pdeProductionSlotService.validateDeliveryCandidate(product.getSlug(), slotCode);
+  }
+
+  /** Conclui a homologação da candidata sem publicar contrato, imagem ou campanha. */
   @PostMapping("/{id}/pde-production-slots/{slotCode}/prepare-publication")
   public PostDeployPdeProductionSlotDto preparePdeProductionSlotForPublication(
       @PathVariable Long id, @PathVariable String slotCode) {
     Product product = service.getProduct(id);
     return pdeProductionSlotService.prepareProductionSlotForPublication(
         product.getSlug(), slotCode);
+  }
+
+  /** Ativa uma versão homologada e publicada sem criar campanha ou autorizar mídia. */
+  @PostMapping("/{id}/pde-production-slots/{slotCode}/activate")
+  public PostDeployPdeProductionSlotDto activatePdeProductionSlot(
+      @PathVariable Long id, @PathVariable String slotCode) {
+    Product product = service.getProduct(id);
+    return pdeProductionSlotService.activateProductionSlot(product.getSlug(), slotCode);
   }
 
   /** Publica o contrato comercial editável de uma versão produtiva PDE. */

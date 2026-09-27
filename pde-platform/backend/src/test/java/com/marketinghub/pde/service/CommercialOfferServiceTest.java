@@ -87,6 +87,28 @@ class CommercialOfferServiceTest {
         server.verify();
     }
 
+    /** Encaminha o slot comercial de Mira mesmo quando o domínio não contém a versão. */
+    @Test
+    void forwardsExplicitMiraSlotFromRuntimeContract() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        CommercialOfferService service = new CommercialOfferService(builder, "http://marketing-hub");
+        server.expect(requestTo(
+                        "http://marketing-hub/api/products/public/pde-planejado-36/commercial-offer?slotCode=v1"))
+                .andRespond(withSuccess(
+                        """
+                        {"productSlug":"pde-planejado-36","experienceVersion":"mira-commercial-v1","layoutKey":"mira-routine-v1","experimentId":93,"experimentStatus":"PLANNED","acquisitionChannel":"DIRECT","pain":"Rotina confusa","proof":"Organização visual","promise":"Cuide de você com mais clareza","primaryCta":"Organizar minha rotina","priceBrl":49,"checkoutUrl":"https://pay.example/mira","salesPageUrl":"https://mira.digicomdigital.com.br","supplierDisplayName":"Digicom Digital","supplierRegistrationNumber":"00.000.000/0001-00","supportEmail":"teste@sandbox.local","termsUrl":"https://mira.digicomdigital.com.br/terms","privacyUrl":"https://mira.digicomdigital.com.br/privacy","refundPolicyUrl":"https://mira.digicomdigital.com.br/refund-policy"}
+                        """,
+                        MediaType.APPLICATION_JSON));
+
+        var offer = service.getOffer(
+                "pde-planejado-36", "mira.digicomdigital.com.br", "v1");
+
+        assertThat(offer.experimentId()).isEqualTo(93L);
+        assertThat(offer.experienceVersion()).isEqualTo("mira-commercial-v1");
+        server.verify();
+    }
+
     /** Usa o canal autenticado somente quando a candidata ainda não possui oferta pública. */
     @Test
     void loadsCandidateOfferThroughAuthenticatedPreflight() {

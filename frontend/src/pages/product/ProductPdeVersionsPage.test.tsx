@@ -47,6 +47,18 @@ describe("ProductPdeVersionsPage", () => {
     });
   });
 
+  it("sugere a candidata comercial exata de Mira sem autorizar mídia", () => {
+    expect(defaultPdeSlotForm({ slug: "pde-planejado-36" })).toMatchObject({
+      slotCode: "v1",
+      domain: "mira.digicomdigital.com.br",
+      experienceVersion: "mira-commercial-v1",
+      layoutKey: "mira-routine-v1",
+      sourceExperimentId: "93",
+      status: "CANDIDATE",
+      notes: expect.stringContaining("mídia permanece desligada"),
+    });
+  });
+
   it("shows the Opala version lifecycle and its actionable pending items", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url === "/api/products/4") {

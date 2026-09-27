@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
-/** Consolida a visão de negócio e a trajetória de uma versão PDE do produto Opala. */
+/** Consolida a visão de negócio e a trajetória de uma versão PDE suportada. */
 public record ProductPdeVersionOverviewDto(
     Long id,
     String slotCode,

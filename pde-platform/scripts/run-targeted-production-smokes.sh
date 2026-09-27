@@ -42,6 +42,15 @@ run_mira_private() {
   )
 }
 
+run_mira_commercial() {
+  local public_url="$1"
+  (
+    cd "${frontend_dir}"
+    MIRA_COMMERCIAL_PUBLIC_URL="${public_url}" \
+      "${npm_command}" run test:mira-commercial:public
+  )
+}
+
 run_musa_consistency() {
   local public_url="$1"
   local experience_version="$2"
@@ -113,6 +122,10 @@ validate_mira() {
   run_mira_private "${MIRA_PUBLIC_BASE_URL:-https://v7.clubemusa.com.br}"
 }
 
+validate_mira_commercial() {
+  run_mira_commercial https://mira.digicomdigital.com.br
+}
+
 validate_kit_whatsapp() {
   run_public_health https://kit-whatsapp-pronto.digicomdigital.com.br
   PDE_PUBLIC_BASE_URL=https://kit-whatsapp-pronto.digicomdigital.com.br \
@@ -135,6 +148,9 @@ case "${target_frontend}" in
   mira)
     validate_mira
     ;;
+  mira-commercial)
+    validate_mira_commercial
+    ;;
   kit-whatsapp)
     validate_kit_whatsapp
     ;;
@@ -144,6 +160,7 @@ case "${target_frontend}" in
     validate_v7
     validate_v8
     validate_mira
+    validate_mira_commercial
     validate_kit_whatsapp
     ;;
   none)

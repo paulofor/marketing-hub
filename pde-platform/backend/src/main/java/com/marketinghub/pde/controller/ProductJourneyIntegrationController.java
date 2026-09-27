@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Responsabilidade: expor o contrato público preparado para homologar a jornada comercial. */
@@ -23,7 +24,10 @@ public class ProductJourneyIntegrationController {
     @GetMapping("/{productSlug}/integration-contract")
     public ProductJourneyIntegrationContractResponse get(
             @PathVariable("productSlug") String productSlug,
-            @RequestHeader(value = "Host", required = false) String host) {
-        return service.get(productSlug, host);
+            @RequestHeader(value = "Host", required = false) String host,
+            @RequestParam(value = "slotCode", required = false) String slotCode,
+            @RequestParam(value = "experienceVersion", required = false)
+                    String experienceVersion) {
+        return service.get(productSlug, host, slotCode, experienceVersion);
     }
 }

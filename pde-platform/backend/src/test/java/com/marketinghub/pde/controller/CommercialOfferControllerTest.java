@@ -20,7 +20,8 @@ class CommercialOfferControllerTest {
     @Test
     void resolvesProductSlugFromPathWithoutCompilerParameterMetadata() throws Exception {
         CommercialOfferService service = mock(CommercialOfferService.class);
-        when(service.getOffer("kit-whatsapp-pronto", "v8.clubemusa.com.br")).thenReturn(offer());
+        when(service.getOffer("kit-whatsapp-pronto", "v8.clubemusa.com.br", null))
+                .thenReturn(offer());
         MockMvc mvc = MockMvcBuilders.standaloneSetup(new CommercialOfferController(service)).build();
 
         mvc.perform(get("/api/pde/products/kit-whatsapp-pronto/commercial-offer")

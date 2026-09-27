@@ -66,6 +66,38 @@ class PdePaymentEntitlementClientTest {
                 .doesNotContain("entitlement-test-token");
     }
 
+    /** Envia a aprovação de Mira pela mesma fronteira financeira sem confundi-la com o Kit. */
+    @Test
+    void publishesMiraPaymentAsConfiguredCommercialProduct() throws Exception {
+        AtomicReference<String> body = new AtomicReference<>();
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/entitlements", exchange -> {
+            body.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            exchange.sendResponseHeaders(202, -1);
+            exchange.close();
+        });
+        server.start();
+        PdeEntitlementProperties properties = properties(server.getAddress().getPort());
+        MercadoPagoPaymentDetails mira = new MercadoPagoPaymentDetails(
+                "mp-mira-93",
+                "approved",
+                new BigDecimal("49.00"),
+                "BRL",
+                "Mira",
+                "buyer@sandbox.local",
+                "pde-planejado-36",
+                Instant.parse("2026-09-26T08:00:00Z"),
+                Map.of("productKey", "pde-planejado-36", "productId", 10, "experimentId", 93),
+                "{\"id\":\"mp-mira-93\"}");
+
+        new PdePaymentEntitlementClient(properties).notifyIfSupported(mira);
+
+        assertThat(body.get())
+                .contains("\"paymentId\":\"mp-mira-93\"")
+                .contains("\"externalReference\":\"pde-planejado-36\"")
+                .contains("\"experimentId\":93");
+    }
+
     /** Ignora produto alheio sem gerar tráfego ou efeito financeiro no PDE. */
     @Test
     void ignoresUnsupportedProduct() throws Exception {

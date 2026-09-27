@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
-/** Publica no backend PDE somente estados financeiros autoritativos do Kit WhatsApp Pronto. */
+/** Publica no backend PDE estados financeiros autoritativos dos produtos comerciais suportados. */
 @Service
 public class PdePaymentEntitlementClient {
     private static final Logger log = LoggerFactory.getLogger(PdePaymentEntitlementClient.class);
@@ -35,13 +35,13 @@ public class PdePaymentEntitlementClient {
         this.restClient = restClient;
     }
 
-    /** Encaminha aprovação ou reembolso do Kit e falha o webhook quando o entitlement não persiste. */
+    /** Encaminha aprovação ou reembolso e falha o webhook quando o entitlement não persiste. */
     public void notifyIfSupported(MercadoPagoPaymentDetails payment) {
         if (payment == null || !supports(payment)) {
             return;
         }
         if (!properties.isEnabled()) {
-            throw new IllegalStateException("Publicação de entitlement do Kit está desabilitada");
+            throw new IllegalStateException("Publicação de entitlement PDE está desabilitada");
         }
         if (!StringUtils.hasText(properties.getInternalToken())) {
             throw new IllegalStateException("Token interno do entitlement PDE não configurado");
@@ -57,8 +57,9 @@ public class PdePaymentEntitlementClient {
                 payment.dateApproved(),
                 payment.metadata());
         log.info(
-                "Enviando estado financeiro do Kit ao PDE; paymentId={}, status={}, endpoint={}",
+                "Enviando estado financeiro ao PDE; paymentId={}, productSlug={}, status={}, endpoint={}",
                 payment.id(),
+                payment.externalReference(),
                 payment.status(),
                 uri);
         try {
@@ -69,28 +70,38 @@ public class PdePaymentEntitlementClient {
                     .retrieve()
                     .toBodilessEntity();
             log.info(
-                    "Estado financeiro do Kit persistido no PDE; paymentId={}, status={}, endpoint={}, httpStatus={}",
+                    "Estado financeiro persistido no PDE; paymentId={}, productSlug={}, status={}, endpoint={}, httpStatus={}",
                     payment.id(),
+                    payment.externalReference(),
                     payment.status(),
                     uri,
                     response.getStatusCode());
         } catch (Exception ex) {
             log.error(
-                    "Falha ao persistir entitlement do Kit; paymentId={}, status={}, endpoint={}",
+                    "Falha ao persistir entitlement PDE; paymentId={}, productSlug={}, status={}, endpoint={}",
                     payment.id(),
+                    payment.externalReference(),
                     payment.status(),
                     uri,
                     ex);
-            throw new IllegalStateException("Não foi possível persistir o entitlement pago do Kit", ex);
+            throw new IllegalStateException("Não foi possível persistir o entitlement pago do PDE", ex);
         }
     }
 
     /** Reconhece somente o produto e os estados finais que alteram entitlement. */
     private boolean supports(MercadoPagoPaymentDetails payment) {
         String status = normalize(payment.status());
-        return StringUtils.hasText(properties.getProductSlug())
-                && properties.getProductSlug().equalsIgnoreCase(payment.externalReference())
-                && SUPPORTED_STATUSES.contains(status);
+        if (!SUPPORTED_STATUSES.contains(status) || !StringUtils.hasText(payment.externalReference())) {
+            return false;
+        }
+        String externalReference = normalize(payment.externalReference());
+        boolean legacyProduct = StringUtils.hasText(properties.getProductSlug())
+                && normalize(properties.getProductSlug()).equals(externalReference);
+        boolean configuredProduct = properties.getProductSlugs().stream()
+                .filter(StringUtils::hasText)
+                .map(this::normalize)
+                .anyMatch(externalReference::equals);
+        return legacyProduct || configuredProduct;
     }
 
     /** Monta e valida a URL absoluta usada na integração interna. */

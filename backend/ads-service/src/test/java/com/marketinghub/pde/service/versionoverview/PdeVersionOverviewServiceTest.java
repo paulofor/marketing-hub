@@ -31,7 +31,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
-/** Responsabilidade: validar a visão consolidada do ciclo de vida das versões PDE Opala. */
+/** Responsabilidade: validar a visão consolidada do ciclo de vida das versões PDE suportadas. */
 @ExtendWith(MockitoExtension.class)
 class PdeVersionOverviewServiceTest {
 
@@ -136,7 +136,7 @@ class PdeVersionOverviewServiceTest {
         .containsExactly("DONE", "DONE", "DONE", "DONE", "CURRENT", "DONE", "PENDING");
   }
 
-  /** Deve rejeitar acesso à visão quando o produto não pertence ao tipo Opala. */
+  /** Deve rejeitar acesso à visão quando o produto não pertence a um tipo PDE suportado. */
   @Test
   void rejectsNonOpalaProduct() {
     Product product =
@@ -149,7 +149,24 @@ class PdeVersionOverviewServiceTest {
 
     assertThatThrownBy(() -> service().list(product))
         .isInstanceOf(ResponseStatusException.class)
-        .hasMessageContaining("somente para produtos Opala");
+        .hasMessageContaining("somente para produtos Opala ou Safira");
+  }
+
+  /** Deve aceitar Mira pelo tipo canônico Safira mesmo antes de existir um slot produtivo. */
+  @Test
+  void acceptsSafiraProductForCommercialVersionManagement() {
+    Product product =
+        Product.builder()
+            .id(10L)
+            .slug("pde-planejado-36")
+            .productTypeDefinition(
+                ProductTypeDefinition.builder().code("AI_PRODUCT").internalName("Safira").build())
+            .build();
+    when(slotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
+        .thenReturn(List.of());
+    when(slotService.listProductionSlotVideosForProduct(product.getSlug())).thenReturn(List.of());
+
+    assertThat(service().list(product)).isEmpty();
   }
 
   /** Deve aceitar o nome interno Opala durante a transição de cadastros legados. */

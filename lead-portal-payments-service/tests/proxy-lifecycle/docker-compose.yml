@@ -9,6 +9,11 @@ services:
     networks:
       - proxy-lifecycle-test
 
+  pde-platform-frontend-mira-commercial:
+    image: nginx:1.27-alpine
+    networks:
+      - proxy-lifecycle-test
+
   proxy:
     build:
       context: ../..
@@ -17,6 +22,8 @@ services:
       lead-portal-payments-service:
         condition: service_started
       pde-platform-frontend-kit-whatsapp:
+        condition: service_started
+      pde-platform-frontend-mira-commercial:
         condition: service_started
     volumes:
       - generated-certs:/etc/nginx/certs

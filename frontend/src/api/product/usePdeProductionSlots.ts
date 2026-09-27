@@ -14,10 +14,16 @@ export interface PdeSlotValidationFeedback {
 export function pdeSlotValidationFeedback(
   slot: PostDeployPdeProductionSlot,
 ): PdeSlotValidationFeedback {
-  if (slot.validationStatus === "OK") {
+  if (
+    slot.validationStatus === "OK" ||
+    slot.validationStatus === "DELIVERY_READY"
+  ) {
     return {
       success: true,
-      message: `URL da versão PDE ${slot.slotCode} validada.`,
+      message:
+        slot.validationStatus === "DELIVERY_READY"
+          ? `Entrega candidata ${slot.slotCode} pronta para criar o checkout.`
+          : `URL da versão PDE ${slot.slotCode} validada.`,
     };
   }
   return {
@@ -26,6 +32,35 @@ export function pdeSlotValidationFeedback(
       slot.validationSummary ||
       `A URL da versão PDE ${slot.slotCode} não passou na validação.`,
   };
+}
+
+export function useValidateProductPdeDeliveryCandidate(
+  productId?: string | number,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (slotCode: string) => {
+      const { data } = await axios.post<PostDeployPdeProductionSlot>(
+        `/api/products/${productId}/pde-production-slots/${slotCode}/validate-delivery`,
+      );
+      return data;
+    },
+    onSuccess: (slot) => {
+      const feedback = pdeSlotValidationFeedback(slot);
+      feedback.success
+        ? toast.success(feedback.message)
+        : toast.error(feedback.message);
+      queryClient.invalidateQueries({
+        queryKey: ["products", productId, "pde-production-slots"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["products", productId, "pde-versions"],
+      });
+    },
+    onError: () => {
+      toast.error("Não foi possível validar a entrega candidata agora.");
+    },
+  });
 }
 
 export function useProductPdeProductionSlots(productId?: string | number) {
@@ -157,6 +192,34 @@ export function usePrepareProductPdeProductionSlot(
     onError: () => {
       toast.error(
         "A versão ainda possui divergências e não pode ser preparada para publicação.",
+      );
+    },
+  });
+}
+
+export function useActivateProductPdeProductionSlot(
+  productId?: string | number,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (slotCode: string) => {
+      const { data } = await axios.post<PostDeployPdeProductionSlot>(
+        `/api/products/${productId}/pde-production-slots/${slotCode}/activate`,
+      );
+      return data;
+    },
+    onSuccess: (slot) => {
+      toast.success(`Versão PDE ${slot.slotCode} publicada e ativa.`);
+      queryClient.invalidateQueries({
+        queryKey: ["products", productId, "pde-production-slots"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["products", productId, "pde-versions"],
+      });
+    },
+    onError: () => {
+      toast.error(
+        "A versão precisa estar homologada, validada e com contrato publicado antes da ativação.",
       );
     },
   });

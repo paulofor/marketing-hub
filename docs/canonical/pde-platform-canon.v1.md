@@ -87,6 +87,31 @@ já emitidos, mas o proxy deve encaminhá-la ao container próprio do produto. A
 campanha ou publicação comercial, o produto também deve receber domínio corporativo próprio; um
 domínio de marca de outro produto nunca pode ser seu destino comercial.
 
+### Publicacao comercial de Mira
+
+Decisao canonica de 26/09/2026: `mira-private-v3` permanece uma superficie historica de pesquisa,
+sem cobranca e sem trafego comercial. A primeira oferta paga usa `mira-commercial-v1`, produto 10 e
+experimento 93, em imagem, container, dominio e contrato de entrega proprios. O preco e R$ 49 em
+pagamento unico e a liberacao depende da confirmacao autoritativa do Mercado Pago.
+
+Para eliminar a dependencia circular entre checkout e validacao da entrega, um PDE comercial pode
+passar por um preflight de entrega candidata antes de possuir checkout. Esse preflight deve validar
+identidade, HTTPS, pagina, saude, versao e contrato de integracao, persistindo o estado
+`DELIVERY_READY`; ele nao publica, ativa, cobra nem autoriza trafego. O checkout pode ser criado
+somente para a candidata exata nesse estado. Depois que a oferta passar a expor o checkout canonico,
+a validacao comercial completa continua obrigatoria para promover e ativar o slot. Falha nessa fase
+mantem checkout, landing e campanha bloqueados e nunca pode ser convertida em `OK` manualmente.
+
+Mira comercial organiza somente produtos ja possuidos a partir das orientacoes documentadas pela
+cliente. Nao diagnostica, prescreve, trata nem recomenda compra de cosmeticos. A entrega paga deve
+preservar retomada, limite de duas tentativas, suporte, reembolso, privacidade, eventos comerciais e
+revogacao por reembolso. Midia e campanha permanecem desligadas ate autorizacao financeira posterior.
+
+A tela administrativa de versoes PDE atende tanto `Opala/PDE` quanto `Safira/AI_PRODUCT`. Uma
+candidata Safira segue o ciclo auditavel `CANDIDATE -> READY -> contrato publicado -> ACTIVE`: a
+homologacao exige oferta, checkout, video explicitamente vinculado e aprovado, URL validada e
+contrato da propria versao. Ativar a entrega nao cria campanha, orcamento nem autorizacao de midia.
+
 Quando o primeiro rollout exigir criar o container antes de trocar o proxy, o modo de bootstrap deve
 ser explícito, limitado àquele produto e comprovar simultaneamente que o novo container passou em sua
 porta exclusiva e que a rota histórica continua saudável no runtime anterior. O bootstrap não conclui

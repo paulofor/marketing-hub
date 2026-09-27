@@ -101,6 +101,7 @@ pde:
     notification-path: ${PDE_ENTITLEMENT_NOTIFICATION_PATH:/api/internal/pde/mercado-pago/entitlements}
     internal-token: ${PDE_ENTITLEMENT_INTERNAL_TOKEN:${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:}}
     product-slug: ${PDE_ENTITLEMENT_PRODUCT_SLUG:kit-whatsapp-pronto}
+    product-slugs: ${PDE_ENTITLEMENT_PRODUCT_SLUGS:kit-whatsapp-pronto,pde-planejado-36}
 ---
 spring:
   config:

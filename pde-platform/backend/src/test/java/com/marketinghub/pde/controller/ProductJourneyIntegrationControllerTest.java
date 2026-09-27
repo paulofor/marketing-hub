@@ -21,7 +21,7 @@ class ProductJourneyIntegrationControllerTest {
     void exposesJourneyIntegrationByProductSlug() throws Exception {
         ProductJourneyIntegrationContractService service =
                 mock(ProductJourneyIntegrationContractService.class);
-        when(service.get("kit-whatsapp-pronto", "v8.clubemusa.com.br"))
+        when(service.get("kit-whatsapp-pronto", "v8.clubemusa.com.br", null, null))
                 .thenReturn(
                         new ProductJourneyIntegrationContractResponse(
                                 "kit-whatsapp-pronto",

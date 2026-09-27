@@ -57,6 +57,20 @@ test("seleciona v8 quando a atestação pronta solicita essa superfície", async
   );
 });
 
+test("seleciona Mira comercial quando o novo manifesto autoriza a publicação", async (t) => {
+  const root = await fixture(t, {
+    "mira-commercial-v1.json": contract("mira-commercial"),
+  });
+  assert.equal(
+    await resolveDeployTarget(
+      root,
+      ["pde-platform/contracts/mira-commercial-v1.json"],
+      async () => "a".repeat(64),
+    ),
+    "mira-commercial",
+  );
+});
+
 test("não publica frontend quando o diff não contém candidata explícita", async (t) => {
   const root = await fixture(t, { "vega-v5.json": contract() });
   assert.equal(await resolveDeployTarget(root, ["pde-platform/frontend/README.md"]), "none");
@@ -288,6 +302,32 @@ test("dispatch manual preserva superfícies não MUSA pelo inventário suportado
     "pde-platform/contracts/product-runtime-isolation-v1.json",
   );
   assert.equal(plan.frontend.sourceSha256, "f".repeat(64));
+});
+
+test("dispatch manual seleciona a superfície comercial independente de Mira", async (t) => {
+  const root = await fixture(t, {
+    "product-runtime-isolation-v1.json": {
+      products: [
+        {
+          productId: 10,
+          productSlug: "pde-planejado-36",
+          surfaces: [
+            { deployTarget: "mira", lifecycleStatus: "SUPPORTED" },
+            { deployTarget: "mira-commercial", lifecycleStatus: "SUPPORTED" },
+          ],
+        },
+      ],
+    },
+  });
+  const plan = await resolveDeploymentPlan(root, [], {
+    manualFrontend: "mira-commercial",
+    fingerprintResolver: async () => "e".repeat(64),
+  });
+  assert.equal(plan.frontend.target, "mira-commercial");
+  assert.equal(
+    plan.frontend.relativePath,
+    "pde-platform/contracts/product-runtime-isolation-v1.json",
+  );
 });
 
 test("dispatch de componente compartilhado nunca seleciona frontend", async (t) => {

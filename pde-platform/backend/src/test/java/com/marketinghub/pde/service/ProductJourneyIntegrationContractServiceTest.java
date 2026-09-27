@@ -39,4 +39,31 @@ class ProductJourneyIntegrationContractServiceTest {
         assertThat(contract.sourceOfTruth()).isEqualTo("pde_funnel_event");
         assertThat(contract.testTrafficPolicy()).contains("INTERNAL_QA");
     }
+
+    /** Resolve a jornada candidata de Mira pelo slot explícito antes da promoção pública. */
+    @Test
+    void exposesExplicitMiraCandidateContract() {
+        ProductCatalogService catalog = mock(ProductCatalogService.class);
+        ProductExperienceResponse product = mock(ProductExperienceResponse.class);
+        when(product.slug()).thenReturn("pde-planejado-36");
+        when(product.experienceVersion()).thenReturn("mira-commercial-v1");
+        when(catalog.getProductForRequest(
+                        "pde-planejado-36",
+                        "mira.digicomdigital.com.br",
+                        "v1",
+                        "mira-commercial-v1"))
+                .thenReturn(product);
+        ProductJourneyIntegrationContractService service =
+                new ProductJourneyIntegrationContractService(catalog);
+
+        var contract = service.get(
+                "pde-planejado-36",
+                "mira.digicomdigital.com.br",
+                "v1",
+                "mira-commercial-v1");
+
+        assertThat(contract.productSlug()).isEqualTo("pde-planejado-36");
+        assertThat(contract.experienceVersion()).isEqualTo("mira-commercial-v1");
+        assertThat(contract.requiredEventTypes()).contains("PURCHASE_COMPLETED", "FIRST_USE");
+    }
 }

@@ -282,12 +282,12 @@ public class AccessService {
     /** Cria ou atualiza um acesso preservando a versão comercial que originou a entrada. */
     public AccessResponse createAccess(
             String productSlug, String email, String source, String experienceVersion) {
-        if (requiresRigelPaidEntitlement(productSlug)) {
+        if (requiresMercadoPagoPaidEntitlement(productSlug)) {
             if (!"INTERNAL_QA".equalsIgnoreCase(source)) {
                 throw new SecurityException(
-                        "O Kit WhatsApp Pronto só libera acesso após pagamento Mercado Pago confirmado");
+                        "Este produto só libera acesso após pagamento Mercado Pago confirmado");
             }
-            requireRigelPaidExperienceVersion(experienceVersion);
+            requireMercadoPagoPaidExperienceVersion(productSlug, experienceVersion);
         }
         resolveProduct(productSlug, experienceVersion);
         AccessGrant existingGrant = findGrantByEmail(productSlug, email);
@@ -360,9 +360,9 @@ public class AccessService {
             String paymentStatus,
             String experienceVersion,
             boolean newlyVerifiedPayment) {
-        if (requiresRigelPaidEntitlement(productSlug)) {
+        if (requiresMercadoPagoPaidEntitlement(productSlug)) {
             throw new SecurityException(
-                    "O Kit WhatsApp Pronto exige pagamento confirmado no checkout Mercado Pago publicado");
+                    "Este produto exige pagamento confirmado no checkout Mercado Pago publicado");
         }
         ProductExperienceResponse paidProduct = resolveProduct(productSlug, experienceVersion);
         if (buyerEmail == null || buyerEmail.isBlank()) {
@@ -445,10 +445,20 @@ public class AccessService {
         return true;
     }
 
-    /** Revoga o grant do Kit após o webhook autoritativo e registra o reembolso uma única vez. */
+    /** Revoga o grant padrão do Kit após o webhook autoritativo e registra o reembolso uma vez. */
     public boolean revokeMercadoPagoPaidAccess(
             String buyerEmail, String transactionId, String refundStatus) {
-        AccessGrant grant = findGrantByEmail(RigelPaidEntitlementService.PRODUCT_SLUG, buyerEmail);
+        return revokeMercadoPagoPaidAccess(
+                RigelPaidEntitlementService.PRODUCT_SLUG,
+                buyerEmail,
+                transactionId,
+                refundStatus);
+    }
+
+    /** Revoga o grant do produto exato após o webhook autoritativo de reembolso. */
+    public boolean revokeMercadoPagoPaidAccess(
+            String productSlug, String buyerEmail, String transactionId, String refundStatus) {
+        AccessGrant grant = findGrantByEmail(productSlug, buyerEmail);
         if (grant == null) {
             return false;
         }
@@ -459,7 +469,7 @@ public class AccessService {
             throw new IllegalArgumentException("Acesso correlacionado não pertence a uma compra Mercado Pago ativa");
         }
         var confirmedRefund = rigelPaidEntitlementService.findConfirmedRefund(
-                buyerEmail, transactionId, grant.getToken());
+                productSlug, buyerEmail, transactionId, grant.getToken());
         if (confirmedRefund.isEmpty()) {
             return false;
         }
@@ -483,7 +493,7 @@ public class AccessService {
                 RigelPaidEntitlementService.PAID_SOURCE,
                 "pde-platform",
                 null,
-                RigelCommercialEventContract.enrichAccessMetadata(grant, refundMetadata)));
+                rigelPaidEntitlementService.enrichAccessMetadata(grant, refundMetadata)));
         return true;
     }
 
@@ -495,7 +505,7 @@ public class AccessService {
     /** Envia link mágico vinculado à versão comercial que iniciou a degustação. */
     public MagicLinkResponse requestMagicLink(
             String productSlug, String email, String experienceVersion) {
-        if (requiresRigelPaidEntitlement(productSlug)) {
+        if (requiresMercadoPagoPaidEntitlement(productSlug)) {
             return requestExistingMagicLink(productSlug, email);
         }
         AccessResponse access = createAccess(productSlug, email, "MAGIC_LINK", experienceVersion);
@@ -505,8 +515,8 @@ public class AccessService {
     /** Envia link mágico apenas quando já existe cadastro para o e-mail informado. */
     public MagicLinkResponse requestExistingMagicLink(String productSlug, String email) {
         AccessGrant grant;
-        if (requiresRigelPaidEntitlement(productSlug)) {
-            grant = ensureRigelPaidAccess(email);
+        if (requiresMercadoPagoPaidEntitlement(productSlug)) {
+            grant = ensureMercadoPagoPaidAccess(productSlug, email);
         } else {
             productCatalogService.getProduct(productSlug);
             grant = findGrantByEmail(productSlug, email);
@@ -536,8 +546,8 @@ public class AccessService {
         }
         String verifiedEmail = googleIdentityService.verifyEmail(idToken);
         AccessResponse access;
-        if (requiresRigelPaidEntitlement(productSlug)) {
-            AccessGrant grant = ensureRigelPaidAccess(verifiedEmail);
+        if (requiresMercadoPagoPaidEntitlement(productSlug)) {
+            AccessGrant grant = ensureMercadoPagoPaidAccess(productSlug, verifiedEmail);
             requirePaidEntitlementIfNeeded(grant);
             access = toAccessResponse(grant);
         } else {
@@ -951,6 +961,25 @@ public class AccessService {
                 toMissionInteractionResponses(grant),
                 toDeliveryArtifactResponses(grant),
                 supportStatus(grant));
+    }
+
+    /** Autoriza um endpoint especializado a usar somente o acesso pago do produto informado. */
+    public PaidAccessIdentity requirePaidAccessIdentity(String token, String productSlug) {
+        AccessGrant grant = getGrant(token);
+        if (!grant.getProductSlug().equals(productSlug)) {
+            throw new SecurityException("O acesso informado pertence a outro produto");
+        }
+        requirePaidEntitlementIfNeeded(grant);
+        if (!"ACTIVE".equals(resolveSubscriptionStatus(grant))) {
+            throw new SecurityException("O acesso pago não está ativo");
+        }
+        return new PaidAccessIdentity(
+                grant.getProductSlug(),
+                grant.getEmail(),
+                grant.getExperienceVersion(),
+                grant.getSource(),
+                grant.getCreatedAt(),
+                grant.getExpiresAt());
     }
 
     /** Confirma que um material protegido pertence a um acesso pago ainda vigente. */
@@ -1640,33 +1669,35 @@ public class AccessService {
                 : "ACTIVE";
     }
 
-    /** Cria ou recupera o grant do Rigel somente depois de confirmar a compra autoritativa. */
-    private AccessGrant ensureRigelPaidAccess(String email) {
-        AccessGrant existing = findGrantByEmail(RigelPaidEntitlementService.PRODUCT_SLUG, email);
+    /** Cria ou recupera o grant do PDE somente depois de confirmar a compra autoritativa. */
+    private AccessGrant ensureMercadoPagoPaidAccess(String productSlug, String email) {
+        String experienceVersion = rigelPaidEntitlementService.experienceVersion(productSlug);
+        AccessGrant existing = findGrantByEmail(productSlug, email);
         if (existing != null && "INTERNAL_QA".equalsIgnoreCase(existing.getSource())) {
-            requireRigelPaidExperienceVersion(existing.getExperienceVersion());
+            requireMercadoPagoPaidExperienceVersion(productSlug, existing.getExperienceVersion());
             return existing;
         }
-        rigelPaidEntitlementService.requireApprovedPayment(email);
+        rigelPaidEntitlementService.requireApprovedPayment(productSlug, email);
         boolean newlyActivated = existing == null
                 || !RigelPaidEntitlementService.PAID_SOURCE.equalsIgnoreCase(existing.getSource());
         AccessGrant grant = existing;
         if (grant == null) {
             grant = new AccessGrant(
                     UUID.randomUUID().toString(),
-                    RigelPaidEntitlementService.PRODUCT_SLUG,
+                    productSlug,
                     normalizeEmail(email),
                     "PAYMENT_PENDING",
                     Instant.now(),
-                    RigelPaidEntitlementService.EXPERIENCE_VERSION,
+                    experienceVersion,
                     null,
                     null);
             accessByToken.put(grant.getToken(), grant);
             persistAccess(grant);
         }
         RigelPaidEntitlementService.PaidClaim claimed =
-                rigelPaidEntitlementService.claimApprovedPayment(email, grant.getToken());
-        grant.updateExperienceVersion(RigelPaidEntitlementService.EXPERIENCE_VERSION);
+                rigelPaidEntitlementService.claimApprovedPayment(
+                        productSlug, email, grant.getToken());
+        grant.updateExperienceVersion(experienceVersion);
         grant.updateSource(RigelPaidEntitlementService.PAID_SOURCE);
         grant.activatePaidAccess(claimed.approvedAt(), null);
         persistAccess(grant);
@@ -1681,27 +1712,28 @@ public class AccessService {
                             "currency", claimed.currency(),
                             "approvedAt", claimed.approvedAt().toString(),
                             "releasedAt", Instant.now().toString(),
-                            "experienceVersion", RigelPaidEntitlementService.EXPERIENCE_VERSION));
+                            "experienceVersion", experienceVersion));
         }
         return grant;
     }
 
-    /** Aplica a guarda única de pagamento e versão em todas as fronteiras pagas do Rigel. */
+    /** Aplica a guarda única de pagamento e versão em todas as fronteiras pagas suportadas. */
     private void requirePaidEntitlementIfNeeded(AccessGrant grant) {
-        if (!requiresRigelPaidEntitlement(grant.getProductSlug())) {
+        if (!requiresMercadoPagoPaidEntitlement(grant.getProductSlug())) {
             return;
         }
         rigelPaidEntitlementService.requireActiveAccess(grant);
     }
 
     /** Identifica o produto assistido que não possui etapa gratuita dentro da workspace. */
-    private boolean requiresRigelPaidEntitlement(String productSlug) {
+    private boolean requiresMercadoPagoPaidEntitlement(String productSlug) {
         return rigelPaidEntitlementService.supports(productSlug);
     }
 
-    /** Exige a versão paga congelada para impedir acesso cruzado entre candidatas do Rigel. */
-    private void requireRigelPaidExperienceVersion(String experienceVersion) {
-        rigelPaidEntitlementService.requireExactExperience(experienceVersion);
+    /** Exige a versão paga congelada para impedir acesso cruzado entre candidatas. */
+    private void requireMercadoPagoPaidExperienceVersion(
+            String productSlug, String experienceVersion) {
+        rigelPaidEntitlementService.requireExactExperience(productSlug, experienceVersion);
     }
 
     /** Garante que somente o primeiro dia gratuito fica disponível sem acesso comprado vigente. */
@@ -1796,7 +1828,9 @@ public class AccessService {
     /** Converte URL relativa em URL absoluta usando o domínio público do produto correto. */
     private String buildAbsoluteAccessUrl(String productSlug, String accessUrl) {
         String normalizedBase;
-        if (StringUtils.hasText(productSlug) && !"metodo-musa-7-dias".equals(productSlug)) {
+        if (RigelPaidEntitlementService.MIRA_PRODUCT_SLUG.equals(productSlug)) {
+            normalizedBase = "https://mira.digicomdigital.com.br";
+        } else if (StringUtils.hasText(productSlug) && !"metodo-musa-7-dias".equals(productSlug)) {
             normalizedBase = "https://" + productSlug.trim().toLowerCase() + ".digicomdigital.com.br";
         } else {
             normalizedBase = appBaseUrl == null || appBaseUrl.isBlank()
@@ -1845,7 +1879,7 @@ public class AccessService {
             }
             eventMetadata.put("experienceVersion", grant.getExperienceVersion());
             eventMetadata.put("idempotencyKey", "paid-access-activation");
-            eventMetadata = RigelCommercialEventContract.enrichAccessMetadata(grant, eventMetadata);
+            eventMetadata = rigelPaidEntitlementService.enrichAccessMetadata(grant, eventMetadata);
             recordFunnelEvent(new FunnelEventRequest(
                     grant.getProductSlug(),
                     "PURCHASE_COMPLETED",
@@ -3282,6 +3316,15 @@ public class AccessService {
 
     /** Guarda a classificação de qualidade persistida junto ao evento bruto. */
     private record TrafficClassification(String quality, String reason, String provider) {}
+
+    /** Expõe somente a identidade mínima de um acesso pago já autorizado. */
+    public record PaidAccessIdentity(
+            String productSlug,
+            String email,
+            String experienceVersion,
+            String source,
+            Instant createdAt,
+            Instant expiresAt) {}
 
     /** Representa o formato persistido do acesso para armazenamento em JSON. */
     private record StoredAccessGrant(

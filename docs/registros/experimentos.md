@@ -7350,3 +7350,12 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
   entregar linhagem comercial estruturada, SHA-256 do MP4 calculado no backend, IDs validados das
   fontes #522/#523 e captura somente leitura do checkout realmente ligado à página.
 - Matriz e critérios: [Capella sucessor em vídeo v1](../homologacao/capella-facebook-successor-video-v1.md).
+# Mira #93 — publicacao comercial autorizada (26/09/2026)
+
+- Foi autorizada a publicacao da entrega validada, a criacao do checkout de R$ 49 e a landing do
+  experimento 93. Campanha, orcamento e gasto de midia continuam expressamente desligados.
+- A tentativa pela tela comprovou a dependencia circular vigente: o checkout exige slot ativo e
+  validado, enquanto o validador do slot exige uma oferta que ja contenha checkout.
+- A solucao escolhida e separar `mira-private-v3` de `mira-commercial-v1` e adotar preflight de
+  entrega candidata seguido da validacao comercial completa. A matriz esta em
+  `docs/homologacao/mira-commercial-v1.md`.

@@ -48,6 +48,12 @@ curl_v8() {
     "https://v8.clubemusa.com.br$1"
 }
 
+curl_mira_commercial() {
+  compose exec -T proxy curl --fail --silent --show-error --insecure \
+    --resolve "mira.digicomdigital.com.br:443:127.0.0.1" \
+    "https://mira.digicomdigital.com.br$1"
+}
+
 vega_v5_diagnostics="$(curl_v5 /version-diagnostics.json)"
 grep -q '"imageVersionId": "v5"' <<<"${vega_v5_diagnostics}"
 grep -q '"experienceVersion": "musa-pde-entry-v5-video-explicativo"' \
@@ -90,6 +96,26 @@ if compose exec -T pde-platform-frontend-v7 \
   echo '[ARQUITETURA] O container de Vega ainda entrega a rota de Mira.' >&2
   exit 1
 fi
+
+mira_commercial_html="$(curl_mira_commercial /)"
+mira_commercial_asset="$(sed -n 's/.*src="\([^"]*\.js\)".*/\1/p' <<<"${mira_commercial_html}")"
+test -n "${mira_commercial_asset}"
+mira_commercial_bundle="$(curl_mira_commercial "${mira_commercial_asset}")"
+grep -q 'Cuide de você com mais clareza' <<<"${mira_commercial_bundle}"
+mira_commercial_contract="$(curl_mira_commercial /pde-health-contract.json)"
+grep -q '/media/mira-commercial-demo-v1.mp4' <<<"${mira_commercial_contract}"
+curl_mira_commercial /media/mira-commercial-demo-v1.mp4 >/dev/null
+curl_mira_commercial /media/mira-commercial-demo-v1-poster.jpg >/dev/null
+mira_commercial_diagnostics="$(curl_mira_commercial /version-diagnostics.json)"
+grep -q '"surface": "pde-platform-frontend-mira-commercial"' \
+  <<<"${mira_commercial_diagnostics}"
+grep -q '"experienceVersion": "mira-commercial-v1"' \
+  <<<"${mira_commercial_diagnostics}"
+if grep -qiE 'acesso privado|homologação interna|evidência sintética|voz gerada por IA' \
+  <<<"${mira_commercial_html}${mira_commercial_bundle}"; then
+  echo '[ARQUITETURA] A superfície comercial de Mira contém linguagem da pesquisa privada.' >&2
+  exit 1
+fi
 if compose exec -T pde-platform-frontend-v7 \
   wget --quiet --spider http://127.0.0.1/mira-private/subrota 2>/dev/null; then
   echo '[ARQUITETURA] O fallback SPA do Vega ainda aceita subrotas de Mira.' >&2
@@ -101,20 +127,26 @@ vega_v6_container_id_before="$(compose ps -q pde-platform-frontend-v6)"
 vega_container_id_before="$(compose ps -q pde-platform-frontend-v7)"
 vega_v12_container_id_before="$(compose ps -q pde-platform-frontend-v8)"
 mira_container_id_before="$(compose ps -q pde-platform-frontend-mira)"
-compose up -d --force-recreate --no-deps --wait pde-platform-frontend-mira
+mira_commercial_container_id_before="$(compose ps -q pde-platform-frontend-mira-commercial)"
+compose up -d --force-recreate --no-deps --wait pde-platform-frontend-mira-commercial
 vega_v5_container_id_after="$(compose ps -q pde-platform-frontend-v5)"
 vega_v6_container_id_after="$(compose ps -q pde-platform-frontend-v6)"
 vega_container_id_after="$(compose ps -q pde-platform-frontend-v7)"
 vega_v12_container_id_after="$(compose ps -q pde-platform-frontend-v8)"
 mira_container_id_after="$(compose ps -q pde-platform-frontend-mira)"
+mira_commercial_container_id_after="$(compose ps -q pde-platform-frontend-mira-commercial)"
 
 test "${vega_v5_container_id_before}" = "${vega_v5_container_id_after}"
 test "${vega_v6_container_id_before}" = "${vega_v6_container_id_after}"
 test "${vega_container_id_before}" = "${vega_container_id_after}"
 test "${vega_v12_container_id_before}" = "${vega_v12_container_id_after}"
-test "${mira_container_id_before}" != "${mira_container_id_after}"
+test "${mira_container_id_before}" = "${mira_container_id_after}"
+test "${mira_commercial_container_id_before}" != "${mira_commercial_container_id_after}"
 curl_v7 /mira-private/version-diagnostics.json | grep -q '"productId": 10'
+curl_mira_commercial /version-diagnostics.json \
+  | grep -q '"experienceVersion": "mira-commercial-v1"'
+curl_mira_commercial /media/mira-commercial-demo-v1.mp4 >/dev/null
 curl_v8 /version-diagnostics.json \
   | grep -q '"experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"'
 
-echo 'Roteamento e ciclo de vida isolados de Mira e Vega v5–v8 validados localmente.'
+echo 'Roteamento e ciclo de vida isolados de Mira privada, Mira comercial e Vega v5–v8 validados localmente.'

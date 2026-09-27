@@ -860,7 +860,7 @@ class ProductControllerTest {
         .andExpect(jsonPath("$[0].experienceVersion").value("musa-pde-entry-v5-estrada-desejo"));
   }
 
-  /** Deve expor a trajetória consolidada das versões PDE do produto Opala. */
+  /** Deve expor a trajetória consolidada das versões PDE do produto suportado. */
   @Test
   void listPdeVersions() throws Exception {
     Product product = Product.builder().id(1L).slug("metodo-musa-7-dias").build();
@@ -954,6 +954,51 @@ class ProductControllerTest {
 
     verify(pdeProductionSlotService)
         .prepareProductionSlotForPublication("metodo-musa-7-dias", "v8");
+  }
+
+  /** Deve expor a ativação explícita sem acionar campanha ou orçamento de mídia. */
+  @Test
+  void activatePublishedPdeVersion() throws Exception {
+    Product product = Product.builder().id(10L).slug("pde-planejado-36").build();
+    when(service.getProduct(10L)).thenReturn(product);
+    PostDeployPdeProductionSlotDto response =
+        new PostDeployPdeProductionSlotDto(
+            10L,
+            "v1",
+            "pde-planejado-36",
+            "mira.digicomdigital.com.br",
+            "https://mira.digicomdigital.com.br",
+            "https://mira.digicomdigital.com.br/api",
+            "mira-commercial-v1",
+            "mira-routine-v1",
+            "production-v1",
+            PdeProductionSlotStatus.ACTIVE,
+            93L,
+            null,
+            "{}",
+            "{}",
+            "Marketing Hub",
+            Instant.parse("2026-09-27T01:00:00Z"),
+            "OK",
+            Instant.parse("2026-09-27T00:55:00Z"),
+            200,
+            "URL validada",
+            null,
+            "pde-planejado-36",
+            "/health",
+            "https://mira.digicomdigital.com.br",
+            Instant.parse("2026-09-27T00:00:00Z"),
+            Instant.parse("2026-09-27T01:00:00Z"));
+    when(pdeProductionSlotService.activateProductionSlot("pde-planejado-36", "v1"))
+        .thenReturn(response);
+
+    mockMvc
+        .perform(post("/api/products/{id}/pde-production-slots/{slotCode}/activate", 10L, "v1"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("ACTIVE"))
+        .andExpect(jsonPath("$.sourceExperimentId").value(93L));
+
+    verify(pdeProductionSlotService).activateProductionSlot("pde-planejado-36", "v1");
   }
 
   /** Deve listar vídeos HLS já resolvidos por versão PDE pelo backend. */

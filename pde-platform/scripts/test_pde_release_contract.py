@@ -26,8 +26,32 @@ class PdeReleaseContractTest(unittest.TestCase):
         MODULE.validate_inventory(self.inventory)
         self.assertEqual(
             {surface["deployTarget"] for surface in MODULE.surfaces(self.inventory)},
-            {"v5", "v6", "v7", "v8", "mira", "kit-whatsapp"},
+            {
+                "v5",
+                "v6",
+                "v7",
+                "v8",
+                "mira",
+                "mira-commercial",
+                "kit-whatsapp",
+            },
         )
+
+    def test_commercial_mira_has_its_own_runtime_identity(self):
+        surface = MODULE.select_surface(self.inventory, "mira-commercial")
+        self.assertEqual(
+            MODULE.diagnostic_surface(surface),
+            "pde-platform-frontend-mira-commercial",
+        )
+
+    def test_commercial_mira_release_manifest_binds_homologated_source(self):
+        surface = MODULE.select_surface(self.inventory, "mira-commercial")
+        contract = MODULE.load_object(
+            ROOT / "pde-platform/contracts/mira-commercial-homologation-v1.json"
+        )
+        source = contract["publicationContract"]["requiredFrontendSourceSha256"]
+
+        MODULE.validate_release_contract(surface, contract, source)
 
     def test_diagnostics_bind_target_image_commit_and_source(self):
         surface = MODULE.select_surface(self.inventory, "v8")

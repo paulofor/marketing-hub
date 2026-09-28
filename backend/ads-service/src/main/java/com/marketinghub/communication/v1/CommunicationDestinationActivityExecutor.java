@@ -6,17 +6,34 @@ import com.marketinghub.businessprocess.execution.service.backendactivity.*;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Responsabilidade: escolher entre destino privado aprovado e produção de landing comercial. */
 @Service
-@RequiredArgsConstructor
 public class CommunicationDestinationActivityExecutor
     implements BackendProductProcessActivityExecutor {
   private final PrivateCommunicationJourney privateJourney;
   private final BusinessProcessDefinitionRepository processes;
+  private final PdeCommercialCommunicationDestination commercialDestination;
+
+  /** Configura as rotas privada, comercial publicada e de geração de landing. */
+  @Autowired
+  public CommunicationDestinationActivityExecutor(
+      PrivateCommunicationJourney privateJourney,
+      BusinessProcessDefinitionRepository processes,
+      PdeCommercialCommunicationDestination commercialDestination) {
+    this.privateJourney = privateJourney;
+    this.processes = processes;
+    this.commercialDestination = commercialDestination;
+  }
+
+  /** Mantém testes focados na rota privada sem exigir um slot comercial. */
+  CommunicationDestinationActivityExecutor(
+      PrivateCommunicationJourney privateJourney, BusinessProcessDefinitionRepository processes) {
+    this(privateJourney, processes, null);
+  }
 
   /** Reconhece somente a decisão de destino do processo canônico de comunicação. */
   @Override
@@ -36,6 +53,10 @@ public class CommunicationDestinationActivityExecutor
       String reference) {
     if (privateJourney.applies(reference))
       return privateJourney.readiness(process, activity, product, reference);
+    if (commercialDestination != null) {
+      var published = commercialDestination.readiness(product, reference);
+      if (published.isPresent()) return published.orElseThrow();
+    }
     if (activity.getSubprocessCode() == null || activity.getSubprocessCode().isBlank())
       return new BackendProductProcessActivityReadiness(
           false, "O destino não possui subprocesso configurado.");
@@ -68,9 +89,13 @@ public class CommunicationDestinationActivityExecutor
       BusinessProcessActivityDefinition activity,
       Product product,
       String reference) {
-    if (!privateJourney.applies(reference))
-      throw new IllegalStateException(
-          "Execute o subprocesso oficial para produzir a landing deste contrato.");
-    return privateJourney.complete(process, activity, product, reference);
+    if (privateJourney.applies(reference))
+      return privateJourney.complete(process, activity, product, reference);
+    if (commercialDestination != null
+        && commercialDestination.readiness(product, reference).isPresent()) {
+      return commercialDestination.complete(process, activity, product, reference);
+    }
+    throw new IllegalStateException(
+        "Execute o subprocesso oficial para produzir a landing deste contrato.");
   }
 }

@@ -202,6 +202,21 @@ class PdeSalesJourneyIntegrationActivityExecutorTest {
                     .contains("\"journeyMode\":\"COMMERCIAL\""));
   }
 
+  /** Não aceita uma landing histórica quando o destino da referência atual ainda não concluiu. */
+  @Test
+  void usesExactReferenceHistoryOutsideLearningCycle() {
+    var creatives = completedCycleActivity(176L, "creatives");
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
+                process.getId(), "experiment:89"))
+        .thenReturn(List.of(creatives));
+
+    var readiness = executor.readiness(process, integration, rigel, "experiment:89");
+
+    assertThat(readiness.ready()).isFalse();
+    assertThat(readiness.reason()).contains("Construir landing");
+  }
+
   /** Monta o processo 4 completo com as fontes persistidas do Rigel. */
   @BeforeEach
   void setUp() {

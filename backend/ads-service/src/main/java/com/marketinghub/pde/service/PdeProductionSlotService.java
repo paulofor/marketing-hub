@@ -138,13 +138,16 @@ public class PdeProductionSlotService {
         repository
             .findByProductSlugAndSlotCode(resolvedProductSlug, slotCode)
             .orElseGet(PdeProductionSlot::new);
-    ValidationFingerprint previousFingerprint = ValidationFingerprint.from(slot);
+    ValidationFingerprint previousFingerprint = validationFingerprint(slot);
     slot.setSlotCode(slotCode);
     slot.setProductSlug(resolvedProductSlug);
     slot.setDomain(domain);
     slot.setPublicUrl(publicUrl);
-    slot.setBackendUrl(
-        StringUtils.hasText(request.backendUrl()) ? request.backendUrl().trim() : null);
+    if (StringUtils.hasText(request.backendUrl())) {
+      slot.setBackendUrl(request.backendUrl().trim());
+    } else if (slot.getId() == null) {
+      slot.setBackendUrl(null);
+    }
     slot.setExperienceVersion(
         normalizeRequired(request.experienceVersion(), "Versão PDE obrigatória"));
     slot.setLayoutKey(
@@ -162,7 +165,7 @@ public class PdeProductionSlotService {
     if (request.draftExperienceJson() != null) {
       slot.setDraftExperienceJson(normalizeOptionalJson(request.draftExperienceJson()));
     }
-    if (slot.getId() != null && !previousFingerprint.equals(ValidationFingerprint.from(slot))) {
+    if (slot.getId() != null && !previousFingerprint.equals(validationFingerprint(slot))) {
       clearValidationEvidence(slot);
     }
     validateGovernedStatusTransition(slot);
@@ -1352,6 +1355,25 @@ public class PdeProductionSlotService {
     return normalizeRequiredJson(rawJson, "Contrato JSON da experiência PDE inválido");
   }
 
+  /** Compara o contrato pelo conteúdo JSON para não invalidar homologação por mera formatação. */
+  private ValidationFingerprint validationFingerprint(PdeProductionSlot slot) {
+    return ValidationFingerprint.from(
+        slot, canonicalJsonFingerprint(slot.getDraftExperienceJson()));
+  }
+
+  /** Canonicaliza JSON válido e preserva texto legado inválido apenas para detectar sua mudança. */
+  private String canonicalJsonFingerprint(String rawJson) {
+    if (!StringUtils.hasText(rawJson)) {
+      return null;
+    }
+    try {
+      return objectMapper.readTree(rawJson).toString();
+    } catch (IOException ex) {
+      log.debug("Contrato PDE legado inválido ao calcular impressão de validação", ex);
+      return rawJson.trim();
+    }
+  }
+
   /** Valida e formata o JSON obrigatório do contrato PDE. */
   private String normalizeRequiredJson(String rawJson, String message) {
     return normalizeRequiredJson(rawJson, message, null, null);
@@ -1518,11 +1540,10 @@ public class PdeProductionSlotService {
     COMMERCIAL_COMPLETE
   }
 
-  /** Captura os campos que precisam continuar idênticos à evidência de homologação da v12. */
+  /** Captura os campos públicos que precisam continuar idênticos à evidência de homologação. */
   private record ValidationFingerprint(
       String domain,
       String publicUrl,
-      String backendUrl,
       String experienceVersion,
       String layoutKey,
       String targetEnvironment,
@@ -1530,16 +1551,16 @@ public class PdeProductionSlotService {
       String draftExperienceJson) {
 
     /** Cria a impressão comparável sem depender da identidade JPA da entidade. */
-    private static ValidationFingerprint from(PdeProductionSlot slot) {
+    private static ValidationFingerprint from(
+        PdeProductionSlot slot, String canonicalDraftExperienceJson) {
       return new ValidationFingerprint(
           slot.getDomain(),
           slot.getPublicUrl(),
-          slot.getBackendUrl(),
           slot.getExperienceVersion(),
           slot.getLayoutKey(),
           slot.getTargetEnvironment(),
           slot.getSourceExperimentId(),
-          slot.getDraftExperienceJson());
+          canonicalDraftExperienceJson);
     }
   }
 }

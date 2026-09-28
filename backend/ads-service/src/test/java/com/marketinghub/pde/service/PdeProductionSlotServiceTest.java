@@ -122,6 +122,91 @@ class PdeProductionSlotServiceTest {
     assertThat(response.publicUrl()).isEqualTo("https://kit-whatsapp-pronto.digicomdigital.com.br");
   }
 
+  /** Deve preservar a URL de backend existente quando uma edição antiga omitir esse campo. */
+  @Test
+  void preservesBackendUrlWhenUpdateOmitsField() {
+    PdeProductionSlot slot =
+        PdeProductionSlot.builder()
+            .id(18L)
+            .slotCode("v1")
+            .productSlug("produto-legado")
+            .domain("produto-legado.digicomdigital.com.br")
+            .publicUrl("https://produto-legado.digicomdigital.com.br")
+            .backendUrl("https://produto-legado.digicomdigital.com.br/api")
+            .experienceVersion("produto-legado-v1")
+            .layoutKey("assisted-service-v1")
+            .targetEnvironment("production-v1")
+            .status(PdeProductionSlotStatus.PLANNED)
+            .build();
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("produto-legado", "v1"))
+        .thenReturn(Optional.of(slot));
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var response =
+        service.saveProductionSlot(
+            "produto-legado",
+            89L,
+            new PostDeployPdeProductionSlotRequestDto(
+                "v1",
+                null,
+                "produto-legado.digicomdigital.com.br",
+                "https://produto-legado.digicomdigital.com.br",
+                null,
+                "produto-legado-v1",
+                "assisted-service-v1",
+                "production-v1",
+                PdeProductionSlotStatus.PLANNED,
+                89L,
+                null,
+                null,
+                null));
+
+    assertThat(response.backendUrl()).isEqualTo("https://produto-legado.digicomdigital.com.br/api");
+  }
+
+  /** Deve permitir corrigir somente o backend sem invalidar a homologação pública vigente. */
+  @Test
+  void keepsPublicValidationWhenOnlyBackendUrlChanges() {
+    PdeProductionSlot slot = miraSlot(PdeProductionSlotStatus.ACTIVE, true);
+    slot.setBackendUrl(null);
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, experimentRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("pde-planejado-36", "v1"))
+        .thenReturn(Optional.of(slot));
+    when(experimentRepository.findById(93L)).thenReturn(Optional.of(miraExperiment()));
+    when(videoAssetRepository.findByExperimentIdOrderByCreatedAtDesc(93L))
+        .thenReturn(List.of(miraVideo()));
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var response =
+        service.saveProductionSlot(
+            "pde-planejado-36",
+            93L,
+            new PostDeployPdeProductionSlotRequestDto(
+                "v1",
+                null,
+                "mira.digicomdigital.com.br",
+                "https://mira.digicomdigital.com.br",
+                "https://mira.digicomdigital.com.br/api",
+                "mira-commercial-v1",
+                "mira-routine-v1",
+                "production-v1",
+                PdeProductionSlotStatus.ACTIVE,
+                93L,
+                null,
+                miraContract(),
+                null));
+
+    assertThat(response.backendUrl()).isEqualTo("https://mira.digicomdigital.com.br/api");
+    assertThat(response.validationStatus()).isEqualTo("OK");
+  }
+
   /** Deve publicar contrato preenchendo a identidade independente de versão e layout do slot. */
   @Test
   void publishesSlotContractWithVersionAndLayoutIdentity() throws Exception {

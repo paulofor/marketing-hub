@@ -7665,3 +7665,28 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   Meta explícita confirmada por HTTP 200 e conclusão da solicitação de parada. As filas oficiais de
   métricas, recomendações e parada não retornam mais a campanha, e a tela separa `PAUSED` de
   **Janela encerrada** em desktop e nos dois perfis móveis homologados.
+
+## LOOP-P4-DESTINO-COMERCIAL-RECRIADO — slot publicado tratado como landing ausente
+
+- **Evidência confirmada em 28/09/2026:** o Processo 4 de Mira abriu o run #28 e, mesmo com o slot
+  `mira-commercial-v1` ativo, homologado e publicado, criou o subprocesso de landing #29. A tarefa
+  #536 bloqueou ao comparar o checkout comercial já persistido no experimento #93 com o snapshot
+  privado antigo que não possuía pagamento. O slot também não tinha `backend_url`, embora acesso e
+  eventos públicos já estivessem contratados.
+- **Causa-raiz histórica e sistêmica:** o executor de destino distinguia somente jornada privada e
+  landing nova; não reconhecia um destino comercial PDE já publicado. A integração podia aceitar
+  evidência global de outro run, sem exigir o histórico da mesma referência, e a edição do slot não
+  expunha a URL operacional. No backend, omitir essa URL durante uma edição ainda a apagava.
+- **Alternativas avaliadas:** corrigir os registros diretamente limparia Mira sem prevenir outro
+  produto; forçar a landing a aceitar o snapshot contraditório duplicaria um destino que já vende;
+  reconciliar o slot publicado como fonte de verdade preserva linhagem, reduz trabalho e fecha a
+  causa sistêmica. A terceira alternativa foi adotada.
+- **Correção sistêmica:** o Processo 4 passa a validar produto, experimento, versão, contrato,
+  checkout, publicação e homologação do slot comercial e materializa essa evidência como destino,
+  sem abrir landing redundante. A integração exige as atividades da mesma execução quando já existe
+  histórico da referência exata. A tela permite cadastrar `backend_url`, e atualizações omissas a
+  preservam.
+- **Prevenção:** testes cobrem destino comercial válido, checkout contraditório, ausência da
+  atividade exata apesar de histórico global, preservação da URL e edição pela tela. A impressão de
+  homologação compara o conteúdo do contrato JSON, portanto só mudanças semânticas invalidam a
+  validação pública; formatação e URL administrativa isolada não criam um novo ciclo de homologação.

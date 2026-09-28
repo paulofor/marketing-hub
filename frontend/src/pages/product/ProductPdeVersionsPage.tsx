@@ -76,6 +76,7 @@ const layoutOptions = [
 type NewPdeSlotForm = {
   slotCode: string;
   domain: string;
+  backendUrl: string;
   experienceVersion: string;
   layoutKey: string;
   sourceExperimentId: string;
@@ -92,6 +93,7 @@ export function defaultPdeSlotForm(product?: {
     return {
       slotCode: "v2",
       domain: "v2.clubemusa.com.br",
+      backendUrl: "",
       experienceVersion: "musa-pde-entry-v5-estrada-desejo",
       layoutKey: "estrada-desejo",
       sourceExperimentId: "",
@@ -103,6 +105,7 @@ export function defaultPdeSlotForm(product?: {
     return {
       slotCode: "v1",
       domain: "mira.digicomdigital.com.br",
+      backendUrl: "https://mira.digicomdigital.com.br/api",
       experienceVersion: "mira-commercial-v1",
       layoutKey: "mira-routine-v1",
       sourceExperimentId: "93",
@@ -123,6 +126,7 @@ export function defaultPdeSlotForm(product?: {
   return {
     slotCode: "v1",
     domain: `${product.slug}.digicomdigital.com.br`,
+    backendUrl: "",
     experienceVersion: `${product.slug}-pde-v1`,
     layoutKey,
     sourceExperimentId: "",
@@ -379,6 +383,7 @@ export default function ProductPdeVersionsPage() {
     [selectedEditorSlotCode, versionsQuery.data],
   );
   const [contractDraft, setContractDraft] = useState("");
+  const [backendUrlDraft, setBackendUrlDraft] = useState("");
   const [publishedBy, setPublishedBy] = useState("Marketing Hub");
 
   useEffect(() => {
@@ -388,18 +393,14 @@ export default function ProductPdeVersionsPage() {
   }, [selectedEditorSlotCode, slots]);
 
   useEffect(() => {
-    if (
-      !product?.slug ||
-      slots.length > 0 ||
-      defaultProductSlug === product.slug
-    )
-      return;
+    if (!product?.slug || defaultProductSlug === product.slug) return;
     setForm(defaultPdeSlotForm(product));
     setDefaultProductSlug(product.slug);
-  }, [defaultProductSlug, product, slots.length]);
+  }, [defaultProductSlug, product]);
 
   useEffect(() => {
     if (!selectedEditorSlot) return;
+    setBackendUrlDraft(selectedEditorSlot.backendUrl || "");
     setContractDraft(
       selectedEditorSlot.draftExperienceJson ||
         selectedEditorSlot.publishedExperienceJson ||
@@ -415,7 +416,7 @@ export default function ProductPdeVersionsPage() {
       slotCode: selectedEditorSlot.slotCode,
       domain: selectedEditorSlot.domain,
       publicUrl: selectedEditorSlot.publicUrl,
-      backendUrl: selectedEditorSlot.backendUrl || undefined,
+      backendUrl: backendUrlDraft.trim() || undefined,
       experienceVersion: selectedEditorSlot.experienceVersion,
       layoutKey: selectedEditorSlot.layoutKey,
       targetEnvironment: selectedEditorSlot.targetEnvironment,
@@ -495,6 +496,7 @@ export default function ProductPdeVersionsPage() {
                 productSlug: product.slug || "",
                 slotCode: form.slotCode,
                 domain: form.domain,
+                backendUrl: form.backendUrl.trim() || undefined,
                 experienceVersion: form.experienceVersion,
                 layoutKey: form.layoutKey,
                 sourceExperimentId: form.sourceExperimentId
@@ -543,6 +545,27 @@ export default function ProductPdeVersionsPage() {
                   }))
                 }
                 required
+              />
+            </div>
+            <div className="col-12 col-md-4">
+              <label
+                className="form-label small fw-semibold"
+                htmlFor="pde-slot-backend-url"
+              >
+                URL do backend de acesso e eventos
+              </label>
+              <input
+                id="pde-slot-backend-url"
+                className="form-control form-control-sm"
+                type="url"
+                placeholder="https://produto.exemplo.com/api"
+                value={form.backendUrl}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    backendUrl: event.target.value,
+                  }))
+                }
               />
             </div>
             <div className="col-12 col-md-3">
@@ -793,6 +816,26 @@ export default function ProductPdeVersionsPage() {
                 </div>
                 <div className="small text-muted">
                   Layout: {selectedEditorSlot?.layoutKey || "—"}
+                </div>
+              </div>
+              <div className="col-12">
+                <label
+                  className="form-label small fw-semibold"
+                  htmlFor="pde-editor-backend-url"
+                >
+                  URL do backend de acesso e eventos
+                </label>
+                <input
+                  id="pde-editor-backend-url"
+                  className="form-control form-control-sm"
+                  type="url"
+                  placeholder="https://produto.exemplo.com/api"
+                  value={backendUrlDraft}
+                  onChange={(event) => setBackendUrlDraft(event.target.value)}
+                />
+                <div className="form-text">
+                  Obrigatória para o Processo 4 comprovar acesso e eventos da
+                  jornada comercial.
                 </div>
               </div>
               <div className="col-12">

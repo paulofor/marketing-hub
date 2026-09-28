@@ -1,0 +1,18 @@
+{
+  "cardKey": "rotacao-criativa-repeticao-percebida",
+  "collection": "neuromarketing",
+  "title": "Separe fadiga real de falha criativa precoce",
+  "finding": "Benchmark observacional recente em Meta indica que a maioria dos criativos não alcançou exposição alta; entre os poucos que escalaram, custo por aquisição deteriorou de forma mais persistente que CTR, enquanto CPM permaneceu relativamente estável.",
+  "mechanism": "Uma peça pode falhar cedo por baixa aderência sem ter sofrido desgaste por repetição. Nos criativos que realmente acumulam exposição, sinais econômicos persistentes podem descrever melhor o desgaste do que idade, CTR inicial ou frequência presumida.",
+  "commercialApplication": "No Marketing Hub, separar creative_failure de creative_fatigue, manter diversidade funcional entre variantes e revisar rotação apenas depois de entrega suficiente, combinando custo e eventos reais do funil.",
+  "evidenceStrength": "Moderada: benchmark de dados reais de entrega em 368 criativos e 15 marcas DTC, mas observacional, de uma única agência e sem randomização.",
+  "publishedOn": "2026-09-28",
+  "validUntil": "2027-03-28",
+  "experimentHypothesis": "Uma política que distingue falha precoce de desgaste após escala evitará trocas desnecessárias sem piorar custo e qualidade dos resultados em comparação com uma política baseada apenas em idade ou CTR inicial.",
+  "risks": "Não transformar os números do benchmark em thresholds universais nem manter peça ruim apenas para alcançar volume. Contexto de público, oferta e orçamento continua relevante.",
+  "limits": "O estudo cobre 15 marcas DTC e quatro meses; as faixas de maior exposição têm viés de sobrevivência. Sem reach por anúncio, não valida causalmente limites específicos de frequência.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-28-desgaste-criativos.md",
+  "sourceTitle": "Fonte revisada — Desgaste de criativos",
+  "sourceSha256": "8c99777b7ffbabf83ff47dbd4140051a58113e785a4a2681d9f051c1d90e407e"
+}

@@ -461,17 +461,24 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
         </div>
         <form className="row g-2" onSubmit={submit}>
           <div className="col-lg-3">
-            <label className="form-label">URL da mídia *</label>
+            <label className="form-label" htmlFor="visual-asset-url">
+              URL da mídia *
+            </label>
             <input
+              id="visual-asset-url"
               className="form-control"
               required
+              maxLength={2048}
               value={draft.assetUrl}
               onChange={(e) => setDraft({ ...draft, assetUrl: e.target.value })}
             />
           </div>
           <div className="col-lg-1">
-            <label className="form-label">Tipo *</label>
+            <label className="form-label" htmlFor="visual-asset-media-type">
+              Tipo *
+            </label>
             <select
+              id="visual-asset-media-type"
               className="form-select"
               value={draft.mediaType}
               onChange={(e) =>
@@ -486,17 +493,24 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
             </select>
           </div>
           <div className="col-lg-3">
-            <label className="form-label">Descrição *</label>
+            <label className="form-label" htmlFor="visual-asset-label">
+              Descrição *
+            </label>
             <input
+              id="visual-asset-label"
               className="form-control"
               required
+              maxLength={191}
               value={draft.label}
               onChange={(e) => setDraft({ ...draft, label: e.target.value })}
             />
           </div>
           <div className="col-lg-2">
-            <label className="form-label">Finalidade *</label>
+            <label className="form-label" htmlFor="visual-asset-purpose">
+              Finalidade *
+            </label>
             <select
+              id="visual-asset-purpose"
               className="form-select"
               value={draft.purpose}
               onChange={(e) => setDraft({ ...draft, purpose: e.target.value })}
@@ -509,19 +523,27 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
             </select>
           </div>
           <div className="col-lg-3">
-            <label className="form-label">Origem *</label>
+            <label className="form-label" htmlFor="visual-asset-origin">
+              Origem *
+            </label>
             <input
+              id="visual-asset-origin"
               className="form-control"
               required
+              maxLength={191}
               value={draft.origin}
               onChange={(e) => setDraft({ ...draft, origin: e.target.value })}
             />
           </div>
           <div className="col-lg-9">
-            <label className="form-label">Direitos de uso *</label>
+            <label className="form-label" htmlFor="visual-asset-rights">
+              Direitos de uso *
+            </label>
             <input
+              id="visual-asset-rights"
               className="form-control"
               required
+              maxLength={512}
               value={draft.rightsStatement}
               onChange={(e) =>
                 setDraft({ ...draft, rightsStatement: e.target.value })
@@ -544,6 +566,11 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
             </button>
           </div>
         </form>
+        {createAsset.isError && (
+          <div className="alert alert-danger mb-0" role="alert">
+            Não foi possível anexar a mídia. Revise os campos e seus limites.
+          </div>
+        )}
         <div className="row g-3">
           {assets.map((asset) => (
             <div className="col-md-4" key={asset.id}>

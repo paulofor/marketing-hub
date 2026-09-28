@@ -421,6 +421,7 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
     useCreateCommercialPlanVisualAsset: () => ({
       mutate: createVisualAssetMutate,
       isPending: false,
+      isError: false,
     }),
     useImportCommercialPlanCreativePackage: () => ({
       mutate: importCreativePackageMutate,
@@ -749,6 +750,29 @@ describe("CommercialPlanningPage", () => {
       }),
       expect.any(Object),
     );
+  });
+
+  it("limita o cadastro visual ao contrato persistido e mantém rótulos acessíveis", () => {
+    renderPage();
+
+    expect(screen.getByLabelText("URL da mídia *")).toHaveAttribute(
+      "maxlength",
+      "2048",
+    );
+    expect(screen.getByLabelText("Descrição *")).toHaveAttribute(
+      "maxlength",
+      "191",
+    );
+    expect(screen.getByLabelText("Origem *")).toHaveAttribute(
+      "maxlength",
+      "191",
+    );
+    expect(screen.getByLabelText("Direitos de uso *")).toHaveAttribute(
+      "maxlength",
+      "512",
+    );
+    expect(screen.getByLabelText("Tipo *")).toBeTruthy();
+    expect(screen.getByLabelText("Finalidade *")).toBeTruthy();
   });
 
   it("importa pacote aprovado somente após decisão humana explícita", async () => {

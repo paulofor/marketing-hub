@@ -79,6 +79,11 @@
   de campanha, ad sets e anúncios na Graph API e reportar o retrato ao backend em
   `POST /api/facebook-campaigns/{campaignId}/status-sync`; o painel deve refletir a Meta, não somente
   o status salvo no momento da publicação.
+- Na mesma sincronização, consultar obrigatoriamente `start_time/stop_time` da campanha e
+  `start_time/end_time`, orçamento e `budget_remaining` dos ad sets. `ACTIVE` não prova entrega.
+  Ao alcançar o término oficial, pausar a campanha diretamente na Meta, reportar o retrato temporal
+  mesmo se a pausa falhar e concluir uma única coleta final de Insights; o backend decide o estado
+  terminal e remove a campanha das filas recorrentes após a liquidação.
 - Retomadas financeiras devem consumir `/api/facebook-campaign-resumptions/pending`, reservar por
   `claim` e reportar por `result`. Preservar a identidade da campanha e usar teto acumulado, incluindo
   gasto anterior, com releitura nativa de orçamento e prazo antes da ativação. A fila não entrega

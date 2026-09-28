@@ -10,6 +10,13 @@ Este documento descreve todos os campos que precisam ser coletados e preenchidos
 > `instagramAccount`. Sem essa conta o worker ignora o experimento para evitar
 > criativos sem `instagram_user_id`.
 
+> Atualização 2026-09-28: a operação também precisa reler `start_time`,
+> `stop_time`, `status` e `effective_status` da campanha e `start_time`,
+> `end_time`, orçamento e `budget_remaining` dos conjuntos. A documentação
+> oficial define os horários da campanha como agregações somente leitura das
+> janelas dos ad sets. Configuração `ACTIVE` depois do término não representa
+> entrega e dispara pausa, callback temporal e medição final.
+
 ## 1. Configurações no nível de Campanha
 
 ### Nome da campanha

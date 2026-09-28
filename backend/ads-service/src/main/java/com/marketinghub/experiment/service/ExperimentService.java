@@ -61,6 +61,8 @@ import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -77,6 +79,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ExperimentService {
   private static final Logger log = LoggerFactory.getLogger(ExperimentService.class);
+  private static final ZoneId COMMERCIAL_ZONE = ZoneId.of("America/Sao_Paulo");
   private final ExperimentRepository repository;
   private final ExperimentStatusChangeRepository statusChangeRepository;
   private final ExperimentPromiseGenerationRequestRepository promiseGenerationRequestRepository;
@@ -1243,6 +1246,9 @@ public class ExperimentService {
     if (exp.getSampleSize() == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize not set");
     }
+    if (exp.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE) {
+      validateDirectCommercialWindow(exp);
+    }
     if (exp.getPlatform() == ExperimentPlatform.FACEBOOK
         && (exp.getKpiTargetCpl() == null || exp.getStopLossCpl() == null)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "financial fields not set");
@@ -1265,6 +1271,22 @@ public class ExperimentService {
     }
     validateActivePdeDestination(exp);
     directPdeActivationService.validateReadyForActivation(exp);
+  }
+
+  /** Impede que uma execução direta seja iniciada sem prazo ou fora da autorização vigente. */
+  private void validateDirectCommercialWindow(Experiment experiment) {
+    LocalDate today = LocalDate.now(COMMERCIAL_ZONE);
+    if (experiment.getStartDate() == null || experiment.getEndDate() == null) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "startDate and endDate required for direct channel");
+    }
+    if (experiment.getStartDate().isAfter(experiment.getEndDate())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "commercial window is inverted");
+    }
+    if (today.isBefore(experiment.getStartDate()) || today.isAfter(experiment.getEndDate())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "direct channel can run only inside its authorized window");
+    }
   }
 
   /** Registra a origem e o motivo da ativação comercial direta quando o estado realmente muda. */

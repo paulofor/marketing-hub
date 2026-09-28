@@ -270,20 +270,19 @@ class Coordinator:
         return state
 
     def discard_unstarted(self, identifier, keep_run=None):
-        """Retira só runs sem jobs, ainda na fila global do APP; mantém qualquer execução iniciada."""
+        """Retira runs sem jobs das filas selecionadas e mantém qualquer execução iniciada."""
         state = self.current(identifier)
         if state["phase"] != "DRAINING":
             raise CoordinationError("Descarte de fila permitido somente durante a drenagem.")
         enabled, pending = self.inspect(state)
         if enabled:
             raise CoordinationError("Pause todos os publicadores antes de retirar itens da fila.")
-        app = next((w for w in state["workflows"] if w["file"] == "deploy-containers.yml"), None)
-        if not app:
-            raise CoordinationError("Esta intervenção não inclui a fila global do APP.")
+        selected_workflow_ids = {workflow["id"] for workflow in state["workflows"]}
         if keep_run is not None:
             retained = self.github.api(f"actions/runs/{keep_run}")
             current_sha = self.github.api("git/ref/heads/main")["object"]["sha"]
-            if (retained["workflow_id"] != app["id"] or retained["head_sha"] != current_sha
+            if (retained["workflow_id"] not in selected_workflow_ids
+                    or retained["head_sha"] != current_sha
                     or retained.get("head_branch") != "main"
                     or retained.get("event") not in {"push", "workflow_dispatch"}):
                 raise CoordinationError("Run preservado deve ser a publicação existente da main atual.")
@@ -293,7 +292,8 @@ class Coordinator:
             if run_id == keep_run:
                 continue
             run = self.github.api(f"actions/runs/{run_id}")
-            if run["workflow_id"] != app["id"] or run["status"] not in {"pending", "queued"}:
+            if (run["workflow_id"] not in selected_workflow_ids
+                    or run["status"] not in {"pending", "queued"}):
                 continue
             jobs = self.github.api(f"actions/runs/{run_id}/jobs?per_page=100")
             if jobs.get("total_count") != 0 or jobs.get("jobs") != []:

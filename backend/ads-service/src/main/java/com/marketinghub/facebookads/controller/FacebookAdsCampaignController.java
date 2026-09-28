@@ -19,6 +19,7 @@ import com.marketinghub.experiment.salespageab.dto.ExperimentSalesPageAbVariantD
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.experiment.service.ExperimentWindowReconciliationService;
 import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import com.marketinghub.facebookads.AdCreativeKind;
 import com.marketinghub.facebookads.BudgetMode;
@@ -29,6 +30,8 @@ import com.marketinghub.facebookads.FacebookAdsAdCreative;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.service.CampaignStrategyService;
+import com.marketinghub.facebookads.service.FacebookCampaignOperationalStatusService;
+import com.marketinghub.facebookads.service.FacebookCampaignOperationalStatusService.CampaignOperationSummary;
 import com.marketinghub.facebookads.service.publicationstep.FacebookCampaignPublicationJobStepRequest;
 import com.marketinghub.facebookads.service.publicationstep.FacebookCampaignPublicationJobStepService;
 import com.marketinghub.facebookads.service.recommendation.FacebookCampaignRecommendationDto;
@@ -53,6 +56,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -87,6 +92,7 @@ public class FacebookAdsCampaignController {
           ExperimentStatus.INCONCLUSIVE,
           ExperimentStatus.FINISHED,
           ExperimentStatus.FAILED);
+  private static final ZoneId COMMERCIAL_ZONE = ZoneId.of("America/Sao_Paulo");
 
   private final ExperimentService experimentService;
   private final FacebookAdsCampaignRepository campaignRepository;
@@ -110,6 +116,8 @@ public class FacebookAdsCampaignController {
   private final FacebookCampaignPublicationJobStepService publicationJobStepService;
   private final CampaignStrategyService campaignStrategyService;
   private final ExperimentSalesPageAbTestService salesPageAbTestService;
+  private final ExperimentWindowReconciliationService windowReconciliationService;
+  private final FacebookCampaignOperationalStatusService operationalStatusService;
 
   /**
    * Cria o controller com os repositórios e serviços usados pelos contratos de campanhas Facebook.
@@ -133,7 +141,9 @@ public class FacebookAdsCampaignController {
       FacebookCampaignRecommendationService recommendationService,
       FacebookCampaignPublicationJobStepService publicationJobStepService,
       CampaignStrategyService campaignStrategyService,
-      ExperimentSalesPageAbTestService salesPageAbTestService) {
+      ExperimentSalesPageAbTestService salesPageAbTestService,
+      ExperimentWindowReconciliationService windowReconciliationService,
+      FacebookCampaignOperationalStatusService operationalStatusService) {
     this.experimentService = experimentService;
     this.campaignRepository = campaignRepository;
     this.accountRepository = accountRepository;
@@ -153,6 +163,8 @@ public class FacebookAdsCampaignController {
     this.publicationJobStepService = publicationJobStepService;
     this.campaignStrategyService = campaignStrategyService;
     this.salesPageAbTestService = salesPageAbTestService;
+    this.windowReconciliationService = windowReconciliationService;
+    this.operationalStatusService = operationalStatusService;
   }
 
   @GetMapping("/experiments-ready")
@@ -468,14 +480,36 @@ public class FacebookAdsCampaignController {
       @PathVariable String campaignId, @RequestBody CampaignStatusSyncRequest request) {
     FacebookAdsCampaign campaign =
         campaignRepository
-            .findById(campaignId)
+            .findForStatusSync(campaignId)
             .orElseThrow(
                 () ->
                     new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Facebook campaign not found: " + campaignId));
+    Instant observedAt = request.observedAt() != null ? request.observedAt() : Instant.now();
+    if (StringUtils.hasText(request.status())) {
+      campaign.setMetaConfiguredStatus(normalizeMetaStatus(request.status()));
+    }
+    if (StringUtils.hasText(request.effectiveStatus())) {
+      campaign.setMetaEffectiveStatus(normalizeMetaStatus(request.effectiveStatus()));
+    }
+    if (request.startTime() != null) {
+      campaign.setMetaStartTime(request.startTime());
+    }
+    if (request.stopTime() != null) {
+      campaign.setMetaStopTime(request.stopTime());
+    }
+    campaign.setStatusLastSyncedAt(observedAt);
     campaign.setStatus(
-        resolveMetaStatus(request.status(), request.effectiveStatus(), campaign.getStatus()));
-    reconcilePausedCampaignWithExperiment(campaign);
+        request.pauseConfirmed()
+            ? FacebookAdStatus.PAUSED
+            : resolveMetaStatus(request.status(), request.effectiveStatus(), campaign.getStatus()));
+    if (request.pauseConfirmed()) {
+      if (campaign.getStopRequestedAt() == null) {
+        campaign.setStopRequestedAt(observedAt);
+      }
+      campaign.setStopCompletedAt(observedAt);
+      campaign.setStopLastError(null);
+    }
     if (request.adSets() != null) {
       for (CampaignStatusSyncRequest.AdSetStatus adSetStatus : request.adSets()) {
         if (adSetStatus == null || !StringUtils.hasText(adSetStatus.id())) {
@@ -484,12 +518,26 @@ public class FacebookAdsCampaignController {
         adSetRepository
             .findById(adSetStatus.id())
             .ifPresent(
-                adSet ->
-                    adSet.setStatus(
-                        resolveMetaStatus(
-                            adSetStatus.status(),
-                            adSetStatus.effectiveStatus(),
-                            adSet.getStatus())));
+                adSet -> {
+                  adSet.setStatus(
+                      resolveMetaStatus(
+                          adSetStatus.status(), adSetStatus.effectiveStatus(), adSet.getStatus()));
+                  if (adSetStatus.startTime() != null) {
+                    adSet.setStartTime(toCommercialLocalDateTime(adSetStatus.startTime()));
+                  }
+                  if (adSetStatus.endTime() != null) {
+                    adSet.setEndTime(toCommercialLocalDateTime(adSetStatus.endTime()));
+                  }
+                  if (adSetStatus.dailyBudgetMinor() != null) {
+                    adSet.setDailyBudgetMinor(adSetStatus.dailyBudgetMinor());
+                  }
+                  if (adSetStatus.lifetimeBudgetMinor() != null) {
+                    adSet.setLifetimeBudgetMinor(adSetStatus.lifetimeBudgetMinor());
+                  }
+                  if (adSetStatus.budgetRemainingMinor() != null) {
+                    adSet.setBudgetRemainingMinor(adSetStatus.budgetRemainingMinor());
+                  }
+                });
       }
     }
     if (request.ads() != null) {
@@ -506,6 +554,26 @@ public class FacebookAdsCampaignController {
                             adStatus.status(), adStatus.effectiveStatus(), ad.getStatus())));
       }
     }
+    boolean expired =
+        windowReconciliationService.reconcileFacebookWindow(
+            campaign, observedAt, request.windowExpired());
+    if (!expired) {
+      reconcilePausedCampaignWithExperiment(campaign);
+    }
+  }
+
+  /** Normaliza o texto observado na Meta sem confundi-lo com o enum canônico legado. */
+  private String normalizeMetaStatus(String value) {
+    if (!StringUtils.hasText(value)) {
+      return null;
+    }
+    String normalized = value.trim().toUpperCase();
+    return normalized.length() <= 32 ? normalized : normalized.substring(0, 32);
+  }
+
+  /** Converte o instante absoluto da Meta para o horário comercial persistido no ad set. */
+  private LocalDateTime toCommercialLocalDateTime(Instant value) {
+    return value == null ? null : LocalDateTime.ofInstant(value, COMMERCIAL_ZONE);
   }
 
   // Resolve o status vindo da Meta preferindo o status efetivo quando ele estiver disponível.
@@ -947,7 +1015,8 @@ public class FacebookAdsCampaignController {
         toCampaignStrategySummary(
             campaignStrategyService.findLatestByExperimentId(experiment.getId())),
         toSalesPageAbTestSummary(
-            salesPageAbTestService.findActiveForCampaign(experiment.getId()).orElse(null)));
+            salesPageAbTestService.findActiveForCampaign(experiment.getId()).orElse(null)),
+        operationalStatusService.summarize(experiment.getId()));
   }
 
   // Converte o teste A/B de pagina de venda para resumo consumido pelo worker Meta.
@@ -1183,7 +1252,8 @@ public class FacebookAdsCampaignController {
       LeadPortalFunnelSummary leadPortalFunnel,
       CampaignMetricSummary metrics,
       CampaignStrategySummary campaignStrategy,
-      SalesPageAbTestSummary salesPageAbTest) {}
+      SalesPageAbTestSummary salesPageAbTest,
+      CampaignOperationSummary campaignOperation) {}
 
   public record LeadPortalFlowSummary(Long id, String name, String slug, String publicUrl) {}
 
@@ -1267,11 +1337,30 @@ public class FacebookAdsCampaignController {
 
   public record CampaignMetricsErrorRequest(String message) {}
 
+  /** Contrato do retrato temporal e operacional observado pelo worker na Meta. */
   public record CampaignStatusSyncRequest(
-      String status, String effectiveStatus, List<AdSetStatus> adSets, List<AdStatus> ads) {
+      String status,
+      String effectiveStatus,
+      Instant startTime,
+      Instant stopTime,
+      Instant observedAt,
+      boolean windowExpired,
+      boolean pauseConfirmed,
+      List<AdSetStatus> adSets,
+      List<AdStatus> ads) {
 
-    public record AdSetStatus(String id, String status, String effectiveStatus) {}
+    /** Retrato de status, janela e orçamento de um conjunto de anúncios. */
+    public record AdSetStatus(
+        String id,
+        String status,
+        String effectiveStatus,
+        Instant startTime,
+        Instant endTime,
+        Long dailyBudgetMinor,
+        Long lifetimeBudgetMinor,
+        Long budgetRemainingMinor) {}
 
+    /** Retrato do status configurado e efetivo de um anúncio. */
     public record AdStatus(String id, String status, String effectiveStatus) {}
   }
 

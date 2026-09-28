@@ -52,6 +52,21 @@ public class FacebookAdsCampaign {
   @Column(nullable = false)
   private FacebookAdStatus status = FacebookAdStatus.PAUSED;
 
+  @Column(name = "meta_configured_status", length = 32)
+  private String metaConfiguredStatus;
+
+  @Column(name = "meta_effective_status", length = 32)
+  private String metaEffectiveStatus;
+
+  @Column(name = "meta_start_time")
+  private Instant metaStartTime;
+
+  @Column(name = "meta_stop_time")
+  private Instant metaStopTime;
+
+  @Column(name = "status_last_synced_at")
+  private Instant statusLastSyncedAt;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "budget_mode", nullable = false)
   private BudgetMode budgetMode;

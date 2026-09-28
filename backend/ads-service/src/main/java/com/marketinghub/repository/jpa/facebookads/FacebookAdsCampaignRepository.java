@@ -6,12 +6,23 @@ import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /** Repositório JPA responsável pela persistência de FacebookAdsCampaign. */
 public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAdsCampaign, String> {
+
+  /** Serializa callbacks de status para impedir duas conclusões do mesmo experimento. */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      """
+      select c from FacebookAdsCampaign c
+      join fetch c.experiment
+      where c.id = :campaignId
+      """)
+  Optional<FacebookAdsCampaign> findForStatusSync(@Param("campaignId") String campaignId);
 
   /** Lista campanhas cujo experimento proprietário está no status informado. */
   @Query(

@@ -113,6 +113,13 @@ class LocalCoordinationTest(unittest.TestCase):
                          ["mois-clickbank-collector-ci.yml"])
         self.assertEqual(self.resume(state)["phase"], "RELEASED")
 
+    def test_facebook_ads_runtime_has_dedicated_reversible_scope(self):
+        state = self.begin(["facebook-ads"])
+        self.assertEqual(state["phase"], "ACTIVE")
+        self.assertEqual([workflow["file"] for workflow in state["workflows"]],
+                         ["facebook-ads-worker.yml"])
+        self.assertEqual(self.resume(state)["phase"], "RELEASED")
+
     def test_in_progress_and_queued_runs_block_until_complete_without_cancellation(self):
         identifier = self.github.workflows["deploy-containers.yml"]["id"]
         for status in module.LIVE_STATUSES:
@@ -338,6 +345,31 @@ class LocalCoordinationTest(unittest.TestCase):
         self.assertEqual(cancelled, [201, 205])
         self.assertEqual(result["phase"], "DRAINING")
         self.assertEqual(len(result["pending_runs"]), 3)
+
+    def test_discard_removes_unstarted_run_from_selected_dedicated_publisher(self):
+        growth = self.github.workflows["growth-operator-worker-ci.yml"]["id"]
+        self.github.runs[growth] = [{"id": 251, "status": "queued", "head_sha": SHA}]
+        state = self.begin(["hermes"])
+        original_api = self.github.api
+        cancelled = []
+
+        def api(path, method="GET"):
+            if path == "actions/runs/251/jobs?per_page=100":
+                return {"total_count": 0, "jobs": []}
+            if path == "actions/runs/251/cancel":
+                self.assertEqual(method, "POST")
+                cancelled.append(251)
+                self.github.runs[growth] = []
+                return None
+            if path == "actions/runs/251":
+                return {"workflow_id": growth, "head_sha": SHA, "status": "queued"}
+            return original_api(path, method)
+
+        with patch.object(self.github, "api", side_effect=api):
+            result = self.coordinator.discard_unstarted(state["id"])
+        self.assertEqual(cancelled, [251])
+        self.assertEqual(result["phase"], "ACTIVE")
+        self.assertEqual(result["pending_runs"], [])
 
     def test_discard_can_preserve_existing_current_main_run(self):
         app = self.github.workflows["deploy-containers.yml"]["id"]

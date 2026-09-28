@@ -7624,3 +7624,28 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   aprovado, não de um criativo intermediário. O upload governado passa a aceitar criativo aprovado
   ou vídeo aprovado como fonte, valida experimento, produto, hipótese e revisão e persiste ambos em
   metadados separados. Testes backend e frontend impedem publicar uma montagem sem linhagem.
+
+## LOOP-EXPERIMENTO-RUNNING-APOS-JANELA — status configurado tratado como entrega
+
+- **Evidência confirmada em 28/09/2026:** Vega #91 permanecia `RUNNING` porque campanha e conjunto
+  ainda retornavam `ACTIVE`, embora o término oficial fosse 26/09 às 23:59:59, o saldo vitalício
+  fosse R$ 0,47 e não houvesse entrega em 27/09 ou 28/09. Os legados diretos #89 e #90 também
+  permaneciam `RUNNING`: o primeiro com janela vencida e o segundo sem prazo ou atividade.
+- **Causa-raiz histórica:** o publicador já enviava `end_time` ao criar/retomar, mas a sincronização
+  posterior lia apenas `status/effective_status`. O backend só reconhecia `PAUSED`; a fila de
+  métricas e recomendações selecionava `RUNNING + ACTIVE`; e a tela chamava esse conjunto de
+  “Ativas” e a ausência de configuração faltante de “Em dia”. O histórico de correções confirmou
+  que o prazo existia na Meta e descartou ausência de agendamento como causa.
+- **Alternativas avaliadas:** corrigir manualmente #89/#90/#91 resolveria apenas o retrato atual;
+  confiar somente no worker perderia a decisão auditável quando a pausa externa falhasse; confiar
+  somente no backend não encerraria o objeto nativo. Foi adotada reconciliação dupla: executor lê e
+  pausa a Meta, backend decide o estado comercial, fecha run/tarefas e exige medição final.
+- **Correção sistêmica:** o retrato passa a transportar início, término, estados, orçamento e saldo.
+  Janela vencida pausa a campanha, muda o experimento para `INCONCLUSIVE`, registra
+  `CAMPAIGN_AUTHORIZED_WINDOW_ENDED`, encerra run como `INSUFFICIENT_DATA` e deixa somente um Insight
+  final pendente. O Growth Operator solicita ao backend a varredura idempotente dos legados diretos;
+  nova ativação direta sem janela atual é recusada.
+- **Prevenção:** testes cobrem campanha `ACTIVE` vencida, saldo de R$ 0,47, pausa externa, transporte
+  temporal, liquidação do run, direto vencido/sem prazo, isolamento de falhas do scheduler, schema
+  MySQL 5.7 e UI com configuração `ACTIVE` separada de “Janela encerrada”. Métricas e recomendações
+  deixam de repetir depois de `metrics_final_synced_at`.

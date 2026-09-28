@@ -30,6 +30,22 @@ Os experimentos que alimentam esse fluxo são apresentados ao time na tela
 "Experimentos para Campanha" do frontend, garantindo o alinhamento entre a visão
 operacional e a automação do worker.
 
+## Reconciliação periódica da janela
+
+Depois da publicação, o worker relê na Graph API a configuração e a janela
+oficiais. A campanha fornece `start_time`, `stop_time`, `status` e
+`effective_status`; cada conjunto fornece `start_time`, `end_time`,
+`daily_budget`, `lifetime_budget` e `budget_remaining`. O callback
+`POST /api/facebook-campaigns/{campaignId}/status-sync` converte os horários para
+instantes absolutos e envia também `observedAt`, `windowExpired` e
+`pauseConfirmed`.
+
+Se a janela terminou, o worker envia `status=PAUSED` à campanha, mas o backend
+continua sendo a autoridade da transição do experimento. Ele registra a causa,
+encerra o run sem classificar ausência de amostra como falha de mercado e mantém
+o alvo apenas até receber o Insight acumulado final. Estado `ACTIVE` isolado não
+é convertido em “entregando agora” na tela.
+
 ## Visão Geral do Fluxo
 
 ```mermaid

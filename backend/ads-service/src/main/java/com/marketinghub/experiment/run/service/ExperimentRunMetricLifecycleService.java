@@ -136,6 +136,7 @@ public class ExperimentRunMetricLifecycleService {
   private ExperimentEvidenceValidity resolveEvidenceValidity(
       FacebookCampaignStopReason stopReason) {
     return stopReason == FacebookCampaignStopReason.LOW_IMPRESSIONS_AFTER_RUNNING_TIME
+            || stopReason == FacebookCampaignStopReason.CAMPAIGN_AUTHORIZED_WINDOW_ENDED
         ? ExperimentEvidenceValidity.INSUFFICIENT_DATA
         : ExperimentEvidenceValidity.COMMERCIALLY_VALID;
   }
@@ -143,6 +144,9 @@ public class ExperimentRunMetricLifecycleService {
   /** Classifica o motivo operacional preservando a distinção entre audiência e hipótese. */
   private ExperimentRunFailureClassification resolveFailureClassification(
       FacebookCampaignStopReason stopReason) {
+    if (stopReason == FacebookCampaignStopReason.CAMPAIGN_AUTHORIZED_WINDOW_ENDED) {
+      return null;
+    }
     return stopReason == FacebookCampaignStopReason.LOW_IMPRESSIONS_AFTER_RUNNING_TIME
         ? ExperimentRunFailureClassification.AUDIENCE_FAILURE
         : ExperimentRunFailureClassification.COMMERCIAL_HYPOTHESIS_FAILURE;

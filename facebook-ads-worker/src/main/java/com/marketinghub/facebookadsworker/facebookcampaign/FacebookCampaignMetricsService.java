@@ -7,6 +7,7 @@ import com.marketinghub.facebookadsworker.FacebookAdsService;
 import com.marketinghub.facebookadsworker.FacebookPermissionException;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient.FacebookWorkerConfiguration;
+import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
 import com.marketinghub.facebookadsworker.util.UrlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,10 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -157,7 +161,12 @@ public class FacebookCampaignMetricsService {
             if (snapshot == null || snapshot.isNull()) {
                 return null;
             }
-            CampaignStatusSyncRequest payload = mapStatusSnapshot(snapshot);
+            Instant observedAt = Instant.now();
+            boolean windowExpired = isAuthorizedWindowExpired(snapshot, observedAt);
+            boolean pauseConfirmed =
+                    pauseCampaignAfterAuthorizedWindow(campaignId, snapshot, windowExpired);
+            CampaignStatusSyncRequest payload =
+                    mapStatusSnapshot(snapshot, observedAt, windowExpired, pauseConfirmed);
             sendStatusSync(campaignId, payload);
             return snapshot;
         } catch (Exception ex) {
@@ -170,6 +179,20 @@ public class FacebookCampaignMetricsService {
      * Converte o retrato bruto da Meta em contrato enxuto de status para o backend.
      */
     private CampaignStatusSyncRequest mapStatusSnapshot(JsonNode snapshot) {
+        Instant observedAt = Instant.now();
+        return mapStatusSnapshot(
+                snapshot,
+                observedAt,
+                isAuthorizedWindowExpired(snapshot, observedAt),
+                false);
+    }
+
+    /** Converte o retrato com a observação temporal e o resultado da pausa preventiva. */
+    private CampaignStatusSyncRequest mapStatusSnapshot(
+            JsonNode snapshot,
+            Instant observedAt,
+            boolean windowExpired,
+            boolean pauseConfirmed) {
         List<CampaignStatusSyncRequest.AdSetStatus> adSets = new java.util.ArrayList<>();
         List<CampaignStatusSyncRequest.AdStatus> ads = new java.util.ArrayList<>();
         JsonNode adSetData = snapshot.path("adsets").path("data");
@@ -179,7 +202,12 @@ public class FacebookCampaignMetricsService {
                 adSets.add(new CampaignStatusSyncRequest.AdSetStatus(
                     adSetId,
                     adSetNode.path("status").asText(null),
-                    adSetNode.path("effective_status").asText(null)
+                    adSetNode.path("effective_status").asText(null),
+                    parseMetaInstant(adSetNode.path("start_time").asText(null)),
+                    parseMetaInstant(adSetNode.path("end_time").asText(null)),
+                    parseNullableLong(adSetNode.path("daily_budget")),
+                    parseNullableLong(adSetNode.path("lifetime_budget")),
+                    parseNullableLong(adSetNode.path("budget_remaining"))
                 ));
                 JsonNode adData = adSetNode.path("ads").path("data");
                 if (adData.isArray()) {
@@ -196,9 +224,87 @@ public class FacebookCampaignMetricsService {
         return new CampaignStatusSyncRequest(
             snapshot.path("status").asText(null),
             snapshot.path("effective_status").asText(null),
+            parseMetaInstant(snapshot.path("start_time").asText(null)),
+            parseMetaInstant(snapshot.path("stop_time").asText(null)),
+            observedAt,
+            windowExpired,
+            pauseConfirmed,
             adSets,
             ads
         );
+    }
+
+    /** Detecta o fim da janela agregada ou o vencimento de todos os conjuntos reportados. */
+    private boolean isAuthorizedWindowExpired(JsonNode snapshot, Instant observedAt) {
+        if (snapshot == null || observedAt == null) {
+            return false;
+        }
+        Instant campaignStop = parseMetaInstant(snapshot.path("stop_time").asText(null));
+        if (campaignStop != null && !campaignStop.isAfter(observedAt)) {
+            return true;
+        }
+        JsonNode adSetData = snapshot.path("adsets").path("data");
+        if (!adSetData.isArray() || adSetData.isEmpty()) {
+            return false;
+        }
+        for (JsonNode adSetNode : adSetData) {
+            Instant endTime = parseMetaInstant(adSetNode.path("end_time").asText(null));
+            if (endTime == null || endTime.isAfter(observedAt)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Confirma se a campanha observada ainda está configurada ou efetivamente ativa. */
+    private boolean isConfiguredOrEffectivelyActive(JsonNode snapshot) {
+        return "ACTIVE".equalsIgnoreCase(snapshot.path("status").asText())
+                || "ACTIVE".equalsIgnoreCase(snapshot.path("effective_status").asText());
+    }
+
+    /** Pausa a campanha vencida na Meta e preserva a reconciliação mesmo se a chamada falhar. */
+    private boolean pauseCampaignAfterAuthorizedWindow(
+            String campaignId, JsonNode snapshot, boolean windowExpired) {
+        if (!windowExpired || !isConfiguredOrEffectivelyActive(snapshot)) {
+            return false;
+        }
+        try {
+            facebookAdsService.pauseCampaign(campaignId);
+            LOGGER.info(
+                    "Facebook campaign paused after authorized window ended: campaignId={} stopTime={}",
+                    campaignId,
+                    snapshot.path("stop_time").asText(null));
+            return true;
+        } catch (Exception ex) {
+            LOGGER.error(
+                    "Failed to pause expired Facebook campaign before backend reconciliation: campaignId={} stopTime={}",
+                    campaignId,
+                    snapshot.path("stop_time").asText(null),
+                    ex);
+            return false;
+        }
+    }
+
+    /** Converte o timestamp da Meta, que pode usar offset com ou sem dois-pontos. */
+    private Instant parseMetaInstant(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(value, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toInstant();
+        } catch (DateTimeParseException firstFormatMismatch) {
+            LOGGER.debug(
+                    "Meta timestamp did not match ISO offset format; trying compact offset: value={}",
+                    value,
+                    firstFormatMismatch);
+            try {
+                return OffsetDateTime.parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ"))
+                        .toInstant();
+            } catch (DateTimeParseException invalid) {
+                LOGGER.warn("Could not parse Meta campaign schedule timestamp: value={}", value, invalid);
+                return null;
+            }
+        }
     }
 
     /**
@@ -348,6 +454,22 @@ public class FacebookCampaignMetricsService {
         }
     }
 
+    /** Lê campo numérico opcional sem transformar ausência de dado da Meta em zero observado. */
+    private Long parseNullableLong(JsonNode node) {
+        if (node == null || node.isNull() || node.isMissingNode() || !StringUtils.hasText(node.asText())) {
+            return null;
+        }
+        try {
+            return Long.valueOf(node.asText());
+        } catch (NumberFormatException ex) {
+            LOGGER.warn(
+                    "Could not parse optional Long from Meta status snapshot: value={}",
+                    node.asText(),
+                    ex);
+            return null;
+        }
+    }
+
     /**
      * Converte uma data textual ISO-8601 da Meta para LocalDate.
      */
@@ -424,6 +546,10 @@ public class FacebookCampaignMetricsService {
      */
     private void sendStatusSync(String campaignId, CampaignStatusSyncRequest payload) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/" + campaignId + "/status-sync");
+        LOGGER.info(
+                "Facebook status reconciliation request: url==>{}, payload={}",
+                url,
+                JsonLogFormatter.wrap(payload));
         backendClient.post()
             .uri(url)
             .bodyValue(payload)
@@ -434,6 +560,10 @@ public class FacebookCampaignMetricsService {
             }))
             .toBodilessEntity()
             .block();
+        LOGGER.info(
+                "Facebook status reconciliation response: url<=={}, response={}",
+                url,
+                JsonLogFormatter.wrap(Map.of("status", "ACCEPTED")));
     }
 
     /**
@@ -525,6 +655,7 @@ public class FacebookCampaignMetricsService {
         }
     }
 
+    /** Contrato de métricas consolidadas enviado ao backend. */
     public record CampaignMetricsUpdateRequest(
             LocalDate dateStart,
             LocalDate dateStop,
@@ -534,16 +665,33 @@ public class FacebookCampaignMetricsService {
             Long leads,
             BigDecimal spend) {}
 
+    /** Contrato de falha sanitizada de sincronização de métricas. */
     public record CampaignMetricsErrorRequest(String message) {}
 
+    /** Contrato do retrato temporal e operacional observado na Meta. */
     public record CampaignStatusSyncRequest(
             String status,
             String effectiveStatus,
+            Instant startTime,
+            Instant stopTime,
+            Instant observedAt,
+            boolean windowExpired,
+            boolean pauseConfirmed,
             List<AdSetStatus> adSets,
             List<AdStatus> ads) {
 
-        public record AdSetStatus(String id, String status, String effectiveStatus) {}
+        /** Retrato de status, janela e orçamento de um conjunto de anúncios. */
+        public record AdSetStatus(
+                String id,
+                String status,
+                String effectiveStatus,
+                Instant startTime,
+                Instant endTime,
+                Long dailyBudgetMinor,
+                Long lifetimeBudgetMinor,
+                Long budgetRemainingMinor) {}
 
+        /** Retrato do status configurado e efetivo de um anúncio. */
         public record AdStatus(String id, String status, String effectiveStatus) {}
     }
 }

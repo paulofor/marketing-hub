@@ -24,6 +24,8 @@ import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -38,6 +40,7 @@ import org.springframework.util.StringUtils;
 /** Consolida pendências básicas de preparação do experimento. */
 @Service
 public class ExperimentReadinessService {
+  private static final ZoneId COMMERCIAL_ZONE = ZoneId.of("America/Sao_Paulo");
   private final ExperimentService experimentService;
   private final CreativeRepository creativeRepository;
   private static final String STATUS_COMPLETED = "CONCLUIDO";
@@ -174,6 +177,7 @@ public class ExperimentReadinessService {
     boolean reusablePdeSuccessorDestinationReady =
         hasReusablePdeSuccessorDestinationEvidence(experiment);
     boolean mediaBudgetReady = hasReadyMediaBudget(experiment);
+    boolean directAuthorizedWindowReady = hasReadyDirectAuthorizedWindow(experiment);
     boolean commercialMaterialReady =
         requiresMetaTargeting ? hasCreatives : hasCreatives || pdeOperationalEvidenceReady;
     boolean landingAssetLineageReady =
@@ -190,6 +194,15 @@ public class ExperimentReadinessService {
               "Teto de mídia incompleto",
               "Campanha Meta exige orçamento diário, teto total e período compatíveis.",
               "Defina um período cujo total planejado não ultrapasse o teto autorizado.",
+              List.of()));
+    }
+    if (!directAuthorizedWindowReady) {
+      issues.add(
+          new ExperimentReadinessIssueDto(
+              ExperimentReadinessIssueType.AUTHORIZED_WINDOW,
+              "Janela comercial direta indisponível",
+              "O canal individual precisa de início e término válidos e só pode operar dentro desse período.",
+              "Defina uma janela comercial atual antes de colocar o experimento em execução.",
               List.of()));
     }
     if (!commercialMaterialReady) {
@@ -464,6 +477,14 @@ public class ExperimentReadinessService {
                     ? "Defina orçamento diário, teto total e período compatíveis."
                     : "Mantenha orçamento e teto de mídia vazios."),
             runningRequirement(
+                "AUTHORIZED_WINDOW_READY",
+                "Janela comercial autorizada",
+                directAuthorizedWindowReady,
+                directAuthorizedWindowReady
+                    ? "A janela comercial do canal está válida para a operação atual."
+                    : "O canal direto está sem prazo válido ou fora do período autorizado.",
+                "Defina início e término e execute somente dentro da janela autorizada."),
+            runningRequirement(
                 "NO_BLOCKING_STAGES",
                 "Sem etapas bloqueantes",
                 blockingStagesCompleted,
@@ -570,6 +591,20 @@ public class ExperimentReadinessService {
       return false;
     }
     return true;
+  }
+
+  /** Confirma a janela vigente exigida somente para a abordagem individual consentida. */
+  private boolean hasReadyDirectAuthorizedWindow(Experiment experiment) {
+    if (experiment == null || experiment.getPlatform() != ExperimentPlatform.DIRECT_ONE_TO_ONE) {
+      return true;
+    }
+    if (experiment.getStartDate() == null
+        || experiment.getEndDate() == null
+        || experiment.getStartDate().isAfter(experiment.getEndDate())) {
+      return false;
+    }
+    LocalDate today = LocalDate.now(COMMERCIAL_ZONE);
+    return !today.isBefore(experiment.getStartDate()) && !today.isAfter(experiment.getEndDate());
   }
 
   /** Trata zero legado como ausência de verba para experimentos de canal direto. */

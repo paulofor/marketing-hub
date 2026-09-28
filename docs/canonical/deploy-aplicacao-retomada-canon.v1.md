@@ -9,6 +9,9 @@ Antes de uma intervenção autorizada em um serviço publicado, usar o coordenad
 selecionados e suas continuações dependentes, preserva os estados anteriores e espera todas
 as execuções já iniciadas terminarem. Uma intervenção só pode começar no estado `ACTIVE`,
 com os publicadores desativados e a fila vazia. Pausar um workflow sozinho não prova esse estado.
+O Facebook Ads Worker usa o escopo dedicado `facebook-ads`, sem acoplá-lo ao publicador central
+da aplicação. Seu workflow deve aceitar a recuperação automática do SHA integrado e comprovar o
+job `Deploy worker`; teste ou build verde sem esse job não prova publicação.
 
 O registro e a exclusão entre operadores ficam no host administrativo, fora de diretórios de
 rsync/deploy. Motivo, autorização, responsável, versão protegida, escopo, SHA inicial, execuções
@@ -16,12 +19,13 @@ observadas e decisões de retomada permanecem auditáveis. A perda da conexão, 
 fim da sessão não libera automaticamente a pausa. Não cancelar uma transação remota em curso.
 Não usar PR, push, dispatch ou deploy para testar este controle.
 
-Quando a fila global do APP contiver revisões antigas que sequer iniciaram jobs, o comando
-explícito `discard-unstarted` pode removê-las: exige publicadores pausados, status `pending` ou `queued`,
-zero jobs e nova leitura do estado antes do pedido de cancelamento. Runs iniciados e filas de
-outros publicadores continuam em drenagem. `--keep-run` preserva uma execução existente da
-`main` atual, permitindo terminar a publicação já enfileirada da correção integrada antes
-de iniciar a intervenção. O aceite do cancelamento não libera a proteção; a fila é reconsultada.
+Quando uma fila selecionada contiver revisões antigas que sequer iniciaram jobs, o comando
+explícito `discard-unstarted` pode removê-las: exige todos os publicadores do registro pausados,
+status `pending` ou `queued`, zero jobs e nova leitura do estado antes do pedido de cancelamento.
+Runs iniciados e filas fora dos escopos selecionados continuam intocados e em drenagem.
+`--keep-run` preserva uma publicação existente da `main` atual em qualquer publicador selecionado,
+permitindo terminar a revisão já enfileirada antes de iniciar a intervenção. O aceite do
+cancelamento não libera a proteção; a fila é reconsultada.
 
 Comandos operacionais passam por `execute`, que mantém o lock e registra `OPERATING` antes
 de iniciar o processo. Se houver desconexão sem resultado, `protect` e `resume` recusam a

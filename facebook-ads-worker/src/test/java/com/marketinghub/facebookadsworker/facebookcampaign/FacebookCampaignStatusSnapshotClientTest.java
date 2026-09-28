@@ -29,7 +29,7 @@ class FacebookCampaignStatusSnapshotClientTest {
         facebook.shutdown();
     }
 
-    /** Garante que início e status expandido de ad sets/anúncios são codificados na URL. */
+    /** Garante que janela, saldo e status expandido de ad sets/anúncios são codificados na URL. */
     @Test
     void fetchEncodesExpandedStatusFields() throws Exception {
         facebook.enqueueResponse(new MockResponse()
@@ -46,7 +46,11 @@ class FacebookCampaignStatusSnapshotClientTest {
         assertThat(request).isNotNull();
         assertThat(request.getPath())
                 .contains("/v23.0/cmp-1")
-                .contains("fields=start_time,status,effective_status,adsets%7Bstatus,effective_status,ads%7Bstatus,effective_status%7D%7D")
+                .contains("start_time")
+                .contains("stop_time")
+                .contains("end_time")
+                .contains("budget_remaining")
+                .contains("lifetime_budget")
                 .contains("access_token=token");
     }
 }

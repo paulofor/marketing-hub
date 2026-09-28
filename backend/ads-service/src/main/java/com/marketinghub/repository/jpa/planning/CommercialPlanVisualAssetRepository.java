@@ -5,6 +5,7 @@ import com.marketinghub.planning.CommercialPlanVisualAssetStatus;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +14,11 @@ import org.springframework.data.repository.query.Param;
 /** Responsabilidade: persistir e consultar o kit visual dos planos comerciais. */
 public interface CommercialPlanVisualAssetRepository
     extends JpaRepository<CommercialPlanVisualAsset, Long> {
+  /** Bloqueia o ativo durante sua promoção para impedir dois criativos no clique concorrente. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select a from CommercialPlanVisualAsset a where a.id = :id")
+  Optional<CommercialPlanVisualAsset> findByIdForUpdate(@Param("id") Long id);
+
   /** Lista o kit completo na ordem de cadastro. */
   List<CommercialPlanVisualAsset> findByCommercialPlanIdOrderByCreatedAtAsc(Long planId);
 

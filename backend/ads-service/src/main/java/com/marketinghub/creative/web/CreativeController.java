@@ -17,6 +17,9 @@ import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.creative.service.video.VideoCreativeRequest;
 import com.marketinghub.creative.service.video.VideoCreativeService;
+import com.marketinghub.creative.service.visual.ApprovedVisualAssetCreativeRequest;
+import com.marketinghub.creative.service.visual.ApprovedVisualAssetCreativeService;
+import com.marketinghub.creative.service.visual.ApprovedVisualAssetOption;
 import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.storage.AssetUploadCategory;
@@ -45,17 +48,40 @@ public class CreativeController {
   private final CreativeMapper mapper;
   private final AssetRepository assetRepository;
   private final VideoCreativeService videoCreativeService;
+  private final ApprovedVisualAssetCreativeService approvedVisualAssetCreativeService;
 
-  /** Inicializa os endpoints com os serviços de criativo, mapeamento e ativos. */
+  /** Inicializa os endpoints com serviços de criativo, mídia aprovada, mapeamento e ativos. */
   public CreativeController(
       CreativeService service,
       CreativeMapper mapper,
       AssetRepository assetRepository,
-      VideoCreativeService videoCreativeService) {
+      VideoCreativeService videoCreativeService,
+      ApprovedVisualAssetCreativeService approvedVisualAssetCreativeService) {
     this.service = service;
     this.mapper = mapper;
     this.assetRepository = assetRepository;
     this.videoCreativeService = videoCreativeService;
+    this.approvedVisualAssetCreativeService = approvedVisualAssetCreativeService;
+  }
+
+  /** Lista imagens aprovadas do plano que podem virar um controle estático auditável. */
+  @Operation(summary = "Listar controles estáticos aprovados do experimento")
+  @GetMapping("/api/experiments/{experimentId}/commercial-plan-visual-assets/eligible")
+  public List<ApprovedVisualAssetOption> listEligibleVisualAssets(@PathVariable Long experimentId) {
+    return approvedVisualAssetCreativeService.listEligible(experimentId);
+  }
+
+  /** Materializa um ativo aprovado como rascunho, mantendo os gates de Têmis e humano. */
+  @Operation(
+      summary = "Usar ativo visual aprovado como controle estático",
+      description =
+          "Preserva URL e SHA-256 do plano, cria DRAFT/PENDING idempotente e não publica campanha.")
+  @PostMapping("/api/experiments/{experimentId}/commercial-plan-visual-assets/{assetId}/creative")
+  public CreativeDto createFromApprovedVisualAsset(
+      @PathVariable Long experimentId,
+      @PathVariable Long assetId,
+      @Valid @RequestBody ApprovedVisualAssetCreativeRequest request) {
+    return mapper.toDto(approvedVisualAssetCreativeService.create(experimentId, assetId, request));
   }
 
   /**

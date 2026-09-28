@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
+import com.marketinghub.creative.service.CreativePublicationCopyPolicy;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
@@ -51,6 +52,7 @@ public class VideoCreativeService {
           || experiment.getFacebookReleaseRequestedAt() != null) {
         throw error(HttpStatus.CONFLICT, "O experimento já foi liberado ou não está planejado.");
       }
+      requirePublicationCopy(request);
       ExperimentVideoAsset video = scopedVideo(experimentId, videoId, tenant);
       if (video.getSlot() != ExperimentVideoSlot.AD
           || video.getStatus() != ExperimentVideoStatus.READY
@@ -172,6 +174,20 @@ public class VideoCreativeService {
         && Objects.equals(creative.getPrimaryText(), request.primaryText().trim())
         && Objects.equals(normalize(creative.getDescription()), normalize(request.description()))
         && Objects.equals(creative.getDestinationUrl(), experiment.getFollowUpActionUrl().trim());
+  }
+
+  /** Recusa excessos antes de abrir uma revisão, contando emojis como a tela e o publicador. */
+  private void requirePublicationCopy(VideoCreativeRequest request) {
+    var violations =
+        CreativePublicationCopyPolicy.violations(
+            request.primaryText().trim(),
+            request.headline().trim(),
+            normalize(request.description()));
+    if (!violations.isEmpty()) {
+      throw error(
+          HttpStatus.BAD_REQUEST,
+          "Copy incompatível com publicação: " + String.join(" ", violations));
+    }
   }
 
   /** Exige HTTPS com host real sem aceitar caminhos ou esquemas impróprios para publicação. */

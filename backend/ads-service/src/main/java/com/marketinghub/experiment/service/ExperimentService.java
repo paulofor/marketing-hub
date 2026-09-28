@@ -9,6 +9,7 @@ import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.ReactivateExperimentRequest;
+import com.marketinghub.experiment.dto.UpdateExperimentPublishingIdentityRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.funnel.ExperimentFinancialGuardrailPolicy;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStandbyService;
@@ -1678,6 +1679,22 @@ public class ExperimentService {
     }
     synchronizeLeadPortalFlow(exp);
     return exp;
+  }
+
+  /** Atualiza apenas página e Instagram sem regravar métricas, janela ou orçamento comercial. */
+  @Transactional
+  public Experiment updatePublishingIdentity(
+      Long id, UpdateExperimentPublishingIdentityRequest request) {
+    Experiment experiment = repository.findForPublishingIdentityUpdate(id).orElseThrow();
+    if (experiment.getStatus() != ExperimentStatus.PLANNED
+        || experiment.getFacebookReleaseRequestedAt() != null) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "A identidade de publicação só pode ser alterada antes da liberação do experimento.");
+    }
+    experiment.setFacebookPage(attachFacebookPage(request.facebookPageId()));
+    experiment.setInstagramAccount(attachInstagramAccount(request.instagramAccountId()));
+    return experiment;
   }
 
   /** Atualiza apenas a síntese de lições aprendidas do experimento. */

@@ -3,8 +3,7 @@ import { Creative, useCreatives } from "../../api/creative/useCreatives";
 import { useUpdateCreativeStatus } from "../../api/creative/useUpdateCreativeStatus";
 import { useDeleteCreative } from "../../api/creative/useDeleteCreative";
 import { useExperiment } from "../../api/experiment/useExperiment";
-import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
-import type { UpdateExperiment } from "../../api/experiment/useUpdateExperiment";
+import { useUpdateExperimentPublishingIdentity } from "../../api/experiment/useUpdateExperimentPublishingIdentity";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import InstagramAdPreview from "../../components/InstagramAdPreview";
@@ -35,6 +34,12 @@ import {
   useReuseProductAd,
 } from "../../api/creative/useReusableProductAds";
 import { useSubmitProductProof } from "../../api/creative/useSubmitProductProof";
+import { useApprovedVisualAssets } from "../../api/creative/useApprovedVisualAssetCreatives";
+import ApprovedStaticControlAction from "./ApprovedStaticControlAction";
+import {
+  CREATIVE_PUBLICATION_COPY_LIMITS as PUBLICATION_COPY_LIMITS,
+  publicationCopyLength,
+} from "./creativePublicationCopy";
 
 interface Props {
   experimentId: string;
@@ -42,15 +47,6 @@ interface Props {
 }
 
 const ICON_SIZE = 16;
-const PUBLICATION_COPY_LIMITS = {
-  headline: 40,
-  primaryText: 125,
-  description: 25,
-} as const;
-
-/** Conta caracteres como o gate do backend, inclusive fora do plano BMP. */
-const publicationCopyLength = (value?: string | null) =>
-  Array.from(value ?? "").length;
 
 /** Impede salvar uma revisão que o gate de publicação rejeitaria. */
 const hasPublicationCopyViolation = (creative: Creative) =>
@@ -492,7 +488,9 @@ export default function CriativosTab({
     pendingCreativeRequests > 0 ||
     !pipelineAvailable ||
     !hasApprovedCreativeReferences;
-  const updateExperimentMutation = useUpdateExperiment(experimentId);
+  const updatePublishingIdentity =
+    useUpdateExperimentPublishingIdentity(experimentId);
+  const approvedVisualAssetsQuery = useApprovedVisualAssets(experimentId);
   const [editing, setEditing] = useState<Creative | null>(null);
   const [versioning, setVersioning] = useState<Creative | null>(null);
   const [proofSource, setProofSource] = useState<Creative | null>(null);
@@ -561,43 +559,8 @@ export default function CriativosTab({
     );
   }, [experiment?.instagramAccount?.id]);
 
-  const buildBaseExperimentUpdate = (): UpdateExperiment => {
-    if (!experiment) {
-      throw new Error("experiment-unavailable");
-    }
-    const kpiTargetValue = experiment.kpiTarget ?? experiment.kpiTargetCpl;
-    if (kpiTargetValue == null || !experiment.metricPresetId) {
-      throw new Error("missing-metrics");
-    }
-    return {
-      name: experiment.name,
-      hypothesis: experiment.hypothesis,
-      kpiTarget: Number(kpiTargetValue),
-      metricPresetId: experiment.metricPresetId,
-      sampleSize: experiment.sampleSize ?? undefined,
-      mde: experiment.mdePercent ?? undefined,
-      startDate: experiment.startDate ?? undefined,
-      endDate: experiment.endDate ?? undefined,
-      creativesToGenerate: experiment.creativesToGenerate ?? undefined,
-    };
-  };
-
   const handleSavePageId = async () => {
     if (!experiment) {
-      return;
-    }
-    let basePayload: UpdateExperiment;
-    try {
-      basePayload = buildBaseExperimentUpdate();
-    } catch (error) {
-      setFeedback({
-        variant: "error",
-        title: "Não foi possível salvar a página",
-        description:
-          error instanceof Error && error.message === "missing-metrics"
-            ? "Defina a meta de KPI e o preset de métricas antes de configurar a página do experimento."
-            : "Tente novamente em instantes.",
-      });
       return;
     }
     if (noInstagramAccounts) {
@@ -629,8 +592,7 @@ export default function CriativosTab({
       return;
     }
     try {
-      await updateExperimentMutation.mutateAsync({
-        ...basePayload,
+      await updatePublishingIdentity.mutateAsync({
         facebookPageId: parsedPageId,
         instagramAccountId: Number(experimentInstagramAccountId),
       });
@@ -657,7 +619,7 @@ export default function CriativosTab({
         : "a conta do Instagram selecionada";
       setFeedback({
         variant: "success",
-        title: "Configurações atualizadas",
+        title: "Identidades atualizadas",
         description: selectedPage
           ? `Os criativos publicarão na página ${selectedPage.name} com ${instagramDescription}.`
           : `Sem página definida o worker utilizará a página padrão do Facebook, mantendo ${instagramDescription}.`,
@@ -665,13 +627,13 @@ export default function CriativosTab({
     } catch {
       setFeedback({
         variant: "error",
-        title: "Não foi possível salvar a página",
+        title: "Não foi possível salvar as identidades",
         description: "Tente novamente em instantes.",
       });
     }
   };
 
-  const isSavingPageId = updateExperimentMutation.isPending;
+  const isSavingPageId = updatePublishingIdentity.isPending;
 
   const openEdit = (c: Creative) => {
     setVersioning({ ...c });
@@ -1369,7 +1331,7 @@ export default function CriativosTab({
                 <span>Salvando...</span>
               </>
             ) : (
-              <span>Salvar página</span>
+              <span>Salvar identidades</span>
             )}
           </button>
         </div>
@@ -1417,6 +1379,54 @@ export default function CriativosTab({
                     </button>
                   </div>
                 ))}
+              </div>
+            </div>
+          </section>
+        )}
+      {experiment &&
+        Array.isArray(approvedVisualAssetsQuery.data) &&
+        approvedVisualAssetsQuery.data.length > 0 && (
+          <section
+            className="card border-primary mb-3"
+            aria-label="Controles estáticos aprovados do plano"
+          >
+            <div className="card-body">
+              <h4 className="h6 mb-1">Controle estático aprovado do plano</h4>
+              <p className="small text-muted">
+                Use a imagem já aprovada como controle do teste sem regenerar
+                mídia. URL e SHA-256 permanecem auditáveis; copy, Têmis e a
+                aprovação humana continuam obrigatórios.
+              </p>
+              <div className="row g-3">
+                {approvedVisualAssetsQuery.data.map((asset) => {
+                  const linkedCreative = creatives.find(
+                    (creative) => creative.imageUrl === asset.assetUrl,
+                  );
+                  return (
+                    <div className="col-12 col-lg-6" key={asset.id}>
+                      <article className="border rounded p-3 h-100">
+                        <img
+                          src={resolveAssetUrl(asset.assetUrl)}
+                          alt={asset.label}
+                          className="w-100 rounded bg-light"
+                          style={{ height: 220, objectFit: "contain" }}
+                        />
+                        <strong className="d-block mt-2">{asset.label}</strong>
+                        <small className="d-block text-muted text-break">
+                          Ativo #{asset.id} · Plano #{asset.commercialPlanId}
+                          <br />
+                          SHA-256 {asset.contentSha256}
+                        </small>
+                        <ApprovedStaticControlAction
+                          experiment={experiment}
+                          asset={asset}
+                          locked={alterationLocked}
+                          alreadyLinkedCreativeId={linkedCreative?.id}
+                        />
+                      </article>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </section>

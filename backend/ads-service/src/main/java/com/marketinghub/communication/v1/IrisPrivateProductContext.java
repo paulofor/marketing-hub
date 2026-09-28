@@ -60,7 +60,7 @@ public class IrisPrivateProductContext {
     }
   }
 
-  /** Confere contratos de origem, gate vigente e identidade sem criar ciclo ou experimento. */
+  /** Confere contratos de origem, prova histórica vigente e identidade sem criar ciclo. */
   private Map<String, Object> context(String reference) throws Exception {
     long productId = Long.parseLong(reference.substring(8, reference.indexOf('@')));
     var product = products.findById(productId).orElseThrow();
@@ -90,7 +90,8 @@ public class IrisPrivateProductContext {
         "COMPLETED".equals(gate.getStatus()) && gate.isObjectiveAchieved(),
         "O último gate multiagente não está aprovado.");
     var readiness =
-        gateValidator.readiness(definition.getProcessDefinition(), definition, product, reference);
+        gateValidator.historicalEvidenceReadiness(
+            definition.getProcessDefinition(), definition, product, reference);
     require(readiness.ready(), readiness.reason());
     var proof = json.readTree(gate.getObjectiveEvidenceJson());
     require(

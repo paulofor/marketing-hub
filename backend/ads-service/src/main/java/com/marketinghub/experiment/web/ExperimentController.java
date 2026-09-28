@@ -11,6 +11,7 @@ import com.marketinghub.experiment.dto.ExperimentSessionDurationSummaryDto;
 import com.marketinghub.experiment.dto.ExperimentSessionDurationVariantDto;
 import com.marketinghub.experiment.dto.ReactivateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentLearnedLessonsRequest;
+import com.marketinghub.experiment.dto.UpdateExperimentPublishingIdentityRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentStrategicPositioningRequest;
 import com.marketinghub.experiment.dto.UpdateSelectedSampleEmailRequest;
@@ -289,6 +290,15 @@ public class ExperimentController {
       method = {RequestMethod.PUT, RequestMethod.PATCH})
   public ExperimentDto update(@PathVariable Long id, @RequestBody UpdateExperimentRequest request) {
     return mapper.toDto(service.update(id, request));
+  }
+
+  /** Atualiza somente as identidades oficiais de Facebook e Instagram do experimento. */
+  @PatchMapping("/{id}/publishing-identity")
+  @Operation(summary = "Atualizar identidade oficial de publicação do experimento")
+  public ExperimentDto updatePublishingIdentity(
+      @PathVariable Long id,
+      @Valid @RequestBody UpdateExperimentPublishingIdentityRequest request) {
+    return mapper.toDto(service.updatePublishingIdentity(id, request));
   }
 
   /** Atualiza somente as lições aprendidas do experimento. */

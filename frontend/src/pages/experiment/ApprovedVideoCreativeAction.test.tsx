@@ -88,6 +88,18 @@ describe("ApprovedVideoCreativeAction", () => {
     expect(
       (screen.getByLabelText("Título do anúncio") as HTMLInputElement).value,
     ).toBe("Seu primeiro ajuste");
+    expect(
+      (screen.getByLabelText("Título do anúncio") as HTMLInputElement)
+        .maxLength,
+    ).toBe(40);
+    expect(
+      (screen.getByLabelText("Texto principal") as HTMLTextAreaElement)
+        .maxLength,
+    ).toBe(125);
+    expect(
+      (screen.getByLabelText("Descrição curta (opcional)") as HTMLInputElement)
+        .maxLength,
+    ).toBe(25);
     expect(screen.queryByRole("option", { name: /Vídeo #39/ })).toBeNull();
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "37" } });
     fireEvent.click(

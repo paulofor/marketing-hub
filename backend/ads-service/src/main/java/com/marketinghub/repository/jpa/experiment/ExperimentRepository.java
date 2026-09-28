@@ -29,6 +29,16 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
   @Query("select e from Experiment e where e.id = :id")
   Optional<Experiment> findForVideoCreativeSelection(@Param("id") Long id);
 
+  /** Serializa a seleção de controle estático com qualquer liberação concorrente da campanha. */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query("select e from Experiment e where e.id = :id")
+  Optional<Experiment> findForApprovedVisualAssetCreativeSelection(@Param("id") Long id);
+
+  /** Serializa a identidade oficial com qualquer liberação concorrente da campanha. */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query("select e from Experiment e where e.id = :id")
+  Optional<Experiment> findForPublishingIdentityUpdate(@Param("id") Long id);
+
   /** Serializa liberações para que cliques concorrentes preservem o mesmo pedido de publicação. */
   @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
   @Query("select e from Experiment e where e.id = :id")

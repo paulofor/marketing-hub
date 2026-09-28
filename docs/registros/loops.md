@@ -7690,3 +7690,27 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   atividade exata apesar de histórico global, preservação da URL e edição pela tela. A impressão de
   homologação compara o conteúdo do contrato JSON, portanto só mudanças semânticas invalidam a
   validação pública; formatação e URL administrativa isolada não criam um novo ciclo de homologação.
+- **Recorrência de ciclo de vida confirmada em 28/09/2026:** depois de reconciliar o backend do slot
+  e concluir a integração, o próprio Processo 4 moveu Mira para `VALIDACAO_COMERCIAL`. A releitura
+  da comunicação então recusou o gate privado aprovado porque o verificador operacional exigia que
+  o produto ainda estivesse em `PLANNED` ou `COMUNICACAO_E_JORNADA`, reabrindo a primeira atividade
+  após a última já ter sido concluída.
+- **Fechamento da recorrência:** a autorização para executar novamente o gate continua limitada à
+  etapa operacional correta, mas o consumo posterior usa uma verificação histórica separada. Essa
+  verificação ignora apenas a posição comercial já avançada e continua exigindo contrato, produto,
+  URL, versão, cinco pareceres atuais, ordem, hashes, capturas, origem e efeitos externos nulos.
+  Testes comprovam que `VALIDACAO_COMERCIAL` preserva a prova aprovada e que qualquer parecer novo
+  bloqueado continua invalidando seu consumo.
+- **Lacunas de materialização encontradas na homologação de Mira:** a tela de criativos usava a
+  atualização geral do experimento para salvar página e Instagram, exigindo KPI e preset que não
+  pertencem à identidade e podendo regravar a janela. A mesma tela não oferecia comando para
+  transformar a peça ADS #311, já aprovada no plano e com SHA-256, em controle do experimento; o
+  único caminho disponível regenerava mídia ou exigia inserção direta sem trilha operacional.
+- **Correção e prevenção na interface oficial:** identidade ganha endpoint parcial próprio, válido
+  antes da liberação e independente de métricas, datas e verba. Imagens ADS só aparecem como
+  controles elegíveis quando pertencem ao plano governante mais recente do experimento, são
+  `APPROVED`, possuem SHA-256 e os pareceres aprovados de Têmis e Psique. A promoção bloqueia o
+  experimento e o ativo para idempotência e exclusão mútua com a liberação, preserva os pixels e
+  destino, registra histórico e cria apenas `DRAFT/PENDING`; nova copy continua exigindo revisão de
+  Têmis e aprovação humana. O contrato de copy usa a mesma contagem Unicode na tela, entrada e
+  publicação para estático e vídeo, evitando abrir revisões sabidamente não publicáveis.

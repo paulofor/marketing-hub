@@ -188,6 +188,21 @@ class PdeAgentValidationGateActivityExecutorTest {
     verify(periods, never()).recordTransition(any(), any());
   }
 
+  /** Preserva a prova imutável para processos posteriores sem reabrir operacionalmente o gate. */
+  @Test
+  void verifiesHistoricalEvidenceAfterProductAdvancesToCommercialValidation() {
+    product.setValidationDefinitionVersion("PDE_AGENT_VALIDATED_V1");
+    product.setCommercialStatus("VALIDACAO_COMERCIAL");
+
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
+    assertThat(executor.historicalEvidenceReadiness(process, gate, product, SOURCE).ready())
+        .isTrue();
+
+    completedTasks.getLast().setStatus("BLOCKED");
+    assertThat(executor.historicalEvidenceReadiness(process, gate, product, SOURCE).ready())
+        .isFalse();
+  }
+
   /** Aprova o ciclo sem alterar o produto comercial nem trocar a referência das tarefas. */
   @Test
   void approvesExperimentCycleAndKeepsItsAuditIdempotent() throws Exception {

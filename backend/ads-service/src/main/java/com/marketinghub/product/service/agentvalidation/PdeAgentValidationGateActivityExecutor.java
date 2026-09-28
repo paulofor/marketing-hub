@@ -164,7 +164,7 @@ public class PdeAgentValidationGateActivityExecutor
           false, "Não existe executor multiagente para esta atividade.");
     }
     try {
-      GateEvaluation evaluation = evaluate(process, product, sourceReference);
+      GateEvaluation evaluation = evaluate(process, product, sourceReference, true);
       return new BackendProductProcessActivityReadiness(
           evaluation.ready(),
           evaluation.ready()
@@ -190,6 +190,39 @@ public class PdeAgentValidationGateActivityExecutor
   }
 
   /**
+   * Revalida a prova imutável já aprovada sem exigir que o produto permaneça na etapa operacional
+   * anterior ao avanço comercial.
+   */
+  @Transactional(readOnly = true)
+  public BackendProductProcessActivityReadiness historicalEvidenceReadiness(
+      BusinessProcessDefinition process,
+      BusinessProcessActivityDefinition activityDefinition,
+      Product product,
+      String sourceReference) {
+    if (!supports(process, activityDefinition)) {
+      return new BackendProductProcessActivityReadiness(
+          false, "Não existe verificador multiagente para esta prova histórica.");
+    }
+    try {
+      GateEvaluation evaluation = evaluate(process, product, sourceReference, false);
+      return new BackendProductProcessActivityReadiness(
+          evaluation.ready(),
+          evaluation.ready()
+              ? "A prova histórica preserva contrato, versão, capturas e pareceres aprovados."
+              : evaluation.issues().getFirst());
+    } catch (RuntimeException ex) {
+      log.error(
+          "Falha ao verificar a prova histórica do gate multiagente. processDefinitionId={} productId={} sourceReference={}",
+          process.getId(),
+          product == null ? null : product.getId(),
+          sourceReference,
+          ex);
+      return new BackendProductProcessActivityReadiness(
+          false, "Não foi possível confirmar a prova histórica da validação multiagente.");
+    }
+  }
+
+  /**
    * Persiste a decisão; no ciclo preserva a operação, na primeira validação libera comunicação em
    * STOP.
    */
@@ -200,7 +233,7 @@ public class PdeAgentValidationGateActivityExecutor
       BusinessProcessActivityDefinition activityDefinition,
       Product product,
       String sourceReference) {
-    GateEvaluation evaluation = evaluate(process, product, sourceReference);
+    GateEvaluation evaluation = evaluate(process, product, sourceReference, true);
     if (!evaluation.ready()) throw new IllegalStateException(evaluation.issues().getFirst());
     Instant now = Instant.now(clock);
     Optional<BusinessProcessActivityInstance> latest =
@@ -244,9 +277,13 @@ public class PdeAgentValidationGateActivityExecutor
 
   /** Avalia separadamente contrato, harness, Psique, Têmis, ordem e efeitos externos. */
   private GateEvaluation evaluate(
-      BusinessProcessDefinition process, Product product, String sourceReference) {
+      BusinessProcessDefinition process,
+      Product product,
+      String sourceReference,
+      boolean enforceOperationalStage) {
     List<String> issues = new ArrayList<>();
-    AgentValidationContract contract = contract(process, product, sourceReference, issues);
+    AgentValidationContract contract =
+        contract(process, product, sourceReference, enforceOperationalStage, issues);
     List<AgentTask> processTasks =
         process == null || process.getId() == null || sourceReference == null
             ? List.of()
@@ -297,6 +334,7 @@ public class PdeAgentValidationGateActivityExecutor
       BusinessProcessDefinition process,
       Product product,
       String sourceReference,
+      boolean enforceOperationalStage,
       List<String> issues) {
     if (product == null || product.getId() == null) {
       issues.add("O produto da validação multiagente não foi encontrado.");
@@ -313,7 +351,8 @@ public class PdeAgentValidationGateActivityExecutor
         && !COMPLETED_CONTRACT.equals(product.getValidationDefinitionVersion())) {
       issues.add("O produto não possui o contrato PDE_AGENT_VALIDATION_V1 vigente.");
     }
-    if (!cycle
+    if (enforceOperationalStage
+        && !cycle
         && !"PLANNED".equals(product.getCommercialStatus())
         && !"COMUNICACAO_E_JORNADA".equals(product.getCommercialStatus())
         && !cycleRevalidation(product)) {

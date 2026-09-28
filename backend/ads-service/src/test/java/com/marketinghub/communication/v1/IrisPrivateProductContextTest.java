@@ -71,7 +71,7 @@ class IrisPrivateProductContextTest {
             .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
                 "pde-construction-approval", SOURCE))
         .thenReturn(List.of(gate));
-    when(validator.readiness(process, activity, product, SOURCE))
+    when(validator.historicalEvidenceReadiness(process, activity, product, SOURCE))
         .thenReturn(new BackendProductProcessActivityReadiness(true, "Provas locais aprovadas"));
     pde.putObject("lineage")
         .put("cycleId", 91064L)
@@ -193,6 +193,7 @@ class IrisPrivateProductContextTest {
   /** Entrega V3, economia, protótipo e provas reais sem fabricar plano, experimento ou ciclo. */
   @Test
   void resolvesProductBeforeExperimentAndExportsWorkerContract() throws Exception {
+    product.setCommercialStatus("VALIDACAO_COMERCIAL");
     var context = provider.resolve(SOURCE).orElseThrow();
     assertThat(context)
         .containsEntry("inputReadiness", "READY")
@@ -204,6 +205,7 @@ class IrisPrivateProductContextTest {
         .containsEntry("paymentEnabled", false)
         .containsEntry("publicationAuthorized", false)
         .containsEntry("externalMediaSpendAuthorized", false);
+    verify(validator).historicalEvidenceReadiness(any(), any(), same(product), eq(SOURCE));
     String output = System.getenv("MIRA_IRIS_INPUT_FILE");
     if (output != null)
       Files.writeString(

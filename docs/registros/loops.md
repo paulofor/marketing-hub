@@ -7690,3 +7690,14 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   atividade exata apesar de histórico global, preservação da URL e edição pela tela. A impressão de
   homologação compara o conteúdo do contrato JSON, portanto só mudanças semânticas invalidam a
   validação pública; formatação e URL administrativa isolada não criam um novo ciclo de homologação.
+- **Recorrência de ciclo de vida confirmada em 28/09/2026:** depois de reconciliar o backend do slot
+  e concluir a integração, o próprio Processo 4 moveu Mira para `VALIDACAO_COMERCIAL`. A releitura
+  da comunicação então recusou o gate privado aprovado porque o verificador operacional exigia que
+  o produto ainda estivesse em `PLANNED` ou `COMUNICACAO_E_JORNADA`, reabrindo a primeira atividade
+  após a última já ter sido concluída.
+- **Fechamento da recorrência:** a autorização para executar novamente o gate continua limitada à
+  etapa operacional correta, mas o consumo posterior usa uma verificação histórica separada. Essa
+  verificação ignora apenas a posição comercial já avançada e continua exigindo contrato, produto,
+  URL, versão, cinco pareceres atuais, ordem, hashes, capturas, origem e efeitos externos nulos.
+  Testes comprovam que `VALIDACAO_COMERCIAL` preserva a prova aprovada e que qualquer parecer novo
+  bloqueado continua invalidando seu consumo.

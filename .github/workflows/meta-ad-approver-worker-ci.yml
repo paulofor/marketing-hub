@@ -9,29 +9,20 @@ on:
       - pde-platform/**
       - backend/ads-service/src/main/resources/db/changelog/**
       - backend/ads-service/src/test/java/com/marketinghub/pde/**
-      - docs/homologacao/**
-      - docs/registros/**
       - scripts/build-commercial-review-evidence.mjs
-      - scripts/build-commercial-review-evidence.test.mjs
       - scripts/generate-musa-v7-canonical-contract-changelog.mjs
-      - scripts/validate-premium-agents.sh
-      - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
       - scripts/codex-oauth-session-safe.sh
       - scripts/coordinate-agent-deployment.mjs
-      - scripts/coordinate-agent-deployment.test.mjs
   pull_request:
     paths:
       - meta-ad-approver-worker/**
       - ai-worker/src/main/java/com/marketinghub/worker/creativereview/**
       - ai-worker/src/test/java/com/marketinghub/worker/architecture/MetaAdApproverIsolationTest.java
-      - docs/canonical/**
       - customer-agent-worker/src/**
       - pde-platform/**
       - backend/ads-service/src/main/resources/db/changelog/**
       - backend/ads-service/src/test/java/com/marketinghub/pde/**
-      - docs/homologacao/**
-      - docs/registros/**
       - .github/workflows/meta-ad-approver-worker-ci.yml
       - scripts/build-commercial-review-evidence.mjs
       - scripts/build-commercial-review-evidence.test.mjs

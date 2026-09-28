@@ -100,6 +100,15 @@ function hasRemoteCommand(job) {
   });
 }
 
+function triggerBlock(workflow, trigger) {
+  const configuration = workflow.split(/^jobs:\s*$/m)[0] ?? "";
+  return (
+    configuration
+      .split(new RegExp(`^  ${trigger}:\\s*$`, "m"))[1]
+      ?.split(/^  [a-z][\w-]*:\s*$/m)[0] ?? ""
+  );
+}
+
 function assertEventDrivenCoordination(workflow, sourceWorkflow, artifactBased) {
   const configuration = workflow.split(/^jobs:\s*$/m)[0];
   assert.match(
@@ -464,6 +473,83 @@ test("Argos, Psique e Íris retomam por evento sem polling nem troca de revisão
   assertEventDrivenCoordination(productDiscovery, "product-discovery-worker-ci.yml", false);
   assertEventDrivenCoordination(customer, "customer-agent-worker-ci.yml", true);
   assertEventDrivenCoordination(metaApprover, "meta-ad-approver-worker-ci.yml", true);
+});
+
+test("relatórios isolados não publicam Psique nem Íris sem contrato versionado", async () => {
+  for (const worker of ["customer-agent-worker", "meta-ad-approver-worker"]) {
+    const workflow = await readFile(
+      path.join(repositoryRoot, `.github/workflows/${worker}-ci.yml`),
+      "utf8",
+    );
+    for (const trigger of ["push", "pull_request"]) {
+      const paths = triggerBlock(workflow, trigger);
+      assert.match(paths, /- pde-platform\/\*\*/, `${worker}: contrato PDE deve disparar validação`);
+      assert.doesNotMatch(
+        paths,
+        /- docs\/(?:canonical|homologacao|registros)\/\*\*/,
+        `${worker}: relatório genérico não deve acionar worker`,
+      );
+    }
+
+    const pushPaths = triggerBlock(workflow, "push");
+    const pullRequestPaths = triggerBlock(workflow, "pull_request");
+    const testOnlyPaths = [
+      "scripts/build-commercial-review-evidence.test.mjs",
+      "scripts/coordinate-agent-deployment.test.mjs",
+      "scripts/test-isolated-agent-codex-auth.sh",
+    ];
+    if (worker === "meta-ad-approver-worker") {
+      testOnlyPaths.push("scripts/validate-premium-agents.sh");
+    }
+    for (const testOnlyPath of testOnlyPaths) {
+      assert.doesNotMatch(
+        pushPaths,
+        new RegExp(`- ${testOnlyPath.replaceAll(".", "\\.")}`),
+        `${worker}: teste isolado não deve republicar runtime`,
+      );
+      assert.match(
+        pullRequestPaths,
+        new RegExp(`- ${testOnlyPath.replaceAll(".", "\\.")}`),
+        `${worker}: teste isolado deve continuar validado no Pull Request`,
+      );
+    }
+  }
+
+  const detector = await readFile(
+    path.join(repositoryRoot, "scripts/detect-deployment-changes.sh"),
+    "utf8",
+  );
+  assert.doesNotMatch(
+    detector,
+    /docs\/homologacao\/\*\|docs\/registros\/\*/,
+    "freshness não deve considerar registro isolado como runtime pendente",
+  );
+});
+
+test("testes isolados do Argos permanecem no Pull Request", async () => {
+  const workflow = await readFile(
+    path.join(repositoryRoot, ".github/workflows/product-discovery-worker-ci.yml"),
+    "utf8",
+  );
+  const pushPaths = triggerBlock(workflow, "push");
+  const pullRequestPaths = triggerBlock(workflow, "pull_request");
+  for (const testOnlyPath of [
+    "scripts/test-isolated-agent-codex-auth.sh",
+    "scripts/test-configure-vps-ssh-fallback.sh",
+    "scripts/coordinate-agent-deployment.test.mjs",
+  ]) {
+    const pathExpression = new RegExp(`- "${testOnlyPath.replaceAll(".", "\\.")}"`);
+    assert.doesNotMatch(
+      pushPaths,
+      pathExpression,
+      `${testOnlyPath}: teste não deve republicar Argos`,
+    );
+    assert.match(
+      pullRequestPaths,
+      pathExpression,
+      `${testOnlyPath}: teste deve permanecer no Pull Request de Argos`,
+    );
+  }
 });
 
 test("CI central acompanha e executa o contrato de coordenação por evento", async () => {

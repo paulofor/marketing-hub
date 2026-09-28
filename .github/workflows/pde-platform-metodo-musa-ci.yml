@@ -5,14 +5,10 @@ on:
     branches: ["main", "master"]
     paths:
       - "pde-platform/**"
-      - ".github/workflows/pde-platform-metodo-musa-ci.yml"
       - "scripts/ensure-agent-vps-disk-space.sh"
       - "scripts/check-musa-pde-public-consistency.sh"
-      - "scripts/test-musa-pde-public-consistency.py"
       - "scripts/build-commercial-review-evidence.mjs"
-      - "scripts/build-commercial-review-evidence.test.mjs"
       - "scripts/resolve-pde-frontend-deploy-target.mjs"
-      - "scripts/resolve-pde-frontend-deploy-target.test.mjs"
   pull_request:
     paths:
       - "pde-platform/**"

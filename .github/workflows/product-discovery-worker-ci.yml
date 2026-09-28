@@ -7,16 +7,13 @@ on:
       - "product-discovery-worker/**"
       - "pesquisas/**"
       - "backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json"
-      - "scripts/test-isolated-agent-codex-auth.sh"
       - "scripts/docker-compose-pull-with-transient-retry.sh"
       - "scripts/docker-compose-up-with-transient-retry.sh"
       - "scripts/docker-login-with-transient-retry.sh"
       - "scripts/configure-vps-ssh-fallback.sh"
       - "scripts/ssh-keyscan-with-retry.sh"
-      - "scripts/test-configure-vps-ssh-fallback.sh"
       - "scripts/wait-for-shared-vps-docker-capacity.sh"
       - "scripts/coordinate-agent-deployment.mjs"
-      - "scripts/coordinate-agent-deployment.test.mjs"
   pull_request:
     paths:
       - "product-discovery-worker/**"

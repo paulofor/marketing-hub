@@ -556,13 +556,12 @@ class WorkflowContractTest(unittest.TestCase):
             "read-frontend-build-revision.sh",
             "check-production-freshness.py",
             "Build & Deploy containers",
+            "workflow_dispatch:",
             "[Watchdog] Produção desatualizada",
             "fetch-depth: 0",
             "deploy-control-known-hosts",
             "PSIQUE_VPS_IP",
             "Configure Psique VPS SSH",
-            "Customer Agent Worker CI/CD",
-            "CI - PDE Platform Metodo MUSA",
             "customer-agent-worker-ci.yml/runs",
             "pde-platform-metodo-musa-ci.yml/runs",
             "--psique-revision",
@@ -573,6 +572,17 @@ class WorkflowContractTest(unittest.TestCase):
             "--report /tmp/musa-pde-watchdog.json",
         ):
             self.assertIn(required, source)
+        workflow_run = source.split("  workflow_run:\n", 1)[1].split(
+            "\n\npermissions:", 1
+        )[0]
+        self.assertEqual(
+            workflow_run,
+            "    workflows:\n"
+            "      - Build & Deploy containers\n"
+            "    types: [completed]\n"
+            "    branches: [main]",
+        )
+        self.assertNotIn("\n  push:\n", source)
         self.assertIn("FRESHNESS_GRACE_MINUTES: '30'", source)
         self.assertIn("MAX_DEPLOY_RUNTIME_MINUTES: '75'", source)
 

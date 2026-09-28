@@ -168,6 +168,27 @@
 - **Prevenção:** regressão reproduz run do HEAD antigo, predecessor recém-concluído e fila sem
   progresso; o relatório expõe `last_progress_at` para auditoria sem ampliar a janela de 75 minutos.
 
+## LOOP-ACTIONS-WATCHDOG-GATILHOS-ENCADEADOS — um merge abre verificações concorrentes
+
+- **Data:** 2026-09-28. O merge `44cff41d` iniciou o Watchdog pelo `push` (`36374718714`) e pelas
+  conclusões encadeadas do deploy central, do reconciliador e dos publicadores. As execuções
+  `36374739486`, `36374803762`, `36374825105` e `36374827086` foram canceladas depois de iniciar
+  sondas de produção, enquanto uma execução sucessora permanecia pendente.
+- **Causa-raiz confirmada:** o Watchdog observava simultaneamente `push`, `Build & Deploy
+  containers`, workers, PDE e `Reconcile automatic publishers`. Um único commit concluía vários
+  desses workflows; cada conclusão criava uma nova verificação no mesmo grupo de concorrência e
+  cancelava a anterior. O cancelamento evitava sobreposição, mas não evitava o consumo de runner e
+  conexões SSH já iniciados.
+- **Alternativas avaliadas:** manter todos os gatilhos preservaria baixa latência, mas continuaria o
+  desperdício; manter `push` e somente o deploy central ainda criaria duas verificações para cada
+  mudança; observar apenas o deploy central, com agenda de cinco minutos e disparo manual, preserva
+  a cobertura imediata e posterior com uma única execução útil. A terceira alternativa foi adotada.
+- **Correção sistêmica:** o Watchdog passa a iniciar por `workflow_run: completed` exclusivamente
+  de `Build & Deploy containers`, além da agenda e do disparo manual. Workers, PDE e reconciliador
+  continuam monitorados pelo conteúdo da verificação, mas não são gatilhos dela.
+- **Prevenção:** o contrato em `scripts/test-production-freshness.py` exige a lista exata do único
+  workflow de origem e rejeita o gatilho direto de `push`.
+
 ## LOOP-VEGA-RUN-PUBLICADO-PERDE-PRONTIDAO — cockpit regride após publicar
 
 - **Data:** 2026-09-19. Vega, experimento #92, run produtivo #2.

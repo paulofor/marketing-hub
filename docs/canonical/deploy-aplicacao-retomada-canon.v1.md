@@ -94,6 +94,13 @@ terminando; nesse caso o estado é `DEPLOYING`. O estado passa a `STALE` quando 
 cubra a mudança pendente ou quando a fila deixa de registrar progresso dentro da janela máxima.
 Runs posteriores, de outra branch ou de outro workflow não renovam essa prova.
 
+O Watchdog é iniciado manualmente, a cada cinco minutos e exclusivamente ao terminar o workflow
+central `Build & Deploy containers` da `main`. Ele não pode ser disparado pelo `push` original, por
+workflows de agentes, pelo PDE ou pelo reconciliador: essas conclusões pertencem ao mesmo ciclo de
+publicação e gerariam verificações concorrentes que se cancelam sem ampliar a cobertura. A execução
+central concluída fornece a leitura imediata pós-publicação; o agendamento preserva a detecção de
+atrasos ou falhas posteriores.
+
 Argos, Psique e Íris devem reconhecer tanto `push` quanto `workflow_dispatch` da aplicação,
 sempre na branch `main` e no mesmo SHA. Uma execução de outro commit, branch, tag ou PR não
 libera os agentes. O push de origem testa e empacota a imagem imutável do agente e confirma, em

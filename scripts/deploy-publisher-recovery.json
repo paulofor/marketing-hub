@@ -13,6 +13,7 @@
   "financial-agent-worker-ci.yml": {},
   "communication-agent-worker-ci.yml": {},
   "growth-operator-worker-ci.yml": {},
+  "facebook-ads-worker.yml": {"publication_job": "Deploy worker"},
   "agent-executor-admin-controller-ci.yml": {},
   "mois-clickbank-collector-ci.yml": {
     "inputs": {"operation": "retire"},

@@ -10,7 +10,8 @@ selecionados e suas continuações dependentes, preserva os estados anteriores e
 as execuções já iniciadas terminarem. Uma intervenção só pode começar no estado `ACTIVE`,
 com os publicadores desativados e a fila vazia. Pausar um workflow sozinho não prova esse estado.
 O Facebook Ads Worker usa o escopo dedicado `facebook-ads`, sem acoplá-lo ao publicador central
-da aplicação.
+da aplicação. Seu workflow deve aceitar a recuperação automática do SHA integrado e comprovar o
+job `Deploy worker`; teste ou build verde sem esse job não prova publicação.
 
 O registro e a exclusão entre operadores ficam no host administrativo, fora de diretórios de
 rsync/deploy. Motivo, autorização, responsável, versão protegida, escopo, SHA inicial, execuções

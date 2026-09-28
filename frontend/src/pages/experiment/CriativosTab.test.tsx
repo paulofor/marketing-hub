@@ -1098,4 +1098,191 @@ describe("CriativosTab", () => {
       expect(screen.getByRole("button", { name: "Aprovar" })).toBeEnabled();
     });
   });
+
+  it("salva as identidades oficiais sem exigir KPI ou preset de métricas", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({
+          data: {
+            id: "1",
+            name: "Mira",
+            hypothesis: "Validar a primeira venda",
+            creativesToGenerate: 0,
+            kpiTarget: null,
+            metricPresetId: null,
+            facebookPage: null,
+            instagramAccount: null,
+          },
+        });
+      }
+      if (url === "/api/accounts/instagram") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 7,
+              name: "Instagram oficial",
+              handle: "@mira",
+              code: "IG-MIRA",
+            },
+          ],
+        });
+      }
+      if (url === "/api/accounts/facebook") {
+        return Promise.resolve({ data: [{ id: 3, name: "Conta oficial" }] });
+      }
+      if (url === "/api/accounts/facebook/3/pages") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 9,
+              accountId: 3,
+              pageId: "meta-page-9",
+              name: "Página oficial",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    (axios.patch as any).mockResolvedValue({ data: { id: "1" } });
+
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    await screen.findByRole("option", { name: /Instagram oficial/ });
+    await userEvent.selectOptions(
+      screen.getByLabelText(/Conta do Instagram/),
+      "7",
+    );
+    await screen.findByRole("option", { name: /Página oficial/ });
+    await userEvent.selectOptions(
+      await screen.findByLabelText(/Página do Facebook/),
+      "9",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Salvar identidades" }),
+    );
+
+    await waitFor(() =>
+      expect(axios.patch).toHaveBeenCalledWith(
+        "/api/experiments/1/publishing-identity",
+        { facebookPageId: 9, instagramAccountId: 7 },
+      ),
+    );
+    expect(
+      await screen.findByText("Identidades atualizadas"),
+    ).toBeInTheDocument();
+  });
+
+  it("promove pela interface o ativo aprovado sem trocar URL ou SHA", async () => {
+    const assetUrl = "https://cdn.test/mira-control.png";
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({
+          data: {
+            id: "1",
+            name: "Mira",
+            hypothesis: "Validar a primeira venda",
+            creativesToGenerate: 0,
+            followUpActionUrl: "https://mira.test",
+            instagramAccount: {
+              id: 7,
+              name: "Instagram oficial",
+              handle: "@mira",
+              code: "IG-MIRA",
+            },
+            adCopy: JSON.stringify({
+              adCopy: {
+                primaryTextVariants: [
+                  {
+                    headline: "Organize sua rotina",
+                    primaryText: "Use os produtos que você já tem.",
+                    description: "Acesso único",
+                  },
+                ],
+              },
+            }),
+          },
+        });
+      }
+      if (url === "/api/experiments/1/commercial-plan-visual-assets/eligible") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 311,
+              commercialPlanId: 8,
+              assetUrl,
+              label: "Controle estático Mira",
+              contentSha256:
+                "bd5bd13370ebf69ff022abcbe6b69bf5735dc271cb0bde64cebf68eccad53637",
+              origin: "Processo criativo aprovado",
+              rightsStatement: "Uso comercial autorizado",
+            },
+          ],
+        });
+      }
+      if (url === "/api/accounts/instagram") {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === "/api/accounts/facebook") {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    (axios.post as any).mockResolvedValue({ data: { id: 612 } });
+
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByText("Controle estático Mira"),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Usar como controle estático" }),
+    );
+    expect(screen.getAllByText(/SHA-256 bd5bd133/)).toHaveLength(2);
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Cadastrar e enviar para revisão",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/experiments/1/commercial-plan-visual-assets/311/creative",
+        {
+          headline: "Organize sua rotina",
+          primaryText: "Use os produtos que você já tem.",
+          description: "Acesso único",
+        },
+      ),
+    );
+    expect(
+      await screen.findByText(/Anúncio #612 cadastrado/),
+    ).toBeInTheDocument();
+  });
 });

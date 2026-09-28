@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
 import axios from "axios";
 import type { Experiment } from "../../api/experiment/useExperiments";
-import type { ExperimentVideoAsset } from "../../api/experiment/useExperimentVideoAssets";
-import { useCreateVideoCreative } from "../../api/creative/useCreateVideoCreative";
+import {
+  type ApprovedVisualAssetOption,
+  useCreateApprovedVisualAssetCreative,
+} from "../../api/creative/useApprovedVisualAssetCreatives";
+import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import {
   CREATIVE_PUBLICATION_COPY_LIMITS,
   plannedCreativeCopy,
@@ -13,23 +15,23 @@ import {
 
 interface Props {
   experiment: Experiment;
-  video: ExperimentVideoAsset;
-  videos: ExperimentVideoAsset[];
+  asset: ApprovedVisualAssetOption;
   locked: boolean;
+  alreadyLinkedCreativeId?: number;
 }
 
-export default function ApprovedVideoCreativeAction({
+export default function ApprovedStaticControlAction({
   experiment,
-  video,
-  videos,
+  asset,
   locked,
+  alreadyLinkedCreativeId,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [copy, setCopy] = useState(() => plannedCreativeCopy(experiment));
-  const [replacement, setReplacement] = useState("");
   const [error, setError] = useState("");
   const [createdId, setCreatedId] = useState<number>();
-  const create = useCreateVideoCreative(experiment.id, video.id);
+  const create = useCreateApprovedVisualAssetCreative(experiment.id, asset.id);
+
   useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;
@@ -38,23 +40,13 @@ export default function ApprovedVideoCreativeAction({
       document.body.style.overflow = previous;
     };
   }, [open]);
-  const replacements = videos.filter(
-    (candidate) =>
-      candidate.id !== video.id &&
-      candidate.slot === "AD" &&
-      candidate.reviewStatus === "REJECTED" &&
-      candidate.requiredForRelease,
-  );
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (locked || create.isPending) return;
+    if (locked || create.isPending || alreadyLinkedCreativeId) return;
     setError("");
     try {
-      const result = await create.mutateAsync({
-        ...copy,
-        replacesVideoAssetId: replacement ? Number(replacement) : undefined,
-      });
+      const result = await create.mutateAsync(copy);
       setCreatedId(result.id);
       setOpen(false);
     } catch (cause) {
@@ -62,34 +54,43 @@ export default function ApprovedVideoCreativeAction({
         axios.isAxiosError(cause)
           ? cause.response?.data?.message ||
               cause.response?.data?.detail ||
-              "Não foi possível cadastrar o anúncio. Tente novamente; a mesma seleção não será duplicada."
-          : "Não foi possível cadastrar o anúncio. Tente novamente.",
+              "Não foi possível vincular o controle. A mesma seleção não será duplicada."
+          : "Não foi possível vincular o controle. Tente novamente.",
       );
     }
+  }
+
+  if (alreadyLinkedCreativeId) {
+    return (
+      <div role="status" className="small text-success mt-2">
+        Controle vinculado ao anúncio #{alreadyLinkedCreativeId}. Copy e gates
+        devem ser tratados no cartão desse anúncio.
+      </div>
+    );
   }
 
   return (
     <>
       <button
         type="button"
-        className="btn btn-sm btn-primary mt-2"
-        disabled={locked}
+        className="btn btn-sm btn-outline-primary mt-2"
+        disabled={locked || !experiment.instagramAccount}
         onClick={() => {
           setCopy(plannedCreativeCopy(experiment));
           setOpen(true);
           setError("");
         }}
       >
-        Usar vídeo em anúncio
+        Usar como controle estático
       </button>
+      {!experiment.instagramAccount && (
+        <div className="small text-warning mt-2">
+          Salve primeiro a identidade oficial do Instagram.
+        </div>
+      )}
       {createdId && (
-        <div role="status" className="small mt-2">
-          Anúncio #{createdId} cadastrado. Acompanhe a revisão e a aprovação
-          final em{" "}
-          <Link to={`/experiments/${experiment.id}?tab=creatives`}>
-            Criativos
-          </Link>
-          .
+        <div role="status" className="small text-success mt-2">
+          Anúncio #{createdId} cadastrado e enviado para revisão.
         </div>
       )}
       {open &&
@@ -98,14 +99,14 @@ export default function ApprovedVideoCreativeAction({
             className="modal d-block"
             role="dialog"
             aria-modal="true"
-            aria-labelledby={`video-creative-title-${video.id}`}
+            aria-labelledby={`static-control-title-${asset.id}`}
             tabIndex={-1}
             style={{ background: "rgba(0,0,0,.45)", height: "100dvh" }}
           >
             <div
               className="modal-dialog modal-dialog-scrollable"
               style={{
-                maxWidth: "min(500px, calc(100vw - 1rem))",
+                maxWidth: "min(540px, calc(100vw - 1rem))",
                 maxHeight: "calc(100dvh - 1rem)",
               }}
             >
@@ -113,9 +114,9 @@ export default function ApprovedVideoCreativeAction({
                 <div className="modal-header">
                   <h2
                     className="modal-title h5"
-                    id={`video-creative-title-${video.id}`}
+                    id={`static-control-title-${asset.id}`}
                   >
-                    Usar vídeo #{video.id} em anúncio
+                    Usar ativo #{asset.id} como controle estático
                   </h2>
                   <button
                     type="button"
@@ -127,27 +128,35 @@ export default function ApprovedVideoCreativeAction({
                 </div>
                 <div className="modal-body d-grid gap-3">
                   <p className="mb-0">
-                    Revise o texto do plano. O vídeo aprovado será enviado a
-                    Têmis junto com a mensagem e o destino. Depois, o anúncio
-                    precisa de aprovação final.
+                    Os pixels e o SHA-256 aprovados serão preservados. A nova
+                    combinação de imagem, texto e destino ainda passará por
+                    Têmis e pela aprovação humana.
                   </p>
-                  <video
-                    src={video.assetUrl || undefined}
-                    controls
-                    preload="metadata"
-                    poster={video.thumbnailUrl || undefined}
-                    style={{ maxHeight: 260, width: "100%" }}
+                  <img
+                    src={resolveAssetUrl(asset.assetUrl)}
+                    alt={asset.label}
+                    style={{
+                      maxHeight: 300,
+                      width: "100%",
+                      objectFit: "contain",
+                    }}
                   />
+                  <div className="small text-muted text-break">
+                    <strong>{asset.label}</strong>
+                    <br />
+                    Plano #{asset.commercialPlanId} · SHA-256{" "}
+                    {asset.contentSha256}
+                  </div>
                   <label className="form-label">
                     Título do anúncio
                     <input
                       required
-                      aria-label="Título do anúncio"
+                      aria-label="Título do controle estático"
                       maxLength={CREATIVE_PUBLICATION_COPY_LIMITS.headline}
                       className="form-control"
                       value={copy.headline}
-                      onChange={(e) =>
-                        setCopy({ ...copy, headline: e.target.value })
+                      onChange={(event) =>
+                        setCopy({ ...copy, headline: event.target.value })
                       }
                     />
                     <span className="form-text">
@@ -159,13 +168,13 @@ export default function ApprovedVideoCreativeAction({
                     Texto principal
                     <textarea
                       required
-                      aria-label="Texto principal"
+                      aria-label="Texto principal do controle estático"
                       maxLength={CREATIVE_PUBLICATION_COPY_LIMITS.primaryText}
                       rows={4}
                       className="form-control"
                       value={copy.primaryText}
-                      onChange={(e) =>
-                        setCopy({ ...copy, primaryText: e.target.value })
+                      onChange={(event) =>
+                        setCopy({ ...copy, primaryText: event.target.value })
                       }
                     />
                     <span className="form-text">
@@ -176,12 +185,12 @@ export default function ApprovedVideoCreativeAction({
                   <label className="form-label">
                     Descrição curta (opcional)
                     <input
-                      aria-label="Descrição curta (opcional)"
+                      aria-label="Descrição do controle estático"
                       maxLength={CREATIVE_PUBLICATION_COPY_LIMITS.description}
                       className="form-control"
                       value={copy.description}
-                      onChange={(e) =>
-                        setCopy({ ...copy, description: e.target.value })
+                      onChange={(event) =>
+                        setCopy({ ...copy, description: event.target.value })
                       }
                     />
                     <span className="form-text">
@@ -189,37 +198,11 @@ export default function ApprovedVideoCreativeAction({
                       {CREATIVE_PUBLICATION_COPY_LIMITS.description}
                     </span>
                   </label>
-                  {replacements.length > 0 && (
-                    <label className="form-label">
-                      Vídeo reprovado que esta peça substitui
-                      <select
-                        className="form-select"
-                        value={replacement}
-                        onChange={(e) => setReplacement(e.target.value)}
-                      >
-                        <option value="">Não substituir outro vídeo</option>
-                        {replacements.map((candidate) => (
-                          <option key={candidate.id} value={candidate.id}>
-                            Vídeo #{candidate.id} — reprovado
-                          </option>
-                        ))}
-                      </select>
-                      <span className="form-text">
-                        O vídeo escolhido continua reprovado no histórico e
-                        deixa de ser exigido para esta campanha.
-                      </span>
-                    </label>
-                  )}
                   <div className="small">
                     Botão: <strong>Saiba mais</strong>
                     <br />
                     Destino: {experiment.followUpActionUrl}
                   </div>
-                  <p className="small text-muted mb-0">
-                    Esta etapa aproveita a mídia existente. O orçamento e o
-                    período da campanha permanecem os cadastrados no
-                    experimento.
-                  </p>
                   {error && (
                     <div className="alert alert-danger mb-0" role="alert">
                       {error}

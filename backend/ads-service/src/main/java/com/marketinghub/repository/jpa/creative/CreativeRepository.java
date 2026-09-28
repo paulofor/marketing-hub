@@ -19,6 +19,9 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
   /** Busca somente anúncios da mesma mídia e experimento para reconhecer comandos repetidos. */
   List<Creative> findByExperimentIdAndVideoUrl(Long experimentId, String videoUrl);
 
+  /** Busca anúncios da mesma imagem e experimento para tornar a promoção visual idempotente. */
+  List<Creative> findByExperimentIdAndImageUrl(Long experimentId, String imageUrl);
+
   /** Lista os criativos vinculados ao experimento informado. */
   List<Creative> findByExperimentId(Long experimentId);
 

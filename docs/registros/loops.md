@@ -7701,3 +7701,16 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   URL, versão, cinco pareceres atuais, ordem, hashes, capturas, origem e efeitos externos nulos.
   Testes comprovam que `VALIDACAO_COMERCIAL` preserva a prova aprovada e que qualquer parecer novo
   bloqueado continua invalidando seu consumo.
+- **Lacunas de materialização encontradas na homologação de Mira:** a tela de criativos usava a
+  atualização geral do experimento para salvar página e Instagram, exigindo KPI e preset que não
+  pertencem à identidade e podendo regravar a janela. A mesma tela não oferecia comando para
+  transformar a peça ADS #311, já aprovada no plano e com SHA-256, em controle do experimento; o
+  único caminho disponível regenerava mídia ou exigia inserção direta sem trilha operacional.
+- **Correção e prevenção na interface oficial:** identidade ganha endpoint parcial próprio, válido
+  antes da liberação e independente de métricas, datas e verba. Imagens ADS só aparecem como
+  controles elegíveis quando pertencem ao plano governante mais recente do experimento, são
+  `APPROVED`, possuem SHA-256 e os pareceres aprovados de Têmis e Psique. A promoção bloqueia o
+  experimento e o ativo para idempotência e exclusão mútua com a liberação, preserva os pixels e
+  destino, registra histórico e cria apenas `DRAFT/PENDING`; nova copy continua exigindo revisão de
+  Têmis e aprovação humana. O contrato de copy usa a mesma contagem Unicode na tela, entrada e
+  publicação para estático e vídeo, evitando abrir revisões sabidamente não publicáveis.

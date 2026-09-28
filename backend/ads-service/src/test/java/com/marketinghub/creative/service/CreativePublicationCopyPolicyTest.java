@@ -17,6 +17,10 @@ class CreativePublicationCopyPolicyTest {
             .description("D".repeat(25))
             .build();
     assertThat(CreativePublicationCopyPolicy.violations(creative)).isEmpty();
+    assertThat(
+            CreativePublicationCopyPolicy.violations(
+                creative.getPrimaryText(), creative.getHeadline(), creative.getDescription()))
+        .isEmpty();
     assertThat(creative.getPrimaryText()).isEqualTo("😀".repeat(125));
   }
 

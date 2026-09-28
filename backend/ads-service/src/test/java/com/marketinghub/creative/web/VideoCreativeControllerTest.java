@@ -289,6 +289,46 @@ class VideoCreativeControllerTest {
     assertThat(creatives.findByExperimentId(experiment.getId())).isEmpty();
   }
 
+  /** Bloqueia copy maior que o contrato publicável antes de alterar a seleção do vídeo. */
+  @Test
+  void rejectsCopyOutsidePublicationContract() throws Exception {
+    mvc.perform(
+            post("/api/experiments/"
+                    + experiment.getId()
+                    + "/video-assets/"
+                    + approved.getId()
+                    + "/creative")
+                .header("X-Tenant-ID", "default")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    json.writeValueAsString(
+                        Map.of(
+                            "headline", "12345678901234567890123456789012345678901",
+                            "primaryText", "Texto"))))
+        .andExpect(status().isBadRequest());
+    assertThat(creatives.findByExperimentId(experiment.getId())).isEmpty();
+  }
+
+  /** Aceita o limite Unicode exato sem contar cada emoji como dois caracteres. */
+  @Test
+  void acceptsUnicodePublicationBoundary() throws Exception {
+    mvc.perform(
+            post("/api/experiments/"
+                    + experiment.getId()
+                    + "/video-assets/"
+                    + approved.getId()
+                    + "/creative")
+                .header("X-Tenant-ID", "default")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    json.writeValueAsString(
+                        Map.of(
+                            "headline", "😀".repeat(40),
+                            "primaryText", "😀".repeat(125),
+                            "description", "😀".repeat(25)))))
+        .andExpect(status().isOk());
+  }
+
   /** Permite completar uma substituição explícita posterior sem criar outro anúncio. */
   @Test
   void completesReplacementForExistingCreative() throws Exception {

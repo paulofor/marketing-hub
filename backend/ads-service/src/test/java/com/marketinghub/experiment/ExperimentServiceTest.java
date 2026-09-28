@@ -7,6 +7,7 @@ import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
+import com.marketinghub.experiment.dto.UpdateExperimentPublishingIdentityRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.funnel.ExperimentFunnelEvent;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
@@ -275,6 +276,74 @@ class ExperimentServiceTest {
   private InstagramAccount createInstagramAccount() {
     return instagramAccountRepository.save(
         InstagramAccount.builder().name("Conta Teste").handle("@contateste").code("IG-1").build());
+  }
+
+  /** Salva a identidade sem exigir métricas e sem alterar a janela comercial já persistida. */
+  @Test
+  void updatePublishingIdentityIsIndependentFromMetricsAndMediaPlan() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("QA identidade").build());
+    var hypothesis =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("QA identidade")
+                .build());
+    InstagramAccount previousInstagram = createInstagramAccount();
+    InstagramAccount officialInstagram =
+        instagramAccountRepository.save(
+            InstagramAccount.builder()
+                .name("Instagram oficial")
+                .handle("@oficial")
+                .code("IG-OFFICIAL")
+                .build());
+    FacebookAccount account =
+        facebookAccountRepository.save(
+            FacebookAccount.builder().name("Conta oficial").currency("BRL").build());
+    FacebookPage page =
+        facebookPageRepository.save(
+            FacebookPage.builder()
+                .account(account)
+                .pageId("page-official")
+                .name("Página oficial")
+                .build());
+    Experiment experiment =
+        experimentRepository.save(
+            Experiment.builder()
+                .niche(niche)
+                .hypothesisRef(hypothesis)
+                .name("Experimento sem métricas " + UUID.randomUUID())
+                .hypothesis("Validar identidade oficial")
+                .status(ExperimentStatus.PLANNED)
+                .platform(ExperimentPlatform.FACEBOOK)
+                .stage(ExperimentStage.AD)
+                .primaryVariable("Identidade")
+                .primaryMetric("Compra")
+                .startDate(LocalDate.of(2026, 9, 29))
+                .endDate(LocalDate.of(2026, 9, 30))
+                .instagramAccount(previousInstagram)
+                .build());
+
+    Experiment updated =
+        service.updatePublishingIdentity(
+            experiment.getId(),
+            new UpdateExperimentPublishingIdentityRequest(page.getId(), officialInstagram.getId()));
+
+    assertThat(updated.getFacebookPage().getId()).isEqualTo(page.getId());
+    assertThat(updated.getInstagramAccount().getId()).isEqualTo(officialInstagram.getId());
+    assertThat(updated.getKpiTargetCpl()).isNull();
+    assertThat(updated.getMetricPreset()).isNull();
+    assertThat(updated.getStartDate()).isEqualTo(LocalDate.of(2026, 9, 29));
+    assertThat(updated.getEndDate()).isEqualTo(LocalDate.of(2026, 9, 30));
+
+    updated.setFacebookReleaseRequestedAt(Instant.now());
+    experimentRepository.saveAndFlush(updated);
+    assertThatThrownBy(
+            () ->
+                service.updatePublishingIdentity(
+                    experiment.getId(),
+                    new UpdateExperimentPublishingIdentityRequest(null, previousInstagram.getId())))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("antes da liberação");
   }
 
   private JourneyTemplate createJourneyTemplate() {

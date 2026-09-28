@@ -11,3 +11,20 @@ services:
       interval: 3s
       timeout: 3s
       retries: 30
+  stop-reason-test:
+    profiles: ["test"]
+    build:
+      context: ../../..
+      dockerfile: infra/testing/facebook-resumption/Dockerfile.stop-reason-test
+    image: marketinghub-facebook-stop-reason-test:local
+    working_dir: /workspace/backend/ads-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      VEGA91_MYSQL_URL: jdbc:mysql://mysql:3306/resumption_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    command:
+      - mvn
+      - -q
+      - -Dtest=FacebookCampaignStopReasonMysqlTest
+      - test

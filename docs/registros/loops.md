@@ -7649,3 +7649,14 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   temporal, liquidação do run, direto vencido/sem prazo, isolamento de falhas do scheduler, schema
   MySQL 5.7 e UI com configuração `ACTIVE` separada de “Janela encerrada”. Métricas e recomendações
   deixam de repetir depois de `metrics_final_synced_at`.
+- **Falha secundária encontrada na homologação publicada:** o primeiro callback temporal real de
+  #91 chegou ao backend em 28/09, mas o MySQL devolveu erro 1265 para
+  `CAMPAIGN_AUTHORIZED_WINDOW_ENDED`. Três changesets anteriores de conversão constavam como
+  executados; a inspeção do schema mostrou `facebook_ads_campaign.stop_reason` e
+  `campaign_strategy_evaluation.stop_reason` novamente como `ENUM`. O histórico e
+  `spring.jpa.hibernate.ddl-auto=update` confirmaram que os campos `@Enumerated` sem tipo JDBC
+  explícito desfaziam a convergência do Liquibase durante o bootstrap.
+- **Fechamento da recorrência:** as duas entidades fixam `JdbcTypeCode(SqlTypes.VARCHAR)` e
+  `columnDefinition = "VARCHAR(100)"`; um changeset novo repara ambas as colunas idempotentemente.
+  O teste de contrato valida master/include relativo, SQL MySQL 5.7 e as anotações que impedem o
+  Hibernate de recriar o tipo nativo.

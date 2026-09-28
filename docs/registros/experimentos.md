@@ -7374,4 +7374,8 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
 - A tela separa **Configuração Meta** de **Entrega atual**, renomeia `RUNNING` para **Em operação** e
   substitui “Em dia” por **Configuração completa**. Estado ativo nunca mais é apresentado como prova
   de veiculação.
+- Na validação publicada, #89 e #90 foram reconciliados, mas o primeiro callback de #91 revelou
+  que o Hibernate havia recriado `stop_reason` como `ENUM` mesmo após três migrations históricas
+  para `VARCHAR`. O reparo fixa o tipo JDBC nas duas entidades afetadas e reconverte ambas as
+  colunas, impedindo que um novo motivo comercial volte a falhar no banco.
 - Matriz e evidências: `docs/homologacao/reconciliacao-janelas-experimentos-v1.md`.

@@ -277,7 +277,17 @@ class PublicConsistencyTest(unittest.TestCase):
     def test_ci_executes_contract_before_publication(self):
         workflow = (ROOT / ".github/workflows/pde-platform-metodo-musa-ci.yml").read_text()
         self.assertEqual(workflow.count('      - "scripts/check-musa-pde-public-consistency.sh"'), 2)
-        self.assertEqual(workflow.count('      - "scripts/test-musa-pde-public-consistency.py"'), 2)
+        self.assertEqual(
+            workflow.count('      - "scripts/test-musa-pde-public-consistency.py"'),
+            1,
+        )
+        pull_request_paths = workflow.split("  pull_request:\n", 1)[1].split(
+            "  workflow_dispatch:\n", 1
+        )[0]
+        self.assertIn(
+            '      - "scripts/test-musa-pde-public-consistency.py"',
+            pull_request_paths,
+        )
         self.assertIn("run: python3 ../../scripts/test-musa-pde-public-consistency.py", workflow)
 
 

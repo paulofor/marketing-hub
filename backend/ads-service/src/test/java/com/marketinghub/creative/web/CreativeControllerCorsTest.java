@@ -14,6 +14,7 @@ import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.creative.service.video.VideoCreativeService;
+import com.marketinghub.creative.service.visual.ApprovedVisualAssetCreativeService;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.storage.AssetUploadCategory;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,8 @@ class CreativeControllerCorsTest {
   @MockBean private CreativeService creativeService;
 
   @MockBean private VideoCreativeService videoCreativeService;
+
+  @MockBean private ApprovedVisualAssetCreativeService approvedVisualAssetCreativeService;
 
   @MockBean private CreativeMapper creativeMapper;
 

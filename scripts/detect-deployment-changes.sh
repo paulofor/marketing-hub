@@ -72,14 +72,15 @@ while IFS= read -r file; do
     deploy/bin/*) app_deploy_sync=true ;;
     deploy/docker-compose.yml) app_deploy_descriptor=true ;;
     deploy/nginx/*) app_deploy_descriptor=true ;;
+    # Relatórios isolados não alteram o runtime: toda evidência comercial vigente deve
+    # chegar por contrato versionado em pde-platform, que permanece um gatilho explícito.
     customer-agent-worker/*) customer_agent=true ;;
     meta-ad-approver-worker/src/*) customer_agent=true ;;
     pde-platform/*) customer_agent=true ;;
-    docs/homologacao/*|docs/registros/*) customer_agent=true ;;
-    scripts/build-commercial-review-evidence.mjs|scripts/build-commercial-review-evidence.test.mjs) customer_agent=true ;;
+    scripts/build-commercial-review-evidence.mjs) customer_agent=true ;;
     scripts/generate-musa-v7-canonical-contract-changelog.mjs) customer_agent=true ;;
-    scripts/test-isolated-agent-codex-auth.sh|scripts/codex-app-server-device-login.mjs) customer_agent=true ;;
-    scripts/coordinate-agent-deployment.mjs|scripts/coordinate-agent-deployment.test.mjs) customer_agent=true ;;
+    scripts/codex-app-server-device-login.mjs) customer_agent=true ;;
+    scripts/coordinate-agent-deployment.mjs) customer_agent=true ;;
   esac
 done <<< "${changed_files}"
 

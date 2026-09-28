@@ -9,15 +9,10 @@ on:
       - pde-platform/**
       - backend/ads-service/src/main/resources/db/changelog/**
       - backend/ads-service/src/test/java/com/marketinghub/pde/**
-      - docs/homologacao/**
-      - docs/registros/**
       - scripts/build-commercial-review-evidence.mjs
-      - scripts/build-commercial-review-evidence.test.mjs
       - scripts/generate-musa-v7-canonical-contract-changelog.mjs
-      - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
       - scripts/coordinate-agent-deployment.mjs
-      - scripts/coordinate-agent-deployment.test.mjs
   pull_request:
     paths:
       - customer-agent-worker/**
@@ -25,8 +20,6 @@ on:
       - pde-platform/**
       - backend/ads-service/src/main/resources/db/changelog/**
       - backend/ads-service/src/test/java/com/marketinghub/pde/**
-      - docs/homologacao/**
-      - docs/registros/**
       - .github/workflows/customer-agent-worker-ci.yml
       - scripts/build-commercial-review-evidence.mjs
       - scripts/build-commercial-review-evidence.test.mjs

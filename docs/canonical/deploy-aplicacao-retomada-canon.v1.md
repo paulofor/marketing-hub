@@ -108,6 +108,14 @@ continuação não aplicável; falha da aplicação ou do teste mantém o agente
 É proibido liberar por ancestralidade presumida, usar o SHA corrente da branch no lugar do SHA do
 evento ou manter um runner fazendo polling durante toda a fila central.
 
+Documentação isolada — incluindo arquivos em `docs/canonical/**`, `docs/homologacao/**` e
+`docs/registros/**` — não aciona teste, empacotamento ou publicação de agentes nem superfícies PDE.
+Quando uma evidência documental precisa alterar o runtime, a mesma mudança deve atualizar um
+contrato versionado em `pde-platform/contracts/**`; esse contrato é o gatilho auditável da
+validação e da publicação. Assim, relatórios operacionais como a retirada de um coletor não
+reiniciam componentes comerciais sem relação com a mudança. Scripts destinados somente a teste
+também permanecem no CI de Pull Request, mas não recompilam ou reiniciam runtimes na `main`.
+
 A resolução do run de origem ocorre antes da fila compartilhada do VPS e não contém SSH, SCP ou
 rsync. Somente depois dessas provas o job remoto entra em `deploy-vps-163-245-202-80`. As imagens
 empacotadas de Psique e Íris têm retenção de sete dias para sobreviver à fila central ampliada.

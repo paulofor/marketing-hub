@@ -186,3 +186,42 @@ grep -Fxq 'backend=true' "$TEST_REPO/health-output"
 grep -Fxq 'frontend=false' "$TEST_REPO/health-output"
 grep -Fxq 'video=false' "$TEST_REPO/health-output"
 printf 'Manifesto técnico isolado encaminhado à reconstrução do backend.\n'
+
+# Relatórios operacionais não podem reiniciar Psique/Íris; a mudança de runtime exige contrato PDE.
+document_base="$(git -C "$TEST_REPO" rev-parse HEAD)"
+mkdir -p "$TEST_REPO/docs/registros" "$TEST_REPO/docs/homologacao"
+printf 'ClickBank aposentado sem consumo comercial.\n' > "$TEST_REPO/docs/registros/mois-clickbank.md"
+printf 'Homologação operacional sem mudança de agente.\n' > "$TEST_REPO/docs/homologacao/mois-clickbank.md"
+git -C "$TEST_REPO" add docs
+git -C "$TEST_REPO" commit -qm 'registro operacional isolado'
+document_head="$(git -C "$TEST_REPO" rev-parse HEAD)"
+(
+  cd "$TEST_REPO"
+  bash "$DETECT_SCRIPT" "$document_base" "$document_head" "$TEST_REPO/document-output" "$document_base" "$document_base"
+)
+grep -Fxq 'customer_agent=false' "$TEST_REPO/document-output"
+
+test_only_base="$(git -C "$TEST_REPO" rev-parse HEAD)"
+mkdir -p "$TEST_REPO/scripts"
+printf 'teste de coordenação sem mudança de runtime\n' > "$TEST_REPO/scripts/coordinate-agent-deployment.test.mjs"
+git -C "$TEST_REPO" add scripts/coordinate-agent-deployment.test.mjs
+git -C "$TEST_REPO" commit -qm 'teste isolado de coordenação'
+test_only_head="$(git -C "$TEST_REPO" rev-parse HEAD)"
+(
+  cd "$TEST_REPO"
+  bash "$DETECT_SCRIPT" "$test_only_base" "$test_only_head" "$TEST_REPO/test-only-output" "$test_only_base" "$test_only_base"
+)
+grep -Fxq 'customer_agent=false' "$TEST_REPO/test-only-output"
+
+contract_base="$(git -C "$TEST_REPO" rev-parse HEAD)"
+mkdir -p "$TEST_REPO/pde-platform/contracts"
+printf '{"contractVersion":"runtime-evidence-v1"}\n' > "$TEST_REPO/pde-platform/contracts/runtime-evidence-v1.json"
+git -C "$TEST_REPO" add pde-platform/contracts/runtime-evidence-v1.json
+git -C "$TEST_REPO" commit -qm 'contrato de evidência do runtime'
+contract_head="$(git -C "$TEST_REPO" rev-parse HEAD)"
+(
+  cd "$TEST_REPO"
+  bash "$DETECT_SCRIPT" "$contract_base" "$contract_head" "$TEST_REPO/contract-output" "$contract_base" "$contract_base"
+)
+grep -Fxq 'customer_agent=true' "$TEST_REPO/contract-output"
+printf 'Documentação isolada não publica agentes; contrato versionado preserva o gatilho.\n'

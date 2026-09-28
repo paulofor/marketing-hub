@@ -34,12 +34,37 @@ test("CI do catálogo confere as provas compartilhadas após os testes do PDE", 
   );
   assert.ok(backend.includes("node-version: 22"));
   assert.doesNotMatch(backend, /continue-on-error|\|\| true/);
-  for (const source of [
-    "scripts/build-commercial-review-evidence.mjs",
-    "scripts/build-commercial-review-evidence.test.mjs",
-  ]) {
-    assert.equal(workflow.split(`      - "${source}"`).length - 1, 2);
-  }
+  assert.equal(
+    workflow.split('      - "scripts/build-commercial-review-evidence.mjs"').length - 1,
+    2,
+  );
+  assert.equal(
+    workflow.split('      - "scripts/build-commercial-review-evidence.test.mjs"').length - 1,
+    1,
+    "teste de evidência deve validar PR sem publicar a superfície PDE na main",
+  );
+  const pullRequestPaths =
+    workflow
+      .split(/^  pull_request:\s*$/m)[1]
+      ?.split(/^  [a-z][\w-]*:\s*$/m)[0] ?? "";
+  assert.match(
+    pullRequestPaths,
+    /- "scripts\/build-commercial-review-evidence\.test\.mjs"/,
+  );
+  const pushPaths =
+    workflow
+      .split(/^  push:\s*$/m)[1]
+      ?.split(/^  [a-z][\w-]*:\s*$/m)[0] ?? "";
+  assert.doesNotMatch(
+    pushPaths,
+    /- "\.github\/workflows\/pde-platform-metodo-musa-ci\.yml"/,
+    "mudança isolada do workflow PDE não deve publicar runtime",
+  );
+  assert.match(
+    pullRequestPaths,
+    /- "\.github\/workflows\/pde-platform-metodo-musa-ci\.yml"/,
+    "mudança do workflow PDE deve continuar validada no Pull Request",
+  );
 });
 
 async function fixture(t) {
@@ -289,7 +314,17 @@ test("workflows e matriz Mira executam a validação compartilhada", async () =>
     assert.equal(
       workflow.split("- scripts/build-commercial-review-evidence.test.mjs")
         .length - 1,
-      2,
+      1,
+      "teste de evidência fica no Pull Request e não deve republicar o worker na main",
+    );
+    const pullRequestPaths =
+      workflow
+        .split(/^  pull_request:\s*$/m)[1]
+        ?.split(/^  [a-z][\w-]*:\s*$/m)[0] ?? "";
+    assert.match(
+      pullRequestPaths,
+      /- scripts\/build-commercial-review-evidence\.test\.mjs/,
+      "teste de evidência deve continuar no CI de Pull Request",
     );
     assert.ok(
       workflow.includes(

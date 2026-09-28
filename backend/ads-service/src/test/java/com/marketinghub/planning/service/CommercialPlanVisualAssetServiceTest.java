@@ -23,9 +23,13 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -109,6 +113,52 @@ class CommercialPlanVisualAssetServiceTest {
 
     assertThat(result.purpose()).isEqualTo("PRODUCT_PROOF");
     assertThat(result.purposes()).containsExactly("PRODUCT_PROOF");
+  }
+
+  /** Deve rejeitar em HTTP 400 metadados maiores que as colunas canônicas. */
+  @ParameterizedTest(name = "rejeita {0} acima de {2} caracteres")
+  @MethodSource("overlongMetadata")
+  void rejectsMetadataThatExceedsDatabaseContract(
+      String field, CreateCommercialPlanVisualAssetRequest request, int maxLength) {
+    assertThatThrownBy(() -> service.create(2L, request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining(field + " must have at most " + maxLength + " characters");
+  }
+
+  /** Fornece um caso excedente para cada coluna textual do cadastro manual. */
+  private static Stream<Arguments> overlongMetadata() {
+    String url = "https://cdn.example/proof.png";
+    return Stream.of(
+        Arguments.of(
+            "assetUrl",
+            new CreateCommercialPlanVisualAssetRequest(
+                "x".repeat(2049), "IMAGE", "Prova", "PRODUCT_PROOF", "Produto", "Autorizado"),
+            2048),
+        Arguments.of(
+            "mediaType",
+            new CreateCommercialPlanVisualAssetRequest(
+                url, "x".repeat(17), "Prova", "PRODUCT_PROOF", "Produto", "Autorizado"),
+            16),
+        Arguments.of(
+            "label",
+            new CreateCommercialPlanVisualAssetRequest(
+                url, "IMAGE", "x".repeat(192), "PRODUCT_PROOF", "Produto", "Autorizado"),
+            191),
+        Arguments.of(
+            "purpose",
+            new CreateCommercialPlanVisualAssetRequest(
+                url, "IMAGE", "Prova", "x".repeat(65), "Produto", "Autorizado"),
+            64),
+        Arguments.of(
+            "origin",
+            new CreateCommercialPlanVisualAssetRequest(
+                url, "IMAGE", "Prova", "PRODUCT_PROOF", "x".repeat(192), "Autorizado"),
+            191),
+        Arguments.of(
+            "rightsStatement",
+            new CreateCommercialPlanVisualAssetRequest(
+                url, "IMAGE", "Prova", "PRODUCT_PROOF", "Produto", "x".repeat(513)),
+            512));
   }
 
   /** Bloqueia finalidade livre que fragmentaria a biblioteca e sua linhagem. */

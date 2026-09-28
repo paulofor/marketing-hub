@@ -7742,3 +7742,18 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Prevenção:** `capture-mira-commercial-review-evidence.mjs`, manifesto v5 e Playwright nos três
   perfis impedem anexar novamente uma landing parcial. Timeout, promessa antiga ou elemento
   ausente falham a captura antes de Psique e preservam a causa observável.
+
+## LOOP-BIBLIOTECA-VISUAL-METADADO-MAIOR-QUE-SCHEMA — 28/09/2026
+
+- **Evidência confirmada:** o cadastro oficial da prova de Mira respondeu HTTP 500 no request
+  `e5bd02a9-0f2c-4055-85f6-1c9b86c13718`; o log preservou o erro MySQL 1406 em `origin`, e a
+  inspeção do schema confirmou `VARCHAR(191)` enquanto a tela aceitava texto sem limite.
+- **Causa-raiz:** o serviço validava somente preenchimento e delegava o tamanho ao banco; a tela
+  também não espelhava os limites nem associava rótulos aos campos. Assim, um erro determinístico
+  de contrato chegava à persistência como falha interna, sem orientação útil ao operador.
+- **Alternativas avaliadas:** encurtar apenas o registro de Mira esconderia a recorrência; ampliar
+  as colunas aumentaria armazenamento e não criaria contrato de entrada; alinhar serviço e tela ao
+  schema vigente previne todos os metadados excedentes com o menor risco. Foi adotada a terceira.
+- **Correção e prevenção:** o serviço normaliza e rejeita em HTTP 400 os seis campos acima dos
+  limites canônicos; a tela espelha os mesmos tamanhos, liga rótulos e entradas e mostra erro de
+  validação. Testes parametrizados cobrem cada coluna e um teste de interface fixa os limites.

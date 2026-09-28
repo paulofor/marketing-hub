@@ -39,6 +39,12 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class CommercialPlanVisualAssetService {
   private static final Logger log = LoggerFactory.getLogger(CommercialPlanVisualAssetService.class);
+  private static final int ASSET_URL_MAX_LENGTH = 2048;
+  private static final int MEDIA_TYPE_MAX_LENGTH = 16;
+  private static final int LABEL_MAX_LENGTH = 191;
+  private static final int PURPOSE_MAX_LENGTH = 64;
+  private static final int ORIGIN_MAX_LENGTH = 191;
+  private static final int RIGHTS_STATEMENT_MAX_LENGTH = 512;
   private static final Set<String> PURPOSES =
       Set.of("ADS", "LANDING", "SOCIAL", "DELIVERY", "PRODUCT_PROOF");
   private final CommercialPlanService planService;
@@ -132,21 +138,22 @@ public class CommercialPlanVisualAssetService {
   @Transactional
   public CommercialPlanVisualAssetDto create(
       Long planId, CreateCommercialPlanVisualAssetRequest request) {
-    require(request.assetUrl(), "assetUrl");
-    require(request.mediaType(), "mediaType");
-    require(request.label(), "label");
-    require(request.purpose(), "purpose");
-    require(request.origin(), "origin");
-    require(request.rightsStatement(), "rightsStatement");
+    String assetUrl = require(request.assetUrl(), "assetUrl", ASSET_URL_MAX_LENGTH);
+    String mediaType = require(request.mediaType(), "mediaType", MEDIA_TYPE_MAX_LENGTH);
+    String label = require(request.label(), "label", LABEL_MAX_LENGTH);
+    String purpose = require(request.purpose(), "purpose", PURPOSE_MAX_LENGTH);
+    String origin = require(request.origin(), "origin", ORIGIN_MAX_LENGTH);
+    String rightsStatement =
+        require(request.rightsStatement(), "rightsStatement", RIGHTS_STATEMENT_MAX_LENGTH);
     CommercialPlanVisualAsset asset = new CommercialPlanVisualAsset();
     asset.setCommercialPlan(planService.getPlan(planId));
-    asset.setAssetUrl(request.assetUrl().trim());
-    asset.setMediaType(normalizeMediaType(request.mediaType()));
-    asset.setLabel(request.label().trim());
-    asset.setPurpose(normalizePurpose(request.purpose()));
+    asset.setAssetUrl(assetUrl);
+    asset.setMediaType(normalizeMediaType(mediaType));
+    asset.setLabel(label);
+    asset.setPurpose(normalizePurpose(purpose));
     asset.setPurposesJson(writePurposes(List.of(asset.getPurpose())));
-    asset.setOrigin(request.origin().trim());
-    asset.setRightsStatement(request.rightsStatement().trim());
+    asset.setOrigin(origin);
+    asset.setRightsStatement(rightsStatement);
     asset.setVersionNumber(
         (int) repository.countByCommercialPlanIdAndAssetUrl(planId, asset.getAssetUrl()) + 1);
     asset.setStatus(CommercialPlanVisualAssetStatus.DRAFT);
@@ -474,11 +481,17 @@ public class CommercialPlanVisualAssetService {
     return null;
   }
 
-  /** Exige metadado textual preenchido antes de persistir a referência. */
-  private void require(String value, String field) {
+  /** Exige metadado preenchido e compatível com o limite canônico da persistência. */
+  private String require(String value, String field, int maxLength) {
     if (!StringUtils.hasText(value)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, field + " is required");
     }
+    String normalized = value.trim();
+    if (normalized.length() > maxLength) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, field + " must have at most " + maxLength + " characters");
+    }
+    return normalized;
   }
 
   /** Normaliza e restringe o tipo às mídias que os executores conseguem consumir. */

@@ -504,6 +504,14 @@
   também revelou drenagem presa após retomada parcial; o reconciliador continua após os runs
   atrasados terminarem, preservando locks e sem cancelamentos. Testes em
   `scripts/test-publisher-recovery.py`; evidências em `docs/homologacao/publicadores-automaticos-2026-09-12.md`.
+- Complemento em 28/09/2026: o PR #5411 foi integrado por squash com árvore idêntica à revisão
+  homologada, mas a comparação de ancestralidade retornou `diverged` e manteve corretamente os
+  publicadores pausados. Retomar manualmente burlaria a automação; reescrever o histórico
+  adicionaria risco; foi adotada a prova pela árvore Git completa. O reconciliador agora aceita
+  squash somente quando a `main` deriva da base protegida e um commit da linha principal possui
+  árvore idêntica a `validated_tree`, registrando o commit efetivo mesmo após avanço posterior da
+  `main`. Árvores diferentes, histórico lateral e respostas incompletas continuam fechados.
+  Regressões em `scripts/test-publisher-recovery.py` previnem recorrência.
 
 > Documento auxiliar de prevenção de recorrência.
 >

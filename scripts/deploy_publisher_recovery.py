@@ -55,6 +55,8 @@ class PublisherRecovery:
                   "effective_commit": prepared.get("effective_commit", prepared["validated_commit"])}
         if prepared.get("superseded_validated_commit"):
             result["superseded_validated_commit"] = prepared["superseded_validated_commit"]
+        if prepared.get("squashed_validated_commit"):
+            result["squashed_validated_commit"] = prepared["squashed_validated_commit"]
         if state.get("recovery"):
             result.update(state["recovery"])
         if state.get("recovery_result") != result:
@@ -87,6 +89,50 @@ class PublisherRecovery:
                 authorization=prepared["supersession"],
             )
         return current_sha
+
+    def exact_tree_integration(self, state, divergent_commit, current_sha):
+        """Reconhece squash somente por árvore idêntica em um commit da linha principal."""
+        prepared = state["automatic_resume"]
+        if divergent_commit != prepared["validated_commit"] or not prepared.get("validated_tree"):
+            return None
+        candidate = current_sha
+        integrated_tree = None
+        for _ in range(256):
+            if candidate == state["initial_sha"]:
+                return None
+            main_commit = self.github.api(f"commits/{candidate}")
+            if not isinstance(main_commit, dict) or main_commit.get("sha") != candidate:
+                raise ValueError("GitHub não confirmou a identidade de um commit da linha principal.")
+            integrated_tree = main_commit.get("commit", {}).get("tree", {}).get("sha")
+            if not isinstance(integrated_tree, str) or not integrated_tree:
+                raise ValueError("GitHub não informou a árvore de um commit da linha principal.")
+            if integrated_tree == prepared["validated_tree"]:
+                break
+            parents = main_commit.get("parents")
+            if not isinstance(parents, list) or not parents or not isinstance(parents[0], dict):
+                raise ValueError("GitHub não informou a ancestralidade da linha principal.")
+            parent = parents[0].get("sha")
+            if not isinstance(parent, str) or not parent or parent == candidate:
+                raise ValueError("GitHub informou ancestralidade inválida para a linha principal.")
+            candidate = parent
+        else:
+            raise ValueError("A busca da árvore homologada excedeu o limite seguro da linha principal.")
+        if prepared.get("effective_commit") != candidate:
+            prepared["squashed_validated_commit"] = divergent_commit
+            prepared["effective_commit"] = candidate
+            prepared["tree_equivalence"] = {
+                "validated_tree": prepared["validated_tree"],
+                "integrated_tree": integrated_tree,
+                "verified_at": datetime.now().astimezone().isoformat(),
+            }
+            self.coordinator.checkpoint(
+                state,
+                "squash_integration_verified",
+                validated_commit=divergent_commit,
+                integrated_commit=candidate,
+                tree=integrated_tree,
+            )
+        return candidate
 
     def observe_receipts(self, state, workflows):
         """Lê recibos pelo ID exato, inclusive se main avançou entre a conferência e o dispatch."""
@@ -204,7 +250,13 @@ class PublisherRecovery:
             }:
                 raise ValueError("Comparação de revisões inválida; integração não comprovada e pausa preservada.")
             if comparison["status"] not in {"ahead", "identical"}:
-                return self.outcome(state, "WAITING", "A revisão homologada ainda não está integrada à main.")
+                replacement = None
+                if label == "revisão validada":
+                    replacement = self.exact_tree_integration(state, commit, sha)
+                if replacement:
+                    effective_commit = replacement
+                else:
+                    return self.outcome(state, "WAITING", "A revisão homologada ainda não está integrada à main.")
         if state["phase"] != "RELEASED":
             enabled, pending = self.coordinator.inspect(state)
             if pending:

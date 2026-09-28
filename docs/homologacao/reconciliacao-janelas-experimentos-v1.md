@@ -60,6 +60,27 @@ falha de hipótese. Campanhas vencidas recebem uma medição final e saem das ro
   página sem overflow, com rolagem restrita à tabela.
 - Scripts e diff: `bash -n`, ShellCheck e `git diff --check` aprovados.
 
+## Defeito revelado pela primeira execução publicada
+
+O backend e os workers chegaram à `main` no SHA `73fe8fd892482c6eb99c070a12d4a8067be23d61`.
+#89 e #90 foram encerrados como `INCONCLUSIVE`; no primeiro retrato temporal real de #91, o backend
+registrou erro MySQL 1265 ao persistir `CAMPAIGN_AUTHORIZED_WINDOW_ENDED`. O schema produtivo
+comprovou que `facebook_ads_campaign.stop_reason` e `campaign_strategy_evaluation.stop_reason`
+estavam como `ENUM`, apesar de três changesets de conversão constarem como executados.
+
+A comparação com o histórico confirmou que `spring.jpa.hibernate.ddl-auto=update` revertia as
+colunas após o Liquibase porque os campos `@Enumerated` não declaravam o tipo JDBC. A correção
+adota `VARCHAR(100)` explícito nas duas entidades, aplica changeset reparador idempotente e adiciona
+teste de contrato contra nova deriva.
+
+O teste físico corretivo foi executado em MySQL 5.7 efêmero e segregado: partiu das duas colunas
+como `ENUM`, preservou os valores existentes, converteu ambas para `VARCHAR(100)`, reaplicou o
+changelog sem executar mudança adicional e persistiu `CAMPAIGN_AUTHORIZED_WINDOW_ENDED`. A imagem
+do teste é construída pelo Dockerfile versionado e a topologia, rede e volumes temporários foram
+removidos ao final. A rodada corretiva também aprovou os 3.645 testes do backend, sem falha ou erro,
+Spotless, o validador Liquibase/MySQL 5.7, a configuração Compose e a integridade do diff. A
+comprovação produtiva final de #91 permanece como gate da entrega.
+
 ## Limites comerciais preservados
 
 - A correção não autoriza gasto, nova campanha, novo prazo ou reativação.

@@ -17,6 +17,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /** Registra uma avaliacao auditavel feita pela estrategia de campanha. */
 @Entity
@@ -66,7 +68,8 @@ public class CampaignStrategyEvaluation {
   private BigDecimal checkoutRate;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "stop_reason", length = 100)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "stop_reason", columnDefinition = "VARCHAR(100)", length = 100)
   private FacebookCampaignStopReason stopReason;
 
   @CreationTimestamp

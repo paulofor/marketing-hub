@@ -12,7 +12,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 /** Representa a campanha publicada na Meta para um experimento do Marketing Hub. */
 @Entity
@@ -102,7 +104,8 @@ public class FacebookAdsCampaign {
   private String apiVersion;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "stop_reason", length = 100)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "stop_reason", columnDefinition = "VARCHAR(100)", length = 100)
   private FacebookCampaignStopReason stopReason;
 
   @Column(name = "stop_requested_at")

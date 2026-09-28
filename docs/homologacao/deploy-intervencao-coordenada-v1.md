@@ -43,7 +43,8 @@ falha após a última correção. Limitações e operação real serão registra
 1. Confirmar a autorização já existente e finalizar investigação, implementação e testes locais.
 2. Abrir a proteção com os componentes que serão alterados. `app` inclui o publicador central
    (backend/frontend e vídeo no mesmo workflow), Argos, Psique e Íris. `pde` inclui o publicador
-   PDE e a recuperação de proxy. Os demais agentes são selecionáveis individualmente.
+   PDE e a recuperação de proxy. `mois-clickbank` protege exclusivamente o coletor ClickBank; os
+   demais agentes são selecionáveis individualmente.
 3. Guardar o `id` retornado. `DRAINING`/exit 75 significa que ainda não é seguro intervir.
    Consultar `status` e repetir `protect --id ...` após as execuções existentes terminarem.
 4. Se necessário, executar `discard-unstarted --id ... --keep-run ...` para retirar revisões

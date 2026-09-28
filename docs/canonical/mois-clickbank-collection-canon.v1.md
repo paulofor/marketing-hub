@@ -10,6 +10,22 @@ Este documento é a fonte única de verdade para a coleta ClickBank no MOIS, con
 
 A referência principal para comportamento é o código do submódulo `mois-clickbank-collector`.
 
+## 1.1 Estado operacional vigente
+
+Desde 2026-09-28, o runtime ClickBank está retirado da produção. A auditoria confirmou que não há
+referências ClickBank persistidas, páginas ingeridas ou consumo pelo Product Discovery, enquanto os
+três ciclos horários geravam falhas e carga no VPS MOIS. O código e o contrato HTTP permanecem
+versionados para reativação controlada, mas nenhuma coleta automática pode ocorrer até que existam:
+
+1. consumidor de evidência ClickBank validado ponta a ponta;
+2. lote persistido sem duplicidade de identidade;
+3. confirmação de que a evidência entra em uma decisão comercial auditável.
+
+A retirada ou reativação ocorre sob o escopo controlado `mois-clickbank`; a reativação usa apenas
+o despacho manual `activate` do workflow do módulo, seguida de homologação do consumidor. O
+Compose produtivo impõe o scheduler desabilitado; uma futura cadência exige alteração versionada
+após a homologação do consumidor.
+
 ## 2. Escopo atual implementado (fonte: código)
 
 A coleta executada hoje pelo endpoint padrão de coleção chama o **Ciclo 3 (GraphQL)**:
@@ -96,7 +112,7 @@ Principais chaves:
 - `collector.clickbank.top-offers-url` (default `https://www.clickbank.com/blog/clickbank-top-offers/`)
 - `collector.backend.base-url` (default `http://191.252.181.168:8000`)
 - `collector.clickbank.jwt-setting-key` (default `clickbank_access_token_jwt`)
-- `collector.scheduler.enabled` (default `true`; ClickBank voltou a ser fonte ativa recorrente de Argos em 2026-08-14)
+- `collector.scheduler.enabled` (default `false`; fonte suspensa até existir consumidor validado)
 - `collector.scheduler.cron` (default `0 0 * * * *`)
 - `collector.scheduler.max-products` (default `25`)
 - `collector.clickbank.username-file` e `collector.clickbank.password-file`: arquivos de uma conta dedicada e restrita, montados somente para leitura; quando configurados, prevalecem sobre variáveis legadas.
@@ -114,9 +130,11 @@ Para diagnóstico e rastreabilidade, manter logging do payload bruto recebido da
 
 ## 7. Consolidação documental
 
-## 6.1 Cadência diária do Radar
+## 6.1 Cadência do Radar
 
-O scheduler permanece ativo e alterna os três ciclos a cada hora, entregando cobertura diária superior ao mínimo do Radar. Token ausente ou inválido mantém o ciclo como `COLLECTION_SKIPPED`; não gera sinal negativo de mercado.
+Não existe cadência automática ClickBank no estado vigente. Quando o consumidor for reativado e
+homologado, a frequência deve ser definida no executor, com limite de custo e evidência de uso; token
+ausente ou inválido continua sendo lacuna operacional, nunca sinal negativo de mercado.
 
 Este documento substitui, como referência operacional principal, os conteúdos antes espalhados em:
 - `docs/mois-clickbank-coletor.md`

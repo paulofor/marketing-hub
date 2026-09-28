@@ -21,9 +21,11 @@ import java.net.http.HttpResponse;
 import java.util.LinkedHashSet;
 import java.util.Iterator;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.nio.file.Path;
 import org.slf4j.Logger;
@@ -534,10 +536,20 @@ public class ClickbankCollectorService {
         }
     }
 
+    /** Converte produtos em referências únicas para não invalidar todo o lote no backend. */
     private List<Map<String, Object>> toCollectedReferences(String jobId, String source, List<ClickbankProductSnapshot> products) {
         List<Map<String, Object>> references = new ArrayList<>();
+        Set<String> referenceIds = new HashSet<>();
         int position = 1;
         for (ClickbankProductSnapshot product : products) {
+            String referenceId = stableClickbankReference(product);
+            if (!referenceIds.add(referenceId)) {
+                log.warn(
+                        "Referência ClickBank duplicada descartada antes da persistência. jobId={}, referenceId={}",
+                        jobId,
+                        referenceId);
+                continue;
+            }
             Map<String, String> rawMetadata = new HashMap<>();
             rawMetadata.put("productName", product.title());
             rawMetadata.put("productUrl", product.detailsUrl());
@@ -553,7 +565,7 @@ public class ClickbankCollectorService {
             rawMetadata.put("producerName", null);
 
             Map<String, Object> reference = new HashMap<>();
-            reference.put("referenceId", stableClickbankReference(product));
+            reference.put("referenceId", referenceId);
             reference.put("jobId", jobId);
             reference.put("source", "CLICKBANK");
             reference.put("title", product.title());
@@ -676,7 +688,7 @@ public class ClickbankCollectorService {
         }
     }
 
-    /* legacy Playwright flow kept below for rollback safety */
+    /** Executa o fallback Playwright e sempre libera navegador e contexto, inclusive em falhas. */
     private ClickbankCollectionResponse legacyCollect(ClickbankCollectionRequest request) {
         int boundedMax = request.maxProducts() <= 0 ? 10 : Math.min(request.maxProducts(), 50);
         List<ClickbankProductSnapshot> products = new ArrayList<>();
@@ -685,6 +697,8 @@ public class ClickbankCollectorService {
         boolean hasSessionCookie = clickbankSessionCookie != null && !clickbankSessionCookie.isBlank();
         boolean hasCredentials = clickbankUsername != null && !clickbankUsername.isBlank()
                 && clickbankPassword != null && !clickbankPassword.isBlank();
+        Browser browser = null;
+        BrowserContext context = null;
         try (Playwright playwright = Playwright.create()) {
             String browserPath = playwright.chromium().executablePath();
             List<String> launchArgs = List.of("--no-sandbox", "--disable-dev-shm-usage");
@@ -698,8 +712,8 @@ public class ClickbankCollectorService {
                 log.info("Usando Chromium com executablePath explícito: '{}'", chromiumExecutablePath);
             }
 
-            Browser browser = playwright.chromium().launch(launchOptions);
-            BrowserContext context = browser.newContext();
+            browser = playwright.chromium().launch(launchOptions);
+            context = browser.newContext();
             Page page = context.newPage();
 
             authenticateClickbank(context, page, hasSessionCookie, hasCredentials);
@@ -746,8 +760,6 @@ public class ClickbankCollectorService {
             }
 
             log.info("Coleta Clickbank finalizada com sucesso. produtosColetados={}", products.size());
-            context.close();
-            browser.close();
         } catch (Exception ex) {
             status = "COLLECTION_ERROR";
             message = "Falha na coleta Playwright: " + ex.getMessage();
@@ -759,6 +771,21 @@ public class ClickbankCollectorService {
                     clickbankMarketUrl,
                     ex
             );
+        } finally {
+            if (context != null) {
+                try {
+                    context.close();
+                } catch (Exception ex) {
+                    log.warn("Falha ao fechar contexto Playwright ClickBank.", ex);
+                }
+            }
+            if (browser != null) {
+                try {
+                    browser.close();
+                } catch (Exception ex) {
+                    log.warn("Falha ao fechar navegador Playwright ClickBank.", ex);
+                }
+            }
         }
 
         return new ClickbankCollectionResponse(status, message, products);

@@ -2019,3 +2019,17 @@ Arquivos principais:
 - O backend passou a enfileirar candidatos por pipeline, registrando `pipeline_code` na auditoria e mantendo custos por página e no total da biblioteca.
 - Regra OpenAI consolidada: tentativa 1 Flex, tentativa 2 Flex e tentativa 3 Standard/default.
 - Prevenção de recorrência: testes ArchUnit protegem separação entre pipelines no worker e impedem que o backend da biblioteca vire executor runtime de OpenAI.
+
+## 2026-09-28 — Retirada operacional do coletor ClickBank sem consumo comercial
+
+- Auditoria por logs e banco confirmou scheduler horário ativo, sem referências ClickBank persistidas,
+  ingestão de páginas ou consumo pelo Product Discovery. Em sete dias, houve execuções vazias e
+  falhas recorrentes de GraphQL/Playwright no VPS MOIS saturado.
+- Causa-raiz: o runtime permaneceu ativo apesar de a Biblioteca operar somente com Hotmart; o lote
+  público ainda continha identidades duplicadas, que violavam a chave única do backend e descartavam
+  toda a coleta.
+- Correção sistêmica: workflow de `main` retira o container ClickBank; a reativação exige despacho
+  manual, consumidor validado, persistência sem duplicidade e evidência de uso auditável. O coletor
+  também passou a descartar duplicidades antes da persistência e a fechar Playwright em falhas.
+- Objetivo: liberar CPU e memória para vídeo, Meta e Hotmart sem perder a capacidade de reativar a
+  fonte quando ela gerar inteligência comercial utilizável.

@@ -3,13 +3,16 @@ package com.marketinghub.moisclickbank.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.moisclickbank.dto.ClickbankDtos.ClickbankCollectionRequest;
 import com.sun.net.httpserver.HttpServer;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
+/** Valida os contratos de coleta e persistência do coletor ClickBank. */
 class ClickbankCollectorServiceTest {
 
     @Test
@@ -79,6 +82,56 @@ class ClickbankCollectorServiceTest {
             assertEquals("https://www.clickbank.com/market/product/vin-checkup", product.detailsUrl());
             assertEquals("https://get.vincheckup.com/", product.salesPageUrl());
             assertTrue(product.collectedAt() != null);
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    /** Garante que identidades repetidas não descartem um lote inteiro no backend. */
+    @Test
+    void shouldPersistOnlyOneReferenceWhenTopOffersShareTheSameStableIdentity() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        AtomicReference<String> persistedPayload = new AtomicReference<>();
+        server.createContext("/top-offers", exchange -> {
+            String html = """
+                    <html><body>
+                      <h2>1) <a href="/market/product/shared-offer">Primeira descrição</a></h2>
+                      <p><strong>Nickname:</strong> first</p>
+                      <p><strong>Category:</strong> Health</p>
+                      <h2>2) <a href="/market/product/shared-offer">Segunda descrição</a></h2>
+                      <p><strong>Nickname:</strong> second</p>
+                      <p><strong>Category:</strong> Health</p>
+                    </body></html>
+                    """;
+            byte[] bytes = html.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
+            exchange.sendResponseHeaders(200, bytes.length);
+            try (OutputStream output = exchange.getResponseBody()) {
+                output.write(bytes);
+            }
+        });
+        server.createContext("/api/v1/mois/persistence/collection-jobs", exchange -> {
+            persistedPayload.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            exchange.sendResponseHeaders(200, 0);
+            exchange.close();
+        });
+        server.start();
+        String base = "http://127.0.0.1:" + server.getAddress().getPort();
+        try {
+            ClickbankCollectorService service = new ClickbankCollectorService(
+                    true, "", "https://app.clickbank.com/market/search", "", "", "", "", "",
+                    base + "/top-offers", "", "", false, base,
+                    "clickbank_access_token_jwt", "https://accounts.clickbank.com/graphql",
+                    "workspace-001", "marketing-digital", "ofertas-clickbank"
+            );
+
+            var response = service.collectFirstCycle(new ClickbankCollectionRequest("clickbank-market", 10));
+
+            assertEquals("COLLECTION_EXECUTED", response.status());
+            assertEquals(2, response.products().size());
+            assertEquals(
+                    1,
+                    new ObjectMapper().readTree(persistedPayload.get()).path("references").size());
         } finally {
             server.stop(0);
         }

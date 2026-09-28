@@ -1,16 +1,23 @@
-# Marketing Hub — System Governance Canon v2
+# Marketing Hub — System Governance Canon v3
 
-> [!WARNING]
-> Esta versão foi substituída pelo
-> [Marketing Hub — System Governance Canon v3](system-governance-canon.v3.md).
-> Novos projetos e evoluções devem usar a v3, incluindo a regra constitucional de validação
-> exclusivamente por agentes ou pelo próprio mercado.
-
+> Changelog v3
+> - estabelece validação obrigatória exclusivamente por agentes ou pelo próprio mercado
+> - proíbe dependência operacional de entrevistas, recrutamento, testes privados e opiniões solicitadas
+> - separa homologação sintética de prova comercial baseada em vendas e contribuição
+> - dá precedência constitucional às regras globais expressamente destacadas neste documento
+>
 > Changelog v2
 > - adiciona regra de precedência canônica
 > - adiciona critérios explícitos para criar novos cânones de domínio
 > - adiciona matriz curta de ownership
 > - vincula mudanças cross-domain a ADRs
+
+> [!IMPORTANT]
+> **REGRA GLOBAL — TODO PRODUTO OU PROJETO É VALIDADO POR AGENTES OU PELO PRÓPRIO MERCADO.**
+> O Marketing Hub não depende de entrevistas, recrutamento, convites para testar, leituras privadas,
+> grupos de opinião, pedidos de avaliação ou qualquer ação que exija encontrar pessoas para validar
+> um produto. Antes do mercado, agentes e testes determinísticos comprovam prontidão. No mercado,
+> comportamento voluntário, vendas reconciliadas e contribuição comprovam demanda e viabilidade.
 
 ## 1. Propósito
 
@@ -40,7 +47,6 @@
 9. **Arquitetura robusta orientada a vendas.** Robustez técnica, validações e contratos existem para sustentar resultado comercial: melhorar conversão, reduzir fricção e manter continuidade de mensagem entre criativo, landing e oferta. Toda decisão arquitetural deve explicitar seu impacto em receita (CVR, CPL/CPA e avanço de funil), não apenas conformidade técnica.
 10. **Stack mandatória para módulos de apoio + deploy rastreável.** Módulos de apoio/satélites devem adotar baseline **Spring Boot + Java + Maven** e manter workflow CI/CD dedicado com teste, build e deploy por **disparo manual (`workflow_dispatch`)** além dos gatilhos automáticos necessários.
 11. **Exceções capturadas preservam ponto de falha.** Todo tratamento de exceção que captura, converte ou relança erro deve registrar log com contexto operacional e a exceção completa para manter stack trace e permitir diagnóstico de causa-raiz. Mensagens resumidas de causa raiz podem ser retornadas ao usuário/API, mas não substituem o log completo no ponto da captura.
-
 12. **Sem metainstrução no artefato final.** Qualquer texto técnico/operacional vazado em conteúdo final ao usuário (copy, CTA, FAQ, HTML publicado) deve bloquear publicação com erro explícito de contrato e apontamento do campo literal rejeitado.
 13. **Wireframe só aceita estilos existentes em definições canônicas.** O artefato de wireframe não pode introduzir `style`, `surfaceStyle`, `contrastMode`, `layoutPreset` ou variação visual fora do conjunto previsto nas definições canônicas vigentes. Qualquer estilo inexistente nas definições deve ser rejeitado em validação de contrato com indicação literal do valor inválido e da definição esperada.
 14. **Classes aplicadas do wireframe ficam somente em `estilos`.** No artefato `landingPageWireframe`, as categorias `estrutura`, `posicao`, `layout` e `mistas` existem apenas dentro de `definicoes` para declarar classes canônicas. Dentro de `pagina.head`, `pagina.corpo`, `pagina.corpo.secoes[]`, `elementosSeccao[]` e `elementosInternos[]`, nomes de classes aplicadas devem aparecer exclusivamente em `estilos[]`, sem duplicação em campos categorizados.
@@ -51,8 +57,51 @@
 19. **Backend principal não executa OpenAI.** O backend (`backend/ads-service`) não deve chamar APIs da OpenAI, criar batches, fazer polling de resposta de modelo ou manter clientes runtime de IA em fluxos de negócio. Quando uma ação precisar de IA, o backend deve apenas persistir a solicitação/execução, expor endpoint canônico `pending`, receber `claim`/status/resultado do módulo executor e consolidar o artefato. A chamada à OpenAI, retry operacional, timeout, prompt final enviado e validação primária da resposta pertencem ao AI Worker ou ao worker executor responsável pela etapa.
 20. **PRs sempre pelo conector GitHub.** Pull Requests só devem ser criados quando o usuário pedir explicitamente. A criação do PR deve usar sempre o conector GitHub; o GitHub CLI fica permitido apenas para leitura, diagnóstico e validações quando necessário, nunca como caminho principal de publicação de branch ou criação de PR.
 21. **Frontend administrativo acessível ao Codex.** O ambiente operacional deve declarar a URL pública do frontend administrativo do Marketing Hub para que fluxos comerciais, experimentos, PDEs, campanhas, vídeos e validações pós-deploy sejam executados e verificados pela mesma superfície usada pelo usuário. Endpoints oficiais do backend podem apoiar diagnóstico, automação e investigação, mas não devem substituir a validação visual pela tela quando a funcionalidade administrativa existir. Se a URL não estiver disponível, essa limitação deve ser registrada antes de concluir uma decisão comercial dependente da experiência administrativa.
+22. **Validação exclusivamente por agentes ou mercado.** Nenhum projeto, produto, evolução, BPM, gate, plano ou recomendação pode depender de recrutar pessoas, realizar entrevistas, pedir testes privados ou solicitar opiniões. Agentes e testes determinísticos homologam antes do mercado; somente comportamento voluntário do mercado comprova demanda, venda, valor entregue e viabilidade econômica.
 
-## 3.1 Regra global de exclusividade de artefatos (todo o sistema)
+## 3.1 Regra global de validação por agentes ou mercado
+
+Decisão do usuário em 28/09/2026: esta é uma regra constitucional para **todo projeto, produto atual
+ou futuro e toda evolução do Marketing Hub**.
+
+- O sistema não deve criar, recomendar nem aguardar entrevistas, recrutamento, convites a pessoas,
+  leitura privada, grupo focal, teste moderado ou não moderado com participantes externos, pesquisa
+  de opinião, pedido de feedback ou atividade equivalente.
+- Nenhuma dessas ações pode aparecer como gate, pendência, tarefa do usuário, próximo passo,
+  critério de aceite ou justificativa para interromper um fluxo. Uma execução não pode entrar em
+  `WAITING_HUMAN` por falta de participante, entrevistado, avaliador ou opinião externa.
+- Antes da exposição ao mercado, o produto é pesquisado e homologado por agentes, fontes públicas,
+  cenários sintéticos explicitamente identificados, testes determinísticos e revisão independente.
+  Essa evidência comprova prontidão, coerência, segurança e mensuração; nunca deve ser apresentada
+  como cliente real, preferência humana, satisfação, demanda ou venda.
+- A validação externa acontece pelo **próprio mercado**, em canal público/comercial autorizado e sem
+  recrutar participantes. São evidências válidas os comportamentos voluntários e atribuídos do funil:
+  impressão, clique, sessão, uso, avanço, checkout, pagamento reconciliado, entrega, recompra,
+  cancelamento, suporte iniciado pelo cliente e reembolso.
+- Engajamento isolado não valida negócio. Demanda comercial exige venda paga e reconciliada; escala
+  exige contribuição positiva depois de mídia, taxas, entrega, reembolso e demais custos variáveis.
+  Os experimentos devem preservar orçamento, critérios de parada e segregação de tráfego interno.
+- Aprovações do proprietário do sistema sobre preço, orçamento, publicação, campanha e gasto
+  continuam válidas: são decisões de governança, não testes com público. Atendimento a compradores
+  também continua válido, mas não pode ser convertido em obrigação de pedir opinião, depoimento ou
+  participação em pesquisa.
+- Fontes humanas históricas ou espontâneas já existentes podem ser analisadas como insumo, com
+  consentimento e anonimização quando aplicável, mas o Marketing Hub não deve criar trabalho para
+  obter novas pessoas ou respostas. Menções históricas em documentos permanecem apenas para
+  auditoria e não são executáveis.
+- Todo cânone de domínio, processo, prompt, agente e plano futuro deve aplicar esta regra. Uma
+  instrução divergente é drift e deve ser corrigida antes da execução; exceção só pode nascer de
+  nova decisão explícita do usuário e nova versão deste cânone.
+
+### Alternativas consideradas
+
+| Alternativa | Benefício | Risco, custo e aderência | Decisão |
+| --- | --- | --- | --- |
+| Recrutar pessoas para entrevistas, testes ou opiniões | Pode trazer relato qualitativo direto | Depende de capacidade operacional inexistente, não escala e paralisa o produto antes de testar venda | Proibida |
+| Usar somente agentes e declarar o produto validado | É rápido, barato e totalmente automatizável | Agentes não comprovam disposição a pagar, receita, entrega ou lucro | Insuficiente como prova comercial |
+| Homologar com agentes e validar comercialmente no mercado | Automatiza a prontidão e mede comportamento, venda e contribuição reais | Exige instrumentação, orçamento controlado e leitura disciplinada do funil | Escolhida |
+
+## 3.2 Regra global de exclusividade de artefatos (todo o sistema)
 
 - Todo artefato gerado direta ou indiretamente por fluxos oficiais do sistema é **exclusivo do contexto de origem** (por exemplo `experimentId`, `leadId`, `campaignId` ou equivalente canônico do domínio).
 - Para um artefato ser classificado como **não exclusivo**, ele não pode ter sido produzido em nenhuma etapa de pipeline/fluxo oficial vinculada a um contexto específico.
@@ -62,17 +111,20 @@
 
 Em caso de conflito, a precedência deve ser:
 
-1. **Schema ou contrato canônico publicado**
-2. **Cânone de domínio correspondente**
-3. **System Governance Canon**
-4. **Implementação atual no código**
-5. **Comportamento observado em frontend, worker ou integração externa**
+1. **Regras constitucionais globais expressamente destacadas neste documento**
+2. **Schema ou contrato canônico publicado**
+3. **Cânone de domínio correspondente**
+4. **Demais regras do System Governance Canon**
+5. **Implementação atual no código**
+6. **Comportamento observado em frontend, worker ou integração externa**
 
 Regra prática:
 
 - Implementação divergente não redefine a regra; ela sinaliza drift.
 - Ausência de contrato explícito não autoriza cada módulo a decidir por conta própria.
 - Quando dois documentos canônicos conflitarem, o conflito deve ser registrado explicitamente até ser resolvido.
+- Plano, prompt ou cânone de domínio não pode transformar entrevista, recrutamento, teste privado ou
+  opinião solicitada em exceção à regra constitucional da seção 3.1.
 
 ## 5. Critérios para identificar risco de drift
 
@@ -82,6 +134,9 @@ Regra prática:
 - **Ausência de contrato único para estados encadeados.** Fluxos que atravessam vários módulos precisam de estados e transições formais.
 - **Flags múltiplas para o mesmo conceito.** Dois nomes, dois campos ou duas flags para representar a mesma ideia são sinal de modelo mal consolidado.
 - **Cópias locais de modelo.** Toda vez que um módulo redefine localmente entidades ou estados já existentes em outro lugar, o risco de drift cresce.
+- **Dependência de pessoas externas para validar.** Entrevista, recrutamento, leitura privada, teste
+  solicitado ou opinião externa em gate, tarefa ou próximo passo viola a execução autônoma e deve
+  ser substituída por homologação de agentes ou experimento de mercado instrumentado.
 
 ## 6. Quando criar um novo cânone de domínio
 
@@ -146,6 +201,10 @@ Regra prática:
 
 ## 10. ADRs
 
+Decisão estrutural desta versão:
+
+- [ADR — validação exclusivamente por agentes ou mercado](../adr/2026-09-28-validacao-agentes-ou-mercado.md)
+
 Usar ADR quando a decisão:
 
 - afeta mais de um domínio
@@ -163,7 +222,7 @@ Regra prática:
 
 ```text
 docs/canonical/
-├─ system-governance-canon.v2.md              # documento-mãe
+├─ system-governance-canon.v3.md              # documento-mãe
 ├─ procedimento-experimento-canon.v1.md        # procedimento ponta a ponta dos experimentos
 ├─ pipeline-operacional-canon.v1.md            # padrão operacional de pipelines, etapas e filas
 ├─ experiments-decision-schema.v1.json        # schema machine-readable para validações automáticas

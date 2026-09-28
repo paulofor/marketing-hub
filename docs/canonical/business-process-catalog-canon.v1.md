@@ -235,10 +235,12 @@ ponta; pipelines e workers executam contratos técnicos referenciados pelo proce
 faz polling, não consome filas e não avança execuções operacionais.
 
 O processo de descoberta PDE deve começar por uma atividade capaz de receber **sinal humano
-observado** sem exigir solução pronta. Conversas, pedidos espontâneos, entrevistas, comentários e
-reclamações devem ser registrados de forma anonimizada, separando fala observada, desejo, dor,
-tentativa frustrada e inferências. O sinal individual inicia pesquisa; somente confirmação
-independente pode transformá-lo em dossiê de oportunidade e permitir o avanço da cadeia.
+observado** sem exigir solução pronta. Conversas e pedidos espontâneos, comentários, reclamações e
+fontes históricas já disponíveis devem ser registrados de forma anonimizada, separando fala
+observada, desejo, dor, tentativa frustrada e inferências. O sinal individual inicia pesquisa;
+somente confirmação independente por agentes e fontes públicas pode transformá-lo em dossiê de
+oportunidade e permitir o avanço da cadeia. O processo não cria entrevistas, recrutamento, testes
+privados ou pedidos de opinião.
 
 O catálogo também deve representar o fluxo contínuo de soluções prontas de IA para trabalhos reais,
 definido em `docs/canonical/solucoes-prontas-ia-trabalho-canon.v1.md`. Esse fluxo separa cinco objetivos
@@ -640,7 +642,8 @@ O processo `pde-opportunity-discovery` é `INDEPENDENT`: uma pergunta real de me
 e somente uma oportunidade factual aprovada poderá originar produto posteriormente. Vincular produto
 apenas para conseguir disparar Argos inverte a cadeia causal e é proibido.
 
-Desde a versão 7, a execução contém duas atividades de Argos: `marketEvidence` reúne candidatas e
+No contrato histórico da versão 7, hoje não executável para novas descobertas, a execução continha
+duas atividades de Argos: `marketEvidence` reunia candidatas e
 lacunas iniciais; `candidateGapDeepening` só entra na fila depois do gate de entrevistas consentidas
 e aprofunda as perguntas por candidata dentro de limites persistidos. O backend preserva a mesma
 referência independente, as identidades das candidatas, as duas tarefas, evidências, custo e
@@ -648,6 +651,9 @@ progresso. A atividade inicial concluída não conclui o processo, não sincroni
 não pode ser reaberta para contornar a coleta comportamental. A única saída direta é uma pesquisa
 que não encontrou candidata factual: nesse caso o backend encerra honestamente sem entrevista, nova
 busca ou handoff, preservando o relatório vazio como resultado.
+
+Novas execuções usam `PUBLIC_SOURCES_V1`: agentes e fontes públicas substituem o gate histórico de
+entrevistas, sem espera por pessoas externas e sem representar evidência sintética como mercado.
 
 `INDEPENDENT` descreve ausência de produto na execução, não ausência de alocação na Cadeia de Valor.
 Sua definição, atividades e entrada operacional seguem a mesma regra obrigatória de integração ao

@@ -1,5 +1,19 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-09-28 — Validação passa a depender somente de agentes ou do mercado
+
+- Causa: a orientação de Alcyone voltou a propor duas leituras com mulheres, apesar de o sistema não
+  possuir capacidade operacional para entrevistar, recrutar participantes, solicitar testes ou
+  coletar opiniões.
+- Alternativas: recrutamento traria relato qualitativo, mas não é executável nem escalável; somente
+  agentes automatizaria tudo, mas não provaria demanda; foi escolhida homologação por agentes antes
+  do mercado e validação comercial por comportamento, vendas e contribuição reais.
+- Decisão: a regra tornou-se constitucional em `system-governance-canon.v3.md` para todos os projetos,
+  produtos e evoluções. Cânones de descoberta, validação e ciclos foram alinhados; referências
+  históricas continuam auditáveis, mas não podem originar tarefa, gate ou próximo passo.
+- Métrica: agentes comprovam prontidão; pagamento reconciliado comprova venda; contribuição positiva
+  comprova condição de escala. Cliques, opiniões e cenários sintéticos não substituem esses fatos.
+
 ## 2026-09-26 — Processo 2 passa a decidir identidade; produto 11 recebe Alcyone/Safira
 
 - Evidência: a execução independente #32 concluiu Atena, Plutus e Dédalo, mas o produto #11 nasceu

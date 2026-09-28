@@ -45,8 +45,12 @@ oportunidades diferentes quando tentam concluir trabalhos distintos.
 **Objetivo final:** formar grupos auditáveis de trabalhos recorrentes em que pessoas tentam usar IA,
 mas não conseguem chegar sozinhas a um resultado confiável.
 
-**Entradas:** conversas espontâneas, entrevistas, busca pública, comunidades, comentários, reviews,
-suporte, pedidos, alternativas existentes e comportamento observado em testes próprios.
+**Entradas:** conversas espontâneas já disponíveis, busca pública, comunidades, comentários, reviews,
+suporte iniciado pelo cliente, pedidos, alternativas existentes, fontes históricas legítimas e
+comportamento observado em experimentos de mercado próprios.
+
+O processo não recruta, entrevista, convida participantes, solicita testes nem pede opiniões. Fontes
+históricas podem ser analisadas, mas nunca originam uma tarefa para obter novas pessoas ou respostas.
 
 **Atividades essenciais:**
 

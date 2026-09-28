@@ -2,7 +2,7 @@ Implemente a Sprint [NUMERO_DA_SPRINT] do plano do módulo MOIS no repositório 
 
 Siga estas regras:
 - leia primeiro os documentos do MOIS e o plano de implementação da sprint;
-- respeite o system-governance-canon.v2.md e os contratos canônicos do sistema;
+- respeite o system-governance-canon.v3.md e os contratos canônicos do sistema;
 - faça apenas o escopo da Sprint [NUMERO_DA_SPRINT], sem adiantar itens de outras sprints, exceto ajustes pequenos estritamente necessários;
 - toda integração com banco deve seguir a arquitetura do projeto e passar pelo backend responsável;
 - preserve compatibilidade com o que já existe no repositório;

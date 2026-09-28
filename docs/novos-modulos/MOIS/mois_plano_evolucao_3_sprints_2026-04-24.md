@@ -142,7 +142,7 @@ Para considerar a evolução concluída ao final das 3 sprints:
 
 ## 8) Artefatos/documentos a atualizar a cada sprint
 
-- `docs/canonical/system-governance-canon.v2.md` (se regra de governança mudar)
+- `docs/canonical/system-governance-canon.v3.md` (se regra de governança mudar)
 - `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` (se contrato canônico evoluir)
 - `docs/modelo-dados-experimento.md` (se houver novas entidades/relacionamentos)
 - `docs/database/liquibase-mysql57.md` (se houver novas migrações/padrões)

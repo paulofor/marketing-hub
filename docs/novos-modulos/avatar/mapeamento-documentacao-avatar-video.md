@@ -22,7 +22,7 @@ Arquivos com conteúdo misto (não exclusivamente avatar/vídeo):
 - `ai-worker/README.md`
 - `deploy/README.md`
 - `video-management-service/README.md`
-- `docs/canonical/system-governance-canon.v2.md`
+- `docs/canonical/system-governance-canon.v3.md`
 - `docs/data-model.md`
 - `docs/modelo-dados.md`
 - `docs/modelo-dados-experimento.md`

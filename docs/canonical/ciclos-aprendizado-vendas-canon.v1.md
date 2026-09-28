@@ -119,8 +119,9 @@ predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.
   de decisão declarados antes da publicação. Uma revisão técnica é retrabalho no mesmo ciclo.
 - Aprendizado → planejamento → ajuste de produto/comunicação → homologação → autorização →
   publicação → medição → decisão. A conclusão comprovada libera a próxima etapa no backend.
-- Registro de etapa é uma evidência humana identificada ou uma referência verificada a execução
-  BPM. Um texto livre não se transforma em aprovação automática de Psique, Têmis ou preflight.
+- Registro de etapa é uma decisão de governança com autoria identificada ou uma referência
+  verificada a execução BPM. Um texto livre não se transforma em aprovação automática de Psique,
+  Têmis ou preflight.
 - Reprovação funcional retorna ao ajuste do mesmo ciclo, preserva a tentativa e invalida as
   aprovações posteriores. Nova versão retorna obrigatoriamente à homologação.
 - Correção exclusivamente técnica após publicação exige pausa prévia, declaração de que hipótese,
@@ -129,9 +130,11 @@ predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.
 - O link para executar uma atividade transporta `learningCycleId`. O backend valida produto,
   composição da cadeia e ciclo aberto antes de fixar `experiment:<id>`; a construção mantém a
   referência canônica da mesma candidata. A tarefa recebe hipótese, memória anterior e decisões do ciclo.
-- A homologação multiagente não é evidência humana. Observações consentidas, se realizadas,
-  podem ser anexadas; exigências adicionais pertencem ao plano específico do produto. Uma nova
-  reprovação invalida a aprovação anterior também antes da publicação ou expansão.
+- A homologação multiagente não é evidência de mercado. Recrutamento, entrevista, leitura privada,
+  teste solicitado ou pedido de opinião não podem ser requisito, tarefa ou próximo passo do ciclo.
+  Somente eventos voluntários e atribuídos do mercado podem comprovar demanda, venda, entrega ou
+  viabilidade econômica. Uma nova reprovação técnica invalida a aprovação anterior também antes da
+  publicação ou expansão.
 - Publicação exige os gates canônicos e autorização explícita de orçamento e janela. Registrar um
   ciclo, aprovar uma etapa ou solicitar escala não ativa campanhas nem autoriza gastos externos.
 - A confirmação de orçamento e janela do ciclo materializa atomicamente no experimento Facebook o

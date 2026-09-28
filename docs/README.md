@@ -34,7 +34,7 @@ O cabeçalho recomendado é:
 
 ## Rotas de leitura por assunto
 
-- Arquitetura e governança: `docs/canonical/system-governance-canon.v2.md` e `docs/canonical/arquitetura-etapas.md`.
+- Arquitetura e governança: `docs/canonical/system-governance-canon.v3.md` e `docs/canonical/arquitetura-etapas.md`.
 - Produtos e ofertas: `docs/canonical/product-catalog-canon.v1.md`, `docs/canonical/product-types-canon.v1.md` e `docs/canonical/psicologia-aplicada-ofertas-canon.v1.md`.
 - Experimentos e funis: `docs/canonical/procedimento-experimento-canon.v1.md`, `docs/canonical/manual-experiments-flow-canon.v1.md` e `docs/canonical/trafego-frio-compra-direta-canon.v1.md`.
 - Landing pages: `docs/canonical/geralanding-arquitetura-canon.v1.md` e `docs/canonical/gerasalespage-arquitetura-canon.v1.md`.

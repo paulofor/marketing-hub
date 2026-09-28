@@ -10,7 +10,7 @@ Faça a montagem do container e publicação, arquivos yml
 
 Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md
 
-Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v3.md
 
 Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefatos.md
 
@@ -26,7 +26,7 @@ Execute a Sprint 3
 
 Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md
 
-Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v3.md
 
 Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefatos.md
 
@@ -39,7 +39,7 @@ Temos um erro no action do GitHub, precisamos ajustar.
 
 Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md
 
-Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v3.md
 
 Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefatos.md
 
@@ -114,7 +114,7 @@ Execute a Sprint 2
 
 Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md
 
-Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v3.md
 
 Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefatos.md
 
@@ -131,7 +131,7 @@ Crie um swagger em : docs/novos-modulos/OPRM com todos os endpoints que o OPRM p
 
 Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md
 
-Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v3.md
 
 Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefatos.md
 
@@ -143,8 +143,7 @@ Verifique se estão corretos todos os itens do swagger : docs/swagger/oprm-backe
 
 Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md
 
-Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v3.md
 
 Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefatos.md
-
 

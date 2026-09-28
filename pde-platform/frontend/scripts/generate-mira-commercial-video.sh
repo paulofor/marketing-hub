@@ -4,12 +4,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OUTPUT_DIR="${MIRA_COMMERCIAL_MEDIA_DIR:-${FRONTEND_DIR}/public-mira-commercial/media}"
-VIDEO_FILE="${OUTPUT_DIR}/mira-commercial-demo-v2.mp4"
-POSTER_FILE="${OUTPUT_DIR}/mira-commercial-demo-v2-poster.jpg"
-HLS_DIR="${OUTPUT_DIR}/mira-commercial-demo-v2-hls"
+VIDEO_FILE="${OUTPUT_DIR}/mira-commercial-demo-v3.mp4"
+POSTER_FILE="${OUTPUT_DIR}/mira-commercial-demo-v3-poster.jpg"
+HLS_DIR="${OUTPUT_DIR}/mira-commercial-demo-v3-hls"
 HLS_PLAYLIST="${HLS_DIR}/index.m3u8"
 AUDIO_SOURCE="${SCRIPT_DIR}/media/mira-approved-voice-asset-47-v1.m4a"
 AUDIO_SOURCE_SHA256="19be7c4776e20dae6ed783264495e85d97ee2156fc67075e85f79af639e0ef63"
+PRODUCT_PROOF="${OUTPUT_DIR}/mira-commercial-product-proof-v1.png"
+PRODUCT_PROOF_SHA256="4ffda62d502d8ea644fa06a0cd6cf0768c39c4278b43bdcefa3665e9d578c2f3"
 
 if ! command -v ffmpeg >/dev/null 2>&1; then
   echo "ffmpeg é obrigatório para gerar o vídeo comercial de Mira." >&2
@@ -23,10 +25,19 @@ if [[ ! -f "${AUDIO_SOURCE}" ]]; then
   echo "Narração comercial aprovada de Mira não encontrada: ${AUDIO_SOURCE}" >&2
   exit 1
 fi
+if [[ ! -f "${PRODUCT_PROOF}" ]]; then
+  echo "Prova de produto de Mira não encontrada: ${PRODUCT_PROOF}" >&2
+  exit 1
+fi
 
 observed_audio_sha256="$(sha256sum "${AUDIO_SOURCE}" | awk '{print $1}')"
 if [[ "${observed_audio_sha256}" != "${AUDIO_SOURCE_SHA256}" ]]; then
   echo "Narração comercial de Mira diverge do ativo aprovado." >&2
+  exit 1
+fi
+observed_product_proof_sha256="$(sha256sum "${PRODUCT_PROOF}" | awk '{print $1}')"
+if [[ "${observed_product_proof_sha256}" != "${PRODUCT_PROOF_SHA256}" ]]; then
+  echo "Prova de produto de Mira diverge do ativo aprovado para composição." >&2
   exit 1
 fi
 
@@ -61,7 +72,9 @@ mkdir -p "${OUTPUT_DIR}"
 ffmpeg -hide_banner -loglevel error -y \
   -f lavfi -i "color=c=#f7f1f8:s=1080x1920:r=30:d=15" \
   -i "${AUDIO_SOURCE}" \
-  -vf "
+  -loop 1 -i "${PRODUCT_PROOF}" \
+  -filter_complex "
+[0:v]
 drawbox=x=0:y=0:w=iw:h=ih:color=#f7f1f8:t=fill,
 drawbox=x='-180+34*t':y='80+7*t':w=520:h=520:color=#ead8ee@0.55:t=fill,
 drawbox=x='760-20*t':y='1450-5*t':w=440:h=440:color=#dfc9e5@0.42:t=fill,
@@ -88,8 +101,8 @@ drawbox=x=255:y=1120:w=570:h=108:color=#6b3e7d:t=fill:enable='between(t,3.2,6.3)
 drawtext=fontfile='${FONT_BOLD}':text='ORGANIZAR MINHA ROTINA':fontcolor=white:fontsize=31:x=(w-text_w)/2:y=1158:enable='between(t,3.2,6.3)',
 
 drawtext=fontfile='${FONT_BOLD}':text='PASSO 2':fontcolor=#7a4e8c:fontsize=36:x=100:y=150:enable='between(t,6.3,9.2)',
-drawtext=fontfile='${FONT_BOLD}':text='Receba uma ordem simples':fontcolor=#2e2034:fontsize=58:x=100:y=235:enable='between(t,6.3,9.2)',
-drawtext=fontfile='${FONT_REGULAR}':text='A orientação fica salva para consultar.':fontcolor=#6b526f:fontsize=36:x=100:y=330:enable='between(t,6.3,9.2)',
+drawtext=fontfile='${FONT_BOLD}':text='Veja a aplicação web':fontcolor=#2e2034:fontsize=58:x=100:y=235:enable='between(t,6.3,9.2)',
+drawtext=fontfile='${FONT_REGULAR}':text='A mesma tela que organiza e salva sua rotina.':fontcolor=#6b526f:fontsize=34:x=100:y=330:enable='between(t,6.3,9.2)',
 drawbox=x=100:y=480:w=880:h=245:color=white@0.96:t=fill:enable='between(t,6.3,9.2)',
 drawbox=x=145:y=530:w=76:h=76:color=#6b3e7d:t=fill:enable='between(t,6.3,9.2)',
 drawtext=fontfile='${FONT_BOLD}':text='1':fontcolor=white:fontsize=40:x=171:y=546:enable='between(t,6.3,9.2)',
@@ -114,19 +127,24 @@ drawtext=fontfile='${FONT_REGULAR}':text='Se faltar informação do rótulo, Mir
 
 drawbox=x=0:y=0:w=iw:h=ih:color=#392442:t=fill:enable='between(t,11.6,15)',
 drawtext=fontfile='${FONT_BOLD}':text='MIRA':fontcolor=#eacff0:fontsize=42:x=(w-text_w)/2:y=220:enable='between(t,11.6,15)',
-drawtext=fontfile='${FONT_BOLD}':text='Duas organizações':fontcolor=white:fontsize=72:x=(w-text_w)/2:y=485:enable='between(t,11.6,15)',
-drawtext=fontfile='${FONT_BOLD}':text='incluídas por R$ 49':fontcolor=white:fontsize=82:x=(w-text_w)/2:y=585:enable='between(t,11.6,15)',
-drawtext=fontfile='${FONT_REGULAR}':text='Pagamento único':fontcolor=#ead8ee:fontsize=38:x=(w-text_w)/2:y=725:enable='between(t,11.6,15)',
-drawbox=x=190:y=880:w=700:h=125:color=#f2deef:t=fill:enable='between(t,11.6,15)',
-drawtext=fontfile='${FONT_BOLD}':text='ORGANIZAR MINHA ROTINA':fontcolor=#392442:fontsize=38:x=(w-text_w)/2:y=923:enable='between(t,11.6,15)',
-drawtext=fontfile='${FONT_REGULAR}':text='Comece com o que você já tem.':fontcolor=#ead8ee:fontsize=37:x=(w-text_w)/2:y=1120:enable='between(t,11.6,15)',
-fade=t=in:st=0:d=0.35,fade=t=out:st=14.65:d=0.35,
-format=yuv420p
+drawtext=fontfile='${FONT_BOLD}':text='Duas organizações':fontcolor=white:fontsize=72:x=(w-text_w)/2:y=425:enable='between(t,11.6,15)',
+drawtext=fontfile='${FONT_BOLD}':text='individualizadas no total':fontcolor=white:fontsize=58:x=(w-text_w)/2:y=525:enable='between(t,11.6,15)',
+drawtext=fontfile='${FONT_BOLD}':text='por R$ 49':fontcolor=white:fontsize=82:x=(w-text_w)/2:y=625:enable='between(t,11.6,15)',
+drawtext=fontfile='${FONT_REGULAR}':text='Cada uma usa 1 das 2 tentativas':fontcolor=#ead8ee:fontsize=35:x=(w-text_w)/2:y=750:enable='between(t,11.6,15)',
+drawtext=fontfile='${FONT_REGULAR}':text='Pagamento único':fontcolor=#ead8ee:fontsize=34:x=(w-text_w)/2:y=815:enable='between(t,11.6,15)',
+drawbox=x=190:y=940:w=700:h=125:color=#f2deef:t=fill:enable='between(t,11.6,15)',
+drawtext=fontfile='${FONT_BOLD}':text='ORGANIZAR MINHA ROTINA':fontcolor=#392442:fontsize=38:x=(w-text_w)/2:y=983:enable='between(t,11.6,15)',
+drawtext=fontfile='${FONT_REGULAR}':text='Comece com o que você já tem.':fontcolor=#ead8ee:fontsize=37:x=(w-text_w)/2:y=1160:enable='between(t,11.6,15)'
+[base];
+[2:v]scale=900:900,format=rgba[proof];
+[base][proof]overlay=x=90:y=430:enable='between(t,6.3,9.2)',
+fade=t=in:st=0:d=0.35,fade=t=out:st=14.65:d=0.35,format=yuv420p[video]
 " \
-  -af "apad=pad_dur=15,atrim=duration=15" \
-  -map 0:v:0 -map 1:a:0 \
+  -af "atrim=start=0:end=8.42,apad=pad_dur=15,atrim=duration=15" \
+  -map "[video]" -map 1:a:0 \
   -c:v libx264 -preset medium -crf 19 -profile:v high -level 4.1 \
   -c:a aac -b:a 128k -ar 48000 -ac 1 \
+  -t 15 \
   -movflags +faststart "${VIDEO_FILE}"
 
 audio_codec="$(ffprobe -v error -select_streams a:0 \

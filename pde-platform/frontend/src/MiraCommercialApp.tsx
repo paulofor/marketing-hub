@@ -3,9 +3,9 @@ import { AdaptiveVideoPlayer } from "./AdaptiveVideoPlayer";
 
 const productSlug = "pde-planejado-36";
 const endpoint = "/api/pde/mira/commercial/v1";
-const commercialVideo = "/media/mira-commercial-demo-v2.mp4";
-const commercialVideoHls = "/media/mira-commercial-demo-v2-hls/index.m3u8";
-const commercialVideoPoster = "/media/mira-commercial-demo-v2-poster.jpg";
+const commercialVideo = "/media/mira-commercial-demo-v3.mp4";
+const commercialVideoHls = "/media/mira-commercial-demo-v3-hls/index.m3u8";
+const commercialVideoPoster = "/media/mira-commercial-demo-v3-poster.jpg";
 
 type ProductInput = { name: string; labelDirections: string };
 type RoutineCard = {
@@ -278,14 +278,14 @@ export function MiraCommercialApp() {
                 videoPlayed.current = true;
                 void trackPublicEvent("VIDEO_PLAY", {
                   experimentId: 93,
-                  creativeVariant: "mira-commercial-demo-v2",
+                  creativeVariant: "mira-commercial-demo-v3",
                 });
               }
               if (event.type === "ended" && !videoCompleted.current) {
                 videoCompleted.current = true;
                 void trackPublicEvent("VIDEO_COMPLETED", {
                   experimentId: 93,
-                  creativeVariant: "mira-commercial-demo-v2",
+                  creativeVariant: "mira-commercial-demo-v3",
                 });
               }
             }}
@@ -294,6 +294,11 @@ export function MiraCommercialApp() {
             <strong>Veja antes de decidir:</strong> entrada guiada, resultado
             claro e duas organizações incluídas por R$ 49, em pagamento único.
           </div>
+          <p className="mira-commercial-offer-rights">
+            A compra inclui{" "}
+            <strong>duas organizações individualizadas no total</strong>. Cada
+            organização concluída usa uma das duas tentativas disponíveis.
+          </p>
           {offer?.checkoutUrl && (
             <>
               <p className="mira-commercial-merchant">
@@ -373,14 +378,18 @@ export function MiraCommercialApp() {
     <main className="mira-commercial-shell">
       <header className="mira-commercial-header">
         <div>
-          <span>Mira</span>
+          <span className="mira-commercial-product-kind">
+            Mira · aplicação web
+          </span>
           <strong>Sua rotina organizada</strong>
         </div>
-        <span>
+        <span className="mira-commercial-entitlement">
           {attemptsLeft}{" "}
-          {attemptsLeft === 1
-            ? "organização disponível"
-            : "organizações disponíveis"}
+          {attemptsLeft === 2
+            ? "rotinas individualizadas incluídas"
+            : attemptsLeft === 1
+              ? "rotina individualizada disponível"
+              : "rotinas individualizadas disponíveis"}
         </span>
       </header>
       {session.status === "READY" ? (
@@ -399,6 +408,10 @@ export function MiraCommercialApp() {
               </li>
             ))}
           </ol>
+          <p className="mira-commercial-safety-summary">
+            Baseada apenas nas orientações que você informou. Não é diagnóstico
+            nem prescrição.
+          </p>
           {!session.events.includes("FIRST_USE") ? (
             <button onClick={() => void mark("FIRST_USE")} disabled={busy}>
               Já usei esta rotina

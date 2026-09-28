@@ -80,6 +80,14 @@ video {
   line-height: 1.6;
   margin: 20px 0;
 }
+.mira-commercial-offer-rights {
+  border-left: 4px solid #6b3e7d;
+  color: #493153;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  margin: 0 0 16px;
+  padding: 4px 0 4px 14px;
+}
 .mira-commercial-merchant {
   color: #594b5f;
   font-size: 0.9rem;
@@ -172,6 +180,15 @@ button:disabled {
   color: #755481;
   font-size: 0.9rem;
 }
+.mira-commercial-product-kind {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.mira-commercial-entitlement {
+  max-width: 280px;
+  text-align: right;
+}
 .mira-routine-list {
   list-style: none;
   padding: 0;
@@ -195,6 +212,12 @@ button:disabled {
   background: #6b3e7d;
   color: white;
   font-weight: 800;
+}
+.mira-commercial-safety-summary {
+  margin: 18px 0 0;
+  color: #5f5064;
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 .mira-routine-list p {
   margin: 6px 0;

@@ -92,5 +92,13 @@ local/
 !/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v2-hls/index.m3u8
 !/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v2-hls/segment-*.ts
 !/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v2-hls/checksums.sha256
+!/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v3.mp4
+!/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v3-poster.jpg
+!/pde-platform/frontend/public-mira-commercial/media/mira-commercial-product-proof-v1.png
+!/pde-platform/frontend/public-mira-commercial/media/mira-commercial-control-v4.png
+!/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v3-hls/
+!/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v3-hls/index.m3u8
+!/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v3-hls/segment-*.ts
+!/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v3-hls/checksums.sha256
 
 __pycache__/

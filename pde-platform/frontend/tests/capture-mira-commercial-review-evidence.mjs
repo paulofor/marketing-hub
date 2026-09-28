@@ -58,6 +58,12 @@ try {
     await page.getByText(/duas organizações incluídas por R\$ 49/i).waitFor({
       state: "visible",
     });
+    await page
+      .getByText(/duas organizações individualizadas no total/i)
+      .waitFor({ state: "visible" });
+    await page
+      .getByText(/Cada organização concluída usa uma das duas tentativas/i)
+      .waitFor({ state: "visible" });
     await page.evaluate(() => document.fonts.ready);
 
     const screenshotPath = join(outputDir, `mira-destination-${name}.png`);

@@ -44,8 +44,8 @@ cat > "${ROOT}/pde-health-contract.json" <<EOF
   "commercialOfferPath": "/api/pde/products/$(json_escape "${PRODUCT_SLUG}")/commercial-offer?slotCode=v1",
   "integrationContractPath": "/api/pde/products/$(json_escape "${PRODUCT_SLUG}")/integration-contract?slotCode=v1&experienceVersion=$(json_escape "${EXPERIENCE_VERSION}")",
   "requiredTexts": ["Cuide de você com mais clareza", "duas organizações incluídas por R$ 49"],
-  "requiredHlsStreams": ["/media/mira-commercial-demo-v2-hls/index.m3u8"],
-  "requiredAssets": ["/media/mira-commercial-demo-v2.mp4", "/media/mira-commercial-demo-v2-poster.jpg", "/media/mira-commercial-demo-v2-hls/index.m3u8", "/media/mira-commercial-demo-v2-hls/segment-000.ts", "/media/mira-commercial-control-v2.png"],
+  "requiredHlsStreams": ["/media/mira-commercial-demo-v3-hls/index.m3u8"],
+  "requiredAssets": ["/media/mira-commercial-demo-v3.mp4", "/media/mira-commercial-demo-v3-poster.jpg", "/media/mira-commercial-demo-v3-hls/index.m3u8", "/media/mira-commercial-demo-v3-hls/segment-000.ts", "/media/mira-commercial-product-proof-v1.png", "/media/mira-commercial-control-v4.png"],
   "forbiddenTexts": ["acesso privado", "SIMULATED_NO_CHARGE", "Clube MUSA", "Método MUSA", "Homologação interna", "evidência sintética", "Voz gerada por IA"]
 }
 EOF

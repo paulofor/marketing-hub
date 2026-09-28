@@ -79,7 +79,45 @@ changelog sem executar mudança adicional e persistiu `CAMPAIGN_AUTHORIZED_WINDO
 do teste é construída pelo Dockerfile versionado e a topologia, rede e volumes temporários foram
 removidos ao final. A rodada corretiva também aprovou os 3.645 testes do backend, sem falha ou erro,
 Spotless, o validador Liquibase/MySQL 5.7, a configuração Compose e a integridade do diff. A
-comprovação produtiva final de #91 permanece como gate da entrega.
+comprovação produtiva final de #91 foi executada após a publicação corretiva descrita a seguir.
+
+## Comprovação produtiva final
+
+- A implementação entrou pela [PR #5403](https://github.com/paulofor/marketing-hub/pull/5403) e o
+  reparo de persistência pela [PR #5404](https://github.com/paulofor/marketing-hub/pull/5404). O
+  backend publicado expôs o commit de merge
+  `36be9cf4ed4b407ed770ced82fcc74b196453542` no `/actuator/info`.
+- Os dois changesets reparadores constaram como `EXECUTED` e o schema produtivo confirmou
+  `VARCHAR(100)` em `facebook_ads_campaign.stop_reason` e
+  `campaign_strategy_evaluation.stop_reason`. Depois da troca, não houve nova ocorrência de
+  `Data truncated for column 'stop_reason'`.
+- #89 e #90 permaneceram `INCONCLUSIVE`; seus runs ativos foram concluídos como `COMPLETED` +
+  `INSUFFICIENT_DATA`, com `CAMPAIGN_AUTHORIZED_WINDOW_ENDED`. #91 também passou a
+  `INCONCLUSIVE` pela ação `AUTHORIZED_WINDOW_RECONCILIATION`, sem criação retroativa de run legado.
+- Para #91, o backend persistiu campanha configurada e efetiva como `PAUSED`, término em 26/09,
+  saldo de R$ 0,47, orçamento vitalício de R$ 150, motivo de parada, solicitação e conclusão da
+  pausa, além de `metrics_final_synced_at`. As métricas finais preservadas foram R$ 149,53, 1.146
+  impressões, 35 cliques e zero leads Meta.
+- O worker enviou a pausa explícita à Meta e recebeu HTTP 200 com `success=true`; o callback de
+  status seguinte recebeu `ACCEPTED`. As filas de métricas, recomendações e parada deixaram de
+  retornar #91, eliminando novas consultas recorrentes para essa campanha encerrada.
+- A tela produtiva mostrou #91 em **Inconclusivas**, com `PAUSED`, **Janela encerrada**, saldo de
+  R$ 0,47 e métricas finais. Chromium desktop, iPhone 15 Pro e Pixel 7 passaram sem overflow da
+  página; a rolagem ficou restrita à tabela.
+- O [deploy da aplicação](https://github.com/paulofor/marketing-hub/actions/runs/36440067256)
+  terminou com sucesso no mesmo SHA imutável. A primeira tentativa recebeu HTTP 500 transitório do
+  GitHub Packages; somente o job falho foi reexecutado e a segunda tentativa concluiu build, saúde
+  e troca transacional sem mudança de código.
+- O coordenador recuperou e confirmou como `COMPLETE` os publicadores dependentes de
+  [Product Discovery](https://github.com/paulofor/marketing-hub/actions/runs/36442427526),
+  [Customer Agent](https://github.com/paulofor/marketing-hub/actions/runs/36442440416) e
+  [Meta Ad Approver](https://github.com/paulofor/marketing-hub/actions/runs/36442453356). O
+  [reconciliador final](https://github.com/paulofor/marketing-hub/actions/runs/36443810324)
+  terminou sem publicador pendente.
+
+O gate produtivo de reconciliação está concluído: nenhum dos três experimentos permanece
+`RUNNING`, a campanha Meta está explicitamente pausada e o painel não apresenta configuração como
+prova de entrega.
 
 ## Limites comerciais preservados
 

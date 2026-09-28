@@ -13,3 +13,9 @@ A rodada reforça que desempenho, confiança e custo de supervisão precisam ser
 **Limite:** estudo exploratório, não pré-registrado e sem randomização entre grupos. Dentro do mesmo bloco de tarefa, a diferença ficou pequena e incerta.
 
 Fonte: https://arxiv.org/abs/2609.31095
+
+## Outros achados
+
+Uma pesquisa qualitativa com 36 participantes sugere que uso contínuo de LLM pode coexistir com esforço recorrente de checagem e correção.
+
+Fonte: https://arxiv.org/abs/2609.30699

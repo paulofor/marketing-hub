@@ -12,7 +12,8 @@ Transformar evidências públicas e auditáveis de mercado em uma fila diária d
 ## Responsabilidades
 
 - A pesquisa Hotmart é executada exclusivamente pelo Agente Radar em navegador isolado, com acesso somente de leitura. Usuário, senha, cookies e tokens não podem ser persistidos no Marketing Hub, em código ou em logs.
-- ClickBank coleta snapshots em seu módulo executor e envia dados ao backend MOIS quando houver credencial oficial válida.
+- ClickBank permanece como capacidade isolada, mas seu runtime está suspenso até haver consumo
+  comprovado de snapshots pelo Product Discovery; credenciais válidas, por si só, não autorizam coleta.
 - A Biblioteca de Anúncios da Meta usa investigação supervisionada; nenhum agente pode raspar a interface, contornar autenticação, CAPTCHA, região ou limite de acesso.
 - O backend persiste fontes, sinais, datas, scores, lacunas e recomendações.
 - O Agente Radar interpreta somente evidências persistidas e oferece prioridade, hipótese de demanda, saturação, risco, lacunas e próxima ação.
@@ -21,7 +22,8 @@ Transformar evidências públicas e auditáveis de mercado em uma fila diária d
 ## Cadência
 
 - Hotmart: as rotinas automáticas do Marketing Hub ficam desativadas. O Agente Radar executa a pesquisa diária pelo navegador do próprio ambiente e registra fontes, data, evidências e lacunas no Radar.
-- ClickBank: alternância horária dos três ciclos, somente quando habilitada e com credencial válida; essa cobertura satisfaz a consolidação diária.
+- ClickBank: sem ciclos automáticos no estado vigente. A reativação exige consumidor validado,
+  persistência sem duplicidades e comprovação de uso em decisão comercial antes de definir cadência.
 - Meta Ads: observações supervisionadas entram quando cadastradas e são consolidadas no ranking diário.
 - Falha ou ausência de credencial deve aparecer como lacuna; nunca deve ser convertida em sinal negativo do mercado.
 

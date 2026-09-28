@@ -14,5 +14,6 @@
   "iris": ["meta-ad-approver-worker-ci.yml"],
   "temis": ["communication-agent-worker-ci.yml"],
   "hermes": ["growth-operator-worker-ci.yml"],
-  "controle-agentes": ["agent-executor-admin-controller-ci.yml"]
+  "controle-agentes": ["agent-executor-admin-controller-ci.yml"],
+  "mois-clickbank": ["mois-clickbank-collector-ci.yml"]
 }

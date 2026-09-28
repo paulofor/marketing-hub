@@ -13,5 +13,9 @@
   "financial-agent-worker-ci.yml": {},
   "communication-agent-worker-ci.yml": {},
   "growth-operator-worker-ci.yml": {},
-  "agent-executor-admin-controller-ci.yml": {}
+  "agent-executor-admin-controller-ci.yml": {},
+  "mois-clickbank-collector-ci.yml": {
+    "inputs": {"operation": "retire"},
+    "publication_job": "Retire idle runtime (MOIS Clickbank Collector)"
+  }
 }

@@ -66,7 +66,10 @@ COLLECTOR_SCHEDULER_SOURCE=clickbank-market
 COLLECTOR_SCHEDULER_MAX_PRODUCTS=25
 ```
 
-> Observação: o padrão operacional atual mantém a execução automática **habilitada** para fornecer evidências recorrentes a Argos.
+> Observação: a execução automática está **suspensa** enquanto não houver consumo ClickBank
+> comprovado pelo Product Discovery. A reativação é manual e exige o workflow `activate`,
+> uma coleta persistida e um consumidor de evidências validado. O Compose produtivo fixa o
+> scheduler em `false`; uma nova cadência requer alteração versionada.
 
 
 ## Compatibilidade Linux
@@ -83,9 +86,9 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
   - `collector.clickbank.search-url` (default: `https://app.clickbank.com/market/search`)
   - `collector.clickbank.session-cookie` (opção 1 para área logada)
   - `collector.clickbank.username-file` + `collector.clickbank.password-file` para a conta dedicada somente leitura
-- Agendamento automático:
-  - `collector.scheduler.enabled=true`
-  - `collector.scheduler.cron=0 0 */2 * * *` (**executa em horas pares**)
+- Agendamento automático (desabilitado por padrão):
+  - `collector.scheduler.enabled=false`
+  - `collector.scheduler.cron=0 0 * * * *` (quando reativado, executa em todos os horários)
   - `collector.scheduler.max-products=25`
 
 ## Variáveis de ambiente suportadas
@@ -124,15 +127,17 @@ Exemplo em produção (mesmo host do MOIS):
 
 - `http://177.153.62.107:9096/internal/ops-monitor/logfile`
 
-## Deploy automático (GitHub Actions)
+## Operação e reativação (GitHub Actions)
 
-O deploy deste módulo agora é automático via workflow:
+O workflow mantém o runtime retirado por padrão e só faz deploy por despacho manual `activate`:
 
 - Arquivo: `.github/workflows/mois-clickbank-collector-ci.yml`
-- Fluxo em `push` na `main` para alterações em `mois-clickbank-collector/**`:
-  1. roda testes (`mvn test`),
-  2. builda e publica imagem no GHCR,
-  3. faz deploy no mesmo host do MOIS principal (`177.153.62.107`).
+- Fluxo em `push` na `main`: roda testes e remove o runtime ClickBank do host MOIS.
+- Fluxo manual `activate`: roda testes, publica a imagem e implanta o módulo somente depois de
+  existir um consumidor de evidências validado.
+- Qualquer retirada ou reativação produtiva usa o escopo de intervenção `mois-clickbank`, que
+  pausa o workflow, registra a evidência e recupera a ação pendente somente após a integração
+  na `main`.
 
 ## Deploy no mesmo host do MOIS principal
 

@@ -345,6 +345,20 @@ class AutomaticRecoveryTest(unittest.TestCase):
         self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
         self.assertEqual(self.github.dispatches, [])
 
+    def test_clickbank_recovery_dispatches_retirement_and_requires_its_publication_job(self):
+        self.prepare(["mois-clickbank"])
+        self.assertEqual(self.recovery.reconcile()["status"], "WAITING")
+        self.assertEqual([name for name, _ in self.github.dispatches], ["mois-clickbank-collector-ci.yml"])
+        _, payload = self.github.dispatches[0]
+        self.assertEqual(payload["inputs"]["operation"], "retire")
+        run = self.github.completed_runs["mois-clickbank-collector-ci.yml"][0]
+        run.update(status="completed", conclusion="success")
+        self.github.jobs[run["id"]] = [{
+            "name": POLICY["mois-clickbank-collector-ci.yml"]["publication_job"],
+            "conclusion": "success",
+        }]
+        self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
+
     def test_existing_live_run_is_reused_without_dispatch(self):
         self.prepare()
         self.github.add_run("communication-agent-worker-ci.yml", status="queued", conclusion=None)

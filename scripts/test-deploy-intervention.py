@@ -106,6 +106,13 @@ class LocalCoordinationTest(unittest.TestCase):
         self.assertEqual(len({w["id"] for w in state["workflows"]}), 7)
         self.assertEqual(self.github.workflows["financial-agent-worker-ci.yml"]["state"], "active")
 
+    def test_clickbank_runtime_has_dedicated_reversible_scope(self):
+        state = self.begin(["mois-clickbank"])
+        self.assertEqual(state["phase"], "ACTIVE")
+        self.assertEqual([workflow["file"] for workflow in state["workflows"]],
+                         ["mois-clickbank-collector-ci.yml"])
+        self.assertEqual(self.resume(state)["phase"], "RELEASED")
+
     def test_in_progress_and_queued_runs_block_until_complete_without_cancellation(self):
         identifier = self.github.workflows["deploy-containers.yml"]["id"]
         for status in module.LIVE_STATUSES:
@@ -420,6 +427,11 @@ class ApiAndInventoryTest(unittest.TestCase):
         self.assertTrue(consumers <= set(module.SCOPES["app"]))
         self.assertNotIn("backend-ci.yml", module.SCOPES["app"])
         self.assertNotIn("frontend.yml", module.SCOPES["app"])
+
+    def test_clickbank_production_compose_cannot_reenable_scheduler_from_legacy_environment(self):
+        source = (ROOT / "mois-clickbank-collector/docker-compose.deploy.yml").read_text()
+        self.assertIn("COLLECTOR_SCHEDULER_ENABLED=false", source)
+        self.assertNotIn("COLLECTOR_SCHEDULER_ENABLED=${", source)
 
     def test_ci_protects_implementation_and_contract_changes(self):
         source = (ROOT / ".github/workflows/github-actions-contracts.yml").read_text()

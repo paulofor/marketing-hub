@@ -68,7 +68,7 @@ O worker seleciona a fonte por ciclo com a seguinte ordem canônica:
 - `worker.backend-base-url` → `${BACKEND_BASE_URL:http://191.252.181.168:8000}`
 - `worker.workspace-id` → `${MOIS_WORKSPACE_ID:workspace-001}`
 - `worker.source` → `${MOIS_SOURCE:HOTMART}`
-- `worker.sources` → `${MOIS_SOURCES:}`; operação atual deve manter somente `HOTMART` em runtime/deploy para evitar reprocessamento de fontes ClickBank durante o reinício da biblioteca.
+- `worker.sources` → `${MOIS_SOURCES:}`; operação atual deve manter somente `HOTMART` em runtime/deploy. O runtime ClickBank permanece retirado até que um consumidor de evidências seja homologado ponta a ponta.
 - `worker.poll-interval-ms` → `${MOIS_POLL_INTERVAL_MS:15000}`
 - `worker.request-timeout-ms` → `${MOIS_REQUEST_TIMEOUT_MS:300000}`
 
@@ -152,7 +152,7 @@ Portanto, rankings, scores e pesquisas complementares da biblioteca devem respon
 ### 12.1 Etapas macro (visão executiva)
 1. **Ingestão de produtos de sucesso (fontes de mercado)**
    - **Hotmart collector** seleciona produtos elegíveis, prioriza `salesPageUrl` com fallback em `detailsUrl` e envia para `POST /api/mois/sales-library/urls:ingest`.
-   - **ClickBank collector** aplica o mesmo padrão: prioriza `salesPageUrl`, usa fallback quando necessário e envia para o mesmo endpoint de ingestão.
+   - **ClickBank collector** aplica o mesmo padrão somente quando reativado após validação de consumo; no estado vigente, não executa nem envia URLs.
 2. **URL fica disponível na biblioteca**
    - O backend normaliza/canonicaliza URL, faz upsert em `mois_sales_page` e, para páginas novas, cria execução `PENDING` em `mois_sales_page_job_execution`.
 3. **Rotina que obtém conteúdo da página e envia para análise**
@@ -310,7 +310,7 @@ sequenceDiagram
 - **Resultado de análise atual/histórico**: `mois_sales_page_job_execution` + campos consolidados em `mois_sales_page`.
 
 ### 12.4 Regra operacional para evitar divergência de leitura
-Quando houver dúvida sobre “onde o fluxo começa”, considerar canonicamente que a alimentação da biblioteca inicia nos coletores (Hotmart/ClickBank), passa obrigatoriamente pelo endpoint `/urls:ingest` no backend e só então entra no ciclo assíncrono do worker.
+Quando houver dúvida sobre “onde o fluxo começa”, considerar canonicamente que a alimentação da biblioteca inicia nos coletores ativos (atualmente Hotmart), passa obrigatoriamente pelo endpoint `/urls:ingest` no backend e só então entra no ciclo assíncrono do worker. ClickBank usa o mesmo contrato somente após reativação validada.
 
 ### 12.4 Ações manuais de status no detalhe da análise (2026-05-21)
 - A tela de detalhe (`/mois/sales-pages-library/{pageId}`) passa a expor comandos operacionais manuais para acelerar triagem:

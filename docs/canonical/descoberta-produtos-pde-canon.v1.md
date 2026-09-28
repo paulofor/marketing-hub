@@ -534,8 +534,9 @@ marketplace. Antes da coleta, ele deve persistir um plano versionado com pergunt
 consultas públicas, marketplaces autorizados, pedidos de cobertura Meta, limites de produtos e
 anuncios e condições de parada.
 
-Hotmart e ClickBank permanecem como coletores autenticados isolados. O plano de Argos
-funciona como solicitação dirigida; os coletores são responsáveis por autenticação e
+Hotmart permanece como coletor autenticado ativo. ClickBank continua isolado e versionado, mas está
+suspenso até comprovar consumidor, persistência sem duplicidade e uso comercial auditável. O plano de
+Argos funciona como solicitação dirigida; os coletores ativos são responsáveis por autenticação e
 captura estruturada. Como a cadeia PDE aceita kits, webapps, agentes, serviços assistidos
 e outros formatos digitais, páginas comerciais públicas de concorrentes também podem
 compor o conjunto comparável quando preservarem URL, domínio, descrição, preço disponível,

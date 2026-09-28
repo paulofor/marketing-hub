@@ -50,8 +50,9 @@ falha após a última correção. Limitações e operação real serão registra
 3. Guardar o `id` retornado. `DRAINING`/exit 75 significa que ainda não é seguro intervir.
    Consultar `status` e repetir `protect --id ...` após as execuções existentes terminarem.
 4. Se necessário, executar `discard-unstarted --id ... --keep-run ...` para retirar revisões
-   antigas ainda sem jobs da fila APP e conservar o run já existente da main atual. Não força
-   cancelamento de transações em execução, não cancela filas de agentes e não dispara builds.
+   antigas ainda sem jobs das filas selecionadas e conservar o run já existente da main atual.
+   O comando relê workflow, status e jobs imediatamente antes de agir; não força cancelamento
+   de transações iniciadas, não alcança filas fora do registro e não dispara builds.
 5. Em `ACTIVE`, executar os comandos já autorizados sob `execute`, mantendo a exclusão entre
    operadores durante toda a alteração e a conferência. O registro permanece aberto entre comandos.
 6. Ao encerrar a homologação e identificar o commit exato validado, registrar `prepare-resume`
@@ -174,3 +175,18 @@ intervenção. O registro remoto e o histórico de cada decisão foram preservad
 O coordenador, a regra em `AGENTS.md` e sua regressão no CI permanecem na worktree, revisados
 e validados, para integração pelo PR do usuário. Nenhum commit, push ou PR foi criado por esta
 execução. Não houve topologia Docker temporária nem processo de monitoramento deixado ativo.
+
+## Fila dedicada sem jobs encontrada em 28/09/2026
+
+Na proteção pré-merge do PR #5403, a intervenção `8f8f1a8668e54398ab61603870cd4495`
+selecionou `app`, `hermes` e `facebook-ads`. A inspeção encontrou cinco revisões antigas da fila
+APP em `pending` e o run `31125737894` do Growth Operator em `queued` desde 06/08, todos sem jobs.
+O contrato anterior só permitia o descarte auditável da fila APP e, por isso, não conseguiria
+chegar a `ACTIVE` sem uma ação manual fora do coordenador.
+
+O descarte foi generalizado somente para workflows já selecionados no registro, preservando as
+barreiras de workflow pausado, status `pending`/`queued`, zero jobs, releitura imediatamente antes
+da mutação e nova inspeção depois do aceite. Duas rodadas consecutivas de 38 testes de proteção e
+50 de recuperação passaram. Os seis runs sem execução iniciada foram retirados; o run APP
+`36416772953`, que já possuía jobs e publicação em andamento, permaneceu intocado e manteve a
+intervenção em `DRAINING`, como exige o contrato.

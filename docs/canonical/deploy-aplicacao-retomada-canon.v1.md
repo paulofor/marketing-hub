@@ -19,12 +19,13 @@ observadas e decisões de retomada permanecem auditáveis. A perda da conexão, 
 fim da sessão não libera automaticamente a pausa. Não cancelar uma transação remota em curso.
 Não usar PR, push, dispatch ou deploy para testar este controle.
 
-Quando a fila global do APP contiver revisões antigas que sequer iniciaram jobs, o comando
-explícito `discard-unstarted` pode removê-las: exige publicadores pausados, status `pending` ou `queued`,
-zero jobs e nova leitura do estado antes do pedido de cancelamento. Runs iniciados e filas de
-outros publicadores continuam em drenagem. `--keep-run` preserva uma execução existente da
-`main` atual, permitindo terminar a publicação já enfileirada da correção integrada antes
-de iniciar a intervenção. O aceite do cancelamento não libera a proteção; a fila é reconsultada.
+Quando uma fila selecionada contiver revisões antigas que sequer iniciaram jobs, o comando
+explícito `discard-unstarted` pode removê-las: exige todos os publicadores do registro pausados,
+status `pending` ou `queued`, zero jobs e nova leitura do estado antes do pedido de cancelamento.
+Runs iniciados e filas fora dos escopos selecionados continuam intocados e em drenagem.
+`--keep-run` preserva uma publicação existente da `main` atual em qualquer publicador selecionado,
+permitindo terminar a revisão já enfileirada antes de iniciar a intervenção. O aceite do
+cancelamento não libera a proteção; a fila é reconsultada.
 
 Comandos operacionais passam por `execute`, que mantém o lock e registra `OPERATING` antes
 de iniciar o processo. Se houver desconexão sem resultado, `protect` e `resume` recusam a

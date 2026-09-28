@@ -107,4 +107,35 @@ describe("FacebookCampaignExperimentsPage", () => {
       screen.getByText("Mais recentes primeiro · exibindo 26-30 de 30"),
     ).toBeInTheDocument();
   });
+
+  it("separa configuração ACTIVE da entrega encerrada sem exibir Em dia", () => {
+    const experiment = makeExperiment(91);
+    experiment.campaignOperation = {
+      campaignId: "120251556536430326",
+      configuredStatus: "ACTIVE",
+      effectiveStatus: "ACTIVE",
+      persistedStatus: "ACTIVE",
+      deliveryState: "WINDOW_ENDED",
+      deliveringNow: false,
+      windowStart: "2026-09-20T03:00:00Z",
+      windowEnd: "2026-09-27T02:59:59Z",
+      statusLastSyncedAt: "2026-09-28T12:09:56Z",
+      budgetRemainingMinor: 47,
+      metricsFinalSyncedAt: null,
+    };
+
+    setup([experiment]);
+
+    expect(
+      screen.getByRole("button", { name: "Em operação" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Ativas" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Configuração completa")).toBeInTheDocument();
+    expect(screen.queryByText("Em dia")).not.toBeInTheDocument();
+    expect(screen.getByText("ACTIVE")).toBeInTheDocument();
+    expect(screen.getByText("Janela encerrada")).toBeInTheDocument();
+    expect(screen.getByText("Saldo Meta R$ 0,47")).toBeInTheDocument();
+  });
 });

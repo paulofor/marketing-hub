@@ -4,6 +4,7 @@ package com.marketinghub.experiment.dto;
 public enum ExperimentReadinessIssueType {
   CREATIVE,
   BUDGET,
+  AUTHORIZED_WINDOW,
   LEAD_PORTAL_FLOW,
   PRODUCT_AI_FUNNEL,
   VIDEO_ASSET,

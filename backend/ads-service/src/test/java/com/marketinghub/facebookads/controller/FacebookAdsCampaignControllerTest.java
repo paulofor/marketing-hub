@@ -33,6 +33,7 @@ import com.marketinghub.experiment.funnel.ExperimentFunnelAutoStopService;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.experiment.service.ExperimentWindowReconciliationService;
 import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsAd;
@@ -40,6 +41,7 @@ import com.marketinghub.facebookads.FacebookAdsAdCreative;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.service.CampaignStrategyService;
+import com.marketinghub.facebookads.service.FacebookCampaignOperationalStatusService;
 import com.marketinghub.facebookads.service.publicationstep.FacebookCampaignPublicationJobStepService;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
@@ -119,6 +121,8 @@ class FacebookAdsCampaignControllerTest {
   @MockBean ExperimentCampaignMetricService campaignMetricService;
   @MockBean ExperimentVideoAssetService experimentVideoAssetService;
   @MockBean CommercialPlanLandingAssetService landingAssetService;
+  @MockBean ExperimentWindowReconciliationService windowReconciliationService;
+  @MockBean FacebookCampaignOperationalStatusService operationalStatusService;
 
   @BeforeEach
   // Mantém prontos os gates que não são o objeto dos contratos HTTP exercitados nesta classe.
@@ -681,7 +685,7 @@ class FacebookAdsCampaignControllerTest {
     var ad = new FacebookAdsAd();
     ad.setId("ad-sync");
     ad.setStatus(FacebookAdStatus.PAUSED);
-    when(campaignRepository.findById("cmp-sync")).thenReturn(Optional.of(campaign));
+    when(campaignRepository.findForStatusSync("cmp-sync")).thenReturn(Optional.of(campaign));
     when(adSetRepository.findById("adset-sync")).thenReturn(Optional.of(adSet));
     when(adRepository.findById("ad-sync")).thenReturn(Optional.of(ad));
 
@@ -728,7 +732,7 @@ class FacebookAdsCampaignControllerTest {
     campaign.setId("cmp-paused");
     campaign.setExperiment(experiment);
     campaign.setStatus(FacebookAdStatus.ACTIVE);
-    when(campaignRepository.findById("cmp-paused")).thenReturn(Optional.of(campaign));
+    when(campaignRepository.findForStatusSync("cmp-paused")).thenReturn(Optional.of(campaign));
 
     String payload =
         """
@@ -747,6 +751,64 @@ class FacebookAdsCampaignControllerTest {
 
     assertThat(campaign.getStatus()).isEqualTo(FacebookAdStatus.PAUSED);
     assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.USER_STOPPED);
+  }
+
+  /** Persiste janela, saldo e observação usados para reconciliar campanha Meta vencida. */
+  @Test
+  void syncStatusPersistsOfficialWindowAndDelegatesExpirationDecision() throws Exception {
+    var experiment = new Experiment();
+    experiment.setId(91L);
+    experiment.setStatus(ExperimentStatus.RUNNING);
+    var campaign = new FacebookAdsCampaign();
+    campaign.setId("cmp-expired");
+    campaign.setExperiment(experiment);
+    campaign.setStatus(FacebookAdStatus.ACTIVE);
+    var adSet = new FacebookAdsAdSet();
+    adSet.setId("adset-expired");
+    adSet.setCampaign(campaign);
+    when(campaignRepository.findForStatusSync("cmp-expired")).thenReturn(Optional.of(campaign));
+    when(adSetRepository.findById("adset-expired")).thenReturn(Optional.of(adSet));
+    when(windowReconciliationService.reconcileFacebookWindow(
+            eq(campaign), eq(Instant.parse("2026-09-28T12:09:56Z")), eq(true)))
+        .thenReturn(true);
+
+    mockMvc
+        .perform(
+            post("/api/facebook-campaigns/cmp-expired/status-sync")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "status": "ACTIVE",
+                      "effectiveStatus": "ACTIVE",
+                      "startTime": "2026-09-20T03:00:00Z",
+                      "stopTime": "2026-09-27T02:59:59Z",
+                      "observedAt": "2026-09-28T12:09:56Z",
+                      "windowExpired": true,
+                      "pauseConfirmed": true,
+                      "adSets": [{
+                        "id": "adset-expired",
+                        "status": "ACTIVE",
+                        "effectiveStatus": "ACTIVE",
+                        "startTime": "2026-09-20T03:00:00Z",
+                        "endTime": "2026-09-27T02:59:59Z",
+                        "lifetimeBudgetMinor": 15000,
+                        "budgetRemainingMinor": 47
+                      }]
+                    }
+                    """))
+        .andExpect(status().isAccepted());
+
+    assertThat(campaign.getMetaConfiguredStatus()).isEqualTo("ACTIVE");
+    assertThat(campaign.getMetaStopTime()).isEqualTo(Instant.parse("2026-09-27T02:59:59Z"));
+    assertThat(campaign.getStatus()).isEqualTo(FacebookAdStatus.PAUSED);
+    assertThat(campaign.getStopRequestedAt()).isEqualTo(Instant.parse("2026-09-28T12:09:56Z"));
+    assertThat(campaign.getStopCompletedAt()).isEqualTo(Instant.parse("2026-09-28T12:09:56Z"));
+    assertThat(adSet.getLifetimeBudgetMinor()).isEqualTo(15000L);
+    assertThat(adSet.getBudgetRemainingMinor()).isEqualTo(47L);
+    assertThat(adSet.getEndTime()).isEqualTo(java.time.LocalDateTime.parse("2026-09-26T23:59:59"));
+    verify(windowReconciliationService)
+        .reconcileFacebookWindow(campaign, Instant.parse("2026-09-28T12:09:56Z"), true);
   }
 
   @Test

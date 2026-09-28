@@ -88,6 +88,26 @@ paths:
           schema: {type: integer, format: int64}
       responses:
         "200": {description: Ciclo atual ou novo ciclo criado quando as evidencias mudam.}
+  /api/growth-operator/v1/internal/experiments/windows/reconcile:
+    post:
+      summary: Solicita ao backend a reconciliação determinística das janelas do canal direto.
+      description: >-
+        O worker controla a cadência; o backend decide e audita quais experimentos RUNNING estão
+        sem prazo, ainda não abertos, invertidos ou vencidos.
+      responses:
+        "200":
+          description: Varredura concluída de forma idempotente.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [scanned, closed, closedExperimentIds]
+                properties:
+                  scanned: {type: integer}
+                  closed: {type: integer}
+                  closedExperimentIds:
+                    type: array
+                    items: {type: integer, format: int64}
   /api/growth-operator/v1/internal/experiments/{experimentId}/session-intelligence:
     get:
       summary: Entrega ao BPM a fonte canônica do experimento, com atribuição e disponibilidade explícitas.

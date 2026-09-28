@@ -2165,3 +2165,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-26-processo2-identidade-produto-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-28-facebook-campaign-window-reconciliation-v1.yaml
+      relativeToChangelogFile: true

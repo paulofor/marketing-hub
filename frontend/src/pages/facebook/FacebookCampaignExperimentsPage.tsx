@@ -10,8 +10,31 @@ import { useFacebookCampaignExperiments } from "../../api/useFacebookCampaignExp
 import PageTitle from "../../components/PageTitle";
 import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
 import { MissingConfigurationList } from "./MissingConfigurationList";
+import type { CampaignDeliveryState } from "../../api/useFacebookCampaignExperiments";
 
 const EXPERIMENTS_PER_PAGE = 25;
+const DELIVERY_PRESENTATION: Record<
+  CampaignDeliveryState,
+  { label: string; badge: string }
+> = {
+  NOT_PUBLISHED: { label: "Campanha não publicada", badge: "text-bg-light" },
+  SCHEDULED: { label: "Agendada; ainda não entrega", badge: "text-bg-info" },
+  WINDOW_ENDED: { label: "Janela encerrada", badge: "text-bg-danger" },
+  PAUSE_PENDING: { label: "Pausa em confirmação", badge: "text-bg-warning" },
+  NOT_DELIVERING: { label: "Não entregando", badge: "text-bg-secondary" },
+  AWAITING_STATUS_SYNC: {
+    label: "Aguardando confirmação da Meta",
+    badge: "text-bg-warning",
+  },
+  STATUS_STALE: {
+    label: "Confirmação da Meta vencida",
+    badge: "text-bg-warning",
+  },
+  ELIGIBLE_NOT_CONFIRMED: {
+    label: "Apta; entrega atual não comprovada",
+    badge: "text-bg-primary",
+  },
+};
 
 export default function FacebookCampaignExperimentsPage() {
   const [status, setStatus] = useState("PLANNED");
@@ -53,7 +76,9 @@ export default function FacebookCampaignExperimentsPage() {
   const formatDateTime = (value?: string | null) =>
     value ? new Date(value).toLocaleString("pt-BR") : "--";
   const formatPercent = (value?: number | null) =>
-    typeof value === "number" ? `${numberFormatter.format(value * 100)}%` : "--";
+    typeof value === "number"
+      ? `${numberFormatter.format(value * 100)}%`
+      : "--";
 
   useEffect(() => {
     setCurrentPage(1);
@@ -64,7 +89,7 @@ export default function FacebookCampaignExperimentsPage() {
   }, [totalPages]);
 
   const renderMetrics = (experiment: (typeof experiments)[number]) => {
-    if (status !== "RUNNING") {
+    if (status === "PLANNED") {
       return <span className="text-muted">--</span>;
     }
     const metrics = experiment.metrics;
@@ -123,6 +148,53 @@ export default function FacebookCampaignExperimentsPage() {
     );
   };
 
+  const renderMetaConfiguration = (
+    experiment: (typeof experiments)[number],
+  ) => {
+    const operation = experiment.campaignOperation;
+    if (!operation?.campaignId) {
+      return <span className="text-muted">Não publicada</span>;
+    }
+    return (
+      <div className="small">
+        <span className="badge text-bg-light border">
+          {operation.configuredStatus ?? "Não informado"}
+        </span>
+        <div className="text-muted mt-1">Campanha {operation.campaignId}</div>
+      </div>
+    );
+  };
+
+  const renderDelivery = (experiment: (typeof experiments)[number]) => {
+    const operation = experiment.campaignOperation;
+    if (!operation) {
+      return <span className="text-muted">Sem leitura operacional</span>;
+    }
+    const presentation = DELIVERY_PRESENTATION[operation.deliveryState];
+    return (
+      <div className="small">
+        <span className={`badge ${presentation.badge}`}>
+          {presentation.label}
+        </span>
+        {operation.windowEnd ? (
+          <div className="text-muted mt-1">
+            Término {formatDateTime(operation.windowEnd)}
+          </div>
+        ) : null}
+        {typeof operation.budgetRemainingMinor === "number" ? (
+          <div className="text-muted">
+            Saldo Meta {formatCurrency(operation.budgetRemainingMinor / 100)}
+          </div>
+        ) : null}
+        {operation.statusLastSyncedAt ? (
+          <div className="text-muted">
+            Confirmado {formatDateTime(operation.statusLastSyncedAt)}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   const renderStrategy = (experiment: (typeof experiments)[number]) => {
     const strategy = experiment.campaignStrategy;
     if (!strategy) {
@@ -163,21 +235,27 @@ export default function FacebookCampaignExperimentsPage() {
           </div>
         </div>
       ) : null}
-      <div className="btn-group mb-3">
+      <div className="d-flex flex-wrap gap-2 mb-3">
         <button
-          className={`btn btn-outline-primary${status === "PLANNED" ? " active" : ""}`}
+          className={`btn btn-outline-primary flex-grow-1 flex-sm-grow-0${status === "PLANNED" ? " active" : ""}`}
           onClick={() => setStatus("PLANNED")}
         >
           Planejadas
         </button>
         <button
-          className={`btn btn-outline-primary${status === "RUNNING" ? " active" : ""}`}
+          className={`btn btn-outline-primary flex-grow-1 flex-sm-grow-0${status === "RUNNING" ? " active" : ""}`}
           onClick={() => setStatus("RUNNING")}
         >
-          Ativas
+          Em operação
         </button>
         <button
-          className={`btn btn-outline-primary${status === "FINISHED" ? " active" : ""}`}
+          className={`btn btn-outline-primary flex-grow-1 flex-sm-grow-0${status === "INCONCLUSIVE" ? " active" : ""}`}
+          onClick={() => setStatus("INCONCLUSIVE")}
+        >
+          Inconclusivas
+        </button>
+        <button
+          className={`btn btn-outline-primary flex-grow-1 flex-sm-grow-0${status === "FINISHED" ? " active" : ""}`}
           onClick={() => setStatus("FINISHED")}
         >
           Encerradas
@@ -202,7 +280,9 @@ export default function FacebookCampaignExperimentsPage() {
                 <th>KPI alvo</th>
                 <th>Início</th>
                 <th>Término</th>
-                <th>Pendências</th>
+                <th>Prontidão</th>
+                <th>Configuração Meta</th>
+                <th>Entrega atual</th>
                 <th>Estratégia</th>
                 <th>Desempenho</th>
               </tr>
@@ -232,10 +312,12 @@ export default function FacebookCampaignExperimentsPage() {
                     ) : (
                       <span className="badge text-bg-success d-inline-flex align-items-center gap-1">
                         <CheckCircle2 size={14} aria-hidden="true" />
-                        Em dia
+                        Configuração completa
                       </span>
                     )}
                   </td>
+                  <td>{renderMetaConfiguration(e)}</td>
+                  <td>{renderDelivery(e)}</td>
                   <td>{renderStrategy(e)}</td>
                   <td>{renderMetrics(e)}</td>
                 </tr>

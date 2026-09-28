@@ -128,6 +128,9 @@ sequenceDiagram
 | GET | `/api/facebook-campaigns/experiments-ready` | `FacebookCampaignService` | Recuperar experimentos elegíveis | `404` vira lista vazia; falhas de rede apenas emitem `WARN` |
 | GET | `/api/facebook-campaigns/experiments/{id}/creatives-ready` | `FacebookCampaignService` | Buscar criativos aprovados pelo contrato exclusivo de consumo do módulo Facebook | Erros retornam lista vazia; o experimento é ignorado |
 | POST | `/api/facebook-campaigns` | `FacebookCampaignService` | Registrar campanha, conjunto, criativo e anúncio criados | Exceções interrompem apenas o experimento atual |
+| GET | `/api/facebook-campaigns/metrics/sync-targets` | `FacebookCampaignMetricsService` | Listar campanhas em execução ou em liquidação final | Lista vazia encerra o ciclo sem chamada Meta |
+| POST | `/api/facebook-campaigns/{campaignId}/status-sync` | `FacebookCampaignMetricsService` | Reportar configuração, efetividade, janela, saldo e confirmação de pausa | O backend encerra janela vencida e cria retry oficial de parada se necessário |
+| POST | `/api/facebook-campaigns/{campaignId}/metrics` | `FacebookCampaignMetricsService` | Persistir Insight acumulado, inclusive a medição final | Uma campanha terminal sai da fila após `metrics_final_synced_at` |
 | PATCH | `/api/experiments/{id}/status?status=FAILED` | `FacebookCampaignService` | Marcar experimento bloqueado por permissão | Falhas são apenas logadas |
 | GET | `/api/accounts/facebook/renewal/eligible` | `FacebookTokenRenewalService` | Listar contas com renovação necessária | Erros retornam lista vazia |
 | POST | `/api/accounts/facebook/{id}/token/renewal` | `FacebookTokenRenewalClient` | Persistir sucesso ou falha da renovação | Erros são logados com `ERROR` |
@@ -144,6 +147,7 @@ sequenceDiagram
 | POST | `/v23.0/act_<adAccountId>/adcreatives` | `FacebookAdsService.createAdCreative` | `object_story_spec` com `page_id`, `instagram_user_id`, mensagem, CTA, link ou lead form + `image_hash` | Evitar `image_url` direto no criativo; usar hash retornado por `/adimages` |
 | POST | `/v23.0/act_<adAccountId>/ads` | `FacebookAdsService.createAd` | Nome, `adset_id`, `creative_id`, `status=PAUSED` | Mantido pausado para revisão manual |
 | POST | `/v23.0/{campaignId}` | `FacebookAdsService.pauseCampaign` | `status=PAUSED`, `access_token` | Conforme [referência oficial da Marketing API](https://developers.facebook.com/docs/marketing-api/reference/ad-campaign/#Updating) |
+| GET | `/v23.0/{campaignId}` | `FacebookCampaignStatusSnapshotClient` | `start_time`, `stop_time`, estados, saldo/orçamento e ad sets expandidos | A URL logada omite o token; `stop_time` vencido dispara pausa antes do callback |
 | GET | `/v23.0/{campaignId}/insights` | `FacebookAdsService.getCampaignMetrics` | Retorna métricas agregadas da campanha | Trata `(#190)` como token expirado |
 | GET | `/v23.0/oauth/access_token` | `FacebookAdsService.renewLongLivedToken` | Query com `grant_type=fb_exchange_token`, `client_id`, `client_secret`, `fb_exchange_token` | Logs mascaram o token e retornam `expires_in` |
 

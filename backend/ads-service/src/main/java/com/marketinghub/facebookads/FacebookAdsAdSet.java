@@ -12,6 +12,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+/** Representa um conjunto de anúncios publicado na Meta e vinculado a uma campanha do Hub. */
 @Entity
 @Table(name = "facebook_ads_ad_set")
 @Getter
@@ -51,6 +52,9 @@ public class FacebookAdsAdSet {
 
   @Column(name = "end_time")
   private LocalDateTime endTime;
+
+  @Column(name = "budget_remaining_minor")
+  private Long budgetRemainingMinor;
 
   @Column(name = "billing_event", nullable = false)
   private String billingEvent;

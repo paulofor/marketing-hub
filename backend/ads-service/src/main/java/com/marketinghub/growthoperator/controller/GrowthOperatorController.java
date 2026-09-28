@@ -1,5 +1,6 @@
 package com.marketinghub.growthoperator.controller;
 
+import com.marketinghub.experiment.service.ExperimentWindowReconciliationService.ReconciliationResult;
 import com.marketinghub.growthoperator.service.GrowthOperatorService;
 import com.marketinghub.growthoperator.service.action.GrowthOperatorExperimentActionRequest;
 import com.marketinghub.growthoperator.service.action.ResolveGrowthOperatorTaskRequest;
@@ -117,6 +118,12 @@ public class GrowthOperatorController {
   @PostMapping("/internal/commercial-plans/executions/ensure-active")
   public List<GrowthOperatorExecutionResponse> ensureActivePlanCycles() {
     return service.ensureActivePlanCycles();
+  }
+
+  /** Solicita a reconciliação determinística das janelas comerciais do canal direto. */
+  @PostMapping("/internal/experiments/windows/reconcile")
+  public ReconciliationResult reconcileExperimentWindows() {
+    return service.reconcileExperimentWindows();
   }
 
   /** Recebe um diagnostico estruturado sem aplicar a recomendacao. */

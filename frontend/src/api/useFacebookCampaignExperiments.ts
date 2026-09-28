@@ -30,6 +30,30 @@ export interface CampaignStrategySummary {
   enabled: boolean;
 }
 
+export type CampaignDeliveryState =
+  | "NOT_PUBLISHED"
+  | "SCHEDULED"
+  | "WINDOW_ENDED"
+  | "PAUSE_PENDING"
+  | "NOT_DELIVERING"
+  | "AWAITING_STATUS_SYNC"
+  | "STATUS_STALE"
+  | "ELIGIBLE_NOT_CONFIRMED";
+
+export interface CampaignOperationSummary {
+  campaignId: string | null;
+  configuredStatus: string | null;
+  effectiveStatus: string | null;
+  persistedStatus: string | null;
+  deliveryState: CampaignDeliveryState;
+  deliveringNow: boolean | null;
+  windowStart: string | null;
+  windowEnd: string | null;
+  statusLastSyncedAt: string | null;
+  budgetRemainingMinor: number | null;
+  metricsFinalSyncedAt: string | null;
+}
+
 export interface ExperimentSummary {
   id: number;
   name: string;
@@ -51,6 +75,7 @@ export interface ExperimentSummary {
   leadPortalFunnel?: LeadPortalFunnelSummary | null;
   metrics?: CampaignMetricSummary | null;
   campaignStrategy?: CampaignStrategySummary | null;
+  campaignOperation?: CampaignOperationSummary | null;
 }
 
 export function useFacebookCampaignExperiments(status: string) {

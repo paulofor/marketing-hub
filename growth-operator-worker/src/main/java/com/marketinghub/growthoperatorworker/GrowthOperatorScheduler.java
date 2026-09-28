@@ -27,6 +27,7 @@ public class GrowthOperatorScheduler {
   /** Processa em PLAY no máximo um diagnóstico por ciclo para preservar custo e auditabilidade. */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
+    reconcileExperimentWindowsWithoutBlockingPendingQueue();
     if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     GrowthOperatorJob job = null;
     try {
@@ -50,6 +51,17 @@ public class GrowthOperatorScheduler {
         backendClient.fail(
             job.id(), ex.getMessage() == null ? ex.getClass().getName() : ex.getMessage());
       }
+    }
+  }
+
+  /** Executa a trava temporal determinística mesmo quando o diagnóstico por IA estiver pausado. */
+  private void reconcileExperimentWindowsWithoutBlockingPendingQueue() {
+    try {
+      backendClient.reconcileExperimentWindows();
+    } catch (Exception ex) {
+      log.warn(
+          "Reconciliação de janelas comerciais indisponível no growth-operator-worker; a fila principal seguirá isolada",
+          ex);
     }
   }
 

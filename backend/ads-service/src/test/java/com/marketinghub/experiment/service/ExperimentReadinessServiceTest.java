@@ -301,6 +301,28 @@ class ExperimentReadinessServiceTest {
         .containsExactly("Canal individual pronto");
   }
 
+  /** Bloqueia execução direta sem início e término comerciais autorizados. */
+  @Test
+  void shouldBlockDirectChannelWithoutAuthorizedWindow() {
+    Long experimentId = 82L;
+    Experiment experiment = buildExperiment(experimentId, 92L);
+    experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    clearMediaSpendPlan(experiment);
+    experiment.setStartDate(null);
+    experiment.setEndDate(null);
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.issues())
+        .extracting(ExperimentReadinessIssueDto::type)
+        .contains(ExperimentReadinessIssueType.AUTHORIZED_WINDOW);
+    assertThat(summary.runningGateRequirements())
+        .filteredOn(requirement -> requirement.code().equals("AUTHORIZED_WINDOW_READY"))
+        .singleElement()
+        .satisfies(requirement -> assertThat(requirement.ready()).isFalse());
+  }
+
   @Test
   void shouldUseReadyCreativeAsApprovalSourceEvenWhenExperimentFlagIsStale() {
     Long experimentId = 22L;
@@ -1231,8 +1253,8 @@ class ExperimentReadinessServiceTest {
   private void clearMediaSpendPlan(Experiment experiment) {
     experiment.setDailyBudget(null);
     experiment.setMediaSpendLimit(null);
-    experiment.setStartDate(null);
-    experiment.setEndDate(null);
+    experiment.setStartDate(LocalDate.now().minusDays(1));
+    experiment.setEndDate(LocalDate.now().plusDays(1));
   }
 
   /** Preenche o contrato comercial mínimo gerado pela etapa Oferta. */

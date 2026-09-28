@@ -1802,6 +1802,8 @@ class ExperimentServiceTest {
     request.setJourneyTemplateId(createJourneyTemplate().getId());
     Experiment experiment = service.create(request);
     experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    experiment.setStartDate(LocalDate.now().minusDays(1));
+    experiment.setEndDate(LocalDate.now().plusDays(1));
     experiment = experimentRepository.saveAndFlush(experiment);
     completeCommercialContract(experiment);
 
@@ -1847,6 +1849,19 @@ class ExperimentServiceTest {
               assertThat(change.getAction()).isEqualTo("START");
               assertThat(change.getChangedBy()).isEqualTo("ADMIN_UI");
             });
+
+    running.setStatus(ExperimentStatus.INCONCLUSIVE);
+    running.setStartDate(null);
+    running.setEndDate(null);
+    experimentRepository.saveAndFlush(running);
+    assertThatThrownBy(
+            () ->
+                service.reactivate(
+                    experimentId,
+                    new com.marketinghub.experiment.dto.ReactivateExperimentRequest(
+                        "Nova rodada direta sem prazo")))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("startDate and endDate required for direct channel");
   }
 
   @Test

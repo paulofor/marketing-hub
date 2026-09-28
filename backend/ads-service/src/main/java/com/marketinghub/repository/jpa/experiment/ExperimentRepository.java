@@ -111,6 +111,18 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
 
   List<Experiment> findByStatusAndPlatform(ExperimentStatus status, ExperimentPlatform platform);
 
+  /** Serializa o encerramento temporal para impedir auditorias duplicadas entre workers. */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      """
+      select e from Experiment e
+      where e.status = :status
+        and e.platform = :platform
+      order by e.id
+      """)
+  List<Experiment> findForWindowReconciliation(
+      @Param("status") ExperimentStatus status, @Param("platform") ExperimentPlatform platform);
+
   /**
    * Busca experimentos reprovados por 100 acessos sem envio de formulário para a mesma hipótese.
    */

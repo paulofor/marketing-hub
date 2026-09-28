@@ -120,6 +120,26 @@ class ExperimentRunMetricLifecycleServiceTest {
     verify(experimentRunRepository).save(run);
   }
 
+  /** Encerra prazo sem amostra como evidência insuficiente, não como falha comercial. */
+  @Test
+  void completesExpiredWindowWithoutInventingCommercialFailure() {
+    Experiment experiment = Experiment.builder().id(91L).build();
+    ExperimentRun run = run(experiment, ExperimentRunStatus.RUNNING);
+    when(experimentRunRepository.findTopByExperimentIdAndModeOrderByRunNumberDesc(
+            91L, ExperimentRunMode.PRODUCTION))
+        .thenReturn(Optional.of(run));
+
+    service.completeCommercialStop(
+        experiment,
+        FacebookCampaignStopReason.CAMPAIGN_AUTHORIZED_WINDOW_ENDED,
+        "janela terminou sem amostra suficiente");
+
+    assertThat(run.getStatus()).isEqualTo(ExperimentRunStatus.COMPLETED);
+    assertThat(run.getEvidenceValidity()).isEqualTo(ExperimentEvidenceValidity.INSUFFICIENT_DATA);
+    assertThat(run.getFailureClassification()).isNull();
+    verify(experimentRunRepository).save(run);
+  }
+
   /** Conclui a execução por meta atingida sem registrar falha da hipótese comercial. */
   @Test
   void completesCommercialRunAsSuccessAtPurchaseGoal() {

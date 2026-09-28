@@ -44,6 +44,7 @@ import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.producttype.ProductTypeDefinitionRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -188,7 +189,7 @@ class ExperimentDirectPdeActivationIntegrationTest {
         .noneMatch(change -> change.getExperiment().getId().equals(fixture.experimentId()));
   }
 
-  /** Cria dados independentes equivalentes ao Rigel, incluindo os quatro gates auditáveis. */
+  /** Cria dados equivalentes ao Rigel com janela vigente e os quatro gates auditáveis. */
   private ActivationFixture readyRigelFixture() {
     String suffix = UUID.randomUUID().toString();
     ProductTypeDefinition pdeType =
@@ -234,6 +235,8 @@ class ExperimentDirectPdeActivationIntegrationTest {
                 .experimentType(ExperimentType.LOW_TICKET_PRODUCT)
                 .platform(ExperimentPlatform.DIRECT_ONE_TO_ONE)
                 .sampleSize(15)
+                .startDate(LocalDate.now().minusDays(1))
+                .endDate(LocalDate.now().plusDays(1))
                 .status(ExperimentStatus.PLANNED)
                 .build());
     commercialPlanRepository.save(

@@ -7359,3 +7359,19 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
 - A solucao escolhida e separar `mira-private-v3` de `mira-commercial-v1` e adotar preflight de
   entrega candidata seguido da validacao comercial completa. A matriz esta em
   `docs/homologacao/mira-commercial-v1.md`.
+
+## 2026-09-28 — Reconciliação das janelas de Vega #89, #90 e #91
+
+- A Meta confirmou que #91 preservava configuração `ACTIVE`, mas sua janela terminou em 26/09,
+  restavam R$ 0,47 e a entrega dos dois dias seguintes era zero. #89 estava vencido e #90 não tinha
+  prazo ou atividade; os três estados `RUNNING` eram operacionalmente falsos.
+- Foram comparados reparo manual, decisão isolada no worker e reconciliação coordenada. A terceira
+  opção foi escolhida: o worker controla chamadas e cadência; o backend permanece fonte de verdade
+  da conclusão comercial e da auditoria.
+- O ciclo Meta agora relê janela/orçamento/saldo, pausa o objeto vencido e envia uma medição final.
+  O backend encerra como `INCONCLUSIVE`, fecha run com evidência insuficiente, cancela tarefas e
+  interrompe novas recomendações. O Growth Operator reconcilia diretos vencidos ou sem prazo.
+- A tela separa **Configuração Meta** de **Entrega atual**, renomeia `RUNNING` para **Em operação** e
+  substitui “Em dia” por **Configuração completa**. Estado ativo nunca mais é apresentado como prova
+  de veiculação.
+- Matriz e evidências: `docs/homologacao/reconciliacao-janelas-experimentos-v1.md`.

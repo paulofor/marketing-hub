@@ -316,13 +316,16 @@ ao Aprovador Meta para reescrita semântica antes de uma nova tentativa.
    criados, já em `ACTIVE`, permitindo que o experimento comece a rodar sem
    ativação manual no Gerenciador de Anúncios.
 
-No ciclo periódico de métricas, o worker também consulta `status` e
-`effective_status` da campanha, dos conjuntos de anúncios e dos anúncios na
-Graph API e envia o snapshot ao backend por
+No ciclo periódico de métricas, o worker também consulta `start_time`,
+`stop_time`, `status` e `effective_status` da campanha; nos conjuntos, consulta
+`start_time`, `end_time`, orçamento e saldo, além dos estados dos anúncios. O
+snapshot é enviado ao backend por
 `POST /api/facebook-campaigns/{campaignId}/status-sync`. Com isso, o painel
-administrativo passa a refletir o estado efetivo da Meta mesmo quando a
-publicação inicial foi repetida ou quando algum filho teve status alterado fora
-do Marketing Hub.
+administrativo separa a configuração Meta da capacidade real de entrega. Quando
+o término oficial já passou, o worker pausa explicitamente a campanha antes do
+callback, executa a última coleta acumulada e o backend encerra o experimento
+como inconclusivo. Uma falha de pausa não mantém o estado `RUNNING`: o retrato
+temporal abre a solicitação oficial de parada e preserva a medição final.
 
 As chamadas ao backend utilizam o prefixo `/api`. O worker consome
 `/api/facebook-campaigns/experiments-ready`, tratando respostas `404` como
@@ -410,9 +413,8 @@ permite cruzar rapidamente o incidente com a documentação oficial.
 ## Coleta de métricas de campanha
 
 O agendador de métricas consulta o endpoint de Insights (`/{campaignId}/insights`)
-com `date_preset = maximum` para obter o período completo disponível, evitando o
-erro `(#100) lifetime is not a valid date_preset` quando a Graph API rejeita o
-valor `lifetime`. O retorno é consolidado no backend via
+com `time_range` explícito desde o início oficial da campanha até o dia corrente,
+sem usar `lifetime` ou depender de um preset que omita o dia atual. O retorno é consolidado no backend via
 `POST /api/facebook-campaigns/{campaignId}/metrics`, mantendo a janela de
 datas (`date_start`/`date_stop`) fornecida pela própria Meta.
 Quando a Graph API devolve `data=[]` no Insights (campanhas sem entrega ainda),
@@ -431,6 +433,12 @@ pelo menos R$ 25,00 com zero leads, o worker pausa a campanha diretamente na
 Meta antes de reportar a métrica ao backend. Essa trava protege orçamento mesmo
 quando o backend está temporariamente indisponível ou rejeita o pós-processamento
 da métrica.
+
+O vencimento de `stop_time`/`end_time` é uma trava própria, independente de
+gasto: `ACTIVE` continua sendo apenas o estado configurado pela Meta. O primeiro
+ciclo vencido pausa o objeto externo, reporta janela e saldo, envia a métrica
+final e retira a campanha das filas recorrentes de métricas e recomendações após
+o backend confirmar `metrics_final_synced_at`.
 
 As chamadas de Insights da Graph API (`/{campaignId}/insights`) não registram
 mais logs de request/response em `INFO`, reduzindo ruído no processamento

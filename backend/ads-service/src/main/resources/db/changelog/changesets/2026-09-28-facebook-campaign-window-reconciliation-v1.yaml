@@ -1,0 +1,97 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-28-facebook-campaign-meta-configured-status-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: meta_configured_status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_ads_campaign ADD COLUMN meta_configured_status VARCHAR(32) NULL AFTER status;
+  - changeSet:
+      id: 2026-09-28-facebook-campaign-meta-effective-status-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: meta_effective_status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_ads_campaign ADD COLUMN meta_effective_status VARCHAR(32) NULL AFTER meta_configured_status;
+  - changeSet:
+      id: 2026-09-28-facebook-campaign-meta-start-time-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: meta_start_time
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_ads_campaign ADD COLUMN meta_start_time DATETIME NULL AFTER meta_effective_status;
+  - changeSet:
+      id: 2026-09-28-facebook-campaign-meta-stop-time-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: meta_stop_time
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_ads_campaign ADD COLUMN meta_stop_time DATETIME NULL AFTER meta_start_time;
+  - changeSet:
+      id: 2026-09-28-facebook-campaign-status-last-synced-at-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: status_last_synced_at
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_ads_campaign ADD COLUMN status_last_synced_at DATETIME NULL AFTER meta_stop_time;
+  - changeSet:
+      id: 2026-09-28-facebook-adset-budget-remaining-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: facebook_ads_ad_set
+                columnName: budget_remaining_minor
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE facebook_ads_ad_set ADD COLUMN budget_remaining_minor BIGINT NULL AFTER lifetime_budget_minor;

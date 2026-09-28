@@ -277,6 +277,17 @@ Regras obrigatórias:
 - a ativação administrativa desse canal deve sincronizar na mesma transação `Experiment`,
   `ExperimentRun`, janela comercial e processo atual do produto, impedindo que o painel declare
   homologação enquanto o experimento já recebe mercado real ou vice-versa.
+- nenhum experimento `DIRECT_ONE_TO_ONE` pode entrar ou voltar a `RUNNING` sem `start_date` e
+  `end_date` válidos e contendo a data atual em `America/Sao_Paulo`. O executor Operador de
+  Crescimento chama periodicamente o backend, mas somente o backend decide o encerramento. Legado
+  `RUNNING` sem prazo, com janela invertida, ainda não aberta ou vencida passa idempotentemente para
+  `INCONCLUSIVE`; o run produtivo não terminal termina como `COMPLETED` com
+  `evidence_validity=INSUFFICIENT_DATA`, sem fabricar falha de hipótese, e tarefas ainda ativas da
+  referência do experimento são canceladas.
+- a mesma regra temporal vale para Meta: `ACTIVE` é configuração, não prova de entrega. O fim
+  observado por `stop_time/end_time` encerra o experimento como `INCONCLUSIVE`, solicita pausa,
+  exige medição final e impede novas coletas de recomendações. `USER_STOPPED` fica reservado à
+  pausa manual observada antes do fim autorizado.
 
 Validades canônicas iniciais:
 - `NOT_EVALUATED`: evidência ainda não avaliada ou legado migrado sem reclassificação segura;

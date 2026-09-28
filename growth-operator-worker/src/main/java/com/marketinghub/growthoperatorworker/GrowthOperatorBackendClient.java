@@ -57,6 +57,15 @@ public class GrowthOperatorBackendClient {
         .toBodilessEntity();
   }
 
+  /** Pede ao backend para encerrar execuções diretas fora da janela autorizada. */
+  public void reconcileExperimentWindows() {
+    client
+        .post()
+        .uri("/api/growth-operator/v1/internal/experiments/windows/reconcile")
+        .retrieve()
+        .toBodilessEntity();
+  }
+
   /** Envia o diagnostico estruturado e preserva a resposta bruta para auditoria. */
   public void complete(Long id, Map<String, Object> payload) {
     client

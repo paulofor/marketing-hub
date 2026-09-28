@@ -59,11 +59,12 @@ principal de aquisição de Mira (produto interno `10`) e Vega (produto interno 
 produto deve declarar isso de forma literal; escrever apenas `Instagram`, `Meta`, `orgânico` ou
 `base própria` não representa integralmente a estratégia aprovada.
 
-- Em Vega, o experimento `91` é o teste pago canônico para Instagram. O experimento direto `90`
-  permanece como validação complementar e não pode fornecer visitas, custos, conversões ou vendas
-  ao resultado do experimento pago. Enquanto somente o `90` estiver `RUNNING`, o campo singular
-  legado do plano pode apontar para ele como contexto operacional de Hermes; isso não altera o canal
-  de aquisição decidido nem substitui a escolha explícita do `91` nas ações da campanha paga.
+- Em Vega, o experimento `91` é o teste pago canônico para Instagram. Encerrada a janela autorizada
+  em 26/09/2026, ele deve ser reconciliado como `INCONCLUSIVE` após a medição final, mesmo que a Meta
+  ainda exponha a configuração `ACTIVE`. O experimento direto `90` é somente histórico complementar:
+  não possui janela nem atividade comercial válida, deve sair de `RUNNING` e não pode fornecer
+  visitas, custos, conversões ou vendas ao resultado pago. O campo singular legado do plano nunca
+  autoriza manter execução sem prazo nem substituir a escolha explícita do canal pago.
 - Em Mira, a validação multiagente substitui convites e leituras privadas como gate anterior à
   aquisição comercial. Testes determinísticos, cenários de Psique e revisão de Têmis devem usar
   marcador interno e não podem ser contabilizados como pessoa, preferência, checkout, venda ou

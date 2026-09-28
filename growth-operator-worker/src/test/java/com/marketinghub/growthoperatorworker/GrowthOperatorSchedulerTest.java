@@ -36,6 +36,23 @@ class GrowthOperatorSchedulerTest {
 
     new GrowthOperatorScheduler(backendClient, runner, new WorkerProperties()).processOne();
 
+    verify(backendClient).reconcileExperimentWindows();
+    verify(backendClient).ensureActivePlanCycles();
+    verify(backendClient).claimPending();
+  }
+
+  /** Confirma que falha na reconciliação temporal não interrompe a fila principal. */
+  @Test
+  void shouldClaimPendingWhenWindowReconciliationIsUnavailable() {
+    GrowthOperatorBackendClient backendClient = mock(GrowthOperatorBackendClient.class);
+    CodexReadOnlyRunner runner = mock(CodexReadOnlyRunner.class);
+    doThrow(new IllegalStateException("Reconciliação indisponível"))
+        .when(backendClient)
+        .reconcileExperimentWindows();
+    when(backendClient.claimPending()).thenReturn(null);
+
+    new GrowthOperatorScheduler(backendClient, runner, new WorkerProperties()).processOne();
+
     verify(backendClient).ensureActivePlanCycles();
     verify(backendClient).claimPending();
   }

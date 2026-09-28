@@ -11,9 +11,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Instant;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -96,12 +98,18 @@ class FacebookCampaignMetricsServiceTest {
         JsonNode row = objectMapper.readTree("""
                 {
                   "id": "cmp-1",
+                  "start_time": "2026-09-20T00:00:00-0300",
+                  "stop_time": "2026-09-26T23:59:59-0300",
                   "status": "ACTIVE",
                   "effective_status": "ACTIVE",
                   "adsets": {
                     "data": [
                       {
                         "id": "adset-1",
+                        "start_time": "2026-09-20T00:00:00-0300",
+                        "end_time": "2026-09-26T23:59:59-0300",
+                        "lifetime_budget": "15000",
+                        "budget_remaining": "47",
                         "status": "ACTIVE",
                         "effective_status": "ACTIVE",
                         "ads": {
@@ -126,10 +134,82 @@ class FacebookCampaignMetricsServiceTest {
 
         assertThat(payload.status()).isEqualTo("ACTIVE");
         assertThat(payload.effectiveStatus()).isEqualTo("ACTIVE");
+        assertThat(payload.startTime()).isEqualTo(Instant.parse("2026-09-20T03:00:00Z"));
+        assertThat(payload.stopTime()).isEqualTo(Instant.parse("2026-09-27T02:59:59Z"));
+        assertThat(payload.windowExpired()).isTrue();
         assertThat(payload.adSets()).hasSize(1);
         assertThat(payload.adSets().get(0).id()).isEqualTo("adset-1");
+        assertThat(payload.adSets().get(0).lifetimeBudgetMinor()).isEqualTo(15000L);
+        assertThat(payload.adSets().get(0).budgetRemainingMinor()).isEqualTo(47L);
         assertThat(payload.ads()).hasSize(1);
         assertThat(payload.ads().get(0).id()).isEqualTo("ad-1");
+    }
+
+    /** Preserva ausência de orçamento como desconhecida em vez de fabricar saldo zero. */
+    @Test
+    void mapStatusSnapshotKeepsMissingBudgetsNull() throws Exception {
+        FacebookCampaignMetricsService service = service();
+        JsonNode row = objectMapper.readTree("""
+                {
+                  "status": "ACTIVE",
+                  "effective_status": "ACTIVE",
+                  "adsets": {"data": [{"id": "adset-1", "status": "ACTIVE"}]}
+                }
+                """);
+
+        Method method = FacebookCampaignMetricsService.class.getDeclaredMethod("mapStatusSnapshot", JsonNode.class);
+        method.setAccessible(true);
+        FacebookCampaignMetricsService.CampaignStatusSyncRequest payload =
+                (FacebookCampaignMetricsService.CampaignStatusSyncRequest) method.invoke(service, row);
+
+        assertThat(payload.adSets()).singleElement().satisfies(adSet -> {
+            assertThat(adSet.dailyBudgetMinor()).isNull();
+            assertThat(adSet.lifetimeBudgetMinor()).isNull();
+            assertThat(adSet.budgetRemainingMinor()).isNull();
+        });
+    }
+
+    /** Garante que o vencimento da janela pausa explicitamente a campanha na Meta. */
+    @Test
+    void pauseCampaignAfterAuthorizedWindowPausesActiveCampaign() throws Exception {
+        FacebookAdsService facebookAdsService = mock(FacebookAdsService.class);
+        FacebookCampaignMetricsService service = service(facebookAdsService);
+        JsonNode snapshot = objectMapper.readTree("""
+                {
+                  "status": "ACTIVE",
+                  "effective_status": "ACTIVE",
+                  "stop_time": "2026-09-26T23:59:59-0300"
+                }
+                """);
+
+        Method method = FacebookCampaignMetricsService.class.getDeclaredMethod(
+                "pauseCampaignAfterAuthorizedWindow", String.class, JsonNode.class, boolean.class);
+        method.setAccessible(true);
+        boolean paused = (boolean) method.invoke(service, "cmp-expired", snapshot, true);
+
+        assertThat(paused).isTrue();
+        verify(facebookAdsService).pauseCampaign("cmp-expired");
+    }
+
+    /** Mantém o vencimento reportável quando a pausa Meta falha e precisa de nova tentativa. */
+    @Test
+    void pauseCampaignAfterAuthorizedWindowPreservesReconciliationAfterMetaFailure() throws Exception {
+        FacebookAdsService facebookAdsService = mock(FacebookAdsService.class);
+        doThrow(new IllegalStateException("Meta indisponível"))
+                .when(facebookAdsService)
+                .pauseCampaign("cmp-expired");
+        FacebookCampaignMetricsService service = service(facebookAdsService);
+        JsonNode snapshot = objectMapper.readTree("""
+                {"status": "ACTIVE", "stop_time": "2026-09-26T23:59:59-0300"}
+                """);
+
+        Method method = FacebookCampaignMetricsService.class.getDeclaredMethod(
+                "pauseCampaignAfterAuthorizedWindow", String.class, JsonNode.class, boolean.class);
+        method.setAccessible(true);
+        boolean paused = (boolean) method.invoke(service, "cmp-expired", snapshot, true);
+
+        assertThat(paused).isFalse();
+        verify(facebookAdsService).pauseCampaign("cmp-expired");
     }
 
     /** Garante que gasto minimo sem leads ativa a trava emergencial direto na Meta. */

@@ -8,6 +8,8 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.experiment.service.ExperimentWindowReconciliationService;
+import com.marketinghub.experiment.service.ExperimentWindowReconciliationService.ReconciliationResult;
 import com.marketinghub.experiment.video.service.ExperimentVideoPerformanceDashboardService;
 import com.marketinghub.growthoperator.GrowthOperatorExecution;
 import com.marketinghub.growthoperator.GrowthOperatorExecutionStatus;
@@ -129,6 +131,7 @@ public class GrowthOperatorService {
   private final ExperimentService experimentService;
   private final ObjectMapper objectMapper;
   private final MarketStrategicContextProvider marketStrategicContextProvider;
+  private final ExperimentWindowReconciliationService windowReconciliationService;
 
   /** Configura o diagnóstico com o contrato estratégico persistido produzido por Atena. */
   @Autowired
@@ -142,7 +145,8 @@ public class GrowthOperatorService {
       ExperimentVideoPerformanceDashboardService videoPerformanceService,
       ExperimentService experimentService,
       ObjectMapper objectMapper,
-      MarketStrategicContextProvider marketStrategicContextProvider) {
+      MarketStrategicContextProvider marketStrategicContextProvider,
+      ExperimentWindowReconciliationService windowReconciliationService) {
     this.repository = repository;
     this.taskRepository = taskRepository;
     this.commercialPlanService = commercialPlanService;
@@ -153,6 +157,33 @@ public class GrowthOperatorService {
     this.experimentService = experimentService;
     this.objectMapper = objectMapper;
     this.marketStrategicContextProvider = marketStrategicContextProvider;
+    this.windowReconciliationService = windowReconciliationService;
+  }
+
+  /** Mantém a construção direta legada com o contexto estratégico, sem executar reconciliação. */
+  public GrowthOperatorService(
+      GrowthOperatorExecutionRepository repository,
+      GrowthOperatorTaskRepository taskRepository,
+      CommercialPlanService commercialPlanService,
+      CommercialPlanWeekObjectiveRepository weekObjectiveRepository,
+      ExperimentFunnelService experimentFunnelService,
+      VideoProjectRepository videoProjectRepository,
+      ExperimentVideoPerformanceDashboardService videoPerformanceService,
+      ExperimentService experimentService,
+      ObjectMapper objectMapper,
+      MarketStrategicContextProvider marketStrategicContextProvider) {
+    this(
+        repository,
+        taskRepository,
+        commercialPlanService,
+        weekObjectiveRepository,
+        experimentFunnelService,
+        videoProjectRepository,
+        videoPerformanceService,
+        experimentService,
+        objectMapper,
+        marketStrategicContextProvider,
+        null);
   }
 
   /** Mantém a construção direta de testes que não exercitam a fronteira Atena–Hermes. */
@@ -176,7 +207,16 @@ public class GrowthOperatorService {
         videoPerformanceService,
         experimentService,
         objectMapper,
-        MarketStrategicContextProvider.empty());
+        MarketStrategicContextProvider.empty(),
+        null);
+  }
+
+  /** Reconcilia janelas diretas por decisão determinística do backend. */
+  public ReconciliationResult reconcileExperimentWindows() {
+    if (windowReconciliationService == null) {
+      return new ReconciliationResult(0, 0, List.of());
+    }
+    return windowReconciliationService.reconcileDirectRunningWindows();
   }
 
   /** Pausa o experimento somente quando o backend comprova o primeiro gate sem receita. */

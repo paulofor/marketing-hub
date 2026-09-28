@@ -16,6 +16,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDetailedEventDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsEvidenceDto;
+import com.marketinghub.experiment.service.ExperimentWindowReconciliationService;
 import com.marketinghub.experiment.video.service.ExperimentVideoPerformanceDashboardService;
 import com.marketinghub.growthoperator.GrowthOperatorDecision;
 import com.marketinghub.growthoperator.GrowthOperatorExecution;
@@ -42,6 +43,32 @@ import org.springframework.data.domain.Pageable;
 
 /** Responsabilidade: validar o contexto auditável entregue ao Operador de Crescimento. */
 class GrowthOperatorServiceTest {
+
+  /** Delega ao reconciliador canônico a decisão de encerrar janelas diretas. */
+  @Test
+  void shouldReconcileExperimentWindowsThroughBackendAuthority() {
+    ExperimentWindowReconciliationService reconciliation =
+        mock(ExperimentWindowReconciliationService.class);
+    var expected =
+        new ExperimentWindowReconciliationService.ReconciliationResult(2, 2, List.of(89L, 90L));
+    when(reconciliation.reconcileDirectRunningWindows()).thenReturn(expected);
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            mock(GrowthOperatorExecutionRepository.class),
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
+            mock(CommercialPlanService.class),
+            mock(CommercialPlanWeekObjectiveRepository.class),
+            mock(ExperimentFunnelService.class),
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
+            new ObjectMapper(),
+            MarketStrategicContextProvider.empty(),
+            reconciliation);
+
+    assertThat(service.reconcileExperimentWindows()).isEqualTo(expected);
+    verify(reconciliation).reconcileDirectRunningWindows();
+  }
 
   /** Simula a persistencia e a releitura usadas para fixar a versao do agente na execucao. */
   private void mockVersionedSave(GrowthOperatorExecutionRepository repository) {

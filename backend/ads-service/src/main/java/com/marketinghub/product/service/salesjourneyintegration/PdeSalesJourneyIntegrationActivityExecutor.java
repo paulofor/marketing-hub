@@ -174,8 +174,8 @@ public class PdeSalesJourneyIntegrationActivityExecutor
             "O produto não está no processo de comunicação e jornada; a execução por uma rota histórica foi bloqueada.");
       }
       Optional<String> predecessorIssue =
-          cycle.isPresent()
-              ? cyclePredecessorIssue(process, sourceReference)
+          cycle.isPresent() || hasScopedPredecessorHistory(process, sourceReference)
+              ? scopedPredecessorIssue(process, sourceReference)
               : predecessorIssue(process, product);
       if (predecessorIssue.isPresent()) {
         return new BackendProductProcessActivityReadiness(false, predecessorIssue.get());
@@ -347,8 +347,10 @@ public class PdeSalesJourneyIntegrationActivityExecutor
     return experiment;
   }
 
-  /** Exige as ocorrências do próprio ciclo, incluindo as chamadas comprovadas dos subprocessos. */
-  private Optional<String> cyclePredecessorIssue(
+  /**
+   * Exige as ocorrências da referência exata, incluindo as chamadas comprovadas dos subprocessos.
+   */
+  private Optional<String> scopedPredecessorIssue(
       BusinessProcessDefinition process, String reference) {
     var instances =
         activityInstanceRepository
@@ -370,6 +372,20 @@ public class PdeSalesJourneyIntegrationActivityExecutor
             "Conclua neste ciclo a atividade " + node.path("label").asText(activityId) + ".");
     }
     return Optional.empty();
+  }
+
+  /**
+   * Prefere as ocorrências da referência exata quando o Processo 4 já começou a ser reconciliado.
+   */
+  private boolean hasScopedPredecessorHistory(
+      BusinessProcessDefinition process, String sourceReference) {
+    if (!StringUtils.hasText(sourceReference)) return false;
+    return activityInstanceRepository
+        .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
+            process.getId(), sourceReference)
+        .stream()
+        .anyMatch(
+            instance -> !ACTIVITY_ID.equals(instance.getActivityDefinition().getActivityId()));
   }
 
   /** Localiza o experimento mais recente sem misturar outro produto no gate de integração. */

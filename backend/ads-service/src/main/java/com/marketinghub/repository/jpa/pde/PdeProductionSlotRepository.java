@@ -33,4 +33,8 @@ public interface PdeProductionSlotRepository extends JpaRepository<PdeProduction
   /** Busca o slot mais recente associado diretamente a um experimento de origem. */
   Optional<PdeProductionSlot> findFirstBySourceExperimentIdOrderByUpdatedAtDesc(
       Long sourceExperimentId);
+
+  /** Busca o slot publicável mais recente associado diretamente a um experimento de origem. */
+  Optional<PdeProductionSlot> findFirstBySourceExperimentIdAndStatusInOrderByPublishedAtDesc(
+      Long sourceExperimentId, Collection<PdeProductionSlotStatus> statuses);
 }

@@ -51,12 +51,108 @@ describe("ProductPdeVersionsPage", () => {
     expect(defaultPdeSlotForm({ slug: "pde-planejado-36" })).toMatchObject({
       slotCode: "v1",
       domain: "mira.digicomdigital.com.br",
+      backendUrl: "https://mira.digicomdigital.com.br/api",
       experienceVersion: "mira-commercial-v1",
       layoutKey: "mira-routine-v1",
       sourceExperimentId: "93",
       status: "CANDIDATE",
       notes: expect.stringContaining("mídia permanece desligada"),
     });
+  });
+
+  it("permite reconciliar a URL do backend de um slot já publicado", async () => {
+    const slot = {
+      id: 9,
+      slotCode: "v1",
+      productSlug: "pde-planejado-36",
+      domain: "mira.digicomdigital.com.br",
+      publicUrl: "https://mira.digicomdigital.com.br",
+      backendUrl: null,
+      experienceVersion: "mira-commercial-v1",
+      layoutKey: "mira-routine-v1",
+      targetEnvironment: "production-v1",
+      status: "ACTIVE",
+      sourceExperimentId: null,
+      draftExperienceJson: '{"slug":"pde-planejado-36"}',
+      publishedExperienceJson: '{"slug":"pde-planejado-36"}',
+    };
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/products/10") {
+        return Promise.resolve({
+          data: { id: 10, slug: "pde-planejado-36", name: "Mira" },
+        });
+      }
+      if (url === "/api/products/10/pde-production-slots") {
+        return Promise.resolve({ data: [slot] });
+      }
+      if (url === "/api/products/10/pde-versions") {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.reject(new Error(`Unexpected GET ${url}`));
+    });
+    (axios.post as any).mockResolvedValue({
+      data: {
+        ...slot,
+        backendUrl: "https://mira.digicomdigital.com.br/api",
+      },
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={["/products/10/pde-versions"]}>
+          <Routes>
+            <Route
+              path="/products/:productId/pde-versions"
+              element={<ProductPdeVersionsPage />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const editor = await screen.findByText("Editor/publicador de contrato PDE");
+    const card = editor.closest(".card") as HTMLElement;
+    await waitFor(() =>
+      expect(screen.getByLabelText("Domínio *")).toHaveValue(
+        "mira.digicomdigital.com.br",
+      ),
+    );
+    expect(screen.getByLabelText("Versão PDE *")).toHaveValue(
+      "mira-commercial-v1",
+    );
+    expect(
+      screen.getByLabelText("URL do backend de acesso e eventos", {
+        selector: "#pde-slot-backend-url",
+      }),
+    ).toHaveValue("https://mira.digicomdigital.com.br/api");
+    await waitFor(() =>
+      expect(within(card).getByLabelText("Slot *")).toHaveValue("v1"),
+    );
+    const backendUrl = within(card).getByLabelText(
+      "URL do backend de acesso e eventos",
+    );
+    fireEvent.change(backendUrl, {
+      target: { value: "https://mira.digicomdigital.com.br/api" },
+    });
+    await waitFor(() =>
+      expect(backendUrl).toHaveValue("https://mira.digicomdigital.com.br/api"),
+    );
+    fireEvent.click(
+      within(card).getByRole("button", { name: "Salvar rascunho" }),
+    );
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/products/10/pde-production-slots",
+        expect.objectContaining({
+          slotCode: "v1",
+          backendUrl: "https://mira.digicomdigital.com.br/api",
+          status: "ACTIVE",
+        }),
+      ),
+    );
   });
 
   it("shows the Opala version lifecycle and its actionable pending items", async () => {

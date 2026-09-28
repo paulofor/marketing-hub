@@ -1,0 +1,18 @@
+{
+  "cardKey": "monitoramento-metacognitivo-calibra-confianca-ai",
+  "collection": "neuromarketing",
+  "title": "Melhor desempenho com IA não garante melhor percepção do próprio erro",
+  "finding": "Em estudo exploratório com 366 participantes, o grupo Human+AI obteve desempenho agregado maior, mas a confiança item a item distinguiu pior respostas corretas de incorretas no agrupamento entre tarefas; dentro da mesma tarefa, essa diferença ficou pequena e incerta.",
+  "mechanism": "Hipótese interpretativa: a facilidade de obter uma resposta com assistência muda os sinais usados para autoavaliação. Fluência e confiança podem refletir disponibilidade da sugestão, não verificação efetiva da qualidade conjunta.",
+  "commercialApplication": "No Marketing Hub, não usar confiança do usuário ou do agente como selo de correção. Para decisões de maior consequência, combinar evidência/proveniência, desempenho conhecido por tipo de tarefa e checkpoints de verificação, medindo qualidade e calibração separadamente.",
+  "evidenceStrength": "Moderada e não causal: estudo exploratório N=366, não pré-registrado e com grupos recrutados separadamente. O efeito de discriminação de confiança foi forte no agrupamento entre tarefas, mas pequeno e estatisticamente incerto dentro do mesmo bloco.",
+  "publishedOn": "2026-09-25",
+  "validUntil": "2027-03-25",
+  "experimentHypothesis": "Em decisões de maior impacto, um checkpoint que mostre evidência e desempenho do agente para aquele tipo de tarefa reduzirá erros aceitos com alta confiança sem eliminar o ganho de desempenho obtido com IA.",
+  "risks": "Excesso de avisos pode reduzir fluidez e induzir desconfiança indiscriminada. Um score de confiança mal calibrado pode virar falsa garantia e deslocar atenção de evidência mais útil.",
+  "limits": "O estudo usa tarefas de raciocínio em uma sessão e não mede vendas, produtividade comercial ou comportamento longitudinal. A comparação entre grupos não identifica causalidade, e a diferença dentro de tarefa foi incerta.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-28-monitoramento-metacognitivo-calibra-confianca-ai.md",
+  "sourceTitle": "Fonte revisada — Desempenho com IA e calibração metacognitiva",
+  "sourceSha256": "de328cec8383d0f462088753fcb8c322df4053be4161930cfba07bb198125d73"
+}

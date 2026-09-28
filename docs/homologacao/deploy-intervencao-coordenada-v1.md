@@ -44,7 +44,8 @@ falha após a última correção. Limitações e operação real serão registra
 2. Abrir a proteção com os componentes que serão alterados. `app` inclui o publicador central
    (backend/frontend e vídeo no mesmo workflow), Argos, Psique e Íris. `pde` inclui o publicador
    PDE e a recuperação de proxy. `mois-clickbank` protege exclusivamente o coletor ClickBank; os
-   demais agentes são selecionáveis individualmente.
+   demais agentes são selecionáveis individualmente. `facebook-ads` protege exclusivamente o
+   workflow que testa, empacota e publica o Facebook Ads Worker.
 3. Guardar o `id` retornado. `DRAINING`/exit 75 significa que ainda não é seguro intervir.
    Consultar `status` e repetir `protect --id ...` após as execuções existentes terminarem.
 4. Se necessário, executar `discard-unstarted --id ... --keep-run ...` para retirar revisões

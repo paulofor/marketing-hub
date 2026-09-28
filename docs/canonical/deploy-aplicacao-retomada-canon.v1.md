@@ -9,6 +9,8 @@ Antes de uma intervenção autorizada em um serviço publicado, usar o coordenad
 selecionados e suas continuações dependentes, preserva os estados anteriores e espera todas
 as execuções já iniciadas terminarem. Uma intervenção só pode começar no estado `ACTIVE`,
 com os publicadores desativados e a fila vazia. Pausar um workflow sozinho não prova esse estado.
+O Facebook Ads Worker usa o escopo dedicado `facebook-ads`, sem acoplá-lo ao publicador central
+da aplicação.
 
 O registro e a exclusão entre operadores ficam no host administrativo, fora de diretórios de
 rsync/deploy. Motivo, autorização, responsável, versão protegida, escopo, SHA inicial, execuções

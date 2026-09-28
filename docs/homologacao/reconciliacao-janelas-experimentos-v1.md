@@ -53,6 +53,8 @@ falha de hipótese. Campanhas vencidas recebem uma medição final e saem das ro
 - Liquibase: validador estático, includes relativos e contrato temporal aprovados.
 - Empacotamento backend: JAR executável aprovado com 4.176 classes, 693 recursos externos e
   catálogos internos íntegros.
+- Coordenação de deploy: escopo dedicado `facebook-ads` coberto por duas rodadas consecutivas de
+  37 testes, sem falhas.
 - Playwright Chromium: desktop, iPhone 15 Pro e Pixel 7 aprovados. A primeira rodada revelou
   overflow horizontal dos filtros no iPhone; a causa foi corrigida e a segunda rodada confirmou
   página sem overflow, com rolagem restrita à tabela.

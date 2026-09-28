@@ -113,6 +113,13 @@ class LocalCoordinationTest(unittest.TestCase):
                          ["mois-clickbank-collector-ci.yml"])
         self.assertEqual(self.resume(state)["phase"], "RELEASED")
 
+    def test_facebook_ads_runtime_has_dedicated_reversible_scope(self):
+        state = self.begin(["facebook-ads"])
+        self.assertEqual(state["phase"], "ACTIVE")
+        self.assertEqual([workflow["file"] for workflow in state["workflows"]],
+                         ["facebook-ads-worker.yml"])
+        self.assertEqual(self.resume(state)["phase"], "RELEASED")
+
     def test_in_progress_and_queued_runs_block_until_complete_without_cancellation(self):
         identifier = self.github.workflows["deploy-containers.yml"]["id"]
         for status in module.LIVE_STATUSES:

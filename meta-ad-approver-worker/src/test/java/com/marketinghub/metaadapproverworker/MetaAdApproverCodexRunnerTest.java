@@ -183,7 +183,9 @@ class MetaAdApproverCodexRunnerTest {
             "decoder: 'FFMPEG_7_1_1'",
             "sha256MatchesGovernance",
             "approvedSourceCreativeCount",
+            "approvedSourceVideoCount",
             "inspectApprovedSourceMedia",
+            "inspectApprovedVideoSourceMedia",
             "readOnlyHint: true",
             "openWorldHint: true",
             "destructiveHint: false");
@@ -234,7 +236,9 @@ class MetaAdApproverCodexRunnerTest {
     assertThat(prompt)
         .contains(
             "VERSIONED_APPROVED_CREATIVE_MONTAGE",
+            "VERSIONED_APPROVED_ASSET_MONTAGE",
             "approvedCreativeSources",
+            "approvedVideoSources",
             "productionReference",
             "commercialLineageEvidence",
             "adoptedSourceExperimentId",

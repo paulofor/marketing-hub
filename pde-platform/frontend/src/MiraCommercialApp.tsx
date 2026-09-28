@@ -295,31 +295,38 @@ export function MiraCommercialApp() {
             claro e duas organizações incluídas por R$ 49, em pagamento único.
           </div>
           {offer?.checkoutUrl && (
-            <a
-              className="mira-commercial-primary"
-              data-checkout-cta
-              href={offer.checkoutUrl}
-              onClick={() => {
-                if (!checkoutCtaViewed.current) {
-                  checkoutCtaViewed.current = true;
-                  void trackPublicEvent("CTA_VIEWED", {
+            <>
+              <p className="mira-commercial-merchant">
+                No checkout, o recebedor é identificado como{" "}
+                <strong>Paulo Forestieri</strong>, responsável comercial pela
+                Mira.
+              </p>
+              <a
+                className="mira-commercial-primary"
+                data-checkout-cta
+                href={offer.checkoutUrl}
+                onClick={() => {
+                  if (!checkoutCtaViewed.current) {
+                    checkoutCtaViewed.current = true;
+                    void trackPublicEvent("CTA_VIEWED", {
+                      experimentId: offer.experimentId ?? 93,
+                      placement: "hero",
+                    });
+                  }
+                  void trackPublicEvent("CHECKOUT_STARTED", {
+                    idempotencyKey: stableActionId(
+                      "checkout",
+                      `${offer.experienceVersion || "mira-commercial-v1"}:${offer.experimentId ?? 93}`,
+                    ),
                     experimentId: offer.experimentId ?? 93,
-                    placement: "hero",
+                    priceBrl: offer.priceBrl,
+                    checkoutHost: new URL(offer.checkoutUrl).hostname,
                   });
-                }
-                void trackPublicEvent("CHECKOUT_STARTED", {
-                  idempotencyKey: stableActionId(
-                    "checkout",
-                    `${offer.experienceVersion || "mira-commercial-v1"}:${offer.experimentId ?? 93}`,
-                  ),
-                  experimentId: offer.experimentId ?? 93,
-                  priceBrl: offer.priceBrl,
-                  checkoutHost: new URL(offer.checkoutUrl).hostname,
-                });
-              }}
-            >
-              {offer.primaryCta || "Quero organizar minha rotina por R$ 49"}
-            </a>
+                }}
+              >
+                {offer.primaryCta || "Quero organizar minha rotina por R$ 49"}
+              </a>
+            </>
           )}
         </section>
         <section className="mira-commercial-card" id="acesso">
@@ -531,6 +538,7 @@ function legalContent(path: string) {
       paragraphs: [
         "Mira organiza, em até duas tentativas, os produtos que a cliente informa a partir das orientações documentadas nos rótulos.",
         "Mira não realiza diagnóstico, prescrição ou tratamento e não substitui orientação profissional.",
+        "No checkout, o recebedor é identificado como Paulo Forestieri, responsável comercial pela Mira.",
       ],
     };
   if (path === "/privacy")

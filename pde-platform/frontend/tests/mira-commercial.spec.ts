@@ -93,6 +93,9 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
   await expect(
     page.getByText(/duas organizações incluídas por R\$ 49/i),
   ).toBeVisible();
+  await expect(
+    page.getByText(/Paulo Forestieri.*responsável comercial pela Mira/i),
+  ).toBeVisible();
   await expect(page.getByLabel("Demonstração de Mira")).toBeVisible();
   await expect
     .poll(() => mediaRequests.some((url) => url.endsWith("/index.m3u8")))
@@ -106,6 +109,11 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
     "/media/mira-commercial-demo-v1-hls/segment-000.ts",
   );
   expect(hlsSegment.ok()).toBe(true);
+  const staticControl = await page.request.get(
+    "/media/mira-commercial-control-v1.png",
+  );
+  expect(staticControl.ok()).toBe(true);
+  expect(staticControl.headers()["content-type"]).toContain("image/png");
   await expect(
     page.getByRole("link", { name: /Quero organizar/i }),
   ).toHaveAttribute("href", "https://checkout.example/mira");

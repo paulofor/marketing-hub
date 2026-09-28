@@ -79,6 +79,9 @@ test("expõe desejo, demonstração, preço, checkout e políticas sem iniciar m
   await expect(
     page.getByText(/duas organizações incluídas por R\$ 49/i),
   ).toBeVisible();
+  await expect(
+    page.getByText(/Paulo Forestieri.*responsável comercial pela Mira/i),
+  ).toBeVisible();
   await expect(page.getByLabel("Demonstração de Mira")).toBeVisible();
   const checkout = page.getByRole("link", { name: /R\$ 49/i });
   await expect(checkout).toHaveAttribute(

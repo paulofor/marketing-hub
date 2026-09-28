@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-projeto-estruturado-editavel-agente",
+  "collection": "video",
+  "title": "Persistir o projeto audiovisual como grafo multimodal versionado",
+  "finding": "O HeyVigo Infinite Canvas, lançado em 28/09/2026, organiza texto, imagem, vídeo, áudio, assets e revisões como nós conectados e permite explorar ramificações sem substituir trabalho já aprovado.",
+  "mechanism": "Representar briefing, referências, tomadas, renders, revisões e versões como nós com relações explícitas cria provenance e permite patches/ramificações locais, mantendo versões aprovadas intactas até confirmação humana.",
+  "commercialApplication": "No Marketing Hub, manter um production_graph com IDs estáveis para briefing, produto, personagem, cena, áudio, tomada e versão; agentes criam versões derivadas e só promovem um nó após revisão/aprovação.",
+  "evidenceStrength": "Alta para a disponibilidade do Infinite Canvas e suas funções principais, confirmadas pelo anúncio de 28/09 e páginas atuais da HeyVigo; moderada para o ganho operacional, que ainda precisa de benchmark interno.",
+  "publishedOn": "2026-09-28",
+  "validUntil": "2026-12-27",
+  "experimentHypothesis": "Em revisões equivalentes, um grafo versionado com branching e aprovação explícita reduzirá regressões, regenerações desnecessárias e tempo de recuperação de contexto em comparação com substituir assets diretamente no pipeline.",
+  "risks": "Relações erradas no grafo podem propagar versões incorretas; crescimento de branches exige política de retenção; automações podem promover assets sem validação se os gates forem frouxos; termos comerciais variam conforme o modelo usado.",
+  "limits": "Não foi localizada API pública específica do Infinite Canvas; a evidência vem do fornecedor; modelos e parâmetros variam por workspace/plano; impacto em custo, velocidade e conversão ainda não foi medido.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-28-heyvigo-infinite-canvas-projeto-grafo.md",
+  "sourceTitle": "Fonte revisada — HeyVigo Infinite Canvas e projeto audiovisual estruturado por grafo",
+  "sourceSha256": "6f1d5ec482ee9e7e93d9ba64d12bd88417e7fa5180f293f994e8c041d9333b22"
+}

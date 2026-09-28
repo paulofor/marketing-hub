@@ -6,11 +6,13 @@ FRONTEND_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 MEDIA_DIR="${MIRA_COMMERCIAL_MEDIA_DIR:-${FRONTEND_DIR}/public-mira-commercial/media}"
 VIDEO_FILE="${MEDIA_DIR}/mira-commercial-demo-v1.mp4"
 POSTER_FILE="${MEDIA_DIR}/mira-commercial-demo-v1-poster.jpg"
+CONTROL_FILE="${MEDIA_DIR}/mira-commercial-control-v1.png"
 HLS_DIR="${MEDIA_DIR}/mira-commercial-demo-v1-hls"
 HLS_PLAYLIST="${HLS_DIR}/index.m3u8"
 HLS_CHECKSUMS="${HLS_DIR}/checksums.sha256"
 EXPECTED_VIDEO_SHA256="e1123f4bf456dcfb459bc2709c5db7800c742178fc6f2b8db165ab552abb6b43"
 EXPECTED_POSTER_SHA256="7964614ac7a5c7e42006473be7c0deabff17f45281bd39ec05f30e9ab6d9a081"
+EXPECTED_CONTROL_SHA256="a87cc42da6a23a642fdd98fa8b0cf34718d29b43f937e4764ba1090ac9f0d1dc"
 EXPECTED_HLS_CHECKSUMS_SHA256="215fcc351f952b006de9a924cd0563fd0a26c33a60d8516a7f29c8588f5805e0"
 
 for required_command in ffmpeg ffprobe sha256sum find grep sort awk; do
@@ -20,7 +22,12 @@ for required_command in ffmpeg ffprobe sha256sum find grep sort awk; do
   fi
 done
 
-for media_file in "${VIDEO_FILE}" "${POSTER_FILE}" "${HLS_PLAYLIST}" "${HLS_CHECKSUMS}"; do
+for media_file in \
+  "${VIDEO_FILE}" \
+  "${POSTER_FILE}" \
+  "${CONTROL_FILE}" \
+  "${HLS_PLAYLIST}" \
+  "${HLS_CHECKSUMS}"; do
   if [[ ! -f "${media_file}" ]]; then
     echo "Ativo comercial canônico de Mira não encontrado: ${media_file}" >&2
     exit 1
@@ -29,9 +36,11 @@ done
 
 observed_video_sha256="$(sha256sum "${VIDEO_FILE}" | awk '{print $1}')"
 observed_poster_sha256="$(sha256sum "${POSTER_FILE}" | awk '{print $1}')"
+observed_control_sha256="$(sha256sum "${CONTROL_FILE}" | awk '{print $1}')"
 observed_hls_checksums_sha256="$(sha256sum "${HLS_CHECKSUMS}" | awk '{print $1}')"
 if [[ "${observed_video_sha256}" != "${EXPECTED_VIDEO_SHA256}" \
   || "${observed_poster_sha256}" != "${EXPECTED_POSTER_SHA256}" \
+  || "${observed_control_sha256}" != "${EXPECTED_CONTROL_SHA256}" \
   || "${observed_hls_checksums_sha256}" != "${EXPECTED_HLS_CHECKSUMS_SHA256}" ]]; then
   echo "Ativos comerciais canônicos de Mira divergem dos hashes homologados." >&2
   exit 1
@@ -70,6 +79,8 @@ video_dimensions="$(ffprobe -v error -select_streams v:0 \
   -show_entries stream=width,height -of csv=s=x:p=0 "${VIDEO_FILE}")"
 poster_dimensions="$(ffprobe -v error -select_streams v:0 \
   -show_entries stream=width,height -of csv=s=x:p=0 "${POSTER_FILE}")"
+control_dimensions="$(ffprobe -v error -select_streams v:0 \
+  -show_entries stream=width,height -of csv=s=x:p=0 "${CONTROL_FILE}")"
 video_duration="$(ffprobe -v error -show_entries format=duration \
   -of default=noprint_wrappers=1:nokey=1 "${VIDEO_FILE}")"
 hls_audio_codec="$(ffprobe -v error -select_streams a:0 \
@@ -87,6 +98,7 @@ hls_duration="$(ffprobe -v error -show_entries format=duration \
 if [[ "${audio_codec}" != "aac" || "${video_codec}" != "h264" \
   || "${video_dimensions}" != "1080x1920" \
   || "${poster_dimensions}" != "1080x1920" \
+  || "${control_dimensions}" != "1080x1350" \
   || ! "${video_duration}" =~ ^15([.]0+)?$ \
   || "${hls_audio_codec}" != "aac" || "${hls_video_codec}" != "h264" \
   || "${hls_dimensions}" != "1080x1920" \

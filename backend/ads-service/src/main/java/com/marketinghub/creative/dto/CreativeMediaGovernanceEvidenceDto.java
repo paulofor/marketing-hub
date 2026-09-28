@@ -15,6 +15,7 @@ public record CreativeMediaGovernanceEvidenceDto(
     String generationStrategy,
     String productionReference,
     List<ApprovedCreativeSource> approvedCreativeSources,
+    List<ApprovedVideoSource> approvedVideoSources,
     MediaArtifact finalArtifact,
     MediaArtifact generatedSourceArtifact,
     MediaReference presenterReference,
@@ -37,6 +38,17 @@ public record CreativeMediaGovernanceEvidenceDto(
       String mediaUrl,
       String status,
       String agentReviewStatus,
+      String reviewedAt) {}
+
+  /** Responsabilidade: identificar um vídeo previamente aprovado usado na montagem final. */
+  public record ApprovedVideoSource(
+      Long videoAssetId,
+      Long experimentId,
+      String slot,
+      String assetUrl,
+      String sha256,
+      String status,
+      String reviewStatus,
       String reviewedAt) {}
 
   /** Responsabilidade: identificar um arquivo de vídeo por origem, tarefa e conteúdo imutável. */

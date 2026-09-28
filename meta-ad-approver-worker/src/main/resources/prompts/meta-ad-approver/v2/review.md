@@ -21,12 +21,14 @@ Para vídeo, valide `mediaGovernanceEvidence`: o status precisa ser `VERIFIED`, 
 do `finalArtifact` precisam identificar a mídia inspecionada e a linhagem deve comprovar a geração,
 a origem sintética, o consentimento aplicável e a licença comercial do provedor.
 
-Quando `generationStrategy` for `VERSIONED_APPROVED_CREATIVE_MONTAGE`, não existe geração por
-provedor externo nem apresentador sintético. Nesse caso, exija o SHA-256 do arquivo final, a
-`productionReference` versionada, todas as `approvedCreativeSources` aprovadas técnica e
-humanamente e a inspeção visual tanto do vídeo quanto das fontes retornadas pelo MCP. Não exija
-licença de provedor, referência de apresentador ou disclosure sintético que não se aplicam a essa
-montagem. A descrição livre das fontes nunca substitui essa evidência estruturada.
+Quando `generationStrategy` for `VERSIONED_APPROVED_CREATIVE_MONTAGE` ou
+`VERSIONED_APPROVED_ASSET_MONTAGE`, não existe geração por provedor externo nem apresentador
+sintético. Nesse caso, exija o SHA-256 do arquivo final, a `productionReference` versionada e todas
+as fontes estruturadas aplicáveis: `approvedCreativeSources` para criativos e
+`approvedVideoSources` para vídeos-fonte. Confirme a aprovação persistida, o SHA-256 de cada
+vídeo-fonte e a inspeção visual do vídeo final e das fontes retornadas pelo MCP. Não exija licença
+de provedor, referência de apresentador ou disclosure sintético que não se aplicam a essa montagem.
+A descrição livre das fontes nunca substitui essa evidência estruturada.
 
 Valide também `commercialLineageEvidence` quando o experimento for sucessor. Status `VERIFIED`
 comprova que produto, hipótese, landing e checkout foram adotados do `adoptedSourceExperimentId` e,

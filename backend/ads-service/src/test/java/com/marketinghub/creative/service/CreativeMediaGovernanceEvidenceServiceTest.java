@@ -220,6 +220,134 @@ class CreativeMediaGovernanceEvidenceServiceTest {
         .isEqualTo("2026-09-24T12:00:00Z");
   }
 
+  /** Aprova montagem versionada quando o arquivo deriva de um vídeo aprovado e imutável. */
+  @Test
+  void resolvesVersionedMontageFromApprovedVideoSources() throws Exception {
+    Experiment experiment = Experiment.builder().id(93L).build();
+    String finalUrl = "https://cdn.test/mira-commercial-demo-v1.mp4";
+    String sourceUrl = "https://cdn.test/mira-approved-video-47.mp4";
+    Creative creative =
+        Creative.builder()
+            .id(537L)
+            .experiment(experiment)
+            .format("VIDEO")
+            .videoUrl(finalUrl)
+            .build();
+    Asset finalAsset =
+        asset(
+            2972L,
+            finalUrl,
+            MediaProvider.USER_UPLOAD,
+            "{\"metadata\":{\"sha256\":\"" + "c".repeat(64) + "\"}}");
+    Asset sourceAsset =
+        asset(
+            2964L,
+            sourceUrl,
+            MediaProvider.VIDEO_MODULE,
+            "{\"metadata\":{\"sha256\":\"" + "d".repeat(64) + "\"}}");
+    Instant sourceReviewedAt = Instant.parse("2026-09-26T14:09:41Z");
+    ExperimentVideoAsset sourceVideo =
+        ExperimentVideoAsset.builder()
+            .id(47L)
+            .experiment(experiment)
+            .slot(ExperimentVideoSlot.AD)
+            .provider("MUSA_POST_PRODUCTION")
+            .status(ExperimentVideoStatus.READY)
+            .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+            .assetUrl(sourceUrl)
+            .asset(sourceAsset)
+            .reviewedAt(sourceReviewedAt)
+            .build();
+    ExperimentVideoAsset finalVideo =
+        ExperimentVideoAsset.builder()
+            .id(48L)
+            .experiment(experiment)
+            .provider("USER_UPLOAD")
+            .model("VERSIONED_FFMPEG_MONTAGE_V1")
+            .status(ExperimentVideoStatus.READY)
+            .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+            .assetUrl(finalUrl)
+            .asset(finalAsset)
+            .requestJson(
+                """
+                {"artifactType":"experiment.userAdVideoUpload.v4",
+                 "generationStrategy":"VERSIONED_APPROVED_ASSET_MONTAGE",
+                 "productionReference":"pde-platform/frontend/scripts/generate-mira-commercial-video.sh",
+                 "approvedSourceCreatives":[],
+                 "approvedSourceVideos":[{"videoAssetId":47,"experimentId":93,
+                   "slot":"AD","assetUrl":"https://cdn.test/mira-approved-video-47.mp4",
+                   "status":"READY","reviewStatus":"APPROVED",
+                   "reviewedAt":"2026-09-26T14:09:41Z"}]}
+                """)
+            .reviewedBy("time@marketinghub.io")
+            .reviewedAt(Instant.parse("2026-09-27T06:09:34Z"))
+            .build();
+    when(videoAssets.findFirstByExperimentIdAndAssetUrlOrderByIdDesc(93L, finalUrl))
+        .thenReturn(Optional.of(finalVideo));
+    when(videoAssets.findById(47L)).thenReturn(Optional.of(sourceVideo));
+
+    var evidence = service.resolve(creative);
+
+    assertThat(evidence.contractVersion()).isEqualTo("CREATIVE_MEDIA_GOVERNANCE_V4");
+    assertThat(evidence.verificationStatus()).isEqualTo("VERIFIED");
+    assertThat(evidence.generationStrategy()).isEqualTo("VERSIONED_APPROVED_ASSET_MONTAGE");
+    assertThat(evidence.productionReference())
+        .isEqualTo("pde-platform/frontend/scripts/generate-mira-commercial-video.sh");
+    assertThat(evidence.finalArtifact().sha256()).isEqualTo("c".repeat(64));
+    assertThat(evidence.approvedCreativeSources()).isEmpty();
+    assertThat(evidence.approvedVideoSources())
+        .singleElement()
+        .satisfies(
+            source -> {
+              assertThat(source.videoAssetId()).isEqualTo(47L);
+              assertThat(source.assetUrl()).isEqualTo(sourceUrl);
+              assertThat(source.sha256()).isEqualTo("d".repeat(64));
+              assertThat(source.reviewedAt()).isEqualTo("2026-09-26T14:09:41Z");
+            });
+    assertThat(evidence.providerLicense()).isNull();
+  }
+
+  /** Mantém a montagem v4 bloqueada quando o snapshot não coincide com o vídeo aprovado atual. */
+  @Test
+  void keepsVersionedVideoMontageIncompleteWhenSourceSnapshotDoesNotMatch() throws Exception {
+    Experiment experiment = Experiment.builder().id(93L).build();
+    String finalUrl = "https://cdn.test/mira-commercial-demo-v1.mp4";
+    Creative creative =
+        Creative.builder().experiment(experiment).format("VIDEO").videoUrl(finalUrl).build();
+    Asset finalAsset =
+        asset(
+            2972L,
+            finalUrl,
+            MediaProvider.USER_UPLOAD,
+            "{\"metadata\":{\"sha256\":\"" + "c".repeat(64) + "\"}}");
+    ExperimentVideoAsset finalVideo =
+        ExperimentVideoAsset.builder()
+            .id(48L)
+            .experiment(experiment)
+            .model("VERSIONED_FFMPEG_MONTAGE_V1")
+            .status(ExperimentVideoStatus.READY)
+            .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+            .assetUrl(finalUrl)
+            .asset(finalAsset)
+            .requestJson(
+                """
+                {"artifactType":"experiment.userAdVideoUpload.v4",
+                 "generationStrategy":"VERSIONED_APPROVED_ASSET_MONTAGE",
+                 "productionReference":"pde-platform/frontend/scripts/generate-mira-commercial-video.sh",
+                 "approvedSourceCreatives":[],
+                 "approvedSourceVideos":[{"videoAssetId":47,"experimentId":93,
+                   "slot":"AD","assetUrl":"https://cdn.test/forged.mp4",
+                   "status":"READY","reviewStatus":"APPROVED",
+                   "reviewedAt":"2026-09-26T14:09:41Z"}]}
+                """)
+            .build();
+    when(videoAssets.findFirstByExperimentIdAndAssetUrlOrderByIdDesc(93L, finalUrl))
+        .thenReturn(Optional.of(finalVideo));
+    when(videoAssets.findById(47L)).thenReturn(Optional.empty());
+
+    assertThat(service.resolve(creative).verificationStatus()).isEqualTo("INCOMPLETE");
+  }
+
   /** Mantém a montagem bloqueada quando a fonte aprovada não pode ser confirmada novamente. */
   @Test
   void keepsVersionedMontageIncompleteWhenSourceSnapshotDoesNotMatch() throws Exception {

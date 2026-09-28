@@ -80,6 +80,12 @@ video {
   line-height: 1.6;
   margin: 20px 0;
 }
+.mira-commercial-merchant {
+  color: #594b5f;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
 form {
   display: grid;
   gap: 12px;

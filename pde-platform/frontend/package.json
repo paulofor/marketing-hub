@@ -11,6 +11,7 @@
     "generate:musa-diagnostic-assets": "node scripts/generate-musa-diagnostic-assets.mjs",
     "generate:musa-product-ugc-reference": "node scripts/generate-musa-product-ugc-reference.mjs",
     "generate:mira-commercial-video": "bash scripts/generate-mira-commercial-video.sh",
+    "generate:mira-commercial-control": "node scripts/generate-mira-commercial-control.mjs",
     "validate:mira-commercial-video": "bash scripts/validate-mira-commercial-video.sh",
     "check:no-musa-slide-videos": "node scripts/validate-no-musa-slide-videos.mjs",
     "test:source-fingerprint": "node --test scripts/source-fingerprint.test.mjs",

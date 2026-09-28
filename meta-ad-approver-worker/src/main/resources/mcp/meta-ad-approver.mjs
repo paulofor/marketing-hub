@@ -95,8 +95,10 @@ async function inspectMedia(creative, toolName, startedAt) {
     experimentId
   });
   const governedSha256 = creative.mediaGovernanceEvidence?.finalArtifact?.sha256 ?? null;
-  const approvedSources = creative.mediaGovernanceEvidence?.approvedCreativeSources ?? [];
-  const sourceContent = await inspectApprovedSourceMedia(approvedSources, toolName, startedAt);
+  const approvedCreativeSources = creative.mediaGovernanceEvidence?.approvedCreativeSources ?? [];
+  const approvedVideoSources = creative.mediaGovernanceEvidence?.approvedVideoSources ?? [];
+  const creativeSourceContent = await inspectApprovedSourceMedia(approvedCreativeSources, toolName, startedAt);
+  const videoSourceContent = await inspectApprovedVideoSourceMedia(approvedVideoSources, toolName, startedAt);
   return [
     text({
       audit: audit(toolName, startedAt),
@@ -108,14 +110,16 @@ async function inspectMedia(creative, toolName, startedAt) {
       sha256: evidence.sha256,
       governedSha256,
       sha256MatchesGovernance: Boolean(governedSha256) && evidence.sha256 === governedSha256,
-      approvedSourceCreativeCount: approvedSources.length
+      approvedSourceCreativeCount: approvedCreativeSources.length,
+      approvedSourceVideoCount: approvedVideoSources.length
     }),
     ...evidence.frames.map(frame => ({
       type: 'image',
       data: frame.toString('base64'),
       mimeType: 'image/jpeg'
     })),
-    ...sourceContent
+    ...creativeSourceContent,
+    ...videoSourceContent
   ];
 }
 
@@ -146,6 +150,33 @@ async function inspectApprovedSourceMedia(sources, toolName, startedAt) {
     content.push({
       type: 'image', data: Buffer.from(await response.arrayBuffer()).toString('base64'), mimeType
     });
+  }
+  return content;
+}
+
+async function inspectApprovedVideoSourceMedia(sources, toolName, startedAt) {
+  const content = [];
+  for (const source of sources.slice(0, 10)) {
+    const url = httpUrl(source.assetUrl, 'vídeo de origem');
+    const evidence = await extractRemoteVideoFrames(url, {
+      tool: `${toolName}_video_source`,
+      creativeId,
+      experimentId: source.experimentId
+    });
+    const governedSha256 = source.sha256 ?? null;
+    content.push(text({
+      audit: audit(toolName, startedAt),
+      sourceVideoAssetId: source.videoAssetId,
+      sourceExperimentId: source.experimentId,
+      mediaType: 'VIDEO_ASSET_SOURCE',
+      source: url,
+      sha256: evidence.sha256,
+      governedSha256,
+      sha256MatchesGovernance: Boolean(governedSha256) && evidence.sha256 === governedSha256
+    }));
+    content.push(...evidence.frames.map(frame => ({
+      type: 'image', data: frame.toString('base64'), mimeType: 'image/jpeg'
+    })));
   }
   return content;
 }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.dto.CreativeMediaGovernanceEvidenceDto;
 import com.marketinghub.creative.dto.CreativeMediaGovernanceEvidenceDto.ApprovedCreativeSource;
+import com.marketinghub.creative.dto.CreativeMediaGovernanceEvidenceDto.ApprovedVideoSource;
 import com.marketinghub.creative.dto.CreativeMediaGovernanceEvidenceDto.MediaArtifact;
 import com.marketinghub.creative.dto.CreativeMediaGovernanceEvidenceDto.MediaReference;
 import com.marketinghub.creative.dto.CreativeMediaGovernanceEvidenceDto.ProviderLicense;
@@ -38,6 +39,7 @@ import org.springframework.util.StringUtils;
 public class CreativeMediaGovernanceEvidenceService {
   static final String CONTRACT_VERSION = "CREATIVE_MEDIA_GOVERNANCE_V2";
   static final String VERSIONED_MONTAGE_CONTRACT_VERSION = "CREATIVE_MEDIA_GOVERNANCE_V3";
+  static final String VERSIONED_ASSET_MONTAGE_CONTRACT_VERSION = "CREATIVE_MEDIA_GOVERNANCE_V4";
   static final String EXPLICIT_REFERENCE = "EXPLICIT_REFERENCE";
   static final String PROMPT_ONLY_SYNTHETIC = "PROMPT_ONLY_SYNTHETIC";
   static final String UNRESOLVED_REFERENCE = "UNRESOLVED";
@@ -90,7 +92,9 @@ public class CreativeMediaGovernanceEvidenceService {
       Creative creative, ExperimentVideoAsset video, String mediaUrl)
       throws JsonProcessingException {
     JsonNode request = readObject(video.getRequestJson());
-    if ("experiment.userAdVideoUpload.v2".equals(text(request, "artifactType"))) {
+    String artifactType = text(request, "artifactType");
+    if ("experiment.userAdVideoUpload.v2".equals(artifactType)
+        || "experiment.userAdVideoUpload.v4".equals(artifactType)) {
       return resolvedVersionedUpload(creative, video, mediaUrl, request);
     }
     JsonNode lineage = nestedObject(request, "postProductionMetadataJson");
@@ -152,6 +156,7 @@ public class CreativeMediaGovernanceEvidenceService {
         text(lineage, "generation_strategy"),
         null,
         List.of(),
+        List.of(),
         finalArtifact,
         generatedSource,
         presenterReference,
@@ -176,25 +181,42 @@ public class CreativeMediaGovernanceEvidenceService {
     Asset finalAsset = video.getAsset();
     MediaArtifact finalArtifact = artifact(finalAsset, mediaUrl, video.getProvider(), null);
     String productionReference = text(request, "productionReference");
-    ResolvedApprovedSources sources =
+    ResolvedApprovedSources creativeSources =
         resolveApprovedSources(request.path("approvedSourceCreatives"), creative);
+    ResolvedApprovedVideoSources videoSources =
+        resolveApprovedVideoSources(request.path("approvedSourceVideos"), creative, video.getId());
     String generationStrategy = text(request, "generationStrategy");
+    boolean assetUpload = "experiment.userAdVideoUpload.v4".equals(text(request, "artifactType"));
+    boolean creativeMontage =
+        "experiment.userAdVideoUpload.v2".equals(text(request, "artifactType"))
+            && "VERSIONED_APPROVED_CREATIVE_MONTAGE".equals(generationStrategy)
+            && creativeSources.declared()
+            && creativeSources.complete()
+            && !videoSources.declared();
+    boolean assetMontage =
+        assetUpload
+            && "VERSIONED_APPROVED_ASSET_MONTAGE".equals(generationStrategy)
+            && creativeSources.complete()
+            && videoSources.complete()
+            && creativeSources.sources().size() + videoSources.sources().size() > 0
+            && creativeSources.sources().size() + videoSources.sources().size() <= 10;
     boolean verified =
         video.getStatus() == ExperimentVideoStatus.READY
             && video.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED
             && "VERSIONED_FFMPEG_MONTAGE_V1".equals(video.getModel())
-            && "VERSIONED_APPROVED_CREATIVE_MONTAGE".equals(generationStrategy)
+            && (creativeMontage || assetMontage)
             && hasSha256(finalArtifact)
             && isVersionedProductionReference(productionReference)
-            && sources.complete();
+            && allVideoSourcesHaveSha256(videoSources.sources());
     return new CreativeMediaGovernanceEvidenceDto(
-        VERSIONED_MONTAGE_CONTRACT_VERSION,
+        assetUpload ? VERSIONED_ASSET_MONTAGE_CONTRACT_VERSION : VERSIONED_MONTAGE_CONTRACT_VERSION,
         verified ? "VERIFIED" : "INCOMPLETE",
         video.getId(),
         null,
         generationStrategy,
         productionReference,
-        sources.sources(),
+        creativeSources.sources(),
+        videoSources.sources(),
         finalArtifact,
         null,
         null,
@@ -212,8 +234,11 @@ public class CreativeMediaGovernanceEvidenceService {
 
   /** Confere novamente no banco cada criativo registrado no snapshot do upload. */
   private ResolvedApprovedSources resolveApprovedSources(JsonNode nodes, Creative target) {
-    if (!nodes.isArray() || nodes.isEmpty() || nodes.size() > 10) {
-      return new ResolvedApprovedSources(List.of(), false);
+    if (!nodes.isArray() || nodes.size() > 10) {
+      return new ResolvedApprovedSources(List.of(), false, false);
+    }
+    if (nodes.isEmpty()) {
+      return new ResolvedApprovedSources(List.of(), false, true);
     }
     Long permittedExperimentId =
         target.getExperiment().getSourceExperiment() == null
@@ -263,7 +288,75 @@ public class CreativeMediaGovernanceEvidenceService {
               && source.getReviewedAt() != null
               && Objects.equals(source.getReviewedAt(), snapshotReviewedAt);
     }
-    return new ResolvedApprovedSources(List.copyOf(resolved), complete);
+    return new ResolvedApprovedSources(List.copyOf(resolved), true, complete);
+  }
+
+  /** Confere novamente cada vídeo-fonte aprovado e preserva o hash atual do arquivo de origem. */
+  private ResolvedApprovedVideoSources resolveApprovedVideoSources(
+      JsonNode nodes, Creative target, Long finalVideoAssetId) throws JsonProcessingException {
+    if (!nodes.isArray() || nodes.size() > 10) {
+      return new ResolvedApprovedVideoSources(List.of(), false, false);
+    }
+    if (nodes.isEmpty()) {
+      return new ResolvedApprovedVideoSources(List.of(), false, true);
+    }
+    Long permittedExperimentId =
+        target.getExperiment().getSourceExperiment() == null
+            ? target.getExperiment().getId()
+            : target.getExperiment().getSourceExperiment().getId();
+    List<ApprovedVideoSource> resolved = new java.util.ArrayList<>();
+    Set<Long> seenVideoIds = new java.util.HashSet<>();
+    boolean complete = true;
+    for (JsonNode node : nodes) {
+      Long videoAssetId = positiveLong(node.path("videoAssetId"));
+      Long experimentId = positiveLong(node.path("experimentId"));
+      Instant snapshotReviewedAt = reviewedInstant(node.path("reviewedAt"));
+      ExperimentVideoAsset source =
+          videoAssetId == null ? null : videoAssets.findById(videoAssetId).orElse(null);
+      MediaArtifact sourceArtifact =
+          source == null
+              ? null
+              : artifact(source.getAsset(), source.getAssetUrl(), source.getProvider(), null);
+      ApprovedVideoSource snapshot =
+          new ApprovedVideoSource(
+              videoAssetId,
+              experimentId,
+              text(node, "slot"),
+              text(node, "assetUrl"),
+              sourceArtifact == null ? null : sourceArtifact.sha256(),
+              text(node, "status"),
+              text(node, "reviewStatus"),
+              snapshotReviewedAt == null ? null : snapshotReviewedAt.toString());
+      resolved.add(snapshot);
+      complete =
+          complete
+              && videoAssetId != null
+              && !Objects.equals(videoAssetId, finalVideoAssetId)
+              && seenVideoIds.add(videoAssetId)
+              && source != null
+              && source.getExperiment() != null
+              && Objects.equals(experimentId, permittedExperimentId)
+              && Objects.equals(source.getExperiment().getId(), permittedExperimentId)
+              && source.getSlot() != null
+              && Objects.equals(source.getSlot().name(), snapshot.slot())
+              && Objects.equals(trimToNull(source.getAssetUrl()), snapshot.assetUrl())
+              && source.getStatus() != null
+              && Objects.equals(source.getStatus().name(), snapshot.status())
+              && source.getStatus() == ExperimentVideoStatus.READY
+              && source.getReviewStatus() != null
+              && Objects.equals(source.getReviewStatus().name(), snapshot.reviewStatus())
+              && source.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED
+              && source.getReviewedAt() != null
+              && Objects.equals(source.getReviewedAt(), snapshotReviewedAt)
+              && hasSha256(sourceArtifact);
+    }
+    return new ResolvedApprovedVideoSources(List.copyOf(resolved), true, complete);
+  }
+
+  /** Exige hash imutável de toda fonte audiovisual declarada quando ela participar da montagem. */
+  private boolean allVideoSourcesHaveSha256(List<ApprovedVideoSource> sources) {
+    return sources.stream()
+        .allMatch(source -> source.sha256() != null && source.sha256().matches("[0-9a-f]{64}"));
   }
 
   /** Aceita apenas um caminho versionável do repositório, sem URL ou travessia de diretório. */
@@ -276,7 +369,12 @@ public class CreativeMediaGovernanceEvidenceService {
   }
 
   /** Responsabilidade: agrupar as fontes resolvidas e o resultado da verificação cruzada. */
-  private record ResolvedApprovedSources(List<ApprovedCreativeSource> sources, boolean complete) {}
+  private record ResolvedApprovedSources(
+      List<ApprovedCreativeSource> sources, boolean declared, boolean complete) {}
+
+  /** Responsabilidade: agrupar vídeos-fonte resolvidos e o resultado da verificação cruzada. */
+  private record ResolvedApprovedVideoSources(
+      List<ApprovedVideoSource> sources, boolean declared, boolean complete) {}
 
   /** Converte o payload persistido de um asset em identidade imutável de arquivo. */
   private MediaArtifact artifact(
@@ -505,6 +603,7 @@ public class CreativeMediaGovernanceEvidenceService {
         null,
         null,
         null,
+        List.of(),
         List.of(),
         mediaUrl == null ? null : new MediaArtifact(null, mediaUrl, null, null, null, null),
         null,

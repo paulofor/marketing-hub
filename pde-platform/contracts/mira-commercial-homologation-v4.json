@@ -1,0 +1,194 @@
+{
+  "contractVersion": "mira-commercial-homologation.v4",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 4,
+  "activityId": "pdeGate",
+  "sourceReference": "product:10@mira-commercial-v1-process4-reconciliation",
+  "experimentId": 93,
+  "product": {
+    "id": 10,
+    "internalName": "Mira",
+    "commercialName": "Mira · sua rotina organizada",
+    "slug": "pde-planejado-36",
+    "experienceVersion": "mira-commercial-v1",
+    "commercialPlanId": 8,
+    "publicUrl": "https://mira.digicomdigital.com.br/"
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "boundary": "Autoriza publicar a transparência do checkout, a prova estática versionada e a governança v4 do vídeo #48, sem criar campanha, verba, compra de homologação ou autorização de mídia.",
+  "operationalState": {
+    "verifiedAt": "2026-09-28",
+    "experimentStatus": "PLANNED",
+    "commercialOfferExpected": true,
+    "deploymentAuthorized": true,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/mira-commercial-homologation-v3.json",
+    "reason": "Reconciliar o mesmo produto comercial com o contrato audiovisual v4, uma prova estática da interface real e a identidade observável do recebedor no checkout.",
+    "includedChanges": [
+      "Governança do vídeo #48 cruza o vídeo-fonte #47 aprovado, sua URL e seu SHA-256 no banco",
+      "MCP do revisor inspeciona os quadros e o hash dos vídeos-fonte declarados",
+      "Controle estático de 1080x1350 capturado deterministicamente do componente comercial real",
+      "Identificação de Paulo Forestieri como responsável comercial antes da CTA de checkout",
+      "Validação local em Chromium desktop, iPhone 15 Pro e Pixel 7"
+    ],
+    "excludedChanges": [
+      "Entrevistas, convites, opiniões solicitadas ou evidência humana fabricada",
+      "Criação ou ativação de campanha, conjunto, anúncio, público ou orçamento de mídia",
+      "Compra real de homologação, venda declarada, receita ou margem presumida"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "mira-commercial",
+    "publicUrl": "https://mira.digicomdigital.com.br/",
+    "requiredFrontendSourceSha256": "7f01511f8ffb01992b3dd573fb114def9ce7c8297e4c4e0e59608972b09e4591"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_CHROMIUM",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "requiredFirstFoldCtas": [
+      "Quero organizar minha rotina por R$ 49"
+    ],
+    "requiredVisibleTexts": [
+      "Cuide de você com mais clareza, usando o que já tem.",
+      "duas organizações incluídas por R$ 49",
+      "Paulo Forestieri",
+      "responsável comercial pela Mira"
+    ],
+    "runtimeIdentity": {
+      "version": "mira-commercial-v1",
+      "experienceVersion": "mira-commercial-v1",
+      "frontendSourceSha256": "7f01511f8ffb01992b3dd573fb114def9ce7c8297e4c4e0e59608972b09e4591"
+    }
+  },
+  "mediaContract": {
+    "hlsPlaybackPath": "/media/mira-commercial-demo-v1-hls/index.m3u8",
+    "hlsPlaylistSha256": "a3d3041da52212c9657784ffb440818f994ac04548b84e9d3c703ee0705c64b8",
+    "hlsChecksumsPath": "/media/mira-commercial-demo-v1-hls/checksums.sha256",
+    "hlsChecksumsSha256": "215fcc351f952b006de9a924cd0563fd0a26c33a60d8516a7f29c8588f5805e0",
+    "hlsSegments": [
+      {
+        "path": "/media/mira-commercial-demo-v1-hls/segment-000.ts",
+        "sha256": "fe9b831708d1561f9abec01705dc42106b9dce54dc2777e1f0a250a5ec0049b1"
+      },
+      {
+        "path": "/media/mira-commercial-demo-v1-hls/segment-001.ts",
+        "sha256": "cd4e1fdac720cbda99a749d74df4e81ecee4316a32f0ac86a416de179b1dace8"
+      },
+      {
+        "path": "/media/mira-commercial-demo-v1-hls/segment-002.ts",
+        "sha256": "89df0ef96996105f951691f0768d3144172eabaf1438bada1769a023146bd058"
+      }
+    ],
+    "fallbackVideoPath": "/media/mira-commercial-demo-v1.mp4",
+    "videoPath": "/media/mira-commercial-demo-v1.mp4",
+    "videoSha256": "e1123f4bf456dcfb459bc2709c5db7800c742178fc6f2b8db165ab552abb6b43",
+    "posterPath": "/media/mira-commercial-demo-v1-poster.jpg",
+    "posterSha256": "7964614ac7a5c7e42006473be7c0deabff17f45281bd39ec05f30e9ab6d9a081",
+    "staticControlPath": "/media/mira-commercial-control-v1.png",
+    "staticControlSha256": "a87cc42da6a23a642fdd98fa8b0cf34718d29b43f937e4764ba1090ac9f0d1dc",
+    "staticControlWidth": 1080,
+    "staticControlHeight": 1350,
+    "durationSeconds": 15,
+    "width": 1080,
+    "height": 1920,
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "audioSourceAssetId": 47,
+    "audioSourceSha256": "19be7c4776e20dae6ed783264495e85d97ee2156fc67075e85f79af639e0ef63",
+    "externalGenerationCostUsd": 0
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/mira-commercial-homologation-v3.json",
+      "sha256": "7356220f1dd96c6ad04825eb525a21f039ca9e87095a873b306f1c62a66081d0",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/creative/dto/CreativeMediaGovernanceEvidenceDto.java",
+      "sha256": "def977801dff24d58d4adb73d5a12a3ba0e8992c5a1d93df25efe1a50a9d07b6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/creative/service/CreativeMediaGovernanceEvidenceService.java",
+      "sha256": "ba39cd5e09913968323bdc498188abace77aed4fb77d13e43e3625066e8f4ee8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/main/resources/mcp/meta-ad-approver.mjs",
+      "sha256": "3297b0a0272d00cadbdd29c505a4a91c508c62786991c6cd57b1a2675a195a76",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/main/resources/prompts/meta-ad-approver/v2/review.md",
+      "sha256": "ad0efa7dabe23a24e0f511e9caee00e29e0e1604c794d42da790e6537f6eed11",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MiraCommercialApp.tsx",
+      "sha256": "cb886d630d66789716fbd4e18fbc39e1734b7f9831f039931aa729eade0e80b3",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/mira-commercial.css",
+      "sha256": "a1777853e7c8bee25b7802bd80964e683af94161f2c834b83f801ec4d1ff3957",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/generate-mira-commercial-control.mjs",
+      "sha256": "cf0cb9348b4afa881bfaab7fd3125af6de027586228aec6f198362e0299a358a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/validate-mira-commercial-video.sh",
+      "sha256": "dfb068d45d0196bef00975710e0d2bc209937e1fc81e446261b0726757d293c8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-control-v1.png",
+      "sha256": "a87cc42da6a23a642fdd98fa8b0cf34718d29b43f937e4764ba1090ac9f0d1dc",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Captura determinística do componente comercial real com dados de QA segregados; não representa cliente, venda ou resultado de mercado."
+    },
+    {
+      "path": "pde-platform/frontend/package.json",
+      "sha256": "99fd844b3c26f0fc346cc1dd5b3be58479009efe2f99bbb75c809b4d2eff8eb9",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/creative/service/CreativeMediaGovernanceEvidenceServiceTest.java",
+      "sha256": "921a8c8159301efd76f98ad9130093b50eed0ba8d462a7b816a50da315e6e3ae",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/test/java/com/marketinghub/metaadapproverworker/MetaAdApproverCodexRunnerTest.java",
+      "sha256": "a2096ae1b073c56cde43fa6364b8a54714eb2a7da9bfafbe94198ec7b4adaa60",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/mira-commercial.spec.ts",
+      "sha256": "f13d81a5c188fb506210ec842ba138d747926b6c5c134cde30140e043fd7c898",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/mira-commercial-local.spec.ts",
+      "sha256": "e4b7596d9e4ea23571a4839942a45920c8be0b21c59c325c3eff7e894c3d9b00",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test_pde_release_contract.py",
+      "sha256": "9393321ebc21cf58b6ac7afc1dfa30f65f33238bdc1af6895e3ab5c300d2e689",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/mira-commercial-v1.md"
+}

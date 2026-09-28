@@ -45,6 +45,15 @@ O reconciliador tenta comprovar a integração nas passagens posteriores. Esse t
 vale somente para a comparação de commits; erros de autenticação, indisponibilidade da
 API, ausência da main e respostas inválidas continuam sendo falhas de consulta. Nunca
 presumir equivalência com outro commit ou substituir a evidência para obter retomada.
+Quando o método de merge for squash e, por isso, a revisão validada divergir na ancestralidade,
+o reconciliador pode reconhecer como commit efetivo somente uma revisão alcançável na linha
+principal entre a base protegida e a `main` atual cuja árvore Git completa seja exatamente igual
+à `validated_tree` persistida por `prepare-resume`. A base protegida deve continuar ancestral da
+`main`; a busca percorre apenas o primeiro pai, tem limite finito e a identidade de cada commit,
+árvore e ancestralidade deve vir da API do GitHub. Ausência, resposta inválida ou nenhuma árvore
+idêntica mantém a pausa. A equivalência exata deve registrar o commit homologado, o commit
+efetivo, a árvore e o evento de decisão antes de chamar `resume`. Comparação de diff, mensagem,
+autor, data ou conteúdo parcial jamais substitui essa igualdade criptográfica da árvore completa.
 
 Para homologação ainda em curso, manter a pausa. Registros antigos sem preparação de retomada
 continuam protegidos. Restaurar somente workflows anteriormente ativos; não reativar os que já

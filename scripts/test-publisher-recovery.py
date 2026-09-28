@@ -194,6 +194,110 @@ class AutomaticRecoveryTest(unittest.TestCase):
         self.assertEqual(self.store.load()["phase"], "AWAITING_MERGE")
         self.assertEqual(self.github.dispatches, [])
 
+    def test_squash_with_exact_validated_tree_releases_and_records_effective_commit(self):
+        prepared = self.prepare()
+        current = "c" * 40
+        self.github.sha = current
+        original = self.github.api
+
+        def squash_api(path, method="GET", payload=None):
+            if path == f"compare/{SHA}...{current}":
+                return {"status": "ahead"}
+            if path == f"compare/{VALIDATED}...{current}":
+                return {"status": "diverged"}
+            if path == f"commits/{current}":
+                return {"sha": current, "commit": {"tree": {"sha": prepared["automatic_resume"]["validated_tree"]}}}
+            return original(path, method, payload)
+
+        with patch.object(self.github, "api", side_effect=squash_api):
+            result = self.recovery.reconcile()
+        self.assertEqual(result["status"], "WAITING")
+        self.assertEqual(result["effective_commit"], current)
+        self.assertEqual(result["squashed_validated_commit"], VALIDATED)
+        state = self.store.load()
+        self.assertEqual(state["phase"], "RELEASED")
+        self.assertEqual(state["integrated_commit"], current)
+        self.assertEqual(state["automatic_resume"]["tree_equivalence"]["integrated_tree"],
+                         prepared["automatic_resume"]["validated_tree"])
+        self.assertTrue(any(event["event"] == "squash_integration_verified" for event in state["history"]))
+        self.assertEqual(len(self.github.dispatches), 1)
+
+    def test_divergent_revision_with_different_tree_keeps_publishers_protected(self):
+        self.prepare()
+        current = "c" * 40
+        self.github.sha = current
+        original = self.github.api
+
+        def divergent_api(path, method="GET", payload=None):
+            if path == f"compare/{SHA}...{current}":
+                return {"status": "ahead"}
+            if path == f"compare/{VALIDATED}...{current}":
+                return {"status": "diverged"}
+            if path == f"commits/{current}":
+                return {"sha": current, "commit": {"tree": {"sha": "e" * 40}},
+                        "parents": [{"sha": SHA}]}
+            return original(path, method, payload)
+
+        with patch.object(self.github, "api", side_effect=divergent_api):
+            result = self.recovery.reconcile()
+        self.assertEqual(result["status"], "WAITING")
+        self.assertEqual(self.store.load()["phase"], "AWAITING_MERGE")
+        self.assertEqual(self.github.dispatches, [])
+
+    def test_squash_tree_in_first_parent_history_survives_later_main_commit(self):
+        prepared = self.prepare()
+        squashed = "c" * 40
+        current = "e" * 40
+        self.github.sha = current
+        original = self.github.api
+
+        def advanced_main_api(path, method="GET", payload=None):
+            if path == f"compare/{SHA}...{current}":
+                return {"status": "ahead"}
+            if path == f"compare/{VALIDATED}...{current}":
+                return {"status": "diverged"}
+            if path == f"compare/{squashed}...{current}":
+                return {"status": "ahead"}
+            if path == f"commits/{current}":
+                return {"sha": current, "commit": {"tree": {"sha": "f" * 40}},
+                        "parents": [{"sha": squashed}]}
+            if path == f"commits/{squashed}":
+                return {"sha": squashed,
+                        "commit": {"tree": {"sha": prepared["automatic_resume"]["validated_tree"]}},
+                        "parents": [{"sha": SHA}]}
+            return original(path, method, payload)
+
+        with patch.object(self.github, "api", side_effect=advanced_main_api):
+            result = self.recovery.reconcile()
+        self.assertEqual(result["status"], "WAITING")
+        self.assertEqual(result["effective_commit"], squashed)
+        state = self.store.load()
+        self.assertEqual(state["phase"], "RELEASED")
+        self.assertEqual(state["integrated_commit"], squashed)
+        self.assertEqual(state["resume_sha"], current)
+        self.assertEqual(len(self.github.dispatches), 1)
+
+    def test_squash_without_confirmed_main_tree_fails_closed(self):
+        self.prepare()
+        current = "c" * 40
+        self.github.sha = current
+        original = self.github.api
+
+        def malformed_api(path, method="GET", payload=None):
+            if path == f"compare/{SHA}...{current}":
+                return {"status": "ahead"}
+            if path == f"compare/{VALIDATED}...{current}":
+                return {"status": "diverged"}
+            if path == f"commits/{current}":
+                return {"sha": current, "commit": {}}
+            return original(path, method, payload)
+
+        with patch.object(self.github, "api", side_effect=malformed_api):
+            with self.assertRaisesRegex(ValueError, "árvore de um commit"):
+                self.recovery.reconcile()
+        self.assertEqual(self.store.load()["phase"], "AWAITING_MERGE")
+        self.assertEqual(self.github.dispatches, [])
+
     def test_missing_validated_commit_blocks_loudly_then_recovers_if_commit_returns(self):
         prepared = self.prepare()
         self.github.missing_commits = [VALIDATED]

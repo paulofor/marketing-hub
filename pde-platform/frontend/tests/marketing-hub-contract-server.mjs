@@ -94,7 +94,7 @@ const miraProduct = {
     primary: "#51283f",
     accent: "#c77b61",
     background: "#fffaf7",
-    imageUrl: "/media/mira-commercial-demo-v2-poster.jpg",
+    imageUrl: "/media/mira-commercial-demo-v3-poster.jpg",
   },
   diagnostic: {
     title: "Sua rotina organizada",

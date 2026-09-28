@@ -18,19 +18,19 @@ auditaveis e permitir que a landing seja publicada sem liberar midia.
 
 ## Matriz obrigatoria antes da publicacao
 
-| Area | Cenario | Aceite |
-|---|---|---|
-| Caminho feliz | pagamento Mercado Pago aprovado, e-mail da compra, link magico e rotina pronta | acesso liberado uma vez, valor de R$ 49 e experimento 93 correlacionados |
-| Primeiro uso | informar produtos e orientacoes documentadas | rotina ordenada sem diagnostico, prescricao ou indicacao de nova compra |
-| Validacao | e-mail sem compra, token invalido, rotulo insuficiente e objetivo clinico | acesso ou geracao bloqueados com causa clara |
-| Falhas | checkout indisponivel, webhook repetido, reembolso e reinicio do servico | sem acesso gratuito, sem duplicidade financeira e reembolso encerra o acesso |
-| Integracoes | Marketing Hub, pagamentos, PDE backend, SMTP descartavel e frontend | contratos usam produto 10, experimento 93 e `mira-commercial-v1` |
-| Observabilidade | compra, acesso, momento de valor, primeiro uso, conclusao e reembolso | eventos persistidos sem e-mail ou bearer em metadados publicos |
-| Metricas | QA e testes automatizados | `mh_internal_test=true`, e-mails `@sandbox.local` e exclusao do funil humano |
-| Segregacao | Mira privada, Vega, Rigel e Mira comercial | nenhuma superficie, imagem, slot, evento ou entitlement e compartilhado indevidamente |
-| Navegadores | Chromium desktop, iPhone 15 Pro e Pixel 7 | checkout, login, formulario, resultado e politicas utilizaveis sem overflow ou erro de console |
-| Video | demonstracao vertical de 15 segundos gerada pelo repositorio | reproduz em 1080x1920, possui audio revisado e nao exibe termos internos de homologacao |
-| Publicacao | entrega, checkout e landing prontos; campanha sem verba | experimento permanece `PLANNED`, sem campanha, gasto ou autorizacao de midia |
+| Area            | Cenario                                                                        | Aceite                                                                                         |
+| --------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Caminho feliz   | pagamento Mercado Pago aprovado, e-mail da compra, link magico e rotina pronta | acesso liberado uma vez, valor de R$ 49 e experimento 93 correlacionados                       |
+| Primeiro uso    | informar produtos e orientacoes documentadas                                   | rotina ordenada sem diagnostico, prescricao ou indicacao de nova compra                        |
+| Validacao       | e-mail sem compra, token invalido, rotulo insuficiente e objetivo clinico      | acesso ou geracao bloqueados com causa clara                                                   |
+| Falhas          | checkout indisponivel, webhook repetido, reembolso e reinicio do servico       | sem acesso gratuito, sem duplicidade financeira e reembolso encerra o acesso                   |
+| Integracoes     | Marketing Hub, pagamentos, PDE backend, SMTP descartavel e frontend            | contratos usam produto 10, experimento 93 e `mira-commercial-v1`                               |
+| Observabilidade | compra, acesso, momento de valor, primeiro uso, conclusao e reembolso          | eventos persistidos sem e-mail ou bearer em metadados publicos                                 |
+| Metricas        | QA e testes automatizados                                                      | `mh_internal_test=true`, e-mails `@sandbox.local` e exclusao do funil humano                   |
+| Segregacao      | Mira privada, Vega, Rigel e Mira comercial                                     | nenhuma superficie, imagem, slot, evento ou entitlement e compartilhado indevidamente          |
+| Navegadores     | Chromium desktop, iPhone 15 Pro e Pixel 7                                      | checkout, login, formulario, resultado e politicas utilizaveis sem overflow ou erro de console |
+| Video           | demonstracao vertical de 15 segundos gerada pelo repositorio                   | reproduz em 1080x1920, possui audio revisado e nao exibe termos internos de homologacao        |
+| Publicacao      | entrega, checkout e landing prontos; campanha sem verba                        | experimento permanece `PLANNED`, sem campanha, gasto ou autorizacao de midia                   |
 
 ## Evidências locais concluídas
 
@@ -120,3 +120,53 @@ seis imagens ao final.
 
 Essas validações comprovam consistência técnica e editorial, não compra ou aceitação do mercado.
 Público, preflight, teto e piloto continuam bloqueados até a conclusão dos gates seguintes.
+
+## Correção perceptiva do controle estático em 28/09/2026
+
+A nova execução independente de Psique aprovou vídeo e landing, mas devolveu `ADJUST` para o
+controle v2. No tamanho real de 360x450 do feed, a peça ainda não identificava inequivocamente o
+formato da entrega, “organizações disponíveis” permanecia ambíguo e os limites repetidos dentro dos
+cartões ficavam pequenos. O parecer foi preservado sob a execução
+`89de9789-2cac-4653-b861-0b2f630e7652`; nenhuma aprovação anterior foi reutilizada.
+
+Foram comparados três caminhos: explicar a peça apenas no texto do anúncio, ampliar o PNG fora da
+fonte ou corrigir a própria experiência e gerar uma nova versão imutável. O terceiro foi escolhido
+porque conserva a correspondência entre anúncio e produto. O cabeçalho pago agora declara “Mira ·
+aplicação web”, o direito aparece como “2 rotinas individualizadas incluídas” e o limite foi
+consolidado em uma frase maior: “Não é diagnóstico nem prescrição”.
+
+O controle v3 mantém 1080x1350, reduz de forma legível para 360x450 e tem SHA-256
+`cc078e9d9953246a2aaa06a33905f34c9093d40a480bc82ab114a6676113ac7a`. O manifesto v6 preserva v2
+e v1 como histórico, mantém o experimento #93 em `PLANNED` e exige nova revisão independente dos
+bytes v3 antes de qualquer importação, público, teto ou mídia. QA e agentes continuam sem valor de
+evidência comercial.
+
+## Correção de prova, linhagem e direito da oferta em 28/09/2026
+
+A execução independente de Têmis `4f0aa6eb-4c6b-45b3-ad28-b0aa12093660` bloqueou corretamente a
+importação porque o vídeo corretivo ainda não possuía identidade própria na Biblioteca, o controle
+não trazia uma prova formalmente aprovada, a locução dizia “Veja a tela real” e o direito completo
+não aparecia antes do CTA. O parecer foi preservado como `ADJUST`; não foi convertido em aprovação.
+
+O histórico do produto descartou uma interpretação adicional do parecer: o cânone e
+`MiraCommercialService` definem duas tentativas no total, usadas como duas organizações, e não duas
+tentativas para cada organização. Alterar para quatro gerações ampliaria a oferta sem decisão de
+produto. A formulação verificável passou a ser “duas organizações individualizadas no total; cada
+organização concluída usa uma das duas tentativas disponíveis”, tanto na landing quanto no quadro
+final do vídeo.
+
+Foram comparados três caminhos: manter a prova #311 com identidade privada, redesenhar outra tela
+editorial ou capturar a aplicação paga e incorporar os mesmos pixels nos dois criativos. O terceiro
+foi escolhido por fechar a causa na origem. A prova
+`mira-commercial-product-proof-v1.png` é uma captura determinística de 1080x1080 da aplicação paga
+com dados de QA e SHA-256
+`4ffda62d502d8ea644fa06a0cd6cf0768c39c4278b43bdcefa3665e9d578c2f3`. O controle v4 incorpora essa
+prova e tem SHA-256 `66482a136dce80aa14121417b3229e8b70c0b575e3879b8e4fffe861faa65fcc`.
+
+O vídeo v3 incorpora a mesma prova, preserva os primeiros 8,42 segundos da narração #47 e substitui
+o restante por silêncio, removendo “Veja a tela real” sem sintetizar outra voz. O MP4 tem 15
+segundos, 1080x1920, H.264/AAC e SHA-256
+`0ba5720d4e3ec6beeed4ee76430a6be47b681a36eca9dfefe349d3a66aee3377`. A nova versão deve ser
+cadastrada como sucessora do #48, nunca como alteração dos bytes históricos. Prova, vídeo e pacote
+continuam dependendo de registro pela interface e de novos pareceres independentes antes do
+Processo 4; nenhuma campanha ou verba foi autorizada por esta correção.

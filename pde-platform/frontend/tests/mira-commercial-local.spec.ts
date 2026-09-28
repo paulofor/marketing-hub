@@ -80,6 +80,12 @@ test("expõe desejo, demonstração, preço, checkout e políticas sem iniciar m
     page.getByText(/duas organizações incluídas por R\$ 49/i),
   ).toBeVisible();
   await expect(
+    page.getByText(/duas organizações individualizadas no total/i),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Cada organização concluída usa uma das duas tentativas/i),
+  ).toBeVisible();
+  await expect(
     page.getByText(/Paulo Forestieri.*responsável comercial pela Mira/i),
   ).toBeVisible();
   await expect(page.getByLabel("Demonstração de Mira")).toBeVisible();
@@ -224,7 +230,10 @@ test("conclui compra, e-mail, rotina, retomada, limites, métricas e reembolso",
     "content",
     "noindex, nofollow",
   );
-  await expect(page.getByText("2 organizações disponíveis")).toBeVisible();
+  await expect(page.getByText("Mira · aplicação web")).toBeVisible();
+  await expect(
+    page.getByText("2 rotinas individualizadas incluídas"),
+  ).toBeVisible();
   const products = page.locator("fieldset");
   await products.nth(0).locator("input").fill("Sabonete suave");
   await products.nth(0).locator("textarea").fill("Limpar e enxaguar");
@@ -232,10 +241,15 @@ test("conclui compra, e-mail, rotina, retomada, limites, métricas e reembolso",
   await products.nth(1).locator("textarea").fill("Aplicar após a limpeza");
   await page.getByRole("button", { name: "Organizar minha rotina" }).click();
   await expect(page.getByText("Sua rotina está pronta")).toBeVisible();
+  await expect(
+    page.getByText(/não é diagnóstico nem prescrição/i),
+  ).toBeVisible();
   await expect(page.locator(".mira-routine-list li").first()).toContainText(
     "Sabonete suave",
   );
-  await expect(page.getByText("1 organização disponível")).toBeVisible();
+  await expect(
+    page.getByText("1 rotina individualizada disponível"),
+  ).toBeVisible();
 
   await page.reload();
   await expect(page.getByText("Sua rotina está pronta")).toBeVisible();
@@ -248,13 +262,17 @@ test("conclui compra, e-mail, rotina, retomada, limites, métricas e reembolso",
     .fill("Diagnosticar e tratar manchas");
   await page.getByRole("button", { name: "Organizar minha rotina" }).click();
   await expect(page.getByRole("alert")).toContainText(/conclusão clínica/i);
-  await expect(page.getByText("1 organização disponível")).toBeVisible();
+  await expect(
+    page.getByText("1 rotina individualizada disponível"),
+  ).toBeVisible();
 
   await page
     .getByLabel("O que você quer facilitar?")
     .fill("Organizar minha rotina noturna");
   await page.getByRole("button", { name: "Organizar minha rotina" }).click();
-  await expect(page.getByText("0 organizações disponíveis")).toBeVisible();
+  await expect(
+    page.getByText("0 rotinas individualizadas disponíveis"),
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Organizar outra combinação" }),
   ).toHaveCount(0);

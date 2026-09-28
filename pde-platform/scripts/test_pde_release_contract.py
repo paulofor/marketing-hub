@@ -47,19 +47,23 @@ class PdeReleaseContractTest(unittest.TestCase):
     def test_commercial_mira_release_manifest_binds_homologated_source(self):
         surface = MODULE.select_surface(self.inventory, "mira-commercial")
         contract = MODULE.load_object(
-            ROOT / "pde-platform/contracts/mira-commercial-homologation-v5.json"
+            ROOT / "pde-platform/contracts/mira-commercial-homologation-v6.json"
         )
         source = contract["publicationContract"]["requiredFrontendSourceSha256"]
 
         MODULE.validate_release_contract(surface, contract, source)
         self.assertEqual(
             contract["mediaContract"]["hlsPlaybackPath"],
-            "/media/mira-commercial-demo-v2-hls/index.m3u8",
+            "/media/mira-commercial-demo-v3-hls/index.m3u8",
         )
         self.assertEqual(len(contract["mediaContract"]["hlsSegments"]), 3)
         self.assertEqual(
             contract["mediaContract"]["staticControlPath"],
-            "/media/mira-commercial-control-v2.png",
+            "/media/mira-commercial-control-v4.png",
+        )
+        self.assertEqual(
+            contract["mediaContract"]["productProofPath"],
+            "/media/mira-commercial-product-proof-v1.png",
         )
 
     def test_diagnostics_bind_target_image_commit_and_source(self):

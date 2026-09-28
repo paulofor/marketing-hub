@@ -1,0 +1,24 @@
+services:
+  pde-mira-contract-server:
+    image: ${MIRA_CONTRACT_IMAGE:?Informe MIRA_CONTRACT_IMAGE}
+    build: null
+
+  pde-mira-mysql:
+    image: ${MIRA_MYSQL_IMAGE:?Informe MIRA_MYSQL_IMAGE}
+    build: null
+
+  pde-platform-backend-mira-commercial-validation:
+    image: ${MIRA_PDE_BACKEND_IMAGE:?Informe MIRA_PDE_BACKEND_IMAGE}
+    build: null
+
+  pde-platform-frontend-mira-commercial-validation:
+    image: ${MIRA_FRONTEND_IMAGE:?Informe MIRA_FRONTEND_IMAGE}
+    build: null
+
+  lead-portal-payments-mira-commercial-validation:
+    image: ${MIRA_PAYMENTS_IMAGE:?Informe MIRA_PAYMENTS_IMAGE}
+    build: null
+
+  pde-mira-commercial-e2e:
+    image: ${MIRA_E2E_IMAGE:?Informe MIRA_E2E_IMAGE}
+    build: null

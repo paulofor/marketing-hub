@@ -37,7 +37,7 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
 }) => {
   const mediaRequests: string[] = [];
   page.on("request", (request) => {
-    if (request.url().includes("mira-commercial-demo-v1-hls")) {
+    if (request.url().includes("mira-commercial-demo-v2-hls")) {
       mediaRequests.push(request.url());
     }
   });
@@ -101,16 +101,16 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
     .poll(() => mediaRequests.some((url) => url.endsWith("/index.m3u8")))
     .toBe(true);
   const hlsManifest = await page.request.get(
-    "/media/mira-commercial-demo-v1-hls/index.m3u8",
+    "/media/mira-commercial-demo-v2-hls/index.m3u8",
   );
   expect(hlsManifest.ok()).toBe(true);
   expect(await hlsManifest.text()).toContain("#EXT-X-ENDLIST");
   const hlsSegment = await page.request.get(
-    "/media/mira-commercial-demo-v1-hls/segment-000.ts",
+    "/media/mira-commercial-demo-v2-hls/segment-000.ts",
   );
   expect(hlsSegment.ok()).toBe(true);
   const staticControl = await page.request.get(
-    "/media/mira-commercial-control-v1.png",
+    "/media/mira-commercial-control-v2.png",
   );
   expect(staticControl.ok()).toBe(true);
   expect(staticControl.headers()["content-type"]).toContain("image/png");
@@ -172,7 +172,7 @@ test("usa o MP4 canônico quando o navegador não oferece HLS", async ({
         .getByLabel("Demonstração de Mira")
         .evaluate((video: HTMLVideoElement) => video.currentSrc),
     )
-    .toMatch(/mira-commercial-demo-v1[.]mp4$/);
+    .toMatch(/mira-commercial-demo-v2[.]mp4$/);
 });
 
 test("troca para o MP4 canônico quando o HLS falha em reprodução", async ({
@@ -188,7 +188,7 @@ test("troca para o MP4 canônico quando o HLS falha em reprodução", async ({
     .poll(() =>
       video.evaluate((element: HTMLVideoElement) => element.currentSrc),
     )
-    .toMatch(/mira-commercial-demo-v1-hls\/index[.]m3u8$/);
+    .toMatch(/mira-commercial-demo-v2-hls\/index[.]m3u8$/);
 
   await video.evaluate((element) =>
     element.dispatchEvent(new Event("error", { bubbles: false })),
@@ -198,7 +198,7 @@ test("troca para o MP4 canônico quando o HLS falha em reprodução", async ({
     .poll(() =>
       video.evaluate((element: HTMLVideoElement) => element.currentSrc),
     )
-    .toMatch(/mira-commercial-demo-v1[.]mp4$/);
+    .toMatch(/mira-commercial-demo-v2[.]mp4$/);
 });
 
 test("retoma a rotina paga sem expor o bearer na URL", async ({ page }) => {

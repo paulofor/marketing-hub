@@ -9,7 +9,7 @@ const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const frontendDirectory = path.resolve(scriptDirectory, "..");
 const outputPath = path.join(
   frontendDirectory,
-  "public-mira-commercial/media/mira-commercial-control-v1.png",
+  "public-mira-commercial/media/mira-commercial-control-v2.png",
 );
 const port = 57182;
 const baseUrl = `http://127.0.0.1:${port}`;
@@ -52,7 +52,7 @@ const readySession = {
     },
   ],
   blocker: null,
-  attemptsUsed: 1,
+  attemptsUsed: 0,
   attemptsLimit: 2,
   events: ["VALUE_MOMENT", "READY_RESULT_USED"],
   generatedAt: "2026-09-28T00:00:00Z",
@@ -125,22 +125,26 @@ try {
           z-index: 2;
           padding: 0;
         }
-        .mira-commercial-header span { font-size: 1rem; }
+        .mira-commercial-header span { font-size: 1.2rem; }
+        .mira-commercial-header strong { font-size: 1.28rem; }
         .mira-commercial-card {
-          margin: 0;
-          padding: 46px;
-          height: 1180px;
+          margin: 82px 0 0;
+          padding: 54px;
+          height: 1030px;
           border-radius: 32px;
           box-shadow: 0 20px 70px rgba(73, 42, 88, 0.11);
           display: flex;
           flex-direction: column;
           justify-content: center;
         }
-        .mira-commercial-card h1 { font-size: 3.25rem; margin-bottom: 24px; }
-        .mira-routine-list { gap: 18px; }
-        .mira-routine-list li { padding: 24px; }
-        .mira-routine-list p { font-size: 1.1rem; }
-        .mira-routine-list small { font-size: 0.9rem; }
+        .mira-commercial-kicker { font-size: 1rem; }
+        .mira-commercial-card h1 { font-size: 3.7rem; margin-bottom: 32px; }
+        .mira-routine-list { gap: 24px; }
+        .mira-routine-list li { grid-template-columns: 58px 1fr; gap: 20px; padding: 30px; }
+        .mira-routine-list li > span { width: 54px; height: 54px; font-size: 1.25rem; }
+        .mira-routine-list strong { font-size: 1.4rem; }
+        .mira-routine-list p { font-size: 1.35rem; line-height: 1.35; }
+        .mira-routine-list small { font-size: 1.05rem; line-height: 1.4; }
         .mira-commercial-card button, footer { display: none; }
       `,
     });
@@ -150,7 +154,9 @@ try {
   }
   const bytes = await readFile(outputPath);
   const sha256 = createHash("sha256").update(bytes).digest("hex");
-  process.stdout.write(`Controle estático de Mira gerado: ${outputPath}\nSHA-256: ${sha256}\n`);
+  process.stdout.write(
+    `Controle estático de Mira gerado: ${outputPath}\nSHA-256: ${sha256}\n`,
+  );
 } finally {
   server.kill("SIGTERM");
   await Promise.race([

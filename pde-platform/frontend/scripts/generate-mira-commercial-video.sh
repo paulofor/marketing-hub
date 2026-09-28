@@ -4,9 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OUTPUT_DIR="${MIRA_COMMERCIAL_MEDIA_DIR:-${FRONTEND_DIR}/public-mira-commercial/media}"
-VIDEO_FILE="${OUTPUT_DIR}/mira-commercial-demo-v1.mp4"
-POSTER_FILE="${OUTPUT_DIR}/mira-commercial-demo-v1-poster.jpg"
-HLS_DIR="${OUTPUT_DIR}/mira-commercial-demo-v1-hls"
+VIDEO_FILE="${OUTPUT_DIR}/mira-commercial-demo-v2.mp4"
+POSTER_FILE="${OUTPUT_DIR}/mira-commercial-demo-v2-poster.jpg"
+HLS_DIR="${OUTPUT_DIR}/mira-commercial-demo-v2-hls"
 HLS_PLAYLIST="${HLS_DIR}/index.m3u8"
 AUDIO_SOURCE="${SCRIPT_DIR}/media/mira-approved-voice-asset-47-v1.m4a"
 AUDIO_SOURCE_SHA256="19be7c4776e20dae6ed783264495e85d97ee2156fc67075e85f79af639e0ef63"
@@ -67,11 +67,11 @@ drawbox=x='-180+34*t':y='80+7*t':w=520:h=520:color=#ead8ee@0.55:t=fill,
 drawbox=x='760-20*t':y='1450-5*t':w=440:h=440:color=#dfc9e5@0.42:t=fill,
 
 drawtext=fontfile='${FONT_BOLD}':text='MIRA':fontcolor=#6b3e7d:fontsize=42:x=(w-text_w)/2:y=150:enable='between(t,0,3.2)',
-drawtext=fontfile='${FONT_BOLD}':text='Mais clareza para':fontcolor=#2e2034:fontsize=76:x=(w-text_w)/2:y=475:enable='between(t,0,3.2)',
-drawtext=fontfile='${FONT_BOLD}':text='cuidar de você.':fontcolor=#2e2034:fontsize=76:x=(w-text_w)/2:y=575:enable='between(t,0,3.2)',
-drawtext=fontfile='${FONT_REGULAR}':text='Com os produtos que você já tem.':fontcolor=#6b526f:fontsize=43:x=(w-text_w)/2:y=735:enable='between(t,0,3.2)',
-drawbox=x=230:y=930:w=620:h=110:color=#6b3e7d:t=fill:enable='between(t,0,3.2)',
-drawtext=fontfile='${FONT_BOLD}':text='VEJA COMO FUNCIONA':fontcolor=white:fontsize=34:x=(w-text_w)/2:y=967:enable='between(t,0,3.2)',
+drawtext=fontfile='${FONT_BOLD}':text='APLICAÇÃO WEB':fontcolor=#7a4e8c:fontsize=36:x=(w-text_w)/2:y=405:enable='between(t,0,3.2)',
+drawtext=fontfile='${FONT_BOLD}':text='Organiza sua rotina':fontcolor=#2e2034:fontsize=72:x=(w-text_w)/2:y=500:enable='between(t,0,3.2)',
+drawtext=fontfile='${FONT_BOLD}':text='com o que você já tem.':fontcolor=#2e2034:fontsize=58:x=(w-text_w)/2:y=605:enable='between(t,0,3.2)',
+drawbox=x=230:y=830:w=620:h=110:color=#6b3e7d:t=fill:enable='between(t,0,3.2)',
+drawtext=fontfile='${FONT_BOLD}':text='VEJA COMO FUNCIONA':fontcolor=white:fontsize=34:x=(w-text_w)/2:y=867:enable='between(t,0,3.2)',
 
 drawtext=fontfile='${FONT_BOLD}':text='PASSO 1':fontcolor=#7a4e8c:fontsize=36:x=100:y=150:enable='between(t,3.2,6.3)',
 drawtext=fontfile='${FONT_BOLD}':text='Conte o que você já usa':fontcolor=#2e2034:fontsize=62:x=100:y=235:enable='between(t,3.2,6.3)',

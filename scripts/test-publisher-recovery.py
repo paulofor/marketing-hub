@@ -643,11 +643,22 @@ class RecoveryContractsTest(unittest.TestCase):
         self.assertEqual(set(POLICY), protected - {"recover-public-proxy.yml"})
         self.assertNotIn("reconcile-publishers.yml", protected)
         source = (ROOT / ".github/workflows/reconcile-publishers.yml").read_text()
-        for contract in ("  push:", "  schedule:", "  workflow_run:", "  workflow_dispatch:",
+        for contract in ("  schedule:", "  workflow_run:", "  workflow_dispatch:",
                          "actions: write", "cancel-in-progress: false", "--actions-ssh",
                          "github.ref == 'refs/heads/main'", "deploy-control-known-hosts"):
             self.assertIn(contract, source)
         self.assertIn("- cron: '*/5 * * * *'", source)
+        workflow_run = source.split("  workflow_run:\n", 1)[1].split(
+            "\n\npermissions:", 1
+        )[0]
+        self.assertEqual(
+            workflow_run,
+            "    workflows:\n"
+            "      - Build & Deploy containers\n"
+            "    types: [completed]\n"
+            "    branches: [main]",
+        )
+        self.assertNotIn("\n  push:\n", source)
         self.assertNotIn("pull_request:", source)
         self.assertNotIn("StrictHostKeyChecking=no", source)
         self.assertNotIn("docker ", source)

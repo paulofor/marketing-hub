@@ -189,6 +189,26 @@
 - **Prevenção:** o contrato em `scripts/test-production-freshness.py` exige a lista exata do único
   workflow de origem e rejeita o gatilho direto de `push`.
 
+## LOOP-ACTIONS-RECONCILIADOR-GATILHOS-ENCADEADOS — conclusões paralelas repetem a retomada
+
+- **Data:** 2026-09-28. Após o merge `d5971c9e`, o reconciliador executou no `push`
+  (`36375395203`), no término do deploy central (`36375451422`) e novamente nas conclusões de
+  workers (`36375471163`, `36375472210` e `36375472292`). Um desses runs já foi cancelado pela
+  concorrência, apesar de todos abrirem a autenticação do host de controle.
+- **Causa-raiz confirmada:** `Reconcile automatic publishers` observava o `push`, o deploy central
+  e todos os publicadores. A recuperação só pode solicitar ou liberar publicação depois do deploy
+  central da mesma revisão; eventos posteriores apenas repetiam a leitura do mesmo estado, enquanto
+  a agenda de cinco minutos já cobre a conclusão assíncrona de uma publicação solicitada.
+- **Alternativas avaliadas:** manter todos os eventos preservaria resposta imediata, mas manteria
+  runners e SSH duplicados; criar um debounce persistido reduziria parte das colisões, porém
+  acrescentaria estado e ainda iniciaria workflows redundantes; usar apenas o deploy central, a
+  agenda e o disparo manual mantém a primeira retomada imediata e cobre o acompanhamento posterior
+  sem repetição. A terceira alternativa foi adotada.
+- **Correção sistêmica:** o reconciliador deixa de receber `push` e conclusões de workers/PDE; ele
+  passa a observar exclusivamente `Build & Deploy containers`, além da agenda e do disparo manual.
+- **Prevenção:** `scripts/test-publisher-recovery.py` exige a lista exata de origem e rejeita
+  retorno do gatilho direto de `push` ou de publicadores individuais.
+
 ## LOOP-VEGA-RUN-PUBLICADO-PERDE-PRONTIDAO — cockpit regride após publicar
 
 - **Data:** 2026-09-19. Vega, experimento #92, run produtivo #2.

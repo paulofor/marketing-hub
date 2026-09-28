@@ -101,6 +101,13 @@ publicação e gerariam verificações concorrentes que se cancelam sem ampliar 
 central concluída fornece a leitura imediata pós-publicação; o agendamento preserva a detecção de
 atrasos ou falhas posteriores.
 
+O reconciliador de publicadores segue a mesma origem única: dispara manualmente, a cada cinco
+minutos e ao término de `Build & Deploy containers` na `main`. A primeira passagem pode retomar ou
+solicitar publicações autorizadas; a agenda observa seus resultados posteriores. Ele não é acionado
+pelo `push` nem pela conclusão de cada agente, PDE ou outro publicador, pois essas notificações
+repetem a mesma conciliação, abrem conexões de controle e disputam a fila sem liberar uma nova
+autorização.
+
 Argos, Psique e Íris devem reconhecer tanto `push` quanto `workflow_dispatch` da aplicação,
 sempre na branch `main` e no mesmo SHA. Uma execução de outro commit, branch, tag ou PR não
 libera os agentes. O push de origem testa e empacota a imagem imutável do agente e confirma, em

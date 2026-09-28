@@ -1,0 +1,18 @@
+{
+  "cardKey": "preco-consistente-sem-personalizacao-oculta",
+  "collection": "neuromarketing",
+  "title": "Mantenha preço e condições consistentes entre canais",
+  "finding": "Consumidores pesquisados relatam comparar preços com frequência e demonstrar menor confiança diante de diferenças difíceis de explicar.",
+  "mechanism": "Diferenças inesperadas entre pontos da jornada podem aumentar incerteza e esforço de verificação.",
+  "commercialApplication": "Usar uma fonte canônica para preço, condições e validade em todos os pontos da mesma oferta.",
+  "evidenceStrength": "Moderada, baseada em pesquisa recente com consumidores e sinais convergentes de mercado, sem experimento causal de conversão.",
+  "publishedOn": "2026-09-28",
+  "validUntil": "2027-03-28",
+  "experimentHypothesis": "Apresentar preço e condições de forma consistente ao longo da jornada reduzirá dúvidas e abandono.",
+  "risks": "Não tratar diferenças comerciais legítimas como erro automático.",
+  "limits": "As fontes não provam aumento de vendas e parte da evidência é dos Estados Unidos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-28-preco-consistente-personalizacao-opaca.md",
+  "sourceTitle": "Fonte revisada — Consistência de preço e personalização opaca",
+  "sourceSha256": "f32038163ddcb731da138e3a67d139c490794b6dcaee5c530c430010e5de2803"
+}

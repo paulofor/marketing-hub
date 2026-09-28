@@ -1,0 +1,18 @@
+{
+  "cardKey": "ugc-clientes-confianca",
+  "collection": "neuromarketing",
+  "title": "Sinais humanos ganham valor em ambientes saturados por IA",
+  "finding": "Três pesquisas recentes com consumidores dos EUA convergem em resistência ao conteúdo percebido como sintético: Menlo encontrou 36% menos propensos a engajar se soubessem que o conteúdo foi gerado por IA, contra 14% mais interessados; Gartner encontrou 57% dizendo que o excesso de conteúdo com IA reduziu a confiança em mensagens de marcas e 43% recorrendo mais a pessoas reais; Clutch encontrou 53% dizendo ser menos propensos a comprar de marcas que usam IA em conteúdo social. São atitudes declaradas, não conversão observada.",
+  "mechanism": "Em ambientes com grande volume de conteúdo sintético, procedência humana verificável, demonstração de uso real, especificidade e transparência podem funcionar como heurísticas de autenticidade e credibilidade. Esse mecanismo é uma hipótese interpretativa, não causalidade demonstrada.",
+  "commercialApplication": "Comparar criativo com pessoa ou cliente real e demonstração real do produto, com identificação adequada do uso de IA quando aplicável, contra peça equivalente de aparência mais sintética ou genérica, mantendo oferta, público, orçamento e CTA comparáveis e medindo retenção, CTA, checkout, pagamento reconciliado, CAC, reembolso e satisfação.",
+  "evidenceStrength": "Moderada para percepção declarada de confiança, autenticidade e intenção, devido à convergência de três pesquisas recentes; baixa a moderada para efeito em vendas, pois não há experimento causal de conversão.",
+  "publishedOn": "2026-09-28",
+  "validUntil": "2026-12-27",
+  "experimentHypothesis": "Para a mesma oferta e audiência, um criativo com procedência humana verificável e uso real do produto elevará CTA e checkout e poderá aumentar pagamentos reconciliados em relação a um criativo equivalente de aparência sintética, sem piorar CAC ou reembolso.",
+  "risks": "Encenar UGC como se fosse espontâneo, ocultar uso material de IA, transformar preferência declarada em promessa de conversão, confundir qualidade visual com procedência ou usar imagem e depoimento sem autorização.",
+  "limits": "As evidências são pesquisas de percepção e intenção, centradas nos EUA, com perguntas e amostras diferentes. Não isolam categoria, ticket ou estágio do funil e não demonstram que UGC ou presença humana causem aumento de vendas. Conteúdo com IA pode ter efeito distinto quando melhora utilidade ou relevância.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-28-ugc-clientes-confianca.md",
+  "sourceTitle": "Fonte revisada — sinais humanos e confiança em conteúdo com IA",
+  "sourceSha256": "1800c08ecb8924f636c2a252a661cf532fdb514fa8c5fc02e6136172dcf8a0d7"
+}

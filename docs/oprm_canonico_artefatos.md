@@ -26,7 +26,7 @@ Ele é a referência canônica inicial para:
 
 Este documento deve ser interpretado em conjunto com:
 
-- `docs/canonical/system-governance-canon.v2.md`
+- `docs/canonical/system-governance-canon.v3.md`
 - `oprm/docs/oprm_plano_geral_implementacao.md`  
   ou o caminho equivalente adotado no repositório
 

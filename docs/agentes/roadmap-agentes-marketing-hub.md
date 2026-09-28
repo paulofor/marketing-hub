@@ -2,7 +2,7 @@
 
 > STATUS: OBSOLETO
 > SUBSTITUÍDO POR: `docs/agentes/roadmap-agentes-marketing-hub-v2-regenerado.md`
-> FONTE CANÔNICA: `docs/canonical/system-governance-canon.v2.md`
+> FONTE CANÔNICA: `docs/canonical/system-governance-canon.v3.md`
 > ÚLTIMA VALIDAÇÃO: 2026-08-03
 
 Este plano foi preservado apenas como histórico. Não deve orientar novas implementações.

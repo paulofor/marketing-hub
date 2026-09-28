@@ -1,5 +1,11 @@
 # Validação multiagente de Produtos Digitais Experienciais — v1
 
+> [!IMPORTANT]
+> Este cânone aplica a
+> [regra global de validação por agentes ou mercado](system-governance-canon.v3.md#31-regra-global-de-validação-por-agentes-ou-mercado).
+> Recrutamento, entrevistas, convites para teste, leituras privadas e opiniões solicitadas não são
+> apenas dispensáveis: são proibidos como tarefa, gate ou próximo passo de qualquer produto.
+
 ## Decisão
 
 Por decisão de produto de 2026-09-06, o Marketing Hub não depende de convites, recrutamento ou
@@ -9,8 +15,8 @@ testes determinísticos, com evidências segregadas de qualquer métrica de merc
 
 Essa validação comprova prontidão técnica, coerência da experiência, segurança e integridade
 comercial. Ela **não comprova** preferência humana, intenção de compra, satisfação, product-market
-fit, venda ou receita. Essas evidências só podem vir do experimento comercial e da entrega a pessoas
-reais, com origem e métricas persistidas.
+fit, venda ou receita. Essas evidências só podem vir do comportamento voluntário do mercado no
+experimento comercial, com origem e métricas persistidas.
 
 Execuções históricas permanecem imutáveis. A primeira versão multiagente entrou em
 `pde-construction-approval` v7, com a referência `product:<id>@agent-validation-v1`; atividades
@@ -59,7 +65,9 @@ O macroprocesso passa a se chamar **Protótipo, validação multiagente e aprova
    o estado comercial ou alterar o STOP/RUN do produto. Todos os critérios e contratos do gate
    continuam obrigatórios. A exceção não autoriza publicação nem mídia.
 6. **O mercado valida o valor**: depois da comunicação, homologação comercial e autorização de
-   mídia, Hermes mede pessoas reais desde o anúncio até compra, entrega, satisfação e reembolso.
+   mídia, Hermes mede tráfego e compradores reais desde o anúncio até compra, entrega, uso,
+   recompra, suporte iniciado pelo cliente e reembolso, sem recrutar participantes nem solicitar
+   testes ou opiniões.
 
 Nenhum agente pode criar e aprovar o mesmo artefato. Atena e Plutus continuam responsáveis,
 respectivamente, pela estratégia e pela economia anteriores à construção; Íris e Apolo continuam
@@ -247,18 +255,19 @@ resultado que transfere à cliente o trabalho de operar a IA.
 
 ## Prova comercial posterior
 
-A primeira evidência humana do PDE passa a ocorrer no mercado, não em uma leitura privada
-artificial. O experimento deve separar tráfego interno e medir, no mínimo:
+A primeira evidência externa do PDE passa a ser o comportamento voluntário do mercado, nunca uma
+leitura privada solicitada. O experimento deve separar tráfego interno e medir, no mínimo:
 
 - impressão, clique e sessão atribuída;
 - início e conclusão da experiência;
 - chegada e uso do primeiro resultado útil;
 - CTA e checkout iniciados;
 - pagamento aprovado, receita e CAC;
-- entrega concluída, satisfação, suporte e reembolso.
+- entrega concluída, uso ou recompra, suporte iniciado pelo cliente e reembolso.
 
 Sem tráfego humano suficiente, o resultado é `EVIDÊNCIA_INSUFICIENTE`. Sem pagamento reconciliado,
-não existe venda. Parecer de agente pode liberar o teste, mas nunca substituir esses fatos.
+não existe venda; sem contribuição positiva, não existe escala comprovada. Parecer de agente pode
+liberar o teste, mas nunca substituir esses fatos.
 
 
 ### Evidência técnica da versão corrigida

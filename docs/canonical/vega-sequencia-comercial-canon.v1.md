@@ -1,5 +1,10 @@
 # Sequência comercial do Vega — v1
 
+> [!IMPORTANT]
+> Esta sequência obedece à
+> [regra global de validação por agentes ou mercado](system-governance-canon.v3.md#31-regra-global-de-validação-por-agentes-ou-mercado).
+> A antiga observação solicitada com cinco pessoas foi retirada e não pode voltar como gate.
+
 Decisão do usuário em 08/09/2026. Produto `4` (Vega/MUSA), plano comercial `3`.
 Referência: [análise conciliada do #91](../marketing/vega-cadeia-valor-estrategia-2026-09-08.md).
 
@@ -16,9 +21,9 @@ a definição compartilhada de operação usada por Rigel, nem transfere conclus
 | 2 | Dédalo: primeiro ajuste aplicável | Solicitar microação que explique o que fazer, como aplicar, ocasião e critério da própria cliente; salvar e consultar novamente. Preferir catálogo curado, incluindo caminho neutro. Implementar e testar localmente; usar imagem exclusiva do Vega. Parecer não substitui implementação. |
 | 3 | Íris: entrada mobile e continuidade da oferta | Mostrar a primeira escolha sem rolagem nos dispositivos homologados; demonstrar o ajuste real. Explicar primeiro ajuste/Dia 1 gratuitos e o benefício adicional dos Dias 2 a 7. Preservar R$ 67, pagamento único, sete dias de jornada e 90 dias de acesso. Apolo só entra se uma necessidade audiovisual for comprovada. |
 | 4 | Homologação técnica; depois Psique; depois Têmis | Validar resultado → e-mail de teste → retomada → checkout de teste → acesso → missão, falhas e recuperação. Exigir evidência da mesma versão/produto. Psique avalia utilidade e esforço; Têmis verifica fidelidade, limites e integridade comercial. Rejeição volta ao responsável pela causa, seguida de nova homologação técnica e das revisões afetadas. |
-| 5 | Operador humano, com síntese de Hermes: observação qualitativa | Recrutar cinco pessoas adultas aderentes, com consentimento. Observar começar, compreender, aplicar, salvar e retomar; registrar dificuldade, satisfação e motivo de continuar ou não. Agentes não substituem essas pessoas. Cinco observações não concluem a amostra contratual de 100 contatos do #90 nem validam conversão paga. |
+| 5 | Hermes + backend: preparar a leitura do mercado | Confirmar a instrumentação da mesma versão, excluir `QA_INTERNAL`/`AGENT_VALIDATION` e predeclarar funil, atribuição, CAC, contribuição e regras de parada. Nenhuma entrevista, recrutamento, observação solicitada ou opinião entra como requisito. Essa preparação não comprova demanda nem venda. |
 | 6 | Atena → Plutus → autorização humana → Hermes: próximo teste pago | Após 1–5, definir uma hipótese, versão, canal, janela, orçamento e regras de parada; validar custos, margem e atribuição. Criar sucessor do #91 pela UI somente quando autorizado. Não reativar #91 automaticamente nem interpretar saldo anterior como autorização. Após estabilizar a versão, mudar uma variável por teste. |
-| 7 | Entrega + Plutus + Hermes: primeiras vendas e decisão | Buscar cinco vendas líquidas atribuídas ao canal avaliado, conciliadas e entregues, com primeiro uso e satisfação acompanhados. Registrar contribuição após custos e reembolsos. Cinco vendas são marco inicial, não prova de escala; ampliar somente com repetição por coorte, economia sustentável e nova autorização. |
+| 7 | Entrega + Plutus + Hermes: primeiras vendas e decisão | Buscar cinco vendas líquidas atribuídas ao canal avaliado, conciliadas e entregues, acompanhando primeiro uso, recompra, suporte iniciado pela cliente e reembolso. Registrar contribuição após custos e reembolsos. Cinco vendas são marco inicial, não prova de escala; ampliar somente com repetição por coorte, economia sustentável e nova autorização. |
 
 ## Bloqueios e interpretação
 
@@ -43,7 +48,7 @@ a definição compartilhada de operação usada por Rigel, nem transfere conclus
 - Meta mensal anterior de R$ 1.340 não é promessa nem receita. O marco inicial é cinco vendas de
   R$ 67 (R$ 335 brutos antes de custos), com análise líquida por canal. Orçamento de plano e mídia
   permanecem limites distintos e não somáveis; este roteiro não acrescenta verba.
-- O roteiro orienta execução humana e dos especialistas. Registrá-lo no plano não cria tarefas,
+- O roteiro orienta execução dos especialistas e decisões de governança do proprietário. Registrá-lo no plano não cria tarefas,
   não implementa as melhorias do produto e não transforma suas condições em gates automáticos
   novos no BPM compartilhado.
 

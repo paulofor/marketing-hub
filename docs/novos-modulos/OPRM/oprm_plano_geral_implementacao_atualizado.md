@@ -66,7 +66,7 @@ Ele deve trabalhar com **persona ocupacional**.
 Este módulo deve obedecer às referências canônicas comuns do Marketing Hub.
 
 ### 5.1 Governança global
-- `docs/canonical/system-governance-canon.v2.md`
+- `docs/canonical/system-governance-canon.v3.md`
 
 Esse documento governa:
 - precedência entre fontes
@@ -76,7 +76,7 @@ Esse documento governa:
 - relação entre módulos e contratos
 
 ### 5.2 Implicação prática
-O OPRM deve ser desenvolvido de forma compatível com o `system-governance-canon.v2.md`, especialmente nos pontos abaixo:
+O OPRM deve ser desenvolvido de forma compatível com o `system-governance-canon.v3.md`, especialmente nos pontos abaixo:
 - artefatos e contratos explícitos
 - separação entre domínio e projeções derivadas
 - integração entre módulos por contrato
@@ -166,7 +166,7 @@ A fonte de verdade do módulo é composta por:
 - os contratos de integração
 - as regras do framework dor → resultado → oferta → mecanismo → prova
 - a governança arquitetural do Marketing Hub
-- o `docs/canonical/system-governance-canon.v2.md`
+- o `docs/canonical/system-governance-canon.v3.md`
 
 O backend atua como:
 - ponto de entrada de dados para processamento
@@ -590,7 +590,7 @@ Entregas:
 2. O módulo deve ter diretórios e containers próprios.
 3. O módulo deve ser implementado em Java Spring Boot.
 4. O módulo deve executar em loop/agendamento e usar o backend como canal operacional de entrada e saída.
-5. O módulo deve respeitar o `docs/canonical/system-governance-canon.v2.md`.
+5. O módulo deve respeitar o `docs/canonical/system-governance-canon.v3.md`.
 6. O módulo deve publicar artefatos canônicos, não apenas relatórios livres.
 7. O módulo deve se integrar ao framework dor-resultado-oferta-mecanismo-prova por contrato explícito.
 8. O módulo deve manter separação entre evidência, inferência e hipótese.

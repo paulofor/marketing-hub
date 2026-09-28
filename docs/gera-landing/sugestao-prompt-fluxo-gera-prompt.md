@@ -20,7 +20,7 @@ Siga rigorosamente as regras abaixo.
 
 ### 2) Fontes de verdade obrigatórias (ler antes de codar)
 
-1. `docs/canonical/system-governance-canon.v2.md`
+1. `docs/canonical/system-governance-canon.v3.md`
 2. `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`
 3. `docs/gera-landing/modelo-canonico-gera-landing.md`
 4. `docs/modelo-dados-experimento.md`

@@ -21,7 +21,7 @@ Este documento é voltado principalmente para uso do **Codex** e de qualquer out
 
 Este protocolo deve ser usado em conjunto com:
 
-- `docs/canonical/system-governance-canon.v2.md`
+- `docs/canonical/system-governance-canon.v3.md`
 - `docs/canonical/avatar-sales-video-canonical-rules.md`
 - `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`
 - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`

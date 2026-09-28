@@ -1,5 +1,11 @@
 # Vega: histórico da implementação protegida por ciclo — v1
 
+> [!WARNING]
+> Este documento preserva um contrato histórico. Convites, leituras humanas e aprovação para
+> recrutamento foram substituídos pela validação multiagente e pela
+> [regra global de validação por agentes ou mercado](system-governance-canon.v3.md#31-regra-global-de-validação-por-agentes-ou-mercado).
+> Não podem orientar novos ciclos, projetos ou próximos passos.
+
 > **Estado canônico desde 16/09/2026:** este documento preserva a evolução histórica das
 > versões v9–v12 e das evidências emitidas pela rota `/vega-private`. Novas correções não criam
 > outra “versão privada”. A v12 é a candidata única do slot `v8`, atravessando pré-visualização,
@@ -34,15 +40,18 @@ São cinco sinais: EXPERIENCE_STARTED, VALUE_MOMENT, READY_RESULT_USED, PREFERRE
 CHECKOUT_STARTED. Cada sinal exige ação explícita e seus pré-requisitos. A preferência pela
 alternativa gratuita não registra preferência pelo cartão. Abertura da simulação não é compra.
 
-Duas leituras humanas possíveis usam convites individuais, revogáveis e limitados a sete dias.
+O contrato histórico admitia duas leituras humanas por convites individuais, revogáveis e limitados
+a sete dias.
 Nova autenticação preserva a leitura e invalida a sessão anterior. O banco armazena hashes dos
 segredos; links usam fragmento removido imediatamente. QA_INTERNAL/AGENT_VALIDATION ficam
 segregados de HUMAN, dos eventos da v7 e da contabilidade comercial. Os testes locais podem
-simular HUMAN apenas no banco sintético. Homologação por agentes não substitui pessoas reais.
+simular HUMAN apenas no banco sintético. Esse caminho não é executável: agentes homologam a
+prontidão e somente o comportamento voluntário do mercado comprova demanda e valor.
 
 Custo monetário fica indisponível quando o provedor não o fornece; tokens e modelo são registrados.
 O relatório não inventa custo realizado, preferência humana, receita ou validação econômica.
-Teto de Plutus e aprovação para recrutamento/venda permanecem gates posteriores.
+Teto de Plutus e autorização comercial permanecem gates posteriores; aprovação para recrutamento
+foi removida pela regra global vigente.
 
 ## Publicação e evidência
 

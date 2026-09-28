@@ -16,7 +16,7 @@ Ele deve servir como referência única de implementação para:
 - riscos e mitigação
 
 Este documento não substitui:
-- `docs/canonical/system-governance-canon.v2.md`
+- `docs/canonical/system-governance-canon.v3.md`
 - o cânone de artefatos do OPRM
 - o histórico de implantação do OPRM
 - ADRs necessários
@@ -30,7 +30,7 @@ Ele consolida a direção operacional para desenvolver a integração do módulo
 
 Este plano deve ser interpretado em conjunto com:
 
-- `docs/canonical/system-governance-canon.v2.md`
+- `docs/canonical/system-governance-canon.v3.md`
 - `docs/history/oprm-implementation-history.md`
 - `docs/canonical/oprm_canonico_artefatos.md`
 - `AGENTS.md` da raiz
@@ -566,7 +566,7 @@ Mitigação:
 
 ## 16. Regras de governança
 
-1. Este plano deve respeitar `docs/canonical/system-governance-canon.v2.md`.
+1. Este plano deve respeitar `docs/canonical/system-governance-canon.v3.md`.
 2. O backend continua sendo o único módulo com acesso ao banco.
 3. O OPRM continua dono do domínio dos seus artefatos.
 4. Integrações devem ser explícitas, versionadas e testadas.

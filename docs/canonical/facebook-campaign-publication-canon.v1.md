@@ -26,7 +26,7 @@
 > - define que a mudança de canal deve criar um experimento sucessor limpo, preservando o histórico e sem herdar métricas, campanhas ou aprovações operacionais
 > - formaliza retomada agendada de campanha existente com orçamento diário, teto acumulado e condições estruturadas de parada por ausência ou meta de compras
 
-Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
+Este documento complementa o `system-governance-canon.v3.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
 ## 1. Propósito
 
@@ -328,7 +328,7 @@ Este procedimento existe para validar, sem alterar a arquitetura principal do fu
 
 ## 11. Referências cruzadas
 
-- `system-governance-canon.v2.md` – precedência canônica e critérios de criação de novos cânones.
+- `system-governance-canon.v3.md` – precedência canônica e critérios de criação de novos cânones.
 - `ExperimentReadinessService` (backend) – cálculo dos bloqueios.
 - Endpoints: `/api/facebook-campaigns/experiments-ready`, `/api/facebook-campaigns/experiments/{experimentId}/creatives-ready`, `/api/facebook-adsets/experiments-ready`, `/api/facebook-pixels/pending`, `/api/facebook-pixels/niches/{nicheId}/request`, `/api/experiments/{experimentId}/funnel/diagnostics`.
 - Metodologia de arquitetura por etapa: `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`.

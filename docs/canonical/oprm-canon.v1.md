@@ -211,7 +211,7 @@ Regras vigentes:
 ## Referência de governança
 
 - Este documento é o cânone específico de OPRM para ingestão de CNAE e totalização de market size.
-- As diretrizes gerais do sistema permanecem em `docs/canonical/system-governance-canon.v2.md`.
+- As diretrizes gerais do sistema permanecem em `docs/canonical/system-governance-canon.v3.md`.
 
 ## Regra obrigatória — ciclo 3 com snapshot canônico fixo para operação
 

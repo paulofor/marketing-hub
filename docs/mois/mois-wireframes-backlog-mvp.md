@@ -5,7 +5,7 @@ Este documento transforma o playbook funcional em especificação executável pa
 Referência base: `docs/mois/mois-conjunto-telas-playbook.md`.
 
 Documentos canônicos obrigatórios para este módulo e para o projeto:
-- `docs/canonical/system-governance-canon.v2.md` (cânone de governança do projeto).
+- `docs/canonical/system-governance-canon.v3.md` (cânone de governança do projeto).
 - `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` (cânone de artefatos e regras de pipeline).
 - `docs/mois/mois-conjunto-telas-playbook.md` (cânone funcional de telas/fluxo do módulo MOIS).
 

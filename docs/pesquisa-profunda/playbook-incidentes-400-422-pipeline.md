@@ -5,7 +5,7 @@ Padronizar diagnóstico de erros de contrato (`400` e `422`) no pipeline com com
 
 ## Fonte de verdade
 - `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`
-- `docs/canonical/system-governance-canon.v2.md`
+- `docs/canonical/system-governance-canon.v3.md`
 
 ## Fluxo obrigatório de diagnóstico
 1. Capturar requisição literal (URL, método, headers e body).

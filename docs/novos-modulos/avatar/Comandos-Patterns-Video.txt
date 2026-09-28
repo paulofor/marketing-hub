@@ -8,7 +8,7 @@ Vamos implementar a Sprint V1
 
 Mantenha registros conforme :docs/novos-modulos/avatar/avatar-sales-video-implementation-history-protocol.md
 
-Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v3.md
 
 Leia para seguir e manter os canônicos de artefatos: docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md
 
@@ -33,7 +33,7 @@ Implemente o que ficou pendente das Sprints passadas. Veja em docs/novos-modulos
 
 Mantenha registros conforme :docs/novos-modulos/avatar/avatar-sales-video-implementation-history-protocol.md
 
-Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v3.md
 
 Leia para seguir e manter os canônicos de artefatos: docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md
 
@@ -58,7 +58,7 @@ Implemente o que ficou pendente das Sprints passadas. Veja em docs/novos-modulos
 
 Mantenha registros conforme :docs/novos-modulos/avatar/avatar-sales-video-implementation-history-protocol.md
 
-Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v3.md
 
 Leia para seguir e manter os canônicos de artefatos: docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md
 
@@ -77,9 +77,8 @@ Leia o documento : docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md
 
 Mantenha registros conforme :docs/novos-modulos/avatar/avatar-sales-video-implementation-history-protocol.md
 
-Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v3.md
 
 Leia para seguir e manter os canônicos de artefatos: docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md
 
 Leia e atualize a integração do modulo com a base de dados que deve ser feita pelo backend com endpoints especificados no Swagger: docs/swagger/avatar-sales-video-integration-swagger.yaml
-

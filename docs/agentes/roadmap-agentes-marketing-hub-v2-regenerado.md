@@ -2,7 +2,7 @@
 
 > STATUS: PROPOSTA
 > SUBSTITUI: `docs/agentes/roadmap-agentes-marketing-hub.md`
-> FONTE CANÔNICA: `docs/canonical/system-governance-canon.v2.md`
+> FONTE CANÔNICA: `docs/canonical/system-governance-canon.v3.md`
 > ÚLTIMA VALIDAÇÃO: 2026-08-03
 
 Este documento é o roadmap de agentes mais recente, mas não comprova implementação. Confirme o estado atual no código, banco, logs e registros operacionais.

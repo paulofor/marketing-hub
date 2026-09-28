@@ -38,7 +38,7 @@ Critério de sucesso mínimo:
   - timestamps (`created_at`/`updated_at`);
   - status e lineage.
 - Validar aderência com:
-  - `docs/canonical/system-governance-canon.v2.md`;
+  - `docs/canonical/system-governance-canon.v3.md`;
   - `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`;
   - `docs/modelo-dados-experimento.md`.
 

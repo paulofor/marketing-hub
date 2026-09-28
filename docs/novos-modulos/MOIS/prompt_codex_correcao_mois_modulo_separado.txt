@@ -14,7 +14,7 @@ Objetivo da correção:
 - preservar compatibilidade incremental e baixo risco de quebra.
 
 Regras obrigatórias:
-- respeite `docs/canonical/system-governance-canon.v2.md`;
+- respeite `docs/canonical/system-governance-canon.v3.md`;
 - trate o MOIS como bounded context/módulo separado;
 - não continue expandindo o domínio do MOIS dentro do backend;
 - não faça migração destrutiva sem antes criar compatibilidade transitória;

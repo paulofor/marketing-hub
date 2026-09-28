@@ -12,7 +12,7 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 2. **Capturar erro** (stack trace, payload, endpoint, horário, contexto).
 3. **Analisar logs e dados** via MCP Server (`https://mcpserverdigi.shop/mcp`, JSON-RPC).
 4. **Comparar com documentação canônica**:
-   - `docs/canonical/system-governance-canon.v2.md`
+   - `docs/canonical/system-governance-canon.v3.md`
    - `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`
 5. **Aplicar ajuste** em código/contrato/prompt/mapeamento.
 6. **Registrar evidências** do ajuste neste documento.

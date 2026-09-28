@@ -463,6 +463,11 @@ chamada **sinal humano observado**. Ela permite registrar conversa, entrevista, 
 comentario, reclamacao ou observacao de rotina sem exigir que o operador ja conheca o produto, a
 oferta ou o mecanismo.
 
+Esse recurso recebe somente material espontaneo ou historico ja disponivel. Ele nao autoriza criar
+tarefa, gate ou proximo passo para entrevistar, recrutar, convidar pessoas, pedir teste ou solicitar
+opiniao. Novas execucoes seguem a politica `PUBLIC_SOURCES_V1` e a regra global de validacao por
+agentes ou pelo proprio mercado.
+
 Cada sinal deve preservar, no minimo:
 
 - tipo de fonte e contexto da conversa;

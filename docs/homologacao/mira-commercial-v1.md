@@ -84,3 +84,39 @@ pagamentos e reinício do backend. Os nove cenários passaram em Chromium deskto
 Pixel 7, incluindo transparência do recebedor, bloqueio sem compra, e-mail, rotina, eventos,
 retomada, limites, métricas segregadas e reembolso. O manifesto v4 e seu teste de release também
 foram validados, sem campanha, verba ou compra real.
+
+## Correção dos bloqueios independentes em 28/09/2026
+
+Psique bloqueou corretamente o pacote v4 por três motivos: o controle mostrava apenas uma
+organização restante e ficava pequeno no feed; o vídeo não identificava a aplicação web nos
+primeiros segundos; e a evidência inicial da landing foi capturada antes de a oferta assíncrona
+materializar CTA e identificação do recebedor. A inspeção do endpoint e do banco confirmou ainda
+que `experiment.funnel_promise` preservava o prazo não comprovado de dez minutos.
+
+Foram comparados três caminhos: reaproveitar os pixels anteriores e explicar as divergências em
+texto, sobrepor correções somente no pacote de revisão ou versionar novas peças geradas do produto
+real e corrigir a fonte comercial. O terceiro foi escolhido porque mantém os hashes v1 históricos,
+evita aprovar evidência diferente da publicada e fecha a causa na oferta oficial.
+
+A promessa do experimento #93 foi corrigida pela interface para
+“Organize os produtos que você já tem em uma rotina individualizada, clara e consultável, por
+R$ 49, com limites explícitos.”, preservando `PLANNED`, janela e mídia vazias. O endpoint público
+passou a devolver o mesmo texto, CTA de R$ 49 e checkout vigente. O controle v2 mostra duas
+organizações disponíveis, usa tipografia legível e tem SHA-256
+`8aca36e2a1fa9433484e691d2f673c7646e7e03c49fd36f411d1e3c5aeb66472`.
+
+O vídeo v2 declara “APLICAÇÃO WEB” desde o primeiro quadro, preserva a narração aprovada #47 e tem
+15 segundos, 1080x1920, H.264/AAC e SHA-256
+`a768205bf65ee8557724899901e3050ba753755391e7e0576ffabf167162faa1`. O script de evidência agora
+espera a resposta 200 da oferta, o CTA visível, a identificação de Paulo Forestieri e o texto das
+duas organizações antes de capturar desktop, iPhone 15 Pro e Pixel 7. O manifesto imutável v5 liga
+esses bytes ao fingerprint frontend
+`1896054bc39e021e08b630f3b7f3c5b93628527be29e0e54f1310f47a75f806c`.
+
+A topologia local v5 aprovou novamente nove cenários ponta a ponta com MySQL 5.7, SMTP descartável,
+pagamentos, backend e frontend reais nos três perfis. Os builds usaram imagens temporárias
+rotuladas por sessão, o projeto Compose exclusivo e limpeza integral de containers, volume, rede e
+seis imagens ao final.
+
+Essas validações comprovam consistência técnica e editorial, não compra ou aceitação do mercado.
+Público, preflight, teto e piloto continuam bloqueados até a conclusão dos gates seguintes.

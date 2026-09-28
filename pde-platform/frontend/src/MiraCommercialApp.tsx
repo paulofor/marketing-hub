@@ -3,9 +3,9 @@ import { AdaptiveVideoPlayer } from "./AdaptiveVideoPlayer";
 
 const productSlug = "pde-planejado-36";
 const endpoint = "/api/pde/mira/commercial/v1";
-const commercialVideo = "/media/mira-commercial-demo-v1.mp4";
-const commercialVideoHls = "/media/mira-commercial-demo-v1-hls/index.m3u8";
-const commercialVideoPoster = "/media/mira-commercial-demo-v1-poster.jpg";
+const commercialVideo = "/media/mira-commercial-demo-v2.mp4";
+const commercialVideoHls = "/media/mira-commercial-demo-v2-hls/index.m3u8";
+const commercialVideoPoster = "/media/mira-commercial-demo-v2-poster.jpg";
 
 type ProductInput = { name: string; labelDirections: string };
 type RoutineCard = {
@@ -278,14 +278,14 @@ export function MiraCommercialApp() {
                 videoPlayed.current = true;
                 void trackPublicEvent("VIDEO_PLAY", {
                   experimentId: 93,
-                  creativeVariant: "mira-commercial-demo-v1",
+                  creativeVariant: "mira-commercial-demo-v2",
                 });
               }
               if (event.type === "ended" && !videoCompleted.current) {
                 videoCompleted.current = true;
                 void trackPublicEvent("VIDEO_COMPLETED", {
                   experimentId: 93,
-                  creativeVariant: "mira-commercial-demo-v1",
+                  creativeVariant: "mira-commercial-demo-v2",
                 });
               }
             }}

@@ -7714,3 +7714,23 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   destino, registra histórico e cria apenas `DRAFT/PENDING`; nova copy continua exigindo revisão de
   Têmis e aprovação humana. O contrato de copy usa a mesma contagem Unicode na tela, entrada e
   publicação para estático e vídeo, evitando abrir revisões sabidamente não publicáveis.
+
+## LOOP-PSIQUE-EVIDENCIA-ANTES-DA-OFERTA-ASSINCRONA — 28/09/2026
+
+- **Evidência confirmada:** a primeira captura de revisão de Mira #93 não mostrava CTA nem a
+  identificação do recebedor. Na mesma versão, o endpoint público da oferta respondia HTTP 200 e
+  uma captura que aguardou os elementos confirmou `Organizar minha rotina por R$ 49` e Paulo
+  Forestieri em desktop, iPhone 15 Pro e Pixel 7. A ausência inicial não era estado do produto.
+- **Causa-raiz:** o procedimento genérico esperava somente o carregamento da página; CTA e
+  transparência comercial dependem de uma consulta assíncrona posterior. A evidência foi congelada
+  antes da condição funcional que pretendia avaliar.
+- **Alternativas avaliadas:** aceitar a primeira imagem gera falso bloqueio; aumentar uma espera
+  fixa continua sujeito à latência; aguardar resposta e predicados visuais exatos comprova a
+  condição sem mascarar indisponibilidade real. Foi escolhida a terceira alternativa.
+- **Correção:** a captura versionada de Mira exige oferta HTTP 200 do experimento #93, preço R$ 49,
+  promessa reconciliada, CTA, recebedor e duas organizações visíveis antes de gerar cada PNG. A
+  mesma rodada substitui o controle inconsistente e o vídeo sem identificação por ativos v2 com
+  hashes imutáveis; não se converte a falha de captura em aprovação automática.
+- **Prevenção:** `capture-mira-commercial-review-evidence.mjs`, manifesto v5 e Playwright nos três
+  perfis impedem anexar novamente uma landing parcial. Timeout, promessa antiga ou elemento
+  ausente falham a captura antes de Psique e preservam a causa observável.

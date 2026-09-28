@@ -7378,4 +7378,9 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
   que o Hibernate havia recriado `stop_reason` como `ENUM` mesmo após três migrations históricas
   para `VARCHAR`. O reparo fixa o tipo JDBC nas duas entidades afetadas e reconverte ambas as
   colunas, impedindo que um novo motivo comercial volte a falhar no banco.
+- A publicação corretiva confirmou as duas colunas como `VARCHAR(100)`. #91 passou a
+  `INCONCLUSIVE`, recebeu medição final, pausa Meta explícita com HTTP 200 e conclusão auditada; as
+  filas de métricas, recomendações e parada deixaram de retorná-lo. A tela produtiva foi aprovada
+  em desktop, iPhone 15 Pro e Pixel 7. Assim, #89, #90 e #91 não permanecem mais `RUNNING` fora de
+  uma janela comercial válida.
 - Matriz e evidências: `docs/homologacao/reconciliacao-janelas-experimentos-v1.md`.

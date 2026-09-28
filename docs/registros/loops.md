@@ -7660,3 +7660,8 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   `columnDefinition = "VARCHAR(100)"`; um changeset novo repara ambas as colunas idempotentemente.
   O teste de contrato valida master/include relativo, SQL MySQL 5.7 e as anotações que impedem o
   Hibernate de recriar o tipo nativo.
+- **Comprovação produtiva:** o schema real ficou com as duas colunas em `VARCHAR(100)` e o callback
+  deixou de gerar erro 1265. #89, #90 e #91 estão `INCONCLUSIVE`; #91 recebeu medição final, pausa
+  Meta explícita confirmada por HTTP 200 e conclusão da solicitação de parada. As filas oficiais de
+  métricas, recomendações e parada não retornam mais a campanha, e a tela separa `PAUSED` de
+  **Janela encerrada** em desktop e nos dois perfis móveis homologados.

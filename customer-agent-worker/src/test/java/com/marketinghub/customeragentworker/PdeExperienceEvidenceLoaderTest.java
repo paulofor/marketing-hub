@@ -181,7 +181,6 @@ class PdeExperienceEvidenceLoaderTest {
         }
         """
             .formatted(hash));
-
     var evidence =
         new PdeExperienceEvidenceLoader(tempDir.toString())
             .loadCommercialHomologationEvidence(
@@ -200,9 +199,114 @@ class PdeExperienceEvidenceLoaderTest {
         .containsEntry(
             "reviewSummary",
             "Registro geral; os contratos funcionais específicos permanecem integrais.")
-        .containsEntry("contentLength", 51)
+        .containsEntry("contentLength", Math.toIntExact(Files.size(proof)))
         .containsEntry("sha256", hash)
         .doesNotContainKey("content");
+  }
+
+  /** Preserva bytes binários atestados sem tentar convertê-los em texto UTF-8. */
+  @Test
+  void loadsAttestedBinaryReferenceWithoutUtf8Decoding() throws Exception {
+    Path proof = tempDir.resolve("pde-platform/frontend/public/prova.png");
+    Files.createDirectories(proof.getParent());
+    byte[] binary = {(byte) 0x89, 0x50, 0x4e, 0x47, (byte) 0xff, 0x00};
+    Files.write(proof, binary);
+    String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(binary));
+    Path manifest = tempDir.resolve("pde-platform/contracts/produto-homologacao-v1.json");
+    Files.createDirectories(manifest.getParent());
+    Files.writeString(
+        manifest,
+        """
+        {
+          "contractVersion":"produto-homologacao.v1",
+          "product":{"id":4,"slug":"produto-b","experienceVersion":"produto-b-v1"},
+          "implementationEvidence":[{
+            "path":"pde-platform/frontend/public/prova.png",
+            "sha256":"%s",
+            "promptMode":"ATTESTED_REFERENCE",
+            "reviewSummary":"Imagem conferida pelo hash imutável do pacote."
+          }]
+        }
+        """
+            .formatted(hash));
+    String manifestHash =
+        HexFormat.of()
+            .formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(manifest)));
+    Files.writeString(
+        tempDir.resolve("commercial-review-bundle-index-v1.json"),
+        """
+        {
+          "bundleVersion":"pde-commercial-review-evidence-v1",
+          "files":[
+            {"path":"pde-platform/contracts/produto-homologacao-v1.json","sha256":"%s"},
+            {"path":"pde-platform/frontend/public/prova.png","sha256":"%s"}
+          ]
+        }
+        """
+            .formatted(manifestHash, hash));
+
+    var evidence =
+        new PdeExperienceEvidenceLoader(tempDir.toString())
+            .loadCommercialHomologationEvidence(
+                Map.of(
+                    "experimentId",
+                    90L,
+                    "productId",
+                    4L,
+                    "productSlug",
+                    "produto-b",
+                    "experienceVersion",
+                    "produto-b-v1"));
+
+    assertThat(evidence.get(1))
+        .containsEntry("promptMode", "ATTESTED_REFERENCE")
+        .containsEntry("contentLength", binary.length)
+        .containsEntry("sha256", hash)
+        .containsEntry("bundleIntegrity", "VERIFIED")
+        .containsEntry("reviewSummary", "Imagem conferida pelo hash imutável do pacote.")
+        .doesNotContainKey("content");
+  }
+
+  /** Recusa bytes inválidos quando o manifesto declara que o conteúdo integral é texto. */
+  @Test
+  void rejectsInvalidUtf8WhenFullContentIsRequired() throws Exception {
+    Path proof = tempDir.resolve("docs/prova.md");
+    Files.createDirectories(proof.getParent());
+    byte[] invalidUtf8 = {(byte) 0xc3, 0x28};
+    Files.write(proof, invalidUtf8);
+    String hash =
+        HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(invalidUtf8));
+    Path manifest = tempDir.resolve("pde-platform/contracts/produto-homologacao-v1.json");
+    Files.createDirectories(manifest.getParent());
+    Files.writeString(
+        manifest,
+        """
+        {
+          "contractVersion":"produto-homologacao.v1",
+          "product":{"id":4,"slug":"produto-b","experienceVersion":"produto-b-v1"},
+          "implementationEvidence":[{
+            "path":"docs/prova.md",
+            "sha256":"%s",
+            "promptMode":"FULL"
+          }]
+        }
+        """
+            .formatted(hash));
+
+    assertThatThrownBy(
+            () ->
+                new PdeExperienceEvidenceLoader(tempDir.toString())
+                    .loadCommercialHomologationEvidence(
+                        Map.of(
+                            "experimentId",
+                            90L,
+                            "productId",
+                            4L,
+                            "productSlug",
+                            "produto-b",
+                            "experienceVersion",
+                            "produto-b-v1")))
+        .isInstanceOf(java.nio.charset.MalformedInputException.class);
   }
 
   /** Impede referência atestada sem uma síntese explícita e auditável. */
@@ -434,6 +538,17 @@ class PdeExperienceEvidenceLoaderTest {
                 "metodo-musa-7-dias",
                 "experienceVersion",
                 "musa-pde-entry-v12-primeiro-ajuste-aplicavel"));
+    var mira =
+        loader.loadCommercialHomologationEvidence(
+            Map.of(
+                "experimentId",
+                93L,
+                "productId",
+                10L,
+                "productSlug",
+                "pde-planejado-36",
+                "experienceVersion",
+                "mira-commercial-v1"));
 
     assertThat(rigel)
         .extracting(item -> item.get("path"))
@@ -476,5 +591,15 @@ class PdeExperienceEvidenceLoaderTest {
     assertThat(vegaV12Product.path("slug").asText()).isEqualTo("metodo-musa-7-dias");
     assertThat(vegaV12Product.path("experienceVersion").asText())
         .isEqualTo("musa-pde-entry-v12-primeiro-ajuste-aplicavel");
+    assertThat(mira)
+        .filteredOn(item -> "ATTESTED_REFERENCE".equals(item.get("promptMode")))
+        .hasSizeGreaterThanOrEqualTo(3)
+        .allSatisfy(
+            item -> {
+              assertThat(item).doesNotContainKey("content");
+              assertThat(item.get("contentLength")).isInstanceOf(Number.class);
+              assertThat(((Number) item.get("contentLength")).longValue()).isPositive();
+              assertThat(item.get("sha256").toString()).hasSize(64);
+            });
   }
 }

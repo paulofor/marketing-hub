@@ -184,3 +184,15 @@ detalhada e bloqueava a mesma revisão depois do parecer. A correção aceita am
 canônicas, mas mantém obrigatórios o parecer concluído, a decisão `APPROVE`, cobertura completa,
 três cenários e lucro positivo no cenário-base. O piloto continua bloqueado até o preflight e a
 autorização final do Processo 5.
+
+## Transporte da prova visual de Psique em 29/09/2026
+
+Depois da correção financeira, a mesma execução #31 avançou para Psique e abriu a tarefa #547.
+Ela bloqueou antes da captura pública porque o executor tentou interpretar como UTF-8 o PNG/MP4
+atestado do pacote v6. Os arquivos, hashes e resumos estavam corretos; a falha era do transporte da
+evidência, não da experiência Mira nem do storage de screenshots.
+
+O carregador agora calcula integridade diretamente sobre os bytes e decodifica somente evidências
+`FULL`. Provas `ATTESTED_REFERENCE` preservam tamanho, checksum, SHA-256 e resumo sem inserir o
+binário no prompt. A tentativa #547 permanece no histórico; a execução só pode ser retomada após
+teste, PR e publicação do worker corrigido. Campanha e gasto continuam bloqueados.

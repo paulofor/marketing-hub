@@ -3,6 +3,8 @@ package com.marketinghub.customeragentworker;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -141,7 +143,7 @@ final class PdeExperienceEvidenceLoader {
           throw new IOException(
               "Manifesto comercial contém modos de prompt conflitantes: " + relativePath);
         }
-        Map<String, Object> artifact = readAuthorizedEvidence(relativePath, bundleIndex);
+        Map<String, Object> artifact = readAuthorizedEvidence(relativePath, bundleIndex, directive);
         evidence.putIfAbsent(
             relativePath, directive.apply(withBaselineHash(artifact, expectedHash)));
       }
@@ -227,6 +229,13 @@ final class PdeExperienceEvidenceLoader {
   /** Lê uma prova e confirma que ela pertence ao pacote imutável produzido no mesmo build. */
   private Map<String, Object> readAuthorizedEvidence(String relativePath, BundleIndex bundleIndex)
       throws IOException {
+    return readAuthorizedEvidence(relativePath, bundleIndex, PromptEvidenceDirective.full());
+  }
+
+  /** Lê bytes auditáveis e só decodifica como UTF-8 quando o prompt exige conteúdo integral. */
+  private Map<String, Object> readAuthorizedEvidence(
+      String relativePath, BundleIndex bundleIndex, PromptEvidenceDirective directive)
+      throws IOException {
     if (relativePath == null || relativePath.isBlank() || Path.of(relativePath).isAbsolute()) {
       throw new IOException("Caminho de evidência comercial inválido");
     }
@@ -236,14 +245,24 @@ final class PdeExperienceEvidenceLoader {
         || !artifact.toRealPath().startsWith(repositoryRoot.toRealPath())) {
       throw new IOException("Evidência comercial fora do repositório ou ausente: " + relativePath);
     }
-    String content = Files.readString(artifact, StandardCharsets.UTF_8);
-    String actualHash = sha256(content.getBytes(StandardCharsets.UTF_8));
+    byte[] contentBytes = Files.readAllBytes(artifact);
+    String actualHash = sha256(contentBytes);
     bundleIndex.verify(relativePath, actualHash);
     Map<String, Object> result = new LinkedHashMap<>();
     result.put("path", relativePath);
-    result.put("contentLength", content.length());
-    result.put("contentChecksum", checksum(content));
-    result.put("content", content);
+    result.put("contentLength", contentBytes.length);
+    result.put("contentChecksum", checksum(contentBytes));
+    if (directive.requiresFullContent()) {
+      String content =
+          StandardCharsets.UTF_8
+              .newDecoder()
+              .onMalformedInput(CodingErrorAction.REPORT)
+              .onUnmappableCharacter(CodingErrorAction.REPORT)
+              .decode(ByteBuffer.wrap(contentBytes))
+              .toString();
+      result.put("contentLength", content.length());
+      result.put("content", content);
+    }
     result.put("sha256", actualHash);
     result.put("bundleIntegrity", bundleIndex.attested() ? "VERIFIED" : "LOCAL_SOURCE");
     return result;
@@ -302,8 +321,13 @@ final class PdeExperienceEvidenceLoader {
 
   /** Calcula checksum determinístico para provar a versão efetivamente avaliada. */
   private String checksum(String content) {
+    return checksum(content.getBytes(StandardCharsets.UTF_8));
+  }
+
+  /** Calcula checksum sobre os bytes originais sem tentar interpretar evidência binária. */
+  private String checksum(byte[] content) {
     CRC32 checksum = new CRC32();
-    checksum.update(content.getBytes(StandardCharsets.UTF_8));
+    checksum.update(content);
     return Long.toHexString(checksum.getValue());
   }
 
@@ -358,6 +382,11 @@ final class PdeExperienceEvidenceLoader {
 
   /** Define como uma prova atestada entra no prompt sem truncamento silencioso. */
   private record PromptEvidenceDirective(String mode, String reviewSummary) {
+    /** Cria a diretiva estrita usada por manifestos e provas textuais integrais. */
+    private static PromptEvidenceDirective full() {
+      return new PromptEvidenceDirective(PROMPT_MODE_FULL, "");
+    }
+
     /** Valida o modo explícito e exige resumo verificável para referência sem conteúdo integral. */
     private static PromptEvidenceDirective from(JsonNode declared, String relativePath)
         throws IOException {
@@ -371,6 +400,11 @@ final class PdeExperienceEvidenceLoader {
             "Prova comercial referenciada sem resumo verificável: " + relativePath);
       }
       return new PromptEvidenceDirective(mode, summary);
+    }
+
+    /** Indica quando os bytes precisam representar texto UTF-8 válido no prompt. */
+    private boolean requiresFullContent() {
+      return PROMPT_MODE_FULL.equals(mode);
     }
 
     /** Mantém conteúdo integral ou entrega resumo, tamanho e hashes do arquivo atestado. */

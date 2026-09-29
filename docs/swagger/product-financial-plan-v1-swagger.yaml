@@ -56,7 +56,11 @@ paths:
       - {$ref: '#/components/parameters/Environment'}
     get:
       summary: Sugere suporte e personalização a partir do contexto do produto
-      description: Fontes de outro ambiente e versões vencidas não são adotadas; seleção comercial ambígua exige edição avançada.
+      description: >-
+        Fontes de outro ambiente e versões vencidas não são adotadas; seleção comercial ambígua
+        exige edição avançada. Quando apenas a versão comercial ou o contrato do produto mudou,
+        a preparação oferece um rebase explícito que descarta os custos anteriores e recompõe os
+        envelopes exclusivamente com as fontes oficiais da versão atual.
       responses:
         '200':
           description: Contexto e sugestões canônicas, sem escrita nem chamada paga
@@ -69,7 +73,8 @@ paths:
       description: >-
         O restante do payload identifica o contexto mostrado na tela para controle de concorrência.
         Preço e CAC reaproveitam referências existentes; ausência de custos continua pendente.
-        Registra suporte separado do período econômico. Não solicita Plutus nem altera oferta ou gastos.
+        Em rebase, custos da revisão anterior não são reutilizados. Registra suporte separado do
+        período econômico. Não solicita Plutus nem altera oferta ou gastos.
       requestBody:
         required: true
         content:

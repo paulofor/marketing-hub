@@ -468,16 +468,63 @@ class FinancialPlanPreparationTest {
         .isInstanceOf(ResponseStatusException.class);
   }
 
-  /** Alteração comercial impede adotar revisão anterior como se as fontes fossem atuais. */
+  /** Alteração comercial ou contratual cria rebase sem reaproveitar custos da revisão anterior. */
   @Test
-  void commercialDriftAndAmbiguityBlock() throws Exception {
+  void commercialAndProductDriftRebaseCurrentReferences() throws Exception {
     var saved = service.prepare(product.getId(), Environment.LIVE, request(0, 7, true), null);
     var old = prior(saved.assumptions());
     old.setCommercialPlanVersion(3);
+    product.setValidationDefinitionVersion("fixture-v2");
+    plan.setVariableCostPerSaleBrl(new BigDecimal("14.75"));
+    plan.setFixedOperationalCostBrl(new BigDecimal("80"));
+    var currentVersion = new CommercialPlanVersion();
+    currentVersion.setVersionNumber(5);
+    when(versions.findTopByPlanIdOrderByVersionNumberDesc(plan.getId()))
+        .thenReturn(Optional.of(currentVersion));
+
+    var preview = service.preparation(product.getId(), Environment.LIVE);
+    assertThat(preview.canPrepare()).isTrue();
+    assertThat(preview.productVersion()).isEqualTo("fixture-v2");
+    assertThat(preview.commercialPlanVersion()).isEqualTo(5);
+    assertThat(preview.suggestion()).contains("descarta custos anteriores");
+
+    var rebased =
+        service.prepare(
+            product.getId(),
+            Environment.LIVE,
+            new PreparePlanRequest(1, plan.getId(), 5, "fixture-v2", 7, true),
+            null);
+    assertThat(rebased.stale()).isFalse();
+    assertThat(rebased.assumptions().productVersion()).isEqualTo("fixture-v2");
+    assertThat(rebased.assumptions().variableCostEnvelope().amountPerCustomerBrl())
+        .isEqualByComparingTo("14.75");
+    assertThat(rebased.assumptions().variableCostEnvelope().sourceReference())
+        .isEqualTo("commercial-plan:95102@v5:variableCostPerSaleBrl");
+    assertThat(rebased.assumptions().fixedCostEnvelope().amountPerPeriodBrl())
+        .isEqualByComparingTo("80");
+    assertThat(rebased.assumptions().evidence()).doesNotContain(saved.assumptions().evidence());
+  }
+
+  /** Validade encerrada ou tipo alterado continuam exigindo revisão avançada das fontes. */
+  @Test
+  void expiredOrTypeChangedRevisionCannotRebaseAutomatically() throws Exception {
+    var saved = service.prepare(product.getId(), Environment.LIVE, request(0, 7, true), null);
+    var expiredNode =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(saved.assumptions());
+    expiredNode.put("validUntil", LocalDate.now(ZoneOffset.UTC).minusDays(1).toString());
+    var expired = prior(json.treeToValue(expiredNode, PlanAssumptions.class));
+    expired.setCommercialPlanVersion(3);
     assertThat(service.preparation(product.getId(), Environment.LIVE).canPrepare()).isFalse();
-    assertThatThrownBy(
-            () -> service.prepare(product.getId(), Environment.LIVE, request(1, 7, true), null))
-        .hasMessageContaining("mudou de contexto");
+
+    var current = prior(saved.assumptions());
+    current.setCommercialPlanVersion(3);
+    product.getProductTypeDefinition().setId(952L);
+    assertThat(service.preparation(product.getId(), Environment.LIVE).canPrepare()).isFalse();
+  }
+
+  /** Seleção ambígua sem histórico continua bloqueada para evitar escolher outro plano. */
+  @Test
+  void ambiguousCommercialPlanWithoutHistoryBlocks() {
     when(plans.findByProductId(product.getId())).thenReturn(List.of(plan, new CommercialPlan()));
     assertThat(service.preparation(product.getId(), Environment.TEST).canPrepare()).isFalse();
   }

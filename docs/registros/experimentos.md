@@ -7384,3 +7384,24 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
   em desktop, iPhone 15 Pro e Pixel 7. Assim, #89, #90 e #91 não permanecem mais `RUNNING` fora de
   uma janela comercial válida.
 - Matriz e evidências: `docs/homologacao/reconciliacao-janelas-experimentos-v1.md`.
+
+## 2026-09-29 — Mira #93: reconciliação do Processo 4 e preparação do piloto
+
+- O contrato comercial `mira-commercial-v1`, o produto #10 e o slot público foram reconciliados
+  com o pacote pago de duas organizações, promessa verificável, checkout de R$ 49 e eventos do
+  funil. O vídeo #48 foi substituído pelo sucessor vertical #49; controle estático e vídeo ficaram
+  aprovados, sem depoimentos, prazo inventado ou promessa de velocidade não comprovada.
+- O Processo 4 #28 concluiu as quatro etapas e preservou separadamente artefato publicável,
+  evidências e metadados técnicos. A oferta publicada aponta para o HLS/poster do vídeo #49 e para
+  os mesmos hashes aprovados no controle comercial.
+- O público oficial do Instagram foi registrado no experimento #93 com a conta
+  `@produtividade360_`, a página Meta oficial e a seleção auditável do interesse `Skin care`. Os
+  criativos estático #538 e vídeo #539 ficaram prontos e aprovados; versões anteriores permaneceram
+  como rascunho para não confundir o executor.
+- Foram comparadas três saídas para a revisão financeira desatualizada: editar manualmente as
+  premissas, reutilizar os custos antigos ou criar um rebase controlado. O rebase foi escolhido
+  porque adota somente produto/plano atuais, descarta custos anteriores e mantém vencimento,
+  mudança de tipo e ambiguidade como bloqueios. Nenhuma dessas ações autoriza mídia por si só.
+- O piloto permanece planejado com teto total de R$ 25, parada sem compra em R$ 25 e encerramento
+  após a primeira compra. A liberação depende de parecer Plutus favorável e preflight completo do
+  Processo 5; venda, entrega, primeiro uso, reembolso e contribuição devem permanecer conciliáveis.

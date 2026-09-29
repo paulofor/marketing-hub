@@ -132,7 +132,7 @@ final class FinancialPlanPreparation {
             + plan.getId()
             + ", versão "
             + request.commercialPlanVersion()
-            + ". Preço e CAC reaproveitados das referências cadastradas; custos sem fonte permanecem pendentes."
+            + ". Preço e CAC obtidos das referências cadastradas; custos sem fonte permanecem pendentes."
             + " O suporte não altera prazo de acesso nem contratos vendidos."
             + " O período econômico é distinto do suporte; quando ausente, a proposta inicial é 30 dias."
             + (aggregate

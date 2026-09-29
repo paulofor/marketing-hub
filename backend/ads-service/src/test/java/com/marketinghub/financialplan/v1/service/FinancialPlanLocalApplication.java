@@ -148,7 +148,7 @@ public class FinancialPlanLocalApplication {
     p.setId(id);
     p.setInternalName("Produto sintético " + id);
     p.setName("Produto local " + id);
-    p.setValidationDefinitionVersion("fixture-v1");
+    p.setValidationDefinitionVersion("fixture-product-v1");
     p.setValidationDefinitionJson(
         "{\"format\":{\"type\":\"CUSTOM_VISUAL_ASSET_PACK\",\"valueUnit\":\"kit utilizável\"},"
             + "\"delivery\":{\"mode\":\"PERSONALIZED_ASSISTED\",\"personalization\":true},"

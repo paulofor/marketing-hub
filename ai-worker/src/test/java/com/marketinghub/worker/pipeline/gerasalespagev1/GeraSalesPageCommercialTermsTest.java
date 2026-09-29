@@ -5,6 +5,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
 import com.marketinghub.worker.openai.core.model.OpenAiDispatch;
 import com.marketinghub.worker.openai.core.model.OpenAiResult;
 import com.marketinghub.worker.openai.core.port.OpenAiClientPort;
@@ -13,6 +17,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -81,6 +86,46 @@ class GeraSalesPageCommercialTermsTest {
                 .doesNotContain("Entrega em até", "Primeira resposta", "Suporte por", "Reembolso integral");
     }
 
+    /** Organiza cada fonte em item próprio e recolhe detalhes para reduzir a cauda visual da página. */
+    @Test
+    void rendersCompactStructuredDisclosureInsteadOfConcatenatedParagraphs() {
+        String result = GeraSalesPageCommercialTerms.render(
+                "<body><main>Oferta</main><div class='mobile-sticky'>Comprar</div></body>",
+                source("Abra o formulário no retorno do pagamento"), json);
+
+        assertThat(result)
+                .contains("data-mh-terms-style=\"v2\"", "class=\"mh-terms-grid\"", "<details><summary>",
+                        "<li>Dias úteis conforme calendário cadastrado</li>",
+                        "<li>Link enviado ao e-mail do briefing</li>")
+                .doesNotContain("Dias úteis conforme calendário cadastrado Link enviado ao e-mail do briefing");
+        assertThat(result).containsOnlyOnce("data-mh-commercial-terms=\"v1\"");
+    }
+
+    /** Garante no navegador mobile que o CTA persistente não cubra os termos e a divulgação permaneça compacta. */
+    @Test
+    void keepsMobileDisclosureReadableWithoutFixedCtaOverlay() {
+        String result = GeraSalesPageCommercialTerms.render(
+                "<html><head><style>.mobile-sticky{position:fixed;bottom:0;height:74px}</style></head>"
+                        + "<body><main style='height:400px'>Oferta</main>"
+                        + "<div class='mobile-sticky'>Comprar</div></body></html>",
+                source("Abra o formulário no retorno do pagamento"), json);
+
+        try (Playwright playwright = Playwright.create();
+                Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                        .setHeadless(true)
+                        .setExecutablePath(Path.of(resolveChromiumExecutable()))
+                        .setArgs(List.of("--no-sandbox", "--disable-dev-shm-usage")))) {
+            Page page = browser.newPage(new Browser.NewPageOptions().setViewportSize(393, 852));
+            page.setContent(result);
+
+            assertThat(page.locator(".mobile-sticky").evaluate("element => getComputedStyle(element).position"))
+                    .isEqualTo("static");
+            assertThat(page.locator("[data-mh-commercial-terms] details").count()).isEqualTo(7);
+            assertThat(page.locator("[data-mh-commercial-terms] details[open]").count()).isZero();
+            assertThat(page.locator("[data-mh-commercial-terms]").boundingBox().height).isLessThan(800);
+        }
+    }
+
     /** Duas etapas preservam condições mesmo se o modelo omitir, mantendo bruto e custo originais. */
     @ParameterizedTest
     @ValueSource(strings = {"sales-page-html", "sales-page-publication-package"})
@@ -122,13 +167,20 @@ class GeraSalesPageCommercialTermsTest {
                 Files.readString(root.resolve("before.html")), context, json));
     }
 
+    /** Usa o Chromium fornecido pela sandbox e pelo pipeline sem baixar navegador durante o teste. */
+    private String resolveChromiumExecutable() {
+        String configured = System.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH");
+        return configured == null || configured.isBlank() ? "/usr/bin/chromium" : configured;
+    }
+
     /** Cria contrato independente de produto, sem valores presumidos pelo renderizador. */
     private Map<String, Object> source(String briefing) {
         return Map.of("experiment", Map.of("id", 246, "product", Map.of("id", 23,
                 "experienceContract", Map.of("delivery", Map.of("briefingChannel", briefing,
                                 "businessDays", 4, "startsAfter", "PAYMENT_APPROVED_AND_COMPLETE_BRIEFING",
                                 "businessDaysDefinition", "Dias úteis conforme calendário cadastrado",
-                                "channel", "Link enviado ao e-mail do briefing", "access", "Arquivo para baixar"),
+                                "channel", "Link enviado ao e-mail do briefing", "access", "Arquivo para baixar",
+                                "personalizationScope", "Três combinações personalizadas para uma ocasião"),
                         "support", Map.of("email", "teste+suporte@sandbox.local", "firstResponseBusinessDays", 2,
                                 "durationCalendarDaysAfterDelivery", 14, "scope", "Ajuda para acessar os arquivos",
                                 "exclusions", "Sem serviços adicionais"),

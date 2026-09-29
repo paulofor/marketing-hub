@@ -311,4 +311,6 @@ sufixo fixo a cada versão ou validar todos os ativos e playlists publicados pel
 A terceira alternativa foi adotada: o teste agora exige listas válidas, consulta cada ativo e
 confirma cada playlist HLS antes e depois da recriação isolada do container. `bash -n`, ShellCheck e
 o ciclo completo de isolamento de Mira/Vega passaram localmente, impedindo que a próxima revisão de
-mídia volte a quebrar o teste por um caminho histórico hardcoded.
+mídia volte a quebrar o teste por um caminho histórico hardcoded. Como esse executável também
+protege Vega, a atestação de compatibilidade v15 foi criada sem alterar a v14 e mantém explícitos o
+experimento #92 `INVALIDATED` e a ausência de autorização de publicação ou mídia para Vega.

@@ -1,0 +1,18 @@
+{
+  "cardKey": "objecthood-memoria-visual-guia-atencao",
+  "collection": "prazer-audio-visual",
+  "title": "Agrupar atributos em um objeto para orientar atenção",
+  "finding": "Cinco experimentos indicam que múltiplas características mantidas na memória visual de trabalho voltam a orientar a atenção quando são integradas como um único objeto; quando pertencem a objetos separados, a captura atencional por correspondência com a memória é fortemente reduzida.",
+  "mechanism": "A capacidade de memória que guia a seleção atencional parece operar sobre unidades representacionais integradas. A objecthood permite que várias propriedades funcionem como uma única unidade para orientar a busca.",
+  "commercialApplication": "Em interfaces ou frames densos, comparar a mesma informação apresentada como uma unidade visual coerente versus elementos dispersos. Priorizar medidas de localização do alvo, erros, primeira fixação, compreensão e memória antes de avaliar impacto comercial.",
+  "evidenceStrength": "Média-alta para o mecanismo em memória visual de trabalho e busca: cinco experimentos convergentes, com generalização entre número de características, dimensões e modalidades de representação. Transferência para UX comercial ainda exige teste.",
+  "publishedOn": "2026-09-29",
+  "validUntil": "2026-11-13",
+  "experimentHypothesis": "Se atributos relacionados ao próximo alvo forem percebidos como um único objeto visual, o usuário localizará e identificará o alvo mais rapidamente e com menos erros do que quando os mesmos atributos estiverem dispersos.",
+  "risks": "Agrupar demais pode aumentar densidade local, reduzir hierarquia ou criar um bloco difícil de escanear. Não interpretar melhor busca como prova de maior prazer, persuasão ou venda.",
+  "limits": "O estudo usa tarefas laboratoriais de memória e busca. Objecthood em produto real depende de contorno, proximidade, movimento, hierarquia e contexto; o efeito comercial não foi testado.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-29-objecthood-memoria-visual-atencao.md",
+  "sourceTitle": "Fonte revisada — Objecthood em memória visual de trabalho e guia da atenção",
+  "sourceSha256": "6b5414851a0f70dde8b8d54f2dd59a078345ea99eea3b2831c588fcecbcafe5d"
+}

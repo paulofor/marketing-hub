@@ -102,7 +102,42 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
   await expect(
     page.getByText(/Paulo Forestieri.*responsável comercial pela Mira/i),
   ).toBeVisible();
+  const purchaseProtection = page.getByLabel("Proteção da compra Mira");
+  await expect(purchaseProtection).toContainText(
+    "R$ 49 uma vez, sem assinatura",
+  );
+  await expect(purchaseProtection).toContainText(
+    "Acesso: após a aprovação do pagamento",
+  );
+  await expect(purchaseProtection).toContainText(
+    "Entrega: na hora, na sua área segura",
+  );
+  await expect(purchaseProtection).toContainText(
+    "Reembolso integral: peça em até 7 dias corridos",
+  );
+  await expect(purchaseProtection).toContainText(
+    "Suporte: disponível por 30 dias",
+  );
+  await expect(purchaseProtection).toContainText(
+    "inclusive quando o método não tiver Compra Garantida do Mercado Pago",
+  );
+  await expect(purchaseProtection).toContainText(
+    "solicitar acesso, correção ou exclusão dos dados",
+  );
+  const productProofImage = page.getByRole("img", {
+    name: "Interface real de Mira com uma rotina organizada",
+  });
+  await expect(productProofImage).toBeVisible();
   await expect(page.getByLabel("Demonstração de Mira")).toBeVisible();
+  expect(
+    await page.locator("[data-product-proof]").evaluate((proof) => {
+      const video = document.querySelector("video");
+      return Boolean(
+        video &&
+        proof.compareDocumentPosition(video) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    }),
+  ).toBe(true);
   await expect
     .poll(() => mediaRequests.some((url) => url.endsWith("/index.m3u8")))
     .toBe(true);
@@ -266,9 +301,19 @@ test("entrega políticas comerciais em rotas públicas", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Política de reembolso" }),
   ).toBeVisible();
-  await expect(page.getByText(/garantia legal aplicável/i)).toBeVisible();
+  await expect(
+    page.getByText(/reembolso integral em até 7 dias/i),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      /não estiver coberto pela Compra Garantida do Mercado Pago/i,
+    ),
+  ).toBeVisible();
   await page.goto("/privacy");
   await expect(
     page.getByRole("heading", { name: "Privacidade" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/solicitar acesso, correção, oposição ou exclusão/i),
   ).toBeVisible();
 });

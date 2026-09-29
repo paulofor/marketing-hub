@@ -215,3 +215,34 @@ O manifesto imutável v7 vincula o fingerprint frontend
 capturador independente agora recusam a página quando a CTA não cabe integralmente na primeira
 dobra em desktop, iPhone 15 Pro ou Pixel 7. Essa homologação comprova consistência técnica e de
 copy; não representa venda ou autorização de mídia.
+
+## Proteção comercial e identidade canônica em 29/09/2026
+
+A tarefa Psique #550 inspecionou a versão publicada depois da correção da primeira dobra e preservou
+o parecer `ADJUST`, score 74. Oferta, preço, prova, checkout, tracking e economia passaram; o
+bloqueio funcional permaneceu porque prazo de acesso e entrega, reembolso integral em sete dias,
+suporte por 30 dias e proteção própria quando o meio de pagamento não possui Compra Garantida não
+estavam resumidos junto à CTA. A mesma revisão confirmou que o produto e o slot ainda declaravam a
+paleta verde/terracota histórica, embora landing, prova, vídeo e controle aprovados já usassem a
+identidade roxa.
+
+Foram comparadas três alternativas: inserir somente uma frase de reembolso, recolorir os ativos
+aprovados para o contrato antigo ou preservar a identidade roxa e reconciliar todo o contrato de
+decisão de compra. A terceira foi escolhida porque fecha acesso, entrega, privacidade, risco e
+identidade na fonte sem descartar os ativos já revisados.
+
+A landing agora declara, imediatamente após a CTA, pagamento único de R$ 49, acesso depois da
+aprovação, entrega na hora após o envio do formulário, reembolso integral solicitado em até sete
+dias, suporte por 30 dias e proteção da Mira para todos os meios de pagamento. O mesmo bloco resume
+o uso limitado de e-mail e rótulos e os direitos de acesso, correção e exclusão. A prova aprovada da
+aplicação paga passa a anteceder o vídeo; o vídeo permanece disponível como demonstração adicional
+de 15 segundos.
+
+O manifesto imutável v8 vincula o fingerprint frontend
+`37ec12be2b70cbfd54c03adfd59a0d3b9cd77effb35f15c364a6db4c617d276b` e a paleta canônica
+`#6b3e7d`, `#7a4e8c` e `#f7f2fa`. Build, políticas públicas e 15 cenários Playwright passaram em
+desktop, iPhone 15 Pro e Pixel 7; outros nove cenários ponta a ponta passaram na topologia isolada
+com MySQL 5.7, pagamento, e-mail descartável, backend e frontend reais. A inspeção visual comprovou
+CTA integral na primeira dobra, prova antes do vídeo e ausência de overflow. Produto #10 e slot v1
+ainda devem receber esse mesmo contrato pela interface oficial depois da publicação, antes de uma
+nova revisão de Psique. Nenhuma campanha, compra ou verba é autorizada por esta correção.

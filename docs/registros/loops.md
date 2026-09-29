@@ -7852,6 +7852,27 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   desktop, iPhone 15 Pro e Pixel 7 agora exigem que o botão inteiro caiba no viewport antes de
   congelar a evidência.
 
+## LOOP-PSIQUE-PROTECAO-COMERCIAL-FORA-DA-CTA — 29/09/2026
+
+- **Evidência confirmada:** a tarefa Psique #550 de Mira aprovou oferta, preço, prova, checkout,
+  tracking e economia, mas bloqueou a decisão de compra porque reembolso em sete dias, suporte por
+  30 dias e proteção quando o método não possui Compra Garantida estavam dispersos entre plano,
+  política e rodapé. A captura pública também mostrou paleta roxa enquanto produto #10 e slot v1
+  declaravam verde e terracota.
+- **Causa-raiz:** o contrato comercial persistia as condições corretas, mas a superfície de venda
+  tratava links jurídicos como substitutos do resumo no momento da decisão; identidade executável e
+  identidade declarada evoluíram separadamente. O erro era de reconciliação entre contratos, não do
+  checkout ou do parecer.
+- **Alternativas avaliadas:** acrescentar só a frase de reembolso deixaria entrega, suporte,
+  privacidade e identidade divergentes; recolorir os ativos quebraria continuidade com prova e
+  criativos aprovados; consolidar o resumo junto à CTA e versionar o roxo como identidade canônica
+  fecha todas as divergências. A terceira alternativa foi adotada.
+- **Correção e prevenção:** o manifesto v8 exige pagamento único, prazo orientado a eventos,
+  reembolso, suporte, proteção própria, privacidade resumida, prova antes do vídeo e paleta exata.
+  Playwright e o capturador independente verificam os textos, a ordem visual, a CTA na primeira
+  dobra e os três perfis. Produto e slot devem publicar a mesma paleta pela UI antes de repetir
+  Processo 5; qualquer fingerprint anterior permanece histórico e não pode autorizar mídia.
+
 ## LOOP-BIBLIOTECA-VISUAL-METADADO-MAIOR-QUE-SCHEMA — 28/09/2026
 
 - **Evidência confirmada:** o cadastro oficial da prova de Mira respondeu HTTP 500 no request

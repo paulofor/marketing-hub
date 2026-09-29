@@ -88,7 +88,42 @@ test("expõe desejo, demonstração, preço, checkout e políticas sem iniciar m
   await expect(
     page.getByText(/Paulo Forestieri.*responsável comercial pela Mira/i),
   ).toBeVisible();
+  const purchaseProtection = page.getByLabel("Proteção da compra Mira");
+  await expect(purchaseProtection).toContainText(
+    "R$ 49 uma vez, sem assinatura",
+  );
+  await expect(purchaseProtection).toContainText(
+    "Acesso: após a aprovação do pagamento",
+  );
+  await expect(purchaseProtection).toContainText(
+    "Entrega: na hora, na sua área segura",
+  );
+  await expect(purchaseProtection).toContainText(
+    "Reembolso integral: peça em até 7 dias corridos",
+  );
+  await expect(purchaseProtection).toContainText(
+    "Suporte: disponível por 30 dias",
+  );
+  await expect(purchaseProtection).toContainText(
+    "inclusive quando o método não tiver Compra Garantida do Mercado Pago",
+  );
+  await expect(purchaseProtection).toContainText(
+    "solicitar acesso, correção ou exclusão dos dados",
+  );
+  const productProof = page.getByRole("img", {
+    name: "Interface real de Mira com uma rotina organizada",
+  });
+  await expect(productProof).toBeVisible();
   await expect(page.getByLabel("Demonstração de Mira")).toBeVisible();
+  expect(
+    await page.locator("[data-product-proof]").evaluate((proof) => {
+      const video = document.querySelector("video");
+      return Boolean(
+        video &&
+        proof.compareDocumentPosition(video) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    }),
+  ).toBe(true);
   const checkout = page.getByRole("link", { name: /R\$ 49/i });
   await expect(checkout).toHaveAttribute(
     "href",

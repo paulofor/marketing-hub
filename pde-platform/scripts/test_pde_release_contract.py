@@ -47,7 +47,7 @@ class PdeReleaseContractTest(unittest.TestCase):
     def test_commercial_mira_release_manifest_binds_homologated_source(self):
         surface = MODULE.select_surface(self.inventory, "mira-commercial")
         contract = MODULE.load_object(
-            ROOT / "pde-platform/contracts/mira-commercial-homologation-v7.json"
+            ROOT / "pde-platform/contracts/mira-commercial-homologation-v8.json"
         )
         source = contract["publicationContract"]["requiredFrontendSourceSha256"]
 
@@ -68,6 +68,22 @@ class PdeReleaseContractTest(unittest.TestCase):
         self.assertEqual(
             contract["mediaContract"]["productProofPath"],
             "/media/mira-commercial-product-proof-v1.png",
+        )
+        self.assertEqual(
+            contract["liveVisualContract"]["requiredTheme"],
+            {
+                "primary": "#6b3e7d",
+                "accent": "#7a4e8c",
+                "background": "#f7f2fa",
+            },
+        )
+        self.assertIn(
+            "Reembolso integral: peça em até 7 dias corridos",
+            contract["liveVisualContract"]["requiredVisibleTexts"],
+        )
+        self.assertIn(
+            "Suporte: disponível por 30 dias",
+            contract["liveVisualContract"]["requiredVisibleTexts"],
         )
 
     def test_diagnostics_bind_target_image_commit_and_source(self):

@@ -67,6 +67,44 @@ try {
     await page
       .getByText(/Paulo Forestieri.*responsável comercial pela Mira/i)
       .waitFor({ state: "visible" });
+    const purchaseProtection = page.getByLabel("Proteção da compra Mira");
+    await purchaseProtection.waitFor({ state: "visible" });
+    for (const requiredText of [
+      "R$ 49 uma vez, sem assinatura",
+      "Entrega: na hora, na sua área segura",
+      "Reembolso integral: peça em até 7 dias corridos",
+      "Suporte: disponível por 30 dias",
+      "inclusive quando o método não tiver Compra Garantida do Mercado Pago",
+      "solicitar acesso, correção ou exclusão dos dados",
+    ]) {
+      if (!(await purchaseProtection.innerText()).includes(requiredText)) {
+        throw new Error(
+          `Proteção comercial de Mira não contém: ${requiredText}`,
+        );
+      }
+    }
+    const productProof = page.getByRole("img", {
+      name: "Interface real de Mira com uma rotina organizada",
+    });
+    await productProof.waitFor({ state: "visible" });
+    await productProof.evaluate((image) => {
+      if (!(image instanceof HTMLImageElement) || !image.complete) {
+        throw new Error("Prova visual de Mira ainda não terminou de carregar.");
+      }
+    });
+    const productProofBeforeVideo = await page
+      .locator("[data-product-proof]")
+      .evaluate((proof) => {
+        const video = document.querySelector("video");
+        return Boolean(
+          video &&
+          proof.compareDocumentPosition(video) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+      });
+    if (!productProofBeforeVideo) {
+      throw new Error(`Prova estática aparece depois do vídeo em ${name}.`);
+    }
     await page.getByText(/duas organizações incluídas por R\$ 49/i).waitFor({
       state: "visible",
     });
@@ -92,6 +130,8 @@ try {
       checkoutCta: await checkoutCta.innerText(),
       checkoutFirstFold: true,
       merchantDisclosureVisible: true,
+      purchaseProtectionVisible: true,
+      productProofBeforeVideo,
     });
     if (name === "desktop") {
       commercialOffer = offer;

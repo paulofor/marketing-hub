@@ -649,6 +649,56 @@ class ExperimentControllerTest {
   }
 
   /**
+   * Garante que a entrega personalizada paga recebe contrato de venda, e não de amostra gratuita.
+   */
+  @Test
+  void personalizedPaidDeliveryPreparationCreatesDirectPaidContract() throws Exception {
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("AI entrega paga").build());
+    var hypothesis =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(nicheRepo.findById(nicheId).orElseThrow())
+                .title("Rotina individualizada")
+                .premiseAngle(angle)
+                .promise("Organizar os produtos já disponíveis em uma rotina clara")
+                .problem("A cliente não sabe em qual ordem usar os produtos")
+                .persona("Compradora com produtos de skincare já disponíveis")
+                .mechanism("Mapa de rotina documentada")
+                .build());
+
+    mockMvc
+        .perform(
+            post(
+                    "/api/product-ai/hypotheses/{hypothesisId}/experiment-preparation",
+                    hypothesis.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"productAiSubtype\":\"AI_PERSONALIZED_PAID_DELIVERY\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.productAiSubtype").value("AI_PERSONALIZED_PAID_DELIVERY"))
+        .andExpect(jsonPath("$.price").value(49.00))
+        .andExpect(jsonPath("$.offerPackageName").value("Pacote de entrega personalizada paga"))
+        .andExpect(jsonPath("$.deliverableTitle").value("Entrega personalizada completa"))
+        .andExpect(jsonPath("$.experimentPreparation.ready").value(true))
+        .andExpect(jsonPath("$.experimentPreparation.draft.stage").value("AD"))
+        .andExpect(
+            jsonPath("$.experimentPreparation.draft.primaryVariable")
+                .value("Entrega personalizada paga"))
+        .andExpect(
+            jsonPath("$.experimentPreparation.draft.primaryMetric")
+                .value("Compra aprovada, primeiro uso e custo de IA por compra"));
+
+    var prepared = hypothesisRepository.findById(hypothesis.getId()).orElseThrow();
+    assertThat(prepared.getProductAiSubtype())
+        .isEqualTo(ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY);
+    assertThat(prepared.getPrice()).isEqualByComparingTo("49.00");
+    assertThat(prepared.getEntrega())
+        .contains("após o pagamento aprovado")
+        .doesNotContain("antes da compra");
+  }
+
+  /**
    * Garante que o preparo de prévia visual paga cria variante sem alterar o funil de amostra atual.
    */
   @Test

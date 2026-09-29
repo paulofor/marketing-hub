@@ -2171,3 +2171,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-28-facebook-stop-reason-varchar-repair-v2.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-29-product-ai-personalized-paid-delivery-v1.yaml
+      relativeToChangelogFile: true

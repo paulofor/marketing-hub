@@ -1,0 +1,136 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-29-hypothesis-product-ai-subtype-varchar-v1
+      author: marketinghub
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        dbms:
+          type: mysql
+        columnExists:
+          tableName: hypothesis
+          columnName: product_ai_subtype
+        sqlCheck:
+          expectedResult: "1"
+          sql: >-
+            SELECT CASE WHEN DATA_TYPE = 'varchar' AND CHARACTER_MAXIMUM_LENGTH >= 48 THEN 0 ELSE 1 END
+              FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'hypothesis'
+               AND COLUMN_NAME = 'product_ai_subtype'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |-
+              ALTER TABLE hypothesis
+                MODIFY COLUMN product_ai_subtype VARCHAR(48) NULL;
+
+  - changeSet:
+      id: 2026-09-29-experiment-product-ai-subtype-varchar-v1
+      author: marketinghub
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        dbms:
+          type: mysql
+        columnExists:
+          tableName: experiment
+          columnName: product_ai_subtype
+        sqlCheck:
+          expectedResult: "1"
+          sql: >-
+            SELECT CASE WHEN DATA_TYPE = 'varchar' AND CHARACTER_MAXIMUM_LENGTH >= 48 THEN 0 ELSE 1 END
+              FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'experiment'
+               AND COLUMN_NAME = 'product_ai_subtype'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |-
+              ALTER TABLE experiment
+                MODIFY COLUMN product_ai_subtype VARCHAR(48) NULL;
+
+  - changeSet:
+      id: 2026-09-29-mira-personalized-paid-delivery-reconciliation-v1
+      author: marketinghub
+      preConditions:
+        onFail: HALT
+        onError: HALT
+        dbms:
+          type: mysql
+        and:
+          - tableExists:
+              tableName: experiment
+          - tableExists:
+              tableName: hypothesis
+          - tableExists:
+              tableName: deliverable_package
+          - tableExists:
+              tableName: deliverable_package_item
+          - tableExists:
+              tableName: deliverable
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |-
+              UPDATE hypothesis h
+              JOIN experiment e
+                ON e.hypothesis_id = h.id
+               AND e.id = 93
+               AND e.product_id = 10
+                 SET h.product_ai_subtype = 'AI_PERSONALIZED_PAID_DELIVERY',
+                     h.promise = 'Organize os produtos que você já tem em uma rotina individualizada, clara e consultável, por R$ 49, com limites explícitos.'
+               WHERE h.product_id = 10
+                 AND h.title = 'MD3A-H003'
+                 AND h.product_ai_subtype IN ('AI_PERSONALIZED_SAMPLE', 'AI_PERSONALIZED_PAID_DELIVERY');
+
+              UPDATE experiment e
+              JOIN hypothesis h
+                ON h.id = e.hypothesis_id
+                 SET e.product_ai_subtype = 'AI_PERSONALIZED_PAID_DELIVERY',
+                     e.stage = 'AD',
+                     e.primary_variable = 'Entrega personalizada paga',
+                     e.primary_metric = 'Compra aprovada, primeiro uso e custo de IA por compra'
+               WHERE e.id = 93
+                 AND e.product_id = 10
+                 AND h.product_id = 10
+                 AND h.title = 'MD3A-H003'
+                 AND e.status = 'PLANNED'
+                 AND e.product_ai_subtype IN ('AI_PERSONALIZED_SAMPLE', 'AI_PERSONALIZED_PAID_DELIVERY');
+
+              UPDATE deliverable_package dp
+              JOIN hypothesis h
+                ON h.offer_package_id = dp.id
+              JOIN experiment e
+                ON e.hypothesis_id = h.id
+               AND e.id = 93
+               AND e.product_id = 10
+                 SET dp.name = 'Pacote de entrega personalizada paga',
+                     dp.description = 'Pacote comercial da rotina individualizada completa, vendida por checkout direto e liberada somente após pagamento aprovado.',
+                     dp.prompt = 'Origem: preparo sistêmico de Produto IA\nHipótese: MD3A-H003\nSubtipo: AI_PERSONALIZED_PAID_DELIVERY\nRegra: pacote mínimo determinístico criado antes do experimento; nenhuma IA foi chamada.'
+               WHERE h.product_id = 10
+                 AND h.title = 'MD3A-H003'
+                 AND h.product_ai_subtype = 'AI_PERSONALIZED_PAID_DELIVERY';
+
+              UPDATE deliverable d
+              JOIN deliverable_package_item dpi
+                ON dpi.deliverable_id = d.id
+              JOIN deliverable_package dp
+                ON dp.id = dpi.deliverable_package_id
+              JOIN hypothesis h
+                ON h.offer_package_id = dp.id
+              JOIN experiment e
+                ON e.hypothesis_id = h.id
+               AND e.id = 93
+               AND e.product_id = 10
+                 SET d.title = 'Entrega personalizada completa',
+                     d.description = 'Rotina individualizada completa liberada após o pagamento aprovado, criada com os produtos informados pela compradora e apresentada com limites explícitos.',
+                     d.content = 'Dor: Esforço e incerteza para transformar produtos de skincare já disponíveis e recomendações dispersas em uma rotina pessoal simples, consultável e limitada às informações documentadas.\nPersona: Mulheres de 35 a 60 anos, com pele madura e produtos de skincare já disponíveis, alcançadas exclusivamente por Instagram Ads, que querem organizar a rotina com menos esforço, sem orientação clínica.\nPromessa: Organize os produtos que você já tem em uma rotina individualizada, clara e consultável, por R$ 49, com limites explícitos.\nMecanismo: Mapa de Rotina Documentada: transforma a lista real da cliente em inventário, sequência consultável e limites explícitos, sem completar lacunas por inferência.\nEntrega: Aplicação web paga com rotina individualizada completa e consultável, liberada após pagamento aprovado.',
+                     d.prompt = 'Origem: preparo sistêmico de Produto IA\nHipótese: MD3A-H003\nSubtipo: AI_PERSONALIZED_PAID_DELIVERY\nRegra: pacote mínimo determinístico criado antes do experimento; nenhuma IA foi chamada.'
+               WHERE h.product_id = 10
+                 AND h.title = 'MD3A-H003'
+                 AND h.product_ai_subtype = 'AI_PERSONALIZED_PAID_DELIVERY';

@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { RefreshCw } from "lucide-react";
+import { toast } from "react-toastify";
 import type {
   TargetingElement,
   TargetingElementSource,
   TargetingElementStatus,
 } from "../api/targeting/types";
+import { useRequestMetaAdsReprocess } from "../api/targeting/useRequestMetaAdsReprocess";
 import { useUpdateTargetingElement } from "../api/targeting/useUpdateTargetingElement";
 
 const typeLabels: Record<TargetingElement["type"], string> = {
@@ -101,6 +104,7 @@ export function TargetingElementCard({
     [element.marketNicheId],
   );
   const updateElement = useUpdateTargetingElement(nicheId);
+  const requestMetaAdsReprocess = useRequestMetaAdsReprocess();
   const audienceRangeLabel = formatAudienceRange(
     element.metaAudienceSizeLowerBound,
     element.metaAudienceSizeUpperBound,
@@ -141,7 +145,26 @@ export function TargetingElementCard({
     });
   };
 
-  const isMutating = updateElement.isPending;
+  const handleMetaAdsReprocess = async () => {
+    try {
+      await requestMetaAdsReprocess.mutateAsync({
+        id: element.id,
+        nicheId: element.marketNicheId,
+      });
+      toast.success(
+        "Elemento reenviado para validação do identificador oficial na Meta.",
+      );
+    } catch (error) {
+      console.error("Erro ao solicitar reprocessamento do público na Meta", error);
+      toast.error(
+        "Não foi possível solicitar o reprocessamento na Meta agora.",
+      );
+    }
+  };
+
+  const isUpdating = updateElement.isPending;
+  const isReprocessing = requestMetaAdsReprocess.isPending;
+  const isMutating = isUpdating || isReprocessing;
   const hasOfficialMetaId = Boolean(element.metaId?.trim());
   const canApprove = element.status === "APPROVED" || hasOfficialMetaId;
   const approvalHelpText = hasOfficialMetaId
@@ -228,7 +251,7 @@ export function TargetingElementCard({
               }
               disabled={isMutating || !canApprove}
             >
-              {isMutating && (
+              {isUpdating && (
                 <span
                   className="spinner-border spinner-border-sm me-2"
                   role="status"
@@ -239,8 +262,26 @@ export function TargetingElementCard({
             </button>
             <button
               type="button"
+              className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+              onClick={handleMetaAdsReprocess}
+              disabled={isMutating}
+            >
+              {isReprocessing ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden="true"
+                />
+              ) : (
+                <RefreshCw size={16} aria-hidden="true" />
+              )}
+              Reprocessar na Meta
+            </button>
+            <button
+              type="button"
               className="btn btn-sm btn-outline-primary"
               onClick={() => setShowModal(true)}
+              disabled={isMutating}
             >
               Editar detalhes
             </button>
@@ -463,7 +504,7 @@ export function TargetingElementCard({
                   onClick={handleSave}
                   disabled={isMutating}
                 >
-                  {isMutating && (
+                  {isUpdating && (
                     <span
                       className="spinner-border spinner-border-sm me-2"
                       role="status"

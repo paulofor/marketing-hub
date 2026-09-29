@@ -592,6 +592,43 @@ class ExperimentReadinessServiceTest {
     assertThat(service.isReadyForCampaign(experiment)).isTrue();
   }
 
+  /** Não exige funil gratuito quando o produto vende a entrega personalizada completa. */
+  @Test
+  void shouldAllowPersonalizedPaidDeliveryWithoutFreeSampleFunnel() {
+    Long experimentId = 93L;
+    Experiment experiment = buildExperiment(experimentId, 34L);
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    experiment.setProductAiSubtype(ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY);
+    experiment.setProduct(
+        Product.builder()
+            .id(10L)
+            .slug("mira")
+            .productTypeDefinition(ProductTypeDefinition.builder().code("AI_PRODUCT").build())
+            .build());
+    experiment.getNiche().setFacebookPixelId("pixel-mira");
+    completeCommercialContract(experiment);
+
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(1L);
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(true);
+    when(directPdeActivationService.isReadyForActivation(experiment)).thenReturn(true);
+    mockPublishableSelection(
+        experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.hasLeadPortalFlow()).isFalse();
+    assertThat(summary.issues()).isEmpty();
+    assertThat(summary.eligibleForRunning()).isTrue();
+    assertThat(service.computeMissingConfiguration(experiment))
+        .doesNotContain("productAiPersonalizedSampleFunnel", "geraSalesPagePipeline");
+  }
+
   /** Garante que a microamostra social curta atende a prontidão sem campos do template genérico. */
   @Test
   void shouldAllowPersonalizedSampleProductAiWithSocialMediaMicroSampleContract() {

@@ -1,5 +1,27 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-PRODUTO-IA-PAGO-CLASSIFICADO-COMO-AMOSTRA-GRATUITA — 29/09/2026
+
+- **Evidência confirmada:** Mira, produto #10 e experimento #93, vende uma aplicação web com rotina
+  individualizada por R$ 49, checkout antes do acesso, eventos conciliados e coleta dentro da
+  experiência paga. Apesar disso, hipótese `MD3A-H003`, experimento, pacote #24 e entregável #89
+  estavam persistidos como `AI_PERSONALIZED_SAMPLE`, “amostra antes da compra” e etapa `SAMPLE`.
+  O readiness exigia corretamente, para esse rótulo incorreto, funil gratuito no Lead Portal e
+  página de amostra auditada.
+- **Causa-raiz:** o catálogo possuía amostra gratuita e prévia paga, mas não um contrato para a
+  entrega personalizada completa vendida diretamente. O preparo usou o subtipo semanticamente mais
+  próximo e o Hibernate reconverteu as colunas extensíveis de `VARCHAR(48)` para `ENUM` nativo,
+  tornando a evolução ainda mais frágil.
+- **Alternativas avaliadas:** criar uma amostra gratuita contradiz a oferta e altera o funil;
+  classificar a rotina completa como prévia paga perde o significado do produto; adicionar o
+  subtipo pago, reconciliar a linhagem inteira e preservar os gates específicos foi a alternativa
+  escolhida.
+- **Correção sistêmica:** `AI_PERSONALIZED_PAID_DELIVERY` representa venda antes da coleta e não
+  herda gates de amostra. Hipótese, experimento, pacote e entregável de Mira convergem para esse
+  contrato; o schema volta a `VARCHAR(48)` e as entidades fixam o tipo JDBC textual.
+- **Prevenção:** testes protegem a preparação, os rótulos de interface, o readiness sem falso funil
+  gratuito, a migração MySQL 5.7 e o mapeamento contra nova conversão automática para `ENUM`.
+
 ## LOOP-FB-TARGETING-PRIMEIRO-RESULTADO-AMBIGUO — 29/09/2026
 
 - **Evidência confirmada:** ao enriquecer o termo amplo `Skin care` do nicho #34 de Mira, a busca

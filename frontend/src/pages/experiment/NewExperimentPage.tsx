@@ -31,6 +31,7 @@ import type {
   ProductAiSubtype,
 } from "../../api/experiment/useExperiments";
 import type { Product } from "../../api/product/useProducts";
+import { productAiSubtypeLabels } from "./productAiSubtypeLabels";
 import {
   experimentIdentityFields,
   parseOptionalConversionRate,
@@ -72,15 +73,6 @@ export function persistedProductUnitPrice(
   }
   return String(product.currentPriceBrl);
 }
-
-const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
-  AI_VISUAL_PREVIEW: "Prévia visual IA",
-  AI_PERSONALIZED_SAMPLE: "Amostra personalizada IA",
-  AI_TRANSFORMATION_SIMULATOR: "Simulador de transformação IA",
-  AI_VISUAL_ASSET_PACK: "Pacote visual IA",
-  AI_IDENTITY_AVATAR_PRODUCT: "Identidade/avatar IA",
-  AI_REPORT_VISUAL_EVIDENCE: "Relatório com evidência visual IA",
-};
 
 export const newExperimentAcquisitionOptions = [
   { value: "FACEBOOK" as const, label: "Instagram Ads (via Meta Ads)" },

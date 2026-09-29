@@ -26,4 +26,5 @@ public record CommercialOfferResponse(
         String supportEmail,
         String termsUrl,
         String privacyUrl,
-        String refundPolicyUrl) {}
+        String refundPolicyUrl,
+        String facebookPixelId) {}

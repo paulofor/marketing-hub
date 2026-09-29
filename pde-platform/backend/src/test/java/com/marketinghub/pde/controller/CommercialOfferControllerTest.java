@@ -60,6 +60,7 @@ class CommercialOfferControllerTest {
                 "teste@sandbox.local",
                 "https://kit-whatsapp-pronto.digicomdigital.com.br/terms",
                 "https://kit-whatsapp-pronto.digicomdigital.com.br/privacy",
-                "https://kit-whatsapp-pronto.digicomdigital.com.br/refund-policy");
+                "https://kit-whatsapp-pronto.digicomdigital.com.br/refund-policy",
+                null);
     }
 }

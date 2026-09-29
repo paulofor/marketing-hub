@@ -178,6 +178,13 @@ Para evitar que uma solicitação fique parada por falta de configuração compl
 usa primeiro `systemUserAccessToken`; se ele não existir, usa o `accessToken` principal já validado.
 O campo `pixelOwnerBusinessId` é enviado apenas quando estiver preenchido, sem bloquear a criação.
 
+Compras de experiências PDE não passam pela tabela legada do Lead Portal. O worker consulta também
+`GET /api/facebook-pixels/pde-conversions-ready`, envia `Purchase` somente a partir do pagamento
+Mercado Pago aprovado, com `action_source=website`, URL da versão publicada e e-mail já normalizado e
+hashado pelo backend, e confirma por `POST /api/facebook-pixels/pde-conversions/ack`. A referência
+financeira vira `event_id` estável; portanto, se a Meta aceitar o evento e o ACK oscilar, a repetição é
+deduplicável e não fabrica uma segunda compra. QA, navegação e clique de checkout não entram nessa fila.
+
 O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 
 Antes de qualquer chamada à Meta, o worker aplica o gate obrigatório de criativo

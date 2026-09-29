@@ -1039,6 +1039,10 @@ components:
         refundPolicyUrl:
           type: string
           format: uri
+        facebookPixelId:
+          type: string
+          nullable: true
+          description: Pixel Meta do nicho, exposto somente quando já foi criado pelo worker oficial.
     ProductValueChainPosition:
       type: object
       required:

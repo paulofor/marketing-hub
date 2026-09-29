@@ -7410,3 +7410,15 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
   pesquisa que o backend entregou. A correção foi generalizada no núcleo de Têmis: toda tarefa com
   `researchIntelligence` recebe o contrato versionado de citação por coleção, mantendo o validador
   estrito e evitando que novas atividades repitam o mesmo custo sem rastreabilidade.
+- O Processo 5 concluiu o preflight produtivo e a autorização limitada, porém a auditoria posterior
+  comprovou que a fila do Facebook Ads Worker ainda excluía o #93 por ausência de pixel no nicho
+  #34. O resumo de prontidão não apresentava esse bloqueio e a tela ocultava “Solicitar pixel”
+  justamente antes da primeira solicitação.
+- A prevenção escolhida alinha o gate `FACEBOOK_PIXEL_READY` ao mesmo requisito da fila e mantém o
+  comando de criação visível desde o estado inicial. Assim, uma autorização futura não pode parecer
+  concluída enquanto a mensuração Meta obrigatória de um low-ticket ainda estiver ausente.
+- A auditoria de eventos encontrou um segundo desvio: o pagamento aprovado do Mira é autoritativo em
+  `pde_payment_audit`, mas a rotina de conversões lia apenas compras antigas do Lead Portal. A correção
+  cria uma fila PDE separada, usa hash do e-mail, URL da versão e `event_id` financeiro estável no CAPI,
+  persiste ACK idempotente e entrega o ID do pixel à landing pelo contrato público da oferta. Eventos
+  de QA, visita, checkout e acesso não são convertidos em compra.

@@ -345,9 +345,24 @@ public class FacebookAdsService {
         return hasText(code) ? code : null;
     }
 
-    public void sendPurchaseEvent(String pixelId, String eventId, java.math.BigDecimal value, String currency, java.time.Instant eventTime) {
+    // Envia uma compra autoritativa ao CAPI com identidade hashada e origem web atribuível.
+    public void sendPurchaseEvent(
+        String pixelId,
+        String eventId,
+        java.math.BigDecimal value,
+        String currency,
+        java.time.Instant eventTime,
+        String hashedEmail,
+        String eventSourceUrl
+    ) {
         if (!hasText(pixelId)) {
             throw new IllegalArgumentException("pixelId must not be blank");
+        }
+        if (!hasText(hashedEmail)) {
+            throw new IllegalArgumentException("hashedEmail must not be blank");
+        }
+        if (!hasText(eventSourceUrl)) {
+            throw new IllegalArgumentException("eventSourceUrl must not be blank");
         }
         Map<String, Object> customData = new HashMap<>();
         if (value != null) {
@@ -362,6 +377,9 @@ public class FacebookAdsService {
         if (hasText(eventId)) {
             event.put("event_id", eventId);
         }
+        event.put("action_source", "website");
+        event.put("event_source_url", eventSourceUrl.trim());
+        event.put("user_data", Map.of("em", List.of(hashedEmail.trim().toLowerCase(Locale.ROOT))));
         event.put("custom_data", customData);
 
         Map<String, Object> body = new HashMap<>();

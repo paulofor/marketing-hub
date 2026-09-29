@@ -138,6 +138,8 @@ public class ExperimentReadinessService {
 
     boolean requiresMetaTargeting = requiresMetaTargeting(experiment);
     boolean hasCompleteTargeting = !requiresMetaTargeting || hasConfiguredTargeting(experiment);
+    boolean requiresFacebookPixel = requiresMetaTargeting && isLowTicketProduct(experiment);
+    boolean hasRequiredFacebookPixel = !requiresFacebookPixel || hasFacebookPixel(experiment);
     List<TargetingElementType> missingTypes =
         hasCompleteTargeting ? List.of() : PUBLISHABLE_TARGETING_TYPES;
     long geraLandingCompletedStageCount = countCompletedGeraLandingStages(experimentId);
@@ -266,6 +268,15 @@ public class ExperimentReadinessService {
               "Ainda não há nenhum interesse, cargo ou comportamento publicável salvo para este experimento.",
               "Acesse a aba Segmentação, marque ao menos um interesse, cargo ou comportamento com ID oficial da Meta e salve o público.",
               List.copyOf(missingTypes)));
+    }
+    if (!hasRequiredFacebookPixel) {
+      issues.add(
+          new ExperimentReadinessIssueDto(
+              ExperimentReadinessIssueType.FACEBOOK_PIXEL,
+              "Pixel da Meta não configurado",
+              "A campanha low-ticket precisa do pixel oficial do nicho para otimizar e atribuir compras.",
+              "Solicite o pixel na tela do nicho e aguarde a criação pelo Facebook Ads Worker antes de autorizar mídia.",
+              List.of()));
     }
 
     if (purchaseIntent && !pdeOperationalEvidenceReady && !hasCommercialContract) {
@@ -452,6 +463,18 @@ public class ExperimentReadinessService {
                         ? "Os eventos obrigatórios estão instalados na página."
                         : "Faltam coletores obrigatórios para medir visita, carregamento, seção e checkout.",
                 "Publique a página com page_view, page_load_metric, section_view_time e checkout_click."),
+            runningRequirement(
+                "FACEBOOK_PIXEL_READY",
+                requiresFacebookPixel ? "Pixel da Meta pronto" : "Pixel da Meta não exigido",
+                hasRequiredFacebookPixel,
+                requiresFacebookPixel
+                    ? hasRequiredFacebookPixel
+                        ? "O nicho possui pixel oficial para otimização e atribuição de compra."
+                        : "O nicho ainda não possui pixel oficial da Meta."
+                    : "Este desenho comercial não exige pixel para entrar em execução.",
+                requiresFacebookPixel
+                    ? "Solicite o pixel na tela do nicho e aguarde a confirmação do worker."
+                    : "Preserve a instrumentação compatível com o canal."),
             runningRequirement(
                 "TARGETING_READY",
                 requiresMetaTargeting ? "Público Meta pronto" : "Canal individual pronto",

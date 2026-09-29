@@ -35,6 +35,19 @@ type Offer = {
   experimentId?: number;
   experienceVersion?: string;
   layoutKey?: string;
+  facebookPixelId?: string;
+};
+type MetaPixelFunction = {
+  (...args: unknown[]): void;
+  callMethod?: (...args: unknown[]) => void;
+  queue?: unknown[][];
+  push?: MetaPixelFunction;
+  loaded?: boolean;
+  version?: string;
+};
+type MetaPixelWindow = Window & {
+  fbq?: MetaPixelFunction;
+  _fbq?: MetaPixelFunction;
 };
 
 /** Entrega login, rotina e políticas da primeira versão comercial de Mira. */
@@ -63,6 +76,7 @@ export function MiraCommercialApp() {
   const [busy, setBusy] = useState(false);
   const pageViewed = useRef(false);
   const checkoutCtaViewed = useRef(false);
+  const metaPageViewed = useRef(false);
   const videoPlayed = useRef(false);
   const videoCompleted = useRef(false);
 
@@ -99,6 +113,20 @@ export function MiraCommercialApp() {
       .then(setOffer)
       .catch(() => setOffer(null));
   }, [accessToken, legalPage]);
+
+  useEffect(() => {
+    if (
+      legalPage ||
+      accessToken ||
+      !offer?.facebookPixelId ||
+      isInternalQaTraffic() ||
+      metaPageViewed.current
+    ) {
+      return;
+    }
+    initializeMetaPixel(offer.facebookPixelId);
+    metaPageViewed.current = true;
+  }, [accessToken, legalPage, offer?.facebookPixelId]);
 
   useEffect(() => {
     if (!offer?.checkoutUrl || checkoutCtaViewed.current) return;
@@ -293,6 +321,10 @@ export function MiraCommercialApp() {
                     experimentId: offer.experimentId ?? 93,
                     priceBrl: offer.priceBrl,
                     checkoutHost: new URL(offer.checkoutUrl).hostname,
+                  });
+                  trackMetaPixel("InitiateCheckout", {
+                    value: offer.priceBrl,
+                    currency: "BRL",
                   });
                 }}
               >
@@ -571,6 +603,54 @@ export function MiraCommercialApp() {
   );
 }
 
+/** Inicializa o pixel oficial recebido do contrato comercial e registra a visita pública. */
+function initializeMetaPixel(pixelId: string) {
+  const normalizedPixelId = pixelId.trim();
+  if (!normalizedPixelId) return;
+  const metaWindow = window as MetaPixelWindow;
+  if (!metaWindow.fbq) {
+    const fbq: MetaPixelFunction = (...args: unknown[]) => {
+      if (fbq.callMethod) {
+        fbq.callMethod(...args);
+      } else {
+        fbq.queue?.push(args);
+      }
+    };
+    fbq.push = fbq;
+    fbq.loaded = true;
+    fbq.version = "2.0";
+    fbq.queue = [];
+    metaWindow.fbq = fbq;
+    metaWindow._fbq = fbq;
+  }
+  if (!document.querySelector('script[data-mira-meta-pixel="true"]')) {
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = "https://connect.facebook.net/en_US/fbevents.js";
+    script.dataset.miraMetaPixel = "true";
+    document.head.appendChild(script);
+  }
+  metaWindow.fbq?.("init", normalizedPixelId);
+  metaWindow.fbq?.("track", "PageView");
+}
+
+/** Registra um evento padrão somente depois que o contrato disponibiliza o pixel. */
+function trackMetaPixel(
+  eventName: string,
+  parameters: Record<string, string | number>,
+) {
+  if (isInternalQaTraffic()) return;
+  (window as MetaPixelWindow).fbq?.("track", eventName, parameters);
+}
+
+/** Impede que navegação de homologação contamine as métricas comerciais da Meta. */
+function isInternalQaTraffic() {
+  const parameters = new URLSearchParams(window.location.search);
+  return (
+    parameters.get("mh_test") === "1" || parameters.get("mh_preview") === "qa"
+  );
+}
+
 function Footer() {
   return (
     <footer>
@@ -679,8 +759,7 @@ async function trackPublicEvent(
 ) {
   const parameters = new URLSearchParams(window.location.search);
   if (parameters.get("pde_analytics")?.toLowerCase() === "off") return;
-  const qa =
-    parameters.get("mh_test") === "1" || parameters.get("mh_preview") === "qa";
+  const qa = isInternalQaTraffic();
   const trackingUrl = new URL(window.location.href);
   trackingUrl.hash = "";
   try {

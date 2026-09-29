@@ -583,9 +583,19 @@ paths:
   /api/facebook-pixels/conversions-ready:
     get:
       tags: [Facebook Pixels]
-      summary: Lista conversões prontas para envio à Meta.
+      summary: Lista conversões legadas prontas para envio à Meta.
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
       responses:
-        '200': { description: Conversões retornadas. }
+        '200':
+          description: Conversões legadas retornadas sem expor e-mail em texto puro.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FacebookPixelConversion' }
   /api/facebook-pixels/conversions/{purchaseId}/ack:
     post:
       tags: [Facebook Pixels]
@@ -596,7 +606,35 @@ paths:
           required: true
           schema: { type: integer, format: int64 }
       responses:
-        '202': { description: Conversão confirmada. }
+        '204': { description: Conversão confirmada. }
+  /api/facebook-pixels/pde-conversions-ready:
+    get:
+      tags: [Facebook Pixels]
+      summary: Lista pagamentos PDE aprovados ainda não entregues ao CAPI.
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+      responses:
+        '200':
+          description: Conversões PDE vinculadas ao slot, experimento e pixel vigentes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PdeFacebookPixelConversion' }
+  /api/facebook-pixels/pde-conversions/ack:
+    post:
+      tags: [Facebook Pixels]
+      summary: Confirma de forma idempotente a entrega CAPI de um pagamento PDE.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PdeFacebookPixelConversionAck' }
+      responses:
+        '204': { description: Entrega registrada ou repetição idempotente confirmada. }
+        '400': { description: Referência, compra aprovada ou pixel vigente inválidos. }
   /api/facebook/configuration-status:
     get:
       tags: [Facebook Configuration]
@@ -1145,6 +1183,45 @@ components:
       type: object
       additionalProperties: true
       description: Dados de pixel criado para nicho e conta Meta.
+    FacebookPixelConversion:
+      type: object
+      required: [purchaseId, experimentId, pixelId, amount, currency, paymentApprovedAt, hashedEmail, eventSourceUrl]
+      properties:
+        purchaseId: { type: integer, format: int64 }
+        experimentId: { type: integer, format: int64 }
+        experimentName: { type: string, nullable: true }
+        pixelId: { type: string }
+        paymentId: { type: string, nullable: true }
+        amount: { type: number }
+        currency: { type: string, example: BRL }
+        paymentApprovedAt: { type: string, format: date-time }
+        hashedEmail:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        eventSourceUrl: { type: string, format: uri }
+    PdeFacebookPixelConversion:
+      type: object
+      required: [sourceReference, experimentId, pixelId, eventId, amount, currency, paymentApprovedAt, hashedEmail, eventSourceUrl]
+      properties:
+        sourceReference: { type: string, example: 'MERCADO_PAGO:123456' }
+        experimentId: { type: integer, format: int64 }
+        experimentName: { type: string, nullable: true }
+        pixelId: { type: string }
+        eventId: { type: string, example: 'pde:MERCADO_PAGO:123456' }
+        amount: { type: number, example: 49.00 }
+        currency: { type: string, example: BRL }
+        paymentApprovedAt: { type: string, format: date-time }
+        hashedEmail:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        eventSourceUrl: { type: string, format: uri }
+    PdeFacebookPixelConversionAck:
+      type: object
+      additionalProperties: false
+      required: [sourceReference, pixelId]
+      properties:
+        sourceReference: { type: string }
+        pixelId: { type: string }
     StartExperimentAdSetWorkflowRequest:
       type: object
       properties:

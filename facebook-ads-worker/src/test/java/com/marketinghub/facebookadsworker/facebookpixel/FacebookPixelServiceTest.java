@@ -96,6 +96,9 @@ class FacebookPixelServiceTest {
         backend.enqueueResponse(new MockResponse()
             .setBody("[]")
             .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse()
+            .setBody("[]")
+            .addHeader("Content-Type", "application/json"));
 
         service.syncPixelsAndConversions();
 
@@ -123,5 +126,131 @@ class FacebookPixelServiceTest {
         RecordedRequest conversionsRequest = backend.takeRequest(5, TimeUnit.SECONDS);
         assertNotNull(conversionsRequest);
         assertEquals("/api/facebook-pixels/conversions-ready", conversionsRequest.getPath());
+        RecordedRequest pdeConversionsRequest = backend.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(pdeConversionsRequest);
+        assertEquals("/api/facebook-pixels/pde-conversions-ready", pdeConversionsRequest.getPath());
+    }
+
+    @Test
+    // Envia a compra PDE com origem, identidade hashada e ACK somente após a resposta da Meta.
+    void syncPixelsSendsAuthoritativePdePurchaseThroughCapi() throws Exception {
+        backend.enqueueResponse(new MockResponse()
+            .setBody("""
+                {
+                  "accountId": 1,
+                  "adAccountId": "1234567890",
+                  "accessToken": "main-token"
+                }
+                """)
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse()
+            .setBody("[]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse()
+            .setBody("[]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse()
+            .setBody("""
+                [{
+                  "sourceReference":"MERCADO_PAGO:mp-mira-1",
+                  "experimentId":93,
+                  "experimentName":"Mira",
+                  "pixelId":"pixel-mira",
+                  "eventId":"pde:MERCADO_PAGO:mp-mira-1",
+                  "amount":49.00,
+                  "currency":"BRL",
+                  "paymentApprovedAt":"2026-09-29T11:00:00Z",
+                  "hashedEmail":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "eventSourceUrl":"https://mira.digicomdigital.com.br"
+                }]
+                """)
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse()
+            .setBody("{\"events_received\":1}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setResponseCode(204));
+
+        service.syncPixelsAndConversions();
+
+        assertEquals("/api/accounts/facebook/worker-config", takeBackendRequest().getPath());
+        assertEquals("/api/facebook-pixels/pending", takeBackendRequest().getPath());
+        assertEquals("/api/facebook-pixels/conversions-ready", takeBackendRequest().getPath());
+        assertEquals("/api/facebook-pixels/pde-conversions-ready", takeBackendRequest().getPath());
+
+        RecordedRequest capiRequest = facebook.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(capiRequest);
+        assertEquals("/v23.0/pixel-mira/events", capiRequest.getPath());
+        String capiBody = capiRequest.getBody().readUtf8();
+        assertTrue(capiBody.contains("\"event_name\":\"Purchase\""));
+        assertTrue(capiBody.contains("\"event_id\":\"pde:MERCADO_PAGO:mp-mira-1\""));
+        assertTrue(capiBody.contains("\"action_source\":\"website\""));
+        assertTrue(capiBody.contains("\"event_source_url\":\"https://mira.digicomdigital.com.br\""));
+        assertTrue(capiBody.contains("\"em\":[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]"));
+        assertTrue(capiBody.contains("\"value\":49.00"));
+        assertTrue(capiBody.contains("\"currency\":\"BRL\""));
+
+        RecordedRequest ack = takeBackendRequest();
+        assertEquals("/api/facebook-pixels/pde-conversions/ack", ack.getPath());
+        String ackBody = ack.getBody().readUtf8();
+        assertTrue(ackBody.contains("\"sourceReference\":\"MERCADO_PAGO:mp-mira-1\""));
+        assertTrue(ackBody.contains("\"pixelId\":\"pixel-mira\""));
+    }
+
+    @Test
+    // Preserva a compra na fila quando a Meta rejeita o evento e nunca envia ACK prematuro.
+    void syncPixelsDoesNotAcknowledgePdePurchaseRejectedByCapi() throws Exception {
+        backend.enqueueResponse(new MockResponse()
+            .setBody("""
+                {
+                  "accountId": 1,
+                  "adAccountId": "1234567890",
+                  "accessToken": "main-token"
+                }
+                """)
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse()
+            .setBody("[]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse()
+            .setBody("[]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse()
+            .setBody("""
+                [{
+                  "sourceReference":"MERCADO_PAGO:mp-mira-2",
+                  "experimentId":93,
+                  "experimentName":"Mira",
+                  "pixelId":"pixel-mira",
+                  "eventId":"pde:MERCADO_PAGO:mp-mira-2",
+                  "amount":49.00,
+                  "currency":"BRL",
+                  "paymentApprovedAt":"2026-09-29T11:00:00Z",
+                  "hashedEmail":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  "eventSourceUrl":"https://mira.digicomdigital.com.br"
+                }]
+                """)
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse()
+            .setResponseCode(400)
+            .setBody("{\"error\":{\"message\":\"invalid event\"}}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.syncPixelsAndConversions();
+
+        assertEquals("/api/accounts/facebook/worker-config", takeBackendRequest().getPath());
+        assertEquals("/api/facebook-pixels/pending", takeBackendRequest().getPath());
+        assertEquals("/api/facebook-pixels/conversions-ready", takeBackendRequest().getPath());
+        assertEquals("/api/facebook-pixels/pde-conversions-ready", takeBackendRequest().getPath());
+        assertEquals(4, backend.getRequestCount());
+        RecordedRequest capiRequest = facebook.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(capiRequest);
+        assertEquals("/v23.0/pixel-mira/events", capiRequest.getPath());
+    }
+
+    // Aguarda uma requisição ao backend sem permitir travamento silencioso do teste.
+    private RecordedRequest takeBackendRequest() throws InterruptedException {
+        RecordedRequest request = backend.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(request);
+        return request;
     }
 }

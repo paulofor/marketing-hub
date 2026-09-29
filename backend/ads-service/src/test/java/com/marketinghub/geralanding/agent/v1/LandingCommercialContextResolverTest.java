@@ -119,6 +119,7 @@ class LandingCommercialContextResolverTest {
         "teste@sandbox.local",
         "https://kit.example/terms",
         "https://kit.example/privacy",
-        "https://kit.example/refund-policy");
+        "https://kit.example/refund-policy",
+        null);
   }
 }

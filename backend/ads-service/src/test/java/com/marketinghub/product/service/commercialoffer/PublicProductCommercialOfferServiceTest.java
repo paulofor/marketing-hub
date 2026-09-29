@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver;
@@ -38,6 +39,8 @@ class PublicProductCommercialOfferServiceTest {
     Product product = product();
     PdeProductionSlot slot = slot();
     Experiment experiment = experiment(product);
+    experiment.setNiche(
+        MarketNiche.builder().id(34L).facebookPixelId("pixel-oficial-mira").build());
     when(productRepository.findBySlug("kit-whatsapp-pronto")).thenReturn(Optional.of(product));
     when(slotRepository.findByProductSlugOrderBySlotCodeAsc("kit-whatsapp-pronto"))
         .thenReturn(List.of(slot));
@@ -55,6 +58,7 @@ class PublicProductCommercialOfferServiceTest {
     assertThat(offer.salesPageUrl()).isEqualTo("https://kit-whatsapp-pronto.digicomdigital.com.br");
     assertThat(offer.supplierDisplayName()).isEqualTo("Digicom Digital");
     assertThat(offer.termsUrl()).endsWith("/terms");
+    assertThat(offer.facebookPixelId()).isEqualTo("pixel-oficial-mira");
   }
 
   /** Prioriza o checkout da versão PDE quando o experimento conserva um fallback antigo. */

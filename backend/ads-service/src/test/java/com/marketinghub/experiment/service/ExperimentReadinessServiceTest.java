@@ -631,6 +631,53 @@ class ExperimentReadinessServiceTest {
         .doesNotContain("productAiPersonalizedSampleFunnel", "geraSalesPagePipeline");
   }
 
+  /** Mantém o preflight pago bloqueado até o nicho possuir o pixel exigido pela fila real. */
+  @Test
+  void shouldExposeMissingFacebookPixelInLowTicketRunningGate() {
+    Long experimentId = 93L;
+    Experiment experiment = buildExperiment(experimentId, 34L);
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    experiment.setProductAiSubtype(ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY);
+    experiment.setProduct(
+        Product.builder()
+            .id(10L)
+            .slug("mira")
+            .productTypeDefinition(ProductTypeDefinition.builder().code("AI_PRODUCT").build())
+            .build());
+    completeCommercialContract(experiment);
+
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(1L);
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(true);
+    when(publishedPdePreflightEvidenceService.isReady(experiment)).thenReturn(true);
+    mockPublishableSelection(
+        experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+    ExperimentReadinessSummaryDto blocked = service.summarize(experimentId);
+
+    assertThat(blocked.issues())
+        .extracting(ExperimentReadinessIssueDto::type)
+        .containsExactly(ExperimentReadinessIssueType.FACEBOOK_PIXEL);
+    assertThat(blocked.eligibleForRunning()).isFalse();
+    assertThat(blocked.runningGateRequirements())
+        .filteredOn(requirement -> requirement.code().equals("FACEBOOK_PIXEL_READY"))
+        .singleElement()
+        .satisfies(requirement -> assertThat(requirement.ready()).isFalse());
+    assertThat(service.computeMissingConfiguration(experiment)).contains("facebookPixel");
+
+    experiment.getNiche().setFacebookPixelId("pixel-mira");
+
+    ExperimentReadinessSummaryDto ready = service.summarize(experimentId);
+    assertThat(ready.issues()).isEmpty();
+    assertThat(ready.eligibleForRunning()).isTrue();
+    assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
+  }
+
   /** Não confunde a integração do Processo 4 com o preflight produtivo do Facebook. */
   @Test
   void shouldBlockPersonalizedPaidDeliveryUntilPublishedPreflightIsCurrent() {

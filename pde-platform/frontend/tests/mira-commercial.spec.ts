@@ -67,6 +67,7 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
           experimentId: 93,
           experienceVersion: "mira-commercial-v1",
           layoutKey: "mira-routine-v1",
+          facebookPixelId: "pixel-mira",
         }),
       }),
   );
@@ -86,6 +87,11 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
   await expect(
     page.getByRole("heading", { name: /Cuide de você com mais clareza/i }),
   ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => (window as Window & { fbq?: unknown }).fbq === undefined,
+    ),
+  ).toBe(true);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     "content",
     "index, follow",
@@ -182,6 +188,11 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
   await expect(page.getByText(/Enviamos seu link seguro/i)).toBeVisible();
   await page.getByLabel("Demonstração de Mira").dispatchEvent("play");
   await page.getByLabel("Demonstração de Mira").dispatchEvent("ended");
+  await checkout.evaluate((element) =>
+    element.addEventListener("click", (event) => event.preventDefault(), {
+      once: true,
+    }),
+  );
   await checkout.click();
   await expect
     .poll(() => events.map((event) => event.eventType))
@@ -198,6 +209,84 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
   expect(
     events.every((event) => event.metadata.trafficQuality === "INTERNAL_QA"),
   ).toBe(true);
+  expect(
+    await page.evaluate(
+      () => (window as Window & { fbq?: unknown }).fbq === undefined,
+    ),
+  ).toBe(true);
+});
+
+test("envia PageView e InitiateCheckout ao pixel somente no tráfego comercial", async ({
+  page,
+}) => {
+  await page.route("**/api/pde/access/events", async (route) =>
+    route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({ status: "RECORDED" }),
+    }),
+  );
+  await page.route(
+    "**/api/pde/products/pde-planejado-36/commercial-offer?slotCode=v1",
+    async (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          checkoutUrl: "https://checkout.example/mira",
+          priceBrl: 49,
+          primaryCta: "Organizar minha rotina por R$ 49",
+          experimentId: 93,
+          experienceVersion: "mira-commercial-v1",
+          layoutKey: "mira-routine-v1",
+          facebookPixelId: "pixel-mira",
+        }),
+      }),
+  );
+  await page.route("https://connect.facebook.net/**", async (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: "window.__miraMetaPixelScriptLoaded = true;",
+    }),
+  );
+
+  await page.goto("/");
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const fbq = (window as Window & { fbq?: { queue?: unknown[][] } }).fbq;
+        return Boolean(
+          fbq?.queue?.some(
+            (command) => command[0] === "init" && command[1] === "pixel-mira",
+          ) &&
+            fbq.queue.some(
+              (command) => command[0] === "track" && command[1] === "PageView",
+            ),
+        );
+      }),
+    )
+    .toBe(true);
+  const checkout = page.getByRole("link", {
+    name: "Organizar minha rotina por R$ 49",
+  });
+  await checkout.evaluate((element) =>
+    element.addEventListener("click", (event) => event.preventDefault(), {
+      once: true,
+    }),
+  );
+  await checkout.click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as Window & { fbq?: { queue?: unknown[][] } }).fbq?.queue?.some(
+          (command) =>
+            command[0] === "track" && command[1] === "InitiateCheckout",
+        ),
+      ),
+    )
+    .toBe(true);
 });
 
 test("usa o MP4 canônico quando o navegador não oferece HLS", async ({

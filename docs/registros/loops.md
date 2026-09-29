@@ -7842,6 +7842,15 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Prevenção:** `capture-mira-commercial-review-evidence.mjs`, manifesto v5 e Playwright nos três
   perfis impedem anexar novamente uma landing parcial. Timeout, promessa antiga ou elemento
   ausente falham a captura antes de Psique e preservam a causa observável.
+- **Recorrência estrutural fechada em 29/09/2026:** depois de o transporte binário de Psique ser
+  corrigido, a tarefa #549 capturou a superfície completa e comprovou que o CTA canônico estava em
+  1.392 px num iPhone de 852 px. A oferta assíncrona, o checkout e o texto estavam corretos; a ordem
+  do hero colocava vídeo vertical, prova e direitos antes da ação, enquanto o manifesto exigia a
+  ação na primeira dobra. Afrouxar a atestação esconderia fricção de conversão e sobrepor o botão
+  ao vídeo reduziria legibilidade. O bloco de recebedor e CTA foi movido para imediatamente após a
+  promessa, preservando vídeo, prova e direitos abaixo. O manifesto imutável v7 e Playwright em
+  desktop, iPhone 15 Pro e Pixel 7 agora exigem que o botão inteiro caiba no viewport antes de
+  congelar a evidência.
 
 ## LOOP-BIBLIOTECA-VISUAL-METADADO-MAIOR-QUE-SCHEMA — 28/09/2026
 

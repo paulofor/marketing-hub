@@ -63,7 +63,7 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
         body: JSON.stringify({
           checkoutUrl: "https://checkout.example/mira",
           priceBrl: 49,
-          primaryCta: "Quero organizar minha rotina por R$ 49",
+          primaryCta: "Organizar minha rotina por R$ 49",
           experimentId: 93,
           experienceVersion: "mira-commercial-v1",
           layoutKey: "mira-routine-v1",
@@ -125,9 +125,21 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
   );
   expect(productProof.ok()).toBe(true);
   expect(productProof.headers()["content-type"]).toContain("image/png");
-  await expect(
-    page.getByRole("link", { name: /Quero organizar/i }),
-  ).toHaveAttribute("href", "https://checkout.example/mira");
+  const checkout = page.getByRole("link", {
+    name: "Organizar minha rotina por R$ 49",
+  });
+  await expect(checkout).toHaveAttribute(
+    "href",
+    "https://checkout.example/mira",
+  );
+  const checkoutBounds = await checkout.boundingBox();
+  const viewport = page.viewportSize();
+  expect(checkoutBounds).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(checkoutBounds!.y).toBeGreaterThanOrEqual(0);
+  expect(checkoutBounds!.y + checkoutBounds!.height).toBeLessThanOrEqual(
+    viewport!.height,
+  );
   await page.getByLabel("E-mail da compra").fill("teste+93@sandbox.local");
   await page
     .getByRole("button", { name: "Receber meu link de acesso" })
@@ -135,7 +147,7 @@ test("mostra valor, preço e primeiro passo antes do compromisso", async ({
   await expect(page.getByText(/Enviamos seu link seguro/i)).toBeVisible();
   await page.getByLabel("Demonstração de Mira").dispatchEvent("play");
   await page.getByLabel("Demonstração de Mira").dispatchEvent("ended");
-  await page.getByRole("link", { name: /Quero organizar/i }).click();
+  await checkout.click();
   await expect
     .poll(() => events.map((event) => event.eventType))
     .toEqual(

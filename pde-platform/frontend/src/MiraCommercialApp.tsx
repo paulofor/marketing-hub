@@ -265,40 +265,6 @@ export function MiraCommercialApp() {
             Mira lê as orientações que você informa e organiza uma ordem
             prática, sem diagnóstico, prescrição ou empurrar novos cosméticos.
           </p>
-          <AdaptiveVideoPlayer
-            src={commercialVideoHls}
-            fallbackSrc={commercialVideo}
-            controls
-            playsInline
-            preload="metadata"
-            poster={commercialVideoPoster}
-            ariaLabel="Demonstração de Mira"
-            onPlaybackEvent={(event) => {
-              if (event.type === "play" && !videoPlayed.current) {
-                videoPlayed.current = true;
-                void trackPublicEvent("VIDEO_PLAY", {
-                  experimentId: 93,
-                  creativeVariant: "mira-commercial-demo-v3",
-                });
-              }
-              if (event.type === "ended" && !videoCompleted.current) {
-                videoCompleted.current = true;
-                void trackPublicEvent("VIDEO_COMPLETED", {
-                  experimentId: 93,
-                  creativeVariant: "mira-commercial-demo-v3",
-                });
-              }
-            }}
-          />
-          <div className="mira-commercial-proof">
-            <strong>Veja antes de decidir:</strong> entrada guiada, resultado
-            claro e duas organizações incluídas por R$ 49, em pagamento único.
-          </div>
-          <p className="mira-commercial-offer-rights">
-            A compra inclui{" "}
-            <strong>duas organizações individualizadas no total</strong>. Cada
-            organização concluída usa uma das duas tentativas disponíveis.
-          </p>
           {offer?.checkoutUrl && (
             <>
               <p className="mira-commercial-merchant">
@@ -333,6 +299,40 @@ export function MiraCommercialApp() {
               </a>
             </>
           )}
+          <AdaptiveVideoPlayer
+            src={commercialVideoHls}
+            fallbackSrc={commercialVideo}
+            controls
+            playsInline
+            preload="metadata"
+            poster={commercialVideoPoster}
+            ariaLabel="Demonstração de Mira"
+            onPlaybackEvent={(event) => {
+              if (event.type === "play" && !videoPlayed.current) {
+                videoPlayed.current = true;
+                void trackPublicEvent("VIDEO_PLAY", {
+                  experimentId: 93,
+                  creativeVariant: "mira-commercial-demo-v3",
+                });
+              }
+              if (event.type === "ended" && !videoCompleted.current) {
+                videoCompleted.current = true;
+                void trackPublicEvent("VIDEO_COMPLETED", {
+                  experimentId: 93,
+                  creativeVariant: "mira-commercial-demo-v3",
+                });
+              }
+            }}
+          />
+          <div className="mira-commercial-proof">
+            <strong>Veja antes de decidir:</strong> entrada guiada, resultado
+            claro e duas organizações incluídas por R$ 49, em pagamento único.
+          </div>
+          <p className="mira-commercial-offer-rights">
+            A compra inclui{" "}
+            <strong>duas organizações individualizadas no total</strong>. Cada
+            organização concluída usa uma das duas tentativas disponíveis.
+          </p>
         </section>
         <section className="mira-commercial-card" id="acesso">
           <h2>Já comprou? Seu primeiro passo leva menos de um minuto.</h2>

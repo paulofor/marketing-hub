@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-29-pde-meta-pixel-conversion-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: facebook_pixel_conversion_delivery
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE facebook_pixel_conversion_delivery (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                source_type VARCHAR(32) NOT NULL,
+                source_reference VARCHAR(255) NOT NULL,
+                pixel_id VARCHAR(64) NOT NULL,
+                meta_event_id VARCHAR(255) NOT NULL,
+                recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_facebook_pixel_conversion_source (source_type, source_reference),
+                KEY idx_facebook_pixel_conversion_recorded (recorded_at)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      rollback:
+        - dropTable:
+            tableName: facebook_pixel_conversion_delivery

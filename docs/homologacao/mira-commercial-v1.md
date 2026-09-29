@@ -267,3 +267,50 @@ serviço de experimento em contexto Spring e a suíte integral do backend com 3.
 falhas e 23 cenários explicitamente ignorados pelo projeto. Os cenários negativos mantêm bloqueados
 fingerprint obsoleto, Processo 4 sem Processo 5 e low-ticket genérico. A autorização e o piloto
 continuam dependentes da publicação desta correção e de nova execução pela interface oficial.
+
+## Mensuração Meta e manifesto v9 em 29/09/2026
+
+A auditoria entre a autorização do Processo 5 e a fila real encontrou duas divergências: o gate
+declarava o #93 pronto sem pixel, e compras de Mira nasciam em `pde_payment_audit` enquanto o CAPI
+lia apenas a tabela legada do Lead Portal. Também não havia Meta Pixel na superfície comercial.
+
+Foram comparados três caminhos. Corrigir apenas o registro #93 seria rápido, mas recorrente; criar
+pixel automaticamente durante a liberação misturaria configuração com autorização de gasto; manter
+uma ação visível na tela, alinhar o gate à fila e conectar a origem financeira PDE ao Pixel/CAPI
+preserva auditabilidade e fecha a causa sistêmica. A terceira alternativa foi adotada.
+
+Antes da homologação ponta a ponta foi definida esta matriz:
+
+| Dimensão | Caminho aceito | Falha obrigatoriamente bloqueada |
+| --- | --- | --- |
+| Prontidão | low-ticket Meta com pixel oficial aparece pronto | ausência de pixel mantém `FACEBOOK_PIXEL_READY` vermelho |
+| Operação | tela do nicho mostra e executa “Solicitar pixel” desde o estado vazio | comando oculto ou duplo durante carregamento |
+| Browser | oferta carrega o ID em runtime e registra `PageView` e `InitiateCheckout` | ausência de ID não injeta script nem evento Meta |
+| Compra | Mercado Pago aprovado gera `Purchase` com valor, moeda, URL, hash e `event_id` estável | navegação, QA, clique, pagamento recusado ou pixel divergente não geram ACK |
+| Idempotência | sucesso Meta seguido de ACK retira a compra uma única vez | falha Meta preserva a pendência; repetição usa o mesmo `event_id` |
+| Observabilidade | worker registra URL, payload mascarado, resposta e correlação financeira | erro capturado sem stack trace ou ACK sem resposta Meta |
+| Métricas | compra conciliada é a única prova comercial | eventos de teste não alteram venda, receita ou decisão do piloto |
+| Segregação | H2/MySQL e servidores Meta simulados usam somente fixtures locais | nenhuma compra real ou evento de produção é fabricado na homologação |
+| Dispositivos | desktop Chromium, iPhone 15 Pro e Pixel 7 preservam CTA e tracking | erro JavaScript, overflow ou navegação antes do evento de checkout |
+
+O manifesto imutável v9 preserva oferta, preço, checkout, vídeo #49, prova e controle estático da v8;
+ele altera somente o contrato de mensuração. A liberação de mídia continua separada e exige novo
+preflight produtivo depois que pixel, backend, worker e superfície v9 estiverem publicados.
+
+A validação local final aprovou 3.698 testes do backend principal, 159 do Facebook Ads Worker e 191
+do backend PDE, todos sem falhas. A tela administrativa comprovou o comando de pixel no estado
+vazio; 18 cenários Playwright validaram desktop, iPhone 15 Pro e Pixel 7; e outros nove cenários
+ponta a ponta passaram na topologia isolada com MySQL 5.7, backend, frontend, pagamentos e e-mail
+descartável reais. Os nove testes do contrato de liberação e os 13 do empacotador de evidências
+também passaram. A navegação `mh_test=1` continua persistida como QA segregado no funil próprio,
+mas não inicializa o Pixel nem envia `PageView` ou `InitiateCheckout` à Meta.
+
+O CI de compatibilidade ainda fixava os caminhos do vídeo `demo-v1`, embora o contrato de saúde e
+os manifestos atuais declarem `demo-v3`. Foram comparados restaurar aliases obsoletos, trocar o
+sufixo fixo a cada versão ou validar todos os ativos e playlists publicados pelo próprio contrato.
+A terceira alternativa foi adotada: o teste agora exige listas válidas, consulta cada ativo e
+confirma cada playlist HLS antes e depois da recriação isolada do container. `bash -n`, ShellCheck e
+o ciclo completo de isolamento de Mira/Vega passaram localmente, impedindo que a próxima revisão de
+mídia volte a quebrar o teste por um caminho histórico hardcoded. Como esse executável também
+protege Vega, a atestação de compatibilidade v15 foi criada sem alterar a v14 e mantém explícitos o
+experimento #92 `INVALIDATED` e a ausência de autorização de publicação ou mídia para Vega.

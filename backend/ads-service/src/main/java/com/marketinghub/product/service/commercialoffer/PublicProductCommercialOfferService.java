@@ -142,7 +142,10 @@ public class PublicProductCommercialOfferService {
         supportEmail,
         salesPageUrl + "/terms",
         salesPageUrl + "/privacy",
-        salesPageUrl + "/refund-policy");
+        salesPageUrl + "/refund-policy",
+        experiment.getNiche() == null
+            ? null
+            : normalizeOptional(experiment.getNiche().getFacebookPixelId()));
   }
 
   /**

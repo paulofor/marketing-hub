@@ -1,79 +1,91 @@
 package com.marketinghub.facebookads.service;
 
+import com.marketinghub.repository.jdbc.facebookads.FacebookPixelConversionJdbcRepository;
 import java.math.BigDecimal;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Responsabilidade: expor compras autoritativas pendentes e registrar a entrega idempotente de
+ * conversões ao pixel da Meta.
+ */
 @Service
 public class FacebookPixelConversionService {
 
-  private final JdbcTemplate jdbcTemplate;
+  private final FacebookPixelConversionJdbcRepository repository;
 
-  public FacebookPixelConversionService(JdbcTemplate jdbcTemplate) {
-    this.jdbcTemplate = jdbcTemplate;
+  /** Configura a persistência canônica de conversões sem acesso direto ao banco. */
+  public FacebookPixelConversionService(FacebookPixelConversionJdbcRepository repository) {
+    this.repository = repository;
   }
 
+  /** Lista compras aprovadas do Lead Portal que ainda não foram enviadas ao pixel. */
   public List<PixelConversion> listApprovedPurchasesPendingPixel(int limit) {
     int safeLimit = Math.max(1, Math.min(limit, 200));
-    String sql =
-        """
-                SELECT
-                    p.id AS purchase_id,
-                    p.mp_payment_id,
-                    p.amount,
-                    p.currency,
-                    p.payment_approved_at,
-                    p.created_at,
-                    exp.id AS experiment_id,
-                    exp.name AS experiment_name,
-                    mn.facebook_pixel_id AS niche_pixel_id
-                FROM lead_portal_purchase p
-                JOIN flow_submission_image_package pack ON pack.payment_purchase_id = p.id
-                JOIN flow_submissions sub ON sub.id = pack.submission_id
-                JOIN lead_portal_flow flow ON flow.slug = sub.flow_slug
-                JOIN experiment exp ON exp.lead_portal_flow_id = flow.id
-                JOIN market_niche mn ON mn.id = exp.niche_id
-                WHERE p.status = 'APPROVED'
-                  AND p.pixel_conversion_recorded_at IS NULL
-                  AND mn.facebook_pixel_id IS NOT NULL
-                ORDER BY p.created_at ASC
-                LIMIT ?
-                """;
-    return jdbcTemplate.query(
-        sql, ps -> ps.setInt(1, safeLimit), (rs, rowNum) -> mapConversion(rs));
+    return repository.findPendingLegacyConversions(safeLimit).stream()
+        .map(
+            row ->
+                new PixelConversion(
+                    row.purchaseId(),
+                    row.experimentId(),
+                    row.experimentName(),
+                    row.pixelId(),
+                    row.paymentId(),
+                    row.amount(),
+                    row.currency(),
+                    row.paymentApprovedAt(),
+                    row.hashedEmail(),
+                    row.eventSourceUrl()))
+        .toList();
   }
 
+  /** Lista pagamentos PDE reais e aprovados que ainda não foram entregues ao CAPI. */
+  public List<PdePixelConversion> listApprovedPdePurchasesPendingPixel(int limit) {
+    int safeLimit = Math.max(1, Math.min(limit, 200));
+    return repository.findPendingPdeConversions(safeLimit).stream()
+        .map(
+            row ->
+                new PdePixelConversion(
+                    row.sourceReference(),
+                    row.experimentId(),
+                    row.experimentName(),
+                    row.pixelId(),
+                    row.eventId(),
+                    row.amount(),
+                    row.currency(),
+                    row.paymentApprovedAt(),
+                    row.hashedEmail(),
+                    row.eventSourceUrl()))
+        .toList();
+  }
+
+  /** Marca uma compra legada como entregue depois da confirmação da Meta. */
   public void markConversionRecorded(long purchaseId) {
-    jdbcTemplate.update(
-        "UPDATE lead_portal_purchase SET pixel_conversion_recorded_at = UTC_TIMESTAMP() WHERE id = ?",
-        purchaseId);
+    repository.markLegacyConversionRecorded(purchaseId);
   }
 
-  private PixelConversion mapConversion(ResultSet rs) throws SQLException {
-    return new PixelConversion(
-        rs.getLong("purchase_id"),
-        (Long) rs.getObject("experiment_id"),
-        rs.getString("experiment_name"),
-        rs.getString("niche_pixel_id"),
-        rs.getString("mp_payment_id"),
-        rs.getBigDecimal("amount"),
-        rs.getString("currency"),
-        toInstant(rs.getTimestamp("payment_approved_at"), rs.getTimestamp("created_at")));
-  }
-
-  private Instant toInstant(Timestamp timestamp, Timestamp fallback) {
-    if (timestamp != null) {
-      return timestamp.toInstant();
+  /** Registra a entrega PDE somente quando a origem, o pixel e o experimento continuam válidos. */
+  public void markPdeConversionRecorded(String sourceReference, String pixelId) {
+    if (!StringUtils.hasText(sourceReference) || !StringUtils.hasText(pixelId)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Referência e pixel são obrigatórios para confirmar CAPI.");
     }
-    return fallback != null ? fallback.toInstant() : null;
+    String normalizedReference = sourceReference.trim();
+    String normalizedPixelId = pixelId.trim();
+    int inserted = repository.insertPdeDeliveryIfEligible(normalizedReference, normalizedPixelId);
+    if (inserted > 0 || repository.pdeDeliveryExists(normalizedReference, normalizedPixelId)) {
+      return;
+    }
+    throw new ResponseStatusException(
+        HttpStatus.BAD_REQUEST,
+        "Conversão PDE não corresponde a uma compra aprovada e a um pixel vigente.");
   }
 
+  /** Representa uma compra legada pronta para envio pela Conversions API. */
   public record PixelConversion(
       Long purchaseId,
       Long experimentId,
@@ -82,7 +94,28 @@ public class FacebookPixelConversionService {
       String paymentId,
       BigDecimal amount,
       String currency,
-      Instant paymentApprovedAt) {
+      Instant paymentApprovedAt,
+      String hashedEmail,
+      String eventSourceUrl) {
+    /** Normaliza a moeda antes do envio à Meta. */
+    public String normalizedCurrency() {
+      return StringUtils.hasText(currency) ? currency.trim().toUpperCase() : null;
+    }
+  }
+
+  /** Representa uma compra PDE pronta para envio idempotente pela Conversions API. */
+  public record PdePixelConversion(
+      String sourceReference,
+      Long experimentId,
+      String experimentName,
+      String pixelId,
+      String eventId,
+      BigDecimal amount,
+      String currency,
+      Instant paymentApprovedAt,
+      String hashedEmail,
+      String eventSourceUrl) {
+    /** Normaliza a moeda antes do envio à Meta. */
     public String normalizedCurrency() {
       return StringUtils.hasText(currency) ? currency.trim().toUpperCase() : null;
     }

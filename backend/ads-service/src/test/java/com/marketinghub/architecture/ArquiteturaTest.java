@@ -2971,7 +2971,7 @@ class ArquiteturaTest {
     };
   }
 
-  /** Verifica se a dependência de Facebook Ads aponta para pacote interno aprovado. */
+  /** Verifica se Facebook Ads aponta apenas para domínios e repositórios JPA/JDBC aprovados. */
   private static boolean isAllowedFacebookAdsDependency(JavaClass targetClass) {
     String targetPackage = targetClass.getPackageName();
     return targetPackage.startsWith("com.marketinghub.facebookads")
@@ -2989,7 +2989,8 @@ class ArquiteturaTest {
         || targetPackage.startsWith("com.marketinghub.repository.jpa.experiment")
         || targetPackage.startsWith("com.marketinghub.repository.jpa.facebookads")
         || targetPackage.startsWith("com.marketinghub.repository.jpa.hypothesis")
-        || targetPackage.startsWith("com.marketinghub.repository.jpa.targeting");
+        || targetPackage.startsWith("com.marketinghub.repository.jpa.targeting")
+        || targetPackage.startsWith("com.marketinghub.repository.jdbc.facebookads");
   }
 
   /** Garante que controllers de etapas novas de Facebook Ads dependam apenas da mesma etapa. */

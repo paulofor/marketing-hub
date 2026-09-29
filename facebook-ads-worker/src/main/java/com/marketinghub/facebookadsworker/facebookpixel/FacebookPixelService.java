@@ -39,6 +39,7 @@ public class FacebookPixelService {
     private final ObjectMapper objectMapper;
     private final boolean pixelsEnabled;
 
+    // Configura integrações e chaves operacionais sem acessar o banco diretamente.
     public FacebookPixelService(FacebookAdsService facebookAdsService,
                                 WebClient.Builder builder,
                                 FacebookWorkerConfigurationClient configurationClient,
@@ -55,6 +56,7 @@ public class FacebookPixelService {
         this.pixelsEnabled = pixelsEnabled;
     }
 
+    // Sincroniza pixels e as duas fontes autoritativas de conversões em uma única rodada.
     public void syncPixelsAndConversions() {
         if (!pixelsEnabled) {
             LOGGER.debug("Facebook pixel sync disabled via configuration; skipping execution");
@@ -72,12 +74,13 @@ public class FacebookPixelService {
         try {
             facebookAdsService.updateAccessToken(config.accessToken());
         } catch (IllegalArgumentException ex) {
-            LOGGER.error("Invalid Facebook access token in worker configuration: {}", ex.getMessage());
+            LOGGER.error("Invalid Facebook access token in worker configuration", ex);
             return;
         }
 
         createPixelsForPendingRequests(config);
         sendConversions();
+        sendPdeConversions();
     }
 
     // Cria pixels pendentes usando o token operacional disponível e sem bloquear quando o Business owner não foi configurado.
@@ -134,6 +137,7 @@ public class FacebookPixelService {
         return StringUtils.hasText(config.accessToken()) ? config.accessToken().trim() : null;
     }
 
+    // Envia compras legadas do Lead Portal com os campos mínimos exigidos pelo CAPI.
     private void sendConversions() {
         List<PixelConversion> conversions = fetchConversionsReady();
         if (conversions.isEmpty()) {
@@ -149,7 +153,9 @@ public class FacebookPixelService {
                     eventId,
                     conversion.amount(),
                     conversion.normalizedCurrency(),
-                    conversion.paymentApprovedAt()
+                    conversion.paymentApprovedAt(),
+                    conversion.hashedEmail(),
+                    conversion.eventSourceUrl()
                 );
                 acknowledgeConversion(conversion.purchaseId());
             } catch (Exception ex) {
@@ -164,6 +170,34 @@ public class FacebookPixelService {
         }
     }
 
+    // Envia compras PDE verificadas e confirma a referência financeira somente após sucesso da Meta.
+    private void sendPdeConversions() {
+        List<PdePixelConversion> conversions = fetchPdeConversionsReady();
+        for (PdePixelConversion conversion : conversions) {
+            try {
+                facebookAdsService.sendPurchaseEvent(
+                    conversion.pixelId(),
+                    conversion.eventId(),
+                    conversion.amount(),
+                    conversion.normalizedCurrency(),
+                    conversion.paymentApprovedAt(),
+                    conversion.hashedEmail(),
+                    conversion.eventSourceUrl()
+                );
+                acknowledgePdeConversion(conversion.sourceReference(), conversion.pixelId());
+            } catch (Exception ex) {
+                LOGGER.error(
+                    "Failed to send PDE pixel conversion for source {} (experiment {}): {}",
+                    conversion.sourceReference(),
+                    conversion.experimentId(),
+                    ex.getMessage(),
+                    ex
+                );
+            }
+        }
+    }
+
+    // Consulta no backend as solicitações de pixel prontas para criação.
     private List<NichePixel> fetchPendingPixelRequests() {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-pixels/pending");
         LOGGER.info(
@@ -198,6 +232,7 @@ public class FacebookPixelService {
         return List.of();
     }
 
+    // Devolve ao backend o pixel criado e o snippet recebido da Meta.
     private void registerPixel(long nicheId, String pixelId, String pixelCode) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-pixels");
         PixelCreationRequest request = new PixelCreationRequest(nicheId, pixelId, pixelCode, Instant.now());
@@ -241,6 +276,7 @@ public class FacebookPixelService {
         }
     }
 
+    // Consulta compras legadas pendentes preservando compatibilidade com o Lead Portal.
     private List<PixelConversion> fetchConversionsReady() {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-pixels/conversions-ready");
         LOGGER.info("Requesting approved purchases pending pixel conversion: url==>{}", url);
@@ -271,6 +307,39 @@ public class FacebookPixelService {
         return List.of();
     }
 
+    // Consulta pagamentos PDE aprovados ainda não confirmados na trilha idempotente.
+    private List<PdePixelConversion> fetchPdeConversionsReady() {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-pixels/pde-conversions-ready");
+        LOGGER.info("Requesting approved PDE payments pending CAPI conversion: url==>{}", url);
+        try {
+            List<PdePixelConversion> conversions = backendClient
+                .get()
+                .uri(url)
+                .retrieve()
+                .bodyToFlux(PdePixelConversion.class)
+                .collectList()
+                .block();
+            LOGGER.info(
+                "Received PDE CAPI conversion candidates: url<=={}, response={}",
+                url,
+                JsonLogFormatter.wrap(objectMapper, conversions)
+            );
+            return conversions != null ? conversions : List.of();
+        } catch (WebClientRequestException ex) {
+            LOGGER.warn("Failed to fetch PDE CAPI conversions: url==>{}", url, ex);
+        } catch (WebClientResponseException ex) {
+            LOGGER.error(
+                "Backend responded with error when fetching PDE CAPI conversions: url<=={}, status={}, body={}",
+                url,
+                ex.getRawStatusCode(),
+                ex.getResponseBodyAsString(),
+                ex
+            );
+        }
+        return List.of();
+    }
+
+    // Confirma a compra legada depois que a Graph API aceitou o evento.
     private void acknowledgeConversion(long purchaseId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-pixels/conversions/" + purchaseId + "/ack");
         LOGGER.info("Acknowledging pixel conversion in backend: url==>{}, purchaseId={}", url, purchaseId);
@@ -296,6 +365,49 @@ public class FacebookPixelService {
         }
     }
 
+    // Confirma a entrega PDE com referência e pixel para impedir ACK cruzado entre nichos.
+    private void acknowledgePdeConversion(String sourceReference, String pixelId) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-pixels/pde-conversions/ack");
+        PdeConversionAck request = new PdeConversionAck(sourceReference, pixelId);
+        LOGGER.info(
+            "Acknowledging PDE CAPI conversion: url==>{}, body={}",
+            url,
+            JsonLogFormatter.wrap(objectMapper, request)
+        );
+        try {
+            backendClient
+                .post()
+                .uri(url)
+                .bodyValue(request)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, response -> response.createException().flatMap(Mono::error))
+                .bodyToMono(Void.class)
+                .block();
+            LOGGER.info(
+                "PDE CAPI conversion acknowledged: url<=={}, sourceReference={}",
+                url,
+                sourceReference
+            );
+        } catch (WebClientRequestException ex) {
+            LOGGER.warn(
+                "Failed to acknowledge PDE CAPI conversion: url==>{}, sourceReference={}",
+                url,
+                sourceReference,
+                ex
+            );
+        } catch (WebClientResponseException ex) {
+            LOGGER.error(
+                "Backend returned error while acknowledging PDE CAPI conversion: url<=={}, status={}, body={}, sourceReference={}",
+                url,
+                ex.getRawStatusCode(),
+                ex.getResponseBodyAsString(),
+                sourceReference,
+                ex
+            );
+        }
+    }
+
+    // Constrói um nome operacional estável para o pixel do nicho.
     private String buildPixelName(NichePixel niche) {
         if (StringUtils.hasText(niche.nicheName())) {
             return "Pixel - " + niche.nicheName();
@@ -303,10 +415,13 @@ public class FacebookPixelService {
         return "Pixel - Niche " + niche.nicheId();
     }
 
+    /** Representa um nicho que aguarda criação de pixel. */
     public record NichePixel(long nicheId, String nicheName) {}
 
+    /** Representa o callback do pixel criado na Meta. */
     public record PixelCreationRequest(long nicheId, String pixelId, String pixelCode, Instant createdAt) {}
 
+    /** Representa uma compra legada pronta para o CAPI. */
     public record PixelConversion(
         long purchaseId,
         long experimentId,
@@ -315,10 +430,35 @@ public class FacebookPixelService {
         String paymentId,
         BigDecimal amount,
         String currency,
-        Instant paymentApprovedAt
+        Instant paymentApprovedAt,
+        String hashedEmail,
+        String eventSourceUrl
     ) {
+        // Normaliza a moeda conforme o contrato da Meta.
         public String normalizedCurrency() {
             return StringUtils.hasText(currency) ? currency.trim().toUpperCase() : null;
         }
     }
+
+    /** Representa uma compra PDE verificada e ainda não confirmada na Meta. */
+    public record PdePixelConversion(
+        String sourceReference,
+        long experimentId,
+        String experimentName,
+        String pixelId,
+        String eventId,
+        BigDecimal amount,
+        String currency,
+        Instant paymentApprovedAt,
+        String hashedEmail,
+        String eventSourceUrl
+    ) {
+        // Normaliza a moeda conforme o contrato da Meta.
+        public String normalizedCurrency() {
+            return StringUtils.hasText(currency) ? currency.trim().toUpperCase() : null;
+        }
+    }
+
+    /** Confirma ao backend a origem e o pixel aceitos pelo CAPI. */
+    public record PdeConversionAck(String sourceReference, String pixelId) {}
 }

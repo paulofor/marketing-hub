@@ -4,6 +4,30 @@ info:
   version: 1.0.0
   description: Contratos públicos usados para entregar e homologar Produtos Digitais Experienciais.
 paths:
+  /api/pde/products/{productSlug}/commercial-offer:
+    get:
+      summary: Entrega ao frontend PDE a oferta canônica do Marketing Hub
+      operationId: getPdeCommercialOffer
+      parameters:
+        - name: productSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: slotCode
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Oferta vinculada ao produto, slot, experimento e nicho vigentes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommercialOffer"
+        "503":
+          description: Oferta canônica indisponível no Marketing Hub.
   /api/pde/products/{productSlug}/integration-contract:
     get:
       summary: Consulta o contrato preparado da jornada comercial PDE
@@ -25,6 +49,44 @@ paths:
           description: Produto PDE não encontrado.
 components:
   schemas:
+    CommercialOffer:
+      type: object
+      required:
+        - productSlug
+        - experienceVersion
+        - layoutKey
+        - experimentId
+        - priceBrl
+        - checkoutUrl
+        - salesPageUrl
+      properties:
+        productSlug: { type: string }
+        experienceVersion: { type: string }
+        layoutKey: { type: string }
+        experimentId: { type: integer, format: int64 }
+        experimentStatus: { type: string }
+        acquisitionChannel: { type: string, nullable: true }
+        pain: { type: string }
+        proof: { type: string }
+        promise: { type: string }
+        primaryCta: { type: string }
+        priceBrl: { type: number }
+        checkoutUrl: { type: string, format: uri }
+        salesPageUrl: { type: string, format: uri }
+        targetAudience: { type: string, nullable: true }
+        productFormat: { type: string, nullable: true }
+        deliveryMode: { type: string, nullable: true }
+        valueUnit: { type: string, nullable: true }
+        supplierDisplayName: { type: string }
+        supplierRegistrationNumber: { type: string }
+        supportEmail: { type: string, format: email }
+        termsUrl: { type: string, format: uri }
+        privacyUrl: { type: string, format: uri }
+        refundPolicyUrl: { type: string, format: uri }
+        facebookPixelId:
+          type: string
+          nullable: true
+          description: Pixel criado pelo worker para o nicho comercial vigente.
     ProductJourneyIntegrationContract:
       type: object
       required:

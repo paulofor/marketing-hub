@@ -79,9 +79,7 @@ export default function NicheDetailPage() {
     ? formatDateTime(data.facebookPixelRequestedAt)
     : null;
   const isFacebookPixelPending = data?.facebookPixelRequestStatus === "PENDING";
-  const shouldShowFacebookPixelSection = Boolean(
-    facebookPixelId || facebookPixelCode || facebookPixelRequestedAtLabel,
-  );
+  const shouldShowFacebookPixelSection = true;
   const { data: chatDialog } = useChatDialog(data?.chatDialogId);
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
   const {

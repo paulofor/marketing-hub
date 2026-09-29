@@ -47,7 +47,7 @@ class PdeReleaseContractTest(unittest.TestCase):
     def test_commercial_mira_release_manifest_binds_homologated_source(self):
         surface = MODULE.select_surface(self.inventory, "mira-commercial")
         contract = MODULE.load_object(
-            ROOT / "pde-platform/contracts/mira-commercial-homologation-v8.json"
+            ROOT / "pde-platform/contracts/mira-commercial-homologation-v9.json"
         )
         source = contract["publicationContract"]["requiredFrontendSourceSha256"]
 

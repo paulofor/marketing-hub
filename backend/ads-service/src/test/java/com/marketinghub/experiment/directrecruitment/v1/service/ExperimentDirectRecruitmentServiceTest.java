@@ -361,7 +361,8 @@ class ExperimentDirectRecruitmentServiceTest {
         "suporte@example.com",
         "https://kit-whatsapp-pronto.example/terms",
         "https://kit-whatsapp-pronto.example/privacy",
-        "https://kit-whatsapp-pronto.example/refund-policy");
+        "https://kit-whatsapp-pronto.example/refund-policy",
+        null);
   }
 
   /** Monta uma adesão válida e qualificada sem identidade em claro. */

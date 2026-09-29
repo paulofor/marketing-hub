@@ -100,7 +100,6 @@ class FacebookCampaignRecommendationServiceTest {
                 null,
                 null,
                 null,
-                null,
                 null);
     }
 

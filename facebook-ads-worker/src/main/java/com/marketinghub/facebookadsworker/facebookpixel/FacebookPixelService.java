@@ -78,13 +78,13 @@ public class FacebookPixelService {
             return;
         }
 
-        reconcilePixelsForPendingRequests(config);
+        createPixelsForPendingRequests(config);
         sendConversions();
         sendPdeConversions();
     }
 
-    // Reconcilia pendências com o pixel compartilhado validado ou cria um pixel quando não há fallback configurado.
-    private void reconcilePixelsForPendingRequests(FacebookWorkerConfiguration config) {
+    // Cria pixels pendentes usando o token operacional disponível e sem bloquear quando o Business owner não foi configurado.
+    private void createPixelsForPendingRequests(FacebookWorkerConfiguration config) {
         if (!StringUtils.hasText(config.adAccountId())) {
             LOGGER.warn("Facebook ad account id is not configured; skipping pixel creation");
             return;
@@ -97,10 +97,7 @@ public class FacebookPixelService {
         String pixelOwnerBusinessId = StringUtils.hasText(config.pixelOwnerBusinessId())
             ? config.pixelOwnerBusinessId().trim()
             : null;
-        String defaultPixelId = StringUtils.hasText(config.defaultPixelId())
-            ? config.defaultPixelId().trim()
-            : null;
-        if (!StringUtils.hasText(defaultPixelId) && !StringUtils.hasText(pixelOwnerBusinessId)) {
+        if (!StringUtils.hasText(pixelOwnerBusinessId)) {
             LOGGER.warn(
                 "Facebook pixel owner business id is not configured; creating pixel without owner_business to avoid blocking requested niches"
             );
@@ -111,18 +108,18 @@ public class FacebookPixelService {
         }
         for (NichePixel niche : niches) {
             try {
-                String pixelId = resolvePixelId(
+                String pixelName = buildPixelName(niche);
+                String pixelId = facebookAdsService.createPixel(
                     config.adAccountId(),
-                    defaultPixelId,
+                    pixelName,
                     pixelOwnerBusinessId,
-                    pixelAccessToken,
-                    niche
+                    pixelAccessToken
                 );
                 String pixelCode = facebookAdsService.fetchPixelCode(pixelId, pixelAccessToken);
                 registerPixel(niche.nicheId(), pixelId, pixelCode);
             } catch (Exception ex) {
                 LOGGER.error(
-                    "Failed to reconcile pixel for niche {} ({}): {}",
+                    "Failed to create pixel for niche {} ({}): {}",
                     niche.nicheId(),
                     niche.nicheName(),
                     ex.getMessage(),
@@ -130,35 +127,6 @@ public class FacebookPixelService {
                 );
             }
         }
-    }
-
-    // Valida o pixel compartilhado contra a conta de anúncios ou cria um novo pixel para o nicho.
-    private String resolvePixelId(
-        String adAccountId,
-        String defaultPixelId,
-        String pixelOwnerBusinessId,
-        String pixelAccessToken,
-        NichePixel niche
-    ) {
-        if (StringUtils.hasText(defaultPixelId)) {
-            facebookAdsService.validatePixelAvailableToAdAccount(
-                adAccountId,
-                defaultPixelId,
-                pixelAccessToken
-            );
-            LOGGER.info(
-                "Reusing validated default Facebook pixel for pending niche: nicheId={}, pixelId={}",
-                niche.nicheId(),
-                defaultPixelId
-            );
-            return defaultPixelId;
-        }
-        return facebookAdsService.createPixel(
-            adAccountId,
-            buildPixelName(niche),
-            pixelOwnerBusinessId,
-            pixelAccessToken
-        );
     }
 
     // Resolve o token usado nas operações de pixel priorizando o system user e usando o token principal como contingência.

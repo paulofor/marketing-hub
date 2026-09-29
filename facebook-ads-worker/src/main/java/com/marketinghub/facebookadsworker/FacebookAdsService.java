@@ -345,41 +345,6 @@ public class FacebookAdsService {
         return hasText(code) ? code : null;
     }
 
-    /** Confirma que o pixel compartilhado está associado à conta de anúncios antes de reutilizá-lo. */
-    public void validatePixelAvailableToAdAccount(
-        String adAccountId,
-        String pixelId,
-        String accessTokenOverride
-    ) {
-        String normalizedAdAccountId = normalizeAdAccountId(adAccountId);
-        if (!hasText(normalizedAdAccountId)) {
-            throw new IllegalArgumentException("adAccountId must not be blank");
-        }
-        if (!hasText(pixelId)) {
-            throw new IllegalArgumentException("pixelId must not be blank");
-        }
-        String normalizedPixelId = pixelId.trim();
-        String path = UriComponentsBuilder
-            .fromPath(buildVersionedPath("/" + normalizedAdAccountId + "/adspixels"))
-            .queryParam("fields", "id")
-            .queryParam("limit", 1000)
-            .queryParam("access_token", resolveAccessToken(accessTokenOverride))
-            .build()
-            .toString();
-        JsonNode data = executeGet(path).body().path("data");
-        if (data.isArray()) {
-            for (JsonNode pixel : data) {
-                if (normalizedPixelId.equals(pixel.path("id").asText())) {
-                    return;
-                }
-            }
-        }
-        throw new IllegalStateException(
-            "Configured default pixel " + normalizedPixelId
-                + " is not available to ad account " + normalizedAdAccountId
-        );
-    }
-
     // Envia uma compra autoritativa ao CAPI com identidade hashada e origem web atribuível.
     public void sendPurchaseEvent(
         String pixelId,

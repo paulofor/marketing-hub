@@ -30,6 +30,8 @@ public class ProductAiExperimentPreparationService {
   private static final String SAMPLE_DESCRIPTION_BLOCKER =
       "Descrição da amostra/entrega personalizada";
   private static final BigDecimal DEFAULT_PERSONALIZED_SAMPLE_PRICE = new BigDecimal("27.00");
+  private static final BigDecimal DEFAULT_PERSONALIZED_PAID_DELIVERY_PRICE =
+      new BigDecimal("49.00");
   private static final BigDecimal DEFAULT_VISUAL_PREVIEW_PRICE = new BigDecimal("9.90");
 
   private final HypothesisRepository hypothesisRepository;
@@ -303,6 +305,9 @@ public class ProductAiExperimentPreparationService {
 
   /** Retorna o preço inicial recomendado para cada subtipo Produto IA preparado pelo sistema. */
   private BigDecimal defaultPrice(ProductAiSubtype subtype) {
+    if (isPersonalizedPaidDelivery(subtype)) {
+      return DEFAULT_PERSONALIZED_PAID_DELIVERY_PRICE;
+    }
     return subtype == ProductAiSubtype.AI_VISUAL_PREVIEW
         ? DEFAULT_VISUAL_PREVIEW_PRICE
         : DEFAULT_PERSONALIZED_SAMPLE_PRICE;
@@ -310,6 +315,9 @@ public class ProductAiExperimentPreparationService {
 
   /** Define a variável primária canônica do experimento conforme o subtipo preparado. */
   private String primaryVariable(ProductAiSubtype subtype) {
+    if (isPersonalizedPaidDelivery(subtype)) {
+      return "Entrega personalizada paga";
+    }
     return subtype == ProductAiSubtype.AI_VISUAL_PREVIEW
         ? "Prévia visual paga"
         : "Amostra visual personalizada";
@@ -317,6 +325,9 @@ public class ProductAiExperimentPreparationService {
 
   /** Define a métrica primária canônica do experimento conforme o subtipo preparado. */
   private String primaryMetric(ProductAiSubtype subtype) {
+    if (isPersonalizedPaidDelivery(subtype)) {
+      return "Compra aprovada, primeiro uso e custo de IA por compra";
+    }
     return subtype == ProductAiSubtype.AI_VISUAL_PREVIEW
         ? "Compra aprovada da prévia e clique no checkout"
         : "Compra aprovada e custo de IA por compra";
@@ -324,6 +335,9 @@ public class ProductAiExperimentPreparationService {
 
   /** Retorna o nome do pacote mínimo conforme a estratégia do funil Produto IA. */
   private String packageName(ProductAiSubtype subtype) {
+    if (isPersonalizedPaidDelivery(subtype)) {
+      return "Pacote de entrega personalizada paga";
+    }
     return subtype == ProductAiSubtype.AI_VISUAL_PREVIEW
         ? "Pacote inicial de prévia paga"
         : "Pacote inicial de amostra personalizada";
@@ -331,6 +345,9 @@ public class ProductAiExperimentPreparationService {
 
   /** Retorna a descrição operacional do pacote mínimo conforme a estratégia do funil Produto IA. */
   private String packageDescription(ProductAiSubtype subtype) {
+    if (isPersonalizedPaidDelivery(subtype)) {
+      return "Pacote para testar venda direta de uma entrega personalizada completa após pagamento aprovado.";
+    }
     return subtype == ProductAiSubtype.AI_VISUAL_PREVIEW
         ? "Pacote mínimo para testar Produto IA com venda de entrada antes da personalização completa."
         : "Pacote mínimo para testar Produto IA com amostra visual personalizada antes da compra.";
@@ -338,6 +355,9 @@ public class ProductAiExperimentPreparationService {
 
   /** Retorna o título do entregável mínimo conforme a estratégia do funil Produto IA. */
   private String deliverableTitle(ProductAiSubtype subtype) {
+    if (isPersonalizedPaidDelivery(subtype)) {
+      return "Entrega personalizada completa";
+    }
     return subtype == ProductAiSubtype.AI_VISUAL_PREVIEW
         ? "Prévia visual personalizada"
         : "Amostra visual personalizada";
@@ -345,6 +365,11 @@ public class ProductAiExperimentPreparationService {
 
   /** Descreve a entrega personalizada a partir da dor, promessa e mecanismo já persistidos. */
   private String buildDeliveryDescription(Hypothesis hypothesis, ProductAiSubtype subtype) {
+    if (isPersonalizedPaidDelivery(subtype)) {
+      return "Entrega personalizada completa liberada após o pagamento aprovado, usando os dados informados pelo comprador para cumprir a promessa: "
+          + compact(hypothesis.getPromise())
+          + ".";
+    }
     if (subtype == ProductAiSubtype.AI_VISUAL_PREVIEW) {
       return "Prévia visual personalizada paga para mostrar ao comprador, depois do checkout, uma direção concreta da promessa: "
           + compact(hypothesis.getPromise())
@@ -376,6 +401,11 @@ public class ProductAiExperimentPreparationService {
         "Hipótese: " + compact(hypothesis.getTitle()),
         "Subtipo: " + subtype.name(),
         "Regra: pacote mínimo determinístico criado antes do experimento; nenhuma IA foi chamada.");
+  }
+
+  /** Identifica a oferta que vende a entrega personalizada completa antes de coletar seus dados. */
+  private boolean isPersonalizedPaidDelivery(ProductAiSubtype subtype) {
+    return subtype == ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY;
   }
 
   /** Compara textos normalizados para localizar variante já existente da mesma base comercial. */

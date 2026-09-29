@@ -128,7 +128,8 @@ public class Experiment {
    * experimento.
    */
   @Enumerated(EnumType.STRING)
-  @Column(name = "product_ai_subtype", length = 48)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "product_ai_subtype", length = 48, columnDefinition = "VARCHAR(48)")
   private ProductAiSubtype productAiSubtype;
 
   /** Objetivo de campanha exigido para publicação do experimento. */

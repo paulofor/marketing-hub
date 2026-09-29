@@ -10,7 +10,9 @@ export function useRequestMetaAdsReprocess() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id }: RequestMetaAdsReprocessPayload) => {
-      const { data } = await axios.post(`/api/targeting-elements/${id}/metaads/reprocess`);
+      const { data } = await axios.post(
+        `/api/targeting-elements/${id}/metaads/reprocess`,
+      );
       return data;
     },
     onSuccess: async (_, variables) => {

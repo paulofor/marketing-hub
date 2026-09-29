@@ -443,6 +443,7 @@ Subtipos iniciais:
 |---|---|---|---|
 | `AI_VISUAL_PREVIEW` | AI Visual Preview | Mostrar uma previa visual do resultado, do depois ou da entrega. | Quando a imagem ajuda o lead a entender rapidamente o beneficio prometido. |
 | `AI_PERSONALIZED_SAMPLE` | AI Personalized Sample | Gerar uma amostra visual ou textual exclusiva para o lead antes da compra. | Primeiro MVP recomendado para testar impacto visual e personalizacao. |
+| `AI_PERSONALIZED_PAID_DELIVERY` | AI Personalized Paid Delivery | Vender a entrega personalizada completa e coletar os dados necessários somente depois do pagamento aprovado. | Quando a oferta principal já é uma aplicação ou entrega individualizada paga, sem amostra gratuita. |
 | `AI_TRANSFORMATION_SIMULATOR` | AI Transformation Simulator | Simular visualmente uma transformacao desejada. | Quando a promessa depende de comparar estado atual e estado desejado. |
 | `AI_VISUAL_ASSET_PACK` | AI Visual Asset Pack | Entregar pacote de imagens, criativos, mockups ou materiais visuais personalizados. | Quando o cliente compra ativos prontos para usar. |
 | `AI_IDENTITY_AVATAR_PRODUCT` | AI Identity / Avatar Product | Criar representacao visual de pessoa, marca, persona, avatar ou estilo. | Quando identidade, pertencimento ou expressao visual forem parte central do valor. |
@@ -459,7 +460,9 @@ Regra operacional:
 - a hipotese pode declarar o subtipo quando o fluxo sistemico identificar que a oferta e Produto IA;
 - o experimento herda o subtipo da hipotese quando nasce pelo fluxo normal;
 - se o experimento declarar um subtipo explicitamente, esse valor deve ficar registrado para rastrear a variacao testada;
-- o primeiro MVP visual/personalizado usa `AI_PERSONALIZED_SAMPLE` como subtipo inicial;
+- o primeiro MVP que oferece uma amostra gratuita antes da compra usa `AI_PERSONALIZED_SAMPLE`;
+- a entrega personalizada completa vendida antes da coleta usa `AI_PERSONALIZED_PAID_DELIVERY` e nunca deve herdar os gates de amostra gratuita;
+- as colunas `product_ai_subtype` devem permanecer em `VARCHAR(48)`, com mapeamento JDBC textual explícito, para aceitar evolução versionada sem o Hibernate recriar `ENUM` nativo no MySQL;
 - relatórios, custos, prompts, schemas e aprendizados devem sempre conseguir voltar ao tipo/subtipo do produto testado.
 
 ### Regra mandatória — Produto IA nasce pelo sistema
@@ -487,6 +490,8 @@ Quando uma hipotese criada pelo sistema ja possuir nicho/contexto, dor principal
 
 Quando o aprendizado comercial indicar que o funil gratuito nao esta gerando compra, o backend pode executar `POST /api/product-ai/hypotheses/{hypothesisId}/experiment-preparation` com `productAiSubtype=AI_VISUAL_PREVIEW` para criar ou reaproveitar uma variante paralela da mesma base comercial. Essa variante representa o Funil B de venda de entrada: pagina curta, CTA de checkout, compra da previa visual por preco baixo e envio dos dados/foto depois do pagamento. A hipotese original `AI_PERSONALIZED_SAMPLE` deve permanecer intacta para preservar comparacao e aprendizado entre funil de amostra gratuita e funil de previa paga.
 
+Quando a oferta vende desde a origem uma aplicação ou entrega individualizada completa, o preparo sistêmico deve usar `productAiSubtype=AI_PERSONALIZED_PAID_DELIVERY`. O anúncio conduz à página comercial ou superfície de produto auditada, o checkout antecede qualquer liberação, e os dados necessários para personalizar a entrega são coletados somente depois da confirmação do pagamento. Esse subtipo não pode exigir `LeadPortalFlow`, página de amostra ou amostra gratuita; deve exigir checkout, eventos conciliados, controle de acesso, experiência paga funcional, primeiro uso observável, custo de IA e política de reembolso.
+
 Um experimento Produto IA nao pode ser criado com subtipo diferente do subtipo preparado na hipotese vinculada. Se a tela selecionar `AI_VISUAL_PREVIEW`, deve primeiro usar a variante retornada pelo preparo sistemico antes de salvar o experimento. Essa trava evita misturar metricas de lead/amostra com metricas de venda de entrada.
 
 Depois que o experimento `AI_PERSONALIZED_SAMPLE` existir, a publicacao de campanha deve continuar bloqueada ate existir um funil canonico de coleta no Lead Portal. A criacao, manutencao, formulario, upload, acompanhamento e experiencia publica desse funil pertencem ao `lead-portal`; o backend principal do Marketing Hub nao deve expor endpoint publico ou de atendimento de lead/cliente para esse caso. A prontidao deve aceitar somente um contrato de template canonico completo, sem exigir campos de outro template. O briefing generico coleta e-mail, negocio/projeto, contexto atual, objetivo visual e dados de personalizacao. A microamostra de redes sociais coleta e-mail, nome profissional, servico divulgado e escolha de estilo visual; foto de referencia permanece opcional. Nome e WhatsApp podem ser solicitados dentro dos dados de personalizacao no template generico quando forem necessarios para a peca, mas nao devem criar dois campos obrigatorios adicionais antes da amostra. Um formulario que misture campos parciais de templates diferentes deve continuar bloqueado.
@@ -496,6 +501,8 @@ Quando o contexto comercial do experimento indicar o piloto `DecoraIA Express`, 
 A pagina de venda aprovada pelo GeraSalesPage para `AI_PERSONALIZED_SAMPLE` deve ser publicada dentro desse mesmo `LeadPortalFlow` de coleta, com formulario gerenciado pelo Lead Portal. O link de campanha deve apontar para esse funil-pagina unico. E proibido publicar uma pagina separada que trate o funil como checkout direto ou que pule a coleta de dados de personalizacao.
 
 Para `AI_VISUAL_PREVIEW` usado como Funil B de venda de entrada, a primeira acao publica deve ser o checkout da previa paga, nao um formulario gratuito. A coleta de foto, objetivo visual e preferencias ocorre depois da compra aprovada, para medir disposicao real de pagamento antes de acionar a personalizacao completa.
+
+Para `AI_PERSONALIZED_PAID_DELIVERY`, a prova anterior ao checkout deve demonstrar o produto real sem entregar gratuitamente o valor completo. A coleta pública pré-pagamento deve se limitar ao necessário para pagamento e consentimento. A personalização completa, o acesso e o consumo das tentativas ou direitos comprados só podem começar após evento de pagamento aprovado e idempotente. Uma superfície própria de produto pode cumprir página, checkout, instrumentação e entrega quando seu preflight produtivo auditado comprovar esses contratos; logs isolados não substituem os eventos persistidos.
 
 O valor central de `AI_PERSONALIZED_SAMPLE` e vender uma solucao aplicada a realidade do lead, nao vender "IA", template generico ou PDF estatico. A amostra gratuita deve provar a personalizacao com um recorte pequeno e util; o produto pago deve entregar a versao completa tambem personalizada, usando os dados capturados no Lead Portal. Se a amostra for personalizada e a entrega paga for generica, o funil quebra a promessa, reduz valor percebido e aumenta risco de frustracao.
 
@@ -517,7 +524,7 @@ O produto pago deve ser uma entrega hibrida personalizada: estrutura-base padron
 
 Exemplo canonico de aplicacao: para manicures em domicilio, a amostra gratuita pode ser um post personalizado acompanhado de uma legenda pronta, suficiente para demonstrar qualidade e aplicacao sem substituir o produto completo. A compra deve entregar o kit completo do experimento, com materiais adicionais coerentes com a promessa, adaptados ao tom escolhido e aos dados informados. O experimento de amostra deve gerar somente uma imagem por pacote; aumentar a quantidade de pecas exige nova versao ou decisao comercial explicita.
 
-Os prompts ativos do GeraSalesPage devem receber contexto suficiente para diferenciar venda direta de funil de personalização. Para `AI_PERSONALIZED_SAMPLE`, o destino comercial da página deve ser o funil-pagina do Lead Portal, deixando claro para o worker que a primeira ação pública é coleta de dados, não checkout direto. O quality review deve aceitar formulário somente nesse subtipo e deve bloquear qualquer ambiguidade entre amostra gratuita, produto pago, preço e entrega paga.
+Os prompts ativos do GeraSalesPage devem receber contexto suficiente para diferenciar venda direta de funil de personalização. Para `AI_PERSONALIZED_SAMPLE`, o destino comercial da página deve ser o funil-pagina do Lead Portal, deixando claro para o worker que a primeira ação pública é coleta de dados, não checkout direto. Para `AI_PERSONALIZED_PAID_DELIVERY`, a ação comercial primária é compra e a coleta de personalização completa ocorre após pagamento aprovado. O quality review deve aceitar formulário gratuito somente no subtipo de amostra e deve bloquear qualquer ambiguidade entre amostra gratuita, produto pago, preço e entrega paga.
 
 Para `AI_PERSONALIZED_SAMPLE`, a pagina publicada dentro do Lead Portal nunca deve embutir o proprio Lead Portal, flow ou funil em `iframe`. O backend deve remover iframe autorreferente antes de publicar e os prompts/schemas ativos devem instruir o worker a usar bloco de formulario gerenciado, nao iframe, para evitar recursao visual e perda de experiencia do lead.
 

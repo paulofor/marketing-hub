@@ -12,6 +12,7 @@ import {
   parseOptionalPositiveAmount,
   productAiSubtypeForExperiment,
 } from "./experimentPlanningContract";
+import { productAiSubtypeLabels } from "./productAiSubtypeLabels";
 
 const product = (id: number, marketNicheId?: number): Product =>
   ({
@@ -82,6 +83,18 @@ describe("contrato de planejamento do experimento", () => {
         "AI_PERSONALIZED_SAMPLE",
       ),
     ).toBe("AI_PERSONALIZED_SAMPLE");
+  });
+
+  it("expõe a entrega personalizada paga sem rotulá-la como amostra gratuita", () => {
+    expect(productAiSubtypeLabels.AI_PERSONALIZED_PAID_DELIVERY).toBe(
+      "Entrega personalizada paga IA",
+    );
+    expect(
+      productAiSubtypeForExperiment(
+        "LOW_TICKET_PRODUCT",
+        "AI_PERSONALIZED_PAID_DELIVERY",
+      ),
+    ).toBe("AI_PERSONALIZED_PAID_DELIVERY");
   });
 
   it("mantém orçamento opcional no rascunho e rejeita valor inválido", () => {

@@ -16,8 +16,10 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 
 /**
  * Responsabilidade: representar uma hipótese comercial usada para gerar, validar e escalar
@@ -154,7 +156,8 @@ public class Hypothesis {
 
   /** Subtipo de Produto IA que esta hipótese pretende materializar no fluxo sistêmico. */
   @Enumerated(EnumType.STRING)
-  @Column(name = "product_ai_subtype", length = 48)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "product_ai_subtype", length = 48, columnDefinition = "VARCHAR(48)")
   private ProductAiSubtype productAiSubtype;
 
   @Enumerated(EnumType.STRING)

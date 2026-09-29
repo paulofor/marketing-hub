@@ -4,6 +4,7 @@ import {
   buildPdeInternalPreviewUrl,
   canAccessExperimentConstruction,
   canManageGeraSalesPage,
+  canRequestFacebookRelease,
   canStartDirectExperiment,
   experimentDetailTabs,
   getVisibleExperimentDetailTabs,
@@ -53,6 +54,69 @@ describe("canStartDirectExperiment", () => {
     expect(canStartDirectExperiment("RUNNING", "DIRECT_ONE_TO_ONE", true)).toBe(
       false,
     );
+  });
+});
+
+describe("canRequestFacebookRelease", () => {
+  const readyFacebookExperiment = {
+    eligibleForRunning: true,
+    platform: "FACEBOOK",
+    status: "PLANNED",
+    facebookReleaseRequestedAt: null,
+    hasPublishedCampaign: false,
+    isLoadingCampaigns: false,
+  };
+
+  it("libera a primeira publicação quando o experimento está pronto", () => {
+    expect(canRequestFacebookRelease(readyFacebookExperiment)).toBe(true);
+  });
+
+  it("permite retomar a publicação pausada antes de existir campanha", () => {
+    expect(
+      canRequestFacebookRelease({
+        ...readyFacebookExperiment,
+        status: "PAUSED",
+        facebookReleaseRequestedAt: "2026-09-29T10:47:56Z",
+      }),
+    ).toBe(true);
+  });
+
+  it("preserva campanhas existentes e pedidos já enfileirados", () => {
+    expect(
+      canRequestFacebookRelease({
+        ...readyFacebookExperiment,
+        status: "PAUSED",
+        facebookReleaseRequestedAt: "2026-09-29T10:47:56Z",
+        hasPublishedCampaign: true,
+      }),
+    ).toBe(false);
+    expect(
+      canRequestFacebookRelease({
+        ...readyFacebookExperiment,
+        facebookReleaseRequestedAt: "2026-09-29T10:47:56Z",
+      }),
+    ).toBe(false);
+  });
+
+  it("bloqueia estados terminais, canal divergente e dados ainda carregando", () => {
+    expect(
+      canRequestFacebookRelease({
+        ...readyFacebookExperiment,
+        status: "USER_STOPPED",
+      }),
+    ).toBe(false);
+    expect(
+      canRequestFacebookRelease({
+        ...readyFacebookExperiment,
+        platform: "DIRECT_ONE_TO_ONE",
+      }),
+    ).toBe(false);
+    expect(
+      canRequestFacebookRelease({
+        ...readyFacebookExperiment,
+        isLoadingCampaigns: true,
+      }),
+    ).toBe(false);
   });
 });
 

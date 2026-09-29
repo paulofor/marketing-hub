@@ -422,7 +422,18 @@ public class ExperimentController {
   @PostMapping("/{id}/facebook-release")
   public ExperimentDto releaseForFacebook(@PathVariable Long id) {
     ensurePurchaseIntentDoesNotBypassSalesPage(id);
+    ensureReadyForFacebookRelease(id);
     return mapper.toDto(service.releaseForFacebook(id));
+  }
+
+  /** Revalida no backend todos os gates antes de aceitar uma solicitação de mídia. */
+  private void ensureReadyForFacebookRelease(Long id) {
+    ExperimentReadinessSummaryDto readiness = readinessService.summarize(id);
+    if (!readiness.eligibleForRunning()) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "O experimento ainda possui bloqueios de prontidão e não pode ser liberado para mídia.");
+    }
   }
 
   /** Bloqueia liberação de tráfego frio com intenção de compra direto para checkout. */

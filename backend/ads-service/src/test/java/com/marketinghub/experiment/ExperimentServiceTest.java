@@ -2106,7 +2106,7 @@ class ExperimentServiceTest {
         .isEmpty();
   }
 
-  /** Protege campanha existente e preserva eventos e janela de métricas ao retomar uma falha. */
+  /** Protege campanha e histórico ao retomar falha ou pausa anterior à publicação. */
   @Test
   void releaseForFacebookProtectsCampaignAndPreservesRetryHistory() {
     MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Release").build());
@@ -2238,6 +2238,23 @@ class ExperimentServiceTest {
     assertThat(retried.getFunnelResetAt()).isEqualTo(initialReset);
     assertThat(experimentFunnelEventRepository.count()).isEqualTo(1);
     assertThat(experimentLandingAnalyticsEventRepository.count()).isEqualTo(1);
+
+    Instant pausedRelease = Instant.parse("2026-09-06T18:00:00Z");
+    retried.setStatus(ExperimentStatus.PAUSED);
+    retried.setFacebookReleaseRequestedAt(pausedRelease);
+    experimentRepository.saveAndFlush(retried);
+    Experiment resumed = service.releaseForFacebook(experiment.getId());
+    assertThat(resumed.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
+    assertThat(resumed.getFacebookReleaseRequestedAt()).isAfter(pausedRelease);
+    assertThat(resumed.getFunnelResetAt()).isEqualTo(initialReset);
+    assertThat(experimentFunnelEventRepository.count()).isEqualTo(1);
+    assertThat(experimentLandingAnalyticsEventRepository.count()).isEqualTo(1);
+
+    resumed.setStatus(ExperimentStatus.USER_STOPPED);
+    experimentRepository.saveAndFlush(resumed);
+    assertThatThrownBy(() -> service.releaseForFacebook(experiment.getId()))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("estado atual do experimento não permite nova liberação");
   }
 
   @Test

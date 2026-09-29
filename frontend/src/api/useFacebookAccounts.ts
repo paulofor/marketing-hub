@@ -32,6 +32,7 @@ export interface FacebookAccount {
   tokenRenewedAt?: string | null;
   tokenRenewalLastError?: string | null;
   adAccountId?: string | null;
+  defaultPixelId?: string | null;
   defaultWebsiteUrl?: string | null;
   defaultLeadGenFormId?: string | null;
   defaultCreativeMessageTemplate?: string | null;

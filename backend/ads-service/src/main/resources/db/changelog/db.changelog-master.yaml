@@ -2177,3 +2177,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-29-pde-meta-pixel-conversion-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-29-facebook-default-pixel-reconciliation-v1.yaml
+      relativeToChangelogFile: true

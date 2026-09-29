@@ -104,6 +104,9 @@ public class FacebookAccountController {
     if (account.isPixelOwnerBusinessIdProvided()) {
       persisted.setPixelOwnerBusinessId(account.getPixelOwnerBusinessId());
     }
+    if (account.isDefaultPixelIdProvided()) {
+      persisted.setDefaultPixelId(account.getDefaultPixelId());
+    }
 
     if (account.isAccessTokenProvided()) {
       String newToken = account.getAccessToken();
@@ -263,6 +266,13 @@ public class FacebookAccountController {
         trimToNull(account.getDefaultCreativeMessageTemplate()));
     account.setDefaultCallToActionType(trimToNull(account.getDefaultCallToActionType()));
     account.setPixelOwnerBusinessId(trimToNull(account.getPixelOwnerBusinessId()));
+    String defaultPixelId = trimToNull(account.getDefaultPixelId());
+    if (defaultPixelId != null
+        && (defaultPixelId.length() > 64 || !defaultPixelId.chars().allMatch(Character::isDigit))) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "O pixel padrão deve conter apenas números");
+    }
+    account.setDefaultPixelId(defaultPixelId);
     account.setAdSetDailyBudget(trimToNull(account.getAdSetDailyBudget()));
     account.setAdSetBillingEvent(trimToNull(account.getAdSetBillingEvent()));
     account.setAdSetOptimizationGoal(trimToNull(account.getAdSetOptimizationGoal()));
@@ -315,6 +325,7 @@ public class FacebookAccountController {
         account.getAccessToken(),
         account.getSystemUserAccessToken(),
         account.getPixelOwnerBusinessId(),
+        account.getDefaultPixelId(),
         account.getAppId(),
         account.getAppSecret(),
         account.getDefaultPageId(),
@@ -482,6 +493,7 @@ public class FacebookAccountController {
       String accessToken,
       String systemUserAccessToken,
       String pixelOwnerBusinessId,
+      String defaultPixelId,
       String appId,
       String appSecret,
       String defaultPageId,

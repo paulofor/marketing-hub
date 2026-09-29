@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Facebook Ads API
-  version: 1.1.0
+  version: 1.2.0
   description: |
     Contrato versionado dos endpoints do backend que atendem a integração com Facebook Ads/Meta Ads.
     A implementação canônica dos controllers fica concentrada no pacote
@@ -67,7 +67,11 @@ paths:
       tags: [Facebook Accounts]
       summary: Retorna a conta habilitada para o Facebook Ads Worker.
       responses:
-        '200': { description: Configuração operacional do worker. }
+        '200':
+          description: Configuração operacional do worker.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FacebookWorkerConfiguration' }
   /api/accounts/facebook/renewal/eligible:
     get:
       tags: [Facebook Accounts]
@@ -792,8 +796,25 @@ components:
   schemas:
     FacebookAccountUpsertRequest:
       type: object
+      properties:
+        defaultPixelId:
+          type: string
+          nullable: true
+          pattern: '^\d+$'
+          description: Pixel de conversão compartilhado que deve ser validado contra a conta antes do reuso.
       additionalProperties: true
       description: Payload de criação/atualização de conta Facebook; campos omitidos em atualização são preservados pelo backend.
+    FacebookWorkerConfiguration:
+      type: object
+      properties:
+        accountId: { type: integer, format: int64 }
+        adAccountId: { type: string }
+        pixelOwnerBusinessId: { type: string, nullable: true }
+        defaultPixelId:
+          type: string
+          nullable: true
+          description: Pixel compartilhado escolhido na conta para reconciliar solicitações sem seleção arbitrária.
+      additionalProperties: true
     FacebookTokenRenewalRequest:
       type: object
       properties:

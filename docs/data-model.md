@@ -864,6 +864,7 @@ allow variants to be created before an experiment is defined.
 - `default_instagram_actor_id` VARCHAR(64)
 - `default_creative_message_template` VARCHAR(255)
 - `default_call_to_action_type` VARCHAR(64)
+- `default_pixel_id` VARCHAR(64) — pixel compartilhado validado contra a conta de anúncios antes do reuso
 - `ad_set_daily_budget` VARCHAR(32)
 - `ad_set_billing_event` VARCHAR(64)
 - `ad_set_optimization_goal` VARCHAR(64)

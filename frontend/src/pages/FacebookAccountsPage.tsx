@@ -45,6 +45,7 @@ interface AccountFormState {
   appSecretKept: boolean;
   tokenRenewalEnabled: boolean;
   adAccountId: string;
+  defaultPixelId: string;
   defaultWebsiteUrl: string;
   defaultLeadGenFormId: string;
   defaultCreativeMessageTemplate: string;
@@ -102,6 +103,7 @@ const emptyAccountForm: AccountFormState = {
   appSecretKept: false,
   tokenRenewalEnabled: false,
   adAccountId: "",
+  defaultPixelId: "",
   defaultWebsiteUrl: "",
   defaultLeadGenFormId: "",
   defaultCreativeMessageTemplate: "%s",
@@ -551,6 +553,7 @@ export default function FacebookAccountsPage() {
       appId: accountForm.appId.trim() || null,
       tokenRenewalEnabled: accountForm.tokenRenewalEnabled,
       adAccountId: accountForm.adAccountId.trim() || null,
+      defaultPixelId: accountForm.defaultPixelId.trim() || null,
       defaultWebsiteUrl: accountForm.defaultWebsiteUrl.trim() || null,
       defaultLeadGenFormId: accountForm.defaultLeadGenFormId.trim() || null,
       defaultCreativeMessageTemplate:
@@ -830,6 +833,8 @@ export default function FacebookAccountsPage() {
                                     account.tokenRenewalEnabled,
                                   ),
                                   adAccountId: account.adAccountId ?? "",
+                                  defaultPixelId:
+                                    account.defaultPixelId ?? "",
                                   defaultWebsiteUrl:
                                     account.defaultWebsiteUrl ?? "",
                                   defaultLeadGenFormId:
@@ -1162,6 +1167,30 @@ export default function FacebookAccountsPage() {
                     }
                     disabled={isAccountMutationPending}
                   />
+                </div>
+                <div className="col-12 col-md-6">
+                  <label className="form-label">
+                    Pixel de conversão compartilhado
+                  </label>
+                  <input
+                    className="form-control"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="Ex.: 525499687083422"
+                    value={accountForm.defaultPixelId}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        defaultPixelId: event.target.value,
+                      }))
+                    }
+                    disabled={isAccountMutationPending}
+                  />
+                  <div className="form-text">
+                    Quando preenchido, o worker confirma na Meta que este pixel
+                    pertence à conta de anúncios antes de reutilizá-lo nos
+                    nichos com solicitação pendente.
+                  </div>
                 </div>
                 <div className="col-12 col-md-6">
                   <label className="form-label">

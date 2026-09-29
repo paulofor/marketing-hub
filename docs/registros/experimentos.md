@@ -7426,3 +7426,8 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
   a fila porque o Compose ainda definia `FACEBOOKPIXEL_ENABLED=false`, contradizendo a aplicação e o
   contrato low-ticket. O default versionado foi corrigido para `true`; o desligamento permanece
   disponível apenas como contingência explícita e um teste de contrato impede nova divergência.
+- Depois da reativação, a Meta recusou criar outro ativo com `(#6200) A pixel already exists for
+  this account`. O histórico de junho confirmou que esse limite havia sido apenas contornado. A conta
+  agora aceita um pixel de conversão compartilhado escolhido na UI; o worker valida a associação
+  desse ID na aresta oficial da conta antes de concluir a pendência e nunca escolhe outro pixel por
+  ordem ou nome aproximado.

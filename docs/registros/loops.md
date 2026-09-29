@@ -7307,6 +7307,17 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   passa a preservar também compromissos estruturados de entrega/suporte/reembolso;
   a regressão cobre valores distintos, singular/plural e dados malformados sem
   inventar prazo. A recuperação histórica continua sem modificar HTML silenciosamente.
+- **Recorrência visual em 29/09/2026:** a publicação #31 preservou todas as condições,
+  porém o renderizador determinístico concatenou campos estruturados em parágrafos longos
+  depois do fechamento da landing. A página mobile chegou a 12.810 px e o CTA fixo cobria
+  a faixa inferior das dobras; Psique #561 reduziu ritmo e densidade de 3 para 2 e bloqueou
+  a homologação. A tarefa #471, anterior ao bloco completo, confirma que o problema surgiu
+  após a preservação dos termos, não na oferta ou no checkout.
+- **Correção sistêmica:** as condições passam a usar divulgação semântica compacta, com cada
+  fonte em item próprio e grupos expansíveis em grade responsiva. CTAs móveis canônicos
+  deixam o modo fixo e voltam ao fluxo quando a divulgação é anexada, preservando a ação sem
+  encobrir conteúdo. Teste Playwright em viewport mobile comprova altura compacta, sete grupos
+  recolhidos e ausência de sobreposição; idempotência, escape e auditoria continuam cobertos.
 
 ## LOOP-GERASALESPAGE-TRANSPORTE-SEM-RETOMADA — falha final exige refazer etapas válidas
 

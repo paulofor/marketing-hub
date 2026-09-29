@@ -163,6 +163,23 @@
   experimento. A regressão usa versões pública e financeira deliberadamente diferentes e exige que
   o plano correto permaneça presente no snapshot Safira.
 
+- **Recorrência do estado financeiro confirmada em 29/09/2026:** depois de selecionar a revisão
+  correta, Mira continuou bloqueada na atividade 5.1.2. A revisão LIVE #3 estava
+  `READY_FOR_ANALYSIS`, e Plutus #61 havia concluído `APPROVE`, cobertura `COMPLETE_AGGREGATE` e
+  cenário-base positivo de R$ 10 no preço de R$ 49.
+- **Causa-raiz do estado financeiro:** o gate Safira aceitava apenas `PROJECTED_VIABLE`, estado do
+  cálculo detalhado, embora o contrato canônico preserve envelopes agregados auditáveis como
+  `READY_FOR_ANALYSIS` e transfira a decisão de viabilidade ao parecer de Plutus. O mesmo padrão já
+  estava correto no percurso Quartzo.
+- **Alternativas avaliadas:** reclassificar artificialmente a revisão apagaria a distinção
+  canônica; decompor o envelope apenas para atravessar o gate poderia deduzir custos duas vezes;
+  aceitar os dois estados de entrada e continuar exigindo Plutus concluído, aprovado, com cobertura
+  completa e cenário-base positivo preserva a verdade financeira. Foi escolhida a terceira opção.
+- **Correção e prevenção:** Safira passa a aceitar `READY_FOR_ANALYSIS` ou
+  `PROJECTED_VIABLE` como base determinística, sem tratá-las como autorização. A regressão positiva
+  exige `APPROVE` e `COMPLETE_AGGREGATE`; a regressão negativa comprova que
+  `READY_FOR_ANALYSIS` sem parecer concluído continua bloqueada.
+
 - **Recorrência de progresso divergente confirmada em 25/09/2026:** Mira #10, Processo 4 #95/v9,
   exibia três de quatro objetivos no cabeçalho, mas mantinha a integração 4.4 concluída e a execução
   automática #18 em quatro de quatro. A tarefa #411 e as provas posteriores pertenciam à validação

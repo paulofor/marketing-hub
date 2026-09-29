@@ -170,3 +170,17 @@ segundos, 1080x1920, H.264/AAC e SHA-256
 cadastrada como sucessora do #48, nunca como alteração dos bytes históricos. Prova, vídeo e pacote
 continuam dependendo de registro pela interface e de novos pareceres independentes antes do
 Processo 4; nenhuma campanha ou verba foi autorizada por esta correção.
+
+## Gate financeiro do Processo 5 em 29/09/2026
+
+A revisão financeira LIVE #3 usa a versão `MIRA_COMMERCIAL_V1`, plano comercial #8 v6, preço de
+R$ 49, CAC máximo de R$ 25, envelope variável de R$ 14 e custo fixo incremental de R$ 0. O cálculo
+determinístico a classificou corretamente como `READY_FOR_ANALYSIS`. Plutus #61 concluiu
+`APPROVE`, cobertura `COMPLETE_AGGREGATE` e cenário-base positivo de R$ 10; isso comprova
+viabilidade condicional, não venda, receita realizada ou autorização de mídia.
+
+O gate Safira confundia esse estado agregado com o estado `PROJECTED_VIABLE` da decomposição
+detalhada e bloqueava a mesma revisão depois do parecer. A correção aceita ambas as bases
+canônicas, mas mantém obrigatórios o parecer concluído, a decisão `APPROVE`, cobertura completa,
+três cenários e lucro positivo no cenário-base. O piloto continua bloqueado até o preflight e a
+autorização final do Processo 5.

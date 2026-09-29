@@ -304,3 +304,11 @@ ponta a ponta passaram na topologia isolada com MySQL 5.7, backend, frontend, pa
 descartável reais. Os nove testes do contrato de liberação e os 13 do empacotador de evidências
 também passaram. A navegação `mh_test=1` continua persistida como QA segregado no funil próprio,
 mas não inicializa o Pixel nem envia `PageView` ou `InitiateCheckout` à Meta.
+
+O CI de compatibilidade ainda fixava os caminhos do vídeo `demo-v1`, embora o contrato de saúde e
+os manifestos atuais declarem `demo-v3`. Foram comparados restaurar aliases obsoletos, trocar o
+sufixo fixo a cada versão ou validar todos os ativos e playlists publicados pelo próprio contrato.
+A terceira alternativa foi adotada: o teste agora exige listas válidas, consulta cada ativo e
+confirma cada playlist HLS antes e depois da recriação isolada do container. `bash -n`, ShellCheck e
+o ciclo completo de isolamento de Mira/Vega passaram localmente, impedindo que a próxima revisão de
+mídia volte a quebrar o teste por um caminho histórico hardcoded.

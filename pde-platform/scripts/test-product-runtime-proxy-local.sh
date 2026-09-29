@@ -54,6 +54,30 @@ curl_mira_commercial() {
     "https://mira.digicomdigital.com.br$1"
 }
 
+validate_mira_commercial_media() {
+  local contract required_asset required_hls_stream
+  contract="$(curl_mira_commercial /pde-health-contract.json)"
+  jq -e '
+    (.requiredAssets | type == "array" and length > 0)
+    and (.requiredHlsStreams | type == "array" and length > 0)
+    and all(.requiredAssets[]; type == "string" and startswith("/"))
+    and all(.requiredHlsStreams[]; type == "string" and startswith("/"))
+  ' <<<"${contract}" >/dev/null
+
+  while IFS= read -r required_asset; do
+    curl_mira_commercial "${required_asset}" >/dev/null
+  done < <(jq -r '.requiredAssets[]' <<<"${contract}")
+
+  while IFS= read -r required_hls_stream; do
+    curl_mira_commercial "${required_hls_stream}" | grep -q '^#EXTM3U'
+  done < <(jq -r '.requiredHlsStreams[]' <<<"${contract}")
+}
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo '[ARQUITETURA] jq e obrigatorio para validar os ativos declarados pela superficie comercial de Mira.' >&2
+  exit 1
+fi
+
 vega_v5_diagnostics="$(curl_v5 /version-diagnostics.json)"
 grep -q '"imageVersionId": "v5"' <<<"${vega_v5_diagnostics}"
 grep -q '"experienceVersion": "musa-pde-entry-v5-video-explicativo"' \
@@ -102,14 +126,7 @@ mira_commercial_asset="$(sed -n 's/.*src="\([^"]*\.js\)".*/\1/p' <<<"${mira_comm
 test -n "${mira_commercial_asset}"
 mira_commercial_bundle="$(curl_mira_commercial "${mira_commercial_asset}")"
 grep -q 'Cuide de você com mais clareza' <<<"${mira_commercial_bundle}"
-mira_commercial_contract="$(curl_mira_commercial /pde-health-contract.json)"
-grep -q '/media/mira-commercial-demo-v1.mp4' <<<"${mira_commercial_contract}"
-grep -q '/media/mira-commercial-demo-v1-hls/index.m3u8' <<<"${mira_commercial_contract}"
-curl_mira_commercial /media/mira-commercial-demo-v1.mp4 >/dev/null
-curl_mira_commercial /media/mira-commercial-demo-v1-poster.jpg >/dev/null
-curl_mira_commercial /media/mira-commercial-demo-v1-hls/index.m3u8 \
-  | grep -q '^#EXTM3U'
-curl_mira_commercial /media/mira-commercial-demo-v1-hls/segment-000.ts >/dev/null
+validate_mira_commercial_media
 mira_commercial_diagnostics="$(curl_mira_commercial /version-diagnostics.json)"
 grep -q '"surface": "pde-platform-frontend-mira-commercial"' \
   <<<"${mira_commercial_diagnostics}"
@@ -149,9 +166,7 @@ test "${mira_commercial_container_id_before}" != "${mira_commercial_container_id
 curl_v7 /mira-private/version-diagnostics.json | grep -q '"productId": 10'
 curl_mira_commercial /version-diagnostics.json \
   | grep -q '"experienceVersion": "mira-commercial-v1"'
-curl_mira_commercial /media/mira-commercial-demo-v1.mp4 >/dev/null
-curl_mira_commercial /media/mira-commercial-demo-v1-hls/index.m3u8 \
-  | grep -q '^#EXTM3U'
+validate_mira_commercial_media
 curl_v8 /version-diagnostics.json \
   | grep -q '"experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"'
 

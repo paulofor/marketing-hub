@@ -69,14 +69,33 @@ class CommercialPlanExecutionSyncServiceTest {
     assertThat(milestone.getActualExperimentsCreated()).isEqualTo(3);
     assertThat(milestone.getActualExperimentsPublished()).isEqualTo(2);
     assertThat(jdbcTemplate.queries)
+        .allMatch(query -> query.contains("commercial_plan_id = ?"))
         .anyMatch(
             query ->
                 query.contains("from gera_sales_page_stage_execution")
-                    && query.contains("where execution_requested_at"))
-        .noneMatch(
-            query ->
-                query.matches(
-                    "(?s).*from\\s+gera_sales_page_stage_execution\\s+where\\s+created_at.*"));
+                    && query.contains("from gera_landing_stage_execution")
+                    && query.contains("from commercial_plan_image_studio_job")
+                    && query.contains("from product_ai_paid_delivery_stage_execution"))
+        .noneMatch(query -> query.contains("from ai_worker_generation"));
+    assertThat(jdbcTemplate.arguments)
+        .hasSize(14)
+        .allSatisfy(args -> assertThat(args).startsWith(1L));
+  }
+
+  /** Zera um plano ainda nao persistido sem executar consultas globais sem identidade. */
+  @Test
+  void syncDoesNotQuerySourcesWithoutPlanId() {
+    CommercialPlan plan =
+        CommercialPlan.builder().name("Rascunho").deadline(LocalDate.of(2026, 7, 31)).build();
+    FakeJdbcTemplate jdbcTemplate = new FakeJdbcTemplate();
+    CommercialPlanExecutionSyncService service =
+        new CommercialPlanExecutionSyncService(
+            jdbcTemplate, new CurrencyConversionService(new CurrencyConversionProperties()));
+
+    service.sync(plan, List.of());
+
+    assertThat(plan.getActualTotalCost()).isEqualByComparingTo("0.00");
+    assertThat(jdbcTemplate.queries).isEmpty();
   }
 
   /**
@@ -86,6 +105,7 @@ class CommercialPlanExecutionSyncServiceTest {
   private static class FakeJdbcTemplate extends JdbcTemplate {
     private final Queue<Object> values = new ArrayDeque<>();
     private final List<String> queries = new ArrayList<>();
+    private final List<List<Object>> arguments = new ArrayList<>();
 
     /** Inicializa a fila de resultados SQL simulados. */
     FakeJdbcTemplate(Object... values) {
@@ -96,6 +116,7 @@ class CommercialPlanExecutionSyncServiceTest {
     @Override
     public <T> T queryForObject(String sql, Class<T> requiredType, Object... args) {
       queries.add(sql);
+      arguments.add(List.of(args));
       return requiredType.cast(values.remove());
     }
   }

@@ -21,7 +21,8 @@ public record PlanAssumptions(
     @NotNull @Size(min = 3, max = 3) List<@NotNull @Valid Scenario> scenarios,
     @Valid Preparation preparation,
     @Valid VariableCostEnvelope variableCostEnvelope,
-    @Valid FixedCostEnvelope fixedCostEnvelope) {
+    @Valid FixedCostEnvelope fixedCostEnvelope,
+    @Valid RealizedCostBaseline realizedCostBaseline) {
   /** Escolhas operacionais; suporte não equivale ao período econômico ou ao acesso vendido. */
   public record Preparation(
       @NotNull @Min(1) @Max(3660) @JsonDeserialize(using = WholeNumberDeserializer.class)
@@ -41,6 +42,13 @@ public record PlanAssumptions(
       @NotNull FixedCostCoverage coverage,
       @NotBlank @Size(max = 1000) String sourceReference,
       @NotNull LocalDate checkedOn) {}
+
+  /** Congela custos realizados conhecidos quando a revisão financeira é criada. */
+  public record RealizedCostBaseline(
+      @NotNull @DecimalMin("0") @Digits(integer = 9, fraction = 2) BigDecimal campaignCostBrl,
+      @NotNull @DecimalMin("0") @Digits(integer = 9, fraction = 2) BigDecimal aiCostBrl,
+      @NotNull @DecimalMin("0") @Digits(integer = 9, fraction = 2) BigDecimal totalCostBrl,
+      @NotBlank @Size(max = 1000) String sourceReference) {}
 
   /** Premissas do pacote completo: tarifa por tentativa, câmbio documentado e teto por cliente. */
   public record AiCost(

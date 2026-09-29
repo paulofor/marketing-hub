@@ -160,7 +160,8 @@ final class FinancialPlanPreparation {
         scenarios,
         new Preparation(request.supportDays(), request.personalizedAi()),
         variableCostEnvelope,
-        fixedCostEnvelope);
+        fixedCostEnvelope,
+        null);
   }
 
   /**

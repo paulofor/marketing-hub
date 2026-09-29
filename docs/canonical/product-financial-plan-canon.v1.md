@@ -61,6 +61,14 @@ vigente; custos, fontes e cenários da revisão anterior não são carregados si
 vencida, mudança de tipo, plano ausente ou seleção ambígua continuam exigindo edição avançada. O
 rebase não solicita Plutus, não aprova a projeção e não autoriza gasto.
 
+Decisão complementar de 29/09/2026: cada revisão de produto passa a congelar uma baseline dos
+custos realizados atribuídos relacionalmente ao plano comercial. O backend reconcilia campanha, IA
+e total antes da gravação e substitui qualquer baseline recebida do cliente. Custo capturado nessa
+fotografia permanece na recuperação histórica e não bloqueia o parecer incremental da mesma revisão;
+somente o aumento positivo posterior exige classificação antes de Plutus. Consolidação mensal global,
+auditoria genérica sem vínculo com plano/experimento e dupla contagem entre fontes são proibidas.
+Revisões legadas sem baseline continuam sujeitas à regra temporal anterior.
+
 Quando preço, CAC, envelopes variável e fixo, fontes e validade são suficientes, mas margem
 mínima e cenários ainda dependem do parecer, a revisão fica `READY_FOR_ANALYSIS`. Esse estado só
 libera Plutus: não significa `PROJECTED_VIABLE`. O parecer deve registrar decisão e cobertura;

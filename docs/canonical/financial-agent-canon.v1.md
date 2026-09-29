@@ -107,6 +107,11 @@ acumulada; investimento incremental zero só vale ao reutilizar a versão existe
 ou gasto. Contrato de pacote fixo usa a entrega integral como limite `INTENSIVE`; uso aberto continua
 exigindo quota. Ausência ou contradição nesses campos bloqueia antes de consumir Plutus.
 
+Para revisões com baseline autoritativa de custo realizado, Plutus recebe a fotografia congelada e
+o eventual aumento posterior separadamente. Valor já capturado compõe recuperação histórica, sem
+nova dedução ou bloqueio temporal; somente aumento positivo posterior exige classificação. A
+baseline deve nascer da conciliação relacional do backend e nunca de valor confiado ao cliente.
+
 Esta decisão atualiza o cânone e os prompts consumidos pelos executores e pelo AIHUB. Não cria
 novos agendamentos, etapas BPM ou um bloqueio automático transversal de vendas nesta revisão.
 A homologação de cada produto deve comprovar suas travas de consumo antes da ativação; ausência

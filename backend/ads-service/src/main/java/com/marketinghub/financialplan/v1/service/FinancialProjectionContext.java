@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.financialplan.v1.service.getplan.PlanEvaluation.ScenarioResult;
 import com.marketinghub.financialplan.v1.service.getplan.PlanView;
 import com.marketinghub.financialplan.v1.service.saveplan.PlanAssumptions.FixedCostCoverage;
+import com.marketinghub.financialplan.v1.service.saveplan.PlanAssumptions.RealizedCostBaseline;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import java.math.BigDecimal;
@@ -131,7 +132,14 @@ final class FinancialProjectionContext {
     BigDecimal historicalTotal = plan.getActualTotalCost();
     String historicalPeriod =
         aggregate
-            ? historicalPeriod(plan, financialPlan, historicalTotal, blockers)
+            ? historicalPeriod(
+                plan,
+                financialPlan,
+                plan.getActualCampaignCost(),
+                plan.getActualAiCost(),
+                historicalTotal,
+                assumptions.realizedCostBaseline(),
+                blockers)
             : "NOT_APPLIED_TO_DECLARED_SCENARIOS";
     Integer recoveryCustomers =
         ceilingCustomers(
@@ -237,6 +245,14 @@ final class FinancialProjectionContext {
             "RECOVERY_AND_MONITORING_NOT_PROJECTION_ENVELOPE_REPLACEMENT",
             "historicalPeriodClassification",
             historicalPeriod,
+            "financialRevisionBaseline",
+            assumptions.realizedCostBaseline(),
+            "postRevisionCostDetectedBrl",
+            positiveDifference(
+                historicalTotal,
+                assumptions.realizedCostBaseline() == null
+                    ? null
+                    : assumptions.realizedCostBaseline().totalCostBrl()),
             "historicalCampaignCostBrl",
             plan.getActualCampaignCost(),
             "historicalAiCostBrl",
@@ -326,20 +342,52 @@ final class FinancialProjectionContext {
     return amount.divide(contribution, 0, RoundingMode.CEILING).intValueExact();
   }
 
-  /** Classifica custos realizados como históricos somente após o encerramento do plano original. */
+  /**
+   * Classifica custos realizados pela baseline autoritativa ou pelo encerramento legado do plano.
+   */
   private static String historicalPeriod(
       CommercialPlan plan,
       PlanView financialPlan,
+      BigDecimal campaignCost,
+      BigDecimal aiCost,
       BigDecimal historicalTotal,
+      RealizedCostBaseline baseline,
       List<String> blockers) {
     if (historicalTotal == null || historicalTotal.signum() == 0)
       return "NO_RECORDED_HISTORICAL_COST";
+    if (baseline != null) {
+      String expectedSource = "commercial-plan:" + plan.getId() + ":relational-realized-costs";
+      if (!expectedSource.equals(baseline.sourceReference())) {
+        blockers.add(
+            "Plutus / responsável financeiro: atualize a baseline de custos realizados deste plano.");
+        return "INVALID_FINANCIAL_REVISION_BASELINE";
+      }
+      if (!exceeds(campaignCost, baseline.campaignCostBrl())
+          && !exceeds(aiCost, baseline.aiCostBrl())
+          && !exceeds(historicalTotal, baseline.totalCostBrl()))
+        return "CAPTURED_BEFORE_CURRENT_FINANCIAL_REVISION";
+      blockers.add(
+          "Plutus / responsável financeiro: classifique os novos custos realizados após esta revisão financeira.");
+      return "POST_REVISION_COST_REQUIRES_CLASSIFICATION";
+    }
     var revisionDate = financialPlan.createdAt().atZone(ZoneOffset.UTC).toLocalDate();
     if (plan.getDeadline() != null && plan.getDeadline().isBefore(revisionDate))
       return "CLOSED_BEFORE_CURRENT_FINANCIAL_REVISION";
     blockers.add(
         "Plutus / responsável financeiro: classifique custos realizados que podem pertencer ao novo período.");
     return "CURRENT_OR_OVERLAPPING_PERIOD_REQUIRES_CLASSIFICATION";
+  }
+
+  /** Informa se o realizado atual ultrapassou o valor congelado na revisão financeira. */
+  private static boolean exceeds(BigDecimal current, BigDecimal baseline) {
+    return current != null && baseline != null && current.compareTo(baseline) > 0;
+  }
+
+  /** Expõe somente o aumento positivo posterior à baseline para auditoria de Plutus. */
+  private static BigDecimal positiveDifference(BigDecimal current, BigDecimal baseline) {
+    if (current == null || baseline == null) return null;
+    BigDecimal difference = current.subtract(baseline).setScale(2, RoundingMode.HALF_UP);
+    return difference.signum() > 0 ? difference : ZERO;
   }
 
   /** Reconhece apenas unidade contratual fechada, sem inferir franquia de uso contínuo. */

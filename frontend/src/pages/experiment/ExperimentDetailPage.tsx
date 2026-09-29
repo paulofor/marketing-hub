@@ -476,6 +476,40 @@ function isExperimentAlterationLocked(experiment: {
   );
 }
 
+export function canRequestFacebookRelease({
+  eligibleForRunning,
+  platform,
+  status,
+  facebookReleaseRequestedAt,
+  hasPublishedCampaign,
+  isLoadingCampaigns,
+}: {
+  eligibleForRunning: boolean;
+  platform?: string | null;
+  status?: string | null;
+  facebookReleaseRequestedAt?: string | null;
+  hasPublishedCampaign: boolean;
+  isLoadingCampaigns: boolean;
+}) {
+  if (
+    !eligibleForRunning ||
+    platform !== "FACEBOOK" ||
+    hasPublishedCampaign ||
+    isLoadingCampaigns
+  ) {
+    return false;
+  }
+
+  const normalizedStatus = (status ?? "").trim().toUpperCase();
+  if (normalizedStatus === "FAILED") {
+    return true;
+  }
+  if (normalizedStatus === "PAUSED") {
+    return Boolean(facebookReleaseRequestedAt);
+  }
+  return normalizedStatus === "PLANNED" && !facebookReleaseRequestedAt;
+}
+
 export function canManageGeraSalesPage(experimentId?: number | string | null) {
   const normalizedId = Number(experimentId);
   return Number.isInteger(normalizedId) && normalizedId > 0;
@@ -2015,13 +2049,19 @@ export default function ExperimentDetailPage() {
   const lastReleaseLabel = lastReleaseAt
     ? formatDateTimeValue(lastReleaseAt)
     : null;
-  const canReleaseExperiment =
-    isReadyForRunning && data.platform === "FACEBOOK";
+  const canReleaseExperiment = canRequestFacebookRelease({
+    eligibleForRunning: isReadyForRunning,
+    platform: data.platform,
+    status: data.status,
+    facebookReleaseRequestedAt: data.facebookReleaseRequestedAt,
+    hasPublishedCampaign: hasPublishedFacebookCampaigns,
+    isLoadingCampaigns: isLoadingFacebookCampaigns,
+  });
+  const isPausedPublicationRetry =
+    canReleaseExperiment &&
+    (data.status ?? "").trim().toUpperCase() === "PAUSED";
   const releaseButtonDisabled =
-    releaseInProgress ||
-    !canReleaseExperiment ||
-    isLoadingReadiness ||
-    alterationLocked;
+    releaseInProgress || !canReleaseExperiment || isLoadingReadiness;
 
   const hasExperimentPipelineContent = Boolean(
     data.campaignAngle ||
@@ -2966,7 +3006,9 @@ export default function ExperimentDetailPage() {
               >
                 {releaseInProgress
                   ? "Liberando..."
-                  : "Liberar para Facebook Ads Worker"}
+                  : isPausedPublicationRetry
+                    ? "Retomar publicação no Facebook Ads Worker"
+                    : "Liberar para Facebook Ads Worker"}
               </button>
             )}
             <div className="small text-body-secondary">
@@ -2979,9 +3021,11 @@ export default function ExperimentDetailPage() {
                     ? "O gate comercial está pronto; a abordagem continua manual, individual, consentida e atribuível."
                     : "Resolva os bloqueios do gate antes de iniciar qualquer contato."
                   : isReadyForRunning
-                    ? isSalesObjectiveExperiment
-                      ? "Ao liberar, o status muda para Planejado e a campanha será preparada para objetivo de vendas."
-                      : "Ao liberar, o status muda para Planejado e o funil de vendas é zerado antes da publicação."
+                    ? isPausedPublicationRetry
+                      ? "A homologação atual permite retomar a publicação sem apagar o funil nem criar uma campanha duplicada."
+                      : isSalesObjectiveExperiment
+                        ? "Ao liberar, o status muda para Planejado e a campanha será preparada para objetivo de vendas."
+                        : "Ao liberar, o status muda para Planejado e o funil de vendas é zerado antes da publicação."
                     : "Resolva os bloqueios para habilitar a liberação automática."}
               {lastReleaseLabel ? (
                 <div className="mt-1">

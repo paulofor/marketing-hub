@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.dto.ReactivateExperimentRequest;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.experiment.funnel.ExperimentTerminalReconciliationService;
@@ -28,8 +29,8 @@ import org.springframework.web.server.ResponseStatusException;
 /** Valida a política de bloqueio no endpoint administrativo de liberação para Facebook Ads. */
 class ExperimentControllerReleasePolicyTest {
 
+  /** Garante que o botão de liberação bloqueia tráfego frio com compra direta. */
   @Test
-  // Garante que o botão de liberação bloqueia tráfego frio com compra direta.
   void releaseForFacebookRejectsPurchaseIntentBypassingSalesPage() {
     ExperimentService service = mock(ExperimentService.class);
     ExperimentCampaignDestinationPolicy policy = mock(ExperimentCampaignDestinationPolicy.class);
@@ -43,6 +44,28 @@ class ExperimentControllerReleasePolicyTest {
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("checkout direto");
     verify(service, never()).releaseForFacebook(60L);
+  }
+
+  /** Revalida no backend a prontidão vista pela tela antes de enfileirar mídia. */
+  @Test
+  void releaseForFacebookRejectsExperimentWithReadinessBlockers() {
+    ExperimentService service = mock(ExperimentService.class);
+    ExperimentReadinessService readinessService = mock(ExperimentReadinessService.class);
+    ExperimentCampaignDestinationPolicy policy = mock(ExperimentCampaignDestinationPolicy.class);
+    Experiment experiment = new Experiment();
+    ExperimentReadinessSummaryDto readiness = mock(ExperimentReadinessSummaryDto.class);
+    when(service.get(93L)).thenReturn(experiment);
+    when(policy.missingConfiguration(experiment)).thenReturn(List.of());
+    when(readinessService.summarize(93L)).thenReturn(readiness);
+    when(readiness.eligibleForRunning()).thenReturn(false);
+    ExperimentController controller =
+        controller(
+            service, policy, readinessService, mock(ExperimentTerminalReconciliationService.class));
+
+    assertThatThrownBy(() -> controller.releaseForFacebook(93L))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("bloqueios de prontidão");
+    verify(service, never()).releaseForFacebook(93L);
   }
 
   /** Impede que um experimento com trava financeira seja reativado pela rota administrativa. */
@@ -70,11 +93,21 @@ class ExperimentControllerReleasePolicyTest {
       ExperimentService service,
       ExperimentCampaignDestinationPolicy policy,
       ExperimentTerminalReconciliationService reconciliationService) {
+    return controller(
+        service, policy, mock(ExperimentReadinessService.class), reconciliationService);
+  }
+
+  /** Monta o controller permitindo controlar também a prontidão consolidada. */
+  private ExperimentController controller(
+      ExperimentService service,
+      ExperimentCampaignDestinationPolicy policy,
+      ExperimentReadinessService readinessService,
+      ExperimentTerminalReconciliationService reconciliationService) {
     return new ExperimentController(
         service,
         mock(ExperimentMapper.class),
         mock(ExperimentDiagnosticsService.class),
-        mock(ExperimentReadinessService.class),
+        readinessService,
         mock(ExperimentPromiseGenerationService.class),
         policy,
         mock(ExperimentFunnelService.class),

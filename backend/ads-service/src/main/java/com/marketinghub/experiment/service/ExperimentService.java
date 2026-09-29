@@ -1922,7 +1922,8 @@ public class ExperimentService {
   }
 
   /**
-   * Libera a primeira publicação ou retoma uma falha sem apagar campanha nem histórico comercial.
+   * Libera a primeira publicação ou retoma uma falha ou pausa pré-publicação sem apagar o
+   * histórico.
    */
   @Transactional
   public Experiment releaseForFacebook(Long id) {
@@ -1944,6 +1945,7 @@ public class ExperimentService {
           "Este experimento já possui campanha vinculada. Retome ou ajuste a campanha existente;"
               + " uma nova liberação não pode apagar seu histórico nem criar campanha duplicada.");
     }
+    ensureFacebookReleaseStatusAllowed(experiment);
     if (experiment.getStatus() == ExperimentStatus.PLANNED
         && experiment.getFacebookReleaseRequestedAt() != null) {
       return experiment;
@@ -1957,6 +1959,22 @@ public class ExperimentService {
       experimentFunnelEventRepository.deleteByExperimentId(id);
     }
     return experiment;
+  }
+
+  /** Restringe a liberação à primeira tentativa, à falha ou à pausa anterior à campanha. */
+  private void ensureFacebookReleaseStatusAllowed(Experiment experiment) {
+    ExperimentStatus status = experiment.getStatus();
+    boolean pausedAfterRelease =
+        status == ExperimentStatus.PAUSED && experiment.getFacebookReleaseRequestedAt() != null;
+    if (status == ExperimentStatus.PLANNED
+        || status == ExperimentStatus.FAILED
+        || pausedAfterRelease) {
+      return;
+    }
+    throw new ResponseStatusException(
+        HttpStatus.CONFLICT,
+        "O estado atual do experimento não permite nova liberação. Use o fluxo de retomada ou"
+            + " autorize um novo ciclo comercial antes de publicar.");
   }
 
   /** Bloqueia venda sem página tradicional ou superfície própria produtiva auditada. */

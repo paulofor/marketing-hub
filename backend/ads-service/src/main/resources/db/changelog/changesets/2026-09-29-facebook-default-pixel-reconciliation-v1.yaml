@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-29-facebook-default-pixel-reconciliation-v1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: fb_account
+                columnName: default_pixel_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE fb_account ADD COLUMN default_pixel_id VARCHAR(64) NULL AFTER pixel_owner_business_id;
+      rollback:
+        - dropColumn:
+            tableName: fb_account
+            columnName: default_pixel_id

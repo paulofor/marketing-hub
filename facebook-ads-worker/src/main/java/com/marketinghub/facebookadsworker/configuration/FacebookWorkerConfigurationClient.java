@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/** Carrega do backend a configuração operacional vigente do Facebook Ads Worker. */
 @Component
 public class FacebookWorkerConfigurationClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookWorkerConfigurationClient.class);
@@ -27,6 +28,7 @@ public class FacebookWorkerConfigurationClient {
     private final AtomicBoolean configurationNotFoundLogged;
     private final AtomicBoolean prematureCloseWarningLogged;
 
+    // Inicializa o cliente HTTP com a URL e o prefixo oficiais do backend.
     public FacebookWorkerConfigurationClient(
         WebClient.Builder builder,
         @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
@@ -39,6 +41,7 @@ public class FacebookWorkerConfigurationClient {
         this.prematureCloseWarningLogged = new AtomicBoolean(false);
     }
 
+    // Consulta a conta habilitada e tolera indisponibilidade transitória sem manter configuração obsoleta.
     public Optional<FacebookWorkerConfiguration> fetchConfiguration() {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/accounts/facebook/worker-config");
         LOGGER.info(
@@ -103,6 +106,7 @@ public class FacebookWorkerConfigurationClient {
         String accessToken,
         String systemUserAccessToken,
         String pixelOwnerBusinessId,
+        String defaultPixelId,
         String appId,
         String appSecret,
         String defaultPageId,

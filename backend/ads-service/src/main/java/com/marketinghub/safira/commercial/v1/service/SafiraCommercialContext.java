@@ -174,7 +174,7 @@ public class SafiraCommercialContext {
         plan);
   }
 
-  /** Monta uma fotografia sem horários voláteis para invalidar somente mudanças materiais. */
+  /** Monta uma fotografia e valida cada versão contra sua fonte canônica correspondente. */
   public ObjectNode snapshot(String source) {
     Scope scope = scope(source, null, false);
     Experiment experiment = scope.experiment();
@@ -276,7 +276,11 @@ public class SafiraCommercialContext {
     var financial =
         finances.list("PRODUCT", product.getId(), Environment.LIVE).stream()
             .filter(plan -> allowedPlans.contains(plan.commercialPlanId()))
-            .filter(plan -> scope.productVersion().equals(plan.assumptions().productVersion()))
+            .filter(
+                plan ->
+                    Objects.equals(
+                        product.getValidationDefinitionVersion(),
+                        plan.assumptions().productVersion()))
             .findFirst()
             .orElse(null);
     result.set("financialPlan", financial == null ? json.nullNode() : json.valueToTree(financial));

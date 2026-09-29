@@ -15,10 +15,14 @@ import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.service.ExperimentTargetingSelectionService;
 import com.marketinghub.experiment.service.IntegratedPdeJourneyEvidenceService;
+import com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment;
 import com.marketinghub.financialplan.v1.service.FinancialPlanService;
+import com.marketinghub.financialplan.v1.service.getplan.PlanView;
+import com.marketinghub.financialplan.v1.service.saveplan.PlanAssumptions;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver;
+import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.producttype.ProductTypeDefinition;
@@ -28,6 +32,7 @@ import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepositor
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -120,6 +125,57 @@ class SafiraCommercialContextTest {
     assertThat(snapshot.path("commercialEvidenceClaimed").asBoolean()).isFalse();
     assertThat(snapshot.path("experienceHash").asText()).hasSize(64);
     verify(experiments, never()).save(any());
+  }
+
+  /** Seleciona a economia pelo contrato do produto sem confundi-lo com a versão pública do slot. */
+  @Test
+  void selectsFinancialPlanByProductContractVersionWhenRuntimeVersionDiffers() {
+    var commercialPlan = mock(CommercialPlan.class);
+    when(commercialPlan.getId()).thenReturn(81L);
+    when(plans.findByExperimentReference(301L)).thenReturn(List.of(commercialPlan));
+    var assumptions =
+        new PlanAssumptions(
+            "private-v1",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+    var financialPlan =
+        new PlanView(
+            41L,
+            "PRODUCT",
+            10L,
+            Environment.LIVE,
+            "Plano sintético",
+            3,
+            null,
+            81L,
+            6,
+            "teste",
+            Instant.parse("2026-09-29T00:00:00Z"),
+            assumptions,
+            null,
+            false,
+            List.of(),
+            false,
+            null);
+    when(finances.list("PRODUCT", 10L, Environment.LIVE)).thenReturn(List.of(financialPlan));
+
+    var snapshot = context.snapshot("experiment:301");
+
+    assertThat(snapshot.path("productVersion").asText()).isEqualTo("public-v1");
+    assertThat(snapshot.path("financialPlan").path("id").asLong()).isEqualTo(41L);
+    assertThat(snapshot.path("financialPlan").path("assumptions").path("productVersion").asText())
+        .isEqualTo("private-v1");
   }
 
   /** Falha fechado para referência privada, subtipo ausente, outro produto e campanha ativa. */

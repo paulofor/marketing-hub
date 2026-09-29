@@ -435,7 +435,7 @@ public class CommercialBpmTaskConsumer {
           "versionedCommercialHomologationEvidence",
           pdeArtifactLoader.loadCommercialHomologationEvidence(task.get("taskTarget")));
     }
-    String agentPromptPart = read("prompts/temis/v1/agent-core.md");
+    String agentPromptPart = commercialCore(task);
     String activityPromptPart =
         (CatalogPromptInput.migrated(task)
                 ? CatalogPromptInput.text(task, schemaResourceFor(task))
@@ -445,6 +445,13 @@ public class CommercialBpmTaskConsumer {
                 json.writeValueAsString(CatalogPromptInput.context(promptContext)));
     return new PromptComposition(
         agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
+  }
+
+  /** Acrescenta o contrato auditável sempre que a tarefa entrega cartões de pesquisa a Têmis. */
+  private String commercialCore(Map<String, Object> task) throws IOException {
+    String core = read("prompts/temis/v1/agent-core.md");
+    if (task.get("researchIntelligence") == null) return core;
+    return core + "\n\n" + read("prompts/temis/research-intelligence-usage-v1.md");
   }
 
   /** Seleciona o prompt versionado específico do gate avaliado. */

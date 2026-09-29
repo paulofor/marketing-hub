@@ -7636,6 +7636,27 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   DOM. Testes de contrato mantêm divergência sem prova como bloqueante e reconhecem somente a
   sucessão direta verificada.
 
+## LOOP-CAPELLA-SUCESSOR-ADOTADO-BLOQUEADO-NA-PRONTIDAO — 29/09/2026
+
+- **Histórico confirmado:** a operação oficial vinculou o sucessor Capella #94 ao #88, preservou
+  produto, hipótese, preço de R$ 67, território, identidades Meta, página e checkout e manteve
+  campanha, métricas, público e criativos segregados. Mesmo assim, readiness e Quartzo exigiam uma
+  auditoria GeraSalesPage gravada diretamente para o #94 e bloqueavam a preparação.
+- **Causa-raiz:** a adoção e a prontidão aplicavam definições diferentes de identidade comercial.
+  A primeira reconhecia a linhagem persistida; as demais consultavam somente execução e publicação
+  próprias, embora a superfície aceita continuasse sendo exatamente a publicação auditada do #88.
+- **Alternativas avaliadas:** copiar a auditoria para o #94 fabricaria uma execução; republicar a
+  mesma página consumiria trabalho e mudaria desnecessariamente a variável do teste; resolver a
+  publicação pela linhagem direta, usando o mesmo contrato central da adoção, preserva prova e
+  segregação. A terceira alternativa foi adotada.
+- **Correção sistêmica:** adoção, readiness e Quartzo compartilham a mesma política de contrato do
+  sucessor. A herança exige produto, nicho, hipótese, preço, território, tipo, subtipo, objetivo,
+  identidades Meta, página e checkout coincidentes; a mensagem do novo criativo pode variar. Uma
+  publicação própria do sucessor sempre prevalece e exige seu próprio pipeline concluído.
+- **Prevenção:** regressões cobrem o caso real #88→#94, divergência comercial, precedência de
+  publicação própria e ausência de auditoria fictícia. A homologação mantém a autorização de mídia
+  como atividade separada depois da preparação e do preflight.
+
 ## LOOP-IRIS-RETRABALHO-REPROVADO-SEM-CONTAR-TENTATIVA — 26/09/2026
 
 - **Evidência confirmada:** os criativos #531, #532 e #533 do experimento Capella #94 acumularam

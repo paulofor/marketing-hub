@@ -116,6 +116,7 @@ public class ExperimentService {
   private final CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository;
   private final ExperimentDirectPdeActivationService directPdeActivationService;
   private final PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService;
+  private final FacebookSuccessorCommercialContractPolicy facebookSuccessorCommercialContractPolicy;
   private static final String VALIDATION_OK = "OK";
 
   /** Inicializa o serviço com repositórios, integrações e validadores usados pelos experimentos. */
@@ -152,7 +153,8 @@ public class ExperimentService {
       CommercialPlanRepository commercialPlanRepository,
       CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository,
       ExperimentDirectPdeActivationService directPdeActivationService,
-      PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService) {
+      PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService,
+      FacebookSuccessorCommercialContractPolicy facebookSuccessorCommercialContractPolicy) {
     this.repository = repository;
     this.statusChangeRepository = statusChangeRepository;
     this.promiseGenerationRequestRepository = promiseGenerationRequestRepository;
@@ -186,6 +188,7 @@ public class ExperimentService {
     this.commercialPlanVisualAssetRepository = commercialPlanVisualAssetRepository;
     this.directPdeActivationService = directPdeActivationService;
     this.publishedPdePreflightEvidenceService = publishedPdePreflightEvidenceService;
+    this.facebookSuccessorCommercialContractPolicy = facebookSuccessorCommercialContractPolicy;
   }
 
   /**
@@ -948,7 +951,7 @@ public class ExperimentService {
       throw successorAdoptionConflict(
           "A origem precisa ter página e checkout comerciais aprovados");
     }
-    if (!sameCommercialContract(source, target)) {
+    if (!facebookSuccessorCommercialContractPolicy.matches(source, target)) {
       throw successorAdoptionConflict(
           "Origem e sucessor precisam ter o mesmo produto, hipótese, oferta e identidades Meta");
     }
@@ -960,34 +963,6 @@ public class ExperimentService {
         && !Objects.equals(target.getCommercialCheckoutUrl(), source.getCommercialCheckoutUrl())) {
       throw successorAdoptionConflict("O checkout do sucessor diverge da origem auditada");
     }
-  }
-
-  /** Compara as identidades e condições imutáveis que autorizam reutilizar página e checkout. */
-  private boolean sameCommercialContract(Experiment source, Experiment target) {
-    return sameReference(source.getProduct(), target.getProduct())
-        && sameReference(source.getNiche(), target.getNiche())
-        && sameReference(source.getHypothesisRef(), target.getHypothesisRef())
-        && sameReference(source.getFacebookPage(), target.getFacebookPage())
-        && sameReference(source.getInstagramAccount(), target.getInstagramAccount())
-        && Objects.equals(source.getDesireTerritoryCode(), target.getDesireTerritoryCode())
-        && source.getExperimentType() == target.getExperimentType()
-        && source.getProductAiSubtype() == target.getProductAiSubtype()
-        && source.getCampaignObjective() == target.getCampaignObjective()
-        && sameAmount(source.getUnitPrice(), target.getUnitPrice());
-  }
-
-  /**
-   * Compara referências JPA pela identidade persistida, sem depender da classe concreta do proxy.
-   */
-  private boolean sameReference(Object first, Object second) {
-    if (first == null || second == null) {
-      return first == second;
-    }
-    Object firstId =
-        entityManager.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(first);
-    Object secondId =
-        entityManager.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(second);
-    return firstId != null && Objects.equals(firstId, secondId);
   }
 
   /** Padroniza conflitos funcionais do vínculo de sucessor para consumo seguro pela interface. */

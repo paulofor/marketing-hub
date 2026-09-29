@@ -140,9 +140,13 @@ public class QuartzoCommercialContext {
     String version =
         cycle == null ? product.getValidationDefinitionVersion() : cycle.getProductVersion();
     require(version != null && !version.isBlank(), "Registre a versão do contrato do produto.");
-    var publication = destinations.latestSalesPagePublication(experiment.getId()).orElse(null);
+    var publication = destinations.auditedSalesPagePublication(experiment).orElse(null);
+    Long sourceExperimentId =
+        experiment.getSourceExperiment() == null ? null : experiment.getSourceExperiment().getId();
     require(
-        publication == null || Objects.equals(publication.getExperimentId(), experiment.getId()),
+        publication == null
+            || Objects.equals(publication.getExperimentId(), experiment.getId())
+            || Objects.equals(publication.getExperimentId(), sourceExperimentId),
         "A página auditada pertence a outro experimento.");
     return new ResolvedScope(
         new Scope(

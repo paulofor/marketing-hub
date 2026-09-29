@@ -92,7 +92,7 @@ class QuartzoCommercialServiceTest {
     snapshot.put("experimentId", experiment.getId());
     when(context.snapshot("experiment:88")).thenAnswer(i -> snapshot.deepCopy());
     when(destinations.hasCompleteCommercialContract(experiment)).thenReturn(true);
-    when(destinations.hasCompletedGeraSalesPagePipeline(88L)).thenReturn(true);
+    when(destinations.hasCompletedGeraSalesPagePipeline(experiment)).thenReturn(true);
     when(destinations.hasRequiredSalesPageAnalyticsCollectors(publication)).thenReturn(true);
     when(destinations.hasAdDestinationPointingToSalesPage(experiment, publication))
         .thenReturn(true);

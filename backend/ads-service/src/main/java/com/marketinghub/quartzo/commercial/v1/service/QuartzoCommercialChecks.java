@@ -45,7 +45,7 @@ public class QuartzoCommercialChecks {
             "Complete dor, promessa, oferta e CTA no experimento.");
         require(
             scope.publication() != null
-                && destinations.hasCompletedGeraSalesPagePipeline(experiment.getId()),
+                && destinations.hasCompletedGeraSalesPagePipeline(experiment),
             "Conclua a página de venda no GeraSalesPage e sua publicação auditada.");
         require(
             http(snapshot.path("destinationUrl").asText()),

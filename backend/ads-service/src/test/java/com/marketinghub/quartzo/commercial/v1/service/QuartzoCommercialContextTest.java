@@ -76,7 +76,7 @@ class QuartzoCommercialContextTest {
             .checkoutUrl("https://example.test/checkout")
             .html("<main>Kit</main>")
             .build();
-    when(destinations.latestSalesPagePublication(88L)).thenReturn(Optional.of(publication));
+    when(destinations.auditedSalesPagePublication(experiment)).thenReturn(Optional.of(publication));
   }
 
   /** Um produto interrompido e sem ciclo pode ser preparado sem reativação ou slot Opala. */
@@ -106,7 +106,7 @@ class QuartzoCommercialContextTest {
       assertThat(second.path("destinationUrl").asText()).isEqualTo(publication.getSalesPageUrl());
       verify(experiments, times(1)).findById(88L);
       verify(cycles, times(1)).findByExperimentId(88L);
-      verify(destinations, times(1)).latestSalesPagePublication(88L);
+      verify(destinations, times(1)).auditedSalesPagePublication(experiment);
     } finally {
       TransactionSynchronizationManager.getSynchronizations()
           .forEach(
@@ -139,6 +139,23 @@ class QuartzoCommercialContextTest {
     publication.setExperimentId(92L);
     assertThatThrownBy(() -> context.snapshot("experiment:88"))
         .hasMessageContaining("outro experimento");
+  }
+
+  /** Aceita a publicação da origem quando a política comprovou a linhagem do sucessor. */
+  @Test
+  void acceptsAuditedPublicationFromExplicitLowTicketSource() {
+    Experiment source = new Experiment();
+    source.setId(88L);
+    experiment.setId(94L);
+    experiment.setSourceExperiment(source);
+    publication.setExperimentId(88L);
+    when(experiments.findById(94L)).thenReturn(Optional.of(experiment));
+
+    var snapshot = context.snapshot("experiment:94");
+
+    assertThat(snapshot.path("experimentId").asLong()).isEqualTo(94L);
+    assertThat(snapshot.path("publicationId").asLong()).isEqualTo(27L);
+    assertThat(snapshot.path("destinationUrl").asText()).isEqualTo(publication.getSalesPageUrl());
   }
 
   /** Uma nova consulta é estável; mudança em página, promessa ou preço invalida o conjunto. */

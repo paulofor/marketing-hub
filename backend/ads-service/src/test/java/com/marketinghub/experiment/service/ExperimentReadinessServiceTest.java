@@ -112,7 +112,8 @@ class ExperimentReadinessServiceTest {
         new ExperimentCampaignDestinationPolicy(
             geraSalesPageStageExecutionRepository,
             geraSalesPagePublicationAuditRepository,
-            publishedPdePreflightEvidenceService);
+            publishedPdePreflightEvidenceService,
+            new FacebookSuccessorCommercialContractPolicy());
     service =
         new ExperimentReadinessService(
             experimentService,
@@ -830,6 +831,115 @@ class ExperimentReadinessServiceTest {
 
     assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
     assertThat(service.isReadyForCampaign(experiment)).isTrue();
+  }
+
+  /** Libera o sucessor low-ticket com a página imutável da origem e execução própria segregada. */
+  @Test
+  void shouldReuseAuditedLowTicketSalesPageForEquivalentFacebookSuccessor() {
+    Long sourceId = 88L;
+    Long successorId = 94L;
+    Experiment source = buildExperiment(sourceId, 21L);
+    source.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    source.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    source.setProduct(Product.builder().id(7L).build());
+    source.setDesireTerritoryCode("PROFESSIONAL_PRIDE");
+    source.setFollowUpActionUrl("https://sales.test/capella");
+    source.setCommercialCheckoutUrl("https://checkout.test/capella");
+    completeCommercialContract(source);
+
+    Experiment successor = buildExperiment(successorId, 21L);
+    successor.setNiche(source.getNiche());
+    successor.setHypothesisRef(source.getHypothesisRef());
+    successor.setProduct(source.getProduct());
+    successor.setSourceExperiment(source);
+    successor.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    successor.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    successor.setDesireTerritoryCode("PROFESSIONAL_PRIDE");
+    successor.setFollowUpActionUrl("https://sales.test/capella");
+    successor.setCommercialCheckoutUrl("https://checkout.test/capella");
+    completeCommercialContract(successor);
+    successor.getNiche().setFacebookPixelId("pixel-capella");
+    String inheritedHtml = trackedSalesPageHtml();
+
+    when(experimentService.get(successorId)).thenReturn(successor);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            successorId, CreativeStatus.READY))
+        .thenReturn(2L);
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
+            successorId, CreativeStatus.READY))
+        .thenReturn(true);
+    mockPublishableSelection(
+        successorId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+    when(geraSalesPagePublicationAuditRepository.findTopByExperimentIdOrderByPublishedAtDesc(
+            successorId))
+        .thenReturn(Optional.empty());
+    mockCompletedGeraSalesPagePublication(sourceId);
+    mockSalesPageAudit(
+        sourceId, "https://sales.test/capella", "https://checkout.test/capella", inheritedHtml);
+    when(landingAssetService.requiredReferenceCount(successorId)).thenReturn(4);
+    when(landingAssetService.hasRequiredApprovedAssetReferences(successorId, inheritedHtml))
+        .thenReturn(true);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(successorId);
+
+    assertThat(summary.issues()).isEmpty();
+    assertThat(summary.eligibleForRunning()).isTrue();
+    assertThat(summary.runningGateRequirements())
+        .filteredOn(requirement -> requirement.code().equals("LANDING_APPROVED"))
+        .singleElement()
+        .satisfies(
+            requirement ->
+                assertThat(requirement.detail()).contains("experimento anterior", "GeraSalesPage"));
+    assertThat(service.computeMissingConfiguration(successor)).isEmpty();
+  }
+
+  /** Mantém o gate fechado quando o sucessor altera a página herdada depois da adoção. */
+  @Test
+  void shouldRejectLowTicketSuccessorWhenInheritedDestinationChanges() {
+    Long sourceId = 88L;
+    Long successorId = 94L;
+    Experiment source = buildExperiment(sourceId, 21L);
+    source.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    source.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    source.setProduct(Product.builder().id(7L).build());
+    source.setFollowUpActionUrl("https://sales.test/capella");
+    source.setCommercialCheckoutUrl("https://checkout.test/capella");
+    completeCommercialContract(source);
+
+    Experiment successor = buildExperiment(successorId, 21L);
+    successor.setNiche(source.getNiche());
+    successor.setHypothesisRef(source.getHypothesisRef());
+    successor.setProduct(source.getProduct());
+    successor.setSourceExperiment(source);
+    successor.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    successor.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    successor.setFollowUpActionUrl("https://sales.test/outra-pagina");
+    successor.setCommercialCheckoutUrl("https://checkout.test/capella");
+    completeCommercialContract(successor);
+    successor.getNiche().setFacebookPixelId("pixel-capella");
+    when(geraSalesPagePublicationAuditRepository.findTopByExperimentIdOrderByPublishedAtDesc(
+            successorId))
+        .thenReturn(Optional.empty());
+    lenient()
+        .when(
+            geraSalesPagePublicationAuditRepository.findTopByExperimentIdOrderByPublishedAtDesc(
+                sourceId))
+        .thenReturn(
+            Optional.of(
+                GeraSalesPagePublicationAudit.builder()
+                    .experimentId(sourceId)
+                    .salesPageUrl("https://sales.test/capella")
+                    .checkoutUrl("https://checkout.test/capella")
+                    .html(trackedSalesPageHtml())
+                    .build()));
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
+            successorId, CreativeStatus.READY))
+        .thenReturn(true);
+    mockPublishableSelection(
+        successorId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+    assertThat(service.computeMissingConfiguration(successor)).contains("geraSalesPagePipeline");
+    assertThat(service.isReadyForCampaign(successor)).isFalse();
   }
 
   /** Garante que pagina sem arquivos reais aprovados nao possa liberar campanha. */

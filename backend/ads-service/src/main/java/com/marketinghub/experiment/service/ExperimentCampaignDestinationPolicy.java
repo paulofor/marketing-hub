@@ -2,6 +2,7 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
+import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageAnalyticsContract;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
@@ -12,6 +13,7 @@ import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecut
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -23,15 +25,18 @@ public class ExperimentCampaignDestinationPolicy {
   private final GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
   private final GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
   private final PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService;
+  private final FacebookSuccessorCommercialContractPolicy facebookSuccessorCommercialContractPolicy;
 
   /** Cria a política usando as auditorias canônicas de página e superfície própria. */
   public ExperimentCampaignDestinationPolicy(
       GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository,
       GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository,
-      PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService) {
+      PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService,
+      FacebookSuccessorCommercialContractPolicy facebookSuccessorCommercialContractPolicy) {
     this.geraSalesPageStageExecutionRepository = geraSalesPageStageExecutionRepository;
     this.geraSalesPagePublicationAuditRepository = geraSalesPagePublicationAuditRepository;
     this.publishedPdePreflightEvidenceService = publishedPdePreflightEvidenceService;
+    this.facebookSuccessorCommercialContractPolicy = facebookSuccessorCommercialContractPolicy;
   }
 
   /** Informa se o experimento tem intenção de compra e precisa de página intermediária auditada. */
@@ -59,9 +64,8 @@ public class ExperimentCampaignDestinationPolicy {
       return List.of();
     }
     Optional<GeraSalesPagePublicationAudit> salesPagePublication =
-        latestSalesPagePublication(experiment != null ? experiment.getId() : null);
-    if (!hasCompletedGeraSalesPagePipeline(experiment != null ? experiment.getId() : null)
-        || salesPagePublication.isEmpty()) {
+        auditedSalesPagePublication(experiment);
+    if (!hasCompletedGeraSalesPagePipeline(experiment) || salesPagePublication.isEmpty()) {
       missing.add("geraSalesPagePipeline");
       return List.copyOf(missing);
     }
@@ -121,6 +125,38 @@ public class ExperimentCampaignDestinationPolicy {
         experimentId);
   }
 
+  /**
+   * Resolve a publicação própria ou a superfície imutável de um antecessor low-ticket explícito.
+   */
+  public Optional<GeraSalesPagePublicationAudit> auditedSalesPagePublication(
+      Experiment experiment) {
+    if (experiment == null || experiment.getId() == null) {
+      return Optional.empty();
+    }
+    Optional<GeraSalesPagePublicationAudit> ownPublication =
+        latestSalesPagePublication(experiment.getId());
+    if (ownPublication.isPresent()) {
+      return ownPublication;
+    }
+    return reusableLowTicketSourcePublication(experiment);
+  }
+
+  /**
+   * Confirma o pipeline próprio ou o pipeline auditado da superfície herdada sem copiar execução.
+   */
+  public boolean hasCompletedGeraSalesPagePipeline(Experiment experiment) {
+    if (experiment == null || experiment.getId() == null) {
+      return false;
+    }
+    if (latestSalesPagePublication(experiment.getId()).isPresent()) {
+      return hasCompletedGeraSalesPagePipeline(experiment.getId());
+    }
+    return reusableLowTicketSourcePublication(experiment)
+        .map(GeraSalesPagePublicationAudit::getExperimentId)
+        .map(this::hasCompletedGeraSalesPagePipeline)
+        .orElse(false);
+  }
+
   /** Verifica a conclusão da etapa final que publica a página de venda canônica. */
   public boolean hasCompletedGeraSalesPagePipeline(Long experimentId) {
     if (experimentId == null) {
@@ -132,6 +168,45 @@ public class ExperimentCampaignDestinationPolicy {
         .map(com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution::getStatus)
         .map(STATUS_COMPLETED::equalsIgnoreCase)
         .orElse(false);
+  }
+
+  /**
+   * Reutiliza somente a página do antecessor direto quando a adoção preserva integralmente a
+   * superfície comercial e a publicação continua sendo a última versão auditada da origem.
+   */
+  private Optional<GeraSalesPagePublicationAudit> reusableLowTicketSourcePublication(
+      Experiment experiment) {
+    Experiment source = experiment == null ? null : experiment.getSourceExperiment();
+    if (!sameReusableLowTicketContract(source, experiment)) {
+      return Optional.empty();
+    }
+    Optional<GeraSalesPagePublicationAudit> publication =
+        latestSalesPagePublication(source.getId());
+    return publication.filter(
+        audit ->
+            Objects.equals(audit.getExperimentId(), source.getId())
+                && hasAdDestinationPointingToSalesPage(experiment, audit)
+                && sameRequiredUrl(experiment.getCommercialCheckoutUrl(), audit.getCheckoutUrl()));
+  }
+
+  /** Impede que uma mudança material no sucessor reutilize silenciosamente a página anterior. */
+  private boolean sameReusableLowTicketContract(Experiment source, Experiment successor) {
+    return source != null
+        && successor != null
+        && successor.getPlatform() == ExperimentPlatform.FACEBOOK
+        && source.getPlatform() == ExperimentPlatform.FACEBOOK
+        && successor.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT
+        && source.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT
+        && facebookSuccessorCommercialContractPolicy.matches(source, successor)
+        && sameRequiredUrl(successor.getFollowUpActionUrl(), source.getFollowUpActionUrl())
+        && sameRequiredUrl(successor.getCommercialCheckoutUrl(), source.getCommercialCheckoutUrl());
+  }
+
+  /** Compara URLs obrigatórias com a mesma normalização usada pelo destino do anúncio. */
+  private boolean sameRequiredUrl(String current, String source) {
+    String normalizedCurrent = normalizeUrl(current);
+    String normalizedSource = normalizeUrl(source);
+    return StringUtils.hasText(normalizedCurrent) && normalizedCurrent.equals(normalizedSource);
   }
 
   /** Confirma que o anúncio levará para a página de venda auditada, não para o checkout. */

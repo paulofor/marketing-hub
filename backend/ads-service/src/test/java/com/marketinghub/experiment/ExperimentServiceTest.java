@@ -18,6 +18,7 @@ import com.marketinghub.experiment.run.ExperimentRunDataQualityStatus;
 import com.marketinghub.experiment.run.ExperimentRunMode;
 import com.marketinghub.experiment.run.ExperimentRunStatus;
 import com.marketinghub.experiment.run.ExperimentRunStopPolicy;
+import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.experiment.service.createFacebookSuccessor.AdoptFacebookSuccessorRequest;
 import com.marketinghub.experiment.service.createFacebookSuccessor.CreateFacebookSuccessorRequest;
@@ -54,6 +55,7 @@ import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanVisualAssetRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -65,6 +67,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Valida os fluxos principais do serviço de experimentos com persistência em memória. */
 @SpringBootTest(classes = com.marketinghub.ads.AdsServiceApplication.class)
@@ -79,6 +82,8 @@ import org.springframework.test.context.TestPropertySource;
     })
 class ExperimentServiceTest {
   @Autowired ExperimentService service;
+  @Autowired ExperimentCampaignDestinationPolicy campaignDestinationPolicy;
+  @Autowired EntityManager entityManager;
   @Autowired MarketNicheRepository nicheRepository;
   @Autowired com.marketinghub.repository.jpa.hypothesis.HypothesisRepository hypothesisRepository;
   @Autowired com.marketinghub.repository.jpa.creative.label.AngleRepository angleRepository;
@@ -700,6 +705,63 @@ class ExperimentServiceTest {
         service.adoptFacebookSuccessor(
             pair.target().getId(), new AdoptFacebookSuccessorRequest(pair.source().getId()));
     assertThat(repeated.getId()).isEqualTo(adopted.getId());
+  }
+
+  /**
+   * Reconhece em uma nova leitura JPA a publicação real da origem sem copiar sua execução para o
+   * sucessor.
+   */
+  @Test
+  @Transactional
+  void adoptedFacebookSuccessorReusesPersistedSourcePublication() {
+    FacebookSuccessorPair pair = createFacebookSuccessorPair("67.00", "67.0");
+    pair.source().setSinglePain("A comunicação antiga não mostrava todo o valor");
+    pair.source().setFreeReward("Quatro amostras do kit na página");
+    pair.source().setFunnelPromise("Kit visual entregue em três dias úteis");
+    pair.source().setPrimaryCta("Comprar o kit");
+    pair.target().setSinglePain("O Instagram ainda não mostra o capricho do trabalho");
+    pair.target().setFreeReward("Quatro amostras apresentadas pelo vídeo");
+    pair.target().setFunnelPromise("Mesma entrega paga explicada por outro ângulo");
+    pair.target().setPrimaryCta("Ver as amostras e decidir");
+    experimentRepository.save(pair.source());
+    experimentRepository.save(pair.target());
+    GeraSalesPageStageExecution execution =
+        geraSalesPageStageExecutionRepository.save(
+            GeraSalesPageStageExecution.builder()
+                .idJob(UUID.randomUUID().toString())
+                .experimentId(pair.source().getId())
+                .stageCode(GeraSalesPageStageCode.PUBLICATION_PACKAGE.code())
+                .status("CONCLUIDO")
+                .executionRequestedAt(Instant.now())
+                .build());
+    geraSalesPagePublicationAuditRepository.save(
+        GeraSalesPagePublicationAudit.builder()
+            .experimentId(pair.source().getId())
+            .publicationJobId(execution.getIdJob())
+            .publishedAt(Instant.now())
+            .salesPageUrl(pair.source().getFollowUpActionUrl())
+            .checkoutUrl(pair.source().getCommercialCheckoutUrl())
+            .html(trackedSalesPageHtml())
+            .createdAt(Instant.now())
+            .build());
+    Experiment adopted =
+        service.adoptFacebookSuccessor(
+            pair.target().getId(), new AdoptFacebookSuccessorRequest(pair.source().getId()));
+    entityManager.flush();
+    entityManager.clear();
+
+    Experiment reloaded = service.get(adopted.getId());
+
+    assertThat(campaignDestinationPolicy.auditedSalesPagePublication(reloaded))
+        .get()
+        .extracting(GeraSalesPagePublicationAudit::getExperimentId)
+        .isEqualTo(pair.source().getId());
+    assertThat(campaignDestinationPolicy.hasCompletedGeraSalesPagePipeline(reloaded)).isTrue();
+    assertThat(campaignDestinationPolicy.missingConfiguration(reloaded)).isEmpty();
+    assertThat(
+            geraSalesPagePublicationAuditRepository.findTopByExperimentIdOrderByPublishedAtDesc(
+                reloaded.getId()))
+        .isEmpty();
   }
 
   /** Bloqueia a reutilização de checkout quando o preço do sucessor diverge da origem. */

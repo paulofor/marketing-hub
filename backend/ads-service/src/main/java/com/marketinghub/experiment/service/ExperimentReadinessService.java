@@ -153,7 +153,7 @@ public class ExperimentReadinessService {
     boolean hasPdeMembershipDestination =
         campaignDestinationPolicy.hasPdeMembershipDestination(experiment);
     boolean hasGeraSalesPagePipeline =
-        campaignDestinationPolicy.hasCompletedGeraSalesPagePipeline(experimentId);
+        campaignDestinationPolicy.hasCompletedGeraSalesPagePipeline(experiment);
     boolean personalizedSampleProductAi = isPersonalizedSampleProductAi(experiment);
     boolean hasRequiredVideoBlockingRelease = hasRequiredVideoBlockingRelease(experiment);
     boolean requiresSalesPageAbTest =
@@ -161,7 +161,13 @@ public class ExperimentReadinessService {
     boolean hasReadySalesPageAbTest =
         !requiresSalesPageAbTest || salesPageAbTestService.hasReadyActiveTest(experimentId);
     Optional<GeraSalesPagePublicationAudit> salesPagePublication =
-        campaignDestinationPolicy.latestSalesPagePublication(experimentId);
+        campaignDestinationPolicy.auditedSalesPagePublication(experiment);
+    boolean reusableLowTicketSuccessorDestinationReady =
+        salesPagePublication
+            .map(GeraSalesPagePublicationAudit::getExperimentId)
+            .filter(
+                publicationExperimentId -> !Objects.equals(publicationExperimentId, experimentId))
+            .isPresent();
     String currentLandingHtml =
         salesPagePublication
             .map(GeraSalesPagePublicationAudit::getHtml)
@@ -415,13 +421,15 @@ public class ExperimentReadinessService {
                     ? "O run produtivo homologado aprovou a superfície comercial em desktop e mobile."
                     : reusablePdeSuccessorDestinationReady
                         ? "O sucessor preserva produto, destino e checkout da superfície PDE homologada no experimento anterior."
-                        : pdeMembershipFunnel
-                            ? landingReady
-                                ? "A experiência PDE está homologada para receber visitantes do anúncio."
-                                : "A entrada do PDE ainda precisa concluir a homologação e a aprovação necessárias."
-                            : landingReady
-                                ? "A página e seu pipeline canônico estão concluídos."
-                                : "A página ainda não concluiu o pipeline ou a aprovação necessária.",
+                        : reusableLowTicketSuccessorDestinationReady
+                            ? "O sucessor preserva integralmente produto, oferta, página e checkout auditados pelo GeraSalesPage no experimento anterior."
+                            : pdeMembershipFunnel
+                                ? landingReady
+                                    ? "A experiência PDE está homologada para receber visitantes do anúncio."
+                                    : "A entrada do PDE ainda precisa concluir a homologação e a aprovação necessárias."
+                                : landingReady
+                                    ? "A página e seu pipeline canônico estão concluídos."
+                                    : "A página ainda não concluiu o pipeline ou a aprovação necessária.",
                 pdeMembershipFunnel
                     ? "Conclua a homologação e a aprovação da entrada do próprio PDE, destino do anúncio."
                     : "Conclua a geração, a revisão de qualidade e a publicação auditada da página."),
@@ -686,7 +694,7 @@ public class ExperimentReadinessService {
       missing.add("landingDestination");
     }
     Optional<GeraSalesPagePublicationAudit> publication =
-        campaignDestinationPolicy.latestSalesPagePublication(experiment.getId());
+        campaignDestinationPolicy.auditedSalesPagePublication(experiment);
     String landingHtml =
         publication
             .map(GeraSalesPagePublicationAudit::getHtml)

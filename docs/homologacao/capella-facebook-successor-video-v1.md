@@ -26,12 +26,17 @@ Criar o experimento sucessor do #88 mantendo produto, preço de R$ 67, página, 
 | Fontes do vídeo | Informar #522 e #523 no upload | Backend confirma que ambos pertencem ao #88, estão aprovados técnica e humanamente e preserva URLs e instantes de aprovação em formato ISO no snapshot; snapshots numéricos legados continuam verificáveis |
 | Integridade do arquivo | Revisar o criativo em vídeo | SHA-256 calculado pelo backend coincide com o arquivo decodificado pelo MCP; fontes visuais também são inspecionadas |
 | Linhagem do sucessor | Revisar o controle #531 e a variante em vídeo | Têmis recebe #88 como origem verificada e não trata URLs herdadas como divergência isolada |
+| Prontidão herdada | Consultar readiness e Quartzo do #94 sem fabricar auditoria própria | A última publicação GeraSalesPage concluída do #88 é reconhecida porque o vínculo direto e o contrato comercial continuam válidos |
+| Mensagem do criativo | Usar no #94 dor, recompensa, promessa e CTA adequados ao vídeo | A variação de comunicação não invalida a superfície herdada quando produto, hipótese, preço, território, tipo, identidades Meta, página e checkout permanecem iguais |
+| Divergência comercial | Alterar produto, hipótese, preço, território, identidade Meta, página ou checkout do sucessor | Readiness e Quartzo voltam a bloquear a herança |
+| Publicação posterior | Criar uma publicação própria para o sucessor sem concluir seu pipeline | A versão própria tem precedência e não pode usar a publicação anterior como fallback silencioso |
 | Checkout observável | Inspecionar a landing herdada | O coletor encontra o checkout canônico nos links reais do DOM, abre-o sem interação e comprova `checkoutLinkedFromLanding=true` |
 | Arquivo inválido | Renomear outro arquivo para `.mp4`, usar horizontal, exceder 50 MB ou omitir áudio/proveniência | Interface ou backend bloqueia antes de disponibilizar a peça |
 | Observabilidade | Abrir detalhe e cockpit do #94 | Orçamento, funil, compras, receita e contribuição ficam separados do #88 |
 | Falha comercial | Atingir R$ 50 sem compra líquida | Campanha deve ser interrompida e a hipótese não pode ser escalada |
 | Margem | Atingir duas compras líquidas dentro de R$ 100 | Resultado pode avançar para repetição somente após conciliação de receita, custos e entrega |
 | QA de interface | Abrir edição/detalhe em desktop, iPhone 15 Pro e Pixel 7 | Vínculo, criativos, vídeo e indicadores permanecem legíveis e operáveis |
+| Autorização financeira | Concluir preparação e preflight do #94 | O Processo 5 para antes do gasto e apresenta separadamente R$ 20/dia, teto de R$ 100, parada sem compra em R$ 50 e meta de duas compras para decisão humana explícita |
 
 ## Copy do vídeo
 

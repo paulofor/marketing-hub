@@ -369,6 +369,7 @@ test("workflow usa o alvo resolvido sem fallback fixo para v7", async () => {
     /PDE_DEPLOY_FRONTEND_VERSION: \$\{\{ needs\.deployment_scope\.outputs\.frontend-version \}\}/,
   );
   assert.doesNotMatch(workflow, /TARGETED_FRONTEND_VERSION=v7/);
+  assert.doesNotMatch(workflow, /TARGETED_FRONTEND_VERSION=all/);
   assert.equal(
     workflow.split(
       '      - "scripts/resolve-pde-frontend-deploy-target.mjs"',

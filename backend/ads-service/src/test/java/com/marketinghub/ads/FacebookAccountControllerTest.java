@@ -103,6 +103,22 @@ public class FacebookAccountControllerTest {
     repository.deleteAll();
   }
 
+  /** Rejeita um pixel padrão inválido antes de persistir ou expor a configuração ao worker. */
+  @Test
+  void shouldRejectNonNumericDefaultPixelId() throws Exception {
+    String payload =
+        "{"
+            + "\"name\":\"Conta BM\","
+            + "\"currency\":\"BRL\","
+            + "\"defaultPixelId\":\"pixel-invalido\""
+            + "}";
+
+    mockMvc
+        .perform(
+            post("/api/accounts/facebook").contentType(MediaType.APPLICATION_JSON).content(payload))
+        .andExpect(status().isBadRequest());
+  }
+
   @Test
   void shouldExposeHasAppSecretFlagAfterSavingSecret() throws Exception {
     repository.deleteAll();
@@ -265,6 +281,7 @@ public class FacebookAccountControllerTest {
         .andExpect(jsonPath("$.upload.message").value("Conta de anuncios nao configurada"));
   }
 
+  /** Preserva credenciais e defaults omitidos por clientes que não editam esses campos. */
   @Test
   void shouldPreserveTokenAndHiddenFieldsWhenUpdatingAccountWithoutExplicitValues()
       throws Exception {
@@ -286,6 +303,7 @@ public class FacebookAccountControllerTest {
                 .defaultLeadGenFormId("form-old")
                 .defaultCreativeMessageTemplate("Campanha antiga %s")
                 .defaultCallToActionType("SIGN_UP")
+                .defaultPixelId("525499687083422")
                 .adAccountId("act_old")
                 .adSetDailyBudget("1500")
                 .adSetBillingEvent("IMPRESSIONS")
@@ -349,6 +367,7 @@ public class FacebookAccountControllerTest {
     assertThat(updated.getTokenRenewalLastError()).isEqualTo("previous-error");
     assertThat(updated.getDefaultPageId()).isEqualTo("page-123");
     assertThat(updated.getDefaultInstagramActorId()).isEqualTo("ig-456");
+    assertThat(updated.getDefaultPixelId()).isEqualTo("525499687083422");
 
     assertThat(updated.getName()).isEqualTo("Atualizada");
     assertThat(updated.getAuthorizedUserId()).isEqualTo("auth-2");
@@ -371,6 +390,7 @@ public class FacebookAccountControllerTest {
     assertThat(updated.isWorkerEnabled()).isFalse();
   }
 
+  /** Expõe ao worker o pixel padrão explicitamente configurado na conta ativa. */
   @Test
   void shouldExposeWorkerConfigurationWhenAccountEnabled() throws Exception {
     repository.deleteAll();
@@ -391,6 +411,7 @@ public class FacebookAccountControllerTest {
                 .adSetBidStrategy("LOWEST_COST_WITHOUT_CAP")
                 .adSetTargetCountry("BR")
                 .pixelOwnerBusinessId("123456789012345")
+                .defaultPixelId("525499687083422")
                 .workerEnabled(true)
                 .build());
 
@@ -405,7 +426,8 @@ public class FacebookAccountControllerTest {
         .andExpect(jsonPath("$.adSetBillingEvent").value("IMPRESSIONS"))
         .andExpect(jsonPath("$.defaultCallToActionType").value("SIGN_UP"))
         .andExpect(jsonPath("$.defaultCreativeMessageTemplate").value("Campanha %s"))
-        .andExpect(jsonPath("$.pixelOwnerBusinessId").value("123456789012345"));
+        .andExpect(jsonPath("$.pixelOwnerBusinessId").value("123456789012345"))
+        .andExpect(jsonPath("$.defaultPixelId").value("525499687083422"));
   }
 
   @Test

@@ -22,6 +22,7 @@ export interface FacebookAccountPayload {
   appSecret?: string | null;
   tokenRenewalEnabled?: boolean;
   adAccountId?: string | null;
+  defaultPixelId?: string | null;
   defaultWebsiteUrl?: string | null;
   defaultLeadGenFormId?: string | null;
   defaultCreativeMessageTemplate?: string | null;

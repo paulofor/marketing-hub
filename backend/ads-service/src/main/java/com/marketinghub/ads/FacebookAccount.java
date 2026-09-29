@@ -19,6 +19,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/** Mantém a configuração persistida de uma conta Meta usada pelo backend e pelos workers. */
 @Entity(name = "fb_account")
 @Data
 @Builder
@@ -93,6 +94,14 @@ public class FacebookAccount {
   @Setter(AccessLevel.NONE)
   private boolean pixelOwnerBusinessIdProvided;
 
+  @Column(name = "default_pixel_id", length = 64)
+  private String defaultPixelId;
+
+  @Transient
+  @JsonIgnore
+  @Setter(AccessLevel.NONE)
+  private boolean defaultPixelIdProvided;
+
   @Column(name = "ad_set_daily_budget")
   private String adSetDailyBudget;
 
@@ -156,12 +165,14 @@ public class FacebookAccount {
   @Setter(AccessLevel.NONE)
   private boolean appSecretProvided;
 
+  /** Informa se o token de acesso já ultrapassou a validade persistida. */
   @Transient
   @JsonProperty("tokenExpired")
   public boolean isTokenExpired() {
     return tokenExpiresAt != null && tokenExpiresAt.isBefore(LocalDateTime.now());
   }
 
+  /** Informa se o token está ausente, sem validade ou próximo do vencimento. */
   @Transient
   @JsonProperty("requiresTokenRenewal")
   public boolean isTokenRenewalRequired() {
@@ -176,6 +187,7 @@ public class FacebookAccount {
     return !tokenExpiresAt.isAfter(threshold);
   }
 
+  /** Calcula quantos dias restam até o vencimento conhecido do token. */
   @Transient
   @JsonProperty("tokenExpiresInDays")
   public Long getTokenExpiresInDays() {
@@ -186,114 +198,154 @@ public class FacebookAccount {
     return days;
   }
 
+  /** Substitui o token sem marcar presença explícita no payload JSON. */
   public void setAccessToken(String accessToken) {
     this.accessToken = accessToken;
   }
 
+  /** Registra que o payload JSON informou explicitamente o token de acesso. */
   @JsonSetter("accessToken")
   public void jsonAccessTokenSetter(String accessToken) {
     this.accessTokenProvided = true;
     this.accessToken = accessToken;
   }
 
+  /** Informa se o token de acesso apareceu no payload recebido. */
   @Transient
   @JsonIgnore
   public boolean isAccessTokenProvided() {
     return accessTokenProvided;
   }
 
+  /** Substitui o token de usuário de sistema sem alterar a marca do payload. */
   public void setSystemUserAccessToken(String systemUserAccessToken) {
     this.systemUserAccessToken = systemUserAccessToken;
   }
 
+  /** Registra que o payload JSON informou explicitamente o token de usuário de sistema. */
   @JsonSetter("systemUserAccessToken")
   public void jsonSystemUserAccessTokenSetter(String systemUserAccessToken) {
     this.systemUserAccessTokenProvided = true;
     this.systemUserAccessToken = systemUserAccessToken;
   }
 
+  /** Informa se o token de usuário de sistema apareceu no payload recebido. */
   @Transient
   @JsonIgnore
   public boolean isSystemUserAccessTokenProvided() {
     return systemUserAccessTokenProvided;
   }
 
+  /** Substitui a página padrão sem alterar a marca do payload. */
   public void setDefaultPageId(String defaultPageId) {
     this.defaultPageId = defaultPageId;
   }
 
+  /** Registra que o payload JSON informou explicitamente a página padrão. */
   @JsonSetter("defaultPageId")
   public void jsonDefaultPageIdSetter(String defaultPageId) {
     this.defaultPageIdProvided = true;
     this.defaultPageId = defaultPageId;
   }
 
+  /** Informa se a página padrão apareceu no payload recebido. */
   @Transient
   @JsonIgnore
   public boolean isDefaultPageIdProvided() {
     return defaultPageIdProvided;
   }
 
+  /** Substitui o ator padrão do Instagram sem alterar a marca do payload. */
   public void setDefaultInstagramActorId(String defaultInstagramActorId) {
     this.defaultInstagramActorId = defaultInstagramActorId;
   }
 
+  /** Registra que o payload JSON informou explicitamente o ator padrão do Instagram. */
   @JsonSetter("defaultInstagramActorId")
   public void jsonDefaultInstagramActorIdSetter(String defaultInstagramActorId) {
     this.defaultInstagramActorIdProvided = true;
     this.defaultInstagramActorId = defaultInstagramActorId;
   }
 
+  /** Informa se o ator padrão do Instagram apareceu no payload recebido. */
   @Transient
   @JsonIgnore
   public boolean isDefaultInstagramActorIdProvided() {
     return defaultInstagramActorIdProvided;
   }
 
+  /** Substitui o Business proprietário do pixel sem alterar a marca do payload. */
   public void setPixelOwnerBusinessId(String pixelOwnerBusinessId) {
     this.pixelOwnerBusinessId = pixelOwnerBusinessId;
   }
 
+  /** Registra que o payload JSON informou explicitamente o Business proprietário do pixel. */
   @JsonSetter("pixelOwnerBusinessId")
   public void jsonPixelOwnerBusinessIdSetter(String pixelOwnerBusinessId) {
     this.pixelOwnerBusinessIdProvided = true;
     this.pixelOwnerBusinessId = pixelOwnerBusinessId;
   }
 
+  /** Informa se o Business proprietário do pixel apareceu no payload recebido. */
   @Transient
   @JsonIgnore
   public boolean isPixelOwnerBusinessIdProvided() {
     return pixelOwnerBusinessIdProvided;
   }
 
+  /** Substitui o pixel padrão sem alterar a marca do payload. */
+  public void setDefaultPixelId(String defaultPixelId) {
+    this.defaultPixelId = defaultPixelId;
+  }
+
+  /** Registra que o payload JSON informou explicitamente o pixel padrão. */
+  @JsonSetter("defaultPixelId")
+  public void jsonDefaultPixelIdSetter(String defaultPixelId) {
+    this.defaultPixelIdProvided = true;
+    this.defaultPixelId = defaultPixelId;
+  }
+
+  /** Informa se o pixel padrão apareceu no payload recebido. */
+  @Transient
+  @JsonIgnore
+  public boolean isDefaultPixelIdProvided() {
+    return defaultPixelIdProvided;
+  }
+
+  /** Registra que o payload JSON informou explicitamente o formulário de leads padrão. */
   @JsonSetter("defaultLeadGenFormId")
   public void jsonDefaultLeadGenFormIdSetter(String defaultLeadGenFormId) {
     this.defaultLeadGenFormIdProvided = true;
     this.defaultLeadGenFormId = defaultLeadGenFormId;
   }
 
+  /** Informa se o formulário de leads padrão apareceu no payload recebido. */
   @Transient
   @JsonIgnore
   public boolean isDefaultLeadGenFormIdProvided() {
     return defaultLeadGenFormIdProvided;
   }
 
+  /** Registra que o payload JSON informou explicitamente o segredo da aplicação. */
   @JsonSetter("appSecret")
   public void jsonAppSecretSetter(String appSecret) {
     this.appSecret = appSecret;
     this.appSecretProvided = true;
   }
 
+  /** Substitui internamente o segredo da aplicação preservado. */
   public void overwriteAppSecret(String appSecret) {
     this.appSecret = appSecret;
   }
 
+  /** Informa se o segredo da aplicação apareceu no payload recebido. */
   @Transient
   @JsonIgnore
   public boolean isAppSecretProvided() {
     return appSecretProvided;
   }
 
+  /** Informa à interface se existe segredo persistido sem expor seu valor. */
   @Transient
   @JsonGetter("hasAppSecret")
   @JsonProperty(value = "hasAppSecret", access = JsonProperty.Access.READ_ONLY)

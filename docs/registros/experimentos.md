@@ -7422,3 +7422,7 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
   cria uma fila PDE separada, usa hash do e-mail, URL da versão e `event_id` financeiro estável no CAPI,
   persiste ACK idempotente e entrega o ID do pixel à landing pelo contrato público da oferta. Eventos
   de QA, visita, checkout e acesso não são convertidos em compra.
+- Na execução produtiva, a solicitação de pixel foi persistida corretamente, mas o worker não consumiu
+  a fila porque o Compose ainda definia `FACEBOOKPIXEL_ENABLED=false`, contradizendo a aplicação e o
+  contrato low-ticket. O default versionado foi corrigido para `true`; o desligamento permanece
+  disponível apenas como contingência explícita e um teste de contrato impede nova divergência.

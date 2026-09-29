@@ -1172,6 +1172,23 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
   prova de oferta já repetida em duas superfícies comerciais e validar a imagem final no runtime
   exato com todas as dobras e zero processos residuais.
 
+## LOOP-PSIQUE-EVIDENCIA-ATESTADA-BINARIA-COMO-TEXTO — prova imutável bloqueia antes da captura
+
+- **Data:** 2026-09-29. Mira, Processo 5.1, tarefa Psique #547.
+- **Evidência confirmada:** a execução bloqueou antes do navegador com
+  `MalformedInputException` em `PdeExperienceEvidenceLoader.readAuthorizedEvidence`. O manifesto
+  vigente v6 declarava PNG e MP4 como `ATTESTED_REFERENCE`, com SHA-256 e resumo, mas o loader
+  tentava decodificar todos os artefatos como UTF-8 antes de remover o conteúdo binário do prompt.
+- **Causa-raiz:** transporte e integridade estavam acoplados à representação textual. Assim, uma
+  prova binária válida falhava antes de sua diretiva atestada ser aplicada.
+- **Correção sistêmica:** o loader passa a ler e hashar os bytes originais de toda evidência;
+  somente `FULL` exige decodificação UTF-8 estrita e inclui conteúdo no prompt.
+  `ATTESTED_REFERENCE` transporta tamanho, checksum, SHA-256 e resumo sem decodificar nem duplicar
+  os bytes.
+- **Prevenção:** regressão unitária usa bytes PNG deliberadamente inválidos em UTF-8 e o teste do
+  repositório carrega o manifesto Mira vigente, exigindo ao menos as três provas binárias atuais
+  sem conteúdo textual. Texto `FULL` continua falhando se estiver corrompido.
+
 ## LOOP-BPM-TAREFA-BLOQUEADA-SEM-RETENTATIVA-VISIVEL — falha auditada sem saída operacional
 
 - **Data:** 2026-08-28.

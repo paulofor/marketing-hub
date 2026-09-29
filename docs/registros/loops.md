@@ -1,5 +1,22 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-FB-TARGETING-PRIMEIRO-RESULTADO-AMBIGUO — 29/09/2026
+
+- **Evidência confirmada:** ao enriquecer o termo amplo `Skin care` do nicho #34 de Mira, a busca
+  `pt_BR` devolveu primeiro `Mario Badescu Skin Care` e o worker vinculou o ID dessa marca ao
+  elemento #397. A mesma busca oficial em `en_US` devolveu o interesse canônico `Skin care`, ID
+  `664130153728886`, com alcance muito mais amplo e coerente com o termo.
+- **Causa-raiz:** o enriquecimento procurava igualdade literal apenas no primeiro locale com
+  resultados e, quando ela não existia por causa da tradução da Meta, aceitava o primeiro item da
+  lista. O fallback confundia relação lexical com identidade semântica e nem consultava o locale
+  seguinte.
+- **Correção sistêmica:** o worker percorre todos os locales até encontrar igualdade normalizada,
+  aceitando somente variação de acento, pontuação ou qualificador final de categoria. Resultado
+  apenas relacionado nunca é fallback; sem match seguro, o item fica indisponível para revisão.
+- **Prevenção:** testes reproduzem a marca ambígua em `pt_BR`, o interesse exato em `en_US`, um
+  qualificador oficial entre parênteses e a recusa integral quando só existem resultados
+  relacionados.
+
 ## LOOP-PDE-HLS-BLOQUEADO-POR-ALIAS-MP4 — 27/09/2026
 
 - **Evidência confirmada:** a candidata comercial de Mira possuía vídeo #48 `READY`/`APPROVED`,

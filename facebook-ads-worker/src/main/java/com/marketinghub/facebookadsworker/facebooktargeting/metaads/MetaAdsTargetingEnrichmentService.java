@@ -10,9 +10,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Serviço responsável por resolver sinais de nicho na Meta Ads e retornar ID oficial e alcance ao backend.
@@ -78,22 +80,32 @@ public class MetaAdsTargetingEnrichmentService {
             if (results.isEmpty()) {
                 continue;
             }
-            FacebookAdsService.FacebookTargetingSearchResult selected = pickBestMatch(term, results);
+            Optional<FacebookAdsService.FacebookTargetingSearchResult> selected = pickBestMatch(term, results);
+            if (selected.isEmpty()) {
+                LOGGER.info(
+                        "Meta Ads targeting search returned no safe semantic match: elementId={}, term={}, locale={}, resultCount={}",
+                        element.id(),
+                        term,
+                        locale,
+                        results.size());
+                continue;
+            }
+            FacebookAdsService.FacebookTargetingSearchResult matched = selected.get();
             backendClient.updateMetaAdsData(
                     element.id(),
                     new MetaAdsUpdatePayload(
-                            selected.id(),
-                            selected.name(),
-                            selected.audienceSizeLowerBound(),
-                            selected.audienceSizeUpperBound())
+                            matched.id(),
+                            matched.name(),
+                            matched.audienceSizeLowerBound(),
+                            matched.audienceSizeUpperBound())
             );
             LOGGER.info(
                     "Meta Ads targeting element enriched with reach: elementId={}, term={}, metaId={}, lowerBound={}, upperBound={}",
                     element.id(),
                     term,
-                    selected.id(),
-                    selected.audienceSizeLowerBound(),
-                    selected.audienceSizeUpperBound());
+                    matched.id(),
+                    matched.audienceSizeLowerBound(),
+                    matched.audienceSizeUpperBound());
             return;
         }
         backendClient.markMetaAdsIdUnavailable(
@@ -104,16 +116,28 @@ public class MetaAdsTargetingEnrichmentService {
     }
 
     /**
-     * Escolhe o resultado mais fiel ao termo original, com fallback para o primeiro retorno da Meta.
+     * Escolhe somente um resultado cujo nome oficial corresponda ao termo, aceitando qualificador final entre parênteses.
      */
-    private FacebookAdsService.FacebookTargetingSearchResult pickBestMatch(String term,
-                                                                            List<FacebookAdsService.FacebookTargetingSearchResult> results) {
-        String normalized = term.trim().toLowerCase(Locale.ROOT);
+    private Optional<FacebookAdsService.FacebookTargetingSearchResult> pickBestMatch(
+            String term,
+            List<FacebookAdsService.FacebookTargetingSearchResult> results) {
+        String normalized = normalizeForMatch(term);
         return results.stream()
                 .filter(result -> StringUtils.hasText(result.name()))
-                .filter(result -> result.name().trim().toLowerCase(Locale.ROOT).equals(normalized))
-                .findFirst()
-                .orElse(results.get(0));
+                .filter(result -> normalizeForMatch(result.name()).equals(normalized))
+                .findFirst();
+    }
+
+    /** Normaliza rótulos oficiais para comparação sem acentos, pontuação ou qualificador de categoria. */
+    private String normalizeForMatch(String value) {
+        String withoutQualifier = value == null ? "" : value.replaceFirst("\\s*\\([^()]*\\)\\s*$", "");
+        String withoutAccents = Normalizer.normalize(withoutQualifier, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "");
+        return withoutAccents
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^\\p{Alnum}]+", " ")
+                .trim()
+                .replaceAll("\\s+", " ");
     }
 
     /**

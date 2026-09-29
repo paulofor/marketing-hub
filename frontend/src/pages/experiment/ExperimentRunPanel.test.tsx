@@ -50,6 +50,8 @@ describe("ExperimentRunPanel", () => {
         runId: 51,
         runStatus: "PREFLIGHT_FAILED",
         hasBlockers: true,
+        requiredLandingEvidenceReference:
+          "slot:9;experience-sha256:abc;safira-fingerprint:def",
         gates: gateCodes.map((gateCode, index) => ({
           gateCode,
           gateGroup:
@@ -127,6 +129,17 @@ describe("ExperimentRunPanel", () => {
         evidenceReference: `evidence://${gateCode}`,
       })),
     });
+  });
+
+  it("preenche a identidade imutável exigida para a landing atual", () => {
+    render(<ExperimentRunPanel experimentId="99" />);
+
+    expect(
+      screen.getByLabelText("Evidência LANDING_QUALITY_REVIEW_APPROVED"),
+    ).toHaveValue("slot:9;experience-sha256:abc;safira-fingerprint:def");
+    expect(
+      screen.getByText(/identidade imutável da publicação atual/i),
+    ).toBeInTheDocument();
   });
 
   it("trata ausência de run após publicação como lacuna histórica sem oferecer mutação retroativa", () => {

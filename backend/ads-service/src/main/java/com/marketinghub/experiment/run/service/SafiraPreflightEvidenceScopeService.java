@@ -5,6 +5,7 @@ import com.marketinghub.experiment.run.ExperimentRun;
 import com.marketinghub.experiment.run.ExperimentRunGateCodes;
 import com.marketinghub.experiment.run.ExperimentRunGateResult;
 import com.marketinghub.experiment.run.ExperimentRunGateStatus;
+import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationEvidenceException;
 import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationRequest.GateEvidence;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunGateResultRepository;
 import com.marketinghub.safira.commercial.v1.service.SafiraCommercialContext;
@@ -46,7 +47,7 @@ public class SafiraPreflightEvidenceScopeService {
     if (!applies(run)) return;
     Scope scope = currentScope(run);
     if (evidence == null || !matches(scope, evidence.evidenceReference()))
-      throw new IllegalArgumentException(
+      throw new ExperimentRunHomologationEvidenceException(
           "A homologação Safira deve referenciar o slot, o SHA-256 da experiência e o contrato"
               + " comercial vigentes: "
               + scope.requiredReference());
@@ -55,18 +56,28 @@ public class SafiraPreflightEvidenceScopeService {
 
   /** Expõe a referência mínima que deve acompanhar a homologação funcional atual. */
   public String requiredReference(ExperimentRun run) {
-    return applies(run) ? currentScope(run).requiredReference() : null;
+    Scope scope = applies(run) ? resolveScope(run, false) : null;
+    return scope != null ? scope.requiredReference() : null;
   }
 
   /** Resolve uma fotografia sem relógio ou outro dado volátil. */
   private Scope currentScope(ExperimentRun run) {
+    return resolveScope(run, true);
+  }
+
+  /** Lê a identidade atual e permite consulta vazia antes da publicação estar materializada. */
+  private Scope resolveScope(ExperimentRun run, boolean required) {
     JsonNode snapshot = context.snapshot("experiment:" + run.getExperiment().getId());
     long slotId = snapshot.path("slotId").asLong(0L);
     String experienceHash = snapshot.path("experienceHash").asText();
     String fingerprint = snapshot.path("fingerprint").asText();
-    SafiraCommercialContext.require(
-        slotId > 0 && !experienceHash.isBlank() && !fingerprint.isBlank(),
-        "A homologação Safira exige slot e experiência publicados com identidade verificável.");
+    boolean complete = slotId > 0 && !experienceHash.isBlank() && !fingerprint.isBlank();
+    if (!complete) {
+      SafiraCommercialContext.require(
+          !required,
+          "A homologação Safira exige slot e experiência publicados com identidade verificável.");
+      return null;
+    }
     return new Scope(slotId, experienceHash, fingerprint);
   }
 

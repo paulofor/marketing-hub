@@ -87,6 +87,7 @@ export type ExperimentRunPreflight = {
   runId: number;
   runStatus: ExperimentRunStatus;
   hasBlockers: boolean;
+  requiredLandingEvidenceReference?: string | null;
   gates: ExperimentRunGateResult[];
 };
 

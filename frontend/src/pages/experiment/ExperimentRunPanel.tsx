@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useState } from "react";
 import type {
   ExperimentRun,
@@ -39,6 +40,30 @@ type HomologationDraft = {
   summary: string;
   evidenceReference: string;
 };
+
+function initialHomologationDraft(
+  gateCode: string,
+  requiredLandingEvidenceReference: string,
+): HomologationDraft {
+  return {
+    status: "",
+    summary: "",
+    evidenceReference:
+      gateCode === "LANDING_QUALITY_REVIEW_APPROVED"
+        ? requiredLandingEvidenceReference
+        : "",
+  };
+}
+
+function homologationErrorMessage(error: unknown) {
+  if (axios.isAxiosError<{ message?: string }>(error)) {
+    const message = error.response?.data?.message;
+    if (message?.trim()) {
+      return message;
+    }
+  }
+  return "Não foi possível registrar a homologação. Revise os quatro gates e tente novamente.";
+}
 
 const statusLabels: Record<string, string> = {
   DRAFT: "Rascunho",
@@ -135,6 +160,8 @@ export default function ExperimentRunPanel({
   const runPreflight = useRunExperimentPreflight(experimentId);
   const recordHomologation = useRecordExperimentRunHomologation(experimentId);
   const preflight = preflightQuery.data;
+  const requiredLandingEvidenceReference =
+    preflight?.requiredLandingEvidenceReference?.trim() ?? "";
   const gateGroups = groupGates(preflight?.gates ?? []);
   const homologationGates = (preflight?.gates ?? []).filter((gate) =>
     homologationGateCodes.has(gate.gateCode),
@@ -158,7 +185,12 @@ export default function ExperimentRunPanel({
   const homologationReady =
     homologationGates.length === 4 &&
     homologationGates.every((gate) => {
-      const draft = homologationDrafts[gate.gateCode];
+      const draft =
+        homologationDrafts[gate.gateCode] ??
+        initialHomologationDraft(
+          gate.gateCode,
+          requiredLandingEvidenceReference,
+        );
       return Boolean(
         draft?.status && draft.summary.trim() && draft.evidenceReference.trim(),
       );
@@ -184,9 +216,11 @@ export default function ExperimentRunPanel({
     setHomologationDrafts((current) => ({
       ...current,
       [gateCode]: {
-        status: current[gateCode]?.status ?? "",
-        summary: current[gateCode]?.summary ?? "",
-        evidenceReference: current[gateCode]?.evidenceReference ?? "",
+        ...initialHomologationDraft(
+          gateCode,
+          requiredLandingEvidenceReference,
+        ),
+        ...current[gateCode],
         [field]: value,
       } as HomologationDraft,
     }));
@@ -398,13 +432,12 @@ export default function ExperimentRunPanel({
                           </p>
                           <div className="d-flex flex-column gap-3">
                             {homologationGates.map((gate) => {
-                              const draft = homologationDrafts[
-                                gate.gateCode
-                              ] ?? {
-                                status: "",
-                                summary: "",
-                                evidenceReference: "",
-                              };
+                              const draft =
+                                homologationDrafts[gate.gateCode] ??
+                                initialHomologationDraft(
+                                  gate.gateCode,
+                                  requiredLandingEvidenceReference,
+                                );
                               return (
                                 <fieldset
                                   className="border rounded p-3"
@@ -453,6 +486,14 @@ export default function ExperimentRunPanel({
                                           }
                                           placeholder="URL, contrato ou referência auditável"
                                         />
+                                        {gate.gateCode ===
+                                          "LANDING_QUALITY_REVIEW_APPROVED" &&
+                                        requiredLandingEvidenceReference ? (
+                                          <span className="form-text">
+                                            A identidade imutável da publicação
+                                            atual já foi preenchida pelo backend.
+                                          </span>
+                                        ) : null}
                                       </label>
                                     </div>
                                     <div className="col-12">
@@ -480,8 +521,9 @@ export default function ExperimentRunPanel({
                           </div>
                           {recordHomologation.isError ? (
                             <div className="alert alert-danger py-2 mt-3 mb-0">
-                              Não foi possível registrar a homologação. Revise
-                              os quatro gates e tente novamente.
+                              {homologationErrorMessage(
+                                recordHomologation.error,
+                              )}
                             </div>
                           ) : null}
                           <button

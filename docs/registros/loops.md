@@ -1,5 +1,25 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-SAFIRA-HOMOLOGACAO-SEM-ESCOPO-EXPOSTO — 29/09/2026
+
+- **Evidência confirmada:** o run produtivo #14 de Mira recebeu as quatro provas funcionais pela
+  tela, mas `POST /api/experiment-runs/14/homologation-results` respondeu HTTP 500. O log do
+  request `e0315754-00dc-4b48-b666-fc62c8b74576` mostrou que a prova visual não continha o slot,
+  o SHA-256 e o fingerprint Safira vigentes, embora o formulário exibisse apenas um placeholder
+  genérico.
+- **Causa-raiz:** o backend já calculava a referência imutável obrigatória, mas não a entregava no
+  contrato de leitura do preflight. O operador precisava adivinhar tokens internos e uma recusa de
+  escopo usava `IllegalArgumentException`, convertida pelo handler global em falso erro técnico 500.
+- **Alternativas avaliadas:** repetir manualmente os tokens concluiria Mira, mas manteria o defeito;
+  remover a validação facilitaria a operação e aceitaria publicação obsoleta; expor a referência
+  calculada pelo backend, pré-preenchê-la na tela e devolver HTTP 400 orientado preserva segurança e
+  usabilidade. Foi escolhida a terceira opção.
+- **Correção sistêmica:** o preflight passa a informar `requiredLandingEvidenceReference`; a tela
+  usa essa identidade no gate visual; divergências retornam HTTP 400 com a referência esperada, sem
+  enfraquecer a comparação exata de slot, hash e fingerprint para Safira e Quartzo.
+- **Prevenção:** testes de backend protegem o tipo da exceção e a resposta HTTP; teste de frontend
+  exige o preenchimento automático da identidade publicada antes do envio da homologação.
+
 ## LOOP-SAFIRA-PREFLIGHT-APROVADO-BLOQUEADO-POR-GERASALESPAGE — 29/09/2026
 
 - **Evidência confirmada:** Mira #93 concluiu o Processo 4, Psique e Têmis, e o run produtivo #13

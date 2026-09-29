@@ -11,6 +11,7 @@ import com.marketinghub.experiment.run.ExperimentRun;
 import com.marketinghub.experiment.run.ExperimentRunGateCodes;
 import com.marketinghub.experiment.run.ExperimentRunGateResult;
 import com.marketinghub.experiment.run.ExperimentRunGateStatus;
+import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationEvidenceException;
 import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationRequest.GateEvidence;
 import com.marketinghub.product.Product;
 import com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialContext;
@@ -76,7 +77,7 @@ class QuartzoPreflightEvidenceScopeServiceTest {
                             + "c".repeat(64)
                             + ";quartzo-fingerprint:"
                             + FINGERPRINT)))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(ExperimentRunHomologationEvidenceException.class)
         .hasMessageContaining("publication:" + PUBLICATION_ID, PAGE_HASH, FINGERPRINT);
     assertThat(run.getAssetBundleVersion()).isNull();
   }
@@ -95,7 +96,7 @@ class QuartzoPreflightEvidenceScopeServiceTest {
                             + PAGE_HASH
                             + ";debug:quartzo-fingerprint:"
                             + FINGERPRINT)))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(ExperimentRunHomologationEvidenceException.class);
   }
 
   /** Confere a vigência usando o gate persistido, sem confiar apenas no estado RUNNING. */
@@ -126,6 +127,15 @@ class QuartzoPreflightEvidenceScopeServiceTest {
             + ";quartzo-fingerprint:"
             + FINGERPRINT);
     assertThat(service.hasCurrentEvidence(run)).isFalse();
+  }
+
+  /** Mantém a leitura do preflight disponível antes de existir publicação Quartzo auditável. */
+  @Test
+  void omitsRequiredReferenceBeforePublicationExists() {
+    when(context.snapshot("experiment:" + EXPERIMENT_ID))
+        .thenReturn(new ObjectMapper().createObjectNode());
+
+    assertThat(service.requiredReference(run)).isNull();
   }
 
   /** Monta a evidência funcional do gate visual. */

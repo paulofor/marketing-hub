@@ -2,6 +2,7 @@ package com.marketinghub.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationEvidenceException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -74,6 +75,25 @@ class ApiExceptionHandlerTest {
         .containsEntry("status", HttpStatus.BAD_REQUEST.value())
         .containsEntry("message", "Requisição inválida.")
         .containsEntry("path", "/api/angles");
+  }
+
+  /** Preserva a orientação de escopo quando a evidência não pertence à publicação vigente. */
+  @Test
+  void shouldReturnRequiredScopeWhenHomologationEvidenceIsInvalid() {
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    request.setMethod("POST");
+    request.setRequestURI("/api/experiment-runs/14/homologation-results");
+    var exception =
+        new ExperimentRunHomologationEvidenceException(
+            "A homologação deve referenciar slot:9;experience-sha256:abc");
+
+    var response = handler.handleExperimentRunHomologationEvidenceException(exception, request);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(response.getBody())
+        .containsEntry("status", HttpStatus.BAD_REQUEST.value())
+        .containsEntry("message", "A homologação deve referenciar slot:9;experience-sha256:abc")
+        .containsEntry("path", "/api/experiment-runs/14/homologation-results");
   }
 
   /** Verifica que entidade ausente retorna HTTP 404 em vez de falso erro interno. */

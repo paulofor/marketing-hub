@@ -1,0 +1,18 @@
+{
+  "cardKey": "integracao-audiovisual-emocao-detalhe-visual",
+  "collection": "prazer-audio-visual",
+  "title": "Detalhe visual muda a integração audiovisual da emoção",
+  "finding": "Em uma tarefa de categorização emocional com ERP, o benefício audiovisual variou com a frequência espacial do rosto e com a emoção. A facilitação comportamental foi maior em alta frequência espacial, e sinais de medo mostraram forte facilitação audiovisual já em componentes precoces.",
+  "mechanism": "A integração de som e expressão facial é dinâmica: depende do detalhe espacial disponível, da emoção e do estágio temporal do processamento. Sinais de ameaça podem receber prioridade crossmodal precoce, enquanto outras combinações emergem mais tarde.",
+  "commercialApplication": "Em vídeo com rosto e voz ou som, testar se tamanho, compressão, nitidez e legibilidade da expressão alteram o benefício do áudio. Medir identificação emocional, tempo de resposta, compreensão e naturalidade mantendo conteúdo e intensidade sonora comparáveis.",
+  "evidenceStrength": "Média para aplicação: comportamento e ERP sustentam interação entre frequência espacial, emoção e integração audiovisual, mas o resultado vem de um paradigma laboratorial e não valida uma regra direta de produção.",
+  "publishedOn": "2026-09-29",
+  "validUntil": "2026-11-13",
+  "experimentHypothesis": "Quando a expressão facial crítica mantém detalhe visual suficiente, um áudio emocionalmente congruente aumentará a identificação correta da emoção mais do que em versões visualmente degradadas, sem reduzir naturalidade.",
+  "risks": "Não usar medo ou maior detalhe como padrão universal; excesso de nitidez, dramatização ou ameaça pode reduzir conforto e confiança. Não transformar ERP em inferência de prazer ou conversão.",
+  "limits": "Frequência espacial filtrada não equivale diretamente a resolução, nitidez ou compressão de vídeo. O estudo não mediu prazer, memória de marca, persuasão ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-29-integracao-audiovisual-emocao-detalhe-visual.md",
+  "sourceTitle": "Fonte revisada — Integração audiovisual da emoção e detalhe visual",
+  "sourceSha256": "0f112c0eed13bddec017ad3b7d6093513a1af8d7656c3fe780348b394dcc85c0"
+}

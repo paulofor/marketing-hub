@@ -6,6 +6,7 @@ import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageAnalyticsContract;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
+import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import java.util.ArrayList;
@@ -21,13 +22,16 @@ public class ExperimentCampaignDestinationPolicy {
   private static final String STATUS_COMPLETED = "CONCLUIDO";
   private final GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
   private final GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
+  private final PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService;
 
-  /** Cria a política usando as auditorias canônicas do GeraSalesPage. */
+  /** Cria a política usando as auditorias canônicas de página e superfície própria. */
   public ExperimentCampaignDestinationPolicy(
       GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository,
-      GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository) {
+      GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository,
+      PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService) {
     this.geraSalesPageStageExecutionRepository = geraSalesPageStageExecutionRepository;
     this.geraSalesPagePublicationAuditRepository = geraSalesPagePublicationAuditRepository;
+    this.publishedPdePreflightEvidenceService = publishedPdePreflightEvidenceService;
   }
 
   /** Informa se o experimento tem intenção de compra e precisa de página intermediária auditada. */
@@ -51,6 +55,9 @@ public class ExperimentCampaignDestinationPolicy {
       missing.add("commercialContract");
       return List.copyOf(missing);
     }
+    if (hasAuditedPersonalizedPaidDeliverySurface(experiment)) {
+      return List.of();
+    }
     Optional<GeraSalesPagePublicationAudit> salesPagePublication =
         latestSalesPagePublication(experiment != null ? experiment.getId() : null);
     if (!hasCompletedGeraSalesPagePipeline(experiment != null ? experiment.getId() : null)
@@ -66,6 +73,13 @@ public class ExperimentCampaignDestinationPolicy {
       missing.add("salesPageAnalyticsCollectors");
     }
     return List.copyOf(missing);
+  }
+
+  /** Aceita a superfície paga própria somente após o preflight produtivo da versão vigente. */
+  public boolean hasAuditedPersonalizedPaidDeliverySurface(Experiment experiment) {
+    return experiment != null
+        && experiment.getProductAiSubtype() == ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY
+        && publishedPdePreflightEvidenceService.isReady(experiment);
   }
 
   /** Lista violações do funil PDE com login gratuito e paywall interno. */

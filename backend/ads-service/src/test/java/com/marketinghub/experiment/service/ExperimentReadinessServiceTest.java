@@ -110,7 +110,9 @@ class ExperimentReadinessServiceTest {
   void setUp() {
     ExperimentCampaignDestinationPolicy campaignDestinationPolicy =
         new ExperimentCampaignDestinationPolicy(
-            geraSalesPageStageExecutionRepository, geraSalesPagePublicationAuditRepository);
+            geraSalesPageStageExecutionRepository,
+            geraSalesPagePublicationAuditRepository,
+            publishedPdePreflightEvidenceService);
     service =
         new ExperimentReadinessService(
             experimentService,
@@ -616,7 +618,7 @@ class ExperimentReadinessServiceTest {
     when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
             experimentId, CreativeStatus.READY))
         .thenReturn(true);
-    when(directPdeActivationService.isReadyForActivation(experiment)).thenReturn(true);
+    when(publishedPdePreflightEvidenceService.isReady(experiment)).thenReturn(true);
     mockPublishableSelection(
         experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
 
@@ -627,6 +629,43 @@ class ExperimentReadinessServiceTest {
     assertThat(summary.eligibleForRunning()).isTrue();
     assertThat(service.computeMissingConfiguration(experiment))
         .doesNotContain("productAiPersonalizedSampleFunnel", "geraSalesPagePipeline");
+  }
+
+  /** Não confunde a integração do Processo 4 com o preflight produtivo do Facebook. */
+  @Test
+  void shouldBlockPersonalizedPaidDeliveryUntilPublishedPreflightIsCurrent() {
+    Long experimentId = 93L;
+    Experiment experiment = buildExperiment(experimentId, 34L);
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    experiment.setProductAiSubtype(ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY);
+    experiment.setProduct(
+        Product.builder()
+            .id(10L)
+            .slug("mira")
+            .productTypeDefinition(ProductTypeDefinition.builder().code("AI_PRODUCT").build())
+            .build());
+    experiment.getNiche().setFacebookPixelId("pixel-mira");
+    completeCommercialContract(experiment);
+
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(1L);
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(true);
+    when(integratedPdeJourneyEvidenceService.isReady(experiment)).thenReturn(true);
+    mockPublishableSelection(
+        experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.eligibleForRunning()).isFalse();
+    assertThat(summary.issues())
+        .extracting(ExperimentReadinessIssueDto::type)
+        .contains(ExperimentReadinessIssueType.GERA_SALES_PAGE);
+    assertThat(service.computeMissingConfiguration(experiment)).contains("geraSalesPagePipeline");
   }
 
   /** Garante que a microamostra social curta atende a prontidão sem campos do template genérico. */

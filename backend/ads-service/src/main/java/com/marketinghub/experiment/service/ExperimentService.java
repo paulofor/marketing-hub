@@ -115,6 +115,7 @@ public class ExperimentService {
   private final CommercialPlanRepository commercialPlanRepository;
   private final CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository;
   private final ExperimentDirectPdeActivationService directPdeActivationService;
+  private final PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService;
   private static final String VALIDATION_OK = "OK";
 
   /** Inicializa o serviço com repositórios, integrações e validadores usados pelos experimentos. */
@@ -150,7 +151,8 @@ public class ExperimentService {
       PdeProductionSlotRepository pdeProductionSlotRepository,
       CommercialPlanRepository commercialPlanRepository,
       CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository,
-      ExperimentDirectPdeActivationService directPdeActivationService) {
+      ExperimentDirectPdeActivationService directPdeActivationService,
+      PublishedPdePreflightEvidenceService publishedPdePreflightEvidenceService) {
     this.repository = repository;
     this.statusChangeRepository = statusChangeRepository;
     this.promiseGenerationRequestRepository = promiseGenerationRequestRepository;
@@ -183,6 +185,7 @@ public class ExperimentService {
     this.commercialPlanRepository = commercialPlanRepository;
     this.commercialPlanVisualAssetRepository = commercialPlanVisualAssetRepository;
     this.directPdeActivationService = directPdeActivationService;
+    this.publishedPdePreflightEvidenceService = publishedPdePreflightEvidenceService;
   }
 
   /**
@@ -1956,7 +1959,7 @@ public class ExperimentService {
     return experiment;
   }
 
-  /** Bloqueia venda quando contrato, página, destino ou métricas não estão prontos para tráfego. */
+  /** Bloqueia venda sem página tradicional ou superfície própria produtiva auditada. */
   private void ensureLowTicketSalesPageWasBuiltByPipeline(Experiment experiment) {
     if (!requiresSalesPageBeforePurchase(experiment)) {
       return;
@@ -1965,6 +1968,10 @@ public class ExperimentService {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
           "Experimento com intenção de compra exige contrato comercial completo da etapa Oferta antes da campanha.");
+    }
+    if (experiment.getProductAiSubtype() == ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY
+        && publishedPdePreflightEvidenceService.isReady(experiment)) {
+      return;
     }
     boolean pipelineCompleted =
         geraSalesPageStageExecutionRepository

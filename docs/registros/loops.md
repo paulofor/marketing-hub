@@ -1,5 +1,27 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-SAFIRA-PREFLIGHT-APROVADO-BLOQUEADO-POR-GERASALESPAGE — 29/09/2026
+
+- **Evidência confirmada:** Mira #93 concluiu o Processo 4, Psique e Têmis, e o run produtivo #13
+  alcançou `READY_TO_PUBLISH` com 11/11 gates em `PASS`. A prova visual estava vinculada ao slot #9,
+  ao SHA-256 da experiência e ao fingerprint Safira vigentes. Mesmo assim, a autorização do
+  Processo 5 recebeu HTTP 409 exigindo GeraSalesPage v1.
+- **Causa-raiz:** o preflight publicado era reconhecido apenas para
+  `PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL`. O readiness aceitava genericamente a integração do Processo
+  4, enquanto a liberação aplicava a regra genérica de low-ticket. As duas decisões usavam provas
+  diferentes e o subtipo `AI_PERSONALIZED_PAID_DELIVERY` ficou entre elas.
+- **Alternativas avaliadas:** gerar outra página duplicaria a experiência e sua manutenção;
+  dispensar a página por subtipo abriria mídia sem prova; reconhecer somente a superfície própria
+  com slot, URL, produto, run, gates e identidade Safira coincidentes preserva conversão e controle.
+  A terceira alternativa foi escolhida.
+- **Correção sistêmica:** o mesmo validador de superfície publicada passa a reconhecer o funil PDE
+  e a entrega paga Safira, mantendo contratos específicos. Readiness e liberação Facebook só
+  aceitam o bypass do GeraSalesPage quando o preflight produtivo atual comprova a identidade
+  imutável; Processo 4 isolado permanece insuficiente.
+- **Prevenção:** regressões cobrem caminho feliz, fingerprint obsoleto, ausência do Processo 5 e
+  low-ticket genérico. O cânone de tráfego frio documenta a exceção estreita e mantém GeraSalesPage
+  obrigatório quando qualquer prova faltar.
+
 ## LOOP-PRODUTO-IA-PAGO-CLASSIFICADO-COMO-AMOSTRA-GRATUITA — 29/09/2026
 
 - **Evidência confirmada:** Mira, produto #10 e experimento #93, vende uma aplicação web com rotina

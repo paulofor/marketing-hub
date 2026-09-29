@@ -177,6 +177,11 @@ e cria os pixels solicitados como pendência no banco antes de enviar os eventos
 Para evitar que uma solicitação fique parada por falta de configuração complementar, a criação de pixel
 usa primeiro `systemUserAccessToken`; se ele não existir, usa o `accessToken` principal já validado.
 O campo `pixelOwnerBusinessId` é enviado apenas quando estiver preenchido, sem bloquear a criação.
+Quando a conta possui `defaultPixelId`, o worker não tenta criar mais um ativo: consulta
+`GET /act_<AD_ACCOUNT_ID>/adspixels`, confirma que o ID configurado está associado à mesma
+conta e o registra no nicho. Se a Meta não devolver esse ID, a pendência permanece aberta e
+nenhum outro pixel é escolhido automaticamente. Essa configuração fica na tela **Contas do
+Facebook** como **Pixel de conversão compartilhado**.
 
 Compras de experiências PDE não passam pela tabela legada do Lead Portal. O worker consulta também
 `GET /api/facebook-pixels/pde-conversions-ready`, envia `Purchase` somente a partir do pagamento

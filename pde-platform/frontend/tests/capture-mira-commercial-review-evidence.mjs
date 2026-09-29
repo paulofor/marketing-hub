@@ -52,6 +52,18 @@ try {
     }
     const checkoutCta = page.locator("[data-checkout-cta]");
     await checkoutCta.waitFor({ state: "visible" });
+    const checkoutBounds = await checkoutCta.boundingBox();
+    const viewport = page.viewportSize();
+    if (
+      !checkoutBounds ||
+      !viewport ||
+      checkoutBounds.y < 0 ||
+      checkoutBounds.y + checkoutBounds.height > viewport.height
+    ) {
+      throw new Error(
+        `CTA comercial de Mira está fora da primeira dobra em ${name}.`,
+      );
+    }
     await page
       .getByText(/Paulo Forestieri.*responsável comercial pela Mira/i)
       .waitFor({ state: "visible" });
@@ -78,6 +90,7 @@ try {
       path: screenshotPath,
       sha256: createHash("sha256").update(bytes).digest("hex"),
       checkoutCta: await checkoutCta.innerText(),
+      checkoutFirstFold: true,
       merchantDisclosureVisible: true,
     });
     if (name === "desktop") {

@@ -196,3 +196,22 @@ O carregador agora calcula integridade diretamente sobre os bytes e decodifica s
 `FULL`. Provas `ATTESTED_REFERENCE` preservam tamanho, checksum, SHA-256 e resumo sem inserir o
 binário no prompt. A tentativa #547 permanece no histórico; a execução só pode ser retomada após
 teste, PR e publicação do worker corrigido. Campanha e gasto continuam bloqueados.
+
+## CTA comercial na primeira dobra em 29/09/2026
+
+Com o transporte publicado, a tarefa #549 avançou até a inspeção real dos pixels e encontrou outro
+bloqueio válido: “Organizar minha rotina por R$ 49” estava visível e levava ao checkout correto,
+mas começava em 1.392 px num viewport de iPhone com 852 px. A causa era a ordem do hero: o vídeo
+vertical, a prova e os direitos completos apareciam antes da ação comercial.
+
+Foram comparadas três alternativas: remover a exigência de primeira dobra, sobrepor o botão ao
+vídeo ou mover o bloco canônico de recebedor e CTA para logo após a promessa. A terceira foi
+escolhida por reduzir esforço de compra sem esconder o vídeo, a prova, os limites ou a identidade
+do recebedor. Preço, checkout, promessa, vídeo v3, prova v1 e controle estático v4 permanecem
+inalterados.
+
+O manifesto imutável v7 vincula o fingerprint frontend
+`671689a386923e569187db61929a7a250ed8cc44020ea33123605cc5501599e8`. O teste Playwright e o
+capturador independente agora recusam a página quando a CTA não cabe integralmente na primeira
+dobra em desktop, iPhone 15 Pro ou Pixel 7. Essa homologação comprova consistência técnica e de
+copy; não representa venda ou autorização de mídia.

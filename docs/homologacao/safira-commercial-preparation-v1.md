@@ -19,6 +19,7 @@
 | Validação | Tipo, produto, experimento, subtipo ou versão divergentes | Bloqueio com causa e fonte a corrigir |
 | Oferta | Ausência de desejo, primeira ação, prova inicial, continuidade paga ou métricas | Jornada não conclui |
 | Economia | Custo ausente, plano vencido, cobertura incompleta ou margem não positiva | Plutus não libera preparação |
+| Identidade financeira | Runtime público e contrato econômico usam versões canônicas distintas | Slot é conferido pela versão pública e plano LIVE pela versão do contrato do produto |
 | Integração | Slot, checkout, criativo, público ou plano de outro experimento | Identidade recusada |
 | Agentes | Callback sem dez gates, evidência ou fingerprint atual | Tarefa não comprova objetivo |
 | Preflight | Slot, SHA-256 ou fingerprint alterado após homologação | Run anterior preservado e nova tentativa exigida |

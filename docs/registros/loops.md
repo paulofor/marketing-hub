@@ -150,6 +150,19 @@
   referência de outro produto, preservação de cadeia/fonte, recusa de execução sem experimento e
   ausência de escrita ou chamadas pagas. A matriz Safira cobre desktop e emulação mobile.
 
+- **Recorrência da identidade financeira confirmada em 29/09/2026:** Mira possuía o runtime
+  publicado `mira-commercial-v1`, o contrato do produto `MIRA_COMMERCIAL_V1` e a revisão financeira
+  LIVE #3 aprovada por Plutus na versão do contrato. Mesmo assim, a atividade 5.1.2 informava que o
+  plano financeiro não existia.
+- **Causa-raiz da identidade financeira:** o contexto Safira comparava `experienceVersion` do slot,
+  que identifica o runtime público, com `assumptions.productVersion` do plano financeiro, que
+  identifica o contrato de validação e economia do produto. As duas identidades legítimas eram
+  tratadas como um único campo.
+- **Correção e prevenção:** o slot continua validado por sua versão pública, enquanto a economia é
+  selecionada pela `validationDefinitionVersion` do produto e pelo plano comercial do mesmo
+  experimento. A regressão usa versões pública e financeira deliberadamente diferentes e exige que
+  o plano correto permaneça presente no snapshot Safira.
+
 - **Recorrência de progresso divergente confirmada em 25/09/2026:** Mira #10, Processo 4 #95/v9,
   exibia três de quatro objetivos no cabeçalho, mas mantinha a integração 4.4 concluída e a execução
   automática #18 em quatro de quatro. A tarefa #411 e as provas posteriores pertenciam à validação

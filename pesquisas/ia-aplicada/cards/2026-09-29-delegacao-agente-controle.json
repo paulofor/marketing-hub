@@ -1,0 +1,18 @@
+{
+  "cardKey": "delegacao-agente-com-controle-humano",
+  "collection": "neuromarketing",
+  "title": "Construa confiança antes de ampliar a autonomia do agente",
+  "finding": "Em um agente pessoal ainda invite-only, o fundador relata que cerca de 40% dos usuários compartilham um cartão pessoal em três semanas e que usuários que conectam ao menos uma informação sensível apresentam retenção de aproximadamente 80%; em paralelo, o novo checkout WebMCP da Shopify preserva confirmação do comprador e devolve controle quando a entrada humana é obrigatória.",
+  "mechanism": "A utilidade e a previsibilidade observadas ao longo do uso podem reduzir incerteza antes de permissões mais sensíveis. Autonomia progressiva, confirmação em ações de alta consequência e revogação fácil podem preservar sensação de controle; a associação observada não prova causalidade.",
+  "commercialApplication": "Em agentes do Marketing Hub, começar com leitura, pesquisa, comparação e preparação; pedir acessos adicionais somente quando necessários à tarefa; explicar o motivo; exigir confirmação explícita antes de pagamento, publicação, alteração de conta ou outra ação sensível; manter revogação e handoff humano fáceis.",
+  "evidenceStrength": "Moderada para sinal de produto e baixa para causalidade: dados operacionais autorrelatados pelo fundador da Instinct, sem coorte ou janela de retenção publicadas, combinados com uma implementação real de controle humano no checkout da Shopify.",
+  "publishedOn": "2026-09-28",
+  "validUntil": "2026-12-31",
+  "experimentHypothesis": "Autonomia progressiva, com permissões solicitadas no contexto e confirmação em ações sensíveis, reduzirá abandono e revogação e manterá ou elevará conclusão, satisfação e conversão reconciliada em relação a um fluxo que pede acessos amplos cedo demais.",
+  "risks": "Transformar compartilhamento de credenciais em meta, incentivar coleta excessiva, confundir usuários mais engajados com efeito causal da permissão, ocultar o escopo do agente ou dificultar revogação e correção.",
+  "limits": "A retenção de aproximadamente 80% não tem janela nem denominador públicos e sofre forte risco de auto-seleção; Instinct é um beta invite-only e os números não são auditados. Shopify demonstra arquitetura de autorização, não impacto comercial. Não generalizar para públicos ou tarefas com risco diferente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-29-delegacao-agente-controle-instinct.md",
+  "sourceTitle": "Confiança progressiva e controle em agentes de compra",
+  "sourceSha256": "627579f07d542e05abc6cd0d073d27b37d4f0d7c999a381aee8c0958ae9c49e5"
+}

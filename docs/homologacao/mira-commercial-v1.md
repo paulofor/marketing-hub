@@ -314,3 +314,19 @@ o ciclo completo de isolamento de Mira/Vega passaram localmente, impedindo que a
 mídia volte a quebrar o teste por um caminho histórico hardcoded. Como esse executável também
 protege Vega, a atestação de compatibilidade v15 foi criada sem alterar a v14 e mantém explícitos o
 experimento #92 `INVALIDATED` e a ausência de autorização de publicação ou mídia para Vega.
+
+## Recuperação do deploy PDE v9 em 29/09/2026
+
+O primeiro deploy da mensuração v9 aprovou backend, frontend, imagens e seis cenários públicos, mas
+terminou vermelho no run
+[36576595716](https://github.com/paulofor/marketing-hub/actions/runs/36576595716). Ao publicar um
+backend compartilhado, o workflow trocou o alvo `mira-commercial` por `all` e exigiu oferta vendável
+das superfícies MUSA v5–v7, embora o experimento #91 estivesse encerrado. Três navegadores receberam
+HTTP 503 da oferta; reativar o experimento apenas para satisfazer o smoke fabricaria operação.
+
+Foram comparados reabrir ofertas antigas, relaxar a regra comercial da API ou preservar os health
+checks compartilhados e limitar o smoke comercial à superfície selecionada. A terceira alternativa
+mantém segurança, isolamento e cobertura. O workflow deixa de inferir `all` pela troca do backend;
+testes de contrato impedem a recorrência, enquanto o executor ainda aceita `all` quando uma
+homologação integral for solicitada explicitamente. Pixel, preflight e mídia continuam bloqueados
+até o novo deploy terminar verde.

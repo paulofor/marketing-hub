@@ -986,9 +986,6 @@ jobs:
           npm ci --include=dev
           npx playwright install --with-deps chromium
           TARGETED_FRONTEND_VERSION="${PDE_DEPLOY_FRONTEND_VERSION}"
-          if [ "${PDE_DEPLOY_BACKEND}" = "true" ]; then
-            TARGETED_FRONTEND_VERSION=all
-          fi
           if [ "${TARGETED_FRONTEND_VERSION}" = "mira" ] \
             && [ "${PDE_MIRA_PROXY_MODE}" = "bootstrap-legacy-route" ]; then
             export MIRA_PUBLIC_BASE_URL="http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_PORT}"

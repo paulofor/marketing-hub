@@ -145,6 +145,11 @@ if grep -Fq 'TARGETED_FRONTEND_VERSION=v7' "${workflow}"; then
   exit 1
 fi
 
+if grep -Fq 'TARGETED_FRONTEND_VERSION=all' "${workflow}"; then
+  echo '[ARQUITETURA] Backend compartilhado não pode reabrir smoke comercial de superfícies não selecionadas.' >&2
+  exit 1
+fi
+
 if ! awk '
   /if docker inspect .*proxy_container/ { start_seen = 0 }
   /docker start .*proxy_container/ { start_seen = 1; start_count++ }

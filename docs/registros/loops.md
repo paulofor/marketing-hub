@@ -1513,6 +1513,26 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
 - **Correção sistêmica:** a homologação final passa a selecionar pelo mesmo `frontend_version` somente os testes de renderização, diagnóstico e consistência pertencentes à superfície publicada; `all` continua validando todas. CTA, preço e checkout passam a ser lidos da oferta pública canônica durante o smoke.
 - **Prevenção:** testes com executores falsos exigem isolamento para `kit-whatsapp` e v5, cobertura completa para `all`, rejeição de versão desconhecida e ausência de CTA comercial duplicado no contrato estático. A saúde básica das rotas compartilhadas continua sendo verificada antes do smoke direcionado.
 
+### Recorrência em 29/09/2026 — backend compartilhado e piloto Mira
+
+- **Evidência:** o workflow PDE
+  [36576595716](https://github.com/paulofor/marketing-hub/actions/runs/36576595716)
+  publicou backend e superfície `mira-commercial`, mas substituiu o alvo resolvido por `all`. O
+  smoke tentou carregar ofertas das superfícies MUSA v5–v7 depois do encerramento da janela do
+  experimento #91 e recebeu HTTP 503 em desktop, iPhone 15 Pro e Pixel 7. Os seis cenários sem essa
+  dependência passaram; backend, frontend e imagens também haviam sido aprovados.
+- **Causa-raiz:** `PDE_DEPLOY_BACKEND=true` ampliava a homologação comercial da superfície
+  selecionada para todas as superfícies históricas. Os health checks compartilhados já cobriam
+  DNS, rotas, diagnóstico e página de cada runtime; a ampliação duplicava cobertura e convertia o
+  gate correto de oferta encerrada em falha de infraestrutura.
+- **Correção sistêmica:** a publicação do backend mantém os health checks compartilhados, mas o
+  smoke comercial final respeita exclusivamente `PDE_DEPLOY_FRONTEND_VERSION`. O modo explícito
+  `all` continua disponível no executor para uma homologação integral deliberada; ele não pode ser
+  inferido de uma troca de backend.
+- **Prevenção:** os contratos do workflow e do resolvedor recusam qualquer retorno de
+  `TARGETED_FRONTEND_VERSION=all`. Experimento pausado ou terminal não é reativado, e uma oferta
+  encerrada não bloqueia a publicação saudável de outra superfície.
+
 ## LOOP-PDE-ATESTACAO-REESCRITA-ACIONA-DEPLOY — evidência técnica promove experimento invalidado
 
 - **Data:** 26/09/2026. Vega #92, workflow

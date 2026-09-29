@@ -140,7 +140,8 @@ public class SafiraCommercialChecks {
     require(
         !plan.path("stale").asBoolean(true), "Atualize o plano financeiro vencido ou alterado.");
     require(
-        "PROJECTED_VIABLE".equals(plan.path("evaluation").path("status").asText()),
+        List.of("READY_FOR_ANALYSIS", "PROJECTED_VIABLE")
+            .contains(plan.path("evaluation").path("status").asText()),
         "A projeção determinística precisa comprovar viabilidade com todos os custos.");
     require(
         plan.path("assumptions").path("priceBrl").isNumber()

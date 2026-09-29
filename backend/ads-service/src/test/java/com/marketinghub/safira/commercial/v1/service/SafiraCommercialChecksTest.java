@@ -141,4 +141,43 @@ class SafiraCommercialChecksTest {
     assertThatThrownBy(() -> checks.check("economics", scope, snapshot))
         .hasMessageContaining("financeiro LIVE");
   }
+
+  /** Aceita envelope agregado somente depois de Plutus aprovar cobertura e cenário-base. */
+  @Test
+  void acceptsReadyAggregateRevisionAfterApprovedPlutusReview() {
+    addFinancialPlan("READY_FOR_ANALYSIS", "COMPLETED", "APPROVE", "COMPLETE_AGGREGATE");
+
+    assertThatCode(() -> checks.check("economics", scope, snapshot)).doesNotThrowAnyException();
+  }
+
+  /** Mantém a revisão agregada bloqueada enquanto o parecer de Plutus não estiver concluído. */
+  @Test
+  void readyAggregateRevisionDoesNotBypassPlutusReview() {
+    addFinancialPlan("READY_FOR_ANALYSIS", "PENDING", "APPROVE", "COMPLETE_AGGREGATE");
+
+    assertThatThrownBy(() -> checks.check("economics", scope, snapshot))
+        .hasMessageContaining("conclua o parecer de Plutus");
+  }
+
+  /** Monta o contrato financeiro mínimo usado pelas regressões do gate econômico. */
+  private void addFinancialPlan(
+      String evaluationStatus, String analysisStatus, String decision, String coverage) {
+    var financial = snapshot.putObject("financialPlan");
+    financial.put("stale", false);
+    financial.putObject("evaluation").put("status", evaluationStatus);
+    financial.putObject("assumptions").put("priceBrl", new BigDecimal("39"));
+    var analysis = financial.putObject("analysis");
+    analysis.put("status", analysisStatus);
+    var result = analysis.putObject("result");
+    result.put("decision", decision);
+    result.putObject("costCoverageAssessment").put("status", coverage);
+    var scenarios = result.putArray("scenarios");
+    scenarios.addObject().put("name", "CONSERVATIVE");
+    scenarios
+        .addObject()
+        .put("name", "BASE")
+        .put("profitBrl", new BigDecimal("10"))
+        .put("averagePriceBrl", new BigDecimal("39"));
+    scenarios.addObject().put("name", "OPTIMISTIC");
+  }
 }

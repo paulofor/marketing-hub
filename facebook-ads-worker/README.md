@@ -105,6 +105,14 @@ Quando a Graph API retornar os limites como `coverage_lower_bound` e
 alcance reportado ao backend. Isso evita que itens com ID oficial permaneçam na
 fila por falta dos nomes alternativos de alcance retornados pela Meta.
 
+O enriquecimento percorre `pt_BR`, `en_US` e o locale padrão, mas só aceita um
+resultado quando o nome oficial corresponde ao termo solicitado, desconsiderando
+acentos, pontuação e um qualificador final de categoria entre parênteses. Um item
+apenas relacionado — por exemplo, uma marca cujo nome contém o termo — não é
+usado como fallback. Sem correspondência segura em todos os locales, o item é
+marcado como indisponível para revisão em vez de receber um ID semanticamente
+incorreto.
+
 Esses limites são usados pelo Marketing Hub como alcance inicial do sinal antes
 de montar ou escalar campanha. Após encontrar o melhor match, o worker envia os dados para o backend via
 `PATCH /api/internal/targeting/elements/{id}/metaads`, mantendo a base local

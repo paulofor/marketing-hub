@@ -53,6 +53,14 @@ backend; salvar as duas escolhas não autoriza gasto, publicação nem aprovaç�
 Antes de salvar, o backend reconfere revisão e versão comercial. Concorrência exige
 recarregar; produtos, ambientes e versões não compartilham premissas automaticamente.
 
+Decisão complementar de 29/09/2026: quando a revisão mais recente ainda está dentro da validade e
+mantém o mesmo tipo e plano do produto, uma mudança da versão comercial ou do contrato do produto
+deve habilitar a ação explícita de atualizar referências. O rebase cria outra revisão imutável,
+usa a versão atual do produto e recompõe preço, CAC e envelopes apenas a partir do plano comercial
+vigente; custos, fontes e cenários da revisão anterior não são carregados silenciosamente. Revisão
+vencida, mudança de tipo, plano ausente ou seleção ambígua continuam exigindo edição avançada. O
+rebase não solicita Plutus, não aprova a projeção e não autoriza gasto.
+
 Quando preço, CAC, envelopes variável e fixo, fontes e validade são suficientes, mas margem
 mínima e cenários ainda dependem do parecer, a revisão fica `READY_FOR_ANALYSIS`. Esse estado só
 libera Plutus: não significa `PROJECTED_VIABLE`. O parecer deve registrar decisão e cobertura;

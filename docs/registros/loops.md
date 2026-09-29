@@ -6942,6 +6942,20 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   contribuição negativa, dupla dedução, decisão desfavorável, cobertura incompleta e revisão
   financeira sem repetição das quatro atividades anteriores.
 
+### Recorrência — atualização comercial bloqueava a própria renovação em 29/09/2026
+
+- **Evidência confirmada:** Mira #10 recebeu o contrato `MIRA_COMMERCIAL_V1` e o plano comercial
+  #8 v6, mas a revisão financeira #6/v1 ficou corretamente desatualizada e o backend desabilitou
+  `Salvar preparação e calcular`. A tela oferecia `Atualizar referências`, porém o mesmo estado
+  `stale` impedia gerar os envelopes oficiais da versão nova.
+- **Causa-raiz:** validade vencida, mudança de tipo, mudança do contrato do produto e nova versão
+  comercial eram reduzidas ao mesmo booleano. O preparador também preservava a versão e os custos
+  da revisão anterior, embora a ação existisse justamente para atualizar essas fontes.
+- **Correção e prevenção:** revisão ainda válida e do mesmo tipo/plano pode fazer rebase explícito
+  para a versão atual. A nova revisão descarta custos anteriores e recompõe preço, CAC e envelopes
+  somente do plano vigente. Validade encerrada, tipo alterado e seleção ambígua continuam
+  bloqueados. Regressões cobrem rebase comercial/contratual e os dois bloqueios negativos.
+
 ### Recorrência — snapshot de projeção confundiu realizado e planejado em 21/09/2026
 
 - **Evidência confirmada:** após a revisão #3 preservar o custo variável agregado, Plutus #51

@@ -111,7 +111,7 @@ public class FinancialPlanService {
     var source = context.source();
     var assumptions =
         FinancialPlanPreparation.prepare(
-            source == null ? null : source.assumptions(),
+            source == null || context.rebaseReferences() ? null : source.assumptions(),
             request,
             context.plan(),
             preview.priceBrl());
@@ -135,13 +135,16 @@ public class FinancialPlanService {
 
   /** Mantém juntos as referências já verificadas e o resumo que o formulário pode apresentar. */
   private record PreparationContext(
-      PlanPreparation preview, PlanView source, CommercialPlan plan) {}
+      PlanPreparation preview, PlanView source, CommercialPlan plan, boolean rebaseReferences) {}
 
-  /** Resolve fontes do mesmo produto/ambiente e recusa versões vencidas ou seleção ambígua. */
+  /** Resolve fontes e permite rebase controlado sem reutilizar custos vencidos ou incompatíveis. */
   private PreparationContext preparationContext(Long productId, Environment environment) {
     var product = products.findById(productId).orElseThrow(() -> missing("Produto"));
-    var history = list("PRODUCT", productId, environment);
-    var source = history.isEmpty() ? null : history.getFirst();
+    var history =
+        revisions.findByScopeKindAndScopeIdAndEnvironmentOrderByRevisionNumberDesc(
+            "PRODUCT", productId, environment);
+    var sourceRevision = history.isEmpty() ? null : history.getFirst();
+    var source = sourceRevision == null ? null : view(sourceRevision);
     var candidates = plans.findByProductId(productId);
     var plan =
         source == null
@@ -150,8 +153,27 @@ public class FinancialPlanService {
                 .filter(p -> p.getId().equals(source.commercialPlanId()))
                 .findFirst()
                 .orElse(null);
+    Integer commercialPlanVersion = plan == null ? null : currentVersion(plan.getId());
+    Long currentTypeId =
+        product.getProductTypeDefinition() == null
+            ? null
+            : product.getProductTypeDefinition().getId();
+    boolean expired = source != null && source.assumptions().validUntil().isBefore(today());
+    boolean typeChanged =
+        sourceRevision != null && !Objects.equals(sourceRevision.getProductTypeId(), currentTypeId);
+    boolean commercialPlanChanged =
+        source != null && !Objects.equals(source.commercialPlanVersion(), commercialPlanVersion);
+    boolean productVersionChanged =
+        source != null
+            && !Objects.equals(
+                source.assumptions().productVersion(), product.getValidationDefinitionVersion());
+    boolean rebaseReferences =
+        source != null
+            && !expired
+            && !typeChanged
+            && (commercialPlanChanged || productVersionChanged);
     String version =
-        source == null
+        source == null || rebaseReferences
             ? product.getValidationDefinitionVersion()
             : source.assumptions().productVersion();
     var choices = source == null ? null : source.assumptions().preparation();
@@ -160,7 +182,7 @@ public class FinancialPlanService {
             && "LOW_TICKET_DIGITAL_PRODUCT".equals(product.getProductTypeDefinition().getCode());
     int days = choices == null ? quartzo ? 7 : 30 : choices.supportDays();
     var price =
-        source != null && source.assumptions().priceBrl() != null
+        source != null && !rebaseReferences && source.assumptions().priceBrl() != null
             ? source.assumptions().priceBrl()
             : product.getCurrentPriceBrl() != null
                 ? product.getCurrentPriceBrl()
@@ -170,7 +192,7 @@ public class FinancialPlanService {
             ? "Defina o plano comercial do produto na edição avançada."
             : version == null || version.isBlank()
                 ? "Registre a versão do produto na edição avançada."
-                : source != null && source.stale()
+                : source != null && source.stale() && !rebaseReferences
                     ? "A revisão anterior venceu ou mudou de contexto. Confira suas fontes na edição avançada."
                     : null;
     var preview =
@@ -178,7 +200,7 @@ public class FinancialPlanService {
             source == null ? 0 : source.revision(),
             source == null ? null : source.id(),
             plan == null ? null : plan.getId(),
-            plan == null ? null : currentVersion(plan.getId()),
+            commercialPlanVersion,
             version,
             days,
             choices == null || choices.personalizedAi(),
@@ -186,11 +208,13 @@ public class FinancialPlanService {
                 ? "Sugestão inicial: "
                     + days
                     + " dias de suporte. Ajuste conforme a entrega do produto."
-                : "Período de suporte da última revisão; ajuste se necessário.",
+                : rebaseReferences
+                    ? "As referências comerciais mudaram. A nova revisão descarta custos anteriores e adota somente as fontes da versão atual."
+                    : "Período de suporte da última revisão; ajuste se necessário.",
             price,
             blocker == null,
             blocker);
-    return new PreparationContext(preview, source, plan);
+    return new PreparationContext(preview, source, plan, rebaseReferences);
   }
 
   /** Salva revisão imutável com versão comercial congelada e controle de concorrência. */
@@ -357,6 +381,11 @@ public class FinancialPlanService {
       if (!Objects.equals(p.getProductTypeId(), currentType)) {
         stale = true;
         pending.add("Responsável pelo produto: o tipo mudou; revise a aplicabilidade do modelo.");
+      }
+      if (!Objects.equals(assumptions.productVersion(), product.getValidationDefinitionVersion())) {
+        stale = true;
+        pending.add(
+            "Responsável pelo produto: a versão do contrato mudou; atualize as referências financeiras.");
       }
     }
     if (List.of("MISSING_INPUTS", "REVIEW_REQUIRED").contains(evaluation.status()))

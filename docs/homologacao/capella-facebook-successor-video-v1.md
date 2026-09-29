@@ -28,6 +28,7 @@ Criar o experimento sucessor do #88 mantendo produto, preço de R$ 67, página, 
 | Linhagem do sucessor | Revisar o controle #531 e a variante em vídeo | Têmis recebe #88 como origem verificada e não trata URLs herdadas como divergência isolada |
 | Prontidão herdada | Consultar readiness e Quartzo do #94 sem fabricar auditoria própria | A última publicação GeraSalesPage concluída do #88 é reconhecida porque o vínculo direto e o contrato comercial continuam válidos |
 | Mensagem do criativo | Usar no #94 dor, recompensa, promessa e CTA adequados ao vídeo | A variação de comunicação não invalida a superfície herdada quando produto, hipótese, preço, território, tipo, identidades Meta, página e checkout permanecem iguais |
+| CTA da superfície herdada | Psique confrontar a primeira dobra publicada durante a preparação do #94 | O contrato usa “Comprar o kit por R$ 67”, pertencente à landing do #88, sem substituir nem rejeitar o CTA novo do anúncio do #94 |
 | Divergência comercial | Alterar produto, hipótese, preço, território, identidade Meta, página ou checkout do sucessor | Readiness e Quartzo voltam a bloquear a herança |
 | Publicação posterior | Criar uma publicação própria para o sucessor sem concluir seu pipeline | A versão própria tem precedência e não pode usar a publicação anterior como fallback silencioso |
 | Checkout observável | Inspecionar a landing herdada | O coletor encontra o checkout canônico nos links reais do DOM, abre-o sem interação e comprova `checkoutLinkedFromLanding=true` |

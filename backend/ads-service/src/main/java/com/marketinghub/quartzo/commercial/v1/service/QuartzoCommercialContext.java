@@ -203,8 +203,11 @@ public class QuartzoCommercialContext {
     result.set("validationContract", read(product.getValidationDefinitionJson()));
     var publication = scope.publication();
     if (publication != null) {
+      var landingExperiment = landingExperiment(scope);
       result.put("publicationId", publication.getId());
       result.put("publicationJobId", publication.getPublicationJobId());
+      result.put("landingExperimentId", landingExperiment.getId());
+      result.put("landingPrimaryCta", landingExperiment.getPrimaryCta());
       result.put("destinationUrl", publication.getSalesPageUrl());
       result.put("checkoutUrl", publication.getCheckoutUrl());
       result.put("pageHash", fingerprintText(Objects.toString(publication.getHtml(), "")));
@@ -260,6 +263,21 @@ public class QuartzoCommercialContext {
     result.put("salesProven", false);
     result.put("fingerprint", fingerprintText(canonical(result).toString()));
     return result;
+  }
+
+  /** Resolve o CTA da página auditada sem confundi-lo com a mensagem variável do sucessor. */
+  private Experiment landingExperiment(Scope scope) {
+    var publication = scope.publication();
+    var experiment = scope.experiment();
+    if (Objects.equals(publication.getExperimentId(), experiment.getId())) return experiment;
+    var source = experiment.getSourceExperiment();
+    require(
+        source != null && Objects.equals(publication.getExperimentId(), source.getId()),
+        "A página auditada não corresponde à origem comercial do sucessor.");
+    require(
+        source.getPrimaryCta() != null && !source.getPrimaryCta().isBlank(),
+        "A página auditada não possui CTA principal persistido.");
+    return source;
   }
 
   /** Mantém a fotografia somente no ciclo da transação e a remove em suspensão ou conclusão. */
@@ -332,6 +350,8 @@ public class QuartzoCommercialContext {
                   "productContract",
                   "publicationId",
                   "publicationJobId",
+                  "landingExperimentId",
+                  "landingPrimaryCta",
                   "destinationUrl",
                   "pageHash",
                   "productProof",

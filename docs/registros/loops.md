@@ -7656,6 +7656,12 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Prevenção:** regressões cobrem o caso real #88→#94, divergência comercial, precedência de
   publicação própria e ausência de auditoria fictícia. A homologação mantém a autorização de mídia
   como atividade separada depois da preparação e do preflight.
+- **Recorrência fechada na revisão visual:** depois de a publicação herdada ser aceita, o snapshot
+  ainda enviava à Psique o CTA variável do anúncio #94 como se ele pertencesse à primeira dobra da
+  página #88. Remover a checagem reduziria a proteção; extrair a expectativa do próprio HTML seria
+  uma prova circular. O contrato agora transporta separadamente o experimento e o CTA da landing
+  auditada, preserva o CTA do sucessor como mensagem de campanha e inclui a identidade da landing
+  no fingerprint da atividade. O worker aceita o campo legado apenas para snapshots anteriores.
 
 ## LOOP-IRIS-RETRABALHO-REPROVADO-SEM-CONTAR-TENTATIVA — 26/09/2026
 

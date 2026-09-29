@@ -431,9 +431,15 @@ public class CustomerBpmTaskConsumer {
       JsonNode scope =
           json.readTree(String.valueOf(task.get("processContextJson"))).path("quartzoCommercial");
       return PdeExperienceEvidenceLoader.LiveVisualContract.publishedPage(
-          scope.path("pageHash").asText(""), scope.path("primaryCta").asText(""));
+          scope.path("pageHash").asText(""), landingPrimaryCta(scope));
     }
     return PdeExperienceEvidenceLoader.LiveVisualContract.none();
+  }
+
+  /** Usa o CTA da publicação auditada e preserva compatibilidade com snapshots anteriores. */
+  private String landingPrimaryCta(JsonNode scope) {
+    String landingPrimaryCta = scope.path("landingPrimaryCta").asText("").trim();
+    return landingPrimaryCta.isBlank() ? scope.path("primaryCta").asText("") : landingPrimaryCta;
   }
 
   /**

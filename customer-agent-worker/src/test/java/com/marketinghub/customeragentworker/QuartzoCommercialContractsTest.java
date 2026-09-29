@@ -35,7 +35,8 @@ class QuartzoCommercialContractsTest {
             "{\"quartzoCommercial\":{\"fingerprint\":\"frozen-quartzo\",\"productId\":23,"
                 + "\"pageHash\":\""
                 + "a".repeat(64)
-                + "\",\"primaryCta\":\"Comprar o kit por R$ 67\"}}",
+                + "\",\"primaryCta\":\"Ver amostras e comprar por R$ 67\","
+                + "\"landingPrimaryCta\":\"Comprar o kit por R$ 67\"}}",
             "taskTarget",
             Map.of("publicUrl", "https://example.test/kit", "productId", 23));
     assertThat(CustomerBpmTaskConsumer.supportsContract(code, "humanExperienceReview")).isTrue();
@@ -68,5 +69,31 @@ class QuartzoCommercialContractsTest {
     var visualContract = worker.liveVisualContract(task);
     assertThat(visualContract.publicationSourceSha256()).isEqualTo("a".repeat(64));
     assertThat(visualContract.requiredFirstFoldCtas()).containsExactly("Comprar o kit por R$ 67");
+  }
+
+  /** Mantém o contrato histórico funcional quando o backend ainda não separava o CTA da página. */
+  @Test
+  void fallsBackToPrimaryCtaForLegacyQuartzoSnapshot() throws Exception {
+    var worker =
+        new CustomerBpmTaskConsumer(
+            "http://127.0.0.1:1",
+            "codex",
+            "gpt-5.6-sol",
+            "max",
+            "/missing",
+            "/missing",
+            new ObjectMapper());
+    var task =
+        Map.<String, Object>of(
+            "processCode",
+            "quartzo-commercial-preparation-v1",
+            "processContextJson",
+            "{\"quartzoCommercial\":{\"pageHash\":\""
+                + "b".repeat(64)
+                + "\",\"primaryCta\":\"Comprar a versão legada\"}}");
+
+    var visualContract = worker.liveVisualContract(task);
+
+    assertThat(visualContract.requiredFirstFoldCtas()).containsExactly("Comprar a versão legada");
   }
 }

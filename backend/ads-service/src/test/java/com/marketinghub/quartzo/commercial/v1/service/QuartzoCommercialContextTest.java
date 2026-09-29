@@ -67,6 +67,7 @@ class QuartzoCommercialContextTest {
     experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
     experiment.setStatus(ExperimentStatus.USER_STOPPED);
     experiment.setUnitPrice(new BigDecimal("67"));
+    experiment.setPrimaryCta("Comprar o kit por R$ 67");
     when(experiments.findById(88L)).thenReturn(Optional.of(experiment));
     publication =
         GeraSalesPagePublicationAudit.builder()
@@ -141,12 +142,14 @@ class QuartzoCommercialContextTest {
         .hasMessageContaining("outro experimento");
   }
 
-  /** Aceita a publicação da origem quando a política comprovou a linhagem do sucessor. */
+  /** Separa a mensagem do sucessor do CTA pertencente à página auditada da origem. */
   @Test
   void acceptsAuditedPublicationFromExplicitLowTicketSource() {
     Experiment source = new Experiment();
     source.setId(88L);
+    source.setPrimaryCta("Comprar o kit por R$ 67");
     experiment.setId(94L);
+    experiment.setPrimaryCta("Ver amostras do kit e, se fizer sentido, comprar por R$ 67");
     experiment.setSourceExperiment(source);
     publication.setExperimentId(88L);
     when(experiments.findById(94L)).thenReturn(Optional.of(experiment));
@@ -155,6 +158,10 @@ class QuartzoCommercialContextTest {
 
     assertThat(snapshot.path("experimentId").asLong()).isEqualTo(94L);
     assertThat(snapshot.path("publicationId").asLong()).isEqualTo(27L);
+    assertThat(snapshot.path("landingExperimentId").asLong()).isEqualTo(88L);
+    assertThat(snapshot.path("primaryCta").asText())
+        .isEqualTo("Ver amostras do kit e, se fizer sentido, comprar por R$ 67");
+    assertThat(snapshot.path("landingPrimaryCta").asText()).isEqualTo("Comprar o kit por R$ 67");
     assertThat(snapshot.path("destinationUrl").asText()).isEqualTo(publication.getSalesPageUrl());
   }
 
@@ -202,6 +209,11 @@ class QuartzoCommercialContextTest {
         .isNotEqualTo(QuartzoCommercialContext.activityFingerprint("entry", initial));
     assertThat(QuartzoCommercialContext.activityFingerprint("economics", pageChange))
         .isEqualTo(QuartzoCommercialContext.activityFingerprint("economics", initial));
+
+    var landingCtaChange = initial.deepCopy();
+    landingCtaChange.put("landingPrimaryCta", "Comprar outra página");
+    assertThat(QuartzoCommercialContext.activityFingerprint("entry", landingCtaChange))
+        .isNotEqualTo(QuartzoCommercialContext.activityFingerprint("entry", initial));
   }
 
   /** Apenas o anúncio final aprovado participa da revisão, preservando a separação de linhagens. */

@@ -7405,3 +7405,8 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
 - O piloto permanece planejado com teto total de R$ 25, parada sem compra em R$ 25 e encerramento
   após a primeira compra. A liberação depende de parecer Plutus favorável e preflight completo do
   Processo 5; venda, entrega, primeiro uso, reembolso e contribuição devem permanecer conciliáveis.
+- A Psique aprovou a jornada pública na tarefa #554. A Têmis aprovou os dez gates na #555, mas o
+  callback foi tecnicamente bloqueado porque o prompt Safira não instruía a citar os cartões de
+  pesquisa que o backend entregou. A correção foi generalizada no núcleo de Têmis: toda tarefa com
+  `researchIntelligence` recebe o contrato versionado de citação por coleção, mantendo o validador
+  estrito e evitando que novas atividades repitam o mesmo custo sem rastreabilidade.

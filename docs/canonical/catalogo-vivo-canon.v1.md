@@ -80,6 +80,19 @@ revisão compara os termos materiais da candidata efetiva com landing e checkout
 uma versão supersedida em contradição nem dispensar preço, cobrança, acesso, direitos ou suporte.
 Versões históricas continuam imutáveis. Evidências: [recuperação da tarefa #458](../homologacao/vega-tarefa-458-candidata-final-suporte-direitos-v1.md).
 
+### Generalização do uso auditável de pesquisa em Têmis
+
+Em 29/09/2026, a tarefa Mira #555 mostrou que a exigência de citação dos cartões ainda estava
+duplicada em prompts de atividades específicas. O novo prompt Safira recebeu cartões válidos, mas
+não instruiu Têmis a registrar os `cardId`; o parecer aprovou os dez gates e foi corretamente
+bloqueado pelo validador depois da inferência.
+
+O contrato de uso de pesquisa passa a ser um fragmento versionado do núcleo de Têmis, composto
+automaticamente sempre que o backend entregar `researchIntelligence`. Para decisões concluídas, a
+resposta deve citar ao menos um cartão de cada coleção entregue, sem transformar pesquisa externa
+em prova do produto, compra, receita, satisfação ou autorização. Prompts de atividade continuam
+versionados e históricos; o validador permanece estrito e cartões não entregues continuam proibidos.
+
 ## Catálogos e responsabilidades
 
 | Elemento | Responsabilidade | Exemplo |

@@ -22,6 +22,7 @@
 | Identidade financeira | Runtime público e contrato econômico usam versões canônicas distintas | Slot é conferido pela versão pública e plano LIVE pela versão do contrato do produto |
 | Integração | Slot, checkout, criativo, público ou plano de outro experimento | Identidade recusada |
 | Agentes | Callback sem dez gates, evidência ou fingerprint atual | Tarefa não comprova objetivo |
+| Pesquisa auditável | Tarefa entrega cartões a Têmis | Prompt composto exige `cardId` de cada coleção; ausência continua bloqueando o callback |
 | Preflight | Slot, SHA-256 ou fingerprint alterado após homologação | Run anterior preservado e nova tentativa exigida |
 | Concorrência | Reinício, callback repetido e retomada | Conclusão idempotente, sem tarefa ou cobrança duplicada |
 | Ordem operacional | IDs persistidos e nós declarados fora da sequência causal | Grafo apresenta preparação, Psique, Têmis, preflight e autorização nessa ordem |
@@ -134,3 +135,24 @@ humanos atribuídos; a ausência de meta de custo permanece pendência, não div
   com APIs simuladas, nenhuma escrita, nenhum erro de página e nenhum overflow horizontal.
   Preço persistido preservado e campos de orçamento continuam vazios.
 - Spotless dos arquivos Java alterados e revisão de diff aprovados. Nenhum changelog alterado.
+
+## Recorrência dos cartões de pesquisa — 29/09/2026
+
+A tarefa Mira #555 recebeu quatro cartões na rota `meta-ad-approver` e produziu decisão
+`APPROVED`, dez gates em `PASS` e recomendação `READY_FOR_PREFLIGHT`. O callback foi preservado
+como falha técnica porque as evidências não citavam os `cardId`, repetindo o contrato já observado
+na Vega #457. O prompt Safira tinha os cartões no contexto, mas não a instrução compatível com o
+validador.
+
+O núcleo de Têmis agora acrescenta um fragmento versionado de uso auditável sempre que houver
+`researchIntelligence`. A validação local confirmou:
+
+- 105 casos contabilizados no Meta Ad Approver Worker, zero falhas/erros e um condicionado;
+- Spotless, testes direcionados Safira/validador, handshake MCP e empacotamento aprovados;
+- JAR contém o fragmento `research-intelligence-usage-v1.md` usado em runtime;
+- `AgentHarnessCatalogTest` aprovou o manifesto que publica o novo recurso;
+- JSON do manifesto e revisão de whitespace/diff válidos.
+
+O parecer #555 permanece histórico e imutável. Uma nova tarefa deve executar a mesma revisão com
+os cartões citados; isso não autoriza campanha, gasto nem converte pesquisa externa em prova de
+compra, uso ou venda.

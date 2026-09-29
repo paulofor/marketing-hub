@@ -347,6 +347,15 @@
 - **Prevenção:** testes do worker reproduzem a resposta genérica da #457 e fixam as instruções do
   prompt; a integração MySQL 5.7 comprova versão incremental, vínculo ativo e preservação do
   histórico. A retomada só ocorre pela tela depois da publicação versionada.
+- **Recorrência em 29/09/2026 — Mira, tarefa #555:** o parecer Safira aprovou os dez gates, mas o
+  callback foi bloqueado pelo mesmo validador porque o prompt específico do Produto IA recebia os
+  cartões no contexto sem a instrução de citar seus `cardId`. A correção anterior estava repetida
+  apenas em prompts de atividades já existentes; uma atividade nova podia voltar a divergir do gate.
+- **Fechamento sistêmico:** Têmis passa a compor um fragmento versionado comum sempre que o backend
+  entregar `researchIntelligence`, independentemente do processo comercial. O fragmento exige ao
+  menos um `cardId` de cada coleção para `APPROVED`/`ADJUST`, preserva a autoridade consultiva dos
+  cartões e mantém o validador estrito. A regressão Safira comprova que contexto e instrução chegam
+  juntos; o manifesto do agente publica o fragmento para impedir fonte operacional invisível.
 
 ## LOOP-PSIQUE-CALLBACK-DE-FALHA-INVALIDO-REPETIDO — retry técnico nunca termina
 

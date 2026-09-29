@@ -27,6 +27,17 @@ class SafiraCommercialContractsTest {
             "commercialIntegrityReview",
             "sourceReference",
             "experiment:301",
+            "researchIntelligence",
+            Map.of(
+                "routes",
+                java.util.List.of(
+                    Map.of(
+                        "agentKey",
+                        "meta-ad-approver",
+                        "cards",
+                        java.util.List.of(
+                            Map.of(
+                                "cardId", "RI1-AAAAAAAAAAAA", "collection", "neuromarketing"))))),
             "processContextJson",
             "{\"safiraCommercial\":{\"fingerprint\":\"frozen-safira\",\"productId\":10}}",
             "taskTarget",
@@ -41,7 +52,10 @@ class SafiraCommercialContractsTest {
             "cinco critérios comerciais",
             "não pode ser promovida",
             "custo de IA",
-            "preflight")
+            "preflight",
+            "Uso auditável da inteligência de pesquisa de Têmis v1",
+            "cada coleção entregue",
+            "RI1-AAAAAAAAAAAA")
         .doesNotContain(
             "{{TASK_CONTEXT}}", "versionedCommercialHomologationEvidence", "Mira", "pele madura");
     var schema =

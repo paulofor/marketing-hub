@@ -764,7 +764,7 @@ Principais variáveis de ambiente (todas já possuem defaults no `docker-compose
 
 - `BACKEND_BASE_URL` e `BACKEND_API_PREFIX` para apontar para o backend;
 - `FACEBOOK_GRAPH_API_BASE_URL` e `FACEBOOK_GRAPH_API_VERSION` para controlar a versão da Graph API;
-- `FACEBOOKPIXEL_ENABLED` para religar explicitamente a sincronização de pixels/eventos (padrão `false`);
+- `FACEBOOKPIXEL_ENABLED` para desligar explicitamente a sincronização de pixels/eventos em contingência (padrão `true`);
 - `FACEBOOKCAMPAIGN_SCHEDULER_DELAY`, `FACEBOOKPIXEL_SCHEDULER_DELAY`, `FACEBOOK_INTEREST_VALIDATION_SCHEDULER_DELAY` e `FACEBOOK_TOKEN_RENEWAL_SCHEDULER_DELAY` para ajustar as janelas dos agendadores;
 - `FACEBOOK_ADS_WORKER_PORT` caso queira expor a porta HTTP (padrão mapeia `8082:8080`).
 

@@ -246,3 +246,24 @@ com MySQL 5.7, pagamento, e-mail descartável, backend e frontend reais. A inspe
 CTA integral na primeira dobra, prova antes do vídeo e ausência de overflow. Produto #10 e slot v1
 ainda devem receber esse mesmo contrato pela interface oficial depois da publicação, antes de uma
 nova revisão de Psique. Nenhuma campanha, compra ou verba é autorizada por esta correção.
+
+## Preflight produtivo e contrato de liberação em 29/09/2026
+
+Depois da publicação v8, Psique #554 e Têmis #556 aprovaram a mesma candidata. O Processo 5 abriu o
+run produtivo #13 e concluiu 11/11 gates: landing, dossiê MOIS, métrica, variável, meta de venda,
+checkout e entrega, frescor, Meta, DRPO, hipótese e persona. A referência visual vigente é
+`slot:9;experience-sha256:98d1d8df808380756c86ce655441a8554b7dda7b3474b90778485eadee1cc08d;safira-fingerprint:071bc121b619f03184ccec426888c5e77e4793c192981c89d00850222ca82ac1`.
+
+A primeira autorização pela interface retornou HTTP 409 pedindo GeraSalesPage, embora o cânone
+Safira permita que a superfície própria cumpra página, checkout, instrumentação e entrega. Foram
+comparadas página redundante, exceção ampla por subtipo e reconhecimento estrito do preflight. A
+terceira foi escolhida: somente `AI_PERSONALIZED_PAID_DELIVERY` de `AI_PRODUCT`, no Facebook, com
+slot publicado do mesmo produto/experimento, URL coincidente, run produtivo válido, todos os gates
+verdes e identidade Safira atual pode substituir a página tradicional. Integração do Processo 4 ou
+logs não liberam mídia.
+
+A validação local aprovou 51 testes direcionados de identidade, política e readiness, 53 testes do
+serviço de experimento em contexto Spring e a suíte integral do backend com 3.689 testes, zero
+falhas e 23 cenários explicitamente ignorados pelo projeto. Os cenários negativos mantêm bloqueados
+fingerprint obsoleto, Processo 4 sem Processo 5 e low-ticket genérico. A autorização e o piloto
+continuam dependentes da publicação desta correção e de nova execução pela interface oficial.

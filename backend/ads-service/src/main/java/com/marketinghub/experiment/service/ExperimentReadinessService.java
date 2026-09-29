@@ -173,7 +173,9 @@ public class ExperimentReadinessService {
     boolean integratedPdeReady = integratedPdeJourneyEvidenceService.isReady(experiment);
     boolean publishedPdePreflightReady = publishedPdePreflightEvidenceService.isReady(experiment);
     boolean pdeOperationalEvidenceReady =
-        directPdeReady || integratedPdeReady || publishedPdePreflightReady;
+        directPdeReady
+            || (!requiresMetaTargeting && integratedPdeReady)
+            || publishedPdePreflightReady;
     boolean reusablePdeSuccessorDestinationReady =
         hasReusablePdeSuccessorDestinationEvidence(experiment);
     boolean mediaBudgetReady = hasReadyMediaBudget(experiment);
@@ -645,7 +647,9 @@ public class ExperimentReadinessService {
     boolean integratedPdeReady = integratedPdeJourneyEvidenceService.isReady(experiment);
     boolean publishedPdePreflightReady = publishedPdePreflightEvidenceService.isReady(experiment);
     boolean pdeOperationalEvidenceReady =
-        directPdeReady || integratedPdeReady || publishedPdePreflightReady;
+        directPdeReady
+            || (!requiresMetaTargeting(experiment) && integratedPdeReady)
+            || publishedPdePreflightReady;
     boolean reusablePdeSuccessorDestinationReady =
         hasReusablePdeSuccessorDestinationEvidence(experiment);
     if ((!pdeOperationalEvidenceReady || requiresMetaTargeting(experiment))

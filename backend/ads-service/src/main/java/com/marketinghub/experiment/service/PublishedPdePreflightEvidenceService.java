@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.run.ExperimentRun;
@@ -10,8 +11,10 @@ import com.marketinghub.experiment.run.ExperimentRunGateResult;
 import com.marketinghub.experiment.run.ExperimentRunGateStatus;
 import com.marketinghub.experiment.run.ExperimentRunMode;
 import com.marketinghub.experiment.run.ExperimentRunStatus;
+import com.marketinghub.experiment.run.service.SafiraPreflightEvidenceScopeService;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunGateResultRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
@@ -23,8 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
- * Responsabilidade: reconhecer a publicação PDE sustentada pelo preflight produtivo do mesmo
- * experimento, slot e versão.
+ * Responsabilidade: reconhecer uma superfície própria publicada sustentada pelo preflight produtivo
+ * do mesmo experimento, slot e versão.
  */
 @Service
 public class PublishedPdePreflightEvidenceService {
@@ -39,23 +42,24 @@ public class PublishedPdePreflightEvidenceService {
   private final ExperimentRunRepository runRepository;
   private final ExperimentRunGateResultRepository gateRepository;
   private final PdeProductionSlotRepository slotRepository;
+  private final SafiraPreflightEvidenceScopeService safiraEvidenceScope;
 
-  /** Configura as fontes persistidas do run, dos gates e do slot publicado. */
+  /** Configura as fontes persistidas do run, dos gates e da identidade do slot publicado. */
   public PublishedPdePreflightEvidenceService(
       ExperimentRunRepository runRepository,
       ExperimentRunGateResultRepository gateRepository,
-      PdeProductionSlotRepository slotRepository) {
+      PdeProductionSlotRepository slotRepository,
+      SafiraPreflightEvidenceScopeService safiraEvidenceScope) {
     this.runRepository = runRepository;
     this.gateRepository = gateRepository;
     this.slotRepository = slotRepository;
+    this.safiraEvidenceScope = safiraEvidenceScope;
   }
 
-  /**
-   * Confirma que a campanha Facebook aponta para a versão PDE publicada e homologada no run atual.
-   */
+  /** Confirma que a campanha Facebook aponta para a superfície própria publicada e homologada. */
   @Transactional(readOnly = true)
   public boolean isReady(Experiment experiment) {
-    if (!isFacebookPde(experiment)) {
+    if (!isSupportedFacebookSurface(experiment)) {
       return false;
     }
     PdeProductionSlot slot =
@@ -77,16 +81,26 @@ public class PublishedPdePreflightEvidenceService {
         gateRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(run.getId());
     return allGatesApproved(gates)
         && REQUIRED_FACEBOOK_GATES.stream().allMatch(code -> hasAuditedPass(gates, code))
-        && landingEvidenceMatchesPublishedSlot(gates, slot);
+        && landingEvidenceMatchesPublishedSlot(experiment, run, gates, slot);
   }
 
-  /** Restringe esta prova ao funil PDE publicado pelo canal Facebook. */
-  private boolean isFacebookPde(Experiment experiment) {
+  /** Restringe a prova ao funil PDE ou à entrega Safira paga pelo canal Facebook. */
+  private boolean isSupportedFacebookSurface(Experiment experiment) {
     return experiment != null
         && experiment.getId() != null
         && experiment.getProduct() != null
         && experiment.getPlatform() == ExperimentPlatform.FACEBOOK
-        && experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL;
+        && (experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
+            || isPersonalizedPaidDelivery(experiment));
+  }
+
+  /** Reconhece somente o subtipo pago Safira que vende antes de coletar a personalização. */
+  private boolean isPersonalizedPaidDelivery(Experiment experiment) {
+    return experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT
+        && experiment.getCampaignObjective() == ExperimentCampaignObjective.SALES
+        && experiment.getProductAiSubtype() == ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY
+        && experiment.getProduct().getProductTypeDefinition() != null
+        && "AI_PRODUCT".equals(experiment.getProduct().getProductTypeDefinition().getCode());
   }
 
   /** Exige publicação real, validação verde e identidade coincidente do destino. */
@@ -133,9 +147,15 @@ public class PublishedPdePreflightEvidenceService {
                     && StringUtils.hasText(gate.getEvidenceReference()));
   }
 
-  /** Impede reutilizar a revisão visual de outra URL ou versão PDE. */
+  /** Impede reutilizar a revisão visual de outra publicação ou contrato comercial. */
   private boolean landingEvidenceMatchesPublishedSlot(
-      List<ExperimentRunGateResult> gates, PdeProductionSlot slot) {
+      Experiment experiment,
+      ExperimentRun run,
+      List<ExperimentRunGateResult> gates,
+      PdeProductionSlot slot) {
+    if (isPersonalizedPaidDelivery(experiment)) {
+      return safiraEvidenceScope.applies(run) && safiraEvidenceScope.hasCurrentEvidence(run);
+    }
     return gates.stream()
         .filter(
             gate ->

@@ -10,12 +10,23 @@ Para `experimentType = PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL`, o destino intermedi�
 
 Para Produto IA `AI_PERSONALIZED_SAMPLE`, o destino intermediário aprovado é o funil-página do Lead Portal vinculado ao experimento. Nesse caso, o GeraSalesPage v1 pode iniciar sem URL de checkout real quando `follow_up_action_url` apontar exatamente para o funil aprovado de coleta da amostra personalizada. A publicação da campanha continua bloqueada até o GeraSalesPage v1 concluir e auditar a página dentro desse funil.
 
+Para Produto IA `AI_PERSONALIZED_PAID_DELIVERY`, a superfície própria do produto pode substituir a
+página tradicional do GeraSalesPage quando ela cumprir integralmente o papel de intermediação e
+estiver publicada e auditada no mesmo experimento. A exceção exige slot `ACTIVE` e validado, URL e
+produto coincidentes, run produtivo vigente e válido, todos os gates aprovados e a prova imutável
+do preflight Safira com `slot`, SHA-256 da experiência e fingerprint comercial atuais. A conclusão
+do Processo 4, uma URL acessível ou logs isolados não bastam. Sem essa prova completa, o
+GeraSalesPage v1 continua obrigatório.
+
 ## Critérios obrigatórios
 
 - Nos tipos que exigem página de venda tradicional, o GeraSalesPage v1 precisa concluir a etapa `publication-package` e registrar auditoria da página publicada antes da liberação para Facebook Ads.
 - `follow_up_action_url` deve ser a URL da página de venda auditada, não a URL de checkout.
 - Em `PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL`, `follow_up_action_url` deve ser a URL da versão PDE produtiva aprovada do Clube MUSA, como `https://v5.clubemusa.com.br`, levando ao login/entrada do Clube MUSA com paywall interno.
 - Em `AI_PERSONALIZED_SAMPLE`, `follow_up_action_url` deve ser a URL pública do `LeadPortalFlow` aprovado que receberá a página auditada e o formulário gerenciado de personalização.
+- Em `AI_PERSONALIZED_PAID_DELIVERY`, `follow_up_action_url` deve ser a URL da superfície própria
+  publicada do mesmo produto e experimento; prontidão, liberação manual e fila de campanha devem
+  consultar a mesma identidade vigente do preflight produtivo.
 - O checkout deve existir apenas como CTA dentro da página, depois de promessa, prova, mecanismo, objeções e percepção de valor.
 - A página precisa conter coletores mínimos `page_view`, `page_load_metric`, `section_view_time` e `checkout_click`.
 - O backend deve bloquear tanto a liberação manual quanto a fila `/api/facebook-campaigns/experiments-ready` quando essa regra não for cumprida.

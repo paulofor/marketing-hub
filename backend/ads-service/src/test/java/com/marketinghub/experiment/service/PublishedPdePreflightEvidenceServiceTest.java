@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.run.ExperimentRun;
@@ -14,9 +15,12 @@ import com.marketinghub.experiment.run.ExperimentRunGateResult;
 import com.marketinghub.experiment.run.ExperimentRunGateStatus;
 import com.marketinghub.experiment.run.ExperimentRunMode;
 import com.marketinghub.experiment.run.ExperimentRunStatus;
+import com.marketinghub.experiment.run.service.SafiraPreflightEvidenceScopeService;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.product.Product;
+import com.marketinghub.productai.ProductAiSubtype;
+import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunGateResultRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
@@ -35,8 +39,10 @@ class PublishedPdePreflightEvidenceServiceTest {
   private final ExperimentRunGateResultRepository gates =
       mock(ExperimentRunGateResultRepository.class);
   private final PdeProductionSlotRepository slots = mock(PdeProductionSlotRepository.class);
+  private final SafiraPreflightEvidenceScopeService safiraEvidence =
+      mock(SafiraPreflightEvidenceScopeService.class);
   private final PublishedPdePreflightEvidenceService service =
-      new PublishedPdePreflightEvidenceService(runs, gates, slots);
+      new PublishedPdePreflightEvidenceService(runs, gates, slots, safiraEvidence);
 
   private Experiment experiment;
   private ExperimentRun run;
@@ -134,6 +140,54 @@ class PublishedPdePreflightEvidenceServiceTest {
     when(gates.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(11L)).thenReturn(incomplete);
 
     assertThat(service.isReady(experiment)).isFalse();
+  }
+
+  /** Reconhece a entrega paga Safira somente com a identidade imutável do preflight atual. */
+  @Test
+  void recognizesPersonalizedPaidDeliveryWithCurrentSafiraEvidence() {
+    configurePersonalizedPaidDelivery();
+    when(safiraEvidence.applies(run)).thenReturn(true);
+    when(safiraEvidence.hasCurrentEvidence(run)).thenReturn(true);
+
+    assertThat(service.isReady(experiment)).isTrue();
+  }
+
+  /** Impede que Processo 4 ou um gate textual substitua a identidade Safira do Processo 5. */
+  @Test
+  void rejectsPersonalizedPaidDeliveryWithStaleSafiraEvidence() {
+    configurePersonalizedPaidDelivery();
+    when(safiraEvidence.applies(run)).thenReturn(true);
+    when(safiraEvidence.hasCurrentEvidence(run)).thenReturn(false);
+
+    assertThat(service.isReady(experiment)).isFalse();
+  }
+
+  /** Impede ampliar a exceção para qualquer low-ticket hospedado em slot próprio. */
+  @Test
+  void rejectsGenericLowTicketEvenWhenSafiraScopeWouldPass() {
+    configurePersonalizedPaidDelivery();
+    experiment.setProductAiSubtype(null);
+    when(safiraEvidence.applies(run)).thenReturn(true);
+    when(safiraEvidence.hasCurrentEvidence(run)).thenReturn(true);
+
+    assertThat(service.isReady(experiment)).isFalse();
+  }
+
+  /** Converte a fixture para o contrato pago de Produto IA usado por Mira. */
+  private void configurePersonalizedPaidDelivery() {
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    experiment.setProductAiSubtype(ProductAiSubtype.AI_PERSONALIZED_PAID_DELIVERY);
+    experiment.setProduct(
+        Product.builder()
+            .id(10L)
+            .slug("mira")
+            .productTypeDefinition(ProductTypeDefinition.builder().code("AI_PRODUCT").build())
+            .build());
+    experiment.setFollowUpActionUrl("https://mira.digicomdigital.com.br");
+    slot.setProductSlug("mira");
+    slot.setPublicUrl("https://mira.digicomdigital.com.br");
+    slot.setExperienceVersion("mira-commercial-v1");
   }
 
   /** Monta os gates mínimos aprovados e vinculados à mesma URL e versão. */

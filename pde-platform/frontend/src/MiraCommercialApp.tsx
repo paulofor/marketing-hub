@@ -6,6 +6,7 @@ const endpoint = "/api/pde/mira/commercial/v1";
 const commercialVideo = "/media/mira-commercial-demo-v3.mp4";
 const commercialVideoHls = "/media/mira-commercial-demo-v3-hls/index.m3u8";
 const commercialVideoPoster = "/media/mira-commercial-demo-v3-poster.jpg";
+const commercialProductProof = "/media/mira-commercial-product-proof-v1.png";
 
 type ProductInput = { name: string; labelDirections: string };
 type RoutineCard = {
@@ -297,37 +298,96 @@ export function MiraCommercialApp() {
               >
                 {offer.primaryCta || "Quero organizar minha rotina por R$ 49"}
               </a>
+              <aside
+                className="mira-commercial-purchase-protection"
+                aria-label="Proteção da compra Mira"
+              >
+                <p>
+                  <strong>R$ 49 uma vez, sem assinatura.</strong>
+                </p>
+                <ul>
+                  <li>
+                    <strong>Acesso:</strong> após a aprovação do pagamento, pelo
+                    mesmo e-mail usado na compra.
+                  </li>
+                  <li>
+                    <strong>Entrega:</strong> na hora, na sua área segura,
+                    depois de preencher e enviar o formulário.
+                  </li>
+                  <li>
+                    <strong>Reembolso integral:</strong> peça em até 7 dias
+                    corridos pelo contato@digicomdigital.com.br.
+                  </li>
+                  <li>
+                    <strong>Suporte:</strong> disponível por 30 dias no mesmo
+                    e-mail.
+                  </li>
+                </ul>
+                <p className="mira-commercial-protection-note">
+                  A proteção da Mira vale em todos os meios de pagamento,
+                  inclusive quando o método não tiver Compra Garantida do
+                  Mercado Pago.
+                </p>
+                <p className="mira-commercial-privacy-note">
+                  Usamos seu e-mail e as informações dos rótulos somente para
+                  liberar, salvar e apoiar sua rotina. Você pode solicitar
+                  acesso, correção ou exclusão dos dados pelo suporte.
+                </p>
+              </aside>
             </>
           )}
-          <AdaptiveVideoPlayer
-            src={commercialVideoHls}
-            fallbackSrc={commercialVideo}
-            controls
-            playsInline
-            preload="metadata"
-            poster={commercialVideoPoster}
-            ariaLabel="Demonstração de Mira"
-            onPlaybackEvent={(event) => {
-              if (event.type === "play" && !videoPlayed.current) {
-                videoPlayed.current = true;
-                void trackPublicEvent("VIDEO_PLAY", {
-                  experimentId: 93,
-                  creativeVariant: "mira-commercial-demo-v3",
-                });
-              }
-              if (event.type === "ended" && !videoCompleted.current) {
-                videoCompleted.current = true;
-                void trackPublicEvent("VIDEO_COMPLETED", {
-                  experimentId: 93,
-                  creativeVariant: "mira-commercial-demo-v3",
-                });
-              }
-            }}
-          />
-          <div className="mira-commercial-proof">
-            <strong>Veja antes de decidir:</strong> entrada guiada, resultado
-            claro e duas organizações incluídas por R$ 49, em pagamento único.
-          </div>
+          <section
+            className="mira-commercial-evidence-grid"
+            aria-label="Demonstração real do produto"
+          >
+            <figure
+              className="mira-commercial-product-proof"
+              data-product-proof
+            >
+              <img
+                src={commercialProductProof}
+                alt="Interface real de Mira com uma rotina organizada"
+                loading="eager"
+                decoding="async"
+              />
+              <figcaption>
+                <strong>Veja o produto antes de decidir:</strong> entrada
+                guiada, resultado claro e duas organizações incluídas por R$ 49,
+                em pagamento único.
+              </figcaption>
+            </figure>
+            <div className="mira-commercial-video-proof">
+              <p className="mira-commercial-kicker">
+                Demonstração de 15 segundos
+              </p>
+              <h2>Veja como a rotina aparece na prática.</h2>
+              <AdaptiveVideoPlayer
+                src={commercialVideoHls}
+                fallbackSrc={commercialVideo}
+                controls
+                playsInline
+                preload="metadata"
+                poster={commercialVideoPoster}
+                ariaLabel="Demonstração de Mira"
+                onPlaybackEvent={(event) => {
+                  if (event.type === "play" && !videoPlayed.current) {
+                    videoPlayed.current = true;
+                    void trackPublicEvent("VIDEO_PLAY", {
+                      experimentId: 93,
+                      creativeVariant: "mira-commercial-demo-v3",
+                    });
+                  }
+                  if (event.type === "ended" && !videoCompleted.current) {
+                    videoCompleted.current = true;
+                    void trackPublicEvent("VIDEO_COMPLETED", {
+                      experimentId: 93,
+                      creativeVariant: "mira-commercial-demo-v3",
+                    });
+                  }
+                }}
+              />
+            </div>
+          </section>
           <p className="mira-commercial-offer-rights">
             A compra inclui{" "}
             <strong>duas organizações individualizadas no total</strong>. Cada
@@ -550,6 +610,8 @@ function legalContent(path: string) {
       title: "Termos de uso",
       paragraphs: [
         "Mira organiza, em até duas tentativas, os produtos que a cliente informa a partir das orientações documentadas nos rótulos.",
+        "O pagamento de R$ 49 é único. Depois da aprovação, o acesso é liberado pelo e-mail da compra e cada organização é exibida na área segura assim que o formulário é enviado.",
+        "O suporte fica disponível por 30 dias pelo e-mail contato@digicomdigital.com.br.",
         "Mira não realiza diagnóstico, prescrição ou tratamento e não substitui orientação profissional.",
         "No checkout, o recebedor é identificado como Paulo Forestieri, responsável comercial pela Mira.",
       ],
@@ -558,7 +620,8 @@ function legalContent(path: string) {
     return {
       title: "Privacidade",
       paragraphs: [
-        "Os dados são usados para liberar o acesso, salvar a rotina e prestar suporte. A cliente pode solicitar acesso, correção, oposição ou exclusão dentro da área autenticada.",
+        "O e-mail da compra e as informações dos rótulos são usados somente para liberar o acesso, salvar a rotina e prestar suporte.",
+        "A cliente pode solicitar acesso, correção, oposição ou exclusão pelo e-mail contato@digicomdigital.com.br.",
         "Credenciais de acesso não são incluídas em URLs de servidor, logs públicos ou relatórios comerciais.",
       ],
     };
@@ -566,7 +629,8 @@ function legalContent(path: string) {
     return {
       title: "Política de reembolso",
       paragraphs: [
-        "A compra possui a garantia legal aplicável. Solicite atendimento pelo e-mail contato@digicomdigital.com.br informando o e-mail usado no pagamento.",
+        "Você pode pedir reembolso integral em até 7 dias corridos após a compra pelo e-mail contato@digicomdigital.com.br, informando o e-mail usado no pagamento.",
+        "A proteção comercial da Mira vale em todos os meios de pagamento, inclusive quando o método não estiver coberto pela Compra Garantida do Mercado Pago.",
         "Quando o provedor confirmar o reembolso, o acesso é encerrado automaticamente.",
       ],
     };

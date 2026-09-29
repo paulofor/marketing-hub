@@ -5,6 +5,7 @@ import com.marketinghub.experiment.run.ExperimentRun;
 import com.marketinghub.experiment.run.ExperimentRunGateCodes;
 import com.marketinghub.experiment.run.ExperimentRunGateResult;
 import com.marketinghub.experiment.run.ExperimentRunGateStatus;
+import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationEvidenceException;
 import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationRequest.GateEvidence;
 import com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialContext;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunGateResultRepository;
@@ -53,7 +54,7 @@ public class QuartzoPreflightEvidenceScopeService {
     if (!applies(run)) return;
     Scope scope = currentScope(run);
     if (evidence == null || !matches(scope, evidence.evidenceReference())) {
-      throw new IllegalArgumentException(
+      throw new ExperimentRunHomologationEvidenceException(
           "A homologação Quartzo deve referenciar a publicação auditada atual, seu hash e o"
               + " contrato comercial vigente: "
               + scope.requiredReference());
@@ -63,18 +64,27 @@ public class QuartzoPreflightEvidenceScopeService {
 
   /** Explica qual identidade deve acompanhar capturas e testes do run atual. */
   public String requiredReference(ExperimentRun run) {
-    return applies(run) ? currentScope(run).requiredReference() : null;
+    Scope scope = applies(run) ? resolveScope(run, false) : null;
+    return scope != null ? scope.requiredReference() : null;
   }
 
   /** Resolve a fotografia comercial atual sem usar data de consulta ou texto declarado. */
   private Scope currentScope(ExperimentRun run) {
+    return resolveScope(run, true);
+  }
+
+  /** Lê a identidade atual e permite consulta vazia enquanto a publicação ainda não existir. */
+  private Scope resolveScope(ExperimentRun run, boolean required) {
     JsonNode snapshot = context.snapshot("experiment:" + run.getExperiment().getId());
     long publicationId = snapshot.path("publicationId").asLong(0L);
     String pageHash = snapshot.path("pageHash").asText();
     String fingerprint = snapshot.path("fingerprint").asText();
-    QuartzoCommercialContext.require(
-        publicationId > 0 && !pageHash.isBlank() && !fingerprint.isBlank(),
-        "A homologação Quartzo exige uma publicação auditada identificável.");
+    boolean complete = publicationId > 0 && !pageHash.isBlank() && !fingerprint.isBlank();
+    if (!complete) {
+      QuartzoCommercialContext.require(
+          !required, "A homologação Quartzo exige uma publicação auditada identificável.");
+      return null;
+    }
     return new Scope(publicationId, pageHash, fingerprint);
   }
 

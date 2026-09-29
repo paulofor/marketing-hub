@@ -11,6 +11,7 @@ import com.marketinghub.experiment.run.ExperimentRun;
 import com.marketinghub.experiment.run.ExperimentRunGateCodes;
 import com.marketinghub.experiment.run.ExperimentRunGateResult;
 import com.marketinghub.experiment.run.ExperimentRunGateStatus;
+import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationEvidenceException;
 import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationRequest.GateEvidence;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunGateResultRepository;
@@ -71,6 +72,7 @@ class SafiraPreflightEvidenceScopeServiceTest {
                         ExperimentRunGateStatus.PASS,
                         "Outra experiência",
                         "slot:901;experience-sha256:" + "a".repeat(64))))
+        .isInstanceOf(ExperimentRunHomologationEvidenceException.class)
         .hasMessageContaining("safira-fingerprint");
   }
 
@@ -102,5 +104,19 @@ class SafiraPreflightEvidenceScopeServiceTest {
         .thenReturn(List.of(stale));
 
     assertThat(service.hasCurrentEvidence(run)).isFalse();
+  }
+
+  /** Mantém a leitura do preflight disponível antes de a publicação Safira estar materializada. */
+  @Test
+  void omitsRequiredReferenceBeforePublicationExists() {
+    var product = Product.builder().id(30L).build();
+    var experiment = new Experiment();
+    experiment.setId(501L);
+    experiment.setProduct(product);
+    var run = ExperimentRun.builder().id(703L).experiment(experiment).build();
+    when(context.applies(product)).thenReturn(true);
+    when(context.snapshot("experiment:501")).thenReturn(new ObjectMapper().createObjectNode());
+
+    assertThat(service.requiredReference(run)).isNull();
   }
 }

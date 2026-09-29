@@ -1,5 +1,6 @@
 package com.marketinghub.web;
 
+import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationEvidenceException;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -107,6 +108,19 @@ public class ApiExceptionHandler {
         request.getQueryString(),
         exception.getMessage());
     return buildResponse(HttpStatus.BAD_REQUEST, "Requisição inválida.", request, null);
+  }
+
+  /** Devolve ao operador o escopo auditável exigido quando a homologação não pertence ao run. */
+  @ExceptionHandler(ExperimentRunHomologationEvidenceException.class)
+  public ResponseEntity<Map<String, Object>> handleExperimentRunHomologationEvidenceException(
+      ExperimentRunHomologationEvidenceException exception, HttpServletRequest request) {
+    LOGGER.warn(
+        "Evidência de homologação rejeitada. method={}, uri={}, query={}, reason={}",
+        request.getMethod(),
+        request.getRequestURI(),
+        request.getQueryString(),
+        exception.getMessage());
+    return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request, null);
   }
 
   /** Trata abortos de conexão assíncrona sem transformar desconexão do cliente em erro técnico. */

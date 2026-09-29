@@ -572,7 +572,19 @@ public class BackendExperimentRunService {
         run.getId(),
         run.getStatus(),
         hasBlockers,
+        requiredLandingEvidenceReference(run),
         gates.stream().map(this::toGateResponse).toList());
+  }
+
+  /** Expõe ao operador a identidade imutável exigida para homologar a landing atual. */
+  private String requiredLandingEvidenceReference(ExperimentRun run) {
+    if (quartzoEvidenceScope != null) {
+      String reference = quartzoEvidenceScope.requiredReference(run);
+      if (reference != null) {
+        return reference;
+      }
+    }
+    return safiraEvidenceScope != null ? safiraEvidenceScope.requiredReference(run) : null;
   }
 
   /** Converte um gate persistido para o contrato de leitura do preflight. */

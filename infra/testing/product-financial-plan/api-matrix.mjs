@@ -196,6 +196,29 @@ const stale = (await list(95103))[0];
 assert.equal(stale.stale, true);
 assert.equal(stale.canRequestAnalysis, false);
 await analyze(95103, held.id, 409);
+const rebase = await request(`${api}/products/95103/preparation`);
+assert.equal(rebase.canPrepare, true);
+assert.equal(rebase.expectedRevision, 1);
+assert.equal(rebase.commercialPlanVersion, 2);
+assert.equal(rebase.productVersion, "fixture-product-v1");
+const refreshed = await request(`${api}/products/95103/preparation`, {
+  expectedRevision: rebase.expectedRevision,
+  commercialPlanId: rebase.commercialPlanId,
+  commercialPlanVersion: rebase.commercialPlanVersion,
+  productVersion: rebase.productVersion,
+  supportDays: rebase.supportDays,
+  personalizedAi: rebase.personalizedAi,
+});
+assert.equal(refreshed.revision, 2);
+assert.equal(refreshed.stale, false);
+assert.equal(refreshed.assumptions.priceBrl, 67);
+assert.equal(refreshed.assumptions.maximumCacBrl, 25);
+assert.equal(
+  refreshed.assumptions.variableCostEnvelope.sourceReference,
+  "commercial-plan:95103@v2:variableCostPerSaleBrl",
+);
+assert.notEqual(refreshed.assumptions.evidence, held.assumptions.evidence);
+assert.equal((await list(95103)).length, 2);
 assert.equal((await request("/fixture/reviews")).length, 2);
 console.log(
   JSON.stringify({

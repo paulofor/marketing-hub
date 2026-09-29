@@ -18,6 +18,7 @@ import com.marketinghub.financialplan.v1.service.prepareplan.*;
 import com.marketinghub.financialplan.v1.service.saveplan.PlanAssumptions;
 import com.marketinghub.financialplan.v1.service.saveplan.SavePlanRequest;
 import com.marketinghub.planning.*;
+import com.marketinghub.planning.service.CommercialPlanExecutionSyncService;
 import com.marketinghub.product.Product;
 import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
@@ -49,6 +50,10 @@ class FinancialPlanPreparationTest {
   private final FinancialAgentExecutionRepository executions =
       mock(FinancialAgentExecutionRepository.class);
   private final FinancialAgentService plutus = mock(FinancialAgentService.class);
+  private final CommercialPlanExecutionSyncService executionSyncService =
+      mock(CommercialPlanExecutionSyncService.class);
+  private final CommercialPlanMilestoneRepository milestones =
+      mock(CommercialPlanMilestoneRepository.class);
   private final Product product = new Product();
   private final CommercialPlan plan = new CommercialPlan();
   private FinancialPlanService service;
@@ -66,7 +71,9 @@ class FinancialPlanPreparationTest {
             executions,
             plutus,
             json,
-            Validation.buildDefaultValidatorFactory().getValidator());
+            Validation.buildDefaultValidatorFactory().getValidator(),
+            executionSyncService,
+            milestones);
     product.setId(95101L);
     product.setValidationDefinitionVersion("fixture-v1");
     product.setValidationDefinitionJson(
@@ -94,6 +101,7 @@ class FinancialPlanPreparationTest {
     when(plans.findByProductId(95101L)).thenReturn(List.of(plan));
     when(plans.findIdsByProductId(95101L)).thenReturn(List.of(plan.getId()));
     when(plans.findById(plan.getId())).thenReturn(Optional.of(plan));
+    when(milestones.findByPlanIdOrderBySequenceOrderAsc(plan.getId())).thenReturn(List.of());
     var version = new CommercialPlanVersion();
     version.setVersionNumber(4);
     when(versions.findTopByPlanIdOrderByVersionNumberDesc(plan.getId()))
@@ -168,10 +176,14 @@ class FinancialPlanPreparationTest {
         .isEqualTo("commercial-plan:95102@v4:fixedOperationalCostBrl");
     assertThat(saved.canRequestAnalysis()).isTrue();
     assertThat(saved.evaluation().status()).isEqualTo("READY_FOR_ANALYSIS");
-    assertThat(
-            FinancialPlanPreparation.prepare(
-                saved.assumptions(), request(0, 7, true), plan, saved.assumptions().priceBrl()))
+    var preparedAgain =
+        FinancialPlanPreparation.prepare(
+            saved.assumptions(), request(0, 7, true), plan, saved.assumptions().priceBrl());
+    assertThat(preparedAgain)
+        .usingRecursiveComparison()
+        .ignoringFields("realizedCostBaseline")
         .isEqualTo(saved.assumptions());
+    assertThat(preparedAgain.realizedCostBaseline()).isNull();
     verifyNoInteractions(plutus);
   }
 
@@ -284,6 +296,12 @@ class FinancialPlanPreparationTest {
 
     assertThat(requested.analysis().status()).isEqualTo("PENDING");
     assertThat(retried.analysis().executionId()).isEqualTo(requested.analysis().executionId());
+    assertThat(saved.assumptions().realizedCostBaseline().campaignCostBrl())
+        .isEqualByComparingTo("59.70");
+    assertThat(saved.assumptions().realizedCostBaseline().aiCostBrl())
+        .isEqualByComparingTo("69.95");
+    assertThat(saved.assumptions().realizedCostBaseline().totalCostBrl())
+        .isEqualByComparingTo("143.15");
     var context = org.mockito.ArgumentCaptor.forClass(StartRevenueProjectionRequest.class);
     verify(plutus, times(1)).startRevenueProjection(eq(plan.getId()), context.capture());
     assertThat(context.getValue().decisionContext())
@@ -295,6 +313,8 @@ class FinancialPlanPreparationTest {
             "CONDITIONAL_COMMERCIAL_TARGET_NOT_DEMAND_FORECAST",
             "DETERMINISTIC_SENSITIVITY_NOT_DEMAND_FORECAST",
             "EXISTING_PRODUCT_VERSION_INCREMENTAL_SALE",
+            "CAPTURED_BEFORE_CURRENT_FINANCIAL_REVISION",
+            "commercial-plan:95102:relational-realized-costs",
             "\"baseCustomers\":5",
             "\"baseProfitBrl\":69.30",
             "\"optimisticRecoveryCustomers\":8");
@@ -367,9 +387,10 @@ class FinancialPlanPreparationTest {
         .saveAndFlush(any());
     var saved = service.prepare(product.getId(), Environment.LIVE, request(0, 7, true), null);
     when(revisions.findLockedById(saved.id())).thenReturn(Optional.of(persisted.get()));
+    plan.setActualTotalCost(new BigDecimal("144.15"));
 
     assertThatThrownBy(() -> service.requestAnalysis(product.getId(), Environment.LIVE, saved.id()))
-        .hasMessageContaining("custos realizados que podem pertencer ao novo período");
+        .hasMessageContaining("novos custos realizados após esta revisão financeira");
     verifyNoInteractions(plutus);
   }
 
@@ -398,6 +419,36 @@ class FinancialPlanPreparationTest {
     assertThatThrownBy(() -> service.requestAnalysis(product.getId(), Environment.LIVE, saved.id()))
         .hasMessageContaining("não produz resultado-base positivo");
     verifyNoInteractions(plutus);
+  }
+
+  /** Substitui uma baseline enviada pelo cliente pelos custos relacionais calculados no backend. */
+  @Test
+  void forgedRealizedCostBaselineIsOverwritten() throws Exception {
+    var assumptions =
+        FinancialPlanPreparation.prepare(
+            null, request(0, 7, true), plan, product.getCurrentPriceBrl());
+    var node = (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(assumptions);
+    node.putObject("realizedCostBaseline")
+        .put("campaignCostBrl", 999)
+        .put("aiCostBrl", 999)
+        .put("totalCostBrl", 1998)
+        .put("sourceReference", "commercial-plan:95102:relational-realized-costs");
+    var forged = json.treeToValue(node, PlanAssumptions.class);
+
+    var saved =
+        service.create(
+            "PRODUCT",
+            product.getId(),
+            Environment.LIVE,
+            new SavePlanRequest(
+                "Plano sintético", "Operador local", 0, plan.getId(), null, forged));
+
+    assertThat(saved.assumptions().realizedCostBaseline().campaignCostBrl())
+        .isEqualByComparingTo("59.70");
+    assertThat(saved.assumptions().realizedCostBaseline().aiCostBrl())
+        .isEqualByComparingTo("69.95");
+    assertThat(saved.assumptions().realizedCostBaseline().totalCostBrl())
+        .isEqualByComparingTo("143.15");
   }
 
   /** Recusa envelopes textuais que não correspondem aos valores e à versão oficiais do plano. */

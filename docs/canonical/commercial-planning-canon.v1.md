@@ -241,13 +241,27 @@ Todo plano mensal e todo marco semanal devem expor:
 
 - `actual_campaign_cost`: custo executado de campanha.
 - `actual_ai_cost`: custo executado de IA.
-- `actual_total_cost`: soma de campanha e IA.
+- `actual_total_cost`: soma de campanha, IA e outros custos operacionais tipados atribuídos ao
+  plano, como produção de vídeo.
 - `actual_revenue`: receita executada.
 - `actual_experiments_created`: quantidade de experimentos criados no periodo.
 - `actual_experiments_published`: quantidade de experimentos publicados no periodo.
 - `execution_synced_at`: data/hora da ultima sincronizacao.
 
 Custos de campanha devem vir de metricas de campanha persistidas. Custos de IA devem considerar geracoes e execucoes de IA persistidas, convertidas para BRL quando a origem estiver em USD. Receita deve vir de metricas financeiras persistidas. Quantidades de experimentos devem vir das tabelas operacionais de experimento e publicacao/campanha, nunca de texto livre.
+
+Toda consolidação de executado deve provar a atribuição ao plano por `commercial_plan_id`
+persistido na fonte ou pelo vínculo relacional `commercial_plan_experiment`. Somar o mês global e
+reapresentá-lo em cada plano é proibido. Registro genérico de auditoria sem relação verificável com
+plano ou experimento não entra no consolidado financeiro; fontes que representam a mesma chamada
+não podem ser contadas duas vezes.
+
+Antes de congelar uma nova revisão financeira de produto, o backend deve reconciliar o executado e
+persistir nela uma baseline autoritativa de campanha, IA e total. Custos já realizados nessa baseline
+continuam visíveis na recuperação acumulada, mas não bloqueiam por si só a análise incremental nem
+são cobrados novamente por venda. Somente aumento positivo depois da baseline exige classificação
+antes de Plutus. A baseline é calculada pelo backend e substitui qualquer valor enviado pelo cliente;
+revisões legadas sem baseline conservam a verificação temporal anterior.
 
 ## Regra de interpretacao
 

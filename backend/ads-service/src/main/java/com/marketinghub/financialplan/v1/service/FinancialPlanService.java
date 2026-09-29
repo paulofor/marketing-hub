@@ -11,8 +11,10 @@ import com.marketinghub.financialplan.v1.service.getplan.*;
 import com.marketinghub.financialplan.v1.service.prepareplan.*;
 import com.marketinghub.financialplan.v1.service.saveplan.*;
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.service.CommercialPlanExecutionSyncService;
 import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
 import com.marketinghub.repository.jpa.financialplan.FinancialPlanRevisionRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanMilestoneRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanVersionRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
@@ -43,6 +45,8 @@ public class FinancialPlanService {
   private final FinancialAgentService plutus;
   private final ObjectMapper json;
   private final Validator validator;
+  private final CommercialPlanExecutionSyncService executionSyncService;
+  private final CommercialPlanMilestoneRepository milestoneRepository;
 
   /** Entrega referências canônicas para cadastro, incluindo o tipo real de cada produto. */
   @Transactional(readOnly = true)
@@ -243,6 +247,7 @@ public class FinancialPlanService {
     p.setName(request.name().trim());
     p.setCreatedBy(request.createdBy().trim());
     p.setCreatedAt(Instant.now());
+    PlanAssumptions persistedAssumptions = request.assumptions();
     if ("PRODUCT".equals(scope)) {
       if (request.assumptions().productVersion() == null
           || request.assumptions().productVersion().isBlank())
@@ -252,6 +257,10 @@ public class FinancialPlanService {
         throw conflict("Selecione um plano comercial deste produto.");
       p.setCommercialPlanId(request.commercialPlanId());
       p.setCommercialPlanVersion(currentVersion(request.commercialPlanId()));
+      var commercialPlan =
+          plans.findById(request.commercialPlanId()).orElseThrow(() -> missing("Plano comercial"));
+      syncCommercialPlanExecution(commercialPlan);
+      persistedAssumptions = withRealizedCostBaseline(request.assumptions(), commercialPlan);
       validateVariableCostEnvelope(
           request.assumptions(), request.commercialPlanId(), p.getCommercialPlanVersion());
       validateFixedCostEnvelope(
@@ -274,6 +283,8 @@ public class FinancialPlanService {
         || request.assumptions().variableCostEnvelope() != null
         || request.assumptions().fixedCostEnvelope() != null) {
       throw conflict("Modelo por tipo não recebe plano comercial nem parecer de outro produto.");
+    } else {
+      persistedAssumptions = withRealizedCostBaseline(request.assumptions(), null);
     }
     if (request.assumptions().ai().pricingCheckedOn() != null
         && request.assumptions().ai().pricingCheckedOn().isAfter(today()))
@@ -284,7 +295,7 @@ public class FinancialPlanService {
     if (request.assumptions().fixedCostEnvelope() != null
         && request.assumptions().fixedCostEnvelope().checkedOn().isAfter(today()))
       throw conflict("A conferência do custo fixo agregado não pode ter data futura.");
-    p.setAssumptionsJson(write(request.assumptions(), scope, scopeId));
+    p.setAssumptionsJson(write(persistedAssumptions, scope, scopeId));
     for (var prior : history) {
       if (Objects.equals(prior.getCommercialPlanId(), p.getCommercialPlanId())
           && Objects.equals(prior.getCommercialPlanVersion(), p.getCommercialPlanVersion())
@@ -293,7 +304,7 @@ public class FinancialPlanService {
           && prior.getAssumptionsJson().equals(p.getAssumptionsJson())) return view(prior);
     }
     p.setEvaluationJson(
-        write(FinancialPlanCalculator.evaluate(request.assumptions()), scope, scopeId));
+        write(FinancialPlanCalculator.evaluate(persistedAssumptions), scope, scopeId));
     var saved = revisions.saveAndFlush(p);
     log.info(
         "Plano financeiro salvo scope={} scopeId={} revision={} environment={} financialPlanId={}",
@@ -318,6 +329,7 @@ public class FinancialPlanService {
     var product = products.findById(productId).orElseThrow(() -> missing("Produto"));
     var commercialPlan =
         plans.findById(p.getCommercialPlanId()).orElseThrow(() -> missing("Plano comercial"));
+    syncCommercialPlanExecution(commercialPlan);
     var projection =
         FinancialProjectionContext.build(
             product, commercialPlan, p.getCommercialPlanVersion(), current, json);
@@ -471,6 +483,48 @@ public class FinancialPlanService {
         .findTopByPlanIdOrderByVersionNumberDesc(planId)
         .orElseThrow(() -> conflict("O plano comercial precisa ter uma versão registrada."))
         .getVersionNumber();
+  }
+
+  /** Atualiza custos e receita do plano antes de congelar ou comparar uma revisão financeira. */
+  private void syncCommercialPlanExecution(CommercialPlan plan) {
+    var milestones = milestoneRepository.findByPlanIdOrderBySequenceOrderAsc(plan.getId());
+    executionSyncService.sync(plan, milestones == null ? List.of() : milestones);
+    if (milestones != null) milestoneRepository.saveAll(milestones);
+    plans.save(plan);
+  }
+
+  /** Substitui qualquer baseline recebido pelo retrato autoritativo calculado no backend. */
+  private PlanAssumptions withRealizedCostBaseline(
+      PlanAssumptions assumptions, CommercialPlan plan) {
+    PlanAssumptions.RealizedCostBaseline baseline =
+        plan == null
+            ? null
+            : new PlanAssumptions.RealizedCostBaseline(
+                zero(plan.getActualCampaignCost()),
+                zero(plan.getActualAiCost()),
+                zero(plan.getActualTotalCost()),
+                "commercial-plan:" + plan.getId() + ":relational-realized-costs");
+    return new PlanAssumptions(
+        assumptions.productVersion(),
+        assumptions.periodDays(),
+        assumptions.validUntil(),
+        assumptions.evidence(),
+        assumptions.ai(),
+        assumptions.costs(),
+        assumptions.priceBrl(),
+        assumptions.minimumMarginPercent(),
+        assumptions.maximumCacBrl(),
+        assumptions.scenarios(),
+        assumptions.preparation(),
+        assumptions.variableCostEnvelope(),
+        assumptions.fixedCostEnvelope(),
+        baseline);
+  }
+
+  /** Normaliza ausência de custo realizado como zero calculado, sem inferir custo futuro. */
+  private java.math.BigDecimal zero(java.math.BigDecimal value) {
+    return (value == null ? java.math.BigDecimal.ZERO : value)
+        .setScale(2, java.math.RoundingMode.HALF_UP);
   }
 
   /**

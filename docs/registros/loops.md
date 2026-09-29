@@ -7810,3 +7810,28 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Correção e prevenção:** o serviço normaliza e rejeita em HTTP 400 os seis campos acima dos
   limites canônicos; a tela espelha os mesmos tamanhos, liga rótulos e entradas e mostra erro de
   validação. Testes parametrizados cobrem cada coluna e um teste de interface fixa os limites.
+
+## LOOP-PLUTUS-CUSTO-GLOBAL-CONTAMINA-PLANO — 29/09/2026
+
+- **Evidência confirmada:** o preflight financeiro de Mira, plano comercial #8, exibiu R$ 205,44 de
+  campanha e R$ 30,25 de IA mesmo sem campanha publicada no experimento #93. A decomposição no
+  banco mostrou que os R$ 205,44 pertenciam aos experimentos #88, #91 e #92; quase todo o custo de
+  IA vinha da página de vendas do #88. Mira possuía somente USD 1,0018 em jobs do Estúdio de
+  Imagens vinculados diretamente ao plano #8.
+- **Causa-raiz:** a sincronização filtrava apenas o intervalo mensal e somava todas as tabelas do
+  sistema. O mesmo total global era gravado em cada plano. Ela também somava o log genérico
+  `ai_worker_generation`, cuja referência não comprova plano e pode duplicar execuções já
+  persistidas nas tabelas tipadas.
+- **Alternativas avaliadas:** zerar Mira manualmente esconderia o custo real do Estúdio; criar outro
+  plano duplicaria identidade e histórico; atribuir cada fonte por `commercial_plan_id` ou
+  `commercial_plan_experiment` e congelar o realizado na revisão financeira preserva custos sem
+  contaminar produtos. A terceira alternativa foi adotada.
+- **Correção sistêmica:** campanha, métricas financeiras, gerações, landings, páginas de venda,
+  entregas pagas, vídeos e contagens agora exigem o vínculo relacional do plano. Jobs do Estúdio
+  usam seu `commercial_plan_id`; auditoria genérica sem identidade comercial sai do consolidado.
+  Cada nova revisão recebe uma baseline calculada pelo backend, e somente custo positivo posterior
+  volta a bloquear Plutus para classificação.
+- **Prevenção:** testes de contrato exigem o filtro do plano em todas as consultas, recusam a fonte
+  genérica, comprovam plano ainda não persistido sem consulta global, impedem baseline forjada pelo
+  cliente e distinguem custo capturado de aumento posterior. O contexto enviado a Plutus preserva
+  baseline, diferença e origem para auditoria.

@@ -40,7 +40,12 @@ public class CommercialPlanExecutionSyncService {
   public void sync(CommercialPlan plan, List<CommercialPlanMilestone> milestones) {
     LocalDate planEnd = resolvePlanEnd(plan);
     LocalDate planStart = planEnd.withDayOfMonth(1);
-    ExecutionTotals monthlyTotals = totals(planStart, planEnd.plusDays(1));
+    if (plan.getId() == null) {
+      applyPlanTotals(plan, ExecutionTotals.empty());
+      milestones.forEach(milestone -> applyMilestoneTotals(milestone, ExecutionTotals.empty()));
+      return;
+    }
+    ExecutionTotals monthlyTotals = totals(plan.getId(), planStart, planEnd.plusDays(1));
     applyPlanTotals(plan, monthlyTotals);
 
     LocalDate currentStart = planStart;
@@ -50,7 +55,7 @@ public class CommercialPlanExecutionSyncService {
         applyMilestoneTotals(milestone, ExecutionTotals.empty());
         continue;
       }
-      applyMilestoneTotals(milestone, totals(currentStart, currentEnd.plusDays(1)));
+      applyMilestoneTotals(milestone, totals(plan.getId(), currentStart, currentEnd.plusDays(1)));
       currentStart = currentEnd.plusDays(1);
     }
   }
@@ -65,8 +70,9 @@ public class CommercialPlanExecutionSyncService {
     return createdDate.withDayOfMonth(createdDate.lengthOfMonth());
   }
 
-  /** Calcula custos, receita e quantidades no intervalo fechado-aberto informado. */
-  private ExecutionTotals totals(LocalDate startInclusive, LocalDate endExclusive) {
+  /** Calcula somente valores ligados relacionalmente ao plano no intervalo fechado-aberto. */
+  private ExecutionTotals totals(
+      Long commercialPlanId, LocalDate startInclusive, LocalDate endExclusive) {
     Timestamp start = Timestamp.from(startInclusive.atStartOfDay().toInstant(ZoneOffset.UTC));
     Timestamp end = Timestamp.from(endExclusive.atStartOfDay().toInstant(ZoneOffset.UTC));
     BigDecimal campaignCost =
@@ -75,7 +81,9 @@ public class CommercialPlanExecutionSyncService {
                 """
                 select coalesce(sum(m.spend), 0)
                 from experiment_campaign_metric m
-                where (
+                join commercial_plan_experiment cpe on cpe.experiment_id = m.experiment_id
+                where cpe.commercial_plan_id = ?
+                and ((
                     m.date_start is not null
                     and m.date_start < ?
                     and (m.date_stop is null or m.date_stop >= ?)
@@ -84,8 +92,9 @@ public class CommercialPlanExecutionSyncService {
                     m.date_start is null
                     and m.updated_at >= ?
                     and m.updated_at < ?
-                )
+                ))
                 """,
+                commercialPlanId,
                 java.sql.Date.valueOf(endExclusive),
                 java.sql.Date.valueOf(startInclusive),
                 start,
@@ -97,32 +106,63 @@ public class CommercialPlanExecutionSyncService {
                 select coalesce(sum(cost_usd), 0)
                 from (
                     select coalesce(sum(cost_usd), 0) as cost_usd
-                    from ai_worker_generation
-                    where created_at >= ? and created_at < ?
+                    from experiment_pipeline_generation_job job
+                    join commercial_plan_experiment cpe on cpe.experiment_id = job.experiment_id
+                    where cpe.commercial_plan_id = ?
+                      and job.created_at >= ? and job.created_at < ?
                     union all
-                    select coalesce(sum(cost_usd), 0) as cost_usd
-                    from experiment_pipeline_generation_job
-                    where created_at >= ? and created_at < ?
+                    select coalesce(sum(stage.cost_usd), 0) as cost_usd
+                    from gera_sales_page_stage_execution stage
+                    join commercial_plan_experiment cpe on cpe.experiment_id = stage.experiment_id
+                    where cpe.commercial_plan_id = ?
+                      and stage.execution_requested_at >= ? and stage.execution_requested_at < ?
                     union all
-                    select coalesce(sum(cost_usd), 0) as cost_usd
-                    from gera_sales_page_stage_execution
-                    where execution_requested_at >= ? and execution_requested_at < ?
+                    select coalesce(sum(stage.cost_usd), 0) as cost_usd
+                    from gera_landing_stage_execution stage
+                    join commercial_plan_experiment cpe on cpe.experiment_id = stage.experiment_id
+                    where cpe.commercial_plan_id = ?
+                      and stage.execution_requested_at >= ? and stage.execution_requested_at < ?
+                    union all
+                    select coalesce(sum(job.cost_usd), 0) as cost_usd
+                    from commercial_plan_image_studio_job job
+                    where job.commercial_plan_id = ?
+                      and job.created_at >= ? and job.created_at < ?
+                    union all
+                    select coalesce(sum(stage.cost_usd), 0) as cost_usd
+                    from product_ai_paid_delivery_stage_execution stage
+                    join commercial_plan_experiment cpe on cpe.experiment_id = stage.experiment_id
+                    where cpe.commercial_plan_id = ?
+                      and stage.execution_requested_at >= ? and stage.execution_requested_at < ?
                 ) actual_ai_costs
                 """,
+                commercialPlanId,
                 start,
                 end,
+                commercialPlanId,
                 start,
                 end,
+                commercialPlanId,
+                start,
+                end,
+                commercialPlanId,
+                start,
+                end,
+                commercialPlanId,
                 start,
                 end));
     BigDecimal aiCostFromMetrics =
         money(
             queryDecimal(
                 """
-                select coalesce(sum(ai_cost_cents), 0) / 100.0
-                from experiment_financial_metric
-                where measured_at >= ? and measured_at < ?
+                select coalesce(sum(metric.ai_cost_cents), 0) / 100.0
+                from experiment_financial_metric metric
+                join experiment_budget budget on budget.id = metric.experiment_budget_id
+                join commercial_plan_experiment cpe
+                  on cpe.experiment_id = budget.external_experiment_id
+                where cpe.commercial_plan_id = ?
+                  and metric.measured_at >= ? and metric.measured_at < ?
                 """,
+                commercialPlanId,
                 start,
                 end));
     BigDecimal aiCost = money(currencyConversionService.usdToBrl(aiCostUsd).add(aiCostFromMetrics));
@@ -130,10 +170,13 @@ public class CommercialPlanExecutionSyncService {
         money(
             queryDecimal(
                 """
-                select coalesce(sum(cost), 0)
-                from experiment_video_asset
-                where created_at >= ? and created_at < ?
+                select coalesce(sum(coalesce(video.cost, 0) + coalesce(video.audio_cost, 0)), 0)
+                from experiment_video_asset video
+                join commercial_plan_experiment cpe on cpe.experiment_id = video.experiment_id
+                where cpe.commercial_plan_id = ?
+                  and video.created_at >= ? and video.created_at < ?
                 """,
+                commercialPlanId,
                 start,
                 end));
     BigDecimal videoCost = money(currencyConversionService.usdToBrl(videoCostUsd));
@@ -141,28 +184,39 @@ public class CommercialPlanExecutionSyncService {
         money(
             queryDecimal(
                 """
-                select coalesce(sum(revenue_cents), 0) / 100.0
-                from experiment_financial_metric
-                where measured_at >= ? and measured_at < ?
+                select coalesce(sum(metric.revenue_cents), 0) / 100.0
+                from experiment_financial_metric metric
+                join experiment_budget budget on budget.id = metric.experiment_budget_id
+                join commercial_plan_experiment cpe
+                  on cpe.experiment_id = budget.external_experiment_id
+                where cpe.commercial_plan_id = ?
+                  and metric.measured_at >= ? and metric.measured_at < ?
                 """,
+                commercialPlanId,
                 start,
                 end));
     Integer experimentsCreated =
         queryInteger(
             """
                 select count(*)
-                from experiment
-                where created_at >= ? and created_at < ?
+                from experiment experiment
+                join commercial_plan_experiment cpe on cpe.experiment_id = experiment.id
+                where cpe.commercial_plan_id = ?
+                  and experiment.created_at >= ? and experiment.created_at < ?
                 """,
+            commercialPlanId,
             start,
             end);
     Integer experimentsPublished =
         queryInteger(
             """
-                select count(distinct experiment_id)
-                from facebook_ads_campaign
-                where created_at >= ? and created_at < ?
+                select count(distinct campaign.experiment_id)
+                from facebook_ads_campaign campaign
+                join commercial_plan_experiment cpe on cpe.experiment_id = campaign.experiment_id
+                where cpe.commercial_plan_id = ?
+                  and campaign.created_at >= ? and campaign.created_at < ?
                 """,
+            commercialPlanId,
             start,
             end);
     return new ExecutionTotals(

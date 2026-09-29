@@ -8,6 +8,7 @@ import com.marketinghub.financialagent.service.*;
 import com.marketinghub.financialplan.v1.FinancialPlanRevision;
 import com.marketinghub.financialplan.v1.controller.FinancialPlanController;
 import com.marketinghub.planning.*;
+import com.marketinghub.planning.service.CommercialPlanExecutionSyncService;
 import com.marketinghub.product.Product;
 import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
@@ -244,6 +245,20 @@ public class FinancialPlanLocalApplication {
     when(repo.findIdsByProductId(anyLong())).thenAnswer(i -> List.of((Long) i.getArgument(0)));
     when(repo.findByProductId(anyLong())).thenAnswer(i -> List.of(plan(i.getArgument(0))));
     when(repo.findById(anyLong())).thenAnswer(i -> Optional.of(plan(i.getArgument(0))));
+    return repo;
+  }
+
+  /** Simula a reconciliação já coberta pelo contrato dedicado de custos relacionais. */
+  @Bean
+  CommercialPlanExecutionSyncService executionSyncService() {
+    return mock(CommercialPlanExecutionSyncService.class);
+  }
+
+  /** Mantém a fixture sem marcos comerciais, preservando a fronteira real do serviço financeiro. */
+  @Bean
+  CommercialPlanMilestoneRepository milestones() {
+    var repo = mock(CommercialPlanMilestoneRepository.class);
+    when(repo.findByPlanIdOrderBySequenceOrderAsc(anyLong())).thenReturn(List.of());
     return repo;
   }
 

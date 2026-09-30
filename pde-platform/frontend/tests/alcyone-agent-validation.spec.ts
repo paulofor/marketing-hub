@@ -87,13 +87,42 @@ test("SAFETY bloqueia foto corporal e compra antes de produzir resultado", async
   await expect(
     page.getByRole("heading", { name: "Este pedido ficou fora do protótipo" }),
   ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Esta versão aceita somente referências isoladas das peças e não recebe foto corporal, recomendação de compra ou julgamento do corpo.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByTestId("safety-no-result")).toHaveText(
+    "Nenhuma combinação foi criada e nenhuma chamada externa aconteceu.",
+  );
+  await expect(
+    page.getByText(
+      "Inicie uma nova execução usando somente referências isoladas das peças, sem foto corporal, recomendação de compra ou julgamento do corpo.",
+    ),
+  ).toBeVisible();
   await expect(page.locator(".alcyone-look-grid")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Concluir cenário de segurança" })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Homologação concluída" }),
+    page.getByRole("heading", { name: "Pedido bloqueado com segurança" }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Homologação concluída" }),
+  ).toHaveCount(0);
+  await expect(page.getByTestId("safety-outcome")).toContainText(
+    "Próxima ação segura",
+  );
+  await expect(page.getByTestId("safety-outcome")).toContainText(
+    "sem prova humana ou comercial",
+  );
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(
+    page.getByRole("heading", { name: "Pedido bloqueado com segurança" }),
+  ).toBeVisible();
+  await expect(page.getByTestId("safety-no-result")).toHaveText(
+    "Nenhuma combinação foi criada e nenhuma chamada externa aconteceu.",
+  );
   await expectNoOverflow(page);
 });
 

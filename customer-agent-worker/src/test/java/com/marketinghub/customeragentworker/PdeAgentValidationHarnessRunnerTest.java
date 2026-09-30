@@ -94,6 +94,46 @@ class PdeAgentValidationHarnessRunnerTest {
         .hasMessageContaining("não possui cenários próprios");
   }
 
+  /** Aceita SAFETY de Alcyone somente quando a saída conserva o desfecho explicável. */
+  @Test
+  void acceptsAlcyoneSafetyWithStructuredOutcome() throws Exception {
+    Path script = fakeAlcyoneSafetyHarness(true);
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/bin/sh", script.toString(), "synthetic", true);
+
+    var execution =
+        runner.run(alcyoneTask(), "SAFETY", "SAFETY", temporaryDirectory.resolve("alcyone-safety"));
+
+    assertThat(execution.result().path("decision").asText()).isEqualTo("APPROVED");
+    assertThat(
+            execution
+                .result()
+                .path("scenarios")
+                .get(0)
+                .path("safetyOutcome")
+                .path("safeAction")
+                .asText())
+        .contains("nova execução");
+  }
+
+  /** Recusa aprovação SAFETY que tenta reduzir causa e orientação a uma flag booleana. */
+  @Test
+  void rejectsAlcyoneSafetyWithoutStructuredOutcome() throws Exception {
+    Path script = fakeAlcyoneSafetyHarness(false);
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/bin/sh", script.toString(), "synthetic", true);
+
+    assertThatThrownBy(
+            () ->
+                runner.run(
+                    alcyoneTask(),
+                    "SAFETY",
+                    "SAFETY",
+                    temporaryDirectory.resolve("alcyone-safety-invalid")))
+        .isInstanceOf(PdeAgentValidationHarnessRunner.HarnessException.class)
+        .hasMessageContaining("sem causa, ausência de resultado e ação segura");
+  }
+
   /** Aceita somente cobertura completa, PNG local e efeitos comerciais nulos. */
   @Test
   void acceptsCompleteTechnicalHarnessWithoutPersistingSecret() throws Exception {
@@ -276,6 +316,86 @@ class PdeAgentValidationHarnessRunnerTest {
             "mira-private-v1",
             "publicUrl",
             "http://127.0.0.1:5176/mira-private"));
+  }
+
+  /** Cria a tarefa sintética de Alcyone com a versão privada atual. */
+  private Map<String, Object> alcyoneTask() {
+    return Map.of(
+        "taskId",
+        901L,
+        "sourceReference",
+        "product:11@agent-validation-v1",
+        "taskTarget",
+        Map.of(
+            "productId",
+            11L,
+            "productSlug",
+            "pde-planejado-46",
+            "experienceVersion",
+            "alcyone-private-v2",
+            "publicUrl",
+            "http://127.0.0.1:5184"));
+  }
+
+  /** Materializa uma saída mínima de SAFETY para provar o contrato estruturado de Alcyone. */
+  private Path fakeAlcyoneSafetyHarness(boolean completeOutcome) throws Exception {
+    Path script = temporaryDirectory.resolve("alcyone-agent-validation-harness.mjs");
+    String outcome =
+        completeOutcome
+            ? """
+              {"code":"OUT_OF_SCOPE","reason":"Pedido fora do escopo seguro.","noResultMessage":"Nenhum resultado foi gerado.","safeAction":"Inicie uma nova execução com referências isoladas.","resultGenerated":false,"providerCalled":false}
+              """
+                .trim()
+            : "{}";
+    Files.writeString(
+        script,
+        """
+        #!/bin/sh
+        set -eu
+        input="$1"
+        output="$2"
+        evidence="$3"
+        mkdir -p "$evidence"
+        png="$evidence/safety-pixel.png"
+        printf '\\211PNG\\r\\n\\032\\n' > "$png"
+        capture=$(grep -o '"captureSessionId":"[^"]*"' "$input" | cut -d'"' -f4)
+        cat > "$output" <<JSON
+        {
+          "contractVersion":"PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
+          "mode":"SAFETY",
+          "decision":"APPROVED",
+          "sourceReference":"product:11@agent-validation-v1",
+          "productId":11,
+          "productSlug":"pde-planejado-46",
+          "publicUrl":"http://127.0.0.1:5184",
+          "prototypeVersion":"alcyone-private-v2",
+          "trafficClass":"AGENT_VALIDATION",
+          "internalMarker":"mh_internal_test",
+          "humanEvidenceClaimed":false,
+          "commercialEvidenceClaimed":false,
+          "checks":{
+            "sameVersion":true,"desktopAndMobile":true,"happyResultWithinTenMinutes":true,
+            "recoveryPreserved":true,"safetyBlocked":true,"accessibilityBasic":true,
+            "responsiveLayout":true,"privacyPreserved":true,"internalTrafficSegregated":true,
+            "paymentDisabled":true,"publicationDisabled":true,"campaignDisabled":true,
+            "zeroMediaSpend":true,"versionedPolicyAcknowledged":true,"credentialRotated":true,
+            "expiredSessionRejected":true,"crossSessionPackageDenied":true,
+            "resultUnavailableRecovered":true,"authenticatedReturn":true,"consentBeforeInput":true,
+            "canonicalSignalsOnly":true,"nullableMilestonesPreserved":true,
+            "safetyOutcomeExplained":true,"sixRecoveryStates":true,"contrastAa":true,
+            "keyboardNavigation":true,"focusVisible":true,"zoom200":true,"reducedMotion":true,
+            "mobileKeyboardSafeArea":true
+          },
+          "devices":[{"deviceProfile":"PIXEL_7","status":"PASS"}],
+          "scenarios":[{"scenarioCode":"SAFETY","status":"PASS","safetyOutcome":%s,"humanEvidenceClaimed":false,"commercialEvidenceClaimed":false,"sideEffects":{"paymentEnabled":false,"published":false,"campaignCreated":false,"mediaSpendBrl":0}}],
+          "artifacts":[{"captureSessionId":"$capture","evidenceKey":"SAFETY-PIXEL_7-FULL_PAGE","evidenceType":"FULL_PAGE","deviceProfile":"PIXEL_7","pageNumber":1,"foldNumber":null,"viewportWidth":412,"viewportHeight":915,"pageHeightPx":915,"scrollY":0,"sourceUrl":"http://127.0.0.1:5184","finalUrl":"http://127.0.0.1:5184","capturedAt":"2026-09-30T12:00:00Z","localPath":"$png"}],
+          "sideEffects":{"paymentEnabled":false,"published":false,"campaignCreated":false,"mediaSpendBrl":0}
+        }
+        JSON
+        """
+            .formatted(outcome));
+    script.toFile().setExecutable(true);
+    return script;
   }
 
   /** Materializa um processo falso que devolve o mesmo contrato usado pelo script real. */

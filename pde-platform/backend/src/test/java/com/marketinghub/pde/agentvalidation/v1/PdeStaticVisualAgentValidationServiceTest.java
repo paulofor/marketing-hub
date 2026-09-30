@@ -272,9 +272,21 @@ class PdeStaticVisualAgentValidationServiceTest {
         var blocked = service.generate(PRODUCT, session.sessionToken());
         assertThat(blocked.status()).isEqualTo("BLOCKED");
         assertThat(blocked.looks()).isEmpty();
+        assertThat(blocked.safetyOutcome()).isNotNull();
+        assertThat(blocked.safetyOutcome().code()).isEqualTo("OUT_OF_SCOPE");
+        assertThat(blocked.safetyOutcome().reason()).isEqualTo(blocked.blocker());
+        assertThat(blocked.safetyOutcome().noResultMessage())
+                .isEqualTo("Nenhuma combinação foi criada e nenhuma chamada externa aconteceu.");
+        assertThat(blocked.safetyOutcome().safeAction())
+                .contains("nova execução", "referências isoladas", "sem foto corporal");
+        assertThat(blocked.safetyOutcome().resultGenerated()).isFalse();
+        assertThat(blocked.safetyOutcome().providerCalled()).isFalse();
         var finished = service.completeScenario(PRODUCT, session.sessionToken());
         assertThat(finished.finished()).isTrue();
         assertThat(finished.providerCalls()).isZero();
+        assertThat(finished.safetyOutcome()).isEqualTo(blocked.safetyOutcome());
+        assertThat(service.evidence(PRODUCT, session.evidenceId()).safetyOutcome())
+                .isEqualTo(blocked.safetyOutcome());
     }
 
     /** Impede saltar interesse, política, retorno autenticado ou preferência na jornada. */

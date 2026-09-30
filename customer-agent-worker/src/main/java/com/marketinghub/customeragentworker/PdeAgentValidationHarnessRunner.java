@@ -50,6 +50,7 @@ public class PdeAgentValidationHarnessRunner {
           "consentBeforeInput",
           "canonicalSignalsOnly",
           "nullableMilestonesPreserved",
+          "safetyOutcomeExplained",
           "sixRecoveryStates",
           "contrastAa",
           "keyboardNavigation",
@@ -264,6 +265,21 @@ public class PdeAgentValidationHarnessRunner {
                     .anyMatch(check -> !checks.path(check).asBoolean(false))))) {
       throw new HarnessException(
           "A homologação Alcyone não comprovou todos os gates de continuidade autenticada.");
+    }
+    if (alcyone && approved) {
+      for (JsonNode scenario : result.path("scenarios")) {
+        if (!"SAFETY".equals(scenario.path("scenarioCode").asText())) continue;
+        JsonNode outcome = scenario.path("safetyOutcome");
+        if (!"OUT_OF_SCOPE".equals(outcome.path("code").asText())
+            || outcome.path("reason").asText().isBlank()
+            || outcome.path("noResultMessage").asText().isBlank()
+            || outcome.path("safeAction").asText().isBlank()
+            || outcome.path("resultGenerated").asBoolean(true)
+            || outcome.path("providerCalled").asBoolean(true)) {
+          throw new HarnessException(
+              "A homologação Alcyone aprovou SAFETY sem causa, ausência de resultado e ação segura.");
+        }
+      }
     }
     requireNoExternalSideEffects(result.path("sideEffects"));
     for (JsonNode scenario : result.path("scenarios")) {

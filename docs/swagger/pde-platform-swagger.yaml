@@ -592,6 +592,16 @@ components:
         code: { type: string }
         message: { type: string }
         recoveryAction: { type: string }
+    AgentValidationSafetyOutcome:
+      type: object
+      required: [code, reason, noResultMessage, safeAction, resultGenerated, providerCalled]
+      properties:
+        code: { type: string, enum: [OUT_OF_SCOPE] }
+        reason: { type: string }
+        noResultMessage: { type: string }
+        safeAction: { type: string }
+        resultGenerated: { type: boolean, enum: [false] }
+        providerCalled: { type: boolean, enum: [false] }
     AgentValidationSession:
       type: object
       required:
@@ -626,6 +636,10 @@ components:
           items: { $ref: "#/components/schemas/AgentValidationLook" }
         selectedLookId: { type: string, nullable: true }
         blocker: { type: string, nullable: true }
+        safetyOutcome:
+          allOf:
+            - $ref: "#/components/schemas/AgentValidationSafetyOutcome"
+          nullable: true
         events:
           type: array
           uniqueItems: true

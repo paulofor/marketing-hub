@@ -272,6 +272,17 @@ label {
   border-color: #c18468;
   background: #fff4ec;
 }
+.alcyone-safety-action {
+  margin: 22px 0;
+  border-left: 5px solid #173c50;
+  border-radius: 10px;
+  padding: 16px 18px;
+  background: #fffefa;
+  line-height: 1.55;
+}
+.alcyone-safety-action p {
+  margin: 0.4rem 0 0;
+}
 .alcyone-alert {
   border-left: 5px solid #b55236;
   border-radius: 9px;

@@ -47,6 +47,7 @@
         "accessAndContinuity",
         "nonAudiovisualSurfaces",
         "audiovisualRequired",
+        "staticResultFixtures",
         "privatePrototype",
         "completionCriteria",
         "blockingCriteria"
@@ -61,6 +62,41 @@
         "accessAndContinuity": { "type": "array", "items": { "type": "string" } },
         "nonAudiovisualSurfaces": { "type": "array", "items": { "type": "string" } },
         "audiovisualRequired": { "type": "boolean" },
+        "staticResultFixtures": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contractVersion",
+            "required",
+            "mode",
+            "artifactType",
+            "count",
+            "width",
+            "height",
+            "generator",
+            "providerCallsAuthorized",
+            "externalSideEffects",
+            "commercialEvidenceEligible",
+            "purpose"
+          ],
+          "properties": {
+            "contractVersion": { "type": "string", "enum": ["PDE_STATIC_RESULT_FIXTURES_V1"] },
+            "required": { "type": "boolean" },
+            "mode": {
+              "type": "string",
+              "enum": ["NOT_REQUIRED", "DETERMINISTIC_HOMOLOGATION_ONLY"]
+            },
+            "artifactType": { "type": "string", "enum": ["NONE", "STATIC_IMAGE"] },
+            "count": { "type": "integer", "minimum": 0, "maximum": 20 },
+            "width": { "type": "integer", "minimum": 0, "maximum": 4096 },
+            "height": { "type": "integer", "minimum": 0, "maximum": 4096 },
+            "generator": { "type": "string", "enum": ["NONE", "DETERMINISTIC_TEST_ADAPTER"] },
+            "providerCallsAuthorized": { "type": "integer", "const": 0 },
+            "externalSideEffects": { "type": "boolean", "const": false },
+            "commercialEvidenceEligible": { "type": "boolean", "const": false },
+            "purpose": { "type": "string" }
+          }
+        },
         "privatePrototype": {
           "type": "object",
           "additionalProperties": false,

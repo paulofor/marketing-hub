@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-30-alcyone-static-visual-contract-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT IF(
+                COUNT(*)=1
+                AND SUM(internal_name='Alcyone')=1
+                AND SUM(validation_definition_version='PDE_AGENT_VALIDATION_V1')=1
+                AND SUM(JSON_VALID(validation_definition_json)=1)=1
+                AND SUM(JSON_VALID(pde_experience_json)=1)=1
+                AND SUM(JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.agentValidationPlan.trafficClass'))='AGENT_VALIDATION')=1
+                AND SUM(JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.agentValidationSourceReference'))='product:11@agent-validation-v1')=1,
+                1,
+                0
+              )
+              FROM product
+              WHERE id=11
+      changes:
+        - sqlFile:
+            path: 2026-09-30-alcyone-static-visual-contract-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+              SET validation_definition_json=JSON_REMOVE(
+                    JSON_SET(
+                      validation_definition_json,
+                      '$.delivery.audiovisualRequired', JSON_EXTRACT('true', '$')
+                    ),
+                    '$.delivery.staticResultFixtures'
+                  ),
+                  pde_experience_json=JSON_REMOVE(
+                    JSON_SET(
+                      pde_experience_json,
+                      '$.harness.audiovisualRequired', JSON_EXTRACT('true', '$')
+                    ),
+                    '$.harness.staticResultFixtures'
+                  ),
+                  commercial_notes=TRIM(REPLACE(
+                    COALESCE(commercial_notes, ''),
+                    '[PDE_STATIC_RESULT_FIXTURES_V1] Alcyone separa três imagens estáticas sintéticas de homologação do pipeline audiovisual pago; zero provider, zero gasto e nenhuma evidência humana ou comercial.',
+                    ''
+                  )),
+                  updated_at=UTC_TIMESTAMP(6)
+              WHERE id=11
+                AND internal_name='Alcyone'
+                AND validation_definition_version='PDE_AGENT_VALIDATION_V1';

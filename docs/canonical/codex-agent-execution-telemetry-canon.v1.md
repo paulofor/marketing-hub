@@ -13,7 +13,9 @@ Distinguir um job apenas reservado de um processo Codex efetivamente ativo, sem 
 - Tokens de entrada e saída só podem ser persistidos quando forem informados de forma estruturada pelo Codex. É proibido estimar ou converter ausência em zero.
 - Falha na telemetria não transforma uma execução funcional em falha, mas deve ser registrada no log do worker.
 - O timeout configurado representa o limite de inatividade observável, não a duração total de um trabalho que continua produzindo saída. Uma execução ativa pode avançar até três janelas operacionais, quando então o teto absoluto encerra o processo.
-- Dédalo, Atena e Psique preservam a lease após timeout por inatividade para uma única retomada automática com a mesma entrada congelada. Nova expiração encerra a execução como falha; é proibido repetir indefinidamente.
+- Dédalo, Atena, Psique e o BPM comercial de Têmis preservam a lease após timeout por inatividade para uma única retomada automática com a mesma entrada congelada. Nova expiração encerra a execução como falha; é proibido repetir indefinidamente.
+- Workers BPM sujeitos a troca de imagem devem declarar um `workerContract` versionado no polling. O backend interrompe claims da imagem legada antes do rollout do executor e só habilita retomada automática depois do handshake compatível.
+- O BPM comercial de Têmis persiste a auditoria antes de iniciar o processo e usa `agentType=TEMIS_BPM` correlacionado pelo `taskId`. `META_AD_APPROVER` continua reservado às revisões de criativos, impedindo colisão entre identidades distintas do mesmo worker.
 - Psique grava reserva, auditoria, evidências, eventos, saída bruta e callback em volume próprio antes da entrega. Reinício ou HTTP 5xx deve reenviar o mesmo callback sem nova inferência; saída concluída pode ser validada e entregue, enquanto inferência interrompida sem saída termina bloqueada com consumo já observado e causa acionável. Um resultado recusado três vezes pelo backend deve ser convertido em callback de falha com o mesmo parecer, evidência e consumo, encerrando a tarefa como bloqueio técnico sem esperar indefinidamente.
 - Falha em uma fila auxiliar de um agente não pode impedir o consumo das demais filas independentes. Em especial, indisponibilidade da fila de vídeo não bloqueia a fila financeira de Plutus.
 
@@ -60,6 +62,12 @@ worker deve bloquear divergência de versão e deploy sem referência auditável
 ## Critério operacional
 
 Continuar quando heartbeat e saída avançarem; investigar quando o processo estiver vivo sem mudança de saída; considerar a execução presa quando o backend marcar `stale=true`. Ao recuperar uma lease presa, reutilizar a entrada congelada e preservar a correlação; após uma segunda expiração, parar e expor a dificuldade para decisão externa.
+
+Uma lease órfã só pode ser reentregue quando não houver resultado, evidência, custo, tokens nem
+saída observada. Heartbeat recente preserva a execução original; saída ou consumo observados
+bloqueiam nova inferência; ausência de telemetria depois de uma auditoria de modelo também bloqueia
+a repetição por custo incerto. A exceção legada sem auditoria pode ser retomada uma única vez após a
+janela de dois minutos.
 
 Toda nova tarefa terminal, bloqueada ou concluída, deve declarar seu modo de execução. Quando houver
 modelo, modelo efetivo, tipo de raciocínio configurado, parte do agente, parte da atividade e prompt

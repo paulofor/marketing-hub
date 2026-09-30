@@ -31,6 +31,7 @@ import org.springframework.web.client.RestClient;
 public class CommercialBpmTaskConsumer {
   private static final Logger log = LoggerFactory.getLogger(CommercialBpmTaskConsumer.class);
   private static final String AGENT_KEY = "meta-ad-approver";
+  private static final String WORKER_CONTRACT = "TEMIS_BPM_LEASE_V1";
   private static final String REQUESTED_SERVICE_TIER = "flex";
   private static final String EFFECTIVE_SERVICE_TIER = "STANDARD";
   private static final String SERVICE_TIER_EXCEPTION =
@@ -53,6 +54,7 @@ public class CommercialBpmTaskConsumer {
   private final String repositoryPath;
   private final PdeReviewArtifactLoader pdeArtifactLoader;
   private final CodexProcessSupervisor processSupervisor;
+  private final CodexTelemetryReporter telemetryReporter;
   private final int maxModelAttempts;
   @Autowired private AutomaticExecutionControl automaticExecution;
 
@@ -66,6 +68,7 @@ public class CommercialBpmTaskConsumer {
       @Value("${TEMIS_COMMERCIAL_EVIDENCE_PATH:}") String commercialEvidencePath,
       ObjectMapper json,
       CodexProcessSupervisor processSupervisor,
+      CodexTelemetryReporter telemetryReporter,
       @Value("${meta-ad-approver.commercial-model-max-attempts:2}") int maxModelAttempts) {
     this.backend = BackendRestClientFactory.create(properties);
     this.codex = codex;
@@ -79,6 +82,7 @@ public class CommercialBpmTaskConsumer {
                 : commercialEvidencePath);
     this.json = json;
     this.processSupervisor = processSupervisor;
+    this.telemetryReporter = telemetryReporter;
     this.maxModelAttempts = Math.max(1, maxModelAttempts);
   }
 
@@ -99,7 +103,30 @@ public class CommercialBpmTaskConsumer {
         json,
         new CodexProcessSupervisor(
             Duration.ofMinutes(10), Duration.ofMinutes(40), Duration.ofSeconds(15)),
+        null,
         2);
+  }
+
+  /** Permite testar limites do supervisor sem publicar heartbeat fora do contexto Spring. */
+  CommercialBpmTaskConsumer(
+      MetaAdApproverProperties properties,
+      String codex,
+      String model,
+      String repositoryPath,
+      String commercialEvidencePath,
+      ObjectMapper json,
+      CodexProcessSupervisor processSupervisor,
+      int maxModelAttempts) {
+    this(
+        properties,
+        codex,
+        model,
+        repositoryPath,
+        commercialEvidencePath,
+        json,
+        processSupervisor,
+        null,
+        maxModelAttempts);
   }
 
   /** Reserva em PLAY e revisa a atividade com integridade comercial e pesquisa rastreável. */
@@ -114,18 +141,6 @@ public class CommercialBpmTaskConsumer {
       task = new HashMap<>(task);
       execution = execute(task);
       JsonNode result = execution.result();
-      if ("creative-production-approval".equals(processCode(task)))
-        CreativeReviewImages.validate(result, json.valueToTree(task.get("creativeVisualInputs")));
-      if (isAgentValidationTask(task)) {
-        validateAgentValidation(result, task);
-      } else {
-        validate(result, processCode(task));
-        ResearchIntelligenceUsageValidator.validate(
-            task,
-            AGENT_KEY,
-            jsonTextValues(result.path("evidence")),
-            !"BLOCKED".equals(result.path("decision").asText()));
-      }
       if ("APPROVED".equals(result.path("decision").asText())) report(task, execution);
       else block(task, execution);
     } catch (Exception ex) {
@@ -148,10 +163,11 @@ public class CommercialBpmTaskConsumer {
           backend
               .get()
               .uri(
-                  "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={processCode}&activityId={activityId}",
+                  "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={processCode}&activityId={activityId}&workerContract={workerContract}",
                   AGENT_KEY,
                   contract.processCode(),
-                  contract.activityId())
+                  contract.activityId(),
+                  WORKER_CONTRACT)
               .retrieve()
               .body(new ParameterizedTypeReference<>() {});
       if (pending != null && !pending.isEmpty()) return pending.get(0);
@@ -180,6 +196,9 @@ public class CommercialBpmTaskConsumer {
       throws IOException, InterruptedException {
     PromptComposition prompt = promptComposition(task);
     validatePromptSize(prompt.fullPrompt());
+    recordExecutionAudit(
+        task,
+        executionAudit(prompt.fullPrompt(), prompt.agentPromptPart(), prompt.activityPromptPart()));
     Path schema = materialize(schemaResourceFor(task), ".json");
     TokenUsage accumulatedUsage = TokenUsage.empty();
     try {
@@ -225,6 +244,7 @@ public class CommercialBpmTaskConsumer {
     Path output = Files.createTempFile("temis-bpm-result-", ".json");
     Path processLog = Files.createTempFile("temis-bpm-process-", ".log");
     Process process = null;
+    CodexTelemetryReporter.Session telemetry = null;
     try {
       process =
           new ProcessBuilder(images.attach(command(output, schema)))
@@ -233,6 +253,7 @@ public class CommercialBpmTaskConsumer {
               .start();
       process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
+      telemetry = monitorExecution(task, process, processLog);
       CodexProcessSupervisor.WaitOutcome outcome =
           processSupervisor.awaitCompletion(process, processLog);
       TokenUsage usage = readTokenUsage(json, processLog);
@@ -249,11 +270,26 @@ public class CommercialBpmTaskConsumer {
       }
       try {
         String rawResponse = Files.readString(output);
-        return new AttemptExecution(
-            json.readTree(rawResponse),
-            usage,
-            CodexProcessSupervisor.WaitOutcome.COMPLETED,
-            rawResponse);
+        JsonNode result = json.readTree(rawResponse);
+        try {
+          validateExecutionResult(task, result);
+        } catch (RuntimeException ex) {
+          log.error(
+              "Resposta reprovada pelo contrato do gate BPM de Têmis. taskId={}", taskId(task), ex);
+          throw new BpmExecutionException(
+              "Resposta de Têmis reprovada pelo contrato funcional.",
+              usage,
+              prompt.fullPrompt(),
+              prompt.agentPromptPart(),
+              prompt.activityPromptPart(),
+              rawResponse,
+              ex);
+        }
+        AttemptExecution completed =
+            new AttemptExecution(
+                result, usage, CodexProcessSupervisor.WaitOutcome.COMPLETED, rawResponse);
+        if (telemetry != null) telemetry.success();
+        return completed;
       } catch (IOException ex) {
         log.error(
             "Resposta inválida no gate BPM de Têmis. taskId={} output={}",
@@ -269,10 +305,36 @@ public class CommercialBpmTaskConsumer {
             ex);
       }
     } finally {
+      if (telemetry != null) telemetry.close();
       if (process != null && process.isAlive()) processSupervisor.terminateTree(process);
       Files.deleteIfExists(output);
       Files.deleteIfExists(processLog);
     }
+  }
+
+  /** Publica heartbeat da tentativa sem misturar a identidade da tarefa com um criativo. */
+  private CodexTelemetryReporter.Session monitorExecution(
+      Map<String, Object> task, Process process, Path processLog) {
+    return telemetryReporter == null
+        ? null
+        : telemetryReporter.monitorBpmTask(taskId(task), process, processLog);
+  }
+
+  /** Valida o resultado integral antes de marcar a tentativa Codex como bem-sucedida. */
+  private void validateExecutionResult(Map<String, Object> task, JsonNode result) {
+    if ("creative-production-approval".equals(processCode(task))) {
+      CreativeReviewImages.validate(result, json.valueToTree(task.get("creativeVisualInputs")));
+    }
+    if (isAgentValidationTask(task)) {
+      validateAgentValidation(result, task);
+      return;
+    }
+    validate(result, processCode(task));
+    ResearchIntelligenceUsageValidator.validate(
+        task,
+        AGENT_KEY,
+        jsonTextValues(result.path("evidence")),
+        !"BLOCKED".equals(result.path("decision").asText()));
   }
 
   /** Monta o comando imutável usado por cada tentativa de revisão comercial. */
@@ -375,7 +437,9 @@ public class CommercialBpmTaskConsumer {
               : bpm == null ? null : bpm.activityPromptPart();
       var failure =
           failureBody(task, ex.toString(), usage, promptSent, agentPromptPart, activityPromptPart);
-      if (execution != null) failure.put("resultJson", execution.rawResponse());
+      String rawResponse =
+          execution != null ? execution.rawResponse() : bpm == null ? null : bpm.rawResponse();
+      if (rawResponse != null) failure.put("resultJson", rawResponse);
       backend
           .post()
           .uri(
@@ -729,6 +793,19 @@ public class CommercialBpmTaskConsumer {
     return audit;
   }
 
+  /** Persiste prompt e configuração antes de iniciar qualquer processo ou cobrança do modelo. */
+  private void recordExecutionAudit(Map<String, Object> task, Map<String, Object> audit) {
+    backend
+        .put()
+        .uri(
+            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/execution-audit",
+            AGENT_KEY,
+            taskId(task))
+        .body(audit)
+        .retrieve()
+        .toBodilessEntity();
+  }
+
   /** Converte a reprovação funcional em uma mudança objetiva e navegável. */
   private Map<String, Object> functionalGuidance(Map<String, Object> task, JsonNode result) {
     String action =
@@ -921,6 +998,7 @@ public class CommercialBpmTaskConsumer {
     private final String promptSent;
     private final String agentPromptPart;
     private final String activityPromptPart;
+    private final String rawResponse;
 
     /** Cria a falha técnica com a última medição conhecida. */
     private BpmExecutionException(
@@ -934,6 +1012,7 @@ public class CommercialBpmTaskConsumer {
       this.promptSent = promptSent;
       this.agentPromptPart = agentPromptPart;
       this.activityPromptPart = activityPromptPart;
+      this.rawResponse = null;
     }
 
     /** Cria a falha técnica mantendo também sua causa original. */
@@ -949,6 +1028,24 @@ public class CommercialBpmTaskConsumer {
       this.promptSent = promptSent;
       this.agentPromptPart = agentPromptPart;
       this.activityPromptPart = activityPromptPart;
+      this.rawResponse = null;
+    }
+
+    /** Cria a falha de contrato preservando também a resposta bruta recebida. */
+    private BpmExecutionException(
+        String message,
+        TokenUsage usage,
+        String promptSent,
+        String agentPromptPart,
+        String activityPromptPart,
+        String rawResponse,
+        Throwable cause) {
+      super(message, cause);
+      this.usage = usage;
+      this.promptSent = promptSent;
+      this.agentPromptPart = agentPromptPart;
+      this.activityPromptPart = activityPromptPart;
+      this.rawResponse = rawResponse;
     }
 
     /** Retorna a medição preservada para o callback de falha. */
@@ -969,6 +1066,11 @@ public class CommercialBpmTaskConsumer {
     /** Retorna o gate específico preservado antes da falha técnica. */
     private String activityPromptPart() {
       return activityPromptPart;
+    }
+
+    /** Retorna a resposta bruta recusada para o callback auditável de falha. */
+    private String rawResponse() {
+      return rawResponse;
     }
   }
 }

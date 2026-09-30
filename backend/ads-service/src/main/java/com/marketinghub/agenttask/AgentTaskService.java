@@ -103,20 +103,34 @@ public class AgentTaskService {
   private static final String CUSTOMER_AGENT_KEY = "customer-agent";
   private static final String COMMUNICATION_AGENT_KEY = "communication-director";
   private static final String LANDING_GENERATOR_AGENT_KEY = "landing-generator";
+  private static final String META_AD_APPROVER_AGENT_KEY = "meta-ad-approver";
   private static final String VIDEO_MAKER_AGENT_KEY = "videomaker";
   private static final String VIDEO_MANAGEMENT_RESOURCE_CODE = "video-management-service";
   static final String APOLLO_AUDIOVISUAL_WORKER_CONTRACT = "APOLLO_AUDIOVISUAL_V1";
+  static final String TEMIS_BPM_WORKER_CONTRACT = "TEMIS_BPM_LEASE_V1";
   private static final Set<String> APOLLO_AUDIOVISUAL_PROCESS_CODES =
       Set.of("pde-construction-approval", "creative-production-approval");
+  private static final Set<String> TEMIS_BPM_QUEUE_CONTRACTS =
+      Set.of(
+          "pde-commercial-homologation-activation|commercialIntegrityReview",
+          "opala-commercial-preparation-v1|commercialIntegrityReview",
+          "quartzo-commercial-preparation-v1|commercialIntegrityReview",
+          "safira-commercial-preparation-v1|commercialIntegrityReview",
+          "creative-production-approval|commercial",
+          "landing-page-generation|commercial",
+          "pde-construction-approval|commercialIntegrityReview");
   private static final Set<String> CALLBACK_REPLAY_CAPABLE_AGENTS =
       Set.of(CUSTOMER_AGENT_KEY, COMMUNICATION_AGENT_KEY, LANDING_GENERATOR_AGENT_KEY);
   private static final String CUSTOMER_AGENT_TELEMETRY_TYPE = "CUSTOMER_AGENT";
   private static final String DEDALO_BPM_TELEMETRY_TYPE = "DEDALO_BPM";
+  private static final String TEMIS_BPM_TELEMETRY_TYPE = "TEMIS_BPM";
   private static final String ORPHANED_LEASE_RECOVERY_PREFIX = "ORPHANED_LEASE_RECOVERY_ONCE|";
   private static final String ORPHANED_LEASE_EXHAUSTED_PREFIX =
       "ORPHANED_LEASE_RECOVERY_EXHAUSTED|";
   private static final String DEDALO_LEASE_RECOVERY_PREFIX = "DEDALO_LEASE_RECOVERY_ONCE|";
   private static final String DEDALO_LEASE_EXHAUSTED_PREFIX = "DEDALO_LEASE_RECOVERY_EXHAUSTED|";
+  private static final String TEMIS_LEASE_RECOVERY_PREFIX = "TEMIS_LEASE_RECOVERY_ONCE|";
+  private static final String TEMIS_LEASE_EXHAUSTED_PREFIX = "TEMIS_LEASE_RECOVERY_EXHAUSTED|";
   private static final String DETERMINISTIC_RESOURCE_RECOVERY_PREFIX =
       "DETERMINISTIC_RESOURCE_LEASE_RECOVERY_ONCE|";
   private static final String DETERMINISTIC_RESOURCE_EXHAUSTED_PREFIX =
@@ -1617,11 +1631,20 @@ public class AgentTaskService {
       String executionResourceCode,
       String workerContract) {
     agent(agentKey);
+    boolean apolloAudiovisualQueue =
+        isApolloAudiovisualQueue(agentKey, processCode, activityId, executionResourceCode);
+    boolean temisBpmQueue = isTemisBpmQueue(agentKey, processCode, activityId);
     boolean apolloAudiovisualContract =
-        validateApolloAudiovisualWorkerContract(
-            agentKey, processCode, activityId, executionResourceCode, workerContract);
-    if (isApolloAudiovisualQueue(agentKey, processCode, activityId, executionResourceCode)
-        && !apolloAudiovisualContract) {
+        apolloAudiovisualQueue
+            && validateApolloAudiovisualWorkerContract(
+                agentKey, processCode, activityId, executionResourceCode, workerContract);
+    boolean temisBpmContract =
+        temisBpmQueue
+            && validateTemisBpmWorkerContract(agentKey, processCode, activityId, workerContract);
+    rejectWorkerContractOutsideItsQueue(
+        workerContract, apolloAudiovisualContract, temisBpmContract);
+    if ((apolloAudiovisualQueue && !apolloAudiovisualContract)
+        || (temisBpmQueue && !temisBpmContract)) {
       return Optional.empty();
     }
     Optional<AgentTask> replayable =
@@ -1636,6 +1659,11 @@ public class AgentTaskService {
         recoverOrphanedDedaloLease(agentKey, processCode, activityId, executionResourceCode);
     if (orphanedDedalo.isPresent())
       return Optional.of(pendingResponse(orphanedDedalo.get(), apolloAudiovisualContract));
+    Optional<AgentTask> orphanedTemis =
+        recoverOrphanedTemisLease(
+            agentKey, processCode, activityId, executionResourceCode, temisBpmContract);
+    if (orphanedTemis.isPresent())
+      return Optional.of(pendingResponse(orphanedTemis.get(), apolloAudiovisualContract));
     Optional<AgentTask> deterministicResourceOrphan =
         recoverOrphanedDeterministicResourceLease(
             agentKey, processCode, activityId, executionResourceCode, apolloAudiovisualContract);
@@ -1694,6 +1722,42 @@ public class AgentTaskService {
         && APOLLO_AUDIOVISUAL_PROCESS_CODES.contains(trimToNull(processCode))
         && "audiovisual".equals(trimToNull(activityId))
         && VIDEO_MANAGEMENT_RESOURCE_CODE.equals(trimToNull(executionResourceCode));
+  }
+
+  /** Valida o handshake que habilita polling e retomada segura do BPM de Têmis. */
+  private boolean validateTemisBpmWorkerContract(
+      String agentKey, String processCode, String activityId, String workerContract) {
+    String normalizedContract = trimToNull(workerContract);
+    if (normalizedContract == null) return false;
+    boolean valid =
+        TEMIS_BPM_WORKER_CONTRACT.equals(normalizedContract)
+            && isTemisBpmQueue(agentKey, processCode, activityId);
+    if (!valid) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Contrato versionado do worker incompatível com a fila solicitada.");
+    }
+    return true;
+  }
+
+  /** Reconhece cada fila comercial cujo claim exige a imagem versionada de Têmis. */
+  private boolean isTemisBpmQueue(String agentKey, String processCode, String activityId) {
+    String normalizedProcess = trimToNull(processCode);
+    String normalizedActivity = trimToNull(activityId);
+    return META_AD_APPROVER_AGENT_KEY.equals(agentKey.trim())
+        && normalizedProcess != null
+        && normalizedActivity != null
+        && TEMIS_BPM_QUEUE_CONTRACTS.contains(normalizedProcess + "|" + normalizedActivity);
+  }
+
+  /** Recusa um contrato conhecido ou desconhecido quando ele foi enviado para outra fila. */
+  private void rejectWorkerContractOutsideItsQueue(
+      String workerContract, boolean apolloAudiovisualContract, boolean temisBpmContract) {
+    if (trimToNull(workerContract) != null && !apolloAudiovisualContract && !temisBpmContract) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Contrato versionado do worker incompatível com a fila solicitada.");
+    }
   }
 
   /**
@@ -2032,6 +2096,165 @@ public class AgentTaskService {
     String error =
         DEDALO_LEASE_EXHAUSTED_PREFIX
             + "Dédalo foi interrompido novamente após a única retomada; nova inferência automática foi recusada para evitar cobrança duplicada.";
+    task.setExecutionError(error);
+    ensurePreModelFailureAudit(task, null, null);
+    applyBlockerGuidance(task, null, error, null);
+    requireTerminalExecutionAudit(task, false);
+    task.setStatus("BLOCKED");
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+  }
+
+  /** Reentrega uma única lease de Têmis interrompida antes de qualquer saída ou consumo. */
+  private Optional<AgentTask> recoverOrphanedTemisLease(
+      String agentKey,
+      String processCode,
+      String activityId,
+      String executionResourceCode,
+      boolean temisBpmContract) {
+    if (!temisBpmContract || !META_AD_APPROVER_AGENT_KEY.equals(agentKey.trim())) {
+      return Optional.empty();
+    }
+    Instant now = Instant.now(clock);
+    List<AgentTask> inProgress =
+        repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            META_AD_APPROVER_AGENT_KEY, "WORK", "IN_PROGRESS");
+    if (inProgress == null) return Optional.empty();
+    for (AgentTask task : inProgress) {
+      if (task.getProcessDefinition() == null
+          || !matchesExecutionContract(task, processCode, activityId, executionResourceCode)) {
+        continue;
+      }
+      if (isRecoveredTemisLease(task)) {
+        if (temisLeaseIsStale(task, now)) blockExhaustedTemisLease(task, now);
+        continue;
+      }
+      if (canRecoverOrphanedTemisLease(task, now)) {
+        task.setExecutionError(
+            TEMIS_LEASE_RECOVERY_PREFIX
+                + "A reserva perdeu o executor antes de produzir saída ou consumo auditável.");
+        task.setUpdatedAt(now);
+        AgentTask saved = repository.save(task);
+        synchronizeActivityInstance(saved, now);
+        return Optional.of(saved);
+      }
+      if (temisProducedOutputBeforeInterruption(task, now)) {
+        blockTemisLeaseWithObservedOutput(task, now);
+      } else if (temisInvocationWithoutTelemetryIsStale(task, now)) {
+        blockTemisLeaseWithoutSufficientTelemetry(task, now);
+      }
+    }
+    return Optional.empty();
+  }
+
+  /** Confirma ausência de resposta, consumo e telemetria de saída antes da retomada de Têmis. */
+  private boolean canRecoverOrphanedTemisLease(AgentTask task, Instant now) {
+    if (trimToNull(task.getResultJson()) != null
+        || trimToNull(task.getEvidenceJson()) != null
+        || task.getInputTokens() != null
+        || task.getCachedInputTokens() != null
+        || task.getOutputTokens() != null
+        || task.getEstimatedCostUsd() != null
+        || task.getModelUsageUpdatedAt() != null
+        || task.getDeliveredAt() != null) {
+      return false;
+    }
+    CodexAgentExecutionTelemetryService.Response telemetry = temisTelemetry(task);
+    if (telemetry != null) {
+      return temisTelemetryIsStale(telemetry, now)
+          && Objects.equals(telemetry.eventCount(), 0L)
+          && Objects.equals(telemetry.outputBytes(), 0L)
+          && telemetry.inputTokens() == null
+          && telemetry.outputTokens() == null;
+    }
+    if (trimToNull(task.getExecutionMode()) != null
+        || trimToNull(task.getExecutionModelCode()) != null
+        || trimToNull(task.getExecutionPrompt()) != null) {
+      return false;
+    }
+    return taskLeaseIsStale(task, now);
+  }
+
+  /** Reconhece a retomada automática já consumida pela mesma tarefa de Têmis. */
+  private boolean isRecoveredTemisLease(AgentTask task) {
+    return task.getExecutionError() != null
+        && task.getExecutionError().startsWith(TEMIS_LEASE_RECOVERY_PREFIX);
+  }
+
+  /** Mede a interrupção por heartbeat e usa a lease somente no legado sem telemetria. */
+  private boolean temisLeaseIsStale(AgentTask task, Instant now) {
+    CodexAgentExecutionTelemetryService.Response telemetry = temisTelemetry(task);
+    return telemetry == null ? taskLeaseIsStale(task, now) : temisTelemetryIsStale(telemetry, now);
+  }
+
+  /** Lê a telemetria BPM de Têmis sem confundi-la com revisões de criativos. */
+  private CodexAgentExecutionTelemetryService.Response temisTelemetry(AgentTask task) {
+    return codexTelemetry == null
+        ? null
+        : codexTelemetry.get(TEMIS_BPM_TELEMETRY_TYPE, task.getId());
+  }
+
+  /** Considera atrasado tanto processo sem heartbeat quanto término sem callback. */
+  private boolean temisTelemetryIsStale(
+      CodexAgentExecutionTelemetryService.Response telemetry, Instant now) {
+    if (telemetry.stale()) return true;
+    return !"RUNNING".equals(telemetry.status())
+        && telemetry.lastActivityAt() != null
+        && telemetry.lastActivityAt().plus(ORPHANED_LEASE_GRACE).isBefore(now);
+  }
+
+  /** Detecta saída observada que torna insegura uma nova inferência comercial. */
+  private boolean temisProducedOutputBeforeInterruption(AgentTask task, Instant now) {
+    CodexAgentExecutionTelemetryService.Response telemetry = temisTelemetry(task);
+    return telemetry != null
+        && temisTelemetryIsStale(telemetry, now)
+        && ((telemetry.eventCount() != null && telemetry.eventCount() > 0L)
+            || (telemetry.outputBytes() != null && telemetry.outputBytes() > 0L)
+            || telemetry.inputTokens() != null
+            || telemetry.outputTokens() != null);
+  }
+
+  /** Detecta auditoria de modelo antiga cuja telemetria não autoriza repetir o custo. */
+  private boolean temisInvocationWithoutTelemetryIsStale(AgentTask task, Instant now) {
+    return temisTelemetry(task) == null
+        && "MODEL".equals(trimToNull(task.getExecutionMode()))
+        && taskLeaseIsStale(task, now);
+  }
+
+  /** Bloqueia Têmis quando a execução interrompida já produziu saída observável. */
+  private void blockTemisLeaseWithObservedOutput(AgentTask task, Instant now) {
+    String error =
+        TEMIS_LEASE_EXHAUSTED_PREFIX
+            + "Têmis produziu saída antes da interrupção; nova inferência automática foi recusada para evitar cobrança duplicada.";
+    task.setExecutionError(error);
+    applyBlockerGuidance(task, null, error, null);
+    requireTerminalExecutionAudit(task, false);
+    task.setStatus("BLOCKED");
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+  }
+
+  /** Bloqueia uma chamada de Têmis auditada sem heartbeat suficiente para repetir o modelo. */
+  private void blockTemisLeaseWithoutSufficientTelemetry(AgentTask task, Instant now) {
+    String error =
+        TEMIS_LEASE_EXHAUSTED_PREFIX
+            + "A chamada de Têmis foi auditada, mas a telemetria se perdeu; nova inferência automática foi recusada para evitar cobrança duplicada.";
+    task.setExecutionError(error);
+    applyBlockerGuidance(task, null, error, null);
+    requireTerminalExecutionAudit(task, false);
+    task.setStatus("BLOCKED");
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+  }
+
+  /** Encerra a segunda interrupção de Têmis sem permitir uma terceira inferência. */
+  private void blockExhaustedTemisLease(AgentTask task, Instant now) {
+    String error =
+        TEMIS_LEASE_EXHAUSTED_PREFIX
+            + "Têmis foi interrompida novamente após a única retomada; nova inferência automática foi recusada para evitar cobrança duplicada.";
     task.setExecutionError(error);
     ensurePreModelFailureAudit(task, null, null);
     applyBlockerGuidance(task, null, error, null);

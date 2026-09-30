@@ -8105,6 +8105,27 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   sem saída, bloqueia repetição quando já houve output/consumo e encerra uma segunda interrupção.
   O changelog de Alcyone aceita e reconcilia #534 mesmo quando o claim ocorre antes do deploy.
 
+## LOOP-TEMIS-BPM-LEASE-ORFA-NA-TROCA-DE-CONTAINER — 30/09/2026
+
+- **Evidência confirmada:** Têmis reservou a tarefa comercial #587 de Alcyone às 22:02:31 UTC; o
+  deploy substituiu o container às 22:04:13 UTC. A tarefa permaneceu `IN_PROGRESS`, sem callback,
+  resultado, auditoria, tokens, custo ou telemetria, enquanto a nova imagem só consultava tarefas
+  pendentes.
+- **Causa-raiz:** o BPM comercial executado no mesmo worker das revisões Meta não publicava
+  heartbeat por `taskId` e o backend não possuía política de lease para Têmis. Além disso, o backend
+  novo podia entrar antes do worker novo e oferecer a retomada à imagem antiga durante o próprio
+  rollout, recriando a interrupção.
+- **Alternativas avaliadas:** cancelar #587 e repetir corrige apenas Alcyone; aguardar não reabre uma
+  lease reservada; exigir handshake de imagem, persistir auditoria e heartbeat e permitir uma única
+  retomada sem saída nem consumo elimina a recorrência sem duplicar inferência. A terceira foi
+  adotada.
+- **Correção e prevenção:** as filas BPM de Têmis exigem `TEMIS_BPM_LEASE_V1`; a imagem antiga para
+  de reservar assim que o backend novo entra. A imagem compatível persiste o prompt antes do modelo
+  e publica `TEMIS_BPM` pelo `taskId`. Heartbeat recente preserva a lease; saída, consumo ou
+  auditoria sem telemetria bloqueiam repetição; uma segunda interrupção também termina bloqueada.
+  Testes cobrem rollout incompatível, recuperação legada, processo ativo, saída observada e
+  esgotamento da única retomada.
+
 ## LOOP-PDE-PROXY-FORA-DA-RETOMADA — 30/09/2026
 
 - **Evidência confirmada:** a superfície privada de Alcyone possuía imagem, porta e domínio

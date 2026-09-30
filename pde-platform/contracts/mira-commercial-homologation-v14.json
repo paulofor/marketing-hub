@@ -1,0 +1,108 @@
+{
+  "contractVersion": "mira-commercial-homologation.v14",
+  "processCode": "pde-commercial-compatibility-attestation",
+  "processVersion": 1,
+  "activityId": "pdeCompatibilityGate",
+  "sourceReference": "product:10@mira-commercial-v1-alcyone-runtime-v3-evidence-lineage",
+  "experimentId": 93,
+  "product": {
+    "id": 10,
+    "internalName": "Mira",
+    "commercialName": "Mira · sua rotina organizada",
+    "slug": "pde-planejado-36",
+    "experienceVersion": "mira-commercial-v1",
+    "publicUrl": "https://mira.digicomdigital.com.br/"
+  },
+  "status": "EVIDENCE_COMPATIBILITY_ONLY",
+  "boundary": "Restaura as referências comerciais limitadas de Mira após a atestação de Alcyone v3; não altera nem publica Mira e não cria campanha, gasto ou cobrança.",
+  "operationalState": {
+    "verifiedAt": "2026-09-30",
+    "experimentStatus": "PAUSED",
+    "commercialOfferExpected": true,
+    "deploymentAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/mira-commercial-homologation-v13.json",
+    "reason": "Preservar a atestação imutável de Alcyone v3 e voltar a declarar diretamente as três provas comerciais que o carregador limitado entrega a Psique.",
+    "includedChanges": [
+      "Manifesto v13 preservado por hash como referência atestada",
+      "Prova do produto, controle estático e vídeo preservados por hashes diretos",
+      "Prompt de Psique mantém as mídias como referências limitadas, sem incorporar bytes binários"
+    ],
+    "excludedChanges": [
+      "Oferta, preço, checkout, vídeo, prova ou identidade executável de Mira",
+      "Publicação ou reativação do experimento 93",
+      "Campanha, tráfego, gasto, cobrança ou contato humano"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "mira-commercial",
+    "publicUrl": "https://mira.digicomdigital.com.br/",
+    "requiredFrontendSourceSha256": "34c93bd0ebc9bece77cea0e7946021bec461ec4b271593d2b3b4fbdef94b0936"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "mira-commercial-v1",
+      "experienceVersion": "mira-commercial-v1",
+      "frontendSourceSha256": "34c93bd0ebc9bece77cea0e7946021bec461ec4b271593d2b3b4fbdef94b0936"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/mira-commercial-homologation-v13.json",
+      "sha256": "4331b85fb9175564e068cd754afba078fca966d2317e0e32834074b5862368fe",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "A v13 comprova que Alcyone v3 não troca a identidade, os arquivos nem o estado comercial de Mira; a v14 preserva essa prova sem expandir a cadeia histórica."
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": ".github/workflows/pde-platform-metodo-musa-ci.yml",
+      "sha256": "12b0ce67f0e5c020e58ca547c8bea122545c07cd7d85fdc48f69b6164996e055",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MiraCommercialApp.tsx",
+      "sha256": "36dcbad81c12cc68f98060d23e5ef621ab21de4fa04bad7de5005620ac311e10",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/mira-commercial.css",
+      "sha256": "854b7b9726df4b415a1e0b74d0864d31c9cf62c68489704391ccd2ac6a1a45ab",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-product-proof-v1.png",
+      "sha256": "4ffda62d502d8ea644fa06a0cd6cf0768c39c4278b43bdcefa3665e9d578c2f3",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Captura determinística da aplicação paga real com dados de QA segregados; comprova somente interface e entrega, sem representar cliente, venda ou resultado de mercado."
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-control-v4.png",
+      "sha256": "66482a136dce80aa14121417b3229e8b70c0b575e3879b8e4fffe861faa65fcc",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Controle 4:5 preservado sem alteração visual; declara preço, direito e limite no tamanho real do feed."
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v3.mp4",
+      "sha256": "0ba5720d4e3ec6beeed4ee76430a6be47b681a36eca9dfefe349d3a66aee3377",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Vídeo #49 preservado byte a byte; a revisão v14 altera somente a linhagem limitada das provas."
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "scripts/resolve-pde-frontend-deploy-target.test.mjs",
+      "sha256": "903628db3aec8fc43647753243185e2b113f4e9fe49be9dfeaab434fd7ac68e3",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test_pde_release_contract.py",
+      "sha256": "61528575cddc9eb5f4c8e3aa3e821ad26486e2c1ad06e28860dfb1ee8cdd7625",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/pde-atestacao-linhagem-mira-v14-2026-09-30.md"
+}

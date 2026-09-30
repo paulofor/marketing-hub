@@ -8234,3 +8234,22 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   sem claim/custo, promoção atômica, build mutado sem versão, reentrega idempotente e nova tentativa.
   A reconciliação técnica não aprova a correção: homologação e Psique continuam obrigatórios antes
   do gate final, sem participantes humanos nem alegação de mercado.
+
+## LOOP-PUBLICADOR-WORKER-CORRE-DURANTE-TROCA-DO-BACKEND — 30/09/2026
+
+- **Evidência histórica:** na retomada do commit `4fcd629a`, Têmis iniciou o relatório de saúde às
+  17:39 e esgotou as tentativas às 17:40:34 com `ECONNREFUSED` em `191.252.181.168:80`. O deploy
+  central da mesma revisão ainda trocava o backend e só confirmou saúde às 17:41:41. A retomada
+  anterior `36536569475` foi bem-sucedida porque o backend já estava disponível, confirmando a
+  corrida de ordenação em vez de defeito na imagem do worker.
+- **Causa-raiz:** o catálogo de recuperação marcava somente alguns agentes com `requires_app`.
+  Dédalo, Atena, Plutus, Têmis e Hermes também registram saúde no backend, mas podiam ser
+  despachados em paralelo com a troca da aplicação; o tempo de build decidia por acaso se passavam.
+- **Alternativas avaliadas:** repetir o run recupera apenas a ocorrência; ampliar retries reduz a
+  frequência, porém conserva a corrida; condicionar todos os workers dependentes ao sucesso da
+  aplicação da mesma revisão elimina a janela inválida e preserva a imagem anterior. A terceira
+  alternativa foi adotada.
+- **Correção e prevenção:** o catálogo agora exige `requires_app` e o job real de publicação para
+  os cinco workers. O teste de contrato deriva os workflows que enviam `agent-health-report` ao
+  backend e falha se algum deles perder a barreira ou puder ser considerado publicado sem o job de
+  deploy. A retomada permanece assíncrona e auditável, sem polling remoto ou repetição cega.

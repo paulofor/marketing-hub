@@ -157,6 +157,14 @@ Uma nova execução manual não substitui os testes locais nem autoriza código 
 Não reexecutar um run histórico esperando que ele publique o HEAD atual: o GitHub preserva
 o SHA e a referência do evento original.
 
+Na retomada automática, todo worker cujo startup ou relatório de saúde consulta o backend central
+deve declarar `requires_app` e o job exato de publicação no catálogo versionado. O reconciliador
+somente solicita esse worker depois que `Build & Deploy containers` da mesma revisão terminou com
+sucesso; um run verde sem o job de publicação também não comprova entrega. Essa barreira vale para
+Dédalo, Atena, Plutus, Têmis e Hermes, além dos agentes de aplicação já protegidos, e não pode ser
+substituída por retries longos de saúde: durante a troca transacional do backend, a indisponibilidade
+é esperada e o worker deve continuar na versão anterior até a aplicação estar saudável.
+
 ## Validação do backend antes da integração
 
 O workflow `Backend CI` deve executar a suíte completa de `backend/ads-service` em Pull Requests

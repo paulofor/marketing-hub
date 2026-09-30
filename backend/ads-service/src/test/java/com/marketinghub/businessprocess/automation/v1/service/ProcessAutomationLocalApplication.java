@@ -275,13 +275,14 @@ public class ProcessAutomationLocalApplication {
     process.setExecutionScope("PRODUCT");
     String rework =
         id == 92003
-            ? ", {\"id\":\"fix\",\"type\":\"TASK\",\"activationMode\":\"ON_FUNCTIONAL_REJECTION\",\"remediatesActivities\":[\"a\"]}"
+            ? "{\"id\":\"fix\",\"type\":\"TASK\",\"activationMode\":\"ON_FUNCTIONAL_REJECTION\",\"remediatesActivities\":[\"a\"]},"
             : "";
     process.setDiagramJson(
-        "{\"nodes\":[{\"id\":\"b\",\"type\":\"TASK\"},{\"id\":\"a\",\"type\":\"TASK\""
+        "{\"nodes\":["
+            + rework
+            + "{\"id\":\"b\",\"type\":\"TASK\"},{\"id\":\"a\",\"type\":\"TASK\""
             + (id == 92004 ? ",\"subprocessCode\":\"local-process-92005\"" : "")
             + "},{\"id\":\"gate\",\"type\":\"TASK\"}"
-            + rework
             + (id == 92011 ? ", {\"id\":\"missing\",\"type\":\"TASK\"}" : "")
             + "],\"flows\":[{\"from\":\"a\",\"to\":\"b\"},{\"from\":\"b\",\"to\":\"gate\"}]}");
     return process;
@@ -438,7 +439,8 @@ public class ProcessAutomationLocalApplication {
     boolean needsFix =
         process == 92003
             && latest(jdbc, product, process, "a") != null
-            && "BLOCKED".equals(latest(jdbc, product, process, "a").get("status"));
+            && "BLOCKED".equals(latest(jdbc, product, process, "a").get("status"))
+            && !"EXECUTOR_FAILURE".equals(latest(jdbc, product, process, "a").get("reason"));
     for (String id : List.of("b", "a", "gate", "fix")) {
       if (id.equals("fix") && process != 92003) continue;
       var task = latest(jdbc, product, process, id);

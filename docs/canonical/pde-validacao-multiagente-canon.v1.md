@@ -117,6 +117,12 @@ recebe a mesma regra, mesmo quando já foi persistido como `TECHNICAL_FAILURE`. 
 posterior aprovada supera a falha do executor; uma falha atribuída ao protótipo ou uma rejeição
 funcional continua exigindo a correção versionada conforme as regras abaixo.
 
+A atividade condicional `prototypeCorrection` nunca integra a sequência progressiva normal. Ela só
+concorre com a próxima atividade quando existe uma rejeição acionável e o próprio comando de
+correção está disponível. Uma tarefa histórica bloqueada ou cancelada não pode manter o controlador
+nessa atividade quando o backend já classificou a origem como `EXECUTOR_FAILURE`; nesse caso, a
+execução repete `technicalHomologation` na mesma versão aceita.
+
 Por decisão de 2026-09-10, refinada em 2026-09-11 após a tarefa 385 do Vega, a atividade bloqueada
 apresenta **uma única ação principal**: um link para a atividade de correção quando esse for o
 caminho vigente, ou o comando da própria atividade quando seus requisitos estiverem satisfeitos.

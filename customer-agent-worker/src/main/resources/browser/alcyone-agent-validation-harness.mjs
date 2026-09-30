@@ -88,6 +88,16 @@ const checks = {
   accessibilityBasic: scenarios.every(
     (scenario) => scenario.accessibilityBasic,
   ),
+  contrastAa: scenarios.every((scenario) => scenario.contrastAa),
+  keyboardNavigation: scenarios.every(
+    (scenario) => scenario.keyboardNavigation,
+  ),
+  focusVisible: scenarios.every((scenario) => scenario.focusVisible),
+  zoom200: scenarios.every((scenario) => scenario.zoom200),
+  reducedMotion: scenarios.every((scenario) => scenario.reducedMotion),
+  mobileKeyboardSafeArea: scenarios.every(
+    (scenario) => scenario.mobileKeyboardSafeArea,
+  ),
   responsiveLayout: scenarios.every(
     (scenario) => scenario.noHorizontalOverflow,
   ),
@@ -133,6 +143,24 @@ const checks = {
   authenticatedReturn: scenarios
     .filter((scenario) => scenario.scenarioCode !== "SAFETY")
     .every((scenario) => scenario.authenticatedReturn),
+  consentBeforeInput: scenarios.every(
+    (scenario) => scenario.consentBeforeInput,
+  ),
+  canonicalSignalsOnly: scenarios.every(
+    (scenario) => scenario.canonicalSignalsOnly,
+  ),
+  nullableMilestonesPreserved: scenarios.every(
+    (scenario) => scenario.nullableMilestonesPreserved,
+  ),
+  sixRecoveryStates:
+    input.mode !== "TECHNICAL" ||
+    scenarios
+      .filter((scenario) => scenario.scenarioCode === "RECOVERY")
+      .every(
+        (scenario) =>
+          scenario.errorStates.length === 6 &&
+          scenario.errorStates.every((state) => state.proved),
+      ),
 };
 const approved =
   scenarios.every((scenario) => scenario.status === "PASS") &&
@@ -174,6 +202,15 @@ await writeFile(
 /** Executa um cenário em um dispositivo com sessão e evidência exclusivas. */
 async function executeScenario(scenarioCode, deviceProfile) {
   const scenarioStartedAt = new Date();
+  const contract = await publicApi("/contract");
+  if (
+    contract.instrumentationEvents?.join("|") !==
+    "EXPERIENCE_STARTED|VALUE_MOMENT|READY_RESULT_USED|PREFERRED_OVER_FREE|CHECKOUT_STARTED"
+  ) {
+    throw new Error(
+      "O contrato Alcyone não expõe exatamente os cinco sinais canônicos.",
+    );
+  }
   const session = await internalApi("/internal/sessions", {
     method: "POST",
     body: JSON.stringify({
@@ -188,6 +225,7 @@ async function executeScenario(scenarioCode, deviceProfile) {
     ...profiles[deviceProfile],
     locale: "pt-BR",
     timezoneId: "UTC",
+    reducedMotion: "reduce",
   });
   const page = await context.newPage();
   const pageErrors = [];
@@ -207,16 +245,63 @@ async function executeScenario(scenarioCode, deviceProfile) {
   let crossSessionPackageDenied = scenarioCode === "SAFETY";
   let resultUnavailableRecovered = scenarioCode !== "RECOVERY";
   let authenticatedReturn = scenarioCode === "SAFETY";
+  let consentBeforeInput = false;
+  let canonicalSignalsOnly = false;
+  let nullableMilestonesPreserved = false;
+  let accessibility = null;
+  const errorStates = [];
   const observedCredentials = [session.sessionToken];
   try {
+    if (scenarioCode === "RECOVERY") {
+      const invalidAccess = await agentApiResult(
+        "/session",
+        "invalid-agent-session-token",
+      );
+      errorStates.push(
+        errorProof(contract, "ACCESS_INVALID", invalidAccess.status === 403),
+      );
+    }
     await page.goto(input.sourceUrl, {
       waitUntil: "domcontentloaded",
       timeout: 45_000,
     });
+    await page.getByTestId("agent-validation-mode").waitFor();
+    await page.getByTestId("intake-consent-step").waitFor();
+    consentBeforeInput =
+      (await page
+        .getByRole("heading", { name: "Conte o mínimo necessário" })
+        .count()) === 0 && !session.consentedAt;
+    await page.getByRole("checkbox").check();
+    await page
+      .getByRole("button", { name: "Autorizar entrada sintética" })
+      .click();
     await page
       .getByRole("heading", { name: "Conte o mínimo necessário" })
       .waitFor();
-    await page.getByTestId("agent-validation-mode").waitFor();
+    accessibility = await validateAccessibility(page, deviceProfile);
+    if (scenarioCode === "RECOVERY") {
+      const incompleteInput = await agentApiResult(
+        "/input",
+        session.sessionToken,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            occasion: "",
+            eventDate: "2026-12-15",
+            preferences: [],
+            constraints: [],
+            pieceReferences: [],
+          }),
+        },
+      );
+      errorStates.push(
+        errorProof(
+          contract,
+          "INPUT_INCOMPLETE",
+          incompleteInput.status === 400,
+        ),
+      );
+    }
     await fillInput(page, scenarioCode === "SAFETY");
     await page.getByRole("button", { name: "Salvar entrada segura" }).click();
     if (scenarioCode === "RECOVERY") {
@@ -228,7 +313,15 @@ async function executeScenario(scenarioCode, deviceProfile) {
       await page
         .getByRole("button", { name: "Gerar três combinações estáticas" })
         .click();
-      await page.getByRole("alert").waitFor();
+      const harnessAlert = page.getByRole("alert");
+      await harnessAlert.waitFor();
+      errorStates.push(
+        errorProof(
+          contract,
+          "HARNESS_FAILURE",
+          (await harnessAlert.textContent())?.includes("HARNESS_FAILURE"),
+        ),
+      );
       await page.reload({ waitUntil: "domcontentloaded" });
       resumed = true;
       if (
@@ -249,9 +342,6 @@ async function executeScenario(scenarioCode, deviceProfile) {
         throw new Error("O cenário de segurança apresentou um pacote visual.");
       }
       await page
-        .getByRole("button", { name: "Registrar bloqueio seguro" })
-        .click();
-      await page
         .getByRole("button", { name: "Concluir cenário de segurança" })
         .click();
       safetyBlocked = true;
@@ -261,6 +351,7 @@ async function executeScenario(scenarioCode, deviceProfile) {
         .waitFor();
       resultReadyAt = new Date();
       staticFixturesValid = await validateFixtures(page);
+      await page.getByLabel("O que tornou o pacote útil?").waitFor();
       await page
         .getByLabel("O que tornou o pacote útil?")
         .fill("As três opções reduziram a dúvida e são aplicáveis à ocasião.");
@@ -321,12 +412,28 @@ async function executeScenario(scenarioCode, deviceProfile) {
       }
 
       if (scenarioCode === "RECOVERY") {
+        const failedResume = await publicApiResult("/continuity/resume", {
+          method: "POST",
+          body: JSON.stringify({
+            continuationCredential: "invalid-continuation-credential",
+            policyVersion: "ALCYONE_AGENT_CONTINUITY_V1",
+          }),
+        });
+        errorStates.push(
+          errorProof(contract, "RESUME_FAILED", failedResume.status === 403),
+        );
         await internalApi("/internal/session-expiration", {
           method: "POST",
           body: JSON.stringify({ sessionToken: beforeReturn.sessionToken }),
         });
-        expiredSessionRejected =
-          (await agentApiStatus("/session", beforeReturn.sessionToken)) === 403;
+        const expiredSession = await agentApiResult(
+          "/session",
+          beforeReturn.sessionToken,
+        );
+        expiredSessionRejected = expiredSession.status === 403;
+        errorStates.push(
+          errorProof(contract, "SESSION_EXPIRED", expiredSessionRejected),
+        );
         if (!expiredSessionRejected)
           throw new Error("A sessão expirada continuou autorizada.");
         await page.route(
@@ -340,7 +447,17 @@ async function executeScenario(scenarioCode, deviceProfile) {
         .getByRole("button", { name: "Retomar pacote autenticado" })
         .click();
       if (scenarioCode === "RECOVERY") {
-        await page.getByRole("alert").waitFor();
+        const unavailableAlert = page.getByRole("alert");
+        await unavailableAlert.waitFor();
+        errorStates.push(
+          errorProof(
+            contract,
+            "RESULT_UNAVAILABLE",
+            (await unavailableAlert.textContent())?.includes(
+              "RESULT_UNAVAILABLE",
+            ),
+          ),
+        );
         await page
           .getByRole("button", { name: "Retomar pacote autenticado" })
           .click();
@@ -391,9 +508,6 @@ async function executeScenario(scenarioCode, deviceProfile) {
         })
         .waitFor();
       if (scenarioCode === "RECOVERY") {
-        await page
-          .getByRole("button", { name: "Confirmar retomada do mesmo pacote" })
-          .click();
         recovered = true;
       }
       await page
@@ -462,26 +576,22 @@ async function executeScenario(scenarioCode, deviceProfile) {
         "A evidência não comprovou encerramento e custo externo zero.",
       );
     }
+    consentBeforeInput =
+      consentBeforeInput &&
+      evidence.consentVersion === "ALCYONE_AGENT_INTAKE_CONSENT_V1" &&
+      Boolean(evidence.consentedAt) &&
+      Boolean(evidence.milestones.inputAcceptedAt) &&
+      new Date(evidence.consentedAt) <=
+        new Date(evidence.milestones.inputAcceptedAt);
     const expectedEvents =
       scenarioCode === "SAFETY"
-        ? [
-            "EXPERIENCE_STARTED",
-            "SAFETY_LIMIT_BLOCKED",
-            "AGENT_SCENARIO_COMPLETED",
-          ]
+        ? ["EXPERIENCE_STARTED"]
         : [
             "EXPERIENCE_STARTED",
             "VALUE_MOMENT",
             "READY_RESULT_USED",
-            "SAVE_INTEREST_DECLARED",
-            "CONTINUITY_POLICY_ACKNOWLEDGED",
-            "CONTINUITY_CREDENTIAL_CREATED",
-            "AUTHENTICATED_ACCESS_RESTORED",
-            "RETURN_COMPLETED",
             "PREFERRED_OVER_FREE",
             "CHECKOUT_STARTED",
-            ...(scenarioCode === "RECOVERY" ? ["RECOVERY_COMPLETED"] : []),
-            "AGENT_SCENARIO_COMPLETED",
           ];
     if (
       JSON.stringify([...evidence.events].sort()) !==
@@ -491,6 +601,38 @@ async function executeScenario(scenarioCode, deviceProfile) {
         "A trilha persistida diverge dos eventos realmente executados.",
       );
     }
+    canonicalSignalsOnly =
+      evidence.eventAudit.length === expectedEvents.length &&
+      evidence.eventAudit.every((event) =>
+        contract.instrumentationEvents.includes(event.eventType),
+      );
+    nullableMilestonesPreserved =
+      scenarioCode === "SAFETY"
+        ? Boolean(
+            evidence.consentedAt &&
+            evidence.milestones.inputAcceptedAt &&
+            evidence.milestones.safetyBlockedAt &&
+            evidence.milestones.finishedAt &&
+            !evidence.milestones.resultReadyAt &&
+            !evidence.milestones.resultPresentedAt &&
+            !evidence.milestones.saveInterestAt &&
+            !evidence.milestones.continuityCredentialCreatedAt &&
+            !evidence.milestones.accessAuthenticatedAt &&
+            !evidence.milestones.accessCompletedAt &&
+            !evidence.milestones.returnedAt,
+          )
+        : Boolean(
+            evidence.consentedAt &&
+            evidence.milestones.inputAcceptedAt &&
+            evidence.milestones.resultReadyAt &&
+            evidence.milestones.resultPresentedAt &&
+            evidence.milestones.saveInterestAt &&
+            evidence.milestones.continuityCredentialCreatedAt &&
+            evidence.milestones.accessAuthenticatedAt &&
+            evidence.milestones.accessCompletedAt &&
+            evidence.milestones.returnedAt &&
+            evidence.milestones.finishedAt,
+          );
     return {
       scenarioCode,
       deviceProfile,
@@ -516,6 +658,10 @@ async function executeScenario(scenarioCode, deviceProfile) {
       crossSessionPackageDenied,
       resultUnavailableRecovered,
       authenticatedReturn,
+      consentBeforeInput,
+      canonicalSignalsOnly,
+      nullableMilestonesPreserved,
+      errorStates,
       providerCalls: evidence.providerCalls,
       resultReadySeconds: resultReadyAt
         ? Math.max(0, Math.ceil((resultReadyAt - scenarioStartedAt) / 1000))
@@ -524,6 +670,12 @@ async function executeScenario(scenarioCode, deviceProfile) {
         dimensions.lang === "pt-BR" &&
         dimensions.controlsNamed &&
         dimensions.touchTargets,
+      contrastAa: accessibility.contrastAa,
+      keyboardNavigation: accessibility.keyboardNavigation,
+      focusVisible: accessibility.focusVisible,
+      zoom200: accessibility.zoom200,
+      reducedMotion: accessibility.reducedMotion,
+      mobileKeyboardSafeArea: accessibility.mobileKeyboardSafeArea,
       noHorizontalOverflow: dimensions.width <= dimensions.viewport + 1,
       privacyPreserved: observedCredentials
         .filter(Boolean)
@@ -601,6 +753,178 @@ async function validateFixtures(page) {
     );
 }
 
+/** Comprova contraste, teclado, foco, zoom, redução de movimento e área útil móvel. */
+async function validateAccessibility(page, deviceProfile) {
+  await page.keyboard.press("Tab");
+  const initialFocus = await page.evaluate(() => {
+    const active = document.activeElement;
+    const style = active ? getComputedStyle(active) : null;
+    return {
+      tag: active?.tagName || "",
+      outlineWidth: Number.parseFloat(style?.outlineWidth || "0"),
+      outlineStyle: style?.outlineStyle || "none",
+    };
+  });
+  const reached = new Set();
+  for (let step = 0; step < 8; step += 1) {
+    await page.keyboard.press("Tab");
+    reached.add(
+      await page.evaluate(() => {
+        const active = document.activeElement;
+        const label = Array.from(active?.labels || [])
+          .map((item) => item.textContent?.trim())
+          .filter(Boolean)
+          .join("|");
+        return `${active?.tagName || ""}:${active?.getAttribute("type") || ""}:${label || active?.textContent?.trim() || active?.getAttribute("name") || ""}`;
+      }),
+    );
+  }
+  const visual = await page.evaluate(() => {
+    const parse = (value) => {
+      const match = value.match(/[\d.]+/g)?.map(Number) || [];
+      return match.length >= 3 ? match.slice(0, 3) : [255, 255, 255];
+    };
+    const luminance = ([red, green, blue]) => {
+      const channels = [red, green, blue].map((channel) => {
+        const normalized = channel / 255;
+        return normalized <= 0.03928
+          ? normalized / 12.92
+          : ((normalized + 0.055) / 1.055) ** 2.4;
+      });
+      return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+    };
+    const ratio = (foreground, background) => {
+      const lighter = Math.max(luminance(foreground), luminance(background));
+      const darker = Math.min(luminance(foreground), luminance(background));
+      return (lighter + 0.05) / (darker + 0.05);
+    };
+    const backgroundOf = (element) => {
+      let current = element;
+      while (current) {
+        const color = getComputedStyle(current).backgroundColor;
+        if (color && color !== "rgba(0, 0, 0, 0)" && color !== "transparent") {
+          return parse(color);
+        }
+        current = current.parentElement;
+      }
+      return [235, 231, 223];
+    };
+    const candidates = Array.from(
+      document.querySelectorAll(
+        "h1, h2, h3, p, label, button, small, dt, dd, .alcyone-kicker, .alcyone-status span, .alcyone-status strong",
+      ),
+    ).filter((element) => {
+      const style = getComputedStyle(element);
+      return (
+        element.textContent?.trim() &&
+        style.visibility !== "hidden" &&
+        style.display !== "none" &&
+        element.getBoundingClientRect().width > 0
+      );
+    });
+    const contrastAa = candidates.every((element) => {
+      const style = getComputedStyle(element);
+      const fontSize = Number.parseFloat(style.fontSize);
+      const fontWeight = Number.parseInt(style.fontWeight, 10) || 400;
+      const large = fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700);
+      return (
+        ratio(parse(style.color), backgroundOf(element)) >= (large ? 3 : 4.5)
+      );
+    });
+    const reducedMotion =
+      matchMedia("(prefers-reduced-motion: reduce)").matches &&
+      Array.from(document.querySelectorAll("button")).every(
+        (element) => getComputedStyle(element).transitionDuration === "0s",
+      );
+    return { contrastAa, reducedMotion };
+  });
+
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+  });
+  const zoom200 = await page.evaluate(
+    () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+  );
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "";
+  });
+
+  let mobileKeyboardSafeArea = true;
+  if (deviceProfile !== "DESKTOP_1440") {
+    const original = page.viewportSize();
+    await page.setViewportSize({
+      width: original.width,
+      height: Math.max(360, Math.floor(original.height * 0.58)),
+    });
+    const input = page.getByLabel("Referências isoladas das peças");
+    await input.focus();
+    await input.evaluate((element) =>
+      element.scrollIntoView({ block: "center" }),
+    );
+    mobileKeyboardSafeArea = await input.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      return bounds.top >= 0 && bounds.bottom <= window.innerHeight;
+    });
+    await page.setViewportSize(original);
+  }
+
+  return {
+    contrastAa: visual.contrastAa,
+    keyboardNavigation: reached.size >= 4,
+    focusVisible:
+      initialFocus.tag !== "BODY" &&
+      initialFocus.outlineStyle !== "none" &&
+      initialFocus.outlineWidth >= 2,
+    zoom200,
+    reducedMotion: visual.reducedMotion,
+    mobileKeyboardSafeArea,
+  };
+}
+
+/** Constrói a prova de um estado previsto usando mensagem e recuperação do contrato. */
+function errorProof(contract, code, observed) {
+  const definition = contract.errorStates?.find((state) => state.code === code);
+  return {
+    code,
+    cause: `${code} reproduzido de forma determinística pelo harness`,
+    participantMessage: definition?.message || "",
+    recoveryAction: definition?.recoveryAction || "",
+    proved: Boolean(
+      observed &&
+      definition?.message?.trim() &&
+      definition?.recoveryAction?.trim(),
+    ),
+  };
+}
+
+/** Chama uma rota pública da superfície e exige JSON bem-sucedido. */
+async function publicApi(path, init = {}) {
+  const result = await publicApiResult(path, init);
+  if (result.status < 200 || result.status >= 300) {
+    throw new Error(`Alcyone harness ${path}: HTTP ${result.status}`);
+  }
+  return result.body;
+}
+
+/** Retorna status e JSON de uma rota pública para comprovar recusas esperadas. */
+async function publicApiResult(path, init = {}) {
+  const response = await fetch(new URL(`${apiBase}${path}`, input.sourceUrl), {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init.headers || {}),
+    },
+    signal: AbortSignal.timeout(30_000),
+  });
+  let body = {};
+  try {
+    body = await response.json();
+  } catch {
+    body = {};
+  }
+  return { status: response.status, body };
+}
+
 /** Chama somente as rotas internas protegidas da mesma superfície. */
 async function internalApi(path, init = {}) {
   const response = await fetch(new URL(`${apiBase}${path}`, input.sourceUrl), {
@@ -627,6 +951,26 @@ async function agentApiStatus(path, sessionToken) {
     signal: AbortSignal.timeout(30_000),
   });
   return response.status;
+}
+
+/** Consulta status e corpo de uma operação de sessão sem transformar recusa em exceção. */
+async function agentApiResult(path, sessionToken, init = {}) {
+  const response = await fetch(new URL(`${apiBase}${path}`, input.sourceUrl), {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      "X-PDE-Agent-Session": sessionToken,
+      ...(init.headers || {}),
+    },
+    signal: AbortSignal.timeout(30_000),
+  });
+  let body = {};
+  try {
+    body = await response.json();
+  } catch {
+    body = {};
+  }
+  return { status: response.status, body };
 }
 
 /** Seleciona o dispositivo canônico para uma revisão isolada de Psique. */

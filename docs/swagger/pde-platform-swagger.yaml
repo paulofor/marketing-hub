@@ -137,6 +137,26 @@ paths:
                 $ref: "#/components/schemas/AgentValidationSession"
         "403":
           description: Sessão ausente, inválida ou expirada.
+  /api/pde/agent-validation/v1/products/{productSlug}/consent:
+    post:
+      summary: Registra o consentimento sintético versionado antes da entrada
+      operationId: acceptPdeAgentValidationConsentV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeAgentSession"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentValidationConsent"
+      responses:
+        "200":
+          description: Consentimento aceito sem inferir qualquer sinal comercial.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationSession"
   /api/pde/agent-validation/v1/products/{productSlug}/input:
     put:
       summary: Persiste a entrada sintética mínima da sessão
@@ -173,7 +193,7 @@ paths:
                 $ref: "#/components/schemas/AgentValidationSession"
   /api/pde/agent-validation/v1/products/{productSlug}/events:
     post:
-      summary: Registra um marco explícito do cenário sintético
+      summary: Registra exclusivamente um sinal comercial explícito do cenário sintético
       operationId: recordPdeAgentValidationEventV1
       parameters:
         - $ref: "#/components/parameters/AgentValidationProductSlug"
@@ -187,6 +207,46 @@ paths:
       responses:
         "200":
           description: Evento validado na ordem funcional e persistido uma única vez.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationSession"
+  /api/pde/agent-validation/v1/products/{productSlug}/milestones/result-presented:
+    post:
+      summary: Registra que o pacote foi apresentado sem inferir valor ou uso
+      operationId: markPdeAgentValidationResultPresentedV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeAgentSession"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentValidationPackageMilestone"
+      responses:
+        "200":
+          description: Marco operacional persistido fora da telemetria comercial.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationSession"
+  /api/pde/agent-validation/v1/products/{productSlug}/milestones/save-interest:
+    post:
+      summary: Registra interesse explícito em preservar o pacote
+      operationId: markPdeAgentValidationSaveInterestV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeAgentSession"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentValidationConfirmation"
+      responses:
+        "200":
+          description: Interesse operacional persistido sem criar conversão comercial.
           content:
             application/json:
               schema:
@@ -250,6 +310,60 @@ paths:
               schema:
                 $ref: "#/components/schemas/AgentValidationResultPackage"
         "403": { description: Pacote não pertence à sessão autenticada. }
+  /api/pde/agent-validation/v1/products/{productSlug}/milestones/access-completed:
+    post:
+      summary: Confirma o acesso autenticado ao pacote preservado
+      operationId: markPdeAgentValidationAccessCompletedV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeAgentSession"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentValidationPackageMilestone"
+      responses:
+        "200":
+          description: Acesso confirmado como marco operacional independente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationSession"
+  /api/pde/agent-validation/v1/products/{productSlug}/milestones/return-completed:
+    post:
+      summary: Confirma o retorno ao mesmo pacote e fingerprint
+      operationId: markPdeAgentValidationReturnCompletedV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeAgentSession"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentValidationPackageMilestone"
+      responses:
+        "200":
+          description: Retorno confirmado sem criar um evento de funil adicional.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationSession"
+  /api/pde/agent-validation/v1/products/{productSlug}/completion:
+    post:
+      summary: Encerra o cenário depois dos sinais e marcos exigidos
+      operationId: completePdeAgentValidationScenarioV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeAgentSession"
+      responses:
+        "200":
+          description: Cenário encerrado com evidência persistida e custo externo zero.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationSession"
   /api/pde/agent-validation/v1/products/{productSlug}/safety:
     get:
       summary: Confirma que cobrança, publicação, campanha e provider estão desativados
@@ -375,6 +489,9 @@ components:
         - paymentEnabled
         - mediaSpendBrl
         - providerCallsAuthorized
+        - intakeConsentVersion
+        - instrumentationEvents
+        - errorStates
       properties:
         productId: { type: integer, format: int64, example: 11 }
         productSlug: { type: string, example: pde-planejado-46 }
@@ -384,12 +501,22 @@ components:
         fixtureManifestPath: { type: string }
         productStatus: { type: string, example: PLANNED }
         checkoutMode: { type: string, example: SIMULATED_NO_CHARGE }
+        intakeConsentVersion: { type: string, example: ALCYONE_AGENT_INTAKE_CONSENT_V1 }
         continuityPolicyVersion: { type: string, example: ALCYONE_AGENT_CONTINUITY_V1 }
         sessionTtlSeconds: { type: integer, format: int64, example: 1800 }
         continuityTtlSeconds: { type: integer, format: int64, example: 86400 }
         instrumentationEvents:
           type: array
+          minItems: 5
+          maxItems: 5
+          uniqueItems: true
           items: { type: string }
+        errorStates:
+          type: array
+          minItems: 6
+          maxItems: 6
+          items:
+            $ref: "#/components/schemas/AgentValidationErrorState"
         published: { type: boolean, example: false }
         paymentEnabled: { type: boolean, example: false }
         mediaSpendBrl: { type: integer, example: 0 }
@@ -425,6 +552,12 @@ components:
           minItems: 2
           maxItems: 8
           items: { type: string, maxLength: 160 }
+    AgentValidationConsent:
+      type: object
+      required: [accepted, consentVersion]
+      properties:
+        accepted: { type: boolean, enum: [true] }
+        consentVersion: { type: string, example: ALCYONE_AGENT_INTAKE_CONSENT_V1 }
     AgentValidationEvent:
       type: object
       required: [eventType]
@@ -434,17 +567,31 @@ components:
           enum:
             - VALUE_MOMENT
             - READY_RESULT_USED
-            - SAVE_INTEREST_DECLARED
-            - RETURN_COMPLETED
             - PREFERRED_OVER_FREE
             - CHECKOUT_STARTED
-            - RECOVERY_COMPLETED
-            - SAFETY_LIMIT_BLOCKED
-            - AGENT_SCENARIO_COMPLETED
         confirmed: { type: boolean, nullable: true }
         selectedLookId: { type: string, nullable: true }
         alternativeCode: { type: string, nullable: true }
         justification: { type: string, maxLength: 500, nullable: true }
+    AgentValidationConfirmation:
+      type: object
+      required: [confirmed]
+      properties:
+        confirmed: { type: boolean, enum: [true] }
+        justification: { type: string, maxLength: 500, nullable: true }
+    AgentValidationPackageMilestone:
+      type: object
+      required: [resultPackageId, resultPackageFingerprint]
+      properties:
+        resultPackageId: { type: string, format: uuid }
+        resultPackageFingerprint: { type: string }
+    AgentValidationErrorState:
+      type: object
+      required: [code, message, recoveryAction]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        recoveryAction: { type: string }
     AgentValidationSession:
       type: object
       required:
@@ -489,10 +636,28 @@ components:
         resultPackageId: { type: string, format: uuid, nullable: true }
         resultPackageFingerprint: { type: string, nullable: true }
         sessionExpiresAt: { type: string, format: date-time }
+        consentVersion: { type: string, nullable: true }
+        consentedAt: { type: string, format: date-time, nullable: true }
         continuityPolicyVersion: { type: string, nullable: true }
         policyAcknowledged: { type: boolean }
+        milestones:
+          $ref: "#/components/schemas/AgentValidationMilestones"
         providerCalls: { type: integer, example: 0 }
         providerCostUsd: { type: integer, example: 0 }
+    AgentValidationMilestones:
+      type: object
+      properties:
+        inputAcceptedAt: { type: string, format: date-time, nullable: true }
+        resultReadyAt: { type: string, format: date-time, nullable: true }
+        resultPresentedAt: { type: string, format: date-time, nullable: true }
+        saveInterestAt: { type: string, format: date-time, nullable: true }
+        continuityCredentialCreatedAt: { type: string, format: date-time, nullable: true }
+        accessAuthenticatedAt: { type: string, format: date-time, nullable: true }
+        accessCompletedAt: { type: string, format: date-time, nullable: true }
+        returnedAt: { type: string, format: date-time, nullable: true }
+        safetyBlockedAt: { type: string, format: date-time, nullable: true }
+        recoveryCompletedAt: { type: string, format: date-time, nullable: true }
+        finishedAt: { type: string, format: date-time, nullable: true }
     AgentValidationContinuityRequest:
       type: object
       required: [policyAcknowledged, policyVersion]

@@ -32,11 +32,10 @@ class PdeStaticVisualAgentValidationServiceTest {
         String initialToken = start.sessionToken();
 
         var inputReady = service.saveInput(PRODUCT, initialToken, validInput());
-        var generated = service.generate(PRODUCT, initialToken);
+        var generated = generateAndPresent(service, initialToken);
         event(service, initialToken, "VALUE_MOMENT", true, null, null, "As opções resolvem a decisão.");
         event(service, initialToken, "READY_RESULT_USED", null, "look-1", null, null);
         var access = createAndResume(service, initialToken);
-        event(service, access.sessionToken(), "RETURN_COMPLETED", null, null, null, null);
         event(
                 service,
                 access.sessionToken(),
@@ -46,8 +45,7 @@ class PdeStaticVisualAgentValidationServiceTest {
                 "FREE_SEARCH",
                 "É mais direto que pesquisar referências soltas.");
         event(service, access.sessionToken(), "CHECKOUT_STARTED", null, null, null, null);
-        var finished = event(
-                service, access.sessionToken(), "AGENT_SCENARIO_COMPLETED", null, null, null, null);
+        var finished = service.completeScenario(PRODUCT, access.sessionToken());
         var evidence = service.evidence(PRODUCT, start.evidenceId());
 
         assertThat(inputReady.events()).containsExactly("EXPERIENCE_STARTED");
@@ -57,14 +55,16 @@ class PdeStaticVisualAgentValidationServiceTest {
                 "EXPERIENCE_STARTED",
                 "VALUE_MOMENT",
                 "READY_RESULT_USED",
-                "SAVE_INTEREST_DECLARED",
-                "CONTINUITY_POLICY_ACKNOWLEDGED",
-                "CONTINUITY_CREDENTIAL_CREATED",
-                "AUTHENTICATED_ACCESS_RESTORED",
-                "RETURN_COMPLETED",
                 "PREFERRED_OVER_FREE",
-                "CHECKOUT_STARTED",
-                "AGENT_SCENARIO_COMPLETED");
+                "CHECKOUT_STARTED");
+        assertThat(evidence.consentedAt()).isNotBlank();
+        assertThat(evidence.milestones().inputAcceptedAt()).isNotBlank();
+        assertThat(evidence.milestones().resultPresentedAt()).isNotBlank();
+        assertThat(evidence.milestones().saveInterestAt()).isNotBlank();
+        assertThat(evidence.milestones().continuityCredentialCreatedAt()).isNotBlank();
+        assertThat(evidence.milestones().accessAuthenticatedAt()).isNotBlank();
+        assertThat(evidence.milestones().accessCompletedAt()).isNotBlank();
+        assertThat(evidence.milestones().returnedAt()).isNotBlank();
         assertThat(evidence.prototypeVersion()).isEqualTo("alcyone-private-v2");
         assertThat(evidence.credentialStoredAsHash()).isTrue();
         assertThat(evidence.providerCalls()).isZero();
@@ -83,10 +83,10 @@ class PdeStaticVisualAgentValidationServiceTest {
         var first = service();
         var start = start(first, "RECOVERY");
         first.saveInput(PRODUCT, start.sessionToken(), validInput());
-        var generated = first.generate(PRODUCT, start.sessionToken());
+        var generated = generateAndPresent(first, start.sessionToken());
         event(first, start.sessionToken(), "VALUE_MOMENT", true, null, null, "O pacote resolve a ocasião.");
         event(first, start.sessionToken(), "READY_RESULT_USED", null, "look-2", null, null);
-        event(first, start.sessionToken(), "SAVE_INTEREST_DECLARED", true, null, null, "Quero retornar à decisão preservada.");
+        declareSaveInterest(first, start.sessionToken());
         var credential = first.createContinuity(
                 PRODUCT,
                 start.sessionToken(),
@@ -104,7 +104,7 @@ class PdeStaticVisualAgentValidationServiceTest {
 
         assertThat(restored.looks()).isEqualTo(generated.looks());
         assertThat(restored.resultPackageFingerprint()).isEqualTo(generated.resultPackageFingerprint());
-        event(restarted, resumed.sessionToken(), "RETURN_COMPLETED", null, null, null, null);
+        completeAccessAndReturn(restarted, resumed.sessionToken(), restored);
         event(
                 restarted,
                 resumed.sessionToken(),
@@ -114,17 +114,15 @@ class PdeStaticVisualAgentValidationServiceTest {
                 "FREE_SEARCH",
                 "Mantém a decisão organizada e utilizável.");
         event(restarted, resumed.sessionToken(), "CHECKOUT_STARTED", null, null, null, null);
-        event(restarted, resumed.sessionToken(), "RECOVERY_COMPLETED", null, null, null, null);
-        var finished = event(
-                restarted,
-                resumed.sessionToken(),
-                "AGENT_SCENARIO_COMPLETED",
-                null,
-                null,
-                null,
-                null);
+        var finished = restarted.completeScenario(PRODUCT, resumed.sessionToken());
         assertThat(finished.finished()).isTrue();
-        assertThat(finished.events()).contains("RECOVERY_COMPLETED").doesNotHaveDuplicates();
+        assertThat(finished.events()).containsExactly(
+                "EXPERIENCE_STARTED",
+                "VALUE_MOMENT",
+                "READY_RESULT_USED",
+                "PREFERRED_OVER_FREE",
+                "CHECKOUT_STARTED");
+        assertThat(finished.milestones().recoveryCompletedAt()).isNotBlank();
     }
 
     /** Rotaciona credenciais, rejeita reutilização e bloqueia pacote pertencente a outra sessão. */
@@ -222,6 +220,42 @@ class PdeStaticVisualAgentValidationServiceTest {
         assertThat(Files.readString(storagePath())).doesNotContain("legacy-raw-session");
     }
 
+    /** Exige consentimento anterior à entrada e conserva todos os marcos posteriores nulos. */
+    @Test
+    void requiresVersionedConsentBeforeInputWithoutInferringMilestones() {
+        var service = service();
+        var session = startWithoutConsent(service, "ADHERENT");
+
+        assertThatThrownBy(() -> service.saveInput(PRODUCT, session.sessionToken(), validInput()))
+                .isInstanceOf(SecurityException.class);
+        var consented = service.acceptConsent(
+                PRODUCT,
+                session.sessionToken(),
+                new PdeStaticVisualAgentValidationService.ConsentRequest(
+                        true, "ALCYONE_AGENT_INTAKE_CONSENT_V1"));
+
+        assertThat(consented.consentedAt()).isNotBlank();
+        assertThat(consented.milestones().inputAcceptedAt()).isNull();
+        assertThat(consented.milestones().resultReadyAt()).isNull();
+        assertThat(consented.milestones().resultPresentedAt()).isNull();
+        assertThat(consented.milestones().saveInterestAt()).isNull();
+        assertThat(consented.events()).isEmpty();
+    }
+
+    /** Mantém resultado apresentado, valor e uso como observações independentes. */
+    @Test
+    void doesNotInferValueOrUseWhenResultIsPresented() {
+        var service = service();
+        var session = start(service, "ADHERENT");
+        service.saveInput(PRODUCT, session.sessionToken(), validInput());
+        var presented = generateAndPresent(service, session.sessionToken());
+
+        assertThat(presented.milestones().resultReadyAt()).isNotBlank();
+        assertThat(presented.milestones().resultPresentedAt()).isNotBlank();
+        assertThat(presented.events()).containsExactly("EXPERIENCE_STARTED");
+        assertThat(presented.selectedLookId()).isNull();
+    }
+
     /** Bloqueia foto corporal e compra sem produzir imagem, valor ou checkout. */
     @Test
     void blocksSafetyInputBeforeResultAndExternalProvider() {
@@ -238,15 +272,7 @@ class PdeStaticVisualAgentValidationServiceTest {
         var blocked = service.generate(PRODUCT, session.sessionToken());
         assertThat(blocked.status()).isEqualTo("BLOCKED");
         assertThat(blocked.looks()).isEmpty();
-        event(service, session.sessionToken(), "SAFETY_LIMIT_BLOCKED", null, null, null, null);
-        var finished = event(
-                service,
-                session.sessionToken(),
-                "AGENT_SCENARIO_COMPLETED",
-                null,
-                null,
-                null,
-                null);
+        var finished = service.completeScenario(PRODUCT, session.sessionToken());
         assertThat(finished.finished()).isTrue();
         assertThat(finished.providerCalls()).isZero();
     }
@@ -257,7 +283,7 @@ class PdeStaticVisualAgentValidationServiceTest {
         var service = service();
         var session = start(service, "ADHERENT");
         service.saveInput(PRODUCT, session.sessionToken(), validInput());
-        service.generate(PRODUCT, session.sessionToken());
+        generateAndPresent(service, session.sessionToken());
 
         assertThatThrownBy(() -> service.createContinuity(
                         PRODUCT,
@@ -273,14 +299,7 @@ class PdeStaticVisualAgentValidationServiceTest {
                         "FREE_SEARCH",
                         "Escolha explícita"))
                 .isInstanceOf(IllegalStateException.class);
-        assertThatThrownBy(() -> event(
-                        service,
-                        session.sessionToken(),
-                        "AGENT_SCENARIO_COMPLETED",
-                        null,
-                        null,
-                        null,
-                        null))
+        assertThatThrownBy(() -> service.completeScenario(PRODUCT, session.sessionToken()))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -289,31 +308,17 @@ class PdeStaticVisualAgentValidationServiceTest {
             PdeStaticVisualAgentValidationService service, String scenario) {
         var start = start(service, scenario);
         service.saveInput(PRODUCT, start.sessionToken(), validInput());
-        service.generate(PRODUCT, start.sessionToken());
+        generateAndPresent(service, start.sessionToken());
         event(service, start.sessionToken(), "VALUE_MOMENT", true, null, null, "O pacote resolve a decisão.");
         event(service, start.sessionToken(), "READY_RESULT_USED", null, "look-1", null, null);
-        event(
-                service,
-                start.sessionToken(),
-                "SAVE_INTEREST_DECLARED",
-                true,
-                null,
-                null,
-                "Quero retornar à decisão preservada.");
+        declareSaveInterest(service, start.sessionToken());
         return start;
     }
 
     /** Executa os marcos de interesse, emissão e retomada autenticada. */
     private ActiveAccess createAndResume(
             PdeStaticVisualAgentValidationService service, String sessionToken) {
-        event(
-                service,
-                sessionToken,
-                "SAVE_INTEREST_DECLARED",
-                true,
-                null,
-                null,
-                "Quero retornar à decisão preservada.");
+        declareSaveInterest(service, sessionToken);
         var credential = service.createContinuity(
                 PRODUCT,
                 sessionToken,
@@ -322,7 +327,8 @@ class PdeStaticVisualAgentValidationServiceTest {
                 PRODUCT,
                 new PdeStaticVisualAgentValidationService.ContinuityResumeRequest(
                         credential.continuationCredential(), POLICY));
-        service.resultPackage(PRODUCT, resumed.sessionToken(), resumed.resultPackageId());
+        var result = service.resultPackage(PRODUCT, resumed.sessionToken(), resumed.resultPackageId());
+        completeAccessAndReturn(service, resumed.sessionToken(), result);
         return new ActiveAccess(resumed.sessionToken(), resumed.continuationCredential());
     }
 
@@ -339,10 +345,54 @@ class PdeStaticVisualAgentValidationServiceTest {
     /** Abre uma sessão canônica do produto Alcyone. */
     private PdeStaticVisualAgentValidationService.SessionResponse start(
             PdeStaticVisualAgentValidationService service, String scenario) {
+        var session = startWithoutConsent(service, scenario);
+        service.acceptConsent(
+                PRODUCT,
+                session.sessionToken(),
+                new PdeStaticVisualAgentValidationService.ConsentRequest(
+                        true, "ALCYONE_AGENT_INTAKE_CONSENT_V1"));
+        return session;
+    }
+
+    /** Abre uma sessão ainda sem consentimento para testar o gate anterior à entrada. */
+    private PdeStaticVisualAgentValidationService.SessionResponse startWithoutConsent(
+            PdeStaticVisualAgentValidationService service, String scenario) {
         return service.startAgentValidation(
                 PRODUCT,
                 new PdeStaticVisualAgentValidationService.AgentSessionRequest(
                         "product:11@agent-validation-v1", scenario));
+    }
+
+    /** Materializa e confirma a apresentação do pacote sem inferir valor ou uso. */
+    private PdeStaticVisualAgentValidationService.SessionResponse generateAndPresent(
+            PdeStaticVisualAgentValidationService service, String sessionToken) {
+        var generated = service.generate(PRODUCT, sessionToken);
+        return service.markResultPresented(
+                PRODUCT,
+                sessionToken,
+                new PdeStaticVisualAgentValidationService.PackageMilestoneRequest(
+                        generated.resultPackageId(), generated.resultPackageFingerprint()));
+    }
+
+    /** Registra o interesse operacional sem ampliar a lista de sinais canônicos. */
+    private void declareSaveInterest(
+            PdeStaticVisualAgentValidationService service, String sessionToken) {
+        service.declareSaveInterest(
+                PRODUCT,
+                sessionToken,
+                new PdeStaticVisualAgentValidationService.ConfirmationRequest(
+                        true, "Quero retornar à decisão preservada."));
+    }
+
+    /** Confirma autorização e retorno como marcos separados para o mesmo pacote. */
+    private void completeAccessAndReturn(
+            PdeStaticVisualAgentValidationService service,
+            String sessionToken,
+            PdeStaticVisualAgentValidationService.ResultPackageResponse result) {
+        var request = new PdeStaticVisualAgentValidationService.PackageMilestoneRequest(
+                result.resultPackageId(), result.resultPackageFingerprint());
+        service.markAccessCompleted(PRODUCT, sessionToken, request);
+        service.markReturnCompleted(PRODUCT, sessionToken, request);
     }
 
     /** Envia um evento ao serviço mantendo explícitos todos os campos possíveis. */

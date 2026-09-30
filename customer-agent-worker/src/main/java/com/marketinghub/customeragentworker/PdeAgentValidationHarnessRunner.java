@@ -46,7 +46,17 @@ public class PdeAgentValidationHarnessRunner {
           "expiredSessionRejected",
           "crossSessionPackageDenied",
           "resultUnavailableRecovered",
-          "authenticatedReturn");
+          "authenticatedReturn",
+          "consentBeforeInput",
+          "canonicalSignalsOnly",
+          "nullableMilestonesPreserved",
+          "sixRecoveryStates",
+          "contrastAa",
+          "keyboardNavigation",
+          "focusVisible",
+          "zoom200",
+          "reducedMotion",
+          "mobileKeyboardSafeArea");
   private final ObjectMapper json;
   private final String nodeBinary;
   private final String scriptPath;

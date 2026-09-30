@@ -10,6 +10,7 @@
     "Segoe UI",
     sans-serif;
   font-synthesis: none;
+  text-size-adjust: 100%;
 }
 
 * {
@@ -24,6 +25,7 @@ body {
     #ebe7df 55%,
     #d9ddd9 100%
   );
+  overflow-wrap: anywhere;
 }
 button,
 input,
@@ -106,7 +108,7 @@ label {
 }
 .alcyone-kicker {
   margin: 0;
-  color: #a45235;
+  color: #9f4b31;
   font-size: 0.78rem;
   font-weight: 900;
   letter-spacing: 0.14em;
@@ -155,8 +157,14 @@ label {
   gap: 18px;
 }
 .alcyone-form .alcyone-full,
-.alcyone-form > button {
+.alcyone-form > button,
+.alcyone-form-hint {
   grid-column: 1 / -1;
+}
+.alcyone-form-hint {
+  margin: 0;
+  color: #4f5e5b;
+  line-height: 1.5;
 }
 .alcyone-ready {
   margin-top: 22px;
@@ -314,7 +322,8 @@ footer {
 @media (max-width: 800px) {
   .alcyone-shell {
     width: min(100% - 22px, 680px);
-    padding-top: 22px;
+    padding: max(22px, env(safe-area-inset-top)) 0
+      max(28px, env(safe-area-inset-bottom));
   }
   .alcyone-header {
     grid-template-columns: 1fr;
@@ -352,5 +361,14 @@ footer {
   *::after {
     scroll-behavior: auto !important;
     transition: none !important;
+    animation: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible {
+    outline: 3px solid CanvasText;
   }
 }

@@ -8149,3 +8149,14 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   para Alcyone, preservando os contratos de Mira e Vega. O manifesto sucessor declara a v1
   substituída; empacotador e Têmis preservam o histórico sem exigir que ele descreva o código atual,
   e as atestações de compatibilidade carregam adiante a prova comercial mínima de cada superfície.
+- **Recorrência em 30/09/2026 — Alcyone #570:** a v2 resolveu continuidade e isolamento, mas Dédalo
+  bloqueou o gate porque o aceite versionado existia apenas na emissão tardia da credencial, dez
+  eventos misturavam funil e operação, e a matriz não provava todos os estados de recuperação nem
+  acessibilidade ampliada. Filtrar a resposta deixaria a fonte inconsistente; criar outro motor
+  duplicaria estado. A correção causal mantém `alcyone-private-v2`, exige consentimento sintético
+  antes de `/input`, expõe somente cinco sinais canônicos e persiste resultado, interesse,
+  credencial, autenticação, acesso e retorno como timestamps anuláveis independentes.
+- **Prevenção da recorrência #570:** serviço e harness recusam inferência entre apresentação, valor,
+  uso, credencial e login; a matriz 3 × 3 reproduz seis falhas recuperáveis e exige contraste AA,
+  teclado, foco, zoom de 200%, movimento reduzido e área útil móvel. O gate do worker recusa a
+  aprovação de Alcyone se qualquer uma dessas provas estiver ausente, sem alterar Mira ou Vega.

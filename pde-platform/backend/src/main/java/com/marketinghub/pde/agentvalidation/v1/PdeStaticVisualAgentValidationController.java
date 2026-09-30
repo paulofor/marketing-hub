@@ -83,6 +83,19 @@ public class PdeStaticVisualAgentValidationController {
         return service.session(productSlug, sessionToken);
     }
 
+    /** Persiste o consentimento sintético versionado antes de liberar a entrada. */
+    @PostMapping("/consent")
+    public PdeStaticVisualAgentValidationService.SessionResponse consent(
+            @PathVariable("productSlug") String productSlug,
+            @RequestHeader("X-PDE-Agent-Session") String sessionToken,
+            @Valid @RequestBody PdeStaticVisualAgentValidationService.ConsentRequest request) {
+        log.info(
+                "Payload bruto recebido no consentimento sintético; productSlug={} request={}",
+                productSlug,
+                request);
+        return service.acceptConsent(productSlug, sessionToken, request);
+    }
+
     /** Persiste a entrada bruta limitada antes de qualquer transformação visual. */
     @PutMapping("/input")
     public PdeStaticVisualAgentValidationService.SessionResponse input(
@@ -99,6 +112,32 @@ public class PdeStaticVisualAgentValidationController {
             @PathVariable("productSlug") String productSlug,
             @RequestHeader("X-PDE-Agent-Session") String sessionToken) {
         return service.generate(productSlug, sessionToken);
+    }
+
+    /** Registra a apresentação do pacote sem inferir valor ou uso. */
+    @PostMapping("/milestones/result-presented")
+    public PdeStaticVisualAgentValidationService.SessionResponse resultPresented(
+            @PathVariable("productSlug") String productSlug,
+            @RequestHeader("X-PDE-Agent-Session") String sessionToken,
+            @Valid @RequestBody PdeStaticVisualAgentValidationService.PackageMilestoneRequest request) {
+        log.info(
+                "Payload bruto recebido na apresentação visual; productSlug={} request={}",
+                productSlug,
+                request);
+        return service.markResultPresented(productSlug, sessionToken, request);
+    }
+
+    /** Registra o interesse explícito de preservar o pacote fora da telemetria comercial. */
+    @PostMapping("/milestones/save-interest")
+    public PdeStaticVisualAgentValidationService.SessionResponse saveInterest(
+            @PathVariable("productSlug") String productSlug,
+            @RequestHeader("X-PDE-Agent-Session") String sessionToken,
+            @Valid @RequestBody PdeStaticVisualAgentValidationService.ConfirmationRequest request) {
+        log.info(
+                "Payload bruto recebido no interesse de continuidade; productSlug={} request={}",
+                productSlug,
+                request);
+        return service.declareSaveInterest(productSlug, sessionToken, request);
     }
 
     /** Emite uma credencial rotativa depois do aceite da política interna versionada. */
@@ -129,6 +168,32 @@ public class PdeStaticVisualAgentValidationController {
         return service.resultPackage(productSlug, sessionToken, packageId);
     }
 
+    /** Confirma que a nova sessão concluiu a autorização do pacote preservado. */
+    @PostMapping("/milestones/access-completed")
+    public PdeStaticVisualAgentValidationService.SessionResponse accessCompleted(
+            @PathVariable("productSlug") String productSlug,
+            @RequestHeader("X-PDE-Agent-Session") String sessionToken,
+            @Valid @RequestBody PdeStaticVisualAgentValidationService.PackageMilestoneRequest request) {
+        log.info(
+                "Payload bruto recebido na conclusão do acesso; productSlug={} request={}",
+                productSlug,
+                request);
+        return service.markAccessCompleted(productSlug, sessionToken, request);
+    }
+
+    /** Confirma o retorno depois de o cliente verificar o mesmo pacote e fingerprint. */
+    @PostMapping("/milestones/return-completed")
+    public PdeStaticVisualAgentValidationService.SessionResponse returnCompleted(
+            @PathVariable("productSlug") String productSlug,
+            @RequestHeader("X-PDE-Agent-Session") String sessionToken,
+            @Valid @RequestBody PdeStaticVisualAgentValidationService.PackageMilestoneRequest request) {
+        log.info(
+                "Payload bruto recebido na conclusão do retorno; productSlug={} request={}",
+                productSlug,
+                request);
+        return service.markReturnCompleted(productSlug, sessionToken, request);
+    }
+
     /** Registra uma ação explícita do agente sem inferir valor, uso ou preferência. */
     @PostMapping("/events")
     public PdeStaticVisualAgentValidationService.SessionResponse event(
@@ -137,6 +202,14 @@ public class PdeStaticVisualAgentValidationController {
             @Valid @RequestBody PdeStaticVisualAgentValidationService.EventRequest request) {
         log.info("Payload bruto recebido no evento visual; productSlug={} request={}", productSlug, request);
         return service.event(productSlug, sessionToken, request);
+    }
+
+    /** Encerra o cenário quando sinais canônicos e marcos independentes estão completos. */
+    @PostMapping("/completion")
+    public PdeStaticVisualAgentValidationService.SessionResponse complete(
+            @PathVariable("productSlug") String productSlug,
+            @RequestHeader("X-PDE-Agent-Session") String sessionToken) {
+        return service.completeScenario(productSlug, sessionToken);
     }
 
     /** Comprova que a superfície não possui publicação, cobrança, campanha ou provedor pago. */

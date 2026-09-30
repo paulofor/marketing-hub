@@ -40,8 +40,23 @@ type Session = {
   resultPackageId?: string | null;
   resultPackageFingerprint?: string | null;
   sessionExpiresAt: string;
+  consentVersion?: string | null;
+  consentedAt?: string | null;
   continuityPolicyVersion?: string | null;
   policyAcknowledged: boolean;
+  milestones: {
+    inputAcceptedAt?: string | null;
+    resultReadyAt?: string | null;
+    resultPresentedAt?: string | null;
+    saveInterestAt?: string | null;
+    continuityCredentialCreatedAt?: string | null;
+    accessAuthenticatedAt?: string | null;
+    accessCompletedAt?: string | null;
+    returnedAt?: string | null;
+    safetyBlockedAt?: string | null;
+    recoveryCompletedAt?: string | null;
+    finishedAt?: string | null;
+  };
   providerCalls: number;
   providerCostUsd: number;
 };
@@ -50,7 +65,14 @@ type Contract = {
   prototypeVersion: string;
   fixtureContract: string;
   checkoutMode: string;
+  intakeConsentVersion: string;
   continuityPolicyVersion: string;
+  instrumentationEvents: string[];
+  errorStates: Array<{
+    code: string;
+    message: string;
+    recoveryAction: string;
+  }>;
   published: boolean;
   paymentEnabled: boolean;
   mediaSpendBrl: number;
@@ -103,6 +125,7 @@ function AlcyonePrototype() {
   const [valueReason, setValueReason] = useState("");
   const [interestReason, setInterestReason] = useState("");
   const [preferenceReason, setPreferenceReason] = useState("");
+  const [consentAcknowledged, setConsentAcknowledged] = useState(false);
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
   const [hasContinuity, setHasContinuity] = useState(() =>
     Boolean(readContinuity()),
@@ -112,6 +135,35 @@ function AlcyonePrototype() {
     void initialize();
   }, []);
 
+  useEffect(() => {
+    if (
+      session?.status !== "READY" ||
+      !session.resultPackageId ||
+      !session.resultPackageFingerprint ||
+      session.milestones.resultPresentedAt
+    )
+      return;
+    const token = window.sessionStorage.getItem(sessionStorageKey);
+    if (!token) return;
+    void sessionRequest<Session>(token, "/milestones/result-presented", {
+      method: "POST",
+      body: JSON.stringify({
+        resultPackageId: session.resultPackageId,
+        resultPackageFingerprint: session.resultPackageFingerprint,
+      }),
+    })
+      .then(setSession)
+      .catch((cause) =>
+        setError(recoveryMessage(contract, "RESULT_UNAVAILABLE", cause)),
+      );
+  }, [
+    contract,
+    session?.status,
+    session?.resultPackageId,
+    session?.resultPackageFingerprint,
+    session?.milestones.resultPresentedAt,
+  ]);
+
   /** Carrega o contrato, tenta a sessão curta e depois a credencial rotativa salva. */
   async function initialize() {
     setLoading(true);
@@ -120,6 +172,7 @@ function AlcyonePrototype() {
       const currentContract = await request<Contract>(`${apiBase}/contract`);
       setContract(currentContract);
       const token = window.sessionStorage.getItem(sessionStorageKey);
+      let shortSessionRejected = false;
       if (token) {
         try {
           const restored = await sessionRequest<Session>(token, "/session");
@@ -128,15 +181,36 @@ function AlcyonePrototype() {
           return;
         } catch {
           window.sessionStorage.removeItem(sessionStorageKey);
+          shortSessionRejected = true;
         }
       }
       const continuity = readContinuity();
-      if (continuity) await resumeWith(continuity);
+      if (continuity) {
+        await resumeWith(continuity);
+      } else if (shortSessionRejected) {
+        setError(recoveryMessage(currentContract, "ACCESS_INVALID"));
+      }
     } catch (cause) {
       setError(message(cause));
     } finally {
       setLoading(false);
     }
+  }
+
+  /** Registra o consentimento sintético antes de habilitar qualquer campo da entrada. */
+  async function acceptConsent() {
+    await run(async (token) => {
+      if (!contract) throw new Error("Contrato de consentimento indisponível.");
+      setSession(
+        await sessionRequest<Session>(token, "/consent", {
+          method: "POST",
+          body: JSON.stringify({
+            accepted: consentAcknowledged,
+            consentVersion: contract.intakeConsentVersion,
+          }),
+        }),
+      );
+    }, "ACCESS_INVALID");
   }
 
   /** Repõe a entrada persistida sem expor credenciais na URL ou no corpo da página. */
@@ -164,7 +238,7 @@ function AlcyonePrototype() {
         }),
       });
       setSession(updated);
-    });
+    }, "INPUT_INCOMPLETE");
   }
 
   /** Solicita o pacote estático já autorizado, sem provedor externo. */
@@ -173,7 +247,7 @@ function AlcyonePrototype() {
       setSession(
         await sessionRequest<Session>(token, "/generate", { method: "POST" }),
       );
-    });
+    }, "HARNESS_FAILURE");
   }
 
   /** Registra um marco explícito e mantém cada dependência observável. */
@@ -213,6 +287,21 @@ function AlcyonePrototype() {
       });
       setHasContinuity(true);
       setSession(await sessionRequest<Session>(token, "/session"));
+    });
+  }
+
+  /** Persiste o interesse de retorno como marco operacional, fora dos cinco sinais. */
+  async function declareSaveInterest() {
+    await run(async (token) => {
+      setSession(
+        await sessionRequest<Session>(token, "/milestones/save-interest", {
+          method: "POST",
+          body: JSON.stringify({
+            confirmed: true,
+            justification: interestReason,
+          }),
+        }),
+      );
     });
   }
 
@@ -261,7 +350,9 @@ function AlcyonePrototype() {
     const result = await sessionRequest<ResultPackage>(
       resumed.sessionToken,
       `/packages/${encodeURIComponent(resumed.resultPackageId)}`,
-    );
+    ).catch((cause) => {
+      throw new Error(recoveryMessage(contract, "RESULT_UNAVAILABLE", cause));
+    });
     if (
       result.resultPackageId !== resumed.resultPackageId ||
       result.looks.length !== 3 ||
@@ -272,19 +363,36 @@ function AlcyonePrototype() {
         "O pacote retomado não corresponde ao resultado preservado.",
       );
     }
-    const returned = await sessionRequest<Session>(
+    await sessionRequest<Session>(
       resumed.sessionToken,
-      "/events",
+      "/milestones/access-completed",
       {
         method: "POST",
-        body: JSON.stringify({ eventType: "RETURN_COMPLETED" }),
+        body: JSON.stringify({
+          resultPackageId: result.resultPackageId,
+          resultPackageFingerprint: result.resultPackageFingerprint,
+        }),
+      },
+    );
+    const returned = await sessionRequest<Session>(
+      resumed.sessionToken,
+      "/milestones/return-completed",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          resultPackageId: result.resultPackageId,
+          resultPackageFingerprint: result.resultPackageFingerprint,
+        }),
       },
     );
     setSession(returned);
   }
 
   /** Executa uma operação autenticada com tratamento uniforme e sem registrar a credencial. */
-  async function run(operation: (token: string) => Promise<void>) {
+  async function run(
+    operation: (token: string) => Promise<void>,
+    failureCode?: string,
+  ) {
     const token = window.sessionStorage.getItem(sessionStorageKey);
     if (!token) {
       setError(
@@ -297,10 +405,25 @@ function AlcyonePrototype() {
     try {
       await operation(token);
     } catch (cause) {
-      setError(message(cause));
+      setError(
+        failureCode
+          ? recoveryMessage(contract, failureCode, cause)
+          : message(cause),
+      );
     } finally {
       setWorking(false);
     }
+  }
+
+  /** Encerra o cenário sem registrar eventos operacionais como sinais de funil. */
+  async function completeScenario() {
+    await run(async (token) => {
+      setSession(
+        await sessionRequest<Session>(token, "/completion", {
+          method: "POST",
+        }),
+      );
+    });
   }
 
   const inputComplete = useMemo(
@@ -402,21 +525,9 @@ function AlcyonePrototype() {
           <p>
             Nenhuma combinação foi criada e nenhuma chamada externa aconteceu.
           </p>
-          {!has("SAFETY_LIMIT_BLOCKED") ? (
-            <button
-              disabled={working}
-              onClick={() => record("SAFETY_LIMIT_BLOCKED")}
-            >
-              Registrar bloqueio seguro
-            </button>
-          ) : (
-            <button
-              disabled={working}
-              onClick={() => record("AGENT_SCENARIO_COMPLETED")}
-            >
-              Concluir cenário de segurança
-            </button>
-          )}
+          <button disabled={working} onClick={completeScenario}>
+            Concluir cenário de segurança
+          </button>
         </section>
       ) : session.status === "READY" ? (
         <>
@@ -459,7 +570,7 @@ function AlcyonePrototype() {
             </div>
           </section>
 
-          {!has("VALUE_MOMENT") && (
+          {session.milestones.resultPresentedAt && !has("VALUE_MOMENT") && (
             <section className="alcyone-panel alcyone-action">
               <label htmlFor="value-reason">O que tornou o pacote útil?</label>
               <textarea
@@ -481,7 +592,7 @@ function AlcyonePrototype() {
             </section>
           )}
 
-          {has("READY_RESULT_USED") && !has("SAVE_INTEREST_DECLARED") && (
+          {has("READY_RESULT_USED") && !session.milestones.saveInterestAt && (
             <section
               className="alcyone-panel alcyone-action"
               data-testid="save-interest-step"
@@ -496,20 +607,15 @@ function AlcyonePrototype() {
               />
               <button
                 disabled={working || interestReason.trim().length < 5}
-                onClick={() =>
-                  record("SAVE_INTEREST_DECLARED", {
-                    confirmed: true,
-                    justification: interestReason,
-                  })
-                }
+                onClick={declareSaveInterest}
               >
                 Quero preservar esta decisão
               </button>
             </section>
           )}
 
-          {has("SAVE_INTEREST_DECLARED") &&
-            !has("CONTINUITY_CREDENTIAL_CREATED") && (
+          {session.milestones.saveInterestAt &&
+            !session.milestones.continuityCredentialCreatedAt && (
               <section
                 className="alcyone-panel alcyone-action"
                 data-testid="credential-step"
@@ -536,26 +642,27 @@ function AlcyonePrototype() {
               </section>
             )}
 
-          {has("CONTINUITY_CREDENTIAL_CREATED") && !has("RETURN_COMPLETED") && (
-            <section
-              className="alcyone-panel alcyone-action"
-              data-testid="authenticated-return-step"
-            >
-              <h2>Decisão preservada</h2>
-              <p>
-                A credencial está separada da sessão curta e será rotacionada no
-                próximo acesso.
-              </p>
-              <button
-                disabled={working || !hasContinuity}
-                onClick={resumeContinuity}
+          {session.milestones.continuityCredentialCreatedAt &&
+            !session.milestones.returnedAt && (
+              <section
+                className="alcyone-panel alcyone-action"
+                data-testid="authenticated-return-step"
               >
-                Retomar pacote autenticado
-              </button>
-            </section>
-          )}
+                <h2>Decisão preservada</h2>
+                <p>
+                  A credencial está separada da sessão curta e será rotacionada
+                  no próximo acesso.
+                </p>
+                <button
+                  disabled={working || !hasContinuity}
+                  onClick={resumeContinuity}
+                >
+                  Retomar pacote autenticado
+                </button>
+              </section>
+            )}
 
-          {has("RETURN_COMPLETED") && !has("PREFERRED_OVER_FREE") && (
+          {session.milestones.returnedAt && !has("PREFERRED_OVER_FREE") && (
             <section
               className="alcyone-panel alcyone-action"
               data-testid="return-complete-step"
@@ -602,33 +709,39 @@ function AlcyonePrototype() {
           {has("CHECKOUT_STARTED") && (
             <section className="alcyone-panel alcyone-complete">
               <h2>Simulação concluída — nenhuma cobrança realizada</h2>
-              {session.scenarioCode === "RECOVERY" ? (
-                !has("RECOVERY_COMPLETED") ? (
-                  <button
-                    disabled={working}
-                    onClick={() => record("RECOVERY_COMPLETED")}
-                  >
-                    Confirmar retomada do mesmo pacote
-                  </button>
-                ) : (
-                  <button
-                    disabled={working}
-                    onClick={() => record("AGENT_SCENARIO_COMPLETED")}
-                  >
-                    Concluir cenário interno
-                  </button>
-                )
-              ) : (
-                <button
-                  disabled={working}
-                  onClick={() => record("AGENT_SCENARIO_COMPLETED")}
-                >
-                  Concluir cenário interno
-                </button>
-              )}
+              <button disabled={working} onClick={completeScenario}>
+                Concluir cenário interno
+              </button>
             </section>
           )}
         </>
+      ) : !session.consentedAt ? (
+        <section
+          className="alcyone-panel alcyone-action"
+          data-testid="intake-consent-step"
+        >
+          <p className="alcyone-kicker">CONSENTIMENTO SINTÉTICO VERSIONADO</p>
+          <h2>Autorizar somente dados de teste</h2>
+          <p>
+            Esta etapa pertence ao agente de homologação. Ela não representa
+            consentimento humano, opinião ou prova comercial.
+          </p>
+          <label className="alcyone-policy">
+            <input
+              type="checkbox"
+              checked={consentAcknowledged}
+              onChange={(event) => setConsentAcknowledged(event.target.checked)}
+            />
+            Confirmo o uso exclusivo de referências sintéticas, sem nome,
+            contato, foto corporal ou dado de pagamento.
+          </label>
+          <button
+            disabled={working || !consentAcknowledged}
+            onClick={acceptConsent}
+          >
+            Autorizar entrada sintética
+          </button>
+        </section>
       ) : (
         <section className="alcyone-panel">
           <p className="alcyone-kicker">ENTRADA MÍNIMA · SEM FOTO CORPORAL</p>
@@ -681,6 +794,12 @@ function AlcyonePrototype() {
             <button type="submit" disabled={working || !inputComplete}>
               Salvar entrada segura
             </button>
+            {!inputComplete && (
+              <p role="status" className="alcyone-form-hint">
+                Complete ocasião, data, preferências, restrições e ao menos duas
+                referências sintéticas.
+              </p>
+            )}
           </form>
           {session.status === "INPUT_READY" && (
             <div className="alcyone-ready">
@@ -783,6 +902,21 @@ function message(cause: unknown) {
   return cause instanceof Error
     ? cause.message
     : "Não foi possível concluir a operação.";
+}
+
+/** Resolve um estado recuperável pelo catálogo versionado e conserva o detalhe técnico seguro. */
+function recoveryMessage(
+  contract: Contract | null,
+  code: string,
+  cause?: unknown,
+) {
+  const state = contract?.errorStates.find(
+    (candidate) => candidate.code === code,
+  );
+  const fallback = message(cause);
+  if (!state) return fallback;
+  const detail = cause ? ` ${fallback}` : "";
+  return `${code}: ${state.message} ${state.recoveryAction}${detail}`.trim();
 }
 
 createRoot(document.getElementById("root")!).render(

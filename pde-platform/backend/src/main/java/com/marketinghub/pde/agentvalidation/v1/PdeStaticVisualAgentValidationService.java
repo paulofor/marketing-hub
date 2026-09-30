@@ -42,26 +42,44 @@ public class PdeStaticVisualAgentValidationService {
     private static final String VERSION = "alcyone-private-v2";
     private static final String PREVIOUS_VERSION = "alcyone-private-v1";
     private static final String FIXTURE_CONTRACT = "PDE_STATIC_RESULT_FIXTURES_V1";
+    private static final String INTAKE_CONSENT_VERSION = "ALCYONE_AGENT_INTAKE_CONSENT_V1";
     private static final String CONTINUITY_POLICY_VERSION = "ALCYONE_AGENT_CONTINUITY_V1";
     private static final Duration SESSION_TTL = Duration.ofMinutes(30);
     private static final Duration CONTINUITY_TTL = Duration.ofHours(24);
     private static final Set<String> SCENARIOS = Set.of("ADHERENT", "RECOVERY", "SAFETY");
-    private static final Set<String> EVENTS = Set.of(
+    private static final List<String> CANONICAL_EVENTS = List.of(
+            "EXPERIENCE_STARTED",
             "VALUE_MOMENT",
             "READY_RESULT_USED",
-            "SAVE_INTEREST_DECLARED",
-            "RETURN_COMPLETED",
             "PREFERRED_OVER_FREE",
-            "CHECKOUT_STARTED",
-            "RECOVERY_COMPLETED",
-            "SAFETY_LIMIT_BLOCKED",
-            "AGENT_SCENARIO_COMPLETED");
-    private static final Set<String> CONTINUITY_EVENTS = Set.of(
-            "SAVE_INTEREST_DECLARED",
-            "CONTINUITY_POLICY_ACKNOWLEDGED",
-            "CONTINUITY_CREDENTIAL_CREATED",
-            "AUTHENTICATED_ACCESS_RESTORED",
-            "RETURN_COMPLETED");
+            "CHECKOUT_STARTED");
+    private static final Set<String> EXPLICIT_EVENTS = Set.of(
+            "VALUE_MOMENT", "READY_RESULT_USED", "PREFERRED_OVER_FREE", "CHECKOUT_STARTED");
+    private static final List<ErrorStateContract> ERROR_STATES = List.of(
+            new ErrorStateContract(
+                    "ACCESS_INVALID",
+                    "Este acesso privado não é válido para esta experiência.",
+                    "Solicitar ao harness nova concessão para o mesmo cenário e versão."),
+            new ErrorStateContract(
+                    "SESSION_EXPIRED",
+                    "Sua sessão terminou, mas o trabalho preservado pode ser retomado.",
+                    "Autenticar a credencial de continuidade e recuperar a mesma execução."),
+            new ErrorStateContract(
+                    "INPUT_INCOMPLETE",
+                    "Ainda faltam informações necessárias para preparar a seleção.",
+                    "Destacar os campos faltantes sem chamar o executor."),
+            new ErrorStateContract(
+                    "HARNESS_FAILURE",
+                    "Não foi possível concluir o processamento agora; sua entrada foi preservada.",
+                    "Repetir com a mesma execução e sem duplicar pacote ou custo."),
+            new ErrorStateContract(
+                    "RESULT_UNAVAILABLE",
+                    "Sua seleção está preservada, mas não pode ser exibida neste momento.",
+                    "Recarregar o mesmo pacote autorizado sem regeneração."),
+            new ErrorStateContract(
+                    "RESUME_FAILED",
+                    "Não foi possível retomar com esta credencial.",
+                    "Validar versão e vigência sem criar nova leitura."));
     private static final List<LookCard> LOOKS = List.of(
             new LookCard(
                     "look-1",
@@ -115,20 +133,12 @@ public class PdeStaticVisualAgentValidationService {
                 "/assets/alcyone/manifest.json",
                 "PLANNED",
                 "SIMULATED_NO_CHARGE",
+                INTAKE_CONSENT_VERSION,
                 CONTINUITY_POLICY_VERSION,
                 SESSION_TTL.toSeconds(),
                 CONTINUITY_TTL.toSeconds(),
-                List.of(
-                        "EXPERIENCE_STARTED",
-                        "VALUE_MOMENT",
-                        "READY_RESULT_USED",
-                        "SAVE_INTEREST_DECLARED",
-                        "CONTINUITY_POLICY_ACKNOWLEDGED",
-                        "CONTINUITY_CREDENTIAL_CREATED",
-                        "AUTHENTICATED_ACCESS_RESTORED",
-                        "RETURN_COMPLETED",
-                        "PREFERRED_OVER_FREE",
-                        "CHECKOUT_STARTED"),
+                CANONICAL_EVENTS,
+                ERROR_STATES,
                 false,
                 false,
                 0,
@@ -167,11 +177,36 @@ public class PdeStaticVisualAgentValidationService {
         return response(requiredSession(sessionToken), null);
     }
 
+    /** Persiste o consentimento sintético versionado antes de aceitar qualquer dado de entrada. */
+    public synchronized SessionResponse acceptConsent(
+            String productSlug, String sessionToken, ConsentRequest request) {
+        requireProduct(productSlug);
+        StoredSession session = requiredSession(sessionToken);
+        if (!Boolean.TRUE.equals(request.accepted())
+                || !INTAKE_CONSENT_VERSION.equals(trim(request.consentVersion()))) {
+            throw new IllegalArgumentException(
+                    "O consentimento sintético precisa ser aceito na versão ativa antes da entrada.");
+        }
+        if (session.input != null) {
+            throw new IllegalStateException("O consentimento não pode mudar depois da entrada.");
+        }
+        if (session.consentedAt == null) {
+            session.consentVersion = INTAKE_CONSENT_VERSION;
+            session.consentedAt = now().toString();
+            persist();
+        }
+        return response(session, null);
+    }
+
     /** Persiste a entrada mínima e registra início somente depois de aceitá-la. */
     public synchronized SessionResponse saveInput(
             String productSlug, String sessionToken, InputRequest request) {
         requireProduct(productSlug);
         StoredSession session = requiredSession(sessionToken);
+        if (!INTAKE_CONSENT_VERSION.equals(session.consentVersion) || session.consentedAt == null) {
+            throw new SecurityException("O consentimento versionado é obrigatório antes da entrada.");
+        }
+        validateInput(request);
         InputSnapshot snapshot = new InputSnapshot(
                 request.occasion().trim(),
                 request.eventDate(),
@@ -183,6 +218,7 @@ public class PdeStaticVisualAgentValidationService {
             throw new IllegalStateException("A execução já possui evidência e não pode receber outra entrada.");
         }
         session.input = snapshot;
+        if (session.inputAcceptedAt == null) session.inputAcceptedAt = now().toString();
         session.status = "INPUT_READY";
         session.blocker = null;
         session.looks = List.of();
@@ -210,6 +246,7 @@ public class PdeStaticVisualAgentValidationService {
                     "Esta versão aceita somente referências isoladas das peças e não recebe foto corporal, "
                             + "recomendação de compra ou julgamento do corpo.";
             session.looks = List.of();
+            if (session.safetyBlockedAt == null) session.safetyBlockedAt = now().toString();
             persist();
             return response(session, null);
         }
@@ -219,6 +256,35 @@ public class PdeStaticVisualAgentValidationService {
         session.resultPackageId = UUID.randomUUID().toString();
         session.resultPackageFingerprint =
                 "alcyone-static-fixtures-v1:3x1024x1024:provider-calls-0";
+        if (session.resultReadyAt == null) session.resultReadyAt = now().toString();
+        persist();
+        return response(session, null);
+    }
+
+    /** Confirma que o navegador apresentou o pacote exato sem converter apresentação em valor. */
+    public synchronized SessionResponse markResultPresented(
+            String productSlug, String sessionToken, PackageMilestoneRequest request) {
+        requireProduct(productSlug);
+        StoredSession session = requiredSession(sessionToken);
+        requirePackage(session, request.resultPackageId(), request.resultPackageFingerprint());
+        if (session.resultPresentedAt == null) session.resultPresentedAt = now().toString();
+        persist();
+        return response(session, null);
+    }
+
+    /** Persiste o interesse explícito de retorno como estado, sem criar um sinal de funil. */
+    public synchronized SessionResponse declareSaveInterest(
+            String productSlug, String sessionToken, ConfirmationRequest request) {
+        requireProduct(productSlug);
+        StoredSession session = requiredSession(sessionToken);
+        requireConfirmation(
+                request.confirmed(),
+                request.justification(),
+                "O interesse de retorno exige confirmação e justificativa.");
+        if (!session.events.contains("READY_RESULT_USED")) {
+            throw new IllegalStateException("O interesse de retorno exige um resultado realmente usado.");
+        }
+        if (session.saveInterestAt == null) session.saveInterestAt = now().toString();
         persist();
         return response(session, null);
     }
@@ -229,7 +295,7 @@ public class PdeStaticVisualAgentValidationService {
         requireProduct(productSlug);
         StoredSession session = requiredSession(sessionToken);
         String eventType = request.eventType().trim().toUpperCase();
-        if (!EVENTS.contains(eventType)) {
+        if (!EXPLICIT_EVENTS.contains(eventType)) {
             throw new IllegalArgumentException("Evento não permitido no protótipo multiagente.");
         }
         if (session.finished) {
@@ -241,7 +307,6 @@ public class PdeStaticVisualAgentValidationService {
         if ("READY_RESULT_USED".equals(eventType)) {
             session.selectedLookId = request.selectedLookId().trim();
         }
-        if ("AGENT_SCENARIO_COMPLETED".equals(eventType)) session.finished = true;
         persist();
         return response(session, null);
     }
@@ -255,7 +320,7 @@ public class PdeStaticVisualAgentValidationService {
         if (session.finished
                 || !"READY".equals(session.status)
                 || session.resultPackageId == null
-                || !session.events.contains("SAVE_INTEREST_DECLARED")) {
+                || session.saveInterestAt == null) {
             throw new IllegalStateException(
                     "A continuidade exige resultado usado e interesse de retorno declarado.");
         }
@@ -264,8 +329,9 @@ public class PdeStaticVisualAgentValidationService {
         session.policyAcknowledgedAt = now().toString();
         session.continuationCredentialHash = hash(continuationCredential);
         session.continuityExpiresAt = now().plus(CONTINUITY_TTL).toString();
-        recordOnce(session, "CONTINUITY_POLICY_ACKNOWLEDGED");
-        recordOnce(session, "CONTINUITY_CREDENTIAL_CREATED");
+        if (session.continuityCredentialCreatedAt == null) {
+            session.continuityCredentialCreatedAt = now().toString();
+        }
         persist();
         return new ContinuityCredentialResponse(
                 CONTINUITY_POLICY_VERSION,
@@ -302,7 +368,7 @@ public class PdeStaticVisualAgentValidationService {
         session.continuityExpiresAt = now().plus(CONTINUITY_TTL).toString();
         if (previousSessionHash != null) sessions.remove(previousSessionHash);
         sessions.put(session.sessionTokenHash, session);
-        recordOnce(session, "AUTHENTICATED_ACCESS_RESTORED");
+        session.accessAuthenticatedAt = now().toString();
         persist();
         return new ContinuityResumeResponse(
                 newSessionToken,
@@ -327,6 +393,56 @@ public class PdeStaticVisualAgentValidationService {
                 session.resultPackageId,
                 session.resultPackageFingerprint,
                 List.copyOf(session.looks));
+    }
+
+    /** Registra a autorização concluída do pacote depois da autenticação, sem inferir retorno. */
+    public synchronized SessionResponse markAccessCompleted(
+            String productSlug, String sessionToken, PackageMilestoneRequest request) {
+        requireProduct(productSlug);
+        StoredSession session = requiredSession(sessionToken);
+        if (session.accessAuthenticatedAt == null) {
+            throw new IllegalStateException("O acesso ao pacote exige autenticação de continuidade.");
+        }
+        requirePackage(session, request.resultPackageId(), request.resultPackageFingerprint());
+        if (session.accessCompletedAt == null) session.accessCompletedAt = now().toString();
+        persist();
+        return response(session, null);
+    }
+
+    /** Confirma o retorno somente após o cliente validar e autorizar o pacote preservado. */
+    public synchronized SessionResponse markReturnCompleted(
+            String productSlug, String sessionToken, PackageMilestoneRequest request) {
+        requireProduct(productSlug);
+        StoredSession session = requiredSession(sessionToken);
+        requirePackage(session, request.resultPackageId(), request.resultPackageFingerprint());
+        if (session.accessCompletedAt == null) {
+            throw new IllegalStateException("O retorno exige acesso concluído ao mesmo pacote.");
+        }
+        if (session.returnedAt == null) session.returnedAt = now().toString();
+        persist();
+        return response(session, null);
+    }
+
+    /** Encerra o cenário somente quando seus sinais e estados obrigatórios estão completos. */
+    public synchronized SessionResponse completeScenario(String productSlug, String sessionToken) {
+        requireProduct(productSlug);
+        StoredSession session = requiredSession(sessionToken);
+        boolean safety = "SAFETY".equals(session.scenarioCode)
+                && "BLOCKED".equals(session.status)
+                && session.safetyBlockedAt != null;
+        boolean journey = !"SAFETY".equals(session.scenarioCode)
+                && canonicalFunnelComplete(session)
+                && continuityComplete(session);
+        if (!safety && !journey) {
+            throw new IllegalStateException("O cenário não possui toda a evidência funcional exigida.");
+        }
+        if ("RECOVERY".equals(session.scenarioCode) && session.recoveryCompletedAt == null) {
+            session.recoveryCompletedAt = now().toString();
+        }
+        session.finished = true;
+        if (session.finishedAt == null) session.finishedAt = now().toString();
+        persist();
+        return response(session, null);
     }
 
     /** Expira uma sessão pelo harness para comprovar a retomada sem esperar o relógio real. */
@@ -362,17 +478,20 @@ public class PdeStaticVisualAgentValidationService {
                 List.copyOf(session.looks),
                 session.selectedLookId,
                 session.blocker,
-                List.copyOf(session.events),
+                canonicalEvents(session),
                 session.finished,
                 session.resultPackageId,
                 session.resultPackageFingerprint,
                 FIXTURE_CONTRACT,
+                session.consentVersion,
+                session.consentedAt,
                 session.continuityPolicyVersion,
                 session.policyAcknowledgedAt,
                 session.sessionExpiresAt,
                 session.continuityExpiresAt,
                 session.continuationCredentialHash != null,
-                List.copyOf(eventAudit(session)),
+                milestones(session),
+                canonicalEventAudit(session),
                 0,
                 0,
                 Map.of(
@@ -386,32 +505,13 @@ public class PdeStaticVisualAgentValidationService {
 
     /** Valida a dependência funcional de cada evento sem inferir comportamento não observado. */
     private void validateEvent(StoredSession session, String eventType, EventRequest request) {
-        if ("SAFETY_LIMIT_BLOCKED".equals(eventType)) {
-            if (!"SAFETY".equals(session.scenarioCode) || !"BLOCKED".equals(session.status)) {
-                throw new IllegalStateException("O limite de segurança precisa estar bloqueado no cenário correto.");
-            }
-            return;
-        }
-        if ("AGENT_SCENARIO_COMPLETED".equals(eventType)) {
-            boolean adherent = "ADHERENT".equals(session.scenarioCode)
-                    && canonicalFunnelComplete(session)
-                    && session.events.containsAll(CONTINUITY_EVENTS);
-            boolean recovery = "RECOVERY".equals(session.scenarioCode)
-                    && canonicalFunnelComplete(session)
-                    && session.events.containsAll(CONTINUITY_EVENTS)
-                    && session.events.contains("RECOVERY_COMPLETED");
-            boolean safety = "SAFETY".equals(session.scenarioCode)
-                    && "BLOCKED".equals(session.status)
-                    && session.events.contains("SAFETY_LIMIT_BLOCKED");
-            if (!adherent && !recovery && !safety) {
-                throw new IllegalStateException("O cenário não possui toda a evidência funcional exigida.");
-            }
-            return;
-        }
         if (!"READY".equals(session.status)) {
             throw new IllegalStateException("O pacote precisa estar pronto antes desta ação.");
         }
         if ("VALUE_MOMENT".equals(eventType)) {
+            if (session.resultPresentedAt == null) {
+                throw new IllegalStateException("O valor só pode ser confirmado após a apresentação do pacote.");
+            }
             requireConfirmation(request, "O reconhecimento de valor exige confirmação e justificativa.");
             return;
         }
@@ -422,24 +522,9 @@ public class PdeStaticVisualAgentValidationService {
             }
             return;
         }
-        if ("SAVE_INTEREST_DECLARED".equals(eventType)) {
-            requireConfirmation(request, "O interesse de retorno exige confirmação e justificativa.");
-            if (!session.events.contains("READY_RESULT_USED")) {
-                throw new IllegalStateException("O interesse de retorno exige um resultado realmente usado.");
-            }
-            return;
-        }
-        if ("RETURN_COMPLETED".equals(eventType)) {
-            if (!session.events.contains("AUTHENTICATED_ACCESS_RESTORED")
-                    || session.resultPackageId == null) {
-                throw new IllegalStateException("O retorno exige acesso autenticado ao mesmo pacote.");
-            }
-            return;
-        }
         if ("PREFERRED_OVER_FREE".equals(eventType)) {
             requireConfirmation(request, "A preferência exige escolha explícita e justificativa.");
-            if (!session.events.contains("RETURN_COMPLETED")
-                    || !"FREE_SEARCH".equals(trim(request.alternativeCode()))) {
+            if (session.returnedAt == null || !"FREE_SEARCH".equals(trim(request.alternativeCode()))) {
                 throw new IllegalStateException(
                         "A preferência exige retorno comprovado e comparação com a alternativa gratuita.");
             }
@@ -451,28 +536,32 @@ public class PdeStaticVisualAgentValidationService {
             }
             return;
         }
-        if ("RECOVERY_COMPLETED".equals(eventType)
-                && (!"RECOVERY".equals(session.scenarioCode)
-                        || !session.events.contains("RETURN_COMPLETED"))) {
-            throw new IllegalStateException("A recuperação exige o mesmo resultado retomado e utilizado.");
-        }
     }
 
     /** Exige confirmação sintética explícita e uma justificativa auditável. */
     private void requireConfirmation(EventRequest request, String message) {
-        if (!Boolean.TRUE.equals(request.confirmed()) || trim(request.justification()).length() < 5) {
+        requireConfirmation(request.confirmed(), request.justification(), message);
+    }
+
+    /** Exige confirmação e justificativa sem acoplar a validação a um tipo de request. */
+    private void requireConfirmation(Boolean confirmed, String justification, String message) {
+        if (!Boolean.TRUE.equals(confirmed) || trim(justification).length() < 5) {
             throw new IllegalArgumentException(message);
         }
     }
 
     /** Confirma os cinco marcos canônicos sem contar mera apresentação como uso. */
     private boolean canonicalFunnelComplete(StoredSession session) {
-        return session.events.containsAll(Set.of(
-                "EXPERIENCE_STARTED",
-                "VALUE_MOMENT",
-                "READY_RESULT_USED",
-                "PREFERRED_OVER_FREE",
-                "CHECKOUT_STARTED"));
+        return session.events.containsAll(CANONICAL_EVENTS);
+    }
+
+    /** Confirma os marcos distintos de interesse, credencial, autenticação, acesso e retorno. */
+    private boolean continuityComplete(StoredSession session) {
+        return session.saveInterestAt != null
+                && session.continuityCredentialCreatedAt != null
+                && session.accessAuthenticatedAt != null
+                && session.accessCompletedAt != null
+                && session.returnedAt != null;
     }
 
     /** Confirma a versão e a aceitação explícita da política interna de continuidade. */
@@ -481,6 +570,35 @@ public class PdeStaticVisualAgentValidationService {
                 || !CONTINUITY_POLICY_VERSION.equals(trim(policyVersion))) {
             throw new IllegalArgumentException(
                     "A política interna de continuidade precisa ser aceita na versão ativa.");
+        }
+    }
+
+    /** Rejeita entrada incompleta mesmo quando o serviço é chamado fora do controller validado. */
+    private void validateInput(InputRequest request) {
+        if (request == null
+                || trim(request.occasion()).length() < 3
+                || request.eventDate() == null
+                || request.preferences() == null
+                || request.preferences().isEmpty()
+                || request.constraints() == null
+                || request.constraints().isEmpty()
+                || request.pieceReferences() == null
+                || request.pieceReferences().size() < 2
+                || request.preferences().stream().anyMatch(value -> trim(value).isEmpty())
+                || request.constraints().stream().anyMatch(value -> trim(value).isEmpty())
+                || request.pieceReferences().stream().anyMatch(value -> trim(value).isEmpty())) {
+            throw new IllegalArgumentException(
+                    "Ainda faltam informações necessárias para preparar a seleção.");
+        }
+    }
+
+    /** Garante que um marco se refere ao pacote e fingerprint da própria sessão. */
+    private void requirePackage(StoredSession session, String packageId, String fingerprint) {
+        if (!"READY".equals(session.status)
+                || session.resultPackageId == null
+                || !session.resultPackageId.equals(trim(packageId))
+                || !session.resultPackageFingerprint.equals(trim(fingerprint))) {
+            throw new SecurityException("O pacote não pertence à sessão autenticada.");
         }
     }
 
@@ -549,6 +667,35 @@ public class PdeStaticVisualAgentValidationService {
         return session.eventAudit;
     }
 
+    /** Projeta somente os cinco sinais canônicos na ordem em que foram observados. */
+    private List<String> canonicalEvents(StoredSession session) {
+        if (session.events == null) session.events = new LinkedHashSet<>();
+        return CANONICAL_EVENTS.stream().filter(session.events::contains).toList();
+    }
+
+    /** Remove marcos operacionais legados da telemetria exposta ao funil. */
+    private List<RecordedEvent> canonicalEventAudit(StoredSession session) {
+        return eventAudit(session).stream()
+                .filter(event -> CANONICAL_EVENTS.contains(event.eventType()))
+                .toList();
+    }
+
+    /** Reúne os marcos anuláveis sem inferir um estado a partir do marco anterior. */
+    private ValidationMilestones milestones(StoredSession session) {
+        return new ValidationMilestones(
+                session.inputAcceptedAt,
+                session.resultReadyAt,
+                session.resultPresentedAt,
+                session.saveInterestAt,
+                session.continuityCredentialCreatedAt,
+                session.accessAuthenticatedAt,
+                session.accessCompletedAt,
+                session.returnedAt,
+                session.safetyBlockedAt,
+                session.recoveryCompletedAt,
+                session.finishedAt);
+    }
+
     /** Exige uma sessão v2 ativa por hash e rejeita credenciais vencidas. */
     private StoredSession requiredSession(String sessionToken) {
         StoredSession session = sessions.get(hash(sessionToken));
@@ -584,15 +731,18 @@ public class PdeStaticVisualAgentValidationService {
                 List.copyOf(session.looks),
                 session.selectedLookId,
                 session.blocker,
-                List.copyOf(session.events),
+                canonicalEvents(session),
                 "SIMULATED_NO_CHARGE",
                 session.finished,
                 session.evidenceId,
                 session.resultPackageId,
                 session.resultPackageFingerprint,
                 session.sessionExpiresAt,
+                session.consentVersion,
+                session.consentedAt,
                 session.continuityPolicyVersion,
                 session.policyAcknowledgedAt != null,
+                milestones(session),
                 0,
                 0);
     }
@@ -647,6 +797,16 @@ public class PdeStaticVisualAgentValidationService {
                     session.sessionToken = null;
                     migrated = true;
                 }
+                if (VERSION.equals(session.prototypeVersion)) {
+                    migrated |= migrateOperationalEvents(session);
+                    if (!INTAKE_CONSENT_VERSION.equals(session.consentVersion)
+                            || session.consentedAt == null) {
+                        session.sessionExpiresAt = Instant.EPOCH.toString();
+                        session.continuationCredentialHash = null;
+                        session.continuityExpiresAt = null;
+                        migrated = true;
+                    }
+                }
                 sessions.put(session.sessionTokenHash, session);
             }
             if (migrated) persist();
@@ -654,6 +814,41 @@ public class PdeStaticVisualAgentValidationService {
             log.error("Falha ao carregar sessões visuais multiagente; storagePath={}", storagePath, ex);
             throw new IllegalStateException("Não foi possível recuperar as sessões do protótipo.", ex);
         }
+    }
+
+    /** Converte eventos operacionais da primeira revisão v2 em timestamps históricos não comerciais. */
+    private boolean migrateOperationalEvents(StoredSession session) {
+        if (session.events == null) session.events = new LinkedHashSet<>();
+        Map<String, String> timestamps = new LinkedHashMap<>();
+        for (RecordedEvent event : eventAudit(session)) {
+            timestamps.putIfAbsent(event.eventType(), event.occurredAt());
+        }
+        if (session.saveInterestAt == null) {
+            session.saveInterestAt = timestamps.get("SAVE_INTEREST_DECLARED");
+        }
+        if (session.continuityCredentialCreatedAt == null) {
+            session.continuityCredentialCreatedAt = timestamps.get("CONTINUITY_CREDENTIAL_CREATED");
+        }
+        if (session.accessAuthenticatedAt == null) {
+            session.accessAuthenticatedAt = timestamps.get("AUTHENTICATED_ACCESS_RESTORED");
+        }
+        if (session.accessCompletedAt == null) {
+            session.accessCompletedAt = timestamps.get("RETURN_COMPLETED");
+        }
+        if (session.returnedAt == null) session.returnedAt = timestamps.get("RETURN_COMPLETED");
+        if (session.safetyBlockedAt == null) {
+            session.safetyBlockedAt = timestamps.get("SAFETY_LIMIT_BLOCKED");
+        }
+        if (session.recoveryCompletedAt == null) {
+            session.recoveryCompletedAt = timestamps.get("RECOVERY_COMPLETED");
+        }
+        if (session.finishedAt == null) {
+            session.finishedAt = timestamps.get("AGENT_SCENARIO_COMPLETED");
+        }
+        boolean hadOperationalEvents = session.events.removeIf(event -> !CANONICAL_EVENTS.contains(event));
+        boolean hadOperationalAudit = eventAudit(session).removeIf(
+                event -> !CANONICAL_EVENTS.contains(event.eventType()));
+        return hadOperationalEvents || hadOperationalAudit;
     }
 
     /** Grava checkpoints atomicamente para garantir retomada após reinício. */
@@ -678,6 +873,11 @@ public class PdeStaticVisualAgentValidationService {
             @NotBlank @Size(max = 200) String sourceReference,
             @NotBlank @Size(max = 32) String scenarioCode) {}
 
+    /** Consentimento sintético versionado exigido antes da entrada do agente. */
+    public record ConsentRequest(
+            Boolean accepted,
+            @NotBlank @Size(max = 80) String consentVersion) {}
+
     /** Entrada limitada à decisão de look para uma ocasião concreta. */
     public record InputRequest(
             @NotBlank @Size(max = 160) String occasion,
@@ -701,6 +901,16 @@ public class PdeStaticVisualAgentValidationService {
             @Size(max = 64) String selectedLookId,
             @Size(max = 64) String alternativeCode,
             @Size(max = 500) String justification) {}
+
+    /** Confirmação auditável de um marco operacional que não pertence ao funil. */
+    public record ConfirmationRequest(
+            Boolean confirmed,
+            @Size(max = 500) String justification) {}
+
+    /** Identidade exata do pacote usada para confirmar apresentação, acesso ou retorno. */
+    public record PackageMilestoneRequest(
+            @NotBlank @Size(max = 80) String resultPackageId,
+            @NotBlank @Size(max = 160) String resultPackageFingerprint) {}
 
     /** Aceite versionado exigido antes da criação da credencial de continuidade. */
     public record ContinuityCredentialRequest(
@@ -730,10 +940,12 @@ public class PdeStaticVisualAgentValidationService {
             String fixtureManifestPath,
             String productStatus,
             String checkoutMode,
+            String intakeConsentVersion,
             String continuityPolicyVersion,
             long sessionTtlSeconds,
             long continuityTtlSeconds,
             List<String> instrumentationEvents,
+            List<ErrorStateContract> errorStates,
             boolean published,
             boolean paymentEnabled,
             int mediaSpendBrl,
@@ -761,8 +973,11 @@ public class PdeStaticVisualAgentValidationService {
             String resultPackageId,
             String resultPackageFingerprint,
             String sessionExpiresAt,
+            String consentVersion,
+            String consentedAt,
             String continuityPolicyVersion,
             boolean policyAcknowledged,
+            ValidationMilestones milestones,
             int providerCalls,
             int providerCostUsd) {}
 
@@ -809,17 +1024,37 @@ public class PdeStaticVisualAgentValidationService {
             String resultPackageId,
             String resultPackageFingerprint,
             String fixtureContract,
+            String consentVersion,
+            String consentedAt,
             String continuityPolicyVersion,
             String policyAcknowledgedAt,
             String sessionExpiresAt,
             String continuityExpiresAt,
             boolean credentialStoredAsHash,
+            ValidationMilestones milestones,
             List<RecordedEvent> eventAudit,
             int providerCalls,
             int providerCostUsd,
             Map<String, Object> sideEffects,
             boolean humanEvidenceClaimed,
             boolean commercialEvidenceClaimed) {}
+
+    /** Mensagem e recuperação determinística de um estado de falha previsto. */
+    public record ErrorStateContract(String code, String message, String recoveryAction) {}
+
+    /** Marcos operacionais independentes que permanecem nulos até a ação correspondente. */
+    public record ValidationMilestones(
+            String inputAcceptedAt,
+            String resultReadyAt,
+            String resultPresentedAt,
+            String saveInterestAt,
+            String continuityCredentialCreatedAt,
+            String accessAuthenticatedAt,
+            String accessCompletedAt,
+            String returnedAt,
+            String safetyBlockedAt,
+            String recoveryCompletedAt,
+            String finishedAt) {}
 
     /** Evento sintético persistido com horário, segregação e correlação da execução. */
     public record RecordedEvent(String eventType, String occurredAt, Map<String, Object> metadata) {}
@@ -832,6 +1067,8 @@ public class PdeStaticVisualAgentValidationService {
         public String sessionExpiresAt;
         public String continuationCredentialHash;
         public String continuityExpiresAt;
+        public String consentVersion;
+        public String consentedAt;
         public String continuityPolicyVersion;
         public String policyAcknowledgedAt;
         public String prototypeVersion;
@@ -847,6 +1084,17 @@ public class PdeStaticVisualAgentValidationService {
         public String blocker;
         public Set<String> events = new LinkedHashSet<>();
         public List<RecordedEvent> eventAudit = new ArrayList<>();
+        public String inputAcceptedAt;
+        public String resultReadyAt;
+        public String resultPresentedAt;
+        public String saveInterestAt;
+        public String continuityCredentialCreatedAt;
+        public String accessAuthenticatedAt;
+        public String accessCompletedAt;
+        public String returnedAt;
+        public String safetyBlockedAt;
+        public String recoveryCompletedAt;
+        public String finishedAt;
         public boolean finished;
         public String resultPackageId;
         public String resultPackageFingerprint;

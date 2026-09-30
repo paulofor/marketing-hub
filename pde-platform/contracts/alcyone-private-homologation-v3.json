@@ -1,0 +1,150 @@
+{
+  "contractVersion": "alcyone-private-homologation.v3",
+  "processCode": "pde-private-agent-homologation",
+  "processVersion": 1,
+  "activityId": "technicalHomologation",
+  "sourceReference": "product:11@agent-validation-v1",
+  "product": {
+    "id": 11,
+    "internalName": "Alcyone",
+    "commercialName": "Alcyone",
+    "slug": "pde-planejado-46",
+    "experienceVersion": "alcyone-private-v2",
+    "supersedesExperienceVersions": ["alcyone-private-v1"],
+    "publicUrl": "https://alcyone.digicomdigital.com.br"
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "boundary": "Autoriza somente a homologação privada por agentes após corrigir consentimento, telemetria, recuperação e acessibilidade; não autoriza participante humano, tráfego, venda, pagamento, campanha, mídia ou alegação de demanda.",
+  "operationalState": {
+    "verifiedAt": "2026-09-30",
+    "productStatus": "PLANNED",
+    "deploymentAuthorized": true,
+    "commercialPublicationAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/alcyone-private-homologation-v2.json",
+    "reason": "Fechar o bloqueio técnico #570 sem validação humana e sem trocar a identidade executável alcyone-private-v2.",
+    "includedChanges": [
+      "Consentimento sintético versionado antes de qualquer entrada",
+      "Somente cinco sinais canônicos no funil, com marcos operacionais anuláveis separados",
+      "Seis estados de falha reproduzidos com mensagem e recuperação determinística",
+      "Contraste AA, teclado, foco, zoom de 200%, movimento reduzido e área útil móvel"
+    ],
+    "excludedChanges": [
+      "Entrevista, convite, opinião solicitada, leitura ou piloto humano",
+      "Checkout real, cobrança, publicação comercial, campanha ou mídia",
+      "Evidência de demanda, disposição a pagar, venda, receita ou margem"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "alcyone",
+    "publicUrl": "https://alcyone.digicomdigital.com.br",
+    "requiredFrontendSourceSha256": "8f1e9e95d3bfc470d14a053477a4379b161c8e24207cb56d59b8c8831bb67e63"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "alcyone-private-v2",
+      "experienceVersion": "alcyone-private-v2",
+      "frontendSourceSha256": "8f1e9e95d3bfc470d14a053477a4379b161c8e24207cb56d59b8c8831bb67e63"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/alcyone-private-homologation-v2.json",
+      "sha256": "467bdabf70dcd040b96ded81b38801d20d1c35a1c2d2f8b81b930b1542530e4a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/alcyone-agent-validation-v3.md",
+      "sha256": "461d20dd2dff74499101fb10cbdfe7b45cdd42106df4a46dff1a893ae0d8de69",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": ".github/workflows/pde-platform-metodo-musa-ci.yml",
+      "sha256": "b64109739dda37804b91c435e5f2609d13f6681b6ac21090b311a3a185fbf7cd",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/Dockerfile.alcyone",
+      "sha256": "1451de51fc85e8edbfb27e813ac3191f0dd2e43885de7c0919d4e9c2b032c988",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/AlcyoneEntry.tsx",
+      "sha256": "338f71ef3ae6e1aa47284b02ace7a342b321f71c5108de5fcb584dd7417f913e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/alcyone.css",
+      "sha256": "fec54f3de054505164531a6b8da2c2d136ddd046bf5cbdaeac92e075defd35c9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/agentvalidation/v1/PdeStaticVisualAgentValidationController.java",
+      "sha256": "0965893f942be9f2ddfe3a3d149ceb40ae78e1809650ca8b0af4296aac43ab13",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/agentvalidation/v1/PdeStaticVisualAgentValidationService.java",
+      "sha256": "2251c1c6104b66c74a1361e910870cbb28ae63772d1546a875f6917ed09dc498",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/swagger/pde-platform-swagger.yaml",
+      "sha256": "14d230aec9f9440d803233cbb49771da3032be502f9fdf5fac7d8601aa52dc4c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/alcyone-agent-validation-harness.mjs",
+      "sha256": "afa831a40619ee8c0e4b8a4b74f96ae41b1eef5f8ba1b9a5e2d2be3fc2be244c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunner.java",
+      "sha256": "71f6ec3047d6cc3e47ed6d5a6d430a2e7fae0a72b02f84cbeae3eddaecd7c5b2",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "scripts/build-commercial-review-evidence.mjs",
+      "sha256": "bb6fd07f5b9b63d7b382a93535fe5601a47d7c1ee88eb346b1fb2f561c848df7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/PdeReviewArtifactLoader.java",
+      "sha256": "ac8492d6884dba21cf1789c066c58af285ce474e1bdd9df9cf219d389ae52fde",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/frontend/tests/alcyone-agent-validation.spec.ts",
+      "sha256": "88faf7b1cf092a6c1a416d42d5f5f80fa4bf58e40bb9bf3915d52a2997206026",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/agentvalidation/v1/PdeStaticVisualAgentValidationServiceTest.java",
+      "sha256": "b92e1b9523c377c404a1a58f4cf6c9d5c6a7c6154f56b54fd91b9f880e78813e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test-alcyone-local-integration.sh",
+      "sha256": "db70c58df17be4564fe194ff6b09e5ac8e2b49bad679e73ca3f74138ee6fab0a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "scripts/build-commercial-review-evidence.test.mjs",
+      "sha256": "53166d6c50a02780ec54ebd00bef8c7de7ef84ba16753c70299c13bcc3ad6052",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/test/java/com/marketinghub/metaadapproverworker/PdeReviewArtifactLoaderTest.java",
+      "sha256": "9e9b3635acc1d2da6d728f58d9cf1966c95957f17ab81919b1a115ea03b480ed",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/alcyone-agent-validation-v3.md"
+}

@@ -14,6 +14,7 @@ test("ADHERENT entrega três fixtures e conclui sem cobrança", async ({
   request,
 }) => {
   await provision(page, request, "ADHERENT");
+  await acceptConsent(page);
   await fillInput(page);
   await page.getByRole("button", { name: "Salvar entrada segura" }).click();
   await page
@@ -44,6 +45,7 @@ test("RECOVERY retoma entrada e o mesmo pacote depois de falha transitória", as
   request,
 }) => {
   await provision(page, request, "RECOVERY");
+  await acceptConsent(page);
   await fillInput(page);
   await page.getByRole("button", { name: "Salvar entrada segura" }).click();
   await page.route(`**${apiBase}/generate`, (route) => route.abort("failed"), {
@@ -73,6 +75,7 @@ test("SAFETY bloqueia foto corporal e compra antes de produzir resultado", async
   request,
 }) => {
   await provision(page, request, "SAFETY");
+  await acceptConsent(page);
   await fillInput(page, {
     preferences: "quero enviar foto corporal",
     constraints: "quero comprar uma roupa nova",
@@ -85,7 +88,6 @@ test("SAFETY bloqueia foto corporal e compra antes de produzir resultado", async
     page.getByRole("heading", { name: "Este pedido ficou fora do protótipo" }),
   ).toBeVisible();
   await expect(page.locator(".alcyone-look-grid")).toHaveCount(0);
-  await page.getByRole("button", { name: "Registrar bloqueio seguro" }).click();
   await page
     .getByRole("button", { name: "Concluir cenário de segurança" })
     .click();
@@ -116,6 +118,21 @@ async function provision(
   await expect(page.getByTestId("agent-validation-mode")).toContainText(
     scenarioCode,
   );
+}
+
+/** Aceita o contrato sintético antes de expor os campos de entrada. */
+async function acceptConsent(page: Page) {
+  await expect(page.getByTestId("intake-consent-step")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Conte o mínimo necessário" }),
+  ).toHaveCount(0);
+  await page.getByRole("checkbox").check();
+  await page
+    .getByRole("button", { name: "Autorizar entrada sintética" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Conte o mínimo necessário" }),
+  ).toBeVisible();
 }
 
 /** Preenche somente ocasião, preferências, restrições e peças sintéticas. */
@@ -255,11 +272,6 @@ async function completeDecision(
       name: "Simulação concluída — nenhuma cobrança realizada",
     }),
   ).toBeVisible();
-  if (recovery) {
-    await page
-      .getByRole("button", { name: "Confirmar retomada do mesmo pacote" })
-      .click();
-  }
   await page.getByRole("button", { name: "Concluir cenário interno" }).click();
 }
 

@@ -158,7 +158,7 @@ databaseChangeLog:
                 1,
                 IF(
                   COUNT(*)=1
-                  AND SUM(status='PENDING')=1
+                  AND SUM(status IN ('PENDING','IN_PROGRESS','BLOCKED','COMPLETED','CANCELLED'))=1
                   AND SUM(source_reference IN ('product:11@private-validation-v1','product:11@agent-validation-v1'))=1,
                   1,
                   0

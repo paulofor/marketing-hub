@@ -17,6 +17,10 @@
   Style DNA e Dressly. Elas comprovam ofertas concorrentes ativas, não compra nem demanda de Alcyone.
 - Métrica: agentes comprovam prontidão e custo técnico de até R$ 24 por pacote; somente pagamento
   reconciliado e contribuição positiva poderão comprovar venda e condição de escala.
+- Continuidade operacional: a primeira publicação confirmou uma corrida entre claim e troca de
+  container. A referência multiagente agora é reconciliada mesmo com #534 em execução, e Dédalo
+  usa heartbeat por tarefa com uma única retomada sem saída/custo; output observado bloqueia nova
+  inferência para proteger a margem.
 
 ## 2026-09-28 — Validação passa a depender somente de agentes ou do mercado
 

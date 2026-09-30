@@ -222,12 +222,12 @@ INSERT INTO opportunity_dossier (id, product_discovery_cycle_id, created_product
 VALUES (46, 71, 11);
 
 INSERT INTO business_process_activity_instance (id, source_reference, status, updated_at)
-VALUES (414, 'product:11@private-validation-v1', 'PENDING', UTC_TIMESTAMP(6));
+VALUES (414, 'product:11@private-validation-v1', 'IN_PROGRESS', UTC_TIMESTAMP(6));
 
 INSERT INTO agent_task (id, status, source_reference, title, description, updated_at)
 VALUES (
     534,
-    'PENDING',
+    'IN_PROGRESS',
     'product:11@private-validation-v1',
     'Construir jornada privada de valor · Alcyone',
     'Entregar jornada privada ainda vinculada ao contrato humano legado.',

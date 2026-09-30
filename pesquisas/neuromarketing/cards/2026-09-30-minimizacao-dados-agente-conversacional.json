@@ -1,0 +1,18 @@
+{
+  "cardKey": "minimizacao-dados-agente-conversacional",
+  "collection": "neuromarketing",
+  "title": "Consentimento de agente não deve ser tratado como sinônimo de confiança",
+  "finding": "Em estudo com 11.000 consumidores de sete mercados, apenas 7% disseram estar totalmente confortáveis em dar a um assistente de IA acesso irrestrito a dados, enquanto 17% aceitariam apesar do desconforto. Pedidos recorrentes ligados a e-mail/calendário, trabalho e saúde tiveram as maiores taxas de consentimento resignado.",
+  "mechanism": "Um opt-in pode refletir conveniência, fadiga de consentimento ou sensação de que recusar custa mais esforço, e não confiança genuína. Taxa de aceitação sozinha pode portanto esconder desconforto e fragilidade da relação com o produto.",
+  "commercialApplication": "Em agentes, formulários e Click-to-WhatsApp, pedir o mínimo necessário, por finalidade e no momento de uso, explicar o benefício e deixar recusa, edição e revogação simples. Medir também recusas, revogações, abandono após o pedido e dados desnecessários enviados espontaneamente, não apenas opt-in.",
+  "evidenceStrength": "Moderada: survey de 11.000 consumidores conduzido por empresa de pesquisa independente, mas encomendado por fornecedor de tecnologia de consentimento e baseado em respostas declaradas; não inclui Brasil.",
+  "publishedOn": "2026-09-29",
+  "validUntil": "2027-03-29",
+  "experimentHypothesis": "Permissões mínimas, contextuais e revogáveis reduzirão desconforto, abandono após pedidos de acesso e compartilhamento desnecessário de dados em comparação com uma autorização ampla de sessão, sem prejudicar a conclusão da tarefa.",
+  "risks": "Não usar fricção, repetição ou bloqueio artificial para empurrar consentimento. Não interpretar um clique em aceitar como autorização ampla para reutilização futura nem coletar dados sensíveis sem necessidade e base adequada.",
+  "limits": "O estudo não inclui Brasil, não observa comportamento real de agentes e usa uma classificação proprietária de consentimento resignado; não demonstra efeito causal sobre conversão, retenção ou confiança no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-30-consentimento-resignado-agentes.md",
+  "sourceTitle": "Fonte revisada — consentimento concedido não significa conforto ou confiança",
+  "sourceSha256": "0e5b7edc9927ca26386e81a44f0e7c1b768e3ddf7f2802090d921f494289bc85"
+}

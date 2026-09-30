@@ -80,9 +80,7 @@ public class PdeAgentValidationHarnessRunner {
     this.allowLocalUrls = allowLocalUrls;
   }
 
-  /**
-   * Valida a família executável e a identidade do ciclo antes de executar seus cenários isolados.
-   */
+  /** Valida a família executável e a identidade versionada antes de executar cenários isolados. */
   HarnessExecution run(
       Map<String, Object> task, String mode, String scenarioCode, Path workDirectory)
       throws Exception {
@@ -125,7 +123,7 @@ public class PdeAgentValidationHarnessRunner {
             && "/mira-private".equals(URI.create(sourceUrl).getPath());
     boolean alcyone =
         "pde-planejado-46".equals(productSlug)
-            && "alcyone-private-v2".equals(prototypeVersion)
+            && prototypeVersion.matches("alcyone-private-v(?:[2-9]|[1-9][0-9]+)")
             && List.of("", "/").contains(URI.create(sourceUrl).getPath());
     if (!("product:" + productId + "@agent-validation-v1").equals(sourceReference) && !vega) {
       throw new HarnessException("A referência da homologação não corresponde ao produto alvo.");

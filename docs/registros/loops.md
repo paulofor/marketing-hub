@@ -8235,6 +8235,24 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   A reconciliação técnica não aprova a correção: homologação e Psique continuam obrigatórios antes
   do gate final, sem participantes humanos nem alegação de mercado.
 
+## LOOP-HARNESS-ALCYONE-NAO-RECONHECE-VERSAO-SUCESSORA — 30/09/2026
+
+- **Evidência confirmada:** a tarefa determinística #581 recebeu produto, slug, URL e
+  `alcyone-private-v3` reconciliados, mas foi bloqueada antes de abrir o navegador com a mensagem de
+  que o harness não possuía cenários próprios. A homologação #573 havia concluído na v2, e o mesmo
+  worker já continha script, validações SAFETY e gates de continuidade compatíveis com a v3.
+- **Causa-raiz:** o roteamento Java reconhecia Alcyone somente quando a versão era exatamente
+  `alcyone-private-v2`. A evolução de identidade exigida pela correção SAFETY atualizou runtime,
+  contrato, tarefa e script, mas deixou esse discriminador fora da cadeia versionada.
+- **Alternativas avaliadas:** aceitar qualquer prefixo seria permissivo; listar v2 e v3 repetiria o
+  defeito na próxima versão; reconhecer somente a família numérica `alcyone-private-v2+`, mantendo
+  slug, URL, versão exata de saída, gates e efeitos externos nulos, elimina o hardcode sem reutilizar
+  cenários de outro PDE. A terceira alternativa foi adotada.
+- **Correção e prevenção:** o runner passa a rotear versões numéricas v2 ou superiores para o
+  harness próprio de Alcyone, preserva a recusa explícita da v1 e continua falhando fechado se a
+  saída não corresponder à versão solicitada. O teste de contrato executa a v3 com SAFETY
+  estruturado e mantém a cobertura da rejeição da versão sem continuidade.
+
 ## LOOP-PUBLICADOR-WORKER-CORRE-DURANTE-TROCA-DO-BACKEND — 30/09/2026
 
 - **Evidência histórica:** na retomada do commit `4fcd629a`, Têmis iniciou o relatório de saúde às

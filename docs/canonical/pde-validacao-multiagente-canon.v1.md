@@ -282,13 +282,19 @@ O alvo e o contexto enviado ao agente devem usar a mesma aceitação canônica d
 `validationDefinitionJson.privatePrototypeAcceptance`. A cópia histórica em `pdeExperienceJson`
 não pode reintroduzir versão anterior no contexto.
 
-Antes de repetir uma correção por ausência de implantação, registrar pela edição do produto a
-prova operacional em `validationDefinitionJson.technicalDeploymentEvidence`, contrato
-`PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1`: `observedAt`, `diagnosticUrl`, `httpStatus`,
-`diagnosticSnapshot` bruto e referência à verificação. O diagnóstico precisa identificar produto,
-URL privada, imagem e versão atuais com status `UP`. O backend expõe a evidência apenas quando
-as identidades conferem com a aceitação vigente; recibos de outra versão/produto/endereço não
-entram no contexto. O registro deve ser renovado após nova implantação.
+Antes de repetir uma correção, o backend mantém `prototypeCorrection` pendente e reconcilia
+automaticamente o runtime, sem edição manual do produto e sem entregar a tarefa ao executor. O
+contrato `PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V2` registra `observedAt`, `httpStatus`,
+`reconciliationTrigger`, `sourceTaskId` e `diagnosticSnapshot` bruto. O diagnóstico precisa
+identificar produto, URL privada, imagem, commit, hash de fonte e uma versão diferente da aceita,
+com status `UP` e efeitos comerciais desligados. Reutilizar a versão com outro build permanece
+bloqueado.
+
+Depois da prova, o backend atualiza atomicamente `privatePrototypeAcceptance` na definição e na
+experiência, preservando a versão anterior, a tarefa de correção e a identidade publicada. Somente
+então o claim é liberado. A reentrega da mesma tarefa e do mesmo build é idempotente; outra tentativa
+de correção exige nova versão. Recibos de outro produto, endereço, versão ou tarefa não entram no
+contexto.
 
 Disponibilidade técnica de protótipo privado não muda `published`, não autoriza distribuição,
 cobrança, campanha ou gasto e não substitui `technicalHomologation`, Psique ou Têmis. O agente

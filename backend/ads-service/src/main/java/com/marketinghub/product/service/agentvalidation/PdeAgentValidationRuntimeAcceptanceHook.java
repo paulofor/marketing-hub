@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskClaimPreparationHook;
 import com.marketinghub.agenttask.AgentTaskCompletionHook;
 import com.marketinghub.agenttask.CompleteAgentTaskRequest;
 import com.marketinghub.product.Product;
@@ -16,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: reconciliar a versão privada publicada ao concluir o acesso do PDE. */
+/** Responsabilidade: reconciliar a identidade privada publicada com a fonte canônica do PDE. */
 @Component
 @Slf4j
 public class PdeAgentValidationRuntimeAcceptanceHook implements AgentTaskCompletionHook {
@@ -70,46 +71,14 @@ public class PdeAgentValidationRuntimeAcceptanceHook implements AgentTaskComplet
       if (!"READY".equals(result.path("decision").asText())) {
         throw new IllegalArgumentException("Dédalo não confirmou a prontidão do acesso privado.");
       }
-      Long productId = productId(task.getSourceReference());
-      Product product =
-          products
-              .findLockedById(productId)
-              .orElseThrow(
-                  () -> new IllegalArgumentException("Produto do runtime não encontrado."));
-      validateProduct(product);
-      ObjectNode validation = object(product.getValidationDefinitionJson(), productId);
-      ObjectNode experience = object(product.getPdeExperienceJson(), productId);
-      JsonNode currentAcceptance = validation.path("privatePrototypeAcceptance");
-      String privateAccessUrl = currentAcceptance.path("privateAccessUrl").asText("").trim();
-      if (!"READY".equals(currentAcceptance.path("status").asText())
-          || privateAccessUrl.isBlank()) {
-        throw new IllegalArgumentException(
-            "O produto não possui uma origem privada previamente aceita para reconciliação.");
-      }
-      var identity = runtimeProbe.probe(privateAccessUrl, product.getId(), product.getSlug());
-      Instant reconciledAt = clock.instant();
-      writeAcceptance(
-          validation.withObject("/privatePrototypeAcceptance"),
-          task,
-          privateAccessUrl,
-          identity,
-          reconciledAt);
-      writeAcceptance(
-          experience.withObject("/privatePrototypeAcceptance"),
-          task,
-          privateAccessUrl,
-          identity,
-          reconciledAt);
-      writeDeploymentEvidence(validation, identity, reconciledAt);
-      product.setValidationDefinitionJson(write(validation, productId));
-      product.setPdeExperienceJson(write(experience, productId));
-      products.save(product);
+      ReconciliationContext context = context(task);
+      persist(context, task, "ACCESS_COMPLETION", null);
       log.info(
           "Runtime privado reconciliado antes da homologação. productId={} taskId={} version={} commitSha={}",
-          productId,
+          context.product().getId(),
           task.getId(),
-          identity.prototypeVersion(),
-          identity.commitSha());
+          context.identity().prototypeVersion(),
+          context.identity().commitSha());
       return CompletionDisposition.COMPLETE;
     } catch (RuntimeException ex) {
       log.error(
@@ -127,6 +96,112 @@ public class PdeAgentValidationRuntimeAcceptanceHook implements AgentTaskComplet
       throw new IllegalArgumentException(
           "Não foi possível reconciliar a identidade do runtime privado.", ex);
     }
+  }
+
+  /** Aguarda uma identidade realmente nova e a persiste antes de Dédalo receber uma correção. */
+  public AgentTaskClaimPreparationHook.Preparation prepareCorrection(AgentTask task) {
+    try {
+      ReconciliationContext context = context(task);
+      JsonNode acceptance = context.validation().path("privatePrototypeAcceptance");
+      String currentVersion = acceptance.path("prototypeVersion").asText("").trim();
+      boolean sameVersion = context.identity().prototypeVersion().equals(currentVersion);
+      boolean sameBuild =
+          context.identity().commitSha().equals(acceptance.path("runtimeCommitSha").asText(""))
+              && context
+                  .identity()
+                  .frontendSourceSha256()
+                  .equals(acceptance.path("runtimeSourceSha256").asText(""));
+      boolean preparedForSameTask =
+          acceptance.path("runtimeCorrectionSourceTaskId").canConvertToLong()
+              && acceptance.path("runtimeCorrectionSourceTaskId").longValue() == task.getId();
+      if (sameVersion && sameBuild && preparedForSameTask) {
+        return AgentTaskClaimPreparationHook.Preparation.ready(
+            "A mesma tarefa já recebeu a identidade publicada e auditada.");
+      }
+      if (sameVersion) {
+        String reason =
+            sameBuild
+                ? "A tarefa aguarda uma nova versão publicada do protótipo; o runtime ainda expõe "
+                    + currentVersion
+                    + "."
+                : "O runtime alterou a compilação sem trocar a versão "
+                    + currentVersion
+                    + "; publique a correção com uma nova identidade versionada.";
+        return AgentTaskClaimPreparationHook.Preparation.waiting("MISSING_EVIDENCE", reason);
+      }
+      persist(context, task, "CORRECTION_CLAIM", currentVersion);
+      log.info(
+          "Nova versão privada reconciliada antes da correção. productId={} taskId={} previousVersion={} version={} commitSha={}",
+          context.product().getId(),
+          task.getId(),
+          currentVersion,
+          context.identity().prototypeVersion(),
+          context.identity().commitSha());
+      return AgentTaskClaimPreparationHook.Preparation.ready(
+          "A nova identidade publicada foi reconciliada antes da execução de Dédalo.");
+    } catch (RuntimeException ex) {
+      log.error(
+          "Falha ao preparar runtime para correção de Dédalo. taskId={} sourceReference={}",
+          task.getId(),
+          task.getSourceReference(),
+          ex);
+      return AgentTaskClaimPreparationHook.Preparation.waiting(
+          "TECHNICAL_FAILURE",
+          "O runtime privado ainda não comprovou uma nova identidade íntegra; corrija a publicação e aguarde a reconciliação automática.");
+    }
+  }
+
+  /** Carrega produto, contratos e identidade externa sob o mesmo lock transacional. */
+  private ReconciliationContext context(AgentTask task) {
+    Long productId = productId(task.getSourceReference());
+    Product product =
+        products
+            .findLockedById(productId)
+            .orElseThrow(() -> new IllegalArgumentException("Produto do runtime não encontrado."));
+    validateProduct(product);
+    ObjectNode validation = object(product.getValidationDefinitionJson(), productId);
+    ObjectNode experience = object(product.getPdeExperienceJson(), productId);
+    JsonNode currentAcceptance = validation.path("privatePrototypeAcceptance");
+    String privateAccessUrl = currentAcceptance.path("privateAccessUrl").asText("").trim();
+    if (!"READY".equals(currentAcceptance.path("status").asText())
+        || currentAcceptance.path("prototypeVersion").asText("").isBlank()
+        || privateAccessUrl.isBlank()) {
+      throw new IllegalArgumentException(
+          "O produto não possui uma origem privada previamente aceita para reconciliação.");
+    }
+    var identity = runtimeProbe.probe(privateAccessUrl, product.getId(), product.getSlug());
+    return new ReconciliationContext(product, validation, experience, privateAccessUrl, identity);
+  }
+
+  /** Persiste a identidade comprovada nos dois contratos e registra o gatilho da reconciliação. */
+  private void persist(
+      ReconciliationContext context,
+      AgentTask task,
+      String trigger,
+      String previousPrototypeVersion) {
+    Instant reconciledAt = clock.instant();
+    writeAcceptance(
+        context.validation().withObject("/privatePrototypeAcceptance"),
+        task,
+        context.privateAccessUrl(),
+        context.identity(),
+        reconciledAt,
+        trigger,
+        previousPrototypeVersion);
+    writeAcceptance(
+        context.experience().withObject("/privatePrototypeAcceptance"),
+        task,
+        context.privateAccessUrl(),
+        context.identity(),
+        reconciledAt,
+        trigger,
+        previousPrototypeVersion);
+    writeDeploymentEvidence(
+        context.validation(), context.identity(), reconciledAt, trigger, task.getId());
+    Long productId = context.product().getId();
+    context.product().setValidationDefinitionJson(write(context.validation(), productId));
+    context.product().setPdeExperienceJson(write(context.experience(), productId));
+    products.save(context.product());
   }
 
   /** Extrai a identidade numérica sem aceitar outras referências operacionais. */
@@ -155,7 +230,9 @@ public class PdeAgentValidationRuntimeAcceptanceHook implements AgentTaskComplet
       AgentTask task,
       String privateAccessUrl,
       PdeAgentValidationRuntimeProbe.RuntimeIdentity identity,
-      Instant reconciledAt) {
+      Instant reconciledAt,
+      String trigger,
+      String previousPrototypeVersion) {
     acceptance.put("status", "READY");
     acceptance.put("prototypeVersion", identity.prototypeVersion());
     acceptance.put("privateAccessUrl", privateAccessUrl);
@@ -164,7 +241,8 @@ public class PdeAgentValidationRuntimeAcceptanceHook implements AgentTaskComplet
         "PDE_AGENT_VALIDATION_RUNTIME_V1:" + identity.frontendSourceSha256());
     acceptance.put("acceptanceEvidenceReference", "agent-task:" + task.getId());
     acceptance.put("acceptedAt", reconciledAt.toString());
-    acceptance.put("runtimeReconciliationVersion", "PDE_AGENT_VALIDATION_RUNTIME_V1");
+    acceptance.put("runtimeReconciliationVersion", "PDE_AGENT_VALIDATION_RUNTIME_V2");
+    acceptance.put("runtimeReconciliationTrigger", trigger);
     acceptance.put("runtimeCommitSha", identity.commitSha());
     acceptance.put("runtimeSourceSha256", identity.frontendSourceSha256());
     acceptance.put("runtimeImage", identity.image());
@@ -176,17 +254,25 @@ public class PdeAgentValidationRuntimeAcceptanceHook implements AgentTaskComplet
     acceptance.put("mediaSpendBrl", 0);
     acceptance.put("eventSource", "FIRST_PARTY_EVENTS");
     acceptance.put("testMarker", "AGENT_VALIDATION");
+    if (previousPrototypeVersion != null) {
+      acceptance.put("previousPrototypeVersion", previousPrototypeVersion);
+      acceptance.put("runtimeCorrectionSourceTaskId", task.getId());
+    }
   }
 
   /** Persiste o diagnóstico bruto necessário para o alvo e para a auditoria do próximo gate. */
   private void writeDeploymentEvidence(
       ObjectNode validation,
       PdeAgentValidationRuntimeProbe.RuntimeIdentity identity,
-      Instant reconciledAt) {
+      Instant reconciledAt,
+      String trigger,
+      Long taskId) {
     ObjectNode evidence = validation.putObject("technicalDeploymentEvidence");
-    evidence.put("contractVersion", "PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1");
+    evidence.put("contractVersion", "PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V2");
     evidence.put("httpStatus", 200);
     evidence.put("observedAt", reconciledAt.toString());
+    evidence.put("reconciliationTrigger", trigger);
+    evidence.put("sourceTaskId", taskId);
     evidence.set("diagnosticSnapshot", identity.diagnosticSnapshot().deepCopy());
   }
 
@@ -211,4 +297,12 @@ public class PdeAgentValidationRuntimeAcceptanceHook implements AgentTaskComplet
       throw new IllegalStateException("Não foi possível persistir a reconciliação do runtime.", ex);
     }
   }
+
+  /** Agrupa o estado travado necessário para uma única gravação atômica do runtime. */
+  private record ReconciliationContext(
+      Product product,
+      ObjectNode validation,
+      ObjectNode experience,
+      String privateAccessUrl,
+      PdeAgentValidationRuntimeProbe.RuntimeIdentity identity) {}
 }

@@ -52,7 +52,7 @@ const manifest = {
   contractVersion: "PDE_STATIC_RESULT_FIXTURES_V1",
   productId: 11,
   productSlug: "pde-planejado-46",
-  prototypeVersion: "alcyone-private-v2",
+  prototypeVersion: "alcyone-private-v3",
   generator: "scripts/generate-alcyone-static-fixtures.mjs",
   providerCalls: 0,
   providerCostUsd: 0,

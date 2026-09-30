@@ -659,7 +659,9 @@ components:
           description: >-
             Contrato PDE versionado, exposto somente à construção privada do próprio produto.
             experienceVersion e privatePrototypeAcceptance usam a aceitação canônica vigente.
-            technicalDeploymentEvidence contém o recibo persistido PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1
+            technicalDeploymentEvidence contém o recibo histórico
+            PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1 ou o recibo automático
+            PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V2 correlacionado à tarefa,
             somente quando produto, URL, versão, imagem e status do diagnóstico conferem.
             A disponibilidade técnica não representa publicação comercial nem aprovação da homologação.
     ExecutionResource:

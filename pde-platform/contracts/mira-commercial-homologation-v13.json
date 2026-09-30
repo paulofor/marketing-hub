@@ -1,0 +1,89 @@
+{
+  "contractVersion": "mira-commercial-homologation.v13",
+  "processCode": "pde-commercial-compatibility-attestation",
+  "processVersion": 1,
+  "activityId": "pdeCompatibilityGate",
+  "sourceReference": "product:10@mira-commercial-v1-alcyone-runtime-v3",
+  "experimentId": 93,
+  "product": {
+    "id": 10,
+    "internalName": "Mira",
+    "commercialName": "Mira · sua rotina organizada",
+    "slug": "pde-planejado-36",
+    "experienceVersion": "mira-commercial-v1",
+    "publicUrl": "https://mira.digicomdigital.com.br/"
+  },
+  "status": "EVIDENCE_COMPATIBILITY_ONLY",
+  "boundary": "Revalida o isolamento de Mira após versionar e reconciliar o retrabalho privado de Alcyone; não altera nem publica Mira e não cria campanha, gasto ou cobrança.",
+  "operationalState": {
+    "verifiedAt": "2026-09-30",
+    "experimentStatus": "PAUSED",
+    "commercialOfferExpected": true,
+    "deploymentAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/mira-commercial-homologation-v12.json",
+    "reason": "Comprovar que o publicador compartilhado seleciona Alcyone v3 sem trocar a identidade, os arquivos ou o estado comercial de Mira.",
+    "includedChanges": [
+      "Workflow compartilhado reconhece a identidade alcyone-private-v3",
+      "Contrato de release seleciona a atestação atual de Alcyone",
+      "Fontes e mídias de Mira permanecem idênticos byte a byte"
+    ],
+    "excludedChanges": [
+      "Oferta, preço, checkout, vídeo, prova ou identidade de Mira",
+      "Publicação ou reativação do experimento 93",
+      "Campanha, tráfego, gasto, cobrança ou contato humano"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "mira-commercial",
+    "publicUrl": "https://mira.digicomdigital.com.br/",
+    "requiredFrontendSourceSha256": "34c93bd0ebc9bece77cea0e7946021bec461ec4b271593d2b3b4fbdef94b0936"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "mira-commercial-v1",
+      "experienceVersion": "mira-commercial-v1",
+      "frontendSourceSha256": "34c93bd0ebc9bece77cea0e7946021bec461ec4b271593d2b3b4fbdef94b0936"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/mira-commercial-homologation-v12.json",
+      "sha256": "3c23d20755c3db9484215b36e6ceb970c78e970a71041bd97a53405b17465de6",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": ".github/workflows/pde-platform-metodo-musa-ci.yml",
+      "sha256": "12b0ce67f0e5c020e58ca547c8bea122545c07cd7d85fdc48f69b6164996e055",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MiraCommercialApp.tsx",
+      "sha256": "36dcbad81c12cc68f98060d23e5ef621ab21de4fa04bad7de5005620ac311e10",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/mira-commercial.css",
+      "sha256": "854b7b9726df4b415a1e0b74d0864d31c9cf62c68489704391ccd2ac6a1a45ab",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "scripts/resolve-pde-frontend-deploy-target.test.mjs",
+      "sha256": "903628db3aec8fc43647753243185e2b113f4e9fe49be9dfeaab434fd7ac68e3",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test_pde_release_contract.py",
+      "sha256": "61528575cddc9eb5f4c8e3aa3e821ad26486e2c1ad06e28860dfb1ee8cdd7625",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/alcyone-agent-validation-v5.md"
+}

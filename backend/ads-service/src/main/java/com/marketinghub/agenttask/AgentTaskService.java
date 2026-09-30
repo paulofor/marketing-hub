@@ -155,6 +155,9 @@ public class AgentTaskService {
   private List<AgentTaskCompletionHook> completionHooks = List.of();
 
   @Autowired(required = false)
+  private List<AgentTaskClaimPreparationHook> claimPreparationHooks = List.of();
+
+  @Autowired(required = false)
   private com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext
       opalaCommercialContext;
 
@@ -1647,7 +1650,8 @@ public class AgentTaskService {
             agentKey.trim(), "WORK", "PENDING")) {
       if (task.getProcessDefinition() == null
           || !matchesExecutionContract(task, processCode, activityId, executionResourceCode)
-          || !predecessorsCompleted(task)) continue;
+          || !predecessorsCompleted(task)
+          || !preparedForClaim(task)) continue;
       Instant now = Instant.now(clock);
       task.setStatus("IN_PROGRESS");
       if (task.getReceivedAt() == null) task.setReceivedAt(now);
@@ -2068,6 +2072,9 @@ public class AgentTaskService {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "As atividades predecessoras ainda não foram concluídas.");
     }
+    if (!preparedForClaim(linkedTask)) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, linkedTask.getBlockerAction());
+    }
     Instant now = Instant.now(clock);
     linkedTask.setStatus("IN_PROGRESS");
     if (linkedTask.getReceivedAt() == null) linkedTask.setReceivedAt(now);
@@ -2319,6 +2326,41 @@ public class AgentTaskService {
         targetOnly || catalogoVivo == null ? null : catalogoVivo.prompt(task),
         retryResultJson(task),
         retryEvidenceJson(task));
+  }
+
+  /** Executa uma única preparação especializada e persiste a espera sem consumir o executor. */
+  private boolean preparedForClaim(AgentTask task) {
+    List<AgentTaskClaimPreparationHook> matched =
+        claimPreparationHooks.stream().filter(hook -> hook.supports(task)).toList();
+    if (matched.size() > 1) {
+      throw new IllegalStateException("Mais de uma preparação governa a reserva da mesma tarefa.");
+    }
+    if (matched.isEmpty()) return true;
+    AgentTaskClaimPreparationHook.Preparation preparation = matched.getFirst().prepare(task);
+    if (preparation.ready()) {
+      if (task.getBlockerCategory() != null || task.getBlockerAction() != null) {
+        clearBlockerGuidance(task);
+        task.setUpdatedAt(Instant.now(clock));
+        repository.save(task);
+      }
+      return true;
+    }
+    String category = normalizedUpper(preparation.blockerCategory());
+    String reason = trimToNull(preparation.reason());
+    if (!BLOCKER_CATEGORIES.contains(category) || reason == null) {
+      throw new IllegalStateException("A preparação bloqueada não informou orientação válida.");
+    }
+    if (!Objects.equals(task.getBlockerCategory(), category)
+        || !Objects.equals(task.getBlockerAction(), reason)) {
+      applyBlockerGuidance(
+          task,
+          new AgentTaskBlockerGuidanceRequest(category, reason, defaultHelpLinks(task)),
+          null,
+          null);
+      task.setUpdatedAt(Instant.now(clock));
+      repository.save(task);
+    }
+    return false;
   }
 
   /** Reentrega somente a saída já auditada após falha transitória no callback terminal. */

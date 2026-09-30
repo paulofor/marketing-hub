@@ -86,6 +86,34 @@ class ProcessExecutionGraphTest {
     assertThat(first.objectiveAchieved()).isFalse();
   }
 
+  /** Retorno condicional só concorre com a sequência quando existe rejeição acionável. */
+  @Test
+  void keepsInactiveConditionalRecoveryOutsideRegularSequence() throws Exception {
+    var graph =
+        new ProcessExecutionGraph(
+            new ObjectMapper()
+                .readTree(
+                    """
+        {"nodes":[
+           {"id":"fix","type":"TASK","activationMode":"ON_FUNCTIONAL_REJECTION","remediatesActivities":["review"]},
+           {"id":"review","type":"TASK"},{"id":"next","type":"TASK"}],
+         "flows":[{"from":"review","to":"next"},{"from":"review","to":"fix","kind":"REWORK"}]}
+        """));
+    var fix = activity("fix", false);
+    var review = activity("review", false);
+    var next = activity("next", false);
+
+    when(fix.executionRequestAvailable()).thenReturn(false);
+    when(review.operationalState()).thenReturn("BLOCKED");
+
+    assertThat(graph.belongsToRegularSequence(fix)).isFalse();
+    assertThat(graph.belongsToRegularSequence(review)).isTrue();
+    assertThat(graph.recovery(fix, List.of(fix, review, next))).isFalse();
+
+    when(fix.executionRequestAvailable()).thenReturn(true);
+    assertThat(graph.recovery(fix, List.of(fix, review, next))).isTrue();
+  }
+
   /** Nenhuma atividade ausente ou de outra versão pode desaparecer silenciosamente do controle. */
   @Test
   void rejectsMissingOrUnmappedActivityContracts() throws Exception {

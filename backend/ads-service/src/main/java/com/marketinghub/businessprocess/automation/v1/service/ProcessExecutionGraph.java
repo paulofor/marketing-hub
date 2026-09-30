@@ -72,6 +72,12 @@ final class ProcessExecutionGraph {
                             || other.recoveryAction() != null));
   }
 
+  /** Mantém retornos condicionais fora da sequência principal quando seu gatilho não está ativo. */
+  boolean belongsToRegularSequence(ProductProcessActivityExecutionGroupResponse activity) {
+    var node = topology.node(activity.activityId());
+    return node == null || node.path("activationMode").asText().isBlank();
+  }
+
   /** Reconhece parecer de etapa dependente ou explicitamente atendida pela correção no BPM. */
   boolean canSupplyCorrection(String activityId, String reviewerId) {
     if (predecessors(reviewerId, new HashSet<>()).contains(activityId)) return true;

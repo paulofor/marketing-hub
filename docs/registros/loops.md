@@ -8272,6 +8272,18 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   nova tentativa da mesma `technicalHomologation`. O erro legado de catálogo permanece reconhecido
   para recuperar #581 sem alterar seu registro histórico. Testes cobrem callback, gate, retentativa
   e apresentação explícita da falha do executor na tela.
+- **Recorrência após cancelar o retrabalho indevido:** a execução #34 foi retomada depois de
+  cancelar #582, mas permaneceu em `WAITING_INPUT` com `currentActivityId=prototypeCorrection`,
+  enquanto a mesma projeção apontava `technicalHomologation` pronta. O grafo ignorava corretamente
+  arestas `REWORK` ao calcular a ordem, porém o fallback tratava o nó condicional sem predecessoras
+  como parte da sequência normal quando uma tarefa histórica o mantinha selecionado.
+- **Alternativas avaliadas:** disparar a homologação manualmente repararia apenas Alcyone; marcar
+  #582 como concluída falsificaria a auditoria; impedir que nós com `activationMode` concorram no
+  fallback sequencial, mantendo-os exclusivos do seletor de recuperação, corrige o motor sem novo
+  gasto ou versão do produto. A terceira alternativa foi adotada.
+- **Prevenção adicional:** o motor agora exclui atividades condicionais da sequência regular e a
+  matriz HTTP/MySQL reproduz rejeição funcional, correção aberta, cancelamento, reclassificação
+  como falha do executor e nova tentativa da atividade original.
 
 ## LOOP-PUBLICADOR-WORKER-CORRE-DURANTE-TROCA-DO-BACKEND — 30/09/2026
 

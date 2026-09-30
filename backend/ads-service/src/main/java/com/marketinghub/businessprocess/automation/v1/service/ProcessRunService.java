@@ -293,7 +293,7 @@ public class ProcessRunService {
         });
   }
 
-  /** Observa provas e decisões humanas e dispara o comando na referência congelada da execução. */
+  /** Observa provas, seleciona retornos condicionais e dispara na referência congelada. */
   private ProcessRunResponse advance(ProcessRun run) {
     if (Set.of("PAUSED", "COMPLETED", "ERROR", "CLOSED").contains(run.getStatus()))
       return response(run);
@@ -394,6 +394,7 @@ public class ProcessRunService {
         recovery.or(
             () ->
                 candidates.stream()
+                    .filter(graph::belongsToRegularSequence)
                     .filter(a -> graph.predecessorsSatisfied(a.activityId(), ordered))
                     .findFirst());
     if (selected.isEmpty()) {

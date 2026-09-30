@@ -115,7 +115,7 @@ public class PdeAgentValidationHarnessConsumer {
           BpmVisualEvidenceBackendClient.UploadedVisualEvidence persisted =
               byKey.get(artifact.path("evidenceKey").asText());
           if (persisted == null) {
-            throw new PdeAgentValidationHarnessRunner.HarnessException(
+            throw PdeAgentValidationHarnessRunner.HarnessException.executor(
                 "O backend não confirmou todos os screenshots do harness.");
           }
           artifact.remove("localPath");
@@ -151,7 +151,7 @@ public class PdeAgentValidationHarnessConsumer {
             key -> {
               var persisted = byKey.get(key.asText());
               if (persisted == null) {
-                throw new PdeAgentValidationHarnessRunner.HarnessException(
+                throw PdeAgentValidationHarnessRunner.HarnessException.executor(
                     "Uma evidência visual referenciada não foi persistida.");
               }
               ids.add(persisted.id());
@@ -282,7 +282,7 @@ public class PdeAgentValidationHarnessConsumer {
                   "executionAudit",
                   executionAudit(input, null),
                   "blockerGuidance",
-                  blockerGuidance()))
+                  failureGuidance(error)))
           .retrieve()
           .toBodilessEntity();
     } catch (Exception callbackEx) {
@@ -294,12 +294,30 @@ public class PdeAgentValidationHarnessConsumer {
   }
 
   /** Orienta retorno à autoridade do protótipo em vez de forçar aprovação. */
-  private Map<String, Object> blockerGuidance() {
+  private static Map<String, Object> blockerGuidance() {
     return Map.of(
         "category",
         "TECHNICAL_FAILURE",
         "recommendedAction",
         "Corrija no protótipo a causa registrada e execute novamente a homologação multiagente.",
+        "helpLinks",
+        List.of(Map.of("label", "Abrir tarefas dos agentes", "url", "/agent-tasks")));
+  }
+
+  /**
+   * Separa indisponibilidade do executor de uma falha observada no protótipo para preservar a mesma
+   * versão quando o navegador nem chegou a homologá-la.
+   */
+  static Map<String, Object> failureGuidance(Exception error) {
+    boolean executorFailure =
+        !(error instanceof PdeAgentValidationHarnessRunner.HarnessException harnessError)
+            || harnessError.isExecutorFailure();
+    if (!executorFailure) return blockerGuidance();
+    return Map.of(
+        "category",
+        "EXECUTOR_FAILURE",
+        "recommendedAction",
+        "Corrija o executor ou o catálogo do harness e repita a mesma homologação, sem criar nova versão do protótipo.",
         "helpLinks",
         List.of(Map.of("label", "Abrir tarefas dos agentes", "url", "/agent-tasks")));
   }

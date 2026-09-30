@@ -65,6 +65,7 @@ export interface AgentTaskBlockerGuidance {
     | "MISSING_EVIDENCE"
     | "COMMERCIAL_RISK"
     | "AUTHORIZATION_REQUIRED"
+    | "EXECUTOR_FAILURE"
     | "TECHNICAL_FAILURE";
   recommendedAction: string;
   helpLinks: AgentTaskAuditLink[];

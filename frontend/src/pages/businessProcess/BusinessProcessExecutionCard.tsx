@@ -36,7 +36,13 @@ export default function BusinessProcessExecutionCard({
   const ContentHeading = contentHeadingLevel;
   const guidance = execution.blockerGuidance;
   const functionalBlock =
-    guidance != null && guidance.category !== "TECHNICAL_FAILURE";
+    guidance != null &&
+    !["TECHNICAL_FAILURE", "EXECUTOR_FAILURE"].includes(guidance.category);
+  const blockerTitle = functionalBlock
+    ? "Avanço bloqueado"
+    : guidance?.category === "EXECUTOR_FAILURE"
+      ? "Falha do executor"
+      : "Falha técnica";
   return (
     <details
       className="card business-process-document"
@@ -96,9 +102,7 @@ export default function BusinessProcessExecutionCard({
               <div
                 className={`alert ${functionalBlock ? "alert-warning" : "alert-danger"} mt-3 mb-0`}
               >
-                <strong>
-                  {functionalBlock ? "Avanço bloqueado" : "Falha técnica"}
-                </strong>
+                <strong>{blockerTitle}</strong>
                 {execution.executionError ? (
                   <StructuredExecutionContent
                     value={execution.executionError}

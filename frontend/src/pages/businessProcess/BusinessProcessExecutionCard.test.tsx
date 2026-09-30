@@ -71,4 +71,30 @@ describe("BusinessProcessExecutionCard", () => {
       await screen.findByText("Parecer integral de Psique."),
     ).toBeInTheDocument();
   });
+
+  /** Distingue indisponibilidade do harness de uma correção atribuída ao produto. */
+  it("labels executor failures without suggesting a functional block", () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <BusinessProcessExecutionCard
+          defaultOpen
+          execution={{
+            ...execution,
+            blockerGuidance: {
+              category: "EXECUTOR_FAILURE",
+              recommendedAction:
+                "Corrija o executor e repita a mesma homologação.",
+              helpLinks: [{ label: "Abrir tarefas", url: "/agent-tasks" }],
+            },
+          }}
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText("Falha do executor")).toBeInTheDocument();
+    expect(screen.queryByText("Avanço bloqueado")).not.toBeInTheDocument();
+  });
 });

@@ -38,6 +38,7 @@ class PdeRevalidationActivityExecutionTest {
     "8,COMPLETED,mira-private-v1,349,true",
     "8,COMPLETED,mira-private-v2,349,true",
     "8,COMPLETED,mira-private-v2,355,false",
+    "8,BLOCKED,mira-private-v2,581,true",
     "8,PENDING,mira-private-v2,354,false",
     "8,IN_PROGRESS,mira-private-v2,354,false"
   })
@@ -98,7 +99,15 @@ class PdeRevalidationActivityExecutionTest {
                 "{\"privatePrototypeAcceptance\":{\"prototypeVersion\":\"mira-private-v2\"}}")
             .build();
     AgentTask old = task(oldTaskId, oldProcess, "technicalHomologation", state);
-    old.setResultJson("{\"decision\":\"APPROVED\",\"prototypeVersion\":\"" + prototype + "\"}");
+    if (oldTaskId == 581L) {
+      old.setBlockerCategory("TECHNICAL_FAILURE");
+      old.setExecutionError(
+          "com.marketinghub.customeragentworker.PdeAgentValidationHarnessRunner$HarnessException: "
+              + "O harness instalado não possui cenários próprios para este produto. "
+              + "Implemente-os antes da homologação; não reutilize outro PDE.");
+    } else {
+      old.setResultJson("{\"decision\":\"APPROVED\",\"prototypeVersion\":\"" + prototype + "\"}");
+    }
     var oldInstance = new BusinessProcessActivityInstance();
     oldInstance.setId(207L);
     oldInstance.setActivityDefinition(oldActivity);
@@ -164,6 +173,17 @@ class PdeRevalidationActivityExecutionTest {
       assertThat(screen.currentActivityId()).isEqualTo("technicalHomologation");
       assertThat(service.requestProductActivityExecution(70L, 10L, "technicalHomologation").tasks())
           .hasSize(1);
+      if (oldTaskId == 581L) {
+        verify(agentTasks)
+            .retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class), eq(true));
+        assertThat(
+                screen.activities().stream()
+                    .filter(a -> a.activityId().equals("prototypeCorrection"))
+                    .findFirst()
+                    .orElseThrow()
+                    .executionRequestAvailable())
+            .isFalse();
+      }
     } else {
       assertThatThrownBy(
               () -> service.requestProductActivityExecution(70L, 10L, "technicalHomologation"))

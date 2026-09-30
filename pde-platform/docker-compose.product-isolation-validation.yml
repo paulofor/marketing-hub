@@ -166,15 +166,15 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.alcyone
       args:
-        PDE_FRONTEND_VERSION_ID: alcyone-private-v1
+        PDE_FRONTEND_VERSION_ID: alcyone-private-v2
     environment:
       PDE_PRODUCT_ID: "11"
       VITE_PDE_PRODUCT_SLUG: pde-planejado-46
-      PDE_EXPERIENCE_VERSION: alcyone-private-v1
-      PDE_FRONTEND_VERSION: alcyone-private-v1
+      PDE_EXPERIENCE_VERSION: alcyone-private-v2
+      PDE_FRONTEND_VERSION: alcyone-private-v2
       PDE_FRONTEND_PUBLIC_URL: https://alcyone.digicomdigital.com.br
       PDE_FRONTEND_IMAGE: pde-platform-frontend-alcyone:validation
-      PDE_FRONTEND_VERSION_ID: alcyone-private-v1
+      PDE_FRONTEND_VERSION_ID: alcyone-private-v2
       PDE_DEPLOY_IMAGE_TAG: local-product-isolation
       PDE_BACKEND_UPSTREAM: pde-platform-backend:80
     depends_on:

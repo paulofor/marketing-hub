@@ -132,7 +132,7 @@ alcyone_diagnostics="$(curl_alcyone /version-diagnostics.json)"
 grep -q '"surface": "pde-platform-frontend-alcyone"' <<<"${alcyone_diagnostics}"
 grep -q '"productId": 11' <<<"${alcyone_diagnostics}"
 grep -q '"productSlug": "pde-planejado-46"' <<<"${alcyone_diagnostics}"
-grep -q '"experienceVersion": "alcyone-private-v1"' <<<"${alcyone_diagnostics}"
+grep -q '"experienceVersion": "alcyone-private-v2"' <<<"${alcyone_diagnostics}"
 grep -Eq '"frontendSourceSha256": "[0-9a-f]{64}"' <<<"${alcyone_diagnostics}"
 curl_alcyone /assets/alcyone/manifest.json \
   | grep -q '"contractVersion": "PDE_STATIC_RESULT_FIXTURES_V1"'
@@ -199,6 +199,6 @@ validate_mira_commercial_media
 curl_v8 /version-diagnostics.json \
   | grep -q '"experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"'
 curl_alcyone /version-diagnostics.json \
-  | grep -q '"experienceVersion": "alcyone-private-v1"'
+  | grep -q '"experienceVersion": "alcyone-private-v2"'
 
 echo 'Roteamento e ciclo de vida isolados de Alcyone, Mira privada, Mira comercial e Vega v5–v8 validados localmente.'

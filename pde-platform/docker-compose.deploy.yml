@@ -335,11 +335,11 @@ services:
     environment:
       PDE_PRODUCT_ID: "11"
       VITE_PDE_PRODUCT_SLUG: pde-planejado-46
-      PDE_EXPERIENCE_VERSION: alcyone-private-v1
-      PDE_FRONTEND_VERSION: alcyone-private-v1
+      PDE_EXPERIENCE_VERSION: alcyone-private-v2
+      PDE_FRONTEND_VERSION: alcyone-private-v2
       PDE_FRONTEND_PUBLIC_URL: https://alcyone.digicomdigital.com.br
       PDE_FRONTEND_IMAGE: ${PDE_PLATFORM_FRONTEND_ALCYONE_IMAGE:-}
-      PDE_FRONTEND_VERSION_ID: alcyone-private-v1
+      PDE_FRONTEND_VERSION_ID: alcyone-private-v2
       PDE_DEPLOY_COMMIT_SHA: ${PDE_DEPLOY_COMMIT_SHA:-unknown}
       PDE_DEPLOY_IMAGE_TAG: ${PDE_DEPLOY_IMAGE_TAG:-unknown}
       PDE_DEPLOY_DEPLOYED_AT: ${PDE_DEPLOY_DEPLOYED_AT:-}

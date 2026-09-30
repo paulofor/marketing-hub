@@ -52,7 +52,7 @@ const manifest = {
   contractVersion: "PDE_STATIC_RESULT_FIXTURES_V1",
   productId: 11,
   productSlug: "pde-planejado-46",
-  prototypeVersion: "alcyone-private-v1",
+  prototypeVersion: "alcyone-private-v2",
   generator: "scripts/generate-alcyone-static-fixtures.mjs",
   providerCalls: 0,
   providerCostUsd: 0,
@@ -70,9 +70,14 @@ function renderLook(palette) {
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const light = Math.round(((x + y) / (width + height)) * 12);
-      setPixel(pixels, x, y, palette.background.map((value, index) =>
-        index === 3 ? value : Math.min(255, value + light),
-      ));
+      setPixel(
+        pixels,
+        x,
+        y,
+        palette.background.map((value, index) =>
+          index === 3 ? value : Math.min(255, value + light),
+        ),
+      );
     }
   }
   ellipse(pixels, 512, 503, 370, 410, [255, 255, 255, 112]);
@@ -80,18 +85,43 @@ function renderLook(palette) {
   line(pixels, 512, 180, 512, 230, 9, palette.accent);
   line(pixels, 512, 200, 390, 265, 8, palette.accent);
   line(pixels, 512, 200, 634, 265, 8, palette.accent);
-  polygon(pixels, [
-    [405, 260], [468, 225], [556, 225], [619, 260],
-    [680, 405], [621, 432], [590, 353], [590, 555],
-    [434, 555], [434, 353], [403, 432], [344, 405],
-  ], palette.top);
+  polygon(
+    pixels,
+    [
+      [405, 260],
+      [468, 225],
+      [556, 225],
+      [619, 260],
+      [680, 405],
+      [621, 432],
+      [590, 353],
+      [590, 555],
+      [434, 555],
+      [434, 353],
+      [403, 432],
+      [344, 405],
+    ],
+    palette.top,
+  );
   // Peça inferior e cinto.
   rectangle(pixels, 425, 552, 599, 586, palette.accent);
-  polygon(pixels, [
-    [438, 586], [510, 586], [493, 825], [401, 825],
-    [427, 626], [438, 586], [586, 586], [597, 626],
-    [623, 825], [531, 825], [514, 586],
-  ], palette.bottom);
+  polygon(
+    pixels,
+    [
+      [438, 586],
+      [510, 586],
+      [493, 825],
+      [401, 825],
+      [427, 626],
+      [438, 586],
+      [586, 586],
+      [597, 626],
+      [623, 825],
+      [531, 825],
+      [514, 586],
+    ],
+    palette.bottom,
+  );
   // Sapatos e ponto de cor.
   ellipse(pixels, 444, 849, 63, 28, palette.top);
   ellipse(pixels, 580, 849, 63, 28, palette.top);
@@ -209,7 +239,11 @@ function polygon(buffer, points, color) {
     }
     intersections.sort((left, right) => left - right);
     for (let index = 0; index < intersections.length; index += 2) {
-      for (let x = Math.ceil(intersections[index]); x <= Math.floor(intersections[index + 1]); x += 1) {
+      for (
+        let x = Math.ceil(intersections[index]);
+        x <= Math.floor(intersections[index + 1]);
+        x += 1
+      ) {
         setPixel(buffer, x, y, color);
       }
     }

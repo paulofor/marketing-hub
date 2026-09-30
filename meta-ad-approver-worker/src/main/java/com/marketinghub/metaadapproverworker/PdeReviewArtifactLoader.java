@@ -144,6 +144,7 @@ final class PdeReviewArtifactLoader {
   private Set<Path> currentManifestPaths(List<Path> artifacts) throws IOException {
     Map<String, List<CommunicationManifestCandidate>> candidatesByProductVersion = new HashMap<>();
     Set<String> productsWithVersionedManifest = new HashSet<>();
+    List<ExperienceSuccession> successions = new ArrayList<>();
     for (Path artifact : artifacts) {
       JsonNode contract = JSON_MAPPER.readTree(Files.readString(artifact, StandardCharsets.UTF_8));
       if (!declaresCommercialEvidence(contract)) continue;
@@ -159,6 +160,46 @@ final class PdeReviewArtifactLoader {
       candidatesByProductVersion
           .computeIfAbsent(identity, ignored -> new ArrayList<>())
           .add(new CommunicationManifestCandidate(artifact, manifestRevision(contract)));
+      List<String> supersededVersions = manifestSupersededExperienceVersions(contract);
+      if (!supersededVersions.isEmpty()) {
+        if (experienceVersion == null
+            || !"READY_FOR_INDEPENDENT_REVIEW".equals(contract.path("status").asText())
+            || !contract
+                .path("publicationContract")
+                .path("automaticDeployOnMerge")
+                .asBoolean(false)) {
+          throw new IOException(
+              "Sucessão de experiência sem candidata publicável: "
+                  + repositoryRoot.relativize(artifact));
+        }
+        successions.add(
+            new ExperienceSuccession(
+                productSlug,
+                experienceVersion,
+                supersededVersions,
+                repositoryRoot.relativize(artifact).toString()));
+      }
+    }
+    Map<String, String> supersededIdentities = new HashMap<>();
+    for (ExperienceSuccession succession : successions) {
+      for (String supersededVersion : succession.supersededVersions()) {
+        if (supersededVersion.equals(succession.successorVersion())) {
+          throw new IOException(
+              "Experiência não pode superseder a si mesma: " + succession.manifestPath());
+        }
+        String identity = succession.productSlug() + "@" + supersededVersion;
+        if (!candidatesByProductVersion.containsKey(identity)) {
+          throw new IOException(
+              "Experiência supersedida não encontrada: "
+                  + identity
+                  + "; manifesto="
+                  + succession.manifestPath());
+        }
+        String previous = supersededIdentities.putIfAbsent(identity, succession.successorVersion());
+        if (previous != null && !previous.equals(succession.successorVersion())) {
+          throw new IOException("Experiência supersedida por mais de uma sucessora: " + identity);
+        }
+      }
     }
     Set<Path> current = new HashSet<>();
     for (Map.Entry<String, List<CommunicationManifestCandidate>> entry :
@@ -168,6 +209,7 @@ final class PdeReviewArtifactLoader {
               entry.getKey().substring(0, entry.getKey().length() - "@legacy".length()))) {
         continue;
       }
+      if (supersededIdentities.containsKey(entry.getKey())) continue;
       int latestRevision =
           entry.getValue().stream()
               .mapToInt(CommunicationManifestCandidate::revision)
@@ -192,6 +234,24 @@ final class PdeReviewArtifactLoader {
     if (!nested.isBlank()) return nested.trim();
     String root = contract.path("experienceVersion").asText("");
     return root.isBlank() ? null : root.trim();
+  }
+
+  /** Lê a substituição explícita de versões sem aceitar lista vazia, duplicada ou ambígua. */
+  private List<String> manifestSupersededExperienceVersions(JsonNode contract) throws IOException {
+    JsonNode declared = contract.path("product").path("supersedesExperienceVersions");
+    if (declared.isMissingNode()) return List.of();
+    if (!declared.isArray() || declared.isEmpty()) {
+      throw new IOException("supersedesExperienceVersions deve ser uma lista não vazia");
+    }
+    List<String> versions = new ArrayList<>();
+    Set<String> unique = new HashSet<>();
+    for (JsonNode value : declared) {
+      String version = value.asText("").trim();
+      if (version.isBlank()) throw new IOException("Versão supersedida inválida");
+      if (!unique.add(version)) throw new IOException("Versão supersedida duplicada");
+      versions.add(version);
+    }
+    return List.copyOf(versions);
   }
 
   /** Seleciona o manifesto do alvo e entrega a candidata atual sem misturar produtos. */
@@ -430,6 +490,13 @@ final class PdeReviewArtifactLoader {
 
   /** Identifica um manifesto geral durante a escolha da revisão atual por produto. */
   private record CommunicationManifestCandidate(Path path, int revision) {}
+
+  /** Representa a substituição auditável de uma experiência por sua sucessora publicável. */
+  private record ExperienceSuccession(
+      String productSlug,
+      String successorVersion,
+      List<String> supersededVersions,
+      String manifestPath) {}
 
   /** Define como uma prova atestada entra no prompt sem permitir truncamento silencioso. */
   private record PromptEvidenceDirective(String mode, String reviewSummary) {

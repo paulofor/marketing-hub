@@ -93,10 +93,31 @@ function manifestExperienceVersion(contract) {
   return typeof root === "string" && root.trim() ? root.trim() : null;
 }
 
+function manifestSupersededExperienceVersions(contract) {
+  const declared = contract.product?.supersedesExperienceVersions;
+  if (declared === undefined) return [];
+  if (!Array.isArray(declared) || declared.length === 0) {
+    throw new Error(
+      "supersedesExperienceVersions deve ser uma lista não vazia",
+    );
+  }
+  const normalized = declared.map((version) => {
+    if (typeof version !== "string" || version.trim() === "") {
+      throw new Error("Versão supersedida inválida");
+    }
+    return version.trim();
+  });
+  if (new Set(normalized).size !== normalized.length) {
+    throw new Error("Versão supersedida duplicada");
+  }
+  return normalized;
+}
+
 // Revalida provas vigentes por produto e versão antes de substituir um pacote.
 async function validateCurrentManifestEvidence(sourceRoot, manifests) {
   const byProductVersion = new Map();
   const productsWithVersionedManifest = new Set();
+  const successionDeclarations = [];
   for (const manifest of manifests) {
     const experienceVersion = manifestExperienceVersion(manifest.contract);
     if (experienceVersion) {
@@ -106,6 +127,49 @@ async function validateCurrentManifestEvidence(sourceRoot, manifests) {
     const candidates = byProductVersion.get(identity) ?? [];
     candidates.push(manifest);
     byProductVersion.set(identity, candidates);
+    const supersededVersions = manifestSupersededExperienceVersions(
+      manifest.contract,
+    );
+    if (supersededVersions.length > 0) {
+      if (
+        !experienceVersion ||
+        manifest.contract.status !== "READY_FOR_INDEPENDENT_REVIEW" ||
+        manifest.contract.publicationContract?.automaticDeployOnMerge !== true
+      ) {
+        throw new Error(
+          `Sucessão de experiência sem candidata publicável: ${manifest.relativePath}`,
+        );
+      }
+      successionDeclarations.push({
+        productSlug: manifest.productSlug,
+        experienceVersion,
+        supersededVersions,
+        manifestPath: manifest.relativePath,
+      });
+    }
+  }
+  const supersededIdentities = new Map();
+  for (const declaration of successionDeclarations) {
+    for (const supersededVersion of declaration.supersededVersions) {
+      if (supersededVersion === declaration.experienceVersion) {
+        throw new Error(
+          `Experiência não pode superseder a si mesma: ${declaration.manifestPath}`,
+        );
+      }
+      const identity = `${declaration.productSlug}@${supersededVersion}`;
+      if (!byProductVersion.has(identity)) {
+        throw new Error(
+          `Experiência supersedida não encontrada: ${identity}; manifesto=${declaration.manifestPath}`,
+        );
+      }
+      const existing = supersededIdentities.get(identity);
+      if (existing && existing !== declaration.experienceVersion) {
+        throw new Error(
+          `Experiência supersedida por mais de uma sucessora: ${identity}`,
+        );
+      }
+      supersededIdentities.set(identity, declaration.experienceVersion);
+    }
   }
   for (const [identity, candidates] of byProductVersion) {
     const separator = identity.indexOf("@");
@@ -115,6 +179,9 @@ async function validateCurrentManifestEvidence(sourceRoot, manifests) {
       experienceVersion === "legacy" &&
       productsWithVersionedManifest.has(productSlug)
     ) {
+      continue;
+    }
+    if (supersededIdentities.has(identity)) {
       continue;
     }
     const latestRevision = Math.max(

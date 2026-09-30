@@ -198,6 +198,56 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/produto-a-v6.json", "pde-platform/contracts/produto-b-v1.json");
   }
 
+  /** Preserva o manifesto substituído sem exigir que seus hashes descrevam a sucessora atual. */
+  @Test
+  void validatesOnlyExplicitSuccessorForSupersededExperience() throws Exception {
+    Path contracts = tempDir.resolve("pde-platform/contracts");
+    Path proof = tempDir.resolve("pde-platform/frontend/src/AssistedServiceApp.tsx");
+    Files.createDirectories(contracts);
+    Files.createDirectories(proof.getParent());
+    Files.writeString(proof, "prova da experiência sucessora");
+    String currentHash =
+        HexFormat.of()
+            .formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(proof)));
+    Files.writeString(
+        contracts.resolve("produto-v1.json"),
+        manifestForVersion("produto-v1", "produto-v1", "0".repeat(64)));
+    Files.writeString(
+        contracts.resolve("produto-v2.json"),
+        """
+        {
+          "contractVersion":"produto-v2",
+          "status":"READY_FOR_INDEPENDENT_REVIEW",
+          "product":{
+            "id":9,
+            "slug":"produto-a",
+            "experienceVersion":"produto-v2",
+            "supersedesExperienceVersions":["produto-v1"]
+          },
+          "publicationContract":{"automaticDeployOnMerge":true},
+          "implementationEvidence":[{
+            "path":"pde-platform/frontend/src/AssistedServiceApp.tsx",
+            "sha256":"%s"
+          }]
+        }
+        """
+            .formatted(currentHash));
+    for (String relativePath : PdeReviewArtifactLoader.communicationImplementationEvidencePaths()) {
+      Path artifact = tempDir.resolve(relativePath);
+      Files.createDirectories(artifact.getParent());
+      if (!Files.exists(artifact)) {
+        Files.writeString(artifact, "prova executável de " + relativePath);
+      }
+    }
+
+    var evidence = new PdeReviewArtifactLoader(tempDir.toString()).loadCommunicationContracts();
+
+    assertThat(evidence)
+        .extracting(item -> item.get("path"))
+        .contains(
+            "pde-platform/contracts/produto-v1.json", "pde-platform/contracts/produto-v2.json");
+  }
+
   /** Confirma o histórico e a revalidação do Rigel após a inclusão do MUSA v12 no catálogo. */
   @Test
   void validatesCurrentRepositoryHomologationManifest() throws Exception {

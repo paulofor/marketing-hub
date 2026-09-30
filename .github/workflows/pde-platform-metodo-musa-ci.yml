@@ -523,7 +523,7 @@ jobs:
             com.marketinghub.pde.product-id=11
             com.marketinghub.pde.product-slug=pde-planejado-46
           build-args: |
-            PDE_FRONTEND_VERSION_ID=alcyone-private-v1
+            PDE_FRONTEND_VERSION_ID=alcyone-private-v2
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_ALCYONE_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_ALCYONE_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push PDE AI worker image
@@ -887,7 +887,7 @@ jobs:
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_ALCYONE_PORT}/healthz" | grep -q '"productId":11'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_ALCYONE_PORT}/version-diagnostics.json" | grep -q '"surface": "pde-platform-frontend-alcyone"'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_ALCYONE_PORT}/version-diagnostics.json" | grep -q '"productSlug": "pde-planejado-46"'
-            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_ALCYONE_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "alcyone-private-v1"'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_ALCYONE_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "alcyone-private-v2"'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_ALCYONE_PORT}/assets/alcyone/manifest.json" | grep -q '"contractVersion": "PDE_STATIC_RESULT_FIXTURES_V1"'
           fi
           # shellcheck disable=SC2029,SC2086
@@ -1031,7 +1031,7 @@ jobs:
             validate_dns_points_to_deploy_host alcyone.digicomdigital.com.br
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://alcyone.digicomdigital.com.br/healthz | grep -q '"productId":11'
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://alcyone.digicomdigital.com.br/pde-health-contract.json | grep -q '"slug": "pde-planejado-46"'
-            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://alcyone.digicomdigital.com.br/version-diagnostics.json | grep -q '"experienceVersion": "alcyone-private-v1"'
+            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://alcyone.digicomdigital.com.br/version-diagnostics.json | grep -q '"experienceVersion": "alcyone-private-v2"'
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://alcyone.digicomdigital.com.br/assets/alcyone/manifest.json | grep -q '"contractVersion": "PDE_STATIC_RESULT_FIXTURES_V1"'
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused --output /dev/null https://alcyone.digicomdigital.com.br/
           fi

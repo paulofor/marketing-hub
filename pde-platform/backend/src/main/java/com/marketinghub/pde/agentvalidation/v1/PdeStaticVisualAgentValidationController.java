@@ -64,6 +64,17 @@ public class PdeStaticVisualAgentValidationController {
         return service.evidence(productSlug, evidenceId);
     }
 
+    /** Expira uma sessão de teste para comprovar o caminho real de continuidade. */
+    @PostMapping("/internal/session-expiration")
+    public Map<String, Object> expireSession(
+            @PathVariable("productSlug") String productSlug,
+            @RequestHeader(value = "X-PDE-Internal-Token", required = false) String internalToken,
+            @Valid @RequestBody
+                    PdeStaticVisualAgentValidationService.InternalSessionExpirationRequest request) {
+        authorizer.requireAuthorized(internalToken);
+        return service.expireSessionForHarness(productSlug, request);
+    }
+
     /** Recupera o checkpoint autorizado pelo token opaco emitido pelo backend. */
     @GetMapping("/session")
     public PdeStaticVisualAgentValidationService.SessionResponse session(
@@ -88,6 +99,34 @@ public class PdeStaticVisualAgentValidationController {
             @PathVariable("productSlug") String productSlug,
             @RequestHeader("X-PDE-Agent-Session") String sessionToken) {
         return service.generate(productSlug, sessionToken);
+    }
+
+    /** Emite uma credencial rotativa depois do aceite da política interna versionada. */
+    @PostMapping("/continuity")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PdeStaticVisualAgentValidationService.ContinuityCredentialResponse continuity(
+            @PathVariable("productSlug") String productSlug,
+            @RequestHeader("X-PDE-Agent-Session") String sessionToken,
+            @Valid @RequestBody
+                    PdeStaticVisualAgentValidationService.ContinuityCredentialRequest request) {
+        return service.createContinuity(productSlug, sessionToken, request);
+    }
+
+    /** Troca a credencial de continuidade por nova sessão e nova credencial rotacionada. */
+    @PostMapping("/continuity/resume")
+    public PdeStaticVisualAgentValidationService.ContinuityResumeResponse resumeContinuity(
+            @PathVariable("productSlug") String productSlug,
+            @Valid @RequestBody PdeStaticVisualAgentValidationService.ContinuityResumeRequest request) {
+        return service.resumeContinuity(productSlug, request);
+    }
+
+    /** Recupera o pacote apenas quando ele pertence à sessão autenticada. */
+    @GetMapping("/packages/{packageId}")
+    public PdeStaticVisualAgentValidationService.ResultPackageResponse resultPackage(
+            @PathVariable("productSlug") String productSlug,
+            @PathVariable("packageId") String packageId,
+            @RequestHeader("X-PDE-Agent-Session") String sessionToken) {
+        return service.resultPackage(productSlug, sessionToken, packageId);
     }
 
     /** Registra uma ação explícita do agente sem inferir valor, uso ou preferência. */

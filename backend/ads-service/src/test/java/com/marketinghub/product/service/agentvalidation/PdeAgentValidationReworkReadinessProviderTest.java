@@ -95,6 +95,33 @@ class PdeAgentValidationReworkReadinessProviderTest {
         .isTrue();
   }
 
+  /** Repete a mesma homologação quando o executor falha sem atribuir defeito ao protótipo. */
+  @ParameterizedTest
+  @CsvSource({
+    "EXECUTOR_FAILURE,Falha no catálogo instalado do executor.",
+    "TECHNICAL_FAILURE,O harness instalado não possui cenários próprios para este produto. Implemente-os antes da homologação; não reutilize outro PDE."
+  })
+  void retriesTechnicalHomologationWithoutOpeningProductCorrection(
+      String category, String executionError) {
+    AgentTask failure = task(581L, process, "technicalHomologation", "BLOCKED");
+    failure.setBlockerCategory(category);
+    failure.setExecutionError(executionError);
+    history.add(failure);
+    BusinessProcessActivityDefinition technical = activity("technicalHomologation");
+    when(predecessors.readiness(process, technical, SOURCE))
+        .thenReturn(
+            new ProductProcessActivityPredecessorReadiness(
+                true, "A atividade predecessora possui conclusão comprovada."));
+
+    var correction = provider.readiness(process, activity("prototypeCorrection"), product, SOURCE);
+    var retry = provider.readiness(process, technical, product, SOURCE);
+
+    assertThat(correction.ready()).isFalse();
+    assertThat(correction.reason()).contains("Nenhuma rejeição funcional");
+    assertThat(retry.ready()).isTrue();
+    assertThat(provider.requiresFreshExecution(process, technical, product, SOURCE)).isTrue();
+  }
+
   /** Não transforma falhas técnicas de cenários ou do próprio corretor em rejeições funcionais. */
   @ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(

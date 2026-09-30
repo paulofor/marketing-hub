@@ -8253,6 +8253,26 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   saída não corresponder à versão solicitada. O teste de contrato executa a v3 com SAFETY
   estruturado e mantém a cobertura da rejeição da versão sem continuidade.
 
+## LOOP-FALHA-DO-EXECUTOR-PDE-ENCAMINHADA-A-DEDALO — 30/09/2026
+
+- **Evidência confirmada:** a tarefa determinística #581 falhou antes de abrir o navegador porque o
+  catálogo instalado não reconhecia `alcyone-private-v3`. Mesmo sem resultado funcional, o backend
+  promoveu o bloqueio a `prototypeCorrection` e criou a tarefa Dédalo #582, que aguardava uma nova
+  versão do protótipo. A #573 havia homologado a v2 e a correção do roteamento tornou a mesma v3
+  executável, confirmando que o produto não era a causa do bloqueio.
+- **Causa-raiz:** o callback do harness classificava toda exceção como `TECHNICAL_FAILURE`, e o gate
+  de retrabalho interpretava toda falha técnica da homologação como defeito corrigível por Dédalo.
+  A taxonomia não distinguia indisponibilidade do executor de reprovação do runtime testado.
+- **Alternativas avaliadas:** cancelar e repetir #581 repararia somente Alcyone; exigir nova versão
+  manteria gasto e retrabalho sem mudança funcional; classificar falha do executor separadamente e
+  repetir a mesma homologação preserva custo, versão e auditoria. A terceira alternativa foi
+  adotada.
+- **Correção e prevenção:** catálogo, configuração e integração do harness reportam
+  `EXECUTOR_FAILURE`; o backend aceita a categoria, não libera `prototypeCorrection` e exige uma
+  nova tentativa da mesma `technicalHomologation`. O erro legado de catálogo permanece reconhecido
+  para recuperar #581 sem alterar seu registro histórico. Testes cobrem callback, gate, retentativa
+  e apresentação explícita da falha do executor na tela.
+
 ## LOOP-PUBLICADOR-WORKER-CORRE-DURANTE-TROCA-DO-BACKEND — 30/09/2026
 
 - **Evidência histórica:** na retomada do commit `4fcd629a`, Têmis iniciou o relatório de saúde às

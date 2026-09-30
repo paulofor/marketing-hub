@@ -26,6 +26,10 @@ import org.springframework.stereotype.Service;
 public class PdeAgentValidationReworkReadinessProvider
     implements AgentProductProcessActivityReadinessProvider {
   static final String CORRECTION_ACTIVITY = "prototypeCorrection";
+  private static final String TECHNICAL_HOMOLOGATION_ACTIVITY = "technicalHomologation";
+  private static final String EXECUTOR_FAILURE = "EXECUTOR_FAILURE";
+  private static final String LEGACY_UNSUPPORTED_HARNESS_ERROR =
+      "O harness instalado não possui cenários próprios para este produto.";
   private static final Set<String> REVIEW_ACTIVITIES =
       Set.of(
           "technicalHomologation",
@@ -130,8 +134,14 @@ public class PdeAgentValidationReworkReadinessProvider
     List<PdeValidationTaskSnapshot> history = processHistory(sourceReference);
     String version = expectedPrototypeVersion(product, sourceReference);
     String activityId = activityDefinition.getActivityId();
+    Optional<PdeValidationTaskSnapshot> latest =
+        latestCurrentProcessTask(history, process, activityId);
+    if (TECHNICAL_HOMOLOGATION_ACTIVITY.equals(activityId)
+        && latest.filter(this::retryableExecutorFailure).isPresent()) {
+      return true;
+    }
     boolean currentBlock =
-        latestCurrentProcessTask(history, process, activityId)
+        latest
             .filter(task -> "BLOCKED".equals(task.status()))
             .filter(
                 task ->
@@ -212,10 +222,11 @@ public class PdeAgentValidationReworkReadinessProvider
     long correctionId = latestCorrectionId(history, version);
     Optional<PdeValidationTaskSnapshot> technical =
         history.stream()
-            .filter(task -> "technicalHomologation".equals(task.processActivityId()))
+            .filter(task -> TECHNICAL_HOMOLOGATION_ACTIVITY.equals(task.processActivityId()))
             .max(Comparator.comparing(PdeValidationTaskSnapshot::id))
             .filter(task -> "BLOCKED".equals(task.status()))
             .filter(task -> "TECHNICAL_FAILURE".equals(task.blockerCategory()))
+            .filter(task -> !retryableExecutorFailure(task))
             .filter(task -> task.id() > correctionId);
     return java.util.stream.Stream.concat(functional.stream(), technical.stream())
         .max(Comparator.comparing(PdeValidationTaskSnapshot::id));
@@ -240,6 +251,18 @@ public class PdeAgentValidationReworkReadinessProvider
     return correction.filter(task -> task.id() > rejection.orElseThrow().id()).isPresent()
         ? Optional.empty()
         : rejection;
+  }
+
+  /**
+   * Separa indisponibilidade do executor de defeito observado no protótipo e reconhece o erro
+   * legado já persistido antes da categoria explícita.
+   */
+  private boolean retryableExecutorFailure(PdeValidationTaskSnapshot task) {
+    if (task == null || !"BLOCKED".equals(task.status())) return false;
+    if (EXECUTOR_FAILURE.equals(task.blockerCategory())) return true;
+    return "TECHNICAL_FAILURE".equals(task.blockerCategory())
+        && task.executionError() != null
+        && task.executionError().contains(LEGACY_UNSUPPORTED_HARNESS_ERROR);
   }
 
   /** Confirma que Dédalo registrou versão nova e retorno obrigatório à homologação técnica. */

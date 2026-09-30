@@ -85,7 +85,7 @@ public class PdeAgentValidationHarnessRunner {
       Map<String, Object> task, String mode, String scenarioCode, Path workDirectory)
       throws Exception {
     if (internalToken.isBlank()) {
-      throw new HarnessException(
+      throw HarnessException.executor(
           "PDE_INTERNAL_API_TOKEN não está configurado no worker de Psique.");
     }
     JsonNode target = json.valueToTree(task.get("taskTarget"));
@@ -129,7 +129,7 @@ public class PdeAgentValidationHarnessRunner {
       throw new HarnessException("A referência da homologação não corresponde ao produto alvo.");
     }
     if (!vega && !mira && !alcyone) {
-      throw new HarnessException(
+      throw HarnessException.executor(
           "O harness instalado não possui cenários próprios para este produto. "
               + "Implemente-os antes da homologação; não reutilize outro PDE.");
     }
@@ -190,7 +190,7 @@ public class PdeAgentValidationHarnessRunner {
       throw new HarnessException("Timeout ao homologar o PDE nos dispositivos suportados.");
     }
     if (process.exitValue() != 0 || !Files.isRegularFile(outputPath)) {
-      throw new HarnessException(
+      throw HarnessException.executor(
           "Falha no harness multiagente: "
               + Files.readString(
                   workDirectory.resolve("agent-validation-browser.log"), StandardCharsets.UTF_8));
@@ -421,9 +421,27 @@ public class PdeAgentValidationHarnessRunner {
 
   /** Diferencia falha do harness de uma reprovação funcional posterior de Psique. */
   static final class HarnessException extends IllegalStateException {
+    private final boolean executorFailure;
+
     /** Cria um bloqueio técnico explícito e recuperável. */
     HarnessException(String message) {
+      this(message, false);
+    }
+
+    /** Cria um bloqueio identificado como indisponibilidade do próprio executor. */
+    private HarnessException(String message, boolean executorFailure) {
       super(message);
+      this.executorFailure = executorFailure;
+    }
+
+    /** Marca falha de catálogo, configuração ou execução do harness sem culpar o protótipo. */
+    static HarnessException executor(String message) {
+      return new HarnessException(message, true);
+    }
+
+    /** Informa se a mesma versão pode ser repetida depois da correção do executor. */
+    boolean isExecutorFailure() {
+      return executorFailure;
     }
   }
 }

@@ -102,12 +102,19 @@ alvo, e o contrato do ciclo precisa ser compatível com o executor antes de libe
 ## Rejeição, correção e nova validação
 
 Por ajuste de 2026-09-10, uma falha `TECHNICAL_FAILURE` da atividade
-`technicalHomologation` também disponibiliza **Criar tarefa de correção** para Dédalo.
-O card bloqueado deve indicar essa correção com destino, responsável e disponibilidade
-fornecidos pelo backend, usando a mesma referência de produto/ciclo. O modo legado
-`ON_FUNCTIONAL_REJECTION` inclui essa recuperação técnica da homologação; falhas técnicas
-de outras atividades não são promovidas a parecer funcional. A tentativa original permanece
-na auditoria. Uma homologação posterior aprovada supera a falha técnica; uma rejeição
+`technicalHomologation`, causada pelo comportamento ou contrato executável do protótipo, também
+disponibiliza **Criar tarefa de correção** para Dédalo. O card bloqueado deve indicar essa correção
+com destino, responsável e disponibilidade fornecidos pelo backend, usando a mesma referência de
+produto/ciclo. O modo legado `ON_FUNCTIONAL_REJECTION` inclui essa recuperação técnica da
+homologação; falhas técnicas de outras atividades não são promovidas a parecer funcional.
+
+Por decisão de 2026-09-30, indisponibilidade de catálogo, configuração, processo ou integração do
+próprio harness usa `EXECUTOR_FAILURE`. Ela preserva a tentativa original na auditoria, não abre
+`prototypeCorrection`, não solicita Dédalo e não exige nova versão do protótipo. Depois de corrigir
+e publicar o executor, o backend cria uma nova tentativa de `technicalHomologation` para a mesma
+versão aceita. O erro legado “O harness instalado não possui cenários próprios para este produto”
+recebe a mesma regra, mesmo quando já foi persistido como `TECHNICAL_FAILURE`. Uma homologação
+posterior aprovada supera a falha do executor; uma falha atribuída ao protótipo ou uma rejeição
 funcional continua exigindo a correção versionada conforme as regras abaixo.
 
 Por decisão de 2026-09-10, refinada em 2026-09-11 após a tarefa 385 do Vega, a atividade bloqueada

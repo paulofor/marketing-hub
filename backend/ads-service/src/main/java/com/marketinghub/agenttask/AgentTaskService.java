@@ -74,6 +74,7 @@ public class AgentTaskService {
           "MISSING_EVIDENCE",
           "COMMERCIAL_RISK",
           "AUTHORIZATION_REQUIRED",
+          "EXECUTOR_FAILURE",
           "TECHNICAL_FAILURE");
   private static final Set<String> ACCESS_METHODS =
       Set.of("WEB_SEARCH", "BROWSER", "PLAYWRIGHT", "PUBLIC_API", "HTTP", "HTTP_CLIENT", "MCP");

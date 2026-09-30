@@ -3342,6 +3342,49 @@ class AgentTaskServiceTest {
         .containsExactly("/experiments/88");
   }
 
+  /** Persiste falha do executor sem convertê-la em ajuste funcional do produto. */
+  @Test
+  void blocksClaimedTaskWithExecutorFailureCategory() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            581L,
+            agent(2L, "customer-agent", "Psique"),
+            process("PUBLISHED", "Psique"),
+            "technicalHomologation",
+            "IN_PROGRESS");
+    when(repository.findById(581L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(581L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+
+    service(repository, mock(AgentRepository.class), Clock.systemUTC())
+        .failClaimedProcessTask(
+            "customer-agent",
+            581L,
+            new FailAgentTaskRequest(
+                "O catálogo do harness não reconheceu a versão suportada.",
+                null,
+                "{\"evidenceType\":\"PDE_AGENT_TECHNICAL_HOMOLOGATION_FAILURE_V1\"}",
+                null,
+                new AgentTaskExecutionAuditRequest(
+                    "DETERMINISTIC",
+                    "pde-agent-validation-harness-v1",
+                    "NOT_APPLICABLE",
+                    "{}",
+                    null,
+                    "{}",
+                    List.of()),
+                new AgentTaskBlockerGuidanceRequest(
+                    "EXECUTOR_FAILURE",
+                    "Corrija o executor e repita a mesma homologação.",
+                    List.of(new AgentTaskHelpLinkRequest("Abrir tarefas", "/agent-tasks")))));
+
+    assertThat(task.getStatus()).isEqualTo("BLOCKED");
+    assertThat(task.getBlockerCategory()).isEqualTo("EXECUTOR_FAILURE");
+    assertThat(task.getBlockerAction()).contains("mesma homologação");
+    assertThat(task.getExecutionMode()).isEqualTo("DETERMINISTIC");
+  }
+
   /** Rejeita URL com credencial para impedir que a auditoria exponha segredo na tela. */
   @Test
   void rejectsAccessedUrlWithSensitiveQueryParameter() {

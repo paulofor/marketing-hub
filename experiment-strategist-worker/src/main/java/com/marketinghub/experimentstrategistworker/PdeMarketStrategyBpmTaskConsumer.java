@@ -35,7 +35,12 @@ public class PdeMarketStrategyBpmTaskConsumer {
   private static final String IDENTITY_PROMPT = "prompts/pde-commercial-plan/v9/market-strategy.md";
   private static final String IDENTITY_SCHEMA =
       "prompts/pde-commercial-plan/v9/market-strategy-schema.json";
+  private static final String AGENT_VALIDATION_PROMPT =
+      "prompts/pde-commercial-plan/v10/market-strategy.md";
+  private static final String AGENT_VALIDATION_SCHEMA =
+      "prompts/pde-commercial-plan/v10/market-strategy-schema.json";
   private static final String READY_FOR_PRIVATE_VALIDATION = "READY_FOR_PRIVATE_VALIDATION";
+  private static final String READY_FOR_AGENT_VALIDATION = "READY_FOR_AGENT_VALIDATION";
   private static final String INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE";
   private static final List<String> REQUIRED_PRIVATE_SIGNALS =
       List.of(
@@ -44,6 +49,10 @@ public class PdeMarketStrategyBpmTaskConsumer {
           "READY_RESULT_USED",
           "PREFERRED_OVER_FREE",
           "CHECKOUT_STARTED");
+  private static final List<String> REQUIRED_AGENT_SCENARIOS =
+      List.of("ADHERENT", "RECOVERY", "SAFETY");
+  private static final List<String> REQUIRED_AGENT_DEVICES =
+      List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7");
   private final RestClient backend;
   private final WorkerProperties properties;
   private final ObjectMapper objectMapper;
@@ -406,7 +415,11 @@ public class PdeMarketStrategyBpmTaskConsumer {
             "agent",
             "Atena",
             "promptVersion",
-            requiresProductIdentity(task) ? "pde-commercial-plan-v9" : "pde-commercial-plan-v8",
+            requiresAgentValidation(task)
+                ? "pde-commercial-plan-v10"
+                : requiresProductIdentity(task)
+                    ? "pde-commercial-plan-v9"
+                    : "pde-commercial-plan-v8",
             "sourceReference",
             sourceReference(task),
             "processCode",
@@ -431,26 +444,31 @@ public class PdeMarketStrategyBpmTaskConsumer {
     validate(result, sourceReference, false, null);
   }
 
-  /** Valida também a identidade obrigatória nas execuções da versão 9 do Processo 2. */
+  /** Valida também identidade e homologação multiagente conforme a versão do Processo 2. */
   static void validate(
       JsonNode result, String sourceReference, boolean requiresProductIdentity, JsonNode task) {
     JsonNode contract = result.path("marketStrategicContract");
-    JsonNode validationPlan = contract.path("privateValidationPlan");
+    boolean agentValidation = requiresAgentValidation(task);
+    JsonNode validationPlan =
+        contract.path(agentValidation ? "agentValidationPlan" : "privateValidationPlan");
     String decision = result.path("decision").asText();
     String status = contract.path("status").asText();
+    String expectedVersion = agentValidation ? "MARKET_STRATEGY_V4" : "MARKET_STRATEGY_V3";
+    String readyStatus =
+        agentValidation ? READY_FOR_AGENT_VALIDATION : READY_FOR_PRIVATE_VALIDATION;
     if (!List.of("APPROVE", "ADJUST", "REJECT").contains(result.path("decision").asText())
         || result.path("alternatives").size() != 3
         || result.path("selectedAlternative").asText().isBlank()
         || !contract.isObject()
-        || !"MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
-        || !List.of(READY_FOR_PRIVATE_VALIDATION, INSUFFICIENT_EVIDENCE).contains(status)
+        || !expectedVersion.equals(contract.path("contractVersion").asText())
+        || !List.of(readyStatus, INSUFFICIENT_EVIDENCE).contains(status)
         || result.path("rationale").asText().isBlank()) {
       throw new IllegalArgumentException("Estratégia PDE fora do contrato versionado de Atena.");
     }
-    if (("APPROVE".equals(decision) && !READY_FOR_PRIVATE_VALIDATION.equals(status))
+    if (("APPROVE".equals(decision) && !readyStatus.equals(status))
         || (!"APPROVE".equals(decision) && !INSUFFICIENT_EVIDENCE.equals(status))) {
       throw new IllegalArgumentException(
-          "A decisão de Atena não corresponde à prontidão para validação privada.");
+          "A decisão de Atena não corresponde à prontidão declarada no contrato.");
     }
     if (sourceReference != null
         && sourceReference.startsWith("product-discovery-cycle:")
@@ -460,31 +478,68 @@ public class PdeMarketStrategyBpmTaskConsumer {
       throw new IllegalArgumentException("Atena aprovou sem selecionar uma candidata factual.");
     }
     if ("APPROVE".equals(decision)
-        && (!validationPlan.isObject()
-            || validationPlan.path("minimumIndependentReadings").asInt(0) != 2
-            || validationPlan.path("minimumEligibleParticipantsPerReading").asInt(0) != 1
-            || !containsAllPrivateSignals(validationPlan.path("requiredSignals"))
-            || !unitRate(validationPlan, "minimumExperienceStartRate")
-            || !unitRate(validationPlan, "minimumValueMomentRate")
-            || !unitRate(validationPlan, "minimumReadyResultUseRate")
-            || !unitRate(validationPlan, "minimumPrototypePreferenceRate")
-            || !unitRate(validationPlan, "minimumCheckoutStartRate")
-            || validationPlan.path("sourceMaxAgeDays").asInt(0) < 1
-            || validationPlan.path("sourceMaxAgeDays").asInt(0) > 90
-            || validationPlan.path("prototypeObjective").asText().isBlank()
-            || !completePurchaseScene(validationPlan.path("purchaseScene"))
-            || !canonicalHumanValueDelivery(validationPlan.path("humanValueDelivery"))
-            || validationPlan.path("strongestFreeAlternative").asText().isBlank()
-            || validationPlan.path("prototypeAdvantage").asText().isBlank()
-            || validationPlan.path("publicationBoundary").asText().isBlank()
-            || (validationPlan.path("sourceRefreshRequired").asBoolean(false)
-                && validationPlan.path("sourceRefreshAction").asText().isBlank()))) {
+        && (agentValidation
+            ? !validAgentValidationPlan(validationPlan)
+            : !validPrivateValidationPlan(validationPlan))) {
       throw new IllegalArgumentException(
-          "Atena aprovou sem um plano completo de duas leituras privadas.");
+          agentValidation
+              ? "Atena aprovou sem um plano completo de homologação multiagente."
+              : "Atena aprovou sem um plano completo de duas leituras privadas.");
     }
     if (requiresProductIdentity) {
       validateProductIdentity(result.path("productIdentity"), decision, sourceReference, task);
     }
+  }
+
+  /** Preserva a validação estrita do contrato histórico sem usá-lo em execuções novas. */
+  private static boolean validPrivateValidationPlan(JsonNode validationPlan) {
+    return validationPlan.isObject()
+        && validationPlan.path("minimumIndependentReadings").asInt(0) == 2
+        && validationPlan.path("minimumEligibleParticipantsPerReading").asInt(0) == 1
+        && containsAllPrivateSignals(validationPlan.path("requiredSignals"))
+        && unitRate(validationPlan, "minimumExperienceStartRate")
+        && unitRate(validationPlan, "minimumValueMomentRate")
+        && unitRate(validationPlan, "minimumReadyResultUseRate")
+        && unitRate(validationPlan, "minimumPrototypePreferenceRate")
+        && unitRate(validationPlan, "minimumCheckoutStartRate")
+        && validationPlan.path("sourceMaxAgeDays").asInt(0) >= 1
+        && validationPlan.path("sourceMaxAgeDays").asInt(0) <= 90
+        && hasText(validationPlan, "prototypeObjective")
+        && completePurchaseScene(validationPlan.path("purchaseScene"))
+        && canonicalCustomerValueDelivery(validationPlan.path("humanValueDelivery"))
+        && hasText(validationPlan, "strongestFreeAlternative")
+        && hasText(validationPlan, "prototypeAdvantage")
+        && hasText(validationPlan, "publicationBoundary")
+        && (!validationPlan.path("sourceRefreshRequired").asBoolean(false)
+            || hasText(validationPlan, "sourceRefreshAction"));
+  }
+
+  /** Exige o plano que automatiza prontidão sem fabricar participante ou prova comercial. */
+  private static boolean validAgentValidationPlan(JsonNode plan) {
+    return plan.isObject()
+        && "PDE_AGENT_VALIDATION_V1".equals(plan.path("contractVersion").asText())
+        && completePurchaseScene(plan.path("purchaseScene"))
+        && canonicalCustomerValueDelivery(plan.path("customerValueDelivery"))
+        && hasText(plan, "hypothesis")
+        && hasText(plan, "prototypeObjective")
+        && hasText(plan, "strongestFreeAlternative")
+        && hasText(plan, "prototypeAdvantage")
+        && exactValues(plan.path("requiredScenarios"), REQUIRED_AGENT_SCENARIOS)
+        && exactValues(plan.path("requiredDevices"), REQUIRED_AGENT_DEVICES)
+        && plan.path("maxReadyResultSeconds").asInt(0) == 600
+        && "AGENT_VALIDATION".equals(plan.path("trafficClass").asText())
+        && "mh_internal_test".equals(plan.path("internalMarker").asText())
+        && !plan.path("humanEvidenceClaimed").asBoolean(true)
+        && !plan.path("commercialEvidenceClaimed").asBoolean(true)
+        && !plan.path("paymentEnabled").asBoolean(true)
+        && !plan.path("publicationAuthorized").asBoolean(true)
+        && !plan.path("campaignAuthorized").asBoolean(true)
+        && plan.path("mediaSpendAuthorizedBrl").asInt(-1) == 0
+        && plan.path("sourceMaxAgeDays").asInt(0) >= 1
+        && plan.path("sourceMaxAgeDays").asInt(0) <= 90
+        && hasText(plan, "publicationBoundary")
+        && (!plan.path("sourceRefreshRequired").asBoolean(false)
+            || hasText(plan, "sourceRefreshAction"));
   }
 
   /** Confirma criação única na descoberta e preservação exata para produtos já cadastrados. */
@@ -607,6 +662,14 @@ public class PdeMarketStrategyBpmTaskConsumer {
         && values.containsAll(REQUIRED_PRIVATE_SIGNALS);
   }
 
+  /** Compara listas como conjuntos exatos sem aceitar duplicidade ou cenário extra. */
+  private static boolean exactValues(JsonNode values, List<String> expected) {
+    if (!values.isArray() || values.size() != expected.size()) return false;
+    List<String> actual = new ArrayList<>();
+    values.forEach(item -> actual.add(item.asText()));
+    return actual.stream().distinct().count() == expected.size() && actual.containsAll(expected);
+  }
+
   /** Exige uma taxa integral para que cada leitura individual prove todos os sinais. */
   private static boolean unitRate(JsonNode plan, String field) {
     return plan.path(field).isNumber() && Double.compare(plan.path(field).asDouble(), 1d) == 0;
@@ -622,8 +685,8 @@ public class PdeMarketStrategyBpmTaskConsumer {
         && hasText(scene, "currentPaidBehavior");
   }
 
-  /** Confirma valor humano, saída pronta e baixo esforço no plano de Atena. */
-  private static boolean canonicalHumanValueDelivery(JsonNode delivery) {
+  /** Confirma valor ao cliente, saída pronta e baixo esforço no plano de Atena. */
+  private static boolean canonicalCustomerValueDelivery(JsonNode delivery) {
     return delivery.isObject()
         && delivery.path("territories").isArray()
         && !delivery.path("territories").isEmpty()
@@ -651,18 +714,33 @@ public class PdeMarketStrategyBpmTaskConsumer {
 
   /** Seleciona o prompt compatível com a versão persistida da definição BPM. */
   private String promptResource(Map<String, Object> task) {
-    return requiresProductIdentity(task) ? IDENTITY_PROMPT : LEGACY_PROMPT;
+    return requiresAgentValidation(task)
+        ? AGENT_VALIDATION_PROMPT
+        : requiresProductIdentity(task) ? IDENTITY_PROMPT : LEGACY_PROMPT;
   }
 
   /** Seleciona o schema compatível com a versão persistida da definição BPM. */
   private String schemaResource(Map<String, Object> task) {
-    return requiresProductIdentity(task) ? IDENTITY_SCHEMA : LEGACY_SCHEMA;
+    return requiresAgentValidation(task)
+        ? AGENT_VALIDATION_SCHEMA
+        : requiresProductIdentity(task) ? IDENTITY_SCHEMA : LEGACY_SCHEMA;
   }
 
   /** Reconhece a versão do Processo 2 que tornou a identidade parte do contrato. */
   private static boolean requiresProductIdentity(Map<String, Object> task) {
     Object value = task == null ? null : task.get("processVersion");
     return value instanceof Number number && number.intValue() >= 9;
+  }
+
+  /** Reconhece a versão que removeu tarefas e gates dependentes de participantes humanos. */
+  private static boolean requiresAgentValidation(Map<String, Object> task) {
+    Object value = task == null ? null : task.get("processVersion");
+    return value instanceof Number number && number.intValue() >= 10;
+  }
+
+  /** Reconhece a versão multiagente dentro do envelope serializado usado pela validação. */
+  private static boolean requiresAgentValidation(JsonNode task) {
+    return task != null && task.path("processVersion").asInt(0) >= 10;
   }
 
   /** Lê o último total cumulativo de tokens realmente informado. */

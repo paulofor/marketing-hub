@@ -64,24 +64,34 @@ class OpportunityProductMaterializationCompletionHookTest {
     assertThat(product.getValue().getMarketNicheId()).isEqualTo(601L);
     assertThat(product.getValue().getDeliveryMode()).isEqualTo("EXPERIÊNCIA_PERSONALIZADA_POR_IA");
     assertThat(product.getValue().getValidationDefinitionVersion())
-        .isEqualTo("PDE_PRIVATE_VALIDATION_V1");
+        .isEqualTo("PDE_AGENT_VALIDATION_V1");
     assertThat(product.getValue().getValidationDefinitionJson())
         .contains(
-            "WAITING_PRIVATE_PROTOTYPE",
-            "privateValidationPlan",
+            "WAITING_AGENT_HOMOLOGATION",
+            "agentValidationPlan",
             "privatePrototype",
             "PRODUCT_IDENTITY_V1",
             "Alcyone",
-            "Safira",
-            "minimumIndependentReadings");
+            "Safira")
+        .doesNotContain("privateValidationPlan", "minimumIndependentReadings");
     assertThat(product.getValue().getPdeExperienceJson())
         .contains(
             "PDE_HARNESS_PLAN_V1",
-            "private-validation-v1",
+            "agent-validation-v1",
             "publicationBoundary",
-            "privateValidationPlan",
+            "agentValidationPlan",
             "productIdentity",
-            "dossierId");
+            "dossierId")
+        .doesNotContain("privateValidationPlan", "READY_FOR_PRIVATE_VALIDATION");
+    assertThat(fixture.product.getValidationDefinitionJson())
+        .contains("product:901@agent-validation-v1");
+    assertThat(fixture.product.getPdeExperienceJson()).contains("product:901@agent-validation-v1");
+    verify(fixture.productService)
+        .updateValidationContracts(
+            901L,
+            "PDE_AGENT_VALIDATION_V1",
+            fixture.product.getValidationDefinitionJson(),
+            fixture.product.getPdeExperienceJson());
     assertThat(fixture.dossier.getStatus()).isEqualTo(OpportunityDossierStatus.CONVERTED_TO_PLAN);
     assertThat(fixture.dossier.getCreatedProduct()).isSameAs(fixture.product);
     assertThat(fixture.product.getAutomaticExecutionEnabled()).isFalse();
@@ -171,7 +181,7 @@ class OpportunityProductMaterializationCompletionHookTest {
     Fixture fixture = new Fixture(ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
     fixture.architectureTask.getProcessDefinition().setVersionNumber(8);
     ObjectNode strategy =
-        (ObjectNode) fixture.objectMapper.readTree(fixture.strategyTask.getResultJson());
+        (ObjectNode) fixture.objectMapper.readTree(fixture.legacyStrategyResult());
     strategy.remove("productIdentity");
     fixture.strategyTask.setResultJson(fixture.objectMapper.writeValueAsString(strategy));
     when(fixture.productTypeRepository.findByCode("PDE"))
@@ -291,7 +301,7 @@ class OpportunityProductMaterializationCompletionHookTest {
       BusinessProcessDefinition process = new BusinessProcessDefinition();
       process.setId(88L);
       process.setProcessCode("pde-commercial-plan-offer");
-      process.setVersionNumber(9);
+      process.setVersionNumber(10);
       Agent atena = Agent.builder().agentKey("experiment-strategist").build();
       Agent plutus = Agent.builder().agentKey("financial-agent").build();
       Agent dedalo = Agent.builder().agentKey("landing-generator").build();
@@ -318,7 +328,15 @@ class OpportunityProductMaterializationCompletionHookTest {
           .thenReturn(
               Optional.of(MarketNiche.builder().id(601L).name("Moda e bem-estar 40+").build()));
       when(commercialPlanService.create(any())).thenReturn(plan);
-      when(productService.createProduct(any())).thenReturn(product);
+      when(productService.createProduct(any()))
+          .thenAnswer(
+              invocation -> {
+                CreateProductRequest request = invocation.getArgument(0);
+                product.setValidationDefinitionVersion(request.getValidationDefinitionVersion());
+                product.setValidationDefinitionJson(request.getValidationDefinitionJson());
+                product.setPdeExperienceJson(request.getPdeExperienceJson());
+                return product;
+              });
       hook =
           new OpportunityProductMaterializationCompletionHook(
               dossierRepository,
@@ -345,8 +363,8 @@ class OpportunityProductMaterializationCompletionHookTest {
     }
 
     /** Retorna a seleção estruturada de Atena. */
-    private String strategyResult(boolean privateValidationReady) {
-      if (!privateValidationReady) {
+    private String strategyResult(boolean validationReady) {
+      if (!validationReady) {
         return """
             {
               "decision":"APPROVE",
@@ -373,8 +391,8 @@ class OpportunityProductMaterializationCompletionHookTest {
               "classificationRationale":"A personalização por IA é o mecanismo de valor; a web é o formato."
             },
             "marketStrategicContract":{
-              "contractVersion":"MARKET_STRATEGY_V3",
-              "status":"READY_FOR_PRIVATE_VALIDATION",
+              "contractVersion":"MARKET_STRATEGY_V4",
+              "status":"READY_FOR_AGENT_VALIDATION",
               "segment":"Moda e bem-estar 40+",
               "buyer":"Mulheres brasileiras de 40 a 55 anos",
               "problem":"Escolher peças confortáveis ainda exige tentativa manual",
@@ -382,9 +400,9 @@ class OpportunityProductMaterializationCompletionHookTest {
               "offerThesis":"Experiência pessoal de cápsula sensorial",
               "valueMechanism":"IA organiza contexto e devolve combinações utilizáveis",
               "causalHypothesis":"Menos esforço aumenta o início da experiência",
-              "privateValidationPlan":{
-                "minimumIndependentReadings":2,
-                "minimumEligibleParticipantsPerReading":1,
+              "agentValidationPlan":{
+                "contractVersion":"PDE_AGENT_VALIDATION_V1",
+                "hypothesis":"Três combinações prontas reduzem o esforço da decisão.",
                 "prototypeObjective":"Comprovar resultado pronto em até dez minutos.",
                 "purchaseScene":{
                   "trigger":"Compromisso confirmado.",
@@ -396,7 +414,7 @@ class OpportunityProductMaterializationCompletionHookTest {
                 },
                 "strongestFreeAlternative":"Montagem manual com IA genérica.",
                 "prototypeAdvantage":"Resultado pessoal pronto sem prompting.",
-                "humanValueDelivery":{
+                "customerValueDelivery":{
                   "territories":["RECOGNITION","EFFORT_RELIEF"],
                   "desiredTransformation":"Sentir segurança com menos esforço.",
                   "evidenceSourceIds":["source-1","source-2"],
@@ -410,23 +428,61 @@ class OpportunityProductMaterializationCompletionHookTest {
                   "timeToUsableResultMinutes":8,
                   "automationBoundary":"A pessoa revisa antes de aplicar."
                 },
-                "requiredSignals":[
-                  "EXPERIENCE_STARTED","VALUE_MOMENT","READY_RESULT_USED",
-                  "PREFERRED_OVER_FREE","CHECKOUT_STARTED"
-                ],
-                "minimumExperienceStartRate":1,
-                "minimumValueMomentRate":1,
-                "minimumReadyResultUseRate":1,
-                "minimumPrototypePreferenceRate":1,
-                "minimumCheckoutStartRate":1,
+                "trafficClass":"AGENT_VALIDATION",
+                "internalMarker":"mh_internal_test",
+                "requiredScenarios":["ADHERENT","RECOVERY","SAFETY"],
+                "requiredDevices":["DESKTOP_1440","IPHONE_15_PRO","PIXEL_7"],
+                "maxReadyResultSeconds":600,
+                "humanEvidenceClaimed":false,
+                "commercialEvidenceClaimed":false,
+                "paymentEnabled":false,
+                "publicationAuthorized":false,
+                "campaignAuthorized":false,
+                "mediaSpendAuthorizedBrl":0,
                 "sourceMaxAgeDays":30,
+                "continueCriteria":"Homologação funcional aprovada nos três cenários.",
+                "adjustCriteria":"Corrigir somente a etapa reprovada e repetir o cenário.",
+                "stopCriteria":"Bloquear quando houver falha de segurança ou custo acima do teto.",
                 "sourceRefreshRequired":false,
                 "sourceRefreshAction":"Nenhuma atualização pendente.",
-                "publicationBoundary":"Uso privado sem contato, publicação, cobrança ou gasto."
+                "publicationBoundary":"Homologação interna sem contato, publicação, cobrança ou gasto."
               }
             }
           }
           """;
+    }
+
+    /** Converte o contrato atual em uma tarefa histórica completa para provar compatibilidade. */
+    private String legacyStrategyResult() throws Exception {
+      ObjectNode root = (ObjectNode) objectMapper.readTree(strategyResult(true));
+      ObjectNode strategy = (ObjectNode) root.path("marketStrategicContract");
+      ObjectNode plan = (ObjectNode) strategy.remove("agentValidationPlan");
+      strategy.put("contractVersion", "MARKET_STRATEGY_V3");
+      strategy.put("status", "READY_FOR_PRIVATE_VALIDATION");
+      plan.remove("customerValueDelivery");
+      plan.set(
+          "humanValueDelivery",
+          objectMapper
+              .readTree(strategyResult(true))
+              .path("marketStrategicContract")
+              .path("agentValidationPlan")
+              .path("customerValueDelivery")
+              .deepCopy());
+      plan.put("minimumIndependentReadings", 2);
+      plan.put("minimumEligibleParticipantsPerReading", 1);
+      plan.putArray("requiredSignals")
+          .add("EXPERIENCE_STARTED")
+          .add("VALUE_MOMENT")
+          .add("READY_RESULT_USED")
+          .add("PREFERRED_OVER_FREE")
+          .add("CHECKOUT_STARTED");
+      plan.put("minimumExperienceStartRate", 1);
+      plan.put("minimumValueMomentRate", 1);
+      plan.put("minimumReadyResultUseRate", 1);
+      plan.put("minimumPrototypePreferenceRate", 1);
+      plan.put("minimumCheckoutStartRate", 1);
+      strategy.set("privateValidationPlan", plan);
+      return objectMapper.writeValueAsString(root);
     }
 
     /** Retorna a hipótese econômica aprovada por Plutus. */

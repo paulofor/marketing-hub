@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Responsabilidade: entregar a comunicação privada do produto validado antes do experimento. */
+/** Responsabilidade: entregar a comunicação privada do produto governado antes do experimento. */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -188,12 +188,12 @@ public class IrisPrivateProductContext {
             .allMatch(t -> t.id() < technicalTaskId),
         "Novo planejamento exige homologação e gate posteriores à alteração.");
     var strategyResult = json.readTree(strategyTask.resultJson());
+    String strategyContractVersion = pde.path("marketStrategy").path("contractVersion").asText();
     require(
         lineage.path("dossierId").asLong() == strategyResult.path("selectedDossierId").asLong()
             && lineage.path("opportunityId").asLong()
                 == strategyResult.path("selectedOpportunityId").asLong()
-            && "MARKET_STRATEGY_V3"
-                .equals(pde.path("marketStrategy").path("contractVersion").asText()),
+            && Set.of("MARKET_STRATEGY_V3", "MARKET_STRATEGY_V4").contains(strategyContractVersion),
         "A estratégia aprovada não corresponde à descoberta que originou o produto.");
     for (var task : List.of(economicsTask, architectureTask)) artifacts.add(artifact(task));
     var strategy =
@@ -207,7 +207,7 @@ public class IrisPrivateProductContext {
             "strategistTaskId",
             strategyTask.id(),
             "contractVersion",
-            "MARKET_STRATEGY_V3",
+            strategyContractVersion,
             "contentHash",
             sha(pde.path("marketStrategy").toString()),
             "contract",

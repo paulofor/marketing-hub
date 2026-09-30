@@ -1,5 +1,23 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-09-30 — Alcyone migra para homologação multiagente executável
+
+- Evidência: o produto #11 ainda carregava `PDE_PRIVATE_VALIDATION_V1`, duas leituras humanas e a
+  referência `product:11@private-validation-v1`, embora o cânone já proibisse esse gate. A tarefa
+  #534 estava `PENDING`; métricas do Actuator mostraram o consumidor de Dédalo preso por dias antes
+  da reserva da fila, enquanto os clientes HTTP desse fluxo não possuíam timeout.
+- Alternativas: encerrar o produto evita trabalho mas não testa a oferta; alterar somente o registro
+  volta a criar o defeito no próximo produto; migrar Alcyone, corrigir a materialização na origem e
+  limitar o polling fecha o estado atual e a recorrência. Foi escolhida a terceira alternativa.
+- Decisão: Processo 2 v10 e o worker de Atena passam a emitir `MARKET_STRATEGY_V4` com
+  `PDE_AGENT_VALIDATION_V1`. Alcyone usa `product:11@agent-validation-v1`, três cenários
+  (`ADHERENT`, `RECOVERY`, `SAFETY`) e desktop, iPhone 15 Pro e Pixel 7, sem recrutamento, convite,
+  leitura privada, opinião solicitada, cobrança, publicação, campanha ou gasto.
+- Fontes: apenas as alternativas oficiais necessárias foram reconfirmadas em 30/09/2026 — Resolva,
+  Style DNA e Dressly. Elas comprovam ofertas concorrentes ativas, não compra nem demanda de Alcyone.
+- Métrica: agentes comprovam prontidão e custo técnico de até R$ 24 por pacote; somente pagamento
+  reconciliado e contribuição positiva poderão comprovar venda e condição de escala.
+
 ## 2026-09-28 — Validação passa a depender somente de agentes ou do mercado
 
 - Causa: a orientação de Alcyone voltou a propor duas leituras com mulheres, apesar de o sistema não

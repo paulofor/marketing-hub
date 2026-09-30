@@ -29,7 +29,10 @@ A etapa estática não inicia MySQL nem executa `liquibase:update`. Os jobs fís
 O job `validate-process2-product-identity` aplica o Processo 2 v9 e o reparo direcionado da
 execução independente #32 em um MySQL 5.7 sintético. Ele comprova a escolha de nome e tipo antes de
 Plutus e Dédalo, a correção para `Alcyone`/`AI_PRODUCT`/`Safira`, idempotência, rollback e
-reaplicação sem usar dados reais.
+reaplicação sem usar dados reais. A mesma fixture aplica o Processo 2 v10 e a migração de
+Alcyone para `PDE_AGENT_VALIDATION_V1`: valida as três fontes públicas, a remoção do gate humano,
+a referência da tarefa/run/instância, o `scope_key`, a cadeia v24, rollback não regressivo e
+reaplicação sem duplicidade.
 
 Localmente, defina `PROCESS2_IDENTITY_COMPOSE_PROJECT` com o projeto exclusivo autorizado e execute
 `bash backend/ads-service/scripts/validate-process2-product-identity-mysql57.sh`.

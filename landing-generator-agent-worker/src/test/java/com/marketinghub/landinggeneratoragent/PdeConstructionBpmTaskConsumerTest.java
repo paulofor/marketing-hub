@@ -235,7 +235,10 @@ class PdeConstructionBpmTaskConsumerTest {
             "SIMULATED_NO_CHARGE",
             "TASK_CONTEXT.taskTarget.pdeContext",
             "researchIntelligence",
-            "Não exija leituras humanas já realizadas")
+            "Não proponha recrutamento",
+            "ADHERENT",
+            "RECOVERY",
+            "SAFETY")
         .doesNotContain("Kit WhatsApp", "15 respostas", "pós-compra");
   }
 
@@ -272,6 +275,40 @@ class PdeConstructionBpmTaskConsumerTest {
         json);
   }
 
+  /** Aceita o contrato multiagente sem plano de leitura ou participante humano. */
+  @Test
+  void acceptsCompleteAgentValidationContext() throws Exception {
+    Map<String, Object> task =
+        json.readValue(
+            """
+            {"taskTarget":{"experienceVersion":"agent-validation-v1","pdeContext":{
+              "contractVersion":"PDE_HARNESS_PLAN_V1",
+              "experienceVersion":"agent-validation-v1",
+              "marketStrategy":{"buyer":"Pessoa compradora definida",
+                "problem":"Dor recorrente definida","desiredOutcome":"Resultado pronto",
+                "valueMechanism":"Transformação orientada por IA"},
+              "economics":{"commercialSpendAuthorized":false},
+              "harness":{"privatePrototype":{"simpleInput":"Entrada simples",
+                "readyResult":"Resultado pessoal pronto","maxValueTimeMinutes":10,
+                "instrumentationEvents":["EXPERIENCE_STARTED","VALUE_MOMENT",
+                  "READY_RESULT_USED","PREFERRED_OVER_FREE","CHECKOUT_STARTED"],
+                "checkoutMode":"SIMULATED_NO_CHARGE"}},
+              "agentValidationPlan":{"contractVersion":"PDE_AGENT_VALIDATION_V1",
+                "purchaseScene":{"trigger":"Ocasião concreta"},
+                "customerValueDelivery":{"minimumCustomerInput":"Contexto mínimo",
+                  "readyMadeOutcome":"Entrega utilizável"}},
+              "publicationBoundary":"Homologação multiagente sem publicação ou gasto"
+            }}}
+            """,
+            Map.class);
+
+    PdeConstructionBpmTaskConsumer.validateTaskContext(
+        task,
+        new PdeConstructionBpmTaskConsumer.BpmContract(
+            "pde-construction-approval", "journey", "prompt", "schema", "v2", "READY"),
+        json);
+  }
+
   /** Recusa o handoff incompleto antes que ele consuma tokens do modelo. */
   @Test
   void rejectsMissingPrivatePdeContextBeforeModel() {
@@ -286,7 +323,7 @@ class PdeConstructionBpmTaskConsumerTest {
                         "pde-construction-approval", "journey", "prompt", "schema", "v2", "READY"),
                     json))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Contrato PDE privado");
+        .hasMessageContaining("Contrato PDE de homologação");
   }
 
   /** Aceita a candidata Opala quando alvo, ciclo, checkout e acesso apontam à mesma versão. */
@@ -392,7 +429,9 @@ class PdeConstructionBpmTaskConsumerTest {
             "prompts/pde-construction/v2/access.md")) {
       assertThat(read(resource))
           .contains("TASK_CONTEXT.taskTarget.pdeContext", "researchIntelligence")
-          .containsIgnoringCase("não exija leituras humanas já realizadas");
+          .containsIgnoringCase("recrutamento")
+          .containsIgnoringCase("opinião solicitada")
+          .doesNotContainIgnoringCase("duas pessoas");
     }
   }
 

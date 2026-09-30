@@ -205,7 +205,7 @@ public class ProductDiscoveryIndependentExecutionReportService
       return handoffUnavailable(
           cycle.getId(),
           "IN_PROGRESS",
-          "O handoff privado já possui uma atividade pendente ou em execução.");
+          "O handoff multiagente já possui uma atividade pendente ou em execução.");
     }
     return handoffUnavailable(
         cycle.getId(),
@@ -220,16 +220,25 @@ public class ProductDiscoveryIndependentExecutionReportService
         false, cycleId, status, "Retomar com Atena", reason);
   }
 
-  /** Reconhece somente a estratégia capaz de sustentar as duas leituras privadas atuais. */
+  /** Reconhece a estratégia vigente da ocorrência sem promover contrato humano histórico. */
   private boolean hasCurrentPrivateValidationStrategy(AgentTask task) {
     JsonNode contract =
         read(task.getResultJson(), "resultado", task.getId()).path("marketStrategicContract");
-    JsonNode plan = contract.path("privateValidationPlan");
-    boolean currentStrategy =
-        "MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
-            && "READY_FOR_PRIVATE_VALIDATION".equals(contract.path("status").asText())
-            && plan.path("minimumIndependentReadings").asInt(0) == 2;
     Integer processVersion = task.getProcessDefinition().getVersionNumber();
+    JsonNode plan =
+        contract.path(
+            processVersion != null && processVersion >= 10
+                ? "agentValidationPlan"
+                : "privateValidationPlan");
+    boolean currentStrategy =
+        processVersion != null && processVersion >= 10
+            ? "MARKET_STRATEGY_V4".equals(contract.path("contractVersion").asText())
+                && "READY_FOR_AGENT_VALIDATION".equals(contract.path("status").asText())
+                && "PDE_AGENT_VALIDATION_V1".equals(plan.path("contractVersion").asText())
+                && !plan.path("humanEvidenceClaimed").asBoolean(true)
+            : "MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
+                && "READY_FOR_PRIVATE_VALIDATION".equals(contract.path("status").asText())
+                && plan.path("minimumIndependentReadings").asInt(0) == 2;
     if (!currentStrategy || processVersion == null || processVersion < 9) return currentStrategy;
     JsonNode identity =
         read(task.getResultJson(), "resultado", task.getId()).path("productIdentity");

@@ -123,7 +123,7 @@ public class PdeConstructionBpmTaskConsumer {
       LandingGeneratorAgentProperties properties,
       ObjectMapper json,
       AutomaticExecutionControl automaticExecution) {
-    this.backend = RestClient.builder().baseUrl(properties.getBackendUrl()).build();
+    this.backend = LandingGeneratorBackendRestClientFactory.create(properties.getBackendUrl());
     this.properties = properties;
     this.json = json;
     this.automaticExecution = automaticExecution;
@@ -618,7 +618,9 @@ public class PdeConstructionBpmTaskConsumer {
     }
   }
 
-  /** Bloqueia antes do modelo quando a construção privada não recebe o contrato PDE completo. */
+  /**
+   * Bloqueia antes do modelo quando a construção não recebe o contrato PDE completo e governado.
+   */
   static void validateTaskContext(
       Map<String, Object> task, BpmContract contract, ObjectMapper json) {
     if ("opala-commercial-preparation-v1".equals(contract.processCode())) {
@@ -632,8 +634,8 @@ public class PdeConstructionBpmTaskConsumer {
     JsonNode economics = context.path("economics");
     JsonNode harness = context.path("harness");
     JsonNode prototype = harness.path("privatePrototype");
-    JsonNode validation = context.path("privateValidationPlan");
-    JsonNode valueDelivery = validation.path("humanValueDelivery");
+    JsonNode validation = validationPlan(context);
+    JsonNode valueDelivery = valueDelivery(validation);
     boolean complete =
         context.isObject()
             && !context.path("contractVersion").asText().isBlank()
@@ -664,8 +666,22 @@ public class PdeConstructionBpmTaskConsumer {
             && !context.path("publicationBoundary").asText().isBlank();
     if (!complete) {
       throw new IllegalArgumentException(
-          "Contrato PDE privado ausente ou incompleto no contexto enviado pelo backend");
+          "Contrato PDE de homologação ausente ou incompleto no contexto enviado pelo backend");
     }
+  }
+
+  /**
+   * Prefere o plano multiagente vigente e preserva apenas a compatibilidade de tarefas históricas.
+   */
+  private static JsonNode validationPlan(JsonNode context) {
+    JsonNode agentPlan = context.path("agentValidationPlan");
+    return agentPlan.isObject() ? agentPlan : context.path("privateValidationPlan");
+  }
+
+  /** Lê a entrega ao cliente pelo nome vigente ou pelo alias imutável do contrato histórico. */
+  private static JsonNode valueDelivery(JsonNode validation) {
+    JsonNode current = validation.path("customerValueDelivery");
+    return current.isObject() ? current : validation.path("humanValueDelivery");
   }
 
   /**

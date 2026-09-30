@@ -249,6 +249,20 @@ public class ProductService {
     return saved;
   }
 
+  /** Finaliza os contratos de validação depois que a identidade persistida do produto existe. */
+  @Transactional
+  public Product updateValidationContracts(
+      Long id,
+      String validationDefinitionVersion,
+      String validationDefinitionJson,
+      String pdeExperienceJson) {
+    Product product = getProduct(id);
+    product.setValidationDefinitionVersion(validationDefinitionVersion);
+    product.setValidationDefinitionJson(validationDefinitionJson);
+    product.setPdeExperienceJson(pdeExperienceJson);
+    return repository.save(product);
+  }
+
   /** Atualiza apenas o nome interno sem regravar o contrato comercial completo do produto. */
   @Transactional
   public Product updateInternalName(Long id, UpdateProductInternalNameRequest request) {

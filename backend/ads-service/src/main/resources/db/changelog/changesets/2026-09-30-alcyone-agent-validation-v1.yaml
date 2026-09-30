@@ -1,0 +1,185 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-30-alcyone-agent-validation-v1-process-2-v10
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT IF(
+                (
+                  (SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-commercial-plan-offer' AND version_number=9 AND status='PUBLISHED')=1
+                  AND
+                  (SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-commercial-plan-offer' AND version_number=10 AND status='PUBLISHED')=0
+                )
+                OR
+                (
+                  (SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-commercial-plan-offer' AND version_number=9 AND status='RETIRED')=1
+                  AND
+                  (SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-commercial-plan-offer' AND version_number=10 AND status='PUBLISHED')=1
+                ),
+                1,
+                0
+              )
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT IF(
+                (
+                  (SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=23 AND status='PUBLISHED')=1
+                  AND
+                  (SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=24 AND status='PUBLISHED')=0
+                )
+                OR
+                (
+                  (SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=23 AND status='RETIRED')=1
+                  AND
+                  (SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=24 AND status='PUBLISHED')=1
+                ),
+                1,
+                0
+              )
+      changes:
+        - sqlFile:
+            path: 2026-09-30-alcyone-agent-validation-process-v10.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;
+
+  - changeSet:
+      id: 2026-09-30-alcyone-agent-validation-v1-public-source-refresh
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT IF(COUNT(*)=0,1,IF(COUNT(*)=1 AND SUM(created_product_id=11)=1,1,0)) FROM opportunity_dossier WHERE id=46
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO opportunity_evidence
+                (dossier_id, source_url, summary, created_by, created_at)
+              SELECT 46,
+                'https://www.resolvameulook.com/book-online',
+                'Atualização factual de 30/09/2026: a página oficial mantém ofertas de montagem de 7 looks por R$ 59,90 e 14 looks por R$ 79,90. Evidência de oferta e preço concorrente; não comprova compra, preferência nem demanda de Alcyone.',
+                'CODEX:public-refresh:alcyone-agent-validation-v1',
+                UTC_TIMESTAMP(6)
+              FROM DUAL
+              WHERE EXISTS (SELECT 1 FROM opportunity_dossier WHERE id=46 AND created_product_id=11)
+                AND NOT EXISTS (
+                  SELECT 1 FROM opportunity_evidence
+                   WHERE dossier_id=46
+                     AND source_url='https://www.resolvameulook.com/book-online'
+                     AND created_by='CODEX:public-refresh:alcyone-agent-validation-v1'
+                );
+
+              INSERT INTO opportunity_evidence
+                (dossier_id, source_url, summary, created_by, created_at)
+              SELECT 46,
+                'https://play.google.com/store/apps/details?id=style.dna.app&hl=pt_BR',
+                'Atualização factual de 30/09/2026: a página oficial informa estilista por IA, sugestões de roupas por ocasião, compras no app, mais de 1 milhão de downloads e atualização em 28/08/2026. Evidência de alternativa ativa; não comprova venda de Alcyone.',
+                'CODEX:public-refresh:alcyone-agent-validation-v1',
+                UTC_TIMESTAMP(6)
+              FROM DUAL
+              WHERE EXISTS (SELECT 1 FROM opportunity_dossier WHERE id=46 AND created_product_id=11)
+                AND NOT EXISTS (
+                  SELECT 1 FROM opportunity_evidence
+                   WHERE dossier_id=46
+                     AND source_url='https://play.google.com/store/apps/details?id=style.dna.app&hl=pt_BR'
+                     AND created_by='CODEX:public-refresh:alcyone-agent-validation-v1'
+                );
+
+              INSERT INTO opportunity_evidence
+                (dossier_id, source_url, summary, created_by, created_at)
+              SELECT 46,
+                'https://play.google.com/store/apps/details?id=world.dressly.fashion',
+                'Atualização factual de 30/09/2026: a página oficial informa planejador de looks por IA, personalização por ocasião, compras no app, mais de 100 mil downloads e atualização em 04/09/2026. Evidência de alternativa ativa; não comprova venda de Alcyone.',
+                'CODEX:public-refresh:alcyone-agent-validation-v1',
+                UTC_TIMESTAMP(6)
+              FROM DUAL
+              WHERE EXISTS (SELECT 1 FROM opportunity_dossier WHERE id=46 AND created_product_id=11)
+                AND NOT EXISTS (
+                  SELECT 1 FROM opportunity_evidence
+                   WHERE dossier_id=46
+                     AND source_url='https://play.google.com/store/apps/details?id=world.dressly.fashion'
+                     AND created_by='CODEX:public-refresh:alcyone-agent-validation-v1'
+                );
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;
+
+  - changeSet:
+      id: 2026-09-30-alcyone-agent-validation-v1-contract-and-run
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT IF(
+                COUNT(*)=0,
+                1,
+                IF(
+                  COUNT(*)=1
+                  AND SUM(internal_name='Alcyone')=1
+                  AND SUM(validation_definition_version IN ('PDE_PRIVATE_VALIDATION_V1','PDE_AGENT_VALIDATION_V1'))=1
+                  AND SUM(JSON_VALID(validation_definition_json)=1)=1
+                  AND SUM(JSON_VALID(pde_experience_json)=1)=1,
+                  1,
+                  0
+                )
+              )
+              FROM product
+              WHERE id=11
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT IF(
+                COUNT(*)=0,
+                1,
+                IF(
+                  COUNT(*)=1
+                  AND SUM(status='PENDING')=1
+                  AND SUM(source_reference IN ('product:11@private-validation-v1','product:11@agent-validation-v1'))=1,
+                  1,
+                  0
+                )
+              )
+              FROM agent_task
+              WHERE id=534
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM product_process_run_v1 WHERE product_id=11 AND source_reference='product:11@agent-validation-v1' AND id<>26
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT IF(COUNT(*)=0,1,IF(COUNT(*)=1 AND SUM(source_reference IN ('product:11@private-validation-v1','product:11@agent-validation-v1'))=1,1,0)) FROM product_process_run_v1 WHERE id=26
+      changes:
+        - sqlFile:
+            path: 2026-09-30-alcyone-agent-validation-contract-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;

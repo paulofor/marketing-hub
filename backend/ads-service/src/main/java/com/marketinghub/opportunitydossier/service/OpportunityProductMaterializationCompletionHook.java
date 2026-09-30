@@ -97,14 +97,14 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
       if (dossier.getCreatedProduct() != null) return CompletionDisposition.COMPLETE;
       ProductIdentity productIdentity = resolveProductIdentity(task, dossier, strategyResult);
       JsonNode strategy = strategyResult.path("marketStrategicContract");
-      requirePrivateValidationReadiness(strategy);
+      requireValidationReadiness(strategy);
       JsonNode economicsResult = completedResult(tasks, "economics");
       JsonNode economics = economicsResult.path("economics");
       JsonNode metrics = economicsResult.path("metrics");
       JsonNode architectureResult = objectMapper.readTree(request.resultJson());
       requireApprove(architectureResult, "Dédalo");
       JsonNode architecture = architectureResult.path("productArchitecture");
-      requirePrivatePrototypeReadiness(architecture);
+      requirePrototypeReadiness(architecture);
 
       CommercialPlan plan = createPlan(dossier, strategy, economics, metrics);
       Product product =
@@ -201,7 +201,7 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
     product.setValueUnit(limit(firstArrayText(architecture.path("deliverables")), 191));
     product.setValueEvidenceMetric(
         limit(firstText(firstArrayText(metrics.path("delivery")), text(metrics, "primary")), 191));
-    product.setValidationDefinitionVersion("PDE_PRIVATE_VALIDATION_V1");
+    product.setValidationDefinitionVersion("PDE_AGENT_VALIDATION_V1");
     product.setValidationDefinitionJson(
         objectMapper.writeValueAsString(
             validationDefinition(productIdentity, strategy, economics, metrics, architecture)));
@@ -220,8 +220,9 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
             + " ("
             + productIdentity.type().getCode()
             + ") escolhidos por Atena"
-            + ". Próximo gate: construir o protótipo privado e obter duas leituras independentes."
-            + " Não está publicado nem autorizado para contato, campanha, pagamento ou gasto.");
+            + ". Próximo gate: construir o protótipo e homologá-lo por agentes independentes."
+            + " Não está publicado nem autorizado para contato, campanha, pagamento ou gasto;"
+            + " somente o mercado poderá comprovar demanda.");
     product.setSevenDayJourney(objectMapper.writeValueAsString(architecture.path("valueJourney")));
     product.setTargetAudience(firstText(text(strategy, "buyer"), dossier.getTargetAudience()));
     product.setNiche(limit(text(strategy, "segment"), PRODUCT_CLASSIFICATION_MAX_LENGTH));
@@ -238,7 +239,29 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
     Product saved = productService.createProduct(product);
     productService.updateAutomaticExecution(saved.getId(), false, "pde-discovery-handoff");
     saved.setAutomaticExecutionEnabled(false);
+    finalizeAgentValidationContracts(saved);
     return saved;
+  }
+
+  /** Grava a referência multiagente exata depois que o banco atribui o identificador do produto. */
+  private void finalizeAgentValidationContracts(Product product) throws JsonProcessingException {
+    String sourceReference = "product:" + product.getId() + "@agent-validation-v1";
+    ObjectNode validation =
+        (ObjectNode) objectMapper.readTree(product.getValidationDefinitionJson());
+    ((ObjectNode) validation.path("agentValidationPlan")).put("sourceReference", sourceReference);
+    ObjectNode experience = (ObjectNode) objectMapper.readTree(product.getPdeExperienceJson());
+    experience.put("agentValidationSourceReference", sourceReference);
+    ((ObjectNode) experience.path("agentValidationPlan")).put("sourceReference", sourceReference);
+    ((ObjectNode) experience.path("marketStrategy").path("agentValidationPlan"))
+        .put("sourceReference", sourceReference);
+    product.setValidationDefinitionVersion("PDE_AGENT_VALIDATION_V1");
+    product.setValidationDefinitionJson(objectMapper.writeValueAsString(validation));
+    product.setPdeExperienceJson(objectMapper.writeValueAsString(experience));
+    productService.updateValidationContracts(
+        product.getId(),
+        product.getValidationDefinitionVersion(),
+        product.getValidationDefinitionJson(),
+        product.getPdeExperienceJson());
   }
 
   /** Reutiliza ou cria o nicho aprovado por Atena para manter atribuição comercial do produto. */
@@ -264,7 +287,7 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
                         .build()));
   }
 
-  /** Monta a definição de construção e validação privada que governa o produto planejado. */
+  /** Monta a definição de construção e homologação multiagente do produto planejado. */
   private ObjectNode validationDefinition(
       ProductIdentity productIdentity,
       JsonNode strategy,
@@ -278,13 +301,14 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
     definition.set("mechanism", valueNode(strategy, "valueMechanism"));
     definition.set("format", valueNode(architecture, "format"));
     definition.set("delivery", architecture.deepCopy());
-    definition.set("privateValidationPlan", strategy.path("privateValidationPlan").deepCopy());
-    ((ObjectNode) definition.path("privateValidationPlan"))
+    definition.set("agentValidationPlan", agentValidationPlan(strategy));
+    ((ObjectNode) definition.path("agentValidationPlan"))
         .put("criteriaDeclaredAt", frozenAt.toString())
         .put("sourceQualityEvaluatedAt", frozenAt.toString());
     definition.set("privatePrototype", architecture.path("privatePrototype").deepCopy());
-    definition.put("purchaseMomentStatus", "WAITING_PRIVATE_PROTOTYPE");
+    definition.put("purchaseMomentStatus", "WAITING_AGENT_HOMOLOGATION");
     definition.put("finalCommercialPrioritizationEligible", false);
+    definition.put("communicationPreparationEligible", false);
     definition.set("economics", economics.deepCopy());
     definition.set("successEvidence", metrics.path("delivery").deepCopy());
     definition.set("decisionRules", metrics.deepCopy());
@@ -303,23 +327,82 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
       JsonNode architectureResult) {
     ObjectNode experience = objectMapper.createObjectNode();
     experience.put("contractVersion", "PDE_HARNESS_PLAN_V1");
-    experience.put("experienceVersion", "private-validation-v1");
-    experience.put("status", "PLANNED");
+    experience.put("experienceVersion", "agent-validation-v1");
+    experience.put("status", "AGENT_VALIDATION_PLANNED");
+    experience.put("validationMode", "MULTI_AGENT_V1");
     ObjectNode lineage = experience.putObject("lineage");
     lineage.put("cycleId", dossier.getProductDiscoveryCycle().getId());
     lineage.put("opportunityId", dossier.getProductDiscoveryOpportunity().getId());
     lineage.put("dossierId", dossier.getId());
     lineage.put("commercialPlanId", plan.getId());
-    experience.set("marketStrategy", strategy.deepCopy());
+    experience.set("marketStrategy", marketStrategyForProduct(strategy));
     experience.set("economics", economics.deepCopy());
     experience.set("metrics", metrics.deepCopy());
     experience.set("harness", architectureResult.path("productArchitecture").deepCopy());
-    experience.set("privateValidationPlan", strategy.path("privateValidationPlan").deepCopy());
+    experience.set("agentValidationPlan", agentValidationPlan(strategy));
     experience.set("productIdentity", productIdentity.contract().deepCopy());
     experience.put(
         "publicationBoundary",
-        "Planejamento e construção privada sem autorização de contato, publicação, campanha, pagamento, orçamento ou gasto.");
+        "Planejamento e homologação multiagente sem autorização de contato, publicação, campanha, pagamento, orçamento ou gasto; agentes não constituem prova de mercado.");
     return experience;
+  }
+
+  /** Converte estratégias vigentes ou históricas no único plano multiagente executável. */
+  private ObjectNode agentValidationPlan(JsonNode strategy) {
+    JsonNode current = strategy.path("agentValidationPlan");
+    JsonNode legacy = strategy.path("privateValidationPlan");
+    ObjectNode plan =
+        current instanceof ObjectNode currentObject
+            ? currentObject.deepCopy()
+            : objectMapper.createObjectNode();
+    JsonNode source = current.isObject() ? current : legacy;
+    plan.put("contractVersion", "PDE_AGENT_VALIDATION_V1");
+    copyIfMissing(plan, "hypothesis", source.path("hypothesis"));
+    copyIfMissing(plan, "prototypeObjective", source.path("prototypeObjective"));
+    copyIfMissing(plan, "purchaseScene", source.path("purchaseScene"));
+    copyIfMissing(plan, "strongestFreeAlternative", source.path("strongestFreeAlternative"));
+    copyIfMissing(plan, "prototypeAdvantage", source.path("prototypeAdvantage"));
+    JsonNode valueDelivery =
+        source.path("customerValueDelivery").isObject()
+            ? source.path("customerValueDelivery")
+            : source.path("humanValueDelivery");
+    copyIfMissing(plan, "customerValueDelivery", valueDelivery);
+    copyIfMissing(plan, "sourceMaxAgeDays", source.path("sourceMaxAgeDays"));
+    copyIfMissing(plan, "continueCriteria", source.path("continueCriteria"));
+    copyIfMissing(plan, "adjustCriteria", source.path("adjustCriteria"));
+    copyIfMissing(plan, "stopCriteria", source.path("stopCriteria"));
+    copyIfMissing(plan, "sourceRefreshRequired", source.path("sourceRefreshRequired"));
+    copyIfMissing(plan, "sourceRefreshAction", source.path("sourceRefreshAction"));
+    copyIfMissing(plan, "publicationBoundary", source.path("publicationBoundary"));
+    plan.put("trafficClass", "AGENT_VALIDATION");
+    plan.put("internalMarker", "mh_internal_test");
+    plan.putArray("requiredScenarios").add("ADHERENT").add("RECOVERY").add("SAFETY");
+    plan.putArray("requiredDevices").add("DESKTOP_1440").add("IPHONE_15_PRO").add("PIXEL_7");
+    plan.put("maxReadyResultSeconds", 600);
+    plan.put("humanEvidenceClaimed", false);
+    plan.put("commercialEvidenceClaimed", false);
+    plan.put("paymentEnabled", false);
+    plan.put("publicationAuthorized", false);
+    plan.put("campaignAuthorized", false);
+    plan.put("mediaSpendAuthorizedBrl", 0);
+    return plan;
+  }
+
+  /** Copia evidência estratégica apenas quando o contrato vigente ainda não declarou o campo. */
+  private void copyIfMissing(ObjectNode target, String field, JsonNode value) {
+    if (!target.has(field) && value != null && !value.isMissingNode() && !value.isNull()) {
+      target.set(field, value.deepCopy());
+    }
+  }
+
+  /** Remove do produto o gate humano legado sem apagar o resultado bruto auditável da tarefa. */
+  private ObjectNode marketStrategyForProduct(JsonNode strategy) {
+    ObjectNode snapshot = ((ObjectNode) strategy).deepCopy();
+    snapshot.put("contractVersion", "MARKET_STRATEGY_V4");
+    snapshot.put("status", "READY_FOR_AGENT_VALIDATION");
+    snapshot.remove("privateValidationPlan");
+    snapshot.set("agentValidationPlan", agentValidationPlan(strategy));
+    return snapshot;
   }
 
   /** Resolve a identidade nova de Atena e preserva somente o fallback das versões históricas. */
@@ -391,8 +474,17 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
     return value;
   }
 
-  /** Exige que Atena tenha liberado somente o protótipo, nunca a operação comercial. */
-  private void requirePrivateValidationReadiness(JsonNode strategy) {
+  /** Exige prontidão multiagente ou converte somente o contrato histórico completo ainda em voo. */
+  private void requireValidationReadiness(JsonNode strategy) {
+    if ("MARKET_STRATEGY_V4".equals(strategy.path("contractVersion").asText())) {
+      JsonNode plan = strategy.path("agentValidationPlan");
+      if (!"READY_FOR_AGENT_VALIDATION".equals(strategy.path("status").asText())
+          || !validAgentValidationPlan(plan)) {
+        throw new IllegalStateException(
+            "Atena não liberou um plano válido de homologação multiagente.");
+      }
+      return;
+    }
     JsonNode validationPlan = strategy.path("privateValidationPlan");
     if (!"MARKET_STRATEGY_V3".equals(strategy.path("contractVersion").asText())
         || !"READY_FOR_PRIVATE_VALIDATION".equals(strategy.path("status").asText())
@@ -409,19 +501,47 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
         || validationPlan.path("sourceMaxAgeDays").asInt(0) > 90
         || validationPlan.path("prototypeObjective").asText().isBlank()
         || !completePurchaseScene(validationPlan.path("purchaseScene"))
-        || !canonicalHumanValueDelivery(validationPlan.path("humanValueDelivery"))
+        || !canonicalCustomerValueDelivery(validationPlan.path("humanValueDelivery"))
         || validationPlan.path("strongestFreeAlternative").asText().isBlank()
         || validationPlan.path("prototypeAdvantage").asText().isBlank()
         || validationPlan.path("publicationBoundary").asText().isBlank()
         || (validationPlan.path("sourceRefreshRequired").asBoolean(false)
             && validationPlan.path("sourceRefreshAction").asText().isBlank())) {
       throw new IllegalStateException(
-          "Atena não liberou um plano válido para protótipo e duas leituras privadas.");
+          "Atena não liberou um plano histórico completo que possa ser migrado para agentes.");
     }
   }
 
-  /** Confirma que Dédalo entregou um protótipo privado limitado, observável e sem cobrança. */
-  private void requirePrivatePrototypeReadiness(JsonNode architecture) {
+  /** Valida o contrato multiagente sem confundir cenário sintético com evidência de mercado. */
+  private boolean validAgentValidationPlan(JsonNode plan) {
+    return plan.isObject()
+        && "PDE_AGENT_VALIDATION_V1".equals(plan.path("contractVersion").asText())
+        && completePurchaseScene(plan.path("purchaseScene"))
+        && canonicalCustomerValueDelivery(plan.path("customerValueDelivery"))
+        && hasText(plan, "prototypeObjective")
+        && hasText(plan, "strongestFreeAlternative")
+        && hasText(plan, "prototypeAdvantage")
+        && exactValues(plan.path("requiredScenarios"), List.of("ADHERENT", "RECOVERY", "SAFETY"))
+        && exactValues(
+            plan.path("requiredDevices"), List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7"))
+        && plan.path("maxReadyResultSeconds").asInt(0) == 600
+        && "AGENT_VALIDATION".equals(plan.path("trafficClass").asText())
+        && "mh_internal_test".equals(plan.path("internalMarker").asText())
+        && !plan.path("humanEvidenceClaimed").asBoolean(true)
+        && !plan.path("commercialEvidenceClaimed").asBoolean(true)
+        && !plan.path("paymentEnabled").asBoolean(true)
+        && !plan.path("publicationAuthorized").asBoolean(true)
+        && !plan.path("campaignAuthorized").asBoolean(true)
+        && plan.path("mediaSpendAuthorizedBrl").asInt(-1) == 0
+        && plan.path("sourceMaxAgeDays").asInt(0) >= 1
+        && plan.path("sourceMaxAgeDays").asInt(0) <= 90
+        && hasText(plan, "publicationBoundary")
+        && (!plan.path("sourceRefreshRequired").asBoolean(false)
+            || hasText(plan, "sourceRefreshAction"));
+  }
+
+  /** Confirma que Dédalo entregou um protótipo limitado, observável e sem cobrança. */
+  private void requirePrototypeReadiness(JsonNode architecture) {
     JsonNode prototype = architecture.path("privatePrototype");
     int maxValueTimeMinutes = prototype.path("maxValueTimeMinutes").asInt(0);
     if (!prototype.isObject()
@@ -447,6 +567,14 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
         && values.containsAll(PRIVATE_VALIDATION_SIGNALS);
   }
 
+  /** Compara cenários e dispositivos como conjuntos exatos, sem duplicidade ou valor extra. */
+  private boolean exactValues(JsonNode values, List<String> expected) {
+    if (!values.isArray() || values.size() != expected.size()) return false;
+    List<String> actual = new java.util.ArrayList<>();
+    values.forEach(value -> actual.add(value.asText()));
+    return actual.stream().distinct().count() == expected.size() && actual.containsAll(expected);
+  }
+
   /** Exige taxa integral porque cada uma das duas leituras representa uma pessoa. */
   private boolean unitRate(JsonNode plan, String field) {
     return plan.path(field).isNumber() && Double.compare(plan.path(field).asDouble(), 1d) == 0;
@@ -462,8 +590,8 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
         && hasText(scene, "currentPaidBehavior");
   }
 
-  /** Confirma que a candidata preserva valor humano e entrega pronta sem transferir a IA. */
-  private boolean canonicalHumanValueDelivery(JsonNode delivery) {
+  /** Confirma que a candidata preserva valor ao cliente e entrega pronta sem transferir a IA. */
+  private boolean canonicalCustomerValueDelivery(JsonNode delivery) {
     return delivery.isObject()
         && delivery.path("territories").isArray()
         && !delivery.path("territories").isEmpty()

@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Responsabilidade: compor o contrato privado do sucessor com aprovações do seu próprio ciclo. */
+/** Responsabilidade: compor o contrato multiagente do sucessor com aprovações do próprio ciclo. */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -104,16 +104,22 @@ public class LearningCycleConstructionContext {
       var strategy = strategyResult.path("marketStrategicContract");
       var economics = economicsResult.path("economics");
       var architecture = architectureResult.path("productArchitecture");
+      boolean agentStrategy =
+          "MARKET_STRATEGY_V4".equals(strategy.path("contractVersion").asText())
+              && "READY_FOR_AGENT_VALIDATION".equals(strategy.path("status").asText())
+              && strategy.path("agentValidationPlan").isObject();
+      boolean historicalStrategy =
+          "MARKET_STRATEGY_V3".equals(strategy.path("contractVersion").asText())
+              && "READY_FOR_PRIVATE_VALIDATION".equals(strategy.path("status").asText())
+              && strategy.path("privateValidationPlan").isObject();
       if (!"APPROVE".equals(strategyResult.path("decision").asText())
-          || !"MARKET_STRATEGY_V3".equals(strategy.path("contractVersion").asText())
-          || !"READY_FOR_PRIVATE_VALIDATION".equals(strategy.path("status").asText())
+          || (!agentStrategy && !historicalStrategy)
           || !"APPROVE".equals(economicsResult.path("decision").asText())
           || !"PDE_PRIVATE_ECONOMICS_V1".equals(economicsResult.path("contractVersion").asText())
           || !economics.isObject()
           || economics.path("commercialSpendAuthorized").asBoolean(true)
           || !"APPROVE".equals(architectureResult.path("decision").asText())
           || !architecture.path("privatePrototype").isObject()
-          || !strategy.path("privateValidationPlan").isObject()
           || architectureTask.deliveredAt().isBefore(economicsTask.deliveredAt())
           || economicsTask.deliveredAt().isBefore(strategyTask.deliveredAt()))
         throw new IllegalStateException(
@@ -150,7 +156,11 @@ public class LearningCycleConstructionContext {
       context.set("economics", economics);
       context.set("metrics", economicsResult.path("metrics"));
       context.set("harness", architecture);
-      context.set("privateValidationPlan", strategy.path("privateValidationPlan"));
+      if (agentStrategy) {
+        context.set("strategyAgentValidationPlan", strategy.path("agentValidationPlan"));
+      } else {
+        context.set("privateValidationPlan", strategy.path("privateValidationPlan"));
+      }
       context.set("inheritedLearning", mapper.readTree(cycle.getInheritedLearningJson()));
       context.set("cycleBrief", mapper.readTree(cycle.getBriefJson()));
       if (videoBinding != null && videoBinding.receipt(cycle).isPresent())

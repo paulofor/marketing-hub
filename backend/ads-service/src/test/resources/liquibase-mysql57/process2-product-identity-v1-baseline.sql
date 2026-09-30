@@ -80,9 +80,14 @@ CREATE TABLE product (
     internal_name VARCHAR(191) NULL,
     product_type_id BIGINT NULL,
     product_type VARCHAR(191) NULL,
+    validation_definition_version VARCHAR(191) NULL,
     validation_definition_json LONGTEXT NULL,
     pde_experience_json LONGTEXT NULL,
     commercial_notes LONGTEXT NULL,
+    commercial_status VARCHAR(32) NULL,
+    automatic_execution_enabled TINYINT(1) NOT NULL DEFAULT 0,
+    automatic_execution_changed_at DATETIME(6) NULL,
+    automatic_execution_changed_by VARCHAR(191) NULL,
     updated_at DATETIME(6) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -95,6 +100,48 @@ CREATE TABLE opportunity_dossier (
     id BIGINT NOT NULL PRIMARY KEY,
     product_discovery_cycle_id BIGINT NOT NULL,
     created_product_id BIGINT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE opportunity_evidence (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    dossier_id BIGINT NOT NULL,
+    source_url VARCHAR(1000) NOT NULL,
+    summary LONGTEXT NOT NULL,
+    created_by VARCHAR(191) NOT NULL,
+    created_at DATETIME(6) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE business_process_activity_instance (
+    id BIGINT NOT NULL PRIMARY KEY,
+    source_reference VARCHAR(200) NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    updated_at DATETIME(6) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE agent_task (
+    id BIGINT NOT NULL PRIMARY KEY,
+    status VARCHAR(30) NOT NULL,
+    source_reference VARCHAR(200) NULL,
+    title VARCHAR(160) NOT NULL,
+    description LONGTEXT NOT NULL,
+    updated_at DATETIME(6) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE product_process_run_v1 (
+    id BIGINT NOT NULL PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    process_definition_id BIGINT NOT NULL,
+    chain_definition_id BIGINT NOT NULL,
+    learning_cycle_id BIGINT NULL,
+    scope_key VARCHAR(64) NOT NULL,
+    source_reference VARCHAR(255) NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    reason TEXT NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+    last_reconciled_at DATETIME(6) NOT NULL,
+    finished_at DATETIME(6) NULL,
+    revision BIGINT NOT NULL,
+    UNIQUE KEY uk_product_process_run_scope (scope_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO business_process_definition (
@@ -154,15 +201,47 @@ INSERT INTO product_type_definition (id, code, name, internal_name, status) VALU
 
 INSERT INTO product (
     id, name, slug, internal_name, product_type_id, product_type,
-    validation_definition_json, pde_experience_json, commercial_notes, updated_at
+    validation_definition_version, validation_definition_json, pde_experience_json,
+    commercial_notes, commercial_status, automatic_execution_enabled,
+    automatic_execution_changed_at, automatic_execution_changed_by, updated_at
 ) VALUES
-    (10, 'Mira', 'mira', 'Mira', 2, 'Produto de Inteligência Artificial', '{}', '{}', 'Produto existente.', UTC_TIMESTAMP(6)),
+    (10, 'Mira', 'mira', 'Mira', 2, 'Produto de Inteligência Artificial',
+     'PDE_AGENT_VALIDATED_V1', '{}', '{}', 'Produto existente.', 'ATIVO', 0,
+     UTC_TIMESTAMP(6), 'fixture', UTC_TIMESTAMP(6)),
     (11, 'Decisão de look para uma ocasião específica · PDE planejado #46', 'pde-planejado-46',
      'Decisão de look para uma ocasião específica · PDE planejado #46', 1,
-     'Produto Digital Especializado', '{}', '{}', 'Materialização provisória.', UTC_TIMESTAMP(6));
+     'Produto Digital Especializado', 'PDE_PRIVATE_VALIDATION_V1',
+     '{"privateValidationPlan":{"minimumIndependentReadings":2},"productIdentity":{"contractVersion":"LEGACY"}}',
+     '{"contractVersion":"PDE_HARNESS_PLAN_V1","experienceVersion":"private-validation-v1","lineage":{"cycleId":71,"dossierId":46,"opportunityId":66,"commercialPlanId":34},"economics":{"offerPriceBrl":79,"variableCostPerSaleBrl":24,"privateReadingsTarget":2,"commercialSpendAuthorized":false},"privateValidationPlan":{"minimumIndependentReadings":2},"productIdentity":{"contractVersion":"LEGACY"}}',
+     'Materialização provisória.', 'PLANNED', 1, UTC_TIMESTAMP(6), 'fixture', UTC_TIMESTAMP(6));
 
 INSERT INTO product_alias (product_id, alias) VALUES (10, 'Mira IA');
 INSERT INTO business_process_independent_execution (id, source_reference)
 VALUES (32, 'product-discovery-cycle:71');
 INSERT INTO opportunity_dossier (id, product_discovery_cycle_id, created_product_id)
 VALUES (46, 71, 11);
+
+INSERT INTO business_process_activity_instance (id, source_reference, status, updated_at)
+VALUES (414, 'product:11@private-validation-v1', 'PENDING', UTC_TIMESTAMP(6));
+
+INSERT INTO agent_task (id, status, source_reference, title, description, updated_at)
+VALUES (
+    534,
+    'PENDING',
+    'product:11@private-validation-v1',
+    'Construir jornada privada de valor · Alcyone',
+    'Entregar jornada privada ainda vinculada ao contrato humano legado.',
+    UTC_TIMESTAMP(6)
+);
+
+INSERT INTO product_process_run_v1 (
+    id, product_id, process_definition_id, chain_definition_id, learning_cycle_id,
+    scope_key, source_reference, status, reason, updated_at, last_reconciled_at,
+    finished_at, revision
+) VALUES (
+    26, 11, 84, 22, NULL,
+    '92d6b26c657d64c1a507a020dcaf2bdbc6497b189f3aa1a3ae58cdf8cac4a1c5',
+    'product:11@private-validation-v1', 'WAITING_ACTIVITY',
+    'Atividade aguardando execução ou liberação pelo backend.',
+    UTC_TIMESTAMP(6), UTC_TIMESTAMP(6), NULL, 1
+);

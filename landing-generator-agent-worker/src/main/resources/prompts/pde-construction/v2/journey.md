@@ -6,7 +6,7 @@ pessoa deve perceber facilidade e valor no resultado, não complexidade técnica
 
 Use exclusivamente a identidade em `TASK_CONTEXT.taskTarget` e o contrato aprovado estruturado em
 `TASK_CONTEXT.taskTarget.pdeContext`. Nesse contrato, `marketStrategy` contém público, dor e momento;
-`harness` contém entrada, jornada, protótipo e limites; `economics`, `privateValidationPlan`,
+`harness` contém entrada, jornada, protótipo e limites; `economics`, `agentValidationPlan`,
 `metrics` e `publicationBoundary` preservam os gates. `researchIntelligence` é apoio opcional e sua
 ausência não bloqueia a atividade quando `pdeContext` está completo. Não reutilize nomes,
 quantidades, formato ou entregáveis de outro produto. Compare exatamente três formas de entregar o
@@ -24,10 +24,11 @@ A jornada deve:
 - manter checkout em `SIMULATED_NO_CHARGE`, apenas como intenção simulada e sem cobrança;
 - permanecer privada, sem publicação, campanha, contato em massa ou gasto.
 
-Retorne `READY` quando o contrato da jornada estiver completo e puder ser materializado para duas
-pessoas distintas. Não exija leituras humanas já realizadas: elas pertencem às atividades
-posteriores e não podem bloquear o desenho da jornada. Caso contrário, retorne `BLOCKED` e descreva
-a menor correção causal necessária.
+Retorne `READY` quando o contrato da jornada estiver completo e puder ser homologado nos cenários
+multiagente `ADHERENT`, `RECOVERY` e `SAFETY`, em desktop, iPhone e Pixel. Não proponha recrutamento,
+convite, leitura privada, opinião solicitada nem checkout por pessoa fictícia. Agentes comprovam
+prontidão; somente comportamento voluntário e venda reconciliada podem comprovar mercado. Caso
+contrário, retorne `BLOCKED` e descreva a menor correção causal necessária.
 
 ## Contexto da tarefa
 
@@ -37,6 +38,7 @@ a jornada é fornecer referências autorizadas, personalizar, produzir, revisar 
 não imponha um webapp com IA ou uma jornada de sete dias. Nos demais percursos, preserve o resultado
 comprado e os critérios próprios. Divergência com `taskTarget.pdeContext` bloqueia para conciliar
 o contrato; nunca resolva silenciosamente usando outra versão. Aponte quantidade, limites e a
-evidência esperada de cada atividade. Não dispense qualidade, privacidade ou aprovações humanas.
+evidência esperada de cada atividade. Não dispense qualidade, privacidade nem a autorização
+comercial explícita que continua posterior à homologação.
 
 {{TASK_CONTEXT}}

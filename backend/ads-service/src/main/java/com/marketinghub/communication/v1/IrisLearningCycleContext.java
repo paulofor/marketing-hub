@@ -182,9 +182,10 @@ public class IrisLearningCycleContext {
           lineage.path(key).asLong() > 0 && lineage.path(key).asLong() < technicalId,
           "Planejamento posterior exige nova homologação.");
     var strategy = pde.path("marketStrategy");
+    String strategyVersion = strategy.path("contractVersion").asText();
     require(
-        "MARKET_STRATEGY_V3".equals(strategy.path("contractVersion").asText()),
-        "Estratégia privada V3 ausente.");
+        Set.of("MARKET_STRATEGY_V3", "MARKET_STRATEGY_V4").contains(strategyVersion),
+        "Estratégia governada ausente.");
     var strategyReference =
         Map.<String, Object>of(
             "availability",
@@ -198,7 +199,7 @@ public class IrisLearningCycleContext {
             "strategistTaskId",
             lineage.path("strategyTaskId").asLong(),
             "contractVersion",
-            "MARKET_STRATEGY_V3",
+            strategyVersion,
             "contentHash",
             sha(json.writeValueAsString(strategy)),
             "contract",

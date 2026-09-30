@@ -8160,3 +8160,25 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   uso, credencial e login; a matriz 3 × 3 reproduz seis falhas recuperáveis e exige contraste AA,
   teclado, foco, zoom de 200%, movimento reduzido e área útil móvel. O gate do worker recusa a
   aprovação de Alcyone se qualquer uma dessas provas estiver ausente, sem alterar Mira ou Vega.
+
+## LOOP-PDE-RUNTIME-PUBLICADO-DIVERGE-DO-ACEITO — 30/09/2026
+
+- **Evidência confirmada:** depois do merge `d5e5f1c` publicar `alcyone-private-v2` com diagnóstico
+  `UP`, o banco ainda projetava `privatePrototypeAcceptance.prototypeVersion =
+  alcyone-private-v1` e o commit técnico `f5ad4c7`. A tarefa #571 recebeu essa versão antiga no
+  `TASK_CONTEXT`, embora o runtime e o contrato público já comprovassem a v2.
+- **Causa-raiz:** a implantação do protótipo e a aceitação persistida evoluíam por autoridades
+  separadas. Dédalo podia concluir o acesso, mas seu callback não reconciliava a identidade
+  executável; o próximo gate lia o JSON histórico e podia reprovar a versão saudável ou testar a
+  versão errada.
+- **Alternativas avaliadas:** alterar somente o JSON de Alcyone resolve a ocorrência e mantém a
+  recorrência; um comando administrativo cria auditoria, mas torna o pipeline dependente de uma
+  pessoa; reconciliar no callback `READY` de acesso, consultando diagnóstico e contrato do mesmo
+  runtime antes de liberar a homologação, fecha a causa sistêmica. A terceira alternativa foi
+  adotada, com migração idempotente apenas para reparar a ocorrência já concluída.
+- **Correção e prevenção:** o backend agora exige HTTPS, identidade de produto, versão única,
+  imagem e commit coerentes, consentimento versionado, exatamente cinco sinais, os seis estados de
+  recuperação e pagamento, publicação, mídia e provider desligados. Somente então troca
+  atomicamente a versão aceita e a evidência técnica. Testes de contrato recusam sinal extra, URL
+  insegura, imagem divergente e callback sem `READY`; a homologação de Psique continua posterior e
+  independente, portanto reconciliação de identidade não equivale a aprovação funcional.

@@ -1,0 +1,107 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-30-alcyone-runtime-acceptance-v2
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT IF(COUNT(*)=1,1,0)
+              FROM product
+              WHERE id=11
+                AND slug='pde-planejado-46'
+                AND internal_name='Alcyone'
+                AND commercial_status='PLANNED'
+                AND validation_definition_version='PDE_AGENT_VALIDATION_V1'
+                AND JSON_VALID(validation_definition_json)=1
+                AND JSON_VALID(pde_experience_json)=1
+                AND JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json,'$.privatePrototypeAcceptance.status'))='READY'
+                AND JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json,'$.privatePrototypeAcceptance.prototypeVersion')) IN ('alcyone-private-v1','alcyone-private-v2')
+                AND JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json,'$.privatePrototypeAcceptance.privateAccessUrl'))='https://alcyone.digicomdigital.com.br'
+                AND JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json,'$.privatePrototypeAcceptance.status'))='READY'
+                AND JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json,'$.privatePrototypeAcceptance.prototypeVersion')) IN ('alcyone-private-v1','alcyone-private-v2')
+                AND JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json,'$.privatePrototypeAcceptance.privateAccessUrl'))='https://alcyone.digicomdigital.com.br'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product
+              SET validation_definition_json = JSON_SET(
+                    validation_definition_json,
+                    '$.privatePrototypeAcceptance.status', 'READY',
+                    '$.privatePrototypeAcceptance.prototypeVersion', 'alcyone-private-v2',
+                    '$.privatePrototypeAcceptance.privateAccessUrl', 'https://alcyone.digicomdigital.com.br',
+                    '$.privatePrototypeAcceptance.instrumentationReference', 'PDE_AGENT_VALIDATION_RUNTIME_V1:8f1e9e95d3bfc470d14a053477a4379b161c8e24207cb56d59b8c8831bb67e63',
+                    '$.privatePrototypeAcceptance.acceptanceEvidenceReference', 'runtime-probe:d5e5f1c111b28b648a6ff3ab2f1996ca83b0e42f',
+                    '$.privatePrototypeAcceptance.acceptedAt', '2026-09-30T10:17:20Z',
+                    '$.privatePrototypeAcceptance.runtimeReconciliationVersion', 'PDE_AGENT_VALIDATION_RUNTIME_V1',
+                    '$.privatePrototypeAcceptance.runtimeCommitSha', 'd5e5f1c111b28b648a6ff3ab2f1996ca83b0e42f',
+                    '$.privatePrototypeAcceptance.runtimeSourceSha256', '8f1e9e95d3bfc470d14a053477a4379b161c8e24207cb56d59b8c8831bb67e63',
+                    '$.privatePrototypeAcceptance.runtimeImage', 'ghcr.io/paulofor/pde-platform-frontend-alcyone:d5e5f1c111b28b648a6ff3ab2f1996ca83b0e42f',
+                    '$.privatePrototypeAcceptance.runtimeDeployedAt', '2026-09-30T10:13:06Z',
+                    '$.privatePrototypeAcceptance.intakeConsentVersion', 'ALCYONE_AGENT_INTAKE_CONSENT_V1',
+                    '$.privatePrototypeAcceptance.privateAccessConfirmed', JSON_EXTRACT('true','$'),
+                    '$.privatePrototypeAcceptance.paymentEnabled', JSON_EXTRACT('false','$'),
+                    '$.privatePrototypeAcceptance.published', JSON_EXTRACT('false','$'),
+                    '$.privatePrototypeAcceptance.mediaSpendBrl', 0,
+                    '$.privatePrototypeAcceptance.eventSource', 'FIRST_PARTY_EVENTS',
+                    '$.privatePrototypeAcceptance.testMarker', 'AGENT_VALIDATION',
+                    '$.technicalDeploymentEvidence', JSON_OBJECT(
+                      'contractVersion', 'PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1',
+                      'httpStatus', 200,
+                      'observedAt', '2026-09-30T10:17:20Z',
+                      'diagnosticSnapshot', JSON_OBJECT(
+                        'status', 'UP',
+                        'surface', 'pde-platform-frontend-alcyone',
+                        'productId', 11,
+                        'productSlug', 'pde-planejado-46',
+                        'version', 'alcyone-private-v2',
+                        'publicUrl', 'https://alcyone.digicomdigital.com.br',
+                        'experienceVersion', 'alcyone-private-v2',
+                        'image', 'ghcr.io/paulofor/pde-platform-frontend-alcyone:d5e5f1c111b28b648a6ff3ab2f1996ca83b0e42f',
+                        'imageVersionId', 'alcyone-private-v2',
+                        'imageTag', 'd5e5f1c111b28b648a6ff3ab2f1996ca83b0e42f',
+                        'commitSha', 'd5e5f1c111b28b648a6ff3ab2f1996ca83b0e42f',
+                        'frontendSourceSha256', '8f1e9e95d3bfc470d14a053477a4379b161c8e24207cb56d59b8c8831bb67e63',
+                        'deployedAt', '2026-09-30T10:13:06Z'
+                      )
+                    )
+                  ),
+                  pde_experience_json = JSON_SET(
+                    pde_experience_json,
+                    '$.privatePrototypeAcceptance.status', 'READY',
+                    '$.privatePrototypeAcceptance.prototypeVersion', 'alcyone-private-v2',
+                    '$.privatePrototypeAcceptance.privateAccessUrl', 'https://alcyone.digicomdigital.com.br',
+                    '$.privatePrototypeAcceptance.instrumentationReference', 'PDE_AGENT_VALIDATION_RUNTIME_V1:8f1e9e95d3bfc470d14a053477a4379b161c8e24207cb56d59b8c8831bb67e63',
+                    '$.privatePrototypeAcceptance.acceptanceEvidenceReference', 'runtime-probe:d5e5f1c111b28b648a6ff3ab2f1996ca83b0e42f',
+                    '$.privatePrototypeAcceptance.acceptedAt', '2026-09-30T10:17:20Z',
+                    '$.privatePrototypeAcceptance.runtimeReconciliationVersion', 'PDE_AGENT_VALIDATION_RUNTIME_V1',
+                    '$.privatePrototypeAcceptance.runtimeCommitSha', 'd5e5f1c111b28b648a6ff3ab2f1996ca83b0e42f',
+                    '$.privatePrototypeAcceptance.runtimeSourceSha256', '8f1e9e95d3bfc470d14a053477a4379b161c8e24207cb56d59b8c8831bb67e63',
+                    '$.privatePrototypeAcceptance.runtimeImage', 'ghcr.io/paulofor/pde-platform-frontend-alcyone:d5e5f1c111b28b648a6ff3ab2f1996ca83b0e42f',
+                    '$.privatePrototypeAcceptance.runtimeDeployedAt', '2026-09-30T10:13:06Z',
+                    '$.privatePrototypeAcceptance.intakeConsentVersion', 'ALCYONE_AGENT_INTAKE_CONSENT_V1',
+                    '$.privatePrototypeAcceptance.privateAccessConfirmed', JSON_EXTRACT('true','$'),
+                    '$.privatePrototypeAcceptance.paymentEnabled', JSON_EXTRACT('false','$'),
+                    '$.privatePrototypeAcceptance.published', JSON_EXTRACT('false','$'),
+                    '$.privatePrototypeAcceptance.mediaSpendBrl', 0,
+                    '$.privatePrototypeAcceptance.eventSource', 'FIRST_PARTY_EVENTS',
+                    '$.privatePrototypeAcceptance.testMarker', 'AGENT_VALIDATION'
+                  ),
+                  updated_at = UTC_TIMESTAMP(6)
+              WHERE id=11
+                AND slug='pde-planejado-46'
+                AND internal_name='Alcyone'
+                AND commercial_status='PLANNED'
+                AND validation_definition_version='PDE_AGENT_VALIDATION_V1'
+                AND JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json,'$.privatePrototypeAcceptance.prototypeVersion')) IN ('alcyone-private-v1','alcyone-private-v2');
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;

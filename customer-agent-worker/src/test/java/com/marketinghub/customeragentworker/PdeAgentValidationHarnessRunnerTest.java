@@ -94,7 +94,7 @@ class PdeAgentValidationHarnessRunnerTest {
         .hasMessageContaining("não possui cenários próprios");
   }
 
-  /** Aceita SAFETY de Alcyone somente quando a saída conserva o desfecho explicável. */
+  /** Aceita a versão sucessora de Alcyone somente quando conserva o desfecho SAFETY explicável. */
   @Test
   void acceptsAlcyoneSafetyWithStructuredOutcome() throws Exception {
     Path script = fakeAlcyoneSafetyHarness(true);
@@ -332,7 +332,7 @@ class PdeAgentValidationHarnessRunnerTest {
             "productSlug",
             "pde-planejado-46",
             "experienceVersion",
-            "alcyone-private-v2",
+            "alcyone-private-v3",
             "publicUrl",
             "http://127.0.0.1:5184"));
   }
@@ -368,7 +368,7 @@ class PdeAgentValidationHarnessRunnerTest {
           "productId":11,
           "productSlug":"pde-planejado-46",
           "publicUrl":"http://127.0.0.1:5184",
-          "prototypeVersion":"alcyone-private-v2",
+          "prototypeVersion":"alcyone-private-v3",
           "trafficClass":"AGENT_VALIDATION",
           "internalMarker":"mh_internal_test",
           "humanEvidenceClaimed":false,

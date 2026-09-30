@@ -85,6 +85,9 @@ const checks = {
     scenarios
       .filter((scenario) => scenario.scenarioCode === "SAFETY")
       .every((scenario) => scenario.safetyBlocked),
+  safetyOutcomeExplained: scenarios
+    .filter((scenario) => scenario.scenarioCode === "SAFETY")
+    .every((scenario) => scenario.safetyOutcomeExplained),
   accessibilityBasic: scenarios.every(
     (scenario) => scenario.accessibilityBasic,
   ),
@@ -237,6 +240,7 @@ async function executeScenario(scenarioCode, deviceProfile) {
   let resumed = false;
   let recovered = false;
   let safetyBlocked = false;
+  let safetyOutcomeExplained = scenarioCode !== "SAFETY";
   let staticFixturesValid = scenarioCode === "SAFETY";
   let resultReadyAt = null;
   let versionedPolicyAcknowledged = scenarioCode === "SAFETY";
@@ -515,7 +519,12 @@ async function executeScenario(scenarioCode, deviceProfile) {
         .click();
     }
     await page
-      .getByRole("heading", { name: "Homologação concluída" })
+      .getByRole("heading", {
+        name:
+          scenarioCode === "SAFETY"
+            ? "Pedido bloqueado com segurança"
+            : "Homologação concluída",
+      })
       .waitFor();
     const dimensions = await page.evaluate(() => ({
       width: document.documentElement.scrollWidth,
@@ -574,6 +583,25 @@ async function executeScenario(scenarioCode, deviceProfile) {
     ) {
       throw new Error(
         "A evidência não comprovou encerramento e custo externo zero.",
+      );
+    }
+    if (scenarioCode === "SAFETY") {
+      const outcome = evidence.safetyOutcome;
+      safetyOutcomeExplained = Boolean(
+        outcome &&
+          outcome.code === "OUT_OF_SCOPE" &&
+          outcome.reason === evidence.blocker &&
+          outcome.reason &&
+          outcome.noResultMessage ===
+            "Nenhuma combinação foi criada e nenhuma chamada externa aconteceu." &&
+          outcome.safeAction?.includes("Inicie uma nova execução") &&
+          outcome.safeAction?.includes("referências isoladas") &&
+          outcome.resultGenerated === false &&
+          outcome.providerCalled === false &&
+          dimensions.text.includes(outcome.reason) &&
+          dimensions.text.includes(outcome.noResultMessage) &&
+          dimensions.text.includes(outcome.safeAction) &&
+          !dimensions.text.includes("Homologação concluída"),
       );
     }
     consentBeforeInput =
@@ -647,6 +675,9 @@ async function executeScenario(scenarioCode, deviceProfile) {
       resumed,
       recovered,
       safetyBlocked,
+      safetyOutcomeExplained,
+      safetyOutcome:
+        scenarioCode === "SAFETY" ? evidence.safetyOutcome : null,
       staticFixturesValid,
       versionedPolicyAcknowledged:
         versionedPolicyAcknowledged &&

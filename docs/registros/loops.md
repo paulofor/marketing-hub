@@ -8190,3 +8190,23 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   atômica e reafirmar todos os bloqueios comerciais. O teste MySQL 5.7 agora reproduz exatamente o
   formato histórico de produção — aceitação v1 somente na definição — antes de validar aplicação,
   reaplicação e rollback.
+
+## LOOP-ALCYONE-SAFETY-PERDE-CAUSA-AO-CONCLUIR — 30/09/2026
+
+- **Evidência confirmada:** a tarefa #577 comprovou que o bloqueio de segurança acontecia antes do
+  provider, mas a captura final mostrava apenas `Homologação concluída`. O backend preservava
+  `status=BLOCKED`, `blocker` e `safetyBlockedAt`; o frontend avaliava `finished` antes de
+  `BLOCKED`, e o harness reduzia o desfecho a `safetyBlocked=true`.
+- **Causa-raiz histórica:** a conclusão era tratada como apresentação universal, embora SAFETY
+  precise conservar causa, ausência de resultado e orientação depois do encerramento. O teste
+  anterior verificava apenas o bloqueio antes do clique e a tela genérica depois dele, tornando a
+  perda de informação parte do próprio contrato de regressão.
+- **Alternativas avaliadas:** liberar o gate porque não houve provider preservaria uma interface
+  enganosa; enriquecer apenas o relatório do agente manteria a tela real divergente; projetar um
+  desfecho seguro no backend e exigi-lo no frontend e no harness mantém uma única fonte auditável.
+  A terceira alternativa foi adotada.
+- **Correção e prevenção:** `safetyOutcome` passa a expor código, motivo, mensagem de nenhum
+  resultado, ação segura e flags negativas de resultado/provider. A tela final prioriza esse estado
+  sobre a conclusão genérica, a recarga o preserva e o runner rejeita aprovação baseada somente em
+  flag. Testes cobrem serviço, contrato OpenAPI, Playwright, saída do harness e os três perfis sem
+  converter a validação sintética em prova humana ou comercial.

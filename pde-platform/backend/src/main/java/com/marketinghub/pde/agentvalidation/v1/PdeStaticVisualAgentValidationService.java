@@ -44,6 +44,12 @@ public class PdeStaticVisualAgentValidationService {
     private static final String FIXTURE_CONTRACT = "PDE_STATIC_RESULT_FIXTURES_V1";
     private static final String INTAKE_CONSENT_VERSION = "ALCYONE_AGENT_INTAKE_CONSENT_V1";
     private static final String CONTINUITY_POLICY_VERSION = "ALCYONE_AGENT_CONTINUITY_V1";
+    private static final String SAFETY_OUTCOME_CODE = "OUT_OF_SCOPE";
+    private static final String SAFETY_NO_RESULT_MESSAGE =
+            "Nenhuma combinação foi criada e nenhuma chamada externa aconteceu.";
+    private static final String SAFETY_SAFE_ACTION =
+            "Inicie uma nova execução usando somente referências isoladas das peças, "
+                    + "sem foto corporal, recomendação de compra ou julgamento do corpo.";
     private static final Duration SESSION_TTL = Duration.ofMinutes(30);
     private static final Duration CONTINUITY_TTL = Duration.ofHours(24);
     private static final Set<String> SCENARIOS = Set.of("ADHERENT", "RECOVERY", "SAFETY");
@@ -478,6 +484,7 @@ public class PdeStaticVisualAgentValidationService {
                 List.copyOf(session.looks),
                 session.selectedLookId,
                 session.blocker,
+                safetyOutcome(session),
                 canonicalEvents(session),
                 session.finished,
                 session.resultPackageId,
@@ -731,6 +738,7 @@ public class PdeStaticVisualAgentValidationService {
                 List.copyOf(session.looks),
                 session.selectedLookId,
                 session.blocker,
+                safetyOutcome(session),
                 canonicalEvents(session),
                 "SIMULATED_NO_CHARGE",
                 session.finished,
@@ -745,6 +753,23 @@ public class PdeStaticVisualAgentValidationService {
                 milestones(session),
                 0,
                 0);
+    }
+
+    /** Projeta causa, ausência de resultado e ação segura somente para um bloqueio comprovado. */
+    private SafetyOutcome safetyOutcome(StoredSession session) {
+        if (!"SAFETY".equals(session.scenarioCode)
+                || !"BLOCKED".equals(session.status)
+                || session.safetyBlockedAt == null
+                || trim(session.blocker).isEmpty()) {
+            return null;
+        }
+        return new SafetyOutcome(
+                SAFETY_OUTCOME_CODE,
+                session.blocker,
+                SAFETY_NO_RESULT_MESSAGE,
+                SAFETY_SAFE_ACTION,
+                false,
+                false);
     }
 
     /** Emite uma credencial opaca de alta entropia sem significado de negócio. */
@@ -966,6 +991,7 @@ public class PdeStaticVisualAgentValidationService {
             List<LookCard> looks,
             String selectedLookId,
             String blocker,
+            SafetyOutcome safetyOutcome,
             List<String> events,
             String checkoutMode,
             boolean finished,
@@ -1019,6 +1045,7 @@ public class PdeStaticVisualAgentValidationService {
             List<LookCard> looks,
             String selectedLookId,
             String blocker,
+            SafetyOutcome safetyOutcome,
             List<String> events,
             boolean finished,
             String resultPackageId,
@@ -1038,6 +1065,15 @@ public class PdeStaticVisualAgentValidationService {
             Map<String, Object> sideEffects,
             boolean humanEvidenceClaimed,
             boolean commercialEvidenceClaimed) {}
+
+    /** Desfecho seguro e explicável de um pedido recusado antes de produzir resultado. */
+    public record SafetyOutcome(
+            String code,
+            String reason,
+            String noResultMessage,
+            String safeAction,
+            boolean resultGenerated,
+            boolean providerCalled) {}
 
     /** Mensagem e recuperação determinística de um estado de falha previsto. */
     public record ErrorStateContract(String code, String message, String recoveryAction) {}

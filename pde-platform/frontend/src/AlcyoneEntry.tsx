@@ -34,6 +34,14 @@ type Session = {
   looks: LookCard[];
   selectedLookId?: string | null;
   blocker?: string | null;
+  safetyOutcome?: {
+    code: string;
+    reason: string;
+    noResultMessage: string;
+    safeAction: string;
+    resultGenerated: boolean;
+    providerCalled: boolean;
+  } | null;
   events: string[];
   checkoutMode: string;
   finished: boolean;
@@ -505,7 +513,36 @@ function AlcyonePrototype() {
         </p>
       )}
 
-      {session.finished ? (
+      {session.status === "BLOCKED" && session.safetyOutcome ? (
+        <section
+          className="alcyone-panel alcyone-blocked"
+          data-testid="safety-outcome"
+        >
+          <p className="alcyone-kicker">LIMITE PROTEGIDO</p>
+          <h2>
+            {session.finished
+              ? "Pedido bloqueado com segurança"
+              : "Este pedido ficou fora do protótipo"}
+          </h2>
+          <p role="alert">{session.safetyOutcome.reason}</p>
+          <p data-testid="safety-no-result">
+            {session.safetyOutcome.noResultMessage}
+          </p>
+          <div className="alcyone-safety-action">
+            <strong>Próxima ação segura</strong>
+            <p>{session.safetyOutcome.safeAction}</p>
+          </div>
+          {session.finished ? (
+            <p className="alcyone-zero">
+              Evidência técnica preservada · sem prova humana ou comercial
+            </p>
+          ) : (
+            <button disabled={working} onClick={completeScenario}>
+              Concluir cenário de segurança
+            </button>
+          )}
+        </section>
+      ) : session.finished ? (
         <section className="alcyone-panel alcyone-complete">
           <p className="alcyone-check">✓</p>
           <h2>Homologação concluída</h2>
@@ -516,18 +553,6 @@ function AlcyonePrototype() {
           <p className="alcyone-zero">
             0 chamadas pagas · R$ 0,00 de mídia · nenhuma cobrança
           </p>
-        </section>
-      ) : session.status === "BLOCKED" ? (
-        <section className="alcyone-panel alcyone-blocked">
-          <p className="alcyone-kicker">LIMITE PROTEGIDO</p>
-          <h2>Este pedido ficou fora do protótipo</h2>
-          <p role="alert">{session.blocker}</p>
-          <p>
-            Nenhuma combinação foi criada e nenhuma chamada externa aconteceu.
-          </p>
-          <button disabled={working} onClick={completeScenario}>
-            Concluir cenário de segurança
-          </button>
         </section>
       ) : session.status === "READY" ? (
         <>

@@ -18,3 +18,15 @@ O preprint “Shopping by algorithm: How agentic AI deploys human heuristics as 
 **Limites:** é preprint, usa ambiente controlado e não mede consumidores reais nem vendas.
 
 Fonte: https://arxiv.org/abs/2609.28372
+
+## 2. Consentimento pode existir sem confiança
+
+Pesquisa publicada em 29/09/2026, com 11.000 consumidores em sete mercados, encontrou uma diferença entre aceitar permissões de IA e se sentir confortável com elas: 7% relataram conforto total, enquanto 17% aceitariam mesmo com desconforto.
+
+**Aplicação possível:** usar permissões mínimas e contextuais, solicitadas no momento de uso, com recusa e revogação simples.
+
+**Experimento:** comparar autorização ampla no início com autorização progressiva por finalidade, medindo conclusão, abandono, recusas, revogações e confiança percebida.
+
+**Limites:** pesquisa proprietária, sem Brasil e baseada em respostas declaradas.
+
+Fonte: https://usercentrics.com/press/resigned-consent/

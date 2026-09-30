@@ -1957,6 +1957,215 @@ class AgentTaskServiceTest {
     verify(repository).save(exhausted);
   }
 
+  /** Impede que uma imagem antiga de Têmis reserve trabalho durante a troca coordenada. */
+  @Test
+  void requiresVersionedContractForTemisBpmQueue() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent temis = agent(6L, "meta-ad-approver", "Têmis");
+    when(agents.findByAgentKey("meta-ad-approver")).thenReturn(Optional.of(temis));
+
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask(
+                    "meta-ad-approver",
+                    "pde-construction-approval",
+                    "commercialIntegrityReview",
+                    null))
+        .isEmpty();
+
+    verify(repository, never())
+        .findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "meta-ad-approver", "WORK", "IN_PROGRESS");
+    verify(repository, never()).save(any());
+  }
+
+  /** Retoma uma única vez a lease legada de Têmis sem saída, auditoria ou consumo. */
+  @Test
+  void recoversStaleLegacyTemisLeaseWithVersionedContract() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent temis = agent(6L, "meta-ad-approver", "Têmis");
+    Instant now = Instant.parse("2026-09-30T22:15:00Z");
+    BusinessProcessDefinition process = process("PUBLISHED", "Têmis");
+    process.setProcessCode("pde-construction-approval");
+    AgentTask orphan =
+        processTask(587L, temis, process, "commercialIntegrityReview", "IN_PROGRESS");
+    orphan.setReceivedAt(now.minusSeconds(600));
+    orphan.setUpdatedAt(now.minusSeconds(600));
+    when(agents.findByAgentKey("meta-ad-approver")).thenReturn(Optional.of(temis));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "meta-ad-approver", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(orphan));
+    when(repository.save(orphan)).thenReturn(orphan);
+
+    AgentTaskPendingResponse recovered =
+        service(repository, agents, Clock.fixed(now, ZoneOffset.UTC))
+            .claimEligibleProcessTask(
+                "meta-ad-approver",
+                "pde-construction-approval",
+                "commercialIntegrityReview",
+                null,
+                "TEMIS_BPM_LEASE_V1")
+            .orElseThrow();
+
+    assertThat(recovered.taskId()).isEqualTo(587L);
+    assertThat(orphan.getStatus()).isEqualTo("IN_PROGRESS");
+    assertThat(orphan.getExecutionError()).startsWith("TEMIS_LEASE_RECOVERY_ONCE|");
+    verify(repository).save(orphan);
+  }
+
+  /** Preserva a lease de Têmis enquanto o heartbeat comprova que o modelo segue ativo. */
+  @Test
+  void doesNotRecoverTemisLeaseWithRecentHeartbeat() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent temis = agent(6L, "meta-ad-approver", "Têmis");
+    Instant now = Instant.parse("2026-09-30T22:20:00Z");
+    BusinessProcessDefinition process = process("PUBLISHED", "Têmis");
+    process.setProcessCode("pde-construction-approval");
+    AgentTask active =
+        processTask(587L, temis, process, "commercialIntegrityReview", "IN_PROGRESS");
+    when(agents.findByAgentKey("meta-ad-approver")).thenReturn(Optional.of(temis));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "meta-ad-approver", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(active));
+    CodexAgentExecutionTelemetryService telemetry = mock(CodexAgentExecutionTelemetryService.class);
+    when(telemetry.get("TEMIS_BPM", 587L))
+        .thenReturn(
+            new CodexAgentExecutionTelemetryService.Response(
+                "TEMIS_BPM",
+                587L,
+                "RUNNING",
+                81L,
+                true,
+                0L,
+                0L,
+                null,
+                null,
+                "HEARTBEAT",
+                now.minusSeconds(5),
+                now.minusSeconds(60),
+                null,
+                false));
+    AgentTaskService service = service(repository, agents, Clock.fixed(now, ZoneOffset.UTC));
+    ReflectionTestUtils.setField(service, "codexTelemetry", telemetry);
+
+    assertThat(
+            service.claimEligibleProcessTask(
+                "meta-ad-approver",
+                "pde-construction-approval",
+                "commercialIntegrityReview",
+                null,
+                "TEMIS_BPM_LEASE_V1"))
+        .isEmpty();
+
+    verify(repository, never()).save(any());
+  }
+
+  /** Bloqueia a repetição quando a telemetria de Têmis já observou saída do modelo. */
+  @Test
+  void blocksStaleTemisLeaseWhenTelemetryObservedOutput() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent temis = agent(6L, "meta-ad-approver", "Têmis");
+    Instant now = Instant.parse("2026-09-30T22:25:00Z");
+    BusinessProcessDefinition process = process("PUBLISHED", "Têmis");
+    process.setProcessCode("pde-construction-approval");
+    AgentTask interrupted =
+        processTask(587L, temis, process, "commercialIntegrityReview", "IN_PROGRESS");
+    interrupted.setExecutionMode("MODEL");
+    interrupted.setExecutionModelCode("gpt-test");
+    interrupted.setExecutionReasoningEffort("high");
+    interrupted.setExecutionAgentPrompt("Núcleo de Têmis.");
+    interrupted.setExecutionActivityPrompt("Revisar a integridade comercial.");
+    interrupted.setExecutionPrompt("Núcleo de Têmis.\n\nRevisar a integridade comercial.");
+    when(agents.findByAgentKey("meta-ad-approver")).thenReturn(Optional.of(temis));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "meta-ad-approver", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(interrupted));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "meta-ad-approver", "WORK", "PENDING"))
+        .thenReturn(List.of());
+    when(repository.save(interrupted)).thenReturn(interrupted);
+    CodexAgentExecutionTelemetryService telemetry = mock(CodexAgentExecutionTelemetryService.class);
+    when(telemetry.get("TEMIS_BPM", 587L))
+        .thenReturn(
+            new CodexAgentExecutionTelemetryService.Response(
+                "TEMIS_BPM",
+                587L,
+                "RUNNING",
+                81L,
+                false,
+                3L,
+                1024L,
+                100L,
+                20L,
+                "OUTPUT",
+                now.minusSeconds(300),
+                now.minusSeconds(600),
+                null,
+                true));
+    AgentTaskService service = service(repository, agents, Clock.fixed(now, ZoneOffset.UTC));
+    ReflectionTestUtils.setField(service, "codexTelemetry", telemetry);
+
+    assertThat(
+            service.claimEligibleProcessTask(
+                "meta-ad-approver",
+                "pde-construction-approval",
+                "commercialIntegrityReview",
+                null,
+                "TEMIS_BPM_LEASE_V1"))
+        .isEmpty();
+
+    assertThat(interrupted.getStatus()).isEqualTo("BLOCKED");
+    assertThat(interrupted.getExecutionError())
+        .startsWith("TEMIS_LEASE_RECOVERY_EXHAUSTED|")
+        .contains("cobrança duplicada");
+    verify(repository).save(interrupted);
+  }
+
+  /** Encerra a segunda interrupção depois da única retomada automática de Têmis. */
+  @Test
+  void blocksTemisLeaseAfterSingleRecoveryExpires() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent temis = agent(6L, "meta-ad-approver", "Têmis");
+    Instant now = Instant.parse("2026-09-30T22:30:00Z");
+    BusinessProcessDefinition process = process("PUBLISHED", "Têmis");
+    process.setProcessCode("pde-construction-approval");
+    AgentTask exhausted =
+        processTask(587L, temis, process, "commercialIntegrityReview", "IN_PROGRESS");
+    exhausted.setReceivedAt(now.minusSeconds(600));
+    exhausted.setUpdatedAt(now.minusSeconds(300));
+    exhausted.setExecutionError("TEMIS_LEASE_RECOVERY_ONCE|Primeira retomada interrompida.");
+    when(agents.findByAgentKey("meta-ad-approver")).thenReturn(Optional.of(temis));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "meta-ad-approver", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(exhausted));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "meta-ad-approver", "WORK", "PENDING"))
+        .thenReturn(List.of());
+    when(repository.save(exhausted)).thenReturn(exhausted);
+
+    assertThat(
+            service(repository, agents, Clock.fixed(now, ZoneOffset.UTC))
+                .claimEligibleProcessTask(
+                    "meta-ad-approver",
+                    "pde-construction-approval",
+                    "commercialIntegrityReview",
+                    null,
+                    "TEMIS_BPM_LEASE_V1"))
+        .isEmpty();
+
+    assertThat(exhausted.getStatus()).isEqualTo("BLOCKED");
+    assertThat(exhausted.getExecutionError())
+        .startsWith("TEMIS_LEASE_RECOVERY_EXHAUSTED|")
+        .contains("cobrança duplicada");
+    assertThat(exhausted.getExecutionMode()).isEqualTo("NOT_STARTED");
+    verify(repository).save(exhausted);
+  }
+
   /** Reexpõe o callback preservado que perdeu o worker sem executar o modelo novamente. */
   @Test
   void replaysOrphanedClaimedCallbackBeforeNewWork() {

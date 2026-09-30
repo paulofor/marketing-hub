@@ -3,10 +3,14 @@ package com.marketinghub.metaadapproverworker;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.net.httpserver.HttpServer;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
@@ -552,7 +556,19 @@ class CommercialBpmTaskConsumerTest {
         """
             .formatted(counter, counter));
     executable.toFile().setExecutable(true);
+    AtomicInteger audits = new AtomicInteger();
+    HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext(
+        "/api/internal/agent-tasks/",
+        exchange -> {
+          exchange.getRequestBody().readAllBytes();
+          if ("PUT".equals(exchange.getRequestMethod())) audits.incrementAndGet();
+          exchange.sendResponseHeaders(204, -1);
+          exchange.close();
+        });
+    server.start();
     MetaAdApproverProperties properties = new MetaAdApproverProperties();
+    properties.setBackendUrl("http://127.0.0.1:" + server.getAddress().getPort());
     CodexProcessSupervisor supervisor =
         new CodexProcessSupervisor(
             java.time.Duration.ofSeconds(1),
@@ -569,26 +585,104 @@ class CommercialBpmTaskConsumerTest {
             supervisor,
             2);
 
-    CommercialBpmTaskConsumer.BpmExecution execution =
-        consumer.execute(
-            Map.of(
-                "taskId",
-                273L,
-                "processCode",
-                "landing-page-generation",
-                "activityId",
-                "commercial",
-                "taskTarget",
-                Map.of("productId", 9L)));
+    try {
+      CommercialBpmTaskConsumer.BpmExecution execution =
+          consumer.execute(
+              Map.of(
+                  "taskId",
+                  273L,
+                  "processCode",
+                  "landing-page-generation",
+                  "activityId",
+                  "commercial",
+                  "taskTarget",
+                  Map.of("productId", 9L)));
 
-    org.assertj.core.api.Assertions.assertThat(execution.result().path("decision").asText())
-        .isEqualTo("APPROVED");
-    org.assertj.core.api.Assertions.assertThat(execution.usage().inputTokens()).isEqualTo(30L);
-    org.assertj.core.api.Assertions.assertThat(execution.usage().cachedInputTokens()).isEqualTo(3L);
-    org.assertj.core.api.Assertions.assertThat(execution.usage().outputTokens()).isEqualTo(5L);
-    org.assertj.core.api.Assertions.assertThat(Files.readString(counter)).isEqualTo("2");
-    Files.deleteIfExists(executable);
-    Files.deleteIfExists(counter);
+      org.assertj.core.api.Assertions.assertThat(execution.result().path("decision").asText())
+          .isEqualTo("APPROVED");
+      org.assertj.core.api.Assertions.assertThat(execution.usage().inputTokens()).isEqualTo(30L);
+      org.assertj.core.api.Assertions.assertThat(execution.usage().cachedInputTokens())
+          .isEqualTo(3L);
+      org.assertj.core.api.Assertions.assertThat(execution.usage().outputTokens()).isEqualTo(5L);
+      org.assertj.core.api.Assertions.assertThat(Files.readString(counter)).isEqualTo("2");
+      org.assertj.core.api.Assertions.assertThat(audits).hasValue(1);
+    } finally {
+      server.stop(0);
+      Files.deleteIfExists(executable);
+      Files.deleteIfExists(counter);
+    }
+  }
+
+  /** Marca telemetria como falha quando o JSON não passa pelo contrato funcional de Têmis. */
+  @Test
+  void rejectsSemanticResponseBeforeTelemetrySuccess() throws Exception {
+    Path executable = Files.createTempFile("temis-invalid-codex-", ".sh");
+    Files.writeString(
+        executable,
+        """
+        #!/bin/sh
+        output=""
+        previous=""
+        for argument in "$@"; do
+          if [ "$previous" = "--output-last-message" ]; then output="$argument"; fi
+          previous="$argument"
+        done
+        cat >/dev/null
+        printf '%s' '{"decision":"APPROVED","commercialRationale":"","evidence":[],"requiredChanges":[]}' > "$output"
+        printf '%s\n' '{"type":"turn.completed","usage":{"input_tokens":20,"cached_input_tokens":2,"output_tokens":3}}'
+        """);
+    executable.toFile().setExecutable(true);
+    AtomicReference<String> finishBody = new AtomicReference<>();
+    HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext(
+        "/",
+        exchange -> {
+          String body =
+              new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+          if (exchange.getRequestURI().getPath().endsWith("/finish")) finishBody.set(body);
+          exchange.sendResponseHeaders(204, -1);
+          exchange.close();
+        });
+    server.start();
+    MetaAdApproverProperties properties = new MetaAdApproverProperties();
+    properties.setBackendUrl("http://127.0.0.1:" + server.getAddress().getPort());
+    CodexTelemetryReporter reporter = new CodexTelemetryReporter(properties);
+    CommercialBpmTaskConsumer consumer =
+        new CommercialBpmTaskConsumer(
+            properties,
+            executable.toString(),
+            "gpt-5.6-sol",
+            "/workspace",
+            "",
+            json,
+            new CodexProcessSupervisor(
+                java.time.Duration.ofSeconds(1),
+                java.time.Duration.ofSeconds(5),
+                java.time.Duration.ofMillis(20)),
+            reporter,
+            1);
+    try {
+      assertThatThrownBy(
+              () ->
+                  consumer.execute(
+                      Map.of(
+                          "taskId",
+                          274L,
+                          "processCode",
+                          "landing-page-generation",
+                          "activityId",
+                          "commercial",
+                          "taskTarget",
+                          Map.of("productId", 9L))))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("contrato funcional");
+      org.assertj.core.api.Assertions.assertThat(finishBody.get())
+          .contains("\"success\":false", "\"eventCount\":1");
+    } finally {
+      reporter.shutdown();
+      server.stop(0);
+      Files.deleteIfExists(executable);
+    }
   }
 
   /** Preserva contexto e ausência de efeitos externos inclusive quando Têmis bloqueia. */

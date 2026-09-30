@@ -1,0 +1,120 @@
+{
+  "contractVersion": "alcyone-private-homologation.v7",
+  "processCode": "pde-private-agent-homologation",
+  "processVersion": 1,
+  "activityId": "commercialIntegrityReview",
+  "sourceReference": "product:11@agent-validation-v1",
+  "product": {
+    "id": 11,
+    "internalName": "Alcyone",
+    "commercialName": "Alcyone",
+    "slug": "pde-planejado-46",
+    "experienceVersion": "alcyone-private-v3",
+    "supersedesExperienceVersions": [
+      "alcyone-private-v2"
+    ],
+    "publicUrl": "https://alcyone.digicomdigital.com.br"
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "boundary": "Autoriza somente a retomada técnica e a homologação privada por agentes da mesma alcyone-private-v3; não autoriza participante humano, tráfego, venda, pagamento, campanha, mídia ou alegação de demanda.",
+  "operationalState": {
+    "verifiedAt": "2026-09-30",
+    "productStatus": "PLANNED",
+    "deploymentAuthorized": true,
+    "commercialPublicationAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/alcyone-private-homologation-v6.json",
+    "reason": "Recuperar com segurança a tarefa #587, órfã após a troca do container de Têmis, e impedir recorrência no rollout.",
+    "includedChanges": [
+      "Handshake TEMIS_BPM_LEASE_V1 entre backend e worker",
+      "Auditoria anterior à chamada do modelo",
+      "Heartbeat TEMIS_BPM correlacionado pelo taskId",
+      "Uma retomada somente sem saída, consumo ou custo",
+      "Bloqueio auditável de repetição insegura ou segunda interrupção"
+    ],
+    "excludedChanges": [
+      "Entrevista, convite, opinião solicitada, leitura ou piloto humano",
+      "Nova versão funcional do protótipo ou reconstrução por Dédalo",
+      "Checkout real, cobrança, publicação comercial, campanha ou mídia",
+      "Evidência de demanda, disposição a pagar, venda, receita ou margem"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "alcyone",
+    "publicUrl": "https://alcyone.digicomdigital.com.br",
+    "requiredFrontendSourceSha256": "30c6fbaaf7888629f5e05819ff3571edc39e10acd8d5757eea94478de53612a7"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "alcyone-private-v3",
+      "experienceVersion": "alcyone-private-v3",
+      "frontendSourceSha256": "30c6fbaaf7888629f5e05819ff3571edc39e10acd8d5757eea94478de53612a7"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/alcyone-private-homologation-v6.json",
+      "sha256": "915eef5cdd42e9868d6f506dc09d8fdceacdd8228731365873920d33761b505e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/alcyone-agent-validation-v7.md",
+      "sha256": "6f7cc38b435c2428d645781a6f8765db67b1da5aaa06ca7d2af9fbe24fc5dd7d",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/agenttask/AgentTaskService.java",
+      "sha256": "6b4637764be53b532ef9a6440764d5492de593a33d6530575a4929de9a74c0a7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/canonical/codex-agent-execution-telemetry-canon.v1.md",
+      "sha256": "621f3f94efaea762a095ac1578f773f29c54b661a6f9a14797946ef2f8ddf632",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/registros/loops.md",
+      "sha256": "7d93f6e666ca900b5b4869f8b4d11da12106c212739300d971d3caea38a5ef49",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Registra a evidência, a causa-raiz e a prevenção do lease órfão de Têmis na troca de container."
+    },
+    {
+      "path": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/CodexTelemetryReporter.java",
+      "sha256": "4b97be1445c9a28f26e180651922d3a0e8bca9fbf43dc8b3b622b4ce0725c8ad",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/CommercialBpmTaskConsumer.java",
+      "sha256": "3dce5a803db087eed836066a63364af9adf681b096e30b12d981533e83112d42",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/agenttask/AgentTaskServiceTest.java",
+      "sha256": "f2336669dc6164033fed3fe82f899de4d7bb6a594bf0fcc7c74926648b1a8a95",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/test/java/com/marketinghub/metaadapproverworker/CodexTelemetryReporterTest.java",
+      "sha256": "6cd963882a11f26c4e06f1a4bb265d4cf589281c9926eb2acde32775e06f0417",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/test/java/com/marketinghub/metaadapproverworker/CommercialBpmCycleIntegrationTest.java",
+      "sha256": "725a59b17bd4f49d4d7b61126f28b4e4aedf38aebdc417ccbb7a1f114def75a0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/test/java/com/marketinghub/metaadapproverworker/CommercialBpmTaskConsumerTest.java",
+      "sha256": "ce251776a06cec9b22d74d7884147e98c370467547ba29dbb7ae65255d4c4325",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/alcyone-agent-validation-v7.md"
+}

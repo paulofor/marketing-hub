@@ -9,6 +9,7 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -134,7 +135,9 @@ class CommercialBpmCycleIntegrationTest {
         """);
     assertThat(model.toFile().setExecutable(true)).isTrue();
     var callback = new AtomicReference<JsonNode>();
+    var executionAudit = new AtomicReference<JsonNode>();
     var failure = new AtomicReference<String>();
+    var versionedClaim = new AtomicBoolean();
     var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     server.createContext(
         "/api/internal/agent-tasks/",
@@ -142,7 +145,9 @@ class CommercialBpmCycleIntegrationTest {
           byte[] body = exchange.getRequestBody().readAllBytes();
           String path = exchange.getRequestURI().getPath();
           Object response = Map.of();
-          if (path.endsWith("/pending"))
+          if (path.endsWith("/pending")) {
+            versionedClaim.set(
+                exchange.getRequestURI().getQuery().contains("workerContract=TEMIS_BPM_LEASE_V1"));
             response =
                 exchange
                         .getRequestURI()
@@ -150,7 +155,9 @@ class CommercialBpmCycleIntegrationTest {
                         .contains("processCode=pde-construction-approval")
                     ? List.of(task)
                     : List.of();
-          else if (path.endsWith("/result")) callback.set(json.readTree(body));
+          } else if (path.endsWith("/execution-audit")) {
+            executionAudit.set(json.readTree(body));
+          } else if (path.endsWith("/result")) callback.set(json.readTree(body));
           else if (path.endsWith("/failure"))
             failure.set(new String(body, java.nio.charset.StandardCharsets.UTF_8));
           byte[] data = json.writeValueAsBytes(response);
@@ -172,6 +179,10 @@ class CommercialBpmCycleIntegrationTest {
               json)
           .processOne();
       assertThat(failure.get()).isNull();
+      assertThat(versionedClaim).isTrue();
+      assertThat(executionAudit.get()).isNotNull();
+      assertThat(executionAudit.get().path("promptSent").asText())
+          .contains("integridade da validação multiagente PDE v4", "experiment:91092");
       assertThat(callback.get()).isNotNull();
       assertThat(callback.get().path("executionAudit").toString())
           .contains("PDE v4", "experiment:91092");

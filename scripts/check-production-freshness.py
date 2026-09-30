@@ -17,6 +17,7 @@ from musa_pde_watchdog import publication_changed_for_frontend, supported_surfac
 DEPLOY_WORKFLOW = "Build & Deploy containers"
 CUSTOMER_AGENT_DEPLOY_WORKFLOW = "Customer Agent Worker CI/CD"
 MUSA_PDE_DEPLOY_WORKFLOW = "CI - PDE Platform Metodo MUSA"
+PUBLISHER_RECONCILER_WORKFLOW = "Reconcile automatic publishers"
 TARGET_KEYS = {"app": "app_deploy", "frontend": "frontend", "psique": "customer_agent"}
 
 
@@ -155,6 +156,19 @@ def live_deploys(
             )
         )
     return result
+
+
+def live_reconciliations_for_head(
+    payload: dict[str, Any], now: datetime, max_minutes: int, head: str
+) -> list[LiveDeploy]:
+    """Aceita somente a janela viva do reconciliador da revisão exata avaliada."""
+    return [
+        run
+        for run in live_deploys(
+            payload, now, max_minutes, PUBLISHER_RECONCILER_WORKFLOW
+        )
+        if run.sha == head
+    ]
 
 
 def find_first_relevant_change(
@@ -360,6 +374,7 @@ def main() -> int:
     parser.add_argument("--runs-json", required=True)
     parser.add_argument("--psique-runs-json", required=True)
     parser.add_argument("--musa-pde-runs-json", required=True)
+    parser.add_argument("--reconciler-runs-json", required=True)
     parser.add_argument("--grace-minutes", type=int, default=30)
     parser.add_argument("--max-deploy-minutes", type=int, default=75)
     parser.add_argument("--now", help="ISO-8601; usado por testes e auditoria")
@@ -386,6 +401,10 @@ def main() -> int:
         musa_pde_payload = json.loads(Path(args.musa_pde_runs_json).read_text())
         musa_pde_deploys = live_deploys(
             musa_pde_payload, now, args.max_deploy_minutes, MUSA_PDE_DEPLOY_WORKFLOW
+        )
+        reconciler_payload = json.loads(Path(args.reconciler_runs_json).read_text())
+        live_reconciliations = live_reconciliations_for_head(
+            reconciler_payload, now, args.max_deploy_minutes, head
         )
         targets = [
             evaluate_target(
@@ -414,7 +433,7 @@ def main() -> int:
                 head=head,
                 repo=repo,
                 detector=detector,
-                deploys=psique_deploys,
+                deploys=[*psique_deploys, *live_reconciliations],
                 now=now,
                 grace_minutes=args.grace_minutes,
             ),
@@ -427,7 +446,7 @@ def main() -> int:
                 head=head,
                 repo=repo,
                 detector=detector,
-                deploys=musa_pde_deploys,
+                deploys=[*musa_pde_deploys, *live_reconciliations],
                 now=now,
                 grace_minutes=args.grace_minutes,
             )
@@ -471,6 +490,17 @@ def main() -> int:
                     "url": run.url,
                 }
                 for run in musa_pde_deploys
+            ],
+            "live_publisher_reconciliations": [
+                {
+                    "id": run.id,
+                    "sha": run.sha,
+                    "status": run.status,
+                    "created_at": run.created_at.isoformat(),
+                    "last_progress_at": run.last_progress_at.isoformat(),
+                    "url": run.url,
+                }
+                for run in live_reconciliations
             ],
         }
         exit_code = 1 if document["overall_status"] == "STALE" else 0

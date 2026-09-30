@@ -130,6 +130,10 @@ jobs:
             -H 'Accept: application/vnd.github+json' \
             "repos/${GITHUB_REPOSITORY}/actions/workflows/pde-platform-metodo-musa-ci.yml/runs?branch=main&per_page=100" \
             > /tmp/musa-pde-deploy-runs.json
+          gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/reconcile-publishers.yml/runs?branch=main&per_page=100" \
+            > /tmp/reconciler-runs.json
 
       - id: freshness
         name: Evaluate production freshness
@@ -144,6 +148,7 @@ jobs:
             --runs-json /tmp/deploy-runs.json \
             --psique-runs-json /tmp/psique-deploy-runs.json \
             --musa-pde-runs-json /tmp/musa-pde-deploy-runs.json \
+            --reconciler-runs-json /tmp/reconciler-runs.json \
             --grace-minutes "${FRESHNESS_GRACE_MINUTES}" \
             --max-deploy-minutes "${MAX_DEPLOY_RUNTIME_MINUTES}" \
             --output /tmp/production-freshness.json

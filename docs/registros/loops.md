@@ -8253,3 +8253,42 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   os cinco workers. O teste de contrato deriva os workflows que enviam `agent-health-report` ao
   backend e falha se algum deles perder a barreira ou puder ser considerado publicado sem o job de
   deploy. A retomada permanece assíncrona e auditável, sem polling remoto ou repetição cega.
+
+## LOOP-WATCHDOG-AVALIA-ANTES-DO-DISPATCH-DE-RETOMADA — 30/09/2026
+
+- **Evidência histórica:** após o merge `92e57c57`, o Watchdog `36756247741` e o reconciliador
+  `36756247887` começaram juntos às 18:06:53. O Watchdog avaliou às 18:07:35 e marcou Psique
+  `STALE`; o reconciliador ainda estava vivo e registrou o dispatch de Psique às 18:07:53. O falso
+  incidente #5449 nasceu 18 segundos antes da prova de publicação aparecer.
+- **Causa-raiz:** o Watchdog conhecia somente os runs do publicador final. Na retomada protegida,
+  existe uma janela legítima entre o término do deploy central e o reconciliador persistir cada
+  dispatch; os dois workflows iniciam pelo mesmo evento e não possuem ordem entre si.
+- **Alternativas avaliadas:** reexecutar depois apenas limpa a ocorrência; inserir espera fixa
+  ocupa runner e continua sensível à fila; reconhecer a reconciliação viva do mesmo SHA como
+  `DEPLOYING`, encerrando a prova quando o run termina, representa o estado real sem esconder falha
+  posterior. A terceira alternativa foi adotada.
+- **Correção e prevenção:** o Watchdog consulta o workflow do reconciliador e usa somente runs vivos,
+  recentes, da `main` e capazes de cobrir a mudança pendente para Psique/PDE. Run concluído, antigo
+  ou de revisão insuficiente deixa o target `STALE`; testes reproduzem os dois lados da fronteira.
+
+## LOOP-ATESTACAO-PERDE-CONTEXTO-COMERCIAL-NA-CADEIA — 30/09/2026
+
+- **Evidência histórica:** o deploy de Psique para `92e57c57` falhou no teste
+  `composesBoundedVegaV12CommercialPromptFromAttestedEvidence`. O prompt construído a partir da v18
+  não continha `ATTESTED_REFERENCE`, a CTA nem a condição de 90 dias. A mesma suíte passava antes
+  da entrada da v18, e a falha foi reproduzida localmente sem rede ou modelo.
+- **Causa-raiz:** cada atestação recente carregava apenas sua antecessora como `FULL`, pressupondo
+  expansão recursiva. O carregador de Psique é intencionalmente direto para limitar prompt e custo;
+  assim, a sequência v18 → v17 → v16 → v12 tornou os sinais comerciais invisíveis.
+- **Alternativas avaliadas:** percorrer toda a cadeia recuperaria conteúdo com custo e risco de
+  ciclos; reescrever a v18 quebraria a imutabilidade; criar uma sucessora com sinais mínimos
+  explícitos e base atestada preserva história e limite. A terceira alternativa foi adotada.
+- **Correção e prevenção:** a v19 mantém a v18 por SHA-256 como `ATTESTED_REFERENCE` e declara
+  diretamente CTA, pagamento único, acesso sem renovação e identidade visual vigentes. O teste do
+  prompt comercial continua exigindo esses sinais e bloqueia qualquer nova atestação que volte a
+  depender de expansão implícita, antes de chamada de IA ou publicação do worker.
+- **Mesma causa confirmada em Mira:** a v13 também retirou do nível direto prova do produto,
+  controle estático e vídeo, deixando zero referência atestada. A v14 preserva a v13 por hash e
+  recoloca as três mídias somente como metadados e resumos limitados; a suíte de segregação por
+  produto exige ao menos três referências e impede que uma atestação de compatibilidade apague de
+  novo o pacote comercial revisável.

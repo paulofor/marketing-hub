@@ -125,6 +125,13 @@ pelo `push` nem pela conclusão de cada agente, PDE ou outro publicador, pois es
 repetem a mesma conciliação, abrem conexões de controle e disputam a fila sem liberar uma nova
 autorização.
 
+Como Watchdog e reconciliador iniciam pela mesma conclusão do deploy central, o Watchdog deve
+reconhecer um run vivo de `Reconcile automatic publishers` no mesmo SHA como estado transitório
+`DEPLOYING` para os targets recuperados. Essa prova termina junto com o run: reconciliação concluída,
+falha, cancelada, antiga, de outra branch ou sem cobrir a mudança pendente não mascara atraso real.
+O Watchdog não ganha um novo gatilho nem espera bloqueante; a agenda seguinte confirma o deploy
+concreto ou abre o incidente se o publicador não tiver sido registrado.
+
 Argos, Psique e Íris devem reconhecer tanto `push` quanto `workflow_dispatch` da aplicação,
 sempre na branch `main` e no mesmo SHA. Uma execução de outro commit, branch, tag ou PR não
 libera os agentes. O push de origem testa e empacota a imagem imutável do agente e confirma, em

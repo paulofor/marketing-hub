@@ -16,6 +16,7 @@ Agentes comprovam prontidão; o mercado voluntário continuará sendo a única p
 | Contrato | `MARKET_STRATEGY_V4` gera `PDE_AGENT_VALIDATION_V1` | V3 incompleto, cenário/dispositivo extra, flag comercial ou humana bloqueiam | Testes de prompt, schema, consumidor e hook |
 | Migração | #11, run #26, instância #414 e tarefa #534 convergem para `product:11@agent-validation-v1` | Claim concorrente antes do deploy conserva estado, mas não a referência humana | MySQL 5.7 físico com #534 `IN_PROGRESS`, JSON válido e precondições |
 | Dédalo | polling reserva #534, carrega contexto e produz jornada | timeout libera novo ciclo; troca de container reentrega uma vez somente lease sem saída/custo | teste HTTP local, heartbeat por `taskId`, logs e tarefa auditável |
+| Visual estático | harness entrega três fixtures de 1024x1024 sem rede | imagem do resultado não pode acionar Estúdio, vídeo ou orçamento | contrato `PDE_STATIC_RESULT_FIXTURES_V1`, zero provider e #566 retomável |
 | Construção | jornada, componentes, audiovisual, acesso e instrumentação pertencem à mesma versão | contrato ausente, artefato incompatível ou efeito externo indevido bloqueiam | resultados/artefatos persistidos pelo backend |
 | Homologação | técnica + `ADHERENT`, `RECOVERY`, `SAFETY` + Têmis + gate | erro recuperável, pedido fora de escopo, privacidade, custo ou versão divergente bloqueiam | pareceres separados, causa-raiz e próxima correção |
 | Observabilidade | request/response, modelo, tokens, custo, horários e status ficam vinculados à execução | falha não pode desaparecer em thread presa ou apenas em log | telemetria e relatório funcional persistido |
@@ -58,3 +59,22 @@ recuperar apenas uma lease sem saída ou consumo após dois minutos. Heartbeat r
 protegido; output observado ou uma segunda interrupção bloqueiam a tarefa para impedir custo
 duplicado. A fixture MySQL reproduz #534 e #414 já `IN_PROGRESS`, garantindo que a migração não
 dependa da ordem entre claim e deploy.
+
+A retomada produtiva concluiu #534 e #565 e chegou corretamente ao gate audiovisual #566. A tarefa
+bloqueou antes de provider, crédito ou custo porque o contrato confundia as três imagens estáticas
+do resultado com vídeo/áudio de Apolo. Foram comparados gasto governado no Estúdio, dispensa total do
+visual e separação das responsabilidades; a terceira alternativa preserva o valor do produto sem
+criar gasto. Alcyone passa a exigir três fixtures estáticas de 1024x1024 no harness determinístico e
+declara vídeo/áudio não requerido, sem transformar QA em evidência humana ou comercial.
+
+| Alternativa visual | Benefício | Risco | Esforço/custo | Aderência |
+| --- | --- | --- | --- | --- |
+| Produzir no Estúdio | acabamento publicável | gasto e autorização sem necessidade funcional | alto e variável | baixa para QA interno |
+| Remover as imagens | desbloqueio imediato | protótipo deixa de demonstrar o mecanismo visual | baixo | baixa para valor do produto |
+| Fixture estática no harness | preserva resultado, auditoria e responsividade | exige contrato explícito entre imagem e audiovisual | baixo, determinístico e sem provider | alta; opção adotada |
+
+Após a correção, a regressão local confirmou 3.715 testes de backend e 83 do worker sem erro ou
+falha, Spotless, ShellCheck, validação estática de Liquibase e MySQL 5.7 físico em aplicação,
+idempotência, rollback e reaplicação. O prompt de arquitetura também elimina o legado de duas
+leituras humanas e deixa explícito que sinais sintéticos não representam visita, preferência,
+checkout, venda ou validação de mercado.

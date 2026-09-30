@@ -601,6 +601,9 @@ public class PdeConstructionBpmTaskConsumer {
       throw new IllegalArgumentException(
           "Protótipo privado do PDE incompleto ou não instrumentado");
     }
+    if (productArchitecture) {
+      validateStaticResultFixtures(result.path("productArchitecture"));
+    }
     if ("pde-construction-approval".equals(contract.processCode())
         && "journey".equals(contract.activityId())
         && (result.path("experienceContract").isMissingNode()
@@ -643,6 +646,38 @@ public class PdeConstructionBpmTaskConsumer {
             || result.path("qualityChecks").isEmpty()
             || !result.path("accessHandoff").isObject())) {
       throw new IllegalArgumentException("Personalização contratada incompleta");
+    }
+  }
+
+  /** Garante que fixtures estáticas não criem provider, efeito externo ou evidência comercial. */
+  private static void validateStaticResultFixtures(JsonNode architecture) {
+    JsonNode fixtures = architecture.path("staticResultFixtures");
+    boolean required = fixtures.path("required").asBoolean(false);
+    boolean commonContract =
+        fixtures.isObject()
+            && fixtures.has("required")
+            && "PDE_STATIC_RESULT_FIXTURES_V1".equals(fixtures.path("contractVersion").asText())
+            && fixtures.path("providerCallsAuthorized").asInt(-1) == 0
+            && !fixtures.path("externalSideEffects").asBoolean(true)
+            && !fixtures.path("commercialEvidenceEligible").asBoolean(true)
+            && !fixtures.path("purpose").asText().isBlank();
+    boolean validConfiguration =
+        required
+            ? "DETERMINISTIC_HOMOLOGATION_ONLY".equals(fixtures.path("mode").asText())
+                && "STATIC_IMAGE".equals(fixtures.path("artifactType").asText())
+                && fixtures.path("count").asInt(0) >= 1
+                && fixtures.path("width").asInt(0) >= 1
+                && fixtures.path("height").asInt(0) >= 1
+                && "DETERMINISTIC_TEST_ADAPTER".equals(fixtures.path("generator").asText())
+            : "NOT_REQUIRED".equals(fixtures.path("mode").asText())
+                && "NONE".equals(fixtures.path("artifactType").asText())
+                && fixtures.path("count").asInt(-1) == 0
+                && fixtures.path("width").asInt(-1) == 0
+                && fixtures.path("height").asInt(-1) == 0
+                && "NONE".equals(fixtures.path("generator").asText());
+    if (!commonContract || !validConfiguration) {
+      throw new IllegalArgumentException(
+          "Contrato de fixtures estáticas do PDE incompleto ou inconsistente");
     }
   }
 

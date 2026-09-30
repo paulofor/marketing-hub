@@ -1040,6 +1040,14 @@ governado no Estúdio; campo ausente ou inválido bloqueia como contrato incompl
 continua sendo a única autoridade para liberar a sucessora, e nenhuma dessas decisões pode ser
 inferida por texto livre, formato de componente ou tarefa duplicada.
 
+Imagens estáticas que constituem o próprio resultado funcional do harness — como cartões, telas e
+fixtures determinísticas de homologação — não são audiovisual de Apolo. Nesses casos,
+`harness.audiovisualRequired` deve permanecer `false`, e o contrato pode declarar
+`staticResultFixtures` com modo `DETERMINISTIC_HOMOLOGATION_ONLY`, quantidade e dimensões explícitas,
+zero chamadas de provider, efeitos externos falsos e inelegibilidade comercial. Essa separação não
+dispensa o resultado visual: apenas mantém sua criação e validação no executor do harness, sem
+simular autorização financeira, evidência humana ou material audiovisual publicável.
+
 Psique e Têmis não podem consultar prova global de outro produto nesse fluxo. Seus pareceres devem
 ser explícitos e posteriores à homologação da mesma versão. O backend recalcula cenários, sinais,
 ordem temporal, vigência da fonte, segregação do tráfego interno e vínculo da versão antes do gate.

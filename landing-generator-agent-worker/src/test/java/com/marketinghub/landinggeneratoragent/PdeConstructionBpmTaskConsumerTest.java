@@ -752,10 +752,16 @@ class PdeConstructionBpmTaskConsumerTest {
             """
             {
               "decision":"APPROVE",
-              "rationale":"Harness mínimo preserva a estratégia e mede valor humano.",
+              "rationale":"Harness mínimo preserva a estratégia e mede integridade técnica.",
               "selectedApproach":"Experiência guiada com resultado pessoal pronto em dez minutos.",
               "alternatives":[{},{},{}],
               "productArchitecture":{
+                "staticResultFixtures":{"contractVersion":"PDE_STATIC_RESULT_FIXTURES_V1",
+                  "required":true,"mode":"DETERMINISTIC_HOMOLOGATION_ONLY",
+                  "artifactType":"STATIC_IMAGE","count":3,"width":1024,"height":1024,
+                  "generator":"DETERMINISTIC_TEST_ADAPTER","providerCallsAuthorized":0,
+                  "externalSideEffects":false,"commercialEvidenceEligible":false,
+                  "purpose":"Validar os cartões estáticos no harness interno."},
                 "privatePrototype":{
                   "scope":"Uma decisão completa em ambiente privado.",
                   "simpleInput":"Contexto informado em linguagem comum.",
@@ -774,6 +780,75 @@ class PdeConstructionBpmTaskConsumerTest {
 
     PdeConstructionBpmTaskConsumer.validate(
         result, "pde-commercial-plan-offer", "productArchitecture");
+  }
+
+  /** Bloqueia uma fixture estática que tenta combinar ausência com geração determinística. */
+  @Test
+  void rejectsInconsistentStaticResultFixtureContract() throws Exception {
+    var result =
+        json.readTree(
+            """
+            {"decision":"APPROVE","rationale":"Contrato visual inconsistente.",
+             "selectedApproach":"Harness determinístico com contrato visual auditável.",
+             "alternatives":[{},{},{}],"productArchitecture":{
+               "staticResultFixtures":{"contractVersion":"PDE_STATIC_RESULT_FIXTURES_V1",
+                 "required":false,"mode":"DETERMINISTIC_HOMOLOGATION_ONLY",
+                 "artifactType":"STATIC_IMAGE","count":3,"width":1024,"height":1024,
+                 "generator":"DETERMINISTIC_TEST_ADAPTER","providerCallsAuthorized":0,
+                 "externalSideEffects":false,"commercialEvidenceEligible":false,
+                 "purpose":"Contrato propositalmente inválido."},
+               "privatePrototype":{"scope":"Uma decisão sintética completa.",
+                 "simpleInput":"Contexto em linguagem comum.",
+                 "readyResult":"Resultado pessoal pronto.","maxValueTimeMinutes":8,
+                 "instrumentationEvents":["EXPERIENCE_STARTED","VALUE_MOMENT",
+                   "READY_RESULT_USED","PREFERRED_OVER_FREE","CHECKOUT_STARTED"],
+                 "checkoutMode":"SIMULATED_NO_CHARGE","excludedFromPrototype":["Cobrança"]}}}
+            """);
+
+    assertThatThrownBy(
+            () ->
+                PdeConstructionBpmTaskConsumer.validate(
+                    result, "pde-commercial-plan-offer", "productArchitecture"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("fixtures estáticas");
+  }
+
+  /** Separa imagens estáticas de homologação do audiovisual governado por Apolo. */
+  @Test
+  void keepsStaticResultFixturesOutsidePaidAudiovisualPipeline() throws Exception {
+    String prompt =
+        new ClassPathResource("prompts/pde-commercial-plan/v6/product-architecture.md")
+            .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+    JsonNode schema =
+        json.readTree(
+            new ClassPathResource("prompts/pde-commercial-plan/v6/product-architecture-schema.json")
+                .getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+
+    assertThat(prompt)
+        .contains(
+            "READY_FOR_AGENT_VALIDATION",
+            "Não proponha recrutamento",
+            "Imagens estáticas do próprio resultado",
+            "audiovisualRequired=false",
+            "DETERMINISTIC_HOMOLOGATION_ONLY",
+            "comprovam somente prontidão técnica")
+        .doesNotContain("READY_FOR_PRIVATE_VALIDATION", "duas leituras", "experiência humana");
+    JsonNode fixtures =
+        schema
+            .path("properties")
+            .path("productArchitecture")
+            .path("properties")
+            .path("staticResultFixtures");
+    assertThat(fixtures.path("type").asText()).isEqualTo("object");
+    assertThat(fixtures.path("properties").path("providerCallsAuthorized").path("const").asInt())
+        .isZero();
+    assertThat(
+            fixtures
+                .path("properties")
+                .path("commercialEvidenceEligible")
+                .path("const")
+                .asBoolean())
+        .isFalse();
   }
 
   /** Rejeita arquitetura que omite a prova privada e tenta avançar direto ao produto completo. */
@@ -853,6 +928,11 @@ class PdeConstructionBpmTaskConsumerTest {
             {"decision":"APPROVE","rationale":"Arquitetura coerente com os contratos.",
              "selectedApproach":"Experiência assistida com primeiro valor verificável.",
              "alternatives":[{},{},{}],"productArchitecture":{"format":"PDE",
+               "staticResultFixtures":{"contractVersion":"PDE_STATIC_RESULT_FIXTURES_V1",
+                 "required":false,"mode":"NOT_REQUIRED","artifactType":"NONE",
+                 "count":0,"width":0,"height":0,"generator":"NONE",
+                 "providerCallsAuthorized":0,"externalSideEffects":false,
+                 "commercialEvidenceEligible":false,"purpose":"Sem fixture nesta arquitetura."},
                "privatePrototype":{"maxValueTimeMinutes":8,
                  "scope":"Uma decisão privada completa.",
                  "simpleInput":"Contexto em linguagem comum.",
@@ -1003,6 +1083,11 @@ class PdeConstructionBpmTaskConsumerTest {
         {"decision":"APPROVE","rationale":"Arquitetura privada, limitada e auditável.",
          "selectedApproach":"Experiência guiada com resultado pessoal pronto e verificável.",
          "alternatives":[{},{},{}],"productArchitecture":{"format":"PDE",
+           "staticResultFixtures":{"contractVersion":"PDE_STATIC_RESULT_FIXTURES_V1",
+             "required":false,"mode":"NOT_REQUIRED","artifactType":"NONE",
+             "count":0,"width":0,"height":0,"generator":"NONE",
+             "providerCallsAuthorized":0,"externalSideEffects":false,
+             "commercialEvidenceEligible":false,"purpose":"Sem fixture nesta arquitetura."},
            "privatePrototype":{"scope":"Uma decisão privada completa.",
              "simpleInput":"Contexto em linguagem comum.",
              "readyResult":"Resultado pessoal pronto.","maxValueTimeMinutes":8,

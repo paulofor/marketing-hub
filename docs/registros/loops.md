@@ -5276,6 +5276,17 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   `harness.audiovisualRequired` apenas na construção. Testes cruzados cobrem produto sem vídeo e
   comunicação com vídeo, rota histórica, rota incompleta, payload mínimo, auditoria do caminho e
   bloqueio sem chamada externa.
+- **Recorrência em 30/09/2026 — Alcyone #566:** o contrato de validação por agentes marcou
+  `harness.audiovisualRequired=true` porque o resultado funcional contém três imagens estáticas. A
+  regra correta de Apolo bloqueou gasto sem autorização, mas revelou que arquitetura confundia
+  imagem do próprio harness com áudio/vídeo produzido no Estúdio. #534 e #565 haviam concluído com
+  custo auditado e #566 bloqueou antes do provider, confirmando a fronteira e descartando falha do
+  worker.
+- **Correção da recorrência:** Alcyone mantém três fixtures estáticas de 1024x1024 no adaptador
+  determinístico, com zero provider, zero efeito externo e inelegibilidade comercial, enquanto
+  `audiovisualRequired=false` dispensa somente o pipeline de vídeo. O prompt e o schema v6 passam a
+  distinguir imagens estáticas, telas e cartões de áudio/vídeo de Apolo; changelog físico no MySQL
+  5.7 protege aplicação, idempotência, rollback e reaplicação.
 
 ## LOOP-HARNESS-HTTPS-GETENT-AAAA-FANTASMA — publicação bloqueada sem registro IPv6 real
 

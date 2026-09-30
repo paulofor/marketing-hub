@@ -21,6 +21,9 @@
   container. A referência multiagente agora é reconciliada mesmo com #534 em execução, e Dédalo
   usa heartbeat por tarefa com uma única retomada sem saída/custo; output observado bloqueia nova
   inferência para proteger a margem.
+- Fronteira visual: três imagens estáticas sintéticas de 1024x1024 continuam obrigatórias no
+  harness de homologação, mas não constituem áudio/vídeo de Apolo. O contrato dispensa o Estúdio e
+  mantém adaptador determinístico, zero provider, zero gasto e inelegibilidade comercial.
 
 ## 2026-09-28 — Validação passa a depender somente de agentes ou do mercado
 

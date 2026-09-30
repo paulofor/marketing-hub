@@ -141,6 +141,39 @@ identity_assert_agent_validation_applied() {
     );")"
 }
 
+identity_assert_static_visual_contract_applied() {
+  identity_assert_equal \
+    "contrato visual estático de Alcyone" \
+    "false:false:PDE_STATIC_RESULT_FIXTURES_V1:true:DETERMINISTIC_HOMOLOGATION_ONLY:STATIC_IMAGE:3:1024:1024:0:false:false" \
+    "$(identity_scalar "SELECT CONCAT(
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.delivery.audiovisualRequired')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.harness.audiovisualRequired')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.harness.staticResultFixtures.contractVersion')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.harness.staticResultFixtures.required')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.harness.staticResultFixtures.mode')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.harness.staticResultFixtures.artifactType')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.harness.staticResultFixtures.count')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.harness.staticResultFixtures.width')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.harness.staticResultFixtures.height')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.harness.staticResultFixtures.providerCallsAuthorized')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.harness.staticResultFixtures.externalSideEffects')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.harness.staticResultFixtures.commercialEvidenceEligible'))
+    ) FROM product WHERE id=11;")"
+}
+
+identity_assert_static_visual_contract_rolled_back() {
+  identity_assert_equal \
+    "rollback do contrato visual estático" \
+    "true:true:0:0:0" \
+    "$(identity_scalar "SELECT CONCAT(
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.delivery.audiovisualRequired')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.harness.audiovisualRequired')), ':',
+      JSON_CONTAINS_PATH(validation_definition_json, 'one', '$.delivery.staticResultFixtures'), ':',
+      JSON_CONTAINS_PATH(pde_experience_json, 'one', '$.harness.staticResultFixtures'), ':',
+      LOCATE('[PDE_STATIC_RESULT_FIXTURES_V1] Alcyone', COALESCE(commercial_notes, ''))
+    ) FROM product WHERE id=11;")"
+}
+
 trap identity_cleanup EXIT
 identity_cleanup
 
@@ -189,4 +222,17 @@ identity_assert_agent_validation_applied
 identity_liquibase_file "${AGENT_CHANGELOG}" "update"
 identity_assert_agent_validation_applied
 
-printf 'Validação física do Processo 2, Alcyone e do reparo da execução #32 concluída.\n'
+STATIC_VISUAL_CHANGELOG="db/changelog/changesets/2026-09-30-alcyone-static-visual-contract-v1.yaml"
+identity_liquibase_file "${STATIC_VISUAL_CHANGELOG}" "update"
+identity_assert_static_visual_contract_applied
+
+identity_liquibase_file "${STATIC_VISUAL_CHANGELOG}" "update"
+identity_assert_static_visual_contract_applied
+
+identity_liquibase_file "${STATIC_VISUAL_CHANGELOG}" "rollbackCount 1"
+identity_assert_static_visual_contract_rolled_back
+
+identity_liquibase_file "${STATIC_VISUAL_CHANGELOG}" "update"
+identity_assert_static_visual_contract_applied
+
+printf 'Validação física do Processo 2, Alcyone, execução #32 e contrato visual estático concluída.\n'

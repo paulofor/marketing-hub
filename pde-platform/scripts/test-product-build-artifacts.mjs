@@ -79,3 +79,17 @@ test("o bundle comercial de Mira não contém a pesquisa privada nem Vega", asyn
     "[ARQUITETURA] A imagem comercial de Mira contém artefato privado ou de Vega.",
   );
 });
+
+test("o bundle de Alcyone contém somente sua superfície e três fixtures geradas", async () => {
+  const alcyone = await compiledSurface("pde-platform/frontend/dist-alcyone");
+  assert.match(alcyone.names, /alcyone\.html/);
+  assert.match(alcyone.names, /assets\/alcyone\/manifest\.json/);
+  assert.match(alcyone.names, /assets\/alcyone\/look-1\.png/);
+  assert.match(alcyone.text, /Três caminhos claros para a sua ocasião/);
+  assert.match(alcyone.text, /PDE_STATIC_RESULT_FIXTURES_V1/);
+  assert.doesNotMatch(
+    `${alcyone.names}\n${alcyone.text}`,
+    /mira-private|Clube MUSA|metodo-musa-7-dias|musa-pde-entry|logo-musa/i,
+    "[ARQUITETURA] A imagem de Alcyone contém artefato de outro produto.",
+  );
+});

@@ -57,6 +57,8 @@ def diagnostic_surface(surface: dict[str, Any]) -> str:
         return "pde-platform-frontend-mira"
     if surface["deployTarget"] == "mira-commercial":
         return "pde-platform-frontend-mira-commercial"
+    if surface["deployTarget"] == "alcyone":
+        return "pde-platform-frontend-alcyone"
     return "pde-platform-frontend"
 
 

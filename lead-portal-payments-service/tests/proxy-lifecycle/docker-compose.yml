@@ -14,6 +14,11 @@ services:
     networks:
       - proxy-lifecycle-test
 
+  pde-platform-frontend-alcyone:
+    image: nginx:1.27-alpine
+    networks:
+      - proxy-lifecycle-test
+
   proxy:
     build:
       context: ../..
@@ -24,6 +29,8 @@ services:
       pde-platform-frontend-kit-whatsapp:
         condition: service_started
       pde-platform-frontend-mira-commercial:
+        condition: service_started
+      pde-platform-frontend-alcyone:
         condition: service_started
     volumes:
       - generated-certs:/etc/nginx/certs

@@ -51,6 +51,16 @@ run_mira_commercial() {
   )
 }
 
+run_alcyone() {
+  local public_url="$1"
+  : "${PDE_INTERNAL_API_TOKEN:?PDE_INTERNAL_API_TOKEN is required for Alcyone agent validation}"
+  (
+    cd "${frontend_dir}"
+    ALCYONE_BASE_URL="${public_url}" \
+      "${npm_command}" run test:alcyone:local
+  )
+}
+
 run_musa_consistency() {
   local public_url="$1"
   local experience_version="$2"
@@ -132,6 +142,10 @@ validate_kit_whatsapp() {
     bash "${rigel_consistency_script}"
 }
 
+validate_alcyone() {
+  run_alcyone https://alcyone.digicomdigital.com.br
+}
+
 case "${target_frontend}" in
   v5)
     validate_v5
@@ -154,6 +168,9 @@ case "${target_frontend}" in
   kit-whatsapp)
     validate_kit_whatsapp
     ;;
+  alcyone)
+    validate_alcyone
+    ;;
   all)
     validate_v5
     validate_v6
@@ -162,6 +179,7 @@ case "${target_frontend}" in
     validate_mira
     validate_mira_commercial
     validate_kit_whatsapp
+    validate_alcyone
     ;;
   none)
     ;;

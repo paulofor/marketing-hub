@@ -11,6 +11,7 @@ async function fixture(t) {
   for (const directory of [
     "docker-entrypoint.d",
     "docker-entrypoint-mira-commercial.d",
+    "docker-entrypoint-alcyone.d",
     "public",
     "public-mira-commercial",
     "scripts",
@@ -23,12 +24,15 @@ async function fixture(t) {
     ".npmrc",
     "Dockerfile",
     "Dockerfile.mira-commercial",
+    "Dockerfile.alcyone",
     "index.html",
     "mira.html",
     "mira-commercial.html",
+    "alcyone.html",
     "nginx.conf",
     "nginx.mira.conf",
     "nginx.mira-commercial.conf",
+    "nginx.alcyone.conf",
     "package-lock.json",
     "package.json",
     "tsconfig.json",
@@ -36,11 +40,13 @@ async function fixture(t) {
     "vite.config.ts",
     "vite.mira.config.ts",
     "vite.mira-commercial.config.ts",
+    "vite.alcyone.config.ts",
     "vite.vega.config.ts",
   ]) {
     await fs.writeFile(path.join(root, file), `${file}\n`);
   }
   await fs.writeFile(path.join(root, "src", "App.tsx"), "candidata");
+  await fs.writeFile(path.join(root, "src", "AlcyoneEntry.tsx"), "alcyone privada");
   await fs.writeFile(path.join(root, "public", "contract.json"), "{}\n");
   await fs.mkdir(path.join(root, "public-mira-commercial", "media"), {
     recursive: true,
@@ -74,6 +80,16 @@ test("muda a identidade quando o vídeo comercial canônico muda", async (t) => 
   await fs.writeFile(
     path.join(root, "public-mira-commercial", "media", "demo.mp4"),
     "outro vídeo",
+  );
+  assert.notEqual(await sourceFingerprint(root), original);
+});
+
+test("muda a identidade quando a experiência privada de Alcyone muda", async (t) => {
+  const root = await fixture(t);
+  const original = await sourceFingerprint(root);
+  await fs.writeFile(
+    path.join(root, "src", "AlcyoneEntry.tsx"),
+    "alcyone privada corrigida",
   );
   assert.notEqual(await sourceFingerprint(root), original);
 });

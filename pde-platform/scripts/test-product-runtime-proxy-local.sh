@@ -54,6 +54,12 @@ curl_mira_commercial() {
     "https://mira.digicomdigital.com.br$1"
 }
 
+curl_alcyone() {
+  compose exec -T proxy curl --fail --silent --show-error --insecure \
+    --resolve "alcyone.digicomdigital.com.br:443:127.0.0.1" \
+    "https://alcyone.digicomdigital.com.br$1"
+}
+
 validate_mira_commercial_media() {
   local contract required_asset required_hls_stream
   contract="$(curl_mira_commercial /pde-health-contract.json)"
@@ -121,6 +127,26 @@ if compose exec -T pde-platform-frontend-v7 \
   exit 1
 fi
 
+alcyone_html="$(curl_alcyone /)"
+alcyone_diagnostics="$(curl_alcyone /version-diagnostics.json)"
+grep -q '"surface": "pde-platform-frontend-alcyone"' <<<"${alcyone_diagnostics}"
+grep -q '"productId": 11' <<<"${alcyone_diagnostics}"
+grep -q '"productSlug": "pde-planejado-46"' <<<"${alcyone_diagnostics}"
+grep -q '"experienceVersion": "alcyone-private-v1"' <<<"${alcyone_diagnostics}"
+grep -Eq '"frontendSourceSha256": "[0-9a-f]{64}"' <<<"${alcyone_diagnostics}"
+curl_alcyone /assets/alcyone/manifest.json \
+  | grep -q '"contractVersion": "PDE_STATIC_RESULT_FIXTURES_V1"'
+
+alcyone_asset="$(sed -n 's/.*src="\([^"]*\.js\)".*/\1/p' <<<"${alcyone_html}")"
+test -n "${alcyone_asset}"
+alcyone_bundle="$(curl_alcyone "${alcyone_asset}")"
+grep -q 'Três caminhos claros para a sua ocasião' <<<"${alcyone_bundle}"
+grep -q 'alcyone-agent-validation-session' <<<"${alcyone_bundle}"
+if curl_alcyone /subrota-inexistente >/dev/null 2>&1; then
+  echo '[ARQUITETURA] O proxy público aceitou uma subrota privada não contratada de Alcyone.' >&2
+  exit 1
+fi
+
 mira_commercial_html="$(curl_mira_commercial /)"
 mira_commercial_asset="$(sed -n 's/.*src="\([^"]*\.js\)".*/\1/p' <<<"${mira_commercial_html}")"
 test -n "${mira_commercial_asset}"
@@ -149,6 +175,7 @@ vega_container_id_before="$(compose ps -q pde-platform-frontend-v7)"
 vega_v12_container_id_before="$(compose ps -q pde-platform-frontend-v8)"
 mira_container_id_before="$(compose ps -q pde-platform-frontend-mira)"
 mira_commercial_container_id_before="$(compose ps -q pde-platform-frontend-mira-commercial)"
+alcyone_container_id_before="$(compose ps -q pde-platform-frontend-alcyone)"
 compose up -d --force-recreate --no-deps --wait pde-platform-frontend-mira-commercial
 vega_v5_container_id_after="$(compose ps -q pde-platform-frontend-v5)"
 vega_v6_container_id_after="$(compose ps -q pde-platform-frontend-v6)"
@@ -156,6 +183,7 @@ vega_container_id_after="$(compose ps -q pde-platform-frontend-v7)"
 vega_v12_container_id_after="$(compose ps -q pde-platform-frontend-v8)"
 mira_container_id_after="$(compose ps -q pde-platform-frontend-mira)"
 mira_commercial_container_id_after="$(compose ps -q pde-platform-frontend-mira-commercial)"
+alcyone_container_id_after="$(compose ps -q pde-platform-frontend-alcyone)"
 
 test "${vega_v5_container_id_before}" = "${vega_v5_container_id_after}"
 test "${vega_v6_container_id_before}" = "${vega_v6_container_id_after}"
@@ -163,11 +191,14 @@ test "${vega_container_id_before}" = "${vega_container_id_after}"
 test "${vega_v12_container_id_before}" = "${vega_v12_container_id_after}"
 test "${mira_container_id_before}" = "${mira_container_id_after}"
 test "${mira_commercial_container_id_before}" != "${mira_commercial_container_id_after}"
+test "${alcyone_container_id_before}" = "${alcyone_container_id_after}"
 curl_v7 /mira-private/version-diagnostics.json | grep -q '"productId": 10'
 curl_mira_commercial /version-diagnostics.json \
   | grep -q '"experienceVersion": "mira-commercial-v1"'
 validate_mira_commercial_media
 curl_v8 /version-diagnostics.json \
   | grep -q '"experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"'
+curl_alcyone /version-diagnostics.json \
+  | grep -q '"experienceVersion": "alcyone-private-v1"'
 
-echo 'Roteamento e ciclo de vida isolados de Mira privada, Mira comercial e Vega v5–v8 validados localmente.'
+echo 'Roteamento e ciclo de vida isolados de Alcyone, Mira privada, Mira comercial e Vega v5–v8 validados localmente.'

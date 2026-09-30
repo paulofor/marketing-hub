@@ -12,6 +12,10 @@ com os publicadores desativados e a fila vazia. Pausar um workflow sozinho não 
 O Facebook Ads Worker usa o escopo dedicado `facebook-ads`, sem acoplá-lo ao publicador central
 da aplicação. Seu workflow deve aceitar a recuperação automática do SHA integrado e comprovar o
 job `Deploy worker`; teste ou build verde sem esse job não prova publicação.
+O proxy público e o certificado de Alcyone usam o escopo dedicado `alcyone-proxy`. A retomada deve
+despachar `lead-portal-payments-ci.yml` na revisão integrada, somente para o destino PDE e somente
+com o certificado de Alcyone selecionado; build da imagem sem o job `deploy` não prova a troca do
+proxy nem a emissão TLS.
 
 O registro e a exclusão entre operadores ficam no host administrativo, fora de diretórios de
 rsync/deploy. Motivo, autorização, responsável, versão protegida, escopo, SHA inicial, execuções

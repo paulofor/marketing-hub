@@ -46,7 +46,8 @@ class PdeAgentValidationHarnessRunnerTest {
         new PdeAgentValidationHarnessRunner(json, "/must-not-run", "/absent", "test", true);
 
     assertThatThrownBy(() -> runner.run(task, "TECHNICAL", null, temporaryDirectory))
-        .hasMessageContaining("cenários somente para o protótipo privado de Mira");
+        .hasMessageContaining("não possui cenários próprios")
+        .hasMessageContaining("não reutilize outro PDE");
   }
 
   /** Exige que a referência e o alvo declarem a mesma identidade de produto. */

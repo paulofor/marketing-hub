@@ -437,13 +437,62 @@ public class PdeAgentValidationGateActivityExecutor
             && result.path("devices").size() == 3
             && approvedSet(result.path("scenarios"), "scenarioCode")
                 .equals(Set.of("ADHERENT", "RECOVERY", "SAFETY"))
-            && result.path("scenarios").size() == 5
+            && validTechnicalScenarioMatrix(result)
             && result.path("scenarios").findValues("resultReadySeconds").stream()
                 .allMatch(value -> value.asInt(601) <= 600)
             && noSideEffects(result.path("sideEffects"));
     if (!valid)
       issues.add("A homologação técnica determinística ainda não está integralmente aprovada.");
     return valid;
+  }
+
+  /**
+   * Aceita a matriz histórica de cinco provas e exige nove combinações isoladas no contrato
+   * estendido.
+   */
+  private boolean validTechnicalScenarioMatrix(JsonNode result) {
+    JsonNode scenarios = result.path("scenarios");
+    JsonNode checks = result.path("checks");
+    boolean extended =
+        checks.has("nineScenarioDeviceGates")
+            || "PDE_STATIC_RESULT_FIXTURES_V1".equals(result.path("fixtureContract").asText());
+    if (!extended) return scenarios.isArray() && scenarios.size() == 5;
+    if (!scenarios.isArray()
+        || scenarios.size() != 9
+        || !"PDE_STATIC_RESULT_FIXTURES_V1".equals(result.path("fixtureContract").asText())
+        || !allTrue(
+            checks,
+            List.of("staticFixturesValid", "providerCallsZero", "nineScenarioDeviceGates"))) {
+      return false;
+    }
+    Set<String> expected = new LinkedHashSet<>();
+    for (String scenario : Set.of("ADHERENT", "RECOVERY", "SAFETY")) {
+      for (String device : Set.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7")) {
+        expected.add(scenario + "@" + device);
+      }
+    }
+    Set<String> observed = new LinkedHashSet<>();
+    scenarios.forEach(
+        scenario -> {
+          if (validExtendedScenario(scenario)) {
+            observed.add(
+                scenario.path("scenarioCode").asText()
+                    + "@"
+                    + scenario.path("deviceProfile").asText());
+          }
+        });
+    return observed.equals(expected);
+  }
+
+  /** Confirma segregação, custo zero e ausência de efeitos externos em cada combinação nova. */
+  private boolean validExtendedScenario(JsonNode scenario) {
+    return "PASS".equals(scenario.path("status").asText())
+        && "AGENT_VALIDATION".equals(scenario.path("trafficClass").asText())
+        && scenario.path("mhInternalTest").asBoolean(false)
+        && scenario.path("providerCalls").asInt(-1) == 0
+        && !scenario.path("humanEvidenceClaimed").asBoolean(true)
+        && !scenario.path("commercialEvidenceClaimed").asBoolean(true)
+        && noSideEffects(scenario.path("sideEffects"));
   }
 
   /** Exige um parecer isolado, modelado e aprovado para o cenário correspondente. */

@@ -5,6 +5,18 @@
     "recovery_base_input": "recovery_base_sha",
     "publication_job": "Deploy production to PDE host"
   },
+  "lead-portal-payments-ci.yml": {
+    "inputs": {
+      "deployment_target": "pde",
+      "issue_clubemusa_certificate": "false",
+      "issue_digicomdigital_certificate": "false",
+      "issue_kit_whatsapp_certificate": "false",
+      "issue_mira_certificate": "false",
+      "issue_alcyone_certificate": "true"
+    },
+    "recovery_base_input": "recovery_base_sha",
+    "publication_job": "deploy"
+  },
   "product-discovery-worker-ci.yml": {"requires_app": true, "publication_job": "deploy"},
   "customer-agent-worker-ci.yml": {"requires_app": true, "publication_job": "Deploy worker"},
   "meta-ad-approver-worker-ci.yml": {"requires_app": true, "publication_job": "Deploy independent agent"},

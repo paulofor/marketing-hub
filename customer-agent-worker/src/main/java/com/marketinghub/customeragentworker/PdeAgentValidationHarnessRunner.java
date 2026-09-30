@@ -100,16 +100,21 @@ public class PdeAgentValidationHarnessRunner {
             && lineage.path("learningCycleId").asLong() > 0
             && lineage.path("experimentId").asLong() == target.path("experimentId").asLong()
             && lineage.path("productId").asLong() == productId;
+    boolean mira =
+        "orientacao-digital-rotina-pele-madura".equals(productSlug)
+            && prototypeVersion.startsWith("mira-private-v")
+            && "/mira-private".equals(URI.create(sourceUrl).getPath());
+    boolean alcyone =
+        "pde-planejado-46".equals(productSlug)
+            && "alcyone-private-v1".equals(prototypeVersion)
+            && List.of("", "/").contains(URI.create(sourceUrl).getPath());
     if (!("product:" + productId + "@agent-validation-v1").equals(sourceReference) && !vega) {
       throw new HarnessException("A referência da homologação não corresponde ao produto alvo.");
     }
-    if (!vega
-        && (!"orientacao-digital-rotina-pele-madura".equals(productSlug)
-            || !prototypeVersion.startsWith("mira-private-v")
-            || !"/mira-private".equals(URI.create(sourceUrl).getPath()))) {
+    if (!vega && !mira && !alcyone) {
       throw new HarnessException(
-          "O harness instalado possui cenários somente para o protótipo privado de Mira. "
-              + "Implemente os cenários do produto alvo antes de homologá-lo; não reutilize outro PDE.");
+          "O harness instalado não possui cenários próprios para este produto. "
+              + "Implemente-os antes da homologação; não reutilize outro PDE.");
     }
     Files.createDirectories(workDirectory);
     Path inputPath = workDirectory.resolve("agent-validation-input.json");
@@ -140,10 +145,16 @@ public class PdeAgentValidationHarnessRunner {
       var videoIntegration = target.path("pdeContext").path("videoIntegration");
       if (videoIntegration.isObject()) input.put("videoIntegration", videoIntegration);
     }
-    String executionScript =
-        vega
-            ? Path.of(scriptPath).resolveSibling("vega-agent-validation-harness.mjs").toString()
-            : scriptPath;
+    String executionScript;
+    if (vega) {
+      executionScript =
+          Path.of(scriptPath).resolveSibling("vega-agent-validation-harness.mjs").toString();
+    } else if (alcyone) {
+      executionScript =
+          Path.of(scriptPath).resolveSibling("alcyone-agent-validation-harness.mjs").toString();
+    } else {
+      executionScript = scriptPath;
+    }
     String serializedInput = json.writeValueAsString(input);
     Files.writeString(inputPath, serializedInput, StandardCharsets.UTF_8);
     ProcessBuilder builder =
@@ -238,9 +249,11 @@ public class PdeAgentValidationHarnessRunner {
     if ("TECHNICAL".equals(mode)) {
       Set<String> devices = textSet(result.path("devices"), "deviceProfile", null);
       Set<String> scenarios = textSet(result.path("scenarios"), "scenarioCode", null);
+      boolean alcyone = "pde-planejado-46".equals(String.valueOf(expected.get("productSlug")));
+      int expectedScenarioDeviceGates = alcyone ? 9 : 5;
       if (result.path("devices").size() != 3
-          || result.path("scenarios").size() != 5
-          || result.path("artifacts").size() != 5
+          || result.path("scenarios").size() != expectedScenarioDeviceGates
+          || result.path("artifacts").size() != expectedScenarioDeviceGates
           || !devices.equals(Set.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7"))
           || !scenarios.equals(Set.of("ADHERENT", "RECOVERY", "SAFETY"))) {
         throw new HarnessException(
@@ -252,6 +265,14 @@ public class PdeAgentValidationHarnessRunner {
               || result.path("scenarios").findValues("status").stream()
                   .anyMatch(status -> !"PASS".equals(status.asText())))) {
         throw new HarnessException("O harness aprovou uma cobertura com percurso reprovado.");
+      }
+      if (alcyone
+          && (!"PDE_STATIC_RESULT_FIXTURES_V1".equals(result.path("fixtureContract").asText())
+              || !result.path("checks").path("staticFixturesValid").asBoolean(false)
+              || !result.path("checks").path("providerCallsZero").asBoolean(false)
+              || !result.path("checks").path("nineScenarioDeviceGates").asBoolean(false))) {
+        throw new HarnessException(
+            "Alcyone não comprovou fixtures estáticas, custo zero e os nove gates.");
       }
     } else if (result.path("scenarios").size() != 1
         || result.path("artifacts").size() != 1

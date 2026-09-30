@@ -1,0 +1,9 @@
+FROM mcr.microsoft.com/playwright:v1.61.1-noble
+
+WORKDIR /work
+COPY package.json package-lock.json ./
+RUN npm ci --include=dev --no-audit --no-fund
+COPY playwright.alcyone.config.ts ./
+COPY tests/alcyone-agent-validation.spec.ts ./tests/
+
+CMD ["npm", "run", "test:alcyone:local"]

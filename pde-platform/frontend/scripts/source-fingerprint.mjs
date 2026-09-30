@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 const SOURCE_DIRECTORIES = [
   "docker-entrypoint.d",
   "docker-entrypoint-mira-commercial.d",
+  "docker-entrypoint-alcyone.d",
   "public",
   "public-mira-commercial",
   "scripts",
@@ -16,12 +17,15 @@ const SOURCE_FILES = [
   ".npmrc",
   "Dockerfile",
   "Dockerfile.mira-commercial",
+  "Dockerfile.alcyone",
   "index.html",
   "mira.html",
   "mira-commercial.html",
+  "alcyone.html",
   "nginx.conf",
   "nginx.mira.conf",
   "nginx.mira-commercial.conf",
+  "nginx.alcyone.conf",
   "package-lock.json",
   "package.json",
   "tsconfig.json",
@@ -29,6 +33,7 @@ const SOURCE_FILES = [
   "vite.config.ts",
   "vite.mira.config.ts",
   "vite.mira-commercial.config.ts",
+  "vite.alcyone.config.ts",
   "vite.vega.config.ts",
 ];
 

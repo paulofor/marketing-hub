@@ -39,6 +39,8 @@ pde:
     participant-one-token: ${PDE_MIRA_PRIVATE_ACCESS_1:}
     participant-two-token: ${PDE_MIRA_PRIVATE_ACCESS_2:}
     qa-token: ${PDE_MIRA_PRIVATE_QA_TOKEN:}
+  agent-validation:
+    static-visual-storage-path: ${PDE_STATIC_VISUAL_AGENT_VALIDATION_STORAGE_PATH:/data/pde/static-visual-agent-validation-sessions.json}
   assisted-operation:
     enabled: ${PDE_ASSISTED_OPERATION_ENABLED:false}
     token: ${PDE_ASSISTED_OPERATION_TOKEN:}

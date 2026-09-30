@@ -217,6 +217,51 @@ test("Mira comercial possui imagem, rota e smoke próprios", async () => {
   assert.match(reload, /pde-platform-frontend-mira-commercial/);
 });
 
+test("Alcyone possui imagem, porta, proxy, fixtures e smoke exclusivos", async () => {
+  const [workflow, proxy, smoke, smokeTest, entry, dockerfile, nginx, generator, localCompose] =
+    await Promise.all([
+      source(".github/workflows/pde-platform-metodo-musa-ci.yml"),
+      source("lead-portal-payments-service/nginx.conf"),
+      source("pde-platform/scripts/run-targeted-production-smokes.sh"),
+      source("pde-platform/scripts/test-targeted-production-smokes.sh"),
+      source("pde-platform/frontend/src/AlcyoneEntry.tsx"),
+      source("pde-platform/frontend/Dockerfile.alcyone"),
+      source("pde-platform/frontend/nginx.alcyone.conf"),
+      source("pde-platform/frontend/scripts/generate-alcyone-static-fixtures.mjs"),
+      source("pde-platform/docker-compose.yml"),
+    ]);
+  for (const marker of [
+    "FRONTEND_ALCYONE_IMAGE_NAME: pde-platform-frontend-alcyone",
+    "PDE_PLATFORM_FRONTEND_ALCYONE_PORT",
+    "Dockerfile.alcyone",
+    "alcyone-private-v1",
+    "https://alcyone.digicomdigital.com.br",
+    "test-alcyone-local-integration.sh",
+  ]) {
+    assert.ok(workflow.includes(marker), `[ARQUITETURA] Workflow sem ${marker}`);
+  }
+  assert.match(proxy, /alcyone\.digicomdigital\.com\.br pde-platform-frontend-alcyone:80/);
+  assert.match(proxy, /live\/alcyone\.digicomdigital\.com\.br\/fullchain\.pem/);
+  assert.match(smoke, /validate_alcyone/);
+  assert.match(smokeTest, /run_target alcyone/);
+  assert.match(entry, /alcyone-agent-validation-session/);
+  assert.doesNotMatch(entry, /MiraPrivatePrototype|metodo-musa-7-dias/);
+  assert.match(dockerfile, /build:alcyone/);
+  assert.match(nginx, /agent-validation\/v1\/products\/pde-planejado-46/);
+  assert.match(generator, /1024/);
+  assert.match(generator, /PDE_STATIC_RESULT_FIXTURES_V1/);
+  assert.match(
+    localCompose,
+    /pde-platform-frontend-alcyone:[\s\S]*?pde-platform-backend:[\s\S]*?condition: service_healthy[\s\S]*?healthcheck:[\s\S]*?version-diagnostics\.json/,
+    "[ARQUITETURA] A superfície local de Alcyone deve aguardar a saúde do backend.",
+  );
+  assert.match(
+    localCompose,
+    /pde-platform-alcyone-e2e:[\s\S]*?pde-platform-frontend-alcyone:[\s\S]*?condition: service_healthy/,
+    "[ARQUITETURA] O E2E de Alcyone deve aguardar a saúde do frontend e do proxy.",
+  );
+});
+
 test("a regra está na fonte canônica e na homologação técnica", async () => {
   const [platformCanon, chainCanon, validationCanon] = await Promise.all([
     source("docs/canonical/pde-platform-canon.v1.md"),

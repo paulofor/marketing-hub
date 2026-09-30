@@ -7,7 +7,7 @@ reloaded=0
 for service in pde-platform-frontend-v5 pde-platform-frontend-v6 pde-platform-frontend-v7 \
   pde-platform-frontend-v8 \
   pde-platform-frontend-mira pde-platform-frontend-mira-commercial \
-  pde-platform-frontend-kit-whatsapp; do
+  pde-platform-frontend-kit-whatsapp pde-platform-frontend-alcyone; do
   containers=$(docker ps --filter "network=$network" \
     --filter "label=com.docker.compose.service=$service" --format '{{.ID}}')
   while IFS= read -r container; do
@@ -25,6 +25,8 @@ for service in pde-platform-frontend-v5 pde-platform-frontend-v6 pde-platform-fr
         probe=/api/pde/mira/commercial/v1/contract
       elif [[ "$service" == pde-platform-frontend-kit-whatsapp ]]; then
         probe=/api/pde/products/kit-whatsapp-pronto
+      elif [[ "$service" == pde-platform-frontend-alcyone ]]; then
+        probe=/api/pde/agent-validation/v1/products/pde-planejado-46/contract
       else
         probe=/api/pde/products/metodo-musa-7-dias
       fi

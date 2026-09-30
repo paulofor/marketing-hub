@@ -102,6 +102,25 @@ paths:
                 $ref: "#/components/schemas/AgentValidationEvidence"
         "403":
           description: Credencial interna ausente ou inválida.
+  /api/pde/agent-validation/v1/products/{productSlug}/internal/session-expiration:
+    post:
+      summary: Expira deterministicamente uma sessão no harness de recuperação
+      operationId: expirePdeAgentValidationSessionV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeInternalToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionToken]
+              properties:
+                sessionToken: { type: string, writeOnly: true }
+      responses:
+        "200": { description: Sessão curta marcada como expirada. }
+        "403": { description: Credencial interna ou sessão inválida. }
   /api/pde/agent-validation/v1/products/{productSlug}/session:
     get:
       summary: Retoma o checkpoint de uma sessão provisionada pelo harness
@@ -172,6 +191,65 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AgentValidationSession"
+  /api/pde/agent-validation/v1/products/{productSlug}/continuity:
+    post:
+      summary: Emite uma credencial rotativa após política e interesse explícitos
+      operationId: createPdeAgentValidationContinuityV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeAgentSession"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentValidationContinuityRequest"
+      responses:
+        "201":
+          description: Credencial devolvida uma vez e persistida somente como hash.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationContinuityCredential"
+  /api/pde/agent-validation/v1/products/{productSlug}/continuity/resume:
+    post:
+      summary: Rotaciona a credencial e restaura uma sessão curta do mesmo pacote
+      operationId: resumePdeAgentValidationContinuityV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentValidationContinuityResumeRequest"
+      responses:
+        "200":
+          description: Nova sessão e nova credencial rotacionada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationContinuityResume"
+        "403": { description: Credencial inválida, reutilizada ou expirada. }
+  /api/pde/agent-validation/v1/products/{productSlug}/packages/{packageId}:
+    get:
+      summary: Entrega o pacote somente à sessão autenticada proprietária
+      operationId: getPdeAgentValidationResultPackageV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeAgentSession"
+        - name: packageId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: O mesmo pacote estático previamente materializado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationResultPackage"
+        "403": { description: Pacote não pertence à sessão autenticada. }
   /api/pde/agent-validation/v1/products/{productSlug}/safety:
     get:
       summary: Confirma que cobrança, publicação, campanha e provider estão desativados
@@ -300,12 +378,15 @@ components:
       properties:
         productId: { type: integer, format: int64, example: 11 }
         productSlug: { type: string, example: pde-planejado-46 }
-        prototypeVersion: { type: string, example: alcyone-private-v1 }
+        prototypeVersion: { type: string, example: alcyone-private-v2 }
         experienceName: { type: string }
         fixtureContract: { type: string, example: PDE_STATIC_RESULT_FIXTURES_V1 }
         fixtureManifestPath: { type: string }
         productStatus: { type: string, example: PLANNED }
         checkoutMode: { type: string, example: SIMULATED_NO_CHARGE }
+        continuityPolicyVersion: { type: string, example: ALCYONE_AGENT_CONTINUITY_V1 }
+        sessionTtlSeconds: { type: integer, format: int64, example: 1800 }
+        continuityTtlSeconds: { type: integer, format: int64, example: 86400 }
         instrumentationEvents:
           type: array
           items: { type: string }
@@ -353,6 +434,8 @@ components:
           enum:
             - VALUE_MOMENT
             - READY_RESULT_USED
+            - SAVE_INTEREST_DECLARED
+            - RETURN_COMPLETED
             - PREFERRED_OVER_FREE
             - CHECKOUT_STARTED
             - RECOVERY_COMPLETED
@@ -381,7 +464,7 @@ components:
         - providerCalls
         - providerCostUsd
       properties:
-        sessionToken: { type: string, format: uuid, writeOnly: true }
+        sessionToken: { type: string, writeOnly: true, nullable: true }
         productId: { type: integer, format: int64 }
         productSlug: { type: string }
         prototypeVersion: { type: string }
@@ -403,9 +486,55 @@ components:
         checkoutMode: { type: string, example: SIMULATED_NO_CHARGE }
         finished: { type: boolean }
         evidenceId: { type: string, format: uuid }
+        resultPackageId: { type: string, format: uuid, nullable: true }
         resultPackageFingerprint: { type: string, nullable: true }
+        sessionExpiresAt: { type: string, format: date-time }
+        continuityPolicyVersion: { type: string, nullable: true }
+        policyAcknowledged: { type: boolean }
         providerCalls: { type: integer, example: 0 }
         providerCostUsd: { type: integer, example: 0 }
+    AgentValidationContinuityRequest:
+      type: object
+      required: [policyAcknowledged, policyVersion]
+      properties:
+        policyAcknowledged: { type: boolean, example: true }
+        policyVersion: { type: string, example: ALCYONE_AGENT_CONTINUITY_V1 }
+    AgentValidationContinuityCredential:
+      type: object
+      required: [policyVersion, policyAcknowledgedAt, continuityExpiresAt, resultPackageId, continuationCredential]
+      properties:
+        policyVersion: { type: string }
+        policyAcknowledgedAt: { type: string, format: date-time }
+        continuityExpiresAt: { type: string, format: date-time }
+        resultPackageId: { type: string, format: uuid }
+        continuationCredential: { type: string, writeOnly: true }
+    AgentValidationContinuityResumeRequest:
+      type: object
+      required: [continuationCredential, policyVersion]
+      properties:
+        continuationCredential: { type: string, writeOnly: true }
+        policyVersion: { type: string, example: ALCYONE_AGENT_CONTINUITY_V1 }
+    AgentValidationContinuityResume:
+      type: object
+      required: [sessionToken, sessionExpiresAt, continuationCredential, continuityExpiresAt, resultPackageId, session]
+      properties:
+        sessionToken: { type: string, writeOnly: true }
+        sessionExpiresAt: { type: string, format: date-time }
+        continuationCredential: { type: string, writeOnly: true }
+        continuityExpiresAt: { type: string, format: date-time }
+        resultPackageId: { type: string, format: uuid }
+        session: { $ref: "#/components/schemas/AgentValidationSession" }
+    AgentValidationResultPackage:
+      type: object
+      required: [resultPackageId, resultPackageFingerprint, looks]
+      properties:
+        resultPackageId: { type: string, format: uuid }
+        resultPackageFingerprint: { type: string }
+        looks:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items: { $ref: "#/components/schemas/AgentValidationLook" }
     AgentValidationLook:
       type: object
       required: [id, title, imagePath, whyItWorks, practicalAdjustment]
@@ -431,6 +560,10 @@ components:
             readingId: { type: string, format: uuid }
             executionId: { type: string, format: uuid }
             fixtureContract: { type: string }
+            continuityPolicyVersion: { type: string }
+            policyAcknowledgedAt: { type: string, format: date-time }
+            continuityExpiresAt: { type: string, format: date-time }
+            credentialStoredAsHash: { type: boolean, example: true }
             eventAudit:
               type: array
               items:

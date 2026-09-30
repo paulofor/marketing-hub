@@ -160,8 +160,8 @@
       "surfaces": [
         {
           "deployTarget": "alcyone",
-          "versionId": "alcyone-private-v1",
-          "experienceVersion": "alcyone-private-v1",
+          "versionId": "alcyone-private-v2",
+          "experienceVersion": "alcyone-private-v2",
           "lifecycleStatus": "SUPPORTED",
           "watchdogRequired": true,
           "serviceName": "pde-platform-frontend-alcyone",

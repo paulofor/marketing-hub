@@ -1,10 +1,10 @@
 {
   "mode": "TECHNICAL",
   "scenarioCode": "",
-  "captureSessionId": "alcyone-local-technical-v1",
+  "captureSessionId": "alcyone-local-technical-v2",
   "sourceUrl": "http://pde-platform-frontend-alcyone",
   "sourceReference": "product:11@agent-validation-v1",
   "productId": 11,
   "productSlug": "pde-planejado-46",
-  "prototypeVersion": "alcyone-private-v1"
+  "prototypeVersion": "alcyone-private-v2"
 }

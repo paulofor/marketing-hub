@@ -8121,3 +8121,29 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   aceita `recovery_sha` e `recovery_base_sha`, seleciona apenas o destino PDE e o certificado de
   Alcyone e exige sucesso do job `deploy`. Testes simulam o ciclo de pausa, dispatch, inputs e
   recibo do job produtivo, impedindo que teste ou build seja confundido com publicação.
+
+## LOOP-ALCYONE-CONTINUIDADE-LIMITADA-A-SESSIONSTORAGE — 30/09/2026
+
+- **Evidência confirmada:** a tarefa de acesso #569 bloqueou Alcyone depois de a superfície v1 já
+  responder HTTP 200 e concluir 9/9 percursos locais. O resultado existia, mas `RECOVERY` apenas
+  recarregava o mesmo `sessionStorage`: não havia política interna versionada, separação entre
+  interesse e credencial, expiração real, login de retorno, autorização do pacote nem retomada em
+  outra sessão. A execução não podia declarar acesso concluído.
+- **Causa-raiz histórica:** o primeiro contrato provou persistência depois de falha de rede, mas
+  tratou uma sessão de navegador como continuidade. Documentação, frontend e harness usavam o
+  mesmo termo para duas garantias diferentes; o gate de acesso corretamente identificou que o
+  segundo comportamento nunca fora implementado.
+- **Alternativas avaliadas:** flags de interface teriam baixo esforço e nenhuma garantia real; um
+  token reutilizável permitiria retorno, mas ampliaria o risco de vazamento e acesso cruzado; uma
+  credencial opaca rotativa, guardada somente como SHA-256 no servidor, com sessão curta, expiração
+  e vínculo ao pacote fecha segurança e continuidade. A terceira alternativa foi adotada.
+- **Correção sistêmica:** `alcyone-private-v2` separa os marcos resultado → interesse de retorno →
+  política automatizada v1 → emissão de credencial → sessão autenticada → autorização do mesmo
+  pacote → retorno. Sessão e credencial expiram, ambas rotacionam no retorno e seus valores brutos
+  nunca entram na persistência, evidência, URL, log ou screenshot. A política é aceite de agente de
+  teste, não consentimento humano e não prova comercial.
+- **Prevenção:** testes unitários controlam relógio, reinício, expiração, rotação, reutilização,
+  persistência sem segredo e negação entre sessões. O harness independente força sessão expirada,
+  indisponibilidade transitória do pacote, retorno em nova sessão e tentativa de acessar o pacote
+  por outro agente nos três perfis. O gate do worker exige esses seis checks adicionais somente
+  para Alcyone, preservando os contratos de Mira e Vega.

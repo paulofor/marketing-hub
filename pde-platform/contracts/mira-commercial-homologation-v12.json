@@ -1,0 +1,107 @@
+{
+  "contractVersion": "mira-commercial-homologation.v12",
+  "processCode": "pde-commercial-compatibility-attestation",
+  "processVersion": 1,
+  "activityId": "pdeCompatibilityGate",
+  "sourceReference": "product:10@mira-commercial-v1-alcyone-continuity-v2",
+  "experimentId": 93,
+  "product": {
+    "id": 10,
+    "internalName": "Mira",
+    "commercialName": "Mira · sua rotina organizada",
+    "slug": "pde-planejado-36",
+    "experienceVersion": "mira-commercial-v1",
+    "publicUrl": "https://mira.digicomdigital.com.br/"
+  },
+  "status": "EVIDENCE_COMPATIBILITY_ONLY",
+  "boundary": "Revalida o isolamento de Mira após evoluir a continuidade privada de Alcyone; não altera oferta, preço, checkout, vídeo, prova ou controle de Mira e não cria campanha, gasto ou publicação comercial.",
+  "operationalState": {
+    "verifiedAt": "2026-09-30",
+    "experimentStatus": "PAUSED",
+    "commercialOfferExpected": true,
+    "deploymentAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/mira-commercial-homologation-v11.json",
+    "reason": "Comprovar que o publicador e o contrato de release continuam mantendo Mira no próprio runtime enquanto Alcyone avança da experiência privada v1 para v2.",
+    "includedChanges": [
+      "O publicador compartilhado identifica Alcyone v2 sem selecionar Mira",
+      "O contrato de release reconhece a nova atestação imutável de Alcyone",
+      "Os fontes visuais de Mira permanecem idênticos byte a byte"
+    ],
+    "excludedChanges": [
+      "Mudança de promessa, preço, checkout, vídeo, prova ou identidade de Mira",
+      "Publicação ou reativação do experimento 93",
+      "Campanha, tráfego, gasto, cobrança ou contato humano"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "mira-commercial",
+    "publicUrl": "https://mira.digicomdigital.com.br/",
+    "requiredFrontendSourceSha256": "34c93bd0ebc9bece77cea0e7946021bec461ec4b271593d2b3b4fbdef94b0936"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "mira-commercial-v1",
+      "experienceVersion": "mira-commercial-v1",
+      "frontendSourceSha256": "34c93bd0ebc9bece77cea0e7946021bec461ec4b271593d2b3b4fbdef94b0936"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/mira-commercial-homologation-v11.json",
+      "sha256": "36e30e05a7b2fc5b3f3b3d2074d0af63d299b7966e44b2ef84121559f2eff769",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": ".github/workflows/pde-platform-metodo-musa-ci.yml",
+      "sha256": "b64109739dda37804b91c435e5f2609d13f6681b6ac21090b311a3a185fbf7cd",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MiraCommercialApp.tsx",
+      "sha256": "36dcbad81c12cc68f98060d23e5ef621ab21de4fa04bad7de5005620ac311e10",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/mira-commercial.css",
+      "sha256": "854b7b9726df4b415a1e0b74d0864d31c9cf62c68489704391ccd2ac6a1a45ab",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-product-proof-v1.png",
+      "sha256": "4ffda62d502d8ea644fa06a0cd6cf0768c39c4278b43bdcefa3665e9d578c2f3",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Captura determinística da aplicação paga real com dados de QA segregados; comprova somente interface e entrega, sem representar cliente, venda ou resultado de mercado."
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-control-v4.png",
+      "sha256": "66482a136dce80aa14121417b3229e8b70c0b575e3879b8e4fffe861faa65fcc",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Controle 4:5 preservado sem alteração visual; declara preço, direito e limite no tamanho real do feed."
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v3.mp4",
+      "sha256": "0ba5720d4e3ec6beeed4ee76430a6be47b681a36eca9dfefe349d3a66aee3377",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Vídeo #49 preservado byte a byte; a revisão v12 altera somente a compatibilidade da infraestrutura compartilhada."
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "scripts/resolve-pde-frontend-deploy-target.test.mjs",
+      "sha256": "903628db3aec8fc43647753243185e2b113f4e9fe49be9dfeaab434fd7ac68e3",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test_pde_release_contract.py",
+      "sha256": "16eca43cb3ca1bbe15ae55538deb128521d75e04ebf8da47a5dd27cb533cf156",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/alcyone-agent-validation-v2.md"
+}

@@ -35,11 +35,14 @@ test("CI do catálogo confere as provas compartilhadas após os testes do PDE", 
   assert.ok(backend.includes("node-version: 22"));
   assert.doesNotMatch(backend, /continue-on-error|\|\| true/);
   assert.equal(
-    workflow.split('      - "scripts/build-commercial-review-evidence.mjs"').length - 1,
+    workflow.split('      - "scripts/build-commercial-review-evidence.mjs"')
+      .length - 1,
     2,
   );
   assert.equal(
-    workflow.split('      - "scripts/build-commercial-review-evidence.test.mjs"').length - 1,
+    workflow.split(
+      '      - "scripts/build-commercial-review-evidence.test.mjs"',
+    ).length - 1,
     1,
     "teste de evidência deve validar PR sem publicar a superfície PDE na main",
   );
@@ -52,9 +55,7 @@ test("CI do catálogo confere as provas compartilhadas após os testes do PDE", 
     /- "scripts\/build-commercial-review-evidence\.test\.mjs"/,
   );
   const pushPaths =
-    workflow
-      .split(/^  push:\s*$/m)[1]
-      ?.split(/^  [a-z][\w-]*:\s*$/m)[0] ?? "";
+    workflow.split(/^  push:\s*$/m)[1]?.split(/^  [a-z][\w-]*:\s*$/m)[0] ?? "";
   assert.doesNotMatch(
     pushPaths,
     /- "\.github\/workflows\/pde-platform-metodo-musa-ci\.yml"/,
@@ -202,6 +203,58 @@ test("valida em paralelo as versões atuais do mesmo produto", async (t) => {
     "rigel-v2-revisao-1.json",
   );
 
+  await assert.rejects(
+    buildBundle(root, destination),
+    /produto=rigel; versão=rigel-v2/,
+  );
+});
+
+test("preserva prova histórica e valida somente a sucessora explicitamente vigente", async (t) => {
+  const { root, destination } = await fixture(t);
+  await manifest(
+    root,
+    10,
+    {
+      product: { id: 9, slug: "rigel", experienceVersion: "rigel-v1" },
+      implementationEvidence: [{ path: proofPath, sha256: "0".repeat(64) }],
+    },
+    "rigel-v1-revisao-10.json",
+  );
+  await manifest(
+    root,
+    11,
+    {
+      product: {
+        id: 9,
+        slug: "rigel",
+        experienceVersion: "rigel-v2",
+        supersedesExperienceVersions: ["rigel-v1"],
+      },
+      status: "READY_FOR_INDEPENDENT_REVIEW",
+      publicationContract: { automaticDeployOnMerge: true },
+    },
+    "rigel-v2-revisao-11.json",
+  );
+
+  const index = await buildBundle(root, destination);
+  assert.equal(index.manifestPaths.length, 2);
+
+  await manifest(
+    root,
+    11,
+    {
+      product: {
+        id: 9,
+        slug: "rigel",
+        experienceVersion: "rigel-v2",
+        supersedesExperienceVersions: ["rigel-v1"],
+      },
+      status: "READY_FOR_INDEPENDENT_REVIEW",
+      publicationContract: { automaticDeployOnMerge: true },
+      implementationEvidence: [{ path: proofPath, sha256: "0".repeat(64) }],
+    },
+    "rigel-v2-revisao-11.json",
+  );
   await assert.rejects(
     buildBundle(root, destination),
     /produto=rigel; versão=rigel-v2/,

@@ -52,6 +52,20 @@ class PdeReleaseContractTest(unittest.TestCase):
             "pde-platform-frontend-alcyone",
         )
 
+    def test_alcyone_v2_manifest_binds_authenticated_continuity_source(self):
+        surface = MODULE.select_surface(self.inventory, "alcyone")
+        contract = MODULE.load_object(
+            ROOT / "pde-platform/contracts/alcyone-private-homologation-v2.json"
+        )
+        source = contract["publicationContract"]["requiredFrontendSourceSha256"]
+
+        MODULE.validate_release_contract(surface, contract, source)
+        self.assertEqual(
+            contract["product"]["experienceVersion"], "alcyone-private-v2"
+        )
+        self.assertFalse(contract["operationalState"]["commercialPublicationAuthorized"])
+        self.assertFalse(contract["operationalState"]["mediaAuthorized"])
+
     def test_commercial_mira_release_manifest_binds_homologated_source(self):
         surface = MODULE.select_surface(self.inventory, "mira-commercial")
         contract = MODULE.load_object(

@@ -62,6 +62,38 @@ class PdeAgentValidationHarnessRunnerTest {
         .hasMessageContaining("não corresponde ao produto alvo");
   }
 
+  /** Recusa a superfície Alcyone v1 que não possuía continuidade autenticada. */
+  @Test
+  void rejectsAlcyoneWithoutContinuityVersionBeforeLaunchingBrowser() {
+    var target =
+        Map.of(
+            "productId",
+            11L,
+            "productSlug",
+            "pde-planejado-46",
+            "experienceVersion",
+            "alcyone-private-v1",
+            "publicUrl",
+            "http://127.0.0.1:5184");
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/must-not-run", "/absent", "test", true);
+
+    assertThatThrownBy(
+            () ->
+                runner.run(
+                    Map.of(
+                        "taskId",
+                        901L,
+                        "sourceReference",
+                        "product:11@agent-validation-v1",
+                        "taskTarget",
+                        target),
+                    "TECHNICAL",
+                    null,
+                    temporaryDirectory))
+        .hasMessageContaining("não possui cenários próprios");
+  }
+
   /** Aceita somente cobertura completa, PNG local e efeitos comerciais nulos. */
   @Test
   void acceptsCompleteTechnicalHarnessWithoutPersistingSecret() throws Exception {

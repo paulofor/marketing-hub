@@ -39,6 +39,14 @@ public class PdeAgentValidationHarnessRunner {
           "publicationDisabled",
           "campaignDisabled",
           "zeroMediaSpend");
+  private static final List<String> ALCYONE_CONTINUITY_CHECKS =
+      List.of(
+          "versionedPolicyAcknowledged",
+          "credentialRotated",
+          "expiredSessionRejected",
+          "crossSessionPackageDenied",
+          "resultUnavailableRecovered",
+          "authenticatedReturn");
   private final ObjectMapper json;
   private final String nodeBinary;
   private final String scriptPath;
@@ -106,7 +114,7 @@ public class PdeAgentValidationHarnessRunner {
             && "/mira-private".equals(URI.create(sourceUrl).getPath());
     boolean alcyone =
         "pde-planejado-46".equals(productSlug)
-            && "alcyone-private-v1".equals(prototypeVersion)
+            && "alcyone-private-v2".equals(prototypeVersion)
             && List.of("", "/").contains(URI.create(sourceUrl).getPath());
     if (!("product:" + productId + "@agent-validation-v1").equals(sourceReference) && !vega) {
       throw new HarnessException("A referência da homologação não corresponde ao produto alvo.");
@@ -238,6 +246,15 @@ public class PdeAgentValidationHarnessRunner {
         && REQUIRED_CHECKS.stream().anyMatch(check -> !checks.path(check).asBoolean(false))) {
       throw new HarnessException("O harness aprovou a execução com gate reprovado.");
     }
+    boolean alcyone = "pde-planejado-46".equals(String.valueOf(expected.get("productSlug")));
+    if (alcyone
+        && (ALCYONE_CONTINUITY_CHECKS.stream().anyMatch(check -> !checks.path(check).isBoolean())
+            || (approved
+                && ALCYONE_CONTINUITY_CHECKS.stream()
+                    .anyMatch(check -> !checks.path(check).asBoolean(false))))) {
+      throw new HarnessException(
+          "A homologação Alcyone não comprovou todos os gates de continuidade autenticada.");
+    }
     requireNoExternalSideEffects(result.path("sideEffects"));
     for (JsonNode scenario : result.path("scenarios")) {
       if (scenario.path("humanEvidenceClaimed").asBoolean(true)
@@ -249,7 +266,6 @@ public class PdeAgentValidationHarnessRunner {
     if ("TECHNICAL".equals(mode)) {
       Set<String> devices = textSet(result.path("devices"), "deviceProfile", null);
       Set<String> scenarios = textSet(result.path("scenarios"), "scenarioCode", null);
-      boolean alcyone = "pde-planejado-46".equals(String.valueOf(expected.get("productSlug")));
       int expectedScenarioDeviceGates = alcyone ? 9 : 5;
       if (result.path("devices").size() != 3
           || result.path("scenarios").size() != expectedScenarioDeviceGates

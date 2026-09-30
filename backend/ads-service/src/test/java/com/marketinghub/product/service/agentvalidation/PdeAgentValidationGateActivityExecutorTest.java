@@ -276,7 +276,7 @@ class PdeAgentValidationGateActivityExecutorTest {
             "landing-generator",
             "MODEL",
             "gpt-5.6-sol",
-            "{}",
+            correctionResult(),
             NOW.minusSeconds(10));
     completedTasks.add(correction);
     assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
@@ -284,6 +284,55 @@ class PdeAgentValidationGateActivityExecutorTest {
     assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isTrue();
     correction.setStatus("BLOCKED");
     assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
+  }
+
+  /** Mantém a correção válida quando uma tentativa condicional posterior foi cancelada. */
+  @Test
+  void cancelledCorrectionDoesNotSupersedeValidCheckpoint() {
+    completedTasks.add(
+        task(
+            106L,
+            "prototypeCorrection",
+            "landing-generator",
+            "MODEL",
+            "gpt-5.6-sol",
+            correctionResult(),
+            NOW.minusSeconds(600)));
+    var cancelled =
+        task(
+            107L,
+            "prototypeCorrection",
+            "landing-generator",
+            "MODEL",
+            "gpt-5.6-sol",
+            "{}",
+            NOW.minusSeconds(50));
+    cancelled.setStatus("CANCELLED");
+    completedTasks.add(cancelled);
+
+    var readiness = executor.readiness(process, gate, product, SOURCE);
+
+    assertThat(readiness.ready()).isTrue();
+    assertThat(readiness.requirements()).allMatch(requirement -> requirement.satisfied());
+  }
+
+  /** Bloqueia uma conclusão sem versão sucessora mesmo quando sua data precede a homologação. */
+  @Test
+  void invalidCompletedCorrectionCannotReleaseGate() {
+    completedTasks.add(
+        task(
+            106L,
+            "prototypeCorrection",
+            "landing-generator",
+            "MODEL",
+            "gpt-5.6-sol",
+            "{}",
+            NOW.minusSeconds(600)));
+
+    var readiness = executor.readiness(process, gate, product, SOURCE);
+
+    assertThat(readiness.ready()).isFalse();
+    assertThat(readiness.reason()).contains("última correção");
   }
 
   /** Mantém o gate fechado quando falta um dos três cenários independentes. */
@@ -514,6 +563,24 @@ class PdeAgentValidationGateActivityExecutorTest {
           },
           "evidence":["harness","aderente","recuperação","segurança"],
           "requiredChanges":[]
+        }
+        """;
+  }
+
+  /** Produz o checkpoint válido que liga a versão corrigida à nova homologação técnica. */
+  private String correctionResult() {
+    return """
+        {
+          "decision":"READY",
+          "correctionPlan":{
+            "previousPrototypeVersion":"mira-private-v1",
+            "correctedPrototypeVersion":"mira-private-v2",
+            "nextActivityId":"technicalHomologation",
+            "verification":{
+              "technicalRevalidationRequired":true,
+              "noExternalSideEffects":true
+            }
+          }
         }
         """;
   }

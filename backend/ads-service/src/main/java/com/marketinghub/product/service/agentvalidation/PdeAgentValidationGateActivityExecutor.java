@@ -108,6 +108,7 @@ public class PdeAgentValidationGateActivityExecutor
   private final ProductProcessPeriodService periods;
   private final ObjectMapper json;
   private final Clock clock;
+  private final PdeAgentValidationCorrectionPolicy correctionPolicy;
 
   @Autowired(required = false)
   private LearningCycleExecutionContext learningCycleContext;
@@ -140,6 +141,7 @@ public class PdeAgentValidationGateActivityExecutor
     this.periods = periods;
     this.json = json;
     this.clock = clock;
+    this.correctionPolicy = new PdeAgentValidationCorrectionPolicy(json);
   }
 
   /** Reconhece o gate backend em revisões compatíveis do contrato de retrabalho funcional. */
@@ -301,7 +303,7 @@ public class PdeAgentValidationGateActivityExecutor
     AgentTask temis = completedTask(processTasks, "commercialIntegrityReview").orElse(null);
     boolean temisApproved = validateTemis(temis, contract, issues);
     boolean chronologyApproved = validateChronology(technical, psique, temis, issues);
-    chronologyApproved &= validateCorrectionOrder(processTasks, technical, issues);
+    chronologyApproved &= validateCorrectionOrder(processTasks, technical, contract, issues);
     List<AgentTask> evidenceTasks = new ArrayList<>();
     if (technical != null) evidenceTasks.add(technical);
     psique.values().stream().filter(java.util.Objects::nonNull).forEach(evidenceTasks::add);
@@ -572,18 +574,30 @@ public class PdeAgentValidationGateActivityExecutor
 
   /** Impede que uma correção mais recente reutilize aprovações produzidas antes de sua entrega. */
   private boolean validateCorrectionOrder(
-      List<AgentTask> processTasks, AgentTask technical, List<String> issues) {
+      List<AgentTask> processTasks,
+      AgentTask technical,
+      AgentValidationContract contract,
+      List<String> issues) {
     var latest =
-        processTasks.stream()
-            .filter(task -> "prototypeCorrection".equals(task.getProcessActivityId()))
-            .max(Comparator.comparing(AgentTask::getCreatedAt).thenComparing(AgentTask::getId));
+        correctionPolicy.latestApplicableAttempt(
+            processTasks.stream()
+                .filter(task -> "prototypeCorrection".equals(task.getProcessActivityId()))
+                .map(
+                    task ->
+                        new PdeAgentValidationCorrectionPolicy.CorrectionAttempt(
+                            task.getId(),
+                            task.getStatus(),
+                            task.getResultJson(),
+                            task.getDeliveredAt()))
+                .toList());
     if (latest.isEmpty()) return true;
     var correction = latest.orElseThrow();
     boolean valid =
-        "COMPLETED".equals(correction.getStatus())
-            && deliveredAt(correction) != null
+        "COMPLETED".equals(correction.status())
+            && correctionPolicy.validForVersion(correction, contract.prototypeVersion())
+            && correction.deliveredAt() != null
             && deliveredAt(technical) != null
-            && !deliveredAt(technical).isBefore(deliveredAt(correction));
+            && !deliveredAt(technical).isBefore(correction.deliveredAt());
     if (!valid)
       issues.add("A última correção precisa ser concluída e seguida de nova homologação técnica.");
     return valid;

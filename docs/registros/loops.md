@@ -8312,6 +8312,28 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   identidade exclusiva `92030`; a sequência compartilhada `92027` permanece intacta e a rodada
   integrada comprova que uma matriz não deixa de autorizar trabalho por resíduo de outra.
 
+## LOOP-GATE-PDE-CANCELAMENTO-SUBSTITUI-CORRECAO-VALIDA — 30/09/2026
+
+- **Evidência confirmada:** Alcyone concluiu a correção válida #580 para
+  `alcyone-private-v3`, homologou a mesma versão na #583 e terminou Psique e Têmis nas #584–#587.
+  A tentativa condicional #582 foi cancelada porque a falha anterior pertencia ao executor, mas o
+  gate final ainda a escolheu por ser a tarefa de correção mais nova e manteve a execução #34 em
+  `WAITING_INPUT`.
+- **Causa-raiz:** o motor de retrabalho definia o checkpoint pela correção concluída e válida para a
+  versão aceita, enquanto o gate final escolhia qualquer tentativa mais recente por data, inclusive
+  `CANCELLED`. Duas implementações da mesma regra permitiram que histórico inerte substituísse
+  evidência funcional vigente.
+- **Alternativas avaliadas:** manter a ordenação atual perpetuaria o falso bloqueio; ignorar todo
+  estado terminal poderia esconder uma correção realmente bloqueada; compartilhar uma política que
+  exclui somente cancelamentos, exige a tentativa aplicável concluída e valida versão sucessora,
+  retorno à homologação e efeitos externos nulos preserva segurança e continuidade. A terceira
+  alternativa foi adotada.
+- **Correção e prevenção:** gate e prontidão de retrabalho usam a mesma política de correção
+  aplicável. `CANCELLED` permanece auditável, mas não substitui o último checkpoint válido;
+  `PENDING`, `IN_PROGRESS`, `BLOCKED` ou uma conclusão contratualmente inválida continuam fechando
+  o gate. Testes reproduzem a sequência correção válida → cancelamento condicional → homologação
+  posterior e protegem o bloqueio de tentativa incompleta.
+
 ## LOOP-PUBLICADOR-WORKER-CORRE-DURANTE-TROCA-DO-BACKEND — 30/09/2026
 
 - **Evidência histórica:** na retomada do commit `4fcd629a`, Têmis iniciou o relatório de saúde às

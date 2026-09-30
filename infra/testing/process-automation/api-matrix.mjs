@@ -271,38 +271,40 @@ await scenario(
 await scenario(
   "correção condicional cancelada não bloqueia nova tentativa do executor",
   async () => {
-    const run = await start(92027, 92003);
+    // Identidade exclusiva: 92027 é mantido para a continuidade lifecycle → navegador.
+    const product = 92030;
+    const run = await start(product, 92003);
     await tick(run.id);
-    await callback(92027, 92003, "a", {
+    await callback(product, 92003, "a", {
       status: "BLOCKED",
       achieved: false,
       reason: "Ajuste funcional necessário",
     });
     await tick(run.id);
     assert.deepEqual(
-      (await tasks(92027, 92003)).map((task) => task.activity_id),
+      (await tasks(product, 92003)).map((task) => task.activity_id),
       ["a", "fix"],
     );
 
-    await pause(92027, 92003, run.id);
-    await callback(92027, 92003, "fix", {
+    await pause(product, 92003, run.id);
+    await callback(product, 92003, "fix", {
       status: "CANCELLED",
       achieved: false,
       reason: "Retrabalho indevido cancelado",
     });
     await tick(run.id);
-    await callback(92027, 92003, "a", {
+    await callback(product, 92003, "a", {
       status: "BLOCKED",
       achieved: false,
       reason: "EXECUTOR_FAILURE",
     });
-    await resume(92027, 92003, run.id);
+    await resume(product, 92003, run.id);
     const retried = await tick(run.id);
 
     assert.equal(retried.currentActivityId, "a");
     assert.equal(retried.status, "WAITING_ACTIVITY");
     assert.deepEqual(
-      (await tasks(92027, 92003)).map((task) => task.activity_id),
+      (await tasks(product, 92003)).map((task) => task.activity_id),
       ["a", "fix", "a"],
     );
   },

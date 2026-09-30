@@ -8284,6 +8284,12 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
 - **Prevenção adicional:** o motor agora exclui atividades condicionais da sequência regular e a
   matriz HTTP/MySQL reproduz rejeição funcional, correção aberta, cancelamento, reclassificação
   como falha do executor e nova tentativa da atividade original.
+- **Falha de isolamento encontrada no CI:** a primeira versão do cenário reutilizou o produto
+  sintético `92027`, cuja execução é preservada intencionalmente entre a matriz de ciclo de vida e a
+  matriz visual. A nova execução ativa aplicou corretamente a exclusão mútua por produto, mas tornou
+  nulo o filho que o cenário seguinte esperava criar. O cenário de retentativa passa a usar a
+  identidade exclusiva `92030`; a sequência compartilhada `92027` permanece intacta e a rodada
+  integrada comprova que uma matriz não deixa de autorizar trabalho por resíduo de outra.
 
 ## LOOP-PUBLICADOR-WORKER-CORRE-DURANTE-TROCA-DO-BACKEND — 30/09/2026
 

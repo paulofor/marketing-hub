@@ -242,6 +242,60 @@ class FreshnessTest(unittest.TestCase):
             "DEPLOYING",
         )
 
+    def test_live_reconciler_same_revision_covers_the_dispatch_registration_window(self):
+        payload = {"workflow_runs": [{
+            "id": 4,
+            "name": freshness.PUBLISHER_RECONCILER_WORKFLOW,
+            "head_branch": "main",
+            "head_sha": HEAD,
+            "status": "in_progress",
+            "created_at": (NOW - timedelta(minutes=1)).isoformat(),
+            "updated_at": NOW.isoformat(),
+            "html_url": "https://example/run/4",
+        }]}
+        runs = freshness.live_reconciliations_for_head(payload, NOW, 75, HEAD)
+
+        self.assertEqual([run.id for run in runs], [4])
+        self.assertEqual(self.evaluate(target="psique", deploys=runs)["status"], "DEPLOYING")
+        self.assertEqual(
+            self.evaluate(target="musa_pde:v8", deploys=runs)["status"],
+            "DEPLOYING",
+        )
+
+    def test_completed_reconciler_never_masks_a_missing_target_deploy(self):
+        payload = {"workflow_runs": [{
+            "id": 5,
+            "name": freshness.PUBLISHER_RECONCILER_WORKFLOW,
+            "head_branch": "main",
+            "head_sha": HEAD,
+            "status": "completed",
+            "conclusion": "success",
+            "created_at": (NOW - timedelta(minutes=2)).isoformat(),
+            "updated_at": (NOW - timedelta(minutes=1)).isoformat(),
+            "html_url": "https://example/run/5",
+        }]}
+        runs = freshness.live_reconciliations_for_head(payload, NOW, 75, HEAD)
+
+        self.assertEqual(runs, [])
+        self.assertEqual(self.evaluate(target="psique", deploys=runs)["status"], "STALE")
+
+    def test_live_reconciler_from_another_revision_never_masks_the_head(self):
+        payload = {"workflow_runs": [{
+            "id": 6,
+            "name": freshness.PUBLISHER_RECONCILER_WORKFLOW,
+            "head_branch": "main",
+            "head_sha": CHANGE,
+            "status": "in_progress",
+            "created_at": (NOW - timedelta(minutes=1)).isoformat(),
+            "updated_at": NOW.isoformat(),
+            "html_url": "https://example/run/6",
+        }]}
+
+        self.assertEqual(
+            freshness.live_reconciliations_for_head(payload, NOW, 75, HEAD),
+            [],
+        )
+
     def test_detector_scopes_musa_change_to_one_frontend_version(self):
         detector = freshness.DeploymentDetector(ROOT)
         with mock.patch.object(
@@ -564,11 +618,13 @@ class WorkflowContractTest(unittest.TestCase):
             "Configure Psique VPS SSH",
             "customer-agent-worker-ci.yml/runs",
             "pde-platform-metodo-musa-ci.yml/runs",
+            "reconcile-publishers.yml/runs",
             "--psique-revision",
             "--psique-runs-json",
             "musa_pde_watchdog.py",
             "--musa-pde-report-json",
             "--musa-pde-runs-json",
+            "--reconciler-runs-json",
             "--report /tmp/musa-pde-watchdog.json",
         ):
             self.assertIn(required, source)

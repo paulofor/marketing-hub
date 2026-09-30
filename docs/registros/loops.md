@@ -8253,3 +8253,20 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   os cinco workers. O teste de contrato deriva os workflows que enviam `agent-health-report` ao
   backend e falha se algum deles perder a barreira ou puder ser considerado publicado sem o job de
   deploy. A retomada permanece assíncrona e auditável, sem polling remoto ou repetição cega.
+
+## LOOP-WATCHDOG-AVALIA-ANTES-DO-DISPATCH-DE-RETOMADA — 30/09/2026
+
+- **Evidência histórica:** após o merge `92e57c57`, o Watchdog `36756247741` e o reconciliador
+  `36756247887` começaram juntos às 18:06:53. O Watchdog avaliou às 18:07:35 e marcou Psique
+  `STALE`; o reconciliador ainda estava vivo e registrou o dispatch de Psique às 18:07:53. O falso
+  incidente #5449 nasceu 18 segundos antes da prova de publicação aparecer.
+- **Causa-raiz:** o Watchdog conhecia somente os runs do publicador final. Na retomada protegida,
+  existe uma janela legítima entre o término do deploy central e o reconciliador persistir cada
+  dispatch; os dois workflows iniciam pelo mesmo evento e não possuem ordem entre si.
+- **Alternativas avaliadas:** reexecutar depois apenas limpa a ocorrência; inserir espera fixa
+  ocupa runner e continua sensível à fila; reconhecer a reconciliação viva do mesmo SHA como
+  `DEPLOYING`, encerrando a prova quando o run termina, representa o estado real sem esconder falha
+  posterior. A terceira alternativa foi adotada.
+- **Correção e prevenção:** o Watchdog consulta o workflow do reconciliador e usa somente runs vivos,
+  recentes, da `main` e capazes de cobrir a mudança pendente para Psique/PDE. Run concluído, antigo
+  ou de revisão insuficiente deixa o target `STALE`; testes reproduzem os dois lados da fronteira.

@@ -161,10 +161,28 @@ class AutomaticRecoveryTest(unittest.TestCase):
         """Abre somente uma intervenção simulada."""
         return self.coordinator.begin(scopes or ["temis"], "teste", "homologação local", "autorização sintética", "v1")
 
-    def prepare(self, scopes=None):
-        """Encerra a homologação para retomar somente após integração comprovada."""
-        state = self.begin(scopes)
-        return self.coordinator.prepare_resume(state["id"], VALIDATED, "duas rodadas locais aprovadas")
+    def mark_application_ready(self):
+        """Registra a aplicação saudável na revisão corrente, como o workflow central real."""
+        return self.github.add_run(APP)
+
+    def complete_publication(self, workflow):
+        """Conclui o run solicitado e registra o job que comprova a publicação real."""
+        run = self.github.completed_runs[workflow][0]
+        run.update(status="completed", conclusion="success")
+        self.github.jobs[run["id"]] = [{
+            "name": POLICY[workflow]["publication_job"],
+            "conclusion": "success",
+        }]
+        return run
+
+    def prepare(self, scopes=None, application_ready=True):
+        """Encerra a homologação e simula o deploy central já concluído para escopos dependentes."""
+        selected_scopes = scopes or ["temis"]
+        state = self.begin(selected_scopes)
+        prepared = self.coordinator.prepare_resume(state["id"], VALIDATED, "duas rodadas locais aprovadas")
+        if application_ready and "app" not in selected_scopes:
+            self.mark_application_ready()
+        return prepared
 
     def test_complete_pause_merge_dispatch_completion_and_no_further_work(self):
         self.prepare()
@@ -173,7 +191,7 @@ class AutomaticRecoveryTest(unittest.TestCase):
         self.assertEqual(len(self.github.dispatches), 1)
         self.recovery.reconcile()
         self.assertEqual(len(self.github.dispatches), 1)
-        self.github.completed_runs["communication-agent-worker-ci.yml"][0].update(status="completed", conclusion="success")
+        self.complete_publication("communication-agent-worker-ci.yml")
         self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
         self.github.sha = "c" * 40
         self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
@@ -198,6 +216,7 @@ class AutomaticRecoveryTest(unittest.TestCase):
         prepared = self.prepare()
         current = "c" * 40
         self.github.sha = current
+        self.mark_application_ready()
         original = self.github.api
 
         def squash_api(path, method="GET", payload=None):
@@ -249,6 +268,7 @@ class AutomaticRecoveryTest(unittest.TestCase):
         squashed = "c" * 40
         current = "e" * 40
         self.github.sha = current
+        self.mark_application_ready()
         original = self.github.api
 
         def advanced_main_api(path, method="GET", payload=None):
@@ -420,16 +440,36 @@ class AutomaticRecoveryTest(unittest.TestCase):
         self.github.completed_runs[APP][0].update(status="completed", conclusion="success")
         self.recovery.reconcile()
         self.assertEqual(len(self.github.dispatches), 4)
-        for name in POLICY:
+        for name in module.SCOPES["app"]:
             if POLICY[name].get("requires_app"):
                 run = self.github.completed_runs[name][0]
                 run.update(status="completed", conclusion="success")
                 self.github.jobs[run["id"]] = [{"name": POLICY[name]["publication_job"], "conclusion": "success"}]
         self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
 
+    def test_backend_dependent_worker_waits_until_application_is_healthy(self):
+        self.prepare(application_ready=False)
+        self.assertEqual(self.recovery.reconcile()["status"], "WAITING")
+        state = self.store.load()
+        self.assertEqual(
+            state["recovery"]["publications"]["communication-agent-worker-ci.yml"]["status"],
+            "WAITING_APP",
+        )
+        self.assertEqual(self.github.dispatches, [])
+        application = self.github.add_run(APP, status="in_progress", conclusion=None)
+        self.assertEqual(self.recovery.reconcile()["status"], "WAITING")
+        self.assertEqual(self.github.dispatches, [])
+        application.update(status="completed", conclusion="success")
+        self.assertEqual(self.recovery.reconcile()["status"], "WAITING")
+        self.assertEqual([name for name, _ in self.github.dispatches], ["communication-agent-worker-ci.yml"])
+
     def test_existing_success_is_reused_without_dispatch(self):
         self.prepare()
-        self.github.add_run("communication-agent-worker-ci.yml")
+        run = self.github.add_run("communication-agent-worker-ci.yml")
+        self.github.jobs[run["id"]] = [{
+            "name": POLICY["communication-agent-worker-ci.yml"]["publication_job"],
+            "conclusion": "success",
+        }]
         self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
         self.assertEqual(self.github.dispatches, [])
 
@@ -636,7 +676,8 @@ class AutomaticRecoveryTest(unittest.TestCase):
         self.github.sha = "c" * 40
         self.recovery.reconcile()
         self.assertEqual(len(self.github.dispatches), 1)
-        self.github.completed_runs["communication-agent-worker-ci.yml"][0].update(status="completed", conclusion="success")
+        self.complete_publication("communication-agent-worker-ci.yml")
+        self.mark_application_ready()
         self.recovery.reconcile()
         self.assertEqual(self.github.dispatches[-1][1]["inputs"]["recovery_sha"], "c" * 40)
 
@@ -669,6 +710,7 @@ class AutomaticRecoveryTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             guard.validate(self.github, {**env, "GITHUB_SHA": mismatched["head_sha"]})
         mismatched.update(status="completed", conclusion="failure")
+        self.mark_application_ready()
         self.recovery.reconcile()
         self.assertEqual(len(self.github.dispatches), 2)
         self.assertEqual(self.github.dispatches[-1][1]["inputs"]["recovery_sha"], "c" * 40)
@@ -770,6 +812,21 @@ class RecoveryContractsTest(unittest.TestCase):
         self.assertIn(f"name: {pde['publication_job']}",
                       (ROOT / ".github/workflows/pde-platform-metodo-musa-ci.yml").read_text())
 
+    def test_workers_that_report_health_to_backend_wait_for_the_same_application_revision(self):
+        """Impede que uma retomada reinicie workers enquanto o backend central ainda está trocando."""
+        for workflow in POLICY:
+            source = (ROOT / ".github/workflows" / workflow).read_text()
+            if "agent-health-report.mjs" not in source or "BACKEND_URL=http://191.252.181.168" not in source:
+                continue
+            with self.subTest(workflow=workflow):
+                self.assertTrue(POLICY[workflow].get("requires_app"), workflow)
+                publication_job = POLICY[workflow].get("publication_job")
+                self.assertTrue(publication_job, workflow)
+                if publication_job == "deploy":
+                    self.assertRegex(source, r"(?m)^  deploy:\s*$")
+                else:
+                    self.assertIn(f"name: {publication_job}", source)
+
     def test_all_publication_checkouts_guard_recovery_before_mutations(self):
         for name in POLICY:
             source = (ROOT / ".github/workflows" / name).read_text()
@@ -865,6 +922,7 @@ class RecoveryCliTest(unittest.TestCase):
                 "TEST_CONTROL_STATE": str(root / "control"),
                 "GITHUB_ACTIONS": "true", "GITHUB_REPOSITORY": module.REPOSITORY,
                 "GITHUB_REF": "refs/heads/main",
+                "TEST_APPLICATION_READY": "true",
             }
             github = textwrap.dedent("""
                 import importlib.util, json, os, re, sys
@@ -880,6 +938,12 @@ class RecoveryCliTest(unittest.TestCase):
                 if state_file.exists():
                     for key, value in json.loads(state_file.read_text()).items():
                         setattr(client, key, value)
+                if os.environ.get("TEST_APPLICATION_READY") == "true" and not any(
+                    run["head_sha"] == client.sha and run["status"] == "completed"
+                    and run["conclusion"] == "success"
+                    for run in client.completed_runs.get(tests.APP, [])
+                ):
+                    client.add_run(tests.APP)
                 args = sys.argv[1:]
                 method = args[args.index("--method") + 1]
                 path = next(a for a in args if a.startswith("repos/")).split("/", 3)[3]
@@ -894,6 +958,9 @@ class RecoveryCliTest(unittest.TestCase):
                     if "status" in query:
                         runs = [r for r in runs if r["status"] == query["status"][0]]
                     response = {"total_count": len(runs), "workflow_runs": runs}
+                elif (jobs_match := re.fullmatch(r"actions/runs/(\d+)/jobs", parsed.path)):
+                    jobs = client.jobs.get(jobs_match[1], client.jobs.get(int(jobs_match[1]), []))
+                    response = {"total_count": len(jobs), "jobs": jobs}
                 else:
                     try:
                         response = client.api(path, method, payload)
@@ -940,7 +1007,12 @@ class RecoveryCliTest(unittest.TestCase):
             state_file = root / "github.json"
             github_state = json.loads(state_file.read_text())
             self.assertEqual(len(github_state["dispatches"]), 1)
-            github_state["completed_runs"]["communication-agent-worker-ci.yml"][0].update(status="completed", conclusion="success")
+            run = github_state["completed_runs"]["communication-agent-worker-ci.yml"][0]
+            run.update(status="completed", conclusion="success")
+            github_state["jobs"][str(run["id"])] = [{
+                "name": POLICY["communication-agent-worker-ci.yml"]["publication_job"],
+                "conclusion": "success",
+            }]
             state_file.write_text(json.dumps(github_state))
             self.assertEqual(call("reconcile-publishers", "--actions-ssh")["status"], "COMPLETE")
             self.assertEqual(call("reconcile-publishers")["status"], "COMPLETE")

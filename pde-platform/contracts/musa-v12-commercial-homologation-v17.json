@@ -54,6 +54,26 @@
       "path": "pde-platform/contracts/musa-v12-commercial-homologation-v16.json",
       "sha256": "5b986d82e18713aa68c2e709a6ed10e47c48ebb7d2c3657f11152b26521720b5",
       "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v15.json",
+      "sha256": "831b4154350806db8fb90054f7b63eafc98cd764a543f755d23c9e4d80eecef8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v14.json",
+      "sha256": "171957c60a11484fa70e789c1f6f3983331ecd312e8ebf666040fee27611b3ad",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v13.json",
+      "sha256": "6bbcd63dc5030817568e6af059b55718ab1dc1b152ffc8d813c731e1ce643b2a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v12.json",
+      "sha256": "f0d32724291bc9cf047623e4cbd3aaedea916915ef8a7a8adbced57a03df3f8e",
+      "promptMode": "FULL"
     }
   ],
   "implementationEvidence": [

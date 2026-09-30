@@ -55,9 +55,9 @@ As validações complementares terminaram assim:
 
 - 202 testes do backend PDE aprovados, sem falha ou teste ignorado;
 - 146 testes Java do agente aprovados, com dois testes de integração externa intencionalmente
-  ignorados, e 22 testes Node aprovados;
-- 11 testes do contrato de release e 37 testes Node de identidade, isolamento e resolução de deploy
-  aprovados;
+  ignorados, 22 testes Node do agente e 106 testes de Têmis aprovados;
+- 11 testes do contrato de release e 51 testes Node de identidade, isolamento, resolução de deploy e
+  empacotamento de evidências aprovados;
 - topologia completa de proxy validou identidade, ativos e recriação isolada de Alcyone, Mira
   privada, Mira comercial e Vega v5–v8;
 - build de produção de Alcyone, TypeScript, Prettier, Spotless, `bash -n` e ShellCheck aprovados;
@@ -66,6 +66,11 @@ As validações complementares terminaram assim:
 A primeira rodada identificou ambiguidade de injeção do relógio no bootstrap do backend e espera
 insuficiente do teste para a emissão assíncrona da credencial. As duas causas foram corrigidas; as
 validações relacionadas e as suítes completas foram repetidas com sucesso.
+
+A prévia do Pull Request detectou ainda que Têmis tratava a v1 substituída como paralelamente
+vigente e que a nova atestação de Vega não carregava o conjunto comercial mínimo exigido por
+Psique. O carregador passou a reconhecer a sucessão explícita e as atestações de compatibilidade
+passaram a preservar as provas anteriores necessárias; as duas suítes completas foram repetidas.
 
 Não houve chamada a provedor, recrutamento, leitura humana, checkout real, cobrança, publicação
 comercial, campanha ou gasto de mídia. A evidência comprova apenas prontidão técnica privada por

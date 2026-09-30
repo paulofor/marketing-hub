@@ -54,6 +54,11 @@
       "path": "pde-platform/contracts/mira-commercial-homologation-v11.json",
       "sha256": "36e30e05a7b2fc5b3f3b3d2074d0af63d299b7966e44b2ef84121559f2eff769",
       "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/mira-commercial-homologation-v10.json",
+      "sha256": "73563b1796ad85efa73fbe9ded69558925dddba87d55d95458c4ebea93ca9bb1",
+      "promptMode": "FULL"
     }
   ],
   "implementationEvidence": [

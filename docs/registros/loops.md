@@ -8146,4 +8146,6 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   persistência sem segredo e negação entre sessões. O harness independente força sessão expirada,
   indisponibilidade transitória do pacote, retorno em nova sessão e tentativa de acessar o pacote
   por outro agente nos três perfis. O gate do worker exige esses seis checks adicionais somente
-  para Alcyone, preservando os contratos de Mira e Vega.
+  para Alcyone, preservando os contratos de Mira e Vega. O manifesto sucessor declara a v1
+  substituída; empacotador e Têmis preservam o histórico sem exigir que ele descreva o código atual,
+  e as atestações de compatibilidade carregam adiante a prova comercial mínima de cada superfície.

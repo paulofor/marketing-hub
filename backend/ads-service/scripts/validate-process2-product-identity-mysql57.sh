@@ -177,7 +177,7 @@ identity_assert_static_visual_contract_rolled_back() {
 identity_assert_runtime_acceptance_reconciled() {
   identity_assert_equal \
     "identidade publicada reconciliada de Alcyone" \
-    "alcyone-private-v2:alcyone-private-v2:d5e5f1c111b28b648a6ff3ab2f1996ca83b0e42f:8f1e9e95d3bfc470d14a053477a4379b161c8e24207cb56d59b8c8831bb67e63:PDE_AGENT_VALIDATION_RUNTIME_V1:200:false:false:0" \
+    "alcyone-private-v2:alcyone-private-v2:d5e5f1c111b28b648a6ff3ab2f1996ca83b0e42f:8f1e9e95d3bfc470d14a053477a4379b161c8e24207cb56d59b8c8831bb67e63:PDE_AGENT_VALIDATION_RUNTIME_V1:200:false:false:0:false:false:false:false:PDE_HARNESS_PLAN_V1:product:11@agent-validation-v1" \
     "$(identity_scalar "SELECT CONCAT(
       JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.prototypeVersion')), ':',
       JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.privatePrototypeAcceptance.prototypeVersion')), ':',
@@ -187,7 +187,13 @@ identity_assert_runtime_acceptance_reconciled() {
       JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.technicalDeploymentEvidence.httpStatus')), ':',
       JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.paymentEnabled')), ':',
       JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.published')), ':',
-      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.mediaSpendBrl'))
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.mediaSpendBrl')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.privatePrototypeAcceptance.campaignAuthorized')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.privatePrototypeAcceptance.publicationAuthorized')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.privatePrototypeAcceptance.humanEvidenceClaimed')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.privatePrototypeAcceptance.commercialEvidenceClaimed')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.contractVersion')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.agentValidationSourceReference'))
     ) FROM product WHERE id=11;")"
 }
 
@@ -198,26 +204,27 @@ identity_seed_stale_runtime_acceptance() {
           '$.privatePrototypeAcceptance', JSON_OBJECT(
             'status', 'READY',
             'prototypeVersion', 'alcyone-private-v1',
-            'privateAccessUrl', 'https://alcyone.digicomdigital.com.br'
+            'privateAccessUrl', 'https://alcyone.digicomdigital.com.br',
+            'paymentEnabled', FALSE,
+            'campaignAuthorized', FALSE,
+            'publicationAuthorized', FALSE,
+            'humanEvidenceClaimed', FALSE,
+            'mediaSpendAuthorizedBrl', 0,
+            'commercialEvidenceClaimed', FALSE
           )
         ),
-        pde_experience_json=JSON_SET(
-          pde_experience_json,
-          '$.privatePrototypeAcceptance', JSON_OBJECT(
-            'status', 'READY',
-            'prototypeVersion', 'alcyone-private-v1',
-            'privateAccessUrl', 'https://alcyone.digicomdigital.com.br'
-          )
-        )
+        pde_experience_json=JSON_REMOVE(pde_experience_json, '$.privatePrototypeAcceptance')
     WHERE id=11
       AND internal_name='Alcyone'
       AND validation_definition_version='PDE_AGENT_VALIDATION_V1';" >/dev/null
   identity_assert_equal \
-    "aceitação histórica simulada" \
-    "alcyone-private-v1:alcyone-private-v1" \
+    "estado produtivo histórico simulado" \
+    "alcyone-private-v1:0:PDE_HARNESS_PLAN_V1:product:11@agent-validation-v1" \
     "$(identity_scalar "SELECT CONCAT(
       JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.prototypeVersion')), ':',
-      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.privatePrototypeAcceptance.prototypeVersion'))
+      JSON_CONTAINS_PATH(pde_experience_json, 'one', '$.privatePrototypeAcceptance'), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.contractVersion')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.agentValidationSourceReference'))
     ) FROM product WHERE id=11;")"
 }
 

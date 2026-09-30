@@ -8182,3 +8182,11 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   atomicamente a versão aceita e a evidência técnica. Testes de contrato recusam sinal extra, URL
   insegura, imagem divergente e callback sem `READY`; a homologação de Psique continua posterior e
   independente, portanto reconciliação de identidade não equivale a aprovação funcional.
+- **Incidente de implantação e reforço:** a primeira migração exigia que
+  `pde_experience_json.privatePrototypeAcceptance` já existisse, mas o histórico produtivo legítimo
+  mantinha a aceitação apenas em `validation_definition_json`; o teste físico também criava os dois
+  espelhos e ocultava essa diferença. O deploy falhou fechado na precondição e fez rollback. A
+  migração passou a aceitar a ausência no contrato de experiência, copiar a aceitação de forma
+  atômica e reafirmar todos os bloqueios comerciais. O teste MySQL 5.7 agora reproduz exatamente o
+  formato histórico de produção — aceitação v1 somente na definição — antes de validar aplicação,
+  reaplicação e rollback.

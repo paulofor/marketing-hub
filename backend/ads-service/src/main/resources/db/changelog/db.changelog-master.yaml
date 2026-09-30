@@ -2186,3 +2186,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-30-alcyone-static-visual-contract-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-30-alcyone-runtime-acceptance-v2.yaml
+      relativeToChangelogFile: true

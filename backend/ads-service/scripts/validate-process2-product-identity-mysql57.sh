@@ -174,6 +174,53 @@ identity_assert_static_visual_contract_rolled_back() {
     ) FROM product WHERE id=11;")"
 }
 
+identity_assert_runtime_acceptance_reconciled() {
+  identity_assert_equal \
+    "identidade publicada reconciliada de Alcyone" \
+    "alcyone-private-v2:alcyone-private-v2:d5e5f1c111b28b648a6ff3ab2f1996ca83b0e42f:8f1e9e95d3bfc470d14a053477a4379b161c8e24207cb56d59b8c8831bb67e63:PDE_AGENT_VALIDATION_RUNTIME_V1:200:false:false:0" \
+    "$(identity_scalar "SELECT CONCAT(
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.prototypeVersion')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.privatePrototypeAcceptance.prototypeVersion')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.runtimeCommitSha')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.runtimeSourceSha256')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.runtimeReconciliationVersion')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.technicalDeploymentEvidence.httpStatus')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.paymentEnabled')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.published')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.mediaSpendBrl'))
+    ) FROM product WHERE id=11;")"
+}
+
+identity_seed_stale_runtime_acceptance() {
+  identity_scalar "UPDATE product
+    SET validation_definition_json=JSON_SET(
+          validation_definition_json,
+          '$.privatePrototypeAcceptance', JSON_OBJECT(
+            'status', 'READY',
+            'prototypeVersion', 'alcyone-private-v1',
+            'privateAccessUrl', 'https://alcyone.digicomdigital.com.br'
+          )
+        ),
+        pde_experience_json=JSON_SET(
+          pde_experience_json,
+          '$.privatePrototypeAcceptance', JSON_OBJECT(
+            'status', 'READY',
+            'prototypeVersion', 'alcyone-private-v1',
+            'privateAccessUrl', 'https://alcyone.digicomdigital.com.br'
+          )
+        )
+    WHERE id=11
+      AND internal_name='Alcyone'
+      AND validation_definition_version='PDE_AGENT_VALIDATION_V1';" >/dev/null
+  identity_assert_equal \
+    "aceitação histórica simulada" \
+    "alcyone-private-v1:alcyone-private-v1" \
+    "$(identity_scalar "SELECT CONCAT(
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.privatePrototypeAcceptance.prototypeVersion')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.privatePrototypeAcceptance.prototypeVersion'))
+    ) FROM product WHERE id=11;")"
+}
+
 trap identity_cleanup EXIT
 identity_cleanup
 
@@ -235,4 +282,16 @@ identity_assert_static_visual_contract_rolled_back
 identity_liquibase_file "${STATIC_VISUAL_CHANGELOG}" "update"
 identity_assert_static_visual_contract_applied
 
-printf 'Validação física do Processo 2, Alcyone, execução #32 e contrato visual estático concluída.\n'
+identity_seed_stale_runtime_acceptance
+
+RUNTIME_ACCEPTANCE_CHANGELOG="db/changelog/changesets/2026-09-30-alcyone-runtime-acceptance-v2.yaml"
+identity_liquibase_file "${RUNTIME_ACCEPTANCE_CHANGELOG}" "update"
+identity_assert_runtime_acceptance_reconciled
+
+identity_liquibase_file "${RUNTIME_ACCEPTANCE_CHANGELOG}" "update"
+identity_assert_runtime_acceptance_reconciled
+
+identity_liquibase_file "${RUNTIME_ACCEPTANCE_CHANGELOG}" "rollbackCount 1"
+identity_assert_runtime_acceptance_reconciled
+
+printf 'Validação física do Processo 2, Alcyone, execução #32, contrato visual e identidade publicada concluída.\n'

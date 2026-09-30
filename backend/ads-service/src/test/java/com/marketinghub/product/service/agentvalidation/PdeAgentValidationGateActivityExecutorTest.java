@@ -324,6 +324,22 @@ class PdeAgentValidationGateActivityExecutorTest {
     verify(products, never()).save(any());
   }
 
+  /** Aprova a matriz nova somente quando os três cenários cobrem os três dispositivos. */
+  @Test
+  void approvesExtendedNineScenarioDeviceMatrix() throws Exception {
+    AgentTask technical =
+        completedTasks.stream()
+            .filter(task -> "technicalHomologation".equals(task.getProcessActivityId()))
+            .findFirst()
+            .orElseThrow();
+    technical.setResultJson(extendedTechnicalResult(false));
+
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isTrue();
+
+    technical.setResultJson(extendedTechnicalResult(true));
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
+  }
+
   /** Impede que uma versão anterior reutilize silenciosamente o executor e o contrato do v8. */
   @Test
   void preservesVersionEightAndRejectsPreviousContracts() {
@@ -402,6 +418,41 @@ class PdeAgentValidationGateActivityExecutorTest {
           "sideEffects":{"paymentEnabled":false,"published":false,"campaignCreated":false,"mediaSpendBrl":0}
         }
         """;
+  }
+
+  /** Produz a matriz estendida e, quando solicitado, duplica um par para provar o bloqueio. */
+  private String extendedTechnicalResult(boolean duplicatePair) throws Exception {
+    var result = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(technicalResult());
+    var checks = (com.fasterxml.jackson.databind.node.ObjectNode) result.path("checks");
+    checks.put("staticFixturesValid", true);
+    checks.put("providerCallsZero", true);
+    checks.put("nineScenarioDeviceGates", true);
+    result.put("fixtureContract", "PDE_STATIC_RESULT_FIXTURES_V1");
+    var scenarios = result.putArray("scenarios");
+    for (String scenario : List.of("ADHERENT", "RECOVERY", "SAFETY")) {
+      for (String device : List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7")) {
+        String effectiveDevice =
+            duplicatePair && "SAFETY".equals(scenario) && "PIXEL_7".equals(device)
+                ? "IPHONE_15_PRO"
+                : device;
+        var value = scenarios.addObject();
+        value.put("scenarioCode", scenario);
+        value.put("deviceProfile", effectiveDevice);
+        value.put("status", "PASS");
+        value.put("resultReadySeconds", "SAFETY".equals(scenario) ? 0 : 1);
+        value.put("trafficClass", "AGENT_VALIDATION");
+        value.put("mhInternalTest", true);
+        value.put("providerCalls", 0);
+        value.put("humanEvidenceClaimed", false);
+        value.put("commercialEvidenceClaimed", false);
+        var effects = value.putObject("sideEffects");
+        effects.put("paymentEnabled", false);
+        effects.put("published", false);
+        effects.put("campaignCreated", false);
+        effects.put("mediaSpendBrl", 0);
+      }
+    }
+    return result.toString();
   }
 
   /** Produz um parecer sintético completo para o cenário informado. */

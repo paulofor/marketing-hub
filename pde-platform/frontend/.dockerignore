@@ -2,5 +2,7 @@ node_modules
 dist
 dist-mira
 dist-mira-commercial
+dist-alcyone
+public-alcyone
 test-results
 playwright-report

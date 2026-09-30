@@ -100,6 +100,52 @@ services:
       com.marketinghub.pde.product-id: "10"
       com.marketinghub.pde.product-slug: pde-planejado-36
 
+  pde-platform-frontend-alcyone:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.alcyone
+    container_name: pde-platform-frontend-alcyone
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    ports:
+      - "5184:80"
+    environment:
+      PDE_PRODUCT_ID: "11"
+      VITE_PDE_PRODUCT_SLUG: pde-planejado-46
+      PDE_EXPERIENCE_VERSION: alcyone-private-v1
+      PDE_FRONTEND_VERSION: alcyone-private-v1
+      PDE_FRONTEND_PUBLIC_URL: http://localhost:5184
+      PDE_FRONTEND_IMAGE: marketing-hub/pde-platform-frontend-alcyone:local
+      PDE_FRONTEND_VERSION_ID: alcyone-private-v1
+      PDE_DEPLOY_IMAGE_TAG: local
+      PDE_BACKEND_UPSTREAM: ${PDE_BACKEND_UPSTREAM:-pde-platform-backend:8096}
+    labels:
+      com.marketinghub.pde.product-id: "11"
+      com.marketinghub.pde.product-slug: pde-planejado-46
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1/version-diagnostics.json | grep -q 'pde-platform-frontend-alcyone'",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  pde-platform-alcyone-e2e:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.alcyone-e2e
+    depends_on:
+      pde-platform-frontend-alcyone:
+        condition: service_healthy
+    environment:
+      ALCYONE_BASE_URL: http://pde-platform-frontend-alcyone
+      PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:-pde-local-internal-test}
+    profiles:
+      - test
+
   pde-ai-worker:
     build:
       context: ./pde-ai-worker

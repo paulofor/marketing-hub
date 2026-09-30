@@ -44,7 +44,8 @@ falha após a última correção. Limitações e operação real serão registra
 2. Abrir a proteção com os componentes que serão alterados. `app` inclui o publicador central
    (backend/frontend e vídeo no mesmo workflow), Argos, Psique e Íris. `pde` inclui o publicador
    PDE e a recuperação de proxy. `mois-clickbank` protege exclusivamente o coletor ClickBank; os
-   demais agentes são selecionáveis individualmente. `facebook-ads` protege exclusivamente o
+   demais agentes são selecionáveis individualmente. `alcyone-proxy` protege exclusivamente a
+   publicação do proxy público e a emissão do certificado de Alcyone no host PDE. `facebook-ads` protege exclusivamente o
    workflow que testa, empacota e publica o Facebook Ads Worker; caso o push de `main` aconteça
    durante a pausa, o reconciliador recupera exatamente o SHA integrado por `workflow_dispatch`.
 3. Guardar o `id` retornado. `DRAINING`/exit 75 significa que ainda não é seguro intervir.

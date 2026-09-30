@@ -330,6 +330,29 @@ test("dispatch manual seleciona a superfície comercial independente de Mira", a
   );
 });
 
+test("dispatch manual seleciona a superfície privada isolada de Alcyone", async (t) => {
+  const root = await fixture(t, {
+    "product-runtime-isolation-v1.json": {
+      products: [
+        {
+          productId: 11,
+          productSlug: "pde-planejado-46",
+          surfaces: [{ deployTarget: "alcyone", lifecycleStatus: "SUPPORTED" }],
+        },
+      ],
+    },
+  });
+  const plan = await resolveDeploymentPlan(root, [], {
+    manualFrontend: "alcyone",
+    fingerprintResolver: async () => "d".repeat(64),
+  });
+  assert.equal(plan.frontend.target, "alcyone");
+  assert.equal(
+    plan.frontend.relativePath,
+    "pde-platform/contracts/product-runtime-isolation-v1.json",
+  );
+});
+
 test("dispatch de componente compartilhado nunca seleciona frontend", async (t) => {
   const root = await fixture(t, { "vega-v5.json": contract() });
   const plan = await resolveDeploymentPlan(root, [], {

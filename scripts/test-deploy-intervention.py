@@ -120,6 +120,13 @@ class LocalCoordinationTest(unittest.TestCase):
                          ["facebook-ads-worker.yml"])
         self.assertEqual(self.resume(state)["phase"], "RELEASED")
 
+    def test_alcyone_proxy_has_dedicated_reversible_scope(self):
+        state = self.begin(["alcyone-proxy"])
+        self.assertEqual(state["phase"], "ACTIVE")
+        self.assertEqual([workflow["file"] for workflow in state["workflows"]],
+                         ["lead-portal-payments-ci.yml"])
+        self.assertEqual(self.resume(state)["phase"], "RELEASED")
+
     def test_in_progress_and_queued_runs_block_until_complete_without_cancellation(self):
         identifier = self.github.workflows["deploy-containers.yml"]["id"]
         for status in module.LIVE_STATUSES:

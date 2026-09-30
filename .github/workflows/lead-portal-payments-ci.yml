@@ -24,6 +24,14 @@ on:
       - "scripts/test-verify-public-artifacts.py"
   workflow_dispatch:
     inputs:
+      recovery_sha:
+        description: "Revisão esperada pelo reconciliador automático; vazio preserva a execução normal"
+        required: false
+        type: string
+      recovery_base_sha:
+        description: "Base protegida usada para recuperar somente a publicação perdida"
+        required: false
+        type: string
       deployment_target:
         description: "Destino publicado: PDEs ou pagamentos públicos (pagamentopalf.site)"
         required: true
@@ -64,6 +72,14 @@ on:
         options:
           - "false"
           - "true"
+      issue_alcyone_certificate:
+        description: "Emitir/renovar certificado de Alcyone depois que o DNS apontar para o VPS PDE"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 jobs:
   test:
@@ -73,6 +89,14 @@ jobs:
         working-directory: lead-portal-payments-service
     steps:
       - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          RECOVERY_BASE_SHA: ${{ inputs.recovery_base_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -106,6 +130,14 @@ jobs:
       image-tag: ${{ steps.image_tag.outputs.value }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          RECOVERY_BASE_SHA: ${{ inputs.recovery_base_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log in to GitHub Container Registry
@@ -163,6 +195,14 @@ jobs:
       LEAD_PORTAL_PAYMENTS_NETWORK: ${{ secrets.LEAD_PORTAL_PAYMENTS_NETWORK != '' && secrets.LEAD_PORTAL_PAYMENTS_NETWORK || 'public-net' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          RECOVERY_BASE_SHA: ${{ inputs.recovery_base_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
       - name: Validate deployment target
         env:
           DEPLOYMENT_TARGET: ${{ inputs.deployment_target || 'pde' }}
@@ -170,9 +210,10 @@ jobs:
           ISSUE_DIGICOMDIGITAL: ${{ inputs.issue_digicomdigital_certificate }}
           ISSUE_KIT_WHATSAPP: ${{ inputs.issue_kit_whatsapp_certificate }}
           ISSUE_MIRA: ${{ inputs.issue_mira_certificate }}
+          ISSUE_ALCYONE: ${{ inputs.issue_alcyone_certificate }}
         run: |
           certificate_targets=0
-          for requested in "$ISSUE_CLUBEMUSA" "$ISSUE_DIGICOMDIGITAL" "$ISSUE_KIT_WHATSAPP" "$ISSUE_MIRA"; do
+          for requested in "$ISSUE_CLUBEMUSA" "$ISSUE_DIGICOMDIGITAL" "$ISSUE_KIT_WHATSAPP" "$ISSUE_MIRA" "$ISSUE_ALCYONE"; do
             if [ "$requested" = true ]; then
               certificate_targets=$((certificate_targets + 1))
             fi
@@ -185,7 +226,8 @@ jobs:
             pde) ;;
             public_payments)
               if [ "$ISSUE_CLUBEMUSA" = true ] || [ "$ISSUE_DIGICOMDIGITAL" = true ] \
-                || [ "$ISSUE_KIT_WHATSAPP" = true ] || [ "$ISSUE_MIRA" = true ]; then
+                || [ "$ISSUE_KIT_WHATSAPP" = true ] || [ "$ISSUE_MIRA" = true ] \
+                || [ "$ISSUE_ALCYONE" = true ]; then
                 echo 'Certificados de PDE não podem ser emitidos no destino de pagamentos.' >&2
                 exit 1
               fi
@@ -346,6 +388,23 @@ jobs:
             && export CERTBOT_INCLUDE_WWW=false \
             && docker compose -f docker-compose.deploy.yml --profile certbot run --rm certbot-pagamentos \
             && docker compose -f docker-compose.deploy.yml up -d --force-recreate --no-deps proxy"
+      - name: Issue Alcyone certificate
+        if: github.event_name == 'workflow_dispatch' && inputs.issue_alcyone_certificate == 'true'
+        env:
+          PAYMENTS_AUTH_TOKEN: ${{ secrets.LEAD_PORTAL_PAYMENTS_AUTH_TOKEN }}
+          AGENDA_CHEIA_OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY }}
+        run: |
+          # shellcheck disable=SC2029,SC2086
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
+            && cd ${REMOTE_PATH} \
+            && export LEAD_PORTAL_PAYMENTS_IMAGE='${IMAGE_NAMESPACE}/lead-portal-payments-service:${IMAGE_TAG}' \
+            && export LEAD_PORTAL_PAYMENTS_NETWORK='${LEAD_PORTAL_PAYMENTS_NETWORK}' \
+            && export LEAD_PORTAL_PAYMENTS_AUTH_TOKEN='${PAYMENTS_AUTH_TOKEN}' \
+            && export OPENAI_API_KEY='${AGENDA_CHEIA_OPENAI_API_KEY}' \
+            && export CERTBOT_PRIMARY_DOMAIN=alcyone.digicomdigital.com.br \
+            && export CERTBOT_INCLUDE_WWW=false \
+            && docker compose -f docker-compose.deploy.yml --profile certbot run --rm certbot-pagamentos \
+            && docker compose -f docker-compose.deploy.yml up -d --force-recreate --no-deps proxy"
       - name: Validate public HTTPS proxy
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
@@ -359,6 +418,8 @@ jobs:
             public_url="https://www.digicomdigital.com.br"
           elif [ "${{ inputs.issue_mira_certificate }}" = "true" ]; then
             public_url="https://mira.digicomdigital.com.br"
+          elif [ "${{ inputs.issue_alcyone_certificate }}" = "true" ]; then
+            public_url="https://alcyone.digicomdigital.com.br"
           else
             public_url="https://kit-whatsapp-pronto.digicomdigital.com.br"
           fi
@@ -366,11 +427,12 @@ jobs:
           if [ "${{ inputs.deployment_target }}" = "public_payments" ]; then
             public_probe="${public_url}/agenda-cheia/obrigado.html"
           fi
-          if [ "${{ inputs.issue_mira_certificate }}" = "true" ]; then
+          if [ "${{ inputs.issue_mira_certificate }}" = "true" ] \
+            || [ "${{ inputs.issue_alcyone_certificate }}" = "true" ]; then
             curl --show-error --silent \
               --retry 12 --retry-delay 10 --retry-connrefused \
               "$public_probe" >/dev/null
-            echo 'TLS público de Mira confirmado; a saúde funcional será exigida pelo deploy proprietário do PDE.'
+            echo 'TLS público da superfície PDE confirmado; a saúde funcional será exigida pelo deploy proprietário.'
           else
             curl --fail --show-error --silent \
               --retry 12 --retry-delay 10 --retry-connrefused \
@@ -378,7 +440,8 @@ jobs:
           fi
           if [ "${{ inputs.deployment_target }}" != "public_payments" ] \
             && [ "${{ inputs.issue_digicomdigital_certificate }}" != "true" ] \
-            && [ "${{ inputs.issue_mira_certificate }}" != "true" ]; then
+            && [ "${{ inputs.issue_mira_certificate }}" != "true" ] \
+            && [ "${{ inputs.issue_alcyone_certificate }}" != "true" ]; then
             curl --fail --show-error --silent \
               --retry 12 --retry-delay 10 --retry-connrefused \
               "${public_url}/healthz" | grep -q '"status":"UP"'

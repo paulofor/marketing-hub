@@ -47,7 +47,159 @@ paths:
                 $ref: "#/components/schemas/ProductJourneyIntegrationContract"
         "404":
           description: Produto PDE não encontrado.
+  /api/pde/agent-validation/v1/products/{productSlug}/contract:
+    get:
+      summary: Consulta identidade e travas da superfície privada de homologação
+      operationId: getPdeAgentValidationContractV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+      responses:
+        "200":
+          description: Contrato sanitizado, sem credencial ou evidência de sessão.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationContract"
+  /api/pde/agent-validation/v1/products/{productSlug}/internal/sessions:
+    post:
+      summary: Abre uma sessão sintética segregada para o harness autorizado
+      operationId: createPdeAgentValidationSessionV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeInternalToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentValidationSessionRequest"
+      responses:
+        "201":
+          description: Sessão opaca vinculada ao produto, cenário e versão.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationSession"
+        "403":
+          description: Credencial interna ausente ou inválida.
+  /api/pde/agent-validation/v1/products/{productSlug}/internal/evidence/{evidenceId}:
+    get:
+      summary: Recupera a evidência técnica sanitizada de uma sessão
+      operationId: getPdeAgentValidationEvidenceV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeInternalToken"
+        - name: evidenceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Eventos, fixtures, custo e efeitos externos persistidos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationEvidence"
+        "403":
+          description: Credencial interna ausente ou inválida.
+  /api/pde/agent-validation/v1/products/{productSlug}/session:
+    get:
+      summary: Retoma o checkpoint de uma sessão provisionada pelo harness
+      operationId: getPdeAgentValidationSessionV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeAgentSession"
+      responses:
+        "200":
+          description: Estado retomável da mesma sessão.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationSession"
+        "403":
+          description: Sessão ausente, inválida ou expirada.
+  /api/pde/agent-validation/v1/products/{productSlug}/input:
+    put:
+      summary: Persiste a entrada sintética mínima da sessão
+      operationId: savePdeAgentValidationInputV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeAgentSession"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentValidationInput"
+      responses:
+        "200":
+          description: Entrada aceita e evento inicial persistido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationSession"
+  /api/pde/agent-validation/v1/products/{productSlug}/generate:
+    post:
+      summary: Materializa três fixtures estáticas ou um bloqueio seguro
+      operationId: generatePdeAgentValidationResultV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeAgentSession"
+      responses:
+        "200":
+          description: Pacote estático pronto ou bloqueado, sempre sem provider pago.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationSession"
+  /api/pde/agent-validation/v1/products/{productSlug}/events:
+    post:
+      summary: Registra um marco explícito do cenário sintético
+      operationId: recordPdeAgentValidationEventV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+        - $ref: "#/components/parameters/PdeAgentSession"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentValidationEvent"
+      responses:
+        "200":
+          description: Evento validado na ordem funcional e persistido uma única vez.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentValidationSession"
+  /api/pde/agent-validation/v1/products/{productSlug}/safety:
+    get:
+      summary: Confirma que cobrança, publicação, campanha e provider estão desativados
+      operationId: getPdeAgentValidationSafetyV1
+      parameters:
+        - $ref: "#/components/parameters/AgentValidationProductSlug"
+      responses:
+        "200":
+          description: Envelope de efeitos externos nulos.
 components:
+  parameters:
+    AgentValidationProductSlug:
+      name: productSlug
+      in: path
+      required: true
+      schema:
+        type: string
+        example: pde-planejado-46
+    PdeInternalToken:
+      name: X-PDE-Internal-Token
+      in: header
+      required: true
+      schema: { type: string, writeOnly: true }
+    PdeAgentSession:
+      name: X-PDE-Agent-Session
+      in: header
+      required: true
+      schema: { type: string, format: uuid, writeOnly: true }
   schemas:
     CommercialOffer:
       type: object
@@ -133,3 +285,167 @@ components:
           example: pde_funnel_event
         testTrafficPolicy:
           type: string
+    AgentValidationContract:
+      type: object
+      required:
+        - productId
+        - productSlug
+        - prototypeVersion
+        - fixtureContract
+        - checkoutMode
+        - published
+        - paymentEnabled
+        - mediaSpendBrl
+        - providerCallsAuthorized
+      properties:
+        productId: { type: integer, format: int64, example: 11 }
+        productSlug: { type: string, example: pde-planejado-46 }
+        prototypeVersion: { type: string, example: alcyone-private-v1 }
+        experienceName: { type: string }
+        fixtureContract: { type: string, example: PDE_STATIC_RESULT_FIXTURES_V1 }
+        fixtureManifestPath: { type: string }
+        productStatus: { type: string, example: PLANNED }
+        checkoutMode: { type: string, example: SIMULATED_NO_CHARGE }
+        instrumentationEvents:
+          type: array
+          items: { type: string }
+        published: { type: boolean, example: false }
+        paymentEnabled: { type: boolean, example: false }
+        mediaSpendBrl: { type: integer, example: 0 }
+        providerCallsAuthorized: { type: integer, example: 0 }
+    AgentValidationSessionRequest:
+      type: object
+      required: [sourceReference, scenarioCode]
+      properties:
+        sourceReference:
+          type: string
+          example: product:11@agent-validation-v1
+        scenarioCode:
+          type: string
+          enum: [ADHERENT, RECOVERY, SAFETY]
+    AgentValidationInput:
+      type: object
+      required: [occasion, eventDate, preferences, constraints, pieceReferences]
+      properties:
+        occasion: { type: string, maxLength: 160 }
+        eventDate: { type: string, format: date }
+        preferences:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items: { type: string, maxLength: 120 }
+        constraints:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items: { type: string, maxLength: 160 }
+        pieceReferences:
+          type: array
+          minItems: 2
+          maxItems: 8
+          items: { type: string, maxLength: 160 }
+    AgentValidationEvent:
+      type: object
+      required: [eventType]
+      properties:
+        eventType:
+          type: string
+          enum:
+            - VALUE_MOMENT
+            - READY_RESULT_USED
+            - PREFERRED_OVER_FREE
+            - CHECKOUT_STARTED
+            - RECOVERY_COMPLETED
+            - SAFETY_LIMIT_BLOCKED
+            - AGENT_SCENARIO_COMPLETED
+        confirmed: { type: boolean, nullable: true }
+        selectedLookId: { type: string, nullable: true }
+        alternativeCode: { type: string, nullable: true }
+        justification: { type: string, maxLength: 500, nullable: true }
+    AgentValidationSession:
+      type: object
+      required:
+        - sessionToken
+        - productId
+        - productSlug
+        - prototypeVersion
+        - sourceReference
+        - scenarioCode
+        - trafficClass
+        - mhInternalTest
+        - status
+        - events
+        - checkoutMode
+        - finished
+        - evidenceId
+        - providerCalls
+        - providerCostUsd
+      properties:
+        sessionToken: { type: string, format: uuid, writeOnly: true }
+        productId: { type: integer, format: int64 }
+        productSlug: { type: string }
+        prototypeVersion: { type: string }
+        sourceReference: { type: string }
+        scenarioCode: { type: string }
+        trafficClass: { type: string, example: AGENT_VALIDATION }
+        mhInternalTest: { type: boolean, example: true }
+        status: { type: string, enum: [AUTHORIZED, INPUT_READY, READY, BLOCKED] }
+        input: { $ref: "#/components/schemas/AgentValidationInput" }
+        looks:
+          type: array
+          items: { $ref: "#/components/schemas/AgentValidationLook" }
+        selectedLookId: { type: string, nullable: true }
+        blocker: { type: string, nullable: true }
+        events:
+          type: array
+          uniqueItems: true
+          items: { type: string }
+        checkoutMode: { type: string, example: SIMULATED_NO_CHARGE }
+        finished: { type: boolean }
+        evidenceId: { type: string, format: uuid }
+        resultPackageFingerprint: { type: string, nullable: true }
+        providerCalls: { type: integer, example: 0 }
+        providerCostUsd: { type: integer, example: 0 }
+    AgentValidationLook:
+      type: object
+      required: [id, title, imagePath, whyItWorks, practicalAdjustment]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        imagePath: { type: string }
+        whyItWorks: { type: string }
+        practicalAdjustment: { type: string }
+    AgentValidationEvidence:
+      allOf:
+        - $ref: "#/components/schemas/AgentValidationSession"
+        - type: object
+          required:
+            - readingId
+            - executionId
+            - fixtureContract
+            - eventAudit
+            - sideEffects
+            - humanEvidenceClaimed
+            - commercialEvidenceClaimed
+          properties:
+            readingId: { type: string, format: uuid }
+            executionId: { type: string, format: uuid }
+            fixtureContract: { type: string }
+            eventAudit:
+              type: array
+              items:
+                type: object
+                required: [eventType, occurredAt, metadata]
+                properties:
+                  eventType: { type: string }
+                  occurredAt: { type: string, format: date-time }
+                  metadata: { type: object, additionalProperties: true }
+            sideEffects:
+              type: object
+              properties:
+                paymentEnabled: { type: boolean, example: false }
+                published: { type: boolean, example: false }
+                campaignCreated: { type: boolean, example: false }
+                mediaSpendBrl: { type: integer, example: 0 }
+            humanEvidenceClaimed: { type: boolean, example: false }
+            commercialEvidenceClaimed: { type: boolean, example: false }

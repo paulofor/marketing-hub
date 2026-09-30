@@ -34,8 +34,15 @@ probe_mira_commercial_route() {
     https://127.0.0.1/ | grep -Fq 'Welcome to nginx!'
 }
 
+probe_alcyone_route() {
+  compose exec -T proxy wget -qO- --no-check-certificate \
+    --header='Host: alcyone.digicomdigital.com.br' \
+    https://127.0.0.1/ | grep -Fq 'Welcome to nginx!'
+}
+
 probe_public_route
 probe_mira_commercial_route
+probe_alcyone_route
 restart_count_before="$(docker inspect "${proxy_id}" --format '{{.RestartCount}}')"
 # Encerra o processo por dentro do namespace para simular crash. `docker kill`
 # seria uma parada manual e, corretamente, suspenderia a política até novo start.
@@ -61,4 +68,5 @@ done
 
 probe_public_route
 probe_mira_commercial_route
+probe_alcyone_route
 echo 'Ciclo de vida do proxy público homologado ponta a ponta.'

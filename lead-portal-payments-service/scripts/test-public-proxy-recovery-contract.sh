@@ -41,6 +41,7 @@ grep -Fq '< lead-portal-payments-service/scripts/recover-public-proxy.sh' "${wor
 for probe in \
   'https://kit-whatsapp-pronto.digicomdigital.com.br' \
   'https://mira.digicomdigital.com.br' \
+  'https://alcyone.digicomdigital.com.br' \
   '/healthz' \
   '/pde-health-contract.json' \
   'kit-whatsapp-pronto' \

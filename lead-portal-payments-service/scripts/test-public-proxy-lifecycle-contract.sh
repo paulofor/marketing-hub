@@ -51,9 +51,18 @@ grep -Fq 'https://kit-whatsapp-pronto.digicomdigital.com.br' "${workflow}" || {
 for commercial_mira_contract in \
   'issue_mira_certificate' \
   'mira.digicomdigital.com.br' \
-  'TLS público de Mira confirmado; a saúde funcional será exigida pelo deploy proprietário do PDE.'; do
+  'TLS público da superfície PDE confirmado; a saúde funcional será exigida pelo deploy proprietário.'; do
   grep -Fq "${commercial_mira_contract}" "${workflow}" || {
     echo "[ARQUITETURA] deploy do proxy deve preparar o TLS comercial de Mira: ${commercial_mira_contract}" >&2
+    exit 1
+  }
+done
+for alcyone_contract in \
+  'issue_alcyone_certificate' \
+  'alcyone.digicomdigital.com.br' \
+  'CERTBOT_PRIMARY_DOMAIN=alcyone.digicomdigital.com.br'; do
+  grep -Fq "${alcyone_contract}" "${workflow}" || {
+    echo "[ARQUITETURA] deploy do proxy deve preparar o TLS de Alcyone: ${alcyone_contract}" >&2
     exit 1
   }
 done
@@ -72,6 +81,15 @@ for proxy_contract in \
   '/etc/nginx/certs/live/mira.digicomdigital.com.br/fullchain.pem'; do
   grep -Fq "${proxy_contract}" "${module_dir}/nginx.conf" || {
     echo "[ARQUITETURA] proxy público sem contrato comercial de Mira: ${proxy_contract}" >&2
+    exit 1
+  }
+done
+for proxy_contract in \
+  'alcyone.digicomdigital.com.br pde-platform-frontend-alcyone:80' \
+  '/etc/nginx/certs/live/alcyone.digicomdigital.com.br/fullchain.pem' \
+  'noindex, nofollow, noarchive'; do
+  grep -Fq "${proxy_contract}" "${module_dir}/nginx.conf" || {
+    echo "[ARQUITETURA] proxy público sem contrato privado de Alcyone: ${proxy_contract}" >&2
     exit 1
   }
 done

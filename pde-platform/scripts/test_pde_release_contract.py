@@ -34,6 +34,7 @@ class PdeReleaseContractTest(unittest.TestCase):
                 "mira",
                 "mira-commercial",
                 "kit-whatsapp",
+                "alcyone",
             },
         )
 
@@ -42,6 +43,13 @@ class PdeReleaseContractTest(unittest.TestCase):
         self.assertEqual(
             MODULE.diagnostic_surface(surface),
             "pde-platform-frontend-mira-commercial",
+        )
+
+    def test_alcyone_has_its_own_runtime_identity(self):
+        surface = MODULE.select_surface(self.inventory, "alcyone")
+        self.assertEqual(
+            MODULE.diagnostic_surface(surface),
+            "pde-platform-frontend-alcyone",
         )
 
     def test_commercial_mira_release_manifest_binds_homologated_source(self):

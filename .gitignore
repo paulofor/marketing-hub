@@ -77,6 +77,9 @@ local/
 # Dependências e bundles locais do protótipo privado
 /customer-agent-worker/node_modules/
 /pde-platform/frontend/dist-vega/
+/pde-platform/frontend/dist-mira-commercial/
+/pde-platform/frontend/dist-alcyone/
+/pde-platform/frontend/public-alcyone/
 /pde-platform/frontend/public-mira-commercial/media/*
 !/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1.mp4
 !/pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v1-poster.jpg

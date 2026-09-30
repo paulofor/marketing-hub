@@ -671,6 +671,22 @@
   Liquibase do PR. Registro: `docs/homologacao/vega-tarefa-377-harness-v1.md`.
 - **Limite:** essa correção não materializa o protótipo v8 nem aprova a tarefa #377. A versão
   executável e seus cenários próprios continuam necessários para homologar o segundo ciclo.
+- **Recorrência em 30/09/2026 — Alcyone #568:** Dédalo concluiu jornada e componentes de Alcyone,
+  mas bloqueou o acesso porque havia somente especificação e nenhuma imagem executável do produto.
+  Reutilizar Mira violaria identidade; aceitar os documentos fabricaria prontidão. Foi criada a
+  superfície isolada `alcyone-private-v1`, com frontend, backend de sessões, persistência atômica,
+  fixtures por código, proxy, diagnóstico e harness próprios. A rodada local aprovou os nove pares
+  de cenário/dispositivo com custo e efeitos externos zero.
+- **Causa-raiz complementar e prevenção:** o gate persistido ainda exigia a cobertura histórica de
+  cinco percursos, portanto rejeitaria a nova prova completa de nove. O backend mantém compatibilidade
+  com evidência histórica, mas, no contrato estendido, exige os nove pares únicos, custo zero,
+  segregação e efeitos externos nulos. O customer-agent seleciona o harness pela identidade do
+  produto e recusa reutilização de cenário de outro PDE; contratos de isolamento impedem compartilhar
+  imagem, container, porta ou alvo de publicação.
+- **Causa-raiz de inicialização e prevenção:** a primeira repetição limpa recebeu `502` nos dois
+  primeiros casos porque o E2E aguardava apenas o container do frontend iniciar. O Compose local
+  agora encadeia `backend saudável → frontend saudável → harness`, e um teste de contrato bloqueia a
+  remoção dessas condições. A reexecução aprovou os 9 casos sem retentativa ou tolerância artificial.
 - **Recorrência na saída do bloqueio em 10/09/2026:** a validação de entrada ocultou a retentativa,
   mas #377 era `TECHNICAL_FAILURE` e a atividade de correção só aceitava rejeição funcional.
   O card ficou sem comando de recuperação. Backend e Dédalo passam a aceitar essa origem
@@ -8088,3 +8104,20 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   `DEDALO_BPM` pelo `taskId`. O backend preserva heartbeat recente, reentrega uma única lease órfã
   sem saída, bloqueia repetição quando já houve output/consumo e encerra uma segunda interrupção.
   O changelog de Alcyone aceita e reconcilia #534 mesmo quando o claim ocorre antes do deploy.
+
+## LOOP-PDE-PROXY-FORA-DA-RETOMADA — 30/09/2026
+
+- **Evidência confirmada:** a superfície privada de Alcyone possuía imagem, porta e domínio
+  exclusivos, mas o publicador que materializa o proxy e o certificado não pertencia a nenhum
+  escopo do coordenador. O merge podia construir a imagem desse serviço sem executar `deploy`, e
+  uma emissão manual trocaria o proxy fora da proteção usada pelo backend e pelo PDE.
+- **Causa-raiz:** o inventário de runtimes havia evoluído, enquanto o inventário de publicadores
+  continuava tratando a recuperação de Nginx como substituta do workflow que realmente publica o
+  Compose e emite TLS. Build bem-sucedido não comprovava mutação produtiva.
+- **Alternativas avaliadas:** publicar manualmente deixaria a mesma lacuna; incluir o workflow no
+  escopo PDE faria toda intervenção renovar o certificado de Alcyone; criar um escopo dedicado com
+  inputs fechados preserva os demais domínios e a mesma revisão. A terceira foi adotada.
+- **Correção e prevenção:** `alcyone-proxy` pausa somente `lead-portal-payments-ci.yml`; a retomada
+  aceita `recovery_sha` e `recovery_base_sha`, seleciona apenas o destino PDE e o certificado de
+  Alcyone e exige sucesso do job `deploy`. Testes simulam o ciclo de pausa, dispatch, inputs e
+  recibo do job produtivo, impedindo que teste ou build seja confundido com publicação.

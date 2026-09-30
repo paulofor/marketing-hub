@@ -475,6 +475,31 @@ class AutomaticRecoveryTest(unittest.TestCase):
         }]
         self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
 
+    def test_alcyone_proxy_recovery_issues_only_its_certificate_and_requires_deploy_job(self):
+        self.prepare(["alcyone-proxy"])
+        self.assertEqual(self.recovery.reconcile()["status"], "WAITING")
+        self.assertEqual(
+            [name for name, _ in self.github.dispatches],
+            ["lead-portal-payments-ci.yml"],
+        )
+        _, payload = self.github.dispatches[0]
+        self.assertEqual(payload["inputs"]["deployment_target"], "pde")
+        self.assertEqual(payload["inputs"]["issue_alcyone_certificate"], "true")
+        for name in (
+            "issue_clubemusa_certificate",
+            "issue_digicomdigital_certificate",
+            "issue_kit_whatsapp_certificate",
+            "issue_mira_certificate",
+        ):
+            self.assertEqual(payload["inputs"][name], "false")
+        run = self.github.completed_runs["lead-portal-payments-ci.yml"][0]
+        run.update(status="completed", conclusion="success")
+        self.github.jobs[run["id"]] = [{
+            "name": POLICY["lead-portal-payments-ci.yml"]["publication_job"],
+            "conclusion": "success",
+        }]
+        self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
+
     def test_existing_live_run_is_reused_without_dispatch(self):
         self.prepare()
         self.github.add_run("communication-agent-worker-ci.yml", status="queued", conclusion=None)

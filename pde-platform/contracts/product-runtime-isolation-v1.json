@@ -152,6 +152,28 @@
           "backendProbePath": "/api/pde/mira/commercial/v1/contract"
         }
       ]
+    },
+    {
+      "productId": 11,
+      "internalName": "Alcyone",
+      "productSlug": "pde-planejado-46",
+      "surfaces": [
+        {
+          "deployTarget": "alcyone",
+          "versionId": "alcyone-private-v1",
+          "experienceVersion": "alcyone-private-v1",
+          "lifecycleStatus": "SUPPORTED",
+          "watchdogRequired": true,
+          "serviceName": "pde-platform-frontend-alcyone",
+          "containerName": "pde-platform-frontend-alcyone",
+          "imageName": "pde-platform-frontend-alcyone",
+          "imageVariable": "PDE_PLATFORM_FRONTEND_ALCYONE_IMAGE",
+          "portVariable": "PDE_PLATFORM_FRONTEND_ALCYONE_PORT",
+          "hostPort": 5184,
+          "publicUrl": "https://alcyone.digicomdigital.com.br",
+          "backendProbePath": "/api/pde/agent-validation/v1/products/pde-planejado-46/contract"
+        }
+      ]
     }
   ]
 }

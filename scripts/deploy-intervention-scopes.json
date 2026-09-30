@@ -6,6 +6,7 @@
     "deploy-containers.yml"
   ],
   "pde": ["recover-public-proxy.yml", "pde-platform-metodo-musa-ci.yml"],
+  "alcyone-proxy": ["lead-portal-payments-ci.yml"],
   "dedalo": ["landing-generator-agent-worker-ci.yml"],
   "psique": ["customer-agent-worker-ci.yml"],
   "atena": ["experiment-strategist-worker-ci.yml"],

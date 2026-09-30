@@ -65,7 +65,7 @@ class PdeStaticVisualAgentValidationServiceTest {
         assertThat(evidence.milestones().accessAuthenticatedAt()).isNotBlank();
         assertThat(evidence.milestones().accessCompletedAt()).isNotBlank();
         assertThat(evidence.milestones().returnedAt()).isNotBlank();
-        assertThat(evidence.prototypeVersion()).isEqualTo("alcyone-private-v2");
+        assertThat(evidence.prototypeVersion()).isEqualTo("alcyone-private-v3");
         assertThat(evidence.credentialStoredAsHash()).isTrue();
         assertThat(evidence.providerCalls()).isZero();
         assertThat(evidence.sideEffects())
@@ -216,7 +216,7 @@ class PdeStaticVisualAgentValidationServiceTest {
         assertThatThrownBy(() -> migrated.session(PRODUCT, "legacy-raw-session"))
                 .isInstanceOf(SecurityException.class);
         assertThat(migrated.evidence(PRODUCT, "legacy-evidence").prototypeVersion())
-                .isEqualTo("alcyone-private-v1");
+                .isEqualTo("alcyone-private-v2");
         assertThat(Files.readString(storagePath())).doesNotContain("legacy-raw-session");
     }
 

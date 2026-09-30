@@ -1,0 +1,79 @@
+{
+  "contractVersion": "musa-v12-commercial-homologation.v18",
+  "processCode": "pde-commercial-compatibility-attestation",
+  "processVersion": 1,
+  "activityId": "pdeCompatibilityGate",
+  "sourceReference": "product:4@musa-pde-entry-v12-alcyone-runtime-v3",
+  "experimentId": 92,
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "publicUrl": "https://v8.clubemusa.com.br/"
+  },
+  "status": "EVIDENCE_COMPATIBILITY_ONLY",
+  "boundary": "Revalida o isolamento de Vega após versionar o runtime privado de Alcyone; não altera nem publica Vega e não cria checkout, campanha ou gasto.",
+  "operationalState": {
+    "verifiedAt": "2026-09-30",
+    "experimentStatus": "INVALIDATED",
+    "commercialOfferExpected": false,
+    "deploymentAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/musa-v12-commercial-homologation-v17.json",
+    "reason": "Comprovar que inventário e smoke de Alcyone v3 preservam o runtime, o roteamento e o estado comercial de Vega.",
+    "includedChanges": [
+      "Inventário compartilhado atualiza somente Alcyone para a versão privada v3",
+      "Teste de proxy exige Alcyone v3 sem substituir a superfície v8",
+      "Fonte principal de Vega permanece idêntico byte a byte"
+    ],
+    "excludedChanges": [
+      "Oferta, preço, checkout, copy, vídeos ou experiência de Vega",
+      "Promoção ou publicação do experimento 92",
+      "Campanha, tráfego, gasto, cobrança ou contato humano"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br/",
+    "requiredFrontendSourceSha256": "c32558dfd8437639e965e8744959e332a33075ac9eab1f396874c5620b3addfa"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "c32558dfd8437639e965e8744959e332a33075ac9eab1f396874c5620b3addfa"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/musa-v12-commercial-homologation-v17.json",
+      "sha256": "f50dff676fc2e2bdc40f148d5f03b01fcb051378451aed5900d8d90e5c121bc5",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/contracts/product-runtime-isolation-v1.json",
+      "sha256": "4b6d8526e51569d88c853bb0fe27632388788cc0be9657838613d42262591266",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "78f5d14b213c5d342868f441cf458150987515cfdf64f57c954d26c8b862a211",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/scripts/test-product-runtime-proxy-local.sh",
+      "sha256": "caf8d08483c4f39599beb55fb9c5211c036a7fe97c1f4058bd20951856fc5233",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/alcyone-agent-validation-v5.md"
+}

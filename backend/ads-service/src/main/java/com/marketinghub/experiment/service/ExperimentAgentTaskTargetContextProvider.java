@@ -346,8 +346,7 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
         JsonNode deployment = validation.path("technicalDeploymentEvidence");
         JsonNode diagnostic = deployment.path("diagnosticSnapshot");
         if (deployment.isObject()
-            && "PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1"
-                .equals(deployment.path("contractVersion").asText())
+            && validTechnicalDeploymentContract(deployment, acceptance)
             && deployment.path("httpStatus").asInt() == 200
             && !deployment.path("observedAt").asText().isBlank()
             && "UP".equals(diagnostic.path("status").asText())
@@ -378,6 +377,27 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
           ex);
       return null;
     }
+  }
+
+  /** Aceita o recibo histórico v1 e exige correlação explícita no recibo automático v2. */
+  private boolean validTechnicalDeploymentContract(JsonNode deployment, JsonNode acceptance) {
+    String version = deployment.path("contractVersion").asText();
+    if ("PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1".equals(version)) return true;
+    String trigger = deployment.path("reconciliationTrigger").asText();
+    long sourceTaskId = deployment.path("sourceTaskId").asLong(0);
+    if (!"PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V2".equals(version)
+        || !"PDE_AGENT_VALIDATION_RUNTIME_V2"
+            .equals(acceptance.path("runtimeReconciliationVersion").asText())
+        || !trigger.equals(acceptance.path("runtimeReconciliationTrigger").asText())
+        || sourceTaskId < 1) return false;
+    return switch (trigger) {
+      case "ACCESS_COMPLETION" ->
+          ("agent-task:" + sourceTaskId)
+              .equals(acceptance.path("acceptanceEvidenceReference").asText());
+      case "CORRECTION_CLAIM" ->
+          acceptance.path("runtimeCorrectionSourceTaskId").asLong(0) == sourceTaskId;
+      default -> false;
+    };
   }
 
   /**

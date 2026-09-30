@@ -1512,6 +1512,69 @@ class AgentTaskServiceTest {
     assertThat(task.getStatus()).isEqualTo("IN_PROGRESS");
   }
 
+  /** Mantém a tarefa na fila e persiste a orientação sem iniciar o executor ou o modelo. */
+  @Test
+  void waitsForClaimPreparationBeforeReservingTask() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    AgentTask task =
+        processTask(579L, dedalo, process("PUBLISHED", "Dédalo"), "prototypeCorrection", "PENDING");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "PENDING"))
+        .thenReturn(List.of(task));
+    when(repository.save(task)).thenReturn(task);
+    AgentTaskClaimPreparationHook hook = mock(AgentTaskClaimPreparationHook.class);
+    when(hook.supports(task)).thenReturn(true);
+    when(hook.prepare(task))
+        .thenReturn(
+            AgentTaskClaimPreparationHook.Preparation.waiting(
+                "MISSING_EVIDENCE", "Publique uma nova versão privada."));
+    AgentTaskService service = service(repository, agents, Clock.systemUTC());
+    ReflectionTestUtils.setField(service, "claimPreparationHooks", List.of(hook));
+
+    assertThat(service.claimEligibleProcessTask("landing-generator")).isEmpty();
+
+    assertThat(task.getStatus()).isEqualTo("PENDING");
+    assertThat(task.getReceivedAt()).isNull();
+    assertThat(task.getBlockerCategory()).isEqualTo("MISSING_EVIDENCE");
+    assertThat(task.getBlockerAction()).isEqualTo("Publique uma nova versão privada.");
+    assertThat(task.getAuditLinks()).anyMatch(link -> "BLOCKER_HELP".equals(link.getLinkType()));
+    verify(repository).save(task);
+  }
+
+  /** Limpa a espera técnica e reserva a tarefa assim que a preparação comprova o runtime. */
+  @Test
+  void claimsTaskAfterPreparationBecomesReady() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    AgentTask task =
+        processTask(580L, dedalo, process("PUBLISHED", "Dédalo"), "prototypeCorrection", "PENDING");
+    task.setBlockerCategory("MISSING_EVIDENCE");
+    task.setBlockerAction("Publique uma nova versão privada.");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "PENDING"))
+        .thenReturn(List.of(task));
+    when(repository.save(task)).thenReturn(task);
+    AgentTaskClaimPreparationHook hook = mock(AgentTaskClaimPreparationHook.class);
+    when(hook.supports(task)).thenReturn(true);
+    when(hook.prepare(task))
+        .thenReturn(AgentTaskClaimPreparationHook.Preparation.ready("Runtime comprovado."));
+    AgentTaskService service = service(repository, agents, Clock.systemUTC());
+    ReflectionTestUtils.setField(service, "claimPreparationHooks", List.of(hook));
+
+    AgentTaskPendingResponse response =
+        service.claimEligibleProcessTask("landing-generator").orElseThrow();
+
+    assertThat(response.taskId()).isEqualTo(580L);
+    assertThat(task.getStatus()).isEqualTo("IN_PROGRESS");
+    assertThat(task.getBlockerCategory()).isNull();
+    assertThat(task.getBlockerAction()).isNull();
+  }
+
   /** Entrega ao executor a identidade comercial resolvida pelo backend para a tarefa reservada. */
   @Test
   void includesTypedCommercialTargetInPendingContract() {

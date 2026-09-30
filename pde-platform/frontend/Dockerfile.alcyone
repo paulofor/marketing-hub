@@ -8,7 +8,7 @@ RUN node scripts/source-fingerprint.mjs > /app/frontend-source.sha256 \
     && mv dist-alcyone/alcyone.html dist-alcyone/index.html
 
 FROM nginx:1.27-alpine
-ARG PDE_FRONTEND_VERSION_ID=alcyone-private-v2
+ARG PDE_FRONTEND_VERSION_ID=alcyone-private-v3
 COPY --from=build /app/dist-alcyone /usr/share/nginx/html
 COPY --from=build /app/frontend-source.sha256 /usr/share/nginx/html/frontend-source.sha256
 COPY nginx.alcyone.conf /etc/nginx/templates/default.conf.template

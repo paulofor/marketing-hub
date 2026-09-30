@@ -39,8 +39,8 @@ public class PdeStaticVisualAgentValidationService {
     private static final long PRODUCT_ID = 11L;
     private static final String PRODUCT_SLUG = "pde-planejado-46";
     private static final String SOURCE_REFERENCE = "product:11@agent-validation-v1";
-    private static final String VERSION = "alcyone-private-v2";
-    private static final String PREVIOUS_VERSION = "alcyone-private-v1";
+    private static final String VERSION = "alcyone-private-v3";
+    private static final String PREVIOUS_VERSION = "alcyone-private-v2";
     private static final String FIXTURE_CONTRACT = "PDE_STATIC_RESULT_FIXTURES_V1";
     private static final String INTAKE_CONSENT_VERSION = "ALCYONE_AGENT_INTAKE_CONSENT_V1";
     private static final String CONTINUITY_POLICY_VERSION = "ALCYONE_AGENT_CONTINUITY_V1";

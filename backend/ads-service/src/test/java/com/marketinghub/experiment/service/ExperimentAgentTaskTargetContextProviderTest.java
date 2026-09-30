@@ -434,13 +434,18 @@ class ExperimentAgentTaskTargetContextProviderTest {
   /** Reconcilia a versão canônica e exclui comprovantes de outro produto, versão ou endereço. */
   @ParameterizedTest
   @CsvSource({
-    "10,mira-private-v2,mira-private-v2,https://private.local/mira,200,UP,true",
-    "11,mira-private-v2,mira-private-v2,https://private.local/mira,200,UP,false",
-    "10,mira-private-v1,mira-private-v2,https://private.local/mira,200,UP,false",
-    "10,mira-private-v2,mira-private-v1,https://private.local/mira,200,UP,false",
-    "10,mira-private-v2,mira-private-v2,https://private.local/vega,200,UP,false",
-    "10,mira-private-v2,mira-private-v2,https://private.local/mira,404,UP,false",
-    "10,mira-private-v2,mira-private-v2,https://private.local/mira,200,DOWN,false"
+    "10,mira-private-v2,mira-private-v2,https://private.local/mira,200,UP,PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1,IGNORED,0,0,true",
+    "10,mira-private-v2,mira-private-v2,https://private.local/mira,200,UP,PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V2,CORRECTION_CLAIM,7001,7001,true",
+    "10,mira-private-v2,mira-private-v2,https://private.local/mira,200,UP,PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V2,ACCESS_COMPLETION,7001,7001,true",
+    "10,mira-private-v2,mira-private-v2,https://private.local/mira,200,UP,PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V2,CORRECTION_CLAIM,7001,7002,false",
+    "10,mira-private-v2,mira-private-v2,https://private.local/mira,200,UP,PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V2,INVALID,7001,7001,false",
+    "10,mira-private-v2,mira-private-v2,https://private.local/mira,200,UP,PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V2,CORRECTION_CLAIM,0,0,false",
+    "11,mira-private-v2,mira-private-v2,https://private.local/mira,200,UP,PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1,IGNORED,0,0,false",
+    "10,mira-private-v1,mira-private-v2,https://private.local/mira,200,UP,PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1,IGNORED,0,0,false",
+    "10,mira-private-v2,mira-private-v1,https://private.local/mira,200,UP,PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1,IGNORED,0,0,false",
+    "10,mira-private-v2,mira-private-v2,https://private.local/vega,200,UP,PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1,IGNORED,0,0,false",
+    "10,mira-private-v2,mira-private-v2,https://private.local/mira,404,UP,PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1,IGNORED,0,0,false",
+    "10,mira-private-v2,mira-private-v2,https://private.local/mira,200,DOWN,PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1,IGNORED,0,0,false"
   })
   void reconcilesPrivateDeploymentEvidence(
       long diagnosticProductId,
@@ -449,6 +454,10 @@ class ExperimentAgentTaskTargetContextProviderTest {
       String url,
       int httpStatus,
       String diagnosticStatus,
+      String evidenceContractVersion,
+      String reconciliationTrigger,
+      long sourceTaskId,
+      long acceptanceTaskId,
       boolean expectedEvidence) {
     ExperimentRepository experiments = mock(ExperimentRepository.class);
     ProductRepository products = mock(ProductRepository.class);
@@ -469,14 +478,23 @@ class ExperimentAgentTaskTargetContextProviderTest {
                 """
           {"privatePrototypeAcceptance":{"status":"READY",
            "prototypeVersion":"mira-private-v2","privateAccessUrl":"https://private.local/mira",
-           "published":false},
-           "technicalDeploymentEvidence":{"contractVersion":"PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1",
+           "published":false,"runtimeReconciliationVersion":"PDE_AGENT_VALIDATION_RUNTIME_V2",
+           "runtimeReconciliationTrigger":"%s","runtimeCorrectionSourceTaskId":%d,
+           "acceptanceEvidenceReference":"agent-task:%d"},
+           "technicalDeploymentEvidence":{"contractVersion":"%s",
              "httpStatus":%d,"observedAt":"2026-09-08T04:24:00Z",
+             "reconciliationTrigger":"%s","sourceTaskId":%d,
              "diagnosticSnapshot":{"status":"%s","productId":%d,"experienceVersion":"%s",
                "imageVersionId":"%s","publicUrl":"%s","image":"mira:sha123"}}}
           """
                     .formatted(
+                        reconciliationTrigger,
+                        acceptanceTaskId,
+                        acceptanceTaskId,
+                        evidenceContractVersion,
                         httpStatus,
+                        reconciliationTrigger,
+                        sourceTaskId,
                         diagnosticStatus,
                         diagnosticProductId,
                         version,

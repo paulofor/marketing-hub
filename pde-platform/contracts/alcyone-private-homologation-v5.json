@@ -1,0 +1,135 @@
+{
+  "contractVersion": "alcyone-private-homologation.v5",
+  "processCode": "pde-private-agent-homologation",
+  "processVersion": 1,
+  "activityId": "technicalHomologation",
+  "sourceReference": "product:11@agent-validation-v1",
+  "product": {
+    "id": 11,
+    "internalName": "Alcyone",
+    "commercialName": "Alcyone",
+    "slug": "pde-planejado-46",
+    "experienceVersion": "alcyone-private-v3",
+    "supersedesExperienceVersions": ["alcyone-private-v2"],
+    "publicUrl": "https://alcyone.digicomdigital.com.br"
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "boundary": "Autoriza somente homologação privada por agentes e reconciliação técnica automática da correção; não autoriza participante humano, tráfego, venda, pagamento, campanha, mídia ou alegação de demanda.",
+  "operationalState": {
+    "verifiedAt": "2026-09-30",
+    "productStatus": "PLANNED",
+    "deploymentAuthorized": true,
+    "commercialPublicationAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/alcyone-private-homologation-v4.json",
+    "reason": "Fechar a propagação de aceite antigo comprovada pelas tarefas #578 e #579 sem executar validação humana.",
+    "includedChanges": [
+      "Nova identidade executável alcyone-private-v3 para a correção SAFETY",
+      "Preparação automática e auditável antes do claim de prototypeCorrection",
+      "Espera sem modelo ou custo quando o runtime repete a versão aceita",
+      "Reconciliação idempotente da nova versão nos dois contratos do produto"
+    ],
+    "excludedChanges": [
+      "Entrevista, convite, opinião solicitada, leitura ou piloto humano",
+      "Checkout real, cobrança, publicação comercial, campanha ou mídia",
+      "Evidência de demanda, disposição a pagar, venda, receita ou margem"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "alcyone",
+    "publicUrl": "https://alcyone.digicomdigital.com.br",
+    "requiredFrontendSourceSha256": "30c6fbaaf7888629f5e05819ff3571edc39e10acd8d5757eea94478de53612a7"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "alcyone-private-v3",
+      "experienceVersion": "alcyone-private-v3",
+      "frontendSourceSha256": "30c6fbaaf7888629f5e05819ff3571edc39e10acd8d5757eea94478de53612a7"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/alcyone-private-homologation-v4.json",
+      "sha256": "0fcb6b9bba1057a13ea084edb81e69c024024487d0aaf0527fd675ad8ed7ab6d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/alcyone-agent-validation-v5.md",
+      "sha256": "5e8e01d8b5b1054aa02f083ed7a430fea19c1e2bd378e697b4970a9907876331",
+      "promptMode": "FULL"
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentAgentTaskTargetContextProvider.java",
+      "sha256": "f60217c453634678cc9973a45884875fb4e43d10f3d9fd4de9d90dc67fb3f679",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/agenttask/AgentTaskClaimPreparationHook.java",
+      "sha256": "e0dfc97cdc006157bddbcdbe85eee88bde684d8af788eeb9f146caffb09b5d0c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/agenttask/AgentTaskService.java",
+      "sha256": "2e93e01582df8570d5e7ae6a8c3562c8afa8e89f0f5306598fabdde81f3cbb78",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationRuntimeAcceptanceHook.java",
+      "sha256": "e899ef201ceefa7310025e3c7756f0f5a1b9f938d73da4dc3a3dd0232b2ea6fa",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationRuntimeCorrectionClaimHook.java",
+      "sha256": "0222bfde0223cc6b9ab470a86a4896c88af1d9b48bc538e564eedb474237fc73",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/Dockerfile.alcyone",
+      "sha256": "b9de2db2ffc36f83b404bb8035729983b60ba13dab89385f6c7a05716e6cb0d2",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/agentvalidation/v1/PdeStaticVisualAgentValidationService.java",
+      "sha256": "b2131d59a771dee6b3f34bc62fe0206c583eba322a2b9b5f14a2a8cd6aa2f24d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/product-runtime-isolation-v1.json",
+      "sha256": "4b6d8526e51569d88c853bb0fe27632388788cc0be9657838613d42262591266",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/experiment/service/ExperimentAgentTaskTargetContextProviderTest.java",
+      "sha256": "9db49caed124f27743ffb68f6323ddab0825f0cb6d132468ed148bc7b7eaa5c9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/agenttask/AgentTaskServiceTest.java",
+      "sha256": "600555652822c637d437f2be1bfd9a9c57367a9ae202f8c0e2b110c88def97ea",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationRuntimeAcceptanceHookTest.java",
+      "sha256": "ed827d24bcb42fb637246060479e52b5383bb75b614b4041030f9679b88c6356",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationRuntimeCorrectionClaimHookTest.java",
+      "sha256": "350a8a397a45fb682396af4160a318fd64bdb969372d9165090b69f673a8489a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/alcyone-agent-validation.spec.ts",
+      "sha256": "8ccda44a240e8cfbdd4295ba7142d2f71dbbc56bebe1ccd35706cce5c3b87602",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/alcyone-agent-validation-v5.md"
+}

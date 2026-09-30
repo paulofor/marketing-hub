@@ -8210,3 +8210,27 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   sobre a conclusão genérica, a recarga o preserva e o runner rejeita aprovação baseada somente em
   flag. Testes cobrem serviço, contrato OpenAPI, Playwright, saída do harness e os três perfis sem
   converter a validação sintética em prova humana ou comercial.
+
+## LOOP-PDE-CORRECAO-RECEBE-ACEITE-DE-RUNTIME-ANTIGO — 30/09/2026
+
+- **Evidência confirmada:** a correção SAFETY foi publicada no commit `ac1953d4`, mas conservou a
+  identidade `alcyone-private-v2`. As tarefas #578 e #579 continuaram recebendo o aceite da v2 e
+  bloquearam ao não conseguirem declarar uma versão corrigida diferente da rejeitada na #577.
+- **Causa-raiz histórica:** `LOOP-PDE-RUNTIME-PUBLICADO-DIVERGE-DO-ACEITO` fechou somente a
+  publicação inicial no callback da atividade `access`. Depois de uma reprovação funcional, deploy,
+  aceite técnico persistido e claim da atividade `prototypeCorrection` voltavam a evoluir por
+  autoridades separadas. O worker podia gastar nova inferência antes de descobrir a divergência.
+- **Alternativas avaliadas:** uma alteração manual do JSON repara apenas Alcyone; renomear o runtime
+  sem reconciliar mantém o alvo antigo; preparar o claim pelo backend, provar uma identidade nova e
+  atualizar os dois contratos antes de entregar trabalho fecha versão, persistência e custo. A
+  terceira alternativa foi adotada.
+- **Correção sistêmica:** o backend ganhou uma preparação extensível anterior ao claim. A correção
+  permanece `PENDING`, com causa e ação persistidas, enquanto o runtime repete a versão ou altera o
+  build sem versioná-lo. Quando diagnóstico e contrato comprovam versão distinta e efeitos
+  comerciais zerados, o backend grava versão anterior, tarefa de origem, gatilho, commit, hash e
+  snapshot, e então libera Dédalo. Reentrega da mesma tarefa é idempotente; nova tentativa exige
+  outra versão.
+- **Prevenção:** `alcyone-private-v3` sucede explicitamente a v2. Testes de contrato cobrem espera
+  sem claim/custo, promoção atômica, build mutado sem versão, reentrega idempotente e nova tentativa.
+  A reconciliação técnica não aprova a correção: homologação e Psique continuam obrigatórios antes
+  do gate final, sem participantes humanos nem alegação de mercado.

@@ -495,7 +495,7 @@ components:
       properties:
         productId: { type: integer, format: int64, example: 11 }
         productSlug: { type: string, example: pde-planejado-46 }
-        prototypeVersion: { type: string, example: alcyone-private-v2 }
+        prototypeVersion: { type: string, example: alcyone-private-v3 }
         experienceName: { type: string }
         fixtureContract: { type: string, example: PDE_STATIC_RESULT_FIXTURES_V1 }
         fixtureManifestPath: { type: string }

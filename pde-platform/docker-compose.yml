@@ -113,11 +113,11 @@ services:
     environment:
       PDE_PRODUCT_ID: "11"
       VITE_PDE_PRODUCT_SLUG: pde-planejado-46
-      PDE_EXPERIENCE_VERSION: alcyone-private-v2
-      PDE_FRONTEND_VERSION: alcyone-private-v2
+      PDE_EXPERIENCE_VERSION: alcyone-private-v3
+      PDE_FRONTEND_VERSION: alcyone-private-v3
       PDE_FRONTEND_PUBLIC_URL: http://localhost:5184
       PDE_FRONTEND_IMAGE: marketing-hub/pde-platform-frontend-alcyone:local
-      PDE_FRONTEND_VERSION_ID: alcyone-private-v2
+      PDE_FRONTEND_VERSION_ID: alcyone-private-v3
       PDE_DEPLOY_IMAGE_TAG: local
       PDE_BACKEND_UPSTREAM: ${PDE_BACKEND_UPSTREAM:-pde-platform-backend:8096}
     labels:

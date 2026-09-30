@@ -234,7 +234,7 @@ test("Alcyone possui imagem, porta, proxy, fixtures e smoke exclusivos", async (
     "FRONTEND_ALCYONE_IMAGE_NAME: pde-platform-frontend-alcyone",
     "PDE_PLATFORM_FRONTEND_ALCYONE_PORT",
     "Dockerfile.alcyone",
-    "alcyone-private-v2",
+    "alcyone-private-v3",
     "https://alcyone.digicomdigital.com.br",
     "test-alcyone-local-integration.sh",
   ]) {

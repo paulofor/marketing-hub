@@ -8,11 +8,15 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -22,6 +26,50 @@ import org.springframework.core.io.ClassPathResource;
 /** Responsabilidade: proteger os contratos BPM de construção do PDE executados por Dédalo. */
 class PdeConstructionBpmTaskConsumerTest {
   private final ObjectMapper json = new ObjectMapper();
+
+  /** Persiste a auditoria integral antes de iniciar a chamada faturável do modelo. */
+  @Test
+  void recordsExecutionAuditBeforeModelInvocation() throws Exception {
+    AtomicReference<String> method = new AtomicReference<>();
+    AtomicReference<String> body = new AtomicReference<>();
+    HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+    server.createContext(
+        "/api/internal/agent-tasks/landing-generator/stage-executions/534/execution-audit",
+        exchange -> {
+          method.set(exchange.getRequestMethod());
+          body.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+          exchange.sendResponseHeaders(204, -1);
+          exchange.close();
+        });
+    server.start();
+    try {
+      LandingGeneratorAgentProperties properties = new LandingGeneratorAgentProperties();
+      properties.setBackendUrl("http://127.0.0.1:" + server.getAddress().getPort());
+      PdeConstructionBpmTaskConsumer consumer =
+          new PdeConstructionBpmTaskConsumer(
+              properties,
+              json,
+              mock(AutomaticExecutionControl.class),
+              mock(CodexTelemetryReporter.class));
+
+      consumer.recordExecutionStart(
+          Map.of("taskId", 534L),
+          "Núcleo de Dédalo.\n\nConstruir a jornada.",
+          "Núcleo de Dédalo.",
+          "Construir a jornada.");
+
+      JsonNode audit = json.readTree(body.get());
+      assertThat(method.get()).isEqualTo("PUT");
+      assertThat(audit.path("executionMode").asText()).isEqualTo("MODEL");
+      assertThat(audit.path("reasoningEffort").asText()).isEqualTo("max");
+      assertThat(audit.path("promptSent").asText())
+          .isEqualTo("Núcleo de Dédalo.\n\nConstruir a jornada.");
+      assertThat(audit.path("agentPromptPart").asText()).isEqualTo("Núcleo de Dédalo.");
+      assertThat(audit.path("activityPromptPart").asText()).isEqualTo("Construir a jornada.");
+    } finally {
+      server.stop(0);
+    }
+  }
 
   /** Reconhece o parecer preservado que deve ser reenviado antes de qualquer nova inferência. */
   @Test
@@ -930,7 +978,10 @@ class PdeConstructionBpmTaskConsumerTest {
     LandingGeneratorAgentProperties properties = new LandingGeneratorAgentProperties();
     properties.setBackendUrl("http://localhost:1");
     return new PdeConstructionBpmTaskConsumer(
-        properties, json, mock(AutomaticExecutionControl.class));
+        properties,
+        json,
+        mock(AutomaticExecutionControl.class),
+        mock(CodexTelemetryReporter.class));
   }
 
   /** Monta a identidade mínima da tarefa real sem fixar o conteúdo comercial do produto. */

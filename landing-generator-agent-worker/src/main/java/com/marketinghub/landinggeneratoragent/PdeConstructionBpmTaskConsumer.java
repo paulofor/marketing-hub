@@ -117,16 +117,19 @@ public class PdeConstructionBpmTaskConsumer {
   private final ObjectMapper json;
   private final LandingGeneratorAgentProperties properties;
   private final AutomaticExecutionControl automaticExecution;
+  private final CodexTelemetryReporter telemetry;
 
   /** Configura a fila canônica, o Codex somente leitura e os contratos versionados do PDE. */
   public PdeConstructionBpmTaskConsumer(
       LandingGeneratorAgentProperties properties,
       ObjectMapper json,
-      AutomaticExecutionControl automaticExecution) {
+      AutomaticExecutionControl automaticExecution,
+      CodexTelemetryReporter telemetry) {
     this.backend = LandingGeneratorBackendRestClientFactory.create(properties.getBackendUrl());
     this.properties = properties;
     this.json = json;
     this.automaticExecution = automaticExecution;
+    this.telemetry = telemetry;
   }
 
   /** Reserva em PLAY uma única atividade liberada sem decidir o avanço do processo. */
@@ -240,58 +243,83 @@ public class PdeConstructionBpmTaskConsumer {
     Path schema = materialize(contract.schemaResource(), ".json");
     PromptComposition prompt = promptComposition(task);
     try {
+      recordExecutionStart(
+          task, prompt.fullPrompt(), prompt.agentPromptPart(), prompt.activityPromptPart());
       Process process =
           new ProcessBuilder(command(output, processLog, schema))
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
-      process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
-      process.getOutputStream().close();
-      if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
-        terminateTree(process);
-        throw new BpmExecutionException(
-            "Timeout da atividade de construção do PDE.",
-            readTokenUsage(json, processLog),
-            prompt.fullPrompt(),
-            prompt.agentPromptPart(),
-            prompt.activityPromptPart());
-      }
-      TokenUsage usage = readTokenUsage(json, processLog);
-      if (process.exitValue() != 0) {
-        throw new BpmExecutionException(
-            "Codex encerrou a construção do PDE com falha: " + Files.readString(processLog),
-            usage,
-            prompt.fullPrompt(),
-            prompt.agentPromptPart(),
-            prompt.activityPromptPart());
-      }
-      try {
-        return new BpmExecution(
-            json.readTree(Files.readString(output)),
-            usage,
-            prompt.fullPrompt(),
-            prompt.agentPromptPart(),
-            prompt.activityPromptPart());
-      } catch (IOException ex) {
-        log.error(
-            "Resposta inválida na construção do PDE. taskId={} activityId={} output={}",
-            taskId(task),
-            contract.activityId(),
-            output,
-            ex);
-        throw new BpmExecutionException(
-            "Resposta de Dédalo não contém JSON válido.",
-            usage,
-            prompt.fullPrompt(),
-            prompt.agentPromptPart(),
-            prompt.activityPromptPart(),
-            ex);
+      try (CodexTelemetryReporter.Session session =
+          telemetry.monitorBpmTask(taskId(task), process, processLog)) {
+        process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
+        process.getOutputStream().close();
+        if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
+          terminateTree(process);
+          throw new BpmExecutionException(
+              "Timeout da atividade de construção do PDE.",
+              readTokenUsage(json, processLog),
+              prompt.fullPrompt(),
+              prompt.agentPromptPart(),
+              prompt.activityPromptPart());
+        }
+        TokenUsage usage = readTokenUsage(json, processLog);
+        if (process.exitValue() != 0) {
+          throw new BpmExecutionException(
+              "Codex encerrou a construção do PDE com falha: " + Files.readString(processLog),
+              usage,
+              prompt.fullPrompt(),
+              prompt.agentPromptPart(),
+              prompt.activityPromptPart());
+        }
+        try {
+          BpmExecution execution =
+              new BpmExecution(
+                  json.readTree(Files.readString(output)),
+                  usage,
+                  prompt.fullPrompt(),
+                  prompt.agentPromptPart(),
+                  prompt.activityPromptPart());
+          session.success();
+          return execution;
+        } catch (IOException ex) {
+          log.error(
+              "Resposta inválida na construção do PDE. taskId={} activityId={} output={}",
+              taskId(task),
+              contract.activityId(),
+              output,
+              ex);
+          throw new BpmExecutionException(
+              "Resposta de Dédalo não contém JSON válido.",
+              usage,
+              prompt.fullPrompt(),
+              prompt.agentPromptPart(),
+              prompt.activityPromptPart(),
+              ex);
+        }
       }
     } finally {
       Files.deleteIfExists(output);
       Files.deleteIfExists(processLog);
       Files.deleteIfExists(schema);
     }
+  }
+
+  /** Persiste modelo e prompt antes da chamada para distinguir claim de inferência iniciada. */
+  void recordExecutionStart(
+      Map<String, Object> task,
+      String fullPrompt,
+      String agentPromptPart,
+      String activityPromptPart) {
+    backend
+        .put()
+        .uri(
+            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/execution-audit",
+            AGENT_KEY,
+            taskId(task))
+        .body(executionAudit(fullPrompt, agentPromptPart, activityPromptPart))
+        .retrieve()
+        .toBodilessEntity();
   }
 
   /** Monta o processo Codex com filesystem somente leitura e schema obrigatório. */

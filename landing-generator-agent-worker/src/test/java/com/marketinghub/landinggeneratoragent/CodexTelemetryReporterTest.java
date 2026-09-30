@@ -3,8 +3,14 @@ package com.marketinghub.landinggeneratoragent;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.net.httpserver.HttpServer;
+import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 /** Valida a leitura auditável do consumo real informado pelo processo Codex. */
@@ -56,5 +62,51 @@ class CodexTelemetryReporterTest {
         .isEqualTo(reporter.executionTelemetryId("execution-a"));
     assertThat(reporter.executionTelemetryId("execution-a"))
         .isNotEqualTo(reporter.executionTelemetryId("execution-b"));
+  }
+
+  /** Deve segregar a telemetria BPM de Dédalo pela identidade canônica da tarefa. */
+  @Test
+  void shouldReportDedaloBpmTelemetryByTaskId() throws Exception {
+    List<String> paths = new CopyOnWriteArrayList<>();
+    CountDownLatch heartbeat = new CountDownLatch(1);
+    CountDownLatch finish = new CountDownLatch(1);
+    HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+    server.createContext(
+        "/api/codex-agent-telemetry/v1/internal/DEDALO_BPM/executions/534",
+        exchange -> {
+          String path = exchange.getRequestURI().getPath();
+          paths.add(path);
+          exchange.getRequestBody().readAllBytes();
+          exchange.sendResponseHeaders(200, 0);
+          exchange.getResponseBody().write("{}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+          exchange.close();
+          if (path.endsWith("/heartbeat")) heartbeat.countDown();
+          if (path.endsWith("/finish")) finish.countDown();
+        });
+    server.start();
+    Path output = Files.createTempFile("dedalo-bpm-events-", ".jsonl");
+    Files.writeString(output, "{\"type\":\"thread.started\"}\n");
+    LandingGeneratorAgentProperties properties = new LandingGeneratorAgentProperties();
+    properties.setBackendUrl("http://127.0.0.1:" + server.getAddress().getPort());
+    CodexTelemetryReporter reporter = new CodexTelemetryReporter(properties, new ObjectMapper());
+    Process process = new ProcessBuilder("/usr/bin/true").start();
+    process.waitFor();
+    try {
+      try (CodexTelemetryReporter.Session session =
+          reporter.monitorBpmTask(534L, process, output)) {
+        assertThat(heartbeat.await(2, TimeUnit.SECONDS)).isTrue();
+        session.success();
+      }
+
+      assertThat(finish.await(2, TimeUnit.SECONDS)).isTrue();
+      assertThat(paths)
+          .contains(
+              "/api/codex-agent-telemetry/v1/internal/DEDALO_BPM/executions/534/heartbeat",
+              "/api/codex-agent-telemetry/v1/internal/DEDALO_BPM/executions/534/finish");
+    } finally {
+      reporter.shutdown();
+      Files.deleteIfExists(output);
+      server.stop(0);
+    }
   }
 }

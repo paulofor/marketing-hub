@@ -110,9 +110,12 @@ public class AgentTaskService {
   private static final Set<String> CALLBACK_REPLAY_CAPABLE_AGENTS =
       Set.of(CUSTOMER_AGENT_KEY, COMMUNICATION_AGENT_KEY, LANDING_GENERATOR_AGENT_KEY);
   private static final String CUSTOMER_AGENT_TELEMETRY_TYPE = "CUSTOMER_AGENT";
+  private static final String DEDALO_BPM_TELEMETRY_TYPE = "DEDALO_BPM";
   private static final String ORPHANED_LEASE_RECOVERY_PREFIX = "ORPHANED_LEASE_RECOVERY_ONCE|";
   private static final String ORPHANED_LEASE_EXHAUSTED_PREFIX =
       "ORPHANED_LEASE_RECOVERY_EXHAUSTED|";
+  private static final String DEDALO_LEASE_RECOVERY_PREFIX = "DEDALO_LEASE_RECOVERY_ONCE|";
+  private static final String DEDALO_LEASE_EXHAUSTED_PREFIX = "DEDALO_LEASE_RECOVERY_EXHAUSTED|";
   private static final String DETERMINISTIC_RESOURCE_RECOVERY_PREFIX =
       "DETERMINISTIC_RESOURCE_LEASE_RECOVERY_ONCE|";
   private static final String DETERMINISTIC_RESOURCE_EXHAUSTED_PREFIX =
@@ -1625,6 +1628,10 @@ public class AgentTaskService {
         recoverOrphanedCustomerAgentLease(agentKey, processCode, activityId, executionResourceCode);
     if (orphaned.isPresent())
       return Optional.of(pendingResponse(orphaned.get(), apolloAudiovisualContract));
+    Optional<AgentTask> orphanedDedalo =
+        recoverOrphanedDedaloLease(agentKey, processCode, activityId, executionResourceCode);
+    if (orphanedDedalo.isPresent())
+      return Optional.of(pendingResponse(orphanedDedalo.get(), apolloAudiovisualContract));
     Optional<AgentTask> deterministicResourceOrphan =
         recoverOrphanedDeterministicResourceLease(
             agentKey, processCode, activityId, executionResourceCode, apolloAudiovisualContract);
@@ -1859,6 +1866,167 @@ public class AgentTaskService {
     String error =
         ORPHANED_LEASE_EXHAUSTED_PREFIX
             + "Psique foi interrompida novamente depois da única retomada automática; nenhuma nova inferência foi iniciada para evitar cobrança duplicada.";
+    task.setExecutionError(error);
+    ensurePreModelFailureAudit(task, null, null);
+    applyBlockerGuidance(task, null, error, null);
+    requireTerminalExecutionAudit(task, false);
+    task.setStatus("BLOCKED");
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+  }
+
+  /**
+   * Reentrega uma única lease de Dédalo interrompida antes de produzir saída ou consumo auditável.
+   */
+  private Optional<AgentTask> recoverOrphanedDedaloLease(
+      String agentKey, String processCode, String activityId, String executionResourceCode) {
+    if (!LANDING_GENERATOR_AGENT_KEY.equals(agentKey.trim())) return Optional.empty();
+    Instant now = Instant.now(clock);
+    List<AgentTask> inProgress =
+        repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            LANDING_GENERATOR_AGENT_KEY, "WORK", "IN_PROGRESS");
+    if (inProgress == null) return Optional.empty();
+    for (AgentTask task : inProgress) {
+      if (task.getProcessDefinition() == null
+          || !matchesExecutionContract(task, processCode, activityId, executionResourceCode)) {
+        continue;
+      }
+      if (isRecoveredDedaloLease(task)) {
+        if (dedaloLeaseIsStale(task, now)) blockExhaustedDedaloLease(task, now);
+        continue;
+      }
+      if (canRecoverOrphanedDedaloLease(task, now)) {
+        task.setExecutionError(
+            DEDALO_LEASE_RECOVERY_PREFIX
+                + "A reserva perdeu o executor antes de produzir saída ou consumo auditável.");
+        task.setUpdatedAt(now);
+        AgentTask saved = repository.save(task);
+        synchronizeActivityInstance(saved, now);
+        return Optional.of(saved);
+      }
+      if (dedaloProducedOutputBeforeInterruption(task, now)) {
+        blockDedaloLeaseWithObservedOutput(task, now);
+      } else if (dedaloInvocationWithoutTelemetryIsStale(task, now)) {
+        blockDedaloLeaseWithoutSufficientTelemetry(task, now);
+      }
+    }
+    return Optional.empty();
+  }
+
+  /** Confirma ausência de resposta, consumo e telemetria de saída antes da retomada única. */
+  private boolean canRecoverOrphanedDedaloLease(AgentTask task, Instant now) {
+    if (trimToNull(task.getResultJson()) != null
+        || trimToNull(task.getEvidenceJson()) != null
+        || task.getInputTokens() != null
+        || task.getCachedInputTokens() != null
+        || task.getOutputTokens() != null
+        || task.getEstimatedCostUsd() != null
+        || task.getModelUsageUpdatedAt() != null
+        || task.getDeliveredAt() != null) {
+      return false;
+    }
+    CodexAgentExecutionTelemetryService.Response telemetry = dedaloTelemetry(task);
+    if (telemetry != null) {
+      return dedaloTelemetryIsStale(telemetry, now)
+          && Objects.equals(telemetry.eventCount(), 0L)
+          && Objects.equals(telemetry.outputBytes(), 0L)
+          && telemetry.inputTokens() == null
+          && telemetry.outputTokens() == null;
+    }
+    if (trimToNull(task.getExecutionMode()) != null
+        || trimToNull(task.getExecutionModelCode()) != null
+        || trimToNull(task.getExecutionPrompt()) != null) {
+      return false;
+    }
+    return taskLeaseIsStale(task, now);
+  }
+
+  /** Reconhece a retomada automática já consumida pela mesma tarefa de Dédalo. */
+  private boolean isRecoveredDedaloLease(AgentTask task) {
+    return task.getExecutionError() != null
+        && task.getExecutionError().startsWith(DEDALO_LEASE_RECOVERY_PREFIX);
+  }
+
+  /** Mede a interrupção por heartbeat e usa a lease somente no legado sem telemetria. */
+  private boolean dedaloLeaseIsStale(AgentTask task, Instant now) {
+    CodexAgentExecutionTelemetryService.Response telemetry = dedaloTelemetry(task);
+    return telemetry == null ? taskLeaseIsStale(task, now) : dedaloTelemetryIsStale(telemetry, now);
+  }
+
+  /** Lê a telemetria da tarefa BPM sem confundi-la com jobs de landing do mesmo worker. */
+  private CodexAgentExecutionTelemetryService.Response dedaloTelemetry(AgentTask task) {
+    return codexTelemetry == null
+        ? null
+        : codexTelemetry.get(DEDALO_BPM_TELEMETRY_TYPE, task.getId());
+  }
+
+  /** Considera atrasado tanto processo RUNNING sem heartbeat quanto término sem callback. */
+  private boolean dedaloTelemetryIsStale(
+      CodexAgentExecutionTelemetryService.Response telemetry, Instant now) {
+    if (telemetry.stale()) return true;
+    return !"RUNNING".equals(telemetry.status())
+        && telemetry.lastActivityAt() != null
+        && telemetry.lastActivityAt().plus(ORPHANED_LEASE_GRACE).isBefore(now);
+  }
+
+  /** Usa o instante persistido mais recente para tarefas legadas sem heartbeat. */
+  private boolean taskLeaseIsStale(AgentTask task, Instant now) {
+    Instant lastProgress = task.getUpdatedAt() == null ? task.getReceivedAt() : task.getUpdatedAt();
+    return lastProgress != null && lastProgress.plus(ORPHANED_LEASE_GRACE).isBefore(now);
+  }
+
+  /** Detecta saída observada que impede uma nova inferência automática com custo duplicado. */
+  private boolean dedaloProducedOutputBeforeInterruption(AgentTask task, Instant now) {
+    CodexAgentExecutionTelemetryService.Response telemetry = dedaloTelemetry(task);
+    return telemetry != null
+        && dedaloTelemetryIsStale(telemetry, now)
+        && ((telemetry.eventCount() != null && telemetry.eventCount() > 0L)
+            || (telemetry.outputBytes() != null && telemetry.outputBytes() > 0L)
+            || telemetry.inputTokens() != null
+            || telemetry.outputTokens() != null);
+  }
+
+  /** Detecta auditoria de modelo antiga cuja telemetria não permite repetir a chamada. */
+  private boolean dedaloInvocationWithoutTelemetryIsStale(AgentTask task, Instant now) {
+    return dedaloTelemetry(task) == null
+        && "MODEL".equals(trimToNull(task.getExecutionMode()))
+        && taskLeaseIsStale(task, now);
+  }
+
+  /** Bloqueia a primeira lease quando já há saída e a repetição poderia cobrar novamente. */
+  private void blockDedaloLeaseWithObservedOutput(AgentTask task, Instant now) {
+    String error =
+        DEDALO_LEASE_EXHAUSTED_PREFIX
+            + "Dédalo produziu saída antes da interrupção; nova inferência automática foi recusada para evitar cobrança duplicada.";
+    task.setExecutionError(error);
+    applyBlockerGuidance(task, null, error, null);
+    requireTerminalExecutionAudit(task, false);
+    task.setStatus("BLOCKED");
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+  }
+
+  /** Bloqueia uma chamada auditada sem heartbeat suficiente para decidir por nova cobrança. */
+  private void blockDedaloLeaseWithoutSufficientTelemetry(AgentTask task, Instant now) {
+    String error =
+        DEDALO_LEASE_EXHAUSTED_PREFIX
+            + "A chamada de Dédalo foi auditada, mas a telemetria se perdeu; nova inferência automática foi recusada para evitar cobrança duplicada.";
+    task.setExecutionError(error);
+    applyBlockerGuidance(task, null, error, null);
+    requireTerminalExecutionAudit(task, false);
+    task.setStatus("BLOCKED");
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+  }
+
+  /** Encerra a segunda interrupção de Dédalo sem permitir uma terceira inferência. */
+  private void blockExhaustedDedaloLease(AgentTask task, Instant now) {
+    String error =
+        DEDALO_LEASE_EXHAUSTED_PREFIX
+            + "Dédalo foi interrompido novamente após a única retomada; nova inferência automática foi recusada para evitar cobrança duplicada.";
     task.setExecutionError(error);
     ensurePreModelFailureAudit(task, null, null);
     applyBlockerGuidance(task, null, error, null);

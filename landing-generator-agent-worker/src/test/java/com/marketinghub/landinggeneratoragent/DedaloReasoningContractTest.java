@@ -22,7 +22,10 @@ class DedaloReasoningContractTest {
     var properties = new LandingGeneratorAgentProperties();
     var consumer =
         new PdeConstructionBpmTaskConsumer(
-            properties, new ObjectMapper(), mock(AutomaticExecutionControl.class));
+            properties,
+            new ObjectMapper(),
+            mock(AutomaticExecutionControl.class),
+            mock(CodexTelemetryReporter.class));
 
     List<String> command =
         ReflectionTestUtils.invokeMethod(
@@ -44,7 +47,8 @@ class DedaloReasoningContractTest {
     var html = new LandingHtmlCodexGenerator(properties, json, telemetry);
     var strategy = new LandingGeneratorCodexRunner(properties, json, telemetry, html);
     var pde =
-        new PdeConstructionBpmTaskConsumer(properties, json, mock(AutomaticExecutionControl.class));
+        new PdeConstructionBpmTaskConsumer(
+            properties, json, mock(AutomaticExecutionControl.class), telemetry);
 
     assertThatThrownBy(() -> html.command(Path.of("out"), Path.of("schema")))
         .isInstanceOf(IllegalStateException.class)

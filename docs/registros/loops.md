@@ -8042,8 +8042,8 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   `MARKET_STRATEGY_V4`/`PDE_AGENT_VALIDATION_V1`; regressões recusam evidência humana, exigem três
   cenários, três dispositivos e efeitos externos nulos. O catálogo central declara os dois
   artefatos v10 e seu teste de cobertura impede prompt ou schema operacional sem auditoria. A tarefa
-  histórica #506 permanece cancelada e imutável; somente a pendente #534 troca para a referência
-  multiagente.
+  histórica #506 permanece cancelada e imutável; #534 troca para a referência multiagente sem
+  depender de estar pendente ou já reservada no instante da migração.
 
 ## LOOP-DEDALO-POLLING-SEM-TIMEOUT — 30/09/2026
 
@@ -8059,3 +8059,21 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   do Dédalo; o scheduler volta ao próximo ciclo após falha observável. Teste com servidor local que
   aceita a conexão e não responde prova que a leitura termina dentro do limite, sem publicar para
   descobrir o defeito.
+
+## LOOP-DEDALO-LEASE-ORFA-NA-TROCA-DE-CONTAINER — 30/09/2026
+
+- **Evidência confirmada:** a imagem anterior de Dédalo reservou a tarefa #534 às 01:02:08 UTC; o
+  deploy substituiu o container e a nova imagem iniciou às 01:02:28 UTC. A tarefa e a instância
+  permaneceram `IN_PROGRESS`, sem callback, resultado, tokens ou custo persistido, e o endpoint
+  `pending` não reentregava leases já reservadas.
+- **Causa-raiz:** o backend tinha retomada limitada a Psique, callbacks já preservados e recursos
+  determinísticos. Uma tarefa de modelo de Dédalo podia perder o processo entre claim e callback;
+  sem heartbeat próprio da tarefa nem política de lease, reinícios deixavam trabalho invisível.
+- **Alternativas avaliadas:** cancelar e recriar #534 corrige somente o caso atual; reabrir toda
+  tarefa antiga pode duplicar inferência e custo; heartbeat por tarefa com uma retomada apenas
+  quando não existe saída ou consumo, seguido de bloqueio auditável, fecha o risco. A terceira foi
+  adotada.
+- **Correção e prevenção:** Dédalo persiste prompt/modelo antes da chamada e publica telemetria
+  `DEDALO_BPM` pelo `taskId`. O backend preserva heartbeat recente, reentrega uma única lease órfã
+  sem saída, bloqueia repetição quando já houve output/consumo e encerra uma segunda interrupção.
+  O changelog de Alcyone aceita e reconcilia #534 mesmo quando o claim ocorre antes do deploy.

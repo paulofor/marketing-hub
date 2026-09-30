@@ -2,6 +2,7 @@ package com.marketinghub.landinggeneratoragent;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -22,6 +23,8 @@ import org.springframework.web.client.RestClient;
 @Component
 public class CodexTelemetryReporter {
   private static final Logger log = LoggerFactory.getLogger(CodexTelemetryReporter.class);
+  private static final String LANDING_AGENT_TYPE = "LANDING_GENERATOR";
+  private static final String DEDALO_BPM_AGENT_TYPE = "DEDALO_BPM";
   private final RestClient backend;
   private final ObjectMapper objectMapper;
   private final java.util.concurrent.ScheduledExecutorService timer =
@@ -36,7 +39,19 @@ public class CodexTelemetryReporter {
 
   /** Inicia heartbeats correlacionados ao experimento. */
   public Session monitor(LandingAgentJob job, Process process, Path output) {
-    return new Session(executionTelemetryId(job.executionId()), process, output);
+    return new Session(
+        LANDING_AGENT_TYPE, executionTelemetryId(job.executionId()), process, output);
+  }
+
+  /** Inicia heartbeats correlacionados diretamente à tarefa BPM executada por Dédalo. */
+  public Session monitorBpmTask(Long taskId, Process process, Path output) {
+    return new Session(DEDALO_BPM_AGENT_TYPE, taskId, process, output);
+  }
+
+  /** Encerra o publicador periódico junto com o ciclo de vida do worker. */
+  @PreDestroy
+  void shutdown() {
+    timer.shutdownNow();
   }
 
   /** Deriva uma identidade estável por execução para somar tentativas distintas no total diário. */
@@ -56,15 +71,17 @@ public class CodexTelemetryReporter {
 
   /** Responsabilidade: encerrar corretamente a telemetria de uma execução. */
   public final class Session implements AutoCloseable {
-    private final Long experimentId;
+    private final String agentType;
+    private final Long executionId;
     private final Process process;
     private final Path output;
     private final ScheduledFuture<?> task;
     private boolean success;
 
     /** Inicia o heartbeat a cada quinze segundos. */
-    private Session(Long experimentId, Process process, Path output) {
-      this.experimentId = experimentId;
+    private Session(String agentType, Long executionId, Process process, Path output) {
+      this.agentType = agentType;
+      this.executionId = executionId;
       this.process = process;
       this.output = output;
       task = timer.scheduleAtFixedRate(() -> send(false), 0, 15, TimeUnit.SECONDS);
@@ -104,14 +121,19 @@ public class CodexTelemetryReporter {
         backend
             .post()
             .uri(
-                "/api/codex-agent-telemetry/v1/internal/LANDING_GENERATOR/executions/{id}/{action}",
-                experimentId,
+                "/api/codex-agent-telemetry/v1/internal/{agentType}/executions/{id}/{action}",
+                agentType,
+                executionId,
                 terminal ? "finish" : "heartbeat")
             .body(body)
             .retrieve()
             .toBodilessEntity();
       } catch (Exception ex) {
-        log.warn("Falha na telemetria do Agente de Landing. experimentId={}", experimentId, ex);
+        log.warn(
+            "Falha na telemetria do Agente de Landing. agentType={} executionId={}",
+            agentType,
+            executionId,
+            ex);
       }
     }
   }

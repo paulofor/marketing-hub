@@ -261,14 +261,18 @@ SET source_reference=@alcyone_source_reference,
     revision=revision+1
 WHERE id=26
   AND product_id=11
-  AND source_reference IN ('product:11@private-validation-v1','product:11@agent-validation-v1')
-  AND finished_at IS NULL;
+  AND source_reference IN ('product:11@private-validation-v1','product:11@agent-validation-v1');
 
 UPDATE business_process_activity_instance
 SET source_reference=@alcyone_source_reference,
     updated_at=UTC_TIMESTAMP(6)
-WHERE id=414
-  AND status='PENDING'
+WHERE id>=414
+  AND source_reference IN ('product:11@private-validation-v1','product:11@agent-validation-v1');
+
+UPDATE agent_task
+SET source_reference=@alcyone_source_reference,
+    updated_at=UTC_TIMESTAMP(6)
+WHERE id>=534
   AND source_reference IN ('product:11@private-validation-v1','product:11@agent-validation-v1');
 
 UPDATE agent_task
@@ -277,5 +281,4 @@ SET source_reference=@alcyone_source_reference,
     description='Entregar jornada do formato aprovado com primeira ação evidente, somente entradas necessárias, três combinações visuais prontas em até dez minutos e benefício aplicável. Preparar ADHERENT, RECOVERY e SAFETY em desktop, iPhone e Pixel; preservar tráfego interno, checkout sem cobrança e efeitos externos nulos. Não recrutar, convidar, solicitar opinião nem alegar evidência humana ou comercial.',
     updated_at=UTC_TIMESTAMP(6)
 WHERE id=534
-  AND status='PENDING'
   AND source_reference IN ('product:11@private-validation-v1','product:11@agent-validation-v1');

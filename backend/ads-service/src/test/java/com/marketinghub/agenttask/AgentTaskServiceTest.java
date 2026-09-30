@@ -1681,24 +1681,217 @@ class AgentTaskServiceTest {
     verify(repository, never()).save(any());
   }
 
-  /** Não reoferece uma lease ativa a outro polling sem identidade da execução original. */
+  /** Não reoferece uma lease recente de Dédalo enquanto o executor original pode estar ativo. */
   @Test
   void doesNotResumeClaimedProcessTaskFromPendingQueue() {
     AgentTaskRepository repository = mock(AgentTaskRepository.class);
     AgentRepository agents = mock(AgentRepository.class);
     Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    Instant now = Instant.parse("2026-09-30T01:00:00Z");
     AgentTask claimed =
         processTask(30L, dedalo, process("PUBLISHED", "Dédalo"), "html", "IN_PROGRESS");
+    claimed.setReceivedAt(now.minusSeconds(30));
+    claimed.setUpdatedAt(now.minusSeconds(30));
     when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
     when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
             "landing-generator", "WORK", "IN_PROGRESS"))
         .thenReturn(List.of(claimed));
 
     assertThat(
-            service(repository, agents, Clock.systemUTC())
+            service(repository, agents, Clock.fixed(now, ZoneOffset.UTC))
                 .claimEligibleProcessTask("landing-generator"))
         .isEmpty();
     verify(repository, never()).save(any());
+  }
+
+  /** Retoma uma única vez a lease legada de Dédalo que não registrou saída nem consumo. */
+  @Test
+  void recoversStaleDedaloLeaseWithoutTelemetryBeforeNewWork() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    Instant now = Instant.parse("2026-09-30T01:10:00Z");
+    AgentTask orphan =
+        processTask(534L, dedalo, process("PUBLISHED", "Dédalo"), "journey", "IN_PROGRESS");
+    orphan.setReceivedAt(now.minusSeconds(300));
+    orphan.setUpdatedAt(now.minusSeconds(300));
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(orphan));
+    when(repository.save(orphan)).thenReturn(orphan);
+
+    AgentTaskPendingResponse recovered =
+        service(repository, agents, Clock.fixed(now, ZoneOffset.UTC))
+            .claimEligibleProcessTask("landing-generator")
+            .orElseThrow();
+
+    assertThat(recovered.taskId()).isEqualTo(534L);
+    assertThat(orphan.getStatus()).isEqualTo("IN_PROGRESS");
+    assertThat(orphan.getExecutionError()).startsWith("DEDALO_LEASE_RECOVERY_ONCE|");
+    verify(repository).save(orphan);
+  }
+
+  /** Preserva a lease de Dédalo enquanto a telemetria ainda comprova processo ativo. */
+  @Test
+  void doesNotRecoverDedaloLeaseWithRecentHeartbeat() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    AgentTask active =
+        processTask(534L, dedalo, process("PUBLISHED", "Dédalo"), "journey", "IN_PROGRESS");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(active));
+    CodexAgentExecutionTelemetryService telemetry = mock(CodexAgentExecutionTelemetryService.class);
+    when(telemetry.get("DEDALO_BPM", 534L))
+        .thenReturn(
+            new CodexAgentExecutionTelemetryService.Response(
+                "DEDALO_BPM",
+                534L,
+                "RUNNING",
+                71L,
+                true,
+                0L,
+                0L,
+                null,
+                null,
+                "HEARTBEAT",
+                Instant.parse("2026-09-30T01:09:55Z"),
+                Instant.parse("2026-09-30T01:09:00Z"),
+                null,
+                false));
+    AgentTaskService service = service(repository, agents, Clock.systemUTC());
+    ReflectionTestUtils.setField(service, "codexTelemetry", telemetry);
+
+    assertThat(service.claimEligibleProcessTask("landing-generator")).isEmpty();
+    verify(repository, never()).save(any());
+  }
+
+  /** Bloqueia uma lease interrompida que já produziu saída para não duplicar cobrança. */
+  @Test
+  void blocksStaleDedaloLeaseWhenTelemetryObservedOutput() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    Instant now = Instant.parse("2026-09-30T01:20:00Z");
+    AgentTask interrupted =
+        processTask(534L, dedalo, process("PUBLISHED", "Dédalo"), "journey", "IN_PROGRESS");
+    interrupted.setExecutionMode("MODEL");
+    interrupted.setExecutionModelCode("gpt-test");
+    interrupted.setExecutionReasoningEffort("max");
+    interrupted.setExecutionAgentPrompt("Núcleo de Dédalo.");
+    interrupted.setExecutionActivityPrompt("Construir a jornada.");
+    interrupted.setExecutionPrompt("Núcleo de Dédalo.\n\nConstruir a jornada.");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(interrupted));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "PENDING"))
+        .thenReturn(List.of());
+    when(repository.save(interrupted)).thenReturn(interrupted);
+    CodexAgentExecutionTelemetryService telemetry = mock(CodexAgentExecutionTelemetryService.class);
+    when(telemetry.get("DEDALO_BPM", 534L))
+        .thenReturn(
+            new CodexAgentExecutionTelemetryService.Response(
+                "DEDALO_BPM",
+                534L,
+                "RUNNING",
+                71L,
+                false,
+                4L,
+                2048L,
+                120L,
+                30L,
+                "OUTPUT",
+                now.minusSeconds(300),
+                now.minusSeconds(600),
+                null,
+                true));
+    AgentTaskService service = service(repository, agents, Clock.fixed(now, ZoneOffset.UTC));
+    ReflectionTestUtils.setField(service, "codexTelemetry", telemetry);
+
+    assertThat(service.claimEligibleProcessTask("landing-generator")).isEmpty();
+
+    assertThat(interrupted.getStatus()).isEqualTo("BLOCKED");
+    assertThat(interrupted.getExecutionError())
+        .startsWith("DEDALO_LEASE_RECOVERY_EXHAUSTED|")
+        .contains("cobrança duplicada");
+    assertThat(interrupted.getBlockerCategory()).isEqualTo("TECHNICAL_FAILURE");
+    verify(repository).save(interrupted);
+  }
+
+  /** Bloqueia a inferência auditada quando o heartbeat se perde e o custo fica incerto. */
+  @Test
+  void blocksStaleDedaloLeaseWithoutSufficientTelemetry() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    Instant now = Instant.parse("2026-09-30T01:25:00Z");
+    AgentTask interrupted =
+        processTask(534L, dedalo, process("PUBLISHED", "Dédalo"), "journey", "IN_PROGRESS");
+    interrupted.setUpdatedAt(now.minusSeconds(300));
+    interrupted.setExecutionMode("MODEL");
+    interrupted.setExecutionModelCode("gpt-test");
+    interrupted.setExecutionReasoningEffort("max");
+    interrupted.setExecutionAgentPrompt("Núcleo de Dédalo.");
+    interrupted.setExecutionActivityPrompt("Construir a jornada.");
+    interrupted.setExecutionPrompt("Núcleo de Dédalo.\n\nConstruir a jornada.");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(interrupted));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "PENDING"))
+        .thenReturn(List.of());
+    when(repository.save(interrupted)).thenReturn(interrupted);
+
+    assertThat(
+            service(repository, agents, Clock.fixed(now, ZoneOffset.UTC))
+                .claimEligibleProcessTask("landing-generator"))
+        .isEmpty();
+
+    assertThat(interrupted.getStatus()).isEqualTo("BLOCKED");
+    assertThat(interrupted.getExecutionError())
+        .startsWith("DEDALO_LEASE_RECOVERY_EXHAUSTED|")
+        .contains("telemetria se perdeu");
+    verify(repository).save(interrupted);
+  }
+
+  /** Encerra a segunda interrupção de Dédalo após a única retomada automática. */
+  @Test
+  void blocksDedaloLeaseAfterSingleRecoveryExpires() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    Instant now = Instant.parse("2026-09-30T01:30:00Z");
+    AgentTask exhausted =
+        processTask(534L, dedalo, process("PUBLISHED", "Dédalo"), "journey", "IN_PROGRESS");
+    exhausted.setReceivedAt(now.minusSeconds(600));
+    exhausted.setUpdatedAt(now.minusSeconds(300));
+    exhausted.setExecutionError("DEDALO_LEASE_RECOVERY_ONCE|Primeira retomada interrompida.");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(exhausted));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "PENDING"))
+        .thenReturn(List.of());
+    when(repository.save(exhausted)).thenReturn(exhausted);
+
+    assertThat(
+            service(repository, agents, Clock.fixed(now, ZoneOffset.UTC))
+                .claimEligibleProcessTask("landing-generator"))
+        .isEmpty();
+
+    assertThat(exhausted.getStatus()).isEqualTo("BLOCKED");
+    assertThat(exhausted.getExecutionError())
+        .startsWith("DEDALO_LEASE_RECOVERY_EXHAUSTED|")
+        .contains("cobrança duplicada");
+    assertThat(exhausted.getExecutionMode()).isEqualTo("NOT_STARTED");
+    verify(repository).save(exhausted);
   }
 
   /** Reexpõe o callback preservado que perdeu o worker sem executar o modelo novamente. */

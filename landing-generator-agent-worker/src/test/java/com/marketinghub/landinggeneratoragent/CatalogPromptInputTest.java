@@ -114,7 +114,8 @@ class CatalogPromptInputTest {
         new PdeConstructionBpmTaskConsumer(
             properties,
             new com.fasterxml.jackson.databind.ObjectMapper(),
-            org.mockito.Mockito.mock(AutomaticExecutionControl.class));
+            org.mockito.Mockito.mock(AutomaticExecutionControl.class),
+            org.mockito.Mockito.mock(CodexTelemetryReporter.class));
     String prompt =
         org.springframework.test.util.ReflectionTestUtils.invokeMethod(consumer, "prompt", task());
     assertThat(prompt).contains("Fixture: preparação comercial Opala v1", "catalogPromptReference");

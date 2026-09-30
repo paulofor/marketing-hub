@@ -1,0 +1,18 @@
+{
+  "cardKey": "ia-gatekeeper-de-compra",
+  "collection": "neuromarketing",
+  "title": "Agentes de compra precisam de atributos diagnósticos e objetivo explícito",
+  "finding": "Em preprint com 16.400 sessões, oito LLMs de três provedores raramente foram desviados por pistas de preço quando a informação estava disponível sem custo. Sob custo de aquisição e objetivo vago, porém, muitos reduziram a busca, omitiram atributos necessários para comparar preço por unidade e fizeram escolhas subótimas; objetivos específicos preservaram melhor a busca diagnóstica.",
+  "mechanism": "A decisão do agente depende do estado de informação que ele constrói antes de escolher. Arquitetura que torna atributos críticos caros ou difíceis de recuperar, combinada a uma delegação vaga, pode levar o agente a encerrar a busca cedo e substituir uma comparação completa por uma regra simplificada.",
+  "commercialApplication": "Evoluir o AgentReadableOfferAudit para checar se preço, quantidade, entregáveis, condições, limites e outras variáveis diagnósticas estão explícitas e recuperáveis. Em agentes próprios, esclarecer o critério que o usuário quer otimizar antes de comparar opções quando o pedido estiver vago.",
+  "evidenceStrength": "Moderada-baixa: experimento amplo com 16.400 sessões e oito LLMs, mas ainda em preprint, em ambiente controlado e com custos artificiais de aquisição.",
+  "publishedOn": "2026-09-23",
+  "validUntil": "2027-03-23",
+  "experimentHypothesis": "Uma oferta com atributos diagnósticos explícitos e um agente que esclarece objetivos vagos produzirá comparações mais completas e menos correções do usuário do que uma oferta fragmentada com delegação aberta; medir também shortlist, erros factuais, CTA, lead, checkout e pagamento separadamente.",
+  "risks": "Não estruturar informações para explorar fragilidades de agentes nem ocultar atributos desfavoráveis. Evitar transformar a recomendação do modelo em selo de qualidade e não assumir que preço por unidade é o único objetivo relevante.",
+  "limits": "O estudo não mede consumidores reais nem vendas; a definição de escolha ótima depende do objetivo experimental; modelos e políticas de tool use mudam rapidamente; o efeito precisa ser revalidado no mesmo ambiente, oferta e agentes usados pelo Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-30-agentes-custo-informacao-objetivo-vago.md",
+  "sourceTitle": "Fonte revisada — agentes de compra sob custo de informação e objetivo vago",
+  "sourceSha256": "a98aa51403fa30241139033083d3d0682ef98787428fd66ae1e80d8aed5c6de2"
+}

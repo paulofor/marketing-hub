@@ -317,10 +317,7 @@ public class IrisCommunicationMaterializationContextProvider
     }
   }
 
-  /**
-   * Reconhece o planejamento privado V3 da mesma referência sem aceitar tarefas genéricas ou
-   * versões misturadas.
-   */
+  /** Reconhece o planejamento governado da mesma referência sem misturar versões ou evidências. */
   private Optional<InitialPrivatePlanning> initialPrivatePlanning(String sourceReference)
       throws Exception {
     Map<String, com.marketinghub.agenttask.AgentTaskFunctionalSnapshot> latest =
@@ -340,9 +337,13 @@ public class IrisCommunicationMaterializationContextProvider
         || !"experiment-strategist".equals(strategyTask.agentKey())) return Optional.empty();
     JsonNode strategyResult = objectMapper.readTree(strategyTask.resultJson());
     JsonNode strategy = strategyResult.path("marketStrategicContract");
-    if (!"APPROVE".equals(strategyResult.path("decision").asText())
-        || !"MARKET_STRATEGY_V3".equals(strategy.path("contractVersion").asText())
-        || !"READY_FOR_PRIVATE_VALIDATION".equals(strategy.path("status").asText())) {
+    String strategyVersion = strategy.path("contractVersion").asText();
+    boolean readyStrategy =
+        ("MARKET_STRATEGY_V4".equals(strategyVersion)
+                && "READY_FOR_AGENT_VALIDATION".equals(strategy.path("status").asText()))
+            || ("MARKET_STRATEGY_V3".equals(strategyVersion)
+                && "READY_FOR_PRIVATE_VALIDATION".equals(strategy.path("status").asText()));
+    if (!"APPROVE".equals(strategyResult.path("decision").asText()) || !readyStrategy) {
       return Optional.empty();
     }
 
@@ -369,7 +370,7 @@ public class IrisCommunicationMaterializationContextProvider
     strategyReference.put("sourceAgent", "ATENA");
     strategyReference.put("sourceReference", sourceReference);
     strategyReference.put("strategistTaskId", strategyTask.id());
-    strategyReference.put("contractVersion", "MARKET_STRATEGY_V3");
+    strategyReference.put("contractVersion", strategyVersion);
     strategyReference.put("contentHash", sha256(strategy.toString()));
     strategyReference.put("contract", strategy);
     return Optional.of(

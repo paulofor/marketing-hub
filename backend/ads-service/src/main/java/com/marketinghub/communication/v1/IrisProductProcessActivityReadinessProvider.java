@@ -83,13 +83,17 @@ public class IrisProductProcessActivityReadinessProvider
         privateStrategy
             ? (context.get("marketStrategicContract") instanceof Map<?, ?> value ? value : Map.of())
             : marketStrategy.resolve(sourceReference).orElse(Map.of());
+    boolean validStrategyVersion =
+        privateStrategy
+            ? Set.of("MARKET_STRATEGY_V3", "MARKET_STRATEGY_V4")
+                .contains(strategy.get("contractVersion"))
+            : "MARKET_STRATEGY_V2".equals(strategy.get("contractVersion"));
     if (!"AVAILABLE".equals(strategy.get("availability"))
-        || !(privateStrategy ? "MARKET_STRATEGY_V3" : "MARKET_STRATEGY_V2")
-            .equals(strategy.get("contractVersion"))
+        || !validStrategyVersion
         || !hasText(strategy.get("contentHash"))) {
       missing.add(
           privateStrategy
-              ? "Contrato Estratégico de Mercado V3 aprovado na origem deste contexto"
+              ? "Contrato Estratégico de Mercado aprovado na origem deste contexto"
               : "Contrato Estratégico de Mercado v2 concluído de Atena");
     }
     if (!"AVAILABLE".equals(context.get("availability"))) {

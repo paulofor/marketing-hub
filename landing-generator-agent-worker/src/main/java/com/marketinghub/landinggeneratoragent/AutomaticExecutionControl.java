@@ -1,10 +1,8 @@
 package com.marketinghub.landinggeneratoragent;
 
-import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -17,10 +15,7 @@ public class AutomaticExecutionControl {
 
   /** Configura uma consulta curta ao backend, sem reservar trabalho durante a verificação. */
   public AutomaticExecutionControl(@Value("${BACKEND_URL:http://backend:8000}") String backendUrl) {
-    SimpleClientHttpRequestFactory requests = new SimpleClientHttpRequestFactory();
-    requests.setConnectTimeout(Duration.ofSeconds(2));
-    requests.setReadTimeout(Duration.ofSeconds(3));
-    backend = RestClient.builder().baseUrl(backendUrl).requestFactory(requests).build();
+    backend = LandingGeneratorBackendRestClientFactory.create(backendUrl);
   }
 
   /** Permite novo trabalho somente quando o backend comprovar PLAY. */

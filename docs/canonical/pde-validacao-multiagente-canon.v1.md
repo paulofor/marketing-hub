@@ -27,6 +27,12 @@ harness, Psique ou Têmis não pode oferecer somente a repetição do mesmo pare
 destacar uma atividade condicional de correção, preservar a rejeição como entrada, orientar o
 usuário e exigir versão nova antes de qualquer revalidação. A v7 permanece imutável como histórico.
 
+Por correção de 2026-09-30, o Processo 2 `pde-commercial-plan-offer` v10 passa a produzir
+`MARKET_STRATEGY_V4` e `PDE_AGENT_VALIDATION_V1` desde a origem. Materializações novas não podem
+reintroduzir `privateValidationPlan`, leituras humanas ou checkout atribuído a pessoa fictícia. Uma
+execução histórica completa pode ser convertida apenas em plano multiagente sem alegar que seus
+critérios humanos aconteceram; o resultado bruto original permanece imutável na tarefa de origem.
+
 ## Alternativas consideradas
 
 | Alternativa | Benefício | Risco/custo | Decisão |

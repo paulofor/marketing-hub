@@ -34,7 +34,7 @@ class LandingGeneratorBackendClientTest {
         .andExpect(jsonPath("$.reasoningEffort").value("high"))
         .andRespond(withSuccess());
 
-    new LandingGeneratorBackendClient(properties, builder)
+    new LandingGeneratorBackendClient(properties, configuredClient(builder, properties))
         .report(
             job,
             Map.of(
@@ -65,7 +65,7 @@ class LandingGeneratorBackendClientTest {
         .andExpect(jsonPath("$.error").value("falha simulada"))
         .andRespond(withSuccess());
 
-    new LandingGeneratorBackendClient(properties, builder)
+    new LandingGeneratorBackendClient(properties, configuredClient(builder, properties))
         .fail(job, new IllegalStateException("falha simulada"));
 
     server.verify();
@@ -86,7 +86,9 @@ class LandingGeneratorBackendClientTest {
         .andExpect(header("X-Agent-Build-Reference", "sha-4909"))
         .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
 
-    var result = new LandingGeneratorBackendClient(properties, builder).claimPending();
+    var result =
+        new LandingGeneratorBackendClient(properties, configuredClient(builder, properties))
+            .claimPending();
 
     assertThat(result).isEmpty();
     server.verify();
@@ -105,8 +107,18 @@ class LandingGeneratorBackendClientTest {
                 "http://backend.test/api/internal/geralanding/agent/v1/stage-executions/pending?limit=1"))
         .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
 
-    new LandingGeneratorBackendClient(properties, builder).claimPending();
+    new LandingGeneratorBackendClient(properties, configuredClient(builder, properties))
+        .claimPending();
 
     server.verify();
+  }
+
+  /** Monta o cliente interceptável preservando URL e identidade do deploy do contrato produtivo. */
+  private RestClient configuredClient(
+      RestClient.Builder builder, LandingGeneratorAgentProperties properties) {
+    return builder
+        .baseUrl(properties.getBackendUrl())
+        .defaultHeader("X-Agent-Build-Reference", properties.getBuildReference())
+        .build();
   }
 }

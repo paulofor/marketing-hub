@@ -298,22 +298,29 @@ public class OpportunityDossierResearchSyncService {
     if (restartFromAtena) {
       agentTaskService.cancelActiveTasksBySourceReference(
           sourceReference,
-          process.getVersionNumber() != null && process.getVersionNumber() >= 9
-              ? "Cadeia reiniciada porque Atena não registrou a identidade PRODUCT_IDENTITY_V1 exigida pelo Processo 2."
-              : "Cadeia reiniciada porque a estratégia concluída usa contrato anterior ao MARKET_STRATEGY_V3.");
+          process.getVersionNumber() != null && process.getVersionNumber() >= 10
+              ? "Cadeia reiniciada porque a estratégia concluída ainda depende do gate humano removido pelo MARKET_STRATEGY_V4."
+              : process.getVersionNumber() != null && process.getVersionNumber() >= 9
+                  ? "Cadeia reiniciada porque Atena não registrou a identidade PRODUCT_IDENTITY_V1 exigida pelo Processo 2."
+                  : "Cadeia reiniciada porque a estratégia concluída usa contrato anterior ao MARKET_STRATEGY_V3.");
     }
     boolean productIdentityRequired =
         process.getVersionNumber() != null && process.getVersionNumber() >= 9;
+    boolean agentValidationRequired =
+        process.getVersionNumber() != null && process.getVersionNumber() >= 10;
     createTask(
         process,
         sourceReference,
         "experiment-strategist",
         "marketStrategy",
-        "Atena · selecionar protótipo privado do ciclo #" + cycleId,
+        "Atena · selecionar protótipo homologável do ciclo #" + cycleId,
         (productIdentityRequired
-                ? "Escolha no máximo um dossiê factual para prototipação privada, defina PRODUCT_IDENTITY_V1 com um nome interno de estrela ainda livre e classifique o mecanismo em um tipo ACTIVE do catálogo. Compare três identidades possíveis e três classificações plausíveis antes de escolher. "
-                : "Escolha no máximo um dossiê factual para prototipação privada. ")
-            + "Predeclare duas leituras e preserve os fatos de Argos. A falta dessas leituras ainda não bloqueia esta atividade. Contexto: "
+                ? "Escolha no máximo um dossiê factual para prototipação, defina PRODUCT_IDENTITY_V1 com um nome interno de estrela ainda livre e classifique o mecanismo em um tipo ACTIVE do catálogo. Compare três identidades possíveis e três classificações plausíveis antes de escolher. "
+                : "Escolha no máximo um dossiê factual para prototipação. ")
+            + (agentValidationRequired
+                ? "Predeclare homologação técnica, cenários independentes de Psique e revisão de Têmis sem entrevista, recrutamento, convite, leitura privada ou opinião solicitada. "
+                : "Preserve integralmente o contrato histórico desta ocorrência. ")
+            + "Preserve os fatos de Argos. Contexto: "
             + context,
         restartFromAtena);
     createTask(
@@ -322,7 +329,9 @@ public class OpportunityDossierResearchSyncService {
         "financial-agent",
         "economics",
         "Plutus · validar economia do ciclo #" + cycleId,
-        "Use somente a seleção MARKET_STRATEGY_V3 mais recente de Atena, entregue pelo contexto do processo. Valide preço de checkout simulado como hipótese, custo e travas da validação privada"
+        "Use somente a seleção "
+            + (agentValidationRequired ? "MARKET_STRATEGY_V4" : "MARKET_STRATEGY_V3")
+            + " mais recente de Atena, entregue pelo contexto do processo. Valide preço como hipótese, custo e travas da homologação"
             + (productIdentityRequired
                 ? ", respeitando o tipo escolhido em PRODUCT_IDENTITY_V1 sem redefinir a identidade"
                 : "")
@@ -334,7 +343,7 @@ public class OpportunityDossierResearchSyncService {
         "landing-generator",
         "productArchitecture",
         "Dédalo · projetar protótipo e harness do ciclo #" + cycleId,
-        "Use a estratégia vigente de Atena e a economia aprovada por Plutus, entregues pelo contexto do processo. Projete somente o protótipo privado instrumentado e o harness PDE da candidata escolhida"
+        "Use a estratégia vigente de Atena e a economia aprovada por Plutus, entregues pelo contexto do processo. Projete somente o protótipo não público instrumentado e o harness PDE da candidata escolhida"
             + (productIdentityRequired
                 ? ", coerentes com o tipo registrado em PRODUCT_IDENTITY_V1"
                 : "")
@@ -383,13 +392,29 @@ public class OpportunityDossierResearchSyncService {
     try {
       JsonNode result = objectMapper.readTree(latestStrategy.getResultJson());
       JsonNode contract = result.path("marketStrategicContract");
-      JsonNode plan = contract.path("privateValidationPlan");
-      boolean staleStrategy =
-          !"MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
-              || !"READY_FOR_PRIVATE_VALIDATION".equals(contract.path("status").asText())
-              || plan.path("minimumIndependentReadings").asInt(0) != 2
-              || !hasExactPrivateSignals(plan.path("requiredSignals"));
-      if (staleStrategy || process.getVersionNumber() < 9) return staleStrategy;
+      if (process.getVersionNumber() >= 10) {
+        JsonNode plan = contract.path("agentValidationPlan");
+        boolean staleAgentStrategy =
+            !"MARKET_STRATEGY_V4".equals(contract.path("contractVersion").asText())
+                || !"READY_FOR_AGENT_VALIDATION".equals(contract.path("status").asText())
+                || !"PDE_AGENT_VALIDATION_V1".equals(plan.path("contractVersion").asText())
+                || !"AGENT_VALIDATION".equals(plan.path("trafficClass").asText())
+                || plan.path("humanEvidenceClaimed").asBoolean(true)
+                || plan.path("commercialEvidenceClaimed").asBoolean(true)
+                || plan.path("paymentEnabled").asBoolean(true)
+                || plan.path("publicationAuthorized").asBoolean(true)
+                || plan.path("campaignAuthorized").asBoolean(true)
+                || plan.path("mediaSpendAuthorizedBrl").asInt(-1) != 0;
+        if (staleAgentStrategy) return true;
+      } else {
+        JsonNode plan = contract.path("privateValidationPlan");
+        boolean staleStrategy =
+            !"MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
+                || !"READY_FOR_PRIVATE_VALIDATION".equals(contract.path("status").asText())
+                || plan.path("minimumIndependentReadings").asInt(0) != 2
+                || !hasExactPrivateSignals(plan.path("requiredSignals"));
+        if (staleStrategy || process.getVersionNumber() < 9) return staleStrategy;
+      }
       JsonNode identity = result.path("productIdentity");
       return !"PRODUCT_IDENTITY_V1".equals(identity.path("contractVersion").asText())
           || !"CREATE".equals(identity.path("mode").asText())

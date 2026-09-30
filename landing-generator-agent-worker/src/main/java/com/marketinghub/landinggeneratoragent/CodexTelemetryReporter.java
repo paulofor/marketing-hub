@@ -30,7 +30,7 @@ public class CodexTelemetryReporter {
   /** Configura o destino central de telemetria. */
   public CodexTelemetryReporter(
       LandingGeneratorAgentProperties properties, ObjectMapper objectMapper) {
-    backend = RestClient.builder().baseUrl(properties.getBackendUrl()).build();
+    backend = LandingGeneratorBackendRestClientFactory.create(properties.getBackendUrl());
     this.objectMapper = objectMapper;
   }
 

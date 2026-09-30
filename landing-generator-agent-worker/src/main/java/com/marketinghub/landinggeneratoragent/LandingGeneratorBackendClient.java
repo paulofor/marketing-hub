@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -17,14 +18,24 @@ public class LandingGeneratorBackendClient {
   private final RestClient client;
 
   /** Configura o backend como única porta de estado. */
+  @Autowired
   public LandingGeneratorBackendClient(
       LandingGeneratorAgentProperties properties, RestClient.Builder builder) {
-    this.properties = properties;
-    client =
-        builder
+    this(
+        properties,
+        LandingGeneratorBackendRestClientFactory.configure(builder)
             .baseUrl(properties.getBackendUrl())
             .defaultHeader("X-Agent-Build-Reference", properties.getBuildReference())
-            .build();
+            .build());
+  }
+
+  /**
+   * Permite validar o contrato HTTP com transporte determinístico sem alterar o cliente produtivo.
+   */
+  LandingGeneratorBackendClient(
+      LandingGeneratorAgentProperties properties, RestClient configuredClient) {
+    this.properties = properties;
+    client = configuredClient;
   }
 
   /** Reserva no máximo uma landing para preservar custo e isolamento. */

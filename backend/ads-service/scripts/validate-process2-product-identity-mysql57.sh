@@ -37,6 +37,16 @@ identity_liquibase() {
     'IDENTITY_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$IDENTITY_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
 }
 
+identity_liquibase_file() {
+  local changelog="$1"
+  local command="$2"
+  # shellcheck disable=SC2016 # O classpath deve ser expandido somente dentro do container.
+  identity_compose run --rm \
+    -e "ADS_LIQUIBASE_CHANGELOG_FILE=${changelog}" \
+    liquibase-process2-product-identity sh -lc \
+    'IDENTITY_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$IDENTITY_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
+}
+
 identity_assert_applied() {
   identity_assert_equal \
     "versões publicadas" \
@@ -75,6 +85,62 @@ identity_assert_applied() {
     );")"
 }
 
+identity_assert_agent_validation_applied() {
+  identity_assert_equal \
+    "versões multiagente publicadas" \
+    "8:RETIRED,9:RETIRED,10:PUBLISHED|22:RETIRED,23:RETIRED,24:PUBLISHED" \
+    "$(identity_scalar "SELECT CONCAT(
+      (SELECT GROUP_CONCAT(CONCAT(version_number, ':', status) ORDER BY version_number SEPARATOR ',')
+       FROM business_process_definition WHERE process_code='pde-commercial-plan-offer'), '|',
+      (SELECT GROUP_CONCAT(CONCAT(version_number, ':', status) ORDER BY version_number SEPARATOR ',')
+       FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery')
+    );")"
+  identity_assert_equal \
+    "contrato multiagente de Alcyone" \
+    "PDE_AGENT_VALIDATION_V1:MARKET_STRATEGY_V4:READY_FOR_AGENT_VALIDATION:PDE_AGENT_VALIDATION_V1:product:11@agent-validation-v1:3:3:false:false:0:0" \
+    "$(identity_scalar "SELECT CONCAT(
+      validation_definition_version, ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.marketStrategy.contractVersion')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.marketStrategy.status')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.agentValidationPlan.contractVersion')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.agentValidationPlan.sourceReference')), ':',
+      JSON_LENGTH(JSON_EXTRACT(validation_definition_json, '$.agentValidationPlan.requiredScenarios')), ':',
+      JSON_LENGTH(JSON_EXTRACT(validation_definition_json, '$.agentValidationPlan.requiredDevices')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.agentValidationPlan.humanEvidenceClaimed')), ':',
+      JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.agentValidationPlan.commercialEvidenceClaimed')), ':',
+      JSON_CONTAINS_PATH(validation_definition_json, 'one', '$.privateValidationPlan'), ':',
+      JSON_CONTAINS_PATH(pde_experience_json, 'one', '$.privateValidationPlan')
+    ) FROM product WHERE id=11;")"
+  identity_assert_equal \
+    "referência retomável de Alcyone" \
+    "product:11@agent-validation-v1:product:11@agent-validation-v1:product:11@agent-validation-v1:8830b7aa99de73cf5323d37cd1b6a9418d90082658d2c13f8b00d6007902d3af" \
+    "$(identity_scalar "SELECT CONCAT(
+      (SELECT source_reference FROM agent_task WHERE id=534), ':',
+      (SELECT source_reference FROM business_process_activity_instance WHERE id=414), ':',
+      source_reference, ':', scope_key
+    ) FROM product_process_run_v1 WHERE id=26;")"
+  identity_assert_equal \
+    "fontes públicas atualizadas uma vez" \
+    "3" \
+    "$(identity_scalar "SELECT COUNT(*) FROM opportunity_evidence
+      WHERE dossier_id=46 AND created_by='CODEX:public-refresh:alcyone-agent-validation-v1';")"
+  identity_assert_equal \
+    "atividades e cadeia multiagente clonadas" \
+    "3:1:10" \
+    "$(identity_scalar "SELECT CONCAT(
+      (SELECT COUNT(*) FROM business_process_activity_definition activity
+       JOIN business_process_definition process ON process.id=activity.process_definition_id
+       WHERE process.process_code='pde-commercial-plan-offer' AND process.version_number=10), ':',
+      (SELECT COUNT(*) FROM business_process_chain_item item
+       JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id
+       WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=24), ':',
+      (SELECT process.version_number FROM business_process_chain_item item
+       JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id
+       JOIN business_process_definition process ON process.id=item.process_definition_id
+       WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=24)
+    );")"
+}
+
 trap identity_cleanup EXIT
 identity_cleanup
 
@@ -110,4 +176,17 @@ identity_assert_equal \
 identity_compose run --rm liquibase-process2-product-identity
 identity_assert_applied
 
-printf 'Validação física do Processo 2 e do reparo da execução #32 concluída.\n'
+AGENT_CHANGELOG="db/changelog/changesets/2026-09-30-alcyone-agent-validation-v1.yaml"
+identity_liquibase_file "${AGENT_CHANGELOG}" "update"
+identity_assert_agent_validation_applied
+
+identity_liquibase_file "${AGENT_CHANGELOG}" "update"
+identity_assert_agent_validation_applied
+
+identity_liquibase_file "${AGENT_CHANGELOG}" "rollbackCount 3"
+identity_assert_agent_validation_applied
+
+identity_liquibase_file "${AGENT_CHANGELOG}" "update"
+identity_assert_agent_validation_applied
+
+printf 'Validação física do Processo 2, Alcyone e do reparo da execução #32 concluída.\n'

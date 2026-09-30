@@ -229,6 +229,115 @@ class PdeMarketStrategyBpmTaskConsumerTest {
         .hasSize(6);
   }
 
+  /** Exige no Processo 2 v10 o plano multiagente sem participante ou prova comercial fabricada. */
+  @Test
+  void acceptsAgentValidationContractWithoutHumanPilot() throws Exception {
+    ObjectNode result = agentValidationResult();
+
+    assertThatCode(
+            () ->
+                PdeMarketStrategyBpmTaskConsumer.validate(
+                    result, "product-discovery-cycle:71", true, agentDiscoveryTask()))
+        .doesNotThrowAnyException();
+
+    result
+        .withObject("/marketStrategicContract/agentValidationPlan")
+        .put("humanEvidenceClaimed", true);
+    assertThatThrownBy(
+            () ->
+                PdeMarketStrategyBpmTaskConsumer.validate(
+                    result, "product-discovery-cycle:71", true, agentDiscoveryTask()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("homologação multiagente");
+  }
+
+  /** Mantém schema e prompt v10 fechados contra o retorno do piloto humano legado. */
+  @Test
+  void keepsAgentValidationResourcesStrictAndHumanIndependent() throws Exception {
+    String rawSchema =
+        Files.readString(
+            Path.of(
+                "src/main/resources/prompts/pde-commercial-plan/v10/market-strategy-schema.json"));
+    String prompt =
+        Files.readString(
+            Path.of("src/main/resources/prompts/pde-commercial-plan/v10/market-strategy.md"));
+    JsonNode schema = objectMapper.readTree(rawSchema);
+
+    assertStrictObjects(schema);
+    org.assertj.core.api.Assertions.assertThat(rawSchema)
+        .contains("MARKET_STRATEGY_V4", "READY_FOR_AGENT_VALIDATION", "agentValidationPlan")
+        .doesNotContain(
+            "privateValidationPlan",
+            "minimumIndependentReadings",
+            "minimumEligibleParticipantsPerReading",
+            "\"uniqueItems\"");
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains("Nunca proponha entrevista", "somente o mercado comprova demanda")
+        .doesNotContain("duas leituras", "READY_FOR_PRIVATE_VALIDATION");
+  }
+
+  /** Monta uma estratégia v4 completa para o gate multiagente automatizado. */
+  private ObjectNode agentValidationResult() throws Exception {
+    ObjectNode result = identityResult("CREATE", "Alcyone", "AI_PRODUCT", "Safira");
+    ObjectNode contract = (ObjectNode) result.path("marketStrategicContract");
+    contract.put("contractVersion", "MARKET_STRATEGY_V4");
+    contract.put("status", "READY_FOR_AGENT_VALIDATION");
+    contract.remove("privateValidationPlan");
+    ObjectNode plan = contract.putObject("agentValidationPlan");
+    plan.put("contractVersion", "PDE_AGENT_VALIDATION_V1");
+    plan.put("hypothesis", "Três combinações prontas reduzem tentativa e erro.");
+    plan.put("prototypeObjective", "Entregar três combinações em até dez minutos.");
+    plan.set(
+        "purchaseScene",
+        objectMapper.readTree(
+            """
+            {"trigger":"Ocasião confirmada","deadline":"Antes do evento",
+             "costOfError":"Perder tempo e confiança","budgetEvidence":"Compara orientação paga",
+             "failedAttempt":"Tentou montar sozinha","currentPaidBehavior":"Compra orientação"}
+            """));
+    plan.put("strongestFreeAlternative", "Montagem manual com IA genérica.");
+    plan.put("prototypeAdvantage", "Resultado pessoal pronto sem prompting.");
+    plan.set(
+        "customerValueDelivery",
+        objectMapper.readTree(
+            """
+            {"territories":["RECOGNITION","EFFORT_RELIEF"],
+             "desiredTransformation":"Escolher com segurança e menos esforço",
+             "evidenceSourceIds":["source-1","source-2"],
+             "evidencePathways":["CURRENT_LANGUAGE","PAID_BEHAVIOR"],
+             "readyMadeOutcome":"Três combinações prontas","minimumCustomerInput":"Ocasião e preferências",
+             "requiresPromptEngineering":false,"requiresManualAssembly":false,
+             "usableWithoutAiKnowledge":true,"customerStepsToValue":3,
+             "timeToUsableResultMinutes":10,"automationBoundary":"Cliente decide o uso final"}
+            """));
+    plan.put("trafficClass", "AGENT_VALIDATION");
+    plan.put("internalMarker", "mh_internal_test");
+    plan.putArray("requiredScenarios").add("ADHERENT").add("RECOVERY").add("SAFETY");
+    plan.putArray("requiredDevices").add("DESKTOP_1440").add("IPHONE_15_PRO").add("PIXEL_7");
+    plan.put("maxReadyResultSeconds", 600);
+    plan.put("humanEvidenceClaimed", false);
+    plan.put("commercialEvidenceClaimed", false);
+    plan.put("paymentEnabled", false);
+    plan.put("publicationAuthorized", false);
+    plan.put("campaignAuthorized", false);
+    plan.put("mediaSpendAuthorizedBrl", 0);
+    plan.put("sourceMaxAgeDays", 30);
+    plan.put("continueCriteria", "Todos os gates automatizados aprovados.");
+    plan.put("adjustCriteria", "Corrigir somente a etapa bloqueada.");
+    plan.put("stopCriteria", "Mecanismo inviável ou inseguro.");
+    plan.put("sourceRefreshRequired", false);
+    plan.put("sourceRefreshAction", "Nenhuma atualização pendente.");
+    plan.put("publicationBoundary", "Sem contato, publicação, cobrança, campanha ou gasto.");
+    return result;
+  }
+
+  /** Acrescenta a versão 10 à mesma política de identidade entregue pelo backend. */
+  private JsonNode agentDiscoveryTask() throws Exception {
+    ObjectNode task = (ObjectNode) discoveryTask();
+    task.put("processVersion", 10);
+    return task;
+  }
+
   /** Acrescenta uma identidade estruturada a um parecer válido para os cenários da versão 9. */
   private ObjectNode identityResult(
       String mode, String internalName, String typeCode, String typeInternalName) throws Exception {

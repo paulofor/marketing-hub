@@ -18,10 +18,10 @@ de demonstração e os cinco eventos canônicos. Separe conteúdo funcional de a
 pagamento real, publicação, campanha, comunicação em massa e operação humana obrigatória fora do
 protótipo.
 
-Retorne `READY` quando os componentes permitirem que duas pessoas usem o futuro protótipo de forma
-independente e gerem evidência auditável. Não exija leituras humanas já realizadas nesta atividade;
-elas ocorrem depois da construção e da aceitação. Caso contrário, retorne `BLOCKED` com a menor
-correção causal.
+Retorne `READY` quando os componentes permitirem homologar de forma independente os cenários
+multiagente `ADHERENT`, `RECOVERY` e `SAFETY` e gerar evidência auditável. Não proponha
+recrutamento, convite, leitura humana, opinião solicitada nem usuário fictício como prova. Caso
+contrário, retorne `BLOCKED` com a menor correção causal.
 
 ## Contexto da tarefa
 

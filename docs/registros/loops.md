@@ -8025,3 +8025,37 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   genérica, comprovam plano ainda não persistido sem consulta global, impedem baseline forjada pelo
   cliente e distinguem custo capturado de aumento posterior. O contexto enviado a Plutus preserva
   baseline, diferença e origem para auditoria.
+
+## LOOP-PDE-MATERIALIZACAO-REINTRODUZ-GATE-HUMANO — 30/09/2026
+
+- **Evidência confirmada:** Alcyone #11 nasceu depois da adoção do gate multiagente, mas o hook de
+  materialização continuou gravando `PDE_PRIVATE_VALIDATION_V1`, `MARKET_STRATEGY_V3`, duas leituras
+  e checkout simulado atribuído a participantes. Produto, run #26, instância #414 e tarefa #534
+  preservavam a referência humana antiga.
+- **Causa-raiz:** o cânone e o Processo 3 haviam evoluído, mas a autoridade que cria o produto e o
+  schema de Atena no Processo 2 permaneceram na versão humana. Corrigir só o cadastro não impediria
+  o próximo produto de nascer inconsistente.
+- **Alternativas avaliadas:** encerrar Alcyone elimina aprendizagem; migrar só #11 deixa recorrência;
+  versionar o contrato na origem e migrar a execução aberta preserva auditoria e remove o bloqueio.
+  Foi escolhida a terceira alternativa.
+- **Correção e prevenção:** Processo 2 v10, prompt/schema v10, hook e consumidores usam
+  `MARKET_STRATEGY_V4`/`PDE_AGENT_VALIDATION_V1`; regressões recusam evidência humana, exigem três
+  cenários, três dispositivos e efeitos externos nulos. O catálogo central declara os dois
+  artefatos v10 e seu teste de cobertura impede prompt ou schema operacional sem auditoria. A tarefa
+  histórica #506 permanece cancelada e imutável; somente a pendente #534 troca para a referência
+  multiagente.
+
+## LOOP-DEDALO-POLLING-SEM-TIMEOUT — 30/09/2026
+
+- **Evidência confirmada:** o backend respondia ao comando `PLAY`, não havia tarefa Dédalo em
+  `IN_PROGRESS` e #534 continuava `PENDING`; no worker, as métricas do Actuator mostravam
+  `PdeConstructionBpmTaskConsumer.processOne` e a reconexão de autenticação ocupadas por cerca de
+  quatro dias. Execuções anteriores bem-sucedidas descartaram fila vazia e contrato do modelo como
+  causa da ausência de reserva.
+- **Causa-raiz:** os clientes `RestClient` do polling, telemetria e autenticação não definiam timeout
+  de conexão/leitura. Uma chamada degradada podia ocupar para sempre a única thread agendada, antes
+  de registrar claim, erro ou retry.
+- **Correção e prevenção:** uma fábrica única aplica limites de conexão e leitura a todas as chamadas
+  do Dédalo; o scheduler volta ao próximo ciclo após falha observável. Teste com servidor local que
+  aceita a conexão e não responde prova que a leitura termina dentro do limite, sem publicar para
+  descobrir o defeito.

@@ -54,6 +54,7 @@ public class PdeAgentValidationReworkReadinessProvider
   private final ProductProcessActivityPredecessorService predecessors;
   private final AgentTaskRepository tasks;
   private final ObjectMapper json;
+  private final PdeAgentValidationCorrectionPolicy correctionPolicy;
 
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.agenttask.AgentTaskTargetContextProvider taskTargets;
@@ -66,6 +67,7 @@ public class PdeAgentValidationReworkReadinessProvider
     this.predecessors = predecessors;
     this.tasks = tasks;
     this.json = json;
+    this.correctionPolicy = new PdeAgentValidationCorrectionPolicy(json);
   }
 
   /** Reconhece atividades de revisões que preservam o contrato de retrabalho explícito. */
@@ -172,12 +174,9 @@ public class PdeAgentValidationReworkReadinessProvider
 
   /** Identifica a última correção válida para separar pendências atuais de pareceres superados. */
   private long latestCorrectionId(List<PdeValidationTaskSnapshot> history, String version) {
-    return history.stream()
-        .filter(task -> CORRECTION_ACTIVITY.equals(task.processActivityId()))
-        .filter(task -> "COMPLETED".equals(task.status()))
-        .filter(task -> validCorrection(task, version))
-        .mapToLong(PdeValidationTaskSnapshot::id)
-        .max()
+    return correctionPolicy
+        .latestValidCompletedAttempt(correctionAttempts(history), version)
+        .map(PdeAgentValidationCorrectionPolicy.CorrectionAttempt::id)
         .orElse(0L);
   }
 
@@ -242,15 +241,8 @@ public class PdeAgentValidationReworkReadinessProvider
             .filter(task -> "FUNCTIONAL_ADJUSTMENT".equals(task.blockerCategory()))
             .max(Comparator.comparing(PdeValidationTaskSnapshot::id));
     if (rejection.isEmpty()) return Optional.empty();
-    Optional<PdeValidationTaskSnapshot> correction =
-        history.stream()
-            .filter(task -> CORRECTION_ACTIVITY.equals(task.processActivityId()))
-            .filter(task -> "COMPLETED".equals(task.status()))
-            .filter(task -> validCorrection(task, expectedVersion))
-            .max(Comparator.comparing(PdeValidationTaskSnapshot::id));
-    return correction.filter(task -> task.id() > rejection.orElseThrow().id()).isPresent()
-        ? Optional.empty()
-        : rejection;
+    long correctionId = latestCorrectionId(history, expectedVersion);
+    return correctionId > rejection.orElseThrow().id() ? Optional.empty() : rejection;
   }
 
   /**
@@ -265,22 +257,16 @@ public class PdeAgentValidationReworkReadinessProvider
         && task.executionError().contains(LEGACY_UNSUPPORTED_HARNESS_ERROR);
   }
 
-  /** Confirma que Dédalo registrou versão nova e retorno obrigatório à homologação técnica. */
-  private boolean validCorrection(PdeValidationTaskSnapshot task, String expectedVersion) {
-    if (expectedVersion == null || task.resultJson() == null) return false;
-    try {
-      JsonNode result = json.readTree(task.resultJson());
-      JsonNode plan = result.path("correctionPlan");
-      return "READY".equals(result.path("decision").asText())
-          && expectedVersion.equals(plan.path("correctedPrototypeVersion").asText())
-          && !expectedVersion.equals(plan.path("previousPrototypeVersion").asText())
-          && "technicalHomologation".equals(plan.path("nextActivityId").asText())
-          && plan.path("verification").path("technicalRevalidationRequired").asBoolean(false)
-          && plan.path("verification").path("noExternalSideEffects").asBoolean(false);
-    } catch (Exception ex) {
-      log.error("Falha ao ler correção PDE. taskId={}", task.id(), ex);
-      return false;
-    }
+  /** Projeta as tentativas de correção para a política única de vigência e contrato. */
+  private List<PdeAgentValidationCorrectionPolicy.CorrectionAttempt> correctionAttempts(
+      List<PdeValidationTaskSnapshot> history) {
+    return history.stream()
+        .filter(task -> CORRECTION_ACTIVITY.equals(task.processActivityId()))
+        .map(
+            task ->
+                new PdeAgentValidationCorrectionPolicy.CorrectionAttempt(
+                    task.id(), task.status(), task.resultJson(), null))
+        .toList();
   }
 
   /** Localiza a tentativa mais recente da versão do processo, inclusive falhas ainda atuais. */

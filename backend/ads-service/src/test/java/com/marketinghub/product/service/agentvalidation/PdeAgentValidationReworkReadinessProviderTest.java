@@ -175,6 +175,24 @@ class PdeAgentValidationReworkReadinessProviderTest {
     assertThat(readiness.reason()).contains("nova versão");
   }
 
+  /** Preserva o checkpoint concluído quando uma tarefa condicional indevida foi cancelada. */
+  @Test
+  void cancelledCorrectionDoesNotReplaceValidCheckpoint() {
+    history.add(rejection(350L));
+    history.add(correction(351L));
+    history.add(task(352L, process, "prototypeCorrection", "CANCELLED"));
+    BusinessProcessActivityDefinition technical = activity("technicalHomologation");
+    when(predecessors.readiness(process, technical, SOURCE))
+        .thenReturn(
+            new ProductProcessActivityPredecessorReadiness(
+                true, "A atividade predecessora possui conclusão comprovada."));
+
+    var readiness = provider.readiness(process, technical, product, SOURCE);
+
+    assertThat(readiness.ready()).isTrue();
+    assertThat(readiness.reason()).contains("nova versão");
+  }
+
   /** Não aceita a homologação da versão aposentada como autorização para Psique na v8. */
   @Test
   void requiresCurrentProcessTechnicalApprovalForPsique() {

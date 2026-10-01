@@ -301,6 +301,11 @@ public class ExperimentCockpitService {
             .contains(sampleDecision.status())) {
       blockers.add(sampleDecision.explanation());
     }
+    if (isLowTicketPdeMeasurement(experiment, sampleDecision)
+        && !sampleDecision.measurementAvailable()) {
+      blockers.add(
+          "A coorte PDE humana deste experimento está indisponível; não interpretar zeros como rejeição.");
+    }
     if (blockers.isEmpty()) {
       if (isDirectOneToOne(experiment)) {
         return new ExperimentCockpitHealthDto(
@@ -324,7 +329,9 @@ public class ExperimentCockpitService {
         blockers);
   }
 
-  /** Decide o gargalo principal priorizando falha técnica, compra e etapa mais próxima da venda. */
+  /**
+   * Prioriza falhas e vendas; evita culpar página ou produto quando a coorte PDE ainda é pequena.
+   */
   private ExperimentCockpitBottleneckDto diagnoseBottleneck(
       Experiment experiment,
       ExperimentReadinessSummaryDto readiness,
@@ -386,6 +393,29 @@ public class ExperimentCockpitService {
           "O experimento já registrou compra aprovada no funil.",
           "Existe sinal real de receita para comparar margem e escala.",
           "Analisar margem, criativos e próxima duplicação controlada.");
+    }
+    if (isLowTicketPdeMeasurement(experiment, sampleDecision)) {
+      if (!sampleDecision.measurementAvailable()) {
+        return bottleneck(
+            "MENSURACAO_AMOSTRA_INDISPONIVEL",
+            "Medição PDE indisponível",
+            "danger",
+            "A coorte humana atribuída ao experimento não pôde ser consultada.",
+            "Zeros sem uma fonte disponível não comprovam ausência de demanda.",
+            "Corrigir a medição antes de interpretar conversão ou gastar mais.");
+      }
+      if (scoreboard.humanVisitors() > 0
+          && experiment.getSampleSize() != null
+          && scoreboard.humanVisitors() < experiment.getSampleSize()) {
+        return bottleneck(
+            "AMOSTRA_PDE_LOW_TICKET_INSUFICIENTE",
+            "Poucas visitas; conversão ainda inconclusiva",
+            "secondary",
+            "%d visitantes humanos atribuídos não atingem a amostra configurada de %d. Não há base para atribuir a falta de compra à página ou ao produto."
+                .formatted(scoreboard.humanVisitors(), experiment.getSampleSize()),
+            "Refazer produto ou oferta por poucos acessos consome recursos sem evidência comercial.",
+            "Preservar produto e preço, avaliar a atração do anúncio e preparar somente a próxima variável de comunicação. Manter a pausa e os limites financeiros; nenhuma ampliação automática de mídia.");
+      }
     }
     if (scoreboard.checkoutAccesses() > 0) {
       return bottleneck(
@@ -479,6 +509,14 @@ public class ExperimentCockpitService {
         "Não há volume suficiente de exposição, clique ou sessão para decidir.",
         "A prioridade é colocar o experimento validamente diante do mercado.",
         "Publicar ou destravar distribuição e confirmar tracking.");
+  }
+
+  /** Reconhece coorte PDE low-ticket sem aplicar automaticamente o protocolo de assinatura. */
+  private boolean isLowTicketPdeMeasurement(
+      Experiment experiment, ExperimentCockpitSampleDecisionDto decision) {
+    return experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT
+        && decision != null
+        && "PDE_ATTRIBUTED_HUMAN_COHORT".equals(decision.measurementSource());
   }
 
   /** Traduz a decisão progressiva em gargalo principal sem inferir causa por amostra pequena. */
@@ -750,6 +788,18 @@ public class ExperimentCockpitService {
                   "Confirme se compra, checkout e eventos finais estão sendo registrados"
                       + " corretamente.",
                   experimentRoute));
+      case "AMOSTRA_PDE_LOW_TICKET_INSUFICIENTE" ->
+          List.of(
+              action(
+                  "REVISAR_ATRACAO",
+                  "Revisar atração da comunicação",
+                  "Use impressões, CTR e criativos para preparar uma variante, preservando produto e preço; não reative mídia automaticamente.",
+                  experimentRoute),
+              action(
+                  "PRESERVAR_PRODUTO_PRECO",
+                  "Preservar produto e preço",
+                  "Poucas visitas não autorizam reconstruir a oferta ou aumentar orçamento.",
+                  experimentRoute + "/cockpit"));
       case "PAGINA_SEM_CONVERSAO" ->
           List.of(
               action(

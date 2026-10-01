@@ -235,6 +235,8 @@ class ExperimentCockpitServiceTest {
     experiment.setName("Mira");
     experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.INVALIDATED);
     experiment.getCampaignMetric().setSpend(new BigDecimal("22.18"));
+    experiment.getCampaignMetric().setImpressions(489L);
+    experiment.getCampaignMetric().setClicks(2L);
     var summary = pdeSummary(2, 2);
     when(pdeExperimentAnalyticsReader.hasPdeSurface(experiment)).thenReturn(true);
     when(pdeExperimentAnalyticsReader.read(experiment)).thenReturn(summary);
@@ -245,6 +247,8 @@ class ExperimentCockpitServiceTest {
     var cockpit = service.getCockpit(93L);
     assertEquals(2, cockpit.scoreboard().humanVisitors());
     assertEquals(2, cockpit.scoreboard().pageViews());
+    assertEquals("AMOSTRA_PDE_LOW_TICKET_INSUFICIENTE", cockpit.bottleneck().code());
+    assertEquals("REVISAR_ATRACAO", cockpit.nextActions().getFirst().code());
     assertEquals(ExperimentType.LOW_TICKET_PRODUCT, experiment.getExperimentType());
     String output = System.getenv("HERMES_TEST_EVIDENCE_DIR");
     if (output != null) {
@@ -255,6 +259,20 @@ class ExperimentCockpitServiceTest {
               .findAndRegisterModules()
               .writeValueAsString(cockpit));
     }
+  }
+
+  /** Uma falha de fonte em Mira bloqueia saúde e decisão, sem recomendar reconstruir a página. */
+  @Test
+  void lowTicketCockpitBlocksUnavailablePdeMeasurement() {
+    var experiment = preparePdeSalesExperiment(93L);
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    when(pdeExperimentAnalyticsReader.hasPdeSurface(experiment)).thenReturn(true);
+    when(pdeExperimentAnalyticsReader.read(experiment))
+        .thenThrow(new IllegalStateException("PDE indisponível"));
+    var cockpit = service.getCockpit(93L);
+    assertEquals("BLOCKED", cockpit.health().status());
+    assertEquals("MENSURACAO_AMOSTRA_INDISPONIVEL", cockpit.bottleneck().code());
+    assertEquals("CORRIGIR_TRACKING", cockpit.nextActions().getFirst().code());
   }
 
   /** Bloqueia a leitura comercial quando a coorte PDE autoritativa não pode ser medida. */

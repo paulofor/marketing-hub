@@ -36,7 +36,7 @@ permanecem históricos, sem mídia reativada. Preflight não constitui autoriza�
 
 ## Validação executada na sandbox
 
-- Suíte completa do backend e testes afetados após os ajustes: 3.760 testes registrados, sem
+- Suíte completa do backend e testes afetados após os ajustes: 3.761 testes registrados, sem
   falhas, incluindo as 92 regras de arquitetura.
 - Facebook Ads Worker: 164 testes, sem falhas, incluindo cadência de consolidação e prazo final.
 - Frontend: 30 testes dos relatórios e detalhe, sem falhas; build de produção concluído.
@@ -63,3 +63,12 @@ saldo oficial 2.012 créditos, nenhuma reserva. A soma dos tetos de rota é US$ 
 analítico inicial de R$ 30. Solicitada confirmação de teto R$ 50 para este vídeo, voz e acabamento;
 sem essa confirmação, não há geração paga. Cotação R$ 5,20 usada apenas como referência do
 planejamento anterior, explicitamente datada no ciclo; não é cotação financeira atual.
+
+### Refinamento encontrado na homologação visual
+
+Com a fonte corrigida, o cockpit low-ticket tratava duas visitas como prova contra a página.
+A causa era a ausência da proteção de amostra aplicada às assinaturas. Sem mudar o tipo de
+Mira nem impor compra de tráfego, a leitura agora usa a coorte e o tamanho já configurado
+para declarar conversão inconclusiva, preservar produto/preço e revisar atração. A fonte
+indisponível também bloqueia a saúde comercial. Testes e nova conferência desktop/iPhone
+confirmaram a recomendação; a campanha histórica continua sem comando de retomada.

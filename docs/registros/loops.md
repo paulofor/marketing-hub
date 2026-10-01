@@ -8460,3 +8460,13 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   e último callback após o prazo. Campanhas ativas mantêm a cadência anterior. Não reativa mídia.
 - **Prevenção:** testes de callback inicial/final, limites de cadência e MySQL 5.7 com rollback;
   tentativas antigas finalizadas não voltam à coleta indefinidamente.
+
+### Mira low-ticket: duas visitas não reprovam página nem produto
+
+A homologação visual da correção de fonte revelou que o cockpit passava de zero para duas
+visitas e recomendava reconstruir a primeira dobra. A proteção de amostra da assinatura não
+cobria a superfície low-ticket. O relatório agora mantém conversão inconclusiva abaixo da
+amostra configurada e recomenda avaliar atração, preservando oferta e teto; indisponibilidade
+da coorte bloqueia a decisão. `ExperimentCockpitServiceTest` cobre ambos os cenários sem
+mudar o tipo de produto ou ativar mídia. Não confundir uma amostra planejada com autorização
+para financiar esse volume.

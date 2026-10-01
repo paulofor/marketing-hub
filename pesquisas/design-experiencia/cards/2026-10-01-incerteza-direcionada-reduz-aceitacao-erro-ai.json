@@ -1,0 +1,18 @@
+{
+  "cardKey": "incerteza-direcionada-reduz-aceitacao-erro-ai",
+  "collection": "neuromarketing",
+  "title": "Sinalizar incerteza apenas onde ela está bem calibrada",
+  "finding": "Em tarefa colaborativa, participantes aceitaram 78% dos movimentos errados quando receberam apenas a mensagem padrão do agente; descrições precisas e ressalvas bem direcionadas reduziram a aceitação de movimentos errados para 36%, preservando em grande parte a aceitação dos corretos. O mesmo estudo mostra que uma ressalva derivada de sinal de incerteza mal calibrado pode piorar o resultado.",
+  "mechanism": "Mensagens fluentes e sem ressalva podem funcionar como sinal implícito de certeza. Uma ressalva específica torna a possibilidade de erro saliente e cria um ponto de revisão, mas alertas pouco confiáveis degradam a calibração.",
+  "commercialApplication": "Em Psique, Têmis e interfaces de recomendação, testar incerteza contextual somente quando houver sinal confiável, acompanhada de ação concreta para revisar evidência, comparar alternativa ou confirmar o referente; evitar alerta genérico em todos os outputs.",
+  "evidenceStrength": "Estudo controlado com N=210 e avaliação de três modelos de visão-linguagem; efeito humano direto sobre aceitação de movimentos errados, mas em tarefa de puzzle e sem resultado comercial.",
+  "publishedOn": "2026-10-01",
+  "validUntil": "2026-11-15",
+  "experimentHypothesis": "Em decisões assistidas por IA com incerteza validada, uma ressalva específica mais opção de revisar reduzirá a aceitação de recomendações incorretas sem reduzir materialmente a aceitação das corretas.",
+  "risks": "Alertas frequentes ou baseados em confiança mal calibrada podem aumentar ruído, reduzir confiança indiscriminadamente ou elevar erros; não usar incerteza para pressionar o usuário ou ocultar responsabilidade.",
+  "limits": "Tarefa de puzzle, modelos específicos e desenho experimental; não demonstra efeito sobre vendas, conversão ou cenários de alto risco. O próprio estudo mostra que hedge baseado em sinal inadequado pode prejudicar.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-01-incerteza-direcionada-reduz-aceitacao-erro-ai.md",
+  "sourceTitle": "Fonte revisada — incerteza referencial e aceitação de erro em colaboração humano–IA",
+  "sourceSha256": "769dd5c9c11029e9f8cbd6609ef543ac5127192aa882a0da43be6c44ad54f565"
+}

@@ -1,5 +1,23 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-IRIS-CONTRATO-AUSENTE-DERRUBA-FICHA — 01/10/2026
+
+- **Evidência confirmada:** a consulta do Processo 4 de Alcyone retornou HTTP 500 mesmo com o
+  Processo 3 concluído. O request `a886f02d-55ff-493a-8906-fc1178c5bc64` apontou
+  `IrisProductProcessActivityReadinessProvider.readiness`: `Set.of(...).contains(null)` ao avaliar
+  a versão ausente de um contrato estratégico em contexto privado indisponível.
+- **Causa-raiz:** a verificação de versão era calculada antes da disponibilidade e assumia um
+  campo obrigatório também no envelope de bloqueio, que legitimamente não inclui a estratégia.
+  O mesmo padrão podia falhar com um modo explicitamente nulo no contexto legado.
+- **Alternativas avaliadas:** repetir a homologação desperdiçaria provas aprovadas; dispensar a
+  estratégia aceitaria comunicação sem origem válida; tratar ausência como pendência preserva a
+  causa original e os gates. Foi escolhida a terceira alternativa.
+- **Correção:** comparações tolerantes a nulo conservam as versões permitidas e devolvem a
+  orientação de bloqueio. Nenhuma estratégia divergente, publicação, cobrança ou mídia é liberada.
+- **Prevenção:** regressões reproduzem contexto privado indisponível, versão ausente, nula, vazia
+  ou incompatível, modo legado nulo e contratos aprovados V3/V4. As provas históricas e seus hashes
+  permanecem imutáveis; divergência real de planejamento continua exigindo reconciliação canônica.
+
 ## LOOP-SAFIRA-HOMOLOGACAO-SEM-ESCOPO-EXPOSTO — 29/09/2026
 
 - **Evidência confirmada:** o run produtivo #14 de Mira recebeu as quatro provas funcionais pela

@@ -1,5 +1,23 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-10-01 — Alcyone conclui homologação e expõe pendência de comunicação
+
+- Evidência: produto #11 em `COMUNICACAO_E_JORNADA`, Processo 3 #84 concluído no percurso vigente
+  da cadeia #24. Gate #470 aprovado, com homologação #583, cenários de Psique #584–#586 e Têmis #587
+  na mesma `alcyone-private-v3`; 9/9 combinações de cenário e dispositivo.
+- Limite: os resultados são fixtures determinísticas segregadas. A superfície permanece reservada
+  à homologação, sem cobrança; não há experimento ou pagamento conciliado de Alcyone. R$ 79 por
+  oferta e R$ 24 de custo variável máximo são hipóteses, sem CAC ou mídia autorizados.
+- Gargalo: a entrada de Íris exige correspondência entre os pareceres da descoberta #491–#493 e
+  os contratos atuais do produto, que divergem. A ausência de estratégia nesse contexto de bloqueio
+  provocava HTTP 500 na ficha do Processo 4, em vez de apresentar a pendência.
+- Correção do harness: a verificação trata campo ausente como bloqueio funcional e preserva o
+  motivo, com regressões de contratos incompletos e V3/V4 válidos. Não modifica parecer, gate,
+  produto, orçamento ou autorização.
+- Próximo movimento comercial: reconciliar os contratos atuais com suas aprovações pelo fluxo
+  oficial, preparar comunicação e entrega comercial, homologar cobrança e personalização e medir
+  compra, entrega e contribuição no mercado. Não recrutar pessoas nem solicitar opiniões.
+
 ## 2026-09-30 — Alcyone migra para homologação multiagente executável
 
 - Evidência: o produto #11 ainda carregava `PDE_PRIVATE_VALIDATION_V1`, duas leituras humanas e a

@@ -56,7 +56,7 @@ public class IrisProductProcessActivityReadinessProvider
 
   /**
    * Exige os contratos aprovados do produto privado, ciclo ou plano e antecipa o gate comercial do
-   * HTML.
+   * HTML, apresentando campos ausentes como pendências sem interromper a leitura da ficha.
    */
   @Override
   public AgentProductProcessActivityReadiness readiness(
@@ -67,8 +67,8 @@ public class IrisProductProcessActivityReadinessProvider
     List<String> missing = new ArrayList<>();
     Map<String, Object> context = communicationContext.resolve(sourceReference).orElse(Map.of());
     boolean approvedPrivateDestination =
-        Set.of(IrisLearningCycleContext.MODE, IrisPrivateProductContext.MODE)
-            .contains(context.getOrDefault("mode", ""));
+        IrisLearningCycleContext.MODE.equals(context.get("mode"))
+            || IrisPrivateProductContext.MODE.equals(context.get("mode"));
     boolean privateStrategy =
         approvedPrivateDestination
             || IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE
@@ -85,8 +85,8 @@ public class IrisProductProcessActivityReadinessProvider
             : marketStrategy.resolve(sourceReference).orElse(Map.of());
     boolean validStrategyVersion =
         privateStrategy
-            ? Set.of("MARKET_STRATEGY_V3", "MARKET_STRATEGY_V4")
-                .contains(strategy.get("contractVersion"))
+            ? "MARKET_STRATEGY_V3".equals(strategy.get("contractVersion"))
+                || "MARKET_STRATEGY_V4".equals(strategy.get("contractVersion"))
             : "MARKET_STRATEGY_V2".equals(strategy.get("contractVersion"));
     if (!"AVAILABLE".equals(strategy.get("availability"))
         || !validStrategyVersion

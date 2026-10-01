@@ -13,6 +13,8 @@ const EVIDENCE_COLLECTIONS = [
 
 const PROMPT_MODES = new Set(["FULL", "ATTESTED_REFERENCE"]);
 
+const MUTABLE_ACTIVE_EVIDENCE_PATHS = new Set(["docs/registros/loops.md"]);
+
 export const FIXED_REVIEW_PATHS = [
   "pde-platform/contracts/kit-whatsapp-pronto-v1.json",
   "pde-platform/contracts/kit-whatsapp-pronto-commercial-v2.json",
@@ -196,6 +198,19 @@ async function validateCurrentManifestEvidence(sourceRoot, manifests) {
       );
     }
     const { relativePath: manifestPath, contract } = latest[0];
+    // Diários globais preservam histórico, mas não podem congelar uma revisão vigente.
+    for (const collection of EVIDENCE_COLLECTIONS) {
+      for (const evidence of contract[collection] ?? []) {
+        const relativePath = authorizedRelativePath(evidence.path);
+        if (MUTABLE_ACTIVE_EVIDENCE_PATHS.has(relativePath)) {
+          throw new Error(
+            `Prova mutável não pode compor atestação vigente: ${relativePath}; ` +
+              `produto=${productSlug}; versão=${experienceVersion}; manifesto=${manifestPath}. ` +
+              "Crie uma evidência específica e versionada para o produto.",
+          );
+        }
+      }
+    }
     // homologationEvidence também representa a candidata a revisar; seu hash-base pode divergir.
     // implementationEvidence/executableEvidence são atestações e exigem igualdade, como em Têmis.
     for (const collection of ["implementationEvidence", "executableEvidence"]) {

@@ -102,7 +102,7 @@ class IrisCommunicationAgentChangelogTest {
             "version_number = 9");
   }
 
-  /** Exige aplicação física idempotente e versão lida do contrato canônico dos agentes. */
+  /** Exige migrações históricas idempotentes e presença de Íris no manifesto técnico vigente. */
   @Test
   void shouldKeepDedicatedMysql57PhysicalValidation() throws Exception {
     Path moduleRoot = Path.of("").toAbsolutePath();
@@ -150,9 +150,9 @@ class IrisCommunicationAgentChangelogTest {
             "compose run --rm --build liquibase-argos-agent-version-v6-strict-contracts",
             "a versão autônoma v4 do Argos não possui histórico auditável",
             "Argos não avançou para a versão v6 com contratos estritos por atividade",
-            "HEALTH_CONTRACT=${REPOSITORY_DIR}/config/agents/codex-agent-health-compliance.json",
-            "agent['key']}:{agent['expectedVersion']}",
-            "as versões implantadas dos nove agentes divergem dos contratos persistidos",
+            "communication-director:1",
+            "customer-agent:6",
+            "as versões históricas dos nove agentes divergem dos changelogs aplicados",
             "matriz dos nove agentes",
             "a reaplicação da Íris duplicou atividades");
     assertThat(irisHealthContracts)

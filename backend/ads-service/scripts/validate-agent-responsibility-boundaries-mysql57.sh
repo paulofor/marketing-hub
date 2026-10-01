@@ -5,8 +5,7 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 MODULE_DIR=$(cd "${SCRIPT_DIR}/.." && pwd)
 REPOSITORY_DIR=$(cd "${MODULE_DIR}/../.." && pwd)
 COMPOSE_PROJECT=${AGENT_BOUNDARIES_COMPOSE_PROJECT:-aihub-34eda72f-8630-4a67-b6ee-d2bd1c54dbe3-4877cec8ee}
-COMPOSE_FILE=${MODULE_DIR}/docker-compose.agent-responsibility-boundaries-mysql57.yml
-HEALTH_CONTRACT=${REPOSITORY_DIR}/config/agents/codex-agent-health-compliance.json
+COMPOSE_FILE=${AGENT_BOUNDARIES_COMPOSE_FILE:-${MODULE_DIR}/docker-compose.agent-responsibility-boundaries-mysql57.yml}
 
 compose() {
   docker compose -p "${COMPOSE_PROJECT}" -f "${COMPOSE_FILE}" "$@"
@@ -342,21 +341,11 @@ assert_equals \
 
 compose run --rm --build liquibase-customer-agent-visual-composition
 
+# O changelog histórico deve conservar suas versões, independentemente do runtime atual.
 assert_equals \
-  "$(python3 - "${HEALTH_CONTRACT}" <<'PY'
-import json
-import pathlib
-import sys
-
-contract = json.loads(pathlib.Path(sys.argv[1]).read_text())
-print("\n".join(
-    f"{agent['key']}:{agent['expectedVersion'] - 1 if agent['key'] == 'customer-agent' else agent['expectedVersion']}"
-    for agent in sorted(contract['agents'], key=lambda item: item['key'])
-))
-PY
-)" \
+  $'communication-director:1\ncustomer-agent:5\nexperiment-strategist:5\nfinancial-agent:4\ngrowth-operator:6\nlanding-generator:4\nmarket-radar:7\nmeta-ad-approver:4\nvideomaker:3' \
   "$(query "SELECT CONCAT(agent_key, ':', current_version) FROM agent ORDER BY agent_key")" \
-  "as versões implantadas dos nove agentes divergem dos contratos persistidos"
+  "as versões históricas dos nove agentes divergem dos changelogs aplicados"
 assert_equals \
   "26" \
   "$(query "SELECT COUNT(*) FROM agent_version")" \
@@ -384,20 +373,9 @@ assert_equals \
 compose run --rm --build liquibase-customer-agent-max-reasoning
 
 assert_equals \
-  "$(python3 - "${HEALTH_CONTRACT}" <<'PY'
-import json
-import pathlib
-import sys
-
-contract = json.loads(pathlib.Path(sys.argv[1]).read_text())
-print("\n".join(
-    f"{agent['key']}:{agent['expectedVersion']}"
-    for agent in sorted(contract['agents'], key=lambda item: item['key'])
-))
-PY
-)" \
+  $'communication-director:1\ncustomer-agent:6\nexperiment-strategist:5\nfinancial-agent:4\ngrowth-operator:6\nlanding-generator:4\nmarket-radar:7\nmeta-ad-approver:4\nvideomaker:3' \
   "$(query "SELECT CONCAT(agent_key, ':', current_version) FROM agent ORDER BY agent_key")" \
-  "as versões implantadas dos nove agentes divergem dos contratos persistidos"
+  "as versões históricas dos nove agentes divergem dos changelogs aplicados"
 assert_equals \
   "27" \
   "$(query "SELECT COUNT(*) FROM agent_version")" \

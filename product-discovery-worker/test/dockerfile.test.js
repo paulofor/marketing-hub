@@ -50,6 +50,12 @@ const agentHarness = JSON.parse(
     "utf8",
   ),
 );
+const runtimeContract = JSON.parse(
+  readFileSync(
+    new URL("../../config/agents/codex-agent-health-compliance.json", import.meta.url),
+    "utf8",
+  ),
+);
 
 test("valida certificados raiz da base antes do cliente Codex", () => {
   const certificates = dockerfile.indexOf(
@@ -68,11 +74,12 @@ test("valida certificados raiz da base antes do cliente Codex", () => {
 });
 
 test("reporta a versão corrente de Argos nas duas topologias", () => {
+  const version = runtimeContract.agents.find(agent => agent.key === "market-radar").expectedVersion;
   for (const compose of [localCompose, deployCompose]) {
     assert.match(
       compose,
-      /AGENT_HEALTH_VERSION: \$\{ARGOS_AGENT_VERSION:-7\}/,
-      "[ARQUITETURA] Argos deve reportar por padrão a versão 6 cadastrada no backend.",
+      new RegExp("AGENT_HEALTH_VERSION: \\$\\{ARGOS_AGENT_VERSION:-" + version + "\\}"),
+      "[ARQUITETURA] Argos deve reportar a versão técnica vigente no manifesto do backend.",
     );
   }
 });

@@ -32,7 +32,7 @@ class StatusControllerTest {
             properties.getApolloPlanner().setApiKeyFile(secret.toString());
             properties.getProviders().getKling().setApiKeyFile(secret.toString());
             assertThat(apolloPlanner(controller.status()).get("apiKeyConfigured")).isEqualTo(true);
-            assertThat(apolloPlanner(controller.status()).get("model")).isEqualTo("gpt-5.6-sol");
+            assertThat(apolloPlanner(controller.status()).get("model")).isEqualTo("gpt-6.1-sol");
             assertThat(provider(controller.status(), "kling").get("apiKeyConfigured")).isEqualTo(true);
             assertThat(provider(controller.status(), "kling").get("model")).isEqualTo("kling-v2-1-master");
             assertThat(provider(controller.status(), "editorialMotion"))

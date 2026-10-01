@@ -11,7 +11,7 @@ public class LandingGeneratorAgentProperties {
   private String repositoryPath = "/workspace/marketing-hub";
   private String mcpScriptPath = "/app/mcp/landing-generator.mjs";
   private String codexCommand = "codex";
-  private String model = "gpt-5.6-sol";
+  private String model = "gpt-6.1-sol";
   private String reasoningEffort = "max";
   private String buildReference = "local";
   private Duration codexTimeout = Duration.ofMinutes(40);

@@ -7,7 +7,7 @@ apollo:
     repository-path: ${MARKETING_HUB_REPOSITORY:/app}
     agent-key: ${AGENT_HEALTH_KEY:videomaker}
   executor-health:
-    deployed-version: ${AGENT_HEALTH_VERSION:3}
+    deployed-version: ${AGENT_HEALTH_VERSION:5}
     build-reference: ${AGENT_BUILD_REFERENCE:local}
 
 video:
@@ -29,11 +29,11 @@ video:
     open-ai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
     api-key: ${OPENAI_API_KEY:}
     api-key-file: ${OPENAI_API_KEY_FILE:}
-    model: ${APOLLO_PLANNER_MODEL:gpt-5.6-sol}
+    model: ${APOLLO_PLANNER_MODEL:gpt-6.1-sol}
     codex-shadow:
       enabled: ${APOLLO_CODEX_SHADOW_ENABLED:false}
       command: ${APOLLO_CODEX_COMMAND:codex}
-      model: ${APOLLO_CODEX_MODEL:gpt-5.6-sol}
+      model: ${APOLLO_CODEX_MODEL:gpt-6.1-sol}
       reasoning-effort: ${APOLLO_CODEX_REASONING_EFFORT:max}
       working-directory: ${APOLLO_CODEX_WORKING_DIRECTORY:/app}
       timeout: ${APOLLO_CODEX_TIMEOUT:PT10M}

@@ -27,10 +27,10 @@ class WorkerArchitectureContractTest {
         .contains(
             "http://127.0.0.1:8101/ops-communication-agent-observability-v1/health",
             "http://127.0.0.1:8101/ops-communication-agent-observability-v1/logfile",
-            "AGENT_BUILD_REFERENCE='${GITHUB_SHA}'");
+            "AGENT_BUILD_REFERENCE='${DEPLOY_SOURCE_SHA}'");
     assertThat(compose)
         .contains(
-            "AGENT_HEALTH_VERSION: \"1\"",
+            "AGENT_HEALTH_VERSION: \"3\"",
             "AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}");
   }
 

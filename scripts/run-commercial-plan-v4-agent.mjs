@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPOSITORY = resolve(SCRIPT_DIR, "..");
 const PROCESS_CODE = "pde-commercial-plan-offer";
-const MODEL = "gpt-5.6-sol";
+const MODEL = "gpt-6.1-sol";
 
 export const CONTRACTS = Object.freeze({
   "experiment-strategist": {

@@ -14,7 +14,7 @@ const modules = ["agent-executor-admin-controller", "communication-agent-worker"
 function validate(workflow, module) {
   const [before, deploy] = workflow.split(/^  deploy:\s*$/m);
   assert.ok(deploy, `${module}: deploy ausente`);
-  const eventDriven = ["customer-agent-worker", "meta-ad-approver-worker"].includes(module);
+  const eventDriven = module !== "agent-executor-admin-controller";
   const reference = `marketing-hub/${module}:\${{ github.sha }}`;
   const deployedReference = eventDriven
     ? `marketing-hub/${module}:\${DEPLOY_SOURCE_SHA}`
@@ -156,7 +156,7 @@ test("imagens de Psique, Plutus e controlador são imutáveis e participam da re
     const compose = readFileSync(path.join(root, `${location}/docker-compose.yml`), "utf8");
     assert.ok(compose.includes(`image: \${${variable}:-marketing-hub/${module}:local}`));
     const workflow = readFileSync(path.join(root, `.github/workflows/${module}-ci.yml`), "utf8");
-    const revisionVariable = module === "customer-agent-worker" ? "DEPLOY_SOURCE_SHA" : "GITHUB_SHA";
+    const revisionVariable = module === "agent-executor-admin-controller" ? "GITHUB_SHA" : "DEPLOY_SOURCE_SHA";
     assert.ok(workflow.includes(`${variable}=marketing-hub/${module}:\${${revisionVariable}}`));
     assert.ok(disk.includes(`marketing-hub/${module}`));
   }

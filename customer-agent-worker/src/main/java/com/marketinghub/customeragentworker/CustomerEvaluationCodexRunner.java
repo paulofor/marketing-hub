@@ -42,7 +42,7 @@ public class CustomerEvaluationCodexRunner {
   /** Configura o executor somente leitura, o raciocínio máximo e sua telemetria auditável. */
   public CustomerEvaluationCodexRunner(
       @Value("${CUSTOMER_AGENT_CODEX_EXECUTABLE:codex}") String executable,
-      @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
+      @Value("${CUSTOMER_AGENT_MODEL:gpt-6.1-sol}") String model,
       @Value("${CUSTOMER_AGENT_REASONING_EFFORT:max}") String reasoningEffort,
       @Value("${CUSTOMER_AGENT_EVALUATION_TIMEOUT_MINUTES:40}") long timeoutMinutes,
       @Value("${CUSTOMER_AGENT_REPOSITORY_PATH:/workspace}") String repositoryPath,

@@ -23,7 +23,7 @@ communication-agent:
   backend-url: ${BACKEND_URL:http://backend:8000}
   repository-path: ${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}
   codex-command: ${CODEX_COMMAND:codex}
-  model: ${CODEX_MODEL:gpt-5.6-sol}
+  model: ${CODEX_MODEL:gpt-6.1-sol}
   reasoning-effort: ${CODEX_REASONING_EFFORT:high}
   service-tier: ${CODEX_SERVICE_TIER:default}
   service-tier-exception-reason: ${CODEX_SERVICE_TIER_EXCEPTION_REASON:O catálogo do Codex OAuth não anuncia Flex para os modelos disponíveis ao harness.}

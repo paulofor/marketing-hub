@@ -24,7 +24,7 @@ public class CodexObservationAnalyzer {
   /** Inicializa o executor com modelo, raciocínio máximo, schema e limite operacional. */
   public CodexObservationAnalyzer(
       @Value("${CUSTOMER_AGENT_CODEX_EXECUTABLE:codex}") String executable,
-      @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
+      @Value("${CUSTOMER_AGENT_MODEL:gpt-6.1-sol}") String model,
       @Value("${CUSTOMER_AGENT_REASONING_EFFORT:max}") String reasoningEffort,
       @Value(
               "${CUSTOMER_AGENT_OBSERVATION_SCHEMA:/app/prompts/customer-agent/v3/digital-observation-schema.json}")

@@ -23,7 +23,7 @@ growth-operator:
   backend-url: ${BACKEND_URL:http://backend:8000}
   repository-path: ${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}
   codex-command: ${CODEX_COMMAND:codex}
-  model: ${CODEX_MODEL:}
+  model: ${CODEX_MODEL:gpt-6.1-sol}
   reasoning-effort: ${CODEX_REASONING_EFFORT:high}
   marketing-hub-url: ${MARKETING_HUB_URL:http://backend:8000}
   commercial-plan-id: ${COMMERCIAL_PLAN_ID:}

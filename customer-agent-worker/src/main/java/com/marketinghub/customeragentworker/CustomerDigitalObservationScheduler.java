@@ -34,7 +34,7 @@ public class CustomerDigitalObservationScheduler {
   /** Inicializa o consumo da fila observacional e as integrações controladas da execução. */
   public CustomerDigitalObservationScheduler(
       @Value("${BACKEND_URL:http://localhost:8080}") String backendUrl,
-      @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
+      @Value("${CUSTOMER_AGENT_MODEL:gpt-6.1-sol}") String model,
       BrowserObservationRunner browserObservationRunner,
       CodexObservationAnalyzer observationAnalyzer) {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();

@@ -32,11 +32,11 @@ public class OpportunityReviewConsumer {
   private final String repositoryPath;
   @Autowired private AutomaticExecutionControl automaticExecution;
 
-  /** Configura o backend e o executor somente leitura especializado de Atena. */
+  /** Configura o backend, o modelo vigente e o executor somente leitura de Atena. */
   public OpportunityReviewConsumer(
       @Value("${BACKEND_URL:http://localhost:8080}") String backendUrl,
       @Value("${STRATEGIST_CODEX_EXECUTABLE:codex}") String codex,
-      @Value("${STRATEGIST_MODEL:gpt-5.6-sol}") String model,
+      @Value("${STRATEGIST_MODEL:gpt-6.1-sol}") String model,
       @Value("${STRATEGIST_REPOSITORY_PATH:/workspace}") String repositoryPath,
       ObjectMapper json) {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();

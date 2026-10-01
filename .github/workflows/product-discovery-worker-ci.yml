@@ -350,6 +350,8 @@ jobs:
           export BRAVE_SEARCH_API_KEY_HOST_FILE="$runtime_secret"
           export ARGOS_CODEX_HOME="/root/infra/argos/codex-home"
           export ARGOS_CODEX_ENABLED="true"
+          export ARGOS_CODEX_MODEL="gpt-6.1-sol"
+          export ARGOS_AGENT_VERSION="9"
 
           bash ./docker-compose-pull-with-transient-retry.sh "${compose_files[@]}"
           runtime_uid=1000

@@ -69,7 +69,7 @@ test("registra o modelo, o esforço e o prompt final enviados ao Codex", () => {
     ),
     {
       executionMode: "MODEL",
-      modelCode: "gpt-5.6-sol",
+      modelCode: "gpt-6.1-sol",
       reasoningEffort: "high",
       promptSent: "Núcleo do agente.\n\nAtividade dirigida.",
       agentPromptPart: "Núcleo do agente.",

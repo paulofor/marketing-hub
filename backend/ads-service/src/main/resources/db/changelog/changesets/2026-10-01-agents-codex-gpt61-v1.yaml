@@ -1,0 +1,138 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-01-agents-codex-gpt61-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: agent
+        - tableExists:
+            tableName: agent_version
+        - sqlCheck:
+            expectedResult: 9
+            sql: |
+              SELECT COUNT(*) FROM agent a JOIN agent_version source ON source.agent_id=a.id AND source.version_number=a.current_version WHERE a.agent_key IN ('growth-operator', 'customer-agent', 'financial-agent', 'experiment-strategist', 'meta-ad-approver', 'landing-generator', 'communication-director', 'videomaker', 'market-radar') AND JSON_VALID(source.contract_snapshot)=1
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT COUNT(*) FROM agent a LEFT JOIN agent_version target ON target.agent_id=a.id AND target.version_number=(CASE a.agent_key
+                WHEN 'growth-operator' THEN 8
+                WHEN 'customer-agent' THEN 8
+                WHEN 'financial-agent' THEN 6
+                WHEN 'experiment-strategist' THEN 7
+                WHEN 'meta-ad-approver' THEN 6
+                WHEN 'landing-generator' THEN 6
+                WHEN 'communication-director' THEN 3
+                WHEN 'videomaker' THEN 5
+                WHEN 'market-radar' THEN 9
+              END) WHERE a.agent_key IN ('growth-operator', 'customer-agent', 'financial-agent', 'experiment-strategist', 'meta-ad-approver', 'landing-generator', 'communication-director', 'videomaker', 'market-radar') AND (a.current_version>(CASE a.agent_key
+                WHEN 'growth-operator' THEN 8
+                WHEN 'customer-agent' THEN 8
+                WHEN 'financial-agent' THEN 6
+                WHEN 'experiment-strategist' THEN 7
+                WHEN 'meta-ad-approver' THEN 6
+                WHEN 'landing-generator' THEN 6
+                WHEN 'communication-director' THEN 3
+                WHEN 'videomaker' THEN 5
+                WHEN 'market-radar' THEN 9
+              END) OR (target.id IS NOT NULL AND COALESCE(JSON_UNQUOTE(JSON_EXTRACT(target.contract_snapshot, '$.sourceChangeSet')), '')<>'2026-10-01-agents-codex-gpt61-v1'))
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, (CASE a.agent_key
+                WHEN 'growth-operator' THEN 8
+                WHEN 'customer-agent' THEN 8
+                WHEN 'financial-agent' THEN 6
+                WHEN 'experiment-strategist' THEN 7
+                WHEN 'meta-ad-approver' THEN 6
+                WHEN 'landing-generator' THEN 6
+                WHEN 'communication-director' THEN 3
+                WHEN 'videomaker' THEN 5
+                WHEN 'market-radar' THEN 9
+              END),
+                JSON_SET(source.contract_snapshot,
+                  '$.agentKey', a.agent_key,
+                  '$.version', (CASE a.agent_key
+                WHEN 'growth-operator' THEN 8
+                WHEN 'customer-agent' THEN 8
+                WHEN 'financial-agent' THEN 6
+                WHEN 'experiment-strategist' THEN 7
+                WHEN 'meta-ad-approver' THEN 6
+                WHEN 'landing-generator' THEN 6
+                WHEN 'communication-director' THEN 3
+                WHEN 'videomaker' THEN 5
+                WHEN 'market-radar' THEN 9
+              END),
+                  '$.model', 'gpt-6.1-sol',
+                  '$.codexVersion', '0.159.3',
+                  '$.previousCurrentVersion', a.current_version,
+                  '$.previousModel', a.model_name,
+                  '$.sourceChangeSet', '2026-10-01-agents-codex-gpt61-v1'),
+                UTC_TIMESTAMP()
+              FROM agent a
+              JOIN agent_version source
+                ON source.agent_id=a.id AND source.version_number=a.current_version
+              LEFT JOIN agent_version target
+                ON target.agent_id=a.id AND target.version_number=(CASE a.agent_key
+                WHEN 'growth-operator' THEN 8
+                WHEN 'customer-agent' THEN 8
+                WHEN 'financial-agent' THEN 6
+                WHEN 'experiment-strategist' THEN 7
+                WHEN 'meta-ad-approver' THEN 6
+                WHEN 'landing-generator' THEN 6
+                WHEN 'communication-director' THEN 3
+                WHEN 'videomaker' THEN 5
+                WHEN 'market-radar' THEN 9
+              END)
+              WHERE a.agent_key IN ('growth-operator', 'customer-agent', 'financial-agent', 'experiment-strategist', 'meta-ad-approver', 'landing-generator', 'communication-director', 'videomaker', 'market-radar')
+                AND a.current_version<(CASE a.agent_key
+                WHEN 'growth-operator' THEN 8
+                WHEN 'customer-agent' THEN 8
+                WHEN 'financial-agent' THEN 6
+                WHEN 'experiment-strategist' THEN 7
+                WHEN 'meta-ad-approver' THEN 6
+                WHEN 'landing-generator' THEN 6
+                WHEN 'communication-director' THEN 3
+                WHEN 'videomaker' THEN 5
+                WHEN 'market-radar' THEN 9
+              END)
+                AND target.id IS NULL;
+
+              UPDATE agent a
+              JOIN agent_version target
+                ON target.agent_id=a.id AND target.version_number=(CASE a.agent_key
+                WHEN 'growth-operator' THEN 8
+                WHEN 'customer-agent' THEN 8
+                WHEN 'financial-agent' THEN 6
+                WHEN 'experiment-strategist' THEN 7
+                WHEN 'meta-ad-approver' THEN 6
+                WHEN 'landing-generator' THEN 6
+                WHEN 'communication-director' THEN 3
+                WHEN 'videomaker' THEN 5
+                WHEN 'market-radar' THEN 9
+              END)
+              SET a.current_version=target.version_number,
+                  a.model_name='gpt-6.1-sol',
+                  a.updated_at=UTC_TIMESTAMP()
+              WHERE a.agent_key IN ('growth-operator', 'customer-agent', 'financial-agent', 'experiment-strategist', 'meta-ad-approver', 'landing-generator', 'communication-director', 'videomaker', 'market-radar')
+                AND a.current_version<=target.version_number
+                AND JSON_UNQUOTE(JSON_EXTRACT(target.contract_snapshot, '$.sourceChangeSet'))='2026-10-01-agents-codex-gpt61-v1';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent a
+              JOIN agent_version target ON target.agent_id=a.id AND target.version_number=a.current_version
+              SET a.current_version=CAST(JSON_UNQUOTE(JSON_EXTRACT(target.contract_snapshot, '$.previousCurrentVersion')) AS UNSIGNED),
+                  a.model_name=JSON_UNQUOTE(JSON_EXTRACT(target.contract_snapshot, '$.previousModel')),
+                  a.updated_at=UTC_TIMESTAMP()
+              WHERE a.agent_key IN ('growth-operator', 'customer-agent', 'financial-agent', 'experiment-strategist', 'meta-ad-approver', 'landing-generator', 'communication-director', 'videomaker', 'market-radar')
+                AND JSON_UNQUOTE(JSON_EXTRACT(target.contract_snapshot, '$.sourceChangeSet'))='2026-10-01-agents-codex-gpt61-v1'
+                AND a.model_name='gpt-6.1-sol';

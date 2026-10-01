@@ -23,7 +23,7 @@ experiment-strategist:
   backend-url: ${BACKEND_URL:http://backend:8000}
   repository-path: ${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}
   codex-command: ${CODEX_COMMAND:codex}
-  model: ${CODEX_MODEL:}
+  model: ${CODEX_MODEL:gpt-6.1-sol}
   reasoning-effort: ${EXPERIMENT_STRATEGIST_REASONING_EFFORT:high}
   codex-timeout: ${EXPERIMENT_STRATEGIST_CODEX_TIMEOUT:PT40M}
   clarity-api-token-file: ${CLARITY_API_TOKEN_FILE:}

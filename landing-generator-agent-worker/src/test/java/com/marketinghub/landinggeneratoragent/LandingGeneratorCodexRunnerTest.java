@@ -37,7 +37,7 @@ class LandingGeneratorCodexRunnerTest {
     assertTrue(command.contains("--search"));
     assertTrue(command.contains("--json"));
     assertTrue(command.contains("read-only"));
-    assertTrue(command.contains("gpt-5.6-sol"));
+    assertTrue(command.contains("gpt-6.1-sol"));
     assertTrue(command.contains("model_reasoning_effort=\"max\""));
     assertTrue(command.stream().anyMatch(value -> value.contains("mcp_servers.landing_generator")));
   }

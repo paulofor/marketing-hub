@@ -237,7 +237,7 @@
           "title": "Runtime do modelo",
           "description": "Configuração do Codex e da inspeção comportamental.",
           "items": [
-            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-5.6-sol", "description": "Modelo canônico configurável por CUSTOMER_AGENT_MODEL.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerEvaluationCodexRunner.java" },
+            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-6.1-sol", "description": "Modelo canônico configurável por CUSTOMER_AGENT_MODEL.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerEvaluationCodexRunner.java" },
             { "key": "reasoning", "label": "Esforço de raciocínio", "value": "max", "description": "Política única e bloqueante em avaliações, observações e atividades BPM de Psique; valores inferiores interrompem a execução antes do modelo.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PsiqueReasoningPolicy.java" },
             { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · 40 minutos", "description": "Inclui evidência visual temporária e limpeza ao final.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerEvaluationCodexRunner.java" }
           ]
@@ -374,7 +374,7 @@
           "title": "Runtime do modelo",
           "description": "Configuração do Codex financeiro.",
           "items": [
-            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-5.6-sol", "description": "Modelo canônico configurável por CODEX_MODEL.", "sourceReference": "financial-agent-worker/src/main/resources/application.yml" },
+            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-6.1-sol", "description": "Modelo canônico configurável por CODEX_MODEL.", "sourceReference": "financial-agent-worker/src/main/resources/application.yml" },
             { "key": "reasoning", "label": "Esforço de raciocínio", "value": "Herda a sessão Codex; o módulo não sobrescreve", "description": "Nenhum valor é inferido na tela.", "sourceReference": "financial-agent-worker/src/main/java/com/marketinghub/financialagentworker/FinancialCodexRunner.java" },
             { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · PT40M", "description": "Execução limitada ao snapshot persistido.", "sourceReference": "financial-agent-worker/src/main/resources/application.yml" }
           ]
@@ -584,7 +584,7 @@
           "title": "Runtime do modelo",
           "description": "Configuração efetiva da revisão comercial independente.",
           "items": [
-            { "key": "review-engine", "label": "Revisor", "value": "Codex ChatGPT · gpt-5.6-sol · high", "description": "Revisão comercial independente em sandbox somente leitura.", "sourceReference": "meta-ad-approver-worker/src/main/resources/application.yml" },
+            { "key": "review-engine", "label": "Revisor", "value": "Codex ChatGPT · gpt-6.1-sol · high", "description": "Revisão comercial independente em sandbox somente leitura.", "sourceReference": "meta-ad-approver-worker/src/main/resources/application.yml" },
             { "key": "limits", "label": "Timeout", "value": "Codex PT40M", "description": "A revisão não compartilha runtime nem segredo com o estúdio visual de Íris.", "sourceReference": "meta-ad-approver-worker/src/main/resources/application.yml" }
           ]
         },
@@ -695,7 +695,7 @@
           "title": "Runtime do modelo",
           "description": "Configuração efetiva da construção PDE.",
           "items": [
-            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-5.6-sol", "description": "Modelo canônico do Dédalo.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" },
+            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-6.1-sol", "description": "Modelo canônico do Dédalo.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" },
             { "key": "reasoning", "label": "Esforço de raciocínio", "value": "max", "description": "Obrigatório em toda execução; configuração inferior bloqueia antes do modelo.", "sourceReference": "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/LandingGeneratorAgentProperties.java" },
             { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · PT40M", "description": "Browser é usado para verificar, não para publicar.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" }
           ]
@@ -815,7 +815,7 @@
           "title": "Runtime do modelo",
           "description": "Configuração efetiva da materialização de comunicação.",
           "items": [
-            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-5.6-sol", "description": "Sessão individual de Íris sem chave OpenAI no prompt.", "sourceReference": "communication-agent-worker/src/main/resources/application.yml" },
+            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-6.1-sol", "description": "Sessão individual de Íris sem chave OpenAI no prompt.", "sourceReference": "communication-agent-worker/src/main/resources/application.yml" },
             { "key": "image-engine", "label": "Motor visual", "value": "OpenAI · gpt-image-2.5-sunburst", "description": "Produz somente LANDING, ADS e SOCIAL apoiados em prova real aprovada.", "sourceReference": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/production.md" },
             { "key": "reasoning", "label": "Esforço de raciocínio", "value": "high", "description": "Valor padrão configurável e auditado por execução.", "sourceReference": "communication-agent-worker/src/main/resources/application.yml" },
             { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · PT40M", "description": "A agente devolve artefatos pelo callback e não escreve no repositório.", "sourceReference": "communication-agent-worker/src/main/java/com/marketinghub/communicationagentworker/CommunicationAgentCodexRunner.java" }
@@ -1002,9 +1002,9 @@
           "title": "Runtime do modelo e mídia",
           "description": "Modelos de planejamento, shadow e provedores de renderização.",
           "items": [
-            { "key": "planner", "label": "Planejador", "value": "OpenAI Responses · gpt-5.6 · service_tier flex", "description": "Planejamento estruturado antes de qualquer renderização.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/config/VideoManagementProperties.java" },
+            { "key": "planner", "label": "Planejador", "value": "OpenAI Responses · gpt-6.1-sol · service_tier flex", "description": "Planejamento estruturado antes de qualquer renderização.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/config/VideoManagementProperties.java" },
             { "key": "reasoning", "label": "Esforço de raciocínio", "value": "max", "description": "Obrigatório na API e no Codex; modelos de mídia sem raciocínio preservam o próprio contrato.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/config/ApolloReasoningPolicy.java" },
-            { "key": "shadow", "label": "Shadow Codex", "value": "gpt-5.6-sol · max · read-only · PT10M", "description": "Avaliação em sombra sem chamar provedor ou autorizar gasto.", "sourceReference": "video-management-service/src/main/resources/application.yml" },
+            { "key": "shadow", "label": "Shadow Codex", "value": "gpt-6.1-sol · max · read-only · PT10M", "description": "Avaliação em sombra sem chamar provedor ou autorizar gasto.", "sourceReference": "video-management-service/src/main/resources/application.yml" },
             { "key": "providers", "label": "Provedores de mídia", "value": "Veo · Luma · Kling · Runway · HeyGen · pós-produção", "description": "Cada integração possui limites, polling e auditoria próprios.", "sourceReference": "video-management-service/src/main/resources/application.yml" }
           ]
         },

@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/playwright:v1.54.2-noble@sha256:18b4bcff4f8ba0ac8c44b09f09def6a4f6cb8579e5f26381c21f38b50935d5d8
 
-ARG CODEX_VERSION=0.146.0
+ARG CODEX_VERSION=0.159.3
 # A base já contém certificados, Node e navegadores compatíveis com o lock do módulo.
 RUN test -s /etc/ssl/certs/ca-certificates.crt \
     && node --version | grep -Eq '^v2[0-9]\.' \

@@ -3,6 +3,7 @@ name: Validação Liquibase MySQL 5.7
 on:
   pull_request:
     paths:
+      - "infra/testing/agent-runtime/**"
       - "infra/testing/mira-report/**"
       - "infra/testing/pde-commercial-principles/**"
       - "backend/ads-service/src/test/java/com/marketinghub/businessprocess/PdeCommercialPrinciplesMysql57Test.java"
@@ -100,6 +101,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-agent-runtime:
+    name: Runtime dos nove agentes com MySQL 5.7
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/ads-service/pom.xml
+      - name: Validar versões, histórico, idempotência, colisão e rollback
+        env:
+          AGENT_RUNTIME_COMPOSE_PROJECT: aihub-agent-runtime-${{ github.run_id }}-${{ github.run_attempt }}
+          AGENT_RUNTIME_DB_HOST: 127.0.0.1
+        run: |
+          bash scripts/docker-pull-with-transient-retry.sh mysql:5.7
+          python3 infra/testing/agent-runtime/run-mysql.py
+
   validate-mira-metrics-settlement:
     name: Reconciliação Mira com MySQL 5.7
     runs-on: ubuntu-latest

@@ -1,0 +1,18 @@
+{
+  "cardKey": "cor-semantica-conceitos-comunicacao",
+  "collection": "prazer-audio-visual",
+  "title": "Tratar efeitos de cor como dependentes de contexto e significado",
+  "finding": "Uma revisão de escopo PRISMA com 299 relatórios e 294 famílias de estudos encontrou forte heterogeneidade: efeitos de cor variaram por propriedade cromática, papel na tarefa, material emocional, comparador e resposta; não emergiu benefício ou prejuízo geral de qualquer cor nomeada.",
+  "mechanism": "Cor pode alterar processamento por saliência perceptual, significado afetivo aprendido e compatibilidade estímulo-resposta. Como esses mecanismos dependem da tarefa e de propriedades como matiz, saturação e luminosidade, não há base para uma regra universal de efeito cognitivo de uma cor isolada.",
+  "commercialApplication": "Homologar semântica da paleta por agentes e fontes públicas, usando testes determinísticos de luminosidade, saturação e contraste. No mercado voluntário, comparar paletas coerentes e menos coerentes com a mensagem e medir interação, abandono, checkout e pagamento reconciliado; não recrutar testadores.",
+  "evidenceStrength": "Alta para mapear heterogeneidade e limites da literatura: revisão de escopo PRISMA-ScR/PRISMA-S com 299 relatórios. Baixa para qualquer regra universal de cor, pois nenhum agrupamento atingiu homogeneidade suficiente para efeito agregado e a transferência para desempenho geral foi inconsistente.",
+  "publishedOn": "2026-09-30",
+  "validUntil": "2026-11-14",
+  "experimentHypothesis": "Uma paleta coerente com contexto e conceito-alvo poderá melhorar avanço no funil do mercado voluntário em relação a uma paleta perceptualmente comparável, porém menos coerente. Agentes homologam semântica e legibilidade; não comprovam compreensão humana ou conversão.",
+  "risks": "Confundir matiz com luminância, saturação ou contraste; transportar associações entre culturas e tarefas; interpretar preferência ou atenção local como persuasão, prazer ou venda.",
+  "limits": "A revisão é de escopo e não uma meta-análise de um efeito único; os paradigmas são heterogêneos, muitos resultados são nulos ou conflitantes e os efeitos aplicados não se generalizam de forma consistente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-30-cor-contexto-tarefa-revisao.md",
+  "sourceTitle": "Fonte revisada — cor, emoção e controle cognitivo",
+  "sourceSha256": "bcc40fc3137965a59d4089f914599359ea5f6ed2c4c6452a3a838c8d680f224a"
+}

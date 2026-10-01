@@ -135,6 +135,24 @@ Falha de resolução gera bloqueio persistido, nunca fallback em arquivo.
 `AgentHarnessCatalogTest` acumula as divergências de todos os agentes antes de falhar.
 Matriz e limites: [Piloto Opala](../homologacao/catalogo-vivo-opala-v1.md).
 
+### Integração das pesquisas da Biblioteca do Harness — 01/10/2026
+
+Uma pesquisa ou card enviado a uma branch ainda não está entregue ao sistema. O produtor deve
+concluir validação local, PR, revisão, merge e acompanhamento da publicação; não escrever partes
+diretamente na main nem deixar o restante sem PR. Fonte revisada e JSON devem integrar o mesmo
+conjunto, com SHA-256 calculado sobre os bytes versionados. O publicador valida todo o lote antes
+da primeira chamada externa e a validação offline deve ocorrer no PR, sem chave da API.
+
+O inventário periódico das branches `automation/*` e `radar-*` deve identificar pontas integradas,
+conteúdo já incorporado, pendências e misturas com código/temporários. Preservar SHA, origem e
+motivo em relatório, inclusive quando a checagem falhar. A reconciliação não deve sobrescrever
+correções posteriores da main, fabricar cards duplicados nem apagar história para limpar o painel.
+Consultar `scripts/audit-harness-research-branches.py` e o guia da API para o contrato operacional.
+
+Integração e sincronização criam candidatos DRAFT. Não representam revisão editorial, ativação,
+autorização de gasto ou evidência comercial. Aplicações de achados públicos continuam subordinadas
+à validação por agentes/testes determinísticos e pelo mercado voluntário, conforme o cânone v3.
+
 ### Controle operacional PLAY/STOP
 
 Por decisão de 2026-08-20, cada agente possui na tela `Gestão de agentes` um controle operacional

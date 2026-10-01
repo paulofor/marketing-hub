@@ -1,0 +1,18 @@
+{
+  "cardKey": "emocao-social-prepara-atencao-crossmodal",
+  "collection": "prazer-audio-visual",
+  "title": "Usar emoção social como pista preparatória crossmodal",
+  "finding": "Pistas visuais sociais felizes produziram orientação crossmodal mais forte para alvos auditivos que pistas neutras ou tristes, tanto em movimento biológico quanto em olhar; o efeito desapareceu com inversão e foi associado a menor tempo de não decisão.",
+  "mechanism": "A emoção carregada por sinais sociais pode modular a preparação atencional antes do processamento do alvo, em vez de simplesmente acelerar a acumulação posterior de evidência.",
+  "commercialApplication": "Homologar timing, coerência de expressão, movimento e pista sonora com agentes e testes determinísticos em avatar, vídeo ou interface. No mercado voluntário, comparar versões e medir conclusão, abandono, CTA, checkout e pagamento reconciliado, sem pedir testes ou opiniões.",
+  "evidenceStrength": "Média-alta dentro do paradigma: convergência entre dois tipos de pista social, controle por inversão e modelagem drift-diffusion; não demonstra efeito comercial.",
+  "publishedOn": "2026-09-17",
+  "validUntil": "2026-12-26",
+  "experimentHypothesis": "Uma pista social coerente com a mensagem e antecipada ao evento auditivo poderá aumentar conclusão e avanço no funil do mercado voluntário versus pista neutra ou incongruente. Agentes homologam timing e coerência; não comprovam reação humana.",
+  "risks": "Não generalizar 'feliz é sempre melhor'; expressão inadequada ao contexto pode parecer artificial, reduzir confiança ou competir com a mensagem.",
+  "limits": "O estudo mede atenção crossmodal em tarefa experimental, não prazer, confiança comercial, retenção, CTA ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-27-emocao-social-atencao-crossmodal.md",
+  "sourceTitle": "Fonte revisada — emoção em pistas sociais e preparação da atenção crossmodal",
+  "sourceSha256": "1ff74834b5d4443b341e0e4f72394b0b5d9579a0351aa107851b1ba7e1784114"
+}

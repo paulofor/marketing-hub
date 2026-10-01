@@ -1,0 +1,18 @@
+{
+  "cardKey": "ritmo-modula-janela-temporal-audiovisual",
+  "collection": "prazer-audio-visual",
+  "title": "Adaptar sincronização ao ritmo",
+  "finding": "Em três experimentos, a janela de integração audiovisual ficou mais estreita com fluxos rítmicos mais rápidos e mais ampla com envelopes semelhantes à fala.",
+  "mechanism": "O padrão é compatível com maior precisão temporal em ritmos rápidos e maior tolerância em sinais quasi-rítmicos; entrainment neural é hipótese, não medida direta.",
+  "commercialApplication": "Homologar sincronização com agentes, FFmpeg e testes determinísticos, usando critérios conservadores por ritmo e tipo de sinal. No mercado voluntário, comparar versões e medir reprodução, abandono, conclusão, checkout e pagamento reconciliado, sem solicitar avaliações perceptivas.",
+  "evidenceStrength": "Média-alta para percepção temporal audiovisual; aplicação a vídeo naturalístico ainda exige validação.",
+  "publishedOn": "2026-09-30",
+  "validUntil": "2026-11-14",
+  "experimentHypothesis": "Critérios de sincronização adaptados ao ritmo poderão reduzir abandono e melhorar conclusão no mercado voluntário em relação a um limite fixo. A medição técnica de agentes não equivale a percepção humana nem comprova venda.",
+  "risks": "Não copiar diretamente os valores laboratoriais como regra universal de edição.",
+  "limits": "Tarefas psicofísicas, amostras jovens e ausência de medida neural, prazer ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-30-ritmo-janela-temporal-audiovisual.md",
+  "sourceTitle": "Fonte revisada — ritmo e janela temporal audiovisual",
+  "sourceSha256": "99aa36ff0aeb5d5844badf7f0d3335875779460f15859a1b2b3b52db8e565d93"
+}

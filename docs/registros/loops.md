@@ -8413,3 +8413,29 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   recoloca as três mídias somente como metadados e resumos limitados; a suíte de segregação por
   produto exige ao menos três referências e impede que uma atestação de compatibilidade apague de
   novo o pacote comercial revisável.
+
+## LOOP-HARNESS-PESQUISA-PARCIAL-SEM-INTEGRACAO — cards ficam nas branches
+
+- **Data:** 01/10/2026.
+- **Evidência:** dez branches `automation/*`/`radar-*` no GitHub; duas já integradas e oito com
+  commits residuais, nenhum PR aberto. Seis JSONs não estavam na main. A publicação `36539225237`
+  falhou por fonte não versionada; `a26291f4b` reparou a fonte e `36697619620` sincronizou 183 JSONs,
+  mas não descobriu as branches pendentes. Portanto, API saudável e reconciliação verde não
+  comprovavam integração completa das pesquisas.
+- **Causa-raiz confirmada:** produtores publicavam partes diretamente na main e deixavam a
+  conclusão em branches. O guia instruía gravação direta, sem conclusão por PR. O publicador
+  descobria apenas arquivos da main, validava durante o envio e ignorava eventos que alteravam
+  apenas a fonte; erro no seletor Git também podia desaparecer em process substitution.
+- **Alternativas:** mesclar todas as árvores arriscaria regressão de fontes corrigidas; recuperar
+  branches isoladas repetiria builds e revisões; consolidar o conteúdo com resolução explícita e
+  conservar as pontas como pais preserva história e usa uma única entrega. Escolhida a terceira.
+- **Correção:** recuperar seis cards e seis relatórios, manter a fonte de delegação corrigida na
+  main e evitar relatório de design duplicado. Aplicações operacionais usam agentes/determinismo
+  e mercado voluntário. Todo o lote é validado antes da primeira chamada, com modo offline no PR,
+  conferência de fontes isoladas, propagação de falha Git e bloqueio de links simbólicos.
+- **Prevenção:** auditor somente leitura inventaria pontas, conteúdo incorporado, pendências,
+  mudanças concorrentes e mistura com código/temporários. Workflow periódico preserva relatório
+  e acusa pendência, sem apagar branches nem mesclar automaticamente. Fixtures Git e API simulada
+  comprovam seleção, idempotência, erro tardio sem publicação parcial, fonte divergente e histórico
+  incompleto. Guia, cânone e AGENTS passam a exigir o ciclo completo de integração.
+- **Homologação:** `docs/homologacao/harness-research-reconciliation-v1.md`.

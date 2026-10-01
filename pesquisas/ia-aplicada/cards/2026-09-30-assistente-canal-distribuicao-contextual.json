@@ -1,0 +1,18 @@
+{
+  "cardKey": "assistente-como-canal-de-distribuicao-contextual",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Assistente pode distribuir o produto no momento da necessidade",
+  "finding": "Em 29/09/2026, a OpenAI abriu o ChatGPT como superfície para experiências nativas de terceiros em uma base coletiva de 1,2 bilhão de usuários semanais e anunciou melhorias de ranking e recomendação de plugins no diretório e dentro das conversas. Isso cria infraestrutura real de descoberta contextual, mas ainda não demonstra conversão, retenção ou receita incremental para apps terceiros.",
+  "mechanism": "Quando a pessoa explicita uma necessidade em linguagem natural, o assistente dispõe de contexto para sugerir uma capacidade especializada perto do momento de intenção, potencialmente reduzindo busca por categoria, comparação de apps e troca de interface.",
+  "commercialApplication": "Testar uma capacidade estreita e mensurável como plugin/app — por exemplo, consultar disponibilidade, montar orçamento, diagnosticar oferta ou iniciar reserva — e comparar aquisição por sugestão contextual do assistente com mídia paga ou descoberta direta, medindo exposição, conexão, ativação qualificada, checkout, pagamento reconciliado e repetição de uso.",
+  "evidenceStrength": "Moderada para existência da infraestrutura e do novo canal; baixa para impacto comercial. O anúncio oficial descreve a superfície, a escala coletiva e a recomendação contextual, corroborado por cobertura independente, mas ainda não há métricas públicas de conversão, CAC, retenção ou receita de terceiros atribuíveis ao recurso.",
+  "publishedOn": "2026-09-30",
+  "validUntil": "2026-11-30",
+  "experimentHypothesis": "Para pedidos de alta intenção, uma capacidade especializada sugerida dentro do assistente elevará ativações qualificadas por exposição e reduzirá CAC até pagamento reconciliado em relação a uma jornada equivalente que exige busca externa ou landing page genérica, sem piorar retenção ou reembolso.",
+  "risks": "Dependência da plataforma e de ranking opaco, fricção de permissões, privacidade, mudança futura de taxas ou regras, substituição da função pelo próprio assistente e perda de identidade da marca. A grande base do ChatGPT não equivale a alcance garantido do plugin.",
+  "limits": "Os 1,2 bilhão de usuários semanais são a base coletiva do ChatGPT, não usuários ou impressões de plugins. Não há experimento causal nem dados públicos de uplift, CAC, receita incremental ou retenção. Rollout, ranking, permissões e economia do ecossistema podem mudar rapidamente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-30-assistente-canal-distribuicao-contextual.md",
+  "sourceTitle": "Fonte revisada — assistente como canal de distribuição contextual",
+  "sourceSha256": "b72543b195c72df660f47c45937cdccf301465eecbb3e3dbe72e708e5771a155"
+}

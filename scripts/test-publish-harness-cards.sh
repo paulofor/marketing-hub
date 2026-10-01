@@ -411,6 +411,60 @@ grep -Fq 'schedule:' "${WORKFLOW}" \
   || fail "workflow não reconcilia eventos perdidos"
 grep -Fq 'bash scripts/publish-harness-cards.sh --all' "${WORKFLOW}" \
   || fail "workflow não usa o publicador testável na reconciliação"
+grep -Fq '"pesquisas/*/cards/fontes/**"' "${WORKFLOW}" \
+  || fail "workflow não observa mudanças isoladas nas fontes"
+
+# A validação local não pode exigir credenciais nem tocar na API.
+: > "${REQUEST_LOG}"
+env -u HARNESS_LIBRARY_API_KEY \
+  PATH="${FAKE_BIN}:${PATH}" \
+  HARNESS_CARDS_REPOSITORY_ROOT="${TEST_REPOSITORY}" \
+  bash "${PUBLISHER}" --validate-only --all >/dev/null
+assert_request_count 0
+
+# Falha de seleção não pode desaparecer dentro de uma process substitution.
+if run_publisher "${PUBLISHER}" --changed "${base_sha}" "commit-inexistente" >/dev/null 2>&1; then
+  fail "commit final inexistente foi tratado como lote vazio"
+fi
+assert_request_count 0
+
+# Um lote inválido deve falhar antes de publicar até mesmo o primeiro card válido.
+valid_batch_before="$(git -C "${TEST_REPOSITORY}" rev-parse HEAD)"
+jq '.title = "Primeiro card válido do lote"' "${video_card}" > "${video_card}.tmp"
+mv "${video_card}.tmp" "${video_card}"
+batch_invalid="${TEST_REPOSITORY}/pesquisas/video/cards/zz-invalido.json"
+printf '{}\n' > "${batch_invalid}"
+invalid_batch_sha="$(commit_fixture "Lote com válido antes do inválido")"
+if run_publisher "${PUBLISHER}" --changed "${valid_batch_before}" "${invalid_batch_sha}" >/dev/null 2>&1; then
+  fail "lote parcialmente inválido foi aceito"
+fi
+assert_request_count 0
+git -C "${TEST_REPOSITORY}" rm -q "pesquisas/video/cards/zz-invalido.json"
+valid_source_before="$(commit_fixture "Remove inválido do lote")"
+
+# Mudar somente uma fonte invalida o hash mesmo sem modificar o JSON.
+source_fixture="${TEST_REPOSITORY}/pesquisas/video/cards/fontes/homologacao-video.md"
+cp "${source_fixture}" "${TEST_ROOT}/source-backup.md"
+printf 'Fonte alterada isoladamente.\n' > "${source_fixture}"
+source_only_sha="$(commit_fixture "Altera somente a fonte")"
+if run_publisher "${PUBLISHER}" --changed "${valid_source_before}" "${source_only_sha}" >/dev/null 2>&1; then
+  fail "alteração isolada da fonte não invalidou o lote"
+fi
+assert_request_count 0
+cp "${TEST_ROOT}/source-backup.md" "${source_fixture}"
+commit_fixture "Restaura fonte da fixture" >/dev/null
+
+# Um caminho versionado não pode atravessar um link para fora da raiz.
+rm "${source_fixture}"
+ln -s "${TEST_ROOT}/source-backup.md" "${source_fixture}"
+commit_fixture "Fonte por link simbólico" >/dev/null
+if run_publisher "${PUBLISHER}" --validate-only --all >/dev/null 2>&1; then
+  fail "fonte simbólica foi aceita"
+fi
+assert_request_count 0
+rm "${source_fixture}"
+cp "${TEST_ROOT}/source-backup.md" "${source_fixture}"
+commit_fixture "Restaura fonte regular" >/dev/null
 
 : > "${REQUEST_LOG}"
 mapfile -d '' -t repository_cards < <(

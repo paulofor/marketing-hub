@@ -4,17 +4,30 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
  * Responsabilidade: proteger a identidade técnica publicada contra cadastro ausente ou inválido.
  */
 class AgentExecutorVersionCatalogTest {
-  /** Confirma o recurso empacotado e impede fallback para um executor não catalogado. */
+  /** Confirma os nove executores empacotados e impede fallback para agente desconhecido. */
   @Test
   void loadsPackagedVersionsWithoutUnknownFallback() {
     var catalog = AgentExecutorVersionCatalog.load();
-    assertThat(catalog.expectedVersion("customer-agent")).isEqualTo(6);
+    for (String agentKey :
+        List.of(
+            "growth-operator",
+            "customer-agent",
+            "financial-agent",
+            "experiment-strategist",
+            "meta-ad-approver",
+            "landing-generator",
+            "communication-director",
+            "videomaker",
+            "market-radar")) {
+      assertThat(catalog.expectedVersion(agentKey)).as(agentKey).isPositive();
+    }
     assertThat(catalog.expectedVersion("unknown")).isNull();
   }
 

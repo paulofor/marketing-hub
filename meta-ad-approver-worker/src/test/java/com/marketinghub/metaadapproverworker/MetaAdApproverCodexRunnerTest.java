@@ -32,7 +32,7 @@ class MetaAdApproverCodexRunnerTest {
     assertThat(command).containsSubsequence("codex", "--search", "exec", "-");
     assertThat(command).containsSubsequence("--sandbox", "read-only");
     assertThat(command).contains("approval_policy=\"never\"");
-    assertThat(command).contains("--cd", "/workspace/repository", "--model", "gpt-5.6-sol");
+    assertThat(command).contains("--cd", "/workspace/repository", "--model", "gpt-6.1-sol");
     assertThat(command).contains("mcp_servers.meta_ad_approver.command=\"node\"");
     assertThat(command).anyMatch(value -> value.startsWith("mcp_servers.meta_ad_approver.args="));
     assertThat(command)

@@ -103,7 +103,7 @@ public class VideoManagementProperties {
         private URI openAiBaseUrl = URI.create("https://api.openai.com/v1");
         private String apiKey;
         private String apiKeyFile;
-        private String model = "gpt-5.6-sol";
+        private String model = "gpt-6.1-sol";
         @NotNull
         private CodexShadow codexShadow = new CodexShadow();
     }
@@ -114,7 +114,7 @@ public class VideoManagementProperties {
     public static class CodexShadow {
         private boolean enabled = false;
         private String command = "codex";
-        private String model = "gpt-5.6-sol";
+        private String model = "gpt-6.1-sol";
         private String reasoningEffort = ApolloReasoningPolicy.MAXIMUM;
         private String workingDirectory = "/app";
         @NotNull

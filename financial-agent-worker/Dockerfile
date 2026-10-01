@@ -5,7 +5,7 @@ COPY src src
 RUN mvn -q -DskipTests package
 
 FROM eclipse-temurin:21-jre
-ARG CODEX_VERSION=0.146.0
+ARG CODEX_VERSION=0.159.3
 RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git ca-certificates \
     && npm install -g @openai/codex@${CODEX_VERSION} \
     && rm -rf /var/lib/apt/lists/*

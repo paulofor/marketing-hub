@@ -239,7 +239,7 @@ invalidem estratégia geram solicitação auditável de nova análise da Atena.
 
 ## Migração do Operador de Crescimento
 
-O Operador usa a chave `growth-operator`, contrato comportamental v2, modelo `gpt-5.6-sol` e
+O Operador usa a chave `growth-operator`, contrato comportamental v2, modelo `gpt-6.1-sol` e
 execução orientada a eventos. A migração cria a próxima `agent_version` disponível, sem reutilizar
 números históricos. Toda nova execução deve apontar para a versão ativa no momento em que foi criada,
 preservando qual contrato fundamentou a decisão.
@@ -364,3 +364,32 @@ O Cadastro de Agentes deve consolidar execuções, pendências e resultados conf
 No Aprovador de Anúncios Meta, cada parecer persistido por versão do criativo representa uma execução. O executor canônico é o módulo independente `meta-ad-approver-worker`, que usa Codex em sandbox somente leitura e MCP próprio. Revisões e correções pendentes formam as pendências do ciclo; decisões encerradas formam resoluções; apenas `APPROVED` conta como resultado técnico confirmado. O custo consolidado inclui a chamada auditada de revisão e as versões visuais geradas por solicitação corretiva do agente, sem atribuir ao aprovador o custo do criativo inicial. Aprovação técnica nunca substitui aprovação humana, publicação ou resultado comercial.
 
 Quando o Aprovador decidir `ADJUST` ou `REJECTED`, a correção seguinte deve usar um contrato visual estruturado, persistido e auditável. O contrato precisa separar requisitos obrigatórios, elementos proibidos e critérios objetivos de aceitação; o worker deve incorporar todos esses itens ao prompt final e bloquear a geração quando requisitos ou critérios estiverem ausentes. Parecer em texto livre ou recomendação vaga não autoriza nova chamada paga. A versão gerada retorna ao mesmo gate multimodal, preservando limite de tentativas, custo e aprovação humana.
+
+## Runtime dos nove agentes — decisão de 01/10/2026
+
+Todos os agentes do Marketing Hub usam `gpt-6.1-sol`: Argos, Atena, Plutus,
+Dédalo, Íris, Apolo, Psique, Têmis e Hermes. O Codex CLI está fixado na versão
+estável `0.159.3`, a mais recente verificada nesta entrega. Uma atualização
+futura deve fixar a versão homologada; não usar `@latest` em builds produtivos.
+
+Cadastro, snapshot imutável, defaults locais, Dockerfile, Compose e exports
+de CI/CD devem permanecer consistentes. O contrato compartilhado é
+`config/agents/codex-agent-health-compliance.json`; o teste de health também
+valida modelo e versão do Codex nos nove executores antes da publicação.
+A versão de curadoria em `agent.current_version` é independente da versão
+técnica do executor no manifesto de health. Alterar cards ou contratos não
+exige outra imagem; trocar o runtime exige compatibilidade do manifesto e
+um snapshot novo do cadastro, preservando os históricos.
+A troca preserva prompts, schemas, memória, cards e contratos anteriores,
+as autorizações, os limites financeiros e o esforço específico de cada agente.
+Modelos especializados de imagem, vídeo, voz e transcrição mantêm seus contratos.
+
+Apolo usa GPT 6.1 Sol no planejador e no executor Codex de replay; o modo
+produtivo existente não é trocado por um replay nem passa a executar inferências
+duplicadas. A disponibilidade do modelo é conferida no catálogo do Codex
+sem chamada de geração, e uso efetivo continua auditado por execução.
+
+Fontes: [GPT 6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol)
+e [Codex](https://developers.openai.com/api/docs/guides/code-generation#use-codex).
+A versão estável foi conferida no pacote oficial `@openai/codex` e no próprio
+binário (`codex --version`).

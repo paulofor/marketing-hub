@@ -35,7 +35,7 @@ public class CustomerBpmTaskConsumer {
   private static final String REQUESTED_SERVICE_TIER = "flex";
   private static final String EFFECTIVE_SERVICE_TIER = "STANDARD";
   private static final String SERVICE_TIER_EXCEPTION =
-      "O catálogo do Codex não anuncia Flex para gpt-5.6-sol; a CLI omite o tier solicitado e usa o tier padrão.";
+      "O catálogo do Codex OAuth não anuncia Flex para o modelo do harness; a CLI usa o tier padrão.";
   private static final int MAX_PROMPT_CHARACTERS = 900_000;
   private static final List<BpmContract> CONTRACTS =
       List.of(
@@ -71,7 +71,7 @@ public class CustomerBpmTaskConsumer {
   public CustomerBpmTaskConsumer(
       @Value("${BACKEND_URL:http://localhost:8080}") String backendUrl,
       @Value("${CUSTOMER_AGENT_CODEX_EXECUTABLE:codex}") String codex,
-      @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
+      @Value("${CUSTOMER_AGENT_MODEL:gpt-6.1-sol}") String model,
       @Value("${CUSTOMER_AGENT_REASONING_EFFORT:max}") String reasoningEffort,
       @Value("${CUSTOMER_AGENT_REPOSITORY_PATH:/workspace}") String repositoryPath,
       @Value("${CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH:}") String commercialEvidencePath,

@@ -11,7 +11,7 @@ public class MetaAdApproverProperties {
   private String marketingHubUrl = "http://backend:8000";
   private String repositoryPath = "/workspace/marketing-hub";
   private String codexCommand = "codex";
-  private String model = "gpt-5.6-sol";
+  private String model = "gpt-6.1-sol";
   private String reasoningEffort = "high";
   private Duration codexTimeout = Duration.ofMinutes(40);
   private Duration backendConnectTimeout = Duration.ofSeconds(10);

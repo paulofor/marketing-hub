@@ -47,7 +47,7 @@ class LandingGeneratorBackendClientTest {
     server.verify();
   }
 
-  /** Deve preservar o esforço máximo configurado quando Dédalo reportar uma falha técnica. */
+  /** Preserva o modelo vigente e o esforço máximo ao reportar uma falha técnica de Dédalo. */
   @Test
   void shouldReportReasoningEffortWhenExecutionFails() {
     RestClient.Builder builder = RestClient.builder();
@@ -60,7 +60,7 @@ class LandingGeneratorBackendClientTest {
             requestTo(
                 "http://backend.test/api/internal/geralanding/agent/v1/stage-executions/job-89/result"))
         .andExpect(method(HttpMethod.POST))
-        .andExpect(jsonPath("$.model").value("gpt-5.6-sol"))
+        .andExpect(jsonPath("$.model").value("gpt-6.1-sol"))
         .andExpect(jsonPath("$.reasoningEffort").value("max"))
         .andExpect(jsonPath("$.error").value("falha simulada"))
         .andRespond(withSuccess());

@@ -26,7 +26,7 @@ export async function synthesizeMarketCandidates(context, options = {}) {
   const directory = await mkdtemp(join(tmpdir(), "argos-research-"));
   const output = join(directory, "output.json");
   const schema = join(directory, "schema.json");
-  const model = options.model || process.env.ARGOS_CODEX_MODEL;
+  const model = options.model || process.env.ARGOS_CODEX_MODEL || "gpt-6.1-sol";
   const reasoningEffort =
     options.reasoningEffort ||
     process.env.ARGOS_CODEX_SYNTHESIS_REASONING_EFFORT ||

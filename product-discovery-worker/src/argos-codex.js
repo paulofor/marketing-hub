@@ -18,7 +18,7 @@ export async function planDirectedResearch(job, options = {}) {
   const directory = await mkdtemp(join(tmpdir(), "argos-plan-"));
   const output = join(directory, "output.json");
   const schema = join(directory, "schema.json");
-  const model = options.model || process.env.ARGOS_CODEX_MODEL;
+  const model = options.model || process.env.ARGOS_CODEX_MODEL || "gpt-6.1-sol";
   const reasoningEffort =
     options.reasoningEffort ||
     process.env.ARGOS_CODEX_PLAN_REASONING_EFFORT ||

@@ -35,7 +35,7 @@ public class CommercialBpmTaskConsumer {
   private static final String REQUESTED_SERVICE_TIER = "flex";
   private static final String EFFECTIVE_SERVICE_TIER = "STANDARD";
   private static final String SERVICE_TIER_EXCEPTION =
-      "O catálogo do Codex não anuncia Flex para gpt-5.6-sol; a CLI omite o tier solicitado e usa o tier padrão.";
+      "O catálogo do Codex OAuth não anuncia Flex para o modelo do harness; a CLI usa o tier padrão.";
   private static final int MAX_PROMPT_CHARACTERS = 900_000;
   private static final List<BpmContract> CONTRACTS =
       List.of(
@@ -58,12 +58,12 @@ public class CommercialBpmTaskConsumer {
   private final int maxModelAttempts;
   @Autowired private AutomaticExecutionControl automaticExecution;
 
-  /** Configura a fila canônica e a sandbox independente de Têmis. */
+  /** Configura a fila canônica, o modelo vigente e a sandbox independente de Têmis. */
   @Autowired
   public CommercialBpmTaskConsumer(
       MetaAdApproverProperties properties,
       @Value("${CODEX_COMMAND:codex}") String codex,
-      @Value("${CODEX_MODEL:gpt-5.6-sol}") String model,
+      @Value("${CODEX_MODEL:gpt-6.1-sol}") String model,
       @Value("${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}") String repositoryPath,
       @Value("${TEMIS_COMMERCIAL_EVIDENCE_PATH:}") String commercialEvidencePath,
       ObjectMapper json,

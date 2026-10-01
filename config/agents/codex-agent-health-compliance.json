@@ -2,14 +2,153 @@
   "contractVersion": "codex-health-v1",
   "maximumHeartbeatSeconds": 60,
   "agents": [
-    {"key":"growth-operator","module":"growth-operator-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":6,"versionSources":["growth-operator-worker/docker-compose.yml"]},
-    {"key":"customer-agent","module":"customer-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":6,"versionSources":["customer-agent-worker/docker-compose.yml"]},
-    {"key":"financial-agent","module":"financial-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":4,"versionSources":["financial-agent-worker/docker-compose.yml"]},
-    {"key":"experiment-strategist","module":"experiment-strategist-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":5,"versionSources":["experiment-strategist-worker/docker-compose.yml"]},
-    {"key":"meta-ad-approver","module":"meta-ad-approver-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":4,"versionSources":["meta-ad-approver-worker/docker-compose.yml"]},
-    {"key":"landing-generator","module":"landing-generator-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":4,"versionSources":["landing-generator-agent-worker/docker-compose.yml"]},
-    {"key":"communication-director","module":"communication-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":1,"versionSources":["communication-agent-worker/docker-compose.yml"]},
-    {"key":"videomaker","module":"video-management-service","reporter":"src/main/java/com/marketinghub/videomanagement/service/ApolloExecutorHealthReporter.java","activation":"src/main/java/com/marketinghub/videomanagement/service/ApolloExecutorHealthReporter.java","expectedVersion":3,"versionSources":["video-management-service/src/main/resources/application.yml"]},
-    {"key":"market-radar","module":"product-discovery-worker","reporter":"src/agent-health-reporter.js","activation":"src/worker.js","expectedVersion":7,"versionSources":["product-discovery-worker/docker-compose.yml","product-discovery-worker/docker-compose.deploy.yml"]}
-  ]
+    {
+      "key": "growth-operator",
+      "module": "growth-operator-worker",
+      "reporter": "agent-health-report.mjs",
+      "activation": "docker-compose.yml",
+      "expectedVersion": 8,
+      "versionSources": [
+        "growth-operator-worker/docker-compose.yml"
+      ],
+      "modelSources": [
+        "growth-operator-worker/docker-compose.yml",
+        "growth-operator-worker/src/main/resources/application.yml",
+        ".github/workflows/growth-operator-worker-ci.yml"
+      ]
+    },
+    {
+      "key": "customer-agent",
+      "module": "customer-agent-worker",
+      "reporter": "agent-health-report.mjs",
+      "activation": "docker-compose.yml",
+      "expectedVersion": 8,
+      "versionSources": [
+        "customer-agent-worker/docker-compose.yml"
+      ],
+      "modelSources": [
+        "customer-agent-worker/docker-compose.yml",
+        ".github/workflows/customer-agent-worker-ci.yml",
+        "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CodexObservationAnalyzer.java",
+        "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerBpmTaskConsumer.java",
+        "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerDigitalObservationScheduler.java",
+        "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerEvaluationCodexRunner.java"
+      ]
+    },
+    {
+      "key": "financial-agent",
+      "module": "financial-agent-worker",
+      "reporter": "agent-health-report.mjs",
+      "activation": "docker-compose.yml",
+      "expectedVersion": 6,
+      "versionSources": [
+        "financial-agent-worker/docker-compose.yml"
+      ],
+      "modelSources": [
+        "financial-agent-worker/docker-compose.yml",
+        "financial-agent-worker/src/main/resources/application.yml",
+        ".github/workflows/financial-agent-worker-ci.yml"
+      ]
+    },
+    {
+      "key": "experiment-strategist",
+      "module": "experiment-strategist-worker",
+      "reporter": "agent-health-report.mjs",
+      "activation": "docker-compose.yml",
+      "expectedVersion": 7,
+      "versionSources": [
+        "experiment-strategist-worker/docker-compose.yml"
+      ],
+      "modelSources": [
+        "experiment-strategist-worker/docker-compose.yml",
+        "experiment-strategist-worker/src/main/resources/application.yml",
+        ".github/workflows/experiment-strategist-worker-ci.yml",
+        "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/OpportunityReviewConsumer.java"
+      ]
+    },
+    {
+      "key": "meta-ad-approver",
+      "module": "meta-ad-approver-worker",
+      "reporter": "agent-health-report.mjs",
+      "activation": "docker-compose.yml",
+      "expectedVersion": 6,
+      "versionSources": [
+        "meta-ad-approver-worker/docker-compose.yml"
+      ],
+      "modelSources": [
+        "meta-ad-approver-worker/docker-compose.yml",
+        "meta-ad-approver-worker/src/main/resources/application.yml",
+        ".github/workflows/meta-ad-approver-worker-ci.yml",
+        "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/CommercialBpmTaskConsumer.java",
+        "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/MetaAdApproverProperties.java"
+      ]
+    },
+    {
+      "key": "landing-generator",
+      "module": "landing-generator-agent-worker",
+      "reporter": "agent-health-report.mjs",
+      "activation": "docker-compose.yml",
+      "expectedVersion": 6,
+      "versionSources": [
+        "landing-generator-agent-worker/docker-compose.yml"
+      ],
+      "modelSources": [
+        "landing-generator-agent-worker/docker-compose.yml",
+        "landing-generator-agent-worker/src/main/resources/application.yml",
+        ".github/workflows/landing-generator-agent-worker-ci.yml",
+        "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/LandingGeneratorAgentProperties.java"
+      ]
+    },
+    {
+      "key": "communication-director",
+      "module": "communication-agent-worker",
+      "reporter": "agent-health-report.mjs",
+      "activation": "docker-compose.yml",
+      "expectedVersion": 3,
+      "versionSources": [
+        "communication-agent-worker/docker-compose.yml"
+      ],
+      "modelSources": [
+        "communication-agent-worker/docker-compose.yml",
+        "communication-agent-worker/src/main/resources/application.yml",
+        ".github/workflows/communication-agent-worker-ci.yml"
+      ]
+    },
+    {
+      "key": "videomaker",
+      "module": "video-management-service",
+      "reporter": "src/main/java/com/marketinghub/videomanagement/service/ApolloExecutorHealthReporter.java",
+      "activation": "src/main/java/com/marketinghub/videomanagement/service/ApolloExecutorHealthReporter.java",
+      "expectedVersion": 5,
+      "versionSources": [
+        "video-management-service/src/main/resources/application.yml"
+      ],
+      "modelSources": [
+        "video-management-service/src/main/resources/application.yml",
+        "video-management-service/src/main/java/com/marketinghub/videomanagement/config/VideoManagementProperties.java",
+        "deploy/docker-compose.video.yml",
+        "docker-compose.yml"
+      ]
+    },
+    {
+      "key": "market-radar",
+      "module": "product-discovery-worker",
+      "reporter": "src/agent-health-reporter.js",
+      "activation": "src/worker.js",
+      "expectedVersion": 9,
+      "versionSources": [
+        "product-discovery-worker/docker-compose.yml",
+        "product-discovery-worker/docker-compose.deploy.yml"
+      ],
+      "modelSources": [
+        "product-discovery-worker/docker-compose.yml",
+        "product-discovery-worker/docker-compose.deploy.yml",
+        ".github/workflows/product-discovery-worker-ci.yml",
+        "product-discovery-worker/src/argos-codex.js",
+        "product-discovery-worker/src/argos-research.js"
+      ]
+    }
+  ],
+  "codexVersion": "0.159.3",
+  "codexModel": "gpt-6.1-sol"
 }

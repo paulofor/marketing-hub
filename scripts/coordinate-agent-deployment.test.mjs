@@ -117,8 +117,9 @@ function assertEventDrivenCoordination(workflow, sourceWorkflow, artifactBased) 
   );
   assert.doesNotMatch(workflow, /^  application-deployment:\s*$/m);
   assert.doesNotMatch(workflow, /wait-for-app-deployment\.mjs/);
+  assert.doesNotMatch(configuration, /^concurrency:/m, "a continuação não pode disputar a fila do workflow de origem");
 
-  const testJob = jobBlock(workflow, "test");
+  const testJob = jobBlock(workflow, "test") || jobBlock(workflow, "test-build");
   assert.ok(testJob, "o job de teste deve existir");
   assert.match(testJob, /if: github\.event_name != 'workflow_run'/);
   assert.match(
@@ -156,6 +157,7 @@ function assertEventDrivenCoordination(workflow, sourceWorkflow, artifactBased) 
   assert.equal(hasRemoteCommand(deploy), true, "somente a continuação aprovada pode acessar o VPS");
 
   if (artifactBased) {
+    assert.match(deploy, /AGENT_BUILD_REFERENCE=['"]?\$\{DEPLOY_SOURCE_SHA\}/);
     assert.match(deploy, /github-token: \$\{\{ github\.token \}\}/);
     assert.match(deploy, /run-id:.*needs\.source-run\.outputs\.source_run_id/);
     assert.match(deploy, /name: agent-images-\$\{\{ env\.DEPLOY_SOURCE_SHA \}\}/);
@@ -567,4 +569,13 @@ test("CI central acompanha e executa o contrato de coordenação por evento", as
     }
   }
   assert.match(ci, /run: node --test scripts\/coordinate-agent-deployment\.test\.mjs/);
+});
+
+
+test("todos os agentes Java aguardam a aplicação e usam o pacote do mesmo SHA", async () => {
+  for (const module of ["growth-operator-worker", "financial-agent-worker",
+    "experiment-strategist-worker", "landing-generator-agent-worker", "communication-agent-worker"]) {
+    const workflow = await readFile(path.join(repositoryRoot, `.github/workflows/${module}-ci.yml`), "utf8");
+    assertEventDrivenCoordination(workflow, `${module}-ci.yml`, true);
+  }
 });

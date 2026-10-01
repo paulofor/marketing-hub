@@ -9,7 +9,7 @@ import { promisify } from "node:util";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPOSITORY = resolve(SCRIPT_DIR, "..");
-const MODEL = "gpt-5.6-sol";
+const MODEL = "gpt-6.1-sol";
 const execFileAsync = promisify(execFile);
 export const CODEX_SANDBOX = "danger-full-access";
 

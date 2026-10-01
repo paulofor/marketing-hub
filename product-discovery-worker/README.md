@@ -70,7 +70,7 @@ gate privado observa `READY_RESULT_USED` antes de permitir priorização final.
 - `PRODUCT_DISCOVERY_SEARCH_COUNTRY`: país usado na busca. Padrão: `br`.
 - `PRODUCT_DISCOVERY_SEARCH_LANGUAGE`: idioma usado na busca. Padrão: `pt-br`.
 - `ARGOS_CODEX_ENABLED`: habilita planejamento e síntese factual pelo Codex. Padrão operacional: `true`.
-- `ARGOS_CODEX_MODEL`: modelo das duas fases. Padrão: `gpt-5.6-sol`.
+- `ARGOS_CODEX_MODEL`: modelo das duas fases. Padrão: `gpt-6.1-sol`.
 - `ARGOS_CODEX_REASONING_EFFORT`: esforço comum das duas fases. Padrão: `medium`, suficiente para
   o contrato estruturado sem ocupar o executor com raciocínio excessivo.
 - `ARGOS_CODEX_PLAN_REASONING_EFFORT` e `ARGOS_CODEX_SYNTHESIS_REASONING_EFFORT`: sobrescrevem o

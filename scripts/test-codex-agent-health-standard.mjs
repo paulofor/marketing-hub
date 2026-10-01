@@ -9,9 +9,25 @@ const contract = JSON.parse(await readFile(contractPath, "utf8"));
 assert.ok(contract.maximumHeartbeatSeconds > 0 && contract.maximumHeartbeatSeconds <= 60);
 assert.ok(contract.agents.length >= 8, "todos os agentes Codex atuais devem estar cadastrados");
 assert.equal(new Set(contract.agents.map(({ key }) => key)).size, contract.agents.length);
+assert.match(contract.codexVersion, /^\d+\.\d+\.\d+$/, "[ARQUITETURA] Codex deve usar versão estável fixada");
+assert.equal(contract.codexModel, "gpt-6.1-sol", "[ARQUITETURA] Modelo dos agentes diverge da decisão vigente");
 
 for (const agent of contract.agents) {
   const module = path.join(root, agent.module);
+  const dockerfile = await readFile(path.join(module, "Dockerfile"), "utf8");
+  assert.ok(
+    dockerfile.includes(`ARG CODEX_VERSION=${contract.codexVersion}`),
+    `[ARQUITETURA] ${agent.key}: Dockerfile deve fixar Codex ${contract.codexVersion}`,
+  );
+  assert.ok(agent.modelSources?.length > 0, `[ARQUITETURA] ${agent.key}: fontes do modelo ausentes`);
+  for (const source of agent.modelSources) {
+    const runtime = await readFile(path.join(root, source), "utf8");
+    assert.ok(runtime.includes(contract.codexModel), `[ARQUITETURA] ${agent.key}: ${source} omite o modelo vigente`);
+    assert.doesNotMatch(runtime, /gpt-5\.6-sol/, `[ARQUITETURA] ${agent.key}: ${source} mantém modelo legado`);
+    for (const match of runtime.matchAll(/CODEX_VERSION:\s*["']([^"']+)["']/g)) {
+      assert.equal(match[1], contract.codexVersion, `[ARQUITETURA] ${agent.key}: Compose sobrescreve a versão do Dockerfile`);
+    }
+  }
   const reporter = await readFile(path.join(module, agent.reporter), "utf8");
   const activation = await readFile(path.join(module, agent.activation), "utf8");
 

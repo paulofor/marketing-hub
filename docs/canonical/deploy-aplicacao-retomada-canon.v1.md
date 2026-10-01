@@ -7,7 +7,9 @@
 Antes de uma intervenção autorizada em um serviço publicado, usar o coordenador
 `scripts/coordinate-deploy-intervention.py`. Ele pausa somente os workflows dos componentes
 selecionados e suas continuações dependentes, preserva os estados anteriores e espera todas
-as execuções já iniciadas terminarem. Uma intervenção só pode começar no estado `ACTIVE`,
+as execuções já iniciadas terminarem. O escopo `app` inclui o publicador central, Argos e
+todos os sete workers Java que consomem sua conclusão; o inventário deve acompanhar
+qualquer nova continuação. Uma intervenção só pode começar no estado `ACTIVE`,
 com os publicadores desativados e a fila vazia. Pausar um workflow sozinho não prova esse estado.
 O Facebook Ads Worker usa o escopo dedicado `facebook-ads`, sem acoplá-lo ao publicador central
 da aplicação. Seu workflow deve aceitar a recuperação automática do SHA integrado e comprovar o
@@ -132,7 +134,7 @@ falha, cancelada, antiga, de outra branch ou sem cobrir a mudança pendente não
 O Watchdog não ganha um novo gatilho nem espera bloqueante; a agenda seguinte confirma o deploy
 concreto ou abre o incidente se o publicador não tiver sido registrado.
 
-Argos, Psique e Íris devem reconhecer tanto `push` quanto `workflow_dispatch` da aplicação,
+Argos e os sete workers Java de agentes devem reconhecer tanto `push` quanto `workflow_dispatch` da aplicação,
 sempre na branch `main` e no mesmo SHA. Uma execução de outro commit, branch, tag ou PR não
 libera os agentes. O push de origem testa e empacota a imagem imutável do agente e confirma, em
 até dois minutos, que o workflow central da mesma revisão foi registrado. Essa confirmação não
@@ -156,7 +158,7 @@ também permanecem no CI de Pull Request, mas não recompilam ou reiniciam runti
 
 A resolução do run de origem ocorre antes da fila compartilhada do VPS e não contém SSH, SCP ou
 rsync. Somente depois dessas provas o job remoto entra em `deploy-vps-163-245-202-80`. As imagens
-empacotadas de Psique e Íris têm retenção de sete dias para sobreviver à fila central ampliada.
+empacotadas dos sete workers Java têm retenção de sete dias para sobreviver à fila central ampliada.
 Uma execução manual do próprio agente continua sendo uma recuperação operacional explícita e não
 substitui a validação normal do push.
 

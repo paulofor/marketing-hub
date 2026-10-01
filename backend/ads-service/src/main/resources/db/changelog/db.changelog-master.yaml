@@ -2192,3 +2192,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-10-01-facebook-metrics-settlement-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-10-01-agents-codex-gpt61-v1.yaml
+      relativeToChangelogFile: true

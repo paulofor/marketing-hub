@@ -7,6 +7,16 @@ on:
       - financial-agent-worker/**
       - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
+  pull_request:
+    paths:
+      - financial-agent-worker/**
+      - .github/workflows/financial-agent-worker-ci.yml
+      - config/agents/codex-agent-health-compliance.json
+      - scripts/test-codex-agent-health-standard.mjs
+  workflow_run:
+    workflows: ["Build & Deploy containers"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       recovery_sha:
@@ -14,12 +24,9 @@ on:
         required: false
         type: string
 
-concurrency:
-  group: financial-agent-worker-production
-  cancel-in-progress: false
-
 permissions:
   contents: read
+  actions: read
 
 env:
   VPS_IP: 163.245.202.80
@@ -28,10 +35,20 @@ env:
 
 jobs:
   test:
+    if: github.event_name != 'workflow_run'
     name: Test and build worker
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Confirm matching application deployment was enqueued
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          APP_DEPLOY_REGISTRATION_TIMEOUT_SECONDS: 120
+        run: node scripts/coordinate-agent-deployment.mjs assert-application-run deploy-containers.yml
       - name: Validate automatic publisher recovery
         if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
         working-directory: ${{ github.workspace }}
@@ -63,19 +80,23 @@ jobs:
         with:
           name: agent-images-${{ github.sha }}
           path: ${{ runner.temp }}/agent-images/
-          retention-days: 1
+          retention-days: 7
           compression-level: 0
           if-no-files-found: error
           overwrite: true
 
-  deploy:
-    name: Deploy worker
+  source-run:
+    name: Resolve tested worker revision
+    if: github.event_name == 'workflow_run'
     runs-on: ubuntu-latest
-    needs: test
-    concurrency:
-      group: deploy-vps-163-245-202-80
-      queue: max
-      cancel-in-progress: false
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      required: ${{ steps.resolve.outputs.required }}
+      source_run_id: ${{ steps.resolve.outputs.source_run_id }}
+      source_sha: ${{ steps.resolve.outputs.source_sha }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate automatic publisher recovery
@@ -86,12 +107,60 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/validate-publisher-recovery.py
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: resolve
+        name: Resolve exact tested source run
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          APP_DEPLOY_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          APP_DEPLOY_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          APP_DEPLOY_EVENT: ${{ github.event.workflow_run.event }}
+          APP_DEPLOY_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          AGENT_SOURCE_WAIT_TIMEOUT_SECONDS: 6900
+        run: node scripts/coordinate-agent-deployment.mjs resolve-source-run financial-agent-worker-ci.yml
+
+  deploy:
+    name: Deploy worker
+    if: >-
+      always() &&
+      ((github.event_name == 'workflow_dispatch' &&
+        needs.test.result == 'success') ||
+       (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        needs.source-run.result == 'success' &&
+        needs.source-run.outputs.required == 'true'))
+    runs-on: ubuntu-latest
+    needs:
+      - test
+      - source-run
+    concurrency:
+      group: deploy-vps-163-245-202-80
+      queue: max
+      cancel-in-progress: false
+    env:
+      DEPLOY_SOURCE_SHA: ${{ github.event_name == 'workflow_run' && needs.source-run.outputs.source_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_SOURCE_SHA }}
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
+
       - uses: actions/download-artifact@v4
         with:
-          name: agent-images-${{ github.sha }}
+          name: agent-images-${{ env.DEPLOY_SOURCE_SHA }}
           path: ${{ runner.temp }}/agent-images/
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event_name == 'workflow_run' && needs.source-run.outputs.source_run_id || github.run_id }}
       - name: Verify tested images
-        run: node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images" marketing-hub/financial-agent-worker:${{ github.sha }}
+        run: node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images" marketing-hub/financial-agent-worker:${DEPLOY_SOURCE_SHA}
       - name: Configure authenticated agent VPS SSH
         env:
           VPS_SSH_KEY_PRIMARY: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}
@@ -108,7 +177,7 @@ jobs:
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" 'bash -s -- retention' < scripts/ensure-agent-vps-disk-space.sh
       - name: Load tested images without rebuilding
         timeout-minutes: 20
-        run: node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" "${VPS_USER}@${VPS_IP}" marketing-hub/financial-agent-worker:${{ github.sha }}
+        run: node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" "${VPS_USER}@${VPS_IP}" marketing-hub/financial-agent-worker:${DEPLOY_SOURCE_SHA}
       - name: Synchronize versioned worker
         run: |
           set -euo pipefail
@@ -121,15 +190,15 @@ jobs:
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "\
             install -d -o 10001 -g 10001 /opt/growth-operator/agents/financial-agent/codex-home \
             && \
-            export FINANCIAL_AGENT_IMAGE=marketing-hub/financial-agent-worker:${GITHUB_SHA} \
+            export FINANCIAL_AGENT_IMAGE=marketing-hub/financial-agent-worker:${DEPLOY_SOURCE_SHA} \
                    BACKEND_URL=http://191.252.181.168 \
                    FINANCIAL_AGENT_CODEX_HOME=/opt/growth-operator/agents/financial-agent/codex-home \
                    MARKETING_HUB_REPOSITORY_PATH='${REPOSITORY_DIR}' \
                    COMMERCIAL_PLAN_ID=2 \
-                   CODEX_MODEL=gpt-5.6-sol \
+                   CODEX_MODEL=gpt-6.1-sol \
                    CODEX_REASONING_EFFORT=high \
                    CODEX_SERVICE_TIER=default \
-                   AGENT_BUILD_REFERENCE='${GITHUB_SHA}' \
+                   AGENT_BUILD_REFERENCE='${DEPLOY_SOURCE_SHA}' \
             && cd '${REPOSITORY_DIR}/financial-agent-worker' \
             && docker compose up -d --no-build --pull never --remove-orphans \
             && for attempt in \$(seq 1 12); do \

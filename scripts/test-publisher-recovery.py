@@ -18,6 +18,12 @@ import deploy_publisher_recovery as recovery_module
 from deploy_publisher_recovery import APP, POLICY, PublisherRecovery
 
 ROOT = Path(__file__).resolve().parent.parent
+APP_AGENTS = {
+    "product-discovery-worker-ci.yml", "customer-agent-worker-ci.yml",
+    "meta-ad-approver-worker-ci.yml", "growth-operator-worker-ci.yml",
+    "financial-agent-worker-ci.yml", "experiment-strategist-worker-ci.yml",
+    "landing-generator-agent-worker-ci.yml", "communication-agent-worker-ci.yml",
+}
 
 
 def workflow_dispatch_inputs(workflow):
@@ -439,7 +445,8 @@ class AutomaticRecoveryTest(unittest.TestCase):
         self.assertEqual([name for name, _ in self.github.dispatches], [APP])
         self.github.completed_runs[APP][0].update(status="completed", conclusion="success")
         self.recovery.reconcile()
-        self.assertEqual(len(self.github.dispatches), 4)
+        self.assertEqual({name for name, _ in self.github.dispatches}, APP_AGENTS | {APP})
+        self.assertEqual(len(self.github.dispatches), 9)
         for name in module.SCOPES["app"]:
             if POLICY[name].get("requires_app"):
                 run = self.github.completed_runs[name][0]
@@ -729,7 +736,8 @@ class AutomaticRecoveryTest(unittest.TestCase):
             if POLICY[name].get("requires_app"):
                 self.github.add_run(name)
         self.recovery.reconcile()
-        self.assertEqual(len(self.github.dispatches), 3)
+        self.assertEqual({name for name, _ in self.github.dispatches}, APP_AGENTS)
+        self.assertEqual(len(self.github.dispatches), 8)
 
     def test_noop_continuation_is_not_mistaken_for_deployed_agent(self):
         self.prepare(["app"])
@@ -738,7 +746,8 @@ class AutomaticRecoveryTest(unittest.TestCase):
             if POLICY[name].get("requires_app"):
                 self.github.add_run(name, event="workflow_run")
         self.recovery.reconcile()
-        self.assertEqual(len(self.github.dispatches), 3)
+        self.assertEqual({name for name, _ in self.github.dispatches}, APP_AGENTS)
+        self.assertEqual(len(self.github.dispatches), 8)
 
     def test_successful_continuation_is_reused_by_actual_publication_job(self):
         self.prepare(["app"])

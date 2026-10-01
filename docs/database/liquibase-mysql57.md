@@ -18,6 +18,17 @@ Localmente: definir `PDE_PRINCIPLES_COMPOSE_PROJECT` com o projeto exclusivo aut
 `python3 infra/testing/pde-commercial-principles/run-mysql.py`. A topologia é removida no
 encerramento. [Matriz de homologação](../homologacao/cinco-principios-comerciais-pde-v1.md).
 
+## Runtime Codex dos nove agentes — GPT 6.1 Sol
+
+O job `validate-agent-runtime` aplica a migração incremental de 01/10/2026 em
+MySQL 5.7 sintético. Valida nove modelos e snapshots novos, cards e hashes
+históricos preservados, idempotência, colisão bloqueada antes de qualquer
+atualização, rollback sem apagar auditoria e proteção contra evolução posterior.
+Localmente, executar `python3 infra/testing/agent-runtime/run-mysql.py` com
+`AGENT_RUNTIME_COMPOSE_PROJECT` exclusivo e `AGENT_RUNTIME_DB_HOST=sandbox-docker`
+na sandbox (`127.0.0.1` no runner). Containers e volumes são removidos ao terminar.
+Ver [matriz de homologação](../homologacao/agentes-codex-gpt61-v1.md).
+
 ## Etapa estática do workflow
 
 Executar `scripts/validate-liquibase-mysql57.sh` para verificar includes relativos, includes duplicados, dependências conhecidas, campos temporais e risco do erro MySQL 1093 nos arquivos alterados.
@@ -126,8 +137,8 @@ assertivas e rollback continuam executados uma única vez e qualquer erro funcio
 
 A matriz dos nove agentes possui fixture própria e valida incremento dinâmico de `agent_version`,
 onze processos sem coautoria, a inclusão operacional de Íris, gates independentes de Psique e
-Têmis, cadeias de valor v8/v9, paridade entre `agent.current_version` e as versões declaradas pelos
-executores no contrato canônico de health, Argos v6 com schemas estritos por atividade e bloqueio
+Têmis, cadeias de valor v8/v9, preservação das versões históricas de
+`agent.current_version` sem acoplamento ao runtime atual, Argos v6 com schemas estritos por atividade e bloqueio
 de startup, a evolução estética v4 de Psique com snapshot e paths auditáveis e a versão v6 com
 raciocínio `max`, incluindo rollback e reaplicação sem duplicidade:
 

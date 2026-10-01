@@ -35,11 +35,13 @@ essa validação de transporte. O contrato `scripts/test-agent-vps-ssh-workflows
 publicadores contra divergência de preflight, transportes e restauração após falha de autenticação.
 
 Os contratos de coordenação com o deploy da aplicação devem identificar o run testado de origem,
-o preflight e os comandos SSH/SCP/rsync, sem depender do texto de `name` das etapas. Argos,
-Psique e o workflow de Íris testam e empacotam a revisão no `push`, mas a publicação automática
+o preflight e os comandos SSH/SCP/rsync, sem depender do texto de `name` das etapas. Argos e os
+sete workers Java de agentes testam e empacotam a revisão no `push`, mas a publicação automática
 é retomada somente por `workflow_run: completed` do workflow central. A continuação exige
 aplicação e agente verdes no mesmo SHA, faz checkout dessa revisão e recupera o artefato pelo ID
-do run de origem. Não pode aceitar commit posterior como compatível nem usar o HEAD atual por
+do run de origem. A continuação cobre Hermes, Psique, Plutus, Atena, Têmis, Dédalo e Íris,
+evitando publicar um executor novo antes do manifesto e da migração do backend.
+Não pode aceitar commit posterior como compatível nem usar o HEAD atual por
 conveniência.
 
 O job `source-run` não acessa o host e permanece fora de `deploy-vps-163-245-202-80`; somente o
@@ -153,7 +155,9 @@ Complemento de capacidade e Atena: `docs/homologacao/actions-capacidade-agentes-
 
 Os oito publicadores que antes faziam build no VPS devem construir e validar suas imagens no job
 de testes do Actions, empacotá-las por `scripts/agent-image-bundle.mjs` e transportá-las pelo artefato
-do mesmo run. O nome inclui o SHA; a retenção é de um dia. Pacote ausente, truncado, checksum
+do mesmo run. O nome inclui o SHA; os sete workers Java de agentes conservam o pacote por
+sete dias para permitir a continuação após a aplicação. O controlador administrativo mantém
+retenção de um dia. Pacote ausente, truncado, checksum
 divergente, referência inesperada ou conteúdo funcional diferente bloqueia a atualização. Não
 reconstruir no VPS para contornar pacote indisponível. Argos mantém o contrato de imagem imutável
 no GHCR.

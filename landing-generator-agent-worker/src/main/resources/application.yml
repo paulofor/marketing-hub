@@ -20,7 +20,7 @@ landing-generator-agent:
   marketing-hub-url: ${MARKETING_HUB_URL:http://backend:8000}
   repository-path: ${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}
   mcp-script-path: ${LANDING_GENERATOR_MCP_SCRIPT_PATH:/app/mcp/landing-generator.mjs}
-  model: ${CODEX_MODEL:gpt-5.6-sol}
+  model: ${CODEX_MODEL:gpt-6.1-sol}
   reasoning-effort: ${CODEX_REASONING_EFFORT:max}
   build-reference: ${AGENT_BUILD_REFERENCE:local}
   codex-command: ${CODEX_COMMAND:codex}

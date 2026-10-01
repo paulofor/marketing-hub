@@ -29,6 +29,7 @@ import com.marketinghub.businessprocess.execution.service.productProcessExecutio
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityRecoveryResolver;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityRequirementResponse;
+import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessConditionalActivityResolver;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
@@ -1672,8 +1673,8 @@ public class BusinessProcessActivityExecutionService {
   }
 
   /**
-   * Projeta o estado pela instância da definição selecionada e preserva outras versões como
-   * auditoria histórica.
+   * Projeta o estado pela definição selecionada, preserva versões e encerra retornos condicionais
+   * já superados como auditoria histórica.
    */
   private List<ProductProcessActivityExecutionGroupResponse> activityGroups(
       BusinessProcessDefinition selectedProcess,
@@ -1851,6 +1852,9 @@ public class BusinessProcessActivityExecutionService {
           executionProfilePolicy.decorate(
               product.getId(), currentExecutionReference, selectedProcess, groups);
     }
+    groups =
+        ProductProcessConditionalActivityResolver.resolve(
+            groups, selectedByActivityId, objectMapper);
     return ProductProcessActivityRecoveryResolver.resolve(
         groups,
         selectedByActivityId,

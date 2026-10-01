@@ -1964,6 +1964,138 @@ class BusinessProcessActivityExecutionServiceTest {
         .contains("Diagnóstico vigente", "#350", "homologação técnica");
   }
 
+  /**
+   * Retira da pendência a tentativa condicional cancelada depois que todos os destinos foram
+   * comprovados.
+   */
+  @Test
+  void recordsCancelledConditionalRecoveryAfterRemediatedObjectivesAreCompleted() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    AgentProductProcessActivityReadinessProvider readinessProvider =
+        mock(AgentProductProcessActivityReadinessProvider.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            agentTasks,
+            new ObjectMapper(),
+            List.of(),
+            List.of(readinessProvider));
+    BusinessProcessDefinition process = selectedProcess();
+    process.setId(81L);
+    process.setVersionNumber(9);
+    process.setStatus("PUBLISHED");
+    process.setProcessCode("pde-construction-approval");
+    process.setDiagramJson(
+        """
+        {"nodes":[
+          {"id":"technicalHomologation","type":"TASK","label":"Homologar tecnicamente", "responsibleAgentKeys":["customer-agent"]},
+          {"id":"prototypeCorrection","type":"TASK","label":"Corrigir protótipo", "responsibleAgentKeys":["landing-generator"],
+           "activationMode":"ON_FUNCTIONAL_REJECTION","remediatesActivities":["technicalHomologation"]}
+        ],"flows":[{"from":"technicalHomologation","to":"prototypeCorrection","kind":"REWORK"}]}
+        """);
+    BusinessProcessActivityDefinition technical =
+        activity(811L, process, "technicalHomologation", "Homologar tecnicamente");
+    technical.setDefinitionJson("{\"responsibleAgentKeys\":[\"customer-agent\"]}");
+    BusinessProcessActivityDefinition correction =
+        activity(812L, process, "prototypeCorrection", "Corrigir protótipo");
+    correction.setDefinitionJson(
+        """
+        {"responsibleAgentKeys":["landing-generator"],
+         "activationMode":"ON_FUNCTIONAL_REJECTION",
+         "remediatesActivities":["technicalHomologation"]}
+        """);
+    Product alcyone = Product.builder().id(11L).internalName("Alcyone").build();
+    alcyone.setAutomaticExecutionEnabled(true);
+    alcyone.setValidationDefinitionVersion("PDE_AGENT_VALIDATION_V1");
+    AgentTask cancelledCorrection = executionTask(582L);
+    cancelledCorrection.setProcessDefinition(process);
+    cancelledCorrection.setProcessActivityId("prototypeCorrection");
+    cancelledCorrection.setProcessActivityName("Corrigir protótipo");
+    cancelledCorrection.setSourceReference("product:11@agent-validation-v1");
+    cancelledCorrection.setStatus("CANCELLED");
+    cancelledCorrection.setAssignedAgent(
+        Agent.builder().agentKey("landing-generator").nickname("Dédalo").build());
+    BusinessProcessActivityInstance cancelledInstance =
+        activityInstance(
+            466L, correction, "CANCELLED", false, null, Instant.parse("2026-09-30T20:37:33Z"));
+    cancelledInstance.setSourceReference("product:11@agent-validation-v1");
+    cancelledInstance.setOccurrenceNumber(2);
+    cancelledCorrection.setActivityInstance(cancelledInstance);
+    AgentTask completedTechnical = executionTask(583L);
+    completedTechnical.setProcessDefinition(process);
+    completedTechnical.setProcessActivityId("technicalHomologation");
+    completedTechnical.setProcessActivityName("Homologar tecnicamente");
+    completedTechnical.setSourceReference("product:11@agent-validation-v1");
+    completedTechnical.setStatus("COMPLETED");
+    completedTechnical.setAssignedAgent(
+        Agent.builder().agentKey("customer-agent").nickname("Psique").build());
+    BusinessProcessActivityInstance completedInstance =
+        activityInstance(
+            465L, technical, "COMPLETED", true, null, Instant.parse("2026-09-30T21:54:01Z"));
+    completedInstance.setSourceReference("product:11@agent-validation-v1");
+    completedInstance.setOccurrenceNumber(2);
+    completedTechnical.setActivityInstance(completedInstance);
+    when(processes.findById(81L)).thenReturn(Optional.of(process));
+    when(products.findById(11L)).thenReturn(Optional.of(alcyone));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(11L)).thenReturn(List.of());
+    when(commercialPlans.findByProductId(11L)).thenReturn(List.of());
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(81L))
+        .thenReturn(List.of(technical, correction));
+    when(tasks
+            .findBySourceReferenceStartingWithAndProcessDefinitionProcessCodeOrderByUpdatedAtDescIdDesc(
+                eq("product:11@"), anyString()))
+        .thenReturn(List.of(completedTechnical, cancelledCorrection));
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
+                "pde-construction-approval", "product:11@"))
+        .thenReturn(List.of(completedInstance, cancelledInstance));
+    when(readinessProvider.supports(process, correction)).thenReturn(true);
+    when(readinessProvider.readiness(
+            process, correction, alcyone, "product:11@agent-validation-v1"))
+        .thenReturn(
+            new AgentProductProcessActivityReadiness(
+                false, "Nenhuma rejeição funcional vigente exige correção."));
+
+    var history = executionService.productProcessExecutions(81L, 11L);
+
+    assertThat(history.objectiveAchieved()).isTrue();
+    assertThat(history.operationalState()).isEqualTo("COMPLETED");
+    assertThat(history.selectedActivityCount()).isEqualTo(2);
+    assertThat(history.completedActivityCount()).isEqualTo(1);
+    assertThat(history.remainingActivityCount()).isZero();
+    assertThat(history.activities())
+        .filteredOn(activity -> "prototypeCorrection".equals(activity.activityId()))
+        .singleElement()
+        .satisfies(
+            activity -> {
+              assertThat(activity.operationalState()).isEqualTo("RECORDED");
+              assertThat(activity.objectiveAchieved()).isFalse();
+              assertThat(activity.activityInstanceId()).isEqualTo(466L);
+              assertThat(activity.executionControl().actionAvailable()).isFalse();
+              assertThat(activity.executionControl().availabilityReason())
+                  .contains("preservada no histórico");
+              assertThat(activity.tasks())
+                  .singleElement()
+                  .satisfies(task -> assertThat(task.status()).isEqualTo("CANCELLED"));
+            });
+  }
+
   /** Libera reinício após bloqueio ou cancelamento e mantém os gates de estado e produto. */
   @ParameterizedTest
   @CsvSource({"BLOCKED,tentativa bloqueada", "CANCELLED,ocorrência cancelada"})

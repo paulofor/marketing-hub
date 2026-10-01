@@ -1,0 +1,83 @@
+name: Integração das pesquisas do Harness
+
+on:
+  pull_request:
+    paths:
+      - "pesquisas/**"
+      - "scripts/publish-harness-cards.sh"
+      - "scripts/test-publish-harness-cards.sh"
+      - "scripts/audit-harness-research-branches.py"
+      - "scripts/test-harness-research-branches.py"
+      - ".github/workflows/harness-research-integration.yml"
+  push:
+    branches: [main, "automation/**", "radar-*"]
+    paths:
+      - "pesquisas/**"
+      - "scripts/publish-harness-cards.sh"
+      - "scripts/test-publish-harness-cards.sh"
+      - "scripts/audit-harness-research-branches.py"
+      - "scripts/test-harness-research-branches.py"
+      - ".github/workflows/harness-research-integration.yml"
+  schedule:
+    - cron: "41 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harness-research-${{ github.event_name }}-${{ github.ref }}
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Contratos e fontes dos cards
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validar scripts shell
+        run: |
+          bash -n scripts/publish-harness-cards.sh scripts/test-publish-harness-cards.sh
+          shellcheck scripts/publish-harness-cards.sh scripts/test-publish-harness-cards.sh
+      - name: Homologar publicação e inventário com fixtures locais
+        run: |
+          bash scripts/test-publish-harness-cards.sh
+          python3 scripts/test-harness-research-branches.py
+      - name: Validar catálogo completo sem publicar ou usar credenciais
+        run: bash scripts/publish-harness-cards.sh --validate-only --all
+
+  audit:
+    name: Branches pendentes de integração
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Executa somente o auditor integrado; nunca código de uma branch de pesquisa.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Atualizar referências de pesquisa
+        run: |
+          git fetch --prune origin \
+            '+refs/heads/automation/*:refs/remotes/origin/automation/*' \
+            '+refs/heads/radar-*:refs/remotes/origin/radar-*'
+      - name: Conferir integração e registrar pendências
+        run: |
+          python3 scripts/audit-harness-research-branches.py \
+            --output harness-research-branches.json \
+            --summary "$GITHUB_STEP_SUMMARY" --fail-pending
+      - name: Preservar auditoria inclusive quando houver pendência
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-research-branches-${{ github.run_id }}
+          path: harness-research-branches.json
+          if-no-files-found: error
+          retention-days: 30

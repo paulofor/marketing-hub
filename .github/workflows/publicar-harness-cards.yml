@@ -11,6 +11,7 @@ on:
       - main
     paths:
       - "pesquisas/*/cards/*.json"
+      - "pesquisas/*/cards/fontes/**"
       - ".github/workflows/publicar-harness-cards.yml"
       - "scripts/publish-harness-cards.sh"
 

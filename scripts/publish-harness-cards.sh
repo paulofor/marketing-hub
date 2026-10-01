@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPOSITORY_ROOT="${HARNESS_CARDS_REPOSITORY_ROOT:-$(cd "${SCRIPT_DIRECTORY}/.." && pwd)}"
 CARD_PATHSPEC=':(glob)pesquisas/*/cards/*.json'
+SOURCE_PATHSPEC=':(glob)pesquisas/*/cards/fontes/**'
 AUTOMATION_PATHS=(
   ".github/workflows/publicar-harness-cards.yml"
   "scripts/publish-harness-cards.sh"
@@ -18,6 +19,8 @@ fail() {
 usage() {
   cat >&2 <<'EOF'
 Uso:
+  publish-harness-cards.sh --validate-only --all
+  publish-harness-cards.sh --validate-only --card pesquisas/<origem>/cards/<card>.json
   publish-harness-cards.sh --all
   publish-harness-cards.sh --card pesquisas/<origem>/cards/<card>.json
   publish-harness-cards.sh --changed <before-sha> <after-sha>
@@ -43,8 +46,8 @@ select_changed_cards() {
     return
   fi
 
-  if ! git diff --quiet "${before_sha}" "${after_sha}" -- "${AUTOMATION_PATHS[@]}"; then
-    echo "::notice::Automação alterada; reconciliando todos os cards versionados." >&2
+  if ! git diff --quiet "${before_sha}" "${after_sha}" -- "${AUTOMATION_PATHS[@]}" "${SOURCE_PATHSPEC}"; then
+    echo "::notice::Automação ou fonte alterada; reconciliando todos os cards versionados." >&2
     select_all_cards
     return
   fi
@@ -173,6 +176,7 @@ validate_source() {
 
   git ls-files --error-unmatch -- "${source_path}" >/dev/null 2>&1 \
     || fail "Fonte repo: não está versionada: ${source_path}"
+  [[ ! -L "${source_path}" ]] || fail "Fonte repo: não pode ser um link simbólico: ${source_path}"
   [[ -f "${source_path}" ]] || fail "Fonte repo: não encontrada: ${source_path}"
 
   expected_sha="$(jq -r '.sourceSha256' "${card}")"
@@ -181,14 +185,13 @@ validate_source() {
     || fail "SHA-256 da fonte não corresponde ao card: ${card}"
 }
 
-publish_card() {
+validate_card() {
   local card="$1"
-  local response="$2"
-  local card_sha idempotency_key http_code expected_card_key expected_source_sha
   local published_on valid_until
 
   echo "Validando ${card}"
   validate_card_path "${card}"
+  [[ -f "${card}" && ! -L "${card}" ]] || fail "Card deve ser arquivo regular: ${card}"
 
   if (( $(wc -c < "${card}") > MAX_CARD_BYTES )); then
     fail "Card excede ${MAX_CARD_BYTES} bytes: ${card}"
@@ -202,6 +205,12 @@ publish_card() {
   validate_iso_date "${valid_until}" "validUntil" "${card}"
 
   validate_source "${card}"
+}
+
+publish_card() {
+  local card="$1"
+  local response="$2"
+  local card_sha idempotency_key http_code expected_card_key expected_source_sha
 
   card_sha="$(sha256sum "${card}" | awk '{print $1}')"
   idempotency_key="gha-${card_sha:0:32}"
@@ -263,11 +272,20 @@ fi
 
 cd "${REPOSITORY_ROOT}"
 
+temporary_directory="$(mktemp -d)"
+trap 'rm -rf -- "${temporary_directory}"' EXIT
+validate_only=false
+if [[ "${1:-}" == "--validate-only" ]]; then
+  validate_only=true
+  shift
+fi
+
 declare -a cards=()
 case "${1:-}" in
   --all)
     (( $# == 1 )) || usage
-    mapfile -d '' -t cards < <(select_all_cards)
+    select_all_cards > "${temporary_directory}/cards"
+    mapfile -d '' -t cards < "${temporary_directory}/cards"
     ;;
   --card)
     (( $# == 2 )) || usage
@@ -279,7 +297,8 @@ case "${1:-}" in
     ;;
   --changed)
     (( $# == 3 )) || usage
-    mapfile -d '' -t cards < <(select_changed_cards "$2" "$3")
+    select_changed_cards "$2" "$3" > "${temporary_directory}/cards"
+    mapfile -d '' -t cards < "${temporary_directory}/cards"
     ;;
   *)
     usage
@@ -296,13 +315,19 @@ fi
 
 mapfile -d '' -t cards < <(printf '%s\0' "${cards[@]}" | sort -zu)
 
+for card in "${cards[@]}"; do
+  validate_card "${card}"
+done
+
+if [[ "${validate_only}" == true ]]; then
+  echo "::notice::${#cards[@]} card(s) validado(s) localmente; nenhuma publicação executada."
+  exit 0
+fi
+
 [[ -n "${HARNESS_LIBRARY_API_KEY:-}" ]] \
   || fail "HARNESS_LIBRARY_API_KEY não configurado"
 HARNESS_LIBRARY_URL="${HARNESS_LIBRARY_URL:-https://mkthub.api.br}"
 HARNESS_LIBRARY_ACTOR="${HARNESS_LIBRARY_ACTOR:-github-actions@marketing-hub}"
-
-temporary_directory="$(mktemp -d)"
-trap 'rm -rf -- "${temporary_directory}"' EXIT
 
 published_count=0
 for card in "${cards[@]}"; do

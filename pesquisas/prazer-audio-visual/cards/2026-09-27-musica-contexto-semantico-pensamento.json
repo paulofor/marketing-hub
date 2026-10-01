@@ -1,0 +1,18 @@
+{
+  "cardKey": "musica-contexto-semantico-pensamento",
+  "collection": "prazer-audio-visual",
+  "title": "Tratar a trilha como contexto semântico do pensamento",
+  "finding": "Em mais de 1.800 adultos, pensamentos relatados durante músicas do mesmo gênero foram semanticamente mais semelhantes que pensamentos durante gêneros diferentes; acústica, emoção expressa e associações contextuais contribuíram para o padrão.",
+  "mechanism": "A música fornece restrições perceptuais e experienciais que alteram o espaço de ideias, imagens e memórias mais disponíveis ao pensamento espontâneo.",
+  "commercialApplication": "Usar agentes e fontes públicas para homologar coerência entre trilha e mensagem, com teste determinístico de inteligibilidade. No mercado voluntário, comparar trilha alinhada, neutra e desalinhada, medindo reprodução, abandono, CTA, checkout e pagamento reconciliado sem solicitar associações ou opiniões.",
+  "evidenceStrength": "Média-alta: estudo revisado por pares, amostra superior a 1.800, dez gêneros, quatro faixas etárias e análise de linguagem natural; gênero reúne fatores que covariam.",
+  "publishedOn": "2026-09-14",
+  "validUntil": "2026-12-26",
+  "experimentHypothesis": "Uma trilha coerente com a mensagem poderá melhorar reprodução e avanço comercial no mercado voluntário em relação à trilha neutra ou desalinhada. A revisão dos agentes é técnica; não representa pensamentos ou preferências de pessoas reais.",
+  "risks": "Não assumir que um gênero induz universalmente um conceito; idade, cultura e experiência podem mudar as associações, e a trilha pode introduzir distração ou estereótipos.",
+  "limits": "O estudo não demonstra efeito em prazer, persuasão, memória comercial, CTA ou venda e não isola causalmente uma única característica musical.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-27-musica-pensamento-espontaneo.md",
+  "sourceTitle": "Fonte revisada — música como contexto semântico do pensamento espontâneo",
+  "sourceSha256": "bd828573a4272ffaf071a9678cd6198b698c3ac601c59bbc4486d3460a8981b8"
+}

@@ -86,7 +86,13 @@ class LocalCoordinationTest(unittest.TestCase):
     def test_happy_path_pauses_and_restores_only_scope_without_deploy(self):
         state = self.begin()
         self.assertEqual(state["phase"], "ACTIVE")
-        self.assertEqual(len(state["workflows"]), 4)
+        self.assertEqual({workflow["file"] for workflow in state["workflows"]}, {
+            "deploy-containers.yml", "product-discovery-worker-ci.yml",
+            "customer-agent-worker-ci.yml", "meta-ad-approver-worker-ci.yml",
+            "growth-operator-worker-ci.yml", "financial-agent-worker-ci.yml",
+            "experiment-strategist-worker-ci.yml", "landing-generator-agent-worker-ci.yml",
+            "communication-agent-worker-ci.yml",
+        })
         self.assertEqual(self.github.workflows["pde-platform-metodo-musa-ci.yml"]["state"], "active")
         self.assertEqual(self.resume(state)["phase"], "RELEASED")
         self.assertTrue(all(w["state"] == "active" for w in self.github.workflows.values()))
@@ -102,9 +108,10 @@ class LocalCoordinationTest(unittest.TestCase):
 
     def test_combined_scopes_deduplicate_consumers(self):
         state = self.begin(["app", "psique", "pde", "dedalo"])
-        self.assertEqual(len(state["workflows"]), 7)
-        self.assertEqual(len({w["id"] for w in state["workflows"]}), 7)
-        self.assertEqual(self.github.workflows["financial-agent-worker-ci.yml"]["state"], "active")
+        self.assertEqual(len(state["workflows"]), 11)
+        self.assertEqual(len({w["id"] for w in state["workflows"]}), 11)
+        self.assertEqual(self.github.workflows["financial-agent-worker-ci.yml"]["state"], "disabled_manually")
+        self.assertEqual(self.github.workflows["facebook-ads-worker.yml"]["state"], "active")
 
     def test_clickbank_runtime_has_dedicated_reversible_scope(self):
         state = self.begin(["mois-clickbank"])

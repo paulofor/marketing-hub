@@ -4,6 +4,8 @@
 set -euo pipefail
 
 dockerfile="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/Dockerfile"
+repository="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+expected_version="$(node -e 'const fs = require("node:fs"); const contract = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); const agent = contract.agents.find(({ key }) => key === "customer-agent"); if (!agent || !Number.isInteger(agent.expectedVersion)) process.exit(1); process.stdout.write(String(agent.expectedVersion));' "${repository}/config/agents/codex-agent-health-compliance.json")"
 
 grep -Fq 'FROM eclipse-temurin:21-jre-noble AS java-runtime' "${dockerfile}"
 grep -Fq 'COPY --from=java-runtime /opt/java/openjdk /opt/java/openjdk' "${dockerfile}"
@@ -41,7 +43,7 @@ grep -Fq 'CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH: /app/commercial-evidence' "${
 grep -Fq 'CUSTOMER_AGENT_BPM_STATE_DIRECTORY: /var/lib/psique/bpm' "${compose}"
 grep -Fq 'psique-bpm-state:/var/lib/psique' "${compose}"
 grep -Fq 'CUSTOMER_AGENT_REASONING_EFFORT: ${CUSTOMER_AGENT_REASONING_EFFORT:-max}' "${compose}"
-grep -Fq 'AGENT_HEALTH_VERSION: "6"' "${compose}"
+grep -Fq "AGENT_HEALTH_VERSION: \"${expected_version}\"" "${compose}"
 grep -Fq 'PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:?' "${compose}"
 grep -Fq 'init: true' "${compose}"
 if grep -Fq 'CHROMIUM_BIN: /usr/bin/chromium' "${compose}"; then

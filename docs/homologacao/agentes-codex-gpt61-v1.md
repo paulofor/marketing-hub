@@ -36,6 +36,15 @@ Resultados locais confirmados:
   unitários; Argos validou 162 casos, com o contrato de versão reexecutado após ajuste.
 - Testes de contratos, coordenação, autenticação isolada, transporte de imagem,
   capacidade de disco, Actionlint, `bash -n` e ShellCheck aprovados.
+- Após os checks iniciais do PR, o inventário de proteção passou a incluir todas
+  as oito continuações do deploy central. Os 39 testes de intervenção e 57 de
+  retomada automática passaram localmente, cobrindo pausa, deduplicação, SHA e
+  preservação de workflows previamente desativados.
+- Todos os comandos do workflow `GitHub Actions Contracts` executados localmente
+  com sucesso, inclusive SSH/SCP/rsync, disco e transporte na engine isolada.
+- Contrato de container do Psique consulta a versão do manifesto canônico;
+  navegador empacotado e sete testes reais de captura passaram no filesystem
+  somente leitura, sem compra nem credenciais produtivas.
 - Todas as topologias e tags temporárias da homologação foram removidas pelo
   encerramento do Compose e pelo wrapper canônico de limpeza.
 

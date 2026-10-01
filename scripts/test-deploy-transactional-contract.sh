@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016 # Os contratos verificam expressões literais dos scripts e do workflow.
 set -euo pipefail
 
 APPLY_SCRIPT="${1:-deploy/bin/apply.sh}"
@@ -73,5 +74,52 @@ if ! grep -Fq 'Probe VIDEO VPS without blocking APP detection' "${WORKFLOW_FILE}
   printf '[ARQUITETURA] indisponibilidade do VPS de vídeo não pode bloquear APP, mas o deploy real de vídeo deve continuar estrito.\n' >&2
   exit 1
 fi
+
+# Replica cada sincronização real em diretórios temporários, sem SSH nem estado produtivo.
+python3 - "${WORKFLOW_FILE}" <<'PY'
+from pathlib import Path
+import shlex
+import subprocess
+import sys
+import tempfile
+
+workflow = Path(sys.argv[1]).read_text()
+commands = [shlex.split(line.strip()) for line in workflow.splitlines()
+            if 'retry rsync -az --delete' in line and ' deploy/ ' in line]
+assert len(commands) == 3, '[ARQUITETURA] As três sincronizações centrais devem preservar estado operacional.'
+for index, command in enumerate(commands):
+    options = command[command.index('rsync') + 1:command.index('-e')]
+    with tempfile.TemporaryDirectory(prefix='deploy-marker-contract-') as temporary:
+        root = Path(temporary)
+        source, destination = root / 'source', root / 'destination'
+        source.mkdir()
+        destination.mkdir()
+        (source / 'descriptor.yml').write_text('image: validated-release\n')
+        (destination / 'obsolete.yml').write_text('old descriptor\n')
+        sentinels = {
+            '.deployed-app-revision': 'a' * 40 + '\n',
+            '.deployed-frontend-revision': 'b' * 40 + '\n',
+            '.deployed-video-revision': 'c' * 40 + '\n',
+            '.env': 'TEST_CREDENTIAL=fixture-only\n',
+            'volumes/fixture.txt': 'persisted local fixture\n',
+        }
+        for name, value in sentinels.items():
+            target = destination / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(value)
+        for phase in ['delete', 'overwrite']:
+            if phase == 'overwrite':
+                for name in sentinels:
+                    target = source / name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text('untrusted source value\n')
+            subprocess.run(['rsync', *options, str(source) + '/', str(destination) + '/'], check=True)
+            for name, value in sentinels.items():
+                assert (destination / name).is_file(), f'[ARQUITETURA] Sincronização {index}: {name} foi apagado.'
+                assert (destination / name).read_text() == value, f'[ARQUITETURA] Sincronização {index}: {name} foi substituído.'
+            assert (destination / 'descriptor.yml').read_text() == 'image: validated-release\n', '[ARQUITETURA] Descritor válido não foi atualizado.'
+            assert not (destination / 'obsolete.yml').exists(), '[ARQUITETURA] Descritor obsoleto não foi removido.'
+print('[ARQUITETURA] Rsync real preservou revisões, credenciais locais e volumes nas três sincronizações.')
+PY
 
 printf 'Contrato de deploy transacional validado.\n'

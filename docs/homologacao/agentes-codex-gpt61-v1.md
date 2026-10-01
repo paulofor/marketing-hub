@@ -67,3 +67,22 @@ de publicação, Actionlint, `bash -n` e ShellCheck. A imagem de Apolo recompila
 iniciou com rede desativada, confirmou CLI 0.159.3 e expôs GPT 6.1 Sol no
 planejador e na direção de imagem; jobs e providers pagos ficaram desativados.
 A topologia e a imagem temporárias foram removidas ao terminar.
+
+Após os merges `6f88eba7` e `7aab843a`, a verificação somente leitura dos nove containers
+confirmou `codex-cli 0.159.3`, modelo configurado `gpt-6.1-sol` e presença do modelo no
+catálogo autenticado de cada agente. O backend reportou os nove como `READY`, com
+autenticação e acesso ao backend válidos. Nenhuma geração foi solicitada para essa conferência.
+
+O watchdog revelou uma falha separada de rastreabilidade: o rsync de descritores apagou os
+marcadores APP/frontend sem trocar as imagens. A correção protege `.deployed-*` nos três
+comandos do workflow e amplia o teste transacional existente com rsync real, sem SSH ou
+estado produtivo. O caso anterior precisa falhar localmente; o corrigido deve preservar
+marcadores, `.env` e volumes em duas fases (exclusão e sobrescrita), enquanto atualiza os
+descritores e remove arquivos obsoletos. A restauração final depende da publicação revisada
+e da confirmação posterior pelo watchdog; não se presume sucesso por configuração estática.
+
+Regressão confirmada localmente: o comando anterior falhou por excluir o marcador APP;
+os três comandos corrigidos passaram nas duas fases. Detecção de módulos, os 12 testes do
+contrato de CI backend, os 19 testes de transporte das imagens, Actionlint, `bash -n` e
+ShellCheck também passaram. As nove telas públicas de detalhe foram verificadas com
+Chromium/Playwright e exibiram GPT 6.1 Sol, correspondendo ao cadastro e aos containers.

@@ -8481,3 +8481,26 @@ conflitantes seguem excluídas. Canal direto sem códigos continua aceitando ví
 Nenhum evento foi removido ou reclassificado. A fixture Mira passa a reproduzir nove acessos
 sem UTM com o mesmo `experimentId`, checkout sem UTM e outra campanha com o mesmo vínculo.
 O caso falhou localmente antes da correção e verifica monitor, funil, origens e total agregado.
+
+## LOOP-ACTIONS-DESCRITORES-APAGAM-REVISAO-PUBLICADA — 01/10/2026
+
+- **Evidência histórica:** o deploy central `36844579683` da revisão `6f88eba7` publicou APP,
+  mas falhou posteriormente no gate de vídeo; o monitor registrou APP como `CURRENT`.
+  Na revisão seguinte,
+  `7aab843a`, o run central `36848313627` sincronizou descritores com `rsync --delete` e dispensou
+  a publicação APP porque o código dessa superfície não mudou. O Watchdog `36849153534` passou
+  a registrar `MISSING`; leitura SSH confirmou a ausência de `.deployed-app-revision` e
+  `.deployed-frontend-revision`, embora backend e nove agentes estivessem saudáveis.
+- **Causa-raiz:** os três comandos centrais protegiam apenas `.env` e `volumes/`. Os marcadores
+  gerados pelo publicador não existem na origem Git e, portanto, eram apagados pela sincronização.
+  Um deploy completo podia recriá-los, mascarando a falha até uma publicação só de descritores.
+- **Alternativas avaliadas:** gravar o SHA manualmente fabricaria prova; ignorar `MISSING`
+  esconderia ausência real de publicação; preservar os arquivos operacionais no transporte e
+  restaurá-los pelo publicador versionado conserva a confirmação de saúde. A terceira foi adotada.
+- **Correção e prevenção:** todos os rsync centrais excluem e protegem `.deployed-*`. O teste
+  transacional existente usa rsync real em diretórios temporários e executa cada comando do
+  workflow: arquivos obsoletos somem, descritores atualizam, marcadores/credenciais/volumes
+  resistem tanto à exclusão quanto à sobrescrita. O teste deve falhar com o comando anterior.
+- **Homologação:** `docs/homologacao/agentes-codex-gpt61-v1.md`. A restauração produtiva ocorre
+  exclusivamente pelo PR e pipeline; um modelo configurado e um marcador escrito à mão não
+  substituem a comprovação do runtime publicado.

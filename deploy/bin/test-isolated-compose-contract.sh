@@ -4,6 +4,7 @@ set -euo pipefail
 
 DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${DEPLOY_DIR}"
+runtime_model="$(node -p 'JSON.parse(require("node:fs").readFileSync("../config/agents/codex-agent-health-compliance.json", "utf8")).codexModel')"
 
 unset LEAD_PORTAL_PAYMENTS_AUTH_TOKEN
 
@@ -59,7 +60,7 @@ grep -Fq 'MARKETING_HUB_REPOSITORY: /app' <<<"${video_config}"
 grep -Fq 'CODEX_HOME: /root/.codex' <<<"${video_config}"
 grep -Fq 'target: /root/.codex' <<<"${video_config}"
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_ENABLED: "true"' <<<"${video_config}"
-grep -Fq 'VIDEO_REFERENCE_ANALYSIS_MODEL: gpt-5.6' <<<"${video_config}"
+grep -Fq "VIDEO_REFERENCE_ANALYSIS_MODEL: ${runtime_model}" <<<"${video_config}"
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_MAX_OUTPUT_TOKENS: "8000"' <<<"${video_config}"
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_REASONING_EFFORT: medium' <<<"${video_config}"
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_BUDGET_LIMIT_USD: "0.75"' <<<"${video_config}"
@@ -68,7 +69,9 @@ grep -Fq 'VIDEO_REFERENCE_ANALYSIS_INPUT_PRICE_PER_MILLION_USD: "4.00"' <<<"${vi
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_OUTPUT_PRICE_PER_MILLION_USD: "20.00"' <<<"${video_config}"
 grep -Fq 'VIDEO_PDE_AUDIOVISUAL_ENABLED: "true"' <<<"${video_config}"
 grep -Fq 'VIDEO_PROVIDERS_EDITORIAL_MOTION_ENABLED: "true"' <<<"${video_config}"
-grep -Fq 'APOLLO_PLANNER_MODEL: gpt-5.6-sol' <<<"${video_config}"
+grep -Fq "APOLLO_PLANNER_MODEL: ${runtime_model}" <<<"${video_config}"
+grep -Fq "APOLLO_CODEX_MODEL: ${runtime_model}" <<<"${video_config}"
+grep -Fq "OPENAI_IMAGE_ORCHESTRATION_MODEL: ${runtime_model}" <<<"${video_config}"
 
 # O Compose 2.38.2 dos runners hospedados aceita a opção, mas omite valores
 # booleanos falsos ao renderizar `config`. Validamos cada bind na fonte e

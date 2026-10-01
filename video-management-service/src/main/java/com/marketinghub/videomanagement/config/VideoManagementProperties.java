@@ -72,7 +72,7 @@ public class VideoManagementProperties {
         private URI openAiBaseUrl = URI.create("https://api.openai.com/v1");
         private String apiKey;
         private String apiKeyFile;
-        private String model = "gpt-5.6";
+        private String model = "gpt-6.1-sol";
         @NotBlank
         private String transcriptionModel = "gpt-transcribe";
         @DecimalMin(value = "0.0", inclusive = false)
@@ -219,7 +219,7 @@ public class VideoManagementProperties {
         private URI openAiBaseUrl = URI.create("https://api.openai.com/v1");
         private String openAiApiKey;
         private String openAiApiKeyFile;
-        private String openAiImageModel = "gpt-5.6";
+        private String openAiImageModel = "gpt-6.1-sol";
         private String openAiImageToolModel = CANONICAL_IMAGE_TOOL_MODEL;
 
         /** Normaliza qualquer configuração antiga para o modelo visual canônico. */

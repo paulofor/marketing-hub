@@ -384,10 +384,12 @@ A troca preserva prompts, schemas, memória, cards e contratos anteriores,
 as autorizações, os limites financeiros e o esforço específico de cada agente.
 Modelos especializados de imagem, vídeo, voz e transcrição mantêm seus contratos.
 
-Apolo usa GPT 6.1 Sol no planejador e no executor Codex de replay; o modo
-produtivo existente não é trocado por um replay nem passa a executar inferências
+Apolo usa GPT 6.1 Sol no planejador, na análise multimodal de referências,
+na direção de imagens e no executor Codex de replay; o modo produtivo existente não é trocado por um replay nem passa a executar inferências
 duplicadas. A disponibilidade do modelo é conferida no catálogo do Codex
 sem chamada de geração, e uso efetivo continua auditado por execução.
+O contrato isolado de vídeo/MCP consulta esse manifesto e integra o CI de PR,
+para detectar defaults antigos antes do merge, inclusive nos fluxos internos.
 
 Fontes: [GPT 6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol)
 e [Codex](https://developers.openai.com/api/docs/guides/code-generation#use-codex).

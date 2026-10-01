@@ -181,3 +181,17 @@ test("CI central acompanha os novos contratos e executa homologação real", () 
     assert.ok(ci.split(`scripts/${file}`).length >= 4, file);
   }
 });
+
+test("contrato isolado de vídeo e MCP acompanha o modelo canônico e bloqueia divergência no PR", () => {
+  const ci = readFileSync(path.join(root, ".github/workflows/github-actions-contracts.yml"), "utf8");
+  const contract = readFileSync(path.join(root, "deploy/bin/test-isolated-compose-contract.sh"), "utf8");
+  assert.ok(contract.includes("config/agents/codex-agent-health-compliance.json"));
+  for (const variable of ["APOLLO_PLANNER_MODEL", "APOLLO_CODEX_MODEL", "VIDEO_REFERENCE_ANALYSIS_MODEL", "OPENAI_IMAGE_ORCHESTRATION_MODEL"]) {
+    assert.ok(contract.includes(`${variable}: \${runtime_model}`), variable);
+  }
+  const pullRequest = ci.split("  pull_request:")[1]?.split("  workflow_dispatch:")[0];
+  for (const source of ["deploy/docker-compose.video.yml", "deploy/docker-compose.mcp.yml", "deploy/bin/test-isolated-compose-contract.sh"]) {
+    assert.ok(pullRequest?.includes(source), `${source}: gate deve executar antes do merge`);
+  }
+  assert.ok(ci.includes("run: bash deploy/bin/test-isolated-compose-contract.sh"));
+});

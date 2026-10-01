@@ -218,7 +218,7 @@ jobs:
           }
 
           retry ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "mkdir -p ${DEPLOY_DIR}"
-          retry rsync -az --delete --exclude '.env' --exclude 'volumes/' --filter='P .env' --filter='P volumes/' -e "ssh ${SSH_OPTS}" deploy/ ${VPS_USER}@${APP_VPS_IP}:${DEPLOY_DIR}/
+          retry rsync -az --delete --exclude '.env' --exclude 'volumes/' --exclude '.deployed-*' --filter='P .env' --filter='P volumes/' --filter='P .deployed-*' -e "ssh ${SSH_OPTS}" deploy/ ${VPS_USER}@${APP_VPS_IP}:${DEPLOY_DIR}/
 
   backend-image:
     name: Backend – build image
@@ -649,7 +649,7 @@ jobs:
           }
 
           retry ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "mkdir -p ${DEPLOY_DIR}"
-          retry rsync -az --delete --exclude '.env' --exclude 'volumes/' --filter='P .env' --filter='P volumes/' -e "ssh ${SSH_OPTS}" deploy/ ${VPS_USER}@${APP_VPS_IP}:${DEPLOY_DIR}/
+          retry rsync -az --delete --exclude '.env' --exclude 'volumes/' --exclude '.deployed-*' --filter='P .env' --filter='P volumes/' --filter='P .deployed-*' -e "ssh ${SSH_OPTS}" deploy/ ${VPS_USER}@${APP_VPS_IP}:${DEPLOY_DIR}/
 
       - name: Upload images to APP VPS
         if: needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.frontend == 'true'
@@ -811,7 +811,7 @@ jobs:
           }
 
           retry ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "mkdir -p ${DEPLOY_DIR}"
-          retry rsync -az --delete --exclude '.env' --exclude 'volumes/' --filter='P .env' --filter='P volumes/' -e "ssh ${SSH_OPTS}" deploy/ ${VPS_USER}@${VIDEO_VPS_IP}:${DEPLOY_DIR}/
+          retry rsync -az --delete --exclude '.env' --exclude 'volumes/' --exclude '.deployed-*' --filter='P .env' --filter='P volumes/' --filter='P .deployed-*' -e "ssh ${SSH_OPTS}" deploy/ ${VPS_USER}@${VIDEO_VPS_IP}:${DEPLOY_DIR}/
 
       - name: Log VIDEO VPS in to GitHub Container Registry
         if: needs.detect-changes.outputs.video == 'true'

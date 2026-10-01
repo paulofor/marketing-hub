@@ -106,6 +106,14 @@ pelo evento, com testes, fila, rollback, retenção e confirmação das revisõe
 A detecção compara o histórico com a revisão efetivamente publicada, recuperando módulos
 pendentes mesmo quando o evento manual não contém `github.event.before`.
 
+Os arquivos `.deployed-*` pertencem ao estado operacional do destino, assim como `.env` e
+`volumes/`. Toda sincronização de descritores com `rsync --delete` deve excluí-los da origem e
+protegê-los da exclusão no receptor. Sincronizar arquivos sem publicar imagem não pode apagar ou
+substituir a prova da versão em execução. Somente o job que comprovou a publicação e a saúde
+da superfície correspondente atualiza seu marcador; é proibido copiar o SHA da `main` para
+simular essa confirmação. O teste transacional executa os três comandos reais de rsync com
+fixtures locais, cobrindo exclusão, tentativa de sobrescrita e atualização normal dos descritores.
+
 Como a fila `queue: max` preserva cada revisão, o Watchdog mede a ausência de progresso do
 publicador, e não apenas a idade original do run que contém a `main` atual. Uma revisão pode
 permanecer aguardando além da janela enquanto execuções anteriores da mesma fila continuam

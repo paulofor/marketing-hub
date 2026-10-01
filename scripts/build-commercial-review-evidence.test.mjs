@@ -128,6 +128,38 @@ test("empacota revisão vigente íntegra e preserva a prova histórica sem reesc
   );
 });
 
+test("preserva diário global no histórico e o recusa como prova da atestação vigente", async (t) => {
+  const { root, destination } = await fixture(t);
+  const mutablePath = "docs/registros/loops.md";
+  const mutableContent = "diário global sujeito a novos registros";
+  const mutableFile = path.join(root, mutablePath);
+  await fs.mkdir(path.dirname(mutableFile), { recursive: true });
+  await fs.writeFile(mutableFile, mutableContent);
+  await manifest(root, 6, {
+    implementationEvidence: [
+      { path: mutablePath, sha256: hash(mutableContent) },
+    ],
+  });
+  await manifest(root, 7);
+
+  await buildBundle(root, destination);
+
+  await manifest(root, 7, {
+    implementationEvidence: [
+      { path: mutablePath, sha256: hash(mutableContent) },
+    ],
+  });
+  await assert.rejects(buildBundle(root, destination), (error) => {
+    assert.match(
+      error.message,
+      /Prova mutável não pode compor atestação vigente/,
+    );
+    assert.match(error.message, /docs\/registros\/loops\.md/);
+    assert.match(error.message, /produto=rigel/);
+    return true;
+  });
+});
+
 for (const collection of ["implementationEvidence", "executableEvidence"]) {
   test(`recusa ${collection} vigente alterada e mantém pacote anterior`, async (t) => {
     const { root, destination } = await fixture(t);

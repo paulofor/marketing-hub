@@ -330,7 +330,8 @@ paths:
   /api/facebook-campaigns/metrics/sync-targets:
     get:
       tags: [Facebook Campaigns]
-      summary: Lista campanhas que precisam sincronizar métricas da Meta.
+      summary: Lista campanhas ativas e campanhas encerradas em consolidação de métricas da Meta.
+      description: Após o primeiro callback terminal, settlementDeadline limita a consolidação financeira a 48 horas. O executor espaça consultas em seis horas e realiza um último callback após o prazo, sem reativar mídia. O campo é opcional para compatibilidade.
       responses:
         '200': { description: Alvos de sincronização retornados. }
   /api/facebook-campaigns/recommendations/sync-targets:

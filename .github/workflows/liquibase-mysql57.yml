@@ -3,6 +3,7 @@ name: Validação Liquibase MySQL 5.7
 on:
   pull_request:
     paths:
+      - "infra/testing/mira-report/**"
       - "infra/testing/pde-commercial-principles/**"
       - "backend/ads-service/src/test/java/com/marketinghub/businessprocess/PdeCommercialPrinciplesMysql57Test.java"
       - "infra/testing/catalogo-vivo/**"
@@ -99,6 +100,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-mira-metrics-settlement:
+    name: Reconciliação Mira com MySQL 5.7
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/ads-service/pom.xml
+      - name: Validar migração, rollback e coorte PDE low-ticket
+        env:
+          MIRA_COMPOSE_PROJECT: aihub-mira-${{ github.run_id }}-${{ github.run_attempt }}
+          MIRA_TEST_DB_HOST: 127.0.0.1
+          HERMES_TEST_EVIDENCE_DIR: ${{ github.workspace }}/backend/ads-service/target/mira-evidence
+        run: python3 infra/testing/mira-report/run-mysql.py
+      - name: Preservar evidências sintéticas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mira-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            backend/ads-service/target/mira-evidence/
+            backend/ads-service/target/surefire-reports/*PdeExperimentAnalyticsIntegration*
+          if-no-files-found: warn
+
   validate-pde-commercial-principles:
     name: Critérios comerciais PDE com MySQL 5.7
     runs-on: ubuntu-latest

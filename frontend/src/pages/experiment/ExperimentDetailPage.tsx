@@ -575,13 +575,14 @@ export default function ExperimentDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data, isLoading } = useExperiment(expId);
-  const isPdeExperimentForMonitor =
-    data?.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+  const mayHavePdeSurface =
+    data?.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL" ||
+    data?.experimentType === "LOW_TICKET_PRODUCT";
   const supportsTraditionalLanding = supportsTraditionalLandingForExperiment(
     data?.experimentType,
   );
   const pdeMonitorQuery = usePostDeployMonitor(
-    isPdeExperimentForMonitor ? expId : undefined,
+    mayHavePdeSurface ? expId : undefined,
   );
   const videoAssetsQuery = useExperimentVideoAssets(expId);
   const geraSalesPagePublications = useGeraSalesPagePublications(

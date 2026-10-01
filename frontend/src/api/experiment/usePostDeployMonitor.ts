@@ -230,6 +230,7 @@ export interface PostDeployFacebookLogSummary {
 }
 
 export interface PostDeployMonitorResponse {
+  pdeSurface?: boolean;
   experimentId: number;
   productSlug: string;
   generatedAt: string;
@@ -246,7 +247,7 @@ export interface PostDeployMonitorResponse {
 
 export function usePostDeployMonitor(
   experimentId?: string,
-  productSlug = "metodo-musa-7-dias",
+  productSlug?: string,
 ) {
   return useQuery<PostDeployMonitorResponse>({
     queryKey: ["experiment", experimentId, "post-deploy-monitor", productSlug],

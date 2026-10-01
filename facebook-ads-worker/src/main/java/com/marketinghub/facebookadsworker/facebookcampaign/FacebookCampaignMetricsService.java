@@ -103,8 +103,15 @@ public class FacebookCampaignMetricsService {
                         target != null ? target.experimentId() : null);
                 continue;
             }
-            processTarget(target);
+            if (isSettlementRefreshDue(target, Instant.now())) processTarget(target);
         }
+    }
+
+    /** Espaça consultas de consolidação sem atrasar a coleta obrigatória após o prazo financeiro. */
+    static boolean isSettlementRefreshDue(CampaignMetricsSyncTarget target, Instant now) {
+        return target.settlementDeadline() == null || target.lastSyncedAt() == null
+                || !now.isBefore(target.settlementDeadline())
+                || !now.isBefore(target.lastSyncedAt().plus(java.time.Duration.ofHours(6)));
     }
 
     /**
@@ -648,10 +655,16 @@ public class FacebookCampaignMetricsService {
             long experimentId,
             BigDecimal mediaSpendLimit,
             Instant lastSyncedAt,
-            BigDecimal zeroLeadSpendThreshold) {
-        /** Preserva contratos legados com limiar conservador padrão. */
+            BigDecimal zeroLeadSpendThreshold,
+            Instant settlementDeadline) {
+        /** Preserva o contrato anterior, que não informava prazo de consolidação. */
+        public CampaignMetricsSyncTarget(String campaignId, long experimentId, BigDecimal mediaSpendLimit, Instant lastSyncedAt, BigDecimal zeroLeadSpendThreshold) {
+            this(campaignId, experimentId, mediaSpendLimit, lastSyncedAt, zeroLeadSpendThreshold, null);
+        }
+
+        /** Preserva os alvos legados sem trava específica de resultado primário. */
         public CampaignMetricsSyncTarget(String campaignId, long experimentId, BigDecimal mediaSpendLimit, Instant lastSyncedAt) {
-            this(campaignId, experimentId, mediaSpendLimit, lastSyncedAt, null);
+            this(campaignId, experimentId, mediaSpendLimit, lastSyncedAt, null, null);
         }
     }
 

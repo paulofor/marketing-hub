@@ -8439,3 +8439,34 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   comprovam seleção, idempotência, erro tardio sem publicação parcial, fonte divergente e histórico
   incompleto. Guia, cânone e AGENTS passam a exigir o ciclo completo de integração.
 - **Homologação:** `docs/homologacao/harness-research-reconciliation-v1.md`.
+
+## LOOP-MIRA-LOW-TICKET-ANALYTICS-PDE — superfície real ignorada pelo tipo de experimento
+
+- **Data:** 2026-10-01.
+- **Evidência:** #93 low-ticket aponta para Mira comercial, com duas visitas HUMAN próprias em
+  `pde_funnel_event`; o cockpit retorna zero e o monitor seleciona Vega.
+- **Causa:** seleção de analytics restrita ao enum de assinatura e default frontend de Vega.
+- **Correção:** reconhecer o slot do destino low-ticket, validar produto/versão e usar o reader
+  atribuído existente. Página convencional mantém fonte anterior; slot divergente bloqueia.
+- **Prevenção/harness:** fixture local SQL + reader + monitor + funil inclui Mira, Vega,
+  campanhas distintas, versões, QA e bots, com os mesmos contratos usados pelos agentes.
+
+## LOOP-META-PRIMEIRO-SYNC-TERMINAL-CONGELA-GASTO — dados oficiais chegam após a pausa
+
+- **Data:** 2026-10-01.
+- **Evidência:** #93 PAUSED na Meta, R$ 22,18 e 489 impressões, versus R$ 21,92 e 483 no Hub;
+  `metrics_final_synced_at` removeu a campanha da fila no primeiro callback terminal.
+- **Correção:** início imutável de consolidação de 48 horas, cadência de seis horas no executor
+  e último callback após o prazo. Campanhas ativas mantêm a cadência anterior. Não reativa mídia.
+- **Prevenção:** testes de callback inicial/final, limites de cadência e MySQL 5.7 com rollback;
+  tentativas antigas finalizadas não voltam à coleta indefinidamente.
+
+### Mira low-ticket: duas visitas não reprovam página nem produto
+
+A homologação visual da correção de fonte revelou que o cockpit passava de zero para duas
+visitas e recomendava reconstruir a primeira dobra. A proteção de amostra da assinatura não
+cobria a superfície low-ticket. O relatório agora mantém conversão inconclusiva abaixo da
+amostra configurada e recomenda avaliar atração, preservando oferta e teto; indisponibilidade
+da coorte bloqueia a decisão. `ExperimentCockpitServiceTest` cobre ambos os cenários sem
+mudar o tipo de produto ou ativar mídia. Não confundir uma amostra planejada com autorização
+para financiar esse volume.

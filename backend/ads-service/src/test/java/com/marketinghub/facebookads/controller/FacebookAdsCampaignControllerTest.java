@@ -879,8 +879,8 @@ class FacebookAdsCampaignControllerTest {
   }
 
   @Test
-  // Marca fechamento final quando uma campanha encerrada recebe métricas oficiais da Meta.
-  void updateMetricsMarksFinalSyncForStoppedCampaign() throws Exception {
+  // Inicia a janela de consolidação sem considerar o primeiro retorno terminal como definitivo.
+  void updateMetricsStartsSettlementForStoppedCampaign() throws Exception {
     var stoppedExperiment =
         Experiment.builder().id(55L).status(ExperimentStatus.USER_STOPPED).build();
     var stoppedCampaign = new FacebookAdsCampaign();
@@ -932,6 +932,18 @@ class FacebookAdsCampaignControllerTest {
         .andExpect(jsonPath("$.spend").value(12.18));
 
     assertThat(stoppedCampaign.getMetricsLastSyncedAt()).isNotNull();
+    assertThat(stoppedCampaign.getMetricsSettlementStartedAt())
+        .isEqualTo(stoppedCampaign.getMetricsLastSyncedAt());
+    assertThat(stoppedCampaign.getMetricsFinalSyncedAt()).isNull();
+    Instant started = Instant.now().minus(java.time.Duration.ofHours(49));
+    stoppedCampaign.setMetricsSettlementStartedAt(started);
+    mockMvc
+        .perform(
+            post("/api/facebook-campaigns/cmp-backfill/metrics")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+        .andExpect(status().isOk());
+    assertThat(stoppedCampaign.getMetricsSettlementStartedAt()).isEqualTo(started);
     assertThat(stoppedCampaign.getMetricsFinalSyncedAt())
         .isEqualTo(stoppedCampaign.getMetricsLastSyncedAt());
   }

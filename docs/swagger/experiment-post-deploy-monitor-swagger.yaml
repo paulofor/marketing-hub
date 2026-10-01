@@ -19,7 +19,7 @@ paths:
           required: false
           schema:
             type: string
-            default: metodo-musa-7-dias
+          description: Fallback legado somente para experimento sem produto; produto vinculado é sempre canônico.
       responses:
         "200":
           description: Painel consolidado com mídia, analytics PDE e versões produtivas.
@@ -42,7 +42,7 @@ paths:
           required: false
           schema:
             type: string
-            default: metodo-musa-7-dias
+          description: Fallback legado somente para experimento sem produto; produto vinculado é sempre canônico.
       responses:
         "200":
           description: Slots produtivos cadastrados para o produto PDE.
@@ -94,7 +94,7 @@ paths:
           required: false
           schema:
             type: string
-            default: metodo-musa-7-dias
+          description: Fallback legado somente para experimento sem produto; produto vinculado é sempre canônico.
       responses:
         "200":
           description: Slot com o resultado auditável da última validação de URL.
@@ -132,6 +132,9 @@ components:
             $ref: "#/components/schemas/PostDeployPdeProductionSlot"
         pdeBuildIdentity:
           $ref: "#/components/schemas/PostDeployPdeBuildIdentity"
+        pdeSurface:
+          type: boolean
+          description: Fonte PDE identificada pelo backend; vale também para low-ticket com slot canônico, inclusive quando analytics está indisponível.
         alerts:
           type: array
           items:

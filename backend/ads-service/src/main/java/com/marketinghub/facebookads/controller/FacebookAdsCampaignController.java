@@ -287,7 +287,10 @@ public class FacebookAdsCampaignController {
                     c.getExperiment().getMediaSpendLimit(),
                     c.getMetricsLastSyncedAt(),
                     com.marketinghub.experiment.funnel.ExperimentFinancialGuardrailPolicy
-                        .zeroPrimaryResultMinimumSpend(c.getExperiment())))
+                        .zeroPrimaryResultMinimumSpend(c.getExperiment()),
+                    c.getMetricsSettlementStartedAt() != null
+                        ? c.getMetricsSettlementStartedAt().plus(java.time.Duration.ofHours(48))
+                        : null))
         .toList();
   }
 
@@ -629,13 +632,23 @@ public class FacebookAdsCampaignController {
     return toMetricSummary(metric);
   }
 
-  // Marca que uma campanha encerrada já teve reconciliação final de métricas contra a Meta.
+  // Registra o início da consolidação e só fecha métricas após a janela de atualização tardia.
   private void markFinalMetricsSyncWhenExperimentIsSettled(FacebookAdsCampaign campaign) {
     if (campaign == null || campaign.getExperiment() == null) {
       return;
     }
     if (METRICS_SETTLEMENT_STATUSES.contains(campaign.getExperiment().getStatus())) {
-      campaign.setMetricsFinalSyncedAt(campaign.getMetricsLastSyncedAt());
+      Instant observedAt = campaign.getMetricsLastSyncedAt();
+      if (campaign.getMetricsSettlementStartedAt() == null) {
+        campaign.setMetricsSettlementStartedAt(observedAt);
+      }
+      if (!observedAt.isBefore(
+          campaign.getMetricsSettlementStartedAt().plus(java.time.Duration.ofHours(48)))) {
+        campaign.setMetricsFinalSyncedAt(observedAt);
+      }
+    } else if (campaign.getExperiment().getStatus() == ExperimentStatus.RUNNING) {
+      campaign.setMetricsSettlementStartedAt(null);
+      campaign.setMetricsFinalSyncedAt(null);
     }
   }
 
@@ -1324,7 +1337,8 @@ public class FacebookAdsCampaignController {
       Long experimentId,
       BigDecimal mediaSpendLimit,
       Instant lastSyncedAt,
-      BigDecimal zeroLeadSpendThreshold) {}
+      BigDecimal zeroLeadSpendThreshold,
+      Instant settlementDeadline) {}
 
   public record CampaignMetricsUpdateRequest(
       LocalDate dateStart,

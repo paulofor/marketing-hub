@@ -126,7 +126,7 @@ public class ExperimentFunnelService {
     Optional<String> versionToken = resolveVersionTokenFromUrl(followUpActionUrl);
     ExpectedPdeExperienceVersion expectedVersion =
         resolveExpectedPdeExperienceVersionDiagnostic(followUpActionUrl);
-    if (!isPdeMembershipSubscriptionFunnel(experiment)) {
+    if (!usesPdeAnalytics(experiment)) {
       return new ExperimentPdeCockpitDiagnosticsDto(
           experimentId,
           false,
@@ -195,9 +195,17 @@ public class ExperimentFunnelService {
         attributionCodes);
   }
 
-  /** Soma a receita aprovada atribuida ao experimento dentro do escopo canônico do funil. */
+  /**
+   * Lê receita atribuída ao experimento; em PDE low-ticket, exige conciliação e desconta
+   * reembolsos.
+   */
   public BigDecimal approvedRevenue(Long experimentId) {
     Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+    if (pdeExperimentAnalyticsReader != null
+        && pdeExperimentAnalyticsReader.hasPdeSurface(experiment)) {
+      var summary = pdeExperimentAnalyticsReader.read(experiment);
+      return reconciledPdeOutcomes(experiment, summary).netRevenueBrl();
+    }
     Instant baseline = resolveBaseline(experiment);
     BigDecimal revenue =
         jdbcTemplate.queryForObject(
@@ -423,7 +431,7 @@ public class ExperimentFunnelService {
                     new org.springframework.web.server.ResponseStatusException(
                         org.springframework.http.HttpStatus.NOT_FOUND,
                         "Experimento não encontrado"));
-    if (!isPdeMembershipSubscriptionFunnel(experiment)) {
+    if (!usesPdeAnalytics(experiment)) {
       return Map.of("available", false, "reason", "NOT_PDE_EXPERIENCE");
     }
     try {
@@ -1511,12 +1519,12 @@ public class ExperimentFunnelService {
   }
 
   /**
-   * Aplica métricas reais do backend PDE/MUSA ao funil de assinatura, preservando a atribuição por
+   * Aplica métricas reais do backend PDE ao funil compatível, preservando a atribuição por
    * campanha.
    */
   private void applyPdeMembershipMetrics(
       Experiment experiment, Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
-    if (!isPdeMembershipSubscriptionFunnel(experiment)) {
+    if (!usesPdeAnalytics(experiment)) {
       return;
     }
     PdeAnalyticsSummary summary;
@@ -1537,12 +1545,15 @@ public class ExperimentFunnelService {
     PdeMembershipMetric metric =
         isFakeExperiment(experiment)
             ? aggregatePdeMembershipMetric(summary, fetchExperimentAttributionCodes(experiment))
-            : canonicalPdeMetric(summary);
+            : canonicalPdeMetric(summary, experiment);
     mergeMetric(
         stages,
         ExperimentFunnelStage.VISUALIZACAO_FORM,
-        new AggregatedMetric(metric.pdeEntries(), null, metric.lastEventAt()),
-        "Entradas reais do PDE/MUSA filtradas por UTM da campanha do experimento");
+        new AggregatedMetric(
+            isLowTicketProduct(experiment) ? summary.pageViews() : metric.pdeEntries(),
+            null,
+            metric.lastEventAt()),
+        "Pageviews humanos do PDE atribuídos ao experimento");
     mergeMetric(
         stages,
         ExperimentFunnelStage.VIDEO_VISTO_PARCIAL,
@@ -1675,10 +1686,13 @@ public class ExperimentFunnelService {
   }
 
   /** Projeta a mesma leitura já atribuída ao experimento, inclusive entrega e primeiro uso. */
-  private PdeMembershipMetric canonicalPdeMetric(PdeAnalyticsSummary summary) {
+  private PdeMembershipMetric canonicalPdeMetric(
+      PdeAnalyticsSummary summary, Experiment experiment) {
     Map<String, Long> events = new HashMap<>();
     if (summary.events() != null)
       summary.events().forEach(event -> events.put(event.eventType(), event.total()));
+    var outcomes =
+        isLowTicketProduct(experiment) ? reconciledPdeOutcomes(experiment, summary) : null;
     return new PdeMembershipMetric(
         summary.pedEntries(),
         events.getOrDefault("VIDEO_PROGRESS_25", 0L)
@@ -1688,10 +1702,23 @@ public class ExperimentFunnelService {
         summary.loginStarted(),
         summary.paywallViewed(),
         summary.checkoutStarted(),
-        summary.subscriptionApproved(),
-        summary.accessReleased(),
-        summary.firstUse(),
+        outcomes != null ? outcomes.purchases() : summary.subscriptionApproved(),
+        outcomes != null ? outcomes.accessReleasedNetSales() : summary.accessReleased(),
+        outcomes != null ? outcomes.firstUseNetSales() : summary.firstUse(),
         parsePdeInstant(summary.lastEventAt()));
+  }
+
+  /** Exige pagamento e valor conciliados antes de transformar eventos PDE em venda ou receita. */
+  private com.marketinghub.experiment.monitoring.pde.PdeCommercialOutcomeSummary
+      reconciledPdeOutcomes(Experiment experiment, PdeAnalyticsSummary summary) {
+    var outcomes = pdeExperimentAnalyticsReader.commercialOutcomes(experiment, summary);
+    if (outcomes == null
+        || !outcomes.financialReferencesComplete()
+        || !outcomes.financialAmountsComplete()
+        || !outcomes.refundReferencesMatchPurchases()) {
+      throw new IllegalStateException("PDE_FINANCIAL_OUTCOMES_NOT_RECONCILED");
+    }
+    return outcomes;
   }
 
   /** Agrega somente métricas PDE que possuem atribuição própria do experimento. */
@@ -1986,7 +2013,9 @@ public class ExperimentFunnelService {
         stages,
         ExperimentFunnelStage.VISUALIZACAO_FORM,
         "Visualização da página de venda",
-        "Visualizações da página de venda publicadas pelo GeraSalesPage (page_view)");
+        usesPdeAnalytics(experiment)
+            ? "Pageviews humanos do PDE atribuídos ao experimento (pde_funnel_event)"
+            : "Visualizações da página de venda publicadas pelo GeraSalesPage (page_view)");
     renameStage(
         stages,
         ExperimentFunnelStage.VIDEO_VISTO_PARCIAL,
@@ -2107,6 +2136,13 @@ public class ExperimentFunnelService {
   private boolean isLowTicketProduct(Experiment experiment) {
     return experiment != null
         && experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT;
+  }
+
+  /** Inclui low-ticket com slot próprio na leitura atribuída, preservando os demais funis. */
+  private boolean usesPdeAnalytics(Experiment experiment) {
+    return isPdeMembershipSubscriptionFunnel(experiment)
+        || (pdeExperimentAnalyticsReader != null
+            && pdeExperimentAnalyticsReader.hasPdeSurface(experiment));
   }
 
   /** Identifica se o experimento mede assinatura e ativação de um produto PDE. */

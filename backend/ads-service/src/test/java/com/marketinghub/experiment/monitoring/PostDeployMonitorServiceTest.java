@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.monitoring;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
@@ -74,6 +75,26 @@ class PostDeployMonitorServiceTest {
     lenient()
         .when(pdeProductionSlotService.listProductionSlotsForProduct("metodo-musa-7-dias"))
         .thenReturn(List.of(productionSlotDto("v1", "musa-pde-entry-v4-video-hero")));
+  }
+
+  /** Todos os comandos de slot respeitam o produto de Mira, mesmo com parâmetro antigo de Vega. */
+  @Test
+  void slotCommandsPreserveCanonicalExperimentProduct() {
+    Experiment experiment =
+        Experiment.builder()
+            .id(93L)
+            .product(com.marketinghub.product.Product.builder().id(10L).slug("mira").build())
+            .build();
+    when(experimentRepository.findById(93L)).thenReturn(Optional.of(experiment));
+    service.listProductionSlots(93L, "metodo-musa-7-dias");
+    service.validateProductionSlot(93L, "metodo-musa-7-dias", "v1");
+    verify(pdeProductionSlotService).listProductionSlotsForProduct("mira");
+    verify(pdeProductionSlotService).validateProductionSlot("mira", "v1");
+    var request = org.mockito.Mockito.mock(PostDeployPdeProductionSlotRequestDto.class);
+    when(request.productSlug()).thenReturn("metodo-musa-7-dias");
+    assertThatThrownBy(() -> service.saveProductionSlot(93L, request))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("produto canônico");
   }
 
   /** Recomenda pausa quando há gasto relevante sem primeira interação no PDE. */

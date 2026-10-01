@@ -225,6 +225,56 @@ class ExperimentCockpitServiceTest {
     assertEquals("PRESERVAR_TESTE", cockpit.nextActions().getFirst().code());
   }
 
+  /**
+   * Usa a coorte PDE de Mira mesmo quando o tipo low-ticket não tem gate de amostra de assinatura.
+   */
+  @Test
+  void lowTicketCockpitReadsPdeHumanVisitorsWithoutChangingExperimentType() throws Exception {
+    var experiment = preparePdeSalesExperiment(93L);
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    experiment.setName("Mira");
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.INVALIDATED);
+    experiment.getCampaignMetric().setSpend(new BigDecimal("22.18"));
+    experiment.getCampaignMetric().setImpressions(489L);
+    experiment.getCampaignMetric().setClicks(2L);
+    var summary = pdeSummary(2, 2);
+    when(pdeExperimentAnalyticsReader.hasPdeSurface(experiment)).thenReturn(true);
+    when(pdeExperimentAnalyticsReader.read(experiment)).thenReturn(summary);
+    when(pdeExperimentAnalyticsReader.commercialOutcomes(experiment, summary))
+        .thenReturn(pdeOutcomes(0, 0));
+    when(funnelService.summarize(93L))
+        .thenReturn(List.of(stage(ExperimentFunnelStage.VISUALIZACAO_FORM, 2)));
+    var cockpit = service.getCockpit(93L);
+    assertEquals(2, cockpit.scoreboard().humanVisitors());
+    assertEquals(2, cockpit.scoreboard().pageViews());
+    assertEquals("AMOSTRA_PDE_LOW_TICKET_INSUFICIENTE", cockpit.bottleneck().code());
+    assertEquals("REVISAR_ATRACAO", cockpit.nextActions().getFirst().code());
+    assertEquals(ExperimentType.LOW_TICKET_PRODUCT, experiment.getExperimentType());
+    String output = System.getenv("HERMES_TEST_EVIDENCE_DIR");
+    if (output != null) {
+      java.nio.file.Files.createDirectories(java.nio.file.Path.of(output));
+      java.nio.file.Files.writeString(
+          java.nio.file.Path.of(output, "mira-cockpit.json"),
+          new com.fasterxml.jackson.databind.ObjectMapper()
+              .findAndRegisterModules()
+              .writeValueAsString(cockpit));
+    }
+  }
+
+  /** Uma falha de fonte em Mira bloqueia saúde e decisão, sem recomendar reconstruir a página. */
+  @Test
+  void lowTicketCockpitBlocksUnavailablePdeMeasurement() {
+    var experiment = preparePdeSalesExperiment(93L);
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    when(pdeExperimentAnalyticsReader.hasPdeSurface(experiment)).thenReturn(true);
+    when(pdeExperimentAnalyticsReader.read(experiment))
+        .thenThrow(new IllegalStateException("PDE indisponível"));
+    var cockpit = service.getCockpit(93L);
+    assertEquals("BLOCKED", cockpit.health().status());
+    assertEquals("MENSURACAO_AMOSTRA_INDISPONIVEL", cockpit.bottleneck().code());
+    assertEquals("CORRIGIR_TRACKING", cockpit.nextActions().getFirst().code());
+  }
+
   /** Bloqueia a leitura comercial quando a coorte PDE autoritativa não pode ser medida. */
   @Test
   void getCockpitBlocksCommercialReadingWhenPdeCohortIsUnavailable() {

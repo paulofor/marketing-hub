@@ -17,6 +17,76 @@ describe("ExperimentLandingAnalyticsTab", () => {
     cleanup();
   });
 
+  it("reads Mira low-ticket from the backend PDE source without requesting Vega or legacy analytics", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/experiments/93/post-deploy-monitor")
+        return Promise.resolve({
+          data: {
+            productSlug: "mira",
+            pdeSurface: true,
+            pde: {
+              available: true,
+              currentExperienceVersion: "mira-commercial-v1",
+              pageViews: 2,
+              sessions: 2,
+              uniqueVisitors: 2,
+              events: {},
+              deviceBreakdown: [],
+              screenSizeBreakdown: [],
+              trafficSources: [],
+              recentJourneys: [],
+            },
+          },
+        });
+      return Promise.reject(new Error(`Fonte indevida: ${url}`));
+    });
+    render(
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <ExperimentLandingAnalyticsTab
+          experimentId="93"
+          experimentType="LOW_TICKET_PRODUCT"
+        />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("Analytics do PDE atual")).toBeTruthy();
+    expect(screen.getByText("Page views PDE")).toBeTruthy();
+    expect(
+      (axios.get as any).mock.calls.map((call: unknown[]) => call[0]),
+    ).toEqual(["/api/experiments/93/post-deploy-monitor"]);
+  });
+
+  it("shows a PDE measurement failure without converting it into a zero legacy result", async () => {
+    (axios.get as any).mockResolvedValue({
+      data: {
+        productSlug: "mira",
+        pdeSurface: true,
+        pde: {
+          available: false,
+          errorMessage: "PDE_ANALYTICS_PRODUCT_MISMATCH",
+        },
+      },
+    });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ExperimentLandingAnalyticsTab
+          experimentId="93"
+          experimentType="LOW_TICKET_PRODUCT"
+        />
+      </QueryClientProvider>,
+    );
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "PDE_ANALYTICS_PRODUCT_MISMATCH",
+    );
+    expect(screen.queryByText("Page views PDE")).toBeNull();
+    expect(
+      (axios.get as any).mock.calls.map((call: unknown[]) => call[0]),
+    ).toEqual(["/api/experiments/93/post-deploy-monitor"]);
+  });
+
   it("shows the persuasive journey with analytics evidence by tracked section", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url === "/api/experiments/67/funnel/analytics") {

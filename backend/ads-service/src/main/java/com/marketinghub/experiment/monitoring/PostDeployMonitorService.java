@@ -74,7 +74,7 @@ public class PostDeployMonitorService {
     this.pdeExperimentAnalyticsReader = pdeExperimentAnalyticsReader;
   }
 
-  /** Monta o painel pós-deploy fixando o produto canônico do experimento PDE. */
+  /** Monta o painel pós-deploy fixando o produto canônico, inclusive em superfícies low-ticket. */
   public PostDeployMonitorResponseDto summarize(Long experimentId, String productSlug) {
     Experiment experiment =
         experimentRepository
@@ -83,11 +83,7 @@ public class PostDeployMonitorService {
                 () ->
                     new EntityNotFoundException(
                         "Experimento %d não encontrado".formatted(experimentId)));
-    String resolvedProductSlug =
-        experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
-                && experiment.getProduct() != null
-            ? experiment.getProduct().getSlug()
-            : pdeProductionSlotService.resolveProductSlug(productSlug);
+    String resolvedProductSlug = canonicalProductSlug(experiment, productSlug);
     ExperimentCampaignMetric metric =
         campaignMetricRepository.findByExperiment(experiment).orElse(null);
     PostDeployMetaAdsSummaryDto metaAds = toMetaAdsSummary(metric);
@@ -124,7 +120,9 @@ public class PostDeployMonitorService {
         pdeBuildIdentity,
         pdeProductionSlots,
         logs,
-        alerts);
+        alerts,
+        experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
+            || pdeExperimentAnalyticsReader.hasPdeSurface(experiment));
   }
 
   /** Consulta a identidade da build PDE pela mesma URL pública usada pelo cockpit. */
@@ -186,38 +184,57 @@ public class PostDeployMonitorService {
   /** Lista os slots produtivos do produto PDE após validar o experimento de origem. */
   public List<PostDeployPdeProductionSlotDto> listProductionSlots(
       Long experimentId, String productSlug) {
-    experimentRepository
-        .findById(experimentId)
-        .orElseThrow(
-            () ->
-                new EntityNotFoundException(
-                    "Experimento %d não encontrado".formatted(experimentId)));
-    return pdeProductionSlotService.listProductionSlotsForProduct(productSlug);
+    Experiment experiment =
+        experimentRepository
+            .findById(experimentId)
+            .orElseThrow(
+                () ->
+                    new EntityNotFoundException(
+                        "Experimento %d não encontrado".formatted(experimentId)));
+    return pdeProductionSlotService.listProductionSlotsForProduct(
+        canonicalProductSlug(experiment, productSlug));
   }
 
   /** Cria ou atualiza um slot produtivo versionado para manter hipóteses PDE em URLs paralelas. */
   public PostDeployPdeProductionSlotDto saveProductionSlot(
       Long experimentId, PostDeployPdeProductionSlotRequestDto request) {
-    experimentRepository
-        .findById(experimentId)
-        .orElseThrow(
-            () ->
-                new EntityNotFoundException(
-                    "Experimento %d não encontrado".formatted(experimentId)));
-    return pdeProductionSlotService.saveProductionSlot(
-        request.productSlug(), experimentId, request);
+    Experiment experiment =
+        experimentRepository
+            .findById(experimentId)
+            .orElseThrow(
+                () ->
+                    new EntityNotFoundException(
+                        "Experimento %d não encontrado".formatted(experimentId)));
+    String canonicalSlug = canonicalProductSlug(experiment, request.productSlug());
+    if (experiment.getProduct() != null && !canonicalSlug.equals(request.productSlug())) {
+      throw new IllegalArgumentException(
+          "O slot deve pertencer ao produto canônico do experimento");
+    }
+    return pdeProductionSlotService.saveProductionSlot(canonicalSlug, experimentId, request);
   }
 
   /** Valida a entrega pública de um slot PDE antes de usar a URL em campanha. */
   public PostDeployPdeProductionSlotDto validateProductionSlot(
       Long experimentId, String productSlug, String slotCode) {
-    experimentRepository
-        .findById(experimentId)
-        .orElseThrow(
-            () ->
-                new EntityNotFoundException(
-                    "Experimento %d não encontrado".formatted(experimentId)));
-    return pdeProductionSlotService.validateProductionSlot(productSlug, slotCode);
+    Experiment experiment =
+        experimentRepository
+            .findById(experimentId)
+            .orElseThrow(
+                () ->
+                    new EntityNotFoundException(
+                        "Experimento %d não encontrado".formatted(experimentId)));
+    return pdeProductionSlotService.validateProductionSlot(
+        canonicalProductSlug(experiment, productSlug), slotCode);
+  }
+
+  /**
+   * Fixa a identidade do produto em todos os comandos do monitor, mantendo apenas o fallback
+   * legado.
+   */
+  private String canonicalProductSlug(Experiment experiment, String fallbackSlug) {
+    return experiment.getProduct() != null
+        ? experiment.getProduct().getSlug()
+        : pdeProductionSlotService.resolveProductSlug(fallbackSlug);
   }
 
   /** Converte a métrica persistida da campanha em resumo do painel. */
@@ -262,7 +279,8 @@ public class PostDeployMonitorService {
       boolean campaignTrafficActive,
       List<String> attributionCodes) {
     try {
-      if (experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL) {
+      if (experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
+          || pdeExperimentAnalyticsReader.hasPdeSurface(experiment)) {
         PdeAnalyticsSummary attributed = pdeExperimentAnalyticsReader.read(experiment);
         return toPdeSummary(
             attributed, attributed.currentExperienceVersion(), campaignTrafficActive, List.of());

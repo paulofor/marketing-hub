@@ -138,6 +138,9 @@ public class FacebookAdsCampaign {
   @Column(name = "metrics_last_synced_at")
   private Instant metricsLastSyncedAt;
 
+  @Column(name = "metrics_settlement_started_at")
+  private Instant metricsSettlementStartedAt;
+
   @Column(name = "metrics_final_synced_at")
   private Instant metricsFinalSyncedAt;
 

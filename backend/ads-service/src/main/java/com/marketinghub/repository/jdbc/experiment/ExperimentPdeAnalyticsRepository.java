@@ -20,7 +20,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * Lê métricas PDE persistidas com o mesmo recorte de produto, versão e atribuição em todas as
- * consultas.
+ * consultas. Mídia exige código de origem; o vínculo explícito sozinho vale para canal direto.
  */
 @Repository
 public class ExperimentPdeAnalyticsRepository {
@@ -28,9 +28,10 @@ public class ExperimentPdeAnalyticsRepository {
       """
       FROM pde_funnel_event
       WHERE product_slug = :product AND experience_version = :version
-        AND (JSON_UNQUOTE(JSON_EXTRACT(metadata_json, '$.experimentId')) = :experimentId
-          OR (COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata_json, '$.experimentId')), '') IN ('', 'null')
-            AND :hasCodes = 1 AND (utm_campaign IN (:codes) OR utm_content IN (:codes))))
+        AND ((:hasCodes = 1 AND (utm_campaign IN (:codes) OR utm_content IN (:codes))
+            AND (JSON_UNQUOTE(JSON_EXTRACT(metadata_json, '$.experimentId')) = :experimentId
+              OR COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata_json, '$.experimentId')), '') IN ('', 'null')))
+          OR (:hasCodes = 0 AND JSON_UNQUOTE(JSON_EXTRACT(metadata_json, '$.experimentId')) = :experimentId))
         AND occurred_at >= :periodStart AND occurred_at <= :periodEnd
       """;
   private static final String HUMAN = " AND traffic_quality = 'HUMAN' ";

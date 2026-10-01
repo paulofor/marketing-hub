@@ -169,6 +169,10 @@ escopo incompatível ou contrato antigo bloqueiam antes do consumo de IA.
 Para PDE, a fonte persistida é `pde_funnel_event`, filtrada antes da agregação por produto,
 versão e códigos de atribuição oficiais ou `experimentId` explícito do evento (canal direto).
 Uma referência explícita a outro experimento impede a atribuição por UTM residual.
+Quando há códigos oficiais de mídia para o experimento, o `experimentId` da página não
+substitui a origem: a consulta exige UTM/código vinculado à campanha. Acessos sem esse código
+permanecem na auditoria do produto, mesmo quando o slot publica o mesmo `experimentId`.
+Somente no canal direto, sem códigos de mídia, o vínculo explícito atribui o evento.
 Sem produto/slot/versão coerentes, a leitura é indisponível;
 nunca há fallback para outro produto, outra versão ou tráfego sem atribuição.
 

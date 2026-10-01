@@ -72,3 +72,28 @@ Mira nem impor compra de tráfego, a leitura agora usa a coorte e o tamanho já 
 para declarar conversão inconclusiva, preservar produto/preço e revisar atração. A fonte
 indisponível também bloqueia a saúde comercial. Testes e nova conferência desktop/iPhone
 confirmaram a recomendação; a campanha histórica continua sem comando de retomada.
+
+### Conferência publicada e origem dos acessos
+
+A versão integrada por #5460 publicou corretamente Mira, mas revelou uma lacuna anterior na
+consulta compartilhada: o slot associa `experimentId=93` também a acessos sem UTM. O banco
+confirmou nove PAGE_VIEW e um CHECKOUT_STARTED sem origem paga, além dos dois PAGE_VIEW da
+campanha. A fixture anterior cobria UTM e versão divergentes, mas não o vínculo fixo da página.
+O teste ampliado reproduziu a falha localmente antes de alterar a consulta.
+
+Foram comparados um endpoint separado de mídia (isolamento explícito, contrato maior), um modo
+de atribuição adicional no reader (clareza, mais alterações de chamadas) e o filtro na consulta
+compartilhada (baixo esforço e mesma origem para tela e agentes). A terceira foi escolhida:
+quando existem códigos de mídia, exige origem correspondente; canal direto preserva o vínculo
+explícito e nenhum evento bruto é apagado. A validação inclui H2, MySQL 5.7, monitor, funil,
+referências conflitantes e regressão de canal direto.
+
+O #93 permanece INVALIDATED. Seu gargalo de execução tem precedência sobre a proteção de
+amostra; não se espera que o cartão de decisão de assinatura seja aplicável a este low-ticket.
+Isso não autoriza mudar o preço, retomar mídia ou considerar visitas sem origem como Meta.
+
+Validação do complemento: 3.761 registros de teste na suíte completa do backend, sem falhas;
+fixture MySQL 5.7 concluída e topologia removida. O SQL mantém dois visitantes e zero checkout
+da campanha, exclui metadados conflitantes e preserva o teste de atribuição direta.
+A primeira entrega já confirmou backend e frontend saudáveis no SHA `334f96a24a21` e atualização
+automática do gasto para R$ 22,18 / 489 impressões / dois cliques, com campanha PAUSED.

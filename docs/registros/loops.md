@@ -8470,3 +8470,14 @@ amostra configurada e recomenda avaliar atração, preservando oferta e teto; in
 da coorte bloqueia a decisão. `ExperimentCockpitServiceTest` cobre ambos os cenários sem
 mudar o tipo de produto ou ativar mídia. Não confundir uma amostra planejada com autorização
 para financiar esse volume.
+
+### Mira: vínculo da página não comprova origem paga
+
+A conferência publicada em 01/10/2026 encontrou 11 acessos HUMAN com `experimentId=93`,
+mas somente dois com a UTM da campanha; o checkout sem UTM não pertence à leitura paga.
+O `OR` do escopo canônico permitia que o vínculo fixo da página substituísse o código de mídia.
+A consulta compartilhada agora exige o código quando existem campanhas vinculadas; referências
+conflitantes seguem excluídas. Canal direto sem códigos continua aceitando vínculo explícito.
+Nenhum evento foi removido ou reclassificado. A fixture Mira passa a reproduzir nove acessos
+sem UTM com o mesmo `experimentId`, checkout sem UTM e outra campanha com o mesmo vínculo.
+O caso falhou localmente antes da correção e verifica monitor, funil, origens e total agregado.

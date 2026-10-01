@@ -193,7 +193,7 @@ public class PdeExperimentAnalyticsIntegrationTest {
     }
   }
 
-  /** Reproduz Mira low-ticket com PAGE_VIEW, preservando coorte e fonte em monitor e funil. */
+  /** Reproduz Mira e separa origem paga do vínculo da página, preservando monitor e funil. */
   @Test
   void lowTicketMiraUsesItsOwnPdeSurfaceAndExcludesUnattributedTraffic() throws Exception {
     experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
@@ -213,7 +213,24 @@ public class PdeExperimentAnalyticsIntegrationTest {
           "HUMAN",
           "PAGE_VIEW",
           "mira-" + i,
-          "{}");
+          "{\"experimentId\":91}");
+    for (int i = 0; i < 9; i++)
+      add(
+          "mira",
+          "mira-commercial-v1",
+          null,
+          "HUMAN",
+          "PAGE_VIEW",
+          "unattributed-" + i,
+          "{\"experimentId\":91}");
+    add(
+        "mira",
+        "mira-commercial-v1",
+        null,
+        "HUMAN",
+        "CHECKOUT_STARTED",
+        "unattributed-0",
+        "{\"experimentId\":91}");
     add(
         "mira",
         "mira-commercial-v1",
@@ -221,7 +238,7 @@ public class PdeExperimentAnalyticsIntegrationTest {
         "HUMAN",
         "PAGE_VIEW",
         "other-campaign",
-        "{}");
+        "{\"experimentId\":91}");
     add(
         "musa",
         "mira-commercial-v1",
@@ -244,6 +261,10 @@ public class PdeExperimentAnalyticsIntegrationTest {
     var summary = reader.read(experiment);
     assertThat(summary.uniqueVisitors()).isEqualTo(2);
     assertThat(summary.pageViews()).isEqualTo(2);
+    assertThat(summary.checkoutStarted()).isZero();
+    assertThat(summary.trafficSources()).hasSize(1);
+    assertThat(summary.trafficSources().getFirst().utmCampaign())
+        .isEqualTo("120251556536430326");
     var monitored = monitor();
     assertThat(monitored.productSlug()).isEqualTo("mira");
     assertThat(monitored.pdeSurface()).isTrue();

@@ -8334,6 +8334,28 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   o gate. Testes reproduzem a sequência correção válida → cancelamento condicional → homologação
   posterior e protegem o bloqueio de tentativa incompleta.
 
+## LOOP-BPM-RECUPERACAO-CANCELADA-CONTA-COMO-PENDENCIA — 01/10/2026
+
+- **Evidência confirmada:** depois da correção do gate, a execução #34 foi retomada pela tela e
+  comprovou o `agentValidationGate` como concluído com todos os cinco requisitos satisfeitos. O
+  run, contudo, voltou a `BLOCKED` com dez de onze atividades porque a ocorrência condicional
+  #466/tarefa #582 continuava `CANCELLED`. No mesmo contexto, a correção #580 e todos os destinos
+  declarados no BPM já estavam concluídos.
+- **Causa-raiz histórica:** a seleção da correção aplicável e a projeção global tinham contratos
+  distintos. A projeção mantinha qualquer retorno condicional com histórico dentro da versão
+  selecionada, mas não distinguia um cancelamento ainda acionável de uma tentativa inerte cujos
+  destinos haviam sido reparados. Como `CANCELLED` não pertence às dispensas explícitas, o motor
+  criava uma pendência sem atividade elegível para executar.
+- **Alternativas avaliadas:** tratar todo cancelamento como sucesso esconderia falhas obrigatórias;
+  excluir a atividade apagaria sua auditoria; classificar somente o retorno
+  `ON_FUNCTIONAL_REJECTION` cancelado, indisponível e com todos os destinos resolvidos como
+  `RECORDED` preserva a prova sem fabricar objetivo. A terceira alternativa foi adotada.
+- **Correção e prevenção:** um resolvedor puro lê `remediatesActivities`, exige a resolução de cada
+  destino e altera somente a projeção derivada para `RECORDED`; tarefa, instância e
+  `objectiveAchieved=false` permanecem intactos. Cancelamento obrigatório, destino pendente,
+  comando disponível ou metadado inválido continuam bloqueando. Testes unitários e de integração
+  reproduzem exatamente a sequência correção válida → cancelamento inerte → destinos comprovados.
+
 ## LOOP-PUBLICADOR-WORKER-CORRE-DURANTE-TROCA-DO-BACKEND — 30/09/2026
 
 - **Evidência histórica:** na retomada do commit `4fcd629a`, Têmis iniciou o relatório de saúde às

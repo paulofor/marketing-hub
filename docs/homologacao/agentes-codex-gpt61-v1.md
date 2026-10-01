@@ -52,3 +52,18 @@ Na verificação preliminar, os nove executores publicados responderam `READY`
 com autenticação individual e acesso ao backend. A confirmação final deve
 comparar a versão/modelo efetivos, o cadastro atualizado e os workflows
 do SHA integrado; evidência preliminar não representa entrega da atualização.
+
+Correção da publicação identificada após o primeiro merge: o gate compartilhado
+de vídeo/MCP ainda exigia literalmente GPT 5.6 Sol e não integrava o CI de PR.
+O contrato passou a consultar o mesmo manifesto dos nove agentes e a validar
+planejador e Codex de Apolo. Sua execução e seus arquivos de entrada passaram
+a integrar o check existente de Actions em PR, cobrindo a falha antes de publicar.
+Os defaults de leitura de referências e preparação de imagens de Apolo também
+adotam GPT 6.1 Sol; transcrição, geração de imagem, áudio e vídeo conservam
+seus modelos específicos e os limites financeiros. O gate cobre os quatro
+modelos de raciocínio de Apolo, incluindo os defaults Java.
+A correção passou em 244 testes de Apolo (zero falhas/erros), 39 contratos
+de publicação, Actionlint, `bash -n` e ShellCheck. A imagem de Apolo recompilada
+iniciou com rede desativada, confirmou CLI 0.159.3 e expôs GPT 6.1 Sol no
+planejador e na direção de imagem; jobs e providers pagos ficaram desativados.
+A topologia e a imagem temporárias foram removidas ao terminar.

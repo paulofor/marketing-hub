@@ -23,7 +23,7 @@ for (const agent of contract.agents) {
   for (const source of agent.modelSources) {
     const runtime = await readFile(path.join(root, source), "utf8");
     assert.ok(runtime.includes(contract.codexModel), `[ARQUITETURA] ${agent.key}: ${source} omite o modelo vigente`);
-    assert.doesNotMatch(runtime, /gpt-5\.6-sol/, `[ARQUITETURA] ${agent.key}: ${source} mantém modelo legado`);
+    assert.doesNotMatch(runtime, /gpt-5\.6(?:-sol)?/, `[ARQUITETURA] ${agent.key}: ${source} mantém modelo legado`);
     for (const match of runtime.matchAll(/CODEX_VERSION:\s*["']([^"']+)["']/g)) {
       assert.equal(match[1], contract.codexVersion, `[ARQUITETURA] ${agent.key}: Compose sobrescreve a versão do Dockerfile`);
     }

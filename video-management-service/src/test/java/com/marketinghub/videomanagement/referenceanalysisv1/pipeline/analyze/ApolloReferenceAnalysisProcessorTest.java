@@ -35,7 +35,7 @@ class ApolloReferenceAnalysisProcessorTest {
                 properties, objectMapper, inspector, transcriptionClient, aiClient);
     }
 
-    /** Converte evidência e resposta válida em resultado importável e auditável. */
+    /** Converte evidência e resposta válida em resultado auditável com o modelo vigente. */
     @Test
     void shouldBuildImportableApolloRecipe() throws Exception {
         ReferenceAnalysisStageContext context = context();
@@ -59,7 +59,7 @@ class ApolloReferenceAnalysisProcessorTest {
                 .isEqualTo("COMPLETED");
         assertThat(result.rawRequest().path("transcription").path("model").asText())
                 .isEqualTo("gpt-transcribe");
-        assertThat(result.model()).isEqualTo("gpt-5.6 + gpt-transcribe");
+        assertThat(result.model()).isEqualTo("gpt-6.1-sol + gpt-transcribe");
         assertThat(result.summaryMarkdown())
                 .contains("24 frames-chave", "transcrição: COMPLETED", "EXTEND_APOLLO", "execução #")
                 .doesNotContain("NEW_AGENT");
@@ -82,7 +82,7 @@ class ApolloReferenceAnalysisProcessorTest {
                 .hasRootCauseMessage("A referência não justificou um papel diferente da direção criativa de Apolo");
     }
 
-    /** Preserva request, resposta de erro e artefatos quando a integração multimodal falha. */
+    /** Preserva modelo, request, resposta de erro e artefatos quando a integração multimodal falha. */
     @Test
     void shouldPreserveAvailableAuditOnAiFailure() throws Exception {
         ReferenceAnalysisStageContext context = context();
@@ -103,11 +103,11 @@ class ApolloReferenceAnalysisProcessorTest {
                             .isEqualTo("COMPLETED");
                     assertThat(failure.rawRequest().path("analysis")).isSameAs(request);
                     assertThat(failure.rawResponse().path("analysis")).isSameAs(response);
-                    assertThat(failure.model()).isEqualTo("gpt-5.6 + gpt-transcribe");
+                    assertThat(failure.model()).isEqualTo("gpt-6.1-sol + gpt-transcribe");
                 });
     }
 
-    /** Preserva request, resposta bruta e artefatos quando o modelo viola o contrato funcional. */
+    /** Preserva modelo, request, resposta bruta e artefatos quando a saída viola o contrato funcional. */
     @Test
     void shouldPreserveAuditWhenStructuredOutputIsInvalid() throws Exception {
         ReferenceAnalysisStageContext context = context();
@@ -129,7 +129,7 @@ class ApolloReferenceAnalysisProcessorTest {
                             .isEqualTo("COMPLETED");
                     assertThat(failure.rawRequest().path("analysis")).isSameAs(request);
                     assertThat(failure.rawResponse().path("analysis")).isSameAs(rawResponse);
-                    assertThat(failure.model()).isEqualTo("gpt-5.6 + gpt-transcribe");
+                    assertThat(failure.model()).isEqualTo("gpt-6.1-sol + gpt-transcribe");
                 });
     }
 

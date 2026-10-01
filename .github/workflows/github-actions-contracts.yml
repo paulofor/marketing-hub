@@ -14,6 +14,10 @@ on:
       - "landing-generator-agent-worker/docker-compose.yml"
       - "landing-generator-agent-worker/src/main/resources/application.yml"
       - "deploy/docker-compose.video.yml"
+      - "deploy/docker-compose.mcp.yml"
+      - "deploy/bin/test-isolated-compose-contract.sh"
+      - "deploy/bin/test-video-planner-secret-recovery.sh"
+      - "deploy/bin/reconcile-video-planner-secret.sh"
       - "video-management-service/src/main/resources/application.yml"
       - "pde-platform/frontend/docker-entrypoint.d/10-runtime-config.sh"
       - "pde-platform/scripts/**"
@@ -113,6 +117,10 @@ on:
       - "landing-generator-agent-worker/docker-compose.yml"
       - "landing-generator-agent-worker/src/main/resources/application.yml"
       - "deploy/docker-compose.video.yml"
+      - "deploy/docker-compose.mcp.yml"
+      - "deploy/bin/test-isolated-compose-contract.sh"
+      - "deploy/bin/test-video-planner-secret-recovery.sh"
+      - "deploy/bin/reconcile-video-planner-secret.sh"
       - "video-management-service/src/main/resources/application.yml"
       - "pde-platform/frontend/docker-entrypoint.d/10-runtime-config.sh"
       - "pde-platform/scripts/**"
@@ -291,6 +299,9 @@ jobs:
 
       - name: Validar sintaxe dos workflows
         run: bash scripts/run-actionlint.sh
+
+      - name: Validar contratos isolados de vídeo e MCP antes da publicação
+        run: bash deploy/bin/test-isolated-compose-contract.sh
 
       - name: Validar consistência pública PDE com HTTP local
         run: python3 scripts/test-musa-pde-public-consistency.py

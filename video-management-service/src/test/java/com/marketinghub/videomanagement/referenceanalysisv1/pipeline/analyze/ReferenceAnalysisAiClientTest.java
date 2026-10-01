@@ -36,7 +36,7 @@ class ReferenceAnalysisAiClientTest {
         server.shutdown();
     }
 
-    /** Envia imagens, raciocínio limitado, Flex e schema estrito sem armazenamento remoto. */
+    /** Envia GPT 6.1 Sol, imagens, raciocínio limitado, Flex e schema sem armazenamento remoto. */
     @Test
     void shouldSendVersionedMultimodalContractWithoutRemoteStorage() throws Exception {
         server.enqueue(new MockResponse().setHeader("Content-Type", "application/json")
@@ -68,7 +68,7 @@ class ReferenceAnalysisAiClientTest {
         JsonNode payload = objectMapper.readTree(request.getBody().readUtf8());
         assertThat(request.getPath()).isEqualTo("/responses");
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer openai-test-key");
-        assertThat(payload.path("model").asText()).isEqualTo("gpt-5.6");
+        assertThat(payload.path("model").asText()).isEqualTo("gpt-6.1-sol");
         assertThat(payload.path("service_tier").asText()).isEqualTo("flex");
         assertThat(payload.at("/reasoning/effort").asText()).isEqualTo("medium");
         assertThat(payload.path("store").asBoolean()).isFalse();

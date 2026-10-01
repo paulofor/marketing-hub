@@ -150,12 +150,24 @@ describe("ExperimentCockpitPage", () => {
     ).toBeTruthy();
     expect(screen.getByText("Reforçar CTA pós-vídeo")).toBeTruthy();
     expect(screen.getByText("Vídeos completos")).toBeTruthy();
-    expect(screen.getByText("Amostra comercial ainda insuficiente")).toBeTruthy();
+    expect(
+      screen.getByText("Visitantes humanos").parentElement?.querySelector(".h4")
+        ?.textContent,
+    ).toBe("4");
+    expect(
+      screen.getByText("Pageviews").parentElement?.querySelector(".h4")
+        ?.textContent,
+    ).toBe("42");
+    expect(
+      screen.getByText("Amostra comercial ainda insuficiente"),
+    ).toBeTruthy();
     expect(screen.getByText("4 / 100")).toBeTruthy();
     expect(screen.getByText("0 / 5")).toBeTruthy();
     expect(screen.getByText("4 / 500")).toBeTruthy();
     expect(screen.getByText("Projeção preliminar")).toBeTruthy();
-    expect(screen.getByText(/Parada automática sem resultado primário:/)).toBeTruthy();
+    expect(
+      screen.getByText(/Parada automática sem resultado primário:/),
+    ).toBeTruthy();
     expect(axios.get).toHaveBeenCalledWith("/api/experiments/67/cockpit");
   });
 });

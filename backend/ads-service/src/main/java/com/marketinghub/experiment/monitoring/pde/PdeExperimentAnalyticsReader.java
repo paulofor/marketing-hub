@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.monitoring.pde;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.repository.jdbc.experiment.ExperimentPdeAnalyticsRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Hermes.
  */
 @Component
+@lombok.extern.slf4j.Slf4j
 public class PdeExperimentAnalyticsReader {
   private final PdeProductionSlotRepository slots;
   private final ExperimentPdeAnalyticsRepository analytics;
@@ -23,6 +25,27 @@ public class PdeExperimentAnalyticsReader {
       PdeProductionSlotRepository slots, ExperimentPdeAnalyticsRepository analytics) {
     this.slots = slots;
     this.analytics = analytics;
+  }
+
+  /** Reconhece a superfície PDE de um low-ticket sem aceitar sua página convencional como PDE. */
+  @Transactional(readOnly = true)
+  public boolean hasPdeSurface(Experiment experiment) {
+    if (experiment == null
+        || experiment.getExperimentType() != ExperimentType.LOW_TICKET_PRODUCT
+        || experiment.getFollowUpActionUrl() == null) return false;
+    try {
+      String host = URI.create(experiment.getFollowUpActionUrl().trim()).getHost();
+      // A leitura posterior valida produto e versão; um slot divergente nunca vira fallback global.
+      return host != null
+          && slots.findFirstByDomain(host.toLowerCase(java.util.Locale.ROOT)).isPresent();
+    } catch (IllegalArgumentException ex) {
+      log.warn(
+          "Destino inválido ao identificar analytics PDE; experimentId={} url={}",
+          experiment.getId(),
+          experiment.getFollowUpActionUrl(),
+          ex);
+      return false;
+    }
   }
 
   /** Rejeita escopo incompleto em vez de substituir por dados globais ou de outro produto. */

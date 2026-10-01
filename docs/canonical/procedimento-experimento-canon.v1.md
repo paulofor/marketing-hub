@@ -815,3 +815,19 @@ Critérios universais obrigatórios:
 Amostras, PDFs, mini-kits, roteiros, diagnósticos e materiais gratuitos são permitidos, mas devem funcionar como prova de valor, redução de risco ou primeiro passo da transformação. A landing não deve centralizar a promessa no formato do material quando o valor real está na melhoria prática que o produto digital entrega.
 
 Antes de avançar para ajustes de prompt, Quality Gate ou publicação, qualquer melhoria de qualidade deve preservar esse padrão como regra universal do Marketing Hub para comercialização de produtos digitais.
+
+## Superfície PDE e consolidação de mídia após a pausa
+
+O tipo comercial `LOW_TICKET_PRODUCT` não determina o armazenamento de analytics. Quando o destino
+possui slot PDE versionado, o relatório usa o produto canônico do experimento, a versão do slot e
+as UTMs persistidas da campanha pelo mesmo reader usado pelos agentes. QA, bots, outro produto,
+outra versão e tráfego sem atribuição não entram na leitura comercial. Slot divergente bloqueia;
+não pode selecionar Vega ou dados globais como fallback. Venda/receita exige conciliação financeira.
+Uma página low-ticket convencional continua usando a origem GeraSalesPage/Lead Portal.
+
+Pausar mídia não torna definitivo o primeiro snapshot de Insights. O backend persiste o início
+imutável de uma janela de consolidação financeira de 48 horas. O executor controla a cadência de
+seis horas durante essa janela e envia um último callback após o prazo; somente então o backend
+marca `metrics_final_synced_at`. O callback jamais reativa campanha ou autoriza novo gasto. Uma
+retomada autorizada começa outra consolidação. Dados finais antigos preservam o histórico sem
+consultas contínuas; a migração reabre apenas snapshots terminais fechados nas últimas 48 horas.

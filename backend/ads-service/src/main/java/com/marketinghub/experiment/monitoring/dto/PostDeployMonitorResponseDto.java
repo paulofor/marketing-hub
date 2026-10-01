@@ -16,4 +16,5 @@ public record PostDeployMonitorResponseDto(
     PostDeployPdeBuildIdentityDto pdeBuildIdentity,
     List<PostDeployPdeProductionSlotDto> pdeProductionSlots,
     PostDeployFacebookLogSummaryDto logs,
-    List<String> alerts) {}
+    List<String> alerts,
+    boolean pdeSurface) {}

@@ -249,3 +249,13 @@ de migração, pois seus três mapeamentos são criados e removidos a cada teste
 `QUARTZO_MYSQL_URL` aceita somente esse schema na porta local 18307. O contrato recusa
 `FOR UPDATE` nas quatro rotas de consulta e exige sua preservação no comando de gravação,
 prevenindo a recorrência de MySQL 1792 que mocks de repositório não detectam.
+
+### Reconciliação de métricas de Mira e PDE low-ticket
+
+A fixture `infra/testing/mira-report/run-mysql.py` valida a janela de consolidação Meta,
+rollback/idempotência e analytics atribuídos com MySQL 5.7 real. Ela usa dados sintéticos nos
+bancos `mira_test` e `hermes_test`, sem consumir IA ou dados produtivos, e encerra o Compose
+em `finally`. Na sandbox, use o projeto exclusivo fornecido no contexto em
+`MIRA_COMPOSE_PROJECT`; em GitHub Actions, o workflow `liquibase-mysql57.yml` cria um projeto
+isolado por run e preserva evidências. `MIRA_TEST_DB_HOST` diferencia `sandbox-docker` de
+`127.0.0.1` no runner.

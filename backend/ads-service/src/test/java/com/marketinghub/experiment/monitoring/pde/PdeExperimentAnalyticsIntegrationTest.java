@@ -193,6 +193,169 @@ public class PdeExperimentAnalyticsIntegrationTest {
     }
   }
 
+  /** Reproduz Mira low-ticket com PAGE_VIEW, preservando coorte e fonte em monitor e funil. */
+  @Test
+  void lowTicketMiraUsesItsOwnPdeSurfaceAndExcludesUnattributedTraffic() throws Exception {
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    experiment.setProduct(Product.builder().id(10L).slug("mira").build());
+    when(slots.findFirstByDomain("v7.example.test"))
+        .thenReturn(
+            Optional.of(
+                PdeProductionSlot.builder()
+                    .productSlug("mira")
+                    .experienceVersion("mira-commercial-v1")
+                    .build()));
+    for (int i = 0; i < 2; i++)
+      add(
+          "mira",
+          "mira-commercial-v1",
+          "120251556536430326",
+          "HUMAN",
+          "PAGE_VIEW",
+          "mira-" + i,
+          "{}");
+    add(
+        "mira",
+        "mira-commercial-v1",
+        "other-campaign",
+        "HUMAN",
+        "PAGE_VIEW",
+        "other-campaign",
+        "{}");
+    add(
+        "musa",
+        "mira-commercial-v1",
+        "120251556536430326",
+        "HUMAN",
+        "PAGE_VIEW",
+        "other-product",
+        "{}");
+    add(
+        "mira",
+        "mira-private-v3",
+        "120251556536430326",
+        "HUMAN",
+        "PAGE_VIEW",
+        "other-version",
+        "{}");
+    for (String quality : List.of("INTERNAL_QA", "BOT_SUSPECTED", "PLATFORM_CRAWLER", "UNKNOWN"))
+      add("mira", "mira-commercial-v1", "120251556536430326", quality, "PAGE_VIEW", quality, "{}");
+    assertThat(reader.hasPdeSurface(experiment)).isTrue();
+    var summary = reader.read(experiment);
+    assertThat(summary.uniqueVisitors()).isEqualTo(2);
+    assertThat(summary.pageViews()).isEqualTo(2);
+    var monitored = monitor();
+    assertThat(monitored.productSlug()).isEqualTo("mira");
+    assertThat(monitored.pdeSurface()).isTrue();
+    assertThat(monitored.pde().pageViews()).isEqualTo(2);
+    assertThat(monitored.pde().uniqueVisitors()).isEqualTo(2);
+    var funnel = lowTicketFunnel();
+    assertThat(
+            funnel.summarize(91L).stream()
+                .filter(
+                    stage ->
+                        stage.getStage()
+                            == com.marketinghub.experiment.funnel.ExperimentFunnelStage
+                                .VISUALIZACAO_FORM)
+                .findFirst()
+                .orElseThrow()
+                .getTotalCount())
+        .isEqualTo(2);
+    String output = System.getenv("HERMES_TEST_EVIDENCE_DIR");
+    if (output != null) {
+      Files.createDirectories(Path.of(output));
+      Files.writeString(Path.of(output, "mira-monitor.json"), json.writeValueAsString(monitored));
+      Files.writeString(
+          Path.of(output, "mira-funnel.json"), json.writeValueAsString(funnel.summarize(91L)));
+    }
+    experiment.setFollowUpActionUrl("https://conventional.example.test/flows/sales");
+    assertThat(reader.hasPdeSurface(experiment)).isFalse();
+  }
+
+  /**
+   * Uma superfície de outro produto é reconhecida, mas sua leitura bloqueia em vez de cair em Vega.
+   */
+  @Test
+  void lowTicketPdeSurfaceRejectsAnotherProduct() {
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    experiment.setProduct(Product.builder().id(10L).slug("mira").build());
+    assertThat(reader.hasPdeSurface(experiment)).isTrue();
+    assertThatThrownBy(() -> reader.read(experiment)).hasMessage("PDE_ANALYTICS_PRODUCT_MISMATCH");
+    assertThat(monitor().pde().available()).isFalse();
+  }
+
+  /**
+   * Mantém vendas deduplicadas e receita líquida na superfície low-ticket, bloqueando valor sem
+   * conciliação.
+   */
+  @Test
+  void lowTicketSalesRequireReconciledPaymentAndSubtractRefunds() {
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    String purchase =
+        "{\"paymentId\":\"synthetic-mira-payment\",\"amountBrl\":49,\"currency\":\"BRL\"}";
+    for (int i = 0; i < 2; i++)
+      add(
+          "musa",
+          "musa-v7",
+          "120251556536430326",
+          "HUMAN",
+          "PURCHASE_COMPLETED",
+          "paid-session",
+          purchase);
+    var funnel = lowTicketFunnel();
+    assertThat(funnel.approvedRevenue(91L)).isEqualByComparingTo("49.00");
+    assertThat(
+            funnel.summarize(91L).stream()
+                .filter(
+                    stage ->
+                        stage.getStage()
+                            == com.marketinghub.experiment.funnel.ExperimentFunnelStage.COMPRA)
+                .findFirst()
+                .orElseThrow()
+                .getTotalCount())
+        .isEqualTo(1);
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "REFUND_CONFIRMED",
+        "paid-session",
+        purchase);
+    assertThat(funnel.approvedRevenue(91L)).isEqualByComparingTo("0.00");
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "PURCHASE_COMPLETED",
+        "unreconciled",
+        "{}");
+    assertThatThrownBy(() -> funnel.approvedRevenue(91L))
+        .hasMessage("PDE_FINANCIAL_OUTCOMES_NOT_RECONCILED");
+  }
+
+  /**
+   * Conecta o funil completo ao leitor SQL real, mantendo somente integrações externas simuladas.
+   */
+  private ExperimentFunnelService lowTicketFunnel() {
+    return new ExperimentFunnelService(
+        experiments,
+        mock(
+            com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository
+                .class),
+        mock(
+            com.marketinghub.repository.jpa.experiment.funnel
+                .ExperimentLandingAnalyticsEventRepository.class),
+        mock(com.marketinghub.repository.jpa.core.LeadRepository.class),
+        mock(JdbcTemplate.class),
+        mock(com.marketinghub.experiment.funnel.ExperimentFunnelStandbyService.class),
+        mock(PdeAnalyticsClient.class),
+        mock(com.marketinghub.experiment.funnel.InternalAnalyticsTrafficFilter.class),
+        slots,
+        reader);
+  }
+
   /** Retorna 404 para experimento inexistente, sem convertê-lo em analytics vazios. */
   @Test
   void rejectsUnknownExperiment() throws Exception {

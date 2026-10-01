@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-01-facebook-metrics-settlement-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE facebook_ads_campaign ADD COLUMN metrics_settlement_started_at DATETIME(6) NULL;
+              UPDATE facebook_ads_campaign c
+              JOIN experiment e ON e.id = c.experiment_id
+              SET c.metrics_settlement_started_at = c.metrics_final_synced_at,
+                  c.metrics_final_synced_at = NULL
+              WHERE e.status IN ('PAUSED', 'STANDBY', 'USER_STOPPED', 'VALIDATED', 'INVALIDATED', 'INCONCLUSIVE', 'FINISHED', 'FAILED')
+                AND c.metrics_final_synced_at >= UTC_TIMESTAMP(6) - INTERVAL 48 HOUR;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE facebook_ads_campaign SET metrics_final_synced_at = metrics_last_synced_at
+              WHERE metrics_settlement_started_at IS NOT NULL AND metrics_final_synced_at IS NULL;
+              ALTER TABLE facebook_ads_campaign DROP COLUMN metrics_settlement_started_at;

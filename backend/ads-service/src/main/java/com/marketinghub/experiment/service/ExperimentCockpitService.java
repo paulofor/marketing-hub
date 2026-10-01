@@ -232,8 +232,9 @@ public class ExperimentCockpitService {
   /** Mede visitantes e vendas líquidas da mesma coorte humana atribuída. */
   private ExperimentSampleDecisionService.SampleMeasurement measureHumanVisitors(
       Experiment experiment, ExperimentLandingAnalyticsDto analytics) {
-    if (sampleDecisionService.isApplicable(experiment)
-        && experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL) {
+    if ((sampleDecisionService.isApplicable(experiment)
+            && experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+        || pdeExperimentAnalyticsReader.hasPdeSurface(experiment)) {
       try {
         var summary = pdeExperimentAnalyticsReader.read(experiment);
         if (summary == null) {

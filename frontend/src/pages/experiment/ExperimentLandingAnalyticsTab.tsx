@@ -157,18 +157,37 @@ export default function ExperimentLandingAnalyticsTab({
   experimentId,
   experimentType,
 }: ExperimentLandingAnalyticsTabProps) {
-  const isPdeExperiment =
-    experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
-  const { data, isLoading, isError } = useExperimentLandingAnalytics(
-    isPdeExperiment ? undefined : experimentId,
-  );
+  const isMembership = experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+  const isLowTicket = experimentType === "LOW_TICKET_PRODUCT";
   const pdeMonitorQuery = usePostDeployMonitor(
-    isPdeExperiment ? experimentId : undefined,
+    isMembership || isLowTicket ? experimentId : undefined,
+  );
+  const isPdeExperiment =
+    isMembership || pdeMonitorQuery.data?.pdeSurface === true;
+  const resolvingSurface = isLowTicket && pdeMonitorQuery.isLoading;
+  const { data, isLoading, isError } = useExperimentLandingAnalytics(
+    isPdeExperiment ||
+      resolvingSurface ||
+      (isLowTicket && pdeMonitorQuery.isError)
+      ? undefined
+      : experimentId,
   );
   const { data: persuasiveJourney } = usePdePersuasiveJourney(
-    "metodo-musa-7-dias",
-    !isPdeExperiment,
+    pdeMonitorQuery.data?.productSlug || "metodo-musa-7-dias",
+    !isPdeExperiment &&
+      !resolvingSurface &&
+      !(isLowTicket && pdeMonitorQuery.isError),
   );
+
+  if (resolvingSurface)
+    return <p>Carregando fonte de analytics do experimento...</p>;
+  if (isLowTicket && pdeMonitorQuery.isError)
+    return (
+      <div className="alert alert-danger">
+        Não foi possível identificar a fonte de analytics deste experimento.
+        Tente atualizar o relatório.
+      </div>
+    );
 
   if (isPdeExperiment) {
     const monitor = pdeMonitorQuery.data;
@@ -186,7 +205,7 @@ export default function ExperimentLandingAnalyticsTab({
         label: "Sessões PDE",
         value: pde?.sessions ?? 0,
         icon: Users,
-        hint: "Sessões reais capturadas no Clube MUSA.",
+        hint: "Sessões humanas atribuídas ao produto e à versão deste experimento.",
       },
       {
         label: "Page views PDE",
@@ -226,6 +245,16 @@ export default function ExperimentLandingAnalyticsTab({
       );
     }
 
+    if (!pde.available) {
+      return (
+        <div className="alert alert-danger mt-3" role="alert">
+          Analytics PDE indisponível:{" "}
+          {pde.errorMessage ||
+            "corrija a medição antes de interpretar o resultado."}
+        </div>
+      );
+    }
+
     return (
       <div className="d-flex flex-column gap-3 mt-3">
         <div className="creative-toolbar align-items-start">
@@ -234,8 +263,9 @@ export default function ExperimentLandingAnalyticsTab({
               <Activity size={18} /> Analytics do PDE atual
             </h5>
             <p className="text-muted small mb-0">
-              Dados atribuídos a este experimento no Clube MUSA. Recortes sem
-              identificação de campanha ou criativo ficam fora desta leitura.
+              Dados atribuídos ao produto e à versão deste experimento. Recortes
+              sem identificação de campanha ou criativo ficam fora desta
+              leitura.
             </p>
           </div>
           <span className="badge text-bg-light border d-inline-flex align-items-center gap-1">

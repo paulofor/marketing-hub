@@ -4,6 +4,8 @@ import {
   BarChart3,
   CheckCircle2,
   DollarSign,
+  Eye,
+  Users,
   Lightbulb,
   MousePointerClick,
   ShoppingCart,
@@ -63,7 +65,10 @@ function progressPercent(value: number, target: number) {
 }
 
 function sampleStatusClass(status: string) {
-  if (status === "INITIAL_TARGET_REACHED" || status === "PRECISION_TARGET_REACHED") {
+  if (
+    status === "INITIAL_TARGET_REACHED" ||
+    status === "PRECISION_TARGET_REACHED"
+  ) {
     return "success";
   }
   if (
@@ -234,6 +239,18 @@ export default function ExperimentCockpitPage() {
 
       <section className="row g-3">
         <MetricCard
+          icon={<Users size={20} />}
+          label="Visitantes humanos"
+          value={formatNumber(scoreboard.humanVisitors)}
+          tone="secondary"
+        />
+        <MetricCard
+          icon={<Eye size={20} />}
+          label="Pageviews"
+          value={formatNumber(scoreboard.pageViews)}
+          tone="secondary"
+        />
+        <MetricCard
           icon={<MousePointerClick size={20} />}
           label="Impressões"
           value={formatNumber(scoreboard.impressions)}
@@ -376,7 +393,9 @@ function SampleDecisionPanel({
           <p className="text-muted small mb-0">{decision.explanation}</p>
         </div>
         {decision.projectionConfidence === "PRELIMINARY" ? (
-          <span className="badge text-bg-light border">Projeção preliminar</span>
+          <span className="badge text-bg-light border">
+            Projeção preliminar
+          </span>
         ) : null}
       </div>
 
@@ -406,14 +425,19 @@ function SampleDecisionPanel({
           <div className="bg-light rounded-2 p-3 h-100">
             <div className="fw-semibold mb-2">Leitura estatística</div>
             <div>
-              Conversão observada: {formatPercent(decision.observedPurchaseRatePercent)}
+              Conversão observada:{" "}
+              {formatPercent(decision.observedPurchaseRatePercent)}
             </div>
             <div>
-              Intervalo de 95%: {hasInterval ? `${formatPercent(decision.confidenceLower95Percent)} a ${formatPercent(decision.confidenceUpper95Percent)}` : "—"}
+              Intervalo de 95%:{" "}
+              {hasInterval
+                ? `${formatPercent(decision.confidenceLower95Percent)} a ${formatPercent(decision.confidenceUpper95Percent)}`
+                : "—"}
             </div>
             {decision.zeroPurchaseUpper95Percent != null ? (
               <div>
-                Limite superior com zero compras: {formatPercent(decision.zeroPurchaseUpper95Percent)}
+                Limite superior com zero compras:{" "}
+                {formatPercent(decision.zeroPurchaseUpper95Percent)}
               </div>
             ) : null}
           </div>
@@ -422,16 +446,21 @@ function SampleDecisionPanel({
           <div className="bg-light rounded-2 p-3 h-100">
             <div className="fw-semibold mb-2">Proteção financeira separada</div>
             <div>
-              Custo observado por visitante: {formatCurrency(decision.estimatedCostPerHumanVisitor)}
+              Custo observado por visitante:{" "}
+              {formatCurrency(decision.estimatedCostPerHumanVisitor)}
             </div>
             <div>
-              Projeção até a primeira decisão: {formatCurrency(decision.projectedSpendForInitialTarget)}
+              Projeção até a primeira decisão:{" "}
+              {formatCurrency(decision.projectedSpendForInitialTarget)}
             </div>
             <div>
-              Parada automática sem resultado primário: {formatCurrency(decision.zeroPrimaryResultStopSpend)}
+              Parada automática sem resultado primário:{" "}
+              {formatCurrency(decision.zeroPrimaryResultStopSpend)}
             </div>
             <div>Teto atual: {formatCurrency(decision.mediaSpendLimit)}</div>
-            <p className="text-muted mb-0 mt-2">{decision.financialGuardrail}</p>
+            <p className="text-muted mb-0 mt-2">
+              {decision.financialGuardrail}
+            </p>
           </div>
         </div>
       </div>

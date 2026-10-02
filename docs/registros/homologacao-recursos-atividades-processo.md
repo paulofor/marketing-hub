@@ -1,5 +1,22 @@
 # Matriz de homologação — recursos especializados por atividade
 
+## 02/10/2026 — número do processo na ficha do produto
+
+Mira/produto 10, cadeia 24, definição 58: o título deve mostrar **Processo 5.4 —
+Homologação técnica de experimento**. O resolvedor agora entrega a posição da
+cadeia também sem ciclo comercial, usa a topologia causal existente e mantém a
+adesão Opala histórica isolada. A interface já apresentava esse contrato.
+
+Na mesma tela, a falta de plano governante era convertida em pendência, mas a
+avaliação transacional marcava rollback e derrubava a consulta com HTTP 500.
+A leitura preserva o bloqueio sem invalidar a transação; execução e gasto
+continuam recusados. A regressão usa proxy Spring e transação H2 reais.
+
+Passaram 64 testes relacionados do backend, 19 da ficha, typecheck, build e
+verificação visual em desktop e emulação de iPhone/Pixel. Os testes usaram
+fixtures segregadas, sem campanha ou comando produtivo. Causas, alternativas e
+matriz: [título e posição da cadeia](../homologacao/titulo-processo-posicao-cadeia.md).
+
 | Área | Cenários obrigatórios | Critério de aceite |
 | --- | --- | --- |
 | Caminho feliz | atividade comum; atividade com `themis-image-studio` | versão salva e recurso oficial visível no diagrama |

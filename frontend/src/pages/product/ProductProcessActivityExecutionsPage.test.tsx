@@ -599,6 +599,46 @@ describe("ProductProcessActivityExecutionsPage", () => {
     expect(axios.post).not.toHaveBeenCalled();
   });
 
+  it("mostra o número do subprocesso informado pelo backend mesmo sem ciclo", async () => {
+    vi.mocked(axios.get).mockImplementation(async (url) => ({
+      data: String(url).includes("value-chain-positions")
+        ? null
+        : String(url).includes("execution-progress")
+          ? []
+          : {
+              ...history,
+              productId: 10,
+              productName: "Mira · sua rotina organizada",
+              productInternalName: "Mira",
+              selectedProcessDefinitionId: 58,
+              processCode: "experiment-homologation-activation",
+              processName: "Homologação técnica de experimento",
+              selectedProcessVersionNumber: 5,
+              currentExecutionReference: "experiment:93",
+              chainPosition: {
+                sequenceLabel: "5.4",
+                parentProcessCode: "pde-commercial-homologation-activation",
+                parentProcessName: "Homologação e ativação comercial do PDE",
+              },
+            },
+    }));
+    renderPage(
+      "/products/10/value-chain-history/processes/58/activities?chainId=24",
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Mira · Processo 5.4 — Homologação técnica de experimento",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/processo v5 · PUBLISHED/)).toBeInTheDocument();
+    expect(axios.get).toHaveBeenCalledWith(
+      "/api/business-processes/58/products/10/activity-executions?chainId=24",
+      expect.anything(),
+    );
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
   it("shows product activities and tasks without duplicating the summary", async () => {
     vi.mocked(axios.get).mockResolvedValue({ data: history });
 

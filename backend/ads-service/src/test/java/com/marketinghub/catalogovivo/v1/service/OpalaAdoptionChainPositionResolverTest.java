@@ -14,11 +14,14 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 /**
- * Responsabilidade: impedir que a posição global do produto oculte a posição comercial da
- * preparação Opala adotada no ciclo.
+ * Responsabilidade: comprovar a posição da cadeia consultada, com ou sem ciclo, preservando a
+ * preparação Opala histórica.
  */
 class OpalaAdoptionChainPositionResolverTest {
   /** Expõe 5.2 somente quando a adesão e a cadeia histórica são comprovadamente as mesmas. */
@@ -84,9 +87,11 @@ class OpalaAdoptionChainPositionResolverTest {
     assertThat(resolver.resolve(4L, 78L, "opala-commercial-preparation-v1", 2L, 14L)).isEmpty();
   }
 
-  /** Expõe 5.1 quando a cadeia nova chama a versão Opala pela rota tipada do Processo 5. */
-  @Test
-  void resolvesProcessFivePointOneFromTypedRoute() {
+  /** Expõe 5.1 pela rota tipada do Processo 5, inclusive sem ciclo comercial associado. */
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(longs = {3})
+  void resolvesProcessFivePointOneFromTypedRoute(Long cycleId) {
     var adoptions = Mockito.mock(OpalaAdoptionRepository.class);
     var chains = Mockito.mock(BusinessProcessChainDefinitionRepository.class);
     var processes = Mockito.mock(BusinessProcessDefinitionRepository.class);
@@ -111,7 +116,7 @@ class OpalaAdoptionChainPositionResolverTest {
     chain.setItems(List.of(item));
     when(chains.findById(16L)).thenReturn(Optional.of(chain));
 
-    assertThat(resolver.resolve(4L, 77L, "opala-commercial-preparation-v1", 3L, 16L))
+    assertThat(resolver.resolve(4L, 77L, "opala-commercial-preparation-v1", cycleId, 16L))
         .hasValueSatisfying(
             position -> {
               assertThat(position.sequenceLabel()).isEqualTo("5.1");
@@ -120,9 +125,11 @@ class OpalaAdoptionChainPositionResolverTest {
             });
   }
 
-  /** Numera a homologação técnica como 5.4 pela atividade real, não como segundo subprocesso. */
-  @Test
-  void resolvesTechnicalHomologationAtProcessFivePointFour() {
+  /** Numera a homologação técnica como 5.4 pela atividade real, sem exigir ciclo comercial. */
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(longs = {3})
+  void resolvesTechnicalHomologationAtProcessFivePointFour(Long cycleId) {
     var adoptions = Mockito.mock(OpalaAdoptionRepository.class);
     var chains = Mockito.mock(BusinessProcessChainDefinitionRepository.class);
     var processes = Mockito.mock(BusinessProcessDefinitionRepository.class);
@@ -147,7 +154,65 @@ class OpalaAdoptionChainPositionResolverTest {
     chain.setItems(List.of(item));
     when(chains.findById(16L)).thenReturn(Optional.of(chain));
 
-    assertThat(resolver.resolve(4L, 88L, "experiment-homologation-activation", 3L, 16L))
+    assertThat(resolver.resolve(4L, 88L, "experiment-homologation-activation", cycleId, 16L))
         .hasValueSatisfying(position -> assertThat(position.sequenceLabel()).isEqualTo("5.4"));
+  }
+
+  /** Preserva 5.4 quando os nós estão embaralhados e há retorno de retrabalho no grafo. */
+  @Test
+  void resolvesTechnicalHomologationByCausalOrder() {
+    var adoptions = Mockito.mock(OpalaAdoptionRepository.class);
+    var chains = Mockito.mock(BusinessProcessChainDefinitionRepository.class);
+    var processes = Mockito.mock(BusinessProcessDefinitionRepository.class);
+    var resolver =
+        new OpalaAdoptionChainPositionResolver(
+            adoptions, chains, processes, new com.fasterxml.jackson.databind.ObjectMapper());
+    var child = new BusinessProcessDefinition();
+    child.setId(58L);
+    child.setProcessCode("experiment-homologation-activation");
+    child.setVersionNumber(5);
+    when(processes.findById(58L)).thenReturn(Optional.of(child));
+    var parent = new BusinessProcessDefinition();
+    parent.setId(96L);
+    parent.setProcessCode("pde-commercial-homologation-activation");
+    parent.setName("Homologação e ativação comercial");
+    parent.setDiagramJson(
+        """
+        {"nodes":[
+          {"id":"preflight","type":"TASK","subprocessCode":"experiment-homologation-activation"},
+          {"id":"integrity","type":"TASK"},
+          {"id":"preparation","type":"TASK"},
+          {"id":"experience","type":"TASK"},
+          {"id":"start","type":"START"}
+        ],"flows":[
+          {"from":"start","to":"preparation"},
+          {"from":"preparation","to":"experience"},
+          {"from":"experience","to":"integrity"},
+          {"from":"integrity","to":"preflight"},
+          {"from":"preflight","to":"preparation","kind":"REWORK"}
+        ]}
+        """);
+    var item = new BusinessProcessChainItem();
+    item.setSequenceNumber(5);
+    item.setProcessDefinition(parent);
+    var chain = new BusinessProcessChainDefinition();
+    chain.setItems(List.of(item));
+    when(chains.findById(24L)).thenReturn(Optional.of(chain));
+
+    assertThat(resolver.resolve(10L, 58L, "experiment-homologation-activation", null, 24L))
+        .hasValueSatisfying(position -> assertThat(position.sequenceLabel()).isEqualTo("5.4"));
+    Mockito.verifyNoInteractions(adoptions);
+  }
+
+  /** Não inventa numeração quando a consulta não identifica sua cadeia. */
+  @Test
+  void doesNotInferPositionWithoutChain() {
+    var adoptions = Mockito.mock(OpalaAdoptionRepository.class);
+    var chains = Mockito.mock(BusinessProcessChainDefinitionRepository.class);
+    var resolver = new OpalaAdoptionChainPositionResolver(adoptions, chains);
+
+    assertThat(resolver.resolve(10L, 58L, "experiment-homologation-activation", null, null))
+        .isEmpty();
+    Mockito.verifyNoInteractions(adoptions, chains);
   }
 }

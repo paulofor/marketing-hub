@@ -126,8 +126,11 @@ public class ExperimentTechnicalPreflightEvidenceService {
     this.clock = clock;
   }
 
-  /** Valida a fonte correspondente à atividade e devolve uma prova funcional imutável. */
-  @Transactional(readOnly = true)
+  /**
+   * Valida a fonte e devolve sua prova imutável; pendências funcionais não invalidam a transação de
+   * leitura que apresenta o bloqueio, e continuam impedindo a execução.
+   */
+  @Transactional(readOnly = true, noRollbackFor = IllegalStateException.class)
   public Evidence evaluate(String activityId, Product product, String sourceReference) {
     require(ACTIVITIES.contains(activityId), "Atividade técnica desconhecida.");
     Experiment experiment = referencedExperiment(product, sourceReference);

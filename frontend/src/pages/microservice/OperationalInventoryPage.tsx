@@ -10,13 +10,13 @@ function triggerLabel(mode?: string | null) {
   return mode === "manual" ? "Manual" : "Automático";
 }
 
-function formatMemory(value?: number | null) {
-  return value === undefined || value === null ? "-" : `${value} GB`;
+function formatCapacity(value?: number | null, unit = "GB") {
+  return value === undefined || value === null ? "-" : `${value} ${unit}`;
 }
 
 function formatMoney(value?: number | null) {
   if (value === undefined || value === null) {
-    return "-";
+    return "Não informado";
   }
   return value.toLocaleString("pt-BR", {
     style: "currency",
@@ -30,6 +30,16 @@ export default function OperationalInventoryPage() {
   const services = data?.services ?? [];
   const deployments = data?.deployments ?? [];
   const hosts = data?.hosts ?? [];
+  const pricedHosts = hosts.filter(
+    (host) =>
+      typeof host.monthlyCostBrl === "number" &&
+      Number.isFinite(host.monthlyCostBrl),
+  );
+  const monthlySubtotal =
+    pricedHosts.reduce(
+      (total, host) => total + Math.round(host.monthlyCostBrl! * 100),
+      0,
+    ) / 100;
 
   const duplicatedPorts = new Set(
     services
@@ -51,9 +61,10 @@ export default function OperationalInventoryPage() {
         <div>
           <PageTitle>Inventário VPS</PageTitle>
           <p className="text-body-secondary mb-0">
-            Mapa versionado de portas, hosts, provedores, capacidade, custos e
-            referências de chaves de deploy para reduzir falhas de publicação
-            por conflito de infraestrutura.
+            Cadastro de hosts, capacidade e custos com evidências. As portas
+            descrevem a configuração versionada; containers ativos e consumo
+            atual precisam de uma consulta operacional. Atualizar recarrega o
+            cadastro, sem consultar os VPS.
           </p>
         </div>
         <div className="d-flex gap-2">
@@ -77,6 +88,24 @@ export default function OperationalInventoryPage() {
         </div>
       ) : null}
 
+      <section className="alert alert-light border" aria-label="Custos de VPS">
+        <strong>
+          {pricedHosts.length === 0
+            ? "Custo mensal não informado"
+            : `${pricedHosts.length === hosts.length ? "Custo mensal cadastrado" : "Subtotal mensal conhecido"}: ${formatMoney(monthlySubtotal)}`}
+        </strong>
+        <div>
+          {pricedHosts.length} de {hosts.length} hosts com custo informado.
+          {pricedHosts.length < hosts.length
+            ? " O custo total permanece desconhecido."
+            : ""}
+        </div>
+        <small>
+          Valores mensais equivalentes; ciclos de cobrança e evidências constam
+          no cadastro de cada host.
+        </small>
+      </section>
+
       <section className="mb-4">
         <div className="d-flex align-items-center justify-content-between mb-2">
           <h2 className="h5 mb-0">Hosts VPS</h2>
@@ -89,8 +118,8 @@ export default function OperationalInventoryPage() {
                 <th>Host</th>
                 <th>Provedor</th>
                 <th>CPU</th>
-                <th>Memória</th>
-                <th>Disco</th>
+                <th>Memória aproximada</th>
+                <th>Disco raiz</th>
                 <th>Sistema</th>
                 <th>Custo mensal</th>
                 <th>Evidência</th>
@@ -110,8 +139,8 @@ export default function OperationalInventoryPage() {
                     ) : null}
                   </td>
                   <td>{formatValue(host.cpu)}</td>
-                  <td>{formatMemory(host.memoryGb)}</td>
-                  <td>{formatMemory(host.diskGb)}</td>
+                  <td>{formatCapacity(host.memoryGb)}</td>
+                  <td>{formatCapacity(host.diskGb, "GiB")}</td>
                   <td>{formatValue(host.operatingSystem)}</td>
                   <td>
                     <div>{formatMoney(host.monthlyCostBrl)}</div>
@@ -156,7 +185,7 @@ export default function OperationalInventoryPage() {
 
       <section className="mb-4">
         <div className="d-flex align-items-center justify-content-between mb-2">
-          <h2 className="h5 mb-0">Portas publicadas</h2>
+          <h2 className="h5 mb-0">Portas previstas no Compose</h2>
           <span className="badge text-bg-light">
             {services.length} serviços
           </span>
@@ -197,7 +226,7 @@ export default function OperationalInventoryPage() {
               {services.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center text-muted">
-                    Nenhum serviço encontrado no docker-compose configurado.
+                    Nenhum serviço definido na fonte Compose do inventário.
                   </td>
                 </tr>
               ) : null}

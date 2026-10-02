@@ -107,6 +107,13 @@ export default function EditVpsHostInventoryPage() {
         <div className="alert alert-warning">{formError}</div>
       ) : null}
 
+      {update.isError ? (
+        <div className="alert alert-danger" role="alert">
+          Não foi possível salvar o cadastro do VPS. Os dados continuam no
+          formulário; tente novamente.
+        </div>
+      ) : null}
+
       <div className="row g-3">
         <div className="col-12">
           <h2 className="h5 mb-0">Identificação</h2>
@@ -160,7 +167,7 @@ export default function EditVpsHostInventoryPage() {
         </div>
         <div className="col-md-4">
           <label className="form-label" htmlFor="vps-memory-gb">
-            Memória GB
+            Memória aproximada GB
           </label>
           <input
             id="vps-memory-gb"
@@ -179,7 +186,7 @@ export default function EditVpsHostInventoryPage() {
         </div>
         <div className="col-md-4">
           <label className="form-label" htmlFor="vps-disk-gb">
-            Disco GB
+            Disco raiz GiB
           </label>
           <input
             id="vps-disk-gb"
@@ -227,6 +234,11 @@ export default function EditVpsHostInventoryPage() {
               })
             }
           />
+          <div className="form-text">
+            Informe o valor contratado, com fatura ou contrato na evidência.
+            Preços públicos para comparação ficam na evidência de custo;
+            cobrança desconhecida deve permanecer em branco.
+          </div>
         </div>
         <div className="col-12">
           <label className="form-label" htmlFor="vps-provider-evidence">

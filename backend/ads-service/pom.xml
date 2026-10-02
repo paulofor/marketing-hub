@@ -139,6 +139,14 @@
         <directory>${project.basedir}/src/main/resources</directory>
       </resource>
       <resource>
+        <targetPath>operational-inventory</targetPath>
+        <filtering>false</filtering>
+        <directory>${project.basedir}/../..</directory>
+        <includes>
+          <include>deploy/docker-compose.yml</include>
+        </includes>
+      </resource>
+      <resource>
         <targetPath>agent-behavior-files</targetPath>
         <filtering>false</filtering>
         <directory>${project.basedir}/../..</directory>

@@ -88,6 +88,8 @@ export type ExperimentRunPreflight = {
   runStatus: ExperimentRunStatus;
   hasBlockers: boolean;
   requiredLandingEvidenceReference?: string | null;
+  currentEvidenceBlockReason?: string | null;
+  canRenewTechnicalHomologation?: boolean;
   gates: ExperimentRunGateResult[];
 };
 
@@ -164,6 +166,30 @@ export function useRunExperimentPreflight(experimentId?: string | number) {
         }),
         queryClient.invalidateQueries({
           queryKey: experimentRunPreflightQueryKey(preflight.runId),
+        }),
+        queryClient.invalidateQueries({ queryKey: ["products"] }),
+      ]);
+    },
+  });
+}
+
+export function useRenewTechnicalHomologation(experimentId?: string | number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (runId: number) => {
+      const { data } = await axios.post<ExperimentRunPreflight>(
+        `/api/experiment-runs/${runId}/technical-homologation-renewal`,
+      );
+      return data;
+    },
+    onSuccess: async (preflight) => {
+      queryClient.setQueryData(
+        experimentRunPreflightQueryKey(preflight.runId),
+        preflight,
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: experimentRunsQueryKey(experimentId),
         }),
         queryClient.invalidateQueries({ queryKey: ["products"] }),
       ]);

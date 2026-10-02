@@ -69,6 +69,15 @@ de IA: deve cobrir a entrega contratada, inclusive o uso posterior, e os custos 
 
 ### Reavaliação e proteção sem desperdício
 
+Na homologação técnica de Quartzo/Safira com mídia, o teto do experimento deve
+caber tanto no plano comercial governante quanto em `recommendedCycleLimitBrl`
+do parecer vigente de Plutus. Teto analítico ausente/não positivo ou menor que o
+limite persistido gera bloqueio com causa e ação. A verificação não reduz o
+orçamento automaticamente nem transforma parecer em autorização de gasto.
+Caso confirmado em 02/10/2026: experimento #88 preservava R$ 125, mas o parecer
+#62 da revisão financeira #9 limita a análise a R$ 100. A tentativa histórica,
+a janela encerrada e o resultado comercial permanecem preservados.
+
 Mudanças materiais de preço, modelo/provedor/tarifa, resolução, duração, quantidade, quota,
 retries, oferta ou padrão observado de consumo exigem nova análise da economia afetada antes de
 novos compromissos ou escala. Plutus registra o motivo, versão/snapshot, fontes, limites, prazo e

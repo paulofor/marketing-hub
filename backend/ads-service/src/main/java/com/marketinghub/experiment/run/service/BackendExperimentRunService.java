@@ -128,6 +128,48 @@ public class BackendExperimentRunService {
     return toResponse(savedRun);
   }
 
+  /** Renova prova vencida em outra tentativa; repetições retornam a mesma renovação sem gasto. */
+  @Transactional
+  public ExperimentRunPreflightResponse renewTechnicalHomologation(Long runId) {
+    ExperimentRun previous =
+        experimentRunRepository
+            .findForTechnicalHomologationRenewal(runId)
+            .orElseThrow(
+                () ->
+                    new EntityNotFoundException(
+                        "Run de experimento %d não encontrado".formatted(runId)));
+    String renewalSource = "technical-homologation-renewal:" + runId;
+    if (previous.getMode() != ExperimentRunMode.PRODUCTION) {
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.CONFLICT,
+          "Somente uma homologação produtiva registrada pode receber renovação técnica.");
+    }
+    ExperimentRun latest =
+        experimentRunRepository
+            .findTopByExperimentIdAndModeOrderByRunNumberDesc(
+                previous.getExperiment().getId(), ExperimentRunMode.PRODUCTION)
+            .orElseThrow();
+    if (!latest.getId().equals(runId)) {
+      if (renewalSource.equals(latest.getCreatedBy())) return getPreflight(latest.getId());
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.CONFLICT,
+          "Existe uma tentativa mais recente. Atualize o painel antes de renovar a homologação técnica.");
+    }
+    var priorGates =
+        gateResultRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(runId);
+    if (!toPreflightResponse(previous, priorGates).canRenewTechnicalHomologation()) {
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.CONFLICT,
+          "A renovação exige uma tentativa produtiva homologada, evidência vencida e publicação atual identificada; nenhuma campanha ou gasto será autorizado.");
+    }
+    var created =
+        create(
+            previous.getExperiment().getId(),
+            new CreateExperimentRunRequest(
+                ExperimentRunMode.PRODUCTION, ExperimentRunStopPolicy.MANUAL_ONLY, renewalSource));
+    return runPreflight(created.id());
+  }
+
   /** Lista todos os runs de um experimento na ordem em que foram criados. */
   @Transactional(readOnly = true)
   public List<ExperimentRunResponse> listByExperiment(Long experimentId) {
@@ -564,16 +606,46 @@ public class BackendExperimentRunService {
     return !normalized.equals("teste") && !normalized.equals("test") && !normalized.equals("n/a");
   }
 
-  /** Converte os gates persistidos em contrato de preflight para o frontend. */
+  /** Expõe gates históricos e bloqueia sua reutilização quando a identidade atual divergir. */
   private ExperimentRunPreflightResponse toPreflightResponse(
       ExperimentRun run, List<ExperimentRunGateResult> gates) {
-    boolean hasBlockers = gates.stream().anyMatch(gate -> !isApprovedGateStatus(gate.getStatus()));
+    String requiredReference = requiredLandingEvidenceReference(run);
+    String currentEvidenceBlockReason = currentEvidenceBlockReason(run, requiredReference);
+    boolean hasBlockers =
+        currentEvidenceBlockReason != null
+            || gates.stream().anyMatch(gate -> !isApprovedGateStatus(gate.getStatus()));
     return new ExperimentRunPreflightResponse(
         run.getId(),
         run.getStatus(),
         hasBlockers,
-        requiredLandingEvidenceReference(run),
+        requiredReference,
+        currentEvidenceBlockReason,
+        run.getMode() == ExperimentRunMode.PRODUCTION
+            && requiredReference != null
+            && !requiredReference.isBlank()
+            && currentEvidenceBlockReason != null
+            && !gates.isEmpty()
+            && gates.stream().allMatch(gate -> isApprovedGateStatus(gate.getStatus())),
         gates.stream().map(this::toGateResponse).toList());
+  }
+
+  /** Confere vigência sem sobrescrever provas, reabrir o experimento ou autorizar gasto. */
+  private String currentEvidenceBlockReason(ExperimentRun run, String requiredReference) {
+    boolean quartzo = quartzoEvidenceScope != null && quartzoEvidenceScope.applies(run);
+    boolean safira = safiraEvidenceScope != null && safiraEvidenceScope.applies(run);
+    if (!quartzo && !safira) return null;
+    if (requiredReference == null || requiredReference.isBlank()) {
+      return "A publicação atual não possui identidade verificável. Comprove a publicação antes"
+          + " de homologar; nenhuma revisão paga ou ativação foi autorizada.";
+    }
+    boolean current =
+        (!quartzo || quartzoEvidenceScope.hasCurrentEvidence(run))
+            && (!safira || safiraEvidenceScope.hasCurrentEvidence(run));
+    return current
+        ? null
+        : "A evidência técnica deste run não corresponde à publicação e ao contrato atuais."
+            + " Homologue a versão atual em uma nova tentativa, preservando os gates históricos;"
+            + " isso não reativa a campanha nem autoriza gasto.";
   }
 
   /** Expõe ao operador a identidade imutável exigida para homologar a landing atual. */

@@ -1,5 +1,34 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-PREFLIGHT-LEITURA-APROVADA-COM-EVIDENCIA-VENCIDA — 02/10/2026
+
+- **Evidência:** execução #37, Capella #7, `experiment:88`, cadeia #25,
+  definição #109 v6. O executor bloqueava a publicação #31 antiga, mas o GET
+  de preflight do run #12 retornava `hasBlockers=false`; a publicação #32
+  possui outro hash e fingerprint e está servida com identidade de origem correta.
+- **Causa confirmada:** a leitura agregava apenas os status históricos dos gates,
+  sem reutilizar os validadores de vigência já empregados pelo executor.
+- **Correção:** a consulta verifica Quartzo/Safira e expõe a causa em
+  `currentEvidenceBlockReason`. Gates e status anteriores permanecem íntegros;
+  a tela apresenta o bloqueio em painel completo e compacto. Não reativa mídia.
+- **Prevenção:** casos de prova antiga, atual, identidade ausente, Safira,
+  outros tipos e gate funcional reprovado; leitura sem escrita e UI sem inferência.
+  Matriz: [execução #37](../homologacao/capella37-publicacao-vigente-v1.md).
+
+## LOOP-PREFLIGHT-TETO-IGNORA-PARECER-VIGENTE — 02/10/2026
+
+- **Evidência:** experimento #88 com teto R$ 125; plano comercial #2 com
+  máximo R$ 400; revisão financeira #9 e Plutus #62 vigentes, com limite R$ 100.
+- **Causa:** `financialGuardrails` validava somente o máximo do plano e a
+  aprovação econômica. O limite estruturado do parecer não era comparado ao
+  teto persistido, embora já integrasse o contrato e os critérios de parada.
+- **Correção:** comparar ambos os limites no preflight Quartzo/Safira com mídia.
+  Ausência/não positivo ou teto superior bloqueiam antes de gravar aprovação.
+  Não altera orçamento, janela, estado comercial ou autorização por inferência.
+- **Prevenção:** diferentes produtos/experimentos sintéticos com conflito,
+  igualdade/limite menor, teto ausente e preservação dos valores anteriores.
+  Matriz: [execução #37](../homologacao/capella37-publicacao-vigente-v1.md).
+
 ## LOOP-IRIS-CONTRATO-AUSENTE-DERRUBA-FICHA — 01/10/2026
 
 - **Evidência confirmada:** a consulta do Processo 4 de Alcyone retornou HTTP 500 mesmo com o
@@ -8522,3 +8551,18 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
 - **Homologação:** `docs/homologacao/agentes-codex-gpt61-v1.md`. A restauração produtiva ocorre
   exclusivamente pelo PR e pipeline; um modelo configurado e um marcador escrito à mão não
   substituem a comprovação do runtime publicado.
+
+### LOOP-PREFLIGHT-RENOVACAO-INACESSIVEL — 02/10/2026
+
+- **Sintoma:** o relatório manda homologar outra tentativa, mas o painel esconde
+  criação/preflight para experimentos já publicados, inclusive #88 invalidado.
+- **Causa confirmada:** a proteção válida contra história retroativa também
+  atingia uma aprovação existente que ficou vencida; faltava comando específico.
+- **Fechamento:** permissão `canRenewTechnicalHomologation` emitida pelo backend
+  e POST `technical-homologation-renewal`, serializado por run de origem.
+  Outra tentativa recebe gates pendentes; retries/concorrência reutilizam a
+  mesma renovação. Sem histórico, identidade ou permissão, rejeita com HTTP 409.
+  Não altera campanha, orçamento, oferta nem aprovação anterior.
+- **Regressões:** HTTP/H2 com duas requisições concorrentes, preservação do run e
+  dos gates anteriores, bloqueio de tentativa independente, UI completa/compacta
+  e integração responsiva consumindo respostas HTTP reais em UTF-8.

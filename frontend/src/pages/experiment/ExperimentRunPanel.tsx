@@ -13,6 +13,7 @@ import {
   useExperimentRuns,
   useRecordExperimentRunHomologation,
   useRunExperimentPreflight,
+  useRenewTechnicalHomologation,
 } from "../../api/experiment/useExperimentRuns";
 
 const gateGroupLabels: Record<ExperimentRunGateGroup, string> = {
@@ -55,14 +56,17 @@ function initialHomologationDraft(
   };
 }
 
-function homologationErrorMessage(error: unknown) {
+function homologationErrorMessage(
+  error: unknown,
+  fallback = "Não foi possível registrar a homologação. Revise os quatro gates e tente novamente.",
+) {
   if (axios.isAxiosError<{ message?: string }>(error)) {
     const message = error.response?.data?.message;
     if (message?.trim()) {
       return message;
     }
   }
-  return "Não foi possível registrar a homologação. Revise os quatro gates e tente novamente.";
+  return fallback;
 }
 
 const statusLabels: Record<string, string> = {
@@ -159,6 +163,7 @@ export default function ExperimentRunPanel({
   const createRun = useCreateExperimentRun(experimentId);
   const runPreflight = useRunExperimentPreflight(experimentId);
   const recordHomologation = useRecordExperimentRunHomologation(experimentId);
+  const renewHomologation = useRenewTechnicalHomologation(experimentId);
   const preflight = preflightQuery.data;
   const requiredLandingEvidenceReference =
     preflight?.requiredLandingEvidenceReference?.trim() ?? "";
@@ -216,10 +221,7 @@ export default function ExperimentRunPanel({
     setHomologationDrafts((current) => ({
       ...current,
       [gateCode]: {
-        ...initialHomologationDraft(
-          gateCode,
-          requiredLandingEvidenceReference,
-        ),
+        ...initialHomologationDraft(gateCode, requiredLandingEvidenceReference),
         ...current[gateCode],
         [field]: value,
       } as HomologationDraft,
@@ -329,6 +331,40 @@ export default function ExperimentRunPanel({
                 value={currentRun.firstVerifiedImpressionAt ?? "—"}
               />
             </div>
+
+            {preflight?.currentEvidenceBlockReason ? (
+              <div className="alert alert-warning mt-3 mb-0" role="alert">
+                <strong>Homologação técnica pendente.</strong>{" "}
+                {preflight.currentEvidenceBlockReason}
+                {preflight.canRenewTechnicalHomologation && currentRun ? (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      disabled={renewHomologation.isPending}
+                      onClick={() => renewHomologation.mutate(currentRun.id)}
+                    >
+                      {renewHomologation.isPending
+                        ? "Preparando nova tentativa…"
+                        : "Renovar homologação técnica"}
+                    </button>
+                    <p className="small mt-2 mb-0">
+                      O backend prepara outra tentativa e preserva a anterior. A
+                      campanha, a oferta e o orçamento permanecem os
+                      cadastrados.
+                    </p>
+                  </div>
+                ) : null}
+                {renewHomologation.isError ? (
+                  <p className="mb-0 mt-2">
+                    {homologationErrorMessage(
+                      renewHomologation.error,
+                      "Não foi possível renovar. Atualize o painel antes de tentar novamente; nenhuma aprovação foi registrada.",
+                    )}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
             {!compact ? (
               <div className="mt-4">
@@ -491,7 +527,8 @@ export default function ExperimentRunPanel({
                                         requiredLandingEvidenceReference ? (
                                           <span className="form-text">
                                             A identidade imutável da publicação
-                                            atual já foi preenchida pelo backend.
+                                            atual já foi preenchida pelo
+                                            backend.
                                           </span>
                                         ) : null}
                                       </label>

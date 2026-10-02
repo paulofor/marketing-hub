@@ -14,6 +14,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.run.service.QuartzoPreflightEvidenceScopeService;
 import com.marketinghub.experiment.run.service.create.CreateExperimentRunRequest;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.OfferType;
@@ -50,6 +51,9 @@ import org.springframework.test.web.servlet.MockMvc;
       "spring.liquibase.enabled=false"
     })
 class BackendExperimentRunControllerTest {
+  @org.springframework.boot.test.mock.mockito.MockBean
+  private QuartzoPreflightEvidenceScopeService quartzoEvidence;
+
   @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private ExperimentRepository experimentRepository;
@@ -70,6 +74,118 @@ class BackendExperimentRunControllerTest {
     angleRepository.deleteAll();
     marketNicheRepository.deleteAll();
     pipelineDossieProdutoRepository.deleteAll();
+  }
+
+  /** Duas requisições concorrentes renovam uma única tentativa e preservam o resultado legado. */
+  @Test
+  void serializesTechnicalRenewalAndPreservesHistoricApproval() throws Exception {
+    Long experimentId = createExperiment();
+    var configured = experimentRepository.findById(experimentId).orElseThrow();
+    configured.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    configured.setUnitPrice(new BigDecimal("67"));
+    configured.setSampleSize(100);
+    configured.setTargetCvr(new BigDecimal("0.05"));
+    experimentRepository.saveAndFlush(configured);
+    createRelevantCommercialDossier();
+    Long previousId = createRun(experimentId);
+    mockMvc
+        .perform(post("/api/experiment-runs/{id}/preflight", previousId))
+        .andExpect(status().isOk());
+    var previous = experimentRunRepository.findById(previousId).orElseThrow();
+    previous.setStatus(ExperimentRunStatus.COMPLETED);
+    previous.setDataQualityStatus(ExperimentRunDataQualityStatus.VALID);
+    previous.setEvidenceValidity(ExperimentEvidenceValidity.COMMERCIALLY_VALID);
+    experimentRunRepository.saveAndFlush(previous);
+    var oldGates =
+        gateResultRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(previousId);
+    oldGates.forEach(gate -> gate.setStatus(ExperimentRunGateStatus.PASS));
+    gateResultRepository.saveAllAndFlush(oldGates);
+    var experiment = experimentRepository.findById(experimentId).orElseThrow();
+    experiment.setStatus(ExperimentStatus.INVALIDATED);
+    experimentRepository.saveAndFlush(experiment);
+    org.mockito.Mockito.when(quartzoEvidence.applies(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(true);
+    org.mockito.Mockito.when(quartzoEvidence.requiredReference(org.mockito.ArgumentMatchers.any()))
+        .thenReturn("publication:93001;page-sha256:" + "a".repeat(64));
+    org.mockito.Mockito.when(quartzoEvidence.hasCurrentEvidence(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(false);
+    var barrier = new java.util.concurrent.CyclicBarrier(2);
+    try (var threads = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+      var command =
+          (java.util.concurrent.Callable<Long>)
+              () -> {
+                barrier.await(30, java.util.concurrent.TimeUnit.SECONDS);
+                var response =
+                    mockMvc
+                        .perform(
+                            post(
+                                "/api/experiment-runs/{id}/technical-homologation-renewal",
+                                previousId))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.hasBlockers").value(true))
+                        .andExpect(jsonPath("$.canRenewTechnicalHomologation").value(false))
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+                return objectMapper.readTree(response).path("runId").asLong();
+              };
+      var first = threads.submit(command);
+      var second = threads.submit(command);
+      Long newId = first.get(30, java.util.concurrent.TimeUnit.SECONDS);
+      assertThat(second.get(30, java.util.concurrent.TimeUnit.SECONDS)).isEqualTo(newId);
+      assertThat(newId).isNotEqualTo(previousId);
+      var all = experimentRunRepository.findByExperimentIdOrderByRunNumberAsc(experimentId);
+      assertThat(all).hasSize(2);
+      assertThat(all.getLast().getCreatedBy())
+          .isEqualTo("technical-homologation-renewal:" + previousId);
+      assertThat(all.getLast().getStatus()).isEqualTo(ExperimentRunStatus.PREFLIGHT_PENDING);
+      assertThat(experimentRepository.findById(experimentId).orElseThrow().getStatus())
+          .isEqualTo(ExperimentStatus.INVALIDATED);
+      assertThat(experimentRunRepository.findById(previousId).orElseThrow().getStatus())
+          .isEqualTo(ExperimentRunStatus.COMPLETED);
+      assertThat(
+              gateResultRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(previousId))
+          .allMatch(gate -> gate.getStatus() == ExperimentRunGateStatus.PASS);
+      assertThat(gateResultRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(newId))
+          .anyMatch(gate -> gate.getStatus() == ExperimentRunGateStatus.PENDING);
+      String output = System.getProperty("preflight.renewal.fixture-output");
+      if (output != null) {
+        String body =
+            mockMvc
+                .perform(get("/api/experiment-runs/{id}/preflight", newId))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        java.nio.file.Files.writeString(java.nio.file.Path.of(output), body);
+      }
+    }
+  }
+
+  /** Tentativa sem evidência vencida não pode criar renovação ou preencher aprovação histórica. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.EnumSource(ExperimentRunMode.class)
+  void rejectsRenewalWithoutBackendPermission(ExperimentRunMode mode) throws Exception {
+    Long experimentId = createExperiment();
+    String created =
+        mockMvc
+            .perform(
+                post("/api/experiments/{id}/runs", experimentId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        objectMapper.writeValueAsString(
+                            new CreateExperimentRunRequest(
+                                mode, ExperimentRunStopPolicy.MANUAL_ONLY, "local-test"))))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+    Long runId = objectMapper.readTree(created).path("id").asLong();
+    mockMvc
+        .perform(post("/api/experiment-runs/{id}/technical-homologation-renewal", runId))
+        .andExpect(status().isConflict());
+    assertThat(experimentRunRepository.findByExperimentIdOrderByRunNumberAsc(experimentId))
+        .hasSize(1);
   }
 
   /** Deve criar runs sequenciais com validade inicial neutra e sem alterar o experimento legado. */

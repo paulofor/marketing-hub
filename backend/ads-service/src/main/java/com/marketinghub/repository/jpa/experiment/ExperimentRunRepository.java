@@ -10,6 +10,11 @@ import org.springframework.data.repository.query.Param;
 
 /** Repositório JPA responsável por persistir execuções operacionais de experimentos. */
 public interface ExperimentRunRepository extends JpaRepository<ExperimentRun, Long> {
+  /** Serializa a renovação da mesma tentativa para preservar uma única nova prova técnica. */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query("select run from ExperimentRun run where run.id = :id")
+  Optional<ExperimentRun> findForTechnicalHomologationRenewal(@Param("id") Long id);
+
   /** Lista os runs de um experimento na ordem operacional. */
   List<ExperimentRun> findByExperimentIdOrderByRunNumberAsc(Long experimentId);
 

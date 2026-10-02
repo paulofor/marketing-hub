@@ -168,6 +168,11 @@ class ExperimentTechnicalPreflightEvidenceServiceTest {
     when(quartzoContext.applies(product)).thenReturn(true);
     var scope = new QuartzoCommercialContext.Scope(experiment, product, "v1", null, 19L, null);
     var snapshot = json.createObjectNode().put("fingerprint", "commercial-sha");
+    snapshot
+        .putObject("financialPlan")
+        .putObject("analysis")
+        .putObject("result")
+        .put("recommendedCycleLimitBrl", 125);
     when(quartzoContext.scope("experiment:88", 7L, false)).thenReturn(scope);
     when(quartzoContext.snapshot("experiment:88")).thenReturn(snapshot);
 
@@ -180,6 +185,67 @@ class ExperimentTechnicalPreflightEvidenceServiceTest {
         .isFalse();
     assertThat(evidence.objectiveEvidence().path("commercialFingerprint").asText())
         .isEqualTo("commercial-sha");
+  }
+
+  /** Impede ultrapassar Plutus mesmo quando o plano comercial possui um teto mais alto. */
+  @ParameterizedTest
+  @CsvSource({"91031,91032,125,100", "91041,91042,75,60"})
+  void blocksMediaLimitAboveCurrentPlutusLimit(
+      long productId, long experimentId, int mediaLimit, int plutusLimit) {
+    product.setId(productId);
+    experiment.setId(experimentId);
+    experiment.setMediaSpendLimit(BigDecimal.valueOf(mediaLimit));
+    when(experiments.findById(experimentId)).thenReturn(Optional.of(experiment));
+    when(runs.findTopByExperimentIdAndModeOrderByRunNumberDesc(
+            experimentId, ExperimentRunMode.PRODUCTION))
+        .thenReturn(Optional.of(run));
+    var plan = new CommercialPlan();
+    plan.setStatus(CommercialPlanStatus.IN_PROGRESS);
+    plan.setMaxBudget(new BigDecimal("400"));
+    when(plans.findByExperimentReference(experimentId)).thenReturn(List.of(plan));
+    var source = "experiment:" + experimentId;
+    when(quartzoContext.applies(product)).thenReturn(true);
+    var snapshot = json.createObjectNode();
+    snapshot
+        .putObject("financialPlan")
+        .putObject("analysis")
+        .putObject("result")
+        .put("recommendedCycleLimitBrl", plutusLimit);
+    when(quartzoContext.snapshot(source)).thenReturn(snapshot);
+
+    assertThatThrownBy(() -> service.evaluate("financialGuardrails", product, source))
+        .hasMessageContaining(
+            "ultrapassa o limite do parecer vigente de Plutus", "não altera o orçamento");
+    assertThat(experiment.getMediaSpendLimit())
+        .isEqualByComparingTo(BigDecimal.valueOf(mediaLimit));
+  }
+
+  /** Teto ausente não vira zero e não comprova o limite de uma campanha de mídia. */
+  @Test
+  void blocksMissingPlutusMediaLimit() {
+    when(quartzoContext.applies(product)).thenReturn(true);
+    when(quartzoContext.snapshot("experiment:88")).thenReturn(json.createObjectNode());
+
+    assertThatThrownBy(() -> service.evaluate("financialGuardrails", product, "experiment:88"))
+        .hasMessageContaining("não informa teto positivo");
+  }
+
+  /** Teto menor continua válido e mantém os gates sem reinterpretar a recomendação como gasto. */
+  @Test
+  void acceptsMediaLimitBelowPlutusLimit() {
+    when(quartzoContext.applies(product)).thenReturn(true);
+    var snapshot = json.createObjectNode();
+    snapshot
+        .putObject("financialPlan")
+        .putObject("analysis")
+        .putObject("result")
+        .put("recommendedCycleLimitBrl", 150);
+    when(quartzoContext.snapshot("experiment:88")).thenReturn(snapshot);
+
+    var result = service.evaluate("financialGuardrails", product, "experiment:88");
+
+    assertThat(result.objectiveEvidence().path("spendAuthorizedByThisActivity").asBoolean())
+        .isFalse();
   }
 
   /** Impede que o teto operacional ultrapasse o plano governante. */

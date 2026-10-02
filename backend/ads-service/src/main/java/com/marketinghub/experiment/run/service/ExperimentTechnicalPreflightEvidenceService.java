@@ -287,12 +287,39 @@ public class ExperimentTechnicalPreflightEvidenceService {
         "O experimento precisa preservar preço positivo antes da ativação.");
     if (quartzoContext.applies(product)) {
       var scope = quartzoContext.scope(sourceReference, product.getId(), false);
-      quartzoChecks.check("economics", scope, quartzoContext.snapshot(sourceReference));
+      var snapshot = quartzoContext.snapshot(sourceReference);
+      quartzoChecks.check("economics", scope, snapshot);
+      validatePlutusCycleLimit(experiment, snapshot);
     }
     if (safiraContext != null && safiraChecks != null && safiraContext.applies(product)) {
       var scope = safiraContext.scope(sourceReference, product.getId(), false);
-      safiraChecks.check("economics", scope, safiraContext.snapshot(sourceReference));
+      var snapshot = safiraContext.snapshot(sourceReference);
+      safiraChecks.check("economics", scope, snapshot);
+      validatePlutusCycleLimit(experiment, snapshot);
     }
+  }
+
+  /** Compara o teto persistido ao parecer vigente sem alterar limites ou conceder autorização. */
+  private void validatePlutusCycleLimit(
+      Experiment experiment, com.fasterxml.jackson.databind.JsonNode snapshot) {
+    if (experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE) return;
+    var limit =
+        snapshot
+            .path("financialPlan")
+            .path("analysis")
+            .path("result")
+            .path("recommendedCycleLimitBrl");
+    require(
+        limit.isNumber() && limit.decimalValue().signum() > 0,
+        "O parecer vigente de Plutus não informa teto positivo para este ciclo de mídia.");
+    require(
+        experiment.getMediaSpendLimit().compareTo(limit.decimalValue()) <= 0,
+        "O teto persistido do experimento (R$ "
+            + experiment.getMediaSpendLimit().toPlainString()
+            + ") ultrapassa o limite do parecer vigente de Plutus (R$ "
+            + limit.decimalValue().toPlainString()
+            + "). Compatibilize os limites ou obtenha revisão financeira aprovada;"
+            + " esta atividade não altera o orçamento nem autoriza gasto.");
   }
 
   /** Escolhe o plano governante e identifica os vínculos bloqueados sem refazer pareceres. */

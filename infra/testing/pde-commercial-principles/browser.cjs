@@ -4,15 +4,24 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 
 const root = path.resolve(__dirname, '../../..');
-const expected = require('./expected.json');
+const expected = require(process.env.PRINCIPLES_EXPECTED || './expected.json');
 const live = process.env.PRINCIPLES_LIVE === 'true';
 const base = process.env.PRINCIPLES_UI_URL || 'http://127.0.0.1:4179';
 const output = process.env.PRINCIPLES_OUTPUT || '/tmp/mkt-five-points/browser';
+const expectedChain = process.env.PRINCIPLES_CHAIN
+  ? JSON.parse(fs.readFileSync(process.env.PRINCIPLES_CHAIN)) : undefined;
 
 async function main() {
   const processes = live
     ? await (await fetch(new URL('/api/business-processes', base))).json()
-    : JSON.parse(fs.readFileSync(path.join(root, 'backend/ads-service/target/principles/processes.json')));
+    : JSON.parse(fs.readFileSync(process.env.PRINCIPLES_PROCESSES || path.join(root, 'backend/ads-service/target/principles/processes.json')));
+  let chain = expectedChain;
+  if (live && expectedChain) {
+    const chains = await (await fetch(new URL('/api/business-process-chains', base))).json();
+    const selected = chains.find((item) => item.chainCode === expectedChain.chainCode && item.versionNumber === expectedChain.versionNumber);
+    assert.ok(selected, 'cadeia esperada ausente');
+    chain = await (await fetch(new URL(`/api/business-process-chains/${selected.id}`, base))).json();
+  }
   const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--no-sandbox'] });
   const results = [];
   fs.mkdirSync(output, { recursive: true });
@@ -32,6 +41,8 @@ async function main() {
           if (!url.pathname.startsWith("/api/")) return route.continue();
           let data = [];
           if (url.pathname === '/api/business-processes') data = processes;
+          if (chain && url.pathname === '/api/business-process-chains') data = [chain];
+          if (chain && url.pathname === `/api/business-process-chains/${chain.id}`) data = chain;
           const composition = url.pathname.match(/\/business-processes\/(\d+)\/composition$/);
           if (composition) {
             const process = processes.find((p) => p.id === Number(composition[1]));
@@ -55,6 +66,21 @@ async function main() {
         if (code === 'pde-communication-sales-journey') await page.screenshot({ path: path.join(output, `${name}.png`), fullPage: true });
         results.push({ device: name, processCode: code, version: contract.targetVersion, checked: Object.keys(contract.objectives).length });
       }
+      if (chain) {
+        await page.goto(`${base}/business-process-chains?chainId=${chain.id}`, { waitUntil: 'domcontentloaded' });
+        const items = page.locator('.business-process-chain-process');
+        await items.first().waitFor({ timeout: 30000 });
+        assert.equal(await items.count(), 6);
+        for (const [index, item] of expectedChain.processes.entries()) {
+          assert.ok((await items.nth(index).innerText()).includes(item.valueContribution), `${name}: contribuição ausente na cadeia`);
+          const actual = chain.processes[index];
+          assert.equal(actual.processCode, item.processCode);
+          assert.equal(actual.versionNumber, item.versionNumber);
+          assert.ok((await items.nth(index).locator('a').first().getAttribute('href')).includes(`processId=${actual.processDefinitionId}`));
+        }
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name}: cadeia com transbordamento`);
+        await page.screenshot({ path: path.join(output, `chain-${name}.png`), fullPage: true });
+      }
       assert.deepEqual(errors, []);
       await context.close();
     }
@@ -62,7 +88,7 @@ async function main() {
     await browser.close();
   }
   fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify(results, null, 2));
-  console.log(JSON.stringify({ live, pages: results.length, objectives: results.reduce((n, r) => n + r.checked, 0) }));
+  console.log(JSON.stringify({ live, pages: results.length, chainPages: chain ? 3 : 0, objectives: results.reduce((n, r) => n + r.checked, 0) }));
 }
 
 main().catch((e) => { console.error(e); process.exitCode = 1; });

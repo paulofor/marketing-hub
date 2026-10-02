@@ -1,0 +1,110 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-02-pde-satisfaction-continuity-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=8 AND status='PUBLISHED' AND JSON_LENGTH(JSON_EXTRACT(diagram_json,'$.nodes'))=6 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='marketEvidence' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='candidateGapDeepening' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].type'))='TASK'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-commercial-plan-offer' AND version_number=10 AND status='PUBLISHED' AND JSON_LENGTH(JSON_EXTRACT(diagram_json,'$.nodes'))=6 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='marketStrategy' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='economics' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].id'))='productArchitecture' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].type'))='TASK'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-construction-approval' AND version_number=9 AND status='PUBLISHED' AND JSON_LENGTH(JSON_EXTRACT(diagram_json,'$.nodes'))=14 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='journey' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='deliverables' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].id'))='audiovisual' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='access' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].id'))='technicalHomologation' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].id'))='prototypeCorrection' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[7].id'))='psiqueAdherent' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[7].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[8].id'))='psiqueRecovery' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[8].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[9].id'))='psiqueSafety' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[9].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[10].id'))='commercialIntegrityReview' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[10].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[11].id'))='agentValidationGate' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[11].type'))='TASK'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-communication-sales-journey' AND version_number=9 AND status='PUBLISHED' AND JSON_LENGTH(JSON_EXTRACT(diagram_json,'$.nodes'))=7 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='communicationContract' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='creatives' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].id'))='destination' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='integration' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].type'))='TASK'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-commercial-homologation-activation' AND version_number=10 AND status='PUBLISHED' AND JSON_LENGTH(JSON_EXTRACT(diagram_json,'$.nodes'))=8 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='commercialPreparation' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='humanExperienceReview' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].id'))='commercialIntegrityReview' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='preflight' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].id'))='authorization' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].type'))='TASK'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-sales-delivery-learning' AND version_number=10 AND status='PUBLISHED' AND JSON_LENGTH(JSON_EXTRACT(diagram_json,'$.nodes'))=13 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='optimization' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].id'))='delivery' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].id'))='consolidate' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[7].id'))='learningCycle' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[7].type'))='TASK'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-tasting-proof-of-value' AND version_number=3 AND status='PUBLISHED' AND JSON_LENGTH(JSON_EXTRACT(diagram_json,'$.nodes'))=9 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='strategy' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='economics' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].id'))='materialization' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='humanExperienceReview' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].id'))='commercialIntegrityReview' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].id'))='integration' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].type'))='TASK'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_definition WHERE process_code='creative-production-approval' AND version_number=8 AND status='PUBLISHED' AND JSON_LENGTH(JSON_EXTRACT(diagram_json,'$.nodes'))=9 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='nonAudiovisual' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].id'))='audiovisual' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='customer' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].id'))='commercial' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].type'))='TASK'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_definition WHERE process_code='experiment-homologation-activation' AND version_number=5 AND status='PUBLISHED' AND JSON_LENGTH(JSON_EXTRACT(diagram_json,'$.nodes'))=7 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='surfaces' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='transaction' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].id'))='measurement' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='financialGuardrails' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].type'))='TASK'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_definition WHERE process_code='operacao-otimizacao-experimento' AND version_number=6 AND status='PUBLISHED' AND JSON_LENGTH(JSON_EXTRACT(diagram_json,'$.nodes'))=13 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='task-1' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].id'))='task-3' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[3].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='task-4' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].id'))='task-5' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].id'))='task-6' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[7].id'))='task-7' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[7].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[10].id'))='task-10' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[10].type'))='TASK'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_definition WHERE process_code='venda-entrega-satisfacao-cliente' AND version_number=4 AND status='PUBLISHED' AND JSON_LENGTH(JSON_EXTRACT(diagram_json,'$.nodes'))=10 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='materialization' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='delivery' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].id'))='satisfaction' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[5].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].id'))='financial' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[6].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[7].id'))='learning' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[7].type'))='TASK'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=5 AND status='PUBLISHED' AND JSON_LENGTH(JSON_EXTRACT(diagram_json,'$.nodes'))=17 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].id'))='LEARNING' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[1].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].id'))='PLANNING' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[2].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].id'))='VIDEO_BRIEF' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[4].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[8].id'))='VALIDATION' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[8].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[12].id'))='MEASUREMENT' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[12].type'))='TASK' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[13].id'))='DECISION' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[13].type'))='TASK'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=24 AND status='PUBLISHED'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT IF(COUNT(*)=6 AND COUNT(DISTINCT sequence_number)=6,1,0) FROM business_process_chain_item item JOIN business_process_chain_definition chain ON chain.id=item.chain_definition_id WHERE chain.chain_code='pde-value-creation-delivery' AND chain.version_number=24
+        - sqlCheck:
+            expectedResult: 0
+            sql: >-
+              SELECT COUNT(*) FROM business_process_definition WHERE ((process_code='pde-opportunity-discovery' AND version_number=9) OR (process_code='pde-commercial-plan-offer' AND version_number=11) OR (process_code='pde-construction-approval' AND version_number=10) OR (process_code='pde-communication-sales-journey' AND version_number=10) OR (process_code='pde-commercial-homologation-activation' AND version_number=11) OR (process_code='pde-sales-delivery-learning' AND version_number=11) OR (process_code='pde-tasting-proof-of-value' AND version_number=4) OR (process_code='creative-production-approval' AND version_number=9) OR (process_code='experiment-homologation-activation' AND version_number=6) OR (process_code='operacao-otimizacao-experimento' AND version_number=7) OR (process_code='venda-entrega-satisfacao-cliente' AND version_number=5) OR (process_code='value-chain-learning-sales-cycle' AND version_number=6)) AND COALESCE(JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.satisfactionContinuityVersion')),'')<>'SATISFACTION_CONTINUITY_V1'
+        - sqlCheck:
+            expectedResult: 0
+            sql: >-
+              SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery' AND version_number=25 AND purpose NOT LIKE '%SATISFACTION_CONTINUITY_V1%'
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain ON chain.id=item.chain_definition_id JOIN business_process_definition process ON process.id=item.process_definition_id WHERE chain.chain_code='pde-value-creation-delivery' AND chain.version_number=24 AND item.sequence_number=1 AND process.process_code='pde-opportunity-discovery' AND process.version_number=8
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain ON chain.id=item.chain_definition_id JOIN business_process_definition process ON process.id=item.process_definition_id WHERE chain.chain_code='pde-value-creation-delivery' AND chain.version_number=24 AND item.sequence_number=2 AND process.process_code='pde-commercial-plan-offer' AND process.version_number=10
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain ON chain.id=item.chain_definition_id JOIN business_process_definition process ON process.id=item.process_definition_id WHERE chain.chain_code='pde-value-creation-delivery' AND chain.version_number=24 AND item.sequence_number=3 AND process.process_code='pde-construction-approval' AND process.version_number=9
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain ON chain.id=item.chain_definition_id JOIN business_process_definition process ON process.id=item.process_definition_id WHERE chain.chain_code='pde-value-creation-delivery' AND chain.version_number=24 AND item.sequence_number=4 AND process.process_code='pde-communication-sales-journey' AND process.version_number=9
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain ON chain.id=item.chain_definition_id JOIN business_process_definition process ON process.id=item.process_definition_id WHERE chain.chain_code='pde-value-creation-delivery' AND chain.version_number=24 AND item.sequence_number=5 AND process.process_code='pde-commercial-homologation-activation' AND process.version_number=10
+        - sqlCheck:
+            expectedResult: 1
+            sql: >-
+              SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain ON chain.id=item.chain_definition_id JOIN business_process_definition process ON process.id=item.process_definition_id WHERE chain.chain_code='pde-value-creation-delivery' AND chain.version_number=24 AND item.sequence_number=6 AND process.process_code='pde-sales-delivery-learning' AND process.version_number=10
+      changes:
+        - sqlFile:
+            path: 2026-10-02-pde-satisfaction-continuity-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_definition SET status='RETIRED' WHERE ((process_code='pde-opportunity-discovery' AND version_number=9) OR (process_code='pde-commercial-plan-offer' AND version_number=11) OR (process_code='pde-construction-approval' AND version_number=10) OR (process_code='pde-communication-sales-journey' AND version_number=10) OR (process_code='pde-commercial-homologation-activation' AND version_number=11) OR (process_code='pde-sales-delivery-learning' AND version_number=11) OR (process_code='pde-tasting-proof-of-value' AND version_number=4) OR (process_code='creative-production-approval' AND version_number=9) OR (process_code='experiment-homologation-activation' AND version_number=6) OR (process_code='operacao-otimizacao-experimento' AND version_number=7) OR (process_code='venda-entrega-satisfacao-cliente' AND version_number=5) OR (process_code='value-chain-learning-sales-cycle' AND version_number=6)) AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.satisfactionContinuityVersion'))='SATISFACTION_CONTINUITY_V1';
+              UPDATE business_process_chain_definition SET status='RETIRED' WHERE chain_code='pde-value-creation-delivery' AND version_number=25 AND purpose LIKE '%SATISFACTION_CONTINUITY_V1%';

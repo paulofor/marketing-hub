@@ -7,6 +7,8 @@ services:
       MYSQL_ROOT_PASSWORD: principles-local-only
     ports:
       - "33418:3306"
+    tmpfs:
+      - /var/lib/mysql:size=512m
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pprinciples-local-only"]
       interval: 2s

@@ -36,6 +36,259 @@ class PdeCommercialPrinciplesMysql57Test {
       "db/changelog/changesets/2026-09-24-paid-instagram-acquisition-v1.yaml";
   private final ObjectMapper mapper = new ObjectMapper();
 
+  /** Comprova a missão transversal sem alterar grafos, evidências ou vínculos históricos. */
+  @Test
+  void versionsSatisfactionIdentityAndReturnWithoutMigratingExistingExecutions() throws Exception {
+    Path fixture = Path.of("../../infra/testing/pde-satisfaction-continuity");
+    List<JsonNode> sources = new ArrayList<>();
+    mapper.readTree(fixture.resolve("sources.json").toFile()).forEach(sources::add);
+    JsonNode requirements = mapper.readTree(fixture.resolve("requirements.json").toFile());
+    String host = System.getenv().getOrDefault("PDE_PRINCIPLES_DB_HOST", "127.0.0.1");
+    assertThat(host).isIn("127.0.0.1", "sandbox-docker");
+    try (var connection = openConnection(host)) {
+      assertThat(connection.getMetaData().getDatabaseProductVersion()).startsWith("5.7.");
+      initialize(connection, sources);
+      execute(connection, "UPDATE business_process_chain_definition SET version_number=24");
+      String productChain = scalar(connection, "SELECT chain_definition_id FROM product");
+      String taskHistory =
+          scalar(
+              connection,
+              "SELECT CONCAT(process_definition_id,':',source_reference,':',status,':',estimated_cost_usd,':',result_json) FROM agent_task");
+      var database =
+          DatabaseFactory.getInstance()
+              .findCorrectDatabaseImplementation(new JdbcConnection(connection));
+      try (var migration =
+          new Liquibase(
+              "db/changelog/changesets/2026-10-02-pde-satisfaction-continuity-v1.yaml",
+              new ClassLoaderResourceAccessor(),
+              database)) {
+        // Fonte ausente, ordem divergente e colisão devem falhar antes da primeira escrita.
+        execute(
+            connection,
+            "UPDATE business_process_definition SET version_number=99 WHERE process_code='pde-opportunity-discovery'");
+        assertThatThrownBy(() -> migration.update("")).hasMessageContaining("Precondition failed");
+        execute(
+            connection,
+            "UPDATE business_process_definition SET version_number=8 WHERE process_code='pde-opportunity-discovery'");
+        execute(
+            connection,
+            "UPDATE business_process_definition SET diagram_json=JSON_SET(diagram_json,'$.nodes[1].id','atividade-deslocada') WHERE process_code='pde-opportunity-discovery'");
+        assertThatThrownBy(() -> migration.update("")).hasMessageContaining("Precondition failed");
+        execute(
+            connection,
+            "UPDATE business_process_definition SET diagram_json=JSON_SET(diagram_json,'$.nodes[1].id','marketEvidence') WHERE process_code='pde-opportunity-discovery'");
+        ObjectNode collision = sources.get(0).deepCopy();
+        collision.put("versionNumber", 9);
+        insertSource(connection, collision);
+        assertThatThrownBy(() -> migration.update("")).hasMessageContaining("Precondition failed");
+        assertThat(scalar(connection, "SELECT COUNT(*) FROM business_process_chain_definition"))
+            .isEqualTo("1");
+        execute(
+            connection,
+            "DELETE FROM business_process_definition WHERE process_code='pde-opportunity-discovery' AND version_number=9");
+
+        migration.update("");
+        verifySatisfactionState(connection, sources, requirements);
+        String count =
+            scalar(connection, "SELECT COUNT(*) FROM business_process_activity_definition");
+        migration.update("");
+        assertThat(scalar(connection, "SELECT COUNT(*) FROM business_process_activity_definition"))
+            .isEqualTo(count);
+        migration.rollback(1, "");
+        assertThat(
+                scalar(
+                    connection,
+                    "SELECT status FROM business_process_chain_definition WHERE version_number=25"))
+            .isEqualTo("RETIRED");
+        assertThat(
+                scalar(
+                    connection,
+                    "SELECT COUNT(*) FROM business_process_definition WHERE JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.satisfactionContinuityVersion'))='SATISFACTION_CONTINUITY_V1' AND status='PUBLISHED'"))
+            .isEqualTo("0");
+        migration.update("");
+        verifySatisfactionState(connection, sources, requirements);
+        assertThat(scalar(connection, "SELECT COUNT(*) FROM business_process_activity_definition"))
+            .isEqualTo(count);
+        assertThat(scalar(connection, "SELECT chain_definition_id FROM product"))
+            .isEqualTo(productChain);
+        assertThat(
+                scalar(
+                    connection,
+                    "SELECT CONCAT(process_definition_id,':',source_reference,':',status,':',estimated_cost_usd,':',result_json) FROM agent_task"))
+            .isEqualTo(taskHistory);
+        exportSatisfactionForBrowser(connection, sources, requirements);
+      }
+    }
+  }
+
+  /** Verifica textos, paridade relacional e invariância das responsabilidades e dos executores. */
+  private void verifySatisfactionState(
+      Connection connection, List<JsonNode> sources, JsonNode requirements) throws Exception {
+    for (JsonNode source : sources) {
+      String code = source.path("processCode").asText();
+      int version = source.path("versionNumber").asInt();
+      assertThat(mapper.readTree(diagram(connection, code, version)))
+          .isEqualTo(source.path("diagram"));
+      assertThat(
+              scalar(
+                  connection,
+                  "SELECT status FROM business_process_definition WHERE process_code='"
+                      + code
+                      + "' AND version_number="
+                      + version))
+          .isEqualTo("PUBLISHED");
+      ObjectNode current = (ObjectNode) mapper.readTree(diagram(connection, code, version + 1));
+      assertThat(current.path("satisfactionContinuityVersion").asText())
+          .isEqualTo("SATISFACTION_CONTINUITY_V1");
+      var objectives = requirements.path(code).path("objectives");
+      for (JsonNode node : current.path("nodes")) {
+        if (!"TASK".equals(node.path("type").asText())) continue;
+        String activityId = node.path("id").asText();
+        if (objectives.has(activityId)) {
+          assertThat(node.path("description").asText())
+              .isEqualTo(objectives.path(activityId).asText())
+              .contains("Entregar:", "Aceite:", "Medir:");
+        }
+        String where =
+            " FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='"
+                + code
+                + "' AND p.version_number="
+                + (version + 1)
+                + " AND a.activity_id='"
+                + activityId
+                + "'";
+        assertThat(scalar(connection, "SELECT a.objective" + where))
+            .isEqualTo(node.path("description").asText());
+        assertThat(mapper.readTree(scalar(connection, "SELECT a.definition_json" + where)))
+            .isEqualTo(node);
+        assertThat(
+                scalar(
+                    connection,
+                    "SELECT a.objective" + where.replace("=" + (version + 1), "=" + version)))
+            .isEqualTo(findNode(source.path("diagram"), activityId).path("description").asText());
+      }
+      if ("pde-construction-approval".equals(code)) {
+        verifyExecutionCompatibility(code, version + 1, current);
+      }
+      current.remove("satisfactionContinuityVersion");
+      for (JsonNode node : current.path("nodes")) {
+        JsonNode original = findNode(source.path("diagram"), node.path("id").asText());
+        if (original.has("description")) {
+          ((ObjectNode) node).set("description", original.get("description"));
+        } else {
+          ((ObjectNode) node).remove("description");
+        }
+      }
+      assertThat(current).isEqualTo(source.path("diagram"));
+    }
+    assertThat(
+            scalar(
+                connection,
+                "SELECT status FROM business_process_chain_definition WHERE version_number=24"))
+        .isEqualTo("PUBLISHED");
+    assertThat(
+            scalar(
+                connection,
+                "SELECT COUNT(*) FROM business_process_chain_item i JOIN business_process_chain_definition c ON c.id=i.chain_definition_id WHERE c.version_number=25"))
+        .isEqualTo("6");
+    for (int i = 0; i < 6; i++) {
+      JsonNode source = sources.get(i);
+      assertThat(
+              scalar(
+                  connection,
+                  "SELECT CONCAT(p.process_code,':',p.version_number) FROM business_process_chain_item i JOIN business_process_chain_definition c ON c.id=i.chain_definition_id JOIN business_process_definition p ON p.id=i.process_definition_id WHERE c.version_number=25 AND i.sequence_number="
+                      + (i + 1)))
+          .isEqualTo(
+              source.path("processCode").asText()
+                  + ":"
+                  + (source.path("versionNumber").asInt() + 1));
+    }
+  }
+
+  /** Localiza uma atividade pela identidade, sem deduzir sua posição pela ordem de inserção. */
+  private JsonNode findNode(JsonNode diagram, String activityId) {
+    for (JsonNode node : diagram.path("nodes")) {
+      if (activityId.equals(node.path("id").asText())) return node;
+    }
+    throw new IllegalArgumentException("Atividade da fixture não encontrada: " + activityId);
+  }
+
+  /** Exporta os dados efetivamente migrados para conferir o mesmo conteúdo na tela local. */
+  private void exportSatisfactionForBrowser(
+      Connection connection, List<JsonNode> sources, JsonNode requirements) throws Exception {
+    var result = mapper.createArrayNode();
+    for (JsonNode source : sources) {
+      ObjectNode value = source.deepCopy();
+      String code = source.path("processCode").asText();
+      int version = requirements.path(code).path("targetVersion").asInt();
+      String where = " WHERE process_code='" + code + "' AND version_number=" + version;
+      value.put(
+          "id",
+          Long.parseLong(scalar(connection, "SELECT id FROM business_process_definition" + where)));
+      value.put("versionNumber", version).put("status", "PUBLISHED");
+      value.put(
+          "purpose", scalar(connection, "SELECT purpose FROM business_process_definition" + where));
+      value.set("diagram", mapper.readTree(diagram(connection, code, version)));
+      result.add(value);
+    }
+    Files.createDirectories(Path.of("target/satisfaction"));
+    mapper
+        .writerWithDefaultPrettyPrinter()
+        .writeValue(Path.of("target/satisfaction/processes.json").toFile(), result);
+    String chainWhere = " WHERE chain_code='pde-value-creation-delivery' AND version_number=25";
+    ObjectNode chain = mapper.createObjectNode();
+    chain.put(
+        "id",
+        Long.parseLong(
+            scalar(connection, "SELECT id FROM business_process_chain_definition" + chainWhere)));
+    chain
+        .put("chainCode", "pde-value-creation-delivery")
+        .put("versionNumber", 25)
+        .put("processCount", 6);
+    for (var field :
+        Map.of(
+                "name",
+                "name",
+                "purpose",
+                "purpose",
+                "outcomeDescription",
+                "outcome_description",
+                "primaryMetric",
+                "primary_metric",
+                "status",
+                "status")
+            .entrySet()) {
+      chain.put(
+          field.getKey(),
+          scalar(
+              connection,
+              "SELECT "
+                  + field.getValue()
+                  + " FROM business_process_chain_definition"
+                  + chainWhere));
+    }
+    var processes = mapper.createArrayNode();
+    for (int index = 0; index < 6; index++) {
+      ObjectNode process = ((ObjectNode) result.get(index)).deepCopy();
+      process
+          .put("processDefinitionId", process.path("id").asLong())
+          .put("sequenceNumber", index + 1);
+      process.put(
+          "valueContribution",
+          scalar(
+              connection,
+              "SELECT value_contribution FROM business_process_chain_item WHERE chain_definition_id="
+                  + chain.path("id").asLong()
+                  + " AND sequence_number="
+                  + (index + 1)));
+      processes.add(process);
+    }
+    chain.set("processes", processes);
+    mapper
+        .writerWithDefaultPrettyPrinter()
+        .writeValue(Path.of("target/satisfaction/chain.json").toFile(), chain);
+  }
+
   /** Aplica a revisão, recusa fontes inválidas e conserva toda evidência nas reaplicações. */
   @Test
   void versionsObjectivesWithoutRewritingHistoryOrExecutionContracts() throws Exception {

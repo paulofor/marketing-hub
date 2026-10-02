@@ -172,6 +172,48 @@ codinome mineral, formato ou tecnologia do produto.
 
 ## Cadeia principal
 
+### Satisfação pretendida, identidade e retorno — decisão de 02/10/2026
+
+**Regra transversal:** situação reconhecível → benefício desejado → experiência real →
+produto identificável → motivo legítimo para voltar. A satisfação pretendida orienta os seis
+processos existentes; não cria outro processo, promessa de resultado emocional ou autorização
+de gasto. Cada passagem preserva a fonte, a versão, os limites e as lacunas da hipótese.
+
+| Processo e atividades | Responsáveis | Entrega e aceite | Medição |
+| --- | --- | --- | --- |
+| 1 — evidências e aprofundamento | Argos | Situação, linguagem pública, satisfação possível, alternativas e contrapontos com URL, data e papel da fonte; separar relato espontâneo de inferência. | Cobertura e independência das fontes; lacunas explicitadas. Pesquisa não comprova demanda pelo produto. |
+| 2 — `marketStrategy`, `economics`, `productArchitecture` | Atena, Plutus, Dédalo | Uma satisfação principal como hipótese, resultado funcional, vantagem sobre alternativas, prova adequada ao tipo, identidade e ocasião futura de utilidade; custos e limites de eventual amostra. | Primeira interação e tempo até benefício como hipóteses mensuráveis; contribuição e CAC com premissas rastreáveis. |
+| 3 — `journey`, `deliverables`, `audiovisual`, `access`, `technicalHomologation` e avaliações | Dédalo, Apolo quando previsto, Psique, Têmis | Resultado fiel ao contexto, entradas necessárias, aplicação, recuperação, salvamento e retomada quando contratados; provas da mesma versão real. Simulações identificadas. | Conclusão, erros, esforço e tempo até resultado; exibição não comprova uso ou satisfação. |
+| 4 — `communicationContract`, `creatives`, `destination`, `integration` | Íris, Apolo, Psique, Têmis, backend | Situação familiar, participação concreta do produto, transformação possível e identidade coerente entre anúncio, demonstração, compra e entrega; benefício adicional pago explícito. | Primeira interação, demonstração, oferta efetivamente vista, checkout e compra em eventos distintos. |
+| 5 — preparação, revisões, preflight e autorização | Backend, Psique, Têmis, Plutus, operador | Promessa e entrega compatíveis, versões correlacionadas, mobile, compra/acesso/entrega segregados, atribuição e limites financeiros comprovados. | Falhas, divergências e custo por homologação concluída; ativação exige orçamento, janela e paradas autorizados. |
+| 6 — operação, entrega, `consolidate`, `learningCycle` | Hermes, Dédalo, Psique, Têmis, Plutus, backend | Compra conciliada, entrega, uso observável, reembolso, contribuição e retorno voluntário atribuível; uma mudança principal por teste, referência anterior e explicações concorrentes. | Vendas líquidas, CAC, custo integral, contribuição; recompra/indicação somente quando pertinentes e atribuídas. Retorno não comprova emoção ou memória. |
+
+Os contratos existentes devem registrar: **satisfação proposta e evidências; ação e resultado
+funcionais que a tornam plausível; identidade contínua; ocasião de retorno; fatos que confirmam
+ou contradizem a hipótese**. Usar os campos existentes de estratégia, arquitetura, comunicação,
+pareceres, evidências e aprendizado; não fabricar prova nem inserir metadados no artefato do cliente.
+
+A amostra personalizada permanece condicional ao plano e integra o Processo 4 pelo subprocesso
+`pde-tasting-proof-of-value`. Atena define o benefício; Plutus limita custo por uso e teto;
+Dédalo materializa; Psique e Têmis revisam; o backend integra. A amostra cumpre sua promessa gratuita
+e explica o adicional pago. Contabilizar também amostras de quem não compra, tentativas e suporte.
+Sem contrato, travas e prova homologados, comunicar somente a demonstração realmente disponível.
+
+Promessa sem suporte retorna à estratégia/comunicação; resultado sem utilidade à construção;
+atribuição ausente à integração; margem inadequada à economia. O backend continua decidindo o
+avanço. Novas definições preservam grafo, donos, recursos, subprocessos e contratos executáveis;
+execuções anteriores conservam versões, aprovações, custos e evidências, sem migração automática.
+
+O teste inicial pode comparar foco nos entregáveis com satisfação vinculada à prova real,
+mantendo produto, preço, público, página e condições. Testar amostra separadamente. A aquisição
+segue o canal aprovado — atualmente Instagram Ads — e exige autorização própria. Amostra
+insuficiente admite conclusão inconclusiva; aprovação técnica não comprova vendas ou lucro.
+
+**Sem entrevistas, recrutamento, pedidos de opinião ou pesquisas solicitadas de lembrança.**
+Aplicar `system-governance-canon.v3.md`: fontes públicas, agentes e comportamento voluntário do
+mercado. Emoção e memória permanecem hipóteses; relatos espontâneos podem complementar, sem
+transformar retorno/recompra em diagnóstico psicológico ou causalidade comprovada.
+
 ### Cinco critérios concretos de criação e avaliação — decisão de 22/09/2026
 
 Os cinco critérios abaixo integram os objetivos das atividades existentes. São exigências de
@@ -195,8 +237,8 @@ resultado ou manter a oferta fora da tela não dispara esse evento. O limiar per
 não é uma regra universal copiada do #91. Telemetria sem fonte continua desconhecida, nunca zero.
 
 Amostra insuficiente produz decisão inconclusiva; parada financeira protege caixa e não prova
-rejeição estatística. Cinco observações humanas, quando realizadas, são avaliação qualitativa
-consentida e ficam separadas da amostra comercial e das simulações dos agentes. Escala exige
+rejeição estatística. Simulações dos agentes e testes determinísticos ficam separados da amostra
+comercial; não se recrutam pessoas nem se solicitam opiniões como condição de avanço. Escala exige
 vendas líquidas, entrega útil e margem conforme a política aprovada, além de autorização própria.
 
 **Versionamento:** cadeia v18 e novas versões dos processos afetados preservam IDs de nós,

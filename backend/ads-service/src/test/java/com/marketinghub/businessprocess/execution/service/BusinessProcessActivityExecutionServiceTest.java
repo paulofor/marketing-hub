@@ -1088,7 +1088,7 @@ class BusinessProcessActivityExecutionServiceTest {
     verifyNoInteractions(agentTasks);
   }
 
-  /** Abre Psique e Têmis juntas na mesma ocorrência e referência do experimento do produto. */
+  /** Abre os revisores no mesmo contexto e transmite integralmente a missão versionada do BPM. */
   @Test
   void requestsEveryResponsibleAgentTaskForProductActivity() {
     BusinessProcessActivityDefinitionRepository activityDefinitions =
@@ -1120,7 +1120,7 @@ class BusinessProcessActivityExecutionServiceTest {
     process.setDiagramJson(
         "{\"nodes\":[{\"id\":\"pdeGate\",\"type\":\"TASK\","
             + "\"label\":\"Validar fatos, controle e valor do PDE\","
-            + "\"description\":\"Comprovar o valor do PDE.\","
+            + "\"description\":\"Comprovar o valor do PDE. Satisfação como hipótese, prova funcional, identidade, ocasião de retorno e contrapontos com fonte.\","
             + "\"responsibleAgentKeys\":[\"customer-agent\",\"meta-ad-approver\"]}]}");
     Product vega = new Product();
     vega.setId(4L);
@@ -1159,6 +1159,9 @@ class BusinessProcessActivityExecutionServiceTest {
               assertThat(request.processDefinitionId()).isEqualTo(45L);
               assertThat(request.processActivityId()).isEqualTo("pdeGate");
               assertThat(request.title()).contains("Vega");
+              assertThat(request.description())
+                  .isEqualTo(
+                      "Comprovar o valor do PDE. Satisfação como hipótese, prova funcional, identidade, ocasião de retorno e contrapontos com fonte.");
             });
   }
 

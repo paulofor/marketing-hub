@@ -298,6 +298,16 @@ garante que o modelo tenha ferramentas para ler arquivos; isso depende do harnes
 
 ## Critérios de conclusão
 
+Decisão de 02/10/2026: as missões BPM da cadeia PDE devem tornar verificável a passagem
+de situação reconhecível, satisfação pretendida e resultado funcional até identidade e
+ocasião legítima de retorno, conforme `cadeia-produtos-pde-canon.v1.md`. Usar os campos
+existentes de objetivo, contexto, artefatos, evidências e aprendizado; registrar fontes/data,
+versões e contrapontos. Agentes identificam plausibilidade e falhas da experiência real,
+mas não declaram emoção humana, memória, satisfação, compra ou lucro a partir de simulação.
+Revisão textual versiona as novas definições, sem migrar execuções, repetir provas pagas
+compatíveis ou autorizar consumo. Validar a paridade entre diagrama, objetivo persistido,
+descrição recebida pela tarefa e tela antes da entrega.
+
 Antes dos testes, definir matriz proporcional ao fluxo afetado, com sucesso, falhas,
 integrações, observabilidade, métricas, segregação e dispositivos pertinentes. Revisar os
 testes unitários de todos os módulos alterados: contratos, fixtures, mocks e expectativas.

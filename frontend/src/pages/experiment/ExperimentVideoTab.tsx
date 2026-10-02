@@ -28,8 +28,6 @@ interface ExperimentVideoTabProps {
   alterationLocked?: boolean;
 }
 
-const MUSA_PRODUCT_ID = 4;
-
 function formatDate(value?: string | null) {
   if (!value) return "—";
   return new Intl.DateTimeFormat("pt-BR", {
@@ -224,7 +222,7 @@ export default function ExperimentVideoTab({
     experiment.id,
   );
   const pdeVersionVideos = useProductPdeVersionVideos(
-    isPdeExperiment ? MUSA_PRODUCT_ID : undefined,
+    isPdeExperiment ? (experiment.productId ?? undefined) : undefined,
   );
   const tenantContext = useTenantContext();
   const updateVideoReview = useUpdateExperimentVideoAssetReview();
@@ -317,7 +315,9 @@ export default function ExperimentVideoTab({
     : experiment.followUpActionUrl
       ? "PDE em produção pelo destino do experimento"
       : "Sem publicação registrada";
-  const productVideoUrl = "/products/4/sales-videos";
+  const productVideoUrl = experiment.productId
+    ? `/products/${experiment.productId}/sales-videos`
+    : "/products";
   const performance = performanceDashboard.data;
   const publishedPdeVideosCount = publishedPdeHeroVideo ? 1 : 0;
 
@@ -342,12 +342,10 @@ export default function ExperimentVideoTab({
 
   return (
     <div className="d-flex flex-column gap-3">
-      {!isPdeExperiment ? (
-        <ExperimentAdVideoUploadPanel
-          experiment={experiment}
-          locked={alterationLocked}
-        />
-      ) : null}
+      <ExperimentAdVideoUploadPanel
+        experiment={experiment}
+        locked={alterationLocked}
+      />
       <div className="card experiment-video-performance-card">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">

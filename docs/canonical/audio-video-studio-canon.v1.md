@@ -29,6 +29,23 @@ Os fluxos existentes de video devem continuar nos seus lugares atuais:
 
 O novo estudio nao substitui esses fluxos. Ele cria uma frente gradual para producoes mais complexas, com mais etapas criativas e maior exigencia de acabamento.
 
+### Reutilização visual e importação de candidatas
+
+O contrato de importação de MP4 finalizado deve estar disponível também para
+experimentos PDE. A fonte aprovada é declarada explicitamente por ID e permanece
+auditável; o upload não aprova a candidata nem autoriza provider, campanha ou gasto.
+
+Reutilizar um vídeo aprovado não exige adotar página, checkout, identidade Meta ou
+plano financeiro da origem. Para fontes de outro experimento sem adoção comercial,
+o backend exige mesmo produto, hipótese, nicho, território de desejo, tipo/subtipo
+e preço conhecido positivo e igual. A fonte deve estar pronta, aprovada, datada e
+com URL disponível. A origem e o escopo `APPROVED_PRODUCT_OFFER` ficam registrados
+no metadata; a candidata continua pendente de revisão independente.
+
+Origem do próprio experimento e origem comercial formalmente adotada conservam seus
+contratos existentes. Aprovações, custos e resultados da fonte não se transferem à
+nova peça. O custo zero de upload mede essa operação, não o custo total de produção.
+
 ## Direcao comercial
 
 O objetivo do estudio e aumentar o valor percebido dos produtos digitais e campanhas do Marketing Hub, permitindo criar pecas audiovisuais mais sedutoras, narrativas e memoraveis.

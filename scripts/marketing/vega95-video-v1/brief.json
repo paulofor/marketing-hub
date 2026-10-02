@@ -1,0 +1,75 @@
+{
+  "productId": 4,
+  "experimentId": 95,
+  "projectId": 8,
+  "profileId": 63,
+  "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  "durationSeconds": 45,
+  "sourceMediaAssetId": 2810,
+  "sourceVideoAssetId": 42,
+  "sourceSha256": "2f1bc4d7cdf8a513d3b780c08a00f96ec66ccca8c907ea42dd6833266fefb55f",
+  "sourceActorInterval": [10.25, 14.85],
+  "voice": "pf_dora",
+  "voiceModelSha256": "6e742170d309016e5891a994e1ce1559c702a2ccd0075e67ef7157974f6406cb",
+  "voiceBankSha256": "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d",
+  "disclosure": "Personagem e voz por IA · encenação ilustrativa",
+  "priceBrl": 67,
+  "scenes": [
+    {
+      "id": "identificacao",
+      "start": 0,
+      "end": 5,
+      "headline": "Roupa escolhida.\nE agora?",
+      "speech": "Já escolheu a roupa, mas ainda falta alguma coisa?",
+      "kind": "actor"
+    },
+    {
+      "id": "desejo",
+      "start": 5,
+      "end": 10,
+      "headline": "Comece com\no que você já tem.",
+      "speech": "Você pode começar com a combinação que já separou.",
+      "kind": "actor"
+    },
+    {
+      "id": "mecanismo",
+      "start": 10,
+      "end": 18,
+      "headline": "Quatro escolhas.\nUm primeiro passo.",
+      "speech": "No Musa, escolha combinação, ocasião, intenção e um recurso que você já possui.",
+      "kind": "choices"
+    },
+    {
+      "id": "prova",
+      "start": 18,
+      "end": 26,
+      "headline": "Veja o resultado.\nTeste para você.",
+      "speech": "Veja seu primeiro ajuste grátis. Experimente um detalhe e compare como fica para você.",
+      "kind": "proof"
+    },
+    {
+      "id": "retomada",
+      "start": 26,
+      "end": 31,
+      "headline": "Seu resultado.\nPara salvar e retomar.",
+      "speech": "Quer guardar? Informe seu e-mail para salvar e retomar.",
+      "kind": "save"
+    },
+    {
+      "id": "continuidade",
+      "start": 31,
+      "end": 38,
+      "headline": "Uma fórmula pessoal.\nPara suas próximas escolhas.",
+      "speech": "Continue nos Dias dois a sete para organizar escolhas e construir sua fórmula pessoal.",
+      "kind": "continuation"
+    },
+    {
+      "id": "oferta",
+      "start": 38,
+      "end": 45,
+      "headline": "Experimente o primeiro ajuste.\nDecida se quer continuar.",
+      "speech": "Depois, continue por sessenta e sete reais, em pagamento único. Veja seu primeiro ajuste grátis.",
+      "kind": "offer"
+    }
+  ]
+}

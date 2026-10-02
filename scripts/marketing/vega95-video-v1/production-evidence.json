@@ -1,0 +1,271 @@
+{
+  "schemaVersion": "vega95-local-apolo-video.v1",
+  "productId": 4,
+  "experimentId": 95,
+  "projectId": 8,
+  "profileId": 63,
+  "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  "productionReference": "scripts/marketing/create-vega95-video-v1.mjs",
+  "harness": {
+    "execution": "LOCAL_VERSIONED_HARNESS_NOT_PRODUCTION_WORKER",
+    "sources": [
+      {
+        "path": "video-management-service/src/main/resources/prompts/apollo/v2/production-mission.md",
+        "sha256": "496c88b156c1b78df17db5e11726dccbd3291df692b8dcc2bedccaa863dd979a"
+      },
+      {
+        "path": "video-management-service/src/main/resources/prompts/apollo/v2/storyboard-planner.md",
+        "sha256": "2746a6889b555d54f5e4fcf0a66084724c7da0c9f9a1e269f94de221df0157ad"
+      }
+    ]
+  },
+  "sourceActorInterval": [10.25, 14.85],
+  "sources": {
+    "capturedAt": "2026-10-02T05:04:14.232Z",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "qaSegregated": true,
+    "writes": ["/api/pde/public/presence-diagnostic"],
+    "customerEmailsSubmitted": 0,
+    "paidProviderCalls": 0,
+    "productSnapshotSha256": "f714a01af2f97ad5f9e0f2336517cd0b694b9e870343eb0b14c9f619a9fc8210",
+    "captures": [
+      {
+        "file": "choice-1.png",
+        "sha256": "4f82054c8ac795cef27774b9e5001246c7c5ed87377e54cd41625d1c709bd3f9",
+        "text": "1\nSUA COMBINAÇÃO\nQual combinação você já separou para usar?\nCalça e camisa ou blusa\nVestido\nJeans e blusa\nSaia e blusa\nOutra combinação que já tenho",
+        "sourceUrl": "https://v8.clubemusa.com.br/?mh_preview=qa&pde_analytics=off"
+      },
+      {
+        "file": "choice-2.png",
+        "sha256": "4a622388b5d0e83b390021b5262f60f0e1cb4f706abf4dc59bd9e53fbad877be",
+        "text": "2\nA OCASIÃO\nEm qual ocasião você pretende usar essa combinação?\nTrabalho ou reunião\nEncontro ou saída\nRotina comum\nEvento\nFoto ou conteúdo",
+        "sourceUrl": "https://v8.clubemusa.com.br/?mh_preview=qa&pde_analytics=off"
+      },
+      {
+        "file": "choice-3.png",
+        "sha256": "2c020d8f15eae378e80b8ffa1cd602a710b0bbe8e73680d71f0613e3d878087c",
+        "text": "3\nSINAL DESEJADO\nQual sinal você quer reforçar nessa ocasião?\nElegância discreta\nSegurança calma\nCuidado percebido\nLeveza\nImagem mais marcante",
+        "sourceUrl": "https://v8.clubemusa.com.br/?mh_preview=qa&pde_analytics=off"
+      },
+      {
+        "file": "choice-4.png",
+        "sha256": "66a950ea992e118e3fbfaef62f92266984d231d4a4d6d1699da3585be2d7777e",
+        "text": "4\nPRIMEIRO AJUSTE\nQual recurso que você já possui consegue aplicar agora?\nAcrescentar uma terceira peça\nAjustar manga, barra ou caimento\nRepetir uma cor em um detalhe\nTrocar acessório, sapato ou bolsa\nOrganizar cabelo e acabamento",
+        "sourceUrl": "https://v8.clubemusa.com.br/?mh_preview=qa&pde_analytics=off"
+      },
+      {
+        "file": "result.png",
+        "sha256": "4473810f8d1f96643fe8107fb029d585d6829d04d1bb536f2f640f37dd935ba1",
+        "text": "PRIMEIRO AJUSTE GRATUITO\n\nSua mensagem visual e o primeiro ajuste estão organizados\n\nSua mensagem visual e o primeiro ajuste estão organizados. As escolhas foram combinadas por regras locais para você testar e avaliar por si mesma.\n\nSUA ESCOLHA PRINCIPAL HOJE\nCalça e camisa ou blusa",
+        "sourceUrl": "https://v8.clubemusa.com.br/?mh_preview=qa&pde_analytics=off"
+      },
+      {
+        "file": "microaction.png",
+        "sha256": "e805e13ef0cad5b3808473a004b67713a9af530b0e8858a5d1131f8fed205be0",
+        "text": "MICROAÇÃO PARA HOJE\n\nUse calça e camisa ou blusa em trabalho ou reunião.",
+        "sourceUrl": "https://v8.clubemusa.com.br/?mh_preview=qa&pde_analytics=off"
+      },
+      {
+        "file": "save.png",
+        "sha256": "aa72685292a37ce16e2aa0296c1805a48322cf57abbfb1f84853f98fc794da81",
+        "text": "SALVAR SEU DIA 1\n\nSalve este resultado gratuito e comece o Dia 1.\n\nSeu e-mail salva o resultado e libera gratuitamente apenas o Dia 1. Os Dias 2 a 7 e os materiais ficam disponíveis por 90 dias após o pagamento único de R$ 67, sem assinatura ou renovação automática.\n\nE-mail para salvar seu plano\nSalvar resultado e liberar o Dia 1",
+        "sourceUrl": "https://v8.clubemusa.com.br/?mh_preview=qa&pde_analytics=off"
+      },
+      {
+        "file": "checklist.png",
+        "sha256": "d1030abb63a1717d915c5759ce5e67ede91b06bf421174ebdc31359249fc36ed",
+        "text": "Mensagem e contexto\nSei em qual situação vou usar esta combinação.\nEscolhi o sinal que quero perceber em mim: calma, cuidado, presença, feminilidade ou segurança.\nA combinação respeita conforto, clima, atividade e minha preferência.",
+        "sourceUrl": "repo:pde-platform/frontend/public/materials/musa-v12/checklist-antes-de-sair.html",
+        "sourceHtmlSha256": "78178c46940d5cb591b091d0009d8d7180bd2b8eef776da182cebe71bb43fd79",
+        "captureKind": "VERSIONED_MATERIAL_PREVIEW_NOT_LIVE_PUBLICATION"
+      }
+    ],
+    "media": [
+      {
+        "file": "source-2810.mp4",
+        "mediaAssetId": 2810,
+        "sourceVideoAssetId": 42,
+        "sha256": "2f1bc4d7cdf8a513d3b780c08a00f96ec66ccca8c907ea42dd6833266fefb55f"
+      }
+    ],
+    "limitations": [
+      "Capturas demonstram a versão atual do produto; não representam uso ou satisfação de cliente.",
+      "Microação categorial; a encenação não é uma prescrição específica do aplicativo."
+    ]
+  },
+  "video": {
+    "file": "vega95-primeiro-ajuste-v1.mp4",
+    "sha256": "49e1c0fe73b0234227b795762b1578017f92ec34039248cdf0639d2676bd53e9",
+    "durationSeconds": 45,
+    "width": 1080,
+    "height": 1920,
+    "codec": "h264",
+    "audioCodec": "aac"
+  },
+  "narration": {
+    "engine": "kokoro-onnx 0.4.9",
+    "voice": "pf_dora",
+    "modelSha256": "6e742170d309016e5891a994e1ce1559c702a2ccd0075e67ef7157974f6406cb",
+    "voiceBankSha256": "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d",
+    "synthetic": true,
+    "license": "Apache-2.0"
+  },
+  "scenes": [
+    {
+      "id": "identificacao",
+      "start": 0,
+      "end": 5,
+      "headline": "Roupa escolhida.\nE agora?",
+      "speech": "Já escolheu a roupa, mas ainda falta alguma coisa?",
+      "kind": "actor",
+      "voiceDuration": 3.2867,
+      "cues": [
+        {
+          "start": 0.2,
+          "end": 3.1867,
+          "text": "Já escolheu a roupa, mas ainda falta\nalguma coisa?"
+        }
+      ]
+    },
+    {
+      "id": "desejo",
+      "start": 5,
+      "end": 10,
+      "headline": "Comece com\no que você já tem.",
+      "speech": "Você pode começar com a combinação que já separou.",
+      "kind": "actor",
+      "voiceDuration": 3.564,
+      "cues": [
+        {
+          "start": 5.2,
+          "end": 8.464,
+          "text": "Você pode começar com a combinação\nque já separou."
+        }
+      ]
+    },
+    {
+      "id": "mecanismo",
+      "start": 10,
+      "end": 18,
+      "headline": "Quatro escolhas.\nUm primeiro passo.",
+      "speech": "No Musa, escolha combinação, ocasião, intenção e um recurso que você já possui.",
+      "kind": "choices",
+      "voiceDuration": 5.648,
+      "cues": [
+        {
+          "start": 10.2,
+          "end": 14.0827,
+          "text": "No Musa, escolha combinação,\nocasião, intenção e um recurso que"
+        },
+        {
+          "start": 14.1827,
+          "end": 15.548,
+          "text": "você já possui."
+        }
+      ]
+    },
+    {
+      "id": "prova",
+      "start": 18,
+      "end": 26,
+      "headline": "Veja o resultado.\nTeste para você.",
+      "speech": "Veja seu primeiro ajuste grátis. Experimente um detalhe e compare como fica para você.",
+      "kind": "proof",
+      "voiceDuration": 6.0107,
+      "cues": [
+        {
+          "start": 18.2,
+          "end": 22.2747,
+          "text": "Veja seu primeiro ajuste grátis.\nExperimente um detalhe e compare"
+        },
+        {
+          "start": 22.3747,
+          "end": 23.9107,
+          "text": "como fica para você."
+        }
+      ]
+    },
+    {
+      "id": "retomada",
+      "start": 26,
+      "end": 31,
+      "headline": "Seu resultado.\nPara salvar e retomar.",
+      "speech": "Quer guardar? Informe seu e-mail para salvar e retomar.",
+      "kind": "save",
+      "voiceDuration": 3.5,
+      "cues": [
+        {
+          "start": 26.2,
+          "end": 29.4,
+          "text": "Quer guardar? Informe seu e-mail\npara salvar e retomar."
+        }
+      ]
+    },
+    {
+      "id": "continuidade",
+      "start": 31,
+      "end": 38,
+      "headline": "Uma fórmula pessoal.\nPara suas próximas escolhas.",
+      "speech": "Continue nos Dias dois a sete para organizar escolhas e construir sua fórmula pessoal.",
+      "kind": "continuation",
+      "voiceDuration": 5.7547,
+      "cues": [
+        {
+          "start": 31.2,
+          "end": 35.3173,
+          "text": "Continue nos Dias dois a sete para\norganizar escolhas e construir sua"
+        },
+        {
+          "start": 35.4173,
+          "end": 36.6547,
+          "text": "fórmula pessoal."
+        }
+      ]
+    },
+    {
+      "id": "oferta",
+      "start": 38,
+      "end": 45,
+      "headline": "Experimente o primeiro ajuste.\nDecida se quer continuar.",
+      "speech": "Depois, continue por sessenta e sete reais, em pagamento único. Veja seu primeiro ajuste grátis.",
+      "kind": "offer",
+      "voiceDuration": 6.6293,
+      "cues": [
+        {
+          "start": 38.2,
+          "end": 42.5947,
+          "text": "Depois, continue por sessenta e sete\nreais, em pagamento único. Veja seu"
+        },
+        {
+          "start": 42.6947,
+          "end": 44.5293,
+          "text": "primeiro ajuste grátis."
+        }
+      ]
+    }
+  ],
+  "paidProviderCalls": 0,
+  "incrementalProviderConsumptionUsd": 0,
+  "totalOperationalCost": null,
+  "status": "CANDIDATE_PENDING_INDEPENDENT_REVIEW",
+  "campaignAuthorized": false,
+  "limitations": [
+    "A microação atual é categorial; o ajuste da personagem é ilustrativo.",
+    "Não demonstra satisfação, venda, uso ou lucro de cliente.",
+    "Revisão perceptual independente e parecer financeiro para consumo futuro permanecem necessários."
+  ],
+  "productionCode": [
+    {
+      "path": "scripts/marketing/create-vega95-video-v1.mjs",
+      "sha256": "2e1e6221fe4abb793fe966823b68d545ca909beb9aa1dd2af29cf93f244ddc7f"
+    },
+    {
+      "path": "scripts/marketing/render-vega95-narration-v1.py",
+      "sha256": "1914e5fa811e2db81991d234b9b9cd7ad92043b04f03cbcf428d7f9e9cfc9857"
+    },
+    {
+      "path": "scripts/marketing/video-candidate-contract.mjs",
+      "sha256": "a8d98a7785be2ba4f2aded551cce820a129c294feaec03ac850cba3b180e328f"
+    }
+  ]
+}

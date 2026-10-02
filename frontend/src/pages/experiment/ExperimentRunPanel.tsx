@@ -216,10 +216,7 @@ export default function ExperimentRunPanel({
     setHomologationDrafts((current) => ({
       ...current,
       [gateCode]: {
-        ...initialHomologationDraft(
-          gateCode,
-          requiredLandingEvidenceReference,
-        ),
+        ...initialHomologationDraft(gateCode, requiredLandingEvidenceReference),
         ...current[gateCode],
         [field]: value,
       } as HomologationDraft,
@@ -329,6 +326,13 @@ export default function ExperimentRunPanel({
                 value={currentRun.firstVerifiedImpressionAt ?? "—"}
               />
             </div>
+
+            {preflight?.currentEvidenceBlockReason ? (
+              <div className="alert alert-warning mt-3 mb-0" role="alert">
+                <strong>Homologação técnica pendente.</strong>{" "}
+                {preflight.currentEvidenceBlockReason}
+              </div>
+            ) : null}
 
             {!compact ? (
               <div className="mt-4">
@@ -491,7 +495,8 @@ export default function ExperimentRunPanel({
                                         requiredLandingEvidenceReference ? (
                                           <span className="form-text">
                                             A identidade imutável da publicação
-                                            atual já foi preenchida pelo backend.
+                                            atual já foi preenchida pelo
+                                            backend.
                                           </span>
                                         ) : null}
                                       </label>

@@ -564,16 +564,40 @@ public class BackendExperimentRunService {
     return !normalized.equals("teste") && !normalized.equals("test") && !normalized.equals("n/a");
   }
 
-  /** Converte os gates persistidos em contrato de preflight para o frontend. */
+  /** Expõe gates históricos e bloqueia sua reutilização quando a identidade atual divergir. */
   private ExperimentRunPreflightResponse toPreflightResponse(
       ExperimentRun run, List<ExperimentRunGateResult> gates) {
-    boolean hasBlockers = gates.stream().anyMatch(gate -> !isApprovedGateStatus(gate.getStatus()));
+    String requiredReference = requiredLandingEvidenceReference(run);
+    String currentEvidenceBlockReason = currentEvidenceBlockReason(run, requiredReference);
+    boolean hasBlockers =
+        currentEvidenceBlockReason != null
+            || gates.stream().anyMatch(gate -> !isApprovedGateStatus(gate.getStatus()));
     return new ExperimentRunPreflightResponse(
         run.getId(),
         run.getStatus(),
         hasBlockers,
-        requiredLandingEvidenceReference(run),
+        requiredReference,
+        currentEvidenceBlockReason,
         gates.stream().map(this::toGateResponse).toList());
+  }
+
+  /** Confere vigência sem sobrescrever provas, reabrir o experimento ou autorizar gasto. */
+  private String currentEvidenceBlockReason(ExperimentRun run, String requiredReference) {
+    boolean quartzo = quartzoEvidenceScope != null && quartzoEvidenceScope.applies(run);
+    boolean safira = safiraEvidenceScope != null && safiraEvidenceScope.applies(run);
+    if (!quartzo && !safira) return null;
+    if (requiredReference == null || requiredReference.isBlank()) {
+      return "A publicação atual não possui identidade verificável. Comprove a publicação antes"
+          + " de homologar; nenhuma revisão paga ou ativação foi autorizada.";
+    }
+    boolean current =
+        (!quartzo || quartzoEvidenceScope.hasCurrentEvidence(run))
+            && (!safira || safiraEvidenceScope.hasCurrentEvidence(run));
+    return current
+        ? null
+        : "A evidência técnica deste run não corresponde à publicação e ao contrato atuais."
+            + " Homologue a versão atual em uma nova tentativa, preservando os gates históricos;"
+            + " isso não reativa a campanha nem autoriza gasto.";
   }
 
   /** Expõe ao operador a identidade imutável exigida para homologar a landing atual. */

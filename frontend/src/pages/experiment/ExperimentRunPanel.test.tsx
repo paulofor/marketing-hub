@@ -142,6 +142,34 @@ describe("ExperimentRunPanel", () => {
     ).toBeInTheDocument();
   });
 
+  it.each([false, true])(
+    "apresenta o bloqueio de vigência informado pelo backend sem apagar gates históricos (compacto=%s)",
+    (compact) => {
+      const data = vi.mocked(useExperimentRunPreflight)(51).data!;
+      vi.mocked(useExperimentRunPreflight).mockReturnValue({
+        data: {
+          ...data,
+          runStatus: "COMPLETED",
+          hasBlockers: true,
+          currentEvidenceBlockReason:
+            "A evidência pertence à publicação anterior. Homologue a versão atual em uma nova tentativa.",
+          gates: data.gates.map((gate) => ({ ...gate, status: "PASS" })),
+        },
+        isLoading: false,
+      } as ReturnType<typeof useExperimentRunPreflight>);
+
+      render(<ExperimentRunPanel experimentId="99" compact={compact} />);
+
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Homologação técnica pendente",
+      );
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "publicação anterior",
+      );
+      expect(recordHomologation).not.toHaveBeenCalled();
+    },
+  );
+
   it("trata ausência de run após publicação como lacuna histórica sem oferecer mutação retroativa", () => {
     vi.mocked(useExperimentRuns).mockReturnValue({
       data: [],

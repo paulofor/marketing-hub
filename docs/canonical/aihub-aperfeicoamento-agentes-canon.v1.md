@@ -186,6 +186,19 @@ Estas instruções orientam futuras correções; a edição do prompt não imple
 A entrega de código segue a autorização de 21/09/2026; gasto e retomada produtiva continuam
 condicionados ao orçamento, aos contratos e às aprovações próprias do processo.
 
+### Leitura do preflight e evidência vigente — 02/10/2026
+
+O relatório de preflight verifica a identidade atual pelos validadores oficiais
+Quartzo/Safira e informa `currentEvidenceBlockReason`. `hasBlockers` inclui
+divergência ou ausência dessa identidade, mesmo com gates históricos `PASS`.
+A consulta preserva os gates, o status do run e o resultado comercial anterior;
+não reabre experimento, duplica revisão paga nem autoriza mídia. A nova prova
+funcional deve identificar outra tentativa, com capturas e testes da versão atual.
+Uma fila reservada por outro processo permanece uma espera operacional legítima;
+não é autorização para aprovar esse processo ou misturar referências.
+Regressões cobrem publicação antiga, atual, ausente, Safira e tipos independentes,
+além da apresentação completa/compacta no frontend.
+
 ### Identidade de páginas transformadas — decisão de 21/09/2026
 
 Quando uma página auditada atravessar transformações legítimas de publicação, como injeção de

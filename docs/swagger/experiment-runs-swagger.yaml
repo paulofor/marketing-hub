@@ -112,6 +112,15 @@ components:
           $ref: '#/components/schemas/ExperimentRunStatus'
         hasBlockers:
           type: boolean
+          description: Inclui gates não aprovados e evidência de publicação ausente ou vencida, sem alterar a tentativa histórica.
+        requiredLandingEvidenceReference:
+          type: string
+          nullable: true
+          description: Identidade imutável exigida para comprovar a publicação e o contrato atuais.
+        currentEvidenceBlockReason:
+          type: string
+          nullable: true
+          description: Bloqueio técnico de vigência; aprovação histórica não autoriza reutilização ou gasto.
         gates:
           type: array
           items:

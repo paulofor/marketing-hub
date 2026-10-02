@@ -1,0 +1,302 @@
+{
+  "checkedAt": "2026-10-02T16:42:33Z",
+  "scope": {
+    "productId": 7,
+    "commercialPlanId": 2,
+    "chainDefinitionId": 25,
+    "processDefinitionId": 109,
+    "processVersion": 6,
+    "automationRunId": 37,
+    "sourceReference": "experiment:88",
+    "cycleId": null,
+    "parentDefinitionId": 105,
+    "parentAutomationRunId": null
+  },
+  "publication": {
+    "id": 32,
+    "sourceSha256": "dbd8533a7066d3be6b4be8307247844db59e124a05d5919d2e61985e8d83bde4",
+    "servedMetaSha256": "5e4454034844f8d7286bdc992b45a16fb190198834e07b2d61a7d772121673e4",
+    "url": "https://oportunidadebrasil.shop/flows/exp-88-gerasalespage-v1?mh_test=1",
+    "devices": [
+      {
+        "name": "desktop",
+        "identity": "dbd8533a7066d3be6b4be8307247844db59e124a05d5919d2e61985e8d83bde4",
+        "screenshotSha256": "d3db98a9239c6c14c54af0d119a3e94acc12766b9475cd9d90c1dfad09f91bb3",
+        "images": 8,
+        "errors": [],
+        "writes": [],
+        "width": {
+          "body": 1440,
+          "viewport": 1440
+        },
+        "checkoutLinks": 6
+      },
+      {
+        "name": "iphone",
+        "identity": "dbd8533a7066d3be6b4be8307247844db59e124a05d5919d2e61985e8d83bde4",
+        "screenshotSha256": "13fe93482b3698e6fad18f336385e31e4641f2270c156e08eef36dab1571aafb",
+        "images": 8,
+        "errors": [],
+        "writes": [],
+        "width": {
+          "body": 393,
+          "viewport": 393
+        },
+        "checkoutLinks": 6
+      },
+      {
+        "name": "pixel",
+        "identity": "dbd8533a7066d3be6b4be8307247844db59e124a05d5919d2e61985e8d83bde4",
+        "screenshotSha256": "c6448984420ef649024e89c93e769343c0294ef98f3273b0e8de1e64efdfa1bf",
+        "images": 8,
+        "errors": [],
+        "writes": [],
+        "width": {
+          "body": 412,
+          "viewport": 412
+        },
+        "checkoutLinks": 6
+      }
+    ]
+  },
+  "postPurchase": {
+    "versions": [
+      {
+        "name": "obrigado.html",
+        "servedSha256": "19a9e13ce4dd7d19e6b0ecea522c1e6751bb399046545ab5ad4287dc7d425285",
+        "repositorySha256": "19a9e13ce4dd7d19e6b0ecea522c1e6751bb399046545ab5ad4287dc7d425285",
+        "identical": true
+      },
+      {
+        "name": "obrigado.js",
+        "servedSha256": "483eaf2c05f4dfd89849f483372afe237b072ea9510838c8768f1a47af8ecf06",
+        "repositorySha256": "483eaf2c05f4dfd89849f483372afe237b072ea9510838c8768f1a47af8ecf06",
+        "identical": true
+      },
+      {
+        "name": "privacidade.html",
+        "servedSha256": "2603e896aa4f45fc6ca8b85821ce4cd41955dd0fd729133df36b56c9248da5c5",
+        "repositorySha256": "2603e896aa4f45fc6ca8b85821ce4cd41955dd0fd729133df36b56c9248da5c5",
+        "identical": true
+      }
+    ],
+    "simulatedUi": [
+      {
+        "device": "desktop",
+        "missingPaymentBlocked": true,
+        "requiredFieldsBlocked": true,
+        "recoveredFailure": true,
+        "delivered": true,
+        "simulatedPosts": 2,
+        "productionPosts": 0,
+        "errors": [],
+        "overflow": false,
+        "screenshotSha256": "a27148ee2362f79426afabd0d571d278589d3837c4cf7c4cb0b3deb3c2a72c17"
+      },
+      {
+        "device": "iphone",
+        "missingPaymentBlocked": true,
+        "requiredFieldsBlocked": true,
+        "recoveredFailure": true,
+        "delivered": true,
+        "simulatedPosts": 2,
+        "productionPosts": 0,
+        "errors": [],
+        "overflow": false,
+        "screenshotSha256": "3db599386ca0e2eb73857febb6cc1e47da3d9f7c2550e1c72998696434608f95"
+      },
+      {
+        "device": "pixel",
+        "missingPaymentBlocked": true,
+        "requiredFieldsBlocked": true,
+        "recoveredFailure": true,
+        "delivered": true,
+        "simulatedPosts": 2,
+        "productionPosts": 0,
+        "errors": [],
+        "overflow": false,
+        "screenshotSha256": "6dc4f6ebf69919e01cbbde6be6a12201e11b2368c2e49132915d38c757d20641"
+      }
+    ],
+    "actualProductionPayments": 0,
+    "actualProductionEmails": 0
+  },
+  "measurement": {
+    "persistedEventCountBefore": 711,
+    "persistedEventCountAfter": 711,
+    "lastEventIdBefore": 5299,
+    "lastEventIdAfter": 5299,
+    "duplicateEventIds": 0,
+    "qualificationSource": "experiment_landing_analytics_event.traffic_quality",
+    "unobservedDownstreamEvents": "UNKNOWN"
+  },
+  "financial": {
+    "planRevisionId": 9,
+    "plutusExecutionId": 62,
+    "recommendedCycleLimitBrl": 100,
+    "persistedMediaSpendLimitBrl": 125,
+    "commercialPlanMaxBudgetBrl": 400,
+    "budgetModified": false,
+    "userDecision": "PENDING"
+  },
+  "distribution": {
+    "campaignId": "120251282333490326",
+    "status": "PAUSED",
+    "effectiveStatus": "PAUSED",
+    "experimentStatus": "INVALIDATED",
+    "reactivationAuthorized": false,
+    "allObservedCampaignsPaused": true
+  },
+  "localAcceptance": {
+    "backendTests": 3805,
+    "backendFailures": 0,
+    "backendErrors": 0,
+    "backendSkipped": 24,
+    "frontendTests": 828,
+    "frontendFailures": 0,
+    "paymentContractTests": 11,
+    "paymentContractFailures": 0,
+    "realSalesProven": false
+  },
+  "localIntegratedUi": [
+    {
+      "device": "desktop",
+      "state": "stale",
+      "runId": 92001,
+      "errors": [],
+      "writes": [],
+      "external": [],
+      "screenshotSha256": "04e9ab501d2419e4649e26886c5da57c51c6f74717d10f993057b17cd274707f"
+    },
+    {
+      "device": "desktop",
+      "state": "current",
+      "runId": 92001,
+      "errors": [],
+      "writes": [],
+      "external": [],
+      "screenshotSha256": "a2ff9968605948e784b1e46776b07253b2e11f2f75ac101e73ccd1859c6647c6"
+    },
+    {
+      "device": "iphone",
+      "state": "stale",
+      "runId": 92001,
+      "errors": [],
+      "writes": [],
+      "external": [],
+      "screenshotSha256": "435465aa0dbe4f3934fa419b9dcba3703945bb9b3d329a8439e7d8b7967e0390"
+    },
+    {
+      "device": "iphone",
+      "state": "current",
+      "runId": 92001,
+      "errors": [],
+      "writes": [],
+      "external": [],
+      "screenshotSha256": "a26e5de7be96b484086d830b0f3f840e73e055c8ea42ce206b5cfad18368e20e"
+    },
+    {
+      "device": "pixel",
+      "state": "stale",
+      "runId": 92001,
+      "errors": [],
+      "writes": [],
+      "external": [],
+      "screenshotSha256": "108138eb1119c33c037c8c544d3dc3bbd98ca4233c4b2a343e6e09930ea7a6ae"
+    },
+    {
+      "device": "pixel",
+      "state": "current",
+      "runId": 92001,
+      "errors": [],
+      "writes": [],
+      "external": [],
+      "screenshotSha256": "d833fe127704d490126a2042b753cfc58ec980344ad36ff87aa4e9d36dd638c7"
+    }
+  ],
+  "advertisements": {
+    "assets": [
+      {
+        "creativeId": 522,
+        "versionNumber": 10,
+        "status": "READY",
+        "format": "LINK",
+        "destinationUrl": "https://oportunidadebrasil.shop/flows/exp-88-gerasalespage-v1",
+        "primaryText": "Manicure: ganhe tempo com 10 posts, 10 stories e textos prontos para divulgar seu trabalho. Kit personalizável por R$ 67.",
+        "headline": "10 posts + 10 stories prontos",
+        "assetSha256": "1301003493f1b8f9edc13034605d4400113f81144a9b527b6b2e0f753bbbc689",
+        "byteCount": 1018591,
+        "browserUserAgentHttpStatus": 200
+      },
+      {
+        "creativeId": 523,
+        "versionNumber": 10,
+        "status": "READY",
+        "format": "STORY",
+        "destinationUrl": "https://oportunidadebrasil.shop/flows/exp-88-gerasalespage-v1",
+        "primaryText": "Manicure: ganhe tempo com 10 posts, 10 stories e textos prontos para divulgar seu trabalho. Kit personalizável por R$ 67.",
+        "headline": "Seu kit de conteúdo por R$ 67",
+        "assetSha256": "99cee8b3e5ab0cd94fec66feca1069c6aa3aeb37df6c6053944dbc04ce2303fa",
+        "byteCount": 1249508,
+        "browserUserAgentHttpStatus": 200
+      }
+    ],
+    "observedMeta": [
+      {
+        "id": "120251282333490326",
+        "status": "PAUSED",
+        "effective_status": "PAUSED",
+        "ads": [
+          {
+            "id": "120251282334310326",
+            "status": "ACTIVE",
+            "effective_status": "CAMPAIGN_PAUSED",
+            "creativeId": "1399338238757778",
+            "title": "Seu kit de conteúdo por R$ 67",
+            "body": "Manicure: ganhe tempo com 10 posts, 10 stories e textos prontos para divulgar seu trabalho. Kit personalizável por R$ 67.",
+            "destinationUrl": "https://oportunidadebrasil.shop/flows/exp-88-gerasalespage-v1?campaign=exp-88",
+            "imageHash": "26294c7b8073dc1e743de9f99ff1aba4"
+          },
+          {
+            "id": "120251282334270326",
+            "status": "ACTIVE",
+            "effective_status": "CAMPAIGN_PAUSED",
+            "creativeId": "1444965961014502",
+            "title": "10 posts + 10 stories prontos",
+            "body": "Manicure: ganhe tempo com 10 posts, 10 stories e textos prontos para divulgar seu trabalho. Kit personalizável por R$ 67.",
+            "destinationUrl": "https://oportunidadebrasil.shop/flows/exp-88-gerasalespage-v1?campaign=exp-88",
+            "imageHash": "cfd181ecce7e027724c3a730c0e9e91f"
+          }
+        ]
+      },
+      {
+        "id": "120251812866290326",
+        "status": "PAUSED",
+        "effective_status": "PAUSED",
+        "ads": [
+          {
+            "id": "120251812867700326",
+            "status": "ACTIVE",
+            "effective_status": "CAMPAIGN_PAUSED",
+            "creativeId": "1444965961014502",
+            "title": "10 posts + 10 stories prontos",
+            "body": "Manicure: ganhe tempo com 10 posts, 10 stories e textos prontos para divulgar seu trabalho. Kit personalizável por R$ 67.",
+            "destinationUrl": "https://oportunidadebrasil.shop/flows/exp-88-gerasalespage-v1?campaign=exp-88",
+            "imageHash": "cfd181ecce7e027724c3a730c0e9e91f"
+          },
+          {
+            "id": "120251812867190326",
+            "status": "ACTIVE",
+            "effective_status": "CAMPAIGN_PAUSED",
+            "creativeId": "1399338238757778",
+            "title": "Seu kit de conteúdo por R$ 67",
+            "body": "Manicure: ganhe tempo com 10 posts, 10 stories e textos prontos para divulgar seu trabalho. Kit personalizável por R$ 67.",
+            "destinationUrl": "https://oportunidadebrasil.shop/flows/exp-88-gerasalespage-v1?campaign=exp-88",
+            "imageHash": "26294c7b8073dc1e743de9f99ff1aba4"
+          }
+        ]
+      }
+    ],
+    "paidRevisions": 0
+  }
+}

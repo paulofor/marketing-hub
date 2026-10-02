@@ -9,4 +9,5 @@ public record ExperimentRunPreflightResponse(
     ExperimentRunStatus runStatus,
     boolean hasBlockers,
     String requiredLandingEvidenceReference,
+    String currentEvidenceBlockReason,
     List<ExperimentRunGateResultResponse> gates) {}

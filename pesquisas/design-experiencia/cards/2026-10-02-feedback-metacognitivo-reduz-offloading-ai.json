@@ -1,0 +1,18 @@
+{
+  "cardKey": "feedback-metacognitivo-reduz-offloading-ai",
+  "collection": "neuromarketing",
+  "title": "Fricção produtiva deve responder ao engajamento, não ao relógio",
+  "finding": "Em experimento controlado com 398 participantes, liberar geração direta somente após uma contribuição argumentativa mínima aumentou a interação, reduziu a incorporação verbatim de texto da IA e acelerou a avaliação posterior em relação ao chatbot padrão, sem aumentar significativamente o tempo total da tarefa. Um controle com espera equivalente mostrou que parte do ganho depende de atrelar a fricção ao engajamento, e não apenas de impor atraso.",
+  "mechanism": "Hipótese interpretativa: formular uma posição e uma justificativa antes da geração ajuda o usuário a construir uma representação própria e um referencial para avaliar a saída da IA. Fricção contingente ao trabalho pode estimular autorregulação; atraso arbitrário ou bloqueio rígido pode apenas adicionar custo.",
+  "commercialApplication": "No Marketing Hub, quando for importante preservar julgamento antes da geração, testar um desbloqueio curto baseado em contribuição real, como registrar objetivo, hipótese, restrição ou critério de sucesso antes de liberar geração completa. Manter rota clara para delegação legítima e não aplicar o gate indiscriminadamente.",
+  "evidenceStrength": "Moderada a forte para a tarefa estudada: experimento controlado com N=398 e condição Time-Matched para separar engajamento de simples espera. A validade externa para marketing, criação comercial e operação de agentes ainda não foi demonstrada.",
+  "publishedOn": "2026-10-01",
+  "validUntil": "2027-04-01",
+  "experimentHypothesis": "Em tarefas de briefing e criação nas quais julgamento prévio importa, um desbloqueio após contribuição mínima relevante reduzirá incorporação acrítica de saídas da IA e custo de verificação posterior sem elevar o tempo total, em comparação com geração imediata e com atraso não contingente.",
+  "risks": "Gates prematuros podem frustrar, estimular respostas apenas para destravar a ferramenta ou bloquear delegação legítima. Um detector de engajamento mal calibrado pode introduzir vieses e fricção desigual.",
+  "limits": "O estudo avaliou escrita argumentativa em tarefa controlada; não mediu conversão, vendas, qualidade de criativos ou produtividade no Marketing Hub. Os resultados não justificam tornar toda interação Socrática ou adicionar fricção a tarefas de baixo risco.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-02-feedback-metacognitivo-engage-to-unlock.md",
+  "sourceTitle": "Fonte revisada — fricção produtiva e engajamento antes da geração",
+  "sourceSha256": "017a2acc29d5936a05d569d716c873263d3f0564d2bdfc8b468d8cbfc64b8c0d"
+}

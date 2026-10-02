@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -206,6 +207,25 @@ class BusinessProcessChainServiceTest {
                         new BusinessProcessChainItemRequest(49L, "Versão atual."))))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("duas versões do mesmo processo");
+  }
+
+  /** Recusa metadado legado e subprocesso sem alterar o rascunho nem suas versões anteriores. */
+  @Test
+  void rejectsNonCanonicalValueProcessTypes() {
+    for (String type : java.util.List.of("CORE", "SUBPROCESS", "UNKNOWN")) {
+      var draft = chain(8, "DRAFT");
+      var definition = process(49L, "communication", "Comunicação", 5);
+      definition.setProcessType(type);
+      when(repository.findById(10L)).thenReturn(Optional.of(draft));
+      when(processRepository.findById(49L)).thenReturn(Optional.of(definition));
+      assertThatThrownBy(
+              () ->
+                  service.updateDraft(
+                      10L, request(new BusinessProcessChainItemRequest(49L, "Nova hipótese."))))
+          .isInstanceOf(ResponseStatusException.class)
+          .hasMessageContaining("VALUE_PROCESS");
+    }
+    verify(itemRepository, never()).deleteByChainDefinitionId(anyLong());
   }
 
   /** Publica o rascunho e aposenta somente a versão anteriormente vigente. */

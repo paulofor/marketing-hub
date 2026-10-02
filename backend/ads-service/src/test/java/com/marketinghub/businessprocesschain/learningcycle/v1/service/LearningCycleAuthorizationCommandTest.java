@@ -137,6 +137,27 @@ class LearningCycleAuthorizationCommandTest {
     assertThat(service.list(4L).getFirst().commercialPreparation().readyForReview()).isFalse();
   }
 
+  /** Aplica a política publicada às novas decisões sem modificar o contrato histórico do ciclo. */
+  @Test
+  void publishedChangePolicyGovernsFutureChangesWithoutMigratingOldCycle() {
+    assertThat(service.list(4L).getFirst().commands())
+        .extracting(LearningCycleResponse.CommandOption::action)
+        .contains("REWORK");
+    var current = new BusinessProcessDefinition();
+    current.setDiagramJson("{\"experimentChangePolicy\":\"CHANGE_PER_CYCLE_V1\"}");
+    when(processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+            LearningCycleRules.PROCESS_CODE, "PUBLISHED"))
+        .thenReturn(Optional.of(current));
+    assertThat(service.list(4L).getFirst().commands())
+        .extracting(LearningCycleResponse.CommandOption::action)
+        .contains("ADJUST")
+        .doesNotContain("REWORK", "SCALE", "AUTHORIZE_SCALE");
+    assertThat(cycle.getProcessDefinitionId()).isEqualTo(75L);
+    assertThat(cycle.getRevision()).isEqualTo(13L);
+    org.mockito.Mockito.verify(cycles, org.mockito.Mockito.never())
+        .save(org.mockito.ArgumentMatchers.any());
+  }
+
   /** Libera o comando quando o teto operacional coincide exatamente com a decisão do ciclo. */
   @Test
   void exposesAuthorizationCommandWhenExperimentBudgetMatchesCycle() {

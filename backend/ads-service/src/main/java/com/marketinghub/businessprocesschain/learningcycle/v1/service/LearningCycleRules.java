@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: definir as transições comerciais e os limites verificáveis do ciclo v1. */
 public final class LearningCycleRules {
   public static final String PROCESS_CODE = "value-chain-learning-sales-cycle";
+  public static final String CHANGE_PER_CYCLE = "CHANGE_PER_CYCLE_V1";
   public static final List<String> STAGES =
       List.of(
           "LEARNING",
@@ -100,6 +101,15 @@ public final class LearningCycleRules {
       case "SCALE_AUTHORIZATION" -> List.of(Action.AUTHORIZE_SCALE, Action.STOP);
       default -> List.of();
     };
+  }
+
+  /** Exige sucessor para mudanças nas novas definições, preservando o contrato histórico. */
+  public static List<Action> actions(String stage, boolean separateChanges) {
+    if (!separateChanges) return actions(stage);
+    var result = new java.util.ArrayList<>(actions(stage));
+    result.removeAll(List.of(Action.REWORK, Action.SCALE, Action.AUTHORIZE_SCALE));
+    if (!result.isEmpty() && !result.contains(Action.ADJUST)) result.add(Action.ADJUST);
+    return List.copyOf(result);
   }
 
   /** Nomeia os comandos administrativos sem prometer execução externa. */

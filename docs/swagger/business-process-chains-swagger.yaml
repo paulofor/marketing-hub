@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Cadeias de processos de valor
   version: 1.0.0
-  description: Leitura versionada das cadeias e dos processos que criam e entregam valor.
+  description: Leitura, edição em rascunho e publicação versionada das cadeias. Histórico e execuções anteriores permanecem vinculados às suas definições.
 paths:
   /api/business-process-chains:
     get:
@@ -17,7 +17,44 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/BusinessProcessChainSummary"
+  /api/business-process-chains/catalog:
+    get:
+      summary: Lista cadeias publicadas e rascunhos editáveis
+      responses:
+        "200":
+          description: Catálogo sem versões aposentadas; histórico continua acessível pelo ID.
+  /api/business-process-chains/{id}/draft:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      summary: Cria próxima versão ou reutiliza o rascunho existente do código
+      responses:
+        "201": { description: Rascunho com sequência e contribuições clonadas }
+        "404": { description: Cadeia de origem inexistente }
+  /api/business-process-chains/{id}/publish:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+    post:
+      summary: Publica rascunho e aposenta versões anteriores do mesmo código
+      responses:
+        "200": { description: Versão publicada sem migrar produtos ou execuções }
+        "400": { description: Processo não publicado, duplicado ou subprocesso na sequência }
+        "409": { description: Versão não editável }
   /api/business-process-chains/{id}:
+    put:
+      summary: Edita somente o rascunho e recompõe sua sequência
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BusinessProcessChainSave"
+      responses:
+        "200": { description: Rascunho salvo }
+        "400": { description: Metadados ou processos inválidos }
+        "409": { description: Edição de versão publicada ou aposentada proibida }
     get:
       summary: Exibe os processos de uma cadeia em ordem de valor
       operationId: getBusinessProcessChain
@@ -39,6 +76,23 @@ paths:
           description: Cadeia não encontrada
 components:
   schemas:
+    BusinessProcessChainSave:
+      type: object
+      required: [name, purpose, outcomeDescription, primaryMetric, processes]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        purpose: { type: string, minLength: 1 }
+        outcomeDescription: { type: string, minLength: 1, maxLength: 500 }
+        primaryMetric: { type: string, minLength: 1, maxLength: 200 }
+        processes:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [processDefinitionId, valueContribution]
+            properties:
+              processDefinitionId: { type: integer, format: int64 }
+              valueContribution: { type: string, minLength: 1, maxLength: 500 }
     BusinessProcessChainSummary:
       type: object
       required:

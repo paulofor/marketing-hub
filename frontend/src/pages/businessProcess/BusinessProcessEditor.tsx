@@ -106,6 +106,36 @@ export default function BusinessProcessEditor({
         </button>
       </div>
 
+      {value.processCode === "value-chain-learning-sales-cycle" ? (
+        <label className="form-label d-block">
+          Política de mudanças do ciclo
+          <select
+            className="form-select"
+            value={value.diagram.experimentChangePolicy ?? ""}
+            onChange={(event) =>
+              setValue({
+                ...value,
+                diagram: {
+                  ...value.diagram,
+                  experimentChangePolicy:
+                    event.target.value === "CHANGE_PER_CYCLE_V1"
+                      ? "CHANGE_PER_CYCLE_V1"
+                      : undefined,
+                },
+              })
+            }
+          >
+            <option value="">Contrato histórico de correção e escala</option>
+            <option value="CHANGE_PER_CYCLE_V1">
+              Cada mudança exige novo ciclo e novo experimento
+            </option>
+          </select>
+          <span className="small text-body-secondary">
+            A política da nova definição orienta os comandos do backend.
+            Ocorrências anteriores preservam sua definição.
+          </span>
+        </label>
+      ) : null}
       <div className="row g-3">
         {[
           ["Código", "processCode", 4],
@@ -121,6 +151,7 @@ export default function BusinessProcessEditor({
             </label>
             <input
               className="form-control"
+              aria-label={String(label)}
               required={field !== "technicalReference"}
               disabled={
                 identityLocked &&
@@ -152,8 +183,7 @@ export default function BusinessProcessEditor({
             value={value.processType ?? "VALUE_PROCESS"}
             onChange={(event) => {
               const processType = event.target.value as
-                | "VALUE_PROCESS"
-                | "SUBPROCESS";
+                "VALUE_PROCESS" | "SUBPROCESS";
               setValue({
                 ...value,
                 processType,
@@ -181,9 +211,7 @@ export default function BusinessProcessEditor({
               setValue({
                 ...value,
                 executionScope: event.target.value as
-                  | "PRODUCT"
-                  | "INDEPENDENT"
-                  | "PRODUCT_OR_INDEPENDENT",
+                  "PRODUCT" | "INDEPENDENT" | "PRODUCT_OR_INDEPENDENT",
               })
             }
           >
@@ -223,6 +251,7 @@ export default function BusinessProcessEditor({
           >
             <label className="form-label">{label} *</label>
             <textarea
+              aria-label={String(label)}
               className="form-control"
               rows={2}
               required
@@ -327,6 +356,32 @@ export default function BusinessProcessEditor({
             </button>
             {node.type === "TASK" ? (
               <div className="process-editor__task-contracts">
+                <label className="form-label">
+                  Chave do agente responsável (opcional)
+                  <input
+                    className="form-control"
+                    value={node.responsibleAgentKeys?.join(", ") ?? ""}
+                    onChange={(event) =>
+                      updateNode(index, {
+                        responsibleAgentKeys: event.target.value.trim()
+                          ? [event.target.value.trim()]
+                          : undefined,
+                      })
+                    }
+                  />
+                </label>
+                <label className="form-label">
+                  Domínio da responsabilidade (opcional)
+                  <input
+                    className="form-control"
+                    value={node.responsibilityDomain ?? ""}
+                    onChange={(event) =>
+                      updateNode(index, {
+                        responsibilityDomain: event.target.value || undefined,
+                      })
+                    }
+                  />
+                </label>
                 <div className="process-editor__resource">
                   <label
                     className="form-label small fw-semibold"
@@ -529,6 +584,19 @@ export default function BusinessProcessEditor({
                 updateFlow(index, { label: e.target.value || undefined })
               }
             />
+            <select
+              className="form-select"
+              aria-label="Tipo de fluxo"
+              value={flow.kind ?? ""}
+              onChange={(event) =>
+                updateFlow(index, {
+                  kind: event.target.value === "REWORK" ? "REWORK" : undefined,
+                })
+              }
+            >
+              <option value="">Avanço</option>
+              <option value="REWORK">Retorno</option>
+            </select>
             <button
               type="button"
               className="btn btn-outline-danger"

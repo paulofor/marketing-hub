@@ -43,6 +43,51 @@ class AgentResponsibilityMatrixTest {
         .hasMessageContaining("exatamente uma");
   }
 
+  /** Aceita especializações vigentes somente no agente, atividade e processo correspondentes. */
+  @Test
+  void acceptsScopedConstructionResponsibilities() {
+    for (String activity :
+        List.of(
+            "technicalHomologation",
+            "psiqueAdherent",
+            "psiqueRecovery",
+            "psiqueSafety",
+            "prototypeCorrection")) {
+      boolean rework = activity.equals("prototypeCorrection");
+      var node =
+          (com.fasterxml.jackson.databind.node.ObjectNode)
+              assignment(
+                  rework ? "landing-generator" : "customer-agent",
+                  rework
+                      ? "PDE_FUNCTIONAL_REWORK"
+                      : activity.equals("technicalHomologation")
+                          ? "PDE_TECHNICAL_HOMOLOGATION"
+                          : "SYNTHETIC_EXPERIENCE_REVIEW",
+                  rework ? "Dédalo" : "Psique");
+      node.put("id", activity);
+      assertThatCode(
+              () -> AgentResponsibilityMatrix.validate(node, "TASK", "pde-construction-approval"))
+          .doesNotThrowAnyException();
+      assertThatThrownBy(() -> AgentResponsibilityMatrix.validate(node, "TASK", "another-process"))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("incompatível");
+      node.put("id", "anotherActivity");
+      assertThatThrownBy(
+              () -> AgentResponsibilityMatrix.validate(node, "TASK", "pde-construction-approval"))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("incompatível");
+    }
+    var wrongAgent =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            assignment("growth-operator", "PDE_FUNCTIONAL_REWORK", "Hermes");
+    wrongAgent.put("id", "prototypeCorrection");
+    assertThatThrownBy(
+            () ->
+                AgentResponsibilityMatrix.validate(wrongAgent, "TASK", "pde-construction-approval"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("incompatível");
+  }
+
   /** Rejeita um agente usando o domínio decisório de outro perfil. */
   @Test
   void rejectsResponsibilityDomainFromAnotherAgent() {
@@ -82,6 +127,25 @@ class AgentResponsibilityMatrixTest {
 
     assertThatCode(() -> AgentResponsibilityMatrix.validate(node, "TASK"))
         .doesNotThrowAnyException();
+  }
+
+  /** Preserva o gate determinístico sem permitir que outros nós dispensem a autoria. */
+  @Test
+  void acceptsOnlyTheDeterministicConstructionGateWithoutAnAgent() throws Exception {
+    var node =
+        mapper.readTree(
+            """
+        {"id":"agentValidationGate","owner":"Backend","executionMode":"DETERMINISTIC",
+         "responsibilityDomain":"PDE_AGENT_VALIDATION_GATE"}
+        """);
+    assertThatCode(
+            () -> AgentResponsibilityMatrix.validate(node, "TASK", "pde-construction-approval"))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> AgentResponsibilityMatrix.validate(node, "TASK", "another-process"))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(
+            () -> AgentResponsibilityMatrix.validate(node, "GATEWAY", "pde-construction-approval"))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   /** Monta um nó de teste com o contrato mínimo de autoria. */

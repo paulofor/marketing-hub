@@ -1,0 +1,33 @@
+{
+  "chainCode": "pde-value-creation-delivery",
+  "name": "Criação e entrega de valor de Produtos Digitais Experienciais",
+  "purpose": "Transformar evidência em protótipo homologado, corrigir rejeições, preparar comunicação, vender e entregar sem fabricar validação humana. Critérios comerciais explícitos v1. Descoberta aprofunda lacunas por candidata antes da estratégia. Produtos IA usam preparação Safira antes do preflight e da autorização humana. Pesquisa pública automatizada PUBLIC_SOURCES_V1 sem recrutamento obrigatório. PAID_INSTAGRAM_ONLY_V1: toda divulgacao comercial usa midia paga no Instagram; convites individuais e canais nao atribuidos permanecem apenas historicos. PRODUCT_IDENTITY_V1: nome interno e tipo sao escolhidos no Processo 2 antes da economia e da construcao. O Processo 2 usa MARKET_STRATEGY_V4 e PDE_AGENT_VALIDATION_V1 sem qualquer gate de piloto humano. SATISFACTION_CONTINUITY_V1: situação reconhecível → benefício desejado → experiência real → produto identificável → motivo legítimo para voltar; sem entrevistas ou opinião solicitada. CHANGE_PER_CYCLE_V1: cada mudança das condições testadas exige novo ciclo e novo experimento, uma variável principal, vínculo com o predecessor e métricas separadas; preservar histórico e autorizações próprias.",
+  "outcomeDescription": "Venda entregue e aprendizado com contribuição verificável; cada mudança segue em novo ciclo e novo experimento vinculado ao predecessor, preservando versões, custos e resultados.",
+  "primaryMetric": "Compras líquidas, entrega útil, contribuição e retorno voluntário atribuível",
+  "processes": [
+    {
+      "processCode": "pde-opportunity-discovery",
+      "valueContribution": "Argos reúne situações, linguagem pública, satisfação possível, fontes e contrapontos, sem escolher estratégia nem provar demanda. Preservar evidências do predecessor e explicitar a lacuna da nova hipótese."
+    },
+    {
+      "processCode": "pde-commercial-plan-offer",
+      "valueContribution": "Atena escolhe uma satisfação como hipótese; Plutus limita custos, inclusive amostras sem compra; Dédalo liga ação, resultado, identidade e ocasião de retorno. Definir novo ciclo e novo experimento, uma mudança principal, condições mantidas e limites próprios."
+    },
+    {
+      "processCode": "pde-construction-approval",
+      "valueContribution": "Dédalo constrói resultado fiel, aplicável e recuperável; Psique e Têmis avaliam a mesma versão sem alegar satisfação humana. Construir no sucessor; reutilizar artefatos compatíveis com origem e versão sem alterar a experiência histórica."
+    },
+    {
+      "processCode": "pde-communication-sales-journey",
+      "valueContribution": "Íris e Apolo mostram situação, participação do produto e satisfação possível com identidade contínua; o backend integra prova e continuidade paga. Novo criativo, copy, CTA, amostra ou destino exige novo ciclo e novo experimento antes da mudança."
+    },
+    {
+      "processCode": "pde-commercial-homologation-activation",
+      "valueContribution": "Preparação, revisões e preflight comprovam promessa, versão, compra/entrega, eventos e limites; autorização humana permanece separada. Conferir identidade e atribuição do sucessor, renovar gates afetados e exigir autorização própria de gasto."
+    },
+    {
+      "processCode": "pde-sales-delivery-learning",
+      "valueContribution": "Hermes, entrega e Plutus conciliam compras, uso, reembolso e contribuição; o ciclo preserva hipóteses, contrapontos e retorno à atividade da causa. Conciliar cada experimento; mudanças e escala seguem em novo ciclo e novo experimento com memória do predecessor."
+    }
+  ]
+}

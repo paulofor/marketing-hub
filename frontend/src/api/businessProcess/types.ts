@@ -18,6 +18,7 @@ export type ProcessNode = {
   executionResourceCode?: string;
   subprocessCode?: string;
   responsibleAgentKeys?: string[];
+  responsibilityDomain?: string;
   documentOutput?: {
     label: string;
   };
@@ -43,6 +44,7 @@ export type ProcessFlow = {
 };
 
 export type ProcessDiagram = {
+  experimentChangePolicy?: "CHANGE_PER_CYCLE_V1";
   salesFlowVersion?: number;
   nodes: ProcessNode[];
   flows: ProcessFlow[];

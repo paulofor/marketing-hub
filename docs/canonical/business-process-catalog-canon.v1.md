@@ -984,6 +984,13 @@ seus contratos; a automação não preenche provas nem autoriza publicação por
 - Uma autorização conserva cadeia, processo/versionamento, produto, ciclo e referência. Publicar
   outra versão não migra automaticamente a execução. A definição retirada pode terminar seus
   callbacks existentes, mas novos disparos continuam sujeitos ao contrato de versão publicada.
+  Quando a versão deixa de estar publicada e não está fixada pela ficha da referência exata,
+  o conciliador encerra o controle como `CLOSED` após receber tarefas já iniciadas, inclusive nos
+  subprocessos. A perda de autorização na origem bloqueia novos disparos nos filhos. Objetivos
+  integralmente comprovados ainda recebem `COMPLETED`; pendências, custos e provas permanecem
+  no histórico. A definição retirada não pode reservar o produto indefinidamente. Versões
+  `RETIRED` fixadas pela ficha continuam executáveis conforme o contrato da ficha, sem migração
+  silenciosa para a versão nova. Encerramento e motivo são persistidos uma única vez no diário.
 - Produtos diferentes avançam em paralelo. Processos do mesmo produto aguardam uma execução
   anterior terminar ou pausar; subprocessos da mesma raiz compartilham a autorização da chamada.
 - Pausa primeiro aguarda tarefas em curso no processo e nas delegações. Só depois libera o produto

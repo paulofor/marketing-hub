@@ -143,7 +143,7 @@ components:
               status:
                 type: string
                 enum: [READY, UNAVAILABLE, QUEUED, WAITING_ACTIVITY, WAITING_INPUT, WAITING_HUMAN, WAITING_SUBPROCESS, WAITING_PARENT, PAUSING, PAUSED, BLOCKED, ERROR, COMPLETED, CLOSED, REVALIDATION_REQUIRED]
-                description: CLOSED encerra o controle de um ciclo fechado com objetivos pendentes; preserva contagens e evidências, sem aprovação artificial ou reserva indefinida do produto.
+                description: CLOSED encerra o controle com objetivos pendentes quando o ciclo está fechado ou a versão não está publicada nem fixada pela ficha da referência exata. Aguarda callbacks em curso, inclusive de subprocessos; a retirada da origem bloqueia novos disparos nos filhos. Preserva contagens, custos e evidências, sem aprovação artificial, retomada ou reserva indefinida do produto. Objetivos integralmente comprovados recebem COMPLETED.
               reason: {type: string}
               userAction:
                 type: object

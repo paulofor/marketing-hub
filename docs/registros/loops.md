@@ -8566,3 +8566,30 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
 - **Regressões:** HTTP/H2 com duas requisições concorrentes, preservação do run e
   dos gates anteriores, bloqueio de tentativa independente, UI completa/compacta
   e integração responsiva consumindo respostas HTTP reais em UTF-8.
+
+## LOOP-BPM-VERSAO-RETIRADA-RESERVA-FILA — 02/10/2026
+
+- **Evidência confirmada:** Capella #7, processo 5.4 v7 (#122), execução #39, cadeia #26 e
+  `experiment:88` permaneciam `QUEUED`. MCP, histórico e tela confirmaram que a execução #32
+  (`experiment:94`, processo #96 v10) reservava o produto em `WAITING_HUMAN`. Sua definição
+  estava `RETIRED`, a atividade já dizia que somente versão publicada recebe novos comandos
+  e não existia ficha vinculada ao produto. As execuções #37/#38 também usavam versões retiradas.
+  `last_reconciled_at` continuava avançando: o conciliador estava ativo.
+- **Histórico que confirma a causa:** a execução #20 do mesmo processo #96 terminou quando
+  sua versão era executável. Em 02/10, pausar #32 permitiu que #37 executasse três atividades;
+  retomar #32 voltou a colocar #37 na fila. Não havia trabalho pendente no filho #33, concluído.
+- **Causa-raiz:** a admissão do comando recusava versões retiradas sem ficha, mas o encerramento
+  do controle só reconhecia ciclo fechado. Uma espera irrealizável continuava sendo raiz ativa
+  e bloqueava todos os processos seguintes do produto, inclusive de outro experimento.
+- **Alternativas:** pausar registros pela tela recupera uma ocorrência com recorrência; ultrapassar
+  a raiz relaxa a serialização e pode concorrer com tarefa real; encerrar o contexto sem autorização
+  reaproveita os estados e contratos existentes. A terceira alternativa foi implementada.
+- **Correção:** antes de novos disparos, conferir publicação ou ficha fixada da referência exata,
+  inclusive na origem dos subprocessos. Aguardar callbacks em curso, preservar objetivos e custos
+  e registrar `CLOSED/CONTEXT_CLOSED` com causa sem aprovar pendências. Provas completas ainda
+  recebem `COMPLETED`. Uma versão retirada fixada pela ficha continua autorizada.
+- **Prevenção/harness:** `ProcessRunVersionAuthorizationTest`, fixture MySQL com retirada e ficha
+  persistidas, sete cenários adicionais no ciclo de vida, encerramento após reinício e regressão
+  visual desktop/iPhone/Pixel. A matriz permite selecionar um cenário para repetir somente a
+  validação necessária; um filtro sem casos falha. Os testes usam somente banco e agentes locais.
+- **Registro do tema:** [homologação da execução automática](../homologacao/execucao-automatica-processos-v1.md).

@@ -102,13 +102,16 @@ public class ProcessAutomationLocalApplication {
       jdbc.execute(
           "CREATE TABLE IF NOT EXISTS " + table + " (id BIGINT PRIMARY KEY) ENGINE=InnoDB");
     jdbc.execute(
-        "CREATE TABLE IF NOT EXISTS fixture_product (id BIGINT PRIMARY KEY, enabled BIT NOT NULL DEFAULT 1, version_number INT NOT NULL DEFAULT 1, cycle_status VARCHAR(32) NOT NULL DEFAULT 'OPEN', destination_code VARCHAR(32) NOT NULL DEFAULT 'LANDING') ENGINE=InnoDB");
+        "CREATE TABLE IF NOT EXISTS fixture_product (id BIGINT PRIMARY KEY, enabled BIT NOT NULL DEFAULT 1, version_number INT NOT NULL DEFAULT 1, cycle_status VARCHAR(32) NOT NULL DEFAULT 'OPEN', destination_code VARCHAR(32) NOT NULL DEFAULT 'LANDING', pinned_process_id BIGINT NULL) ENGINE=InnoDB");
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS fixture_task (id BIGINT AUTO_INCREMENT PRIMARY KEY, product_id BIGINT NOT NULL, process_id BIGINT NOT NULL, activity_id VARCHAR(100) NOT NULL, status VARCHAR(32) NOT NULL, achieved BIT NOT NULL DEFAULT 0, reason VARCHAR(300) NOT NULL, KEY ix_fixture_task(product_id,process_id,activity_id,id)) ENGINE=InnoDB");
-    for (long id = 92001; id <= 92030; id++) {
+    jdbc.execute(
+        "CREATE TABLE IF NOT EXISTS fixture_process (id BIGINT PRIMARY KEY, status VARCHAR(32) NOT NULL DEFAULT 'PUBLISHED') ENGINE=InnoDB");
+    for (long id = 92001; id <= 92040; id++) {
       jdbc.update("INSERT IGNORE INTO product VALUES (?)", id);
       jdbc.update("INSERT IGNORE INTO fixture_product(id) VALUES (?)", id);
       jdbc.update("INSERT IGNORE INTO business_process_definition VALUES (?)", id);
+      jdbc.update("INSERT IGNORE INTO fixture_process(id) VALUES (?)", id);
       jdbc.update("INSERT IGNORE INTO learning_sales_cycle_v1 VALUES (?)", id);
     }
     jdbc.update("INSERT IGNORE INTO business_process_chain_definition VALUES (92014)");
@@ -252,16 +255,56 @@ public class ProcessAutomationLocalApplication {
     return Optional.of(product);
   }
 
-  /** Simula versões de processo mantendo ordem do grafo diferente da lista de atividades. */
+  /** Simula versões e retirada persistida mantendo a ordem do grafo diferente das atividades. */
   @Bean
-  BusinessProcessDefinitionRepository processes() {
+  BusinessProcessDefinitionRepository processes(JdbcTemplate jdbc) {
     var processes = mock(BusinessProcessDefinitionRepository.class);
     when(processes.findById(anyLong()))
-        .thenAnswer(inv -> Optional.of(definition(inv.getArgument(0))));
+        .thenAnswer(inv -> Optional.of(definition(jdbc, inv.getArgument(0))));
     when(processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
             "local-process-92005", "PUBLISHED"))
-        .thenReturn(Optional.of(definition(92005L)));
+        .thenAnswer(inv -> Optional.of(definition(jdbc, 92005L)));
     return processes;
+  }
+
+  /** Lê a publicação local para reproduzir a retirada sem alterar a identidade da execução. */
+  static BusinessProcessDefinition definition(JdbcTemplate jdbc, Long id) {
+    var process = definition(id);
+    process.setStatus(
+        jdbc.queryForObject("SELECT status FROM fixture_process WHERE id=?", String.class, id));
+    return process;
+  }
+
+  /** Simula somente o vínculo exato da ficha para testar a exceção de versões retiradas. */
+  @Bean
+  com.marketinghub.product.executionprofile.v1.service.ExecutionProfileContext executionProfile(
+      JdbcTemplate jdbc) {
+    var profiles =
+        mock(com.marketinghub.product.executionprofile.v1.service.ExecutionProfileContext.class);
+    when(profiles.bound(anyLong(), anyString()))
+        .thenAnswer(
+            inv -> {
+              Long product = inv.getArgument(0);
+              if (!Objects.equals("experiment:" + product, inv.getArgument(1)))
+                return Optional.empty();
+              var pinned =
+                  jdbc.queryForObject(
+                      "SELECT pinned_process_id FROM fixture_product WHERE id=?", Long.class, product);
+              return pinned == null
+                  ? Optional.empty()
+                  : Optional.of(new com.marketinghub.product.executionprofile.v1.ExecutionProfile());
+            });
+    when(profiles.pins(anyString(), anyLong()))
+        .thenAnswer(
+            inv -> {
+              String reference = inv.getArgument(0);
+              Long product = Long.valueOf(reference.substring("experiment:".length()));
+              var pinned =
+                  jdbc.queryForObject(
+                      "SELECT pinned_process_id FROM fixture_product WHERE id=?", Long.class, product);
+              return Objects.equals(pinned, inv.getArgument(1));
+            });
+    return profiles;
   }
 
   /** Declara fluxos locais felizes, incompletos, de aprovação, subprocesso e recuperação. */
@@ -295,7 +338,7 @@ public class ProcessAutomationLocalApplication {
     var chain = new BusinessProcessChainDefinition();
     chain.setId(92014L);
     chain.setStatus("PUBLISHED");
-    for (long id = 92001; id <= 92030; id++) {
+    for (long id = 92001; id <= 92040; id++) {
       var item = new BusinessProcessChainItem();
       item.setProcessDefinition(definition(id));
       item.setSequenceNumber((int) (id - 92000));
@@ -432,7 +475,7 @@ public class ProcessAutomationLocalApplication {
     return tasks.isEmpty() ? null : tasks.getFirst();
   }
 
-  /** Projeta prontidão, escolha de destino e objetivo, sem decidir a ordem pelo executor. */
+  /** Projeta publicação, prontidão e objetivo sem decidir a ordem pelo executor. */
   static ProductProcessActivityExecutionHistoryResponse snapshot(
       JdbcTemplate jdbc, Long product, Long process, String sourceReference) {
     List<ProductProcessActivityExecutionGroupResponse> groups = new ArrayList<>();
@@ -521,7 +564,7 @@ public class ProcessAutomationLocalApplication {
         definition(process).getProcessCode(),
         definition(process).getName(),
         1,
-        "PUBLISHED",
+        definition(jdbc, process).getStatus(),
         sourceReference,
         completed == total ? "COMPLETED" : "IN_PROGRESS",
         completed == total,
@@ -599,7 +642,7 @@ public class ProcessAutomationLocalApplication {
       return Map.of("ok", true);
     }
 
-    /** Permite testar STOP, encerramento, mudança de entrada e destino sem editar a execução. */
+    /** Permite testar STOP, encerramento, ficha e mudança de entrada sem editar a execução. */
     @PostMapping("/fixture/products/{product}")
     Object productState(@PathVariable Long product, @RequestBody Map<String, Object> state) {
       if (state.containsKey("play"))
@@ -619,6 +662,18 @@ public class ProcessAutomationLocalApplication {
             "UPDATE fixture_product SET destination_code=? WHERE id=?",
             state.get("destination"),
             product);
+      if (state.containsKey("pinnedProcessId"))
+        jdbc.update(
+            "UPDATE fixture_product SET pinned_process_id=? WHERE id=?",
+            state.get("pinnedProcessId"),
+            product);
+      return Map.of("ok", true);
+    }
+
+    /** Retira ou publica somente definições sintéticas do banco descartável. */
+    @PostMapping("/fixture/processes/{process}")
+    Object processState(@PathVariable Long process, @RequestBody Map<String, Object> state) {
+      jdbc.update("UPDATE fixture_process SET status=? WHERE id=?", state.get("status"), process);
       return Map.of("ok", true);
     }
   }

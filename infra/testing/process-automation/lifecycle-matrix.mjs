@@ -35,6 +35,15 @@ const callback = (product, activity, process = 92001) =>
   });
 const tasks = async (product) =>
   (await request("/fixture/tasks")).filter((t) => t.product_id === product);
+const publication = (process, status) =>
+  request(`/fixture/processes/${process}`, { status });
+async function withRetirement(process, run) {
+  try {
+    await run(() => publication(process, "RETIRED"));
+  } finally {
+    await publication(process, "PUBLISHED");
+  }
+}
 async function prove(run, product, process = 92001) {
   await tick(run.id);
   await callback(product, "a", process);
@@ -45,6 +54,11 @@ async function prove(run, product, process = 92001) {
 let passed = 0;
 const failures = [];
 async function scenario(name, run) {
+  if (
+    process.env.PROCESS_TEST_SCENARIO &&
+    !name.includes(process.env.PROCESS_TEST_SCENARIO)
+  )
+    return;
   try {
     await run();
     passed++;
@@ -258,6 +272,174 @@ await scenario(
   },
 );
 
+await scenario(
+  "versão retirada em espera humana libera a fila e preserva diário sem aprovar objetivos",
+  () =>
+    withRetirement(92002, async (retire) => {
+      const product = 92031;
+      const old = await start(product, 92002);
+      await tick(old.id);
+      await callback(product, "a", 92002);
+      assert.equal((await tick(old.id)).status, "WAITING_HUMAN");
+      const next = await start(product, 92006);
+      assert.equal((await tick(next.id)).status, "QUEUED");
+      await retire();
+      const closed = await tick(old.id);
+      assert.equal(closed.status, "CLOSED");
+      assert.equal(closed.completedActivities, 1);
+      assert.equal(closed.remainingActivities, 2);
+      assert.equal(closed.canResume, false);
+      assert.match(closed.reason, /não está publicada nem fixada/);
+      assert.equal((await tick(next.id)).status, "WAITING_ACTIVITY");
+      await tick(old.id);
+      const history = await request(root(product, 92002) + `/${old.id}/events`);
+      assert.equal(
+        history.filter((e) => e.eventType === "CONTEXT_CLOSED").length,
+        1,
+      );
+      assert.equal(
+        history.filter((e) => e.eventType === "ACTIVITY_REQUESTED").length,
+        1,
+      );
+      await request(root(product, 92002) + `/${old.id}/resume`, {}, 409);
+      const pending = await request(
+        "/api/internal/business-processes/automation/v1/stage-executions/pending?limit=100",
+      );
+      assert(!pending.includes(old.id));
+      assert.equal(
+        (await tasks(product)).filter((t) => t.process_id === 92002).length,
+        1,
+      );
+    }),
+);
+
+await scenario(
+  "retirada aguarda callback da tarefa real antes de encerrar e liberar o produto",
+  () =>
+    withRetirement(92001, async (retire) => {
+      const product = 92032;
+      const old = await start(product);
+      await tick(old.id);
+      const next = await start(product, 92006);
+      await retire();
+      assert.equal((await tick(old.id)).status, "WAITING_ACTIVITY");
+      assert.equal((await tick(next.id)).status, "QUEUED");
+      assert.equal((await tasks(product)).length, 1);
+      await callback(product, "a");
+      const closed = await tick(old.id);
+      assert.equal(closed.status, "CLOSED");
+      assert.equal(closed.completedActivities, 1);
+      assert.equal((await tick(next.id)).status, "WAITING_ACTIVITY");
+      assert.equal(
+        (await tasks(product)).filter((t) => t.process_id === 92001).length,
+        1,
+      );
+    }),
+);
+
+await scenario(
+  "origem retirada drena o filho sem despachar sua próxima atividade",
+  () =>
+    withRetirement(92004, async (retire) => {
+      const product = 92033;
+      const parent = await start(product, 92004);
+      const childId = (await tick(parent.id)).childRunId;
+      await tick(childId);
+      const next = await start(product, 92006);
+      await retire();
+      assert.equal((await tick(parent.id)).status, "WAITING_SUBPROCESS");
+      assert.equal((await tick(next.id)).status, "QUEUED");
+      assert.equal((await tick(childId)).status, "WAITING_ACTIVITY");
+      await callback(product, "a", 92005);
+      assert.equal((await tick(childId)).status, "CLOSED");
+      assert.equal((await tick(parent.id)).status, "CLOSED");
+      assert.equal((await tick(next.id)).status, "WAITING_ACTIVITY");
+      const childTasks = (await tasks(product)).filter(
+        (t) => t.process_id === 92005,
+      );
+      assert.equal(childTasks.length, 1);
+      assert.equal(childTasks[0].status, "COMPLETED");
+      assert.equal(childTasks[0].activity_id, "a");
+    }),
+);
+
+await scenario(
+  "filho ainda não iniciado encerra quando a origem perde autorização",
+  () =>
+    withRetirement(92004, async (retire) => {
+      const product = 92034;
+      const parent = await start(product, 92004);
+      const childId = (await tick(parent.id)).childRunId;
+      await retire();
+      assert.equal((await tick(childId)).status, "CLOSED");
+      assert.equal((await tick(parent.id)).status, "CLOSED");
+      assert.equal((await tasks(product)).length, 0);
+    }),
+);
+
+await scenario(
+  "retirada preserva conclusão já comprovada em vez de converter sucesso em CLOSED",
+  () =>
+    withRetirement(92001, async (retire) => {
+      const product = 92035;
+      const run = await start(product);
+      await prove(run, product);
+      await retire();
+      const result = await tick(run.id);
+      assert.equal(result.status, "COMPLETED");
+      assert.equal(result.completedActivities, 3);
+      assert.equal((await tasks(product)).length, 3);
+    }),
+);
+
+await scenario(
+  "ficha da mesma referência permite continuar a versão retirada até concluir",
+  () =>
+    withRetirement(92001, async (retire) => {
+      const product = 92036;
+      const run = await start(product);
+      await tick(run.id);
+      await request(`/fixture/products/${product}`, { pinnedProcessId: 92001 });
+      await retire();
+      await callback(product, "a");
+      assert.equal((await tick(run.id)).status, "WAITING_ACTIVITY");
+      await callback(product, "b");
+      await tick(run.id);
+      assert.equal((await tick(run.id)).status, "COMPLETED");
+      assert.equal((await tasks(product)).length, 3);
+    }),
+);
+
+await scenario(
+  "espera de versão legada sem ciclo ou ficha encerra e libera a fila",
+  () =>
+    withRetirement(92002, async (retire) => {
+      const product = 92037;
+      const old = await request(root(product, 92002), {
+        chainId: 92014,
+        sourceReference: `experiment:${product}`,
+      });
+      await tick(old.id);
+      await callback(product, "a", 92002);
+      assert.equal((await tick(old.id)).status, "WAITING_HUMAN");
+      const next = await request(root(product, 92006), {
+        chainId: 92014,
+        sourceReference: `experiment:${product}`,
+      });
+      assert.equal((await tick(next.id)).status, "QUEUED");
+      await retire();
+      const closed = await tick(old.id);
+      assert.equal(closed.status, "CLOSED");
+      assert.equal(closed.learningCycleId, null);
+      assert.equal(closed.sourceReference, `experiment:${product}`);
+      assert.equal((await tick(next.id)).status, "WAITING_ACTIVITY");
+      assert.equal(
+        (await tasks(product)).filter((t) => t.process_id === 92002).length,
+        1,
+      );
+    }),
+);
+
 console.log(
   JSON.stringify({
     passed,
@@ -270,4 +452,8 @@ assert.equal(
   failures.length,
   0,
   "A leitura do resultado não pode depender de autorização para disparar novo trabalho.",
+);
+assert(
+  passed > 0,
+  "O filtro da matriz precisa selecionar pelo menos um cenário.",
 );

@@ -174,7 +174,8 @@ public class ProcessRunService {
   }
 
   /**
-   * Confere resultados já obtidos antes de autorizar nova tentativa após revisão do impedimento.
+   * Confere resultados antes de nova tentativa e recusa contextos sem autorização, inclusive na
+   * origem de uma delegação, preservando conclusões já comprovadas.
    */
   public ProcessRunResponse resume(Long productId, Long processId, Long runId) {
     return locked(
@@ -196,7 +197,7 @@ public class ProcessRunService {
               return response(run);
             }
             requirePlay(productId);
-            String blocker = context.dispatchBlockReason(run);
+            String blocker = dispatchBlockReason(run);
             if (blocker != null) throw new ResponseStatusException(HttpStatus.CONFLICT, blocker);
             updateCounts(run, readiness);
             run.setFinishedAt(null);
@@ -293,7 +294,10 @@ public class ProcessRunService {
         });
   }
 
-  /** Observa provas, seleciona retornos condicionais e dispara na referência congelada. */
+  /**
+   * Observa provas e retornos condicionais antes de disparar na referência congelada e encerra
+   * contextos sem autorização somente depois de receber o trabalho em curso nas delegações.
+   */
   private ProcessRunResponse advance(ProcessRun run) {
     if (Set.of("PAUSED", "COMPLETED", "ERROR", "CLOSED").contains(run.getStatus()))
       return response(run);
@@ -316,7 +320,7 @@ public class ProcessRunService {
     }
     if (videoContinuation != null
         && !"PAUSING".equals(run.getStatus())
-        && context.dispatchBlockReason(run) == null
+        && dispatchBlockReason(run) == null
         && !ancestorPaused(run)) {
       if (hasTurn(run)) {
         var videoProgress = videoContinuation.advance(run);
@@ -348,8 +352,16 @@ public class ProcessRunService {
       complete(run);
       return response(run);
     }
-    String blocker = context.dispatchBlockReason(run);
+    String blocker = dispatchBlockReason(run);
     if (blocker != null) {
+      if (inFlight(run, new HashSet<>())) {
+        transition(
+            run,
+            "WAITING_SUBPROCESS",
+            blocker + " Aguardando resultados das tarefas já iniciadas antes de liberar o produto.",
+            "WAITING_CONTEXT_DRAIN");
+        return response(run);
+      }
       run.setCurrentActivityId(null);
       run.setCurrentActivityName(null);
       run.setCurrentOwnerName(null);
@@ -553,6 +565,19 @@ public class ProcessRunService {
             "correctionInputHash",
             correctionInputs.isEmpty() ? "" : hash(correctionInputs.toString())));
     return response(run);
+  }
+
+  /** Propaga o bloqueio da origem sem autorizar novos disparos em subprocessos já delegados. */
+  private String dispatchBlockReason(ProcessRun run) {
+    Set<Long> seen = new HashSet<>();
+    while (true) {
+      if (!seen.add(run.getId()))
+        throw new IllegalStateException("Ciclo inválido na delegação do processo.");
+      String blocker = context.dispatchBlockReason(run);
+      if (blocker != null) return blocker;
+      if (run.getParentRunId() == null) return null;
+      run = runs.findById(run.getParentRunId()).orElseThrow();
+    }
   }
 
   /** Libera dependência comercial exata sem ultrapassar tarefa real, pausa ou outra ocorrência. */

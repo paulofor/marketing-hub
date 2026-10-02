@@ -83,6 +83,7 @@ run_check restart.log node infra/testing/process-automation/restart-check.mjs
 node infra/testing/process-automation/frontend-server.mjs > "$output/frontend-server.log" 2>&1 &
 frontend_pid=$!
 PROCESS_TEST_ARTIFACTS="$output/browser" run_check browser.log node infra/testing/process-automation/browser-matrix.mjs
+PROCESS_TEST_ARTIFACTS="$output/browser" run_check retirement-browser.log node infra/testing/process-automation/retired-version-browser.mjs
 compose exec -T process-mysql mysql -uroot -pprocess-local-only process_automation_local --batch --skip-column-names -e "SELECT COUNT(*) FROM DATABASECHANGELOG WHERE ID LIKE '2026-09-12-product-process-automation%'; SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE FROM information_schema.columns WHERE table_schema='process_automation_local' AND table_name IN ('product_process_run_v1','product_process_run_event_v1') ORDER BY TABLE_NAME,ORDINAL_POSITION;" > "$output/mysql-schema.txt" 2>/dev/null
 git diff --check > "$output/diff-check.log"
 printf 'PASS rodada %s: backend, frontend, worker, contratos, MySQL, HTTP, reinício, desktop e mobile\n' "$round_name" | tee "$output/result.txt"

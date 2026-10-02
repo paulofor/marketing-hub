@@ -56,8 +56,10 @@ mantido durante a requisição. Provas invalidadas permitem revalidação sem ap
 | Navegadores | Chromium desktop, iPhone 15 Pro e Pixel 7 emulados, teclado, movimento reduzido e sem overflow |
 | Métricas | IDs e banco locais segregados; conclusão técnica não conta como venda; IA e serviços externos simulados |
 
-Uma rodada sem defeitos encerra a homologação. Se houver correção, executar duas rodadas
-completas consecutivas sem falhas após a última mudança. Não usar publicação como teste.
+Uma rodada sem defeitos encerra a homologação. Conforme orientação de 02/10/2026, se houver
+defeito, corrigir a causa e repetir somente as validações necessárias para confirmar a correção
+e prevenir regressões relacionadas. Não repetir a matriz para cumprir quantidade mínima nem
+usar publicação como teste. As rodadas históricas abaixo permanecem como evidência de sua época.
 
 ## Resultados
 
@@ -124,3 +126,50 @@ contratos estruturais; isso não representa doze processos comerciais executados
 Os três dispositivos usam Chromium com emulação mobile; não representam Safari físico.
 
 Nenhum PR, push, deploy ou alteração de produto produtivo realizado por esta implementação.
+
+## Correção da fila reservada por versão retirada — 02/10/2026
+
+O banco e a tela pública confirmaram #39 na fila atrás de #32, com versão `RETIRED`, sem ciclo
+nem ficha vinculada. #37 e #38 também apontavam para versões retiradas. O conciliador continuava
+atualizando os horários; o histórico de pausa/retomada de #32 provou a reserva causal. A execução
+#20 da mesma definição terminou anteriormente, descartando falha genérica do executor.
+
+Foram comparadas pausa operacional dos registros (rápida, mas recorrente), ultrapassagem da raiz
+(simples, mas perde proteção contra trabalho concorrente) e encerramento do contexto sem
+autorização (preserva serialização e histórico). A terceira foi adotada; não exige migração de
+schema produtivo nem atribui sucesso a objetivos pendentes.
+
+### Matriz específica definida antes da execução
+
+| Critério | Evidência local |
+| --- | --- |
+| Caminho feliz e serialização | API: produto distinto avança; mesmo produto aguarda; versão retirada libera sucessora |
+| Versão legada sem ciclo | Espera humana reproduz #32; `CLOSED` conserva referência e libera fila |
+| Versão fixada | Ficha da referência exata mantém execução de `RETIRED`; ficha divergente e rascunho não autorizam |
+| Integração e falhas | Tarefa real e filho recebem callbacks; retirada da origem impede novos disparos em descendentes |
+| Validações | Ciclo fechado, STOP, pausa, aprovação humana e ausência de contrato mantêm suas proteções |
+| Observabilidade | Contagens e diário preservados; `CONTEXT_CLOSED` único; sem retomada nem reoferta em `pending` |
+| Métricas e segregação | IDs 920xx, banco descartável MySQL 5.7; sem IA, venda, cobrança ou tráfego produtivo |
+| Navegadores | Chromium desktop, iPhone 15 Pro e Pixel 7 emulados; causa visível, diário e ausência de overflow |
+| Recuperação | Reinício e reaplicação idempotente preservam `CLOSED`, conclusão e tarefas em andamento |
+
+A lacuna concreta do harness era o catálogo sintético sempre retornar `PUBLISHED`. A fixture
+passou a persistir retirada e vínculo da ficha; os novos cenários usam controller, serviço,
+transações, JPA e MySQL reais. O backend decide encerramento e avanço; o executor permanece
+consumindo `pending`. Testes de retirada e navegação integram o runner existente do PR.
+
+### Resultado local desta correção
+
+- Backend completo: 3.822 casos reportados, zero falhas/erros e 24 exclusões condicionais existentes
+  (3.798 executados). Inclui os sete casos de autorização de versão e os testes de arquitetura.
+- API/MySQL 5.7: 19 cenários gerais e 16 de ciclo de vida aprovados. O cenário legado sem ciclo
+  foi acrescentado e executado isoladamente, sem repetir os cenários já aprovados.
+- Conciliador: seis testes aprovados com Node 22; painel/hook: 22 testes aprovados.
+- Navegação real do frontend compilado: fluxo geral e encerramento de versão retirada aprovados
+  nas três configurações Chromium (desktop, iPhone 15 Pro e Pixel 7); diário visível e zero overflow.
+- Reinício do backend: conclusão, tarefas reais e `CLOSED` persistidos; execução encerrada não
+  reaparece em `pending`. Contratos do runner/entrega, Spotless, Prettier, `bash -n`, ShellCheck
+  e revisão do diff aprovados. Nenhum changelog produtivo foi alterado.
+
+Evidências locais: `.codex/queue39/local-evidence/` (logs, relatórios e capturas descartáveis).
+O runtime produtivo permanece objeto de verificação após integração e publicação pelo PR.

@@ -7431,3 +7431,17 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
   agora aceita um pixel de conversão compartilhado escolhido na UI; o worker valida a associação
   desse ID na aresta oficial da conta antes de concluir a pendência e nunca escolhe outro pixel por
   ordem ou nome aproximado.
+
+## 2026-10-02 — Vega #95: identificação, prova real e decisão da persona
+
+- Completado pela interface o rascunho #95 (`MUSA-H003-E004`), preservando os experimentos
+  anteriores e evitando duplicação. Métrica principal: vendas líquidas conciliadas e entregues
+  com contribuição positiva; variável: identificação → ajuste real → mesma mulher pronta para sair.
+- Criado no Estúdio o projeto #8, vinculado ao produto #4, experimento #95 e perfil #63. Roteiro
+  candidato vertical de 45s, revisado editorialmente com o harness de Apolo em ambiente local;
+  essa revisão não representa execução produtiva nem aprovação de Psique, Têmis ou Plutus.
+- O briefing separa encenação de prova funcional e bloqueia fala mais precisa que a orientação
+  real. A persona mantém peças/corpo/cenário e muda de indecisão para decisão, sem depoimento fictício.
+- Frontend conferido em desktop/iPhone/Android emulados; backend e MCP confirmaram persistência e
+  ausência de job de provider. #95 permanece `PLANNED`, sem janela, orçamento ou liberação de mídia.
+- [Roteiro, matriz de aceite, limites e condições de execução](../homologacao/vega95-identificacao-persona-transformada-v1.md).

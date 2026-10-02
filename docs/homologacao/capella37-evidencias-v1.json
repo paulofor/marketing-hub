@@ -148,11 +148,11 @@
     "allObservedCampaignsPaused": true
   },
   "localAcceptance": {
-    "backendTests": 3805,
+    "backendTests": 3809,
     "backendFailures": 0,
     "backendErrors": 0,
     "backendSkipped": 24,
-    "frontendTests": 828,
+    "frontendTests": 831,
     "frontendFailures": 0,
     "paymentContractTests": 11,
     "paymentContractFailures": 0,
@@ -163,15 +163,20 @@
       "device": "desktop",
       "state": "stale",
       "runId": 92001,
+      "renewedRunId": 4,
       "errors": [],
-      "writes": [],
+      "writes": [
+        "/api/experiment-runs/92001/technical-homologation-renewal"
+      ],
       "external": [],
-      "screenshotSha256": "04e9ab501d2419e4649e26886c5da57c51c6f74717d10f993057b17cd274707f"
+      "screenshotSha256": "02333654ca92271f10c02506c868ce5bf6d7308ade944af581da895e658b506f",
+      "renewalScreenshotSha256": "3369203418c22fa1bf5b72216afeabaa6537c26c66745926153f5f7e9e766197"
     },
     {
       "device": "desktop",
       "state": "current",
       "runId": 92001,
+      "renewedRunId": null,
       "errors": [],
       "writes": [],
       "external": [],
@@ -181,15 +186,20 @@
       "device": "iphone",
       "state": "stale",
       "runId": 92001,
+      "renewedRunId": 4,
       "errors": [],
-      "writes": [],
+      "writes": [
+        "/api/experiment-runs/92001/technical-homologation-renewal"
+      ],
       "external": [],
-      "screenshotSha256": "435465aa0dbe4f3934fa419b9dcba3703945bb9b3d329a8439e7d8b7967e0390"
+      "screenshotSha256": "d066ab22cf05a06ab736a8ecb5762275741ec5f607f2272b089eb24f64363d4c",
+      "renewalScreenshotSha256": "19f0340ca983a25242a9779f4bb97d36a1bf48c737c1ef7ccc8a8f6522aae296"
     },
     {
       "device": "iphone",
       "state": "current",
       "runId": 92001,
+      "renewedRunId": null,
       "errors": [],
       "writes": [],
       "external": [],
@@ -199,15 +209,20 @@
       "device": "pixel",
       "state": "stale",
       "runId": 92001,
+      "renewedRunId": 4,
       "errors": [],
-      "writes": [],
+      "writes": [
+        "/api/experiment-runs/92001/technical-homologation-renewal"
+      ],
       "external": [],
-      "screenshotSha256": "108138eb1119c33c037c8c544d3dc3bbd98ca4233c4b2a343e6e09930ea7a6ae"
+      "screenshotSha256": "8906a451ef82d4e2ba7f9a8442286a9b3a0c11131a18a5bec2f68e6cdbe9c99e",
+      "renewalScreenshotSha256": "cd08135f98f6e64a9f2d9adc6d16685fe505350f88235c8cfaaf8baec1d94502"
     },
     {
       "device": "pixel",
       "state": "current",
       "runId": 92001,
+      "renewedRunId": null,
       "errors": [],
       "writes": [],
       "external": [],
@@ -298,5 +313,15 @@
       }
     ],
     "paidRevisions": 0
+  },
+  "technicalRenewal": {
+    "sourcePreserved": true,
+    "concurrentRequests": 2,
+    "newAttempts": 1,
+    "newFunctionalGates": "PENDING",
+    "backendOwnsPreparation": true,
+    "paidModelCalls": 0,
+    "campaignAltered": false,
+    "validationEnvironment": "LOCAL_H2_SIMULATED_HTTP"
   }
 }

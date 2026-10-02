@@ -199,6 +199,14 @@ não é autorização para aprovar esse processo ou misturar referências.
 Regressões cobrem publicação antiga, atual, ausente, Safira e tipos independentes,
 além da apresentação completa/compacta no frontend.
 
+Quando `canRenewTechnicalHomologation` permitir, a tela chama
+`POST /api/experiment-runs/{runId}/technical-homologation-renewal`.
+O backend serializa a origem, cria outra tentativa produtiva com gates
+pendentes e reutiliza essa renovação em retries. Preserva experimento, oferta,
+orçamento e aprovações anteriores. Ausência de histórico ou de publicação
+identificada não permite criar aprovação retroativa; outra tentativa independente
+mais recente gera conflito acionável. O frontend não orquestra os próximos gates.
+
 ### Identidade de páginas transformadas — decisão de 21/09/2026
 
 Quando uma página auditada atravessar transformações legítimas de publicação, como injeção de

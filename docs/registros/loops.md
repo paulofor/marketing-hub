@@ -8551,3 +8551,18 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
 - **Homologação:** `docs/homologacao/agentes-codex-gpt61-v1.md`. A restauração produtiva ocorre
   exclusivamente pelo PR e pipeline; um modelo configurado e um marcador escrito à mão não
   substituem a comprovação do runtime publicado.
+
+### LOOP-PREFLIGHT-RENOVACAO-INACESSIVEL — 02/10/2026
+
+- **Sintoma:** o relatório manda homologar outra tentativa, mas o painel esconde
+  criação/preflight para experimentos já publicados, inclusive #88 invalidado.
+- **Causa confirmada:** a proteção válida contra história retroativa também
+  atingia uma aprovação existente que ficou vencida; faltava comando específico.
+- **Fechamento:** permissão `canRenewTechnicalHomologation` emitida pelo backend
+  e POST `technical-homologation-renewal`, serializado por run de origem.
+  Outra tentativa recebe gates pendentes; retries/concorrência reutilizam a
+  mesma renovação. Sem histórico, identidade ou permissão, rejeita com HTTP 409.
+  Não altera campanha, orçamento, oferta nem aprovação anterior.
+- **Regressões:** HTTP/H2 com duas requisições concorrentes, preservação do run e
+  dos gates anteriores, bloqueio de tentativa independente, UI completa/compacta
+  e integração responsiva consumindo respostas HTTP reais em UTF-8.

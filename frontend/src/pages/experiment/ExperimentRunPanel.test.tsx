@@ -6,6 +6,7 @@ import {
   useExperimentRuns,
   useRecordExperimentRunHomologation,
   useRunExperimentPreflight,
+  useRenewTechnicalHomologation,
 } from "../../api/experiment/useExperimentRuns";
 import ExperimentRunPanel from "./ExperimentRunPanel";
 
@@ -15,6 +16,7 @@ vi.mock("../../api/experiment/useExperimentRuns", () => ({
   useExperimentRuns: vi.fn(),
   useRecordExperimentRunHomologation: vi.fn(),
   useRunExperimentPreflight: vi.fn(),
+  useRenewTechnicalHomologation: vi.fn(),
 }));
 
 const gateCodes = [
@@ -79,6 +81,11 @@ describe("ExperimentRunPanel", () => {
       mutate: vi.fn(),
       isPending: false,
     } as unknown as ReturnType<typeof useRunExperimentPreflight>);
+    vi.mocked(useRenewTechnicalHomologation).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useRenewTechnicalHomologation>);
     vi.mocked(useRecordExperimentRunHomologation).mockReturnValue({
       mutate: recordHomologation,
       isPending: false,
@@ -169,6 +176,74 @@ describe("ExperimentRunPanel", () => {
       expect(recordHomologation).not.toHaveBeenCalled();
     },
   );
+
+  it.each([false, true])(
+    "renova somente quando o backend permite, mesmo após publicação (compacto=%s)",
+    (compact) => {
+      const data = vi.mocked(useExperimentRunPreflight)(51).data!;
+      vi.mocked(useExperimentRunPreflight).mockReturnValue({
+        data: {
+          ...data,
+          canRenewTechnicalHomologation: true,
+          currentEvidenceBlockReason: "Publicação atual mudou.",
+        },
+        isLoading: false,
+      } as ReturnType<typeof useExperimentRunPreflight>);
+      render(
+        <ExperimentRunPanel
+          experimentId="99"
+          experimentStatus="INVALIDATED"
+          campaignPublished
+          compact={compact}
+        />,
+      );
+      expect(
+        screen.queryByRole("button", { name: "Criar run" }),
+      ).not.toBeInTheDocument();
+      fireEvent.click(
+        screen.getByRole("button", { name: "Renovar homologação técnica" }),
+      );
+      expect(
+        vi.mocked(useRenewTechnicalHomologation)(99).mutate,
+      ).toHaveBeenCalledTimes(1);
+      expect(
+        vi.mocked(useRenewTechnicalHomologation)(99).mutate,
+      ).toHaveBeenCalledWith(51);
+      expect(
+        vi.mocked(useRunExperimentPreflight)(99).mutate,
+      ).not.toHaveBeenCalled();
+      expect(recordHomologation).not.toHaveBeenCalled();
+    },
+  );
+
+  it("impede novo clique durante a renovação e mostra falha sem declarar aprovação", () => {
+    const data = vi.mocked(useExperimentRunPreflight)(51).data!;
+    vi.mocked(useExperimentRunPreflight).mockReturnValue({
+      data: {
+        ...data,
+        canRenewTechnicalHomologation: true,
+        currentEvidenceBlockReason: "Evidência vencida.",
+      },
+      isLoading: false,
+    } as ReturnType<typeof useExperimentRunPreflight>);
+    const renew = vi.mocked(useRenewTechnicalHomologation)(99);
+    vi.mocked(useRenewTechnicalHomologation).mockReturnValue({
+      ...renew,
+      isPending: true,
+      isError: true,
+      error: new Error("Falha simulada"),
+    } as unknown as ReturnType<typeof useRenewTechnicalHomologation>);
+    render(
+      <ExperimentRunPanel experimentId="99" experimentStatus="INVALIDATED" />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Preparando nova tentativa…" }),
+    ).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "nenhuma aprovação foi registrada",
+    );
+    expect(recordHomologation).not.toHaveBeenCalled();
+  });
 
   it("trata ausência de run após publicação como lacuna histórica sem oferecer mutação retroativa", () => {
     vi.mocked(useExperimentRuns).mockReturnValue({

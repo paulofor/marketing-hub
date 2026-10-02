@@ -50,6 +50,12 @@ public class BackendExperimentRunController {
     return service.runPreflight(runId);
   }
 
+  /** Renova prova técnica vencida em uma única nova tentativa sem publicar ou reativar campanha. */
+  @PostMapping("/experiment-runs/{runId}/technical-homologation-renewal")
+  public ExperimentRunPreflightResponse renewTechnicalHomologation(@PathVariable Long runId) {
+    return service.renewTechnicalHomologation(runId);
+  }
+
   /** Registra as evidencias funcionais obrigatorias produzidas pela homologacao ponta a ponta. */
   @PostMapping("/experiment-runs/{runId}/homologation-results")
   public ExperimentRunPreflightResponse recordHomologationResults(

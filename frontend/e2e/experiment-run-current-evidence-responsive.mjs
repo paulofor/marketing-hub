@@ -9,6 +9,9 @@ const fixture = JSON.parse(
 assert.ok(
   fixture.stale.currentEvidenceBlockReason.includes("evidência técnica"),
 );
+const renewalFixture = JSON.parse(
+  await readFile(process.env.PREFLIGHT_RENEWAL_RESULT, "utf8"),
+);
 const output = process.env.PREFLIGHT_EVIDENCE_DIR;
 const base = process.env.PREFLIGHT_FRONTEND_URL || "http://127.0.0.1:15173";
 await mkdir(output, { recursive: true });
@@ -30,6 +33,7 @@ try {
         writes = [],
         external = [];
       const runId = fixture[state].runId;
+      let renewed = false;
       page.on("pageerror", (error) => errors.push(error.message));
       page.on("console", (message) => {
         if (message.type() === "error") errors.push(message.text());
@@ -39,6 +43,15 @@ try {
         const url = new URL(request.url());
         if (url.pathname.startsWith("/api/")) {
           if (request.method() !== "GET") writes.push(url.pathname);
+          if (
+            url.pathname ===
+              `/api/experiment-runs/${runId}/technical-homologation-renewal` &&
+            request.method() === "POST"
+          ) {
+            assert.equal(state, "stale");
+            renewed = true;
+            return route.fulfill({ json: renewalFixture });
+          }
           if (url.pathname === "/api/experiments/92008")
             return route.fulfill({
               json: {
@@ -59,18 +72,25 @@ try {
             return route.fulfill({
               json: [
                 {
-                  id: runId,
+                  id: renewed ? renewalFixture.runId : runId,
                   experimentId: 92008,
-                  runNumber: 1,
+                  runNumber: renewed ? 2 : 1,
                   mode: "PRODUCTION",
-                  status: "COMPLETED",
-                  evidenceValidity: "COMMERCIALLY_VALID",
-                  dataQualityStatus: "VALID",
+                  status: renewed ? renewalFixture.runStatus : "COMPLETED",
+                  evidenceValidity: renewed
+                    ? "NOT_EVALUATED"
+                    : "COMMERCIALLY_VALID",
+                  dataQualityStatus: renewed ? "UNKNOWN" : "VALID",
                   stopPolicy: "MANUAL_ONLY",
                   requestedAt: "2026-10-02T00:00:00Z",
                 },
               ],
             });
+          if (
+            url.pathname ===
+            `/api/experiment-runs/${renewalFixture.runId}/preflight`
+          )
+            return route.fulfill({ json: renewalFixture });
           if (url.pathname === `/api/experiment-runs/${runId}/preflight`)
             return route.fulfill({ json: fixture[state] });
           if (url.pathname.includes("configuration-status"))
@@ -139,10 +159,24 @@ try {
       assert.deepEqual(writes, []);
       assert.deepEqual(external, []);
       await panel.screenshot({ path: `${output}/${deviceName}-${state}.png` });
+      if (state === "stale") {
+        await panel
+          .getByRole("button", { name: "Renovar homologação técnica" })
+          .click();
+        await expect(panel).toContainText("Preflight pendente");
+        await expect(
+          panel.getByRole("button", { name: "Renovar homologação técnica" }),
+        ).toHaveCount(0);
+        assert.deepEqual(writes, [
+          `/api/experiment-runs/${runId}/technical-homologation-renewal`,
+        ]);
+        await panel.screenshot({ path: `${output}/${deviceName}-renewed.png` });
+      }
       results.push({
         device: deviceName,
         state,
         runId,
+        renewedRunId: renewed ? renewalFixture.runId : null,
         errors,
         writes,
         external,

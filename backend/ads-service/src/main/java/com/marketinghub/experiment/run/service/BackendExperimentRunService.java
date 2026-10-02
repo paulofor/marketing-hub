@@ -128,6 +128,48 @@ public class BackendExperimentRunService {
     return toResponse(savedRun);
   }
 
+  /** Renova prova vencida em outra tentativa; repetições retornam a mesma renovação sem gasto. */
+  @Transactional
+  public ExperimentRunPreflightResponse renewTechnicalHomologation(Long runId) {
+    ExperimentRun previous =
+        experimentRunRepository
+            .findForTechnicalHomologationRenewal(runId)
+            .orElseThrow(
+                () ->
+                    new EntityNotFoundException(
+                        "Run de experimento %d não encontrado".formatted(runId)));
+    String renewalSource = "technical-homologation-renewal:" + runId;
+    if (previous.getMode() != ExperimentRunMode.PRODUCTION) {
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.CONFLICT,
+          "Somente uma homologação produtiva registrada pode receber renovação técnica.");
+    }
+    ExperimentRun latest =
+        experimentRunRepository
+            .findTopByExperimentIdAndModeOrderByRunNumberDesc(
+                previous.getExperiment().getId(), ExperimentRunMode.PRODUCTION)
+            .orElseThrow();
+    if (!latest.getId().equals(runId)) {
+      if (renewalSource.equals(latest.getCreatedBy())) return getPreflight(latest.getId());
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.CONFLICT,
+          "Existe uma tentativa mais recente. Atualize o painel antes de renovar a homologação técnica.");
+    }
+    var priorGates =
+        gateResultRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(runId);
+    if (!toPreflightResponse(previous, priorGates).canRenewTechnicalHomologation()) {
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.CONFLICT,
+          "A renovação exige uma tentativa produtiva homologada, evidência vencida e publicação atual identificada; nenhuma campanha ou gasto será autorizado.");
+    }
+    var created =
+        create(
+            previous.getExperiment().getId(),
+            new CreateExperimentRunRequest(
+                ExperimentRunMode.PRODUCTION, ExperimentRunStopPolicy.MANUAL_ONLY, renewalSource));
+    return runPreflight(created.id());
+  }
+
   /** Lista todos os runs de um experimento na ordem em que foram criados. */
   @Transactional(readOnly = true)
   public List<ExperimentRunResponse> listByExperiment(Long experimentId) {
@@ -578,6 +620,12 @@ public class BackendExperimentRunService {
         hasBlockers,
         requiredReference,
         currentEvidenceBlockReason,
+        run.getMode() == ExperimentRunMode.PRODUCTION
+            && requiredReference != null
+            && !requiredReference.isBlank()
+            && currentEvidenceBlockReason != null
+            && !gates.isEmpty()
+            && gates.stream().allMatch(gate -> isApprovedGateStatus(gate.getStatus())),
         gates.stream().map(this::toGateResponse).toList());
   }
 

@@ -16,6 +16,10 @@ para `experiment:88` na cadeia #25.
   de 29/09, possui outro HTML e fingerprint. O bloqueio das atividades está correto.
 - O GET de preflight #12 dizia `hasBlockers=false` porque agregava somente os
   status históricos. Não verificava a identidade atual já exigida pelo executor.
+- O painel ocultava criação/preflight para todo experimento já publicado.
+  A proteção contra criação retroativa é válida, mas também impedia renovar
+  uma aprovação registrada que ficou vencida. A nova permissão vem do backend,
+  por comando único, sem sobrescrever história nem permitir aprovação sem prova.
 - O experimento #88 está `INVALIDATED`, com janela de 25–29/09 encerrada.
   Homologação técnica não renova essa janela nem reativa sua campanha.
 - O teto do #88 é R$ 125. A revisão financeira #9, parecer Plutus #62,
@@ -48,6 +52,7 @@ de sua resposta; a homologação não autoriza nova veiculação.
 | --- | --- |
 | Vigência | Gate PASS antigo bloqueia; publicação atual aprovada libera; identidade ausente bloqueia; contrato de outro tipo preserva comportamento |
 | História | GET não grava status/gates nem modifica experimento; tentativa antiga e resultado comercial preservados |
+| Renovação | Comando único, outra tentativa com gates pendentes, permissão exclusivamente backend, dois POSTs concorrentes e retry reutilizam a mesma tentativa; ausência de prova ou tentativa independente mais recente bloqueia |
 | Integração técnica | Referências completas, versão divergente, predecessoras, idempotência e retorno ao pai continuam protegidos |
 | Compra/acesso/entrega | Pagamento simulado aprovado/pendente, briefing, ZIP, e-mail local, download, falhas e duplicidade; nenhuma cobrança, SMTP real ou modelo pago |
 | Eventos | Interação/CTA, oferta visível, QA, bots, atribuição e deduplicação; ausência permanece desconhecida |
@@ -60,9 +65,9 @@ entrega assistida e direitos vendidos permanecem os cadastrados.
 
 ## Resultado da validação local
 
-- Backend completo: 3.805 testes, zero falhas/erros e 24 testes condicionais
+- Backend completo e regressões finais: 3.809 testes, zero falhas/erros e 24 testes condicionais
   ou já desabilitados na base. As regressões desta correção executaram sem skip.
-  Frontend completo: 828 testes aprovados; typecheck e build aprovados.
+  Frontend completo: 831 testes aprovados; typecheck e build aprovados.
 - Contrato transacional existente: 11 testes aprovados, incluindo HTTP,
   persistência H2, pagamento simulado, ZIP de 24 entradas, e-mail em servidor
   local, recuperação e ausência de duplicação. Nenhum provedor pago foi usado.
@@ -71,6 +76,11 @@ entrega assistida e direitos vendidos permanecem os cadastrados.
   aprovam estados vencido/atual, sem gravações nem chamadas externas.
   A fixture lê explicitamente UTF-8; isso evita evidência visual com acentos
   corrompidos pelo charset padrão do MockMvc.
+- Renovação pelo controller HTTP e banco H2 reais: duas solicitações
+  concorrentes retornam a mesma nova tentativa, com gates pendentes e histórico
+  preservado. Os modos TEST/PRODUCTION sem permissão e outra tentativa
+  independente mais recente recebem conflito sem criar run. A tela usa a
+  resposta dessa integração para comprovar a renovação nos três dispositivos.
 - Antes da correção, os cenários de vigência e incompatibilidade financeira
   falharam ao restaurar temporariamente o comportamento anterior. Depois, os
   mesmos casos passaram, juntamente com casos atuais e outros identificadores.
@@ -103,10 +113,12 @@ local na porta 15173:
 
 ```bash
 cd backend/ads-service
-mvn -Dtest=BackendExperimentRunServiceQuartzoTest \
-  -Dpreflight.fixture-output=/tmp/preflight-fixture.json test
+mvn -Dtest=BackendExperimentRunServiceQuartzoTest,BackendExperimentRunControllerTest \
+  -Dpreflight.fixture-output=/tmp/preflight-fixture.json \
+  -Dpreflight.renewal.fixture-output=/tmp/preflight-renewal.json test
 cd ../../
 PREFLIGHT_FIXTURE_RESULT=/tmp/preflight-fixture.json \
+  PREFLIGHT_RENEWAL_RESULT=/tmp/preflight-renewal.json \
   PREFLIGHT_EVIDENCE_DIR=/tmp/preflight-evidence \
   node frontend/e2e/experiment-run-current-evidence-responsive.mjs
 ```

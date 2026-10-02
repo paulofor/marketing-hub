@@ -83,6 +83,10 @@ class BackendExperimentRunServiceQuartzoTest {
                     .value(true))
             .andExpect(
                 org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath(
+                        "$.canRenewTechnicalHomologation")
+                    .value(true))
+            .andExpect(
+                org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath(
                         "$.runStatus")
                     .value("COMPLETED"))
             .andExpect(
@@ -103,6 +107,10 @@ class BackendExperimentRunServiceQuartzoTest {
             .andExpect(
                 org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath(
                         "$.hasBlockers")
+                    .value(false))
+            .andExpect(
+                org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath(
+                        "$.canRenewTechnicalHomologation")
                     .value(false))
             .andReturn()
             .getResponse()
@@ -213,6 +221,23 @@ class BackendExperimentRunServiceQuartzoTest {
     when(runs.findById(RUN_ID)).thenReturn(Optional.of(run));
     when(gates.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(RUN_ID)).thenReturn(persisted);
     return run;
+  }
+
+  /** Renovação não pode reaproveitar uma tentativa mais recente criada por outra ação. */
+  @Test
+  void rejectsIndependentNewerRunWithoutMutatingEitherAttempt() {
+    var previous = approvedRun();
+    when(runs.findForTechnicalHomologationRenewal(RUN_ID)).thenReturn(Optional.of(previous));
+    var newer = ExperimentRun.builder().id(92013L).createdBy("outra-operacao").build();
+    when(runs.findTopByExperimentIdAndModeOrderByRunNumberDesc(
+            previous.getExperiment().getId(), ExperimentRunMode.PRODUCTION))
+        .thenReturn(Optional.of(newer));
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> service.renewTechnicalHomologation(RUN_ID))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("tentativa mais recente");
+    verify(runs, never()).save(any());
+    verify(gates, never()).saveAll(any());
   }
 
   /** Valida a identidade Quartzo antes de persistir quatro gates aprovados e liberar o run. */

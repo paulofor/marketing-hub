@@ -98,6 +98,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExperimentRunPreflightResponse'
+  /api/experiment-runs/{runId}/technical-homologation-renewal:
+    post:
+      summary: Renova a homologação técnica vencida em outra tentativa
+      description: Serializa comandos da mesma origem e reutiliza a renovação em retries. Exige publicação identificada e aprovação histórica vencida. O backend prepara gates pendentes sem alterar campanha, oferta, orçamento ou provas anteriores.
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Nova tentativa técnica ou renovação anterior reutilizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentRunPreflightResponse'
+        '409':
+          description: Renovação não permitida ou tentativa independente mais recente; atualizar o painel sem repetir aprovação.
 components:
   schemas:
 
@@ -121,6 +141,9 @@ components:
           type: string
           nullable: true
           description: Bloqueio técnico de vigência; aprovação histórica não autoriza reutilização ou gasto.
+        canRenewTechnicalHomologation:
+          type: boolean
+          description: Permissão do backend para preparar uma nova prova sem sobrescrever a tentativa homologada e vencida.
         gates:
           type: array
           items:

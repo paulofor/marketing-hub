@@ -7445,3 +7445,21 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
 - Frontend conferido em desktop/iPhone/Android emulados; backend e MCP confirmaram persistência e
   ausência de job de provider. #95 permanece `PLANNED`, sem janela, orçamento ou liberação de mídia.
 - [Roteiro, matriz de aceite, limites e condições de execução](../homologacao/vega95-identificacao-persona-transformada-v1.md).
+
+## 2026-10-02 — Mira #93: Processo 5.4 conciliado, pendência financeira preservada
+
+- Confirmados produto #10 Safira, cadeia #24 v24, definição #58 v5 e execução #36.
+  O contexto antigo mostrava 2/4 e erro de mensuração, mas as instâncias #471–473 já comprovavam
+  superfícies, transação segregada e eventos pelo run #14, sem custo incremental.
+- A falha transacional já estava corrigida e publicada no PR #5468. Depois da validação local,
+  o comando **Retomar processo** na UI conciliou #36 para `WAITING_INPUT`, 3/4,
+  `financialGuardrails`, zero falhas técnicas; não foram recriadas tarefas ou provas.
+- A pendência atual é o plano comercial #8 v6 `BLOCKED`, não ausência de Plutus:
+  o plano financeiro #8 revisão 3 e parecer #61 `APPROVE` estão vigentes. O piloto #93
+  está `INVALIDATED`, com janela encerrada em 30/09. Não liberar mídia, alterar os limites
+  ou fabricar conclusão financeira. A execução pai #30 já estava concluída; #36 não foi
+  criada por ela e não pode reescrever essa comprovação histórica.
+- Melhorado o diagnóstico compartilhado do executor: mostrar IDs e estados dos planos,
+  orientar a fonte correta e preservar parecer compatível. Regressões transacionais cobrem
+  o caso original e identidades independentes, mantendo bloqueios e ausência de nova revisão.
+- [Evidências, comparação de alternativas e matriz local](../homologacao/mira93-processo54-bloqueio-financeiro-v1.md).

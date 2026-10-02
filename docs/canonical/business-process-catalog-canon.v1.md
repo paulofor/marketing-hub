@@ -627,6 +627,15 @@ qualquer falha preserva integralmente o estado anterior.
 O backend mantém atividades backend sem comando explícito como `AUTOMATIC`, mostrando o evento
 aguardado em vez de permitir conclusão manual sem evidência.
 
+Na atividade financeira do preflight, a pendência de estado do plano comercial deve identificar
+os planos vinculados e seus estados. Ela não equivale a parecer de Plutus ausente: um parecer
+compatível e vigente deve ser preservado, sem nova revisão paga para resolver um estado
+administrativo. Rascunho, bloqueio ou cancelamento do plano continuam impedindo a comprovação;
+não promover o plano, reabrir experimento encerrado ou conceder gasto durante essa leitura.
+A retomada concilia as atividades já persistidas e registra a pendência funcional atual, sem
+substituir seu histórico por falha técnica. Homologação incompleta não comprova conclusão do pai.
+Regressão e evidências: `docs/homologacao/mira93-processo54-bloqueio-financeiro-v1.md`.
+
 ## Execuções independentes de produto
 
 Cada versão de processo declara explicitamente `executionScope`, sem inferência por nome, posição na

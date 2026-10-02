@@ -37,6 +37,8 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRunGateResultReposit
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -45,7 +47,10 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
@@ -194,16 +199,111 @@ class ExperimentTechnicalPreflightEvidenceServiceTest {
   @Test
   void blocksFinancialGuardrailsWithoutActiveGoverningPlan() {
     var draft = new CommercialPlan();
+    draft.setId(200L);
     draft.setStatus(CommercialPlanStatus.DRAFT);
     draft.setMaxBudget(new BigDecimal("400.00"));
     var blocked = new CommercialPlan();
+    blocked.setId(201L);
     blocked.setStatus(CommercialPlanStatus.BLOCKED);
     blocked.setMaxBudget(new BigDecimal("400.00"));
     when(plans.findByExperimentReference(88L)).thenReturn(List.of(draft, blocked));
 
     assertThatThrownBy(() -> service.evaluate("financialGuardrails", product, "experiment:88"))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("em execução ou concluído");
+        .hasMessageContaining("em execução ou concluído")
+        .hasMessageContaining("#200 (DRAFT)", "#201 (BLOCKED)")
+        .hasMessageContaining(
+            "um parecer financeiro não substitui esse requisito nem autoriza gasto");
+  }
+
+  /** Preserva progresso e diário transacional quando a próxima atividade tem plano bloqueado. */
+  @ParameterizedTest
+  @CsvSource({"10,93,8,BLOCKED", "42,198,19,CANCELLED", "43,199,20,DRAFT"})
+  void reconcilesProgressWithoutRepeatingReviewsOrCompletingBlockedFinancialActivity(
+      long productId, long experimentId, long planId, CommercialPlanStatus planStatus)
+      throws Exception {
+    product.setId(productId);
+    experiment.setId(experimentId);
+    String reference = "experiment:" + experimentId;
+    when(experiments.findById(experimentId)).thenReturn(Optional.of(experiment));
+    when(runs.findTopByExperimentIdAndModeOrderByRunNumberDesc(
+            experimentId, ExperimentRunMode.PRODUCTION))
+        .thenReturn(Optional.of(run));
+    var plan = new CommercialPlan();
+    plan.setId(planId);
+    plan.setStatus(planStatus);
+    plan.setMaxBudget(experiment.getMediaSpendLimit());
+    when(plans.findByExperimentReference(experimentId)).thenReturn(List.of(plan));
+
+    var datasource =
+        new DriverManagerDataSource(
+            "jdbc:h2:mem:preflight_progress_" + experimentId + ";DB_CLOSE_DELAY=-1", "sa", "");
+    var jdbc = new JdbcTemplate(datasource);
+    jdbc.execute(
+        "CREATE TABLE progress (id BIGINT PRIMARY KEY, completed INT, remaining INT, status VARCHAR(32))");
+    var transactions = new DataSourceTransactionManager(datasource);
+    var proxy = new ProxyFactory(service);
+    proxy.addAdvice(
+        new TransactionInterceptor(transactions, new AnnotationTransactionAttributeSource()));
+    var proxiedEvidence = (ExperimentTechnicalPreflightEvidenceService) proxy.getProxy();
+    var predecessors = mock(ProductProcessActivityPredecessorService.class);
+    var instances = mock(BusinessProcessActivityInstanceRepository.class);
+    var process = new BusinessProcessDefinition();
+    process.setId(58L);
+    process.setProcessCode("experiment-homologation-activation");
+    var activity = new BusinessProcessActivityDefinition();
+    activity.setId(5804L);
+    activity.setActivityId("financialGuardrails");
+    activity.setProcessDefinition(process);
+    when(predecessors.readiness(process, activity, reference))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Concluídas"));
+    var executor =
+        new ExperimentTechnicalPreflightActivityExecutor(
+            predecessors, proxiedEvidence, instances, json, clock);
+
+    var readiness =
+        new TransactionTemplate(transactions)
+            .execute(
+                status -> {
+                  for (String activityId : List.of("surfaces", "transaction", "measurement"))
+                    assertThat(proxiedEvidence.evaluate(activityId, product, reference).runId())
+                        .isEqualTo(run.getId());
+                  jdbc.update("INSERT INTO progress VALUES (?, 3, 1, 'QUEUED')", experimentId);
+                  var result = executor.readiness(process, activity, product, reference);
+                  jdbc.update(
+                      "UPDATE progress SET status=? WHERE id=?",
+                      result.ready() ? "COMPLETED" : "WAITING_INPUT",
+                      experimentId);
+                  return result;
+                });
+
+    assertThat(readiness.ready()).isFalse();
+    assertThat(readiness.reason())
+        .contains("#" + experimentId, "#" + planId + " (" + planStatus + ")");
+    assertThat(readiness.requirements())
+        .singleElement()
+        .satisfies(
+            requirement -> {
+              assertThat(requirement.satisfied()).isFalse();
+              assertThat(requirement.recommendation())
+                  .contains("Reutilize o parecer de Plutus", "não autoriza gasto");
+            });
+    assertThat(
+            jdbc.queryForMap(
+                "SELECT completed, remaining, status FROM progress WHERE id=?", experimentId))
+        .containsEntry("COMPLETED", 3)
+        .containsEntry("REMAINING", 1)
+        .containsEntry("STATUS", "WAITING_INPUT");
+    assertThat(plan.getStatus()).isEqualTo(planStatus);
+    verifyNoInteractions(instances, quartzoChecks);
+    String outputDirectory = System.getProperty("preflight.output");
+    if (outputDirectory != null) {
+      Path output = Path.of(outputDirectory);
+      Files.createDirectories(output);
+      Files.writeString(
+          output.resolve("readiness-" + experimentId + ".json"),
+          json.writeValueAsString(readiness));
+    }
   }
 
   /** Mantém a ficha legível quando o plano ausente bloqueia o preflight dentro da transação. */

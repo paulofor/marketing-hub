@@ -76,7 +76,7 @@ public class ExperimentTechnicalPreflightActivityExecutor
       String sourceReference) {
     var predecessor = predecessors.readiness(process, activity, sourceReference);
     if (!predecessor.ready()) {
-      return response(false, predecessor.reason(), false, predecessor.reason(), null);
+      return response(false, predecessor.reason(), false, predecessor.reason(), null, null);
     }
     try {
       var evidence = evidenceService.evaluate(activity.getActivityId(), product, sourceReference);
@@ -85,7 +85,8 @@ public class ExperimentTechnicalPreflightActivityExecutor
           "A evidência do run produtivo vigente pode comprovar esta atividade.",
           true,
           "Run #" + evidence.runId() + " e fontes da atividade estão vigentes.",
-          evidence.experimentId());
+          evidence.experimentId(),
+          activity.getActivityId());
     } catch (RuntimeException ex) {
       log.warn(
           "Preflight técnico aguarda evidência. productId={} processDefinitionId={} activityId={} sourceReference={}",
@@ -94,7 +95,13 @@ public class ExperimentTechnicalPreflightActivityExecutor
           activity == null ? null : activity.getActivityId(),
           sourceReference,
           ex);
-      return response(false, ex.getMessage(), false, ex.getMessage(), null);
+      return response(
+          false,
+          ex.getMessage(),
+          false,
+          ex.getMessage(),
+          null,
+          activity == null ? null : activity.getActivityId());
     }
   }
 
@@ -137,13 +144,14 @@ public class ExperimentTechnicalPreflightActivityExecutor
         "Objetivo técnico comprovado pelo run produtivo vigente, sem repetir custo ou tráfego.");
   }
 
-  /** Monta a explicação usada pela tela sem duplicar a regra funcional do avaliador. */
+  /** Monta a explicação da tela, distinguindo a prova técnica do estado do plano financeiro. */
   private BackendProductProcessActivityReadiness response(
       boolean ready,
       String reason,
       boolean evidenceReady,
       String evidenceDetail,
-      Long experimentId) {
+      Long experimentId,
+      String activityId) {
     return new BackendProductProcessActivityReadiness(
         ready,
         reason,
@@ -159,7 +167,9 @@ public class ExperimentTechnicalPreflightActivityExecutor
                 evidenceDetail,
                 evidenceReady
                     ? "Preserve o run e as versões comprovadas."
-                    : "Conclua ou renove a homologação técnica antes de avançar.")));
+                    : "financialGuardrails".equals(activityId)
+                        ? "Confira o estado e o bloqueio do plano comercial vinculado. Reutilize o parecer de Plutus se suas premissas e validade ainda forem compatíveis; esta atividade não autoriza gasto."
+                        : "Conclua ou renove a homologação técnica antes de avançar.")));
   }
 
   /** Confirma idempotência por estado e impressão dos mesmos insumos verificados. */

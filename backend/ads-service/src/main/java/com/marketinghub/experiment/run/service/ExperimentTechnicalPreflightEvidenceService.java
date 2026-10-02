@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -275,7 +276,7 @@ public class ExperimentTechnicalPreflightEvidenceService {
                 && experiment.getPurchaseStopCount() > 0,
             "Defina as paradas sem compra e por quantidade de compras.");
       }
-      CommercialPlan governing = governingPlan(experiment.getId());
+      CommercialPlan governing = governingPlan(experiment);
       require(
           positive(governing.getMaxBudget())
               && experiment.getMediaSpendLimit().compareTo(governing.getMaxBudget()) <= 0,
@@ -294,9 +295,10 @@ public class ExperimentTechnicalPreflightEvidenceService {
     }
   }
 
-  /** Escolhe o plano mais recente ainda válido para governar o teto operacional. */
-  private CommercialPlan governingPlan(Long experimentId) {
-    return plans.findByExperimentReference(experimentId).stream()
+  /** Escolhe o plano governante e identifica os vínculos bloqueados sem refazer pareceres. */
+  private CommercialPlan governingPlan(Experiment experiment) {
+    List<CommercialPlan> linked = plans.findByExperimentReference(experiment.getId());
+    return linked.stream()
         .filter(
             plan ->
                 plan.getStatus() == CommercialPlanStatus.IN_PROGRESS
@@ -305,7 +307,23 @@ public class ExperimentTechnicalPreflightEvidenceService {
         .orElseThrow(
             () ->
                 new IllegalStateException(
-                    "O experimento não possui plano comercial governante em execução ou concluído."));
+                    "O experimento #"
+                        + experiment.getId()
+                        + " não possui plano comercial governante em execução ou concluído. "
+                        + "Planos vinculados: "
+                        + (linked.isEmpty()
+                            ? "nenhum"
+                            : linked.stream()
+                                .map(
+                                    plan ->
+                                        "#"
+                                            + Objects.toString(plan.getId(), "não informado")
+                                            + " ("
+                                            + Objects.toString(plan.getStatus(), "não informado")
+                                            + ")")
+                                .collect(Collectors.joining(", ")))
+                        + ". Confira o estado e o motivo do plano no planejamento comercial; "
+                        + "um parecer financeiro não substitui esse requisito nem autoriza gasto."));
   }
 
   /** Monta a evidência sem serializar documentos JSON dentro de outro JSON. */

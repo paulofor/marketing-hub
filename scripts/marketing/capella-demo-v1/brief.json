@@ -1,0 +1,180 @@
+{
+  "productId": 7,
+  "commercialPlanId": 2,
+  "profileId": 64,
+  "disclosure": "Demonstração · negócios fictícios · fotos ilustrativas por IA",
+  "supportEmail": "contato@digicomdigital.com.br",
+  "priceBrl": 67,
+  "sample": "Uma peça demonstrativa com legenda, gratuita, sem promessa de personalização individual ou geração paga por pedido.",
+  "examples": [
+    {
+      "id": "aurora-francesinha",
+      "brand": "Aurora Nails",
+      "city": "Campinas · SP",
+      "service": "MANICURE CLÁSSICA",
+      "headline": "Clássica.\nSempre sua.",
+      "body": "Francesinha delicada,\nacabamento que encanta.",
+      "cta": "Converse sobre seu próximo horário",
+      "accent": "#713346",
+      "background": "#fcf4f0",
+      "sourceId": 133,
+      "crop": [580, 130, 444, 880],
+      "layout": "split",
+      "caption": "A francesinha combina delicadeza com um acabamento que valoriza suas mãos. Qual versão combina com você? Fale com a Aurora Nails pelo WhatsApp para consultar serviços e horários. Campinas · SP.",
+      "whatsapp": "Olá! Gostaria de saber sobre a francesinha e consultar os horários da Aurora Nails."
+    },
+    {
+      "id": "aurora-conversa",
+      "brand": "Aurora Nails",
+      "city": "Campinas · SP",
+      "service": "SEU MOMENTO DE CUIDADO",
+      "headline": "Um cuidado.\nSeu tempo.",
+      "body": "Escolha sua inspiração.\nVamos conversar sobre horários?",
+      "cta": "Seu próximo cuidado começa na conversa",
+      "accent": "#713346",
+      "background": "#fcf4f0",
+      "sourceId": 136,
+      "crop": [0, 130, 1024, 480],
+      "layout": "editorial",
+      "caption": "Um momento para você, com atenção aos detalhes. Salve esta inspiração e converse com a Aurora Nails para consultar os serviços e encontrar um horário que faça sentido para sua rotina. Campinas · SP.",
+      "whatsapp": "Olá, Aurora Nails! Quero consultar os serviços e as opções de horário para meu próximo cuidado."
+    },
+    {
+      "id": "jade-detalhe",
+      "brand": "Ateliê Jade",
+      "city": "Curitiba · PR",
+      "service": "NATURAL COM PERSONALIDADE",
+      "headline": "Beleza nos\ndetalhes.",
+      "body": "Tom suave. Brilho sutil.\nUm acabamento com a sua cara.",
+      "cta": "Encontre sua inspiração e fale conosco",
+      "accent": "#194f42",
+      "background": "#f0f4ed",
+      "sourceId": 137,
+      "crop": [0, 130, 1024, 500],
+      "layout": "editorial",
+      "caption": "Cor suave e detalhes que fazem diferença. No Ateliê Jade, a conversa começa pelo estilo que você deseja. Salve a inspiração e fale pelo WhatsApp para consultar possibilidades e horários. Curitiba · PR.",
+      "whatsapp": "Olá, Ateliê Jade! Gostei da inspiração delicada. Quais serviços e horários posso consultar?"
+    },
+    {
+      "id": "jade-retorno",
+      "brand": "Ateliê Jade",
+      "city": "Curitiba · PR",
+      "service": "RENOVE SEU CUIDADO",
+      "headline": "Vamos escolher\nsua próxima cor?",
+      "body": "Uma nova inspiração\npara o seu próximo cuidado.",
+      "cta": "Converse pelo WhatsApp",
+      "accent": "#194f42",
+      "background": "#f0f4ed",
+      "sourceId": 136,
+      "crop": [0, 130, 1024, 480],
+      "layout": "split",
+      "caption": "Já pensando no próximo cuidado? Guarde sua inspiração favorita e converse com o Ateliê Jade sobre estilos e horários. Sem pressa: escolha o que combina com você. Curitiba · PR.",
+      "whatsapp": "Olá, Ateliê Jade! Quero conversar sobre meu próximo cuidado e consultar horários."
+    },
+    {
+      "id": "lis-cor",
+      "brand": "Studio Lis",
+      "city": "Recife · PE",
+      "service": "COR E PERSONALIDADE",
+      "headline": "Sua cor.\nSua presença.",
+      "body": "Um tom marcante\npara expressar seu estilo.",
+      "cta": "Quer conhecer as possibilidades? Fale conosco",
+      "accent": "#662736",
+      "background": "#fcf1e4",
+      "sourceId": 134,
+      "crop": [0, 130, 1024, 420],
+      "layout": "editorial",
+      "caption": "Um tom marcante pode ser a inspiração do seu próximo cuidado. No Studio Lis, converse sobre a cor e o acabamento que você deseja. Consulte os serviços e horários pelo WhatsApp. Recife · PE.",
+      "whatsapp": "Olá, Studio Lis! Gostei da inspiração em vinho e quero saber quais serviços e horários estão disponíveis."
+    },
+    {
+      "id": "lis-pausa",
+      "brand": "Studio Lis",
+      "city": "Recife · PE",
+      "service": "CONVITE AO AUTOCUIDADO",
+      "headline": "Uma pausa\npara você.",
+      "body": "Seu estilo merece\num momento de atenção.",
+      "cta": "Consulte serviços e horários pelo WhatsApp",
+      "accent": "#662736",
+      "background": "#fcf1e4",
+      "sourceId": 133,
+      "crop": [580, 130, 444, 880],
+      "layout": "split",
+      "caption": "Entre os compromissos da semana, reserve um espaço para o seu cuidado. Escolha uma inspiração e converse com o Studio Lis sobre os serviços e horários. Recife · PE.",
+      "whatsapp": "Olá, Studio Lis! Quero consultar serviços e horários para reservar um momento de cuidado."
+    }
+  ],
+  "scenes": [
+    {
+      "kind": "hook",
+      "headline": "Seu trabalho é caprichado.\nSua divulgação mostra isso?",
+      "speech": "Seu trabalho é caprichado. Sua divulgação mostra isso?"
+    },
+    {
+      "kind": "post",
+      "example": 0,
+      "headline": "Seu nome. Seu estilo.",
+      "speech": "Veja posts com seu nome, suas cores e sua cidade."
+    },
+    {
+      "kind": "post",
+      "example": 1,
+      "headline": "Um convite claro para conversar",
+      "speech": "Uma mensagem clara para conversar sobre horários."
+    },
+    {
+      "kind": "post",
+      "example": 2,
+      "headline": "Uma apresentação coerente",
+      "speech": "Uma apresentação à altura do cuidado que você oferece."
+    },
+    {
+      "kind": "post",
+      "example": 3,
+      "headline": "Inspiração para o próximo cuidado",
+      "speech": "Inspirações para divulgar e convidar ao próximo cuidado."
+    },
+    {
+      "kind": "post",
+      "example": 4,
+      "headline": "Cada negócio, sua identidade",
+      "speech": "Combinando nome, serviço e identidade visual."
+    },
+    {
+      "kind": "post",
+      "example": 5,
+      "headline": "Conteúdo que abre uma conversa",
+      "speech": "Sem começar do zero a cada publicação."
+    },
+    {
+      "kind": "sequence",
+      "headline": "Arte + legenda + convite",
+      "speech": "Você recebe arte, legenda, mensagens para WhatsApp e uma sequência para publicar."
+    },
+    {
+      "kind": "value",
+      "headline": "Menos esforço para divulgar.",
+      "speech": "Menos tempo criando. Mais confiança para divulgar."
+    },
+    {
+      "kind": "offer",
+      "headline": "Uma semana organizada",
+      "speech": "Dez posts, dez stories, dez legendas, cinco mensagens e calendário de sete dias."
+    },
+    {
+      "kind": "price",
+      "headline": "R$ 67\nPagamento único",
+      "speech": "O kit completo custa sessenta e sete reais, em pagamento único."
+    },
+    {
+      "kind": "delivery",
+      "headline": "Até 3 dias úteis",
+      "speech": "Entrega em até três dias úteis após pagamento aprovado e briefing completo."
+    },
+    {
+      "kind": "sample",
+      "headline": "Peça uma amostra\ngratuita",
+      "speech": "Quer conhecer o estilo? Peça uma amostra demonstrativa gratuita pelo e-mail na legenda."
+    }
+  ]
+}

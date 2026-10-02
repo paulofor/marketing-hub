@@ -49,6 +49,9 @@ import {
   SALES_VIDEO_PROVIDER_OPTIONS,
 } from "../../api/salesVideo/videoProviderCatalog";
 import "./ProductSalesVideoPage.css";
+import ProductVideoScriptEditor, {
+  ProductVideoScriptDraft,
+} from "./ProductVideoScriptEditor";
 
 const VIDEO_KIND_OPTIONS: SalesVideoKind[] = ["HERO", "OBJECTION", "PROOF"];
 const AVATAR_STRATEGY_LABELS: Record<SalesVideoAvatarStrategy, string> = {
@@ -63,28 +66,9 @@ const DEFAULT_AVATAR_STRATEGY: SalesVideoAvatarStrategy =
   "PLATFORM_TEST_AVATAR";
 const USD_TO_BRL_RATE = 5;
 
-const DEFAULT_SCRIPT = [
-  "Hook: voce sente que sua imagem ainda nao comunica a presenca que voce quer?",
-  "Dor: nao e falta de roupa. E falta de clareza sobre os sinais que sua imagem envia.",
-  "Mecanismo: o Metodo MUSA cria um plano de 7 dias com microacoes para ajustar presenca, elegancia e intencao.",
-  "Desejo: pequenos sinais visuais mudam como voce se percebe e como entra nos ambientes.",
-  "CTA: veja agora seu plano MUSA personalizado.",
-].join("\n\n");
-
-const DEFAULT_POST_PRODUCTION_VOICE = [
-  "Você se arruma, olha no espelho e ainda sente que falta presença?",
-  "Às vezes não é falta de roupa. É falta de clareza sobre os pequenos sinais que sua imagem comunica.",
-  "O Método MUSA te guia por microações simples: reduzir ruído visual, escolher uma peça-sinal, ajustar cor, acabamento e postura usando o que você já tem.",
-  "Em 7 dias, você enxerga um caminho mais elegante, marcante e possível.",
-  "Faça o diagnóstico gratuito e veja seu Plano MUSA de 7 dias.",
-].join(" ");
-
-const DEFAULT_POST_PRODUCTION_CAPTION =
-  "Presença elegante começa com pequenos sinais. Veja seu Plano MUSA de 7 dias.";
 const DEFAULT_HEYGEN_VOICE_ID = "0edbc867be6f48c5be8ff8b0fbca0802";
 
-const DEFAULT_OPENAI_REFERENCE_IMAGE_PROMPT =
-  "Imagem-base MUSA anti-sensualizacao: mulher brasileira adulta em um ambiente claro e cotidiano, organizando roupa e anotacoes do plano, postura natural, expressao de alivio e clareza, elegancia acessivel, sem pose sedutora, sem foco corporal, sem luxo ostensivo.";
+const DEFAULT_OPENAI_REFERENCE_IMAGE_PROMPT = "";
 const MAX_MONTAGE_DURATION_SECONDS = 600;
 
 type ProfileFormState = {
@@ -139,25 +123,16 @@ export default function ProductSalesVideoPage() {
   );
   const [referenceImageCount, setReferenceImageCount] = useState("1");
   const [seedImageAssetId, setSeedImageAssetId] = useState("");
-  const [seedCharacterName, setSeedCharacterName] = useState("Sofia MUSA");
+  const [seedCharacterName, setSeedCharacterName] = useState("");
   const [seedReviewNotes, setSeedReviewNotes] = useState("");
-  const [postProductionVoiceOver, setPostProductionVoiceOver] = useState(
-    DEFAULT_POST_PRODUCTION_VOICE,
-  );
-  const [postProductionCaption, setPostProductionCaption] = useState(
-    DEFAULT_POST_PRODUCTION_CAPTION,
-  );
+  const [postProductionVoiceOver, setPostProductionVoiceOver] = useState("");
+  const [postProductionCaption, setPostProductionCaption] = useState("");
   const [heyGenVoiceId, setHeyGenVoiceId] = useState(DEFAULT_HEYGEN_VOICE_ID);
   const [montageJobIds, setMontageJobIds] = useState<string[]>([]);
   const [profileForm, setProfileForm] =
     useState<ProfileFormState>(emptyProfileForm);
-  const [scriptText, setScriptText] = useState(DEFAULT_SCRIPT);
   const createProfile = useCreateSalesVideoProfile(productId);
   const updateVideoSeedImage = useUpdateProductVideoSeedImage();
-  const approveScript = useApproveSalesVideoScript(
-    selectedProfileId || undefined,
-  );
-  const requestRender = useRequestVideoRender(selectedProfileId || undefined);
   const requestMontage = useRequestSalesVideoMontage(productId);
 
   const profileList = useMemo(() => profiles ?? [], [profiles]);
@@ -219,6 +194,10 @@ export default function ProductSalesVideoPage() {
     return profileList[0];
   }, [profileList, selectedProfileId, selectedVideoJob]);
   const effectiveProfileId = selectedProfile ? String(selectedProfile.id) : "";
+  const approveScript = useApproveSalesVideoScript(
+    effectiveProfileId || undefined,
+  );
+  const requestRender = useRequestVideoRender(effectiveProfileId || undefined);
   const selectedVideoSourceUrl =
     selectedVideoJob?.streamPlaybackUrl?.trim() ||
     selectedVideoAsset?.publicUrl ||
@@ -245,9 +224,9 @@ export default function ProductSalesVideoPage() {
   );
   const providerDurationLimitExceeded = Boolean(
     selectedProvider.maxDirectDurationSeconds &&
-    selectedProfile?.targetDurationSeconds &&
-    selectedProfile.targetDurationSeconds >
-      selectedProvider.maxDirectDurationSeconds,
+      selectedProfile?.targetDurationSeconds &&
+      selectedProfile.targetDurationSeconds >
+        selectedProvider.maxDirectDurationSeconds,
   );
   const providerDurationLimitMessage =
     providerDurationLimitExceeded && selectedProvider.maxDirectDurationSeconds
@@ -361,7 +340,11 @@ export default function ProductSalesVideoPage() {
     }
   };
 
-  const handleSaveScript = async () => {
+  const handleSaveScript = async ({
+    scriptText,
+    ctaText,
+    captionText,
+  }: ProductVideoScriptDraft) => {
     if (!effectiveProfileId) {
       toast.error("Crie ou selecione um vídeo antes do roteiro");
       return;
@@ -374,9 +357,8 @@ export default function ProductSalesVideoPage() {
       await approveScript.mutateAsync({
         scriptText,
         hookText: firstLine(scriptText),
-        ctaText: "Ver meu plano MUSA de 7 dias",
-        captionText:
-          "Diagnostico MUSA: entenda o que sua imagem comunica hoje.",
+        ctaText: ctaText.trim(),
+        captionText: captionText.trim(),
         approvedBy: tenantContext.userEmail,
       });
       toast.success("Roteiro salvo e aprovado");
@@ -648,7 +630,7 @@ export default function ProductSalesVideoPage() {
               className="form-control"
               value={seedCharacterName}
               onChange={(event) => setSeedCharacterName(event.target.value)}
-              placeholder="Sofia MUSA"
+              placeholder="Nome da personagem deste produto"
             />
             <label className="form-label" htmlFor="seed-review-notes">
               Observações da revisão
@@ -798,7 +780,7 @@ export default function ProductSalesVideoPage() {
                   title: event.target.value,
                 }))
               }
-              placeholder="Hero falado MUSA"
+              placeholder="Título do vídeo deste produto"
             />
             <label className="form-label" htmlFor="video-persona">
               Persona
@@ -813,7 +795,7 @@ export default function ProductSalesVideoPage() {
                   personaName: event.target.value,
                 }))
               }
-              placeholder="Visitante MUSA"
+              placeholder="Persona deste produto"
             />
             <label className="form-label" htmlFor="video-style">
               Estilo visual
@@ -1021,23 +1003,17 @@ export default function ProductSalesVideoPage() {
                 <FileText size={18} aria-hidden="true" />
                 <strong>Roteiro comercial</strong>
               </div>
-              <textarea
-                className="form-control"
-                rows={12}
-                value={scriptText}
-                onChange={(event) => setScriptText(event.target.value)}
-              />
-              <button
-                type="button"
-                className="btn btn-outline-primary"
-                onClick={handleSaveScript}
-                disabled={!effectiveProfileId || approveScript.isPending}
-              >
-                <Save size={16} aria-hidden="true" />
-                {approveScript.isPending
-                  ? "Salvando..."
-                  : "Salvar roteiro aprovado"}
-              </button>
+              {selectedProfile ? (
+                <ProductVideoScriptEditor
+                  key={`${productId}:${effectiveProfileId}:${selectedProfile.latestScript?.id ?? "new"}`}
+                  script={selectedProfile.latestScript}
+                  productCta={product?.primaryCta}
+                  pending={approveScript.isPending}
+                  onSave={(draft) => void handleSaveScript(draft)}
+                />
+              ) : (
+                <p>Crie ou selecione um vídeo para editar o roteiro.</p>
+              )}
             </div>
 
             <div className="product-video-page__render" id="geracao">
@@ -1123,7 +1099,7 @@ export default function ProductSalesVideoPage() {
                   />
                   <p className="form-text mb-0">
                     Padrão inicial: Sofia Brazil - Friendly, voz feminina em
-                    português para a Sofia MUSA.
+                    português para o personagem deste perfil.
                   </p>
                 </div>
               ) : null}
@@ -1677,170 +1653,24 @@ function findProfile(profiles: SalesVideoProfile[], profileId: number) {
   return profiles.find((profile) => profile.id === profileId);
 }
 
-function describeVideoObjective(
+/** Apresenta a intenção registrada no perfil, sem deduzir oferta pelo título ou por outro produto. */
+export function describeVideoObjective(
   profile: SalesVideoProfile | undefined,
-  job: SalesVideoJob,
+  _job: SalesVideoJob,
 ) {
-  const profileTitleText = profile?.title?.toLowerCase() ?? "";
-  const plannedObjective = describeKnownMusaPlannedVideo(profileTitleText);
-  if (plannedObjective) {
-    return plannedObjective;
-  }
-
-  const searchableText = [
-    profile?.title,
-    profile?.videoKind,
-    profile?.personaStyle,
-    profile?.voiceStyle,
-    job.providerName,
-    job.metadataJson,
-    job.auditSnapshotJson,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  if (
-    containsAny(searchableText, ["espelho", "dor", "hook", "apagada", "#5"])
-  ) {
-    return {
-      stage: "Desconhecimento -> relevancia",
-      goal: "Abrir com uma cena reconhecivel para a visitante pensar: isso acontece comigo.",
-      evidence:
-        "Criterio da estrada: situacao reconhecivel antes de explicar o produto.",
-    };
-  }
-
-  if (
-    containsAny(searchableText, [
-      "microacoes",
-      "microações",
-      "mecanismo",
-      "7 dias",
-      "#7",
-    ])
-  ) {
-    return {
-      stage: "Curiosidade -> mecanismo plausivel",
-      goal: "Mostrar como pequenas decisoes guiadas produzem uma presenca mais intencional.",
-      evidence:
-        "Criterio da estrada: entrada da cliente, mecanismo simples e resultado imaginavel.",
-    };
-  }
-
-  if (
-    containsAny(searchableText, [
-      "plano",
-      "personalizado",
-      "diagnostico",
-      "diagnóstico",
-      "cta",
-      "#8",
-    ])
-  ) {
-    return {
-      stage: "Desejo -> compra",
-      goal: "Conectar o valor percebido ao proximo passo: ver e continuar o plano MUSA.",
-      evidence:
-        "Criterio da estrada: oferta como continuidade do resultado, nao como compra fria.",
-    };
-  }
-
-  if (
-    containsAny(searchableText, [
-      "presenca",
-      "presença",
-      "luxo",
-      "sofisticacao",
-      "sofisticação",
-      "#6",
-    ])
-  ) {
-    return {
-      stage: "Confianca -> desejo",
-      goal: "Ajudar a cliente a se imaginar com mais elegancia sem depender de luxo caro.",
-      evidence:
-        "Criterio da estrada: simular a transformacao futura em uma trajetoria possivel.",
-    };
-  }
-
-  if (profile?.videoKind === "PROOF") {
-    return {
-      stage: "Valor pessoal -> confianca",
-      goal: "Reforcar prova de produto, mecanismo e casos semelhantes antes da decisao.",
-      evidence:
-        "Criterio da estrada: transformar interesse inicial em confianca no produto.",
-    };
-  }
-
-  if (profile?.videoKind === "OBJECTION") {
-    return {
-      stage: "Reducao de risco",
-      goal: "Diminuir incerteza, risco e esforco percebido antes do checkout.",
-      evidence:
-        "Criterio da estrada: remover resistencias de uso, valor, risco, tradicao e imagem.",
-    };
-  }
-
-  return {
-    stage: "Relevancia -> compreensao",
-    goal: "Conectar a dor de imagem ao Metodo MUSA com clareza suficiente para continuar.",
-    evidence:
-      "Criterio da estrada: aumentar relevancia, valor, adequacao pessoal e confianca.",
+  const stages = {
+    HERO: "Apresentação do produto",
+    PROOF: "Demonstração de valor",
+    OBJECTION: "Esclarecimento antes da compra",
   };
-}
-
-function describeKnownMusaPlannedVideo(profileTitleText: string) {
-  if (profileTitleText.includes("#5")) {
-    return {
-      stage: "Desconhecimento -> relevancia",
-      goal: "Abrir com a dor do espelho para a visitante reconhecer a propria inseguranca visual.",
-      evidence:
-        "Criterio da estrada: comecar por situacao reconhecivel, problema percebido e atencao.",
-    };
-  }
-
-  if (profileTitleText.includes("#6")) {
-    return {
-      stage: "Confianca -> desejo",
-      goal: "Mostrar a presenca elegante acessivel como transformacao desejavel sem luxo caro.",
-      evidence:
-        "Criterio da estrada: ajudar a cliente a simular uma nova situacao futura.",
-    };
-  }
-
-  if (profileTitleText.includes("#7")) {
-    return {
-      stage: "Curiosidade -> mecanismo plausivel",
-      goal: "Explicar as microacoes de 7 dias para reduzir esforco e tornar o resultado possivel.",
-      evidence:
-        "Criterio da estrada: entrada da cliente, mecanismo simples e resultado imaginavel.",
-    };
-  }
-
-  if (profileTitleText.includes("#8")) {
-    return {
-      stage: "Desejo -> compra",
-      goal: "Levar a visitante do desejo ao plano MUSA personalizado como proximo passo natural.",
-      evidence:
-        "Criterio da estrada: oferta como continuidade do resultado, nao como compra fria.",
-    };
-  }
-
-  if (profileTitleText.includes("#9")) {
-    return {
-      stage: "Desconhecimento -> relevancia",
-      goal: "Usar fala curta para capturar atencao e fazer a cliente reconhecer rapidamente a dor.",
-      evidence:
-        "Criterio da estrada: situacao reconhecivel antes de pedir acao comercial.",
-    };
-  }
-
-  return null;
-}
-
-function containsAny(value: string, needles: string[]) {
-  return needles.some((needle) => value.includes(needle));
+  return {
+    stage: profile ? stages[profile.videoKind] : "Intenção não registrada",
+    goal: profile?.latestScript?.ctaText?.trim()
+      ? `Chamada registrada: ${profile.latestScript.ctaText.trim()}`
+      : "Registre o roteiro e a chamada para ação específicos deste produto.",
+    evidence:
+      "Intenção de comunicação; resultados comerciais dependem de evidência de mercado.",
+  };
 }
 
 type VideoVisualQualityStatus = "approved" | "warning" | "blocked";

@@ -175,6 +175,40 @@ describe("upload governado de vídeo do experimento", () => {
     );
   });
 
+  it("anexa uma candidata opcional sem torná-la requisito da liberação", async () => {
+    const file = new File(["mp4"], "new-candidate.mp4", { type: "video/mp4" });
+    render(
+      <ExperimentAdVideoUploadPanel
+        experiment={{ ...experiment, id: "122", productId: 19 }}
+        locked={false}
+        metadataReader={async () => ({
+          durationSeconds: 45,
+          width: 1080,
+          height: 1920,
+        })}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Arquivo MP4"), {
+      target: { files: [file] },
+    });
+    await screen.findByText(/1080×1920 · 45s/);
+    fillCommercialEvidence();
+    fireEvent.click(
+      screen.getByLabelText(
+        "Exigir aprovação deste vídeo para liberar o experimento.",
+      ),
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Enviar para revisão do experimento",
+      }),
+    );
+    await waitFor(() => expect(fixture.mutateAsync).toHaveBeenCalledTimes(1));
+    expect(fixture.mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ requiredForRelease: false }),
+    );
+  });
+
   it("bloqueia arquivo que não seja vertical 9:16", async () => {
     const file = new File(["mp4"], "horizontal.mp4", { type: "video/mp4" });
     render(

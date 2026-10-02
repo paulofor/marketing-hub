@@ -1,9 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { SalesVideoJob } from "../../api/salesVideo/types";
+import { SalesVideoJob, SalesVideoProfile } from "../../api/salesVideo/types";
 import {
   assessVideoVisualQuality,
   isPostProductionSourceJob,
+  describeVideoObjective,
 } from "./ProductSalesVideoPage";
+
+describe("intenção de comunicação do próprio perfil", () => {
+  it.each(["Personalizado #7", "Diagnóstico CTA", "Vídeo #8"])(
+    "não infere MUSA pelo título %s",
+    (title) => {
+      const result = describeVideoObjective(
+        {
+          id: 90,
+          productId: 17,
+          title,
+          videoKind: "HERO",
+          latestScript: { ctaText: "Ver a amostra do meu kit" },
+        } as SalesVideoProfile,
+        {} as SalesVideoJob,
+      );
+      expect(result.goal).toBe("Chamada registrada: Ver a amostra do meu kit");
+      expect(result.evidence).toContain("dependem de evidência de mercado");
+    },
+  );
+  it("mantém a ausência de CTA explícita", () => {
+    expect(
+      describeVideoObjective(undefined, {} as SalesVideoJob).goal,
+    ).toContain("Registre o roteiro");
+  });
+});
 
 describe("fontes reutilizáveis de pós-produção", () => {
   it("aceita somente falha de duração com arquivo preservado", () => {

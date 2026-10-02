@@ -11,6 +11,7 @@ import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.LandingPage;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
@@ -56,9 +57,14 @@ import com.marketinghub.salesvideo.service.SalesVideoProductionCostCalculator;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.util.List;
 import java.util.Optional;
+import java.math.BigDecimal;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -302,6 +308,128 @@ class ExperimentVideoAssetServiceTest {
             "\"videoAssetId\":47",
             "https://cdn.test/mira-approved-v3.mp4",
             "mira-commercial-demo-v1-hls/index.m3u8");
+  }
+
+  /** Reutiliza uma fonte da mesma oferta sem copiar a campanha ou retirar a revisão da candidata. */
+  @Test
+  void shouldReuseApprovedProductVideoWithoutAdoptingCommercialSurface() throws Exception {
+    Experiment target = reusableVideoExperiment(125L);
+    Experiment source = reusableVideoExperiment(112L);
+    source.setHypothesisRef(target.getHypothesisRef());
+    target.setInstagramAccount(com.marketinghub.ads.InstagramAccount.builder().id(9L).build());
+    given(experimentRepository.findById(target.getId())).willReturn(Optional.of(target));
+    given(repository.findById(83L)).willReturn(Optional.of(reusableVideoSource(source)));
+    given(salesVideoService.storeAsset(any(), eq(AssetType.VIDEO), eq(MediaProvider.USER_UPLOAD), any()))
+        .willReturn(Asset.builder().id(2900L).url("https://cdn.test/candidate.mp4").build());
+    given(repository.save(any(ExperimentVideoAsset.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+    ExperimentVideoAssetDto dto = service.uploadUserAdVideo(target.getId(), reusableVideoFile(), reusableVideoRequest());
+
+    assertThat(dto.reviewStatus()).isEqualTo(ExperimentVideoReviewStatus.PENDING);
+    assertThat(dto.requestJson()).contains("APPROVED_PRODUCT_OFFER", "\"experimentId\":112", "\"videoAssetId\":83");
+    assertThat(target.getSourceExperiment()).isNull();
+    assertThat(target.getFollowUpActionUrl()).isNull();
+    assertThat(target.getDailyBudget()).isNull();
+    assertThat(target.getInstagramAccount().getId()).isEqualTo(9L);
+  }
+
+  /** Comprova o multipart do controller com serviço real e dependências locais simuladas. */
+  @Test
+  void shouldImportApprovedReuseThroughOfficialMultipartContract() throws Exception {
+    Experiment target = reusableVideoExperiment(125L);
+    Experiment source = reusableVideoExperiment(112L);
+    source.setHypothesisRef(target.getHypothesisRef());
+    given(experimentRepository.findById(target.getId())).willReturn(Optional.of(target));
+    given(repository.findById(83L)).willReturn(Optional.of(reusableVideoSource(source)));
+    given(salesVideoService.storeAsset(any(), eq(AssetType.VIDEO), eq(MediaProvider.USER_UPLOAD), any()))
+        .willReturn(Asset.builder().id(2900L).url("https://cdn.test/candidate.mp4").build());
+    given(repository.save(any(ExperimentVideoAsset.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+    var controller = new com.marketinghub.experiment.video.web.ExperimentVideoAssetController(
+        service, org.mockito.Mockito.mock(ExperimentVideoPerformanceDashboardService.class));
+    var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(controller).build();
+    var request = reusableVideoRequest();
+
+    mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+            .multipart("/api/experiments/125/video-assets/ad-uploads").file(reusableVideoFile())
+            .param("objective", request.objective()).param("primaryMetric", request.primaryMetric())
+            .param("script", request.script()).param("durationSeconds", "20").param("hasAudio", "true")
+            .param("visualSourceKey", request.visualSourceKey())
+            .param("visualSourceDescription", request.visualSourceDescription())
+            .param("productionReference", request.productionReference())
+            .param("visualSourceVideoAssetIds", "83").param("requiredForRelease", "true"))
+        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isCreated())
+        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.reviewStatus").value("PENDING"))
+        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.status").value("READY"))
+        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.experimentId").value(125));
+  }
+
+  /** Recusa origens sem aprovação ou com produto, hipótese ou oferta incompatíveis antes do storage. */
+  @ParameterizedTest
+  @MethodSource("incompatibleVideoSources")
+  void shouldRejectIncompatibleCrossExperimentVideo(Consumer<ExperimentVideoAsset> change) throws Exception {
+    Experiment target = reusableVideoExperiment(125L);
+    Experiment source = reusableVideoExperiment(112L);
+    source.setHypothesisRef(target.getHypothesisRef());
+    ExperimentVideoAsset video = reusableVideoSource(source);
+    change.accept(video);
+    given(experimentRepository.findById(target.getId())).willReturn(Optional.of(target));
+    given(repository.findById(83L)).willReturn(Optional.of(video));
+
+    ResponseStatusException error = assertThrows(ResponseStatusException.class,
+        () -> service.uploadUserAdVideo(target.getId(), reusableVideoFile(), reusableVideoRequest()));
+
+    assertThat(error.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(error.getReason()).contains("approved", "product, hypothesis and offer");
+    verify(salesVideoService, org.mockito.Mockito.never()).storeAsset(any(), any(), any(), any());
+  }
+
+  /** Fornece divergências reais do contrato e aprovação, sem fixar identidades de produção. */
+  private static Stream<Consumer<ExperimentVideoAsset>> incompatibleVideoSources() {
+    return Stream.of(
+        video -> video.getExperiment().setProduct(Product.builder().id(19L).build()),
+        video -> video.getExperiment().setHypothesisRef(Hypothesis.builder().id(java.util.UUID.randomUUID()).build()),
+        video -> video.getExperiment().setUnitPrice(new BigDecimal("42")),
+        video -> video.getExperiment().setUnitPrice(null),
+        video -> video.getExperiment().setExperimentType(ExperimentType.LOW_TICKET_PRODUCT),
+        video -> video.getExperiment().setDesireTerritoryCode("OTHER_DESIRE"),
+        video -> video.getExperiment().setNiche(MarketNiche.builder().id(29L).build()),
+        video -> video.setReviewStatus(ExperimentVideoReviewStatus.PENDING),
+        video -> video.setReviewedAt(null),
+        video -> video.setStatus(ExperimentVideoStatus.GENERATING),
+        video -> video.setAssetUrl(""));
+  }
+
+  /** Monta uma oferta fictícia completa para validar reutilização em identidades independentes. */
+  private static Experiment reusableVideoExperiment(Long id) {
+    return Experiment.builder().id(id).product(Product.builder().id(18L).build())
+        .niche(MarketNiche.builder().id(28L).build())
+        .hypothesisRef(Hypothesis.builder().id(java.util.UUID.randomUUID()).build())
+        .unitPrice(new BigDecimal("39.00"))
+        .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+        .desireTerritoryCode("TEST_DESIRE").build();
+  }
+
+  /** Monta uma fonte pronta com data e decisão de aprovação verificáveis. */
+  private static ExperimentVideoAsset reusableVideoSource(Experiment source) {
+    return ExperimentVideoAsset.builder().id(83L).experiment(source).slot(ExperimentVideoSlot.AD)
+        .status(ExperimentVideoStatus.READY).reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+        .reviewedAt(java.time.Instant.parse("2026-09-28T12:00:00Z"))
+        .assetUrl("https://cdn.test/approved.mp4").build();
+  }
+
+  /** Fornece arquivo com assinatura MP4 para alcançar a validação das fontes. */
+  private static MockMultipartFile reusableVideoFile() {
+    return new MockMultipartFile("file", "candidate.mp4", "video/mp4",
+        new byte[] {0, 0, 0, 24, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm'});
+  }
+
+  /** Declara a origem aprovada e o script versionado sem liberar a campanha. */
+  private static UploadExperimentAdVideoRequest reusableVideoRequest() {
+    return new UploadExperimentAdVideoRequest("Demonstrar valor", "Compras conciliadas",
+        "Confira um exemplo antes de comprar.", 20, true, "approved-source-v1",
+        "Fonte aprovada preservada no histórico", "scripts/marketing/create-video-v1.mjs",
+        List.of(), List.of(83L), true);
   }
 
   /** Rejeita HLS inválido antes de armazenar o MP4 e deixar uma gravação parcial. */

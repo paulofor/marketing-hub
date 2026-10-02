@@ -542,7 +542,7 @@ public class ExperimentVideoAssetService {
         .toList();
   }
 
-  /** Confirma que cada vídeo-fonte foi aprovado e pertence ao experimento adotado. */
+  /** Confirma aprovação e oferta das fontes, sem exigir adoção da campanha para reutilizar pixels. */
   private List<Map<String, Object>> resolveApprovedVideoSources(
       Experiment target, List<Long> videoAssetIds) {
     Experiment permittedSource =
@@ -571,14 +571,18 @@ public class ExperimentVideoAssetService {
                   source.getStatus() == ExperimentVideoStatus.READY
                       && source.getReviewStatus() == ExperimentVideoReviewStatus.APPROVED
                       && source.getReviewedAt() != null;
-              if (!Objects.equals(source.getExperiment().getId(), permittedSource.getId())
+              boolean permittedOrigin =
+                  Objects.equals(source.getExperiment().getId(), target.getId())
+                      || Objects.equals(source.getExperiment().getId(), permittedSource.getId())
+                      || sameVideoReuseOffer(source.getExperiment(), target);
+              if (!permittedOrigin
                   || !sameProduct
                   || !sameHypothesis
                   || !approved
                   || !StringUtils.hasText(source.getAssetUrl())) {
                 throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "visual source video must be approved and belong to the adopted experiment");
+                    "visual source video must be approved and match the product, hypothesis and offer");
               }
               Map<String, Object> evidence = new LinkedHashMap<>();
               evidence.put("videoAssetId", source.getId());
@@ -588,9 +592,33 @@ public class ExperimentVideoAssetService {
               evidence.put("status", source.getStatus().name());
               evidence.put("reviewStatus", source.getReviewStatus().name());
               evidence.put("reviewedAt", source.getReviewedAt().toString());
+              evidence.put(
+                  "reuseScope",
+                  Objects.equals(source.getExperiment().getId(), target.getId())
+                      ? "SAME_EXPERIMENT"
+                      : Objects.equals(source.getExperiment().getId(), permittedSource.getId())
+                          ? "ADOPTED_EXPERIMENT"
+                          : "APPROVED_PRODUCT_OFFER");
               return evidence;
             })
         .toList();
+  }
+
+  /** Confere os termos conhecidos da oferta para reutilização visual entre experimentos separados. */
+  private boolean sameVideoReuseOffer(Experiment source, Experiment target) {
+    return source.getUnitPrice() != null
+        && source.getUnitPrice().signum() > 0
+        && target.getUnitPrice() != null
+        && source.getUnitPrice().compareTo(target.getUnitPrice()) == 0
+        && source.getExperimentType() != null
+        && source.getExperimentType() == target.getExperimentType()
+        && source.getProductAiSubtype() == target.getProductAiSubtype()
+        && StringUtils.hasText(source.getDesireTerritoryCode())
+        && Objects.equals(source.getDesireTerritoryCode(), target.getDesireTerritoryCode())
+        && source.getNiche() != null
+        && target.getNiche() != null
+        && source.getNiche().getId() != null
+        && Objects.equals(source.getNiche().getId(), target.getNiche().getId());
   }
 
   /** Converte uma coleção ausente de fontes em lista vazia imutável. */

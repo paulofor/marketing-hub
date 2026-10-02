@@ -2,6 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Experiment } from "../../api/experiment/useExperiments";
+import { useProductPdeVersionVideos } from "../../api/product/usePdeVersionVideos";
 import ExperimentVideoTab from "./ExperimentVideoTab";
 
 vi.mock("../../api/experiment/useExperimentVideoAssets", () => ({
@@ -37,7 +38,7 @@ vi.mock("../../api/experiment/useExperimentVideoPerformanceDashboard", () => ({
 }));
 
 vi.mock("../../api/product/usePdeVersionVideos", () => ({
-  useProductPdeVersionVideos: () => ({
+  useProductPdeVersionVideos: vi.fn(() => ({
     data: [
       {
         slot: {
@@ -73,11 +74,18 @@ vi.mock("../../api/product/usePdeVersionVideos", () => ({
         alerts: [],
       },
     ],
-  }),
+  })),
 }));
 
 vi.mock("../../api/experiment/useUpdateExperimentVideoAssetReview", () => ({
   useUpdateExperimentVideoAssetReview: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+}));
+
+vi.mock("../../api/experiment/useUploadExperimentAdVideo", () => ({
+  useUploadExperimentAdVideo: () => ({
     mutateAsync: vi.fn(),
     isPending: false,
   }),
@@ -92,6 +100,7 @@ vi.mock("../../components/AdaptiveVideoPlayer", () => ({
 const experiment = {
   id: "76",
   nicheId: 31,
+  productId: 4,
   hypothesisId: "hypothesis-76",
   name: "Metodo MUSA - Presenca Elegante em 7 Dias-E005",
   hypothesis: "Validar PDE MUSA v6 com video motivacional.",
@@ -110,6 +119,69 @@ const experiment = {
 describe("ExperimentVideoTab", () => {
   afterEach(() => {
     cleanup();
+  });
+
+  it("permite importar uma candidata pronta para PDE sem retirar a revisão", () => {
+    render(
+      <MemoryRouter>
+        <ExperimentVideoTab
+          experiment={{
+            ...experiment,
+            id: "125",
+            productId: 18,
+            status: "PLANNED",
+          }}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByLabelText("Arquivo MP4")).toBeTruthy();
+    expect(
+      screen.getByLabelText("IDs dos vídeos aprovados usados como fonte"),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", {
+        name: "Enviar para revisão do experimento",
+      }),
+    ).toBeDisabled();
+    expect(
+      screen
+        .getByRole("link", { name: "Gerenciar no produto" })
+        .getAttribute("href"),
+    ).toBe("/products/18/sales-videos");
+    expect(useProductPdeVersionVideos).toHaveBeenLastCalledWith(18);
+  });
+
+  it("não consulta vídeos de Vega quando o produto do experimento está ausente", () => {
+    render(
+      <MemoryRouter>
+        <ExperimentVideoTab
+          experiment={{ ...experiment, productId: undefined }}
+        />
+      </MemoryRouter>,
+    );
+    expect(useProductPdeVersionVideos).toHaveBeenLastCalledWith(undefined);
+    expect(
+      screen
+        .getByRole("link", { name: "Gerenciar no produto" })
+        .getAttribute("href"),
+    ).toBe("/products");
+  });
+
+  it("preserva o bloqueio de alterações também na importação de PDE", () => {
+    render(
+      <MemoryRouter>
+        <ExperimentVideoTab
+          experiment={{ ...experiment, productId: 18 }}
+          alterationLocked
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByLabelText("Arquivo MP4")).toBeDisabled();
+    expect(
+      screen.getByRole("button", {
+        name: "Enviar para revisão do experimento",
+      }),
+    ).toBeDisabled();
   });
 
   it("mostra o video HLS publicado no PDE quando o experimento nao possui asset direto", async () => {

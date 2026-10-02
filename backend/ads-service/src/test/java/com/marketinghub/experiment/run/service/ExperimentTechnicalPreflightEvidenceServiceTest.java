@@ -4,9 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
+import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorReadiness;
+import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentPlatform;
@@ -26,6 +31,7 @@ import com.marketinghub.planning.CommercialPlanStatus;
 import com.marketinghub.product.Product;
 import com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialChecks;
 import com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialContext;
+import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunGateResultRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
@@ -39,6 +45,12 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /** Responsabilidade: provar o mapeamento entre cada atividade técnica e sua fonte persistida. */
 class ExperimentTechnicalPreflightEvidenceServiceTest {
@@ -192,6 +204,42 @@ class ExperimentTechnicalPreflightEvidenceServiceTest {
     assertThatThrownBy(() -> service.evaluate("financialGuardrails", product, "experiment:88"))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("em execução ou concluído");
+  }
+
+  /** Mantém a ficha legível quando o plano ausente bloqueia o preflight dentro da transação. */
+  @Test
+  void reportsMissingPlanWithoutRollingBackReadinessQuery() {
+    when(plans.findByExperimentReference(88L)).thenReturn(List.of());
+    var transactions =
+        new DataSourceTransactionManager(
+            new DriverManagerDataSource("jdbc:h2:mem:preflight_readiness_missing_plan", "sa", ""));
+    var proxy = new ProxyFactory(service);
+    proxy.addAdvice(
+        new TransactionInterceptor(transactions, new AnnotationTransactionAttributeSource()));
+    var proxiedEvidence = (ExperimentTechnicalPreflightEvidenceService) proxy.getProxy();
+    var predecessors = mock(ProductProcessActivityPredecessorService.class);
+    var instances = mock(BusinessProcessActivityInstanceRepository.class);
+    var process = new BusinessProcessDefinition();
+    process.setId(58L);
+    process.setProcessCode("experiment-homologation-activation");
+    var activity = new BusinessProcessActivityDefinition();
+    activity.setId(5804L);
+    activity.setActivityId("financialGuardrails");
+    activity.setProcessDefinition(process);
+    when(predecessors.readiness(process, activity, "experiment:88"))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Concluídas"));
+    var executor =
+        new ExperimentTechnicalPreflightActivityExecutor(
+            predecessors, proxiedEvidence, instances, json, clock);
+    var query = new TransactionTemplate(transactions);
+    query.setReadOnly(true);
+
+    var readiness =
+        query.execute(status -> executor.readiness(process, activity, product, "experiment:88"));
+
+    assertThat(readiness.ready()).isFalse();
+    assertThat(readiness.reason()).contains("plano comercial governante em execução ou concluído");
+    verifyNoInteractions(instances);
   }
 
   /** Impede que a mesma referência técnica seja reutilizada por outro produto. */

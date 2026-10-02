@@ -1,6 +1,7 @@
 package com.marketinghub.catalogovivo.v1.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.businessprocess.BusinessProcessGraphTopology;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessChainPositionResponse;
 import com.marketinghub.repository.jdbc.catalogovivo.OpalaAdoptionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
@@ -46,13 +47,13 @@ public class OpalaAdoptionChainPositionResolver {
   }
 
   /**
-   * Retorna a posição 5.2 somente para uma adesão Opala que pertença exatamente ao produto, ciclo e
-   * cadeia consultados.
+   * Resolve a chamada na cadeia mesmo sem ciclo e preserva 5.2 somente para uma adesão Opala do
+   * produto, ciclo e cadeia consultados.
    */
   public Optional<ProductProcessChainPositionResponse> resolve(
       long productId, long processDefinitionId, String processCode, Long cycleId, Long chainId) {
-    if (cycleId == null || chainId == null) return Optional.empty();
-    var adoption = adoptions.find(cycleId).orElse(null);
+    if (chainId == null) return Optional.empty();
+    var adoption = cycleId == null ? null : adoptions.find(cycleId).orElse(null);
     if (OPALA_PROCESS_CODE.equals(processCode) && adoption != null) {
       if (adoption.productId() != productId
           || adoption.processDefinitionId() != processDefinitionId
@@ -111,14 +112,15 @@ public class OpalaAdoptionChainPositionResolver {
                                 item.getProcessDefinition().getName())));
   }
 
-  /** Localiza a ordem da atividade delegadora, contando apenas tarefas do processo pai. */
+  /** Localiza a atividade delegadora na ordem causal das tarefas, ignorando retornos REWORK. */
   private Integer calledTaskSequence(
       com.marketinghub.businessprocess.BusinessProcessDefinition parent,
       com.marketinghub.businessprocess.BusinessProcessDefinition target) {
     try {
       int sequence = 0;
-      for (var node : json.readTree(parent.getDiagramJson()).path("nodes")) {
-        if (!"TASK".equals(node.path("type").asText())) continue;
+      var topology = new BusinessProcessGraphTopology(json.readTree(parent.getDiagramJson()));
+      for (var activityId : topology.orderedTaskIds()) {
+        var node = topology.node(activityId);
         sequence++;
         if (target.getProcessCode().equals(node.path("subprocessCode").asText())) return sequence;
         for (var route : node.path("subprocessRoutes"))

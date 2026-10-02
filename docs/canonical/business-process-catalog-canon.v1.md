@@ -898,6 +898,14 @@ auditáveis. O contrato completo está em
 
 ### Navegação entre processo pai e subprocessos — decisão de 12/09/2026
 
+O título da ficha do produto deve identificar o número do processo na cadeia
+consultada, por exemplo `Mira · Processo 5.4 — Homologação técnica de experimento`.
+A numeração vem de `chainPosition.sequenceLabel` no backend: usa a posição do pai
+e a ordem causal de sua atividade delegadora. Não é o ID da definição, a versão
+do BPM nem o índice dos subprocessos iniciados. A consulta sem ciclo também
+expõe essa posição quando a cadeia foi identificada; a adesão Opala histórica
+mantém a numeração do contexto comprovado. O frontend apenas apresenta o contrato.
+
 Toda atividade que delega trabalho deve identificar no processo pai o subprocesso de destino,
 sua versão e o link oficial para abri-lo no mesmo produto, cadeia, ciclo e referência. O
 subprocesso deve oferecer retorno ao processo pai durante a execução e após a conclusão,

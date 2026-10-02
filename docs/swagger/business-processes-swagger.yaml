@@ -782,6 +782,15 @@ components:
         - costCoverage
         - activities
       properties:
+        chainPosition:
+          type: object
+          nullable: true
+          description: Posição do subprocesso na cadeia consultada, também disponível sem ciclo. Usa a ordem causal da atividade delegadora; preserva adesões históricas comprovadas.
+          required: [sequenceLabel, parentProcessCode, parentProcessName]
+          properties:
+            sequenceLabel: { type: string, example: "5.4" }
+            parentProcessCode: { type: string }
+            parentProcessName: { type: string }
         salesFlow:
           nullable: true
           allOf:

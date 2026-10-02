@@ -29,6 +29,19 @@
   fatura não foram somados como novas cobranças recorrentes.
   Fontes: https://central.dokehost.com.br/store/vps-cloud,
   https://www.locaweb.com.br/servidor-vps/, https://king.host/servidor-vps.
+- Ampliação após conciliação das cobranças: a fatura DokeHost recebida em 23/09/2026
+  revelou `163.245.203.201`, VPS Cloud 07, com R$ 139,90 + R$ 7,00 de taxa de cartão
+  = R$ 146,90/mês. O endereço não consta dos workflows produtivos consultados, mas
+  possui cobrança recorrente; foi incluído pelo formulário oficial, sem presumir
+  função produtiva, ociosidade ou autorização para cancelar o contrato. O banco
+  confirmou 8 hosts, 5 custos e subtotal mensal equivalente de R$ 435,84.
+  Capacidade e uso desse oitavo host permanecem desconhecidos: o MCP respondeu
+  `host must be one of` (IP ausente da lista permitida) e `sandbox-ssh` respondeu
+  `Permission denied (publickey,password)`. As especificações do catálogo Cloud 07
+  não foram apresentadas como uma medição da máquina. Faltam ainda as cobranças
+  vigentes dos hosts `191.252.102.54`, `191.252.210.83` e `177.153.62.107`.
+  O fluxo local de leitura, edição e subtotal foi validado com os oito registros
+  em desktop, iPhone e Android emulados; testes ficaram segregados do banco real.
 - Causa confirmada da lista vazia: o JAR embarcava o cadastro de deploys, mas não o Compose.
   `discoverFromCompose` retornava vazio quando o arquivo do repositório não existia no runtime.
   A correção copia diretamente `deploy/docker-compose.yml` como recurso Maven, sem manter

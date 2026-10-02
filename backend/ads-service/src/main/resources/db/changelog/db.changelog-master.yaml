@@ -2195,3 +2195,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-10-01-agents-codex-gpt61-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-10-02-pde-satisfaction-continuity-v1.yaml
+      relativeToChangelogFile: true

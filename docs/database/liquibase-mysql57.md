@@ -13,6 +13,17 @@ não destrutivo. As definições de referência não contêm dados de clientes o
 O mesmo job valida a extensão `PAID_INSTAGRAM_ONLY_V1`: cadeia PDE v22, cinco definições
 versionadas, rota Safira v2, preservação dos históricos e bloqueio de regressão para canal direto.
 
+O mesmo teste físico também valida `SATISFACTION_CONTINUITY_V1`: cadeia v25, 12 definições
+e 61 objetivos de satisfação pretendida, prova, identidade e retorno. Usa os contratos de
+`infra/testing/pde-satisfaction-continuity`, conserva grafos, atividades e execuções anteriores,
+bloqueia fonte ausente, atividade deslocada e colisão antes de publicar e comprova reaplicação
+e rollback sem destruir auditoria. Exporta os dados migrados em `target/satisfaction/processes.json`
+e a cadeia em `target/satisfaction/chain.json`.
+Para a UI local, o navegador existente aceita `PRINCIPLES_EXPECTED` apontando ao arquivo absoluto
+`requirements.json`, `PRINCIPLES_PROCESSES` às definições exportadas e `PRINCIPLES_CHAIN` à cadeia;
+não envia eventos a serviços comerciais.
+Ver [matriz de homologação](../homologacao/satisfacao-identidade-retorno-pde-v1.md).
+
 Localmente: definir `PDE_PRINCIPLES_COMPOSE_PROJECT` com o projeto exclusivo autorizado,
 `PDE_PRINCIPLES_DB_HOST=sandbox-docker` na sandbox (`127.0.0.1` no runner), e executar
 `python3 infra/testing/pde-commercial-principles/run-mysql.py`. A topologia é removida no

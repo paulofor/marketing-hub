@@ -1,0 +1,1975 @@
+[
+  {
+    "processCode": "pde-opportunity-discovery",
+    "name": "Descoberta factual da oportunidade PDE",
+    "purpose": "Encontrar situações concretas em que o desejo vira ação, qualificar evidências por candidata e aprofundar lacunas com comportamento passado antes de entregar o dossiê a Atena.",
+    "ownerName": "Argos",
+    "triggerDescription": "Novo ciclo de pesquisa ou sinal real de mercado.",
+    "outcomeDescription": "Dossiê factual com ocasiões de compra, fontes qualificadas, relatos públicos rastreáveis, lacunas e limites auditáveis; somente então pronto para decisão estratégica.",
+    "versionNumber": 8,
+    "technicalReference": "docs/canonical/descoberta-produtos-pde-canon.v1.md / public-sources-v1",
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Pergunta de mercado recebida",
+          "owner": "Backend",
+          "description": "O tema, público, canal, restrições, objetivo e origem da pesquisa ficam congelados."
+        },
+        {
+          "id": "marketEvidence",
+          "type": "TASK",
+          "label": "Reunir evidências factuais e situações de compra",
+          "owner": "Argos",
+          "description": "Entregar duas ou três candidatas com ocasião concreta, resultado desejado, dificuldade e alternativa usada; qualificar ofertas atuais por preço, entrega, público, aderência e data; distinguir linguagem de vendedores, relatos de clientes, anúncios e artigos científicos. Registrar lacunas por candidata, sem escolher mercado, oferta ou produto. Aceite: fontes rastreáveis, atuais quando a decisão exigir e separadas por função; referência antiga ou indireta permanece marcada. Medir cobertura, atualidade, independência, ofertas aderentes e custo conhecido da coleta.",
+          "responsibleAgentKeys": [
+            "market-radar"
+          ],
+          "responsibilityDomain": "MARKET_EVIDENCE"
+        },
+        {
+          "id": "candidateGapDeepening",
+          "type": "TASK",
+          "label": "Aprofundar lacunas da candidata",
+          "owner": "Argos",
+          "description": "Entregar um plano por candidata com pergunta pendente, fonte adequada, evidência necessária, contraponto, consultas executadas e limite de consultas/custo. Reutilizar fatos válidos e investigar automaticamente relatos públicos de uso, compra, desistência e reclamação; preservar URL, data, trecho, papel da fonte e limites de interpretação. Aceite: preservar identidades das candidatas, cobrir todas, registrar o que resolveu ou não cada lacuna e parar sem aprovação quando não houver progresso ou o teto for atingido. Não exige entrevistas, recrutamento nem contato externo. Relatos públicos não comprovam vendas do nosso produto.",
+          "responsibleAgentKeys": [
+            "market-radar"
+          ],
+          "responsibilityDomain": "MARKET_EVIDENCE"
+        },
+        {
+          "id": "candidateFound",
+          "type": "GATEWAY",
+          "label": "Há candidatas factuais?",
+          "owner": "Backend",
+          "description": "Sem candidata factual, encerra honestamente sem entrevista, nova busca ou handoff; com duas ou três candidatas, inicia pesquisa pública dirigida às lacunas."
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Dossiê aprofundado suficiente?",
+          "owner": "Backend",
+          "description": "Exige as duas atividades, cobertura das candidatas, duas fontes comportamentais independentes por candidata promovida, alternativas comerciais, trechos rastreáveis e limites comprovados. Lacuna persistente mantém RESEARCH_MORE; o gate não fabrica oportunidade."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Pesquisa encerrada ou dossiê entregue a Atena",
+          "owner": "Backend",
+          "description": "Sem candidata, a pesquisa termina sem fabricar avanço. Com dossiê factual, Atena pode definir a proposta; Plutus deve validar a economia; Dédalo deve materializar a menor experiência útil; utilidade humana e compra rentável continuam sendo comprovadas somente nos processos posteriores com compras líquidas, reembolsos, custo integral e margem."
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "marketEvidence"
+        },
+        {
+          "from": "marketEvidence",
+          "to": "candidateFound"
+        },
+        {
+          "from": "candidateFound",
+          "to": "candidateGapDeepening",
+          "condition": "duas ou três candidatas factuais"
+        },
+        {
+          "from": "candidateFound",
+          "to": "end",
+          "condition": "nenhuma candidata factual"
+        },
+        {
+          "from": "candidateGapDeepening",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "end"
+        }
+      ],
+      "researchContractVersion": "PUBLIC_SOURCES_V1"
+    },
+    "processType": "VALUE_PROCESS",
+    "parentProcessCode": null,
+    "executionScope": "INDEPENDENT"
+  },
+  {
+    "processCode": "pde-commercial-plan-offer",
+    "name": "Estratégia, economia e homologação multiagente do PDE",
+    "purpose": "Selecionar uma candidata factual para prototipação privada, limitar a economia e projetar o harness sem antecipar prontidão comercial. A aquisicao comercial usa exclusivamente midia paga no Instagram; convite individual, base propria e divulgacao organica nao sao canais executaveis. Atena define o nome interno e o tipo catalogado antes de Plutus e Dedalo. O contrato nasce sem recrutamento, convite, leitura privada ou opinião solicitada; agentes comprovam prontidão e somente o mercado comprova demanda.",
+    "ownerName": "Backend de Planejamento Comercial",
+    "triggerDescription": "Candidatas DOSSIER_READY com evidências factuais de Argos.",
+    "outcomeDescription": "Estratégia, identidade, economia e arquitetura prontas para construção e homologação multiagente, sem alegar validação humana, venda ou receita.",
+    "versionNumber": 10,
+    "technicalReference": "docs/canonical/pde-validacao-multiagente-canon.v1.md / MARKET_STRATEGY_V4 / PDE_AGENT_VALIDATION_V1",
+    "diagram": {
+      "flows": [
+        {
+          "to": "marketStrategy",
+          "from": "start"
+        },
+        {
+          "to": "economics",
+          "from": "marketStrategy"
+        },
+        {
+          "to": "productArchitecture",
+          "from": "economics"
+        },
+        {
+          "to": "gate",
+          "from": "productArchitecture"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Dossiês factuais prontos",
+          "owner": "Backend",
+          "description": "Argos entrega candidatas DOSSIER_READY sem exigir protótipo que ainda não existe."
+        },
+        {
+          "id": "marketStrategy",
+          "type": "TASK",
+          "label": "Selecionar candidata para homologação multiagente",
+          "owner": "Atena",
+          "description": "Entregar estratégia MARKET_STRATEGY_V4 com hipótese, ocasião, alternativa, valor pronto, fontes públicas vigentes e plano PDE_AGENT_VALIDATION_V1. Aceite: exatamente três cenários e três dispositivos, nenhum recrutamento, convite, leitura privada, opinião solicitada, pessoa fictícia, pagamento, publicação, campanha ou gasto. Agentes não constituem prova de mercado.",
+          "responsibilityDomain": "MARKET_STRATEGY",
+          "responsibleAgentKeys": [
+            "experiment-strategist"
+          ]
+        },
+        {
+          "id": "economics",
+          "type": "TASK",
+          "label": "Limitar economia da homologação",
+          "owner": "Plutus",
+          "description": "Entregar preço e custo como hipóteses, envelope técnico finito e contribuição projetada. Aceite: custo auditável por pacote, nenhuma cobrança real e nenhum orçamento de mídia autorizado. Medir custo real da construção sem declarar venda ou margem comprovada.",
+          "responsibilityDomain": "FINANCIAL_VALIDATION",
+          "responsibleAgentKeys": [
+            "financial-agent"
+          ]
+        },
+        {
+          "id": "productArchitecture",
+          "type": "TASK",
+          "label": "Arquitetar protótipo para cenários multiagente",
+          "owner": "Dédalo",
+          "description": "Entregar jornada, componentes, audiovisual, acesso e instrumentação para homologação ADHERENT, RECOVERY e SAFETY em desktop, iPhone e Pixel. Aceite: resultado pronto em até dez minutos, tráfego interno segregado e efeitos externos nulos.",
+          "responsibilityDomain": "PDE_CONSTRUCTION",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ]
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Contratos aptos à homologação multiagente?",
+          "owner": "Backend",
+          "description": "O backend bloqueia contratos humanos ou incompletos. Prontidão técnica permite construir; demanda continuará dependendo de comportamento voluntário, pagamento reconciliado e contribuição positiva."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Produto PLANNED encaminhado à construção",
+          "owner": "Backend",
+          "description": "Materializa produto PLANNED com PDE_AGENT_VALIDATION_V1, sem contato, publicação, campanha, pagamento ou gasto."
+        }
+      ],
+      "schemaVersion": "PDE_COMMERCIAL_PLAN_OFFER_V10",
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1",
+      "validationContractVersion": "MARKET_STRATEGY_V4",
+      "agentValidationContractVersion": "PDE_AGENT_VALIDATION_V1",
+      "productIdentityContractVersion": "PRODUCT_IDENTITY_V1",
+      "commercialAcquisitionPolicyVersion": "PAID_INSTAGRAM_ONLY_V1"
+    },
+    "processType": "VALUE_PROCESS",
+    "parentProcessCode": null,
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "pde-construction-approval",
+    "name": "Protótipo, validação multiagente e aprovação do PDE",
+    "purpose": "Homologar a versão real do PDE e transformar toda rejeição funcional em correção orientada, versionada e revalidada antes da preparação comercial.",
+    "ownerName": "Backend de Construção PDE",
+    "triggerDescription": "Produto PLANNED em PLAY com contrato multiagente; rejeição funcional abre a rota condicional de correção sem apagar evidência anterior.",
+    "outcomeDescription": "PDE liberado para comunicação em STOP ou encaminhado a Dédalo com causa-raiz, ação clara, nova versão e retorno obrigatório à homologação técnica.",
+    "versionNumber": 9,
+    "technicalReference": "docs/canonical/cadeia-produtos-pde-canon.v1.md / cinco criterios comerciais",
+    "diagram": {
+      "flows": [
+        {
+          "to": "journey",
+          "from": "start"
+        },
+        {
+          "to": "deliverables",
+          "from": "journey"
+        },
+        {
+          "to": "audiovisual",
+          "from": "deliverables"
+        },
+        {
+          "to": "access",
+          "from": "audiovisual"
+        },
+        {
+          "to": "technicalHomologation",
+          "from": "access"
+        },
+        {
+          "to": "psiqueAdherent",
+          "from": "technicalHomologation"
+        },
+        {
+          "to": "psiqueRecovery",
+          "from": "psiqueAdherent"
+        },
+        {
+          "to": "psiqueSafety",
+          "from": "psiqueRecovery"
+        },
+        {
+          "to": "commercialIntegrityReview",
+          "from": "psiqueSafety"
+        },
+        {
+          "to": "agentValidationGate",
+          "from": "commercialIntegrityReview"
+        },
+        {
+          "to": "gate",
+          "from": "agentValidationGate"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "technicalHomologation",
+          "kind": "REWORK",
+          "label": "Ajustar"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "psiqueAdherent",
+          "kind": "REWORK",
+          "label": "Ajustar"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "psiqueRecovery",
+          "kind": "REWORK",
+          "label": "Ajustar"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "psiqueSafety",
+          "kind": "REWORK",
+          "label": "Ajustar"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "commercialIntegrityReview",
+          "kind": "REWORK",
+          "label": "Ajustar"
+        },
+        {
+          "to": "technicalHomologation",
+          "from": "prototypeCorrection",
+          "kind": "REWORK",
+          "label": "Nova versão"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Produto planejado liberado",
+          "owner": "Backend",
+          "description": "O backend inicia uma ocorrência versionada sem reescrever evidências históricas."
+        },
+        {
+          "id": "journey",
+          "type": "TASK",
+          "label": "Construir jornada privada de valor",
+          "owner": "Dédalo",
+          "description": "Entregar: jornada privada do formato aprovado com primeira ação evidente, apenas entradas necessárias e benefício aplicável. Aceite: justificar cada pergunta, manter próximo botão e botão final alcançáveis no celular sem rolagem inesperada ou conteúdo bloqueante; cumprir a promessa inicial e explicar o próximo passo. Medir: início, conclusão das entradas e resultado recebido separadamente, abandono por etapa e tempo até o benefício. A quantidade de escolhas depende do benefício e do formato, sem padrão universal.",
+          "responsibilityDomain": "PDE_CONSTRUCTION",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ]
+        },
+        {
+          "id": "deliverables",
+          "type": "TASK",
+          "label": "Produzir componentes do protótipo PDE",
+          "owner": "Dédalo",
+          "description": "Produz os componentes funcionais da mesma versão do produto sem reutilizar artefato de outro PDE.",
+          "responsibilityDomain": "PDE_CONSTRUCTION",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ]
+        },
+        {
+          "id": "audiovisual",
+          "type": "TASK",
+          "label": "Produzir audiovisual quando previsto",
+          "owner": "Apolo",
+          "description": "Produz somente o audiovisual exigido; a ausência de necessidade deve permanecer explícita.",
+          "responsibilityDomain": "AUDIOVISUAL_PRODUCTION",
+          "responsibleAgentKeys": [
+            "videomaker"
+          ],
+          "executionResourceCode": "video-management-service"
+        },
+        {
+          "id": "access",
+          "type": "TASK",
+          "label": "Implementar acesso, continuidade e instrumentação",
+          "owner": "Dédalo",
+          "description": "Entregar: acesso de teste, salvamento/retomada quando previstos, tratamento de erro, privacidade e eventos correlacionados à versão. Aceite: cadastro não equivale a login; resultado exibido não equivale a uso; registrar consentimento e excluir testes da amostra comercial. Medir: resultado → interesse em salvar → cadastro → acesso concluído → retorno, sem inferir etapas ausentes.",
+          "responsibilityDomain": "PDE_CONSTRUCTION",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ]
+        },
+        {
+          "id": "technicalHomologation",
+          "type": "TASK",
+          "label": "Homologar tecnicamente a versão real",
+          "owner": "Psique",
+          "description": "Entregar: evidências da mesma versão em desktop, iPhone e Android, com caminho feliz, falha e retomada. Aceite: primeira ação, próximo botão e botão final visíveis/acessíveis após cada passo, inclusive teclado aberto; resultado legível e compreensível; oferta fora da tela não gera exposição. Registrar URL, versão, capturas e resultado por cenário. Medir: conclusão funcional, erros e tempo até o benefício em tráfego de QA segregado. Correções retornam aqui; teste aprovado não prova vendas.",
+          "executionMode": "DETERMINISTIC",
+          "controlDescription": "Psique executa testes automáticos com o harness, a estrutura de ferramentas, cenários e evidências. Esta etapa técnica não usa parecer de IA; os cenários de experiência vêm depois.",
+          "responsibilityDomain": "PDE_TECHNICAL_HOMOLOGATION",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "prototypeCorrection",
+          "type": "TASK",
+          "label": "Corrigir o protótipo a partir do parecer",
+          "owner": "Dédalo",
+          "actionLabel": "Criar tarefa de correção",
+          "description": "Transforma a rejeição funcional vigente em instruções executáveis, corrige a causa-raiz, cria nova versão e devolve o fluxo à homologação técnica.",
+          "activationMode": "ON_FUNCTIONAL_REJECTION",
+          "controlDescription": "Dédalo receberá o parecer rejeitado, a causa-raiz e a ação recomendada; a conclusão exige uma nova versão e retorno à homologação técnica.",
+          "remediatesActivities": [
+            "technicalHomologation",
+            "psiqueAdherent",
+            "psiqueRecovery",
+            "psiqueSafety",
+            "commercialIntegrityReview"
+          ],
+          "responsibilityDomain": "PDE_FUNCTIONAL_REWORK",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ]
+        },
+        {
+          "id": "psiqueAdherent",
+          "type": "TASK",
+          "label": "Psique · cenário aderente",
+          "owner": "Psique",
+          "description": "Entregar: avaliação independente de compreensão, desejo, esforço, utilidade e próximo passo na versão real. Aceite: localizar primeira ação sem ajuda, concluir entradas, compreender como aplicar o resultado e explicar o valor adicional da continuidade paga. Registrar evidência observada e lacunas; resultado exibido não comprova aplicação ou satisfação. Medir: conclusão e tempo por cenário. Identificar a leitura como simulação de agente, sem contá-la como cliente ou venda.",
+          "scenarioCode": "ADHERENT",
+          "responsibilityDomain": "SYNTHETIC_EXPERIENCE_REVIEW",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "psiqueRecovery",
+          "type": "TASK",
+          "label": "Psique · fricção e recuperação",
+          "owner": "Psique",
+          "description": "Entregar: avaliação da versão real com entrada incompleta, erro recuperável e retomada. Aceite: orientação suficiente sem conhecimento de IA, respostas preservadas quando permitido, próximo botão e botão final alcançáveis no celular e nenhuma promessa de resultado inventado. Medir: recuperação, abandono por etapa e esforço observado; separar hipótese de causa, defeito reproduzido e preferência humana.",
+          "scenarioCode": "RECOVERY",
+          "responsibilityDomain": "SYNTHETIC_EXPERIENCE_REVIEW",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "psiqueSafety",
+          "type": "TASK",
+          "label": "Psique · limite e segurança",
+          "owner": "Psique",
+          "description": "Com raciocínio máximo, avalia pedido fora do escopo e exige bloqueio seguro sem resultado inventado.",
+          "scenarioCode": "SAFETY",
+          "responsibilityDomain": "SYNTHETIC_EXPERIENCE_REVIEW",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "commercialIntegrityReview",
+          "type": "TASK",
+          "label": "Revisar integridade da validação multiagente",
+          "owner": "Têmis",
+          "description": "Confirma fidelidade, segurança, verdade, privacidade, segregação interna e ausência de alegação humana ou efeito comercial.",
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW",
+          "responsibleAgentKeys": [
+            "meta-ad-approver"
+          ]
+        },
+        {
+          "id": "agentValidationGate",
+          "type": "TASK",
+          "label": "Calcular gate multiagente",
+          "owner": "Backend",
+          "description": "Valida somente evidências persistidas, sequenciais e da mesma versão; libera comunicação em STOP sem publicar, cobrar, criar campanha ou autorizar gasto.",
+          "executionMode": "DETERMINISTIC",
+          "responsibilityDomain": "PDE_AGENT_VALIDATION_GATE"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Produto apto à comunicação?",
+          "owner": "Backend",
+          "description": "Exige homologação técnica, três cenários aprovados em sequência e revisão independente de Têmis."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Decisão multiagente registrada",
+          "owner": "Backend",
+          "description": "O mercado continuará sendo a única fonte de preferência, compra, entrega, satisfação e receita."
+        }
+      ],
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1"
+    },
+    "processType": "VALUE_PROCESS",
+    "parentProcessCode": null,
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "pde-communication-sales-journey",
+    "name": "Comunicação e jornada de venda do PDE",
+    "purpose": "Materializar comunicação pré-compra com um contrato próprio antes de integrar a jornada. Toda divulgacao comercial e preparada para midia paga no Instagram, sem convite individual.",
+    "ownerName": "Backend de Experiências PDE",
+    "triggerDescription": "Produto, estratégia, economia e provas reais aprovados.",
+    "outcomeDescription": "Pacote de comunicação, criativos e destino aprovados e integrados sem publicação.",
+    "versionNumber": 9,
+    "technicalReference": "docs/canonical/cadeia-produtos-pde-canon.v1.md / paid-instagram-only-v1",
+    "diagram": {
+      "flows": [
+        {
+          "to": "communicationContract",
+          "from": "start"
+        },
+        {
+          "to": "creatives",
+          "from": "communicationContract"
+        },
+        {
+          "to": "destination",
+          "from": "creatives"
+        },
+        {
+          "to": "integration",
+          "from": "destination"
+        },
+        {
+          "to": "gate",
+          "from": "integration"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Produto e contratos aprovados",
+          "owner": "Backend",
+          "description": "Estratégia, economia, PDE e provas chegam versionados."
+        },
+        {
+          "id": "communicationContract",
+          "type": "TASK",
+          "label": "Materializar contrato de comunicação",
+          "owner": "Íris",
+          "description": "Entregar: desejo escolhido por Atena, linguagem do publico com fonte/data, mensagem, CTA e prova real da versao aprovada para Instagram Ads; explicitar beneficio inicial e beneficio adicional pago, entregaveis, uso, preco, prazo, acesso, suporte e reembolso. Aceite: fidelidade ao tipo, ficha e oferta; nenhuma emocao inferida como fato; convite individual, lista propria, contato direto e divulgacao organica nao sao canais substitutos. Medir: primeira interacao e oferta efetivamente vista -> CTA -> checkout -> compra, por campanha, variante e janela.",
+          "responsibilityDomain": "COMMUNICATION_MATERIALIZATION",
+          "responsibleAgentKeys": [
+            "communication-director"
+          ],
+          "executionResourceCode": "iris-communication-worker"
+        },
+        {
+          "id": "creatives",
+          "type": "TASK",
+          "label": "Executar produção e aprovação de criativos",
+          "owner": "Backend",
+          "description": "Entregar: criativos finais para Instagram Ads no formato aprovado pelo contrato do produto, com identidade publica, promessa, prova, CTA e destino coerentes. Aceite: revisao independente, direitos de uso e correspondencia com oferta, checkout e entrega; nao produzir mensagem de convite individual. Medir: impressoes atribuidas -> primeira interacao e custo por etapa, sem confundir producao com desempenho.",
+          "subprocessCode": "creative-production-approval"
+        },
+        {
+          "id": "destination",
+          "type": "TASK",
+          "label": "Executar geração e aprovação do destino",
+          "owner": "Backend",
+          "description": "Entregar: destino aprovado que torna a primeira acao evidente e demonstra valor real antes do compromisso, conforme o contrato do produto. Aceite: receber trafego pago do Instagram com continuidade, checkout e recuperacao funcionais em celular; cumprir a promessa inicial e explicar o ganho pago. Medir: visitantes atribuidos -> primeira acao -> beneficio e exposicao efetiva a oferta.",
+          "subprocessCode": "landing-page-generation"
+        },
+        {
+          "id": "integration",
+          "type": "TASK",
+          "label": "Integrar canal, checkout, acesso e eventos",
+          "owner": "Backend",
+          "description": "Entregar: Instagram Ads, destino, checkout e acesso versionados com UTM, campanha, criativo e eventos correlacionados ate venda, entrega e primeiro uso. Aceite: identidade oficial do Instagram e publico salvo; segregar QA, bots, duplicidades e historicos diretos; convite individual, lista propria, contato direto ou organico nao suprem aquisicao. Medir: impressao -> visita -> beneficio -> oferta vista -> clique -> checkout -> compra conciliada. Nao publicar nem autorizar gasto."
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Jornada integrada sem lacunas?",
+          "owner": "Backend",
+          "description": "Exige message match, checkout, acesso, eventos e segregação de testes."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Jornada pronta para homologação",
+          "owner": "Backend",
+          "description": "O processo termina sem publicação, contato ou gasto."
+        }
+      ],
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1",
+      "commercialAcquisitionPolicyVersion": "PAID_INSTAGRAM_ONLY_V1"
+    },
+    "processType": "CORE",
+    "parentProcessCode": null,
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "pde-commercial-homologation-activation",
+    "name": "Homologação e ativação comercial do PDE",
+    "purpose": "Comprovar que a versão está pronta para vender, entregar o prometido e operar dentro dos limites financeiros antes de qualquer ativação. A homologacao aceita somente aquisicao paga no Instagram e mantem o gasto dependente de decisao humana.",
+    "ownerName": "Backend de Experimentos",
+    "triggerDescription": "Produto e jornada aprovados, com tipo cadastrado, ficha aplicável e versões exatas.",
+    "outcomeDescription": "Ativação autorizada para a versão comprovada ou bloqueio persistido com causa e retorno à atividade responsável.",
+    "versionNumber": 10,
+    "technicalReference": "docs/canonical/cadeia-produtos-pde-canon.v1.md / paid-instagram-only-v1",
+    "diagram": {
+      "flows": [
+        {
+          "id": "prepare-by-type",
+          "to": "commercialPreparation",
+          "from": "start"
+        },
+        {
+          "id": "reuse-psique",
+          "to": "humanExperienceReview",
+          "from": "commercialPreparation"
+        },
+        {
+          "id": "reuse-themis",
+          "to": "commercialIntegrityReview",
+          "from": "humanExperienceReview"
+        },
+        {
+          "id": "technical-homologation",
+          "to": "preflight",
+          "from": "commercialIntegrityReview"
+        },
+        {
+          "id": "commercial-gate",
+          "to": "decision",
+          "from": "preflight"
+        },
+        {
+          "id": "approved",
+          "to": "authorization",
+          "from": "decision",
+          "label": "Todos os gates vigentes"
+        },
+        {
+          "id": "authorized",
+          "to": "end",
+          "from": "authorization"
+        },
+        {
+          "id": "rework-preparation",
+          "to": "commercialPreparation",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "Corrigir causa na preparação"
+        },
+        {
+          "id": "rework-experience",
+          "to": "humanExperienceReview",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "Renovar experiência afetada"
+        },
+        {
+          "id": "rework-integrity",
+          "to": "commercialIntegrityReview",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "Renovar integridade afetada"
+        },
+        {
+          "id": "rework-technical",
+          "to": "preflight",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "Renovar homologação afetada"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Produto e jornada aprovados",
+          "owner": "Backend",
+          "description": "O backend fixa produto, experimento, versão, tipo e ficha antes de preparar a operação."
+        },
+        {
+          "id": "commercialPreparation",
+          "type": "TASK",
+          "label": "Preparar operação comercial conforme o tipo",
+          "owner": "Backend",
+          "description": "Seleciona pelo tipo cadastrado e pela ficha o subprocesso comercial aplicavel. A candidata deve usar Instagram Ads (Meta Ads); convite individual, lista propria, contato direto e divulgacao organica bloqueiam a preparacao, sem inferencia pelo nome ou formato do produto.",
+          "subprocessRoutes": [
+            {
+              "subprocessCode": "opala-commercial-preparation-v1",
+              "productTypeCode": "PDE",
+              "subprocessVersion": 1,
+              "productTypeInternalName": "Opala"
+            },
+            {
+              "subprocessCode": "quartzo-commercial-preparation-v1",
+              "productTypeCode": "LOW_TICKET_DIGITAL_PRODUCT",
+              "subprocessVersion": 1,
+              "productTypeInternalName": "Quartzo"
+            },
+            {
+              "subprocessCode": "safira-commercial-preparation-v1",
+              "productTypeCode": "AI_PRODUCT",
+              "subprocessVersion": 2,
+              "productTypeInternalName": "Safira"
+            }
+          ],
+          "commercialPreparationRouterVersion": "COMMERCIAL_PREPARATION_BY_PRODUCT_TYPE_V1"
+        },
+        {
+          "id": "humanExperienceReview",
+          "type": "TASK",
+          "label": "Validar experiência e valor para o cliente",
+          "owner": "Psique",
+          "description": "Reutiliza o parecer de Psique da mesma preparacao e confere a experiencia real recebida pelo trafego pago do Instagram; mudanca material ou canal divergente exige renovacao.",
+          "evidenceReuseVersion": "COMMERCIAL_REVIEW_REUSE_V1",
+          "responsibilityDomain": "HUMAN_EXPERIENCE_REVIEW",
+          "reuseSubprocessActivityId": "humanExperienceReview"
+        },
+        {
+          "id": "commercialIntegrityReview",
+          "type": "TASK",
+          "label": "Validar integridade comercial",
+          "owner": "Têmis",
+          "description": "Reutiliza o parecer independente de Temis e confere promessa, criativo, Instagram, publico, preco, checkout e entrega da mesma versao; divergencia bloqueia e retorna a origem.",
+          "evidenceReuseVersion": "COMMERCIAL_REVIEW_REUSE_V1",
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW",
+          "reuseSubprocessActivityId": "commercialIntegrityReview"
+        },
+        {
+          "id": "preflight",
+          "type": "TASK",
+          "label": "Executar homologação técnica do experimento",
+          "owner": "Backend",
+          "description": "Chama a homologacao tecnica para comprovar desktop, celular, compra simulada, acesso, entrega, falhas, eventos, segregacao e limites do experimento de Instagram Ads, reutilizando evidencias vigentes.",
+          "subprocessCode": "experiment-homologation-activation"
+        },
+        {
+          "id": "decision",
+          "type": "GATEWAY",
+          "label": "Preparação, experiência, integridade, técnica e economia estão válidas?",
+          "owner": "Backend",
+          "description": "Qualquer reprovação ou mudança material bloqueia a ativação e preserva a causa e a atividade responsável."
+        },
+        {
+          "id": "authorization",
+          "type": "TASK",
+          "label": "Autorizar ativação, orçamento e janela",
+          "owner": "Operador humano",
+          "description": "Aprova explicitamente versao, Instagram Ads, teto financeiro, periodo e condicoes de parada. Nenhum gate tecnico concede gasto; convite individual, lista propria, contato direto ou divulgacao organica nao podem ser autorizados."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Ativação autorizada",
+          "owner": "Backend",
+          "description": "O Processo 6 executa a operação; RUNNING depende da confirmação externa e dos gates de publicação."
+        }
+      ],
+      "schemaVersion": "PDE_COMMERCIAL_HOMOLOGATION_ACTIVATION_V10",
+      "commercialAcquisitionPolicyVersion": "PAID_INSTAGRAM_ONLY_V1"
+    },
+    "processType": "VALUE_PROCESS",
+    "parentProcessCode": null,
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "pde-sales-delivery-learning",
+    "name": "Venda, entrega e aprendizado do PDE",
+    "purpose": "Vender, entregar valor e conduzir ciclos por experimento: resultados orientam ajustes, revalidação e decisões de investimento. A operacao comercial mede exclusivamente a aquisicao paga atribuida ao Instagram.",
+    "ownerName": "Operador de Crescimento",
+    "triggerDescription": "Ativação autorizada pelo Processo 5, com orçamento, canais, versão e critérios vigentes.",
+    "outcomeDescription": "Decisão registrada no ciclo, com evidências, responsável e retorno ao processo da causa; vendas e entrega preservadas.",
+    "versionNumber": 10,
+    "technicalReference": "docs/canonical/cadeia-produtos-pde-canon.v1.md / paid-instagram-only-v1",
+    "diagram": {
+      "flows": [
+        {
+          "id": "identify",
+          "to": "entry",
+          "from": "start",
+          "label": "Fixar produto e experimento"
+        },
+        {
+          "id": "live-entry",
+          "to": "parallel",
+          "from": "entry",
+          "label": "Publicação atual autorizada"
+        },
+        {
+          "id": "historical-entry",
+          "to": "consolidate",
+          "from": "entry",
+          "label": "ADOPT_BASELINE: publicação histórica comprovada; preservar limitações"
+        },
+        {
+          "id": "operate",
+          "to": "optimization",
+          "from": "parallel",
+          "label": "Operação com limites vigentes"
+        },
+        {
+          "id": "delivery-condition",
+          "to": "sales",
+          "from": "parallel",
+          "label": "Entregar cada compra durante a operação"
+        },
+        {
+          "id": "has-sales",
+          "to": "delivery",
+          "from": "sales",
+          "label": "Vendas existentes: entrega obrigatória"
+        },
+        {
+          "id": "no-sales",
+          "to": "join",
+          "from": "sales",
+          "label": "Zero vendas comprovado: entrega não aplicável nesta passagem"
+        },
+        {
+          "id": "operation-snapshot",
+          "to": "join",
+          "from": "optimization",
+          "label": "Rodada de resultados disponível"
+        },
+        {
+          "id": "delivery-snapshot",
+          "to": "join",
+          "from": "delivery",
+          "label": "Situação das entregas registrada"
+        },
+        {
+          "id": "consolidation",
+          "to": "consolidate",
+          "from": "join",
+          "label": "Fontes e limites do mesmo experimento"
+        },
+        {
+          "id": "measurement-ready",
+          "to": "learningCycle",
+          "from": "consolidate",
+          "label": "MEASURE: leitura válida; obrigações de entrega verificadas"
+        },
+        {
+          "id": "measurement-blocked",
+          "to": "consolidate",
+          "from": "consolidate",
+          "kind": "REWORK",
+          "label": "MEASUREMENT_BLOCKED: corrigir fonte e repetir conciliação"
+        },
+        {
+          "id": "delivery-blocked",
+          "to": "delivery",
+          "from": "consolidate",
+          "kind": "REWORK",
+          "label": "Venda sem entrega comprovada: tratar e reconsolidar"
+        },
+        {
+          "id": "decision-recorded",
+          "to": "decision",
+          "from": "learningCycle",
+          "label": "Decisão, causa, evidência, responsável e destino registrados"
+        },
+        {
+          "id": "continue-collection",
+          "to": "optimization",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "CONTINUE: mesmo experimento, dentro do orçamento e janela"
+        },
+        {
+          "id": "fix-measurement",
+          "to": "consolidate",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "FIX_MEASUREMENT: corrigir e reconciliar a fonte; sem reiniciar campanha"
+        },
+        {
+          "id": "directed-adjustment",
+          "to": "returnTarget",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "ADJUST / REWORK: executar retorno registrado pela causa"
+        },
+        {
+          "id": "delegated-progress",
+          "to": "learningCycle",
+          "from": "returnTarget",
+          "kind": "REWORK",
+          "label": "Etapas delegadas concluídas com evidência no ciclo"
+        },
+        {
+          "id": "request-scale",
+          "to": "returnAuthorization",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "SCALE: contribuição e valor comprovados; solicitar autorização"
+        },
+        {
+          "id": "revalidate",
+          "to": "returnAuthorization",
+          "from": "returnTarget",
+          "label": "Melhoria pronta: revalidar a mesma versão"
+        },
+        {
+          "id": "authorized-scale",
+          "to": "optimization",
+          "from": "returnAuthorization",
+          "kind": "REWORK",
+          "label": "AUTHORIZE_SCALE: expansão explicitamente autorizada"
+        },
+        {
+          "id": "publication-measurement",
+          "to": "consolidate",
+          "from": "returnAuthorization",
+          "label": "Publicação comprovada após gates próprios"
+        },
+        {
+          "id": "close-cycle",
+          "to": "end",
+          "from": "decision",
+          "label": "STOP / INCONCLUSIVE: preservar resultados e motivos"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Ativação autorizada",
+          "owner": "Backend",
+          "description": "A operacao comeca somente apos autorizacao do experimento de Instagram Ads ou referencia historica comprovada; convite individual, lista propria, contato direto e divulgacao organica nao iniciam nova operacao."
+        },
+        {
+          "id": "entry",
+          "type": "GATEWAY",
+          "label": "Operação atual ou referência histórica?",
+          "owner": "Backend",
+          "description": "Adoção histórica exige evento ADOPT_BASELINE e evidência de publicação, sem aprovação retroativa."
+        },
+        {
+          "id": "parallel",
+          "type": "GATEWAY",
+          "label": "Operação e entrega durante as vendas",
+          "owner": "Backend",
+          "description": "Ramos paralelos explícitos; a entrega de uma compra não aguarda o encerramento do experimento."
+        },
+        {
+          "id": "sales",
+          "type": "GATEWAY",
+          "label": "Existem vendas no recorte?",
+          "owner": "Backend",
+          "description": "Somente fonte válida pode comprovar zero vendas. Nenhuma venda implica entrega não aplicável nesta passagem."
+        },
+        {
+          "id": "optimization",
+          "type": "TASK",
+          "label": "Operar e otimizar o experimento",
+          "owner": "Backend",
+          "description": "Delega aquisicao paga no Instagram, mensuracao atribuida e teste de uma variavel ao subprocesso canonico, sempre dentro do teto, janela e condicoes de parada autorizados. Nao criar ou importar contatos individuais.",
+          "subprocessCode": "operacao-otimizacao-experimento"
+        },
+        {
+          "id": "delivery",
+          "type": "TASK",
+          "label": "Entregar cada venda e acompanhar satisfação",
+          "owner": "Backend",
+          "description": "Delega conciliação, entrega, suporte, satisfação e reembolso ao subprocesso canônico.",
+          "subprocessCode": "venda-entrega-satisfacao-cliente"
+        },
+        {
+          "id": "consolidate",
+          "type": "TASK",
+          "label": "Consolidar resultado comercial",
+          "owner": "Backend",
+          "description": "O backend concilia fontes do experimento de Instagram Ads por campanha, criativo, UTM e versao. Fonte invalida bloqueia; QA, bots, trafego direto, organico ou convite individual nao comprovam aquisicao, compra ou receita."
+        },
+        {
+          "id": "learningCycle",
+          "type": "TASK",
+          "label": "Conduzir o ciclo de aprendizado e vendas",
+          "owner": "Operador responsável pelo produto",
+          "description": "Abra ou retome o ciclo deste produto e experimento pago. Concilie vendas liquidas, CAC, custo integral, entrega e margem; registre decisao e siga a atividade orientada. Mudanca comercial exige sucessor e nova homologacao; correcao tecnica preserva a iteracao.",
+          "subprocessCode": "value-chain-learning-sales-cycle"
+        },
+        {
+          "id": "decision",
+          "type": "GATEWAY",
+          "label": "Qual decisão comercial?",
+          "owner": "Backend e operador humano",
+          "description": "A decisão persistida determina o retorno pela causa. Continuar coleta respeita janela e orçamento; escala exige nova autorização."
+        },
+        {
+          "id": "join",
+          "type": "GATEWAY",
+          "label": "Resultados e situação das entregas disponíveis",
+          "owner": "Backend",
+          "description": "Consolidar situação comercial e entregas, preservando bloqueios e ausência comprovada de vendas."
+        },
+        {
+          "id": "returnTarget",
+          "type": "GATEWAY",
+          "label": "Retorno ao processo da causa: 2, 3 ou 4",
+          "owner": "Backend",
+          "description": "A decisão identifica processo e atividade. Mudança comercial usa sucessor; correção técnica preserva o experimento."
+        },
+        {
+          "id": "returnAuthorization",
+          "type": "GATEWAY",
+          "label": "Processo 5: homologação e autorização",
+          "owner": "Backend e operador",
+          "description": "Renovar os gates afetados e autorização explícita antes da publicação ou escala; retorno registrado não autoriza gasto por si só."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Ciclo decidido por vendas entregues",
+          "owner": "Backend",
+          "description": "A decisão e suas evidências ficam auditáveis."
+        }
+      ],
+      "schemaVersion": "PDE_SALES_DELIVERY_LEARNING_V8",
+      "salesFlowVersion": 2,
+      "learningCycleReturns": [
+        {
+          "label": "Estratégia e economia",
+          "condition": "A evidência exige rever oferta, preço ou viabilidade. Defina a hipótese do sucessor.",
+          "processCode": "pde-commercial-plan-offer"
+        },
+        {
+          "label": "Utilidade do produto",
+          "condition": "A cliente não consegue aplicar o resultado ou perceber valor. Corrija a entrega e renove os pareceres.",
+          "processCode": "pde-construction-approval"
+        },
+        {
+          "label": "Comunicação e vídeos",
+          "condition": "O benefício ou a entrada não são compreendidos. Ajuste mensagem, demonstração e criativo.",
+          "processCode": "pde-communication-sales-journey"
+        },
+        {
+          "label": "Homologação e autorização",
+          "condition": "Depois dos ajustes, valide a mesma versão e obtenha autorização explícita antes de publicar ou expandir.",
+          "processCode": "pde-commercial-homologation-activation"
+        },
+        {
+          "label": "Coleta e medição",
+          "condition": "Continuar somente com dados válidos dentro dos limites; corrigir dados inválidos antes de decidir sobre desempenho.",
+          "processCode": "pde-sales-delivery-learning"
+        }
+      ],
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1",
+      "commercialAcquisitionPolicyVersion": "PAID_INSTAGRAM_ONLY_V1"
+    },
+    "processType": "VALUE_PROCESS",
+    "parentProcessCode": null,
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "pde-tasting-proof-of-value",
+    "name": "Degustação e prova de valor do PDE",
+    "purpose": "Validar hipótese, economia, materialização, experiência e integridade em decisões separadas.",
+    "ownerName": "Backend de Experiências PDE",
+    "triggerDescription": "Produto, estratégia, prova e limites aprovados.",
+    "outcomeDescription": "Degustação aprovada ou bloqueada sem canibalização, gasto ou venda falsa.",
+    "versionNumber": 3,
+    "technicalReference": "docs/canonical/cadeia-produtos-pde-canon.v1.md / cinco criterios comerciais",
+    "diagram": {
+      "flows": [
+        {
+          "to": "strategy",
+          "from": "start"
+        },
+        {
+          "to": "economics",
+          "from": "strategy"
+        },
+        {
+          "to": "materialization",
+          "from": "economics"
+        },
+        {
+          "to": "humanExperienceReview",
+          "from": "materialization"
+        },
+        {
+          "to": "commercialIntegrityReview",
+          "from": "humanExperienceReview"
+        },
+        {
+          "to": "integration",
+          "from": "commercialIntegrityReview"
+        },
+        {
+          "to": "gate",
+          "from": "integration"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Produto e contratos aprovados",
+          "owner": "Backend",
+          "description": "Recebe somente versões vigentes."
+        },
+        {
+          "id": "strategy",
+          "type": "TASK",
+          "label": "Definir hipótese estratégica da degustação",
+          "owner": "Atena",
+          "description": "Entregar: hipótese do desejo, público/situação, benefício inicial aplicável e ligação com a continuidade paga, usando fontes com data. Aceite: degustação explicitamente escolhida no plano; respeitar tipo e ficha, definir o que a pessoa faz/recebe e uma explicação concorrente; não impor questionário ou cadastro antes do valor. Medir: primeira interação, benefício recebido e interesse em continuar, com versão, janela e denominadores.",
+          "responsibilityDomain": "MARKET_STRATEGY",
+          "responsibleAgentKeys": [
+            "experiment-strategist"
+          ]
+        },
+        {
+          "id": "economics",
+          "type": "TASK",
+          "label": "Validar fronteira econômica",
+          "owner": "Plutus",
+          "description": "Entregar: fronteira gratuita/paga, custo máximo por uso, limite total, expiração/antiabuso e economia da continuidade paga. Aceite: custos completos e origem das premissas, cenários conservador/esperado/uso intenso, contribuição e margem vigentes; desconhecido bloqueia, sem virar zero. Medir: custo por benefício útil e por compra líquida; impedir que participação gratuita seja tratada como receita. Parecer não autoriza gasto.",
+          "responsibilityDomain": "FINANCIAL_VALIDATION",
+          "responsibleAgentKeys": [
+            "financial-agent"
+          ]
+        },
+        {
+          "id": "materialization",
+          "type": "TASK",
+          "label": "Materializar microexperiência",
+          "owner": "Dédalo",
+          "description": "Entregar: pequena orientação aplicável, amostra ou uso limitado real do produto aprovado, com primeira ação fácil e continuidade clara. Aceite: cumprir integralmente a promessa inicial; próximo botão e botão final acessíveis no celular, entradas mínimas, limites/consentimento/retomada conforme contrato; não esconder o benefício prometido atrás de novo cadastro. Medir: início → conclusão → resultado recebido, aplicação relatada separada de exibição e de teste sintético.",
+          "responsibilityDomain": "PDE_CONSTRUCTION",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ]
+        },
+        {
+          "id": "humanExperienceReview",
+          "type": "TASK",
+          "label": "Revisar experiência humana",
+          "owner": "Psique",
+          "description": "Entregar: avaliação da compreensão e aplicação do benefício inicial, esforço e motivo para continuar pagando. Aceite: observar percurso e botões no celular; explicar com evidência o que a pessoa recebe agora e o que ganha ao pagar; não inferir satisfação de resultado exibido ou e-mail. Medir: conclusão, utilidade observada/relatada e entendimento da oferta. Identificar simulação de agente; observações humanas consentidas e amostra paga ficam separadas.",
+          "responsibilityDomain": "HUMAN_EXPERIENCE_REVIEW",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "commercialIntegrityReview",
+          "type": "TASK",
+          "label": "Revisar integridade comercial",
+          "owner": "Têmis",
+          "description": "Entregar: conferência de promessa, prova real, fronteira gratuita/paga, preço total/recorrência, entregáveis, uso, prazo, acesso, suporte, reembolso, direitos e privacidade na mesma versão. Aceite: consistência com produto e checkout, nenhum depoimento fictício e nenhuma promessa inicial descumprida para forçar compra. Medir: divergências comprovadas e evidência de correção; aprovação não equivale a venda.",
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW",
+          "responsibleAgentKeys": [
+            "meta-ad-approver"
+          ]
+        },
+        {
+          "id": "integration",
+          "type": "TASK",
+          "label": "Integrar eventos e continuidade paga",
+          "owner": "Backend",
+          "description": "Entregar: vínculo auditável ao Processo 4 antes de integrar a jornada, com versão, pareceres, custo/limites e eventos de degustação, resultado, oferta, checkout, compra, acesso, retorno, expiração e abuso. Aceite: gatilhos observáveis, unidade/denominador/janela, correlação e testes segregados; oferta vista depende de visibilidade e tempo mínimo definidos, nunca apenas resultado pronto. Medir: valor recebido → exposição efetiva → CTA → checkout → compra líquida; resultado exibido não comprova aplicação."
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Degustação prova valor com segurança?",
+          "owner": "Backend",
+          "description": "Exige todos os contratos e gates aprovados."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Decisão de degustação registrada",
+          "owner": "Backend",
+          "description": "Uso gratuito ou checkout não são tratados como venda."
+        }
+      ],
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1"
+    },
+    "processType": "SUBPROCESS",
+    "parentProcessCode": null,
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "creative-production-approval",
+    "name": "Produção e aprovação independente de criativos",
+    "purpose": "Separar materialização de comunicação, produção audiovisual e revisões independentes.",
+    "ownerName": "Backend de Experiências PDE",
+    "triggerDescription": "Contrato de comunicação de Íris aprovado.",
+    "outcomeDescription": "Pacote criativo materializado, revisado e selecionado sem autoaprovação.",
+    "versionNumber": 8,
+    "technicalReference": "iris-communication-agent-v1 / creative-production",
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Contrato de comunicação congelado",
+          "owner": "Backend",
+          "description": "Mensagem, produto, prova, canal, destino e CTA chegam versionados."
+        },
+        {
+          "id": "route",
+          "type": "TASK",
+          "label": "Resolver formatos técnicos previstos",
+          "owner": "Backend",
+          "description": "Aplica os formatos aprovados sem redefinir estratégia, canal ou hipótese."
+        },
+        {
+          "id": "nonAudiovisual",
+          "type": "TASK",
+          "label": "Materializar peças não audiovisuais",
+          "owner": "Íris",
+          "description": "Produz copy, composição, peças estáticas e e-mails sob o contrato aprovado.",
+          "responsibleAgentKeys": [
+            "communication-director"
+          ],
+          "responsibilityDomain": "COMMUNICATION_MATERIALIZATION",
+          "executionResourceCode": "iris-communication-worker"
+        },
+        {
+          "id": "audiovisual",
+          "type": "TASK",
+          "label": "Materializar peças audiovisuais quando previstas",
+          "owner": "Apolo",
+          "description": "Produz roteiro técnico, cenas, áudio, montagem e legendas sob o briefing de Íris.",
+          "responsibleAgentKeys": [
+            "videomaker"
+          ],
+          "responsibilityDomain": "AUDIOVISUAL_PRODUCTION",
+          "executionResourceCode": "video-management-service"
+        },
+        {
+          "id": "customer",
+          "type": "TASK",
+          "label": "Avaliar experiência humana do criativo",
+          "owner": "Psique",
+          "description": "Inspeciona cada formato real e registra reação, clareza, desejo, confiança e esforço.",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ],
+          "responsibilityDomain": "HUMAN_EXPERIENCE_REVIEW"
+        },
+        {
+          "id": "commercial",
+          "type": "TASK",
+          "label": "Revisar integridade comercial do criativo",
+          "owner": "Têmis",
+          "description": "Valida verdade, prova, fidelidade, direitos, compliance e segurança sem criar correção.",
+          "responsibleAgentKeys": [
+            "meta-ad-approver"
+          ],
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Formatos aprovados nos dois gates?",
+          "owner": "Backend",
+          "description": "Exige prova vigente e zero bloqueio crítico."
+        },
+        {
+          "id": "human",
+          "type": "TASK",
+          "label": "Registrar decisão humana de uso",
+          "owner": "Operador humano",
+          "description": "Seleciona peças elegíveis sem publicar ou gastar."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Pacote criativo aprovado",
+          "owner": "Backend",
+          "description": "Peças e pareceres ficam prontos para integração."
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "route"
+        },
+        {
+          "from": "route",
+          "to": "nonAudiovisual"
+        },
+        {
+          "from": "nonAudiovisual",
+          "to": "audiovisual"
+        },
+        {
+          "from": "audiovisual",
+          "to": "customer"
+        },
+        {
+          "from": "customer",
+          "to": "commercial"
+        },
+        {
+          "from": "commercial",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "human"
+        },
+        {
+          "from": "human",
+          "to": "end"
+        }
+      ]
+    },
+    "processType": "SUBPROCESS",
+    "parentProcessCode": "pde-communication-sales-journey",
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "experiment-homologation-activation",
+    "name": "Homologação técnica de experimento",
+    "purpose": "Comprovar superfícies, transação, eventos e limites sem misturar operação de Hermes com decisão financeira de Plutus.",
+    "ownerName": "Backend de Experimentos",
+    "triggerDescription": "Experimento planejado com ativos e limites aprovados.",
+    "outcomeDescription": "Preflight técnico persistido, sem decidir ativação.",
+    "versionNumber": 5,
+    "technicalReference": "agent-responsibility-matrix-v3 / technical-preflight",
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Experimento pronto para preflight",
+          "owner": "Backend",
+          "description": "Versões candidatas e limites estão congelados."
+        },
+        {
+          "id": "surfaces",
+          "type": "TASK",
+          "label": "Validar superfícies candidatas",
+          "owner": "Quality Review",
+          "description": "Comprova versão, mobile, desempenho, links, ativos e correspondência."
+        },
+        {
+          "id": "transaction",
+          "type": "TASK",
+          "label": "Testar compra, acesso e entrega",
+          "owner": "Backend",
+          "description": "Executa transação segregada sem registrar venda real."
+        },
+        {
+          "id": "measurement",
+          "type": "TASK",
+          "label": "Validar eventos e deduplicação",
+          "owner": "Backend",
+          "description": "Confere contratos operacionais de Hermes sem operar tráfego."
+        },
+        {
+          "id": "financialGuardrails",
+          "type": "TASK",
+          "label": "Validar limites financeiros persistidos",
+          "owner": "Backend",
+          "description": "Confere teto e regras aprovados por Plutus sem recalcular ou autorizar gasto."
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Preflight técnico aprovado?",
+          "owner": "Backend",
+          "description": "Persiste evidências e causa de qualquer bloqueio."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Preflight entregue ao processo pai",
+          "owner": "Backend",
+          "description": "O subprocesso termina sem autorizar RUNNING."
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "surfaces"
+        },
+        {
+          "from": "surfaces",
+          "to": "transaction"
+        },
+        {
+          "from": "transaction",
+          "to": "measurement"
+        },
+        {
+          "from": "measurement",
+          "to": "financialGuardrails"
+        },
+        {
+          "from": "financialGuardrails",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "end"
+        }
+      ]
+    },
+    "processType": "SUBPROCESS",
+    "parentProcessCode": "pde-commercial-homologation-activation",
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "operacao-otimizacao-experimento",
+    "name": "Operação e otimização de experimento",
+    "purpose": "Operar crescimento e devolver cada correção ao agente proprietário da variável.",
+    "ownerName": "Hermes",
+    "triggerDescription": "Experimento RUNNING após autorização humana.",
+    "outcomeDescription": "Teste controlado decidido por eventos, vendas e entrega reais.",
+    "versionNumber": 6,
+    "technicalReference": "docs/canonical/cadeia-produtos-pde-canon.v1.md / cinco criterios comerciais",
+    "diagram": {
+      "flows": [
+        {
+          "to": "task-1",
+          "from": "start"
+        },
+        {
+          "to": "task-2",
+          "from": "task-1"
+        },
+        {
+          "to": "task-3",
+          "from": "task-2"
+        },
+        {
+          "to": "task-4",
+          "from": "task-3"
+        },
+        {
+          "to": "task-5",
+          "from": "task-4"
+        },
+        {
+          "to": "task-6",
+          "from": "task-5"
+        },
+        {
+          "to": "task-7",
+          "from": "task-6"
+        },
+        {
+          "to": "task-8",
+          "from": "task-7"
+        },
+        {
+          "to": "task-9",
+          "from": "task-8"
+        },
+        {
+          "to": "task-10",
+          "from": "task-9"
+        },
+        {
+          "to": "gate",
+          "from": "task-10"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Operação autorizada",
+          "owner": "Backend",
+          "description": "Estratégia, orçamento e regras de parada estão vigentes."
+        },
+        {
+          "id": "task-1",
+          "type": "TASK",
+          "label": "Verificar integridade dos eventos",
+          "owner": "Hermes",
+          "description": "Entregar: conciliação de eventos com fonte, versão, gatilho, unidade, numerador/denominador, atribuição e janela. Aceite: visitantes humanos distintos; testes, bots, duplicidades e reembolsos segregados; não inventar zero para fonte ausente. Verificar exposição real à oferta com limiar declarado; resultado pronto não dispara oferta vista. Medir: separar primeira interação, conclusão, resultado, aplicação/relato, cadastro, login, retorno, checkout e compra.",
+          "responsibilityDomain": "GROWTH_OPERATION",
+          "responsibleAgentKeys": [
+            "growth-operator"
+          ]
+        },
+        {
+          "id": "task-2",
+          "type": "TASK",
+          "label": "Acumular amostra mínima",
+          "owner": "Hermes",
+          "description": "Entregar: amostra e janela atingidas ou leitura inconclusiva, usando o planejamento aprovado. Aceite: contar pessoas elegíveis deduplicadas, aguardar janela de compra e reportar incerteza; não copiar 100/500 visitas a todo produto sem justificativa. Parada financeira protege o caixa, mas não comprova rejeição estatística. Medir: amostra observada/meta, compras líquidas e cobertura das fontes, sempre dentro do teto autorizado.",
+          "responsibilityDomain": "GROWTH_OPERATION",
+          "responsibleAgentKeys": [
+            "growth-operator"
+          ]
+        },
+        {
+          "id": "task-3",
+          "type": "TASK",
+          "label": "Identificar gargalo real",
+          "owner": "Hermes",
+          "description": "Entregar: primeira perda mensurável do funil com numerador, denominador, versão, origem e janela; hipótese causal e explicação concorrente. Aceite: comparar início → conclusão → resultado → oferta efetivamente vista → checkout → compra, sem confundir cadastro/login nem resultado/uso; registrar lacunas e amostra insuficiente. Medir: abandono por etapa e tempo até o benefício. Correlação ou clique não confirma causa, satisfação ou lucro.",
+          "responsibilityDomain": "GROWTH_OPERATION",
+          "responsibleAgentKeys": [
+            "growth-operator"
+          ]
+        },
+        {
+          "id": "task-4",
+          "type": "TASK",
+          "label": "Propor ajuste operacional de uma variável",
+          "owner": "Hermes",
+          "description": "Entregar: uma variável principal, referência anterior, hipótese, explicação concorrente, condições mantidas e critério de sucesso/falha predefinido. Aceite: preservar estratégia, preço, público e produto quando não forem a variável autorizada; contradição volta a Atena, produto a Dédalo e comunicação a Íris. Medir: efeito na etapa-alvo junto com compras líquidas, entrega, CAC e margem; participação isolada não autoriza escala.",
+          "responsibilityDomain": "GROWTH_OPERATION",
+          "responsibleAgentKeys": [
+            "growth-operator"
+          ]
+        },
+        {
+          "id": "task-5",
+          "type": "TASK",
+          "label": "Revisar experiência humana da variante",
+          "owner": "Psique",
+          "description": "Avalia a variante real sem substituir dados do funil ou materializar correção.",
+          "responsibilityDomain": "HUMAN_EXPERIENCE_REVIEW",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "task-6",
+          "type": "TASK",
+          "label": "Revisar integridade comercial da variante",
+          "owner": "Têmis",
+          "description": "Avalia prova, fidelidade, direitos e compliance sem criar a variante.",
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW",
+          "responsibleAgentKeys": [
+            "meta-ad-approver"
+          ]
+        },
+        {
+          "id": "task-7",
+          "type": "TASK",
+          "label": "Validar limite financeiro da variante",
+          "owner": "Plutus",
+          "description": "Entregar: parecer sobre orçamento, receita líquida, CAC e custo integral da variante, incluindo IA, suporte, taxas, entrega e reembolsos. Aceite: fontes/validade e cenários conservador/esperado/uso intenso; desconhecido não é zero; contribuição positiva e margem conforme política aprovada. Medir: compras líquidas, contribuição e margem após custos e aquisição. Parecer não autoriza gasto ou ampliação de teto.",
+          "responsibilityDomain": "FINANCIAL_VALIDATION",
+          "responsibleAgentKeys": [
+            "financial-agent"
+          ]
+        },
+        {
+          "id": "task-8",
+          "type": "TASK",
+          "label": "Autorizar mudança material quando necessária",
+          "owner": "Operador humano",
+          "description": "Autoriza gasto, publicação ou mudança comercial material."
+        },
+        {
+          "id": "task-9",
+          "type": "TASK",
+          "label": "Rotear materialização autorizada",
+          "owner": "Backend",
+          "description": "Abre job de Íris para comunicação, Apolo para audiovisual ou Dédalo para produto conforme a variável aprovada."
+        },
+        {
+          "id": "task-10",
+          "type": "TASK",
+          "label": "Executar teste e medir efeito",
+          "owner": "Hermes",
+          "description": "Entregar: comparação da variante com a referência, uma mudança principal, condições mantidas, amostra/janela e limitações; preservar histórico. Aceite: evidência suficiente ou conclusão inconclusiva; testes qualitativos não contam na amostra paga. Medir: etapa-alvo, vendas líquidas, receita conciliada, CAC, custo completo, entrega útil e reembolso. Melhor participação sem venda/margem não comprova sucesso comercial.",
+          "responsibilityDomain": "GROWTH_OPERATION",
+          "responsibleAgentKeys": [
+            "growth-operator"
+          ]
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Continuar, ajustar ou parar?",
+          "owner": "Backend",
+          "description": "Decide somente com evidência comercial real."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Otimização decidida",
+          "owner": "Backend",
+          "description": "Resultado e próximo movimento ficam auditáveis."
+        }
+      ],
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1"
+    },
+    "processType": "SUBPROCESS",
+    "parentProcessCode": "pde-sales-delivery-learning",
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "venda-entrega-satisfacao-cliente",
+    "name": "Venda, entrega e satisfação da cliente",
+    "purpose": "Entregar a versão comprada e aprender com integridade sem atribuir produção e revisão ao mesmo agente.",
+    "ownerName": "Backend de Entrega",
+    "triggerDescription": "Pagamento aprovado e reconciliado.",
+    "outcomeDescription": "Venda entregue com satisfação ou falha bloqueada e tratada pela causa-raiz.",
+    "versionNumber": 4,
+    "technicalReference": "agent-responsibility-matrix-v3 / delivery-independent-responsibilities",
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Pagamento aprovado",
+          "owner": "Backend",
+          "description": "Evento oficial chega segregado de testes."
+        },
+        {
+          "id": "reconcile",
+          "type": "TASK",
+          "label": "Conciliar venda e versão contratada",
+          "owner": "Backend",
+          "description": "Confirma valor, produto e versão antes da entrega."
+        },
+        {
+          "id": "materialization",
+          "type": "TASK",
+          "label": "Materializar personalização quando contratada",
+          "owner": "Dédalo",
+          "description": "Produz somente a personalização não audiovisual prevista sem mudar oferta ou preço.",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ],
+          "responsibilityDomain": "PDE_CONSTRUCTION"
+        },
+        {
+          "id": "integrity",
+          "type": "TASK",
+          "label": "Revisar integridade da entrega",
+          "owner": "Têmis",
+          "description": "Comprova fidelidade, direitos e segurança sem produzir os arquivos.",
+          "responsibleAgentKeys": [
+            "meta-ad-approver"
+          ],
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW"
+        },
+        {
+          "id": "delivery",
+          "type": "TASK",
+          "label": "Entregar e confirmar acesso",
+          "owner": "Backend",
+          "description": "Comprova canal, recebimento, links, arquivos e prazo."
+        },
+        {
+          "id": "satisfaction",
+          "type": "TASK",
+          "label": "Avaliar satisfação e utilidade",
+          "owner": "Psique",
+          "description": "Registra uso, valor percebido, dificuldade e satisfação sem inventar comportamento.",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ],
+          "responsibilityDomain": "HUMAN_EXPERIENCE_REVIEW"
+        },
+        {
+          "id": "financial",
+          "type": "TASK",
+          "label": "Conciliar receita, reembolso e risco",
+          "owner": "Plutus",
+          "description": "Relaciona pagamento, custo, reembolso e margem sem movimentar recursos.",
+          "responsibleAgentKeys": [
+            "financial-agent"
+          ],
+          "responsibilityDomain": "FINANCIAL_VALIDATION"
+        },
+        {
+          "id": "learning",
+          "type": "TASK",
+          "label": "Registrar aprendizado candidato",
+          "owner": "Backend",
+          "description": "Preserva procedência; prova só é reutilizada com consentimento e aprovação."
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Venda terminou com entrega satisfatória?",
+          "owner": "Backend",
+          "description": "Atraso ou falha bloqueia nova aquisição até correção."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Venda entregue e reconciliada",
+          "owner": "Backend",
+          "description": "Receita e satisfação ficam auditáveis."
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "reconcile"
+        },
+        {
+          "from": "reconcile",
+          "to": "materialization"
+        },
+        {
+          "from": "materialization",
+          "to": "integrity"
+        },
+        {
+          "from": "integrity",
+          "to": "delivery"
+        },
+        {
+          "from": "delivery",
+          "to": "satisfaction"
+        },
+        {
+          "from": "satisfaction",
+          "to": "financial"
+        },
+        {
+          "from": "financial",
+          "to": "learning"
+        },
+        {
+          "from": "learning",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "end"
+        }
+      ]
+    },
+    "processType": "SUBPROCESS",
+    "parentProcessCode": "pde-sales-delivery-learning",
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "value-chain-learning-sales-cycle",
+    "name": "Ciclos de aprendizado e vendas",
+    "purpose": "Transformar automaticamente resultados atribuídos em decisões para melhorar produto, comunicação, vendas líquidas e contribuição.",
+    "ownerName": "Coordenação da Cadeia de Valor",
+    "triggerDescription": "Hipótese inicial ou decisão de ajuste de um experimento anterior.",
+    "outcomeDescription": "Atena prepara a proposta com evidências conciliadas; o usuário edita e aprova; o backend registra a decisão e o retorno no BPM.",
+    "versionNumber": 5,
+    "technicalReference": "docs/canonical/cadeia-produtos-pde-canon.v1.md / cinco criterios comerciais",
+    "diagram": {
+      "flows": [
+        {
+          "to": "LEARNING",
+          "from": "start"
+        },
+        {
+          "to": "PLANNING",
+          "from": "LEARNING"
+        },
+        {
+          "to": "ADJUSTMENT",
+          "from": "PLANNING"
+        },
+        {
+          "to": "VIDEO_BRIEF",
+          "from": "ADJUSTMENT"
+        },
+        {
+          "to": "CAMPAIGN_VIDEO",
+          "from": "VIDEO_BRIEF"
+        },
+        {
+          "to": "PDE_ENTRY_VIDEO",
+          "from": "CAMPAIGN_VIDEO"
+        },
+        {
+          "to": "VIDEO_APPROVAL",
+          "from": "PDE_ENTRY_VIDEO"
+        },
+        {
+          "to": "VALIDATION",
+          "from": "VIDEO_APPROVAL"
+        },
+        {
+          "to": "qualityDecision",
+          "from": "VALIDATION"
+        },
+        {
+          "to": "PUBLICATION",
+          "from": "AUTHORIZATION"
+        },
+        {
+          "to": "MEASUREMENT",
+          "from": "PUBLICATION"
+        },
+        {
+          "to": "DECISION",
+          "from": "MEASUREMENT"
+        },
+        {
+          "to": "commercialDecision",
+          "from": "DECISION"
+        },
+        {
+          "to": "ADJUSTMENT",
+          "from": "qualityDecision",
+          "kind": "REWORK",
+          "label": "Reprovado: corrigir a mesma iteração"
+        },
+        {
+          "to": "AUTHORIZATION",
+          "from": "qualityDecision",
+          "label": "Aprovado: mesma versão"
+        },
+        {
+          "to": "LEARNING",
+          "from": "commercialDecision",
+          "kind": "REWORK",
+          "label": "Ajustar: novo experimento com memória"
+        },
+        {
+          "to": "ADJUSTMENT",
+          "from": "commercialDecision",
+          "kind": "REWORK",
+          "label": "Correção técnica: pausar e revalidar o mesmo experimento"
+        },
+        {
+          "to": "MEASUREMENT",
+          "from": "commercialDecision",
+          "kind": "REWORK",
+          "label": "Continuar dentro dos limites / corrigir medição"
+        },
+        {
+          "to": "SCALE_AUTHORIZATION",
+          "from": "commercialDecision",
+          "label": "Vendas, contribuição e valor comprovados"
+        },
+        {
+          "to": "MEASUREMENT",
+          "from": "SCALE_AUTHORIZATION",
+          "kind": "REWORK",
+          "label": "Nova autorização explícita"
+        },
+        {
+          "to": "end",
+          "from": "commercialDecision",
+          "label": "Encerrar / inconclusivo"
+        },
+        {
+          "to": "ADJUSTMENT",
+          "from": "VIDEO_APPROVAL",
+          "kind": "REWORK",
+          "label": "Reprovado: corrigir causa e renovar evidências"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Aprendizado anterior ou primeira hipótese"
+        },
+        {
+          "id": "LEARNING",
+          "type": "TASK",
+          "label": "Aprendizado e hipótese",
+          "owner": "Hermes · síntese; operador · registro",
+          "description": "Entregar: aprendizado com fonte/data, versões, estado/objetivo da etapa, fato observado, hipótese e explicação concorrente; separar sucessos, falhas e limites de validade. Aceite: conciliação do experimento anterior sem transformar participação do experimento de referência em causalidade ou venda; resolver contradições antes de reutilizar memória. Medir: evidência nova, recorrência do gargalo e resultado comercial conhecido, sem dados pessoais no aprendizado.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "PLANNING",
+          "type": "TASK",
+          "label": "Planejar o experimento",
+          "owner": "Atena e Plutus · pareceres separados; operador · registro",
+          "description": "Entregar: referência anterior, uma variável principal, hipótese e explicação concorrente; oferta, canal, público e entrega mantidos quando não forem a variável, amostra, janela de compra, atribuição, teto e parada predefinidos. Aceite: metas justificadas por produto e economia, custo desconhecido pendente; mudança material requer aprovação própria. Medir: etapa-alvo e guardas de compras líquidas, utilidade, CAC, custo integral e margem. Não confundir limite financeiro com conclusão estatística.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "ADJUSTMENT",
+          "type": "TASK",
+          "label": "Ajustar produto e comunicação",
+          "owner": "Dédalo · produto; Íris e Apolo · comunicação",
+          "description": "Execute a atividade indicada pela causa. Entregue uma ação útil para a cliente e uma comunicação fiel. Registre a versão e as provas do ajuste.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "VIDEO_BRIEF",
+          "type": "TASK",
+          "label": "Definir os dois vídeos",
+          "owner": "Íris · briefing; Plutus · limite de produção",
+          "description": "Defina objetivo, CTA e métrica próprios do vídeo AD e da entrada LANDING_HERO. Demonstre o produto real e registre a hipótese principal, as variáveis mantidas e a referência do teto de produção. Consumo exige autorização e preflight no Estúdio.",
+          "runtimePath": "/audio-video-studio"
+        },
+        {
+          "id": "CAMPAIGN_VIDEO",
+          "type": "TASK",
+          "label": "Produzir vídeo do criativo de campanha",
+          "owner": "Apolo · produção no Estúdio",
+          "description": "No Estúdio, use o produto e o experimento deste ciclo para produzir um vídeo AD com gancho, prova fiel, áudio, legendas e CTA para a experiência. Passe por preflight e Plutus antes de consumir. Selecione aqui o ativo pronto; ausência ou falha exige correção.",
+          "runtimePath": "/audio-video-studio"
+        },
+        {
+          "id": "PDE_ENTRY_VIDEO",
+          "type": "TASK",
+          "label": "Produzir vídeo de entrada do PDE",
+          "owner": "Apolo · demonstração da experiência real",
+          "description": "Produza um LANDING_HERO distinto do mesmo experimento: mostre o que a pessoa faz, o primeiro resultado útil e a continuidade paga. Use a versão ajustada e legendas. Assistir deve ser opcional, com CTA acessível e fallback.",
+          "runtimePath": "/audio-video-studio"
+        },
+        {
+          "id": "VIDEO_APPROVAL",
+          "type": "TASK",
+          "label": "Revisar e integrar os dois vídeos",
+          "owner": "Psique e Têmis · revisão; operador · integração",
+          "description": "Aprove os ativos nos gates oficiais. No experimento, crie e aprove o criativo a partir do AD. Em Versões PDE, inclua o LANDING_HERO no rascunho da versão deste ciclo. Registre reprodução, legendas, fallback, CTA sem assistir e mobile com testes segregados. Concluir não publica nem autoriza campanha.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "VALIDATION",
+          "type": "TASK",
+          "label": "Homologar a mesma versão",
+          "owner": "Harness técnico, Psique e Têmis · gates independentes",
+          "description": "Execute homologação técnica e avaliações independentes da mesma versão. Informe a instância real do gate multiagente aprovado, a prova da jornada e, se realizada, a observação humana consentida. Reprovação volta ao ajuste.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "qualityDecision",
+          "type": "GATEWAY",
+          "label": "Versão homologada?",
+          "description": "Reprovação exige correção e nova evidência para a versão afetada."
+        },
+        {
+          "id": "AUTHORIZATION",
+          "type": "TASK",
+          "label": "Autorizar orçamento e janela",
+          "owner": "Operador responsável pela autorização",
+          "description": "Confira os gates, confirme a versão, o teto total de mídia e a janela. A autorização registrada no ciclo não aciona campanha: execute o fluxo oficial do experimento.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "PUBLICATION",
+          "type": "TASK",
+          "label": "Conferir publicação",
+          "owner": "Operador · fluxo oficial do experimento",
+          "description": "Abra o experimento e solicite sua publicação pelo fluxo oficial. Depois confira aqui o run produtivo, o preflight, a data e o teto aprovados.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "MEASUREMENT",
+          "type": "TASK",
+          "label": "Medir vendas e valor entregue",
+          "owner": "Marketing Hub · conciliação automática; Hermes e Plutus · interpretação",
+          "description": "O backend concilia fontes do experimento e persiste período, versão e segregação; resultados não são digitados. Entregar: pessoas humanas distintas, início/conclusão/resultado, oferta efetivamente vista, cadastro/login/retorno, checkout, compras líquidas, receita, custo integral, CAC, entrega/uso e reembolso quando houver fonte. Aceite: gatilhos e denominadores válidos; fonte ausente não vira zero; resultado pronto não comprova oferta vista ou satisfação. Medir: cobertura, amostra/incerteza e contribuição/margem conforme política.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "DECISION",
+          "type": "TASK",
+          "label": "Revisar e aprovar proposta comercial de Atena",
+          "owner": "Atena · proposta; usuário · edição e aprovação",
+          "description": "Entregar: proposta de Atena comparando três alternativas com a conciliação oficial, justificativa, evidência, aprendizado, hipótese, explicação concorrente e destino. Aceite: separar sinal de participação de venda; amostra insuficiente é inconclusiva; escala exige compras líquidas, entrega útil, custos essenciais conhecidos, contribuição positiva e margem vigente. Usuário pode editar/aprovar; proposta inválida/desatualizada bloqueia o losango. Medir: vendas líquidas, CAC, margem e entrega. Este parecer não autoriza gasto/publicação.",
+          "runtimePath": "/business-process-chains/learning-cycles",
+          "executionContract": "LEARNING_CYCLE_DECISION_PROPOSAL_V1",
+          "responsibilityDomain": "MARKET_STRATEGY",
+          "responsibleAgentKeys": [
+            "experiment-strategist"
+          ],
+          "humanApprovalRequired": true
+        },
+        {
+          "id": "commercialDecision",
+          "type": "GATEWAY",
+          "label": "O que os resultados autorizam?",
+          "description": "Ajustar, continuar, corrigir dados, solicitar escala ou encerrar."
+        },
+        {
+          "id": "SCALE_AUTHORIZATION",
+          "type": "TASK",
+          "label": "Autorizar expansão",
+          "owner": "Operador responsável pela autorização",
+          "description": "Reavalie contribuição, vendas e valor entregue. Defina uma nova autorização explícita e atualize os limites pelo fluxo oficial antes de continuar o acompanhamento.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Preservar resultados e aprendizado"
+        }
+      ],
+      "schemaVersion": "LEARNING_SALES_CYCLE_V4",
+      "decisionPreparation": {
+        "pending": "/api/internal/business-process-chains/learning-cycles/v1/decision/stage-executions/pending",
+        "agentKey": "experiment-strategist",
+        "sequence": [
+          "ATENA_PROPOSAL",
+          "HUMAN_REVIEW",
+          "EXPLICIT_APPROVAL",
+          "COMMERCIAL_GATEWAY"
+        ],
+        "activityId": "DECISION"
+      },
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1"
+    },
+    "processType": "SUBPROCESS",
+    "parentProcessCode": "pde-sales-delivery-learning",
+    "executionScope": "PRODUCT"
+  }
+]

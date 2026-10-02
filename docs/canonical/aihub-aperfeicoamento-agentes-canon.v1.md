@@ -308,6 +308,12 @@ Revisão textual versiona as novas definições, sem migrar execuções, repetir
 compatíveis ou autorizar consumo. Validar a paridade entre diagrama, objetivo persistido,
 descrição recebida pela tarefa e tela antes da entrega.
 
+Quando uma implementação ou teste estiver referenciado por hash em manifesto vigente,
+conferir o pacote pelo validador existente `scripts/build-commercial-review-evidence.mjs`
+antes da publicação. Uma nova regressão genérica deve ficar em teste independente quando
+a implementação atestada não mudou; se mudou, revalidar o produto e criar atestação sucessora.
+Não reescrever o hash histórico nem reduzir a proteção para acomodar uma mudança alheia.
+
 Antes dos testes, definir matriz proporcional ao fluxo afetado, com sucesso, falhas,
 integrações, observabilidade, métricas, segregação e dispositivos pertinentes. Revisar os
 testes unitários de todos os módulos alterados: contratos, fixtures, mocks e expectativas.

@@ -63,6 +63,12 @@ Validação local concluída:
   Os scripts de validação e formatação passaram por `bash -n` e `shellcheck`.
 - Diff revisado: apenas changeset novo, definições e critérios; grafos, tipos, recursos,
   contratos técnicos, produtos, aprovações, orçamento e histórico preservados.
+- Após o CI apontar vínculo por hash em um teste histórico de Alcyone, a nova regressão foi
+  isolada em `BusinessProcessActivityMissionContractTest`, com duas identidades sintéticas.
+  Os 37 testes relacionados passaram; o empacotador comercial validou 309 arquivos e 60
+  manifestos, e seus 15 testes passaram. A prova e o teste atestados continuam íntegros.
+  Comparadas: renovar atestação de outro produto (exigiria revalidá-lo), enfraquecer o gate
+  (perderia integridade) e isolar a nova regressão (escolhida, preserva prova e cobertura).
 
 Publicação e confirmação operacional serão vinculadas ao PR desta entrega; os testes acima
 não comprovam satisfação humana, lembrança, aumento de vendas ou margem comercial realizada.

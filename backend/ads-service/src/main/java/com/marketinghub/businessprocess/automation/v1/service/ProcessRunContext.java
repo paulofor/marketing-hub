@@ -125,17 +125,30 @@ public class ProcessRunContext {
     return read(run.getProductId(), run.getProcessDefinitionId(), command(run), execution);
   }
 
-  /** Bloqueia novos trabalhos em ciclo encerrado, sem impedir a leitura de resultados recebidos. */
+  /**
+   * Bloqueia novos trabalhos em ciclo encerrado ou versão sem autorização, preservando callbacks
+   * existentes e versões retiradas que foram fixadas pela ficha da mesma referência.
+   */
   public String dispatchBlockReason(ProcessRun run) {
-    if (run.getLearningCycleId() == null) return null;
-    var cycle =
-        cycles
-            .findById(run.getLearningCycleId())
-            .orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ciclo não encontrado."));
-    return "OPEN".equals(cycle.getStatus())
-        ? null
-        : "O ciclo está encerrado. Resultados preservados; nenhuma nova atividade será iniciada neste ciclo.";
+    if (run.getLearningCycleId() != null) {
+      var cycle =
+          cycles
+              .findById(run.getLearningCycleId())
+              .orElseThrow(
+                  () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ciclo não encontrado."));
+      if (!"OPEN".equals(cycle.getStatus()))
+        return "O ciclo está encerrado. Resultados preservados; nenhuma nova atividade será iniciada neste ciclo.";
+    }
+    var process = process(run.getProcessDefinitionId());
+    if (executableVersion(
+        run.getProductId(), run.getProcessDefinitionId(), command(run), process.getStatus()))
+      return null;
+    return "A versão v"
+        + process.getVersionNumber()
+        + " do processo #"
+        + process.getId()
+        + " não está publicada nem fixada por uma ficha desta referência. Resultados preservados; "
+        + "inicie a versão autorizada no contexto correto.";
   }
 
   /**

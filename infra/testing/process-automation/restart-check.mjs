@@ -24,6 +24,22 @@ const events = await (
   )
 ).json();
 assert(events.some((e) => e.eventType === "COMPLETED"));
+const retired = await (
+  await fetch(
+    `${base}/api/business-processes/92002/products/92031/automation/v1?chainId=92014&learningCycleId=92031&sourceReference=experiment:92031`,
+  )
+).json();
+assert.equal(retired.status, "CLOSED");
+assert.equal(retired.completedActivities, 1);
+assert.equal(retired.canResume, false);
+const pending = await (
+  await fetch(
+    base +
+      "/api/internal/business-processes/automation/v1/stage-executions/pending?limit=100",
+    { headers: { "X-Process-Worker-Token": "process-fixture-only" } },
+  )
+).json();
+assert(!pending.includes(retired.id));
 console.log(
-  "PASS reinício do backend e reaplicação do Liquibase preservam conclusões, tarefas ativas, histórico e deduplicação",
+  "PASS reinício preserva conclusões, encerramento de versões retiradas, tarefas ativas, histórico e deduplicação",
 );

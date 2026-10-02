@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -36,9 +38,14 @@ import org.yaml.snakeyaml.Yaml;
  */
 @Service
 public class MicroserviceDiscoveryService {
+  private static final Logger log = LoggerFactory.getLogger(MicroserviceDiscoveryService.class);
+  private static final String FALLBACK_COMPOSE_RESOURCE =
+      "operational-inventory/deploy/docker-compose.yml";
   private static final String FALLBACK_DEPLOYMENTS_RESOURCE =
       "operational-inventory/project-vps-deployments.yaml";
   private static final Pattern SECRET_REFERENCE_PATTERN = Pattern.compile("secrets\\.([A-Z0-9_]+)");
+  private static final Pattern COMPOSE_DEFAULT_PATTERN =
+      Pattern.compile("\\$\\{[A-Za-z_][A-Za-z0-9_]*:-([^{}]*)}");
 
   private final Path composePath;
   private final Path workflowsPath;
@@ -57,14 +64,10 @@ public class MicroserviceDiscoveryService {
     this.hostInventoryRepository = hostInventoryRepository;
   }
 
-  /** Descobre os serviços publicados no docker-compose configurado. */
+  /** Descobre serviços previstos no Compose configurado ou na fonte versionada embarcada. */
   public List<DiscoveredMicroserviceDto> discoverFromCompose() {
-    if (!Files.exists(composePath)) {
-      return List.of();
-    }
-
     Yaml yaml = new Yaml();
-    try (InputStream inputStream = Files.newInputStream(composePath)) {
+    try (InputStream inputStream = openComposeInventory()) {
       Object data = yaml.load(inputStream);
       if (!(data instanceof Map<?, ?> root)) {
         return List.of();
@@ -85,8 +88,26 @@ public class MicroserviceDiscoveryService {
       discovered.sort(Comparator.comparing(DiscoveredMicroserviceDto::serviceName));
       return discovered;
     } catch (IOException e) {
-      throw new UncheckedIOException("Failed to read docker-compose file at " + composePath, e);
+      log.error("Inventário VPS: falha ao ler Compose configurado em {}", composePath, e);
+      throw new UncheckedIOException("Falha ao ler inventário Compose em " + composePath, e);
     }
+  }
+
+  /** Abre a fonte local quando existe e usa o Compose embarcado quando o runtime não a possui. */
+  private InputStream openComposeInventory() throws IOException {
+    if (Files.exists(composePath)) {
+      return Files.newInputStream(composePath);
+    }
+    InputStream inputStream =
+        MicroserviceDiscoveryService.class
+            .getClassLoader()
+            .getResourceAsStream(FALLBACK_COMPOSE_RESOURCE);
+    if (inputStream == null) {
+      log.error(
+          "Inventário VPS: recurso obrigatório ausente no build: {}", FALLBACK_COMPOSE_RESOURCE);
+      throw new IllegalStateException("Compose versionado ausente no build do inventário VPS");
+    }
+    return inputStream;
   }
 
   /** Consolida portas do compose e dados de deploy dos workflows em um único inventário. */
@@ -170,6 +191,7 @@ public class MicroserviceDiscoveryService {
       }
       return deployments;
     } catch (IOException e) {
+      log.error("Inventário VPS: falha ao listar workflows em {}", workflowsPath, e);
       throw new UncheckedIOException("Failed to read workflows at " + workflowsPath, e);
     }
   }
@@ -207,6 +229,7 @@ public class MicroserviceDiscoveryService {
               .thenComparing(DeploymentWorkflowInventoryDto::jobName));
       return discovered;
     } catch (IOException e) {
+      log.error("Inventário VPS: falha ao ler deployments em {}", FALLBACK_DEPLOYMENTS_RESOURCE, e);
       throw new UncheckedIOException(
           "Failed to read fallback deployment inventory at " + FALLBACK_DEPLOYMENTS_RESOURCE, e);
     }
@@ -242,6 +265,7 @@ public class MicroserviceDiscoveryService {
       discovered.sort(Comparator.comparing(VpsHostInventoryDto::host));
       return discovered;
     } catch (IOException e) {
+      log.error("Inventário VPS: falha ao ler hosts em {}", FALLBACK_DEPLOYMENTS_RESOURCE, e);
       throw new UncheckedIOException(
           "Failed to read fallback host inventory at " + FALLBACK_DEPLOYMENTS_RESOURCE, e);
     }
@@ -340,7 +364,7 @@ public class MicroserviceDiscoveryService {
     return PortMapping.EMPTY;
   }
 
-  /** Interpreta um item de porta do compose nos formatos numérico e texto. */
+  /** Interpreta portas numéricas, padrões de variáveis e bindings com endereço no Compose. */
   private PortMapping parsePort(Object port) {
     if (port instanceof Number numberPort) {
       int value = numberPort.intValue();
@@ -351,12 +375,12 @@ public class MicroserviceDiscoveryService {
       return null;
     }
 
-    String sanitized = portString.split("/")[0];
+    String sanitized = COMPOSE_DEFAULT_PATTERN.matcher(portString).replaceAll("$1").split("/")[0];
     String[] parts = sanitized.split(":");
 
-    if (parts.length == 2) {
-      Integer hostPort = parsePortNumber(parts[0]);
-      Integer containerPort = parsePortNumber(parts[1]);
+    if (parts.length >= 2) {
+      Integer hostPort = parsePortNumber(parts[parts.length - 2]);
+      Integer containerPort = parsePortNumber(parts[parts.length - 1]);
       if (hostPort != null || containerPort != null) {
         return new PortMapping(hostPort, containerPort, true);
       }
@@ -418,6 +442,7 @@ public class MicroserviceDiscoveryService {
       }
       return deployments;
     } catch (IOException e) {
+      log.error("Inventário VPS: falha ao ler workflow em {}", workflowPath, e);
       throw new UncheckedIOException("Failed to read workflow at " + workflowPath, e);
     }
   }

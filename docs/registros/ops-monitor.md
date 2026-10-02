@@ -1,5 +1,63 @@
 # Registros do monitor operacional
 
+## 2026-10-02 — Inventário verificável de capacidade e referências de preço
+
+- Evidência: a tela retornou 7 hosts, 10 deploys e `services=[]`. O banco não possuía
+  edições em `ops_vps_host_inventory`; a UI exibia apenas o cadastro inicial de julho/setembro.
+  A consulta MCP `vps_host_inventory` respondeu nos 7 hosts. Cinco capacidades estavam
+  ausentes; `163.245.202.80` passou de 6 vCPU/6 GB cadastrados para 7 vCPU/8 GB aproximados.
+- Correção operacional: dados atualizados pelo formulário oficial, com leitura, unidade,
+  data, módulos observados e pendências. O banco confirmou os 7 registros persistidos.
+  `177.153.62.107` e `191.252.210.83` possuem hostname/PTR KingHost; o bloco Locaweb
+  identifica infraestrutura, não necessariamente o fornecedor contratual. A correspondência
+  dos dois IPs `163.245.*` com contratos Dokehost foi comprovada nos e-mails de cobrança.
+  E-mails de instalação e fatura também comprovam os três hosts publiccloud como Locaweb.
+- Preços consultados nos sites oficiais: Dokehost Cloud 05/06 a partir de R$ 89,90/R$ 103,90
+  por mês; Locaweb 1/2 GB R$ 15,90/R$ 23,90 equivalentes com 24 meses (renovação anunciada
+  R$ 25,90/R$ 36,90); KingHost atual começa em 4 GB, R$ 53,90 no ciclo mensal ou R$ 32,90
+  equivalentes com 24 meses. Nenhum catálogo comprova as faturas ou os planos legados.
+  Referências e condições ficam em `costEvidence`; cobrança desconhecida permanece nula.
+- Cobranças comprovadas no e-mail conectado: Dokehost Cloud 05 em `163.245.200.7`,
+  R$ 95,90 + R$ 4,80 de taxa de cartão = R$ 100,70/mês; Cloud 06 em `163.245.202.80`,
+  R$ 103,90 + R$ 5,20 = R$ 109,10/mês. Fatura Locaweb de 26/09/2026: `vps62161`
+  (`191.252.120.96`) R$ 99,73/trimestre, equivalente a R$ 33,24/mês; `vps65013`
+  (`191.252.181.168`) R$ 137,70/trimestre, equivalente a R$ 45,90/mês. Valores
+  e ciclos foram registrados pelo formulário, sem expor dados pessoais ou credenciais.
+  Subtotal mensal equivalente R$ 288,94, com cobertura de 4/7 hosts; três custos
+  continuam desconhecidos. A tela calcula o subtotal e explicita a cobertura parcial.
+  Faturas proporcionais de upgrade, avisos duplicados e o total compartilhado da
+  fatura não foram somados como novas cobranças recorrentes.
+  Fontes: https://central.dokehost.com.br/store/vps-cloud,
+  https://www.locaweb.com.br/servidor-vps/, https://king.host/servidor-vps.
+- Causa confirmada da lista vazia: o JAR embarcava o cadastro de deploys, mas não o Compose.
+  `discoverFromCompose` retornava vazio quando o arquivo do repositório não existia no runtime.
+  A correção copia diretamente `deploy/docker-compose.yml` como recurso Maven, sem manter
+  uma segunda versão. O serviço usa a fonte embarcada somente quando a fonte local não existe.
+- Melhoria do harness: regressão para runtime sem checkout do repositório, interpretação
+  de portas com defaults/IP e preservação das edições financeiras. Recurso obrigatório
+  ausente causa erro explícito. Logs conservam contexto e stack trace. A tela distingue
+  configuração prevista, dados cadastrados e consulta operacional; o botão Atualizar não
+  promete coleta remota. Custo desconhecido não aparece como zero.
+- Matriz de homologação proporcional:
+
+  | Caso | Critério de aceite | Validação |
+  |---|---|---|
+  | Runtime sem Compose local | Serviços obtidos do recurso do build | Teste Java e inspeção do JAR |
+  | Compose local válido | Fonte local preservada; sem mesclar configuração diferente | Teste Java com outros nomes/portas |
+  | Defaults e binding por IP | Portas conhecidas interpretadas; variável desconhecida não inventada | Teste Java |
+  | Cadastro e cobrança | PUT/GET preservam edição; custo ausente fica nulo; subtotal informa cobertura | Contrato MVC, formulário local, testes de UI e consulta MCP |
+  | Falha na gravação | Mensagem de erro; nenhuma navegação de sucesso | Formulário com API simulada |
+  | Desktop e mobile Chromium | Campos, unidades, fontes e ação Salvar acessíveis | Playwright desktop, iPhone e Android emulados |
+  | Observabilidade e métricas | Configuração não apresentada como runtime; testes sem tráfego comercial | Testes de UI/contrato e API local simulada |
+
+  Não existem novas chamadas de IA, campanha, consumo pago ou dependência de provedor no fluxo.
+- Validação local: suíte completa do backend (3.792 testes; nenhuma falha/erro; 23
+  dispensados pelas condições da suíte), contratos HTTP e arquitetura, build/JAR com
+  721 recursos externos verificados, testes e build TypeScript, Playwright desktop,
+  iPhone e Android emulados. A primeira rodada completa excedeu os 8 GiB da sandbox;
+  a segunda passou limitando somente o cache de contextos Spring de teste a 4,
+  sem alterar os critérios ou a implementação produtiva.
+
 ## 2026-07-29 — Cadastro das VPS do projeto
 
 - Decisão operacional: as VPS usadas pelos workflows passam a aparecer no Ops Monitor como camada própria `type=VPS`, separada dos módulos de aplicação.

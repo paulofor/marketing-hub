@@ -76,9 +76,9 @@ class MicroserviceDiscoveryServiceTest {
     Files.deleteIfExists(composeFile);
   }
 
-  /** Deve retornar uma lista vazia quando o arquivo Compose não existe. */
+  /** Deve descobrir a configuração embarcada mesmo sem arquivos do repositório no runtime. */
   @Test
-  void shouldReturnEmptyListWhenFileDoesNotExist() {
+  void shouldUsePackagedComposeWhenFileDoesNotExist() {
     MicroserviceDiscoveryService service =
         new MicroserviceDiscoveryService(
             "non-existent-compose.yml",
@@ -88,7 +88,59 @@ class MicroserviceDiscoveryServiceTest {
 
     List<DiscoveredMicroserviceDto> discovered = service.discoverFromCompose();
 
-    assertTrue(discovered.isEmpty());
+    assertTrue(discovered.stream().anyMatch(dto -> dto.serviceName().equals("backend")));
+    DiscoveredMicroserviceDto frontend =
+        discovered.stream()
+            .filter(dto -> dto.serviceName().equals("frontend"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(5173, frontend.hostPort());
+    assertEquals(5173, frontend.containerPort());
+    assertTrue(
+        discovered.stream().anyMatch(dto -> dto.serviceName().equals("process-execution-worker")));
+  }
+
+  /** Deve interpretar defaults e endereços sem consultar variáveis do ambiente produtivo. */
+  @Test
+  void shouldParseComposeDefaultsAndAddressBindings() throws IOException {
+    Path composeFile = Files.createTempFile("compose-bindings", ".yml");
+    Files.writeString(
+        composeFile,
+        """
+        services:
+          sample:
+            image: sample/application:version
+            ports:
+              - "${PUBLIC_BIND_IP:-127.0.0.1}:${PUBLIC_PORT:-18110}:8090/tcp"
+          unresolved:
+            ports:
+              - "${CUSTOM_PORT}:8120"
+        """);
+    try {
+      MicroserviceDiscoveryService service =
+          new MicroserviceDiscoveryService(
+              composeFile.toString(), "missing-workflows", "/health", hostInventoryRepository);
+      List<DiscoveredMicroserviceDto> discovered = service.discoverFromCompose();
+      assertEquals(2, discovered.size());
+      DiscoveredMicroserviceDto sample =
+          discovered.stream()
+              .filter(dto -> dto.serviceName().equals("sample"))
+              .findFirst()
+              .orElseThrow();
+      assertEquals(18110, sample.hostPort());
+      assertEquals(8090, sample.containerPort());
+      assertEquals("http://localhost:18110", sample.baseUrl());
+      DiscoveredMicroserviceDto unresolved =
+          discovered.stream()
+              .filter(dto -> dto.serviceName().equals("unresolved"))
+              .findFirst()
+              .orElseThrow();
+      assertEquals(null, unresolved.hostPort());
+      assertEquals(8120, unresolved.containerPort());
+      assertEquals("http://unresolved:8120", unresolved.baseUrl());
+    } finally {
+      Files.deleteIfExists(composeFile);
+    }
   }
 
   /** Deve descobrir o inventário de implantação diretamente dos workflows disponíveis. */

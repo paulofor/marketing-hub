@@ -38,6 +38,35 @@ function renderPage() {
 }
 
 describe("EditVpsHostInventoryPage", () => {
+  it("mantém referência pública sem inventar custo e informa falha ao salvar", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        host: "191.252.210.83",
+        cpu: "1 vCPU",
+        monthlyCostBrl: null,
+        costEvidence: "Referência pública; cobrança não confirmada",
+      },
+    });
+    vi.mocked(axios.put).mockRejectedValue(
+      new Error("Falha de integração simulada"),
+    );
+    renderPage();
+    expect(await screen.findByDisplayValue("1 vCPU")).toBeInTheDocument();
+    expect(screen.getByLabelText("Custo mensal BRL")).toHaveValue(null);
+    await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível salvar",
+    );
+    expect(screen.getByLabelText("Evidência de custo")).toHaveValue(
+      "Referência pública; cobrança não confirmada",
+    );
+    expect(axios.put).toHaveBeenCalledWith(
+      "/api/microservices/operational-inventory/hosts/191.252.210.83",
+      expect.objectContaining({ monthlyCostBrl: null }),
+    );
+    expect(screen.queryByText("Inventário salvo")).not.toBeInTheDocument();
+  });
+
   it("salva as características físicas e financeiras do VPS", async () => {
     (axios.get as any).mockResolvedValue({
       data: {
@@ -76,8 +105,8 @@ describe("EditVpsHostInventoryPage", () => {
 
     expect(await screen.findByDisplayValue("191.252.210.83")).toBeDisabled();
     await userEvent.type(screen.getByLabelText("CPU"), "4 vCPU");
-    await userEvent.type(screen.getByLabelText("Memória GB"), "8");
-    await userEvent.type(screen.getByLabelText("Disco GB"), "160");
+    await userEvent.type(screen.getByLabelText("Memória aproximada GB"), "8");
+    await userEvent.type(screen.getByLabelText("Disco raiz GiB"), "160");
     await userEvent.type(
       screen.getByLabelText("Sistema operacional"),
       "Ubuntu 24.04",

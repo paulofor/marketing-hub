@@ -1,5 +1,34 @@
 # Ciclos de aprendizado e vendas da Cadeia de Valor — v1
 
+## Uma mudança por ciclo e experimento — decisão de 02/10/2026
+
+O contrato `CHANGE_PER_CYCLE_V1` exige **novo ciclo e novo experimento para cada mudança
+das condições testadas**, inclusive novo criativo, vídeo, mensagem, CTA, amostra, destino,
+experiência, oferta, preço, público, canal ou investimento. A pausa, ausência de compras
+ou homologação pendente do predecessor não permite misturar variantes no mesmo registro.
+Uma variável principal por comparação; alterações adicionais pertencem a outros sucessores.
+
+Registrar predecessor, aprendizado com fonte e limites, hipótese, mudança principal,
+condições preservadas e métrica antes de executar o ajuste. O sucessor começa planejado,
+com versões, ativos, janela, atribuição e resultados próprios; não herda campanha,
+aprovações de outro contexto nem autorização financeira. Reutilizar somente artefatos
+compatíveis explicitamente vinculados e revalidar os gates afetados. Custos históricos
+permanecem históricos; custos novos desconhecidos não são zero.
+
+Retentar uma tarefa com contrato/artefato inalterados ou corrigir a leitura dos mesmos
+fatos não constitui mudança da condição testada. Preservar o erro e a correção no diário.
+Se a correção muda a experiência entregue ou a variável da comparação, criar sucessor.
+Esta regra prevalece sobre a exceção anterior de alterar versões no mesmo experimento,
+inclusive quando a motivação é técnica. Não reclassificar retroativamente ciclos antigos.
+Publicada a política, ela governa também novas decisões em ciclos ainda abertos de versões
+anteriores: seus BPMs, versões, eventos e aprovações permanecem intactos, mas uma nova mudança
+segue para sucessor. A leitura histórica não executa nem migra ocorrências.
+
+O fluxo continua dentro do Processo 6 e dos BPMs existentes. Preparar o sucessor não
+autoriza mídia, produção paga ou publicação comercial. Para um criativo novo, o retorno
+é ao Processo 4 no contexto do novo ciclo/experimento; não mudar simultaneamente produto,
+preço, público e página sem declarar e separar as hipóteses.
+
 ## Continuidade após aprovação dos vídeos — decisão de 14/09/2026
 
 A aprovação humana registrada em Vídeos é a fonte de verdade para o uso da peça
@@ -116,17 +145,17 @@ predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.
 - Identidade própria, produto, versão exata da cadeia, experimento único, predecessor e versão do
   produto. Nenhum ciclo pode usar experimento de outro produto ou compartilhar suas métricas.
 - Pergunta verificável, variável principal, resultado esperado, canal, público, oferta e critérios
-  de decisão declarados antes da publicação. Uma revisão técnica é retrabalho no mesmo ciclo.
+  de decisão declarados antes da publicação. Retentativa do contrato inalterado permanece no ciclo; mudança das condições testadas exige sucessor.
 - Aprendizado → planejamento → ajuste de produto/comunicação → homologação → autorização →
   publicação → medição → decisão. A conclusão comprovada libera a próxima etapa no backend.
 - Registro de etapa é uma decisão de governança com autoria identificada ou uma referência
   verificada a execução BPM. Um texto livre não se transforma em aprovação automática de Psique,
   Têmis ou preflight.
-- Reprovação funcional retorna ao ajuste do mesmo ciclo, preserva a tentativa e invalida as
-  aprovações posteriores. Nova versão retorna obrigatoriamente à homologação.
-- Correção exclusivamente técnica após publicação exige pausa prévia, declaração de que hipótese,
-  oferta e aquisição permanecem iguais, versão nova, homologação e publicação posterior à nova
-  autorização. Preserva o experimento e suas métricas cumulativas. Alteração comercial usa sucessor.
+- Reprovação funcional preserva a tentativa. Na política CHANGE_PER_CYCLE_V1, solução que muda
+  a candidata segue no sucessor e exige homologação; repetir o mesmo contrato permanece auditável.
+- Mudança da versão ou experiência entregue, mesmo por correção técnica, usa novo ciclo e
+  experimento na política CHANGE_PER_CYCLE_V1. Preservar a falha, a exposição e os resultados
+  anteriores. Corrigir somente a conciliação dos fatos não substitui a candidata.
 - O link para executar uma atividade transporta `learningCycleId`. O backend valida produto,
   composição da cadeia e ciclo aberto antes de fixar `experiment:<id>`; a construção mantém a
   referência canônica da mesma candidata. A tarefa recebe hipótese, memória anterior e decisões do ciclo.
@@ -265,7 +294,8 @@ compatível bloqueia explicitamente, sem reutilizar silenciosamente o contrato d
   a partir de dados inválidos e sem criar sucessor apenas para esconder erro técnico.
 - **Solicitar escala:** exige vendas líquidas, contribuição positiva e evidências de entrega, uso e
   satisfação. Abre nova autorização explícita; não aumenta orçamento nem publica automaticamente.
-  Uma referência histórica adotada sem homologação deve orientar um sucessor homologado.
+  Na política CHANGE_PER_CYCLE_V1, expansão de investimento é planejada em novo ciclo e
+  experimento, com autorização própria. Uma referência histórica sem homologação exige sucessor homologado.
 - **Encerrar / inconclusivo:** preservar contexto, versão, amostra, gastos, resultados e motivos.
 
 Métricas do ciclo preservam origem, período, moeda, denominadores e qualidade dos dados. Tráfego de
@@ -354,8 +384,8 @@ A versão v1 fica no histórico como RETIRED; somente v2 aparece como versão pu
 - A evidência técnica declara legendas, reprodução opcional, CTA acessível na entrada, fallback, mobile
   e dados de teste segregados. Psique e Têmis continuam independentes; texto de operador não
   fabrica parecer de agente nem dispensa a homologação canônica.
-- Falha retorna à correção na mesma iteração com causa e evidência; mudança comercial depois da
-  exposição exige sucessor. Aprendizado, briefing e referências de mídia permanecem no histórico.
+- Falha da mesma execução permite retentativa com causa e evidência; mudança da candidata
+  exige sucessor na política CHANGE_PER_CYCLE_V1, inclusive antes da exposição. Aprendizado, briefing e referências de mídia permanecem no histórico.
 - A leitura comercial prioriza sessão atribuída, início, primeiro resultado, checkout, compra,
   receita e contribuição. Reprodução/conclusão de vídeo são métricas auxiliares, separadas por
   finalidade e ativo; produzir dois vídeos não demonstra qual deles causou aumento de conversão.

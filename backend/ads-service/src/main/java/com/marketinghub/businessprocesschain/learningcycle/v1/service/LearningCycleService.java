@@ -820,8 +820,8 @@ public class LearningCycleService {
         "OPEN".equals(cycle.getStatus()),
         "Este ciclo já foi encerrado e seu histórico é imutável.");
     require(
-        actions(cycle.getStage()).contains(request.action()),
-        "Comando incompatível com a etapa atual.");
+        cycleActions(cycle).contains(request.action()),
+        "Comando incompatível com a etapa atual. Mudanças nas condições testadas exigem novo ciclo e novo experimento quando previstos pelo BPM.");
     require(
         request.evidence().isObject() && input.length() <= 64000,
         "Envie evidência estruturada de até 64 KB.");
@@ -1020,7 +1020,8 @@ public class LearningCycleService {
   }
 
   /**
-   * Valida movimento e prova da versão; o aceite financeiro não substitui a preparação comercial.
+   * Valida movimento e prova da versão; mudanças seguem a política vigente e preservam o
+   * predecessor. O aceite financeiro não substitui a preparação comercial.
    */
   private void apply(
       LearningSalesCycle cycle, Experiment experiment, LearningCycleCommand request, Instant now) {
@@ -1043,7 +1044,7 @@ public class LearningCycleService {
           case "ADJUSTMENT" -> {
             require(
                 cycle.getProductVersion().equals(text(data, "productVersion")),
-                "O ajuste precisa corresponder à versão declarada. Use Devolver para correção para trocar a versão.");
+                "O ajuste precisa corresponder à versão declarada. Consulte os comandos do ciclo para registrar uma mudança com histórico preservado.");
             text(data, "changeEvidence");
           }
           case "VIDEO_BRIEF" -> {
@@ -1109,12 +1110,19 @@ public class LearningCycleService {
         cycle.setStage("DECISION");
       }
       case ADJUST -> {
-        JsonNode metrics = latestMetrics(cycle);
-        requireDeliveryResolved(metrics);
-        require(
-            metrics.path("dataValid").asBoolean(false)
-                && metrics.path("testDataExcluded").asBoolean(false),
-            "Corrija os dados antes de concluir um ajuste comercial.");
+        boolean beforeExposure =
+            separateChanges(cycle)
+                && experiment.getStatus() == ExperimentStatus.PLANNED
+                && experiment.getFacebookReleaseRequestedAt() == null
+                && !evidence.operated(experiment);
+        if (!beforeExposure) {
+          JsonNode metrics = latestMetrics(cycle);
+          requireDeliveryResolved(metrics);
+          require(
+              metrics.path("dataValid").asBoolean(false)
+                  && metrics.path("testDataExcluded").asBoolean(false),
+              "Corrija os dados antes de concluir um ajuste comercial.");
+        }
         require(
             experiment.getStatus() != ExperimentStatus.RUNNING,
             "Pause ou encerre o experimento pelo fluxo oficial antes de preparar o sucessor.");
@@ -1345,7 +1353,7 @@ public class LearningCycleService {
             : List.<LearningCycleResponse.ApprovalOption>of();
     var commands =
         "OPEN".equals(cycle.getStatus())
-            ? actions(cycle.getStage()).stream()
+            ? cycleActions(cycle).stream()
                 .map(
                     action -> {
                       String blocker =
@@ -1374,7 +1382,9 @@ public class LearningCycleService {
                               .contains(action)) blocker = deliveryBlocker(metrics);
                       return new LearningCycleResponse.CommandOption(
                           action.name(),
-                          actionLabel(action, cycle.getStage()),
+                          action == Action.ADJUST && separateChanges(cycle)
+                              ? "Registrar mudança e preparar novo ciclo e experimento"
+                              : actionLabel(action, cycle.getStage()),
                           blocker == null,
                           blocker == null
                               ? "O backend conferirá os requisitos e preservará a decisão."
@@ -1644,6 +1654,29 @@ public class LearningCycleService {
   /** Lê a versão exata do BPM persistido no ciclo, sem migrar ocorrências em andamento. */
   private boolean videoWorkflow(LearningSalesCycle cycle) {
     return processes.findById(cycle.getProcessDefinitionId()).orElseThrow().getVersionNumber() >= 2;
+  }
+
+  /** Aplica a política vigente às próximas mudanças sem reescrever o BPM ou eventos históricos. */
+  private boolean separateChanges(LearningSalesCycle cycle) {
+    var process = processes.findById(cycle.getProcessDefinitionId()).orElseThrow();
+    return changePolicy(process)
+        || processes
+            .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(PROCESS_CODE, "PUBLISHED")
+            .map(this::changePolicy)
+            .orElse(false);
+  }
+
+  /** Reconhece somente o contrato explícito, mantendo o comportamento anterior antes da adoção. */
+  private boolean changePolicy(com.marketinghub.businessprocess.BusinessProcessDefinition process) {
+    return CHANGE_PER_CYCLE.equals(
+        json.read(process.getDiagramJson()).path("experimentChangePolicy").asText());
+  }
+
+  /**
+   * Usa a mesma política na apresentação e na execução dos comandos, inclusive chamadas diretas.
+   */
+  private List<Action> cycleActions(LearningSalesCycle cycle) {
+    return actions(cycle.getStage(), separateChanges(cycle));
   }
 
   /** Mantém a tela legível se uma mídia desaparecer, permitindo devolver para correção. */

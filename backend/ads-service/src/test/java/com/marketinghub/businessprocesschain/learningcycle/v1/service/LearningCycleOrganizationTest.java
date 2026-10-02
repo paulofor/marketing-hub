@@ -55,6 +55,8 @@ class LearningCycleOrganizationTest {
   void resolvesPlacementAndFiltersUnknownReturnTargets() {
     var entry = organization.describe(chain(), cycleProcess(), 4L, null);
     assertThat(entry.canStartCycle()).isTrue();
+    assertThat(entry.guidance())
+        .contains("novo criativo", "novo ciclo e novo experimento", "Retentativa", "históricos");
     assertThat(entry.sequenceNumber()).isEqualTo(6);
     assertThat(entry.activityId()).isEqualTo("learningCycle");
     assertThat(entry.activitySequenceNumber()).isEqualTo(1);

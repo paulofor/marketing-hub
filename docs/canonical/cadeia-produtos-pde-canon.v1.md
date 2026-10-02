@@ -2,6 +2,37 @@
 
 ## Objetivo
 
+### Uma mudança, um novo ciclo e um novo experimento — decisão de 02/10/2026
+
+Cada mudança das condições testadas abre **novo ciclo e novo experimento**, ligados ao
+predecessor: criativo/vídeo, mensagem, CTA, demonstração/amostra, destino, experiência,
+oferta, preço, público, canal ou condições de investimento. Isso vale também quando o
+experimento anterior está pausado, sem vendas ou com homologação pendente. Não substituir
+o criativo do experimento anterior para testar outra comunicação.
+
+Antes do ajuste, registrar aprendizado, fonte, hipótese, uma mudança principal e condições
+mantidas. O novo par ciclo/experimento tem identidade, versões, ativos, atribuição, janela,
+custos e resultados próprios. O predecessor conserva configuração, tentativas, aprovações,
+custos, métricas e limitações; uma comparação antes/depois não comprova causalidade.
+Correção de execução que apenas repete o mesmo contrato/artefato sem alterar as condições
+testadas é retentativa auditada, não nova hipótese. Alterar a experiência efetivamente
+entregue exige sucessor, mesmo quando a motivação é técnica. Corrigir a conciliação dos
+fatos históricos não cria vendas nem transfere resultados para o sucessor.
+
+Os seis processos aplicam a regra nas suas atividades: Descoberta preserva fontes;
+Estratégia delimita a mudança e Economia define limites próprios; Construção e Comunicação
+trabalham na candidata do sucessor; Homologação confere as identidades e renova gates
+afetados; Operação mede cada experimento separadamente e retorna à atividade da causa.
+Um criativo novo com a mesma experiência não obriga reconstruir o produto: reutilizar
+somente artefatos compatíveis e rastreáveis, sem transportar aprovações contextuais,
+autorização de gasto ou resultados. Orçamento, campanha e consumo pago continuam sujeitos
+aos seus gates. A regra não autoriza iniciar experimentos automaticamente.
+
+Esta decisão prevalece sobre orientações anteriores que permitiam mudar a versão ou as
+condições testadas dentro do mesmo experimento. As versões anteriores da cadeia e as
+execuções já registradas permanecem históricas; novas definições explicitam o contrato
+`CHANGE_PER_CYCLE_V1`. Detalhes em `ciclos-aprendizado-vendas-canon.v1.md`.
+
 A cadeia adota o ciclo executável descrito em `ciclos-aprendizado-vendas-canon.v1.md`: cada
 experimento possui memória própria e um losango de decisão comercial que orienta continuidade,
 correção, sucessor, solicitação de escala ou encerramento. O retorno respeita a causa comprovada.

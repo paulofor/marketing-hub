@@ -90,7 +90,7 @@ public class LearningCycleOrganization {
             && "PUBLISHED".equals(parent.getProcessDefinition().getStatus())
             && "PUBLISHED".equals(cycleProcess.getStatus()),
         integrated
-            ? "Após consolidar os resultados, abra o ciclo deste produto e experimento. Registre a decisão e execute a próxima atividade orientada. Uma mudança comercial abre um sucessor; uma correção técnica preserva o experimento e exige revalidação."
+            ? "Cada mudança das condições testadas, inclusive novo criativo, exige novo ciclo e novo experimento ligados ao anterior. Registre uma mudança principal, preserve custos e resultados e execute o ajuste no sucessor. Retentativa do mesmo contrato não muda a hipótese. Consulte a política da versão selecionada; ciclos históricos preservam seus contratos."
             : "Esta versão histórica da cadeia ainda não chama o ciclo no BPM. Consulte o histórico ou selecione a cadeia vigente para iniciar uma nova iteração.",
         workspace,
         activeCycle == null

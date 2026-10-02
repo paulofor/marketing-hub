@@ -6,6 +6,13 @@ info:
   version: 1.0.0
   description: >-
     O backend governa etapas, memória, autoria, idempotência e decisões por experimento.
+    Definições com diagram.experimentChangePolicy=CHANGE_PER_CYCLE_V1 exigem novo ciclo
+    e experimento para cada mudança: REWORK, SCALE e AUTHORIZE_SCALE são recusados.
+    ADJUST registra causa, aprendizado, hipótese e retorno sem alterar o experimento.
+    Antes de exposição, um experimento PLANNED pode encerrar a preparação sem métricas
+    fictícias. Depois de exposição, a conciliação continua obrigatória.
+    Publicada a política, novas mudanças de ciclos anteriores também exigem sucessor,
+    preservando suas definições, versões e eventos históricos.
     A preparação comercial incompleta não bloqueia o aceite inicial do orçamento; revisões pagas e ativação mantêm seus gates. Nenhuma rota ativa campanha ou cria venda. COMPLETE em AUTHORIZATION, após confirmação explícita,
     valida versão, janela e homologação vigentes e materializa os limites de mídia atomicamente.
     Ao entrar em MEASUREMENT, o backend concilia automaticamente analytics atribuído,
@@ -218,6 +225,8 @@ paths:
     post:
       summary: Aplicar decisão com revisão esperada e recibo idempotente
       description: >-
+        Sob CHANGE_PER_CYCLE_V1, mudanças usam ADJUST e sucessor; REWORK, SCALE e
+        AUTHORIZE_SCALE não são oferecidos nem aceitos. Antes da adoção dessa política,
         COMPLETE avança a etapa após validar sua evidência. REWORK exige nova versão e retorna
         ao ajuste antes da publicação; após publicação, exige experimento pausado e technicalOnly=true
         (mesma hipótese, oferta e aquisição), com nova homologação e publicação oficial posterior.

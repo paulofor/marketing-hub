@@ -1,0 +1,2125 @@
+[
+  {
+    "processCode": "landing-page-generation",
+    "name": "Geração e aprovação independente de landing",
+    "purpose": "Materializar persuasão pré-compra com Íris e manter três gates independentes. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.",
+    "ownerName": "Backend de Experiências PDE",
+    "triggerDescription": "Contrato de comunicação, produto, prova e checkout aprovados.",
+    "outcomeDescription": "Landing técnica, humana e comercialmente aprovada, sem publicação automática.",
+    "versionNumber": 7,
+    "technicalReference": "docs/canonical/ciclos-aprendizado-vendas-canon.v1.md / CHANGE_PER_CYCLE_V1",
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Comunicação e produto aprovados",
+          "owner": "Backend",
+          "description": "Mensagem, oferta, prova, checkout e objetivo chegam congelados."
+        },
+        {
+          "id": "select",
+          "type": "TASK",
+          "label": "Selecionar provas reais",
+          "owner": "Íris",
+          "description": "Seleciona ativos de Dédalo com linhagem e bloqueia reconstrução fictícia. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Materializar destino e prova no contexto do sucessor quando mudarem; preservar a publicação anterior e atribuir captura, versão, oferta e eventos ao experimento correto.",
+          "responsibleAgentKeys": [
+            "communication-director"
+          ],
+          "responsibilityDomain": "COMMUNICATION_MATERIALIZATION",
+          "executionResourceCode": "iris-communication-worker"
+        },
+        {
+          "id": "strategy",
+          "type": "TASK",
+          "label": "Definir arquitetura de conversão da página",
+          "owner": "Íris",
+          "description": "Materializa hierarquia, narrativa e copy sem redefinir posicionamento, oferta ou preço. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Materializar destino e prova no contexto do sucessor quando mudarem; preservar a publicação anterior e atribuir captura, versão, oferta e eventos ao experimento correto.",
+          "responsibleAgentKeys": [
+            "communication-director"
+          ],
+          "responsibilityDomain": "COMMUNICATION_MATERIALIZATION",
+          "executionResourceCode": "iris-communication-worker"
+        },
+        {
+          "id": "compose",
+          "type": "TASK",
+          "label": "Materializar composição visual",
+          "owner": "Íris",
+          "description": "Define composição sensorial e usa somente provas aprovadas sem autoaprovação. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Materializar destino e prova no contexto do sucessor quando mudarem; preservar a publicação anterior e atribuir captura, versão, oferta e eventos ao experimento correto.",
+          "responsibleAgentKeys": [
+            "communication-director"
+          ],
+          "responsibilityDomain": "COMMUNICATION_MATERIALIZATION",
+          "executionResourceCode": "iris-communication-worker"
+        },
+        {
+          "id": "html",
+          "type": "TASK",
+          "label": "Construir HTML completo",
+          "owner": "Íris",
+          "description": "Entrega HTML responsivo e acessível com ativos, checkout e instrumentação canônicos. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Materializar destino e prova no contexto do sucessor quando mudarem; preservar a publicação anterior e atribuir captura, versão, oferta e eventos ao experimento correto.",
+          "responsibleAgentKeys": [
+            "communication-director"
+          ],
+          "responsibilityDomain": "COMMUNICATION_MATERIALIZATION",
+          "executionResourceCode": "iris-communication-worker"
+        },
+        {
+          "id": "technical",
+          "type": "TASK",
+          "label": "Validar técnica e fidelidade",
+          "owner": "Quality Review",
+          "description": "Valida desktop, mobile, links, tracking, desempenho e correspondência dos ativos. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Materializar destino e prova no contexto do sucessor quando mudarem; preservar a publicação anterior e atribuir captura, versão, oferta e eventos ao experimento correto."
+        },
+        {
+          "id": "customer",
+          "type": "TASK",
+          "label": "Avaliar experiência humana da landing",
+          "owner": "Psique",
+          "description": "Avalia clareza, desejo, confiança, prazer sensorial, objeções e esforço. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Materializar destino e prova no contexto do sucessor quando mudarem; preservar a publicação anterior e atribuir captura, versão, oferta e eventos ao experimento correto.",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ],
+          "responsibilityDomain": "HUMAN_EXPERIENCE_REVIEW"
+        },
+        {
+          "id": "commercial",
+          "type": "TASK",
+          "label": "Revisar integridade comercial da landing",
+          "owner": "Têmis",
+          "description": "Verifica verdade, prova, fidelidade, direitos e compliance sem criar a correção. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Materializar destino e prova no contexto do sucessor quando mudarem; preservar a publicação anterior e atribuir captura, versão, oferta e eventos ao experimento correto.",
+          "responsibleAgentKeys": [
+            "meta-ad-approver"
+          ],
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Landing aprovada nos três gates?",
+          "owner": "Backend",
+          "description": "Exige técnica, experiência e integridade aprovadas."
+        },
+        {
+          "id": "human",
+          "type": "TASK",
+          "label": "Autorizar publicação da versão",
+          "owner": "Operador humano",
+          "description": "Autoriza explicitamente a publicação e preserva rollback. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Materializar destino e prova no contexto do sucessor quando mudarem; preservar a publicação anterior e atribuir captura, versão, oferta e eventos ao experimento correto."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Landing pronta para publicação",
+          "owner": "Backend",
+          "description": "Nenhuma publicação ou campanha é feita pelo subprocesso."
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "select"
+        },
+        {
+          "from": "select",
+          "to": "strategy"
+        },
+        {
+          "from": "strategy",
+          "to": "compose"
+        },
+        {
+          "from": "compose",
+          "to": "html"
+        },
+        {
+          "from": "html",
+          "to": "technical"
+        },
+        {
+          "from": "technical",
+          "to": "customer"
+        },
+        {
+          "from": "customer",
+          "to": "commercial"
+        },
+        {
+          "from": "commercial",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "human"
+        },
+        {
+          "from": "human",
+          "to": "end"
+        }
+      ]
+    },
+    "processType": "SUBPROCESS",
+    "parentProcessCode": "pde-communication-sales-journey",
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "pde-opportunity-discovery",
+    "name": "Descoberta factual da oportunidade PDE",
+    "purpose": "Encontrar situações concretas em que o desejo vira ação, qualificar evidências por candidata e aprofundar lacunas com comportamento passado antes de entregar o dossiê a Atena. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.",
+    "ownerName": "Argos",
+    "triggerDescription": "Novo ciclo de pesquisa ou sinal real de mercado.",
+    "outcomeDescription": "Dossiê factual com ocasiões de compra, fontes qualificadas, relatos públicos rastreáveis, lacunas e limites auditáveis; somente então pronto para decisão estratégica.",
+    "versionNumber": 10,
+    "technicalReference": "docs/canonical/ciclos-aprendizado-vendas-canon.v1.md / CHANGE_PER_CYCLE_V1",
+    "diagram": {
+      "flows": [
+        {
+          "to": "marketEvidence",
+          "from": "start"
+        },
+        {
+          "to": "candidateFound",
+          "from": "marketEvidence"
+        },
+        {
+          "to": "candidateGapDeepening",
+          "from": "candidateFound",
+          "condition": "duas ou três candidatas factuais"
+        },
+        {
+          "to": "end",
+          "from": "candidateFound",
+          "condition": "nenhuma candidata factual"
+        },
+        {
+          "to": "gate",
+          "from": "candidateGapDeepening"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Pergunta de mercado recebida",
+          "owner": "Backend",
+          "description": "O tema, público, canal, restrições, objetivo e origem da pesquisa ficam congelados."
+        },
+        {
+          "id": "marketEvidence",
+          "type": "TASK",
+          "label": "Reunir evidências factuais e situações de compra",
+          "owner": "Argos",
+          "description": "Entregar duas ou três candidatas com ocasião concreta, resultado desejado, dificuldade e alternativa usada; qualificar ofertas atuais por preço, entrega, público, aderência e data; distinguir linguagem de vendedores, relatos de clientes, anúncios e artigos científicos. Registrar lacunas por candidata, sem escolher mercado, oferta ou produto. Aceite: fontes rastreáveis, atuais quando a decisão exigir e separadas por função; referência antiga ou indireta permanece marcada. Medir cobertura, atualidade, independência, ofertas aderentes e custo conhecido da coleta. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Situação reconhecível, satisfação possível (orgulho, alívio, segurança ou praticidade), linguagem pública, ocasião, alternativas e contrapontos com URL, data e papel da fonte. Aceite: Separar relato espontâneo, publicidade e inferência; não escolher estratégia nem apresentar hipótese emocional como sentimento comprovado. Medir: Cobertura, atualidade, independência e lacunas das fontes. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Argos preserva fontes, datas, contrapontos e lacunas como memória; nova pesquisa não comprova oportunidade nem cria experimento automaticamente.",
+          "responsibilityDomain": "MARKET_EVIDENCE",
+          "responsibleAgentKeys": [
+            "market-radar"
+          ]
+        },
+        {
+          "id": "candidateGapDeepening",
+          "type": "TASK",
+          "label": "Aprofundar lacunas da candidata",
+          "owner": "Argos",
+          "description": "Entregar um plano por candidata com pergunta pendente, fonte adequada, evidência necessária, contraponto, consultas executadas e limite de consultas/custo. Reutilizar fatos válidos e investigar automaticamente relatos públicos de uso, compra, desistência e reclamação; preservar URL, data, trecho, papel da fonte e limites de interpretação. Aceite: preservar identidades das candidatas, cobrir todas, registrar o que resolveu ou não cada lacuna e parar sem aprovação quando não houver progresso ou o teto for atingido. Não exige entrevistas, recrutamento nem contato externo. Relatos públicos não comprovam vendas do nosso produto. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Evidência específica que sustente ou contradiga a satisfação proposta e a ocasião em que o benefício volta a ser necessário. Aceite: Reutilizar fontes válidas, aprofundar somente lacunas com consultas e limites aprovados; sem entrevistas, recrutamento ou opinião solicitada. Medir: Lacunas resolvidas ou preservadas, consultas, custo conhecido e limites de validade. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Argos preserva fontes, datas, contrapontos e lacunas como memória; nova pesquisa não comprova oportunidade nem cria experimento automaticamente.",
+          "responsibilityDomain": "MARKET_EVIDENCE",
+          "responsibleAgentKeys": [
+            "market-radar"
+          ]
+        },
+        {
+          "id": "candidateFound",
+          "type": "GATEWAY",
+          "label": "Há candidatas factuais?",
+          "owner": "Backend",
+          "description": "Sem candidata factual, encerra honestamente sem entrevista, nova busca ou handoff; com duas ou três candidatas, inicia pesquisa pública dirigida às lacunas."
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Dossiê aprofundado suficiente?",
+          "owner": "Backend",
+          "description": "Exige as duas atividades, cobertura das candidatas, duas fontes comportamentais independentes por candidata promovida, alternativas comerciais, trechos rastreáveis e limites comprovados. Lacuna persistente mantém RESEARCH_MORE; o gate não fabrica oportunidade."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Pesquisa encerrada ou dossiê entregue a Atena",
+          "owner": "Backend",
+          "description": "Sem candidata, a pesquisa termina sem fabricar avanço. Com dossiê factual, Atena pode definir a proposta; Plutus deve validar a economia; Dédalo deve materializar a menor experiência útil; utilidade humana e compra rentável continuam sendo comprovadas somente nos processos posteriores com compras líquidas, reembolsos, custo integral e margem."
+        }
+      ],
+      "researchContractVersion": "PUBLIC_SOURCES_V1",
+      "satisfactionContinuityVersion": "SATISFACTION_CONTINUITY_V1"
+    },
+    "processType": "VALUE_PROCESS",
+    "parentProcessCode": null,
+    "executionScope": "INDEPENDENT"
+  },
+  {
+    "processCode": "pde-commercial-plan-offer",
+    "name": "Estratégia, economia e homologação multiagente do PDE",
+    "purpose": "Selecionar uma candidata factual para prototipação privada, limitar a economia e projetar o harness sem antecipar prontidão comercial. A aquisicao comercial usa exclusivamente midia paga no Instagram; convite individual, base propria e divulgacao organica nao sao canais executaveis. Atena define o nome interno e o tipo catalogado antes de Plutus e Dedalo. O contrato nasce sem recrutamento, convite, leitura privada ou opinião solicitada; agentes comprovam prontidão e somente o mercado comprova demanda. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.",
+    "ownerName": "Backend de Planejamento Comercial",
+    "triggerDescription": "Candidatas DOSSIER_READY com evidências factuais de Argos.",
+    "outcomeDescription": "Estratégia, identidade, economia e arquitetura prontas para construção e homologação multiagente, sem alegar validação humana, venda ou receita.",
+    "versionNumber": 12,
+    "technicalReference": "docs/canonical/ciclos-aprendizado-vendas-canon.v1.md / CHANGE_PER_CYCLE_V1",
+    "diagram": {
+      "flows": [
+        {
+          "to": "marketStrategy",
+          "from": "start"
+        },
+        {
+          "to": "economics",
+          "from": "marketStrategy"
+        },
+        {
+          "to": "productArchitecture",
+          "from": "economics"
+        },
+        {
+          "to": "gate",
+          "from": "productArchitecture"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Dossiês factuais prontos",
+          "owner": "Backend",
+          "description": "Argos entrega candidatas DOSSIER_READY sem exigir protótipo que ainda não existe."
+        },
+        {
+          "id": "marketStrategy",
+          "type": "TASK",
+          "label": "Selecionar candidata para homologação multiagente",
+          "owner": "Atena",
+          "description": "Entregar estratégia MARKET_STRATEGY_V4 com hipótese, ocasião, alternativa, valor pronto, fontes públicas vigentes e plano PDE_AGENT_VALIDATION_V1. Aceite: exatamente três cenários e três dispositivos, nenhum recrutamento, convite, leitura privada, opinião solicitada, pessoa fictícia, pagamento, publicação, campanha ou gasto. Agentes não constituem prova de mercado. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Uma satisfação principal como hipótese, situação, resultado funcional que pode proporcioná-la, fonte/data, explicação concorrente, identidade do produto e ocasião futura de utilidade. Aceite: Comparar orgulho, alívio ou outra hipótese sustentada, escolher uma; preservar tipo, oferta e canal aprovados, sem inferir emoção individual. Medir: Primeira interação por variante/janela, compras e contribuição; linguagem reconhecível não comprova venda. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Atena declara hipótese, predecessor, variável principal e condições mantidas; Plutus verifica limites próprios e custos desconhecidos; Dédalo delimita a candidata. Um criativo novo não exige mudar também o produto.",
+          "responsibilityDomain": "MARKET_STRATEGY",
+          "responsibleAgentKeys": [
+            "experiment-strategist"
+          ]
+        },
+        {
+          "id": "economics",
+          "type": "TASK",
+          "label": "Limitar economia da homologação",
+          "owner": "Plutus",
+          "description": "Entregar preço e custo como hipóteses, envelope técnico finito e contribuição projetada. Aceite: custo auditável por pacote, nenhuma cobrança real e nenhum orçamento de mídia autorizado. Medir custo real da construção sem declarar venda ou margem comprovada. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Economia da entrega e de eventual amostra: custo integral, tentativas, suporte, usos sem compra, teto por uso/total e continuidade paga. Aceite: Reutilizar parecer válido; custos desconhecidos permanecem pendentes, cenários conservador/esperado/intenso e limites aprovados sem novo gasto. Medir: CAC, compras líquidas, custo por entrega útil e contribuição após aquisição e todos os custos variáveis. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Atena declara hipótese, predecessor, variável principal e condições mantidas; Plutus verifica limites próprios e custos desconhecidos; Dédalo delimita a candidata. Um criativo novo não exige mudar também o produto.",
+          "responsibilityDomain": "FINANCIAL_VALIDATION",
+          "responsibleAgentKeys": [
+            "financial-agent"
+          ]
+        },
+        {
+          "id": "productArchitecture",
+          "type": "TASK",
+          "label": "Arquitetar protótipo para cenários multiagente",
+          "owner": "Dédalo",
+          "description": "Entregar jornada, componentes, audiovisual, acesso e instrumentação para homologação ADHERENT, RECOVERY e SAFETY em desktop, iPhone e Pixel. Aceite: resultado pronto em até dez minutos, tráfego interno segregado e efeitos externos nulos. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Relação entre satisfação pretendida, ação, resultado utilizável, vantagem sobre alternativas, identidade e retomada quando contratada. Aceite: Prova adequada ao formato aprovado, entradas necessárias e contexto preservado; demonstração ou degustação somente quando prevista, com limites de Plutus. Medir: Esforço, erros, tempo até benefício e aplicação observável, separados de satisfação e compra. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Atena declara hipótese, predecessor, variável principal e condições mantidas; Plutus verifica limites próprios e custos desconhecidos; Dédalo delimita a candidata. Um criativo novo não exige mudar também o produto.",
+          "responsibilityDomain": "PDE_CONSTRUCTION",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ]
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Contratos aptos à homologação multiagente?",
+          "owner": "Backend",
+          "description": "O backend bloqueia contratos humanos ou incompletos. Prontidão técnica permite construir; demanda continuará dependendo de comportamento voluntário, pagamento reconciliado e contribuição positiva."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Produto PLANNED encaminhado à construção",
+          "owner": "Backend",
+          "description": "Materializa produto PLANNED com PDE_AGENT_VALIDATION_V1, sem contato, publicação, campanha, pagamento ou gasto."
+        }
+      ],
+      "schemaVersion": "PDE_COMMERCIAL_PLAN_OFFER_V10",
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1",
+      "validationContractVersion": "MARKET_STRATEGY_V4",
+      "satisfactionContinuityVersion": "SATISFACTION_CONTINUITY_V1",
+      "agentValidationContractVersion": "PDE_AGENT_VALIDATION_V1",
+      "productIdentityContractVersion": "PRODUCT_IDENTITY_V1",
+      "commercialAcquisitionPolicyVersion": "PAID_INSTAGRAM_ONLY_V1"
+    },
+    "processType": "VALUE_PROCESS",
+    "parentProcessCode": null,
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "pde-construction-approval",
+    "name": "Protótipo, validação multiagente e aprovação do PDE",
+    "purpose": "Homologar a versão real do PDE e transformar toda rejeição funcional em correção orientada, versionada e revalidada antes da preparação comercial. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.",
+    "ownerName": "Backend de Construção PDE",
+    "triggerDescription": "Produto PLANNED em PLAY com contrato multiagente; rejeição funcional abre a rota condicional de correção sem apagar evidência anterior.",
+    "outcomeDescription": "PDE liberado para comunicação em STOP ou encaminhado a Dédalo com causa-raiz, ação clara, nova versão e retorno obrigatório à homologação técnica.",
+    "versionNumber": 11,
+    "technicalReference": "docs/canonical/ciclos-aprendizado-vendas-canon.v1.md / CHANGE_PER_CYCLE_V1",
+    "diagram": {
+      "flows": [
+        {
+          "to": "journey",
+          "from": "start"
+        },
+        {
+          "to": "deliverables",
+          "from": "journey"
+        },
+        {
+          "to": "audiovisual",
+          "from": "deliverables"
+        },
+        {
+          "to": "access",
+          "from": "audiovisual"
+        },
+        {
+          "to": "technicalHomologation",
+          "from": "access"
+        },
+        {
+          "to": "psiqueAdherent",
+          "from": "technicalHomologation"
+        },
+        {
+          "to": "psiqueRecovery",
+          "from": "psiqueAdherent"
+        },
+        {
+          "to": "psiqueSafety",
+          "from": "psiqueRecovery"
+        },
+        {
+          "to": "commercialIntegrityReview",
+          "from": "psiqueSafety"
+        },
+        {
+          "to": "agentValidationGate",
+          "from": "commercialIntegrityReview"
+        },
+        {
+          "to": "gate",
+          "from": "agentValidationGate"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "technicalHomologation",
+          "kind": "REWORK",
+          "label": "Ajustar"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "psiqueAdherent",
+          "kind": "REWORK",
+          "label": "Ajustar"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "psiqueRecovery",
+          "kind": "REWORK",
+          "label": "Ajustar"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "psiqueSafety",
+          "kind": "REWORK",
+          "label": "Ajustar"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "commercialIntegrityReview",
+          "kind": "REWORK",
+          "label": "Ajustar"
+        },
+        {
+          "to": "technicalHomologation",
+          "from": "prototypeCorrection",
+          "kind": "REWORK",
+          "label": "Nova versão"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Produto planejado liberado",
+          "owner": "Backend",
+          "description": "O backend inicia uma ocorrência versionada sem reescrever evidências históricas."
+        },
+        {
+          "id": "journey",
+          "type": "TASK",
+          "label": "Construir jornada privada de valor",
+          "owner": "Dédalo",
+          "description": "Entregar: jornada privada do formato aprovado com primeira ação evidente, apenas entradas necessárias e benefício aplicável. Aceite: justificar cada pergunta, manter próximo botão e botão final alcançáveis no celular sem rolagem inesperada ou conteúdo bloqueante; cumprir a promessa inicial e explicar o próximo passo. Medir: início, conclusão das entradas e resultado recebido separadamente, abandono por etapa e tempo até o benefício. A quantidade de escolhas depende do benefício e do formato, sem padrão universal. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Caminho mínimo da situação reconhecível até a ação e o resultado que tornam plausível a satisfação proposta. Aceite: Contexto fiel, entradas justificadas, aplicação compreensível e primeira ação mobile; não exigir cadastro, questionário ou amostra universais. Medir: Conclusão, abandono por etapa e tempo até benefício na mesma versão. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+          "responsibilityDomain": "PDE_CONSTRUCTION",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ]
+        },
+        {
+          "id": "deliverables",
+          "type": "TASK",
+          "label": "Produzir componentes do protótipo PDE",
+          "owner": "Dédalo",
+          "description": "Produz os componentes funcionais da mesma versão do produto sem reutilizar artefato de outro PDE. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Resultado e referências fiéis às informações da cliente, com identidade coerente e orientação para uso. Aceite: Comprovar personalização e correspondência entre apresentação e saída funcional; demonstração sintética identificada não representa cliente real. Medir: Utilidade funcional, erros de contexto e correspondência entre promessa e entregável. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+          "responsibilityDomain": "PDE_CONSTRUCTION",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ]
+        },
+        {
+          "id": "audiovisual",
+          "type": "TASK",
+          "label": "Produzir audiovisual quando previsto",
+          "owner": "Apolo",
+          "description": "Produz somente o audiovisual exigido; a ausência de necessidade deve permanecer explícita. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Audiovisual funcional previsto, com contexto e prova coerentes com a mesma versão real. Aceite: Preservar peças, corpo e contexto da representação quando houver transformação ilustrativa; não inventar resultados, depoimentos ou necessidade de vídeo. Medir: Compreensão, legibilidade mobile, continuidade e integridade técnica; revisão não comprova emoção humana. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+          "responsibilityDomain": "AUDIOVISUAL_PRODUCTION",
+          "responsibleAgentKeys": [
+            "videomaker"
+          ],
+          "executionResourceCode": "video-management-service"
+        },
+        {
+          "id": "access",
+          "type": "TASK",
+          "label": "Implementar acesso, continuidade e instrumentação",
+          "owner": "Dédalo",
+          "description": "Entregar: acesso de teste, salvamento/retomada quando previstos, tratamento de erro, privacidade e eventos correlacionados à versão. Aceite: cadastro não equivale a login; resultado exibido não equivale a uso; registrar consentimento e excluir testes da amostra comercial. Medir: resultado → interesse em salvar → cadastro → acesso concluído → retorno, sem inferir etapas ausentes. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Identidade identificável, resultado salvo e reencontro simples quando acesso/retomada fizerem parte da oferta. Aceite: Preservar contexto e privacidade, recuperação sem duplicar geração/cobrança; nenhuma recorrência ou recompra obrigatória inventada. Medir: Acesso, retomada e retorno voluntário em eventos próprios; retorno não comprova memória ou satisfação. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+          "responsibilityDomain": "PDE_CONSTRUCTION",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ]
+        },
+        {
+          "id": "technicalHomologation",
+          "type": "TASK",
+          "label": "Homologar tecnicamente a versão real",
+          "owner": "Psique",
+          "description": "Entregar: evidências da mesma versão em desktop, iPhone e Android, com caminho feliz, falha e retomada. Aceite: primeira ação, próximo botão e botão final visíveis/acessíveis após cada passo, inclusive teclado aberto; resultado legível e compreensível; oferta fora da tela não gera exposição. Registrar URL, versão, capturas e resultado por cenário. Medir: conclusão funcional, erros e tempo até o benefício em tráfego de QA segregado. Correções retornam aqui; teste aprovado não prova vendas. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Manifesto, hashes, capturas e testes da mesma versão para ação, resultado, aplicação e recuperação em desktop/iPhone/Android. Aceite: Correspondência da promessa com o comportamento servido; dados sintéticos segregados e bloqueio técnico antes de revisão paga se a prova não corresponder. Medir: Conclusão funcional, erros, tempo até resultado e custo conhecido por homologação concluída. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+          "executionMode": "DETERMINISTIC",
+          "controlDescription": "Psique executa testes automáticos com o harness, a estrutura de ferramentas, cenários e evidências. Esta etapa técnica não usa parecer de IA; os cenários de experiência vêm depois.",
+          "responsibilityDomain": "PDE_TECHNICAL_HOMOLOGATION",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "prototypeCorrection",
+          "type": "TASK",
+          "label": "Corrigir o protótipo a partir do parecer",
+          "owner": "Dédalo",
+          "actionLabel": "Criar tarefa de correção",
+          "description": "Transforma a rejeição funcional vigente em instruções executáveis, corrige a causa-raiz, cria nova versão e devolve o fluxo à homologação técnica. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Correção na camada da causa comprovada da promessa, personalização, utilidade, acesso ou recuperação. Aceite: Preservar entradas e resultados válidos; nova versão retorna à homologação técnica, sem contornar gate ou repetir consumo por impedimento idêntico. Medir: Recorrência do defeito e conclusão funcional comparadas à versão anterior; nenhuma venda presumida. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+          "activationMode": "ON_FUNCTIONAL_REJECTION",
+          "controlDescription": "Dédalo receberá o parecer rejeitado, a causa-raiz e a ação recomendada; a conclusão exige uma nova versão e retorno à homologação técnica.",
+          "remediatesActivities": [
+            "technicalHomologation",
+            "psiqueAdherent",
+            "psiqueRecovery",
+            "psiqueSafety",
+            "commercialIntegrityReview"
+          ],
+          "responsibilityDomain": "PDE_FUNCTIONAL_REWORK",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ]
+        },
+        {
+          "id": "psiqueAdherent",
+          "type": "TASK",
+          "label": "Psique · cenário aderente",
+          "owner": "Psique",
+          "description": "Entregar: avaliação independente de compreensão, desejo, esforço, utilidade e próximo passo na versão real. Aceite: localizar primeira ação sem ajuda, concluir entradas, compreender como aplicar o resultado e explicar o valor adicional da continuidade paga. Registrar evidência observada e lacunas; resultado exibido não comprova aplicação ou satisfação. Medir: conclusão e tempo por cenário. Identificar a leitura como simulação de agente, sem contá-la como cliente ou venda. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Avaliação simulada de clareza, esforço, aplicação do resultado e plausibilidade da satisfação pretendida na experiência real. Aceite: Identificar a simulação; verificar próximo passo e benefício adicional sem afirmar satisfação, preferência humana ou cliente inexistente. Medir: Conclusão, esforço e tempo por cenário; resultado exibido não comprova aplicação. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+          "scenarioCode": "ADHERENT",
+          "responsibilityDomain": "SYNTHETIC_EXPERIENCE_REVIEW",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "psiqueRecovery",
+          "type": "TASK",
+          "label": "Psique · fricção e recuperação",
+          "owner": "Psique",
+          "description": "Entregar: avaliação da versão real com entrada incompleta, erro recuperável e retomada. Aceite: orientação suficiente sem conhecimento de IA, respostas preservadas quando permitido, próximo botão e botão final alcançáveis no celular e nenhuma promessa de resultado inventado. Medir: recuperação, abandono por etapa e esforço observado; separar hipótese de causa, defeito reproduzido e preferência humana. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Avaliação simulada de contexto preservado e retomada após entrada incompleta ou falha. Aceite: Orientação suficiente no celular, limites honestos e recuperação sem esforço redundante; não recrutar pessoas nem solicitar opinião. Medir: Recuperação, perda de contexto e erros reproduzidos, separados de preferência estética. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+          "scenarioCode": "RECOVERY",
+          "responsibilityDomain": "SYNTHETIC_EXPERIENCE_REVIEW",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "psiqueSafety",
+          "type": "TASK",
+          "label": "Psique · limite e segurança",
+          "owner": "Psique",
+          "description": "Com raciocínio máximo, avalia pedido fora do escopo e exige bloqueio seguro sem resultado inventado. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Avaliação simulada de limites e segurança da promessa funcional e emocional. Aceite: Bloquear pedidos fora do escopo, diagnóstico psicológico, satisfação garantida e resultado inventado; respeitar autonomia e preferências. Medir: Falhas de segurança e bloqueios corretos no cenário segregado. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+          "scenarioCode": "SAFETY",
+          "responsibilityDomain": "SYNTHETIC_EXPERIENCE_REVIEW",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "commercialIntegrityReview",
+          "type": "TASK",
+          "label": "Revisar integridade da validação multiagente",
+          "owner": "Têmis",
+          "description": "Confirma fidelidade, segurança, verdade, privacidade, segregação interna e ausência de alegação humana ou efeito comercial. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Parecer independente que liga promessa, prova funcional, identidade, versão e limites da transformação representada. Aceite: Personagem não parece depoimento real; nenhuma compra, agendamento, satisfação ou emoção fictícia como prova; fonte/prova ausente retorna à origem. Medir: Divergências confirmadas, correções e evidências; aprovação não comprova vendas. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW",
+          "responsibleAgentKeys": [
+            "meta-ad-approver"
+          ]
+        },
+        {
+          "id": "agentValidationGate",
+          "type": "TASK",
+          "label": "Calcular gate multiagente",
+          "owner": "Backend",
+          "description": "Valida somente evidências persistidas, sequenciais e da mesma versão; libera comunicação em STOP sem publicar, cobrar, criar campanha ou autorizar gasto. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Referências persistidas das avaliações sequenciais da mesma versão, com fatos e hipóteses separados. Aceite: Preservar o gate determinístico e os resultados válidos; liberar somente comunicação em STOP, sem afirmar satisfação ou demanda nem autorizar gasto. Medir: Cobertura de evidências e bloqueios técnicos claros, com responsável e ação. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Dédalo altera somente a candidata do sucessor quando a experiência mudar; reutiliza artefatos compatíveis com origem e hash. Psique e Têmis conferem identidade e gates afetados, sem refazer produto inalterado.",
+          "executionMode": "DETERMINISTIC",
+          "responsibilityDomain": "PDE_AGENT_VALIDATION_GATE"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Produto apto à comunicação?",
+          "owner": "Backend",
+          "description": "Exige homologação técnica, três cenários aprovados em sequência e revisão independente de Têmis."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Decisão multiagente registrada",
+          "owner": "Backend",
+          "description": "O mercado continuará sendo a única fonte de preferência, compra, entrega, satisfação e receita."
+        }
+      ],
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1",
+      "satisfactionContinuityVersion": "SATISFACTION_CONTINUITY_V1"
+    },
+    "processType": "VALUE_PROCESS",
+    "parentProcessCode": null,
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "pde-communication-sales-journey",
+    "name": "Comunicação e jornada de venda do PDE",
+    "purpose": "Materializar comunicação pré-compra com um contrato próprio antes de integrar a jornada. Toda divulgacao comercial e preparada para midia paga no Instagram, sem convite individual. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.",
+    "ownerName": "Backend de Experiências PDE",
+    "triggerDescription": "Produto, estratégia, economia e provas reais aprovados.",
+    "outcomeDescription": "Pacote de comunicação, criativos e destino aprovados e integrados sem publicação.",
+    "versionNumber": 11,
+    "technicalReference": "docs/canonical/ciclos-aprendizado-vendas-canon.v1.md / CHANGE_PER_CYCLE_V1",
+    "diagram": {
+      "flows": [
+        {
+          "to": "communicationContract",
+          "from": "start"
+        },
+        {
+          "to": "creatives",
+          "from": "communicationContract"
+        },
+        {
+          "to": "destination",
+          "from": "creatives"
+        },
+        {
+          "to": "integration",
+          "from": "destination"
+        },
+        {
+          "to": "gate",
+          "from": "integration"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Produto e contratos aprovados",
+          "owner": "Backend",
+          "description": "Estratégia, economia, PDE e provas chegam versionados."
+        },
+        {
+          "id": "communicationContract",
+          "type": "TASK",
+          "label": "Materializar contrato de comunicação",
+          "owner": "Íris",
+          "description": "Entregar: desejo escolhido por Atena, linguagem do publico com fonte/data, mensagem, CTA e prova real da versao aprovada para Instagram Ads; explicitar beneficio inicial e beneficio adicional pago, entregaveis, uso, preco, prazo, acesso, suporte e reembolso. Aceite: fidelidade ao tipo, ficha e oferta; nenhuma emocao inferida como fato; convite individual, lista propria, contato direto e divulgacao organica nao sao canais substitutos. Medir: primeira interacao e oferta efetivamente vista -> CTA -> checkout -> compra, por campanha, variante e janela. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Situação familiar → participação concreta do produto → resultado utilizável → satisfação possível; satisfação proposta e fontes, identidade contínua, ocasião de retorno e contrapontos nos campos existentes do contrato. Aceite: Preservar estratégia, versão, preço e canal; cada promessa aponta para prova real. Explicar adicional pago e limites. Degustação escolhida referencia pde-tasting-proof-of-value; sem contrato/homologação, comunicar somente demonstração disponível. Medir: Primeira interação, demonstração, oferta efetivamente vista, checkout e compra em eventos distintos. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo vinculam novo vídeo, copy, CTA ou amostra ao sucessor antes da materialização; preservar produto, preço, público e destino quando a variável for apenas o criativo. Integração conserva a atribuição do novo experimento.",
+          "responsibilityDomain": "COMMUNICATION_MATERIALIZATION",
+          "responsibleAgentKeys": [
+            "communication-director"
+          ],
+          "executionResourceCode": "iris-communication-worker"
+        },
+        {
+          "id": "creatives",
+          "type": "TASK",
+          "label": "Executar produção e aprovação de criativos",
+          "owner": "Backend",
+          "description": "Entregar: criativos finais para Instagram Ads no formato aprovado pelo contrato do produto, com identidade publica, promessa, prova, CTA e destino coerentes. Aceite: revisao independente, direitos de uso e correspondencia com oferta, checkout e entrega; nao produzir mensagem de convite individual. Medir: impressoes atribuidas -> primeira interacao e custo por etapa, sem confundir producao com desempenho. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Briefing para Íris/Apolo com identificação cotidiana, produto em uso, transformação possível e nome reconhecível, delegando ao subprocesso canônico. Aceite: Personagem e encenação identificadas, sem agenda cheia ou depoimento inventado; identidade consistente com página, prova e entrega. Medir: Impressão → interação → visita por variante; desempenho depende do mercado. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo vinculam novo vídeo, copy, CTA ou amostra ao sucessor antes da materialização; preservar produto, preço, público e destino quando a variável for apenas o criativo. Integração conserva a atribuição do novo experimento.",
+          "subprocessCode": "creative-production-approval"
+        },
+        {
+          "id": "destination",
+          "type": "TASK",
+          "label": "Executar geração e aprovação do destino",
+          "owner": "Backend",
+          "description": "Entregar: destino aprovado que torna a primeira acao evidente e demonstra valor real antes do compromisso, conforme o contrato do produto. Aceite: receber trafego pago do Instagram com continuidade, checkout e recuperacao funcionais em celular; cumprir a promessa inicial e explicar o ganho pago. Medir: visitantes atribuidos -> primeira acao -> beneficio e exposicao efetiva a oferta. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Destino que demonstra o resultado real, participação e benefício adicional pago com a mesma identidade. Aceite: Amostra personalizada somente quando prevista/homologada no subprocesso de degustação; alternativa real documentada quando não aplicável. Não prometer funcionalidade futura. Medir: Demonstração, resultado recebido, oferta vista e checkout separados; salvamento não comprova utilidade. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo vinculam novo vídeo, copy, CTA ou amostra ao sucessor antes da materialização; preservar produto, preço, público e destino quando a variável for apenas o criativo. Integração conserva a atribuição do novo experimento.",
+          "subprocessCode": "landing-page-generation"
+        },
+        {
+          "id": "integration",
+          "type": "TASK",
+          "label": "Integrar canal, checkout, acesso e eventos",
+          "owner": "Backend",
+          "description": "Entregar: Instagram Ads, destino, checkout e acesso versionados com UTM, campanha, criativo e eventos correlacionados ate venda, entrega e primeiro uso. Aceite: identidade oficial do Instagram e publico salvo; segregar QA, bots, duplicidades e historicos diretos; convite individual, lista propria, contato direto ou organico nao suprem aquisicao. Medir: impressao -> visita -> beneficio -> oferta vista -> clique -> checkout -> compra conciliada. Nao publicar nem autorizar gasto. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Vínculo entre satisfação proposta, prova, identidade e ocasião de retorno nos contratos aprovados de anúncio, destino, checkout e entrega. Aceite: Versões, fontes e eventos correlacionados; referências/pareceres e limites da degustação antes de integrar, QA/bots/duplicidades excluídos. Atribuição ausente retorna à integração. Medir: Visita → primeira ação → demonstração → oferta vista → checkout → compra → entrega → uso/retorno voluntário. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo vinculam novo vídeo, copy, CTA ou amostra ao sucessor antes da materialização; preservar produto, preço, público e destino quando a variável for apenas o criativo. Integração conserva a atribuição do novo experimento."
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Jornada integrada sem lacunas?",
+          "owner": "Backend",
+          "description": "Exige message match, checkout, acesso, eventos e segregação de testes."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Jornada pronta para homologação",
+          "owner": "Backend",
+          "description": "O processo termina sem publicação, contato ou gasto."
+        }
+      ],
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1",
+      "satisfactionContinuityVersion": "SATISFACTION_CONTINUITY_V1",
+      "commercialAcquisitionPolicyVersion": "PAID_INSTAGRAM_ONLY_V1"
+    },
+    "processType": "VALUE_PROCESS",
+    "parentProcessCode": null,
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "pde-commercial-homologation-activation",
+    "name": "Homologação e ativação comercial do PDE",
+    "purpose": "Comprovar que a versão está pronta para vender, entregar o prometido e operar dentro dos limites financeiros antes de qualquer ativação. A homologacao aceita somente aquisicao paga no Instagram e mantem o gasto dependente de decisao humana. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.",
+    "ownerName": "Backend de Experimentos",
+    "triggerDescription": "Produto e jornada aprovados, com tipo cadastrado, ficha aplicável e versões exatas.",
+    "outcomeDescription": "Ativação autorizada para a versão comprovada ou bloqueio persistido com causa e retorno à atividade responsável.",
+    "versionNumber": 12,
+    "technicalReference": "docs/canonical/ciclos-aprendizado-vendas-canon.v1.md / CHANGE_PER_CYCLE_V1",
+    "diagram": {
+      "flows": [
+        {
+          "id": "prepare-by-type",
+          "to": "commercialPreparation",
+          "from": "start"
+        },
+        {
+          "id": "reuse-psique",
+          "to": "humanExperienceReview",
+          "from": "commercialPreparation"
+        },
+        {
+          "id": "reuse-themis",
+          "to": "commercialIntegrityReview",
+          "from": "humanExperienceReview"
+        },
+        {
+          "id": "technical-homologation",
+          "to": "preflight",
+          "from": "commercialIntegrityReview"
+        },
+        {
+          "id": "commercial-gate",
+          "to": "decision",
+          "from": "preflight"
+        },
+        {
+          "id": "approved",
+          "to": "authorization",
+          "from": "decision",
+          "label": "Todos os gates vigentes"
+        },
+        {
+          "id": "authorized",
+          "to": "end",
+          "from": "authorization"
+        },
+        {
+          "id": "rework-preparation",
+          "to": "commercialPreparation",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "Corrigir causa na preparação"
+        },
+        {
+          "id": "rework-experience",
+          "to": "humanExperienceReview",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "Renovar experiência afetada"
+        },
+        {
+          "id": "rework-integrity",
+          "to": "commercialIntegrityReview",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "Renovar integridade afetada"
+        },
+        {
+          "id": "rework-technical",
+          "to": "preflight",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "Renovar homologação afetada"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Produto e jornada aprovados",
+          "owner": "Backend",
+          "description": "O backend fixa produto, experimento, versão, tipo e ficha antes de preparar a operação."
+        },
+        {
+          "id": "commercialPreparation",
+          "type": "TASK",
+          "label": "Preparar operação comercial conforme o tipo",
+          "owner": "Backend",
+          "description": "Seleciona pelo tipo cadastrado e pela ficha o subprocesso comercial aplicavel. A candidata deve usar Instagram Ads (Meta Ads); convite individual, lista propria, contato direto e divulgacao organica bloqueiam a preparacao, sem inferencia pelo nome ou formato do produto. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Preparação pelo tipo/ficha com promessa funcional, satisfação como hipótese, identidade, demonstração e eventual amostra compatíveis. Aceite: Mesmos produto, versão e oferta; amostra exige limites e provas, custos essenciais conhecidos; preservar Instagram Ads e decisões próprias. Medir: Divergências de promessa/entrega, cobertura financeira e preparação concluída. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Comprovar produto, ciclo, experimento, versões e ativos da candidata, com testes segregados e limites próprios. Aprovação anterior não autoriza campanha, janela ou gasto no sucessor.",
+          "subprocessRoutes": [
+            {
+              "subprocessCode": "opala-commercial-preparation-v1",
+              "productTypeCode": "PDE",
+              "subprocessVersion": 1,
+              "productTypeInternalName": "Opala"
+            },
+            {
+              "subprocessCode": "quartzo-commercial-preparation-v1",
+              "productTypeCode": "LOW_TICKET_DIGITAL_PRODUCT",
+              "subprocessVersion": 1,
+              "productTypeInternalName": "Quartzo"
+            },
+            {
+              "subprocessCode": "safira-commercial-preparation-v1",
+              "productTypeCode": "AI_PRODUCT",
+              "subprocessVersion": 2,
+              "productTypeInternalName": "Safira"
+            }
+          ],
+          "commercialPreparationRouterVersion": "COMMERCIAL_PREPARATION_BY_PRODUCT_TYPE_V1"
+        },
+        {
+          "id": "humanExperienceReview",
+          "type": "TASK",
+          "label": "Validar experiência e valor para o cliente",
+          "owner": "Psique",
+          "description": "Reutiliza o parecer de Psique da mesma preparacao e confere a experiencia real recebida pelo trafego pago do Instagram; mudanca material ou canal divergente exige renovacao. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Parecer simulado independente sobre identificação, clareza, aplicação, esforço e transformação plausível da versão real. Aceite: Reutilizar provas vigentes; ausência/divergência de build bloqueia tecnicamente antes de revisão paga. Não solicitar opiniões ou declarar emoção humana comprovada. Medir: Conclusão por cenário, esforço, retrabalho e custo conhecido por homologação. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Comprovar produto, ciclo, experimento, versões e ativos da candidata, com testes segregados e limites próprios. Aprovação anterior não autoriza campanha, janela ou gasto no sucessor.",
+          "evidenceReuseVersion": "COMMERCIAL_REVIEW_REUSE_V1",
+          "responsibilityDomain": "HUMAN_EXPERIENCE_REVIEW",
+          "reuseSubprocessActivityId": "humanExperienceReview",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "commercialIntegrityReview",
+          "type": "TASK",
+          "label": "Validar integridade comercial",
+          "owner": "Têmis",
+          "description": "Reutiliza o parecer independente de Temis e confere promessa, criativo, Instagram, publico, preco, checkout e entrega da mesma versao; divergencia bloqueia e retorna a origem. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Parecer independente sobre identidade, promessa, prova real, fronteira gratuita/paga e condições da oferta. Aceite: Anúncio, demonstração, compra e entrega coerentes; sem agenda cheia, depoimento sintético ou satisfação garantida. Retornar lacuna à origem. Medir: Divergências confirmadas e prova de correção; aprovação não autoriza campanha. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Comprovar produto, ciclo, experimento, versões e ativos da candidata, com testes segregados e limites próprios. Aprovação anterior não autoriza campanha, janela ou gasto no sucessor.",
+          "evidenceReuseVersion": "COMMERCIAL_REVIEW_REUSE_V1",
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW",
+          "reuseSubprocessActivityId": "commercialIntegrityReview",
+          "responsibleAgentKeys": [
+            "meta-ad-approver"
+          ]
+        },
+        {
+          "id": "preflight",
+          "type": "TASK",
+          "label": "Executar homologação técnica do experimento",
+          "owner": "Backend",
+          "description": "Chama a homologacao tecnica para comprovar desktop, celular, compra simulada, acesso, entrega, falhas, eventos, segregacao e limites do experimento de Instagram Ads, reutilizando evidencias vigentes. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Retorno do subprocesso técnico com versões, hashes, mobile, transação segregada, entrega, eventos e limites financeiros. Aceite: Reutilizar somente evidência vigente; comprovar oferta vista separada de resultado pronto e atribuição na mesma versão, sem operar mídia. Medir: Conclusão técnica, falhas, tempo de preparação e cobertura dos custos. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Comprovar produto, ciclo, experimento, versões e ativos da candidata, com testes segregados e limites próprios. Aprovação anterior não autoriza campanha, janela ou gasto no sucessor.",
+          "subprocessCode": "experiment-homologation-activation"
+        },
+        {
+          "id": "decision",
+          "type": "GATEWAY",
+          "label": "Preparação, experiência, integridade, técnica e economia estão válidas?",
+          "owner": "Backend",
+          "description": "Qualquer reprovação ou mudança material bloqueia a ativação e preserva a causa e a atividade responsável."
+        },
+        {
+          "id": "authorization",
+          "type": "TASK",
+          "label": "Autorizar ativação, orçamento e janela",
+          "owner": "Operador humano",
+          "description": "Aprova explicitamente versao, Instagram Ads, teto financeiro, periodo e condicoes de parada. Nenhum gate tecnico concede gasto; convite individual, lista propria, contato direto ou divulgacao organica nao podem ser autorizados. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Decisão explícita sobre versão, Instagram Ads, teto, janela e paradas, com demonstração e custos comprovados. Aceite: Parecer de agente e melhoria de missão não autorizam gasto; preservar decisão humana do orçamento sem pesquisa com participantes. Medir: Limites persistidos e vigência; não apresentar autorização como compra ou receita. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Comprovar produto, ciclo, experimento, versões e ativos da candidata, com testes segregados e limites próprios. Aprovação anterior não autoriza campanha, janela ou gasto no sucessor."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Ativação autorizada",
+          "owner": "Backend",
+          "description": "O Processo 6 executa a operação; RUNNING depende da confirmação externa e dos gates de publicação."
+        }
+      ],
+      "schemaVersion": "PDE_COMMERCIAL_HOMOLOGATION_ACTIVATION_V10",
+      "satisfactionContinuityVersion": "SATISFACTION_CONTINUITY_V1",
+      "commercialAcquisitionPolicyVersion": "PAID_INSTAGRAM_ONLY_V1"
+    },
+    "processType": "VALUE_PROCESS",
+    "parentProcessCode": null,
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "pde-sales-delivery-learning",
+    "name": "Venda, entrega e aprendizado do PDE",
+    "purpose": "Vender, entregar valor e conduzir ciclos por experimento: resultados orientam ajustes, revalidação e decisões de investimento. A operacao comercial mede exclusivamente a aquisicao paga atribuida ao Instagram. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.",
+    "ownerName": "Operador de Crescimento",
+    "triggerDescription": "Ativação autorizada pelo Processo 5, com orçamento, canais, versão e critérios vigentes.",
+    "outcomeDescription": "Decisão registrada no ciclo, com evidências, responsável e retorno ao processo da causa; vendas e entrega preservadas.",
+    "versionNumber": 12,
+    "technicalReference": "docs/canonical/ciclos-aprendizado-vendas-canon.v1.md / CHANGE_PER_CYCLE_V1",
+    "diagram": {
+      "flows": [
+        {
+          "id": "identify",
+          "to": "entry",
+          "from": "start",
+          "label": "Fixar produto e experimento"
+        },
+        {
+          "id": "live-entry",
+          "to": "parallel",
+          "from": "entry",
+          "label": "Publicação atual autorizada"
+        },
+        {
+          "id": "historical-entry",
+          "to": "consolidate",
+          "from": "entry",
+          "label": "ADOPT_BASELINE: publicação histórica comprovada; preservar limitações"
+        },
+        {
+          "id": "operate",
+          "to": "optimization",
+          "from": "parallel",
+          "label": "Operação com limites vigentes"
+        },
+        {
+          "id": "delivery-condition",
+          "to": "sales",
+          "from": "parallel",
+          "label": "Entregar cada compra durante a operação"
+        },
+        {
+          "id": "has-sales",
+          "to": "delivery",
+          "from": "sales",
+          "label": "Vendas existentes: entrega obrigatória"
+        },
+        {
+          "id": "no-sales",
+          "to": "join",
+          "from": "sales",
+          "label": "Zero vendas comprovado: entrega não aplicável nesta passagem"
+        },
+        {
+          "id": "operation-snapshot",
+          "to": "join",
+          "from": "optimization",
+          "label": "Rodada de resultados disponível"
+        },
+        {
+          "id": "delivery-snapshot",
+          "to": "join",
+          "from": "delivery",
+          "label": "Situação das entregas registrada"
+        },
+        {
+          "id": "consolidation",
+          "to": "consolidate",
+          "from": "join",
+          "label": "Fontes e limites do mesmo experimento"
+        },
+        {
+          "id": "measurement-ready",
+          "to": "learningCycle",
+          "from": "consolidate",
+          "label": "MEASURE: leitura válida; obrigações de entrega verificadas"
+        },
+        {
+          "id": "measurement-blocked",
+          "to": "consolidate",
+          "from": "consolidate",
+          "kind": "REWORK",
+          "label": "MEASUREMENT_BLOCKED: corrigir fonte e repetir conciliação"
+        },
+        {
+          "id": "delivery-blocked",
+          "to": "delivery",
+          "from": "consolidate",
+          "kind": "REWORK",
+          "label": "Venda sem entrega comprovada: tratar e reconsolidar"
+        },
+        {
+          "id": "decision-recorded",
+          "to": "decision",
+          "from": "learningCycle",
+          "label": "Decisão, causa, evidência, responsável e destino registrados"
+        },
+        {
+          "id": "continue-collection",
+          "to": "optimization",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "CONTINUE: mesmo experimento, dentro do orçamento e janela"
+        },
+        {
+          "id": "fix-measurement",
+          "to": "consolidate",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "FIX_MEASUREMENT: corrigir e reconciliar a fonte; sem reiniciar campanha"
+        },
+        {
+          "id": "directed-adjustment",
+          "to": "returnTarget",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "ADJUST / REWORK: executar retorno registrado pela causa"
+        },
+        {
+          "id": "delegated-progress",
+          "to": "learningCycle",
+          "from": "returnTarget",
+          "kind": "REWORK",
+          "label": "Etapas delegadas concluídas com evidência no ciclo"
+        },
+        {
+          "id": "request-scale",
+          "to": "returnAuthorization",
+          "from": "decision",
+          "kind": "REWORK",
+          "label": "SCALE: contribuição e valor comprovados; solicitar autorização"
+        },
+        {
+          "id": "revalidate",
+          "to": "returnAuthorization",
+          "from": "returnTarget",
+          "label": "Melhoria pronta: revalidar a mesma versão"
+        },
+        {
+          "id": "authorized-scale",
+          "to": "optimization",
+          "from": "returnAuthorization",
+          "kind": "REWORK",
+          "label": "Sucessor homologado e autorizado: operação do novo experimento"
+        },
+        {
+          "id": "publication-measurement",
+          "to": "consolidate",
+          "from": "returnAuthorization",
+          "label": "Publicação comprovada após gates próprios"
+        },
+        {
+          "id": "close-cycle",
+          "to": "end",
+          "from": "decision",
+          "label": "STOP / INCONCLUSIVE: preservar resultados e motivos"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Ativação autorizada",
+          "owner": "Backend",
+          "description": "A operacao comeca somente apos autorizacao do experimento de Instagram Ads ou referencia historica comprovada; convite individual, lista propria, contato direto e divulgacao organica nao iniciam nova operacao."
+        },
+        {
+          "id": "entry",
+          "type": "GATEWAY",
+          "label": "Operação atual ou referência histórica?",
+          "owner": "Backend",
+          "description": "Adoção histórica exige evento ADOPT_BASELINE e evidência de publicação, sem aprovação retroativa."
+        },
+        {
+          "id": "parallel",
+          "type": "GATEWAY",
+          "label": "Operação e entrega durante as vendas",
+          "owner": "Backend",
+          "description": "Ramos paralelos explícitos; a entrega de uma compra não aguarda o encerramento do experimento."
+        },
+        {
+          "id": "sales",
+          "type": "GATEWAY",
+          "label": "Existem vendas no recorte?",
+          "owner": "Backend",
+          "description": "Somente fonte válida pode comprovar zero vendas. Nenhuma venda implica entrega não aplicável nesta passagem."
+        },
+        {
+          "id": "optimization",
+          "type": "TASK",
+          "label": "Operar e otimizar o experimento",
+          "owner": "Backend",
+          "description": "Delega aquisicao paga no Instagram, mensuracao atribuida e teste de uma variavel ao subprocesso canonico, sempre dentro do teto, janela e condicoes de parada autorizados. Nao criar ou importar contatos individuais. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Delegação de teste com uma mudança principal entre foco nos entregáveis e satisfação vinculada à prova real, quando essa for a hipótese aprovada. Aceite: Preservar produto, preço, público, página e condições; testar amostra em comparação posterior separada, respeitando teto/janela e atribuição. Medir: Compras líquidas, custo por compra e contribuição; amostra insuficiente pode ser inconclusiva. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Hermes e Plutus conciliam cada experimento separadamente; registrar fato, hipótese, causa, limites e decisão. Mudança de criativo ou investimento segue no sucessor; continuar coleta só com condições e limites inalterados.",
+          "subprocessCode": "operacao-otimizacao-experimento"
+        },
+        {
+          "id": "delivery",
+          "type": "TASK",
+          "label": "Entregar cada venda e acompanhar satisfação",
+          "owner": "Backend",
+          "description": "Delega conciliação, entrega, suporte, satisfação e reembolso ao subprocesso canônico. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Delegação da entrega fiel, uso, suporte espontâneo, reembolso e reencontro do produto quando necessário. Aceite: Preservar identidade e resultado contratado, sem reentrega ou pesquisa de satisfação duplicada. Medir: Entrega, uso observável e retorno voluntário atribuível; retorno não comprova satisfação. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Hermes e Plutus conciliam cada experimento separadamente; registrar fato, hipótese, causa, limites e decisão. Mudança de criativo ou investimento segue no sucessor; continuar coleta só com condições e limites inalterados.",
+          "subprocessCode": "venda-entrega-satisfacao-cliente"
+        },
+        {
+          "id": "consolidate",
+          "type": "TASK",
+          "label": "Consolidar resultado comercial",
+          "owner": "Backend",
+          "description": "O backend concilia fontes do experimento de Instagram Ads por campanha, criativo, UTM e versao. Fonte invalida bloqueia; QA, bots, trafego direto, organico ou convite individual nao comprovam aquisicao, compra ou receita. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Conciliação de compra, entrega, uso, retorno, reembolso e contribuição com fontes, versões e denominadores. Aceite: Separar fato observado, satisfação/memória como hipóteses e explicações concorrentes; relato espontâneo complementa, não substitui venda. Fonte ausente permanece desconhecida. Medir: Compras líquidas, CAC, custo integral e contribuição; recompra/indicação somente quando pertinentes e atribuídas. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Hermes e Plutus conciliam cada experimento separadamente; registrar fato, hipótese, causa, limites e decisão. Mudança de criativo ou investimento segue no sucessor; continuar coleta só com condições e limites inalterados."
+        },
+        {
+          "id": "learningCycle",
+          "type": "TASK",
+          "label": "Conduzir o ciclo de aprendizado e vendas",
+          "owner": "Operador responsável pelo produto",
+          "description": "Abra ou retome o ciclo deste produto e experimento pago. Concilie vendas liquidas, CAC, custo integral, entrega e margem; registre decisao e siga a atividade orientada. Mudanca comercial exige sucessor e nova homologacao; correcao tecnica preserva a iteracao. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Aprendizado sobre satisfação proposta, prova, identidade e ocasião de retorno, com fatos favoráveis/contrários e limites. Aceite: Preservar referência anterior e uma mudança principal; promessa sem suporte volta à estratégia/comunicação, resultado à construção, atribuição à integração e margem à economia. Medir: Compra conciliada, entrega útil e contribuição positiva antes de repetir ou solicitar escala. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Hermes e Plutus conciliam cada experimento separadamente; registrar fato, hipótese, causa, limites e decisão. Mudança de criativo ou investimento segue no sucessor; continuar coleta só com condições e limites inalterados.",
+          "subprocessCode": "value-chain-learning-sales-cycle"
+        },
+        {
+          "id": "decision",
+          "type": "GATEWAY",
+          "label": "Qual decisão comercial?",
+          "owner": "Backend e operador humano",
+          "description": "A decisão persistida determina o retorno pela causa. Continuar coleta respeita janela e orçamento; escala exige nova autorização."
+        },
+        {
+          "id": "join",
+          "type": "GATEWAY",
+          "label": "Resultados e situação das entregas disponíveis",
+          "owner": "Backend",
+          "description": "Consolidar situação comercial e entregas, preservando bloqueios e ausência comprovada de vendas."
+        },
+        {
+          "id": "returnTarget",
+          "type": "GATEWAY",
+          "label": "Retorno ao processo da causa: 2, 3 ou 4",
+          "owner": "Backend",
+          "description": "A decisão identifica processo e atividade. Mudança comercial usa sucessor; correção técnica preserva o experimento."
+        },
+        {
+          "id": "returnAuthorization",
+          "type": "GATEWAY",
+          "label": "Processo 5: homologação e autorização",
+          "owner": "Backend e operador",
+          "description": "Renovar os gates afetados e autorização explícita antes da publicação ou escala; retorno registrado não autoriza gasto por si só."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Ciclo decidido por vendas entregues",
+          "owner": "Backend",
+          "description": "A decisão e suas evidências ficam auditáveis."
+        }
+      ],
+      "schemaVersion": "PDE_SALES_DELIVERY_LEARNING_V8",
+      "salesFlowVersion": 2,
+      "learningCycleReturns": [
+        {
+          "label": "Estratégia e economia",
+          "condition": "A evidência exige rever oferta, preço ou viabilidade. Defina a hipótese do sucessor.",
+          "processCode": "pde-commercial-plan-offer"
+        },
+        {
+          "label": "Utilidade do produto",
+          "condition": "A cliente não consegue aplicar o resultado ou perceber valor. Corrija a entrega e renove os pareceres.",
+          "processCode": "pde-construction-approval"
+        },
+        {
+          "label": "Comunicação e vídeos",
+          "condition": "O benefício ou a entrada não são compreendidos. Ajuste mensagem, demonstração e criativo.",
+          "processCode": "pde-communication-sales-journey"
+        },
+        {
+          "label": "Homologação e autorização",
+          "condition": "Depois dos ajustes, valide a mesma versão e obtenha autorização explícita antes de publicar ou expandir.",
+          "processCode": "pde-commercial-homologation-activation"
+        },
+        {
+          "label": "Coleta e medição",
+          "condition": "Continuar somente com dados válidos dentro dos limites; corrigir dados inválidos antes de decidir sobre desempenho.",
+          "processCode": "pde-sales-delivery-learning"
+        }
+      ],
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1",
+      "satisfactionContinuityVersion": "SATISFACTION_CONTINUITY_V1",
+      "commercialAcquisitionPolicyVersion": "PAID_INSTAGRAM_ONLY_V1"
+    },
+    "processType": "VALUE_PROCESS",
+    "parentProcessCode": null,
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "pde-tasting-proof-of-value",
+    "name": "Degustação e prova de valor do PDE",
+    "purpose": "Validar hipótese, economia, materialização, experiência e integridade em decisões separadas. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.",
+    "ownerName": "Backend de Experiências PDE",
+    "triggerDescription": "Produto, estratégia, prova e limites aprovados.",
+    "outcomeDescription": "Degustação aprovada ou bloqueada sem canibalização, gasto ou venda falsa.",
+    "versionNumber": 5,
+    "technicalReference": "docs/canonical/ciclos-aprendizado-vendas-canon.v1.md / CHANGE_PER_CYCLE_V1",
+    "diagram": {
+      "flows": [
+        {
+          "to": "strategy",
+          "from": "start"
+        },
+        {
+          "to": "economics",
+          "from": "strategy"
+        },
+        {
+          "to": "materialization",
+          "from": "economics"
+        },
+        {
+          "to": "humanExperienceReview",
+          "from": "materialization"
+        },
+        {
+          "to": "commercialIntegrityReview",
+          "from": "humanExperienceReview"
+        },
+        {
+          "to": "integration",
+          "from": "commercialIntegrityReview"
+        },
+        {
+          "to": "gate",
+          "from": "integration"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Produto e contratos aprovados",
+          "owner": "Backend",
+          "description": "Recebe somente versões vigentes."
+        },
+        {
+          "id": "strategy",
+          "type": "TASK",
+          "label": "Definir hipótese estratégica da degustação",
+          "owner": "Atena",
+          "description": "Entregar: hipótese do desejo, público/situação, benefício inicial aplicável e ligação com a continuidade paga, usando fontes com data. Aceite: degustação explicitamente escolhida no plano; respeitar tipo e ficha, definir o que a pessoa faz/recebe e uma explicação concorrente; não impor questionário ou cadastro antes do valor. Medir: primeira interação, benefício recebido e interesse em continuar, com versão, janela e denominadores. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Benefício inicial que torna plausível a satisfação proposta, com fonte/data, contraponto e motivo para continuidade paga. Aceite: Degustação explicitamente aprovada pelo plano/tipo; não impor gratuidade, cadastro ou questionário; aquisição segue o canal autorizado. Medir: Primeira ação, benefício, oferta vista e compra separados. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Uma nova amostra ou mudança da degustação constitui outra hipótese: planejar no sucessor, separar do teste de criativo e verificar custo inclusive dos usos sem compra e limites aprovados.",
+          "responsibilityDomain": "MARKET_STRATEGY",
+          "responsibleAgentKeys": [
+            "experiment-strategist"
+          ]
+        },
+        {
+          "id": "economics",
+          "type": "TASK",
+          "label": "Validar fronteira econômica",
+          "owner": "Plutus",
+          "description": "Entregar: fronteira gratuita/paga, custo máximo por uso, limite total, expiração/antiabuso e economia da continuidade paga. Aceite: custos completos e origem das premissas, cenários conservador/esperado/uso intenso, contribuição e margem vigentes; desconhecido bloqueia, sem virar zero. Medir: custo por benefício útil e por compra líquida; impedir que participação gratuita seja tratada como receita. Parecer não autoriza gasto. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Custos de todas as amostras, inclusive sem compra, tentativas, suporte, limite por uso, teto total e prevenção de abuso. Aceite: Custos com fonte, cenários e margem da continuidade; desconhecido é pendência, parecer não autoriza consumo. Medir: Custo por amostra útil, CAC e contribuição por compra líquida. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Uma nova amostra ou mudança da degustação constitui outra hipótese: planejar no sucessor, separar do teste de criativo e verificar custo inclusive dos usos sem compra e limites aprovados.",
+          "responsibilityDomain": "FINANCIAL_VALIDATION",
+          "responsibleAgentKeys": [
+            "financial-agent"
+          ]
+        },
+        {
+          "id": "materialization",
+          "type": "TASK",
+          "label": "Materializar microexperiência",
+          "owner": "Dédalo",
+          "description": "Entregar: pequena orientação aplicável, amostra ou uso limitado real do produto aprovado, com primeira ação fácil e continuidade clara. Aceite: cumprir integralmente a promessa inicial; próximo botão e botão final acessíveis no celular, entradas mínimas, limites/consentimento/retomada conforme contrato; não esconder o benefício prometido atrás de novo cadastro. Medir: início → conclusão → resultado recebido, aplicação relatada separada de exibição e de teste sintético. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Amostra real fiel ao contexto, aplicável, identificada pelo produto e coerente com a entrega paga. Aceite: Cumprir integralmente promessa gratuita e limites; recuperação e retomada quando contratadas, sem gerar/cobrar em duplicidade. Medir: Conclusão, resultado recebido e uso observável; resultado exibido não comprova satisfação. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Uma nova amostra ou mudança da degustação constitui outra hipótese: planejar no sucessor, separar do teste de criativo e verificar custo inclusive dos usos sem compra e limites aprovados.",
+          "responsibilityDomain": "PDE_CONSTRUCTION",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ]
+        },
+        {
+          "id": "humanExperienceReview",
+          "type": "TASK",
+          "label": "Revisar experiência humana",
+          "owner": "Psique",
+          "description": "Entregar: avaliação da compreensão e aplicação do benefício inicial, esforço e motivo para continuar pagando. Aceite: observar percurso e botões no celular; explicar com evidência o que a pessoa recebe agora e o que ganha ao pagar; não inferir satisfação de resultado exibido ou e-mail. Medir: conclusão, utilidade observada/relatada e entendimento da oferta. Identificar simulação de agente; evidências voluntárias do mercado e simulações ficam separadas. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Avaliação simulada da identificação, esforço, aplicação da amostra e compreensão do benefício adicional pago. Aceite: Agente identificado; sem entrevistas, recrutamento ou opiniões solicitadas. Não transformar aceitação gratuita em disposição de pagar. Medir: Conclusão e compreensão por cenário, separadas de comportamento voluntário do mercado. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Uma nova amostra ou mudança da degustação constitui outra hipótese: planejar no sucessor, separar do teste de criativo e verificar custo inclusive dos usos sem compra e limites aprovados.",
+          "responsibilityDomain": "HUMAN_EXPERIENCE_REVIEW",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "commercialIntegrityReview",
+          "type": "TASK",
+          "label": "Revisar integridade comercial",
+          "owner": "Têmis",
+          "description": "Entregar: conferência de promessa, prova real, fronteira gratuita/paga, preço total/recorrência, entregáveis, uso, prazo, acesso, suporte, reembolso, direitos e privacidade na mesma versão. Aceite: consistência com produto e checkout, nenhum depoimento fictício e nenhuma promessa inicial descumprida para forçar compra. Medir: divergências comprovadas e evidência de correção; aprovação não equivale a venda. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Revisão independente da amostra, produto identificável, prova real e promessa gratuita/paga. Aceite: Oferta, direitos, preço e limites coerentes; nenhuma emoção, depoimento ou venda fictícia. Medir: Divergências e prova corrigida; aprovação técnica não comprova demanda. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Uma nova amostra ou mudança da degustação constitui outra hipótese: planejar no sucessor, separar do teste de criativo e verificar custo inclusive dos usos sem compra e limites aprovados.",
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW",
+          "responsibleAgentKeys": [
+            "meta-ad-approver"
+          ]
+        },
+        {
+          "id": "integration",
+          "type": "TASK",
+          "label": "Integrar eventos e continuidade paga",
+          "owner": "Backend",
+          "description": "Entregar: vínculo auditável ao Processo 4 antes de integrar a jornada, com versão, pareceres, custo/limites e eventos de degustação, resultado, oferta, checkout, compra, acesso, retorno, expiração e abuso. Aceite: gatilhos observáveis, unidade/denominador/janela, correlação e testes segregados; oferta vista depende de visibilidade e tempo mínimo definidos, nunca apenas resultado pronto. Medir: valor recebido → exposição efetiva → CTA → checkout → compra líquida; resultado exibido não comprova aplicação. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Retorno auditável ao Processo 4 com versão, pareceres, prova, identidade, limites, custos e eventos. Aceite: Backend coordena avanço; amostra sem contrato/prova não é promessa publicável; manter a ocasião de retorno sem inventar recorrência. Medir: Amostra → oferta vista → checkout → compra → entrega/uso; custo inclui quem não compra. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Uma nova amostra ou mudança da degustação constitui outra hipótese: planejar no sucessor, separar do teste de criativo e verificar custo inclusive dos usos sem compra e limites aprovados."
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Degustação prova valor com segurança?",
+          "owner": "Backend",
+          "description": "Exige todos os contratos e gates aprovados."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Decisão de degustação registrada",
+          "owner": "Backend",
+          "description": "Uso gratuito ou checkout não são tratados como venda."
+        }
+      ],
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1",
+      "satisfactionContinuityVersion": "SATISFACTION_CONTINUITY_V1"
+    },
+    "processType": "SUBPROCESS",
+    "parentProcessCode": "pde-communication-sales-journey",
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "creative-production-approval",
+    "name": "Produção e aprovação independente de criativos",
+    "purpose": "Separar materialização de comunicação, produção audiovisual e revisões independentes. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.",
+    "ownerName": "Backend de Experiências PDE",
+    "triggerDescription": "Contrato de comunicação de Íris aprovado.",
+    "outcomeDescription": "Pacote criativo materializado, revisado e selecionado sem autoaprovação.",
+    "versionNumber": 10,
+    "technicalReference": "docs/canonical/ciclos-aprendizado-vendas-canon.v1.md / CHANGE_PER_CYCLE_V1",
+    "diagram": {
+      "flows": [
+        {
+          "to": "route",
+          "from": "start"
+        },
+        {
+          "to": "nonAudiovisual",
+          "from": "route"
+        },
+        {
+          "to": "audiovisual",
+          "from": "nonAudiovisual"
+        },
+        {
+          "to": "customer",
+          "from": "audiovisual"
+        },
+        {
+          "to": "commercial",
+          "from": "customer"
+        },
+        {
+          "to": "gate",
+          "from": "commercial"
+        },
+        {
+          "to": "human",
+          "from": "gate"
+        },
+        {
+          "to": "end",
+          "from": "human"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Contrato de comunicação congelado",
+          "owner": "Backend",
+          "description": "Mensagem, produto, prova, canal, destino e CTA chegam versionados."
+        },
+        {
+          "id": "route",
+          "type": "TASK",
+          "label": "Resolver formatos técnicos previstos",
+          "owner": "Backend",
+          "description": "Aplica os formatos aprovados sem redefinir estratégia, canal ou hipótese. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo preparam e identificam a peça do novo experimento; Psique e Têmis revisam a candidata exata. Não substituir o vídeo do experimento predecessor para testar outra comunicação."
+        },
+        {
+          "id": "nonAudiovisual",
+          "type": "TASK",
+          "label": "Materializar peças não audiovisuais",
+          "owner": "Íris",
+          "description": "Produz copy, composição, peças estáticas e e-mails sob o contrato aprovado. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Peças com situação familiar, participação do produto, resultado verificável, identidade e satisfação possível coerentes com o contrato de Íris. Aceite: Preservar pixels/provas aprovados e identificar exemplos; não trocar a oferta nem usar emoção como fato. Medir: Legibilidade mobile, clareza e correspondência com destino/entrega; desempenho comercial pendente. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo preparam e identificam a peça do novo experimento; Psique e Têmis revisam a candidata exata. Não substituir o vídeo do experimento predecessor para testar outra comunicação.",
+          "responsibilityDomain": "COMMUNICATION_MATERIALIZATION",
+          "responsibleAgentKeys": [
+            "communication-director"
+          ],
+          "executionResourceCode": "iris-communication-worker"
+        },
+        {
+          "id": "audiovisual",
+          "type": "TASK",
+          "label": "Materializar peças audiovisuais quando previstas",
+          "owner": "Apolo",
+          "description": "Produz roteiro técnico, cenas, áudio, montagem e legendas sob o briefing de Íris. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Vídeo com identificação cotidiana, participação concreta do produto e persona transformada por uma ação funcional demonstrável. Aceite: Mesma personagem/contexto quando pertinente; distinguir encenação de prova, preservar produto/peças e mostrar identidade/CTA fiel. Sem depoimento, compra ou agenda fictícios. Medir: Continuidade, voz, legendas, prova da versão real e qualidade final em desktop/mobile. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo preparam e identificam a peça do novo experimento; Psique e Têmis revisam a candidata exata. Não substituir o vídeo do experimento predecessor para testar outra comunicação.",
+          "responsibilityDomain": "AUDIOVISUAL_PRODUCTION",
+          "responsibleAgentKeys": [
+            "videomaker"
+          ],
+          "executionResourceCode": "video-management-service"
+        },
+        {
+          "id": "customer",
+          "type": "TASK",
+          "label": "Avaliar experiência humana do criativo",
+          "owner": "Psique",
+          "description": "Inspeciona cada formato real e registra reação, clareza, desejo, confiança e esforço. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Avaliação simulada da compreensão, esforço, desejo hipotético e capacidade de aplicar o resultado mostrado. Aceite: Agente identificado; personagem não conta como compradora nem satisfação comprovada. Resultado não utilizável volta à construção, mensagem sem suporte à comunicação. Medir: Falhas observadas, legibilidade e conclusão; nenhuma inferência de emoção individual. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo preparam e identificam a peça do novo experimento; Psique e Têmis revisam a candidata exata. Não substituir o vídeo do experimento predecessor para testar outra comunicação.",
+          "responsibilityDomain": "HUMAN_EXPERIENCE_REVIEW",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "commercial",
+          "type": "TASK",
+          "label": "Revisar integridade comercial do criativo",
+          "owner": "Têmis",
+          "description": "Valida verdade, prova, fidelidade, direitos, compliance e segurança sem criar correção. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Parecer independente ligando promessa, identidade, prova real e limites da oferta. Aceite: Revisar transformação/encenação e fronteira gratuita/paga, fontes/direitos e versão; não fabricar sucesso comercial. Medir: Divergências e evidências de correção, sem autorizar gasto/publicação. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo preparam e identificam a peça do novo experimento; Psique e Têmis revisam a candidata exata. Não substituir o vídeo do experimento predecessor para testar outra comunicação.",
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW",
+          "responsibleAgentKeys": [
+            "meta-ad-approver"
+          ]
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Formatos aprovados nos dois gates?",
+          "owner": "Backend",
+          "description": "Exige prova vigente e zero bloqueio crítico."
+        },
+        {
+          "id": "human",
+          "type": "TASK",
+          "label": "Registrar decisão humana de uso",
+          "owner": "Operador humano",
+          "description": "Seleciona peças elegíveis sem publicar ou gastar. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Íris e Apolo preparam e identificam a peça do novo experimento; Psique e Têmis revisam a candidata exata. Não substituir o vídeo do experimento predecessor para testar outra comunicação."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Pacote criativo aprovado",
+          "owner": "Backend",
+          "description": "Peças e pareceres ficam prontos para integração."
+        }
+      ],
+      "satisfactionContinuityVersion": "SATISFACTION_CONTINUITY_V1"
+    },
+    "processType": "SUBPROCESS",
+    "parentProcessCode": "pde-communication-sales-journey",
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "experiment-homologation-activation",
+    "name": "Homologação técnica de experimento",
+    "purpose": "Comprovar superfícies, transação, eventos e limites sem misturar operação de Hermes com decisão financeira de Plutus. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.",
+    "ownerName": "Backend de Experimentos",
+    "triggerDescription": "Experimento planejado com ativos e limites aprovados.",
+    "outcomeDescription": "Preflight técnico persistido, sem decidir ativação.",
+    "versionNumber": 7,
+    "technicalReference": "docs/canonical/ciclos-aprendizado-vendas-canon.v1.md / CHANGE_PER_CYCLE_V1",
+    "diagram": {
+      "flows": [
+        {
+          "to": "surfaces",
+          "from": "start"
+        },
+        {
+          "to": "transaction",
+          "from": "surfaces"
+        },
+        {
+          "to": "measurement",
+          "from": "transaction"
+        },
+        {
+          "to": "financialGuardrails",
+          "from": "measurement"
+        },
+        {
+          "to": "gate",
+          "from": "financialGuardrails"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Experimento pronto para preflight",
+          "owner": "Backend",
+          "description": "Versões candidatas e limites estão congelados."
+        },
+        {
+          "id": "surfaces",
+          "type": "TASK",
+          "label": "Validar superfícies candidatas",
+          "owner": "Quality Review",
+          "description": "Comprova versão, mobile, desempenho, links, ativos e correspondência. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Provas da mesma versão de anúncio, demonstração e destino com identidade consistente e ação/resultado funcionais. Aceite: Manifesto/hashes e pixels corretos, mobile, links e limites; divergência é bloqueio técnico anterior à revisão paga. Medir: Falhas de versão, acessibilidade e desempenho; health isolado não comprova a experiência. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Verificar a identidade do novo ciclo/experimento e as evidências atuais; compra simulada e eventos QA não contam como vendas. Divergência de versão bloqueia antes de revisão paga."
+        },
+        {
+          "id": "transaction",
+          "type": "TASK",
+          "label": "Testar compra, acesso e entrega",
+          "owner": "Backend",
+          "description": "Executa transação segregada sem registrar venda real. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Compra simulada, acesso e entrega coerentes com o benefício anunciado e a identidade do produto. Aceite: Dados de teste segregados, sem venda real, cobrança ou geração duplicada; preservar preço e condições aprovados. Medir: Conclusão transacional, entrega e recuperação por cenário. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Verificar a identidade do novo ciclo/experimento e as evidências atuais; compra simulada e eventos QA não contam como vendas. Divergência de versão bloqueia antes de revisão paga."
+        },
+        {
+          "id": "measurement",
+          "type": "TASK",
+          "label": "Validar eventos e deduplicação",
+          "owner": "Backend",
+          "description": "Confere contratos operacionais de Hermes sem operar tráfego. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Eventos observáveis de interação, demonstração, oferta vista, checkout, compra, entrega, uso e retorno quando pertinentes. Aceite: Atribuição, versão, janela, denominadores e deduplicação; resultado pronto não é oferta vista, retorno não comprova memória/satisfação; ausente é desconhecido. Medir: Cobertura e segregação de QA/bots/duplicidades, sem operar tráfego. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Verificar a identidade do novo ciclo/experimento e as evidências atuais; compra simulada e eventos QA não contam como vendas. Divergência de versão bloqueia antes de revisão paga."
+        },
+        {
+          "id": "financialGuardrails",
+          "type": "TASK",
+          "label": "Validar limites financeiros persistidos",
+          "owner": "Backend",
+          "description": "Confere teto e regras aprovados por Plutus sem recalcular ou autorizar gasto. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Limites persistidos de aquisição, entrega e amostra quando prevista, com validade do plano e parecer. Aceite: Incluir usos gratuitos sem compra, tentativas/suporte; verificar teto/janela/parada sem recalcular nem autorizar gasto. Medir: Cobertura dos custos e travas; contribuição projetada não é lucro realizado. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Verificar a identidade do novo ciclo/experimento e as evidências atuais; compra simulada e eventos QA não contam como vendas. Divergência de versão bloqueia antes de revisão paga."
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Preflight técnico aprovado?",
+          "owner": "Backend",
+          "description": "Persiste evidências e causa de qualquer bloqueio."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Preflight entregue ao processo pai",
+          "owner": "Backend",
+          "description": "O subprocesso termina sem autorizar RUNNING."
+        }
+      ],
+      "satisfactionContinuityVersion": "SATISFACTION_CONTINUITY_V1"
+    },
+    "processType": "SUBPROCESS",
+    "parentProcessCode": "pde-commercial-homologation-activation",
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "operacao-otimizacao-experimento",
+    "name": "Operação e otimização de experimento",
+    "purpose": "Operar crescimento e devolver cada correção ao agente proprietário da variável. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.",
+    "ownerName": "Hermes",
+    "triggerDescription": "Experimento RUNNING após autorização humana.",
+    "outcomeDescription": "Teste controlado decidido por eventos, vendas e entrega reais.",
+    "versionNumber": 8,
+    "technicalReference": "docs/canonical/ciclos-aprendizado-vendas-canon.v1.md / CHANGE_PER_CYCLE_V1",
+    "diagram": {
+      "flows": [
+        {
+          "to": "task-1",
+          "from": "start"
+        },
+        {
+          "to": "task-2",
+          "from": "task-1"
+        },
+        {
+          "to": "task-3",
+          "from": "task-2"
+        },
+        {
+          "to": "task-4",
+          "from": "task-3"
+        },
+        {
+          "to": "task-5",
+          "from": "task-4"
+        },
+        {
+          "to": "task-6",
+          "from": "task-5"
+        },
+        {
+          "to": "task-7",
+          "from": "task-6"
+        },
+        {
+          "to": "task-8",
+          "from": "task-7"
+        },
+        {
+          "to": "task-9",
+          "from": "task-8"
+        },
+        {
+          "to": "task-10",
+          "from": "task-9"
+        },
+        {
+          "to": "gate",
+          "from": "task-10"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Operação autorizada",
+          "owner": "Backend",
+          "description": "Estratégia, orçamento e regras de parada estão vigentes."
+        },
+        {
+          "id": "task-1",
+          "type": "TASK",
+          "label": "Verificar integridade dos eventos",
+          "owner": "Hermes",
+          "description": "Entregar: conciliação de eventos com fonte, versão, gatilho, unidade, numerador/denominador, atribuição e janela. Aceite: visitantes humanos distintos; testes, bots, duplicidades e reembolsos segregados; não inventar zero para fonte ausente. Verificar exposição real à oferta com limiar declarado; resultado pronto não dispara oferta vista. Medir: separar primeira interação, conclusão, resultado, aplicação/relato, cadastro, login, retorno, checkout e compra. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Funil da situação reconhecida até compra, entrega, uso e retorno, com fonte e versão. Aceite: Somente comportamentos observáveis e atribuídos, sem solicitar lembrança/opinião nem inferir emoção; fonte ausente não é zero. Medir: Conversão por etapa, compras líquidas e cobertura. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Não aplicar variante no experimento em medição. Registrar causa, uma mudança, referência e retorno; materializar e medir somente no sucessor. Acompanhar compras líquidas, contribuição e custos próprios por janela.",
+          "responsibilityDomain": "GROWTH_OPERATION",
+          "responsibleAgentKeys": [
+            "growth-operator"
+          ]
+        },
+        {
+          "id": "task-2",
+          "type": "TASK",
+          "label": "Acumular amostra mínima",
+          "owner": "Hermes",
+          "description": "Entregar: amostra e janela atingidas ou leitura inconclusiva, usando o planejamento aprovado. Aceite: contar pessoas elegíveis deduplicadas, aguardar janela de compra e reportar incerteza; não copiar 100/500 visitas a todo produto sem justificativa. Parada financeira protege o caixa, mas não comprova rejeição estatística. Medir: amostra observada/meta, compras líquidas e cobertura das fontes, sempre dentro do teto autorizado. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Não aplicar variante no experimento em medição. Registrar causa, uma mudança, referência e retorno; materializar e medir somente no sucessor. Acompanhar compras líquidas, contribuição e custos próprios por janela.",
+          "responsibilityDomain": "GROWTH_OPERATION",
+          "responsibleAgentKeys": [
+            "growth-operator"
+          ]
+        },
+        {
+          "id": "task-3",
+          "type": "TASK",
+          "label": "Identificar gargalo real",
+          "owner": "Hermes",
+          "description": "Entregar: primeira perda mensurável do funil com numerador, denominador, versão, origem e janela; hipótese causal e explicação concorrente. Aceite: comparar início → conclusão → resultado → oferta efetivamente vista → checkout → compra, sem confundir cadastro/login nem resultado/uso; registrar lacunas e amostra insuficiente. Medir: abandono por etapa e tempo até o benefício. Correlação ou clique não confirma causa, satisfação ou lucro. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Primeira perda mensurável e hipótese/explicação concorrente sobre mensagem, prova, esforço ou continuidade. Aceite: Retorno não prova memória/satisfação; localizar causa com históricos comparáveis antes de alterar estratégia, preço ou produto. Medir: Abandono, tempo até benefício e custo por compra, com denominadores. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Não aplicar variante no experimento em medição. Registrar causa, uma mudança, referência e retorno; materializar e medir somente no sucessor. Acompanhar compras líquidas, contribuição e custos próprios por janela.",
+          "responsibilityDomain": "GROWTH_OPERATION",
+          "responsibleAgentKeys": [
+            "growth-operator"
+          ]
+        },
+        {
+          "id": "task-4",
+          "type": "TASK",
+          "label": "Propor ajuste operacional de uma variável",
+          "owner": "Hermes",
+          "description": "Entregar: uma variável principal, referência anterior, hipótese, explicação concorrente, condições mantidas e critério de sucesso/falha predefinido. Aceite: preservar estratégia, preço, público e produto quando não forem a variável autorizada; contradição volta a Atena, produto a Dédalo e comunicação a Íris. Medir: efeito na etapa-alvo junto com compras líquidas, entrega, CAC e margem; participação isolada não autoriza escala. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Teste de abordagem dos entregáveis versus satisfação ligada à prova, se autorizado, com referência e uma mudança principal. Aceite: Preservar produto/preço/público/página; testar amostra separadamente e devolver problema à atividade responsável. Medir: Compras, contribuição e guardas de entrega/reembolso, admitindo resultado inconclusivo. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Não aplicar variante no experimento em medição. Registrar causa, uma mudança, referência e retorno; materializar e medir somente no sucessor. Acompanhar compras líquidas, contribuição e custos próprios por janela.",
+          "responsibilityDomain": "GROWTH_OPERATION",
+          "responsibleAgentKeys": [
+            "growth-operator"
+          ]
+        },
+        {
+          "id": "task-5",
+          "type": "TASK",
+          "label": "Revisar experiência humana da variante",
+          "owner": "Psique",
+          "description": "Avalia a variante real sem substituir dados do funil ou materializar correção. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Revisão simulada da variante e da ligação entre situação, ação, resultado e satisfação possível. Aceite: Sem preferência humana fabricada; manter identidade e produto reais, usar evidência do artefato. Medir: Clareza, esforço e utilidade funcional; não substituir dados de mercado. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Não aplicar variante no experimento em medição. Registrar causa, uma mudança, referência e retorno; materializar e medir somente no sucessor. Acompanhar compras líquidas, contribuição e custos próprios por janela.",
+          "responsibilityDomain": "HUMAN_EXPERIENCE_REVIEW",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "task-6",
+          "type": "TASK",
+          "label": "Revisar integridade comercial da variante",
+          "owner": "Têmis",
+          "description": "Avalia prova, fidelidade, direitos e compliance sem criar a variante. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Parecer independente sobre promessa, prova, identidade e transformação mostradas. Aceite: Sem satisfação garantida, depoimento ou agendamento fictícios; amostra precisa existir e cumprir o contrato. Medir: Divergências confirmadas e retornos à origem. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Não aplicar variante no experimento em medição. Registrar causa, uma mudança, referência e retorno; materializar e medir somente no sucessor. Acompanhar compras líquidas, contribuição e custos próprios por janela.",
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW",
+          "responsibleAgentKeys": [
+            "meta-ad-approver"
+          ]
+        },
+        {
+          "id": "task-7",
+          "type": "TASK",
+          "label": "Validar limite financeiro da variante",
+          "owner": "Plutus",
+          "description": "Entregar: parecer sobre orçamento, receita líquida, CAC e custo integral da variante, incluindo IA, suporte, taxas, entrega e reembolsos. Aceite: fontes/validade e cenários conservador/esperado/uso intenso; desconhecido não é zero; contribuição positiva e margem conforme política aprovada. Medir: compras líquidas, contribuição e margem após custos e aquisição. Parecer não autoriza gasto ou ampliação de teto. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Economia medida de entrega, aquisição e amostras, inclusive sem compra, tentativas, suporte e reembolsos. Aceite: Custos essenciais com fonte; preservar pareceres válidos, desconhecido pendente; não autorizar novo teto. Medir: CAC, contribuição, margem e cobertura após todos os custos variáveis. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Não aplicar variante no experimento em medição. Registrar causa, uma mudança, referência e retorno; materializar e medir somente no sucessor. Acompanhar compras líquidas, contribuição e custos próprios por janela.",
+          "responsibilityDomain": "FINANCIAL_VALIDATION",
+          "responsibleAgentKeys": [
+            "financial-agent"
+          ]
+        },
+        {
+          "id": "task-8",
+          "type": "TASK",
+          "label": "Autorizar mudança material quando necessária",
+          "owner": "Operador humano",
+          "description": "Autoriza gasto, publicação ou mudança comercial material. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Não aplicar variante no experimento em medição. Registrar causa, uma mudança, referência e retorno; materializar e medir somente no sucessor. Acompanhar compras líquidas, contribuição e custos próprios por janela."
+        },
+        {
+          "id": "task-9",
+          "type": "TASK",
+          "label": "Rotear materialização autorizada",
+          "owner": "Backend",
+          "description": "Abre job de Íris para comunicação, Apolo para audiovisual ou Dédalo para produto conforme a variável aprovada. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Não aplicar variante no experimento em medição. Registrar causa, uma mudança, referência e retorno; materializar e medir somente no sucessor. Acompanhar compras líquidas, contribuição e custos próprios por janela."
+        },
+        {
+          "id": "task-10",
+          "type": "TASK",
+          "label": "Executar teste e medir efeito",
+          "owner": "Hermes",
+          "description": "Entregar: comparação da variante com a referência, uma mudança principal, condições mantidas, amostra/janela e limitações; preservar histórico. Aceite: evidência suficiente ou conclusão inconclusiva; testes qualitativos não contam na amostra paga. Medir: etapa-alvo, vendas líquidas, receita conciliada, CAC, custo completo, entrega útil e reembolso. Melhor participação sem venda/margem não comprova sucesso comercial. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Comparação com fatos favoráveis/contrários à satisfação proposta, à prova e à utilidade de retorno. Aceite: Uma mudança principal, amostra/janela, versões e explicações concorrentes; retorno/recompra não prova emoção ou mecanismo de memória. Medir: Compras líquidas, entrega/uso, reembolso e contribuição para repetir ou encerrar. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Não aplicar variante no experimento em medição. Registrar causa, uma mudança, referência e retorno; materializar e medir somente no sucessor. Acompanhar compras líquidas, contribuição e custos próprios por janela.",
+          "responsibilityDomain": "GROWTH_OPERATION",
+          "responsibleAgentKeys": [
+            "growth-operator"
+          ]
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Continuar, ajustar ou parar?",
+          "owner": "Backend",
+          "description": "Decide somente com evidência comercial real."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Otimização decidida",
+          "owner": "Backend",
+          "description": "Resultado e próximo movimento ficam auditáveis."
+        }
+      ],
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1",
+      "satisfactionContinuityVersion": "SATISFACTION_CONTINUITY_V1"
+    },
+    "processType": "SUBPROCESS",
+    "parentProcessCode": "pde-sales-delivery-learning",
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "venda-entrega-satisfacao-cliente",
+    "name": "Venda, entrega e satisfação da cliente",
+    "purpose": "Entregar a versão comprada e aprender com integridade sem atribuir produção e revisão ao mesmo agente. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.",
+    "ownerName": "Backend de Entrega",
+    "triggerDescription": "Pagamento aprovado e reconciliado.",
+    "outcomeDescription": "Venda entregue com satisfação ou falha bloqueada e tratada pela causa-raiz.",
+    "versionNumber": 6,
+    "technicalReference": "docs/canonical/ciclos-aprendizado-vendas-canon.v1.md / CHANGE_PER_CYCLE_V1",
+    "diagram": {
+      "flows": [
+        {
+          "to": "reconcile",
+          "from": "start"
+        },
+        {
+          "to": "materialization",
+          "from": "reconcile"
+        },
+        {
+          "to": "integrity",
+          "from": "materialization"
+        },
+        {
+          "to": "delivery",
+          "from": "integrity"
+        },
+        {
+          "to": "satisfaction",
+          "from": "delivery"
+        },
+        {
+          "to": "financial",
+          "from": "satisfaction"
+        },
+        {
+          "to": "learning",
+          "from": "financial"
+        },
+        {
+          "to": "gate",
+          "from": "learning"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Pagamento aprovado",
+          "owner": "Backend",
+          "description": "Evento oficial chega segregado de testes."
+        },
+        {
+          "id": "reconcile",
+          "type": "TASK",
+          "label": "Conciliar venda e versão contratada",
+          "owner": "Backend",
+          "description": "Confirma valor, produto e versão antes da entrega. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Entregar o contrato comprado no experimento de origem mesmo após iniciar sucessor. Receita, custo, reembolso, uso e retorno pertencem à sua versão; não transferir vendas ou aprovações entre ciclos."
+        },
+        {
+          "id": "materialization",
+          "type": "TASK",
+          "label": "Materializar personalização quando contratada",
+          "owner": "Dédalo",
+          "description": "Produz somente a personalização não audiovisual prevista sem mudar oferta ou preço. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Entrega personalizada coerente com a situação, identidade e resultado funcional comprados. Aceite: Preservar contexto e limites da oferta, sem modificar imagem do trabalho ou inventar capacidade. Medir: Correspondência, custo integral e conclusão funcional. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Entregar o contrato comprado no experimento de origem mesmo após iniciar sucessor. Receita, custo, reembolso, uso e retorno pertencem à sua versão; não transferir vendas ou aprovações entre ciclos.",
+          "responsibilityDomain": "PDE_CONSTRUCTION",
+          "responsibleAgentKeys": [
+            "landing-generator"
+          ]
+        },
+        {
+          "id": "integrity",
+          "type": "TASK",
+          "label": "Revisar integridade da entrega",
+          "owner": "Têmis",
+          "description": "Comprova fidelidade, direitos e segurança sem produzir os arquivos. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Entregar o contrato comprado no experimento de origem mesmo após iniciar sucessor. Receita, custo, reembolso, uso e retorno pertencem à sua versão; não transferir vendas ou aprovações entre ciclos.",
+          "responsibilityDomain": "COMMERCIAL_INTEGRITY_REVIEW",
+          "responsibleAgentKeys": [
+            "meta-ad-approver"
+          ]
+        },
+        {
+          "id": "delivery",
+          "type": "TASK",
+          "label": "Entregar e confirmar acesso",
+          "owner": "Backend",
+          "description": "Comprova canal, recebimento, links, arquivos e prazo. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Entrega identificável, acessível e reencontrável quando previsto, com orientação de aplicação. Aceite: Cumprir prazo/canal, permitir recuperar resultado sem reentrega ou cobrança duplicada. Medir: Recebimento, links válidos, primeiro uso e retorno voluntário atribuível. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Entregar o contrato comprado no experimento de origem mesmo após iniciar sucessor. Receita, custo, reembolso, uso e retorno pertencem à sua versão; não transferir vendas ou aprovações entre ciclos."
+        },
+        {
+          "id": "satisfaction",
+          "type": "TASK",
+          "label": "Avaliar satisfação e utilidade",
+          "owner": "Psique",
+          "description": "Registra uso, valor percebido, dificuldade e satisfação sem inventar comportamento. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Leitura por Psique de uso observável, dificuldade, suporte e relatos espontâneos com fonte/data e limites. Aceite: Sem solicitar opinião, entrevistar ou recrutar; separar simulação, comportamento e relato. Retorno/recompra não comprova satisfação ou memória. Medir: Uso, retorno, cancelamento e reembolso; emoção sem evidência permanece hipótese. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Entregar o contrato comprado no experimento de origem mesmo após iniciar sucessor. Receita, custo, reembolso, uso e retorno pertencem à sua versão; não transferir vendas ou aprovações entre ciclos.",
+          "responsibilityDomain": "HUMAN_EXPERIENCE_REVIEW",
+          "responsibleAgentKeys": [
+            "customer-agent"
+          ]
+        },
+        {
+          "id": "financial",
+          "type": "TASK",
+          "label": "Conciliar receita, reembolso e risco",
+          "owner": "Plutus",
+          "description": "Relaciona pagamento, custo, reembolso e margem sem movimentar recursos. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Conciliação de receita líquida, aquisição, taxas, entrega, IA, tentativas, suporte e amostras, inclusive sem compra. Aceite: Custos essenciais conhecidos e reembolsos conciliados; sem movimentar recursos ou confundir projeção com lucro. Medir: Contribuição por venda, margem e cobertura; custos fixos/preparação avaliados separadamente. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Entregar o contrato comprado no experimento de origem mesmo após iniciar sucessor. Receita, custo, reembolso, uso e retorno pertencem à sua versão; não transferir vendas ou aprovações entre ciclos.",
+          "responsibilityDomain": "FINANCIAL_VALIDATION",
+          "responsibleAgentKeys": [
+            "financial-agent"
+          ]
+        },
+        {
+          "id": "learning",
+          "type": "TASK",
+          "label": "Registrar aprendizado candidato",
+          "owner": "Backend",
+          "description": "Preserva procedência; prova só é reutilizada com consentimento e aprovação. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Resultado da hipótese de satisfação com contrapontos, versão, fonte, identidade e ocasião legítima de retorno. Aceite: Reutilização governada e consentimento quando necessário; indicação/recompra atribuídas e pertinentes, sem fabricar depoimento. Medir: Vendas líquidas, entrega útil, reembolso e contribuição; retorno não comprova mecanismo psicológico. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Entregar o contrato comprado no experimento de origem mesmo após iniciar sucessor. Receita, custo, reembolso, uso e retorno pertencem à sua versão; não transferir vendas ou aprovações entre ciclos."
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY",
+          "label": "Venda terminou com entrega satisfatória?",
+          "owner": "Backend",
+          "description": "Atraso ou falha bloqueia nova aquisição até correção."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Venda entregue e reconciliada",
+          "owner": "Backend",
+          "description": "Receita e satisfação ficam auditáveis."
+        }
+      ],
+      "satisfactionContinuityVersion": "SATISFACTION_CONTINUITY_V1"
+    },
+    "processType": "SUBPROCESS",
+    "parentProcessCode": "pde-sales-delivery-learning",
+    "executionScope": "PRODUCT"
+  },
+  {
+    "processCode": "value-chain-learning-sales-cycle",
+    "name": "Ciclos de aprendizado e vendas",
+    "purpose": "Transformar automaticamente resultados atribuídos em decisões para melhorar produto, comunicação, vendas líquidas e contribuição. Satisfação pretendida, prova funcional, identidade e ocasião de retorno são explícitas; emoção e memória permanecem hipóteses. Cada mudança das condições testadas exige novo ciclo e novo experimento com memória do predecessor.",
+    "ownerName": "Coordenação da Cadeia de Valor",
+    "triggerDescription": "Hipótese inicial ou decisão de ajuste de um experimento anterior.",
+    "outcomeDescription": "Atena prepara a proposta com evidências conciliadas; o usuário edita e aprova; o backend registra a decisão e o retorno no BPM.",
+    "versionNumber": 7,
+    "technicalReference": "docs/canonical/ciclos-aprendizado-vendas-canon.v1.md / CHANGE_PER_CYCLE_V1",
+    "diagram": {
+      "flows": [
+        {
+          "to": "LEARNING",
+          "from": "start"
+        },
+        {
+          "to": "PLANNING",
+          "from": "LEARNING"
+        },
+        {
+          "to": "ADJUSTMENT",
+          "from": "PLANNING"
+        },
+        {
+          "to": "VIDEO_BRIEF",
+          "from": "ADJUSTMENT"
+        },
+        {
+          "to": "CAMPAIGN_VIDEO",
+          "from": "VIDEO_BRIEF"
+        },
+        {
+          "to": "PDE_ENTRY_VIDEO",
+          "from": "CAMPAIGN_VIDEO"
+        },
+        {
+          "to": "VIDEO_APPROVAL",
+          "from": "PDE_ENTRY_VIDEO"
+        },
+        {
+          "to": "VALIDATION",
+          "from": "VIDEO_APPROVAL"
+        },
+        {
+          "to": "qualityDecision",
+          "from": "VALIDATION"
+        },
+        {
+          "to": "PUBLICATION",
+          "from": "AUTHORIZATION"
+        },
+        {
+          "to": "MEASUREMENT",
+          "from": "PUBLICATION"
+        },
+        {
+          "to": "DECISION",
+          "from": "MEASUREMENT"
+        },
+        {
+          "to": "commercialDecision",
+          "from": "DECISION"
+        },
+        {
+          "to": "end",
+          "from": "qualityDecision",
+          "label": "Mudança: ADJUST, novo ciclo e novo experimento"
+        },
+        {
+          "to": "AUTHORIZATION",
+          "from": "qualityDecision",
+          "label": "Aprovado: mesma versão"
+        },
+        {
+          "to": "end",
+          "from": "commercialDecision",
+          "label": "Mudança: ADJUST, novo ciclo e novo experimento; encerrar ou inconclusivo preserva o histórico"
+        },
+        {
+          "to": "MEASUREMENT",
+          "from": "commercialDecision",
+          "kind": "REWORK",
+          "label": "Continuar dentro dos limites / corrigir medição"
+        },
+        {
+          "to": "end",
+          "from": "VIDEO_APPROVAL",
+          "label": "Mudança: ADJUST, novo ciclo e novo experimento"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Aprendizado anterior ou primeira hipótese"
+        },
+        {
+          "id": "LEARNING",
+          "type": "TASK",
+          "label": "Aprendizado e hipótese",
+          "owner": "Backend · coordenação e registro",
+          "description": "Entregar: aprendizado com fonte/data, versões, estado/objetivo da etapa, fato observado, hipótese e explicação concorrente; separar sucessos, falhas e limites de validade. Aceite: conciliação do experimento anterior sem transformar participação do experimento de referência em causalidade ou venda; resolver contradições antes de reutilizar memória. Medir: evidência nova, recorrência do gargalo e resultado comercial conhecido, sem dados pessoais no aprendizado. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Fatos favoráveis/contrários à satisfação proposta, prova, identidade e ocasião de retorno com fontes e versões. Aceite: Separar observação, relato espontâneo e hipótese; memória/emoção não são inferidas de clique/retorno. Medir: Gargalo, recorrência e resultado comercial conhecido. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Registrar mudança pela decisão ADJUST e preparar sucessor planejado com novo ciclo e novo experimento antes do ajuste. Sem exposição, registrar hipótese e lacuna sem inventar resultado; depois de exposição, conciliar e preservar evidências. Expansão de investimento também usa sucessor e autorização própria. Coordenação e registro pelo backend; especialistas executam nos subprocessos e ferramentas canônicas.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "PLANNING",
+          "type": "TASK",
+          "label": "Planejar o experimento",
+          "owner": "Backend · coordenação e registro",
+          "description": "Entregar: referência anterior, uma variável principal, hipótese e explicação concorrente; oferta, canal, público e entrega mantidos quando não forem a variável, amostra, janela de compra, atribuição, teto e parada predefinidos. Aceite: metas justificadas por produto e economia, custo desconhecido pendente; mudança material requer aprovação própria. Medir: etapa-alvo e guardas de compras líquidas, utilidade, CAC, custo integral e margem. Não confundir limite financeiro com conclusão estatística. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Uma mudança principal na abordagem com referência, alternativa concorrente e condições comparáveis. Aceite: Preservar produto, preço, público e página quando a variável for a narrativa; amostra é teste separado com custos/limites aprovados. Medir: Compras líquidas, CAC e contribuição, com janela, amostra e atribuição definidas. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Registrar mudança pela decisão ADJUST e preparar sucessor planejado com novo ciclo e novo experimento antes do ajuste. Sem exposição, registrar hipótese e lacuna sem inventar resultado; depois de exposição, conciliar e preservar evidências. Expansão de investimento também usa sucessor e autorização própria. Coordenação e registro pelo backend; especialistas executam nos subprocessos e ferramentas canônicas.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "ADJUSTMENT",
+          "type": "TASK",
+          "label": "Ajustar produto e comunicação",
+          "owner": "Backend · coordenação e registro",
+          "description": "Execute a atividade indicada pela causa. Entregue uma ação útil para a cliente e uma comunicação fiel. Registre a versão e as provas do ajuste. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Registrar mudança pela decisão ADJUST e preparar sucessor planejado com novo ciclo e novo experimento antes do ajuste. Sem exposição, registrar hipótese e lacuna sem inventar resultado; depois de exposição, conciliar e preservar evidências. Expansão de investimento também usa sucessor e autorização própria. Coordenação e registro pelo backend; especialistas executam nos subprocessos e ferramentas canônicas.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "VIDEO_BRIEF",
+          "type": "TASK",
+          "label": "Definir os dois vídeos",
+          "owner": "Backend · coordenação e registro",
+          "description": "Defina objetivo, CTA e métrica próprios do vídeo AD e da entrada LANDING_HERO. Demonstre o produto real e registre a hipótese principal, as variáveis mantidas e a referência do teto de produção. Consumo exige autorização e preflight no Estúdio. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Briefing de Íris para Apolo com situação reconhecível, participação concreta do produto, resultado aplicável, identidade e satisfação possível. Aceite: Versão/prova reais e persona transformada identificada como encenação, CTA/limites coerentes; não prometer satisfação garantida. Medir: Métrica do papel no funil, qualidade final e custo conhecido por vídeo aceito. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Registrar mudança pela decisão ADJUST e preparar sucessor planejado com novo ciclo e novo experimento antes do ajuste. Sem exposição, registrar hipótese e lacuna sem inventar resultado; depois de exposição, conciliar e preservar evidências. Expansão de investimento também usa sucessor e autorização própria. Coordenação e registro pelo backend; especialistas executam nos subprocessos e ferramentas canônicas.",
+          "runtimePath": "/audio-video-studio"
+        },
+        {
+          "id": "CAMPAIGN_VIDEO",
+          "type": "TASK",
+          "label": "Produzir vídeo do criativo de campanha",
+          "owner": "Backend · coordenação e registro",
+          "description": "No Estúdio, use o produto e o experimento deste ciclo para produzir um vídeo AD com gancho, prova fiel, áudio, legendas e CTA para a experiência. Passe por preflight e Plutus antes de consumir. Selecione aqui o ativo pronto; ausência ou falha exige correção. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Registrar mudança pela decisão ADJUST e preparar sucessor planejado com novo ciclo e novo experimento antes do ajuste. Sem exposição, registrar hipótese e lacuna sem inventar resultado; depois de exposição, conciliar e preservar evidências. Expansão de investimento também usa sucessor e autorização própria. Coordenação e registro pelo backend; especialistas executam nos subprocessos e ferramentas canônicas.",
+          "runtimePath": "/audio-video-studio"
+        },
+        {
+          "id": "PDE_ENTRY_VIDEO",
+          "type": "TASK",
+          "label": "Produzir vídeo de entrada do PDE",
+          "owner": "Backend · coordenação e registro",
+          "description": "Produza um LANDING_HERO distinto do mesmo experimento: mostre o que a pessoa faz, o primeiro resultado útil e a continuidade paga. Use a versão ajustada e legendas. Assistir deve ser opcional, com CTA acessível e fallback. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Registrar mudança pela decisão ADJUST e preparar sucessor planejado com novo ciclo e novo experimento antes do ajuste. Sem exposição, registrar hipótese e lacuna sem inventar resultado; depois de exposição, conciliar e preservar evidências. Expansão de investimento também usa sucessor e autorização própria. Coordenação e registro pelo backend; especialistas executam nos subprocessos e ferramentas canônicas.",
+          "runtimePath": "/audio-video-studio"
+        },
+        {
+          "id": "VIDEO_APPROVAL",
+          "type": "TASK",
+          "label": "Revisar e integrar os dois vídeos",
+          "owner": "Backend · coordenação e registro",
+          "description": "Aprove os ativos nos gates oficiais. No experimento, crie e aprove o criativo a partir do AD. Em Versões PDE, inclua o LANDING_HERO no rascunho da versão deste ciclo. Registre reprodução, legendas, fallback, CTA sem assistir e mobile com testes segregados. Concluir não publica nem autoriza campanha. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Registrar mudança pela decisão ADJUST e preparar sucessor planejado com novo ciclo e novo experimento antes do ajuste. Sem exposição, registrar hipótese e lacuna sem inventar resultado; depois de exposição, conciliar e preservar evidências. Expansão de investimento também usa sucessor e autorização própria. Coordenação e registro pelo backend; especialistas executam nos subprocessos e ferramentas canônicas.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "VALIDATION",
+          "type": "TASK",
+          "label": "Homologar a mesma versão",
+          "owner": "Backend · coordenação e registro",
+          "description": "Execute homologação técnica e avaliações independentes da mesma versão. Informe a instância real do gate multiagente aprovado, a prova da jornada preservando testes internos e dados comerciais separados. Reprovação volta ao ajuste. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Homologação técnica e revisões simuladas independentes da mesma versão e da fidelidade anúncio → demonstração → compra → entrega. Aceite: Sem entrevistas, recrutamento ou opinião solicitada; simulação identificada, eventos/tráfego segregados e limites comprovados. Medir: Conclusão por cenário, falhas, custo e tempo de homologação; testes não comprovam vendas. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Registrar mudança pela decisão ADJUST e preparar sucessor planejado com novo ciclo e novo experimento antes do ajuste. Sem exposição, registrar hipótese e lacuna sem inventar resultado; depois de exposição, conciliar e preservar evidências. Expansão de investimento também usa sucessor e autorização própria. Coordenação e registro pelo backend; especialistas executam nos subprocessos e ferramentas canônicas.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "qualityDecision",
+          "type": "GATEWAY",
+          "label": "Versão homologada?",
+          "description": "Repetir somente o mesmo contrato. Se a solução mudar a experiência ou as condições testadas, registrar ADJUST e preparar sucessor."
+        },
+        {
+          "id": "AUTHORIZATION",
+          "type": "TASK",
+          "label": "Autorizar orçamento e janela",
+          "owner": "Operador responsável pela autorização",
+          "description": "Confira os gates, confirme a versão, o teto total de mídia e a janela. A autorização registrada no ciclo não aciona campanha: execute o fluxo oficial do experimento. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Registrar mudança pela decisão ADJUST e preparar sucessor planejado com novo ciclo e novo experimento antes do ajuste. Sem exposição, registrar hipótese e lacuna sem inventar resultado; depois de exposição, conciliar e preservar evidências. Expansão de investimento também usa sucessor e autorização própria.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "PUBLICATION",
+          "type": "TASK",
+          "label": "Conferir publicação",
+          "owner": "Operador · fluxo oficial do experimento",
+          "description": "Abra o experimento e solicite sua publicação pelo fluxo oficial. Depois confira aqui o run produtivo, o preflight, a data e o teto aprovados. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Registrar mudança pela decisão ADJUST e preparar sucessor planejado com novo ciclo e novo experimento antes do ajuste. Sem exposição, registrar hipótese e lacuna sem inventar resultado; depois de exposição, conciliar e preservar evidências. Expansão de investimento também usa sucessor e autorização própria.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "MEASUREMENT",
+          "type": "TASK",
+          "label": "Medir vendas e valor entregue",
+          "owner": "Backend · coordenação e registro",
+          "description": "O backend concilia fontes do experimento e persiste período, versão e segregação; resultados não são digitados. Entregar: pessoas humanas distintas, início/conclusão/resultado, oferta efetivamente vista, cadastro/login/retorno, checkout, compras líquidas, receita, custo integral, CAC, entrega/uso e reembolso quando houver fonte. Aceite: gatilhos e denominadores válidos; fonte ausente não vira zero; resultado pronto não comprova oferta vista ou satisfação. Medir: cobertura, amostra/incerteza e contribuição/margem conforme política. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Conciliação de compra, entrega, uso, retorno, reembolso e todos os custos, inclusive amostras sem compra. Aceite: Fonte/versão/janela e deduplicação; oferta vista é evento próprio, desconhecido não vira zero; retorno/recompra não prova emoção ou lembrança. Medir: Compras líquidas, CAC, contribuição e cobertura, com incerteza explícita. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Registrar mudança pela decisão ADJUST e preparar sucessor planejado com novo ciclo e novo experimento antes do ajuste. Sem exposição, registrar hipótese e lacuna sem inventar resultado; depois de exposição, conciliar e preservar evidências. Expansão de investimento também usa sucessor e autorização própria. Coordenação e registro pelo backend; especialistas executam nos subprocessos e ferramentas canônicas.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "DECISION",
+          "type": "TASK",
+          "label": "Revisar e aprovar proposta comercial de Atena",
+          "owner": "Atena",
+          "description": "Entregar: proposta de Atena comparando três alternativas com a conciliação oficial, justificativa, evidência, aprendizado, hipótese, explicação concorrente e destino. Aceite: separar sinal de participação de venda; amostra insuficiente é inconclusiva; escala exige compras líquidas, entrega útil, custos essenciais conhecidos, contribuição positiva e margem vigente. Usuário pode editar/aprovar; proposta inválida/desatualizada bloqueia o losango. Medir: vendas líquidas, CAC, margem e entrega. Este parecer não autoriza gasto/publicação. Contrato SATISFACTION_CONTINUITY_V1 — Entregar: Decisão com três alternativas, fatos favoráveis/contrários, explicação concorrente e retorno à camada da causa. Aceite: Promessa sem prova à estratégia/comunicação; utilidade à construção; atribuição à integração; margem à economia. Amostra insuficiente admite inconclusivo. Medir: Repetir/solicitar escala somente com compra conciliada, entrega útil e contribuição positiva, sem novo gasto implícito. Contrato CHANGE_PER_CYCLE_V1 — Cada mudança das condições testadas exige novo ciclo e novo experimento, vinculados ao predecessor, com uma mudança principal e condições mantidas explícitas. Preservar versões, tentativas, custos, aprovações e resultados anteriores; não misturar métricas nem herdar autorização de gasto. Retentativa do mesmo contrato/artefato não constitui nova hipótese. Registrar mudança pela decisão ADJUST e preparar sucessor planejado com novo ciclo e novo experimento antes do ajuste. Sem exposição, registrar hipótese e lacuna sem inventar resultado; depois de exposição, conciliar e preservar evidências. Expansão de investimento também usa sucessor e autorização própria.",
+          "runtimePath": "/business-process-chains/learning-cycles",
+          "executionContract": "LEARNING_CYCLE_DECISION_PROPOSAL_V1",
+          "responsibilityDomain": "MARKET_STRATEGY",
+          "responsibleAgentKeys": [
+            "experiment-strategist"
+          ],
+          "humanApprovalRequired": true
+        },
+        {
+          "id": "commercialDecision",
+          "type": "GATEWAY",
+          "label": "O que os resultados autorizam?",
+          "description": "Continuar coleta inalterada, corrigir conciliação ou encerrar. Novo criativo, condição ou escala: ADJUST, novo ciclo e novo experimento."
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Preservar histórico; mudança abre novo ciclo e experimento"
+        }
+      ],
+      "schemaVersion": "LEARNING_SALES_CYCLE_V4",
+      "decisionPreparation": {
+        "pending": "/api/internal/business-process-chains/learning-cycles/v1/decision/stage-executions/pending",
+        "agentKey": "experiment-strategist",
+        "sequence": [
+          "ATENA_PROPOSAL",
+          "HUMAN_REVIEW",
+          "EXPLICIT_APPROVAL",
+          "COMMERCIAL_GATEWAY"
+        ],
+        "activityId": "DECISION"
+      },
+      "commercialCriteriaVersion": "PDE_COMMERCIAL_PRINCIPLES_V1",
+      "satisfactionContinuityVersion": "SATISFACTION_CONTINUITY_V1",
+      "experimentChangePolicy": "CHANGE_PER_CYCLE_V1"
+    },
+    "processType": "SUBPROCESS",
+    "parentProcessCode": "pde-sales-delivery-learning",
+    "executionScope": "PRODUCT"
+  }
+]

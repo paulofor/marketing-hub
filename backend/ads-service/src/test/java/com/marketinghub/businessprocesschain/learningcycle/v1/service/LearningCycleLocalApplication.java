@@ -708,6 +708,17 @@ public class LearningCycleLocalApplication {
       return Map.of("updated", true);
     }
 
+    /** Simula fila de publicação para impedir sucessão antes de encerrar o trabalho pendente. */
+    @PostMapping("/fixture/experiments/{id}/pending-publication")
+    Map<String, Object> pendingPublication(
+        @PathVariable Long id, @RequestBody Map<String, Boolean> input) {
+      EXPERIMENTS
+          .get(id)
+          .setFacebookReleaseRequestedAt(
+              input.getOrDefault("pending", true) ? Instant.now() : null);
+      return Map.of("updated", true);
+    }
+
     /** Simula o registro de publicação pelo backend responsável. */
     @PostMapping("/fixture/experiments/{id}/publish")
     Map<String, Object> publish(@PathVariable Long id) {

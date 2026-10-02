@@ -63,6 +63,27 @@ class LearningCycleRulesTest {
     assertFalse(LearningCycleRules.actions("MEASUREMENT").contains(Action.MEASURE));
   }
 
+  /** Impede alteração ou expansão no mesmo registro somente para o contrato novo. */
+  @Test
+  void eachChangedConditionUsesSuccessorWithoutChangingHistoricalRules() {
+    for (String stage :
+        Stream.concat(LearningCycleRules.STAGES.stream(), LearningCycleRules.VIDEO_STAGES.stream())
+            .toList()) {
+      var strict = LearningCycleRules.actions(stage, true);
+      assertTrue(strict.contains(Action.ADJUST), stage);
+      assertFalse(strict.contains(Action.REWORK), stage);
+      assertFalse(strict.contains(Action.SCALE), stage);
+      assertFalse(strict.contains(Action.AUTHORIZE_SCALE), stage);
+      assertEquals(LearningCycleRules.actions(stage), LearningCycleRules.actions(stage, false));
+    }
+    assertTrue(LearningCycleRules.actions("MEASUREMENT", true).contains(Action.FIX_MEASUREMENT));
+    assertTrue(LearningCycleRules.actions("DECISION", true).contains(Action.CONTINUE));
+    assertTrue(LearningCycleRules.actions("VALIDATION", false).contains(Action.REWORK));
+    assertTrue(
+        LearningCycleRules.actions("SCALE_AUTHORIZATION", false).contains(Action.AUTHORIZE_SCALE));
+    assertTrue(LearningCycleRules.actions("UNKNOWN", true).isEmpty());
+  }
+
   /** Aceita resultados válidos sem transformar amostra em venda. */
   @Test
   void validatesStructuredSnapshot() {

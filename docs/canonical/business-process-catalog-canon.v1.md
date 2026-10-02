@@ -11,6 +11,17 @@
 
 ## Decisão
 
+### Mudança isolada em novo ciclo e experimento — 02/10/2026
+
+A cadeia e suas atividades seguem `CHANGE_PER_CYCLE_V1`, descrito em
+`ciclos-aprendizado-vendas-canon.v1.md`: cada mudança de criativo, experiência ou
+condição testada usa novo ciclo e novo experimento, conservando o predecessor.
+O campo `diagram.experimentChangePolicy` ativa essa política na nova definição do
+subprocesso de ciclos. A edição administrativa preserva a política do rascunho,
+responsabilidades e atributos dos nós; publicar não migra ocorrências históricas.
+A tela da cadeia expõe criar versão, editar rascunho e publicar pelos contratos
+existentes. Links com ID histórico consultam a versão exata, mesmo aposentada.
+
 ### Preparação comercial por tipo Opala — decisão de 15/09/2026, corrigida em 16/09/2026
 
 A preparação comercial Opala pertence ao **Processo 5 — Homologar e ativar**, na
@@ -528,7 +539,17 @@ Psique e Têmis nunca são coautoras da mesma atividade. Definições histórica
 continuam legíveis e executáveis somente para preservar auditoria, mas não podem ser republicadas ou
 usadas como modelo de nova versão. O comando canônico da tela do produto é
 `POST /api/business-processes/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests`.
-Ele somente aceita versão `PUBLISHED`, produto em `PLAY`, atividade ainda não iniciada ou
+
+Especializações já executadas por `pde-construction-approval` preservam seu contrato:
+Psique em `technicalHomologation` usa `PDE_TECHNICAL_HOMOLOGATION`; em `psiqueAdherent`,
+`psiqueRecovery` e `psiqueSafety`, `SYNTHETIC_EXPERIENCE_REVIEW`. Dédalo em
+`prototypeCorrection` usa `PDE_FUNCTIONAL_REWORK`. Somente essas combinações de processo,
+atividade e agente são aceitas. O `agentValidationGate`, executado pelo Backend em modo
+`DETERMINISTIC`, preserva `PDE_AGENT_VALIDATION_GATE` sem fingir autoria de um agente.
+O editor deve conservar e permitir corrigir esses metadados; copiá-los por SQL sem validar o
+contrato não autoriza a republicação. O teste de candidatas usa o validador do cadastro.
+
+O comando de solicitação de execução somente aceita versão `PUBLISHED`, produto em `PLAY`, atividade ainda não iniciada ou
 `BLOCKED` ou `CANCELLED` e experimento do próprio produto. Uma atividade `BLOCKED` ou `CANCELLED` deve expor na tela o comando explícito
 **Reiniciar tarefa**, desde que seus validadores de prontidão atuais permitam a nova tentativa. O
 reinício após `BLOCKED` cria uma tentativa `PENDING` na mesma instância e referência operacional, preserva a tarefa

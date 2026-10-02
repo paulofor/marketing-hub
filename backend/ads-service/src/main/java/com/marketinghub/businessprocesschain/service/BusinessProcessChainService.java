@@ -247,9 +247,10 @@ public class BusinessProcessChainService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Todos os processos da cadeia precisam estar publicados.");
     }
-    if ("SUBPROCESS".equals(processType)) {
+    if (!"VALUE_PROCESS".equals(processType)) {
       throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST, "Subprocessos não podem ocupar uma etapa da cadeia de valor.");
+          HttpStatus.BAD_REQUEST,
+          "Cada etapa da cadeia precisa ser um processo de valor (VALUE_PROCESS); subprocessos e tipos legados não são aceitos.");
     }
   }
 

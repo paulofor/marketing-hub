@@ -29,3 +29,13 @@ export type BusinessProcessChainDetail = BusinessProcessChainSummary & {
   createdAt: string;
   processes: BusinessProcessChainProcess[];
 };
+
+export type BusinessProcessChainSave = Pick<
+  BusinessProcessChainSummary,
+  "name" | "purpose" | "outcomeDescription" | "primaryMetric"
+> & {
+  processes: Pick<
+    BusinessProcessChainProcess,
+    "processDefinitionId" | "valueContribution"
+  >[];
+};

@@ -265,7 +265,7 @@ public class BusinessProcessDefinitionService {
       if (!Set.of("START", "TASK", "GATEWAY", "END").contains(type)) {
         throw invalid("Todo elemento deve possuir um tipo BPM reconhecido.");
       }
-      validateAgentResponsibility(node, type);
+      validateAgentResponsibility(node, type, processCode);
       validateExecutionResource(node, type);
       validateDocumentOutput(node, type);
       validateSubprocessReference(node, type, processCode);
@@ -280,10 +280,10 @@ public class BusinessProcessDefinitionService {
     }
   }
 
-  /** Aplica a matriz canônica que impede coautoria e domínio incompatível entre agentes. */
-  private void validateAgentResponsibility(JsonNode node, String nodeType) {
+  /** Aplica autoria única e subdomínios especializados somente no processo que os define. */
+  private void validateAgentResponsibility(JsonNode node, String nodeType, String processCode) {
     try {
-      AgentResponsibilityMatrix.validate(node, nodeType);
+      AgentResponsibilityMatrix.validate(node, nodeType, processCode);
     } catch (IllegalArgumentException ex) {
       log.warn(
           "Falha ao validar responsabilidade de agente no processo. operacao=publicar-processo activityId={} nodeType={} owner={}",

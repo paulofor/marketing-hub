@@ -11,16 +11,28 @@ import java.util.Map;
 final class AgentResponsibilityMatrix {
   private static final Map<String, Responsibility> RESPONSIBILITIES = responsibilities();
 
+  /** Impede instâncias da matriz determinística de responsabilidades. */
   private AgentResponsibilityMatrix() {}
 
   /** Valida identidade, domínio e rótulo do único agente responsável por uma atividade. */
   static void validate(JsonNode node, String nodeType) {
+    validate(node, nodeType, null);
+  }
+
+  /** Valida autoria e reconhece subdomínios somente nas atividades canônicas do processo. */
+  static void validate(JsonNode node, String nodeType, String processCode) {
     JsonNode responsibleAgentKeys = node.get("responsibleAgentKeys");
     String responsibilityDomain = node.path("responsibilityDomain").asText("").trim();
     String owner = node.path("owner").asText("").trim();
     List<Responsibility> matchedOwners = matchedOwners(owner);
 
     if (responsibleAgentKeys == null || responsibleAgentKeys.isNull()) {
+      if ("TASK".equals(nodeType)
+          && "pde-construction-approval".equals(processCode)
+          && "agentValidationGate".equals(node.path("id").asText())
+          && "DETERMINISTIC".equals(node.path("executionMode").asText())
+          && "PDE_AGENT_VALIDATION_GATE".equals(responsibilityDomain)
+          && "Backend".equals(owner)) return;
       if (!responsibilityDomain.isEmpty()) {
         throw new IllegalArgumentException(
             "Domínio de agente exige uma responsibleAgentKey explícita.");
@@ -43,7 +55,9 @@ final class AgentResponsibilityMatrix {
     if (responsibility == null) {
       throw new IllegalArgumentException("A atividade declara um agente fora da matriz canônica.");
     }
-    if (!responsibility.domain().equals(responsibilityDomain)) {
+    if (!responsibility.domain().equals(responsibilityDomain)
+        && !canonicalSpecialization(
+            processCode, node.path("id").asText(), agentKey, responsibilityDomain)) {
       throw new IllegalArgumentException(
           "O domínio da atividade é incompatível com o agente responsável.");
     }
@@ -55,6 +69,19 @@ final class AgentResponsibilityMatrix {
       throw new IllegalArgumentException(
           "Atividade de agente não pode combinar coautores no campo owner.");
     }
+  }
+
+  /** Conserva contratos especializados de construção sem aceitar aliases em outros contextos. */
+  private static boolean canonicalSpecialization(
+      String processCode, String activityId, String agentKey, String domain) {
+    if (!"pde-construction-approval".equals(processCode)) return false;
+    if ("landing-generator".equals(agentKey))
+      return "prototypeCorrection".equals(activityId) && "PDE_FUNCTIONAL_REWORK".equals(domain);
+    if (!"customer-agent".equals(agentKey)) return false;
+    return ("technicalHomologation".equals(activityId)
+            && "PDE_TECHNICAL_HOMOLOGATION".equals(domain))
+        || (List.of("psiqueAdherent", "psiqueRecovery", "psiqueSafety").contains(activityId)
+            && "SYNTHETIC_EXPERIENCE_REVIEW".equals(domain));
   }
 
   /** Localiza identidades canônicas e legadas citadas no rótulo de responsabilidade. */

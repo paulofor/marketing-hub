@@ -39,6 +39,23 @@ Preço, quantidade e mecanismo de valor permanecem. A comunicação respeita o
 trabalho da profissional e não promete clientes, renda ou agenda garantidos.
 Mudanças de custo/escopo exigem revalidação econômica; custo desconhecido não é zero.
 
+## Amostra gratuita demonstrativa (decisão de 02/10/2026)
+
+O usuário solicitou exemplos personalizados e vídeo com possibilidade de pedir
+amostra gratuita. A amostra é limitada a uma peça demonstrativa pronta e sua
+legenda, sem compra obrigatória, cobrança, geração individual por pedido ou
+promessa de personalização gratuita. Negócios fictícios e fotos ilustrativas por
+IA devem estar identificados na peça. Pedido pelo canal existente
+`contato@digicomdigital.com.br`, assunto “Quero minha amostra Capella”. Os arquivos
+prontos e suas fontes devem permanecer vinculados ao plano comercial para uso no
+atendimento. Não declarar envio automático, formulário ou resposta imediata sem
+comprovar esses recursos. O prazo geral de atendimento permanece o contratado.
+
+Essa demonstração não muda as quantidades, o preço de R$ 67, o mecanismo de
+personalização ou o prazo do kit pago. A comunicação mostra praticidade e uma
+apresentação coerente; não declara agendamentos ou satisfação de clientes
+inexistentes. O pedido não autoriza mídia nem nova geração paga por interessado.
+
 ## Evidência e escolhas
 
 Consulta em 21/09/2026: o backend configura esse e-mail como contato público do

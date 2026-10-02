@@ -88,6 +88,7 @@ export default function ExperimentAdVideoUploadPanel({
   const [productionReference, setProductionReference] = useState("");
   const [hlsPlaybackUrl, setHlsPlaybackUrl] = useState("");
   const [audioConfirmed, setAudioConfirmed] = useState(false);
+  const [requiredForRelease, setRequiredForRelease] = useState(true);
 
   const canSubmit = useMemo(() => {
     const creativeIds = parseSourceIds(visualSourceCreativeIds);
@@ -189,7 +190,7 @@ export default function ExperimentAdVideoUploadPanel({
         visualSourceDescription: visualSourceDescription.trim(),
         productionReference: productionReference.trim(),
         hlsPlaybackUrl: hlsPlaybackUrl.trim(),
-        requiredForRelease: true,
+        requiredForRelease,
       });
       toast.success("Vídeo enviado e mantido pendente de revisão humana.");
       setFile(undefined);
@@ -342,6 +343,22 @@ export default function ExperimentAdVideoUploadPanel({
             Opcional para anúncio e obrigatório quando a peça será usada em uma
             experiência PDE pública.
           </span>
+          <label className="form-check">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              checked={requiredForRelease}
+              disabled={locked || upload.isPending}
+              onChange={(event) => setRequiredForRelease(event.target.checked)}
+            />
+            <span className="form-check-label">
+              Exigir aprovação deste vídeo para liberar o experimento.
+            </span>
+          </label>
+          <p className="form-text">
+            Desmarque para anexar uma candidata opcional, preservando as peças
+            já aprovadas. Isso não aprova nem publica o vídeo.
+          </p>
           <label className="form-check">
             <input
               className="form-check-input"

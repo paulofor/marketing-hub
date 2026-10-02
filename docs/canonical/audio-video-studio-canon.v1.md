@@ -625,3 +625,20 @@ do job: `AVAILABLE`, `PROCESSING`, `READY` ou `UNAVAILABLE`, com job correlacion
 texto congelado e motivo quando aplicável. O frontend apenas apresenta essa decisão;
 não infere elegibilidade pelo nome do provider, por `VIDEO_READY` ou pelos filhos.
 O backend valida os hashes de MP4/VTT, voz e legenda e identifica entrega já em curso.
+
+## Identidade do produto no editor (02/10/2026)
+
+Roteiro, CTA, legenda, prompt de imagem e persona não podem ter defaults de um
+produto específico no editor compartilhado. Usar a versão persistida do perfil
+atual; na ausência de CTA, usar somente a chamada cadastrada do próprio produto
+ou solicitar preenchimento. Troca de produto/perfil deve preservar essa separação.
+O perfil efetivamente exibido deve ser o mesmo enviado no comando de salvamento.
+Título, número de vídeo ou palavra-chave não comprovam objetivo de negócio:
+apresentar apenas intenção registrada, separada de resultado comercial medido.
+
+Importação de composição local usa upload oficial e mantém origem, direitos e
+manifesto de hashes auditáveis. Ela não enfileira IA nem constitui aprovação.
+Uma candidata adicional pode ser anexada como opcional pelo contrato
+`requiredForRelease=false`, mantendo a revisão pendente e sem tornar a peça
+requisito de um experimento já homologado. O padrão obrigatório permanece
+explícito para peças destinadas à liberação; opção não autoriza campanha.

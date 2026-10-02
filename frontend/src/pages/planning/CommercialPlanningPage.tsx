@@ -37,6 +37,7 @@ import GrowthOperatorPanel from "./GrowthOperatorPanel";
 import ExperimentStrategistPanel from "./ExperimentStrategistPanel";
 import FinancialAgentPanel from "./FinancialAgentPanel";
 import CommercialOperationalFlowPanel from "./CommercialOperationalFlowPanel";
+import VisualAssetImageUpload from "./VisualAssetImageUpload";
 
 const CURRENT_OPERATIONAL_MONTH = new Date().toISOString().slice(0, 7);
 const LEGACY_PLAN_REFERENCE_MONTH = "2026-07";
@@ -459,6 +460,15 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
             </div>
           )}
         </div>
+        <VisualAssetImageUpload
+          onUploaded={(assetUrl) =>
+            setDraft((current) => ({
+              ...current,
+              assetUrl,
+              mediaType: "IMAGE",
+            }))
+          }
+        />
         <form className="row g-2" onSubmit={submit}>
           <div className="col-lg-3">
             <label className="form-label" htmlFor="visual-asset-url">

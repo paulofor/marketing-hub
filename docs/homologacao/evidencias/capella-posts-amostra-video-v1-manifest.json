@@ -1,0 +1,197 @@
+{
+  "schemaVersion": "capella-demo.v1",
+  "productId": 7,
+  "commercialPlanId": 2,
+  "profileId": 64,
+  "productionReference": "scripts/marketing/create-capella-demo-assets-v1.mjs",
+  "sources": [
+    {
+      "id": 133,
+      "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/commercial-plans/deliverables/2026/08/16/misc/1fbbfbbb887a-temis-image-studio-9.png",
+      "sha256": "b21116624596def185d080c7fa6d30844491843c3d33099541cd911b16ae83d1",
+      "rights": "Gerado para uso comercial e entrega deste produto"
+    },
+    {
+      "id": 134,
+      "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/commercial-plans/deliverables/2026/08/16/misc/3fa4ed67d2b4-temis-image-studio-10.png",
+      "sha256": "4749790d0dbb61e71768d03c2c298fcf5c31cbc0f4fcd5dd59fd496dd531932b",
+      "rights": "Gerado para uso comercial e entrega deste produto"
+    },
+    {
+      "id": 135,
+      "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/commercial-plans/deliverables/2026/08/16/misc/bba0b5f73aaf-temis-image-studio-11.png",
+      "sha256": "59296706aa0bf3167775074002b117c0d6afaf3a4c45d3d24301e445d8e84d9f",
+      "rights": "Gerado para uso comercial e entrega deste produto"
+    },
+    {
+      "id": 136,
+      "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/commercial-plans/deliverables/2026/08/16/misc/384d1ac3af5e-temis-image-studio-12.png",
+      "sha256": "85888b8440116df02411865554ca8745d6237cfa694f9d2738e4359ae7556dc6",
+      "rights": "Gerado para uso comercial e entrega deste produto"
+    },
+    {
+      "id": 137,
+      "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/commercial-plans/deliverables/2026/08/16/misc/fdfd4536eba1-temis-image-studio-13.png",
+      "sha256": "38dbf2ebfa586dab7c2dfda8187c10f224ee110d6229d7f88674d5a1dbffb704",
+      "rights": "Gerado para uso comercial e entrega deste produto"
+    },
+    {
+      "id": 138,
+      "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/commercial-plans/deliverables/2026/08/16/misc/c69b98165f1a-temis-image-studio-14.png",
+      "sha256": "fa03e4b091fc7b0412f1580344874846a7698d74a3e7c78ce28d36998466e00e",
+      "rights": "Gerado para uso comercial e entrega deste produto"
+    }
+  ],
+  "approvedCreative": {
+    "id": 523,
+    "sha256": "99cee8b3e5ab0cd94fec66feca1069c6aa3aeb37df6c6053944dbc04ce2303fa"
+  },
+  "examples": [
+    {
+      "id": "aurora-francesinha",
+      "sha256": "ca4b785fcdfff44f9875695c864a0a218ecc90768eb0ecde9f57922d660ca661",
+      "width": 1080,
+      "height": 1080,
+      "sourceId": 133,
+      "file": "aurora-francesinha.png"
+    },
+    {
+      "id": "aurora-conversa",
+      "sha256": "4d007b1ee02548662ed240dbb910f865d64253c92419de0111cd2a6000853e19",
+      "width": 1080,
+      "height": 1080,
+      "sourceId": 136,
+      "file": "aurora-conversa.png"
+    },
+    {
+      "id": "jade-detalhe",
+      "sha256": "26cd96de42b686fead0ad94d6f74412c98a084ca13e46499fba9c60af7eb7a5b",
+      "width": 1080,
+      "height": 1080,
+      "sourceId": 137,
+      "file": "jade-detalhe.png"
+    },
+    {
+      "id": "jade-retorno",
+      "sha256": "5674e8287387e83d15c238265b86da1b168217af09cd0e011aac536bf3cf1f42",
+      "width": 1080,
+      "height": 1080,
+      "sourceId": 136,
+      "file": "jade-retorno.png"
+    },
+    {
+      "id": "lis-cor",
+      "sha256": "ab3117373888752de899be02ba1a99b778532de83dc5f98ac111b1b250f4a31e",
+      "width": 1080,
+      "height": 1080,
+      "sourceId": 134,
+      "file": "lis-cor.png"
+    },
+    {
+      "id": "lis-pausa",
+      "sha256": "996ca1e5635dbebf442bf0a3ecd0181589042ef8b56ae7f6e7f70019c95fbc74",
+      "width": 1080,
+      "height": 1080,
+      "sourceId": 133,
+      "file": "lis-pausa.png"
+    }
+  ],
+  "video": {
+    "file": "capella-personalizada-amostra-v1.mp4",
+    "sha256": "5df37fd3d1d1f5eda30279ec1569a0d6172d89cc92afcd72c74f79a50fc9fa8c",
+    "durationSeconds": 50.048,
+    "width": 1080,
+    "height": 1920
+  },
+  "narration": {
+    "model": "pt_BR-faber-medium",
+    "engine": "piper-tts 1.3.0",
+    "modelSha256": "858555e3a064209c57088fe6bd70c4c3dc54d03eaa00c45d5ecaf43a33f95aa7",
+    "datasetLicense": "CC0",
+    "synthetic": true
+  },
+  "incrementalProviderConsumptionUsd": 0,
+  "totalOperationalCost": null,
+  "sample": "Uma peça demonstrativa com legenda, gratuita, sem promessa de personalização individual ou geração paga por pedido.",
+  "segments": [
+    {
+      "scene": 0,
+      "startSeconds": 0,
+      "durationSeconds": 3.433333333333333,
+      "speech": "Seu trabalho é caprichado. Sua divulgação mostra isso?"
+    },
+    {
+      "scene": 1,
+      "startSeconds": 3.433333333333333,
+      "durationSeconds": 3.2333333333333334,
+      "speech": "Veja posts com seu nome, suas cores e sua cidade."
+    },
+    {
+      "scene": 2,
+      "startSeconds": 6.666666666666666,
+      "durationSeconds": 2.933333333333333,
+      "speech": "Uma mensagem clara para conversar sobre horários."
+    },
+    {
+      "scene": 3,
+      "startSeconds": 9.6,
+      "durationSeconds": 3.2,
+      "speech": "Uma apresentação à altura do cuidado que você oferece."
+    },
+    {
+      "scene": 4,
+      "startSeconds": 12.8,
+      "durationSeconds": 3.533333333333333,
+      "speech": "Inspirações para divulgar e convidar ao próximo cuidado."
+    },
+    {
+      "scene": 5,
+      "startSeconds": 16.333333333333336,
+      "durationSeconds": 3.1,
+      "speech": "Combinando nome, serviço e identidade visual."
+    },
+    {
+      "scene": 6,
+      "startSeconds": 19.433333333333337,
+      "durationSeconds": 2.533333333333333,
+      "speech": "Sem começar do zero a cada publicação."
+    },
+    {
+      "scene": 7,
+      "startSeconds": 21.96666666666667,
+      "durationSeconds": 5.266666666666667,
+      "speech": "Você recebe arte, legenda, mensagens para WhatsApp e uma sequência para publicar."
+    },
+    {
+      "scene": 8,
+      "startSeconds": 27.233333333333334,
+      "durationSeconds": 3.3,
+      "speech": "Menos tempo criando. Mais confiança para divulgar."
+    },
+    {
+      "scene": 9,
+      "startSeconds": 30.533333333333335,
+      "durationSeconds": 5.6,
+      "speech": "Dez posts, dez stories, dez legendas, cinco mensagens e calendário de sete dias."
+    },
+    {
+      "scene": 10,
+      "startSeconds": 36.13333333333333,
+      "durationSeconds": 4.266666666666667,
+      "speech": "O kit completo custa sessenta e sete reais, em pagamento único."
+    },
+    {
+      "scene": 11,
+      "startSeconds": 40.4,
+      "durationSeconds": 4.633333333333334,
+      "speech": "Entrega em até três dias úteis após pagamento aprovado e briefing completo."
+    },
+    {
+      "scene": 12,
+      "startSeconds": 45.03333333333333,
+      "durationSeconds": 4.9,
+      "speech": "Quer conhecer o estilo? Peça uma amostra demonstrativa gratuita pelo e-mail na legenda."
+    }
+  ],
+  "status": "CANDIDATE_NOT_CAMPAIGN_AUTHORIZATION"
+}

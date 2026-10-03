@@ -1,0 +1,18 @@
+{
+  "cardKey": "recompensa-busca-visual-cautela-decisao",
+  "collection": "prazer-audio-visual",
+  "title": "Recompensa e cautela na busca visual",
+  "finding": "Em duas tarefas de busca visual, a recompensa acelerou respostas quando o alvo estava presente, sem melhora equivalente quando estava ausente; a modelagem indicou menor cautela decisória para respostas de alvo presente.",
+  "mechanism": "O incentivo pode alterar o critério de decisão: a pessoa pode responder com menos evidência antes de declarar que encontrou o alvo. Detecção e encerramento da busca são processos distintos.",
+  "commercialApplication": "Em testes de interface com incentivo ou feedback de desempenho, avaliar tempo de detecção junto com falsos positivos, cliques errados e acurácia quando o alvo não existe.",
+  "evidenceStrength": "Média-alta no paradigma experimental: dois experimentos e convergência com modelagem computacional; transferência para interfaces reais ainda exige teste.",
+  "publishedOn": "2026-10-03",
+  "validUntil": "2026-11-17",
+  "experimentHypothesis": "Um sinal de recompensa reduzirá o tempo de detecção; o desenho só será considerado melhor se o ganho de velocidade não aumentar falsos positivos ou encerramento prematuro da busca.",
+  "risks": "Responder mais rápido pode refletir menor cautela, não melhor percepção.",
+  "limits": "Recompensa explícita por desempenho em tarefa de busca visual; não testou experiência audiovisual comercial nem resposta de recompensa neural.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-03-recompensa-busca-visual-cautela-decisao.md",
+  "sourceTitle": "Fonte revisada — recompensa, busca visual e cautela decisória",
+  "sourceSha256": "ea98a88161ee02a52ff106128f1fc9bf093cf2260af9beeba15039f47eae0843"
+}

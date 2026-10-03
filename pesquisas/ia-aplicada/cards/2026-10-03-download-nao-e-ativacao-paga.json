@@ -1,0 +1,18 @@
+{
+  "cardKey": "download-nao-e-ativacao-paga",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Pagamento inicial não comprova valor recorrente em apps de IA",
+  "finding": "No State of Subscription Apps 2026, com mais de 115 mil apps e mais de US$ 16 bilhões em receita observada, apps classificados como AI-powered mostram mediana 52% maior de conversão de trial para pago e 41% maior de receita realizada por pagante no primeiro ano, mas retenção de 12 meses inferior e taxa mediana de reembolso maior. O padrão sugere separar aquisição e monetização inicial de retenção, sem atribuir causalidade à IA.",
+  "mechanism": "Novidade e percepção inicial de capacidade podem elevar experimentação e primeiro pagamento, enquanto renovação depende de utilidade recorrente, encaixe do ciclo de cobrança e valor percebido depois do primeiro efeito. O relatório é observacional e não isola esse mecanismo.",
+  "commercialApplication": "Para produtos de assinatura com IA, avaliar o funil completo: ativação qualificada, conversão para pago, primeira renovação, retenção, reembolso e margem. Não promover uma variante como vencedora apenas por instalação, trial ou primeiro pagamento; testar se um resultado recorrente claramente percebido melhora renovação.",
+  "evidenceStrength": "Forte como benchmark observacional de mercado; moderada para a associação entre apps de IA, maior monetização inicial e menor retenção; insuficiente para causalidade.",
+  "publishedOn": "2026-10-03",
+  "validUntil": "2027-01-31",
+  "experimentHypothesis": "Em uma oferta de assinatura com IA, enfatizar e entregar um resultado recorrente mensurável após a primeira sessão aumentará primeira renovação e retenção sem elevar reembolso, em comparação com uma experiência centrada principalmente no efeito inicial da IA.",
+  "risks": "Otimizar retenção sacrificando valor imediato; interpretar medianas de mercado como meta causal; ignorar diferenças de categoria, preço, plano e canal de aquisição.",
+  "limits": "A amostra inclui apps observados pela RevenueCat e não representa necessariamente todo o mercado. A categoria AI-powered agrega produtos heterogêneos e os dados não isolam categoria, preço, geografia, maturidade ou aquisição.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-10-03-revenuecat-ia-monetizacao-retencao.md",
+  "sourceTitle": "RevenueCat 2026: monetização inicial de IA não garante retenção — evidência revisada",
+  "sourceSha256": "d5c77105f255c7fad94f363783f975c8a5b3be6c2ce940a13fb11bb540a73d64"
+}

@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.marketinghub.payments.dto.AgendaCheiaBriefingRequest;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoPaymentDetails;
@@ -48,6 +50,35 @@ class AgendaCheiaPostPurchaseServiceTest {
         verify(emailService).sendToRecipient(payment, "buyer@example.com", "Studio Ana");
         verify(productionService).produceAndDeliver(org.mockito.ArgumentMatchers.any(AgendaCheiaBriefing.class),
                 org.mockito.ArgumentMatchers.eq(payment));
+    }
+
+    /** Recusa a profissão divergente antes de alterar o briefing ou produzir qualquer arquivo. */
+    @Test
+    void refusesDifferentProfessionBeforePersistenceAndProduction() {
+        var payment = new MercadoPagoPaymentDetails("qa-mismatch", "approved", new BigDecimal("67"),
+                "BRL", "Agenda Cheia", "teste+mismatch@sandbox.local", "agenda-cheia-nail-design",
+                Instant.now(), Map.of(), "{}");
+        when(checkoutService.fetchPayment("qa-mismatch")).thenReturn(Optional.of(payment));
+        var service = new AgendaCheiaPostPurchaseService(checkoutService, repository, emailService, productionService);
+        assertThatThrownBy(() -> service.submit(new AgendaCheiaBriefingRequest("qa-mismatch",
+                "teste+mismatch@sandbox.local", "Barbearia QA", "Cidade QA", "11999999999", "Corte",
+                "Moderno", "Preto", "Divulgar corte", null, "barber-v1")))
+                .hasMessageContaining("difere do kit comprado");
+        verifyNoInteractions(repository, emailService, productionService);
+    }
+
+    /** A consulta informa a profissão da oferta confirmada, sem inferir pelo texto livre. */
+    @Test
+    void exposesPurchasedProfessionAndServiceExamples() {
+        var payment = new MercadoPagoPaymentDetails("qa-options", "approved", new BigDecimal("67"),
+                "BRL", "Descrição livre de barbearia", "teste+options@sandbox.local", "agenda-cheia-nail-design",
+                Instant.now(), Map.of(), "{}");
+        when(checkoutService.fetchPayment("qa-options")).thenReturn(Optional.of(payment));
+        when(repository.findByPaymentId("qa-options")).thenReturn(Optional.empty());
+        var service = new AgendaCheiaPostPurchaseService(checkoutService, repository, emailService, productionService);
+        assertThat(service.paymentStatus("qa-options").profile().code()).isEqualTo("nails-v1");
+        assertThat(service.paymentStatus("qa-options").profile().serviceExamples()).contains("Alongamento");
+        verifyNoInteractions(emailService, productionService);
     }
 
     /** Deve retornar a entrega existente sem alterar briefing nem reenviar emails. */

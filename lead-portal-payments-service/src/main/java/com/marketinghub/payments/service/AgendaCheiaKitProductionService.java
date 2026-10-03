@@ -8,6 +8,9 @@ import com.marketinghub.payments.integration.mercadopago.MercadoPagoPaymentDetai
 import com.marketinghub.payments.model.AgendaCheiaBriefing;
 import com.marketinghub.payments.model.AgendaCheiaDelivery;
 import com.marketinghub.payments.repository.AgendaCheiaDeliveryRepository;
+import com.marketinghub.payments.service.kit.CapellaKitCatalog;
+import com.marketinghub.payments.service.kit.CapellaKitProfile;
+import com.marketinghub.payments.service.kit.CapellaKitText;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -34,12 +37,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-/** Produz, revisa e libera o pacote personalizado Agenda Cheia a partir do briefing pago. */
+/** Compõe e revisa kits Capella, entregando apenas o perfil correspondente à compra homologada. */
 @Service
 public class AgendaCheiaKitProductionService {
     private static final Logger log = LoggerFactory.getLogger(AgendaCheiaKitProductionService.class);
     private static final List<String> FORBIDDEN = List.of("payload", "debug", "prompt", "localhost", "jobid");
 
+    private final CapellaKitText text = new CapellaKitText();
     private final AgendaCheiaDeliveryRepository repository;
     private final DigitalProductPostPurchaseEmailService emailService;
     private final ObjectMapper objectMapper;
@@ -66,6 +70,7 @@ public class AgendaCheiaKitProductionService {
     /** Executa idempotentemente geração, gate de qualidade e entrega do kit. */
     public AgendaCheiaDeliveryResponse produceAndDeliver(
             AgendaCheiaBriefing briefing, MercadoPagoPaymentDetails payment) {
+        CapellaKitProfile profile = CapellaKitCatalog.forPaymentReference(payment.externalReference());
         AgendaCheiaDelivery delivery = repository.findByBriefingId(briefing.getId())
                 .orElseGet(AgendaCheiaDelivery::new);
         if ("ENTREGUE".equals(delivery.getStatus())) {
@@ -76,14 +81,14 @@ public class AgendaCheiaKitProductionService {
             delivery.setStatus("EM_PRODUCAO");
             delivery.setStageCode("COMPOSICAO_DO_KIT");
             repository.save(delivery);
-            ProductionResult result = generate(briefing, delivery.getDownloadToken());
+            ProductionResult result = generate(briefing, delivery.getDownloadToken(), profile);
             delivery.setStageCode("REVISAO_DE_QUALIDADE");
             delivery.setQualityScore(result.qualityScore());
             if (delivery.getQualityScore() < 90) {
                 throw new IllegalStateException("O kit não atingiu o padrão mínimo de qualidade");
             }
             delivery.setArtifactPath(result.zipPath().toString());
-            delivery.setManifestJson(manifest(result));
+            delivery.setManifestJson(manifest(result, profile));
             delivery.setFinishedAt(Instant.now());
             delivery.setStageCode("ENTREGA");
             delivery.setStatus("PRONTO_PARA_ENTREGA");
@@ -106,6 +111,18 @@ public class AgendaCheiaKitProductionService {
             repository.save(delivery);
             throw new IllegalStateException("Não foi possível concluir o kit personalizado", ex);
         }
+    }
+
+    /** Prepara uma candidata local sem pagamento, persistência de venda ou envio de e-mail. */
+    public PreparedKit prepareCandidate(AgendaCheiaBriefing briefing, String profileCode) throws IOException {
+        CapellaKitProfile profile = CapellaKitCatalog.byCode(profileCode);
+        ProductionResult result = generate(briefing, UUID.randomUUID().toString().replace("-", ""), profile);
+        if (result.qualityScore() < 90) {
+            throw new IllegalStateException("A candidata não atingiu o padrão mínimo de qualidade");
+        }
+        log.info("Candidata Capella preparada sem venda. profileCode={}, qualityScore={}",
+                profile.code(), result.qualityScore());
+        return new PreparedKit(profile.code(), result.zipPath(), result.qualityScore());
     }
 
     /** Resolve o arquivo privado apenas por token opaco válido. */
@@ -132,24 +149,28 @@ public class AgendaCheiaKitProductionService {
     }
 
     /** Gera imagens e textos em diretório temporário e publica um ZIP atômico. */
-    private ProductionResult generate(AgendaCheiaBriefing briefing, String token) throws IOException {
+    private ProductionResult generate(AgendaCheiaBriefing briefing, String token, CapellaKitProfile profile) throws IOException {
         Files.createDirectories(storageRoot);
         Path work = Files.createTempDirectory(storageRoot, "kit-");
         List<Path> images = new ArrayList<>();
-        List<String> captions = captions(briefing);
+        List<String> captions = text.captions(briefing, profile);
         try {
             List<BufferedImage> photos = new ArrayList<>();
-            for (int index = 0; index < 10; index++) photos.add(photoGenerator.generate(token, index));
+            for (int index = 0; index < 10; index++) {
+                photos.add(CapellaKitCatalog.NAILS.equals(profile.code())
+                        ? photoGenerator.generate(token, index)
+                        : photoGenerator.generate(token, index, profile));
+            }
             for (int index = 0; index < 10; index++) {
                 images.add(render(work.resolve("post-%02d.png".formatted(index + 1)), 1080, 1080,
-                        briefing, headline(index), index, photos.get(index)));
+                        briefing, profile.headlines().get(index), index, photos.get(index)));
                 images.add(render(work.resolve("story-%02d.png".formatted(index + 1)), 1080, 1920,
-                        briefing, headline(index), index + 10, photos.get(index)));
+                        briefing, profile.headlines().get(index), index + 10, photos.get(index)));
             }
             Files.writeString(work.resolve("legendas-prontas.txt"), String.join("\n\n---\n\n", captions), StandardCharsets.UTF_8);
-            Files.writeString(work.resolve("mensagens-whatsapp.txt"), whatsappMessages(briefing), StandardCharsets.UTF_8);
-            Files.writeString(work.resolve("calendario-7-dias.txt"), calendar(), StandardCharsets.UTF_8);
-            Files.writeString(work.resolve("LEIA-ME.txt"), instructions(briefing), StandardCharsets.UTF_8);
+            Files.writeString(work.resolve("mensagens-whatsapp.txt"), text.whatsappMessages(briefing), StandardCharsets.UTF_8);
+            Files.writeString(work.resolve("calendario-7-dias.txt"), text.calendar(profile), StandardCharsets.UTF_8);
+            Files.writeString(work.resolve("LEIA-ME.txt"), text.instructions(briefing, profile), StandardCharsets.UTF_8);
             Path temporaryZip = work.resolve("agenda-cheia.zip");
             int qualityScore = reviewImages(images, photos, captions.size(), 5, 7);
             zip(work, temporaryZip);
@@ -186,13 +207,13 @@ public class AgendaCheiaKitProductionService {
         graphics.setFont(new Font("SansSerif", Font.BOLD, width / 18));
         drawWrapped(graphics, headline, 102, (int) (cardY + height * .055f), width - 204, width / 16);
         graphics.setFont(new Font("SansSerif", Font.PLAIN, width / 34));
-        graphics.drawString(serviceName(briefing), 102, (int) (cardY + cardHeight - height * .035f));
+        graphics.drawString(text.serviceName(briefing), 102, (int) (cardY + cardHeight - height * .035f));
         drawActionChip(graphics, width, height, cardY, variant);
         graphics.setFont(new Font("SansSerif", Font.BOLD, width / 38));
-        graphics.drawString(publicText(briefing.getProfessionalName()), 70, 92);
+        graphics.drawString(text.publicText(briefing.getProfessionalName()), 70, 92);
         graphics.setFont(new Font("SansSerif", Font.PLAIN, width / 45));
-        graphics.drawString(publicText(briefing.getCityRegion()) + "  •  WhatsApp "
-                + publicText(briefing.getWhatsapp()), 70, 130);
+        graphics.drawString(text.publicText(briefing.getCityRegion()) + "  •  WhatsApp "
+                + text.publicText(briefing.getWhatsapp()), 70, 130);
         graphics.dispose();
         ImageIO.write(image, "png", output.toFile());
         return output;
@@ -289,9 +310,9 @@ public class AgendaCheiaKitProductionService {
     }
 
     /** Serializa apenas o resumo funcional do pacote final. */
-    private String manifest(ProductionResult result) throws JsonProcessingException {
+    private String manifest(ProductionResult result, CapellaKitProfile profile) throws JsonProcessingException {
         return objectMapper.writeValueAsString(new Manifest(10, 10, result.captionCount(),
-                result.messageCount(), result.calendarDays(), "PNG", "pronto para publicar"));
+                result.messageCount(), result.calendarDays(), "PNG", "pronto para publicar", profile.code()));
     }
 
     /** Compacta todos os artefatos, excluindo o próprio arquivo de saída. */
@@ -317,73 +338,6 @@ public class AgendaCheiaKitProductionService {
         } catch (IOException ex) {
             log.warn("Não foi possível limpar diretório temporário do Agenda Cheia. path={}", root, ex);
         }
-    }
-
-    /** Cria dez legendas com chamada clara e sem garantia de resultado. */
-    private List<String> captions(AgendaCheiaBriefing briefing) {
-        List<String> result = new ArrayList<>();
-        for (int index = 0; index < 10; index++) {
-            result.add((index + 1) + ". " + headline(index) + "\n\n" + serviceName(briefing)
-                    + " em " + publicText(briefing.getCityRegion())
-                    + ". Quer consultar horários? Chame no WhatsApp: "
-                    + publicText(briefing.getWhatsapp()) + ".");
-        }
-        return result;
-    }
-
-    /** Cria cinco respostas comerciais reutilizáveis no WhatsApp. */
-    private String whatsappMessages(AgendaCheiaBriefing briefing) {
-        return "1. Oi! Que bom receber sua mensagem. Qual serviço você deseja fazer?\n\n"
-                + "2. Tenho opções de horário nesta semana. Qual período funciona melhor para você?\n\n"
-                + "3. Trabalho com " + serviceName(briefing) + ". Posso te explicar as opções e valores.\n\n"
-                + "4. Quer que eu reserve esse horário enquanto confirmamos os detalhes?\n\n"
-                + "5. Posso enviar as próximas disponibilidades pelo WhatsApp?";
-    }
-
-    /** Cria o calendário funcional de sete dias. */
-    private String calendar() {
-        return "Dia 1 — Apresente seu serviço principal\nDia 2 — Mostre agenda aberta\n"
-                + "Dia 3 — Publique um detalhe do acabamento\nDia 4 — Convide clientes antigas\n"
-                + "Dia 5 — Divulgue horários do fim de semana\nDia 6 — Mostre opções de estilo\n"
-                + "Dia 7 — Reforce o contato pelo WhatsApp";
-    }
-
-    /** Entrega instruções, formatos e condições de atendimento junto dos arquivos comprados. */
-    private String instructions(AgendaCheiaBriefing briefing) {
-        return "AGENDA CHEIA NAIL DESIGN — KIT PERSONALIZADO\n\nProduzido para: "
-                + publicText(briefing.getProfessionalName())
-                + "\n\nUse uma arte por dia com a legenda correspondente. "
-                + "O kit melhora sua apresentação e cria oportunidades de conversa; não garante clientes ou agendamentos."
-                + "\n\nARQUIVOS E USO\n10 posts PNG 1080x1080, 10 stories PNG 1080x1920, "
-                + "10 legendas, 5 mensagens de WhatsApp e calendário de 7 dias em texto. "
-                + "As artes são prontas para publicar; não incluem arquivo editável Canva ou PSD. "
-                + "Guarde sua cópia do ZIP. Use os arquivos na divulgação do próprio negócio; "
-                + "não revenda nem redistribua o kit. As fotografias não são exclusivas."
-                + "\n\nATENDIMENTO\ncontato@digicomdigital.com.br — primeira resposta em até 1 dia útil "
-                + "(segunda a sexta, exceto feriados nacionais, horário de Brasília). "
-                + "Suporte de uso por 7 dias corridos após a entrega, incluindo acesso, download "
-                + "e correção de divergências em relação ao briefing. Não inclui gestão de redes sociais, "
-                + "nova identidade visual ou revisões ilimitadas."
-                + "\n\nREEMBOLSO\nVocê pode solicitar reembolso integral desde a compra até 7 dias corridos "
-                + "após receber o kit, sem precisar justificar, pelo mesmo e-mail. Informe o e-mail da compra "
-                + "e a identificação do pagamento, nunca dados do cartão. Solicitamos o estorno sem demora; "
-                + "a compensação depende do meio de pagamento. Falhas de entrega, problemas nos arquivos "
-                + "e outros direitos continuam sendo atendidos após o período de suporte de uso.";
-    }
-
-    /** Seleciona a chamada de cada situação comercial. */
-    private String headline(int index) {
-        return List.of("Agenda aberta esta semana", "Seu próximo nail design começa aqui",
-                "Horários disponíveis", "Alongamento com acabamento elegante",
-                "Que tal renovar suas unhas?", "Um detalhe muda toda a produção",
-                "Volte a cuidar das suas unhas", "Escolha seu estilo favorito",
-                "Reserve seu horário pelo WhatsApp", "Sua próxima inspiração está aqui").get(index);
-    }
-
-    /** Resolve um serviço curto para não poluir as artes. */
-    private String serviceName(AgendaCheiaBriefing briefing) {
-        String first = publicText(briefing.getServices().split("[,;\\n]")[0].trim());
-        return first.length() > 60 ? first.substring(0, 60) : first;
     }
 
     /** Resolve paleta estável conforme estilo e variação do kit. */
@@ -416,19 +370,13 @@ public class AgendaCheiaKitProductionService {
         return FORBIDDEN.stream().anyMatch(normalized::contains) ? "Falha na produção do kit" : message.substring(0, Math.min(1000, message.length()));
     }
 
-    /** Sanitiza dados do briefing antes de incorporá-los aos artefatos públicos. */
-    private String publicText(String value) {
-        String result = value == null ? "" : value.replaceAll("[\\p{Cntrl}&&[^\\n\\t]]", " ").trim();
-        for (String forbidden : FORBIDDEN) {
-            result = result.replaceAll("(?i)" + java.util.regex.Pattern.quote(forbidden), "");
-        }
-        return result.replaceAll("\\s+", " ");
-    }
-
     /** Agrupa os artefatos usados pelo gate antes da publicação. */
     private record ProductionResult(Path zipPath, int captionCount, int messageCount, int calendarDays, int qualityScore) {}
 
+    /** Descreve a preparação privada; não representa entrega comercial ou resultado de mercado. */
+    public record PreparedKit(String profileCode, Path zipPath, int qualityScore) {}
+
     /** Descreve somente o conteúdo comercial entregue. */
     private record Manifest(int posts, int stories, int captions, int whatsappMessages,
-                            int calendarDays, String imageFormat, String usage) {}
+                            int calendarDays, String imageFormat, String usage, String profileCode) {}
 }

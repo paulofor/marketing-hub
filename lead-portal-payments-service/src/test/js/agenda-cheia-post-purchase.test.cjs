@@ -12,13 +12,16 @@ function setup(fetch, search = '?payment_id=synthetic-payment') {
     querySelector: () => button, setAttribute() {}, addEventListener(_, callback) { this.submit = callback; } };
   const message = { textContent: '' }, status = { textContent: 'Agenda Cheia Nail Design' };
   const nodes = { '#briefing': form, '#message': message, '#payment-status': status,
-    '#kit-title': { textContent: '' }, '#kit-intro': { textContent: '' } };
+    '#kit-title': { textContent: '' }, '#kit-intro': { textContent: '' },
+    '#profession-context': { textContent: '' }, '#service-examples': { textContent: '' } };
   vm.runInNewContext(script, { URLSearchParams, location: { search }, fetch,
     document: { querySelector: selector => nodes[selector] },
     FormData: class { *[Symbol.iterator]() { yield ['buyerEmail', 'teste+policy@sandbox.local']; } } });
-  return { form, message, status, button, classes };
+  return { form, message, status, button, classes, nodes };
 }
-const response = status => ({ ok: true, json: async () => ({ status }) });
+const profile = { code: 'nails-v1', profession: 'Manicure / nail designer',
+  productName: 'Agenda Cheia Nail Design', serviceExamples: 'Alongamento e manutenção' };
+const response = (status, kitProfile = profile) => ({ ok: true, json: async () => ({ status, profile: kitProfile }) });
 for (const state of ['AGUARDANDO_BRIEFING', 'BRIEFING_RECEBIDO', 'ENTREGUE']) {
   test(`consulta respeita o estado oficial ${state}`, async () => {
     const ui = setup(async () => response(state)); await tick();
@@ -37,6 +40,19 @@ test('ausência ou recusa de pagamento nunca apresenta aprovação', async () =>
 test('estado desconhecido não libera briefing nem inventa sucesso', async () => {
   const ui = setup(async () => response('UNKNOWN')); await tick();
   assert.ok(ui.classes.has('hidden')); assert.doesNotMatch(ui.status.textContent, /confirmado/);
+});
+test('profissão e exemplos vêm do contrato, sem inferir pelo pagamento ou URL', async () => {
+  const kitProfile = { code: 'barber-v1', profession: 'Barbeiro / barbearia',
+    productName: 'Capella — divulgação para barbearia', serviceExamples: 'Corte e barba' };
+  const ui = setup(async () => response('AGUARDANDO_BRIEFING', kitProfile)); await tick();
+  assert.match(ui.nodes['#profession-context'].textContent, /Barbeiro/);
+  assert.equal(ui.nodes['#service-examples'].textContent, 'Corte e barba');
+});
+test('perfil ausente mantém formulário bloqueado e registra orientação acionável', async () => {
+  const ui = setup(async () => response('AGUARDANDO_BRIEFING', null)); await tick();
+  assert.ok(ui.classes.has('hidden'));
+  assert.match(ui.message.textContent, /profissão do kit/);
+  assert.doesNotMatch(ui.status.textContent, /confirmado/);
 });
 test('envio aguarda, impede duplicação e mostra entrega concluída', async () => {
   let release, posts = 0;

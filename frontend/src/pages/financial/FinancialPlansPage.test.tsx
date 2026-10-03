@@ -345,6 +345,39 @@ describe("Plano financeiro", () => {
       mocks.mutation.mutateAsync.mock.calls[0][0].assumptions.fixedCostEnvelope,
     ).toEqual(plan.assumptions.fixedCostEnvelope);
   });
+  it("reconfere o uso de IA por cliente ao adaptar uma entrega sem alterar o histórico", async () => {
+    const plan = aggregatePlan();
+    mocks.history.data = [plan];
+    mocks.mutation.mutateAsync.mockRejectedValue(new Error("fixture"));
+    page();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Editar premissas detalhadas" }),
+    );
+    fireEvent.change(
+      screen.getByLabelText("Geração personalizada com IA por cliente"),
+      {
+        target: { value: "false" },
+      },
+    );
+    fireEvent.submit(
+      screen
+        .getByRole("button", { name: "Salvar revisão e calcular" })
+        .closest("form")!,
+    );
+    await waitFor(() =>
+      expect(mocks.mutation.mutateAsync).toHaveBeenCalledOnce(),
+    );
+    expect(
+      mocks.mutation.mutateAsync.mock.calls[0][0].assumptions.preparation,
+    ).toEqual({
+      supportDays: 7,
+      personalizedAi: false,
+    });
+    expect(plan.assumptions.preparation.personalizedAi).toBe(true);
+    expect(
+      mocks.mutation.mutateAsync.mock.calls[0][0].assumptions.costs.supportBrl,
+    ).toBeNull();
+  });
   it("permite recuperar falha de sugestões sem exibir formulário financeiro extenso", () => {
     mocks.preparation.isError = true;
     page();

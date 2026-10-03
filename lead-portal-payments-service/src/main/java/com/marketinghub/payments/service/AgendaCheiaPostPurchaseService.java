@@ -5,6 +5,8 @@ import com.marketinghub.payments.dto.AgendaCheiaBriefingResponse;
 import com.marketinghub.payments.integration.mercadopago.MercadoPagoPaymentDetails;
 import com.marketinghub.payments.model.AgendaCheiaBriefing;
 import com.marketinghub.payments.repository.AgendaCheiaBriefingRepository;
+import com.marketinghub.payments.service.kit.CapellaKitCatalog;
+import com.marketinghub.payments.service.kit.BriefingKitProfile;
 import java.time.Instant;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -15,7 +17,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class AgendaCheiaPostPurchaseService {
     private static final Logger log = LoggerFactory.getLogger(AgendaCheiaPostPurchaseService.class);
-    private static final String PRODUCT_KEY = "agenda-cheia-nail-design";
 
     private final CheckoutService checkoutService;
     private final AgendaCheiaBriefingRepository repository;
@@ -37,17 +38,22 @@ public class AgendaCheiaPostPurchaseService {
     /** Confirma se o pagamento pertence ao produto e está aprovado. */
     public AgendaCheiaBriefingResponse paymentStatus(String paymentId) {
         MercadoPagoPaymentDetails payment = approvedPayment(paymentId);
+        BriefingKitProfile profile = profile(payment);
         return repository.findByPaymentId(payment.id())
-                .map(this::toResponse)
-                .orElse(new AgendaCheiaBriefingResponse(null, payment.id(), "AGUARDANDO_BRIEFING", null));
+                .map(briefing -> toResponse(briefing, profile))
+                .orElse(new AgendaCheiaBriefingResponse(null, payment.id(), "AGUARDANDO_BRIEFING", null, profile));
     }
 
-    /** Salva o briefing uma única vez e preserva sem reenvio uma entrega já concluída. */
+    /** Confere a profissão comprada, salva o briefing e preserva sem reenvio uma entrega concluída. */
     public AgendaCheiaBriefingResponse submit(AgendaCheiaBriefingRequest request) {
         MercadoPagoPaymentDetails payment = approvedPayment(request.paymentId());
+        BriefingKitProfile profile = profile(payment);
+        if (request.professionCode() != null && !request.professionCode().equals(profile.code())) {
+            throw new IllegalArgumentException("A profissão do briefing difere do kit comprado");
+        }
         Optional<AgendaCheiaBriefing> existing = repository.findByPaymentId(payment.id());
         if (existing.isPresent() && "ENTREGUE".equals(existing.get().getStatus())) {
-            return toResponse(existing.get());
+            return toResponse(existing.get(), profile);
         }
         AgendaCheiaBriefing briefing = existing.orElseGet(AgendaCheiaBriefing::new);
         briefing.setPaymentId(payment.id());
@@ -68,7 +74,7 @@ public class AgendaCheiaPostPurchaseService {
         productionService.produceAndDeliver(saved, payment);
         saved.setStatus("ENTREGUE");
         repository.save(saved);
-        return toResponse(saved);
+        return toResponse(saved, profile);
     }
 
     /** Envia ao endereço confirmado no briefing o link seguro do pós-compra. */
@@ -92,16 +98,19 @@ public class AgendaCheiaPostPurchaseService {
         if (!"approved".equalsIgnoreCase(payment.status())) {
             throw new IllegalStateException("Pagamento ainda não foi aprovado");
         }
-        if (!PRODUCT_KEY.equalsIgnoreCase(payment.externalReference())) {
-            throw new IllegalArgumentException("Pagamento não pertence ao Agenda Cheia Nail Design");
-        }
+        CapellaKitCatalog.forPaymentReference(payment.externalReference());
         return payment;
     }
 
     /** Converte a entidade para o contrato público sem expor dados pessoais. */
-    private AgendaCheiaBriefingResponse toResponse(AgendaCheiaBriefing briefing) {
+    private AgendaCheiaBriefingResponse toResponse(AgendaCheiaBriefing briefing, BriefingKitProfile profile) {
         return new AgendaCheiaBriefingResponse(
-                briefing.getId(), briefing.getPaymentId(), briefing.getStatus(), briefing.getSubmittedAt());
+                briefing.getId(), briefing.getPaymentId(), briefing.getStatus(), briefing.getSubmittedAt(), profile);
+    }
+
+    /** Resolve a profissão no contrato autoritativo do pagamento, nunca no texto livre do briefing. */
+    private BriefingKitProfile profile(MercadoPagoPaymentDetails payment) {
+        return BriefingKitProfile.from(CapellaKitCatalog.forPaymentReference(payment.externalReference()));
     }
 
     /** Normaliza campos opcionais vazios. */

@@ -15,4 +15,13 @@ public record AgendaCheiaBriefingRequest(
         @NotBlank @Size(max = 120) String visualStyle,
         @Size(max = 180) String preferredColors,
         @NotBlank @Size(max = 180) String weeklyGoal,
-        @Size(max = 2000) String notes) {}
+        @Size(max = 2000) String notes,
+        @Size(max = 100) String professionCode) {
+    /** Preserva clientes anteriores; a profissão continua definida pela referência comprada. */
+    public AgendaCheiaBriefingRequest(String paymentId, String buyerEmail, String professionalName,
+            String cityRegion, String whatsapp, String services, String visualStyle,
+            String preferredColors, String weeklyGoal, String notes) {
+        this(paymentId, buyerEmail, professionalName, cityRegion, whatsapp, services, visualStyle,
+                preferredColors, weeklyGoal, notes, null);
+    }
+}

@@ -6,10 +6,20 @@ const paymentStatus = document.querySelector("#payment-status");
 const submitButton = form.querySelector('button[type="submit"]');
 const kitTitle = document.querySelector("#kit-title");
 const kitIntro = document.querySelector("#kit-intro");
+const professionContext = document.querySelector("#profession-context");
+const serviceExamples = document.querySelector("#service-examples");
+const professionCode = form.querySelector('[name="professionCode"]');
 let submitting = false;
 
 function showStatus(status) {
   form.classList.add("hidden");
+  if (!status.profile?.code || !status.profile?.profession || !status.profile?.productName) {
+    throw new Error("Não foi possível confirmar a profissão do kit. Fale com nosso atendimento abaixo.");
+  }
+  document.title = `Seu kit | ${status.profile.productName}`;
+  professionContext.textContent = `Kit para ${status.profile.profession}. A profissão corresponde à sua compra.`;
+  serviceExamples.textContent = status.profile.serviceExamples || "";
+  professionCode.value = status.profile.code;
   if (status.status === "ENTREGUE") {
     kitTitle.textContent = "Seu kit está pronto.";
     kitIntro.textContent = "Baixe e guarde os arquivos pelo link enviado ao seu e-mail. Escolha a primeira arte e use a legenda para divulgar seu trabalho.";

@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.imageio.ImageIO;
+import com.marketinghub.payments.service.kit.CapellaKitCatalog;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -42,7 +43,7 @@ class ApprovedAgendaCheiaPhotoLibraryTest {
                 .hasMessageContaining("ao menos 10 imagens");
     }
 
-    /** Deve bloquear arquivo alterado depois da revisão humana. */
+    /** Deve bloquear arquivo alterado depois da revisão auditável. */
     @Test
     void rejectsPhotoChangedAfterApproval() throws Exception {
         for (int index = 0; index < 10; index++) writeImage(index);
@@ -54,6 +55,43 @@ class ApprovedAgendaCheiaPhotoLibraryTest {
         assertThatThrownBy(() -> library.generate("purchase-123", 0))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("sem aprovação auditável");
+    }
+
+    /** Recusa notas não finitas que anteriormente passavam pela comparação numérica. */
+    @Test
+    void rejectsNonFiniteReviewScore() throws Exception {
+        for (int index = 0; index < 10; index++) writeImage(index);
+        writeManifest(10);
+        Path manifest = storage.resolve("approved-manifest.tsv");
+        Files.writeString(manifest, Files.readString(manifest).replace("9.5", "NaN"));
+        var library = new ApprovedAgendaCheiaPhotoLibrary(storage.toString());
+        assertThatThrownBy(() -> library.generate("qa-score", 0)).hasMessageContaining("sem aprovação auditável");
+    }
+
+    /** Dez nomes de arquivo não comprovam dez fotografias distintas. */
+    @Test
+    void rejectsDuplicatePhotographsEvenWithDifferentFilenames() throws Exception {
+        for (int index = 0; index < 10; index++) writeImage(index);
+        Files.copy(storage.resolve("approved-00.png"), storage.resolve("approved-01.png"),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        writeManifest(10);
+        var library = new ApprovedAgendaCheiaPhotoLibrary(storage.toString());
+        assertThatThrownBy(() -> library.generate("qa-duplicate", 0)).hasMessageContaining("duplicadas");
+    }
+
+    /** O acervo de uma candidata deve declarar o perfil, além de comprovar hashes e revisão. */
+    @Test
+    void requiresExplicitProfessionOnCandidateManifest() throws Exception {
+        for (int index = 0; index < 10; index++) writeImage(index);
+        writeManifest(10);
+        Path candidate = storage.resolve("barber-v1");
+        Files.createDirectory(candidate);
+        try (var paths = Files.list(storage)) {
+            for (Path path : paths.filter(Files::isRegularFile).toList()) Files.move(path, candidate.resolve(path.getFileName()));
+        }
+        var library = new ApprovedAgendaCheiaPhotoLibrary(storage.toString());
+        assertThatThrownBy(() -> library.generate("qa-profession", 0, CapellaKitCatalog.byCode("barber-v1")))
+                .hasMessageContaining("não comprova a profissão");
     }
 
     /** Cria uma fotografia raster válida e identificável para o teste. */

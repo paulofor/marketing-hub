@@ -1,5 +1,27 @@
 # Capella — entrega e atendimento v1
 
+## Preparação da primeira expansão — 03/10/2026
+
+O usuário autorizou executar a preparação do plano, preservando a autorização própria de qualquer
+análise paga, produção paga ou mídia. A primeira candidata é barbearia (`barber-v1`), por permitir
+um recorte mais delimitado de serviço e repertório; a decisão é exploratória, sem vencedor comercial.
+Unhas (`nails-v1`) conserva o contrato já vendido. Não alterar seus arquivos para fazer o anúncio
+parecer multissetor, nem reutilizar seu acervo como prova visual de corte ou barba.
+
+O compositor reutilizável carrega contratos versionados em `kits/capella/*.json`. A biblioteca
+de cada nova profissão exige subdiretório e manifesto com `# profile=<versão>`, hashes íntegros,
+dez imagens distintas e revisão auditável. Biblioteca ausente, incompatível ou insuficiente bloqueia;
+nunca provoca geração paga automática. O pagamento confirmado define a profissão, sem deduzi-la
+de nome, descrição ou texto livre. A referência comercial de barbearia permanece recusada até haver
+oferta, checkout, biblioteca, economia, pareceres e homologação próprios.
+
+Preparar um ZIP de QA não registra venda nem envia e-mail ao comprador. Imagens sintéticas usadas
+nos testes comprovam composição e empacotamento, não fotografias adequadas, demanda ou utilidade.
+O próximo experimento deve explicitar a exploração da nova proposta; público, repertório e entrega
+mudam juntos, portanto não há alegação causal de que somente ampliar o público aumentou vendas.
+Orçamento, janela e amostra comerciais pendentes não recebem valores fictícios para liberar ciclo.
+Ver [matriz local](../homologacao/capella-barbearia-preparacao-v1.md).
+
 ## Expansão horizontal planejada — 03/10/2026
 
 O usuário decidiu ampliar o mercado potencial de Capella. A direção é um PDE de divulgação

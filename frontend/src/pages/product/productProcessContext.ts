@@ -57,6 +57,8 @@ export function processContextText(context: ProcessContext, origin: string) {
     );
     if (chainId) url.searchParams.set("chainId", String(chainId));
     if (cycleId) url.searchParams.set("learningCycleId", String(cycleId));
+    if (h.currentExecutionReference)
+      url.searchParams.set("sourceReference", h.currentExecutionReference);
     if (activityId) url.hash = `activity-${activityId}`;
     return url.href;
   };
@@ -146,6 +148,17 @@ export function processContextText(context: ProcessContext, origin: string) {
         ? [`Link de acompanhamento: ${new URL(run.navigationUrl, origin).href}`]
         : []),
     );
+    if (run.queueBlocker) {
+      const blocker = run.queueBlocker;
+      lines.push(
+        `Execução que reserva a fila: #${blocker.runId} · ${blocker.processName} · v${blocker.processVersion} · definição ID ${blocker.processDefinitionId}`,
+        `Contexto da reserva: cadeia #${blocker.chainId} · ciclo ${value(blocker.learningCycleId)} · referência ${blocker.sourceReference}`,
+        `Situação da reserva: ${state(automationStateLabels, blocker.status)} · atividade ${value(blocker.currentActivityName)}`,
+        `Motivo da reserva: ${blocker.reason}`,
+        `Link da execução que reserva a fila: ${new URL(blocker.navigationUrl, origin).href}`,
+        "Liberar a fila não comprova os requisitos desta execução nem autoriza gasto. Preserve os contextos distintos.",
+      );
+    }
     if (run.userAction) {
       lines.push(
         `Próxima ação necessária: ${run.userAction.title} (${run.userAction.code})`,

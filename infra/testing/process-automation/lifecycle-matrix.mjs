@@ -440,6 +440,74 @@ await scenario(
     }),
 );
 
+await scenario(
+  "fila identifica a reserva exata e libera somente após pausa persistida",
+  async () => {
+    const product = 92038;
+    const waiting = await start(product, 92002);
+    await tick(waiting.id);
+    await callback(product, "a", 92002);
+    assert.equal((await tick(waiting.id)).status, "WAITING_HUMAN");
+    const nextCommand = {
+      chainId: 92014,
+      sourceReference: `experiment:${product}`,
+    };
+    const next = await request(root(product), nextCommand);
+    assert.equal((await tick(next.id)).status, "QUEUED");
+    const query = root(product) + "?" + new URLSearchParams(nextCommand);
+    const before = await request(
+      root(product, 92002) + "?" + new URLSearchParams(command(product)),
+    );
+    const historyBefore = await request(
+      root(product, 92002) + `/${waiting.id}/events`,
+    );
+    const queued = await request(query);
+    assert.equal(queued.queueBlocker.runId, waiting.id);
+    assert.equal(queued.queueBlocker.sourceReference, `experiment:${product}`);
+    assert.equal(queued.sourceReference, `experiment:${product}`);
+    assert.equal(queued.queueBlocker.status, "WAITING_HUMAN");
+    assert(
+      queued.queueBlocker.navigationUrl.includes(`learningCycleId=${product}`),
+    );
+    assert(
+      queued.queueBlocker.navigationUrl.includes(
+        `sourceReference=experiment%3A${product}`,
+      ),
+    );
+    const after = await request(
+      root(product, 92002) + "?" + new URLSearchParams(command(product)),
+    );
+    assert.equal(after.revision, before.revision);
+    assert.equal(
+      (await request(root(product, 92002) + `/${waiting.id}/events`)).length,
+      historyBefore.length,
+    );
+    assert.equal(
+      (await tasks(product)).filter((t) => t.process_id === 92001).length,
+      0,
+    );
+    await request(root(product, 92002) + `/${waiting.id}/pause`, {});
+    assert.equal((await tick(waiting.id)).status, "PAUSED");
+    const released = await request(query);
+    assert.equal(released.status, "QUEUED");
+    assert.equal(released.queueBlocker, null);
+    assert.equal((await tick(next.id)).status, "WAITING_ACTIVITY");
+    assert.equal(
+      (await tasks(product)).filter((t) => t.process_id === 92001).length,
+      1,
+    );
+    console.log(
+      JSON.stringify({
+        queueReservation: {
+          waitingId: waiting.id,
+          nextId: next.id,
+          readOnly: true,
+        },
+      }),
+    );
+  },
+);
+
 console.log(
   JSON.stringify({
     passed,

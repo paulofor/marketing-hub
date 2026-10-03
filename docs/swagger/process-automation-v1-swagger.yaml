@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Execução automática de processos v1
-  version: 1.1.0
+  version: 1.2.0
   description: Controle durável por produto, processo, cadeia, ciclo e referência. Somente o backend decide a próxima atividade; nenhum comando confirma decisão humana ou autorização comercial implícita.
 paths:
   /api/business-processes/{processId}/products/{productId}/automation/v1:
@@ -145,6 +145,11 @@ components:
                 enum: [READY, UNAVAILABLE, QUEUED, WAITING_ACTIVITY, WAITING_INPUT, WAITING_HUMAN, WAITING_SUBPROCESS, WAITING_PARENT, PAUSING, PAUSED, BLOCKED, ERROR, COMPLETED, CLOSED, REVALIDATION_REQUIRED]
                 description: CLOSED encerra o controle com objetivos pendentes quando o ciclo está fechado ou a versão não está publicada nem fixada pela ficha da referência exata. Aguarda callbacks em curso, inclusive de subprocessos; a retirada da origem bloqueia novos disparos nos filhos. Preserva contagens, custos e evidências, sem aprovação artificial, retomada ou reserva indefinida do produto. Objetivos integralmente comprovados recebem COMPLETED.
               reason: {type: string}
+              queueBlocker:
+                allOf:
+                  - $ref: '#/components/schemas/QueueBlocker'
+                nullable: true
+                description: Reserva anterior do mesmo produto, identificada pelo mesmo critério da conciliação. Disponível para QUEUED; nula quando não há outra raiz bloqueante. Consulta não muda estado, contagens, custos ou diário. Liberar a reserva não aprova os requisitos da execução consultada.
               userAction:
                 type: object
                 nullable: true
@@ -189,6 +194,21 @@ components:
                 description: Subprocessos publicados, identificados pela atividade chamadora; o backend preserva produto, cadeia, ciclo e versão nos links.
                 items: {$ref: '#/components/schemas/ProcessRelation'}
   schemas:
+    QueueBlocker:
+      type: object
+      required: [runId, processDefinitionId, processName, processVersion, chainId, sourceReference, status, reason, navigationUrl]
+      properties:
+        runId: {type: integer, format: int64}
+        processDefinitionId: {type: integer, format: int64}
+        processName: {type: string}
+        processVersion: {type: integer}
+        chainId: {type: integer, format: int64}
+        learningCycleId: {type: integer, format: int64, nullable: true}
+        sourceReference: {type: string}
+        status: {type: string}
+        reason: {type: string, description: Motivo persistido da execução que reserva a fila; não é resultado nem aprovação da execução consultada.}
+        currentActivityName: {type: string, nullable: true}
+        navigationUrl: {type: string, description: Link local da reserva com produto, processo, cadeia, ciclo quando registrado e sourceReference explícita. Abrir não pausa nem retoma.}
     ProcessRelation:
       type: object
       required: [processDefinitionId, processName, processVersion, activityId, activityName, navigationUrl]

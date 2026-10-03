@@ -101,6 +101,79 @@ afterEach(() => {
 });
 
 describe("Controle de processo", () => {
+  const queueBlocker = {
+    runId: 19,
+    processDefinitionId: 92002,
+    processName: "Homologação técnica local",
+    processVersion: 4,
+    chainId: 92014,
+    learningCycleId: null,
+    sourceReference: "experiment:92002",
+    status: "WAITING_INPUT",
+    reason: "Atualize o plano financeiro vencido ou alterado.",
+    currentActivityName: "Validar limites financeiros persistidos",
+    navigationUrl:
+      "/products/92001/value-chain-history/processes/92002/activities?chainId=92014&sourceReference=experiment%3A92002#activity-financialGuardrails",
+  };
+
+  it("identifica a execução e a pendência que reservam a fila sem disparar comandos", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...running,
+        status: "QUEUED",
+        currentActivityId: null,
+        queueBlocker,
+      },
+    });
+    setup();
+    expect(
+      await screen.findByLabelText("Processo que reserva a fila"),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/Execução #19 · Homologação técnica local/),
+    ).toBeVisible();
+    expect(screen.getByText(queueBlocker.reason)).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Ver processo que reserva a fila" }),
+    ).toHaveAttribute("href", queueBlocker.navigationUrl);
+    expect(
+      screen.queryByRole("button", { name: "Pausar execução anterior" }),
+    ).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("oculta o link da reserva após falha de atualização sem repetir comandos", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { ...running, status: "QUEUED", queueBlocker },
+    });
+    const client = setup();
+    await screen.findByRole("link", {
+      name: "Ver processo que reserva a fila",
+    });
+    vi.mocked(axios.get).mockRejectedValue(new Error("Falha simulada"));
+    await client.invalidateQueries({ queryKey: ["process-automation", 92001] });
+    expect(
+      await screen.findByText(
+        "Atualize a execução para confirmar quem reserva a fila.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("link", { name: "Ver processo que reserva a fila" }),
+    ).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("não inventa quem reserva a fila quando o backend não informou dependência", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { ...running, status: "QUEUED", queueBlocker: null },
+    });
+    setup();
+    await screen.findByText("Na fila");
+    expect(
+      screen.queryByLabelText("Processo que reserva a fila"),
+    ).not.toBeInTheDocument();
+  });
+
   it("distingue espera de execução e abre a pendência oficial do mesmo ciclo", async () => {
     const navigationUrl =
       "/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2";

@@ -38,4 +38,5 @@ public record ProcessRunResponse(
     long revision,
     List<ProcessRunRelationResponse> parentProcesses,
     List<ProcessRunRelationResponse> subprocesses,
-    ProcessRunUserAction userAction) {}
+    ProcessRunUserAction userAction,
+    ProcessRunQueueBlocker queueBlocker) {}

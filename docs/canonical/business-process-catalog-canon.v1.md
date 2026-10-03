@@ -993,6 +993,14 @@ seus contratos; a automação não preenche provas nem autoriza publicação por
   silenciosa para a versão nova. Encerramento e motivo são persistidos uma única vez no diário.
 - Produtos diferentes avançam em paralelo. Processos do mesmo produto aguardam uma execução
   anterior terminar ou pausar; subprocessos da mesma raiz compartilham a autorização da chamada.
+- Na consulta de uma execução `QUEUED`, expor `queueBlocker` com a raiz que efetivamente reserva
+  o produto, processo/versão, cadeia, ciclo quando registrado, referência, estado, causa persistida
+  e link oficial com `sourceReference` explícita. A mesma regra de dependência comercial usada
+  na conciliação identifica a reserva; o frontend e o contexto copiado para AIHUB não inferem
+  outro experimento nem confundem essa pendência com os requisitos da execução selecionada.
+  Consultar não altera contagens, custos, status ou diário. Ausência de outra reserva não muda
+  `QUEUED` até a conciliação. A pausa da execução anterior libera somente a fila e não aprova
+  finanças, publicação ou gasto da próxima. O estado e o comando permanecem na tela da reserva.
 - Pausa primeiro aguarda tarefas em curso no processo e nas delegações. Só depois libera o produto
   para outro processo. Não cancela tarefas, não as conclui e não abandona sua auditoria.
 - Esperas de entrada, evento ou decisão permanecem duráveis. Nenhum limite de duração conclui

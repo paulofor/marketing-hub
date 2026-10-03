@@ -1,5 +1,25 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-BPM-FILA-SEM-RESERVA-IDENTIFICAVEL — 03/10/2026
+
+- **Evidência:** Capella #7, execução #40, processo #81 v1, cadeia #26 e `experiment:94`
+  exibiam somente “Aguardando outro processo”. MCP confirmou a raiz #39, processo #122,
+  `experiment:88`, em `WAITING_INPUT` por plano financeiro vencido/alterado. A conciliação
+  continuava ativa. As versões retiradas #32/#37/#38 já estavam encerradas pela correção #5480.
+- **Causa confirmada:** a serialização funcionava conforme o contrato, mas sua resposta não
+  identificava a reserva, a referência nem a pendência. O operador e o contexto do AIHUB
+  recebiam uma espera genérica. Pausar a raiz anterior libera apenas a fila: a #40 também
+  depende de revisão financeira válida. A expansão preparada para barbearias é #96.
+- **Correção:** `queueBlocker` usa o mesmo critério de vez da conciliação e expõe identidade,
+  causa persistida e link com referência explícita. Painel e contexto copiado mostram a reserva
+  separada da execução consultada. Nenhuma inferência financeira, mudança de fila ou chamada
+  paga acontece pela consulta. Leitura da exceção comercial não atualiza contagens JPA.
+- **Prevenção/harness:** regressões HTTP/JPA com referências e produtos distintos, liberação
+  persistida, tarefa real, mesma raiz e dependência comercial; matriz MySQL e navegação em
+  desktop/iPhone/Pixel. O teste verifica ausência de eventos, comandos e alteração de custos
+  durante leituras repetidas. Não confundir diagnóstico entregue com processo ou venda concluídos.
+- **Registro do tema:** [matriz e investigação](../homologacao/capella-fila-reserva-financeira-2026-10-03.md).
+
 ## LOOP-PREFLIGHT-LEITURA-APROVADA-COM-EVIDENCIA-VENCIDA — 02/10/2026
 
 - **Evidência:** execução #37, Capella #7, `experiment:88`, cadeia #25,

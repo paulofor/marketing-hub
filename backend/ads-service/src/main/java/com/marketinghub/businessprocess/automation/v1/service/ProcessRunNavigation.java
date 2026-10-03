@@ -82,6 +82,18 @@ public class ProcessRunNavigation {
     return url(run, run.getProcessDefinitionId(), activityId);
   }
 
+  /** Abre a execução exata, incluindo sua referência quando não há ciclo registrado. */
+  public String executionUrl(ProcessRun run) {
+    return url(run, run.getProcessDefinitionId(), null)
+        + "&sourceReference="
+        + URLEncoder.encode(run.getSourceReference(), StandardCharsets.UTF_8).replace("+", "%20")
+        + (run.getCurrentActivityId() == null || run.getCurrentActivityId().isBlank()
+            ? ""
+            : "#activity-"
+                + URLEncoder.encode(run.getCurrentActivityId(), StandardCharsets.UTF_8)
+                    .replace("+", "%20"));
+  }
+
   /** Percorre composições aninhadas, impedindo ciclos e duplicação na coleta do catálogo. */
   private void collect(
       BusinessProcessDefinition process,

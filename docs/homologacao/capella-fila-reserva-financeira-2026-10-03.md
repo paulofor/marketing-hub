@@ -74,6 +74,9 @@ do diagnóstico não comprova vendas, margem nem conclusão de Capella.
   O roteiro agora confere esse contrato antes das suítes e inclui a regressão visual da fila.
   A revisão final também preservou a recusa original para raiz ausente da fila ativa; os testes
   da automação e do caso limite foram repetidos sem alterar a política de serialização.
+- A regressão visual usa a seleção existente `PROCESS_TEST_BROWSER=bundled` no CI e o
+  Chromium do sistema na sandbox. A rodada local com o navegador instalado pelo Playwright
+  também passou em desktop, iPhone e Pixel, incluindo a liberação auditável em QA.
 
 A publicação será conferida pelo SHA do merge, workflows aplicáveis, identidade do backend,
 frontend e comportamento da tela. Os registros #39/#40 e revisões financeiras consultados

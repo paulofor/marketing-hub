@@ -45,7 +45,9 @@ assert.equal((await tick(waiting.id)).status, "WAITING_HUMAN");
 const queued = await request(root(92001), input);
 assert.equal((await tick(queued.id)).status, "QUEUED");
 const browser = await chromium.launch({
-  executablePath: "/usr/bin/chromium",
+  ...(process.env.PROCESS_TEST_BROWSER === "bundled"
+    ? {}
+    : { executablePath: "/usr/bin/chromium" }),
   headless: true,
   args: ["--no-sandbox"],
 });

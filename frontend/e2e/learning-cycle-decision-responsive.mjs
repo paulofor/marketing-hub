@@ -106,6 +106,18 @@ try {
     ])
       await expect(form.locator(`[name="${field}"]`)).not.toHaveValue("");
     await expect(page.getByText(/Modelo simulado na sandbox/)).toBeVisible();
+    const market = page.getByRole("region", { name: "Avaliação de mercado" });
+    await expect(market).toContainText(
+      "Evidência insuficiente para redirecionar",
+    );
+    await expect(market).toContainText("Capacidade ainda não demonstrada");
+    await expect(market).toContainText("Contribuição líquida após aquisição");
+    await expect(market).toContainText(
+      "Novo ciclo e novo experimento obrigatórios",
+    );
+    await expect(market).toContainText(
+      "seis visitantes não provam mercado estreito",
+    );
     const original = await form.locator('[name="summary"]').inputValue();
     const edited = `Revisão humana ${name}: testar uma ação mais fácil e medir continuidade até compra.`;
     await form.locator('[name="summary"]').fill(edited);
@@ -141,6 +153,18 @@ try {
       `${api}/products/91001/${cycle.id}/decision-proposal`,
     );
     assert.equal(saved.proposal.summary, original);
+    assert.equal(
+      saved.proposal.contractVersion,
+      "LEARNING_CYCLE_DECISION_PROPOSAL_V2",
+    );
+    assert.equal(
+      saved.proposal.marketReview.recommendedScope,
+      "INSUFFICIENT_EVIDENCE",
+    );
+    assert.deepEqual(
+      new Set(saved.proposal.alternatives.map((item) => item.marketScope)),
+      new Set(["KEEP_FOCUS", "ADJACENT_SEGMENTS", "BROAD_PROBLEM"]),
+    );
     assert.equal(saved.status, "APPROVED");
     const audit = await request(
       `${api}/products/91001/${cycle.id}/decision-proposal/audit`,

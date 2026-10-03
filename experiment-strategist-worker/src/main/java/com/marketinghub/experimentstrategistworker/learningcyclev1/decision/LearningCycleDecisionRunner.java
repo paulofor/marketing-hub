@@ -28,16 +28,24 @@ public class LearningCycleDecisionRunner {
     this.json = json;
   }
 
-  /** Compõe o request auditável a partir dos arquivos versionados e do contexto congelado. */
+  /** Seleciona o contrato congelado pelo backend, preservando execuções anteriores à revisão v2. */
   public Prepared prepare(JsonNode context) throws IOException {
+    String version =
+        switch (context.path("contractVersion").asText("LEARNING_CYCLE_DECISION_PROPOSAL_V1")) {
+          case "LEARNING_CYCLE_DECISION_PROPOSAL_V1" -> "v1";
+          case "LEARNING_CYCLE_DECISION_PROPOSAL_V2" -> "v2";
+          default ->
+              throw new IllegalArgumentException("Contrato de decisão do ciclo desconhecido.");
+        };
+    String resource = "prompts/learning-cycle/" + version + "/";
     String prompt =
         read("prompts/experiment-strategist/v1/agent-core.md")
             + "\n\n"
-            + read("prompts/learning-cycle/v1/decision.md")
+            + read(resource + "decision.md")
                 .replace("{{CYCLE_CONTEXT}}", json.writeValueAsString(context));
     return new Prepared(
         prompt,
-        json.readTree(read("prompts/learning-cycle/v1/decision-schema.json")),
+        json.readTree(read(resource + "decision-schema.json")),
         properties.getModel() == null || properties.getModel().isBlank()
             ? "codex-default"
             : properties.getModel());

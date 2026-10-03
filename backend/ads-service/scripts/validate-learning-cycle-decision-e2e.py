@@ -8,7 +8,7 @@ PROJECT=os.environ['LEARNING_CYCLES_COMPOSE_PROJECT']
 assert PROJECT.startswith('aihub-')
 checks=[]
 def http(path, body=None, expected=200, method=None):
-    req=urllib.request.Request(BASE+path,data=None if body is None else json.dumps(body).encode(),headers={'Content-Type':'application/json'},method=method)
+    req=urllib.request.Request(BASE+path,data=None if body is None else json.dumps(body).encode(),headers={'Content-Type':'application/json','X-Learning-Decision-Contract':'LEARNING_CYCLE_DECISION_PROPOSAL_V2'},method=method)
     try:
         with urllib.request.urlopen(req,timeout=30) as r:
             raw=r.read();status=r.status;value=json.loads(raw) if raw else None
@@ -26,11 +26,13 @@ def proposal_url(c):return f'{API}/products/{c["productId"]}/{c["id"]}/decision-
 def valid(job):
     c=job['context'];target=next(t for t in c['returnTargets'] if t['activityId']=='rework')
     value={k:'Hipótese de melhoria; amostra pequena não comprova causa. Validar continuidade até compra.' for k in ('summary','rootCause','learning','nextHypothesis','evidenceLimits','correctionPlan','scaleHypothesis')}
-    value.update(contractVersion='LEARNING_CYCLE_DECISION_PROPOSAL_V1',action='ADJUST',returnProcessId=target['processDefinitionId'],returnActivityId=target['activityId'],selectedAlternative=0,evidenceEventIds=[c['measurementEventId']],alternatives=[dict(option='Opção '+str(i),benefit='Valor verificável',risk='Amostra limitada',effort='Médio',salesImpact='Hipótese a medir') for i in range(3)])
+    value.update(contractVersion=c['contractVersion'],action='ADJUST',returnProcessId=target['processDefinitionId'],returnActivityId=target['activityId'],selectedAlternative=0,evidenceEventIds=[c['measurementEventId']],alternatives=[dict(option='Opção '+str(i),benefit='Valor verificável',risk='Amostra limitada',effort='Médio',salesImpact='Hipótese a medir') for i in range(3)])
+    for alternative,scope in zip(value['alternatives'],['KEEP_FOCUS','ADJACENT_SEGMENTS','BROAD_PROBLEM']):alternative['marketScope']=scope
+    value['marketReview']=dict(recommendedScope='KEEP_FOCUS',currentAudience='Profissionais locais',proposedAudience='Mesmo público no sucessor',sharedProblem='Divulgar serviços sem esforço de criação',deliveryReadiness='UNKNOWN',requiredAdaptations='Comprovar entrega por profissão',excludedAudiences='Públicos sem entrega compatível',evidenceLimits='Dados de teste; sem prova de mercado',primaryMetric='NET_CONTRIBUTION_AFTER_ACQUISITION',continueWhen='Venda, entrega e contribuição comprovadas',adjustWhen='Falha localizada',stopWhen='Limite atingido',requiresNewCycle=True)
     return value
 
 def audit(job):
-    schema=json.loads(pathlib.Path('experiment-strategist-worker/src/main/resources/prompts/learning-cycle/v1/decision-schema.json').read_text())
+    schema=json.loads(pathlib.Path('experiment-strategist-worker/src/main/resources/prompts/learning-cycle/v2/decision-schema.json').read_text())
     body=dict(leaseToken=job['leaseToken'],prompt='Prompt simulado com contexto oficial '+json.dumps(job['context']),schema=schema,model='fixture-no-external-model',serviceTier='flex',serviceTierReason=None)
     http(f'{INTERNAL}/{job["proposalId"]}/request',body,method='PUT')
     http(f'{INTERNAL}/{job["proposalId"]}/request',body,method='PUT')

@@ -34,6 +34,9 @@ class LearningCycleDecisionWorkerTest {
         exchange -> {
           String route = exchange.getRequestURI().getPath();
           calls.add(exchange.getRequestMethod() + " " + route);
+          if (route.endsWith("/pending"))
+            assertThat(exchange.getRequestHeaders().getFirst("X-Learning-Decision-Contract"))
+                .isEqualTo("LEARNING_CYCLE_DECISION_PROPOSAL_V2");
           byte[] answer;
           if (route.endsWith("/pending"))
             answer =
@@ -126,6 +129,34 @@ class LearningCycleDecisionWorkerTest {
             "mcp_servers={}",
             "web_search=\"disabled\"",
             "--output-schema");
+  }
+
+  /** Revisão v2 exige mercado, três escopos, resultado econômico e segregação de testes. */
+  @Test
+  void preparesMarketReviewV2WithoutChangingLegacySchema() throws Exception {
+    var runner = new LearningCycleDecisionRunner(properties(), json);
+    var v2 =
+        runner.prepare(
+            json.createObjectNode().put("contractVersion", "LEARNING_CYCLE_DECISION_PROPOSAL_V2"));
+    assertThat(v2.schema().path("required").toString()).contains("marketReview");
+    assertThat(v2.schema().at("/properties/alternatives/items/required").toString())
+        .contains("marketScope");
+    assertThat(v2.prompt())
+        .contains(
+            "NET_CONTRIBUTION_AFTER_ACQUISITION",
+            "novo ciclo e um novo experimento",
+            "Gasto sem atribuição",
+            "INSUFFICIENT_EVIDENCE",
+            "AGENT_VALIDATION",
+            "capacidade",
+            "Não solicite entrevistas");
+    var v1 =
+        runner.prepare(
+            json.createObjectNode().put("contractVersion", "LEARNING_CYCLE_DECISION_PROPOSAL_V1"));
+    assertThat(v1.schema().path("properties").has("marketReview")).isFalse();
+    assertThatThrownBy(
+            () -> runner.prepare(json.createObjectNode().put("contractVersion", "UNKNOWN")))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   /** Saída malformada permanece bruta para bloqueio e auditoria no backend. */

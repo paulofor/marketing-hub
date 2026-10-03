@@ -3,7 +3,33 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { cycleApi, type LearningCycle } from "./useLearningCycles";
 
+const marketScope = z.enum([
+  "KEEP_FOCUS",
+  "ADJACENT_SEGMENTS",
+  "BROAD_PROBLEM",
+]);
+const marketReview = z.object({
+  recommendedScope: z.enum([
+    "KEEP_FOCUS",
+    "ADJACENT_SEGMENTS",
+    "BROAD_PROBLEM",
+    "INSUFFICIENT_EVIDENCE",
+  ]),
+  currentAudience: z.string(),
+  proposedAudience: z.string(),
+  sharedProblem: z.string(),
+  deliveryReadiness: z.enum(["SUPPORTED", "REQUIRES_ADAPTATION", "UNKNOWN"]),
+  requiredAdaptations: z.string(),
+  excludedAudiences: z.string(),
+  evidenceLimits: z.string(),
+  primaryMetric: z.literal("NET_CONTRIBUTION_AFTER_ACQUISITION"),
+  continueWhen: z.string(),
+  adjustWhen: z.string(),
+  stopWhen: z.string(),
+  requiresNewCycle: z.boolean(),
+});
 const alternative = z.object({
+  marketScope: marketScope.optional(),
   option: z.string(),
   benefit: z.string(),
   risk: z.string(),
@@ -37,7 +63,11 @@ const proposalSchema = z.object({
   approvedEventId: z.number().nullable(),
   proposal: z
     .object({
-      contractVersion: z.literal("LEARNING_CYCLE_DECISION_PROPOSAL_V1"),
+      contractVersion: z.enum([
+        "LEARNING_CYCLE_DECISION_PROPOSAL_V1",
+        "LEARNING_CYCLE_DECISION_PROPOSAL_V2",
+      ]),
+      marketReview: marketReview.optional(),
       action: z.enum([
         "ADJUST",
         "CONTINUE",
@@ -59,6 +89,18 @@ const proposalSchema = z.object({
       evidenceEventIds: z.array(z.number()),
       alternatives: z.array(alternative).length(3),
       selectedAlternative: z.number().int().min(0).max(2),
+    })
+    .superRefine((value, context) => {
+      if (
+        value.contractVersion === "LEARNING_CYCLE_DECISION_PROPOSAL_V2" &&
+        (!value.marketReview ||
+          value.alternatives.some((item) => !item.marketScope))
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Avaliação de mercado v2 incompleta.",
+        });
+      }
     })
     .nullable(),
 });

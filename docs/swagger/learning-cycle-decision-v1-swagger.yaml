@@ -1,11 +1,16 @@
 openapi: 3.0.3
 info:
   title: Proposta comercial de Atena no ciclo da Cadeia de Valor
-  version: 1.0.0
+  version: 1.1.0
   description: >-
     A atividade DECISION do subprocesso chamado por 6.4 recebe uma proposta de Atena.
     O worker apenas prepara; a pessoa edita e aprova pelo comando canônico do ciclo.
     A proposta nunca publica, autoriza gasto, cria sucessor ou altera o experimento.
+    Novas execuções usam LEARNING_CYCLE_DECISION_PROPOSAL_V2 e exigem marketReview;
+    snapshots v1 permanecem válidos. A revisão compara KEEP_FOCUS, ADJACENT_SEGMENTS e
+    BROAD_PROBLEM. Expansão exige ADJUST e retorno marketStrategy do processo
+    pde-commercial-plan-offer, com novo ciclo/experimento. A métrica principal é
+    NET_CONTRIBUTION_AFTER_ACQUISITION; cliques não comprovam sucesso comercial.
 paths:
   /api/business-process-chains/learning-cycles/v1/products/{productId}/{cycleId}/decision-proposal:
     parameters:
@@ -69,6 +74,15 @@ paths:
           description: Revisão, tentativa ou etapa incompatível
   /api/internal/business-process-chains/learning-cycles/v1/decision/stage-executions/pending:
     get:
+      parameters:
+        - name: X-Learning-Decision-Contract
+          in: header
+          required: false
+          description: O worker declara v2. Sem o header, somente tarefas v1 já congeladas podem ser reservadas; novas tarefas aguardam o worker atualizado.
+          schema:
+            type: string
+            enum: [LEARNING_CYCLE_DECISION_PROPOSAL_V1, LEARNING_CYCLE_DECISION_PROPOSAL_V2]
+            default: LEARNING_CYCLE_DECISION_PROPOSAL_V1
       operationId: claimLearningCycleDecisionProposal
       summary: Reservar no máximo uma proposta para o executor de Atena em PLAY
       description: >-
@@ -162,7 +176,7 @@ components:
         agentId: {type: integer, format: int64, nullable: true}
         automaticExecutionEnabled: {type: boolean}
         activityDefinitionId: {type: integer, format: int64, nullable: true}
-        proposal: {type: object, nullable: true, description: 'Contrato LEARNING_CYCLE_DECISION_PROPOSAL_V1 do schema versionado no worker, acrescido da referência de evidência resolvida pelo backend.'}
+        proposal: {type: object, nullable: true, description: 'Contrato LEARNING_CYCLE_DECISION_PROPOSAL_V2 (ou v1 histórico) do schema versionado no worker; marketReview contém recommendedScope, currentAudience, proposedAudience, sharedProblem, deliveryReadiness, requiredAdaptations, excludedAudiences, evidenceLimits, primaryMetric, continueWhen, adjustWhen, stopWhen e requiresNewCycle; alternatives inclui marketScope, acrescido da referência de evidência resolvida pelo backend.'}
         operatorName: {type: string, description: Sugestão editável a partir do responsável declarado na criação do ciclo; não é identidade autenticada}
         error: {type: string, nullable: true}
         createdAt: {type: string, format: date-time, nullable: true}

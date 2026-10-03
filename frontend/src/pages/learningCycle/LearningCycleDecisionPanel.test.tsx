@@ -201,3 +201,72 @@ it("uma falha HTTP não se torna formulário vazio", async () => {
   );
   expect(axios.post).not.toHaveBeenCalled();
 });
+
+it("apresenta revisão de mercado v2 com limites, adaptações e critério financeiro", async () => {
+  const marketReview = {
+    recommendedScope: "ADJACENT_SEGMENTS",
+    currentAudience: "Nail designers",
+    proposedAudience: "Cabeleireiros e barbeiros",
+    sharedProblem: "Divulgar serviços sem criar tudo do zero",
+    deliveryReadiness: "REQUIRES_ADAPTATION",
+    requiredAdaptations: "Adaptar briefing, imagens e calendário por profissão",
+    excludedAudiences: "Profissões sem entrega homologada",
+    evidenceLimits: "Seis visitantes não comprovam mercado estreito",
+    primaryMetric: "NET_CONTRIBUTION_AFTER_ACQUISITION",
+    continueWhen: "Vendas líquidas, contribuição e entrega comprovadas",
+    adjustWhen: "Interesse com falha corrigível",
+    stopWhen: "Limite atingido ou entrega inviável",
+    requiresNewCycle: true,
+  };
+  vi.mocked(axios.get).mockResolvedValue({
+    data: {
+      ...draft,
+      proposal: {
+        ...draft.proposal,
+        contractVersion: "LEARNING_CYCLE_DECISION_PROPOSAL_V2",
+        marketReview,
+        selectedAlternative: 1,
+        alternatives: draft.proposal.alternatives.map((value, index) => ({
+          ...value,
+          marketScope: ["KEEP_FOCUS", "ADJACENT_SEGMENTS", "BROAD_PROBLEM"][
+            index
+          ],
+        })),
+      },
+    },
+  });
+  mount();
+  expect(
+    await screen.findByRole("region", { name: "Avaliação de mercado" }),
+  ).toHaveTextContent("Cabeleireiros e barbeiros");
+  expect(screen.getByText("Precisa adaptar a entrega")).toBeInTheDocument();
+  expect(
+    screen.getByText(/Novo ciclo e novo experimento obrigatórios/),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/Contribuição líquida após aquisição/),
+  ).toBeInTheDocument();
+  expect(axios.post).not.toHaveBeenCalled();
+});
+it("rejeita resposta v2 incompleta sem liberar aprovação", async () => {
+  vi.mocked(axios.get).mockResolvedValue({
+    data: {
+      ...draft,
+      proposal: {
+        ...draft.proposal,
+        contractVersion: "LEARNING_CYCLE_DECISION_PROPOSAL_V2",
+      },
+    },
+  });
+  mount();
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Não foi possível consultar",
+  );
+  expect(
+    screen.queryByRole("button", { name: /Aprovar decisão/ }),
+  ).not.toBeInTheDocument();
+});
+it("identifica a ausência de revisão de mercado no histórico v1", async () => {
+  mount();
+  expect(await screen.findByText(/Proposta histórica/)).toBeInTheDocument();
+});

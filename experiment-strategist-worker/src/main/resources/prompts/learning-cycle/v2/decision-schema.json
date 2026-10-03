@@ -1,0 +1,243 @@
+{
+  "type": "object",
+  "properties": {
+    "contractVersion": {
+      "type": "string",
+      "enum": [
+        "LEARNING_CYCLE_DECISION_PROPOSAL_V2"
+      ]
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "ADJUST",
+        "CONTINUE",
+        "FIX_MEASUREMENT",
+        "SCALE",
+        "STOP",
+        "INCONCLUSIVE"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "rootCause": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "learning": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "nextHypothesis": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "evidenceLimits": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "correctionPlan": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "scaleHypothesis": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "returnProcessId": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "returnActivityId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidenceEventIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "integer"
+      }
+    },
+    "selectedAlternative": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2
+    },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "properties": {
+          "option": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "benefit": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "risk": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "effort": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "salesImpact": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "marketScope": {
+            "type": "string",
+            "enum": [
+              "KEEP_FOCUS",
+              "ADJACENT_SEGMENTS",
+              "BROAD_PROBLEM"
+            ]
+          }
+        },
+        "required": [
+          "option",
+          "benefit",
+          "risk",
+          "effort",
+          "salesImpact",
+          "marketScope"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "marketReview": {
+      "type": "object",
+      "properties": {
+        "currentAudience": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "proposedAudience": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "sharedProblem": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "requiredAdaptations": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "excludedAudiences": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "evidenceLimits": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "continueWhen": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "adjustWhen": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "stopWhen": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "recommendedScope": {
+          "type": "string",
+          "enum": [
+            "KEEP_FOCUS",
+            "ADJACENT_SEGMENTS",
+            "BROAD_PROBLEM",
+            "INSUFFICIENT_EVIDENCE"
+          ]
+        },
+        "deliveryReadiness": {
+          "type": "string",
+          "enum": [
+            "SUPPORTED",
+            "REQUIRES_ADAPTATION",
+            "UNKNOWN"
+          ]
+        },
+        "primaryMetric": {
+          "type": "string",
+          "enum": [
+            "NET_CONTRIBUTION_AFTER_ACQUISITION"
+          ]
+        },
+        "requiresNewCycle": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "currentAudience",
+        "proposedAudience",
+        "sharedProblem",
+        "requiredAdaptations",
+        "excludedAudiences",
+        "evidenceLimits",
+        "continueWhen",
+        "adjustWhen",
+        "stopWhen",
+        "recommendedScope",
+        "deliveryReadiness",
+        "primaryMetric",
+        "requiresNewCycle"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "contractVersion",
+    "action",
+    "summary",
+    "rootCause",
+    "learning",
+    "nextHypothesis",
+    "evidenceLimits",
+    "correctionPlan",
+    "scaleHypothesis",
+    "returnProcessId",
+    "returnActivityId",
+    "evidenceEventIds",
+    "selectedAlternative",
+    "alternatives",
+    "marketReview"
+  ],
+  "additionalProperties": false
+}

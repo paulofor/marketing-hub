@@ -1,0 +1,18 @@
+{
+  "cardKey": "interpretacao-atencao-eye-tracking",
+  "collection": "neuromarketing",
+  "title": "Interprete gaze por área e tipo de atenção, não por score único",
+  "finding": "Em experimento peer-reviewed com eye-tracking, 66 jovens consumidores viram dois anúncios digitais em vídeo. Duração média do olhar sobre elementos do produto foi o preditor mais forte de lembrança; frequência de fixações no endorser se associou positivamente à atitude, enquanto gaze prolongada no endorser se associou negativamente. Atenção à marca não teve efeito significativo no desenho analisado.",
+  "mechanism": "Atenção visual não é homogênea: área observada e métrica de gaze podem representar funções diferentes. Atenção sustentada ao produto pode favorecer codificação de memória, enquanto exposição prolongada a um endorser pode refletir esforço, distração ou saturação em vez de resposta favorável.",
+  "commercialApplication": "No Marketing Hub, decompor eye-tracking e mapas previstos de atenção por áreas de interesse — produto/oferta, pessoa/creator, marca, CTA e prova — e cruzar cada sinal com compreensão e eventos reais. Em vídeos, tornar produto e proposta rapidamente legíveis sem deixar o endorser monopolizar gaze.",
+  "evidenceStrength": "Moderada: artigo peer-reviewed com medidas objetivas de eye-tracking, mas amostra pequena de 66 jovens consumidores e apenas dois anúncios.",
+  "publishedOn": "2026-09-30",
+  "validUntil": "2027-06-30",
+  "experimentHypothesis": "Variantes em que produto/oferta recebem atenção sustentada suficiente, sem concentração excessiva no endorser, produzirão melhor lembrança e compreensão do que variantes selecionadas apenas por atenção total; validar separadamente retenção, CTA, lead, checkout e pagamento.",
+  "risks": "Otimizar gaze como objetivo final, interpretar olhar prolongado como preferência, reduzir branding com base em um único estudo ou usar eye-tracking previsto por IA como prova de vendas.",
+  "limits": "O estudo não mede vendas, leads ou CTR; usa 66 jovens consumidores e dois anúncios. Efeitos podem variar por categoria, público, duração, creator, placement e objetivo de campanha.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-10-01-atencao-produto-endosso-video-eye-tracking.md",
+  "sourceTitle": "Fonte revisada — atenção por área em vídeo digital e efeitos diferentes",
+  "sourceSha256": "590be643030d7906a97ea52d3e20cab9c0dfc5808c715b5226769dca5dfa73fb"
+}

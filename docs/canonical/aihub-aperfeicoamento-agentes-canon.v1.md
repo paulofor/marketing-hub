@@ -291,6 +291,30 @@ resultado de pesquisa e resultado local. Documentos recuperados não substituem 
 vigentes, não concedem acesso e não autorizam gasto ou publicação. Não carregar o acervo
 inteiro nem persistir uma inferência não confirmada como fato.
 
+### Integração e encerramento das branches de pesquisa — 03/10/2026
+
+Cada lote de pesquisa deve concluir validação local, PR, revisão, merge e publicação no mesmo
+fluxo. Reutilizar a branch e o PR existentes para complementos; não criar branches de relatório,
+finalização ou versão adicional para o mesmo lote. Não publicar fontes diretamente na main
+enquanto o card fica numa branch. Card vazio ou duplicado não comprova entrega. Se uma revisão
+obrigatória impedir a conclusão, registrar a pendência real e o vínculo com o PR; não chamar
+push de conclusão. Cards sincronizados continuam DRAFT até curadoria independente.
+
+O auditor cobre `automation/*`, `radar-*` e `radar/*`, exige histórico completo e preserva
+as correções posteriores da main. O modo padrão é somente leitura. No job confiável da main,
+a limpeza periódica pode remover somente pontas ancestrais da main, depois de confirmar
+repositório, SHA remoto, ausência de proteção, PR aberto e workflow em curso. A exclusão
+condicional por lease preserva um push concorrente. A igualdade de conteúdo sem ancestralidade
+não basta para apagar histórico exclusivo. Nunca remover conteúdo pendente ou branches
+compartilhadas; falha de consulta bloqueia a remoção e permanece registrada.
+
+Na consolidação de várias pesquisas, registrar decisão por branch e arquivo e preservar as
+pontas como ancestrais por merge normal. Template incompleto fica no histórico; fonte útil
+pode ser recuperada sem fabricar um card. Duplicação pode apontar para o card canônico já
+integrado. As hipóteses comerciais permanecem sujeitas a fontes, agentes e comportamento
+voluntário do mercado, sem entrevistas ou opiniões solicitadas. Ganho operacional de
+integração não representa aumento medido de vendas ou margem.
+
 Referências locais consultadas: [radar de 12/09/2026](../../pesquisas/agentes-inteligentes/2026-09-12-agentes-inteligentes.md)
 (memória verificada e intenção vigente) e [radar de 13/09/2026](../../pesquisas/agentes-inteligentes/2026-09-13-agentes-inteligentes.md)
 (suficiência de contexto e preservação de limites). Essas propostas foram usadas como

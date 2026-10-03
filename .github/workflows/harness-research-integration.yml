@@ -10,7 +10,7 @@ on:
       - "scripts/test-harness-research-branches.py"
       - ".github/workflows/harness-research-integration.yml"
   push:
-    branches: [main, "automation/**", "radar-*"]
+    branches: [main, "automation/**", "radar-*", "radar/**"]
     paths:
       - "pesquisas/**"
       - "scripts/publish-harness-cards.sh"
@@ -53,10 +53,18 @@ jobs:
         run: bash scripts/publish-harness-cards.sh --validate-only --all
 
   audit:
-    name: Branches pendentes de integração
+    name: Auditar pendências e limpar branches integradas
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: read
+      actions: read
+    concurrency:
+      group: harness-research-branch-maintenance
+      queue: max
+      cancel-in-progress: false
     steps:
       # Executa somente o auditor integrado; nunca código de uma branch de pesquisa.
       - uses: actions/checkout@v4
@@ -66,13 +74,15 @@ jobs:
       - name: Atualizar referências de pesquisa
         run: |
           git fetch --prune origin \
-            '+refs/heads/automation/*:refs/remotes/origin/automation/*' \
-            '+refs/heads/radar-*:refs/remotes/origin/radar-*'
-      - name: Conferir integração e registrar pendências
+            '+refs/heads/*:refs/remotes/origin/*'
+      - name: Conferir integração, remover ancestrais e registrar pendências
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           python3 scripts/audit-harness-research-branches.py \
             --output harness-research-branches.json \
-            --summary "$GITHUB_STEP_SUMMARY" --fail-pending
+            --summary "$GITHUB_STEP_SUMMARY" --fail-pending \
+            --prune-integrated --github-repository "$GITHUB_REPOSITORY"
       - name: Preservar auditoria inclusive quando houver pendência
         if: always()
         uses: actions/upload-artifact@v4

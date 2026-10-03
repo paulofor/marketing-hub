@@ -1,0 +1,18 @@
+{
+  "cardKey": "ai-assistants-product-discovery-intent",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Busca por IA cresce, mas prova e checkout ainda ficam no vendedor",
+  "finding": "A Salesforce reportou em 30/09/2026 crescimento de 200% da busca agêntica como primeiro passo da compra e, em dados comportamentais de mais de 1,5 bilhão de compradores, crescimento anual de 150% a 428% no tráfego referido por chats de IA nos trimestres medidos. Em paralelo, a Attentive encontrou que 93% dos compradores assistidos por IA buscaram prova fora do chatbot e apenas 10% concluíram a compra dentro dele na experiência descrita.",
+  "mechanism": "A IA pode comprimir descoberta e formação de shortlist, mas a redução de incerteza e o fechamento ainda dependem frequentemente de reviews, preço, detalhes verificáveis e de uma superfície controlada pelo vendedor.",
+  "commercialApplication": "Preparar ofertas para duas camadas: dados claros e verificáveis que assistentes consigam interpretar e uma página de prova/checkout que facilite validação. Medir influência por IA separadamente do último clique e decidir por checkout, pagamento reconciliado, CAC e margem.",
+  "evidenceStrength": "Moderada a forte para a mudança de descoberta/referral, pois a Salesforce inclui dados comportamentais em grande escala; moderada para preferência de prova e checkout, baseada em pesquisa autorrelatada da Attentive. Não há prova causal de uplift comercial.",
+  "publishedOn": "2026-10-01",
+  "validUntil": "2026-11-30",
+  "experimentHypothesis": "Uma oferta com fatos estruturados para IA e uma landing page de prova explícita produzirá mais checkouts qualificados e pagamentos entre jornadas assistidas por IA do que uma página genérica, sem depender apenas da atribuição de último clique.",
+  "risks": "Otimizar para citação por IA sem impacto em receita; atribuir vendas à IA sem evidência; exagerar resultados de pesquisas externas; transportar dados dos EUA/globais para o Brasil sem validação local; expor informações inconsistentes entre assistente e checkout.",
+  "limits": "A Salesforce observa o próprio ecossistema de comércio e não conduz experimento randomizado; a Attentive pesquisou consumidores dos EUA e mede comportamento declarado. As fontes não demonstram causalmente melhora em conversão, CAC, receita, margem, retenção ou LTV.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-10-01-ai-shopping-descoberta-prova.md",
+  "sourceTitle": "Fonte revisada — busca por IA cresce, mas prova e checkout ainda ficam no vendedor",
+  "sourceSha256": "5b4fedf4f3cd01bc906800df76e6afa662affa8c5f51047b9e16b9ddfe8b66ef"
+}

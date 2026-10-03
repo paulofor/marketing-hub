@@ -1,0 +1,18 @@
+{
+  "cardKey": "continuidade-contextual-agente",
+  "collection": "neuromarketing",
+  "title": "Memória útil deve ser pertinente, explícita e limitada ao contexto",
+  "finding": "Em um survey com 2.000 usuários de IA nos EUA, 74% disseram já ter se surpreendido com o quanto um chatbot parecia saber a partir do histórico e 61% disseram que compartilhariam menos informação se a IA lembrasse de tudo. Isso complementa experimentos anteriores nos quais memória pertinente recebeu resultados de confiança mais favoráveis do que memória intrusiva ou de outro contexto.",
+  "mechanism": "A continuidade reduz esforço quando preserva intenção e decisões úteis, mas uma interface conversacional pode induzir sensação de confidencialidade e estimular divulgação além do necessário. Quando a memória é ampla, opaca ou reutilizada fora da tarefa, o benefício de continuidade pode se transformar em percepção de vigilância ou perda de controle.",
+  "commercialApplication": "No customer-agent e Click-to-WhatsApp, usar memória mínima e pertinente, indicar quando um dado será lembrado, evitar perguntas abertas que estimulem revelações desnecessárias, pedir confirmação antes de reutilizar informação de outro contexto e oferecer correção ou remoção no próprio fluxo.",
+  "evidenceStrength": "Moderada: o sinal novo vem de survey autorrelatado com 2.000 usuários de IA nos EUA e converge com seis experimentos controlados anteriores N=2.140 sobre relevância contextual da memória. Não há demonstração de ganho em conversão, receita ou retenção.",
+  "publishedOn": "2026-10-02",
+  "validUntil": "2027-04-02",
+  "experimentHypothesis": "Um agente com memória mínima, aviso just-in-time e confirmação para reutilização cross-contextual reduzirá compartilhamento desnecessário de dados e sinais de intrusão sem aumentar repetição de perguntas, abandono ou handoff em comparação com memória ampla ou opaca.",
+  "risks": "Expor ou inferir dados sensíveis; criar falsa sensação de confidencialidade; reutilizar informação fora da finalidade esperada; transformar memória em vigilância; aumentar fricção com avisos excessivos; violar LGPD ou políticas do canal.",
+  "limits": "O survey da Aura é autorrelatado, restrito aos EUA e encomendado por empresa de segurança digital. Os experimentos anteriores usaram memórias simuladas e não mostraram efeito transacional consistente. O efeito deve ser validado com métricas humanas e eventos reais do funil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-10-02-continuidade-contextual-agente-memoria-transparente.md",
+  "sourceTitle": "Fonte revisada — Continuidade contextual, memória e limites de divulgação em agentes",
+  "sourceSha256": "a83dda41cc6e990d1582a7b775ecf15bfc16e2e1fd479df3cb598763951bafa8"
+}

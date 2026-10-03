@@ -8487,6 +8487,28 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   incompleto. Guia, cânone e AGENTS passam a exigir o ciclo completo de integração.
 - **Homologação:** `docs/homologacao/harness-research-reconciliation-v1.md`.
 
+### Recorrência e encerramento das branches — 03/10/2026
+
+- **Evidência histórica:** a configuração `delete_branch_on_merge` continuava habilitada;
+  PRs de correção eram integrados e suas branches removidas normalmente. Mesmo assim, havia
+  12 branches de pesquisa sem PR aberto, dez com complementos pendentes. O run `37073005462`
+  reportou nove pendências em 11 branches: `radar/agentes-inteligentes-2026-10-01` era ignorada.
+- **Causa confirmada:** produtores ainda fracionavam o mesmo lote em branches de relatório,
+  card e finalização. Sem merge do PR de origem, a exclusão nativa não se aplica. O auditor
+  anterior apenas falhava e preservava relatório; não encerrava referências já integradas.
+  Um template `{}` e um card duplicado reforçam a ausência de conclusão do lote.
+- **Correção proporcional:** recuperar seis relatórios, oito cards e oito fontes úteis num
+  único PR revisto, preservar pontas como ancestrais por merge normal e excluir referências
+  integradas. Template vazio fica no histórico; duplicação reutiliza card canônico. Auditor
+  inclui `radar/`, bloqueia histórico raso e oferece limpeza optativa apenas de ancestrais.
+- **Prevenção:** rotina confiável da main confere repositório, SHA, proteção, PR aberto e
+  workflows antes de excluir com lease. Push concorrente, API indisponível, pendência ou branch
+  compartilhada preservam a referência. Produtor deve reutilizar branch/PR até concluir o
+  fluxo validado; limpeza não fabrica conteúdo, não ativa cards nem faz merge automático.
+- **Teste de contrato:** Git bare local e API simulada cobrem remoção real, concorrência,
+  paginação, revisão pendente, falhas e idempotência, além do inventário anterior.
+- **Homologação:** `docs/homologacao/harness-branch-lifecycle-2026-10-03.md`.
+
 ## LOOP-MIRA-LOW-TICKET-ANALYTICS-PDE — superfície real ignorada pelo tipo de experimento
 
 - **Data:** 2026-10-01.

@@ -1,0 +1,18 @@
+{
+  "cardKey": "live-commerce-demonstracao-interacao-tempo-real",
+  "collection": "video",
+  "title": "Demonstração e resposta a dúvidas aproximam vídeo da decisão de compra",
+  "finding": "Levantamento brasileiro divulgado em 30/09/2026 com 1.002 consumidores reportou que demonstrações de funcionamento e respostas a dúvidas foram elementos valorizados em transmissões de comércio por vídeo.",
+  "mechanism": "Demonstração concreta e esclarecimento de objeções podem reduzir a incerteza percebida em categorias difíceis de avaliar por foto ou texto, enquanto um CTA no mesmo contexto encurta a distância entre entendimento e ação.",
+  "commercialApplication": "Comparar um criativo puramente narrativo com vídeo de demonstração que mostre o resultado acontecendo e responda uma objeção crítica. Avaliar CTA, checkout, pagamento reconciliado, reembolso e margem.",
+  "evidenceStrength": "Moderada como sinal de preferência em uma pesquisa brasileira de comércio por vídeo, mas baixa a moderada para efeito comercial causal, pois o levantamento é autorrelatado e não houve teste controlado contra outros formatos.",
+  "publishedOn": "2026-10-01",
+  "validUntil": "2026-11-15",
+  "experimentHypothesis": "Para ofertas em que uso, transformação ou funcionamento são difíceis de explicar, um vídeo que demonstra o resultado e responde uma dúvida frequente elevará checkout e pagamento em relação a uma peça apenas narrativa, mantendo oferta, público e CTA comparáveis.",
+  "risks": "Confundir preferência declarada com conversão; atribuir efeito ao formato quando promoção, apresentador, algoritmo ou preço podem ser os verdadeiros motores; alongar a peça; simular demonstrações que não representem o produto real.",
+  "limits": "A pesquisa é autorrelatada e tem recorte de uma plataforma de comércio social. Não informa uplift causal de vendas versus vídeo gravado, imagem ou página de produto. O efeito precisa ser validado no nicho e canal específicos do Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-10-01-demonstracao-produto-video.md",
+  "sourceTitle": "Fonte revisada — demonstração de produto em vídeo",
+  "sourceSha256": "8de0ead432eecc211ae15ac7ed5f1dd6b919007bbd32df68d4c40cf05431b171"
+}

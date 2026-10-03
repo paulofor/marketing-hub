@@ -1,0 +1,18 @@
+{
+  "cardKey": "recompensa-intrinseca-confianca-alocacao-visual",
+  "collection": "prazer-audio-visual",
+  "title": "Evitar ciclo de atenção preso ao que já parece fácil",
+  "finding": "Em uma série de experimentos de estimação visual, estímulos associados a menor erro, menor incerteza ou maior recompensa passaram a receber mais recursos de codificação, melhorando ainda mais o que já era estimado com precisão e podendo piorar o erro global.",
+  "mechanism": "Sinais de competência percebida e confiança podem funcionar como recompensa intrínseca; associados às características do estímulo, atualizam seu valor por um mecanismo compatível com reinforcement learning e enviesam a alocação futura de recursos atencionais.",
+  "commercialApplication": "Em interfaces, onboarding, quizzes, configuradores e experiências audiovisuais adaptativas, comparar feedback e saliência que reforçam apenas elementos já fáceis com uma versão que mantém conteúdo crítico ainda pouco consolidado disponível para processamento. Medir reconhecimento, conclusão, abandono, CTA, checkout e pagamento reconciliado.",
+  "evidenceStrength": "Média-alta: artigo revisado por pares na Nature Human Behaviour, com experimentos psicofísicos convergentes e modelagem computacional; a confiança interna foi inferida em parte das análises e a aplicação a produto é externa.",
+  "publishedOn": "2026-10-01",
+  "validUntil": "2026-12-31",
+  "experimentHypothesis": "Uma experiência que evita reforçar somente elementos de alta confiança e mantém saliência e progressão para conteúdo crítico ainda frágil reduzirá a diferença de reconhecimento entre elementos fáceis e difíceis e poderá melhorar conclusão sem aumentar erro ou abandono.",
+  "risks": "Não transportar manipulações experimentais de feedback para produção; não interpretar o efeito como dopamina, prazer ou prova de conversão. Reforçar excessivamente conteúdo difícil pode aumentar esforço e distração.",
+  "limits": "Tarefas laboratoriais de estimação de movimento; sem vídeo naturalístico, prazer, dopamina ou resultado comercial. O modelo de confiança é parcialmente inferencial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-02-recompensa-intrinseca-confianca-alocacao-visual.md",
+  "sourceTitle": "Fonte revisada — recompensa intrínseca e alocação visual",
+  "sourceSha256": "7c1e67ba7bfbc448c7322b1dcad1ecaa00a5bece9108502f91460faf8dc61c52"
+}

@@ -101,7 +101,9 @@ Use somente uma destas coleções: `video`, `prazer-audio-visual`, `neuromarketi
 Um sistema que já grava conteúdo no repositório pode cadastrar o rascunho sem executar `curl` contra
 a Biblioteca. Ele deve versionar o contrato completo em
 `pesquisas/<origem>/cards/<nome>.json`, junto com a fonte revisada, em uma branch de trabalho.
-A origem pode ser diferente da coleção de roteamento declarada no JSON. Antes de publicar, executar
+A origem pode ser diferente da coleção de roteamento declarada no JSON. Complete o lote na mesma
+branch e no mesmo PR; sufixos como `final` ou `v2` não justificam branches adicionais para partes
+da mesma entrega. JSON vazio é arquivo incompleto, nunca card publicável. Antes de publicar, executar
 `bash scripts/publish-harness-cards.sh --validate-only --all`, conferir o diff e concluir o PR,
 revisão e merge na `main`. Não gravar parcialmente na main nem encerrar a execução apenas porque
 a branch foi enviada. O workflow
@@ -111,10 +113,17 @@ tipo de fonte e SHA-256 e envia o JSON com chave idempotente derivada do arquivo
 O lote inteiro é validado antes da primeira chamada à API. Alterar somente uma fonte também
 dispara a conferência; fonte e hash divergentes bloqueiam antes de qualquer publicação. O workflow
 `Integração das pesquisas do Harness` aplica essa validação nos PRs e audita periodicamente as
-branches `automation/*` e `radar-*`. Trabalho pendente ou fora de escopo gera falha explícita e um
+branches `automation/*`, `radar-*` e `radar/*`. Trabalho pendente ou fora de escopo gera falha explícita e um
 artifact com branch, SHA, arquivos e motivo; não há merge automático nem alteração de credenciais.
+O job periódico também remove branches de pesquisa cuja ponta seja ancestral comprovada da main,
+somente após conferir ausência de proteção, PR aberto e workflow em curso. A remoção usa lease do
+SHA auditado; se houver novo commit, a branch é preservada. Igualdade de arquivos sem ancestralidade,
+histórico raso, falha de consulta e branches compartilhadas não autorizam exclusão. Essa limpeza
+não substitui a obrigação do produtor de concluir PR, revisão e publicação.
 Para conferir localmente, buscar o histórico completo e todas as referências de pesquisa e executar
 `python3 scripts/audit-harness-research-branches.py --fail-pending`.
+O modo padrão permanece somente leitura. Para a limpeza autorizada, usar
+`python3 scripts/audit-harness-research-branches.py --prune-integrated --github-repository paulofor/marketing-hub`.
 
 Se o escritor for outro GitHub Action autenticado com `GITHUB_TOKEN` e o merge não emitir um evento
 de push, ele deve emitir, depois da integração, o `repository_dispatch` de tipo

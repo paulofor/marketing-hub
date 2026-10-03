@@ -1,0 +1,18 @@
+{
+  "cardKey": "adocao-nao-equivale-compreensao-ai",
+  "collection": "neuromarketing",
+  "title": "Desempenho assistido por IA não equivale a compreensão independente",
+  "finding": "Dois experimentos pré-registrados em uma simulação de gestão encontraram melhora de desempenho com assessor LLM sem ganho igualmente robusto de compreensão ou capacidade posterior sem IA; alterar recomendações com maior frequência previu melhores resultados posteriores dentro do grupo assistido, mas essa associação não é causal.",
+  "mechanism": "A recomendação pode reduzir esforço e elevar o resultado por substituição parcial do julgamento. Questionar ou alterar a sugestão pode exigir processamento mais ativo e sinalizar construção de modelo mental, porém o estudo não manipulou causalmente esse comportamento.",
+  "commercialApplication": "Em copilots e workflows agentic nos quais preservar capacidade humana importa, medir separadamente resultado assistido, compreensão e capacidade sem IA; testar pontos de contestação ou edição antes de aceitar recomendações de maior impacto.",
+  "evidenceStrength": "Dois experimentos pré-registrados (N=200 e N=198) em problema complexo simulado; forte para dissociar desempenho assistido de compreensão, mas a relação entre alterar recomendações e aprendizagem é observacional dentro do grupo tratado e não prova causalidade.",
+  "publishedOn": "2026-10-03",
+  "validUntil": "2026-11-17",
+  "experimentHypothesis": "Em decisões de maior impacto, um ponto curto de contestação ou edição da recomendação aumentará a capacidade independente posterior sem eliminar o ganho de desempenho assistido.",
+  "risks": "Fricção obrigatória pode irritar usuários que legitimamente querem delegar; edição cosmética pode criar falsa sensação de compreensão e não deve ser tratada como prova de aprendizagem.",
+  "limits": "Simulação de fábrica e contexto experimental; medidas de conhecimento e transferência variaram entre estudos e critérios; não há evidência de efeito em receita, conversão ou vendas reais.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-03-adocao-nao-equivale-compreensao-ai.md",
+  "sourceTitle": "Fonte revisada — Desempenho assistido por IA não equivale a compreensão independente",
+  "sourceSha256": "bc91a37d6d926c5919e9315b0ca4a907b0e6621efe836faaf0cfe18c724f0d0c"
+}

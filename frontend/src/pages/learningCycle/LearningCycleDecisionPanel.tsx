@@ -12,6 +12,18 @@ import {
 } from "../../api/learningCycle/useLearningCycles";
 import LearningCycleCommandForm from "./LearningCycleCommandForm";
 
+const scopeLabels = {
+  KEEP_FOCUS: "Manter o foco atual",
+  ADJACENT_SEGMENTS: "Expandir para segmentos próximos",
+  BROAD_PROBLEM: "Atender pela dor compartilhada",
+  INSUFFICIENT_EVIDENCE: "Evidência insuficiente para redirecionar",
+};
+const readinessLabels = {
+  SUPPORTED: "Compatibilidade sustentada pelas evidências",
+  REQUIRES_ADAPTATION: "Precisa adaptar a entrega",
+  UNKNOWN: "Capacidade ainda não demonstrada",
+};
+
 export default function LearningCycleDecisionPanel({
   cycle,
   catalog,
@@ -26,6 +38,7 @@ export default function LearningCycleDecisionPanel({
   const [showAudit, setShowAudit] = useState(false);
   const audit = useDecisionProposalAudit(cycle, showAudit);
   const value = query.data;
+  const market = value?.proposal?.marketReview;
   const ready =
     value?.status === "READY" &&
     value.cycleRevision === cycle.revision &&
@@ -96,6 +109,52 @@ export default function LearningCycleDecisionPanel({
               <strong>Limites da evidência:</strong>{" "}
               {value.proposal.evidenceLimits}
             </p>
+            {market ? (
+              <section aria-label="Avaliação de mercado" className="mb-3">
+                <h4 className="h6">Mercado e possível redirecionamento</h4>
+                <p>
+                  <strong>{scopeLabels[market.recommendedScope]}</strong>
+                </p>
+                <dl>
+                  <dt>Público atual</dt>
+                  <dd>{market.currentAudience}</dd>
+                  <dt>Público proposto</dt>
+                  <dd>{market.proposedAudience}</dd>
+                  <dt>Problema compartilhado</dt>
+                  <dd>{market.sharedProblem}</dd>
+                  <dt>Capacidade de entrega</dt>
+                  <dd>{readinessLabels[market.deliveryReadiness]}</dd>
+                  <dt>Adaptações necessárias</dt>
+                  <dd>{market.requiredAdaptations}</dd>
+                  <dt>Públicos excluídos</dt>
+                  <dd>{market.excludedAudiences}</dd>
+                  <dt>Limites e atribuição</dt>
+                  <dd>{market.evidenceLimits}</dd>
+                  <dt>Métrica principal</dt>
+                  <dd>
+                    Contribuição líquida após aquisição, com vendas
+                    reconciliadas e valor entregue.
+                  </dd>
+                  <dt>Continuar quando</dt>
+                  <dd>{market.continueWhen}</dd>
+                  <dt>Ajustar quando</dt>
+                  <dd>{market.adjustWhen}</dd>
+                  <dt>Parar quando</dt>
+                  <dd>{market.stopWhen}</dd>
+                </dl>
+                {market.requiresNewCycle ? (
+                  <p>
+                    Novo ciclo e novo experimento obrigatórios. A proposta não
+                    autoriza campanha, orçamento ou publicação.
+                  </p>
+                ) : null}
+              </section>
+            ) : (
+              <p>
+                Proposta histórica: esta versão ainda não exigia avaliação
+                estruturada de mercado.
+              </p>
+            )}
             <details>
               <summary>Três alternativas avaliadas por Atena</summary>
               <ol>
@@ -107,6 +166,9 @@ export default function LearningCycleDecisionPanel({
                         ? " · recomendada"
                         : ""}
                     </strong>
+                    {item.marketScope ? (
+                      <p>{scopeLabels[item.marketScope]}</p>
+                    ) : null}
                     <p>{item.benefit}</p>
                     <p>
                       Risco: {item.risk} · Esforço: {item.effort}

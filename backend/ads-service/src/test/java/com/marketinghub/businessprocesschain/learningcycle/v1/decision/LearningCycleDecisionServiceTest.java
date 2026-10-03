@@ -117,7 +117,7 @@ class LearningCycleDecisionServiceTest {
         .thenReturn(
             mapper.readValue(
                 """
-        {"returnTargets":[{"processDefinitionId":3,"activityId":"rework","owner":"Dédalo"}]}
+        {"returnTargets":[{"processDefinitionId":3,"activityId":"rework","owner":"Dédalo"},{"processDefinitionId":2,"activityId":"marketStrategy","owner":"Atena","processCode":"pde-commercial-plan-offer"}]}
         """,
                 LearningCycleCatalog.class));
   }
@@ -333,6 +333,149 @@ class LearningCycleDecisionServiceTest {
     assertThat(instance.isObjectiveAchieved()).isTrue();
   }
 
+  /** Nova proposta sem avaliação de mercado permanece bloqueada e auditável. */
+  @Test
+  void rejectsMissingMarketReview() {
+    var bad = valid();
+    bad.remove("marketReview");
+    assertThat(complete(bad).status()).isEqualTo("FAILED");
+  }
+
+  /** As alternativas não podem repetir o foco e omitir uma forma de expansão. */
+  @Test
+  void rejectsRepeatedMarketScopes() {
+    var bad = valid();
+    ((ObjectNode) bad.path("alternatives").get(1)).put("marketScope", "KEEP_FOCUS");
+    assertThat(complete(bad).status()).isEqualTo("FAILED");
+  }
+
+  /** Clique não substitui contribuição como critério principal de mercado. */
+  @Test
+  void rejectsClickMetricAsCommercialSuccess() {
+    var bad = valid();
+    ((ObjectNode) bad.path("marketReview")).put("primaryMetric", "CLICKS");
+    assertThat(complete(bad).status()).isEqualTo("FAILED");
+  }
+
+  /** Redirecionamento preserva a referência e retorna à estratégia em sucessor. */
+  @Test
+  void acceptsExpansionOnlyAsSuccessorStrategy() {
+    var node = expansion();
+    assertThat(complete(node).status()).isEqualTo("READY");
+    assertThat(cycle.getStage()).isEqualTo("DECISION");
+    verify(cycleService, never()).command(any(), any(), any());
+  }
+
+  /** Não encaminha mudança de mercado diretamente à produção ou à comunicação. */
+  @Test
+  void rejectsExpansionWithoutStrategicReturn() {
+    var node = expansion();
+    node.put("returnProcessId", 3).put("returnActivityId", "rework");
+    assertThat(complete(node).status()).isEqualTo("FAILED");
+  }
+
+  /** Não modifica o mercado dentro do experimento já medido. */
+  @Test
+  void rejectsExpansionWithoutNewCycle() {
+    var node = expansion();
+    ((ObjectNode) node.path("marketReview")).put("requiresNewCycle", false);
+    assertThat(complete(node).status()).isEqualTo("FAILED");
+  }
+
+  /** Campos extras não podem embutir aprovações fora do contrato auditável. */
+  @Test
+  void rejectsHiddenMarketFields() {
+    var node = valid();
+    ((ObjectNode) node.path("marketReview")).put("hiddenApproval", true);
+    assertThat(complete(node).status()).isEqualTo("FAILED");
+  }
+
+  /** Uma escolha contraditória não chega ao formulário como recomendação pronta. */
+  @Test
+  void rejectsRecommendationDifferentFromSelectedAlternative() {
+    var node = expansion();
+    node.put("selectedAlternative", 0);
+    assertThat(complete(node).status()).isEqualTo("FAILED");
+  }
+
+  /** A decisão não pode substituir campos da revisão por texto ou valores inventados. */
+  @Test
+  void rejectsIncompleteMarketDeliveryReview() {
+    var node = valid();
+    ((ObjectNode) node.path("marketReview")).put("requiredAdaptations", "");
+    assertThat(complete(node).status()).isEqualTo("FAILED");
+  }
+
+  /** Até uma mudança mantendo o público precisa preservar a separação entre experimentos. */
+  @Test
+  void rejectsAdjustmentWithoutNewExperiment() {
+    var node = valid();
+    ((ObjectNode) node.path("marketReview")).put("requiresNewCycle", false);
+    assertThat(complete(node).status()).isEqualTo("FAILED");
+  }
+
+  /** Contrato novo não aceita resposta do schema antigo sem revisão de mercado. */
+  @Test
+  void rejectsContractDowngrade() {
+    var node = legacy();
+    assertThat(complete(node).status()).isEqualTo("FAILED");
+  }
+
+  /** Resposta v1 já reservada antes da atualização conserva seu contrato e auditoria. */
+  @Test
+  void acceptsFrozenLegacyContract() {
+    var job = service.pending().getFirst();
+    var context = (ObjectNode) json.read(saved.get().getContextJson());
+    context.put("contractVersion", LearningCycleDecisionService.LEGACY_CONTRACT);
+    saved.get().setContextJson(json.write(context));
+    auditRequest(job.leaseToken());
+    assertThat(
+            service
+                .result(
+                    5L,
+                    new DecisionProposalResult(
+                        job.leaseToken(), json.write(legacy()), null, 10L, 20L, null))
+                .status())
+        .isEqualTo("READY");
+  }
+
+  /** Durante o deploy, worker antigo não reserva tarefa cujo schema ainda desconhece. */
+  @Test
+  void oldWorkerWaitsWithoutCreatingOrLosingWork() {
+    assertThat(service.pending(LearningCycleDecisionService.LEGACY_CONTRACT)).isEmpty();
+    verify(proposals, never()).saveAndFlush(any());
+    assertThat(service.pending(LearningCycleDecisionService.CONTRACT)).hasSize(1);
+  }
+
+  /** Evidência insuficiente é conclusão válida sem obrigar expansão do produto. */
+  @Test
+  void allowsInsufficientEvidenceWithoutInventingMarketRejection() {
+    var node = valid();
+    ((ObjectNode) node.path("marketReview")).put("recommendedScope", "INSUFFICIENT_EVIDENCE");
+    assertThat(complete(node).status()).isEqualTo("READY");
+  }
+
+  /** Monta uma recomendação de expansão sem executar o ajuste. */
+  private ObjectNode expansion() {
+    var node = valid();
+    node.put("selectedAlternative", 1)
+        .put("returnProcessId", 2)
+        .put("returnActivityId", "marketStrategy");
+    ((ObjectNode) node.path("marketReview"))
+        .put("recommendedScope", "ADJACENT_SEGMENTS")
+        .put("deliveryReadiness", "REQUIRES_ADAPTATION");
+    return node;
+  }
+
+  /** Reconstitui a estrutura histórica sem fabricar revisão de mercado retroativa. */
+  private ObjectNode legacy() {
+    var node = valid();
+    node.put("contractVersion", LearningCycleDecisionService.LEGACY_CONTRACT);
+    node.remove("marketReview");
+    node.path("alternatives").forEach(item -> ((ObjectNode) item).remove("marketScope"));
+    return node;
+  }
+
   /** Monta uma proposta simulada com explicitação de incerteza e três alternativas. */
   private ObjectNode valid() {
     var node = mapper.createObjectNode();
@@ -355,9 +498,28 @@ class LearningCycleDecisionServiceTest {
     var alternatives = node.putArray("alternatives");
     for (int i = 0; i < 3; i++) {
       var alternative = alternatives.addObject();
+      alternative.put(
+          "marketScope", List.of("KEEP_FOCUS", "ADJACENT_SEGMENTS", "BROAD_PROBLEM").get(i));
       for (String key : List.of("option", "benefit", "risk", "effort", "salesImpact"))
         alternative.put(key, "Alternativa " + i);
     }
+    var review = node.putObject("marketReview");
+    for (String key :
+        List.of(
+            "currentAudience",
+            "proposedAudience",
+            "sharedProblem",
+            "requiredAdaptations",
+            "excludedAudiences",
+            "evidenceLimits",
+            "continueWhen",
+            "adjustWhen",
+            "stopWhen"))
+      review.put(key, "Hipótese; validar entrega, vendas e contribuição com evidência suficiente.");
+    review.put("recommendedScope", "KEEP_FOCUS");
+    review.put("deliveryReadiness", "UNKNOWN");
+    review.put("primaryMetric", "NET_CONTRIBUTION_AFTER_ACQUISITION");
+    review.put("requiresNewCycle", true);
     return node;
   }
 

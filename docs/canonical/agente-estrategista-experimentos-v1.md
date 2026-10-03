@@ -108,7 +108,36 @@ isolada já aprovada, compare três maneiras de executar essa melhoria preservan
 preço e oferta; registre expansão como hipótese futura. No caso histórico Vega #92, preservar o
 teste de utilidade do primeiro ajuste. O exemplo de agenda não redefine Vega ou Mira.
 
+## Revisão de mercado ao decidir cada ciclo — 03/10/2026
+
+Atena é a responsável existente pela avaliação de foco, expansão horizontal e possível
+reposicionamento após a conciliação de cada experimento da Cadeia de Valor, na atividade 6.4.
+Não criar outro agente, scheduler ou caminho de encerramento. A fila canônica de decisões já
+faz a reserva automática; a avaliação faz parte de toda nova proposta, inclusive quando a
+conclusão for manter o público, corrigir medição ou declarar evidência insuficiente.
+
+Novas propostas usam `LEARNING_CYCLE_DECISION_PROPOSAL_V2`, com `marketReview` obrigatório.
+As três alternativas distinguem `KEEP_FOCUS`, `ADJACENT_SEGMENTS` e `BROAD_PROBLEM`, comparando
+benefício, risco, esforço e impacto comercial esperado. A revisão registra público atual e
+proposto, problema compartilhado, capacidade real de entrega, adaptações, exclusões, limites
+de atribuição e critérios de continuar, ajustar e parar. Lacuna de pesquisa ou amostra não
+prova que o nicho causou o resultado. Recomendações de expansão exigem `ADJUST`, retorno
+canônico à estratégia e novo ciclo/experimento; `SCALE` não permite ampliar público escondido.
+
+O objetivo é venda líquida, contribuição e valor entregue. CTR, CPC, alcance e cliques são
+diagnóstico, nunca critério suficiente de vitória. Custos desconhecidos permanecem desconhecidos;
+gasto sem atribuição fica agregado e dados de agentes/QA são excluídos. Plutus continua responsável
+pela economia; Dédalo, pela adaptação e prova da entrega; Íris, pela comunicação; Hermes, pela
+operação autorizada. A experiência personalizada do PDE deve remover esforço real do cliente.
+
+O backend rejeita revisão incompleta, mudança de público sem sucessor ou recomendação incompatível
+com as três alternativas. Respostas de execuções v1 já congeladas continuam auditáveis e não são
+reescritas. A avaliação usa o snapshot da execução; evidência externa ausente vira pendência de
+pesquisa no retorno à estratégia, sem autorizar ferramentas, mídia ou publicação na decisão.
+Preparar a recomendação não executa o redirecionamento nem transfere orçamento ou aprovações.
+
 ## Fontes de verdade
+
 
 - sessões e eventos persistidos do experimento;
 - funil consolidado pelo backend;

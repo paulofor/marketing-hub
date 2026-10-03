@@ -41,7 +41,8 @@ import org.springframework.web.server.ResponseStatusException;
 @Slf4j
 public class LearningCycleDecisionService {
   public static final String AGENT = "experiment-strategist";
-  public static final String CONTRACT = "LEARNING_CYCLE_DECISION_PROPOSAL_V1";
+  public static final String LEGACY_CONTRACT = "LEARNING_CYCLE_DECISION_PROPOSAL_V1";
+  public static final String CONTRACT = "LEARNING_CYCLE_DECISION_PROPOSAL_V2";
   private final LearningSalesCycleRepository cycles;
   private final LearningCycleDecisionProposalRepository proposals;
   private final BusinessProcessDefinitionRepository processes;
@@ -52,14 +53,27 @@ public class LearningCycleDecisionService {
   private final LearningCycleJson json;
   @Autowired private ResearchIntelligenceService researchIntelligenceService;
 
-  /** Reserva sob lock do ciclo e lê commits recentes, evitando snapshot antigo do MySQL 5.7. */
+  /** Reserva o contrato atual para consumidores internos com suporte à revisão de mercado. */
   @Transactional(isolation = Isolation.READ_COMMITTED)
   public List<PendingDecisionProposal> pending() {
+    return pending(CONTRACT);
+  }
+
+  /** Reserva sob lock apenas contratos suportados, preservando a fila durante o deploy gradual. */
+  @Transactional(isolation = Isolation.READ_COMMITTED)
+  public List<PendingDecisionProposal> pending(String supportedContract) {
+    require(
+        Set.of(LEGACY_CONTRACT, CONTRACT).contains(supportedContract),
+        "Contrato de decisão não suportado.");
     if (!enabled()) return List.of();
     for (Long id : cycles.findDecisionPending(PageRequest.of(0, 10))) {
       var cycle = cycles.findLockedById(id).orElseThrow();
       if (!isDecision(cycle)) continue;
       var proposal = latest(cycle);
+      if (LEGACY_CONTRACT.equals(supportedContract)
+          && (proposal == null
+              || !LEGACY_CONTRACT.equals(
+                  json.read(proposal.getContextJson()).path("contractVersion").asText()))) continue;
       if (proposal != null && !"QUEUED".equals(proposal.getStatus())) continue;
       if (proposal == null) proposal = create(cycle, 1);
       if ("FAILED".equals(proposal.getStatus())) continue;
@@ -360,12 +374,17 @@ public class LearningCycleDecisionService {
     return json.write(context);
   }
 
-  /** Valida estrutura, alternativa, fontes e destino antes de liberar o formulário para revisão. */
+  /**
+   * Valida o contrato congelado, a revisão de mercado, fontes e destino antes da revisão humana.
+   */
   private void validate(
       LearningCycleDecisionProposal proposal, LearningSalesCycle cycle, JsonNode result) {
     var context = json.read(proposal.getContextJson());
+    String expectedContract = context.path("contractVersion").asText();
     require(
-        result.isObject() && CONTRACT.equals(result.path("contractVersion").asText()),
+        result.isObject()
+            && Set.of(LEGACY_CONTRACT, CONTRACT).contains(expectedContract)
+            && expectedContract.equals(result.path("contractVersion").asText()),
         "Contrato de proposta inválido.");
     for (String field :
         List.of(
@@ -384,21 +403,23 @@ public class LearningCycleDecisionService {
           "Campo ausente ou inválido na proposta: " + field);
     }
     Set<String> allowedFields =
-        Set.of(
-            "contractVersion",
-            "action",
-            "summary",
-            "rootCause",
-            "learning",
-            "nextHypothesis",
-            "evidenceLimits",
-            "correctionPlan",
-            "scaleHypothesis",
-            "returnProcessId",
-            "returnActivityId",
-            "evidenceEventIds",
-            "selectedAlternative",
-            "alternatives");
+        new HashSet<>(
+            Set.of(
+                "contractVersion",
+                "action",
+                "summary",
+                "rootCause",
+                "learning",
+                "nextHypothesis",
+                "evidenceLimits",
+                "correctionPlan",
+                "scaleHypothesis",
+                "returnProcessId",
+                "returnActivityId",
+                "evidenceEventIds",
+                "selectedAlternative",
+                "alternatives"));
+    if (CONTRACT.equals(expectedContract)) allowedFields.add("marketReview");
     var names = result.fieldNames();
     while (names.hasNext())
       require(allowedFields.contains(names.next()), "A proposta contém campo fora do contrato.");
@@ -458,6 +479,7 @@ public class LearningCycleDecisionService {
       require(
           result.path("returnProcessId").isNull() && result.path("returnActivityId").isNull(),
           "Esta decisão não deve declarar um retorno de ajuste.");
+    if (CONTRACT.equals(expectedContract)) LearningCycleMarketReview.validate(result, context);
     ((ObjectNode) result).put("evidenceReference", context.path("evidenceReference").asText());
   }
 

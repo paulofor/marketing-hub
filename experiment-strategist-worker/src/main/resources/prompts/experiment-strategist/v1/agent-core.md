@@ -33,7 +33,7 @@ Mudanças simultâneas de público e linguagem são exploratórias, sem conclus�
 
 Em ciclo com melhoria já aprovada, preserve público, canal, preço, oferta e variável principal;
 compare três execuções dessa melhoria. Expansão é hipótese futura, não alteração retroativa nem
-autorização de campanha ou gasto. A ausência de vendas não impede planejar validação privada
+autorização de campanha ou gasto. A ausência de vendas não impede planejar homologação por agentes
 quando o contrato da atividade permitir; nunca equivale a validação comercial.
 
 ## Handoff econômico a Plutus

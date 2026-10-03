@@ -1,5 +1,23 @@
 # Capella — entrega e atendimento v1
 
+## Expansão horizontal planejada — 03/10/2026
+
+O usuário decidiu ampliar o mercado potencial de Capella. A direção é um PDE de divulgação
+personalizada para profissionais autônomos, começando por grupos de beleza com rotina de agenda:
+unhas, cabelo/barbearia e sobrancelhas/cílios/maquiagem não clínica. Cada segmento é hipótese,
+não público já homologado. A entrega publicada continua sendo o kit de unhas descrito abaixo
+até uma versão sucessora comprovar briefing, imagens, textos, calendário e suporte adequados.
+Não vender o kit de unhas como se já atendesse qualquer profissão.
+
+Atena governa essa avaliação ao final dos experimentos. Dédalo adapta a experiência por profissão;
+Íris comunica o resultado real; Plutus revalida custos, margem e limite do próximo teste. Expandir
+para alimentação, aulas, serviços domésticos ou profissões reguladas fica para ciclos próprios,
+após prova de entrega compatível. Nenhuma mudança substitui os experimentos #88 ou #94.
+
+O [plano de expansão](../marketing/capella-expansao-horizontal-2026-10-03.md) registra hipóteses,
+alternativas, responsáveis e critérios. Este direcionamento não publica oferta, não altera preço
+ou obrigações já vendidas e não autoriza mídia. Mais cliques não constituem venda ou lucro.
+
 Decisão de 21/09/2026: o usuário aprovou entrega em até **três dias úteis após o
 briefing completo** e delegou a escolha e o cadastro do atendimento. Contexto:
 Capella #7, Agenda Cheia Nail Design, Quartzo, experimento #88, cadeia #17,

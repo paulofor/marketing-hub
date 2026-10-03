@@ -37,14 +37,20 @@ public class LearningCycleDecisionConsumer {
     this.control = control;
   }
 
-  /** Reserva uma proposta por execução agendada; somente o backend governa o avanço comercial. */
+  /** Declara suporte à revisão v2 e reserva uma proposta; o backend governa o avanço comercial. */
   @Scheduled(cron = "25 */1 * * * *")
   public void processOne() {
     if (!control.allowsAutomaticExecution()) return;
     JsonNode job = null;
     LearningCycleDecisionRunner.Result result = null;
     try {
-      JsonNode pending = backend.get().uri(ENDPOINT + "/pending").retrieve().body(JsonNode.class);
+      JsonNode pending =
+          backend
+              .get()
+              .uri(ENDPOINT + "/pending")
+              .header("X-Learning-Decision-Contract", "LEARNING_CYCLE_DECISION_PROPOSAL_V2")
+              .retrieve()
+              .body(JsonNode.class);
       if (pending == null || pending.isEmpty()) return;
       job = pending.get(0);
       log.info(

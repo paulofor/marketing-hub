@@ -43,10 +43,14 @@ public class LearningCycleDecisionController {
     return service.retry(productId, cycleId, request);
   }
 
-  /** Reserva uma decisão elegível para o worker de Atena. */
+  /** Reserva somente contratos suportados pelo worker, sem perder tarefas durante a atualização. */
   @GetMapping(INTERNAL + "/pending")
-  public List<PendingDecisionProposal> pending() {
-    return service.pending();
+  public List<PendingDecisionProposal> pending(
+      @RequestHeader(
+              value = "X-Learning-Decision-Contract",
+              defaultValue = LearningCycleDecisionService.LEGACY_CONTRACT)
+          String supportedContract) {
+    return service.pending(supportedContract);
   }
 
   /** Recebe o prompt e a configuração antes de qualquer resposta do modelo. */

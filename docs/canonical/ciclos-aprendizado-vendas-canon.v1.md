@@ -29,7 +29,21 @@ autoriza mídia, produção paga ou publicação comercial. Para um criativo nov
 é ao Processo 4 no contexto do novo ciclo/experimento; não mudar simultaneamente produto,
 preço, público e página sem declarar e separar as hipóteses.
 
+## Revisão de mercado em toda decisão — 03/10/2026
+
+Depois da conciliação e antes de encerrar, manter, ajustar ou propor escala, Atena compara manter
+o foco, atender segmentos adjacentes e aquisição pela dor compartilhada. A atividade 6.4 e sua
+fila existente exigem o contrato `LEARNING_CYCLE_DECISION_PROPOSAL_V2`, com avaliação estruturada
+de público, entrega, evidência, adaptações e critérios comerciais. A tela apresenta esse parecer
+antes da decisão. A regra e compatibilidade histórica estão no
+[cânone de Atena](agente-estrategista-experimentos-v1.md#revisão-de-mercado-ao-decidir-cada-ciclo--03102026).
+
+Expansão é hipótese de novo ciclo e experimento, retornando à estratégia; nunca alteração do
+predecessor ou autorização de gasto. Poucos cliques, nenhuma venda ou amostra pequena não provam
+mercado estreito. A avaliação pode recomendar manter o público ou buscar evidência suficiente.
+
 ## Continuidade após aprovação dos vídeos — decisão de 14/09/2026
+
 
 A aprovação humana registrada em Vídeos é a fonte de verdade para o uso da peça
 exata. O processo ativo deve reutilizá-la e integrar automaticamente AD e

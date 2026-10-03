@@ -1,0 +1,18 @@
+{
+  "cardKey": "ensemble-multissensorial-media-sequencia",
+  "collection": "prazer-audio-visual",
+  "title": "Media perceptiva em sequencias rapidas",
+  "finding": "Em tarefas pareadas em tres modalidades, a precisao para estimar a media de sequencias permaneceu relativamente estavel com mais itens; a precisao individual mostrou associacao entre modalidades.",
+  "mechanism": "O sistema perceptivo pode extrair uma representacao-resumo da magnitude da sequencia em vez de depender apenas de comparacao serial.",
+  "commercialApplication": "Em sequencias digitais com muitos eventos rapidos, comparar versoes com media global semelhante e distribuicoes locais diferentes, medindo intensidade percebida, lembranca e compreensao.",
+  "evidenceStrength": "Media: dois experimentos psicofisicos pareados, com amostras modestas e sem apresentacao multimodal simultanea.",
+  "publishedOn": "2026-10-03",
+  "validUntil": "2026-11-17",
+  "experimentHypothesis": "Sequencias com media global semelhante e picos locais diferentes podem gerar avaliacoes globais proximas, enquanto a lembranca dos picos pode divergir.",
+  "risks": "Nao assumir que a media perceptiva elimina a importancia de eventos individuais.",
+  "limits": "As modalidades foram testadas separadamente e com dimensoes diferentes.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-03-ensemble-multissensorial-media-sequencia.md",
+  "sourceTitle": "Fonte revisada sobre media perceptiva em sequencias",
+  "sourceSha256": "47ce6f6491c965bf0ea032ef3854647ad7bc717e21e19000c9ba94bc7f34491f"
+}

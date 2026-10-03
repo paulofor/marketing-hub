@@ -62,9 +62,9 @@ Não foi localizado nesta rodada um novo experimento humano direto, ainda não c
 
 Fonte revisada: `pesquisas/prazer-audio-visual/cards/fontes/2026-10-01-carga-cognitiva-codificacao-emocional.md`  
 SHA-256: `35f9ea5b15830524fd9d6956b3e2c06ebea155c815e76e7cba3c56b5f14ae974`  
-JSON preparado em branch de trabalho: `pesquisas/prazer-audio-visual/cards/2026-10-01-carga-cognitiva-codificacao-emocional.json`
+JSON: `pesquisas/prazer-audio-visual/cards/2026-10-01-carga-cognitiva-codificacao-emocional.json`
 
-Nenhuma ação de submit-review, activate ou archive foi executada.
+Os arquivos representam somente candidato DRAFT. Nenhuma ação de submit-review, activate ou archive foi executada.
 
 ## Referências
 

@@ -1,0 +1,18 @@
+{
+  "cardKey": "carga-cognitiva-codificacao-emocional",
+  "collection": "prazer-audio-visual",
+  "title": "Reduzir carga concorrente em imagens emocionais críticas",
+  "finding": "Em um experimento com EEG e reconhecimento, alta carga de memória de trabalho reduziu o processamento inicial de imagens e, para imagens negativas, foi seguida por pior reconhecimento e por respostas posteriores mais semelhantes às de imagens novas.",
+  "mechanism": "A carga cognitiva concorrente pode reduzir a codificação inicial e/ou a habituação, deixando o estímulo menos familiar quando reaparece. O LPP é um índice de processamento motivacional/atencional, não de prazer ou dopamina.",
+  "commercialApplication": "Quando produto, preço ou mensagem emocional precisa ser reconhecido depois, comparar uma versão em que esse elemento aparece com pouca competição cognitiva contra outra com texto, escolhas ou movimento concorrentes. Medir reconhecimento, compreensão, abandono, CTA, checkout e pagamento reconciliado.",
+  "evidenceStrength": "Média-alta para o mecanismo laboratorial de carga, processamento emocional e reconhecimento; transferência para vídeo, marketing e emoções positivas exige teste próprio.",
+  "publishedOn": "2026-10-01",
+  "validUntil": "2026-11-15",
+  "experimentHypothesis": "Reduzir a carga cognitiva concorrente no momento de um elemento emocional crítico aumentará reconhecimento e compreensão posteriores em relação a uma versão visualmente mais exigente, sem assumir aumento de prazer ou vendas.",
+  "risks": "Simplificar demais pode reduzir informação útil; imagens negativas não representam todas as emoções. Não interpretar LPP, arousal ou reconhecimento como prova de persuasão ou venda.",
+  "limits": "Amostra de 73 adultos de 18–23 anos, imagens laboratoriais e teste de reconhecimento logo após a tarefa inicial; não houve música, vídeo naturalístico, dopamina ou desfecho comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-01-carga-cognitiva-codificacao-emocional.md",
+  "sourceTitle": "Fonte revisada — carga cognitiva e reexposição emocional",
+  "sourceSha256": "35f9ea5b15830524fd9d6956b3e2c06ebea155c815e76e7cba3c56b5f14ae974"
+}

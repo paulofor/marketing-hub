@@ -2,17 +2,17 @@
   "cardKey": "video-avatar-conversacional-agente-tempo-real",
   "collection": "video",
   "title": "Tratar avatar em tempo real como camada de agente audiovisual",
-  "finding": "Tavus Griffin-Lite unificou percepção audiovisual, turn-taking, fala e geração de vídeo em um modelo full-duplex, enquanto Synthesia Sessions colocou roleplay e entrevistas por avatar em produção com Interactive Avatars API GA.",
+  "finding": "A Tavus descreve Griffin-Lite como preview de pesquisa de um modelo audiovisual full-duplex com percepção, decisão conversacional e geração contínuas. A documentação da Synthesia descreve avatares interativos que renderizam uma conversa controlada pelo agente do integrador, em sua sala LiveKit. São arquiteturas distintas, confirmadas apenas por fontes de fornecedores.",
   "mechanism": "Um avatar que observa e escuta continuamente pode reagir a pausas, interrupções, sinais visuais e respostas em tempo real, enquanto um agente e suas ferramentas mantêm lógica, dados e objetivos fora da camada visual.",
-  "commercialApplication": "No Marketing Hub, testar avatares para qualificação de leads, demonstração de produto e entrevistas de descoberta, mantendo preço, claims, CTA e estado comercial em fontes canônicas externas.",
-  "evidenceStrength": "Alta para disponibilidade e arquitetura da Synthesia, confirmadas em páginas oficiais e pricing; moderada para Griffin, porque o avanço técnico é oficial e há avaliação VideoFDB, mas o modelo ainda é research preview e a alegação de Turing test é do próprio fornecedor.",
-  "publishedOn": "2026-10-02",
+  "commercialApplication": "No Marketing Hub, avaliar demonstração de produto e atendimento voluntário com identidade de IA explícita, mantendo preço, alegações, CTA, ferramentas e estado comercial nos contratos do backend. Homologar por agentes e testes determinísticos; comprovar demanda pelo mercado voluntário, sem entrevistas, recrutamento ou opiniões solicitadas.",
+  "evidenceStrength": "Moderada para os contratos técnicos documentados em fontes primárias dos fornecedores; limitada para eficácia comercial. O preview da Tavus e a integração modular da Synthesia não comprovam melhora de conversão, receita ou margem no Marketing Hub.",
+  "publishedOn": "2026-10-03",
   "validUntil": "2026-12-31",
   "experimentHypothesis": "Para a mesma tarefa de qualificação, um avatar audiovisual interativo aumentará taxa de conclusão e profundidade das respostas em relação a chat ou voz sem avatar, sem elevar erros factuais nem custo por sessão concluída acima do ganho de conversão.",
   "risks": "Confusão entre humano e IA, impersonação, privacidade de câmera/voz, inferência emocional incorreta, custo de streaming e otimização indevida para engajamento; exige disclosure explícito, consentimento e guardrails.",
-  "limits": "Griffin-Lite ainda não é GA e não possui API/preço público específico; Synthesia usa uma arquitetura modular e seu avatar não equivale ao modelo full-duplex unificado da Tavus; ganhos de negócio precisam de experimento próprio.",
+  "limits": "Griffin-Lite é descrito como preview de pesquisa; a disponibilidade ampla não foi comprovada. A integração modular da Synthesia não equivale ao modelo full-duplex unificado da Tavus. Custos, acesso e limites exigem conferência antes de uso; nenhum resultado comercial foi medido no Marketing Hub.",
   "sourceKind": "MARKDOWN",
   "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-02-griffin-sessions-avatar-full-duplex.md",
   "sourceTitle": "Fonte revisada — Tavus Griffin e Synthesia Sessions tornam o avatar um agente audiovisual em tempo real",
-  "sourceSha256": "7246e2e6610ecdbd7bd9b803e2117cda9e2d2b397f0e5dce10ff826e68091dfd"
+  "sourceSha256": "7286030cb1b3851053dce7e3e16a0a96c6f62aaa817682385caf8e3fe1ff818a"
 }

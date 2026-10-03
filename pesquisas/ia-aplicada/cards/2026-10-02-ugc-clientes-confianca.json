@@ -1,0 +1,18 @@
+{
+  "cardKey": "ugc-clientes-confianca",
+  "collection": "neuromarketing",
+  "title": "Experiências humanas no criativo merecem prioridade no pré-score",
+  "finding": "Kroger, Vidmob e MMA Global analisaram 1.934 peças de imagem e vídeo em Meta e DV360; um modelo treinado com dados de 2025 e validado em um conjunto independente do 1º trimestre de 2026 previu performance de conversão de e-commerce com 81% de acurácia. Peças alinhadas às recomendações tiveram, em média, 4x maior conversão e até 70% menor custo por conversão, e experiências humanas relacionáveis superaram peças centradas principalmente em produto ou compra. Esses números pertencem ao contexto do estudo e não provam causalidade.",
+  "mechanism": "Cenas humanas relacionáveis podem aumentar relevância percebida, autoidentificação e compreensão do benefício em contexto. Em paralelo, um score baseado em atributos históricos pode reduzir o custo de exploração ao priorizar peças associadas a melhor performance. O estudo não isolou causalmente esses mecanismos.",
+  "commercialApplication": "No Marketing Hub, etiquetar atributos de criativos — presença humana, demonstração, produto isolado, narrativa, mensagem, ritmo e CTA — e usar histórico para pré-classificar quais variantes recebem orçamento exploratório. Comparar essa priorização com uma regra de controle e decidir por retenção, CTA, checkout, pagamento reconciliado, CAC e margem; não substituir teste real pelo score.",
+  "evidenceStrength": "Moderada: 1.934 ativos de campanhas reais e validação temporal fora da amostra, mas um único varejista em duas plataformas, estudo conduzido com o fornecedor da tecnologia e sem replicação independente ou experimento causal isolando cada atributo.",
+  "publishedOn": "2026-10-02",
+  "validUntil": "2026-12-31",
+  "experimentHypothesis": "Priorizar para teste peças com atributos que o histórico associa a maior conversão, incluindo experiências humanas relacionáveis quando aderentes à oferta, reduzirá o custo de exploração e aumentará pagamentos por unidade de mídia versus priorização sem score, sem elevar reembolso ou reduzir satisfação.",
+  "risks": "Overfitting à marca, categoria ou plataforma; vazamento de informação no treinamento; transformar correlação em regra causal; reduzir diversidade criativa; realocar mídia de modo autorreforçante e esconder ideias novas que o histórico não reconhece.",
+  "limits": "Os 81% de acurácia, 4x de conversão e até 70% de redução de custo pertencem ao estudo Kroger/Vidmob/MMA e não são garantia para outros contextos. A evidência não demonstra que presença humana, isoladamente, cause conversão e pode refletir público, marca, sazonalidade, mídia e outras variáveis.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-10-02-ugc-clientes-confianca-kroger.md",
+  "sourceTitle": "Fonte revisada — Kroger, Vidmob e MMA Global: scoring criativo e conversão",
+  "sourceSha256": "7339bb84e49ed09ff39a19dda097a990876b0d733287123e7c547c8e317b119b"
+}

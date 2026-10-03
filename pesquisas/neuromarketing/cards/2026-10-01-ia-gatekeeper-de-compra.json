@@ -1,0 +1,18 @@
+{
+  "cardKey": "ia-gatekeeper-de-compra",
+  "collection": "neuromarketing",
+  "title": "IA pode formar a shortlist, mas a prova final ainda precisa existir fora dela",
+  "finding": "Em survey da Attentive com 3.054 adultos dos EUA, 62% dos compradores assistidos por IA disseram ter trocado produto ou marca habitual por influência do chatbot, mas 93% buscaram prova fora da IA. Reviews, comparação de preços e detalhes de produto foram as validações mais citadas; 60% preferem concluir uma compra futura no site ou app onde o produto é vendido.",
+  "mechanism": "A IA pode reduzir o conjunto de opções e alterar consideração, mas a confiança para concluir a compra continua dependendo de evidência verificável, preço e detalhes coerentes em uma superfície controlada pela marca. Descoberta mediada por IA e validação final podem ser etapas diferentes da mesma jornada.",
+  "commercialApplication": "Evoluir o AgentReadableOfferAudit para validar duas superfícies: o que agentes conseguem recuperar e recomendar e o que o usuário encontra na landing/checkout. Manter preço, entregáveis, limitações, FAQ e prova social verificável consistentes e rastrear referrals de IA até CTA, lead, checkout, pagamento, reembolso e retorno.",
+  "evidenceStrength": "Moderada: survey recente com mais de 3 mil consumidores, mas autorrelatado, apenas nos EUA e patrocinado por empresa do setor.",
+  "publishedOn": "2026-09-30",
+  "validUntil": "2027-01-31",
+  "experimentHypothesis": "Uma jornada em que a oferta é legível para agentes e oferece prova, preço e detalhes consistentes na landing reduzirá correções e abandono depois da recomendação por IA e aumentará a passagem de referral de IA para CTA e checkout sem elevar reembolso.",
+  "risks": "Não ajustar páginas para explorar limitações dos agentes, não usar avaliações falsas, não esconder condições desfavoráveis e não tratar recomendação de IA como endosso objetivo. Não confundir preferência declarada por checkout próprio com conversão real.",
+  "limits": "A pesquisa é autorrelatada e americana; não mede causalidade nem o público brasileiro do Marketing Hub. O comportamento de agentes e consumidores muda rapidamente, exigindo revalidação frequente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-10-01-ia-descoberta-prova-fora-ai.md",
+  "sourceTitle": "Fonte revisada — IA muda a shortlist, mas compradores ainda procuram prova fora do chatbot",
+  "sourceSha256": "12bd8ad60001a7ce5553528a227c721f6c3801894c9a2c49c25f5e603f774968"
+}

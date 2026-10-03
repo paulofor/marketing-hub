@@ -36,7 +36,7 @@ import org.springframework.transaction.PlatformTransactionManager;
     properties = {
       "spring.liquibase.enabled=false",
       "spring.jpa.show-sql=false",
-      "spring.datasource.url=jdbc:h2:mem:ProcessRunQueueBlockerPersistenceTest-${random.uuid};DB_CLOSE_DELAY=0"
+      "spring.datasource.url=jdbc:h2:mem:com.marketinghub.businessprocess.automation.v1.service.ProcessRunQueueBlockerPersistenceTest-${random.uuid};DB_CLOSE_DELAY=0"
     })
 class ProcessRunQueueBlockerPersistenceTest {
   @Autowired private ProcessRunRepository runs;
@@ -162,6 +162,24 @@ class ProcessRunQueueBlockerPersistenceTest {
   void sharesReservationWithinSameRoot() {
     queued.setParentRunId(waiting.getId());
     assertThat(readStatus().queueBlocker()).isNull();
+  }
+
+  /** Uma raiz ausente da fila ativa não ganha vez apenas por uma continuação comercial. */
+  @Test
+  void preservesReservationWhenOwnRootIsNotEligible() throws Exception {
+    var pausedRoot = runs.saveAndFlush(run(95001L, 95013L, "experiment:95023", "PAUSED"));
+    queued.setParentRunId(pausedRoot.getId());
+    when(context.permitsCommercialContinuation(any(), any())).thenReturn(true);
+    when(context.read(any(ProcessRun.class), eq(false)))
+        .thenReturn(
+            json.readValue(
+                """
+        {"selectedActivityCount":8,"completedActivityCount":7,"remainingActivityCount":1,"activities":[]}
+        """,
+                ProductProcessActivityExecutionHistoryResponse.class));
+    assertThat(readStatus().queueBlocker().runId()).isEqualTo(waiting.getId());
+    assertThat(events.count()).isZero();
+    verifyNoInteractions(activities);
   }
 
   /** Trabalho real impede ultrapassagem mesmo na exceção comercial, sem gravar a observação. */

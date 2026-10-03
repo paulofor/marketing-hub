@@ -35,7 +35,7 @@ por esta melhoria de diagnóstico. Gasto novo autorizado permanece R$ 0.
 | --- | --- |
 | Caso original | Duas raízes do mesmo produto e referências diferentes: a segunda identifica a espera financeira da primeira |
 | Identidade | Link da reserva preserva produto, processo/versão, cadeia, ciclo opcional, referência e atividade; outros produtos são isolados |
-| Serialização | Mesmo critério da conciliação; raízes próprias e dependência comercial permitida continuam sem bloqueio adicional |
+| Serialização | Mesmo critério da conciliação; raízes próprias e dependência comercial permitida continuam sem bloqueio adicional; raiz ausente da fila ativa não ganha vez |
 | Trabalho real | Tarefa ou delegação em curso impede ultrapassagem; consulta não atualiza contagens observadas |
 | Liberação | PAUSED/COMPLETED/CLOSED/ERROR deixam de ser reserva; consulta não promove status nem conclui objetivos |
 | Observabilidade | API, painel e contexto copiado apresentam IDs, causa persistida e link; não inferem ciclo nem aprovação |
@@ -52,7 +52,7 @@ do diagnóstico não comprova vendas, margem nem conclusão de Capella.
 
 ## Resultados locais
 
-- Backend: 615 classes com testes, 3.822 casos aprovados, zero erros/falhas e 24 casos
+- Backend: 615 classes com testes, 3.823 casos aprovados, zero erros/falhas e 24 casos
   ignorados pelas condições existentes da suíte. A classe vazia `PipelineTest` não declara
   casos. A primeira JVM foi encerrada com código 137 e `oom_kill=1` no limite de 8 GiB,
   após 3.709 casos registrados. Os 15 grupos restantes foram executados separadamente com
@@ -68,6 +68,12 @@ do diagnóstico não comprova vendas, margem nem conclusão de Capella.
   inteira. A pausa auditável em QA remove somente a reserva; não conclui requisitos.
 - `bash -n` e ShellCheck no runner existente consultado: sem achados. Dezesseis casos de
   proteção do modelo visual aprovados. Nenhuma migração produtiva foi modificada.
+- O primeiro CI detectou o nome abreviado do banco H2 da nova fixture. O nome foi corrigido
+  para incluir a classe qualificada, UUID e encerramento imediato, mantendo a regra existente
+  de isolamento. Os 12 testes do contrato de CI e os três casos do roteiro local passaram.
+  O roteiro agora confere esse contrato antes das suítes e inclui a regressão visual da fila.
+  A revisão final também preservou a recusa original para raiz ausente da fila ativa; os testes
+  da automação e do caso limite foram repetidos sem alterar a política de serialização.
 
 A publicação será conferida pelo SHA do merge, workflows aplicáveis, identidade do backend,
 frontend e comportamento da tela. Os registros #39/#40 e revisões financeiras consultados

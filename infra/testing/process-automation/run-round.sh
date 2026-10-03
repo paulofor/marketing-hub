@@ -49,6 +49,7 @@ start_backend() {
   return 1
 }
 # As dependências são locais ou simuladas; nenhuma credencial de produção é utilizada.
+run_check backend-ci-contract.log python3 scripts/test-backend-ci-workflow.py
 run_check worker-tests.log npm --prefix process-execution-worker test
 run_check backend-tests.log mvn -q -f backend/ads-service/pom.xml test dependency:build-classpath -Dmdep.includeScope=test -Dmdep.outputFile=target/process-test.classpath
 python3 - "$output/backend-counts.json" <<'PY'
@@ -84,6 +85,7 @@ node infra/testing/process-automation/frontend-server.mjs > "$output/frontend-se
 frontend_pid=$!
 PROCESS_TEST_ARTIFACTS="$output/browser" run_check browser.log node infra/testing/process-automation/browser-matrix.mjs
 PROCESS_TEST_ARTIFACTS="$output/browser" run_check retirement-browser.log node infra/testing/process-automation/retired-version-browser.mjs
+PROCESS_TEST_ARTIFACTS="$output/browser" run_check queue-reservation-browser.log node infra/testing/process-automation/queue-reservation-browser.mjs
 compose exec -T process-mysql mysql -uroot -pprocess-local-only process_automation_local --batch --skip-column-names -e "SELECT COUNT(*) FROM DATABASECHANGELOG WHERE ID LIKE '2026-09-12-product-process-automation%'; SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE FROM information_schema.columns WHERE table_schema='process_automation_local' AND table_name IN ('product_process_run_v1','product_process_run_event_v1') ORDER BY TABLE_NAME,ORDINAL_POSITION;" > "$output/mysql-schema.txt" 2>/dev/null
 git diff --check > "$output/diff-check.log"
 printf 'PASS rodada %s: backend, frontend, worker, contratos, MySQL, HTTP, reinício, desktop e mobile\n' "$round_name" | tee "$output/result.txt"

@@ -31,6 +31,7 @@ class RunnerContractTest(unittest.TestCase):
         }
         # O Maven encerra o teste no próximo gate; nenhum container ou banco é iniciado.
         for name, body in {
+            "python3": '[[ "$*" == "scripts/test-backend-ci-workflow.py" ]] || exit 99\ntouch backend-ci-contract-called\n',
             "mvn": "touch maven-called\necho 'falha simulada do próximo gate'\nexit 37\n",
             "docker": '[[ "$*" == *"down --volumes --remove-orphans" ]] || exit 99\ntouch cleanup-called\n',
         }.items():
@@ -54,9 +55,22 @@ class RunnerContractTest(unittest.TestCase):
         report = (self.output / "worker-tests.log").read_text()
         self.assertRegex(report, r"# tests [1-9][0-9]*")
         self.assertRegex(report, r"# fail 0\b")
+        self.assertTrue((self.root / "backend-ci-contract-called").exists())
         self.assertTrue((self.root / "maven-called").exists())
         self.assertIn("backend-tests.log", result.stderr)
         self.assertIn("falha simulada do próximo gate", result.stderr)
+        self.assertTrue((self.root / "cleanup-called").exists())
+        self.assertFalse((self.output / "result.txt").exists())
+
+    def test_ci_contract_failure_stops_before_tests_and_cleans_up(self):
+        contract = self.root / "bin/python3"
+        contract.write_text("#!/usr/bin/env bash\necho 'contrato CI inválido'\nexit 27\n")
+        result = self.run_runner()
+        self.assertEqual(result.returncode, 27, result.stdout + result.stderr)
+        self.assertIn("backend-ci-contract.log", result.stderr)
+        self.assertIn("contrato CI inválido", result.stderr)
+        self.assertFalse((self.output / "worker-tests.log").exists())
+        self.assertFalse((self.root / "maven-called").exists())
         self.assertTrue((self.root / "cleanup-called").exists())
         self.assertFalse((self.output / "result.txt").exists())
 

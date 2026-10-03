@@ -597,7 +597,7 @@ public class ProcessRunService {
       if (!context.permitsCommercialContinuation(waiting, candidate)
           || inFlight(waiting, new HashSet<>(), refreshProgress)) return Optional.of(waiting);
     }
-    return Optional.empty();
+    return Optional.of(roots.getFirst());
   }
 
   /**

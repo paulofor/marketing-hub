@@ -32,6 +32,19 @@ export interface ProcessAutomation {
   revision: number;
   parentProcesses?: ProcessRelation[];
   subprocesses?: ProcessRelation[];
+  queueBlocker?: {
+    runId: number;
+    processDefinitionId: number;
+    processName: string;
+    processVersion: number;
+    chainId: number;
+    learningCycleId: number | null;
+    sourceReference: string;
+    status: string;
+    reason: string;
+    currentActivityName: string | null;
+    navigationUrl: string;
+  } | null;
   userAction?: {
     code: string;
     title: string;

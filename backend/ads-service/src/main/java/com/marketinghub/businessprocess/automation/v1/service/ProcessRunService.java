@@ -582,16 +582,47 @@ public class ProcessRunService {
 
   /** Libera dependência comercial exata sem ultrapassar tarefa real, pausa ou outra ocorrência. */
   private boolean hasTurn(ProcessRun run) {
+    return blockingRoot(run, true).isEmpty();
+  }
+
+  /** Identifica a mesma reserva usada na conciliação, sem atualizar progresso durante consultas. */
+  private Optional<ProcessRun> blockingRoot(ProcessRun run, boolean refreshProgress) {
     var roots = runs.activeRoots(run.getProductId());
     Long currentRootId = rootId(run);
-    if (roots.isEmpty() || Objects.equals(roots.getFirst().getId(), currentRootId)) return true;
+    if (roots.isEmpty() || Objects.equals(roots.getFirst().getId(), currentRootId))
+      return Optional.empty();
     var candidate = runs.findById(currentRootId).orElseThrow();
     for (var waiting : roots) {
-      if (Objects.equals(waiting.getId(), currentRootId)) return true;
+      if (Objects.equals(waiting.getId(), currentRootId)) return Optional.empty();
       if (!context.permitsCommercialContinuation(waiting, candidate)
-          || inFlight(waiting, new HashSet<>())) return false;
+          || inFlight(waiting, new HashSet<>(), refreshProgress)) return Optional.of(waiting);
     }
-    return false;
+    return Optional.of(roots.getFirst());
+  }
+
+  /**
+   * Projeta causa e link da reserva sem disparar trabalho, pausar processos ou aprovar objetivos.
+   */
+  private ProcessRunQueueBlocker queueBlocker(ProcessRun run) {
+    if (run.getId() == null || !"QUEUED".equals(run.getStatus())) return null;
+    return blockingRoot(run, false)
+        .map(
+            blocker -> {
+              var definition = context.process(blocker.getProcessDefinitionId());
+              return new ProcessRunQueueBlocker(
+                  blocker.getId(),
+                  blocker.getProcessDefinitionId(),
+                  definition.getName(),
+                  definition.getVersionNumber(),
+                  blocker.getChainDefinitionId(),
+                  blocker.getLearningCycleId(),
+                  blocker.getSourceReference(),
+                  blocker.getStatus(),
+                  blocker.getReason(),
+                  blocker.getCurrentActivityName(),
+                  navigation.executionUrl(blocker));
+            })
+        .orElse(null);
   }
 
   /**
@@ -858,11 +889,17 @@ public class ProcessRunService {
 
   /** Aguarda trabalho real, permitindo pausar um ciclo que espera apenas entrada do operador. */
   private boolean inFlight(ProcessRun run, Set<Long> seen) {
+    return inFlight(run, seen, true);
+  }
+
+  /** Observa tarefas e delegações sem modificar entidades quando a operação é apenas leitura. */
+  private boolean inFlight(ProcessRun run, Set<Long> seen, boolean refreshProgress) {
     if (!seen.add(run.getId())) throw new IllegalStateException("Ciclo inválido de subprocessos.");
     var snapshot = context.read(run, false);
-    updateCounts(run, snapshot);
+    if (refreshProgress) updateCounts(run, snapshot);
     return snapshot.activities().stream().anyMatch(a -> activityInFlight(run, a))
-        || runs.findAllByParentRunId(run.getId()).stream().anyMatch(child -> inFlight(child, seen));
+        || runs.findAllByParentRunId(run.getId()).stream()
+            .anyMatch(child -> inFlight(child, seen, refreshProgress));
   }
 
   /** Preserva tarefas reais em curso sem confundir o estado geral do ciclo com uma execução. */
@@ -980,7 +1017,8 @@ public class ProcessRunService {
         run.getRevision(),
         navigation.parents(run),
         navigation.children(run),
-        userAction);
+        userAction,
+        queueBlocker(run));
   }
 
   /** Gera identidade compacta com todos os limites de segregação, inclusive ciclo ausente. */

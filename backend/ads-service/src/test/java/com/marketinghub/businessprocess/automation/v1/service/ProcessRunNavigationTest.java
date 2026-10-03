@@ -27,6 +27,23 @@ class ProcessRunNavigationTest {
   private final ProcessRunNavigation navigation =
       new ProcessRunNavigation(processes, chains, runs, products, new ObjectMapper());
 
+  /** Links de reserva preservam a referência exata com e sem ciclo, sem inferir o experimento. */
+  @Test
+  void linksExactQueueReservationWithEncodedReferenceAndAnchor() {
+    var queued = run(9L, 63L);
+    queued.setSourceReference("experiment:93001");
+    queued.setCurrentActivityId("economics");
+    assertThat(navigation.executionUrl(queued))
+        .isEqualTo(
+            "/products/4/value-chain-history/processes/63/activities?chainId=14&learningCycleId=2&sourceReference=experiment%3A93001#activity-economics");
+    queued.setLearningCycleId(null);
+    queued.setSourceReference("product:4@validation v1&variant=2");
+    queued.setCurrentActivityId(null);
+    assertThat(navigation.executionUrl(queued))
+        .isEqualTo(
+            "/products/4/value-chain-history/processes/63/activities?chainId=14&sourceReference=product%3A4%40validation%20v1%26variant%3D2");
+  }
+
   /** Mantém links após conclusão e preserva cadeia e ciclo sem carregar outro contexto. */
   @Test
   void linksBothDirectionsBeforeAndAfterCompletion() {

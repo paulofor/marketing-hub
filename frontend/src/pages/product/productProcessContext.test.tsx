@@ -32,6 +32,34 @@ afterEach(() => {
 });
 
 describe("Contexto do processo", () => {
+  it("leva a reserva da fila ao AIHUB separada da identidade da execução selecionada", () => {
+    context.automation!.queueBlocker = {
+      runId: 930001,
+      processDefinitionId: 93002,
+      processName: "Homologação técnica local",
+      processVersion: 2,
+      chainId: 93014,
+      learningCycleId: null,
+      sourceReference: "experiment:93021",
+      status: "WAITING_INPUT",
+      reason: "Atualize o plano financeiro vencido ou alterado.",
+      currentActivityName: "Validar limites financeiros",
+      navigationUrl:
+        "/products/92004/value-chain-history/processes/93002/activities?chainId=93014&sourceReference=experiment%3A93021",
+    };
+    const text = processContextText(context, origin);
+    expect(text).toContain("Execução que reserva a fila: #930001");
+    expect(text).toContain(
+      "Contexto da reserva: cadeia #93014 · ciclo Não informado · referência experiment:93021",
+    );
+    expect(text).toContain(
+      "Motivo da reserva: Atualize o plano financeiro vencido ou alterado.",
+    );
+    expect(text).toContain("sourceReference=experiment%3A93021");
+    expect(text).toContain("Execução: #920001");
+    expect(text).toContain("Preserve os contextos distintos.");
+  });
+
   it("copia decisão pendente, destino e continuidade sem confundir teto com conclusão", () => {
     context.automation!.userAction = {
       code: "AUTHORIZE_VIDEO_BUDGET",
@@ -80,9 +108,9 @@ describe("Contexto do processo", () => {
       "Erro: Contrato anterior não comprovou o objetivo.",
       "Versão da atividade: v6 · definição histórica não informada",
       "Registro da atividade: histórico (fora da versão selecionada)",
-      "Link do processo: http://marketing-hub.test/products/92004/value-chain-history/processes/92063/activities?chainId=92014&learningCycleId=92002\n",
+      "Link do processo: http://marketing-hub.test/products/92004/value-chain-history/processes/92063/activities?chainId=92014&learningCycleId=92002&sourceReference=experiment%3A92092\n",
       "Destino da atividade: https://local.example/private",
-      "learningCycleId=92002#activity-commercialReview",
+      "learningCycleId=92002&sourceReference=experiment%3A92092#activity-commercialReview",
     ])
       expect(text).toContain(expected);
   });

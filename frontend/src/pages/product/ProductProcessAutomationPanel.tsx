@@ -232,6 +232,51 @@ export default function ProductProcessAutomationPanel({
           ) : (
             <p className="small mb-2">{data.reason}</p>
           )}
+          {data.queueBlocker && (
+            <div
+              className="alert alert-warning mt-2 mb-3"
+              aria-label="Processo que reserva a fila"
+            >
+              <strong>
+                Esta execução aguarda outro processo deste produto
+              </strong>
+              <p className="mt-2 mb-2">
+                Execução #{data.queueBlocker.runId} ·{" "}
+                {data.queueBlocker.processName}
+                {" · v"}
+                {data.queueBlocker.processVersion}
+              </p>
+              <p className="small mb-2">
+                Referência: {data.queueBlocker.sourceReference} ·{" "}
+                {automationStateLabels[data.queueBlocker.status] ||
+                  data.queueBlocker.status}
+              </p>
+              {data.queueBlocker.currentActivityName && (
+                <p className="small mb-2">
+                  Atividade pendente: {data.queueBlocker.currentActivityName}
+                </p>
+              )}
+              <p className="mb-2">{data.queueBlocker.reason}</p>
+              <p className="small mb-2">
+                Consulte essa pendência. Se a execução anterior não será
+                continuada agora, pause-a na tela dela para liberar a fila. Os
+                resultados e custos ficam preservados; esta execução ainda
+                precisa atender aos próprios requisitos.
+              </p>
+              {status.isError ? (
+                <p role="alert" className="mb-0">
+                  Atualize a execução para confirmar quem reserva a fila.
+                </p>
+              ) : (
+                <Link
+                  className="btn btn-primary text-wrap"
+                  to={data.queueBlocker.navigationUrl}
+                >
+                  Ver processo que reserva a fila
+                </Link>
+              )}
+            </div>
+          )}
           {Boolean(data.parentProcesses?.length) && (
             <nav aria-label="Retorno ao processo pai" className="mb-3">
               {data.parentProcesses?.map((parent) => (

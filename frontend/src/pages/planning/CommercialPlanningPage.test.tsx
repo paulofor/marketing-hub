@@ -990,6 +990,8 @@ describe("CommercialPlanningPage", () => {
         maxBudget: 100,
         commercialObjective:
           "Concluir MECANISMO e CTA sem gerar cenas já aprovadas.",
+        customerConversationsTarget: 0,
+        experimentsToPublish: 0,
       }),
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );

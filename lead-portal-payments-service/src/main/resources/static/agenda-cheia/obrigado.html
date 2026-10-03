@@ -15,12 +15,14 @@
       <p id="kit-intro">Seu kit será enviado por link ao e-mail informado em até 3 dias úteis após a confirmação do pagamento e o recebimento de todas as informações do briefing.</p>
       <div id="message" class="message" role="status" aria-live="polite">Confirmando seu pagamento…</div>
       <form id="briefing" class="hidden">
+        <p id="profession-context"></p>
+        <input type="hidden" name="professionCode" />
         <p id="briefing-privacy">Usamos estes dados para personalizar e entregar seu kit e atender sua compra. Nome, região e WhatsApp podem aparecer nas suas artes. Não envie dados de cartão ou de suas clientes. <a href="/agenda-cheia/privacidade.html" target="_blank" rel="noopener noreferrer">Saiba como cuidamos dos seus dados</a>.</p>
-        <div class="grid"><label>E-mail<input name="buyerEmail" type="email" required /></label><label>Nome profissional ou do espaço<input name="professionalName" required maxlength="180" /></label></div>
-        <div class="grid"><label>Cidade ou região<input name="cityRegion" required maxlength="180" /></label><label>WhatsApp<input name="whatsapp" required maxlength="40" /></label></div>
-        <label>Quais serviços você oferece?<textarea name="services" required maxlength="2000"></textarea></label>
-        <div class="grid"><label>Estilo visual<select name="visualStyle" required><option value="">Escolha</option><option>Clean e elegante</option><option>Luxo e sofisticado</option><option>Delicado e feminino</option><option>Moderno e marcante</option><option>Colorido e divertido</option></select></label><label>Cores preferidas<input name="preferredColors" maxlength="180" /></label></div>
-        <label>Qual é seu objetivo principal nesta semana?<select name="weeklyGoal" required><option value="">Escolha</option><option>Divulgar agenda aberta</option><option>Preencher horários vagos</option><option>Trazer clientes antigas de volta</option><option>Divulgar um serviço específico</option><option>Gerar indicações</option></select></label>
+        <div class="grid"><label>E-mail *<input name="buyerEmail" type="email" required /></label><label>Nome profissional ou do espaço *<input name="professionalName" required maxlength="180" /></label></div>
+        <div class="grid"><label>Cidade ou região *<input name="cityRegion" required maxlength="180" /></label><label>WhatsApp *<input name="whatsapp" required maxlength="40" /></label></div>
+        <label>Qual serviço você quer destacar? *<textarea name="services" required maxlength="2000" aria-describedby="service-examples"></textarea></label><p id="service-examples"></p>
+        <div class="grid"><label>Estilo visual *<select name="visualStyle" required><option value="">Escolha</option><option>Clean e elegante</option><option>Luxo e sofisticado</option><option>Delicado e feminino</option><option>Moderno e marcante</option><option>Colorido e divertido</option></select></label><label>Cores preferidas<input name="preferredColors" maxlength="180" /></label></div>
+        <label>Qual é seu objetivo principal nesta semana? *<select name="weeklyGoal" required><option value="">Escolha</option><option>Divulgar agenda aberta</option><option>Preencher horários vagos</option><option>Trazer clientes de volta</option><option>Divulgar um serviço específico</option><option>Gerar indicações</option></select></label>
         <label>Observações, promoções ou dias disponíveis<textarea name="notes" maxlength="2000"></textarea></label>
         <button type="submit">Enviar briefing e iniciar meu kit</button>
       </form>

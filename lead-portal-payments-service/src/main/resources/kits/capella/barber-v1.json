@@ -1,0 +1,20 @@
+{
+  "code": "barber-v1",
+  "profession": "Barbeiro / barbearia",
+  "productName": "Capella — divulgação para barbearia",
+  "serviceExamples": "Corte, barba, acabamento: escolha seu serviço principal e informe apenas o que oferece.",
+  "libraryDirectory": "barber-v1",
+  "headlines": [
+    "Seu próximo cuidado começa aqui", "Um visual com seu estilo",
+    "Consulte horários desta semana", "Seu visual, seu jeito",
+    "Renove o visual com cuidado", "Atenção em cada acabamento",
+    "Hora de cuidar do seu visual", "Um novo estilo para sua semana",
+    "Combine seu horário pelo WhatsApp", "Escolha seu próximo visual"
+  ],
+  "calendarDays": [
+    "Apresente seu serviço de corte ou barba", "Convide a consultar horários da semana",
+    "Mostre um detalhe do acabamento, sem atribuir a você fotos ilustrativas",
+    "Convide clientes que autorizaram contato a voltar", "Divulgue disponibilidade real do fim de semana",
+    "Mostre os estilos de corte ou barba que você oferece", "Reforce o contato e a localização"
+  ]
+}

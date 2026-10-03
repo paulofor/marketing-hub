@@ -710,7 +710,7 @@ const emptyCommercialPlan: SaveCommercialPlanPayload = {
   productsToValidate: 1,
   productTypesToExplore: 1,
   approachesToTest: 2,
-  customerConversationsTarget: 5,
+  customerConversationsTarget: 0,
   nextAction: "",
   currentBlocker: "",
   rootCause: "",
@@ -754,7 +754,7 @@ const augustRevenuePlan: SaveCommercialPlanPayload = {
   productsToValidate: 1,
   productTypesToExplore: 1,
   approachesToTest: 2,
-  customerConversationsTarget: 5,
+  customerConversationsTarget: 0,
   nextAction:
     "Acompanhar diariamente o experimento 81 a R$ 25 por dia, proteger a primeira venda e corrigir somente o ponto comprovado de abandono.",
   currentBlocker:
@@ -803,7 +803,7 @@ const julyPlanningForm: SaveCommercialPlanPayload = {
   productsToValidate: 1,
   productTypesToExplore: 1,
   approachesToTest: 2,
-  customerConversationsTarget: 5,
+  customerConversationsTarget: 0,
   nextAction:
     "Preparar produto compravel, pagina curta com checkout na primeira dobra e 3 criativos: dor, prova visual do kit e oferta direta.",
   currentBlocker:

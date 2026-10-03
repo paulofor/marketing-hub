@@ -37,6 +37,14 @@ export function parseOptionalConversionRate(
     : null;
 }
 
+export function parseDraftTargetConversionRate(
+  value: string,
+  salesObjective: boolean,
+): number | undefined | null {
+  const parsed = parseOptionalConversionRate(value);
+  return salesObjective && parsed === 0 ? null : parsed;
+}
+
 export function parseOptionalEntityId(value: string): number | null {
   if (!value.trim()) return null;
   const parsed = Number(value);

@@ -34,6 +34,7 @@ import type { Product } from "../../api/product/useProducts";
 import { productAiSubtypeLabels } from "./productAiSubtypeLabels";
 import {
   experimentIdentityFields,
+  parseDraftTargetConversionRate,
   parseOptionalConversionRate,
   parseOptionalPositiveAmount,
   productAiSubtypeForExperiment,
@@ -230,15 +231,15 @@ export default function NewExperimentPage() {
   })() as Array<{ code: string; name: string; idea?: string }>;
   const canGeneratePromiseOptions = Boolean(
     form.nicheId &&
-    form.hypothesisId &&
-    form.productId &&
-    form.desireTerritoryCode,
+      form.hypothesisId &&
+      form.productId &&
+      form.desireTerritoryCode,
   );
   const promiseOptionsRequest = usePromiseOptionsRequest(promiseRequestId);
   const promiseRequestStatus = promiseOptionsRequest.data?.status;
   const isWaitingPromiseOptions = Boolean(
     promiseRequestId &&
-    !["COMPLETED", "FAILED"].includes(promiseRequestStatus ?? ""),
+      !["COMPLETED", "FAILED"].includes(promiseRequestStatus ?? ""),
   );
   const isLowTicketProduct = form.experimentType === "LOW_TICKET_PRODUCT";
   const isPdeMembershipSubscriptionFunnel =
@@ -258,7 +259,7 @@ export default function NewExperimentPage() {
     !isProductAiExperiment ||
     Boolean(
       productAiPreparationData?.ready &&
-      productAiPreparationData.productAiSubtype === selectedProductAiSubtype,
+        productAiPreparationData.productAiSubtype === selectedProductAiSubtype,
     );
   const experimentTypeLabel = isPdeMembershipSubscriptionFunnel
     ? "PDE / assinatura MUSA"
@@ -591,12 +592,11 @@ export default function NewExperimentPage() {
         alert("Informe uma conversão atual entre 0% e 100%");
         return;
       }
-      const parsedTargetCvr = parseOptionalConversionRate(form.targetCvr);
-      if (
-        parsedTargetCvr === null ||
-        (isSalesObjectiveExperiment &&
-          (parsedTargetCvr == null || parsedTargetCvr <= 0))
-      ) {
+      const parsedTargetCvr = parseDraftTargetConversionRate(
+        form.targetCvr,
+        isSalesObjectiveExperiment,
+      );
+      if (parsedTargetCvr === null) {
         alert("Informe uma meta de conversão entre 0,01% e 100%");
         return;
       }
@@ -1436,10 +1436,7 @@ export default function NewExperimentPage() {
         </div>
         <div className="col-12 col-md-6">
           <label className="form-label" htmlFor="targetCvr">
-            Meta de conversão (%){" "}
-            {isSalesObjectiveExperiment && (
-              <span className="text-danger">*</span>
-            )}
+            Meta de conversão (%)
           </label>
           <input
             id="targetCvr"
@@ -1458,7 +1455,8 @@ export default function NewExperimentPage() {
             }
           />
           <div className="form-text">
-            Necessária para o preflight de experimentos de vendas.
+            Pode ficar pendente no rascunho. Defina com a economia antes do
+            preflight de experimentos de vendas.
           </div>
         </div>
       </div>

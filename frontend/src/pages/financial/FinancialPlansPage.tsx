@@ -713,7 +713,13 @@ function PlanEditor({
         scope === "products" ? number("commercialPlanId") : null,
       templateId: copyingType ? source!.id : (source?.templateId ?? null),
       assumptions: {
-        preparation: copyingType ? null : (a?.preparation ?? null),
+        preparation:
+          !copyingType && a?.preparation
+            ? {
+                supportDays: number("supportDays")!,
+                personalizedAi: text("personalizedAi") === "true",
+              }
+            : null,
         productVersion: text("productVersion") || null,
         periodDays: number("periodDays"),
         validUntil: text("validUntil"),
@@ -848,6 +854,38 @@ function PlanEditor({
           )}
           {field("maximumCacBrl", "CAC máximo proposto (R$)", a?.maximumCacBrl)}
         </div>
+        {!copyingType && a?.preparation && (
+          <section>
+            <h3 className="h6">Condições da entrega nesta revisão</h3>
+            <p className="small">
+              Reconfira estas condições ao adaptar a entrega. O uso de IA na
+              criação inicial de um acervo não significa uma chamada paga por
+              cliente.
+            </p>
+            <div className="row g-3">
+              {field(
+                "supportDays",
+                "Período de suporte (dias)",
+                a.preparation.supportDays,
+                "number",
+                true,
+              )}
+              <label className="col-md-6 col-xl-4">
+                Geração personalizada com IA por cliente *
+                <select
+                  name="personalizedAi"
+                  aria-label="Geração personalizada com IA por cliente"
+                  className="form-select"
+                  required
+                  defaultValue={String(a.preparation.personalizedAi)}
+                >
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </label>
+            </div>
+          </section>
+        )}
         {scope === "products" && !plans.length && (
           <p className="text-warning">
             Este produto precisa de um{" "}

@@ -1,0 +1,141 @@
+openapi: 3.0.3
+info:
+  title: Capella — briefing e entrega do kit
+  version: 1.1.0
+  description: |
+    Contrato do pós-compra existente. A profissão vem da referência confirmada do pagamento.
+    Barber-v1 é candidata privada; não possui endpoint público de produção ou oferta homologada.
+servers:
+  - url: https://pagamentopalf.site
+paths:
+  /api/v1/agenda-cheia/post-purchase:
+    get:
+      summary: Confirma pagamento, situação e profissão do kit comprado
+      parameters:
+        - in: query
+          name: payment_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Situação funcional e contexto autoritativo do kit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BriefingResponse"
+        "400":
+          description: Pagamento ausente, pendente ou pertencente a outra oferta
+  /api/v1/agenda-cheia/post-purchase/briefing:
+    post:
+      summary: Recebe briefing sem permitir troca da profissão comprada
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BriefingRequest"
+      responses:
+        "200":
+          description: Situação registrada; reenvio de entrega concluída preserva a compra
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BriefingResponse"
+        "400":
+          description: Dados inválidos ou profissão divergente; não inicia outra produção
+        "500":
+          description: Falha técnica, sem anúncio de entrega concluída
+  /api/v1/agenda-cheia/post-purchase/deliveries/{token}/download:
+    get:
+      summary: Baixa o ZIP aprovado pelo token opaco da entrega
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pacote de 10 posts, 10 stories e textos contratados
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+components:
+  schemas:
+    KitProfile:
+      type: object
+      required: [code, profession, productName, serviceExamples]
+      properties:
+        code:
+          type: string
+          example: nails-v1
+        profession:
+          type: string
+          example: Manicure / nail designer
+        productName:
+          type: string
+          example: Agenda Cheia Nail Design
+        serviceExamples:
+          type: string
+    BriefingResponse:
+      type: object
+      required: [paymentId, status, profile]
+      properties:
+        id:
+          type: integer
+          format: int64
+          nullable: true
+        paymentId:
+          type: string
+        status:
+          type: string
+          enum: [AGUARDANDO_BRIEFING, BRIEFING_RECEBIDO, ENTREGUE]
+        submittedAt:
+          type: string
+          format: date-time
+          nullable: true
+        profile:
+          $ref: "#/components/schemas/KitProfile"
+    BriefingRequest:
+      type: object
+      required: [paymentId, buyerEmail, professionalName, cityRegion, whatsapp, services, visualStyle, weeklyGoal]
+      properties:
+        paymentId:
+          type: string
+        buyerEmail:
+          type: string
+          format: email
+        professionalName:
+          type: string
+          maxLength: 180
+        cityRegion:
+          type: string
+          maxLength: 180
+        whatsapp:
+          type: string
+          maxLength: 40
+        services:
+          type: string
+          maxLength: 2000
+        visualStyle:
+          type: string
+          maxLength: 120
+        preferredColors:
+          type: string
+          maxLength: 180
+          nullable: true
+        weeklyGoal:
+          type: string
+          maxLength: 180
+        notes:
+          type: string
+          maxLength: 2000
+          nullable: true
+        professionCode:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: Opcional para compatibilidade; quando informado deve corresponder à compra.

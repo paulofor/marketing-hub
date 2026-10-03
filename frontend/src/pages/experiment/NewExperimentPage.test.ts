@@ -7,6 +7,7 @@ import {
 } from "./NewExperimentPage";
 import {
   experimentIdentityFields,
+  parseDraftTargetConversionRate,
   parseOptionalConversionRate,
   parseOptionalEntityId,
   parseOptionalPositiveAmount,
@@ -116,6 +117,16 @@ describe("contrato de planejamento do experimento", () => {
     expect(parseOptionalConversionRate("100")).toBe(100);
     expect(parseOptionalConversionRate("-1")).toBe(null);
     expect(parseOptionalConversionRate("100.01")).toBe(null);
+  });
+
+  it("prepara um rascunho sem inventar conversão e recusa metas inválidas", () => {
+    expect(parseDraftTargetConversionRate("", true)).toBe(undefined);
+    expect(parseDraftTargetConversionRate("5", true)).toBe(5);
+    expect(parseDraftTargetConversionRate("0", true)).toBe(null);
+    expect(parseDraftTargetConversionRate("-1", true)).toBe(null);
+    expect(parseDraftTargetConversionRate("101", true)).toBe(null);
+    expect(parseDraftTargetConversionRate("NaN", true)).toBe(null);
+    expect(parseDraftTargetConversionRate("0", false)).toBe(0);
   });
 
   it("mantém Instagram opcional nos experimentos orgânicos", () => {

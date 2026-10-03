@@ -4,6 +4,11 @@ Decisão de 03/10/2026. Produto #7, tipo Quartzo, cadeia #26. Responsável pela 
 Atena. Meta comercial: vendas líquidas e contribuição com entrega útil e repetível.
 Este é o plano de uma evolução; não é uma oferta multissetor já publicada.
 
+Preparação iniciada após autorização do usuário: **barbearia** é a primeira candidata,
+com contrato `barber-v1`, entregáveis e gates registrados na
+[execução da preparação](capella-barbearia-preparacao-2026-10-03.md). A entrega atual e os
+experimentos #88/#94 permanecem preservados; nenhuma campanha nova foi autorizada.
+
 ## Evidência disponível
 
 - Cadastro e entrega atuais: Agenda Cheia Nail Design. Kit de 10 posts, 10 stories, 10 legendas,

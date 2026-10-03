@@ -109,3 +109,16 @@ Estado editorial: candidato a DRAFT somente. Nenhuma ação de submit-review, ac
 ## Guia consultado
 
 Foi consultada a versão atual de harness-library-api/docs/guia-uso-api-cards.md. As coleções aceitas continuam: video, prazer-audio-visual, neuromarketing e momentos-de-compra-b2c.
+
+
+## Complemento — voz full-duplex e intenção tardia
+
+When Intent Arrives Late avaliou 3.136 sessões com quatro modelos full-duplex usando prefixos ambíguos cujo sentido completo só aparece mais tarde. O resultado reforça que baixa latência e compreensão suficiente não são a mesma variável: um agente pode começar a responder antes de ter contexto semântico suficiente. O paper também mostra que uma pausa controlada depois de a intenção ficar clara alterou favoravelmente os resultados do benchmark.
+
+**Aplicação:** separar acoustic readiness, semantic completeness, intent sufficiency, response policy e action permission. Testar latência mínima fixa contra um gate adaptativo de suficiência de intenção.
+
+**Limites:** benchmark com quatro modelos; o intervalo temporal testado não deve ser tratado como recomendação universal de UX.
+
+Fonte: https://arxiv.org/abs/2610.00272
+
+**Card:** não criado; é arquitetura de voz e não pertence legitimamente à coleção prazer-audio-visual.

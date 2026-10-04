@@ -81,6 +81,14 @@ origem, atividade, hash estratégico preservado, exatamente três alternativas a
 escolhida, artefato estruturado, lacunas, próximo handoff, guardrails e critérios de continuar,
 ajustar e parar.
 
+Na entrada comercial V2, pesquisa de Atena `COMPLETED` e artefato `AVAILABLE` permitem leitura,
+mas não comprovam liberação: o contrato interno da mesma versão precisa declarar
+`READY_FOR_OPERATION`. `INSUFFICIENT_EVIDENCE`, estado ausente ou versão divergente bloqueiam
+a criação da tarefa e o preflight do worker antes de qualquer modelo. A tela conserva a causa
+estratégica junto às demais pendências. Resolver as lacunas e comprovar as entradas precede uma
+nova avaliação; não repetir pesquisa paga com o mesmo impedimento. Os percursos privados V3/V4
+continuam sujeitos a seus próprios gates e não exigem autorização comercial para preparação.
+
 O parecer econômico aceito na entrada deve vir de uma `financial_agent_execution` concluída por
 Plutus para a versão comercial vigente, com autoridade `READ_ONLY_REVENUE_PROJECTION` e resposta
 estruturada preservada. Tarefa genérica, execução de versão anterior ou relatório sem resultado não

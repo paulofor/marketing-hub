@@ -31,7 +31,8 @@ class IrisProductProcessActivityReadinessProviderTest {
                     "mode", IrisPrivateProductContext.MODE,
                     "availability", "MISSING",
                     "inputReadiness", "BLOCKED",
-                    "reason", "O contrato do produto diverge do parecer aprovado: marketStrategy")));
+                    "reason",
+                        "O contrato do produto diverge do parecer aprovado: marketStrategy")));
     var provider =
         new IrisProductProcessActivityReadinessProvider(
             MarketStrategicContextProvider.empty(), communication);
@@ -60,10 +61,14 @@ class IrisProductProcessActivityReadinessProviderTest {
         .thenReturn(
             Optional.of(
                 Map.of(
-                    "mode", IrisPrivateProductContext.MODE,
-                    "availability", "AVAILABLE",
-                    "inputReadiness", "READY",
-                    "marketStrategicContract", strategy)));
+                    "mode",
+                    IrisPrivateProductContext.MODE,
+                    "availability",
+                    "AVAILABLE",
+                    "inputReadiness",
+                    "READY",
+                    "marketStrategicContract",
+                    strategy)));
     var provider =
         new IrisProductProcessActivityReadinessProvider(
             MarketStrategicContextProvider.empty(), communication);
@@ -76,7 +81,9 @@ class IrisProductProcessActivityReadinessProviderTest {
         .contains("Contrato Estratégico de Mercado aprovado na origem deste contexto");
   }
 
-  /** Aceita o contexto comercial legado com modo nulo somente quando seus contratos estão prontos. */
+  /**
+   * Aceita o contexto comercial legado com modo nulo somente quando seus contratos estão prontos.
+   */
   @Test
   void shouldReadLegacyContextWithExplicitNullMode() {
     var strategy = mock(MarketStrategicContextProvider.class);
@@ -84,9 +91,18 @@ class IrisProductProcessActivityReadinessProviderTest {
         .thenReturn(
             Optional.of(
                 Map.of(
-                    "availability", "AVAILABLE",
-                    "contractVersion", "MARKET_STRATEGY_V2",
-                    "contentHash", "a".repeat(64))));
+                    "availability",
+                    "AVAILABLE",
+                    "contractVersion",
+                    "MARKET_STRATEGY_V2",
+                    "contentHash",
+                    "a".repeat(64),
+                    "contract",
+                    Map.of(
+                        "contractVersion",
+                        "MARKET_STRATEGY_V2",
+                        "status",
+                        "READY_FOR_OPERATION"))));
     var context = new LinkedHashMap<String, Object>();
     context.put("mode", null);
     context.put("availability", "AVAILABLE");
@@ -95,7 +111,112 @@ class IrisProductProcessActivityReadinessProviderTest {
     when(communication.resolve("experiment:91089")).thenReturn(Optional.of(context));
     var provider = new IrisProductProcessActivityReadinessProvider(strategy, communication);
 
-    assertThat(provider.readiness(process(), activity(), null, "experiment:91089").ready()).isTrue();
+    assertThat(provider.readiness(process(), activity(), null, "experiment:91089").ready())
+        .isTrue();
+  }
+
+  /** Recusa pesquisa concluída sem aceite estratégico, mesmo com outros contratos prontos. */
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"INSUFFICIENT_EVIDENCE", "READY_FOR_PRIVATE_VALIDATION", "DESCONHECIDO"})
+  void shouldBlockCommercialStrategyWithoutApproval(String status) {
+    String reference = "experiment:91097";
+    var contract = new LinkedHashMap<String, Object>();
+    contract.put("contractVersion", "MARKET_STRATEGY_V2");
+    contract.put("status", status);
+    var strategy = mock(MarketStrategicContextProvider.class);
+    when(strategy.resolve(reference))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "availability",
+                    "AVAILABLE",
+                    "contractVersion",
+                    "MARKET_STRATEGY_V2",
+                    "contentHash",
+                    "a".repeat(64),
+                    "contract",
+                    contract)));
+    var communication = mock(CommunicationMaterializationContextProvider.class);
+    when(communication.resolve(reference))
+        .thenReturn(Optional.of(Map.of("availability", "AVAILABLE", "inputReadiness", "READY")));
+    var provider = new IrisProductProcessActivityReadinessProvider(strategy, communication);
+
+    var readiness = provider.readiness(process(), activity(), null, reference);
+
+    assertThat(readiness.ready()).isFalse();
+    assertThat(readiness.reason()).contains("Atena", "lacunas do parecer");
+    if (status != null && !status.isBlank()) assertThat(readiness.reason()).contains(status);
+  }
+
+  /** Não aceita uma versão interna divergente embora o envelope declare V2 aprovado. */
+  @Test
+  void shouldBlockMismatchedCommercialStrategyContract() {
+    String reference = "experiment:91098";
+    var strategy = mock(MarketStrategicContextProvider.class);
+    when(strategy.resolve(reference))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "availability",
+                    "AVAILABLE",
+                    "contractVersion",
+                    "MARKET_STRATEGY_V2",
+                    "contentHash",
+                    "a".repeat(64),
+                    "contract",
+                    Map.of(
+                        "contractVersion",
+                        "MARKET_STRATEGY_V4",
+                        "status",
+                        "READY_FOR_OPERATION"))));
+    var communication = mock(CommunicationMaterializationContextProvider.class);
+    when(communication.resolve(reference))
+        .thenReturn(Optional.of(Map.of("availability", "AVAILABLE", "inputReadiness", "READY")));
+    var provider = new IrisProductProcessActivityReadinessProvider(strategy, communication);
+
+    assertThat(provider.readiness(process(), activity(), null, reference).ready()).isFalse();
+  }
+
+  /** Expõe a lacuna estratégica junto às pendências financeiras e funcionais, sem retentativa. */
+  @Test
+  void shouldPreserveAllMissingPredecessorsWithInsufficientStrategy() {
+    String reference = "experiment:91099";
+    var strategy = mock(MarketStrategicContextProvider.class);
+    when(strategy.resolve(reference))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "availability",
+                    "AVAILABLE",
+                    "contractVersion",
+                    "MARKET_STRATEGY_V2",
+                    "contentHash",
+                    "a".repeat(64),
+                    "contract",
+                    Map.of(
+                        "contractVersion",
+                        "MARKET_STRATEGY_V2",
+                        "status",
+                        "INSUFFICIENT_EVIDENCE"))));
+    var communication = mock(CommunicationMaterializationContextProvider.class);
+    when(communication.resolve(reference))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "availability",
+                    "AVAILABLE",
+                    "inputReadiness",
+                    "BLOCKED",
+                    "missingRequiredPredecessors",
+                    List.of(
+                        "Parecer econômico concluído de Plutus",
+                        "PDE e prova funcional concluídos de Dédalo"))));
+    var provider = new IrisProductProcessActivityReadinessProvider(strategy, communication);
+
+    assertThat(provider.readiness(process(), activity(), null, reference).reason())
+        .contains("INSUFFICIENT_EVIDENCE", "Plutus", "Dédalo")
+        .doesNotContain("Solicitar nova análise", "Retomar");
   }
 
   /** Libera a atividade somente com estratégia e contexto funcional completos. */
@@ -113,7 +234,13 @@ class IrisProductProcessActivityReadinessProviderTest {
                     "contractVersion",
                     "MARKET_STRATEGY_V2",
                     "contentHash",
-                    "abc123")));
+                    "abc123",
+                    "contract",
+                    Map.of(
+                        "contractVersion",
+                        "MARKET_STRATEGY_V2",
+                        "status",
+                        "READY_FOR_OPERATION"))));
     when(communication.resolve("experiment:89"))
         .thenReturn(Optional.of(Map.of("availability", "AVAILABLE", "inputReadiness", "READY")));
     IrisProductProcessActivityReadinessProvider provider =
@@ -173,7 +300,13 @@ class IrisProductProcessActivityReadinessProviderTest {
                     "contractVersion",
                     "MARKET_STRATEGY_V2",
                     "contentHash",
-                    "abc123")));
+                    "abc123",
+                    "contract",
+                    Map.of(
+                        "contractVersion",
+                        "MARKET_STRATEGY_V2",
+                        "status",
+                        "READY_FOR_OPERATION"))));
     when(communication.resolve("experiment:89"))
         .thenReturn(
             Optional.of(

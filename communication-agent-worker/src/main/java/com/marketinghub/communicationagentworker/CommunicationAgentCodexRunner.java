@@ -277,7 +277,7 @@ public class CommunicationAgentCodexRunner {
         task, "communication-director", researchEvidence, true);
   }
 
-  /** Bloqueia contratos ausentes antes de consumir modelo ou criar uma saída incompleta. */
+  /** Recusa contratos ausentes ou V2 sem aceite de Atena antes de preparar ou consumir modelo. */
   static void validateInput(Map<String, Object> task) {
     try {
       JsonNode context =
@@ -289,6 +289,17 @@ public class CommunicationAgentCodexRunner {
           || !strategy.path("contentHash").asText().matches("[0-9a-f]{64}")) {
         throw new IllegalArgumentException(
             "Íris exige Contrato Estratégico de Mercado íntegro antes da execução.");
+      }
+      if ("MARKET_STRATEGY_V2".equals(strategy.path("contractVersion").asText())
+          && (!"MARKET_STRATEGY_V2"
+                  .equals(strategy.path("contract").path("contractVersion").asText())
+              || !"READY_FOR_OPERATION"
+                  .equals(strategy.path("contract").path("status").asText()))) {
+        String status = strategy.path("contract").path("status").asText();
+        throw new IllegalArgumentException(
+            "Estratégia de Atena sem liberação compatível ("
+                + (status.isBlank() ? "NOT_REPORTED" : status)
+                + "); resolva as lacunas do parecer antes de materializar a comunicação.");
       }
       if (!"AVAILABLE".equals(communication.path("availability").asText())
           || !"READY".equals(communication.path("inputReadiness").asText())) {

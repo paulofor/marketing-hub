@@ -1,3 +1,23 @@
+## 2026-10-04 — Look para a Ocasião #97: comunicação aguarda prova e economia
+
+- Escopo confirmado pela tela, backend e MCP: Alcyone #11 (Safira), plano #34 v3,
+  cadeia #26, processo #113 v11 e execução #44 `WAITING_INPUT`, 0/4 atividades.
+  Não há ciclo nem ficha de execução vinculados; não foram criados por inferência.
+- Atena #17 concluiu pesquisa com `MARKET_STRATEGY_V2/INSUFFICIENT_EVIDENCE`.
+  Plutus não possui execução para o plano #34. Revisão financeira #12 r2 conserva
+  29 premissas ausentes; tarifa, modelo, tentativas, margem e custos integrais não são zero.
+- Gate #583–587 e versão `alcyone-private-v3` continuam como prova técnica interna.
+  Fixtures declaram zero chamadas autorizadas e inelegibilidade comercial. Não foram
+  reutilizadas como prova de geração personalizada para venda.
+- A lacuna do gate estratégico de Íris foi reproduzida localmente e corrigida no backend
+  e worker, com testes de bloqueio anterior ao modelo. Fonte, custo e pesquisa originais
+  ficam preservados. Ver `LOOP-IRIS-PESQUISA-CONCLUIDA-SEM-ACEITE` e a matriz
+  `docs/homologacao/iris-gate-atena-v1.md`.
+- Atividades 4.2 (#121 v10), 4.3 (#114 v7) e 4.4 dependem dos contratos da 4.1;
+  não foram abertas para consumir produção com a mesma lacuna. Orçamento atual R$0,
+  sem mídia, cobrança, compra ou lucro comprovados. Homologação paga e novas análises
+  continuam dependentes de envelope explícito, distinto de mídia.
+
 ## 2026-10-04 — Capella #88: evidências e contexto do Processo 5.4
 
 - Confirmados produto #7 Quartzo v1, cadeia #26, processo #122/v7 e execução #39,

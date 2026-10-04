@@ -43,7 +43,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /**
- * Responsabilidade: comprovar o comando de comunicação privada, fila e callbacks com H2 e executor
+ * Responsabilidade: comprovar gates, comando de comunicação, fila e callbacks com H2 e executor
  * simulado.
  */
 @DataJpaTest(showSql = false)
@@ -284,6 +284,188 @@ class PrivateProductCommunicationLifecycleTest {
     assertThat(progress)
         .contains("COMPLETED", "BLOCKED")
         .doesNotContain("prompt", "evidence", "resultJson");
+  }
+
+  /** Recusa o parecer insuficiente sem criar tarefa e aceita o mesmo contexto após liberação. */
+  @Test
+  void blocksInsufficientStrategyBeforeQueueAndAllowsApprovedSuccessor() throws Exception {
+    agent();
+    var process = process();
+    var diagram = json.readTree(process.getDiagramJson());
+    ((com.fasterxml.jackson.databind.node.ObjectNode) diagram.path("nodes").get(0))
+        .remove("remediatesActivities");
+    process.setDiagramJson(diagram.toString());
+    var definition =
+        definitions
+            .findByProcessDefinitionIdAndActivityId(process.getId(), "communicationContract")
+            .orElseThrow();
+    definition.setDefinitionJson(diagram.path("nodes").get(0).toString());
+    var product =
+        Product.builder()
+            .id(910011L)
+            .name("Produto sintético")
+            .internalName("Produto QA")
+            .automaticExecutionEnabled(true)
+            .build();
+    var products = mock(ProductRepository.class);
+    when(products.findById(product.getId())).thenReturn(Optional.of(product));
+    when(products.existsById(product.getId())).thenReturn(true);
+    var experiment = new com.marketinghub.experiment.Experiment();
+    experiment.setId(910097L);
+    experiment.setProduct(product);
+    var experiments = mock(ExperimentRepository.class);
+    when(experiments.existsByIdAndProductId(experiment.getId(), product.getId())).thenReturn(true);
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(product.getId()))
+        .thenReturn(List.of(experiment));
+    String reference = "experiment:" + experiment.getId();
+    var strategy = mock(MarketStrategicContextProvider.class);
+    var materialization = mock(CommunicationMaterializationContextProvider.class);
+    when(materialization.resolve(reference))
+        .thenReturn(
+            Optional.of(java.util.Map.of("availability", "AVAILABLE", "inputReadiness", "READY")));
+    when(strategy.resolve(reference))
+        .thenReturn(Optional.of(strategyEnvelope("INSUFFICIENT_EVIDENCE")));
+    var taskService =
+        new AgentTaskService(
+            tasks,
+            instances,
+            agents,
+            processes,
+            definitions,
+            resources,
+            json,
+            mock(OpenAiPricingService.class),
+            strategy,
+            mock(AgentTaskTargetContextProvider.class));
+    ReflectionTestUtils.setField(
+        taskService, "communicationMaterializationContextProvider", materialization);
+    var service =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            definitions,
+            tasks,
+            coverage,
+            instances,
+            mock(CommercialPlanRepository.class),
+            null,
+            products,
+            experiments,
+            taskService,
+            json,
+            List.of(),
+            List.of(new IrisProductProcessActivityReadinessProvider(strategy, materialization)));
+    var mvc =
+        MockMvcBuilders.standaloneSetup(
+                new BusinessProcessActivityExecutionController(service),
+                new InternalAgentTaskExecutionController(
+                    taskService, mock(AgentTaskVisualEvidenceService.class)))
+            .setMessageConverters(new MappingJackson2HttpMessageConverter(json))
+            .build();
+    String base = "/api/business-processes/" + process.getId() + "/products/" + product.getId();
+    String command = base + "/activities/communicationContract/execution-requests";
+    String queue = "/api/internal/agent-tasks/communication-director/stage-executions/pending";
+    var blocked =
+        mvc.perform(
+                get(base + "/activity-executions")
+                    .param("sourceReference", reference)
+                    .param("includePromptAudit", "false"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+    assertThat(
+            json.readTree(blocked)
+                .path("activities")
+                .get(0)
+                .path("executionRequestAvailable")
+                .asBoolean())
+        .isFalse();
+    assertThat(blocked).contains("INSUFFICIENT_EVIDENCE", "lacunas do parecer");
+    var refused =
+        mvc.perform(post(command).param("sourceReference", reference))
+            .andExpect(status().isConflict())
+            .andReturn();
+    assertThat(refused.getResolvedException()).hasMessageContaining("INSUFFICIENT_EVIDENCE");
+    assertThat(tasks.count()).isZero();
+    var emptyQueue =
+        mvc.perform(
+                get(queue)
+                    .param("processCode", process.getProcessCode())
+                    .param("activityId", "communicationContract"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+    assertThat(json.readTree(emptyQueue)).isEmpty();
+
+    when(strategy.resolve(reference))
+        .thenReturn(Optional.of(strategyEnvelope("READY_FOR_OPERATION")));
+    var ready =
+        mvc.perform(
+                get(base + "/activity-executions")
+                    .param("sourceReference", reference)
+                    .param("includePromptAudit", "false"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+    assertThat(
+            json.readTree(ready)
+                .path("activities")
+                .get(0)
+                .path("executionRequestAvailable")
+                .asBoolean())
+        .isTrue();
+    mvc.perform(post(command).param("sourceReference", reference)).andExpect(status().isOk());
+    assertThat(tasks.count()).isEqualTo(1);
+    mvc.perform(post(command).param("sourceReference", reference)).andExpect(status().isConflict());
+    assertThat(tasks.count()).isEqualTo(1);
+    var pending =
+        mvc.perform(
+                get(queue)
+                    .param("processCode", process.getProcessCode())
+                    .param("activityId", "communicationContract"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+    assertThat(json.readTree(pending)).hasSize(1);
+    var queued = tasks.findAll().get(0);
+    assertThat(queued.getSourceReference()).isEqualTo(reference);
+    assertThat(queued.getStatus()).isEqualTo("IN_PROGRESS");
+    assertThat(queued.getEstimatedCostUsd()).isNull();
+    String evidence = System.getProperty("iris.gate.evidence");
+    if (evidence != null) {
+      java.nio.file.Files.writeString(
+          java.nio.file.Path.of(evidence),
+          json.writeValueAsString(
+              java.util.Map.of(
+                  "productId",
+                  product.getId(),
+                  "processId",
+                  process.getId(),
+                  "sourceReference",
+                  reference,
+                  "blocked",
+                  json.readTree(blocked),
+                  "ready",
+                  json.readTree(ready),
+                  "pending",
+                  json.readTree(pending))));
+    }
+  }
+
+  /** Representa o parecer imutável de Atena com o estado funcional declarado, sem inferência. */
+  private java.util.Map<String, Object> strategyEnvelope(String status) {
+    return java.util.Map.of(
+        "availability",
+        "AVAILABLE",
+        "contractVersion",
+        "MARKET_STRATEGY_V2",
+        "contentHash",
+        "a".repeat(64),
+        "contract",
+        java.util.Map.of("contractVersion", "MARKET_STRATEGY_V2", "status", status));
   }
 
   /** Executa o POST oficial e devolve o identificador efetivamente persistido. */

@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.springframework.stereotype.Service;
 
 /** Responsabilidade: alinhar o gate operacional da tela aos contratos exigidos por Íris. */
@@ -55,8 +54,8 @@ public class IrisProductProcessActivityReadinessProvider
   }
 
   /**
-   * Exige os contratos aprovados do produto privado, ciclo ou plano e antecipa o gate comercial do
-   * HTML, apresentando campos ausentes como pendências sem interromper a leitura da ficha.
+   * Exige aceite estratégico V2 e predecessores do mesmo contexto, preserva os gates privados e
+   * antecipa pendências do HTML sem interromper a leitura da ficha.
    */
   @Override
   public AgentProductProcessActivityReadiness readiness(
@@ -95,6 +94,16 @@ public class IrisProductProcessActivityReadinessProvider
           privateStrategy
               ? "Contrato Estratégico de Mercado aprovado na origem deste contexto"
               : "Contrato Estratégico de Mercado v2 concluído de Atena");
+    } else if (!privateStrategy) {
+      var contract = JSON.valueToTree(strategy.get("contract"));
+      if (!"MARKET_STRATEGY_V2".equals(contract.path("contractVersion").asText())
+          || !"READY_FOR_OPERATION".equals(contract.path("status").asText())) {
+        String status = contract.path("status").asText();
+        missing.add(
+            "Estratégia de Atena sem liberação compatível ("
+                + (status.isBlank() ? "NOT_REPORTED" : status)
+                + "); resolva as lacunas do parecer antes de materializar a comunicação");
+      }
     }
     if (!"AVAILABLE".equals(context.get("availability"))) {
       missing.add(

@@ -2,7 +2,8 @@ package com.marketinghub.communicationagentworker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +13,9 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.io.ClassPathResource;
 
 /** Responsabilidade: proteger a fronteira, o contrato e a sandbox do executor de Íris. */
@@ -68,6 +72,46 @@ class CommunicationAgentCodexRunnerTest {
                         "communicationContract",
                         context("BLOCKED", false))))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  /** Bloqueia a tarefa congelada antes de criar processo, prompt ou telemetria de modelo. */
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"INSUFFICIENT_EVIDENCE", "READY_FOR_PRIVATE_VALIDATION", "DESCONHECIDO"})
+  void shouldNeverInvokeModelForCommercialStrategyWithoutApproval(String status) throws Exception {
+    var context =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(context("READY", true));
+    context.withObject("/marketStrategicContract/contract").put("status", status);
+    var input =
+        task("pde-communication-sales-journey", "communicationContract", context.toString());
+    var telemetry = mock(CodexTelemetryReporter.class);
+    var runner = spy(new CommunicationAgentCodexRunner(properties(), json, telemetry));
+    doThrow(new AssertionError("O modelo não pode ser iniciado neste cenário."))
+        .when(runner)
+        .command(any(), any(), any());
+
+    assertThatThrownBy(() -> runner.run(input))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Atena")
+        .hasMessageContaining("lacunas do parecer");
+    verify(runner, never()).command(any(), any(), any());
+    verifyNoInteractions(telemetry);
+  }
+
+  /** Recusa contrato interno de outra versão sem iniciar o modelo. */
+  @Test
+  void shouldRejectMismatchedCommercialStrategyContract() throws Exception {
+    var context =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(context("READY", true));
+    context
+        .withObject("/marketStrategicContract/contract")
+        .put("contractVersion", "MARKET_STRATEGY_V4");
+    var input =
+        task("pde-communication-sales-journey", "communicationContract", context.toString());
+
+    assertThatThrownBy(() -> CommunicationAgentCodexRunner.validateInput(input))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Atena");
   }
 
   /** Confirma pesquisa, MCP próprio, sandbox somente leitura e política não interativa. */
@@ -378,6 +422,7 @@ class CommunicationAgentCodexRunnerTest {
           "marketStrategicContract":{
             "availability":"AVAILABLE",
             "contractVersion":"MARKET_STRATEGY_V2",
+            "contract":{"contractVersion":"MARKET_STRATEGY_V2","status":"READY_FOR_OPERATION"},
             "contentHash":"%s"
           },
           "communicationMaterializationContext":{

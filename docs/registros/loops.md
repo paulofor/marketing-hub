@@ -1,5 +1,22 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-IRIS-PESQUISA-CONCLUIDA-SEM-ACEITE — 04/10/2026
+
+- **Evidência:** Alcyone #11 / Look para a Ocasião, processo #113 v11, execução #44,
+  `experiment:97`, plano #34 v3. Atena #17 está `COMPLETED`, mas seu contrato V2 está
+  `INSUFFICIENT_EVIDENCE`. A tela omitia essa pendência e informava somente Plutus e Dédalo.
+- **Causa confirmada:** backend e worker verificavam disponibilidade/hash da estratégia sem
+  conferir seu aceite. Com predecessores artificialmente prontos, regressões locais reproduziram
+  liberação indevida no backend e chegada ao comando Codex no executor. Não houve inferência real.
+- **Correção:** Íris exige contrato interno V2 compatível e `READY_FOR_OPERATION` antes de criar
+  tarefa/preparar modelo. A pesquisa continua consultável e o motivo conserva as demais lacunas.
+  V3/V4 privados, histórico, preço, orçamento e oferta não são alterados.
+- **Prevenção:** testes de estado ausente/insuficiente, versão divergente, caminho aprovado,
+  ausência de comando/telemetria e integração de endpoint/fila sem tarefa duplicada. Matriz e
+  limites em `docs/homologacao/iris-gate-atena-v1.md`.
+- **Validade:** essa correção não fornece prova de geração personalizada nem parecer de Plutus.
+  Teto de novo gasto continua R$0; resolver as lacunas precede revisão paga, sem retentativa idêntica.
+
 ## LOOP-PREFLIGHT-CONCLUSAO-HISTORICA-MASCA-VIGENCIA — 04/10/2026
 
 - **Evidência:** Capella #7, cadeia #26, processo #122/v7, execução #39 e

@@ -511,8 +511,8 @@ export type ProductProcessActivityExecutionRequest = {
 export type ProductProcessActivityExecutionHistory = {
   chainPosition?: {
     sequenceLabel: string;
-    parentProcessCode: string;
-    parentProcessName: string;
+    parentProcessCode: string | null;
+    parentProcessName: string | null;
   } | null;
   salesFlow?: SalesFlow | null;
   productId: number;

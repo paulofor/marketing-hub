@@ -838,6 +838,71 @@ describe("ProductProcessActivityExecutionsPage", () => {
     );
   });
 
+  it.each(["6", null])(
+    "keeps the historical chain position %s without borrowing the live chain's number",
+    async (sequenceLabel) => {
+      vi.mocked(axios.get).mockImplementation(async (url) => {
+        if (url === "/api/products/value-chain-positions/93004") {
+          return {
+            data: {
+              productId: 93004,
+              chainDefinitionId: 93026,
+              processDefinitionId: 93075,
+              sequenceNumber: 8,
+              processMeasurements: [],
+              subprocessPosition: null,
+            },
+          };
+        }
+        return {
+          data: {
+            ...history,
+            productId: 93004,
+            productInternalName: "Produto local",
+            selectedProcessDefinitionId: 93075,
+            processName: "Processo histórico local",
+            selectedProcessStatus: "RETIRED",
+            chainPosition: sequenceLabel
+              ? {
+                  sequenceLabel,
+                  parentProcessCode: null,
+                  parentProcessName: null,
+                }
+              : null,
+          },
+        };
+      });
+
+      renderPage(
+        "/products/93004/value-chain-history/processes/93075/activities?chainId=93014&sourceReference=experiment%3A93092",
+      );
+
+      expect(
+        await screen.findByRole("heading", {
+          name: sequenceLabel
+            ? "Produto local · Processo 6 — Processo histórico local"
+            : "Produto local · Processo histórico local",
+        }),
+      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(axios.get).toHaveBeenCalledWith(
+          "/api/products/value-chain-positions/93004",
+        ),
+      );
+      expect(screen.queryByText(/Processo 8 —/)).not.toBeInTheDocument();
+      const details = screen.getByText("Ver contexto completo")
+        .parentElement as HTMLDetailsElement;
+      details.open = true;
+      fireEvent(details, new Event("toggle"));
+      expect(
+        await screen.findByLabelText("Contexto completo do processo"),
+      ).toHaveTextContent(
+        `Processo: ${sequenceLabel ?? "Número não informado"} — Processo histórico local`,
+      );
+      expect(axios.post).not.toHaveBeenCalled();
+    },
+  );
+
   it("uses the backend position of an adopted Opala preparation instead of the product's live version", async () => {
     vi.mocked(axios.get).mockImplementation(async (url) => {
       if (url === "/api/products/value-chain-positions/4") {

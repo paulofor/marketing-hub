@@ -6,14 +6,15 @@ import com.marketinghub.businessprocess.execution.service.productProcessExecutio
 import com.marketinghub.repository.jdbc.catalogovivo.OpalaAdoptionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Responsabilidade: localizar subprocessos no grafo da cadeia e preservar a posição Opala adotada
- * em ciclos históricos.
+ * Responsabilidade: localizar processos e subprocessos na cadeia consultada e preservar a posição
+ * Opala adotada em ciclos históricos.
  */
 @Component
 @Slf4j
@@ -47,8 +48,8 @@ public class OpalaAdoptionChainPositionResolver {
   }
 
   /**
-   * Resolve a chamada na cadeia mesmo sem ciclo e preserva 5.2 somente para uma adesão Opala do
-   * produto, ciclo e cadeia consultados.
+   * Resolve o membro ou a chamada na cadeia mesmo sem ciclo e preserva 5.2 somente para uma adesão
+   * Opala do produto, ciclo e cadeia consultados.
    */
   public Optional<ProductProcessChainPositionResponse> resolve(
       long productId, long processDefinitionId, String processCode, Long cycleId, Long chainId) {
@@ -88,7 +89,7 @@ public class OpalaAdoptionChainPositionResolver {
   }
 
   /**
-   * Calcula a posição pela chamada real da cadeia e pela versão exata do filho quando declarada.
+   * Resolve primeiro o membro direto pela definição exata; depois busca a chamada real do filho.
    */
   private Optional<ProductProcessChainPositionResponse> graphPosition(
       long processDefinitionId, String processCode, long chainId) {
@@ -98,18 +99,31 @@ public class OpalaAdoptionChainPositionResolver {
     return chains
         .findById(chainId)
         .flatMap(
-            chain ->
-                chain.getItems().stream()
-                    .filter(item -> calledTaskSequence(item.getProcessDefinition(), target) != null)
-                    .findFirst()
-                    .map(
-                        item ->
-                            new ProductProcessChainPositionResponse(
-                                item.getSequenceNumber()
-                                    + "."
-                                    + calledTaskSequence(item.getProcessDefinition(), target),
-                                item.getProcessDefinition().getProcessCode(),
-                                item.getProcessDefinition().getName())));
+            chain -> {
+              var directMember =
+                  chain.getItems().stream()
+                      .filter(
+                          item ->
+                              Objects.equals(
+                                  item.getProcessDefinition().getId(), processDefinitionId))
+                      .findFirst();
+              if (directMember.isPresent()) {
+                return Optional.of(
+                    new ProductProcessChainPositionResponse(
+                        String.valueOf(directMember.get().getSequenceNumber()), null, null));
+              }
+              return chain.getItems().stream()
+                  .filter(item -> calledTaskSequence(item.getProcessDefinition(), target) != null)
+                  .findFirst()
+                  .map(
+                      item ->
+                          new ProductProcessChainPositionResponse(
+                              item.getSequenceNumber()
+                                  + "."
+                                  + calledTaskSequence(item.getProcessDefinition(), target),
+                              item.getProcessDefinition().getProcessCode(),
+                              item.getProcessDefinition().getName()));
+            });
   }
 
   /** Localiza a atividade delegadora na ordem causal das tarefas, ignorando retornos REWORK. */

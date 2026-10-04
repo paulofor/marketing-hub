@@ -6815,6 +6815,18 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   e novas; referências estrangeiras continuam recusadas.
 - Evidências e limites: `docs/homologacao/experimento-92-contexto-cadeia.md`.
 
+### Numeração histórica no título e no contexto AIHUB — 04/10/2026
+
+- Banco, API da cadeia 14 e captura de Vega confirmam definição 75 v6 na posição 6;
+  a API de atividades retornava `chainPosition: null` e a posição vigente era da cadeia 26.
+- O resolvedor tratava chamadas de subprocessos, mas não os membros diretos. Agora resolve
+  primeiro a definição exata na cadeia consultada, sem inventar pai ou migrar o ciclo.
+- A interface não empresta a posição vigente de outra cadeia; o contexto AIHUB preserva
+  a posição histórica fornecida pelo contrato da própria consulta.
+- Regressões cobrem definições diferentes com o mesmo código, cadeia ausente, membros
+  publicados/retirados e subprocessos existentes. Matriz e validação integrada em
+  `docs/registros/homologacao-recursos-atividades-processo.md`. Nenhum gasto ou execução iniciado.
+
 ## LOOP-VIDEO-GOVERNANCA-EXIGE-REFERENCIA-INEXISTENTE — 17/09/2026
 
 - **Sintoma confirmado:** o criativo #529 do Vega, experimento #92, foi reprovado mesmo com vídeo

@@ -18,6 +18,7 @@ export const activityStateLabels: Record<
 };
 
 export const processStateLabels = {
+  CLOSED: "Encerrado com pendências",
   NOT_RECORDED: "Sem atividades registradas",
   NOT_STARTED: "Não iniciado",
   PENDING: "Aguardando execução",

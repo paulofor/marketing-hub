@@ -95,6 +95,39 @@ describe("ExperimentRunPanel", () => {
 
   afterEach(cleanup);
 
+  it.each([false, true])(
+    "preserva histórico sem oferecer comandos quando o backend encerrou a referência, compact=%s",
+    (compact) => {
+      const previous = vi
+        .mocked(useExperimentRunPreflight)
+        .getMockImplementation()!();
+      vi.mocked(useExperimentRunPreflight).mockReturnValue({
+        ...previous,
+        data: {
+          ...previous.data!,
+          executionBlockReason:
+            "O experimento está encerrado. Preserve as provas; não renove Plutus.",
+          canRenewTechnicalHomologation: false,
+        },
+      } as ReturnType<typeof useExperimentRunPreflight>);
+      render(<ExperimentRunPanel experimentId="99" compact={compact} />);
+      expect(screen.getByText("Histórico de homologação")).toBeInTheDocument();
+      expect(screen.getByText(/Preserve as provas/)).toBeInTheDocument();
+      for (const name of [
+        "Criar run",
+        "Rodar preflight",
+        "Registrar homologação",
+        "Renovar homologação técnica",
+      ])
+        expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+      if (!compact)
+        expect(
+          screen.getByText("LANDING_QUALITY_REVIEW_APPROVED"),
+        ).toBeInTheDocument();
+      expect(recordHomologation).not.toHaveBeenCalled();
+    },
+  );
+
   it("expõe a raiz fluida que contém códigos técnicos no celular", () => {
     const { container } = render(<ExperimentRunPanel experimentId="99" />);
 

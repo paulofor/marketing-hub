@@ -461,4 +461,18 @@ class ExperimentTechnicalPreflightEvidenceServiceTest {
         .evaluatorVersion("experiment-run-homologation.v1")
         .build();
   }
+
+  /** Mantém três provas técnicas e prioriza encerramento sobre uma nova análise de Plutus. */
+  @Test
+  void closedReferencePreservesProofsAndDoesNotRequestFinancialRevision() {
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.INVALIDATED);
+    assertThat(service.executionBlockReason(product, "experiment:88"))
+        .contains("não renove Plutus");
+    for (String activity : List.of("surfaces", "transaction", "measurement"))
+      assertThat(service.evaluate(activity, product, "experiment:88").runId())
+          .isEqualTo(run.getId());
+    assertThatThrownBy(() -> service.evaluate("financialGuardrails", product, "experiment:88"))
+        .hasMessageContaining("está encerrado");
+    verifyNoInteractions(quartzoChecks, quartzoContext);
+  }
 }

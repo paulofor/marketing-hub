@@ -94,7 +94,7 @@ public class BackendExperimentRunService {
         null);
   }
 
-  /** Cria um novo run sequencial para o experimento sem alterar o status legado do experimento. */
+  /** Cria tentativa apenas em referência aberta, preservando estado e histórico do experimento. */
   @Transactional
   public ExperimentRunResponse create(Long experimentId, CreateExperimentRunRequest request) {
     Experiment experiment =
@@ -104,6 +104,7 @@ public class BackendExperimentRunService {
                 () ->
                     new EntityNotFoundException(
                         "Experimento %d não encontrado".formatted(experimentId)));
+    ExperimentHomologationLifecycle.requireOpen(experiment);
     int nextRunNumber = experimentRunRepository.findMaxRunNumberByExperimentId(experimentId) + 1;
     Instant now = Instant.now();
     ExperimentRun run =
@@ -129,7 +130,7 @@ public class BackendExperimentRunService {
     return toResponse(savedRun);
   }
 
-  /** Renova prova vencida em outra tentativa; repetições retornam a mesma renovação sem gasto. */
+  /** Renova prova em referência aberta; repetições retornam a mesma tentativa sem gasto. */
   @Transactional
   public ExperimentRunPreflightResponse renewTechnicalHomologation(Long runId) {
     ExperimentRun previous =
@@ -139,6 +140,7 @@ public class BackendExperimentRunService {
                 () ->
                     new EntityNotFoundException(
                         "Run de experimento %d não encontrado".formatted(runId)));
+    ExperimentHomologationLifecycle.requireOpen(previous.getExperiment());
     String renewalSource = "technical-homologation-renewal:" + runId;
     if (previous.getMode() != ExperimentRunMode.PRODUCTION) {
       throw new org.springframework.web.server.ResponseStatusException(
@@ -182,7 +184,7 @@ public class BackendExperimentRunService {
         .toList();
   }
 
-  /** Substitui os gates determinísticos anteriores e atualiza o status operacional do run. */
+  /** Recusa referência encerrada antes de substituir gates e atualizar a preparação do run. */
   @Transactional
   public ExperimentRunPreflightResponse runPreflight(Long runId) {
     ExperimentRun run =
@@ -192,6 +194,7 @@ public class BackendExperimentRunService {
                 () ->
                     new EntityNotFoundException(
                         "Run de experimento %d não encontrado".formatted(runId)));
+    ExperimentHomologationLifecycle.requireOpen(run.getExperiment());
     gateResultRepository.deleteByExperimentRunId(runId);
     gateResultRepository.flush();
     List<ExperimentRunGateResult> gates = buildInitialGateResults(run);
@@ -204,7 +207,7 @@ public class BackendExperimentRunService {
     return toPreflightResponse(savedRun, savedGates);
   }
 
-  /** Consolida resultados funcionais e libera o run somente quando nenhum gate ficar pendente. */
+  /** Recusa referência encerrada antes de exigir gates e consolida somente provas compatíveis. */
   @Transactional
   public ExperimentRunPreflightResponse recordHomologationResults(
       Long runId, ExperimentRunHomologationRequest request) {
@@ -215,6 +218,7 @@ public class BackendExperimentRunService {
                 () ->
                     new EntityNotFoundException(
                         "Run de experimento %d não encontrado".formatted(runId)));
+    ExperimentHomologationLifecycle.requireOpen(run.getExperiment());
     List<ExperimentRunGateResult> gates =
         gateResultRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(runId);
     if (gates.isEmpty()) {
@@ -615,13 +619,15 @@ public class BackendExperimentRunService {
     return !normalized.equals("teste") && !normalized.equals("test") && !normalized.equals("n/a");
   }
 
-  /** Expõe gates históricos e bloqueia sua reutilização quando a identidade atual divergir. */
+  /** Expõe gates históricos e bloqueios de identidade ou encerramento sem reescrever provas. */
   private ExperimentRunPreflightResponse toPreflightResponse(
       ExperimentRun run, List<ExperimentRunGateResult> gates) {
+    String executionBlockReason = ExperimentHomologationLifecycle.blockReason(run.getExperiment());
     String requiredReference = requiredLandingEvidenceReference(run);
     String currentEvidenceBlockReason = currentEvidenceBlockReason(run, requiredReference);
     boolean hasBlockers =
-        currentEvidenceBlockReason != null
+        executionBlockReason != null
+            || currentEvidenceBlockReason != null
             || gates.stream().anyMatch(gate -> !isApprovedGateStatus(gate.getStatus()));
     return new ExperimentRunPreflightResponse(
         run.getId(),
@@ -629,12 +635,14 @@ public class BackendExperimentRunService {
         hasBlockers,
         requiredReference,
         currentEvidenceBlockReason,
-        run.getMode() == ExperimentRunMode.PRODUCTION
+        executionBlockReason == null
+            && run.getMode() == ExperimentRunMode.PRODUCTION
             && requiredReference != null
             && !requiredReference.isBlank()
             && currentEvidenceBlockReason != null
             && !gates.isEmpty()
             && gates.stream().allMatch(gate -> isApprovedGateStatus(gate.getStatus())),
+        executionBlockReason,
         gates.stream().map(this::toGateResponse).toList());
   }
 

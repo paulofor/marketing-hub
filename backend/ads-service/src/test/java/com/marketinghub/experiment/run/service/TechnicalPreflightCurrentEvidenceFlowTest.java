@@ -182,6 +182,26 @@ class TechnicalPreflightCurrentEvidenceFlowTest {
             });
   }
 
+  /**
+   * O relatório deixa de indicar andamento quando a referência encerrou e mantém as três provas.
+   */
+  @Test
+  void reportsClosedReferenceWithoutLosingPartialProgress() throws Exception {
+    when(evidence.executionBlockReason(product, reference))
+        .thenReturn("Experimento encerrado; preserve as provas.");
+    var result =
+        service.productProcessExecutions(
+            process.getId(), product.getId(), null, null, false, reference);
+    assertThat(result.operationalState()).isEqualTo("CLOSED");
+    assertThat(result.objectiveAchieved()).isFalse();
+    assertThat(result.completedActivityCount()).isEqualTo(3);
+    assertThat(result.remainingActivityCount()).isEqualTo(1);
+    assertThat(result.currentActivityStateReason()).contains("encerrado");
+    String output = System.getProperty("closed-history.fixture-output");
+    if (output != null) Files.writeString(Path.of(output), json.writeValueAsString(result));
+    verifyNoInteractions(paidTasks);
+  }
+
   /** O relatório usa o plano do experimento mesmo com outra candidata mais recente do produto. */
   @ParameterizedTest
   @CsvSource({"7,88,2,35", "97001,97002,97003,97004"})

@@ -177,4 +177,31 @@ class ExperimentTechnicalPreflightActivityExecutorTest {
     process.setProcessCode("another-process");
     assertThat(executor.supports(process, activity)).isFalse();
   }
+
+  /** O encerramento impede comando manual e não recomenda nova revisão financeira ou técnica. */
+  @Test
+  void closedReferenceBlocksBeforeEvidenceAndExplainsHistory() {
+    when(evidenceService.executionBlockReason(product, "experiment:88"))
+        .thenReturn("Experimento encerrado; preserve histórico.");
+    var readiness = executor.readiness(process, activity, product, "experiment:88");
+    assertThat(readiness.ready()).isFalse();
+    assertThat(readiness.requirements())
+        .singleElement()
+        .satisfies(
+            requirement -> {
+              assertThat(requirement.code()).isEqualTo("EXPERIMENT_REFERENCE_CLOSED");
+              assertThat(requirement.recommendation())
+                  .doesNotContain("Conclua ou renove")
+                  .contains("nenhuma nova homologação");
+            });
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> executor.execute(process, activity, product, "experiment:88"))
+        .hasMessageContaining("encerrado");
+    org.mockito.Mockito.verifyNoInteractions(predecessors, instances);
+    verify(evidenceService, never())
+        .evaluate(
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any());
+  }
 }

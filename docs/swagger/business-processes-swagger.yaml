@@ -782,6 +782,10 @@ components:
         - costCoverage
         - activities
       properties:
+        operationalState:
+          type: string
+          description: Estado consolidado pelo backend. CLOSED indica referência de homologação encerrada sem tarefas em curso; preserva contagens e provas e não equivale a objetivo atingido.
+          enum: [NOT_RECORDED, NOT_STARTED, PENDING, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED, CLOSED]
         chainPosition:
           type: object
           nullable: true

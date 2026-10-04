@@ -197,7 +197,9 @@ class OpalaAdoptionRoutingTest {
             chains,
             cycles,
             mock(ProductRepository.class),
-            new ObjectMapper());
+            new ObjectMapper(),
+            org.mockito.Mockito.mock(
+                com.marketinghub.repository.jpa.experiment.ExperimentRepository.class));
     ReflectionTestUtils.setField(context, "catalogAdoptions", adoptions);
     var process = new BusinessProcessDefinition();
     process.setId(77L);
@@ -242,7 +244,15 @@ class OpalaAdoptionRoutingTest {
     var cycles = mock(LearningSalesCycleRepository.class);
     var products = mock(ProductRepository.class);
     var context =
-        new ProcessRunContext(activities, processes, chains, cycles, products, new ObjectMapper());
+        new ProcessRunContext(
+            activities,
+            processes,
+            chains,
+            cycles,
+            products,
+            new ObjectMapper(),
+            org.mockito.Mockito.mock(
+                com.marketinghub.repository.jpa.experiment.ExperimentRepository.class));
     var product = new Product();
     product.setId(4L);
     product.setProductTypeDefinition(ProductTypeDefinition.builder().code("PDE").build());

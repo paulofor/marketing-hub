@@ -67,7 +67,7 @@ public class ProcessRunService {
     this.transaction = new TransactionTemplate(manager);
   }
 
-  /** Mostra progresso e prontidão da versão publicada ou fixada na ficha, preservando o diário. */
+  /** Mostra progresso e prontidão da versão autorizada, recusando início em contexto encerrado. */
   public ProcessRunResponse status(Long productId, Long processId, ProcessRunCommand command) {
     return transaction.execute(
         ignored -> {
@@ -115,6 +115,13 @@ public class ProcessRunService {
                                       history.selectedProcessStatus())
                               ? "Esta versão não está publicada."
                               : "Execute o processo para iniciar as atividades em sequência. Você pode fechar esta tela.");
+          if ("READY".equals(preview.getStatus())) {
+            String blocker = dispatchBlockReason(preview);
+            if (blocker != null) {
+              preview.setStatus("UNAVAILABLE");
+              preview.setReason(blocker);
+            }
+          }
           return response(preview);
         });
   }
@@ -988,6 +995,13 @@ public class ProcessRunService {
     int omitted =
         readiness == null ? run.getOmittedActivities() : Math.max(0, total - completed - remaining);
     int applicable = total - omitted;
+    String resumeBlocker =
+        persisted
+                && (revalidation
+                    || Set.of("PAUSING", "PAUSED", "BLOCKED", "ERROR", "WAITING_INPUT")
+                        .contains(run.getStatus()))
+            ? dispatchBlockReason(run)
+            : null;
     var userAction = guidance.resolve(run);
     return new ProcessRunResponse(
         run.getId(),
@@ -999,9 +1013,11 @@ public class ProcessRunService {
         revalidation
             ? "REVALIDATION_REQUIRED"
             : userAction != null ? userAction.waitingStatus() : run.getStatus(),
-        revalidation
-            ? "As provas atuais já não comprovam todos os objetivos. Retome o processo para revalidar; as conclusões anteriores permanecem no histórico."
-            : userAction != null ? userAction.reason() : run.getReason(),
+        resumeBlocker != null
+            ? resumeBlocker
+            : revalidation
+                ? "As provas atuais já não comprovam todos os objetivos. Retome o processo para revalidar; as conclusões anteriores permanecem no histórico."
+                : userAction != null ? userAction.reason() : run.getReason(),
         run.getCurrentActivityId(),
         run.getCurrentActivityName(),
         userAction != null ? userAction.responsible() : run.getCurrentOwnerName(),
@@ -1016,6 +1032,7 @@ public class ProcessRunService {
         !persisted && "READY".equals(run.getStatus()),
         persisted && !Set.of("PAUSING", "PAUSED", "COMPLETED", "CLOSED").contains(run.getStatus()),
         persisted
+            && resumeBlocker == null
             && (revalidation
                 || Set.of("PAUSING", "PAUSED", "BLOCKED", "ERROR", "WAITING_INPUT")
                     .contains(run.getStatus())),

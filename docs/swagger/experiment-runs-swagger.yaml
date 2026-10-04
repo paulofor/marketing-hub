@@ -7,7 +7,7 @@ paths:
   /api/experiments/{experimentId}/runs:
     post:
       summary: Cria um novo run sequencial para o experimento
-      description: Cria uma tentativa operacional sem alterar o status legado do experimento.
+      description: Cria uma tentativa em referência aberta sem alterar o status legado. Estado comercial terminal ou janela expirada retorna HTTP 409 sem gravação.
       parameters:
         - name: experimentId
           in: path
@@ -83,7 +83,7 @@ paths:
                 $ref: '#/components/schemas/ExperimentRunPreflightResponse'
     post:
       summary: Executa a avaliação determinística inicial de preflight
-      description: Reavalia gates determinísticos iniciais e atualiza o status operacional do run.
+      description: Reavalia gates em referência aberta. Estado comercial terminal ou janela expirada retorna HTTP 409 antes de substituir qualquer gate.
       parameters:
         - name: runId
           in: path
@@ -101,7 +101,7 @@ paths:
   /api/experiment-runs/{runId}/homologation-results:
     post:
       summary: Registra as quatro provas funcionais do run
-      description: Valida todos os gates antes de alterar a tentativa. Resumo e referência aceitam até 512 caracteres; use links para manifestos completos sem truncar sua evidência. Recusas de entrada retornam HTTP 400, preservam o run e permitem corrigir a mesma tentativa sem custo ou autorização comercial.
+      description: Recusa referência encerrada com HTTP 409. Valida todos os gates antes de alterar a tentativa. Resumo e referência aceitam até 512 caracteres; use links para manifestos completos sem truncar sua evidência. Recusas de entrada retornam HTTP 400, preservam o run e permitem corrigir a mesma tentativa sem custo ou autorização comercial.
       parameters:
         - name: runId
           in: path
@@ -127,7 +127,7 @@ paths:
   /api/experiment-runs/{runId}/technical-homologation-renewal:
     post:
       summary: Renova a homologação técnica vencida em outra tentativa
-      description: Serializa comandos da mesma origem e reutiliza a renovação em retries. Exige publicação identificada e aprovação histórica vencida. O backend prepara gates pendentes sem alterar campanha, oferta, orçamento ou provas anteriores.
+      description: Serializa comandos da mesma origem e reutiliza a renovação em retries. Exige experimento ainda aberto, publicação identificada e aprovação histórica vencida; encerramento retorna HTTP 409. O backend prepara gates pendentes sem alterar campanha, oferta, orçamento ou provas anteriores.
       parameters:
         - name: runId
           in: path
@@ -198,6 +198,10 @@ components:
           type: string
           nullable: true
           description: Bloqueio técnico de vigência; aprovação histórica não autoriza reutilização ou gasto.
+        executionBlockReason:
+          type: string
+          nullable: true
+          description: Encerramento comercial ou janela expirada. Impede criação, preflight, renovação e gravação de homologação (HTTP 409), preservando gates históricos. Não solicita nova análise de Plutus nem autoriza gasto.
         canRenewTechnicalHomologation:
           type: boolean
           description: Permissão do backend para preparar uma nova prova sem sobrescrever a tentativa homologada e vencida.

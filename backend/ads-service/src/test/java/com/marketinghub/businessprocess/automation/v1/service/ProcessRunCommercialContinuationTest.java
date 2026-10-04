@@ -20,7 +20,15 @@ class ProcessRunCommercialContinuationTest {
       mock(BusinessProcessDefinitionRepository.class);
   private final LearningSalesCycleRepository cycles = mock(LearningSalesCycleRepository.class);
   private final ProcessRunContext context =
-      new ProcessRunContext(null, definitions, null, cycles, null, new ObjectMapper());
+      new ProcessRunContext(
+          null,
+          definitions,
+          null,
+          cycles,
+          null,
+          new ObjectMapper(),
+          org.mockito.Mockito.mock(
+              com.marketinghub.repository.jpa.experiment.ExperimentRepository.class));
   private final ProcessRun waiting = new ProcessRun();
   private final ProcessRun candidate = new ProcessRun();
   private final LearningSalesCycle cycle = new LearningSalesCycle();

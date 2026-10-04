@@ -29,6 +29,7 @@ public class ProcessRunContext {
   private final LearningSalesCycleRepository cycles;
   private final ProductRepository products;
   private final ObjectMapper json;
+  private final com.marketinghub.repository.jpa.experiment.ExperimentRepository experiments;
 
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.product.executionprofile.v1.service.ExecutionProfileContext
@@ -49,7 +50,7 @@ public class ProcessRunContext {
 
   /**
    * Valida identidade, ficha, BPM e adesão explícita, preservando a referência congelada em toda
-   * leitura; navegação sem referência não permite execução.
+   * leitura; navegação sem referência e homologação encerrada não permitem execução.
    */
   public ProductProcessActivityExecutionHistoryResponse read(
       Long productId, Long processId, ProcessRunCommand command, boolean execution) {
@@ -116,6 +117,10 @@ public class ProcessRunContext {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
           "O contexto operacional mudou. Atualize a tela antes de iniciar outro processo.");
+    if (execution) {
+      String blocker = experimentBlockReason(process, productId, command.sourceReference());
+      if (blocker != null) throw new ResponseStatusException(HttpStatus.CONFLICT, blocker);
+    }
     graph(processId).ordered(result.activities());
     return result;
   }
@@ -126,7 +131,7 @@ public class ProcessRunContext {
   }
 
   /**
-   * Bloqueia novos trabalhos em ciclo encerrado ou versão sem autorização, preservando callbacks
+   * Bloqueia homologação encerrada, ciclo fechado ou versão sem autorização, preservando callbacks
    * existentes e versões retiradas que foram fixadas pela ficha da mesma referência.
    */
   public String dispatchBlockReason(ProcessRun run) {
@@ -140,6 +145,9 @@ public class ProcessRunContext {
         return "O ciclo está encerrado. Resultados preservados; nenhuma nova atividade será iniciada neste ciclo.";
     }
     var process = process(run.getProcessDefinitionId());
+    String experimentBlocker =
+        experimentBlockReason(process, run.getProductId(), run.getSourceReference());
+    if (experimentBlocker != null) return experimentBlocker;
     if (executableVersion(
         run.getProductId(), run.getProcessDefinitionId(), command(run), process.getStatus()))
       return null;
@@ -149,6 +157,27 @@ public class ProcessRunContext {
         + process.getId()
         + " não está publicada nem fixada por uma ficha desta referência. Resultados preservados; "
         + "inicie a versão autorizada no contexto correto.";
+  }
+
+  /** Limita a homologação à referência do produto, sem impedir conciliação ou aprendizado. */
+  private String experimentBlockReason(
+      BusinessProcessDefinition process, Long productId, String reference) {
+    if (!"experiment-homologation-activation".equals(process.getProcessCode())
+        && !"pde-commercial-homologation-activation".equals(process.getProcessCode())) return null;
+    if (reference == null || !reference.matches("experiment:[1-9][0-9]*")) return null;
+    Long id = Long.valueOf(reference.substring("experiment:".length()));
+    var experiment =
+        experiments
+            .findById(id)
+            .filter(
+                value -> value.getProduct() != null && productId.equals(value.getProduct().getId()))
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "O experimento não pertence ao produto desta homologação."));
+    return com.marketinghub.experiment.run.service.ExperimentHomologationLifecycle.blockReason(
+        experiment);
   }
 
   /**

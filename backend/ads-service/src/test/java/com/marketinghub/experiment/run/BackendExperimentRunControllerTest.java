@@ -76,9 +76,13 @@ class BackendExperimentRunControllerTest {
     pipelineDossieProdutoRepository.deleteAll();
   }
 
-  /** Duas requisições concorrentes renovam uma única tentativa e preservam o resultado legado. */
-  @Test
-  void serializesTechnicalRenewalAndPreservesHistoricApproval() throws Exception {
+  /** Concorrência renova uma tentativa pausada, mas preserva sem mutação a referência encerrada. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.EnumSource(
+      value = ExperimentStatus.class,
+      names = {"PAUSED", "INVALIDATED"})
+  void serializesTechnicalRenewalAndPreservesHistoricApproval(ExperimentStatus state)
+      throws Exception {
     Long experimentId = createExperiment();
     var configured = experimentRepository.findById(experimentId).orElseThrow();
     configured.setCampaignObjective(ExperimentCampaignObjective.SALES);
@@ -101,7 +105,7 @@ class BackendExperimentRunControllerTest {
     oldGates.forEach(gate -> gate.setStatus(ExperimentRunGateStatus.PASS));
     gateResultRepository.saveAllAndFlush(oldGates);
     var experiment = experimentRepository.findById(experimentId).orElseThrow();
-    experiment.setStatus(ExperimentStatus.INVALIDATED);
+    experiment.setStatus(state);
     experimentRepository.saveAndFlush(experiment);
     org.mockito.Mockito.when(quartzoEvidence.applies(org.mockito.ArgumentMatchers.any()))
         .thenReturn(true);
@@ -115,12 +119,17 @@ class BackendExperimentRunControllerTest {
           (java.util.concurrent.Callable<Long>)
               () -> {
                 barrier.await(30, java.util.concurrent.TimeUnit.SECONDS);
+                var performed =
+                    mockMvc.perform(
+                        post(
+                            "/api/experiment-runs/{id}/technical-homologation-renewal",
+                            previousId));
+                if (state == ExperimentStatus.INVALIDATED) {
+                  performed.andExpect(status().isConflict());
+                  return previousId;
+                }
                 var response =
-                    mockMvc
-                        .perform(
-                            post(
-                                "/api/experiment-runs/{id}/technical-homologation-renewal",
-                                previousId))
+                    performed
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.hasBlockers").value(true))
                         .andExpect(jsonPath("$.canRenewTechnicalHomologation").value(false))
@@ -133,14 +142,23 @@ class BackendExperimentRunControllerTest {
       var second = threads.submit(command);
       Long newId = first.get(30, java.util.concurrent.TimeUnit.SECONDS);
       assertThat(second.get(30, java.util.concurrent.TimeUnit.SECONDS)).isEqualTo(newId);
-      assertThat(newId).isNotEqualTo(previousId);
       var all = experimentRunRepository.findByExperimentIdOrderByRunNumberAsc(experimentId);
+      if (state == ExperimentStatus.INVALIDATED) {
+        assertThat(all).hasSize(1);
+        assertThat(all.getFirst().getStatus()).isEqualTo(ExperimentRunStatus.COMPLETED);
+        assertThat(
+                gateResultRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(
+                    previousId))
+            .allMatch(gate -> gate.getStatus() == ExperimentRunGateStatus.PASS);
+        return;
+      }
+      assertThat(newId).isNotEqualTo(previousId);
       assertThat(all).hasSize(2);
       assertThat(all.getLast().getCreatedBy())
           .isEqualTo("technical-homologation-renewal:" + previousId);
       assertThat(all.getLast().getStatus()).isEqualTo(ExperimentRunStatus.PREFLIGHT_PENDING);
       assertThat(experimentRepository.findById(experimentId).orElseThrow().getStatus())
-          .isEqualTo(ExperimentStatus.INVALIDATED);
+          .isEqualTo(state);
       assertThat(experimentRunRepository.findById(previousId).orElseThrow().getStatus())
           .isEqualTo(ExperimentRunStatus.COMPLETED);
       assertThat(

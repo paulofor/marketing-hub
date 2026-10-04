@@ -8796,3 +8796,18 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
 - **Harness:** contrato e regressões impedem orientar agentes/operadores a uma ação indevida,
   sem repetir proposta, homologação, campanha ou custo para corrigir o diagnóstico.
 - **Matriz:** `docs/homologacao/mira-conciliacao-janela-v1.md`.
+
+
+## LOOP-PREFLIGHT-EXPERIMENTO-ENCERRADO-PEDE-PLUTUS — 04/10/2026
+
+- Evidência: execução #39/processo #122 mantinha 3/4 provas e repetia WAITING_INPUT
+  por parecer #62 vencido, apesar de experimento #88 INVALIDATED e janela até 29/09.
+  Execução anterior #17 completara 4/4 em 23/09; tentativas #16/#17 eram posteriores.
+- Causa: elegibilidade do motor verificava versão/ciclo, mas não o experimento sem
+  ciclo; preflight permitia novas tentativas e orientava renovar economia histórica.
+- Correção: política compartilhada confere estado/janela antes de comandos de
+  homologação; motor usa encerramento existente com drenagem de tarefas; leitura/UI
+  mantêm provas e explicitam impedimento sem fabricar conclusão ou gastar em Plutus.
+- Prevenção: testes de estado/data, API sem mutação, identidade, economia, motor com
+  persistência, idempotência e histórico em desktop/mobile. Casos ativos continuam
+  sujeitos aos gates existentes. Matriz em `docs/homologacao/homologacao-experimento-encerrado-v1.md`.

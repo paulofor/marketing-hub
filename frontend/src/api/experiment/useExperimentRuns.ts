@@ -90,6 +90,7 @@ export type ExperimentRunPreflight = {
   requiredLandingEvidenceReference?: string | null;
   currentEvidenceBlockReason?: string | null;
   canRenewTechnicalHomologation?: boolean;
+  executionBlockReason?: string | null;
   gates: ExperimentRunGateResult[];
 };
 

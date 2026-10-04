@@ -66,6 +66,37 @@ public class ExperimentTechnicalPreflightActivityExecutor
             activity.getActivityId());
   }
 
+  /** Reconfere a prova concluída sem apagar a ocorrência original nem executar revisão paga. */
+  @Override
+  @Transactional(readOnly = true)
+  public boolean requiresFreshExecution(
+      BusinessProcessDefinition process,
+      BusinessProcessActivityDefinition activity,
+      Product product,
+      String sourceReference) {
+    if (!supports(process, activity) || sourceReference == null) return false;
+    var latest =
+        instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            activity.getId(), sourceReference);
+    if (latest.isEmpty()
+        || !"COMPLETED".equals(latest.get().getStatus())
+        || !latest.get().isObjectiveAchieved()) return false;
+    try {
+      var evidence = evidenceService.evaluate(activity.getActivityId(), product, sourceReference);
+      return !sameCompletedEvidence(latest.get(), evidence);
+    } catch (RuntimeException ex) {
+      log.warn(
+          "Conclusão técnica exige evidência vigente. productId={} processDefinitionId={} activityId={} activityInstanceId={} sourceReference={}",
+          product == null ? null : product.getId(),
+          process.getId(),
+          activity.getActivityId(),
+          latest.get().getId(),
+          sourceReference,
+          ex);
+      return true;
+    }
+  }
+
   /** Exige predecessoras concluídas e uma prova vigente antes de liberar o comando. */
   @Override
   @Transactional(readOnly = true)

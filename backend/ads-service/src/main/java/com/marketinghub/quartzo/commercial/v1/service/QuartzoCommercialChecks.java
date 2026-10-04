@@ -28,7 +28,7 @@ public class QuartzoCommercialChecks {
     this.readiness = readiness;
   }
 
-  /** Confirma as fontes próprias de cada trabalho, sem confundir inspeção com autorização. */
+  /** Confirma fontes e identifica a revisão financeira bloqueante, sem autorizar gasto. */
   public void check(String activity, QuartzoCommercialContext.Scope scope, JsonNode snapshot) {
     var experiment = scope.experiment();
     require(
@@ -96,9 +96,7 @@ public class QuartzoCommercialChecks {
         require(
             plan.isObject(),
             "Cadastre o plano financeiro LIVE desta versão e do plano comercial do experimento.");
-        require(
-            !plan.path("stale").asBoolean(true),
-            "Atualize o plano financeiro vencido ou alterado.");
+        require(!plan.path("stale").asBoolean(true), staleFinancialPlanReason(plan));
         require(
             List.of("READY_FOR_ANALYSIS", "PROJECTED_VIABLE")
                 .contains(plan.path("evaluation").path("status").asText()),
@@ -142,6 +140,22 @@ public class QuartzoCommercialChecks {
           throw new IllegalArgumentException(
               "Atividade de preparação Quartzo desconhecida: " + activity);
     }
+  }
+
+  /** Explica a pendência da revisão exata sem confundi-la com outra candidata do produto. */
+  private String staleFinancialPlanReason(JsonNode plan) {
+    String reason = "Atualize o plano financeiro vencido ou alterado.";
+    if (plan.path("id").isIntegralNumber()) {
+      reason += " Plano financeiro #" + plan.path("id").asLong();
+      if (plan.path("revision").isIntegralNumber())
+        reason += ", revisão " + plan.path("revision").asInt();
+      if (plan.path("commercialPlanId").isIntegralNumber())
+        reason += ", plano comercial #" + plan.path("commercialPlanId").asLong();
+      reason += ".";
+    }
+    if (plan.path("pendingActions").isArray() && !plan.path("pendingActions").isEmpty())
+      reason += " " + plan.path("pendingActions").get(0).asText();
+    return reason;
   }
 
   /** Revalida todas as fontes antes da avaliação independente e da consolidação final. */

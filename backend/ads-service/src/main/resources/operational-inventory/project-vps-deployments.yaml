@@ -1,16 +1,28 @@
 hosts:
   - host: "177.153.62.107"
-    providerName: "Locaweb Serviços de Internet S/A"
-    providerEvidence: "RDAP registro.br: bloco 177.153.0.0/16, AS27715, entidade Locaweb Serviços de Internet S/A"
-    cpu: null
-    memoryGb: null
-    diskGb: null
-    operatingSystem: null
+    providerName: "KingHost"
+    providerEvidence: "Painel KingHost informado pelo titular em 04/10/2026: plano ID 18306, loja.vps-kinghost.net (177.153.62.107), VPS 1 GB Linux, contratado em 23/03/2026. RDAP identifica a infraestrutura Locaweb, não o fornecedor contratual."
+    cpu: "1 vCPU"
+    memoryGb: 1
+    diskGb: 47
+    operatingSystem: "Ubuntu 24.04.3 LTS"
     monthlyCostBrl: null
     billingCycle: null
-    costEvidence: "Pendente: MCP não expõe contrato financeiro ou fatura do provedor"
-    physicalSpecsEvidence: "Pendente: MCP não expõe CPU, memória e disco deste host sem agente/SSH operacional"
-    notes: "Host usado por serviços MOIS, MDS, OPRM legado e vídeo conforme workflows e cadastro microservice."
+    costEvidence: "Pendente: lista de planos KingHost de 04/10/2026 não informa preço, periodicidade ou fatura do ID 18306. Catálogo público de novos contratos não comprova o custo deste VPS de 1 GB. Custo desconhecido permanece nulo."
+    physicalSpecsEvidence: "MCP vps_host_inventory em 04/10/2026: 1 vCPU, RAM total 957 MiB, disco raiz 47 GiB arredondados, Ubuntu 24.04.3 LTS. Plano de 1 GB confirmado pelo painel do titular."
+    notes: "loja.vps-kinghost.net, plano KingHost ID 18306. MCP em 04/10/2026 confirmou vídeo, coletor Meta Library e Hotmart ativos; MDS em reinício. Workflows/cadastro também contêm serviços legados; não presumir que todos estão ativos."
+  - host: "189.126.106.93"
+    providerName: "KingHost"
+    providerEvidence: "Painel KingHost informado pelo titular em 04/10/2026: plano ID 555, d555d.vps-kinghost.net (189.126.106.93), VPS 4 GB Linux, contratado em 22/12/2020. DNS confirmou hostname e IP na mesma data."
+    cpu: null
+    memoryGb: 4
+    diskGb: null
+    operatingSystem: "Linux (distribuição não verificada)"
+    monthlyCostBrl: null
+    billingCycle: null
+    costEvidence: "Pendente: lista de planos KingHost de 04/10/2026 não informa preço, periodicidade ou fatura do ID 555. Catálogo público de novos contratos não comprova o custo deste VPS. Custo desconhecido permanece nulo."
+    physicalSpecsEvidence: "Capacidade contratada de 4 GB Linux segundo painel informado pelo titular em 04/10/2026; CPU, RAM efetiva, disco e distribuição não medidos. MCP db_query confirmou MySQL 5.7.42 e hostname d555d.vps-kinghost.net; versão do MySQL não comprova hardware nem sistema operacional."
+    notes: "Dependência externa do backend: banco marketinghubdb em d555d.vps-kinghost.net, comprovado por SELECT @@hostname, @@version, DATABASE() via MCP em 04/10/2026 e por db.host em application.properties. Não é container de aplicação nem há deploy de banco nos workflows consultados. Compartilhamento com outros projetos e rateio financeiro não verificados."
   - host: "191.252.102.54"
     providerName: "Locaweb Serviços de Internet S/A"
     providerEvidence: "RDAP registro.br: bloco 191.252.0.0/16, AS27715, entidade Locaweb Serviços de Internet S/A"
@@ -48,17 +60,17 @@ hosts:
     physicalSpecsEvidence: "Pendente: MCP não expõe CPU, memória e disco deste host sem agente/SSH operacional"
     notes: "Host do backend principal e frontend administrativo confirmado pelo banco e workflow deploy-containers.yml."
   - host: "191.252.210.83"
-    providerName: "Locaweb Serviços de Internet S/A"
-    providerEvidence: "RDAP registro.br: bloco 191.252.0.0/16, AS27715, entidade Locaweb Serviços de Internet S/A"
-    cpu: null
-    memoryGb: null
-    diskGb: null
-    operatingSystem: null
+    providerName: "KingHost"
+    providerEvidence: "Painel KingHost informado pelo titular em 04/10/2026: plano ID 18537, interface.vps-kinghost.net (191.252.210.83), VPS 1 GB Linux, contratado em 02/04/2026. RDAP identifica a infraestrutura Locaweb, não o fornecedor contratual."
+    cpu: "1 vCPU"
+    memoryGb: 1
+    diskGb: 47
+    operatingSystem: "Ubuntu 24.04.3 LTS"
     monthlyCostBrl: null
     billingCycle: null
-    costEvidence: "Pendente: MCP não expõe contrato financeiro ou fatura do provedor"
-    physicalSpecsEvidence: "Pendente: MCP/docker_ops confirmou container permitido no host MCP, mas não expõe CPU, memória e disco do host"
-    notes: "Host do MCP, AI Worker, Facebook Ads Worker e Fashion Chat; docker_ops confirmou marketinghub-fashion-chat ativo."
+    costEvidence: "Pendente: lista de planos KingHost de 04/10/2026 não informa preço, periodicidade ou fatura do ID 18537. Catálogo público de novos contratos não comprova o custo deste VPS de 1 GB. Custo desconhecido permanece nulo."
+    physicalSpecsEvidence: "MCP vps_host_inventory em 04/10/2026: 1 vCPU, RAM total 957 MiB, disco raiz 47 GiB arredondados, Ubuntu 24.04.3 LTS. Plano de 1 GB confirmado pelo painel do titular."
+    notes: "interface.vps-kinghost.net, plano KingHost ID 18537. MCP em 04/10/2026 confirmou MCP/nginx, AI Worker, Facebook Ads Worker e Fashion Chat ativos. Inventário pontual, sem telemetria automática."
   - host: "163.245.200.7"
     providerName: null
     providerEvidence: "Pendente: RDAP público não retornou entidade útil na consulta da sandbox"

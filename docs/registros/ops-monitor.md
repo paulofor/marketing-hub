@@ -1,5 +1,68 @@
 # Registros do monitor operacional
 
+## 2026-10-04 — Planos KingHost e dependência do banco no inventário
+
+- Conferência por fonte: o painel informado pelo titular identifica `d555d`
+  (`189.126.106.93`, ID 555, 4 GB Linux, contratação em 22/12/2020), `loja`
+  (`177.153.62.107`, ID 18306, 1 GB Linux, 23/03/2026) e `interface`
+  (`191.252.210.83`, ID 18537, 1 GB Linux, 02/04/2026). DNS confirmou os três
+  endereços; MCP confirmou os containers de loja/interface e o banco
+  `marketinghubdb`, MySQL 5.7.42, no hostname `d555d.vps-kinghost.net`.
+- Lacuna comprovada: o banco estava ausente tanto do YAML embarcado quanto dos oito
+  cadastros persistidos em `ops_vps_host_inventory`. O mapa cobria deployments,
+  mas omitia esta dependência externa essencial. O fallback também classificava
+  os dois hosts KingHost pelo proprietário da rede (Locaweb); as edições de
+  02/10 já distinguiam marca operacional, mas ainda aguardavam confirmação contratual.
+- Correção proporcional: incluir o banco no mapa existente e atualizar a fonte
+  contratual KingHost, datas, identificação e capacidade confirmada. O banco permanece
+  sem CPU/disco medidos; seus 4 GB são capacidade contratada. Edições persistidas
+  continuam tendo precedência, preservando custos, fontes e dados de outros hosts.
+- Comparação das alternativas: atualizar somente os dois cadastros existentes é
+  simples, mas conserva a omissão do banco; criar nova descoberta automática amplia
+  escopo, acesso e manutenção; completar o fallback existente e persistir os dados
+  pelo formulário oficial resolve a lacuna com menor esforço. Escolhida a terceira.
+- Harness: a regressão cruza `db.host` de `application.properties` com o inventário
+  embarcado sem consulta produtiva ou valores secretos. Uma mudança do endereço do
+  banco sem correspondente inventário passa a falhar no teste. Preservada a regressão
+  de precedência das edições persistidas sobre o fallback.
+- Limites financeiros: a lista enviada não contém preços, faturas nem periodicidade.
+  Pesquisa de cobranças no e-mail conectado não encontrou documento KingHost atual
+  vinculado aos três planos. A [página oficial](https://king.host/servidor-vps),
+  consultada em 04/10/2026, explicita novas contratações; não substitui a cobrança
+  desses contratos. Os três custos permanecem desconhecidos, nunca zero. Rateio
+  por produto, compartilhamento do banco e margem continuam sem prova própria.
+- Outros planos da lista: `digicom01` (`186.202.209.206`, ID 18262) expõe um MCP
+  identificado como `bedrock-readonly` v0.16.5, com ferramentas de mundo/servidor
+  Minecraft Bedrock; nenhuma ferramenta operacional foi executada. Não foi encontrado
+  vínculo com o Marketing Hub no repositório, cadastro de microserviços ou inventário.
+  `interface4g` (`187.45.254.75`, ID 18546) recusou HTTP/HTTPS, e não há vínculo nos
+  mesmos registros. Porta HTTP fechada não comprova ociosidade ou ausência de outros
+  serviços. Nenhum desses dois foi incluído como custo do Hub sem vínculo comprovado.
+- Matriz proporcional antes dos testes:
+
+  | Caso | Critério de aceite | Evidência prevista |
+  |---|---|---|
+  | Runtime sem checkout | Banco presente no recurso embarcado | Regressão Java e inspeção do JAR |
+  | Configuração do banco | Endereço configurado corresponde a um único host documentado | Teste cruzando fontes versionadas |
+  | Edições anteriores | Custos e capacidade persistidos prevalecem, sem hosts duplicados | Suíte do serviço e API simulada |
+  | Fonte financeira ausente | Três custos KingHost nulos; subtotal não vira custo total | Formulário e lista locais |
+  | Desktop e mobile | Novo host e campos editáveis acessíveis | Chromium desktop, iPhone e Android emulados |
+  | Falha e recuperação | Falha de gravação mantém dados; retentativa não duplica host | Formulário com API local simulada |
+  | Isolamento e observabilidade | Testes sem banco real, campanhas, cobrança ou chamadas de IA | Doubles locais e consultas MCP somente leitura |
+
+  A edição dos dados administrativos não publica banco, cria campanha, autoriza
+  gasto ou comprova venda. A entrega operacional pela tela e suas consultas de
+  persistência devem ser vinculadas ao PR após a publicação do mapa validado.
+- Validação local concluída: 3.896 testes do backend, zero falhas/erros e 24
+  dispensados pelas condições existentes; oito testes da UI; nove contratos de
+  empacotamento; Spotless e build aprovados. O JAR preserva 4.207 classes testadas,
+  746 recursos externos e o inventário byte a byte (SHA-256
+  `8321c9010115cc4a3112eebcac45cd21fdf45c36e8e600e633ad27f494228403`).
+  Desktop, iPhone e Android emulados aprovaram nove hosts, custos KingHost nulos,
+  preservação do subtotal conhecido de R$ 435,84 e recuperação de falha ao salvar.
+  A regressão nova falhou no mapa anterior por encontrar zero referências ao banco,
+  e passou no mapa corrigido. Dados de teste não foram persistidos em produção.
+
 ## 2026-10-02 — Inventário verificável de capacidade e referências de preço
 
 - Evidência: a tela retornou 7 hosts, 10 deploys e `services=[]`. O banco não possuía

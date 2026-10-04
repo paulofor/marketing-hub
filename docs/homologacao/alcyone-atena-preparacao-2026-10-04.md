@@ -78,7 +78,8 @@ Ainda não há amostra para comparar custo por tarefa concluída ou ganho de ven
 O cadastro do produto #11 usa “Look para a Ocasião”; Alcyone continua como nome interno.
 Experimento #97 PLANNED, preço hipotético R$79, sem mídia, janela, amostra, checkout ou campanha.
 Plano #34 v3 BLOCKED vinculado ao #97; custos privados anteriores foram preservados no histórico,
-e custos comerciais desconhecidos permanecem ausentes. Revisão financeira #11 (versão 1)
+e custos comerciais desconhecidos permanecem ausentes. A revisão financeira inicial #11
+(versão 1) foi preservada; a atual #12 (versão 2) confirma três resultados incluídos e mantém
 MISSING_INPUTS, sem solicitação de análise. Não houve mudança no contrato interno homologado.
 
 Processo #113 v11, referência `experiment:97`, 0/4 atividades: contrato de comunicação depende

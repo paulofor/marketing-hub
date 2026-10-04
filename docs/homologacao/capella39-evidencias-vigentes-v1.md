@@ -78,3 +78,48 @@ PREFLIGHT_PROCESS_EVIDENCE_DIR=/tmp/preflight-current-evidence \
 Para consultar a pendência exata, use o plano financeiro do produto #7 com
 `revisionId=9`, na edição avançada. A revisão mais recente, #10/barber-v1/plano #35,
 não deve substituir a revisão da referência `experiment:88`.
+
+## Complemento: contrato transacional da consulta
+
+O PR #5487 foi integrado em `4ab65f09d972dd573ed3ebed22ed9e2267bcf09e`, com
+workflows e deploy aprovados. A validação funcional posterior encontrou HTTP 500
+no relatório: MySQL 1792, `SELECT ... FOR UPDATE` dentro de transação somente leitura,
+em `ExperimentTechnicalPreflightActivityExecutor.requiresFreshExecution`. Os logs
+preservam os request IDs `0cc2c9d9-b1ea-46a9-a301-9f44a1650200` e
+`4b724b93-5016-4f81-8d7d-4b55ebfd8607`. Os mocks anteriores não verificavam SQL.
+O histórico já documentava a mesma causa em Opala/Quartzo; o repositório já dispõe
+de uma consulta sem lock, que deve ser reutilizada. A reserva continua nos comandos.
+
+Antes da validação complementar, a matriz incorpora JPA real, transações Spring e
+MySQL 5.7 isolado: ausência de ocorrência; quatro provas vigentes; alteração de
+fingerprint/run; pendência funcional; preservação do histórico/custo; renovação e
+idempotência entre transações. As consultas não podem emitir lock ou escrita;
+os comandos devem conservar a reserva. O mesmo teste também inspeciona SQL em H2.
+
+Alternativas: reutilizar a consulta existente sem lock corrige o contrato com baixo
+esforço e preserva a segurança dos comandos; projetar a última ocorrência a partir
+do histórico já carregado evita outra consulta, mas exige mudar o contrato genérico;
+criar uma projeção consultiva própria é possível, com custo de manutenção maior.
+Escolhida a primeira, sustentada pelas correções anteriores e pelo SQL observado.
+
+O teste anterior falhou nas cinco consultas: H2 apontou `FOR UPDATE` pela inspeção
+do SQL; MySQL 5.7 reproduziu erro 1792. Com a correção, 37 testes direcionados e
+104 testes do runner conjunto Opala/Quartzo/preflight passaram. `bash -n`,
+ShellCheck e Spotless passaram; a topologia temporária foi removida pelo runner.
+
+As [evidências complementares](capella39-evidencias-complementares-v1.json)
+preservam 13 testes de compra/entrega com integrações simuladas, falha e recuperação;
+37 testes do executor de comunicação (35 aprovados, dois skips condicionais); bytes
+de HTML/JS/privacidade pós-compra idênticos aos arquivos versionados; homologação
+visual de sucesso/falha em três dispositivos e capturas imutáveis no repositório.
+Texto, imagens/alt, links e estilos da publicação servida correspondem à fonte #32.
+As diferenças de HTML bruto são inserções do publicador (telemetria e imagens
+otimizadas); não constituem alteração da oferta. Nenhum pagamento, IA ou mídia foi
+acionado. Capturas e testes segregados comprovam comportamento técnico, nunca venda.
+
+A suíte completa complementar passou com 3.843 aprovações e 24 skips condicionais;
+build e verificação do JAR também passaram. A rodada visual local repetiu os seis
+cenários pertinentes sem escrita produtiva. Antes da retomada, o MCP confirma #39
+em `WAITING_INPUT`, atividade `surfaces`, duas provas vigentes e o histórico
+#477–#479 preservado. A liberação técnica e a dependência financeira serão
+reconferidas pela tela após a publicação desta correção complementar.

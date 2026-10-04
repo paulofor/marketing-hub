@@ -18,6 +18,9 @@ on:
       - "infra/testing/pde-version-contract/**"
       - "infra/testing/product-financial-plan/**"
       - "infra/testing/opala-commercial/**"
+      - "backend/ads-service/src/main/java/com/marketinghub/experiment/run/service/ExperimentTechnicalPreflightActivityExecutor.java"
+      - "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/agenttask/BusinessProcessActivityInstanceRepository.java"
+      - "backend/ads-service/src/test/java/com/marketinghub/experiment/run/service/ExperimentTechnicalPreflightPersistenceTest.java"
       - "backend/ads-service/src/test/java/com/marketinghub/opala/**"
       - "backend/ads-service/src/main/java/com/marketinghub/financialplan/**"
       - "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/financialplan/**"
@@ -195,7 +198,7 @@ jobs:
         run: python3 infra/testing/catalogo-vivo/run-local.py --persistence-only
 
   validate-opala-commercial-preparation:
-    name: Validar preparação comercial Opala
+    name: Validar Opala, Quartzo e leitura de preflight
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

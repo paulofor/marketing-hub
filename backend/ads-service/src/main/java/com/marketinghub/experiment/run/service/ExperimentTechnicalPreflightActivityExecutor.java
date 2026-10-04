@@ -66,7 +66,7 @@ public class ExperimentTechnicalPreflightActivityExecutor
             activity.getActivityId());
   }
 
-  /** Reconfere a prova concluída sem apagar a ocorrência original nem executar revisão paga. */
+  /** Reconfere a prova sem lock de escrita, mutação do histórico ou revisão paga. */
   @Override
   @Transactional(readOnly = true)
   public boolean requiresFreshExecution(
@@ -76,7 +76,7 @@ public class ExperimentTechnicalPreflightActivityExecutor
       String sourceReference) {
     if (!supports(process, activity) || sourceReference == null) return false;
     var latest =
-        instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+        instances.findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
             activity.getId(), sourceReference);
     if (latest.isEmpty()
         || !"COMPLETED".equals(latest.get().getStatus())

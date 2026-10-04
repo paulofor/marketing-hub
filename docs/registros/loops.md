@@ -19,6 +19,14 @@
 - **Prevenção:** fluxo local com executor e serviço BPM reais, caso original e
   IDs independentes, fonte divergente/válida, plano ausente, recuperação e
   idempotência. [Matriz](../homologacao/capella39-evidencias-vigentes-v1.md).
+- **Complemento transacional:** o PR #5487 passou pelos testes e deploy, mas
+  a validação funcional encontrou MySQL 1792 no relatório: a leitura de vigência
+  reutilizava `findTop...` com `PESSIMISTIC_WRITE`. A causa coincide com o histórico
+  de Opala/Quartzo abaixo. `requiresFreshExecution` passa a usar `findFirst...` sem
+  lock; `execute` conserva a reserva. `ExperimentTechnicalPreflightPersistenceTest`
+  falha no comportamento anterior tanto por SQL em H2 quanto no MySQL 5.7 real.
+  O runner existente inclui o preflight para impedir que mocks ocultem o contrato
+  físico de leitura, renovação e conciliação entre transações.
 
 ## LOOP-BPM-MEDICAO-PROJETADA-RESERVA-FILA — 03/10/2026
 

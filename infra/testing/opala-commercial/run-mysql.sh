@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Valida Opala, Quartzo e consultas transacionais em MySQL local descartável.
+# Valida Opala, Quartzo e preflight técnico em MySQL local descartável.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 : "${OPALA_COMPOSE_PROJECT:?Informe o projeto Compose exclusivo da sandbox ou do job}"
@@ -26,4 +26,4 @@ for attempt in $(seq 1 30); do
 done
 OPALA_MYSQL_URL="jdbc:mysql://${opala_db_host}:18307/opala_test?useSSL=false&allowPublicKeyRetrieval=true" \
 QUARTZO_MYSQL_URL="jdbc:mysql://${opala_db_host}:18307/quartzo_persistence_test?useSSL=false&serverTimezone=UTC" \
-  mvn -B -f backend/ads-service/pom.xml '-Dtest=OpalaCommercial*Test,QuartzoCommercial*Test' test
+  mvn -B -f backend/ads-service/pom.xml '-Dtest=OpalaCommercial*Test,QuartzoCommercial*Test,ExperimentTechnicalPreflight*Test' test

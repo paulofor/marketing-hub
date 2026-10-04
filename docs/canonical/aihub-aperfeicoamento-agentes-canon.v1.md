@@ -239,6 +239,21 @@ mais recente gera conflito acionável. O frontend não orquestra os próximos ga
 
 ### Homologação de experimento encerrado — aprendizado de 04/10/2026
 
+Na preparação Safira, o encerramento também deve ser conferido pela referência
+do experimento, mesmo quando a navegação omite o ciclo. Não revalidar fontes atuais
+para apagar uma conclusão histórica de Psique, Têmis ou das atividades determinísticas.
+Preservar essas ocorrências não autoriza nova tarefa, novo consumo ou gasto. O motor
+concilia a conclusão quando todos os objetivos já estão comprovados, conforme o
+cânone de processos; prova ausente permanece ausente e impede sucesso. Contagens,
+custos e retorno histórico são preservados. Uma candidata aberta continua exigindo
+fingerprints, economia e pareceres vigentes.
+
+Caso confirmado: Mira #93, preparação #31 concluída, repetição #45 aguardando
+indevidamente com 0/5 apesar das cinco ocorrências concluídas. A melhoria está no
+contrato de contexto/prontidão entregue aos agentes, sem mudar prompts ou modelos.
+Regressões com HTTP real, persistência e outros identificadores estão em
+[`mira-preparacao-historica-v1.md`](../homologacao/mira-preparacao-historica-v1.md).
+
 Antes de orientar renovação financeira, criação de tentativa ou repetição técnica,
 conferir o estado e a janela do experimento da referência exata. Estado comercial
 terminal ou janela expirada impede novos comandos de homologação. O backend encerra

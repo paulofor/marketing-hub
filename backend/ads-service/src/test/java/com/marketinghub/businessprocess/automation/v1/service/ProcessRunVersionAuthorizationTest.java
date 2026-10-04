@@ -113,7 +113,7 @@ class ProcessRunVersionAuthorizationTest {
     verifyNoInteractions(definitions, profiles);
   }
 
-  /** Confere a referência exata em homologação, sem bloquear o processo de aprendizado. */
+  /** Confere preparação e homologação encerradas sem bloquear o processo de aprendizado. */
   @Test
   void blocksClosedExperimentOnlyForHomologation() {
     definition.setStatus("PUBLISHED");
@@ -129,6 +129,8 @@ class ProcessRunVersionAuthorizationTest {
     assertThat(context.dispatchBlockReason(run)).contains("#94", "não renove Plutus");
     definition.setProcessCode("pde-commercial-homologation-activation");
     assertThat(context.dispatchBlockReason(run)).contains("#94", "não renove Plutus");
+    definition.setProcessCode("safira-commercial-preparation-v1");
+    assertThat(context.dispatchBlockReason(run)).contains("#94", "não renove Plutus");
     definition.setProcessCode("pde-sales-delivery-learning");
     assertThat(context.dispatchBlockReason(run)).isNull();
     definition.setProcessCode("experiment-homologation-activation");
@@ -136,5 +138,32 @@ class ProcessRunVersionAuthorizationTest {
     assertThat(context.dispatchBlockReason(run)).isNull();
     experiment.setProduct(com.marketinghub.product.Product.builder().id(97001L).build());
     assertThatThrownBy(() -> context.dispatchBlockReason(run)).hasMessageContaining("não pertence");
+  }
+
+  /** Omitir o ciclo no comando não contorna o encerramento persistido na referência oficial. */
+  @Test
+  void resolvesClosedCycleEvenWhenNavigationOmitsIt() {
+    definition.setStatus("PUBLISHED");
+    definition.setProcessCode("safira-commercial-preparation-v1");
+    var experiments =
+        (com.marketinghub.repository.jpa.experiment.ExperimentRepository)
+            ReflectionTestUtils.getField(context, "experiments");
+    var experiment = new com.marketinghub.experiment.Experiment();
+    experiment.setId(94L);
+    experiment.setProduct(com.marketinghub.product.Product.builder().id(7L).build());
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    when(experiments.findById(94L)).thenReturn(Optional.of(experiment));
+    var cycle = new LearningSalesCycle();
+    cycle.setId(700L);
+    cycle.setProductId(7L);
+    cycle.setStatus("ADJUSTED");
+    when(cycles.findByExperimentId(94L)).thenReturn(Optional.of(cycle));
+    assertThat(run.getLearningCycleId()).isNull();
+    assertThat(context.dispatchBlockReason(run)).contains("#700", "encerrado");
+    cycle.setProductId(800L);
+    assertThatThrownBy(() -> context.dispatchBlockReason(run)).hasMessageContaining("não pertence");
+    cycle.setProductId(7L);
+    cycle.setStatus("OPEN");
+    assertThat(context.dispatchBlockReason(run)).isNull();
   }
 }

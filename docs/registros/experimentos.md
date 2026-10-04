@@ -7510,3 +7510,18 @@ encerrar a espera indevida e impedir novas tentativas/gates na referência hist�
 Sem alteração da oferta, preço, campanha ou limites, sem chamada paga e sem iniciar
 processo sucessor. A homologação técnica anterior permanece no histórico.
 Matriz/evidências da entrega: `docs/homologacao/homologacao-experimento-encerrado-v1.md`.
+
+# 04/10/2026 — Mira: preparação histórica e repetição indevida
+
+Mira #10, Safira #98/v2, experimento #93: banco e tela confirmaram cinco atividades
+concluídas na execução #31, mas a repetição #45 mostrava 0/5. O ciclo #3 já estava
+`ADJUSTED`, proposta Atena #3 aprovada em 04/10 às 21:04:32 UTC, e o experimento
+`INVALIDATED`. A nova execução omitiu o ciclo e não recebeu a proteção existente no
+preflight. Não foi criada candidata sucessora nem alterada a decisão aprovada.
+
+Correção local: preservar conclusões históricas, recusar nova preparação/revisão
+no contexto encerrado e conciliar somente os objetivos efetivamente comprovados.
+O harness de entrada de Psique/Têmis conserva a auditoria e não pede nova inferência
+para um arquivo encerrado. A matriz e os resultados da entrega ficam em
+[`mira-preparacao-historica-v1.md`](../homologacao/mira-preparacao-historica-v1.md).
+Testes não representam venda, receita ou margem; nenhum novo consumo pago foi iniciado.

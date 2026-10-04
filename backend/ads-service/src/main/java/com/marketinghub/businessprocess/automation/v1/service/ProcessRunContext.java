@@ -159,11 +159,12 @@ public class ProcessRunContext {
         + "inicie a versão autorizada no contexto correto.";
   }
 
-  /** Limita a homologação à referência do produto, sem impedir conciliação ou aprendizado. */
+  /** Protege preparação e homologação pela referência, inclusive quando o ciclo foi omitido. */
   private String experimentBlockReason(
       BusinessProcessDefinition process, Long productId, String reference) {
     if (!"experiment-homologation-activation".equals(process.getProcessCode())
-        && !"pde-commercial-homologation-activation".equals(process.getProcessCode())) return null;
+        && !"pde-commercial-homologation-activation".equals(process.getProcessCode())
+        && !"safira-commercial-preparation-v1".equals(process.getProcessCode())) return null;
     if (reference == null || !reference.matches("experiment:[1-9][0-9]*")) return null;
     Long id = Long.valueOf(reference.substring("experiment:".length()));
     var experiment =
@@ -176,8 +177,19 @@ public class ProcessRunContext {
                     new ResponseStatusException(
                         HttpStatus.CONFLICT,
                         "O experimento não pertence ao produto desta homologação."));
-    return com.marketinghub.experiment.run.service.ExperimentHomologationLifecycle.blockReason(
-        experiment);
+    String reason =
+        com.marketinghub.experiment.run.service.ExperimentHomologationLifecycle.blockReason(
+            experiment);
+    if (reason != null) return reason;
+    var cycle = cycles.findByExperimentId(id).orElse(null);
+    if (cycle != null && !productId.equals(cycle.getProductId()))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "O ciclo do experimento não pertence ao produto desta preparação.");
+    if (cycle != null && !"OPEN".equals(cycle.getStatus()))
+      return "O ciclo #"
+          + cycle.getId()
+          + " está encerrado. Resultados preservados; nenhuma nova atividade será iniciada neste ciclo.";
+    return null;
   }
 
   /**

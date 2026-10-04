@@ -195,6 +195,44 @@ class SafiraCommercialContextTest {
     assertThat(context.scope("experiment:301", 10L, false)).isNotNull();
   }
 
+  /** Não confunde referência encerrada com campanha ativa nem consulta economia para renová-la. */
+  @Test
+  void blocksTerminalAndExpiredPreparationBeforeLiveInputs() {
+    experiment.setStatus(ExperimentStatus.INVALIDATED);
+    experiment.setProductAiSubtype(null);
+    assertThatThrownBy(() -> context.scope("experiment:301", 10L, true))
+        .hasMessageContaining("encerrado", "não renove Plutus");
+    assertThat(context.historicalBlockReason("experiment:301", 10L)).contains("#301");
+    assertThatThrownBy(() -> context.historicalBlockReason("experiment:301", 999L))
+        .hasMessageContaining("outro produto");
+    experiment.setStatus(ExperimentStatus.PAUSED);
+    experiment.setEndDate(java.time.LocalDate.now(java.time.ZoneOffset.UTC).minusDays(1));
+    assertThatThrownBy(() -> context.scope("experiment:301", 10L, true))
+        .hasMessageContaining("janela encerrada");
+    org.mockito.Mockito.verifyNoInteractions(finances, slots, plans);
+  }
+
+  /** Recupera o ciclo pela referência e não exige vigência atual das fontes de um arquivo. */
+  @Test
+  void preservesClosedCycleIdentityAndOpenCandidateValidation() {
+    var cycle = new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+    cycle.setId(702L);
+    cycle.setProductId(10L);
+    cycle.setStatus("ADJUSTED");
+    when(cycles.findByExperimentId(301L)).thenReturn(Optional.of(cycle));
+    assertThat(context.historicalBlockReason("experiment:301", 10L)).contains("#702", "encerrado");
+    assertThatThrownBy(() -> context.scope("experiment:301", 10L, true))
+        .hasMessageContaining("encerrado");
+    cycle.setProductId(999L);
+    assertThatThrownBy(() -> context.historicalBlockReason("experiment:301", 10L))
+        .hasMessageContaining("outro produto");
+    cycle.setProductId(10L);
+    cycle.setStatus("OPEN");
+    cycle.setStage("AUTHORIZATION");
+    assertThat(context.historicalBlockReason("experiment:301", 10L)).isNull();
+    assertThat(context.scope("experiment:301", 10L, true).cycleId()).isEqualTo(702L);
+  }
+
   /** Recusa um slot que tente misturar outro produto, experimento ou versão comercial. */
   @Test
   void rejectsIncompatiblePublicSlotIdentity() {

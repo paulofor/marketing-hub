@@ -145,6 +145,14 @@ comunicação, oferta, checkout, entrega, economia, identidade, público, revis�
 Versão, teto, janela e condições de parada continuam dependentes de decisão humana explícita.
 Mudança de campanha, público, criativo, versão ou limite invalida somente as evidências afetadas.
 
+Na referência encerrada de Safira, as conclusões já persistidas permanecem históricas;
+vencimento financeiro ou alteração posterior de fonte não converte trabalho passado
+em atividade não iniciada. O backend recusa nova preparação ou revisão e resolve o
+ciclo oficial pelo experimento, inclusive quando seu ID não veio da tela. Uma
+execução apenas concilia as conclusões recebidas; isso não reabre experimento nem
+autoriza novo gasto. Objetivo ausente continua pendente. Candidatas abertas continuam
+revalidando todas as fontes e gates pertinentes.
+
 ## Gestão das versões PDE Opala — decisão de 16/09/2026
 
 Todo produto oficialmente vinculado ao tipo `PDE` (nome interno Opala) deve oferecer no card do

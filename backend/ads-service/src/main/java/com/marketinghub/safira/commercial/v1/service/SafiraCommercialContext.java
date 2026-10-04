@@ -13,6 +13,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentType;
+import com.marketinghub.experiment.run.service.ExperimentHomologationLifecycle;
 import com.marketinghub.experiment.service.ExperimentTargetingSelectionService;
 import com.marketinghub.experiment.service.IntegratedPdeJourneyEvidenceService;
 import com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment;
@@ -97,8 +98,8 @@ public class SafiraCommercialContext {
         && TYPE.equals(product.getProductTypeDefinition().getCode());
   }
 
-  /** Confere a referência, o produto, o subtipo e o estado seguro antes de qualquer atividade. */
-  public Scope scope(String source, Long productId, boolean mutation) {
+  /** Resolve a identidade antes de consultar fontes atuais ou preservar comprovações históricas. */
+  private Experiment experiment(String source, Long productId) {
     require(
         source != null && source.matches("experiment:[1-9][0-9]{0,17}"),
         "Crie e selecione o experimento comercial exato de Safira antes da preparação.");
@@ -115,6 +116,46 @@ public class SafiraCommercialContext {
     require(
         productId == null || Objects.equals(productId, product.getId()),
         "O experimento Safira pertence a outro produto.");
+    return experiment;
+  }
+
+  /** Consulta o ciclo pela referência oficial, mesmo quando a navegação omite seu identificador. */
+  private LearningSalesCycle cycle(Experiment experiment) {
+    LearningSalesCycle cycle = cycles.findByExperimentId(experiment.getId()).orElse(null);
+    require(
+        cycle == null || Objects.equals(cycle.getProductId(), experiment.getProduct().getId()),
+        "O ciclo comercial pertence a outro produto.");
+    return cycle;
+  }
+
+  /** Distingue arquivo histórico de candidata sem exigir que suas fontes continuem vigentes. */
+  public String historicalBlockReason(String source, Long productId) {
+    Experiment experiment = experiment(source, productId);
+    return historicalBlockReason(experiment, cycle(experiment));
+  }
+
+  /** Preserva o encerramento do experimento ou ciclo sem renovar economia e pareceres. */
+  private String historicalBlockReason(Experiment experiment, LearningSalesCycle cycle) {
+    String reason = ExperimentHomologationLifecycle.blockReason(experiment);
+    if (reason != null) return reason;
+    if (cycle != null && !"OPEN".equals(cycle.getStatus())) {
+      return "O ciclo #"
+          + cycle.getId()
+          + " está encerrado. Preserve as provas da preparação comercial; a continuidade exige "
+          + "novo ciclo/experimento com limites próprios, sem repetir pareceres nesta referência.";
+    }
+    return null;
+  }
+
+  /** Confere identidade, encerramento, subtipo e estado seguro antes de qualquer nova atividade. */
+  public Scope scope(String source, Long productId, boolean mutation) {
+    Experiment experiment = experiment(source, productId);
+    Product product = experiment.getProduct();
+    LearningSalesCycle cycle = cycle(experiment);
+    if (mutation) {
+      String closed = historicalBlockReason(experiment, cycle);
+      require(closed == null, closed);
+    }
     require(
         experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT,
         "O experimento Safira precisa usar o contrato de venda de Produto IA.");
@@ -130,10 +171,6 @@ public class SafiraCommercialContext {
               .contains(experiment.getStatus()),
           "Prepare uma candidata planejada ou interrompida; não altere campanha em operação.");
     }
-    LearningSalesCycle cycle = cycles.findByExperimentId(experiment.getId()).orElse(null);
-    require(
-        cycle == null || Objects.equals(cycle.getProductId(), product.getId()),
-        "O ciclo comercial pertence a outro produto.");
     if (mutation && cycle != null) {
       require(
           "OPEN".equals(cycle.getStatus())

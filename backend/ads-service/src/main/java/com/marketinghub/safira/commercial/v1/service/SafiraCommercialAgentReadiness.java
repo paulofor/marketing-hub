@@ -39,7 +39,7 @@ public class SafiraCommercialAgentReadiness
                     .contains(activity.getActivityId())));
   }
 
-  /** Libera os agentes somente após as fontes determinísticas da mesma candidata comercial. */
+  /** Recusa referências encerradas e libera agentes apenas com fontes da candidata aberta. */
   @Override
   public AgentProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,
@@ -50,6 +50,8 @@ public class SafiraCommercialAgentReadiness
       return new AgentProductProcessActivityReadiness(
           true, "O executor do processo pai valida a rota Safira pelo tipo cadastrado.");
     try {
+      String closed = context.historicalBlockReason(source, product.getId());
+      if (closed != null) return new AgentProductProcessActivityReadiness(false, closed);
       var scope = context.scope(source, product.getId(), true);
       if (SafiraCommercialService.REVIEWS.contains(activity.getActivityId()))
         preparation.prepared(process, scope, source, context.snapshot(source));
@@ -66,7 +68,7 @@ public class SafiraCommercialAgentReadiness
     }
   }
 
-  /** Invalida apenas a comprovação cuja impressão deixou de representar os ativos atuais. */
+  /** Preserva conclusões encerradas e revalida fontes somente em preparação ainda aberta. */
   @Override
   public boolean requiresFreshExecution(
       BusinessProcessDefinition process,
@@ -79,6 +81,7 @@ public class SafiraCommercialAgentReadiness
             activity.getId(), source);
     if (previous.isEmpty() || !"COMPLETED".equals(previous.get().getStatus())) return false;
     try {
+      if (context.historicalBlockReason(source, product.getId()) != null) return false;
       if (!SafiraCommercialContext.CODE.equals(process.getProcessCode()))
         return !preparation.completed(product, source);
       var snapshot = context.snapshot(source);

@@ -10,11 +10,13 @@ import com.marketinghub.microservice.dto.DiscoveredMicroserviceDto;
 import com.marketinghub.microservice.dto.UpdateVpsHostInventoryRequest;
 import com.marketinghub.repository.jpa.microservice.VpsHostInventoryRepository;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -246,7 +248,7 @@ class MicroserviceDiscoveryServiceTest {
 
     var inventory = service.discoverOperationalInventory();
 
-    assertEquals(7, inventory.hosts().size());
+    assertEquals(8, inventory.hosts().size());
     assertTrue(
         inventory.hosts().stream()
             .anyMatch(
@@ -259,7 +261,8 @@ class MicroserviceDiscoveryServiceTest {
             .anyMatch(
                 host ->
                     host.host().equals("191.252.210.83")
-                        && host.notes().contains("docker_ops confirmou")));
+                        && host.providerName().equals("KingHost")
+                        && host.notes().contains("18537")));
     assertTrue(
         inventory.hosts().stream()
             .anyMatch(
@@ -276,6 +279,36 @@ class MicroserviceDiscoveryServiceTest {
                     host.host().equals("163.245.202.80")
                         && host.cpu().equals("6 vCPU")
                         && host.memoryGb().equals(6)));
+  }
+
+  /** Impede omitir o banco externo do inventário mesmo sem workflow de deploy próprio. */
+  @Test
+  void shouldIncludeConfiguredDatabaseDependencyInPackagedInventory() throws IOException {
+    Properties application = new Properties();
+    try (InputStream input = Files.newInputStream(Path.of("src/main/resources/application.properties"))) {
+      application.load(input);
+    }
+    String databaseHost = application.getProperty("db.host");
+    assertTrue(databaseHost != null && !databaseHost.isBlank());
+    when(hostInventoryRepository.findAllByOrderByHostAsc()).thenReturn(List.of());
+    MicroserviceDiscoveryService service =
+        new MicroserviceDiscoveryService(
+            "non-existent-compose.yml",
+            "non-existent-workflows",
+            "/health",
+            hostInventoryRepository);
+
+    var inventory = service.discoverOperationalInventory();
+    var databaseHosts =
+        inventory.hosts().stream()
+            .filter(
+                host ->
+                    host.host().equals(databaseHost)
+                        || (host.notes() != null && host.notes().contains(databaseHost)))
+            .toList();
+
+    assertEquals(1, databaseHosts.size());
+    assertEquals(databaseHosts.getFirst(), service.getHostInventory(databaseHosts.getFirst().host()));
   }
 
   /** Deve priorizar dados editados no banco sem perder hosts do inventário versionado. */
@@ -297,7 +330,7 @@ class MicroserviceDiscoveryServiceTest {
 
     var inventory = service.discoverOperationalInventory();
 
-    assertEquals(7, inventory.hosts().size());
+    assertEquals(8, inventory.hosts().size());
     assertTrue(
         inventory.hosts().stream()
             .anyMatch(

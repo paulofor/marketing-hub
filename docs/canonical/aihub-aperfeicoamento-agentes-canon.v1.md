@@ -446,6 +446,14 @@ Ambas devem distinguir validação privada de evidência humana e deixar compra 
 falhas e eventos para o preflight. Alteração de fingerprint invalida somente a prova atingida; não
 autoriza repetição cega, publicação ou gasto.
 
+Na consulta de evidências, mocks de repositories não comprovam o contrato transacional.
+O preflight técnico deve reconferir ocorrências com consulta sem lock; reservas de escrita
+pertencem aos comandos. A regressão deve usar JPA, transações Spring e inspecionar o SQL,
+além do MySQL 5.7 segregado no runner existente. A renovação mantém histórico, custo e
+idempotência após uma nova transação de conciliação. Evidência: execução #39, HTTP 500
+com MySQL 1792 após o PR #5487; teste `ExperimentTechnicalPreflightPersistenceTest` e
+[matriz complementar](../homologacao/capella39-evidencias-vigentes-v1.md).
+
 ## Argos sem recrutamento — decisão de 24/09/2026
 
 A política `PUBLIC_SOURCES_V1` substitui entrevistas obrigatórias por investigação dirigida na

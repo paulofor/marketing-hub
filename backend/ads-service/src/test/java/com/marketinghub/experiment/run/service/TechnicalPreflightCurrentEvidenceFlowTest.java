@@ -142,6 +142,16 @@ class TechnicalPreflightCurrentEvidenceFlowTest {
                     .max(
                         Comparator.comparingInt(
                             BusinessProcessActivityInstance::getOccurrenceNumber)));
+    when(instances.findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            anyLong(), anyString()))
+        .thenAnswer(
+            inv ->
+                history.stream()
+                    .filter(i -> i.getActivityDefinition().getId().equals(inv.getArgument(0)))
+                    .filter(i -> i.getSourceReference().equals(inv.getArgument(1)))
+                    .max(
+                        Comparator.comparingInt(
+                            BusinessProcessActivityInstance::getOccurrenceNumber)));
     when(instances
             .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
                 eq(process.getProcessCode()), anyString()))

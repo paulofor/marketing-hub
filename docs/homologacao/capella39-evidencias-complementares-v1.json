@@ -1,0 +1,148 @@
+{
+  "transactionTests": {
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "simulatedPaymentAndProviders": true
+  },
+  "communicationWorker": {
+    "tests": 37,
+    "passed": 35,
+    "skipped": 2,
+    "failures": 0
+  },
+  "postPurchase": {
+    "bytes": [
+      {
+        "name": "obrigado.html",
+        "url": "https://pagamentopalf.site/agenda-cheia/obrigado.html",
+        "status": 200,
+        "servedSha256": "1b2107cb1257b20f65de38c1ac5eef0f5110d51e99fc6cb366e28abdcd592f19",
+        "repositorySha256": "1b2107cb1257b20f65de38c1ac5eef0f5110d51e99fc6cb366e28abdcd592f19",
+        "identical": true
+      },
+      {
+        "name": "obrigado.js",
+        "url": "https://pagamentopalf.site/agenda-cheia/obrigado.js",
+        "status": 200,
+        "servedSha256": "3f2d13da4776eb5266203fbf9d33f720558f417abd593fde15b6dcf5a462070f",
+        "repositorySha256": "3f2d13da4776eb5266203fbf9d33f720558f417abd593fde15b6dcf5a462070f",
+        "identical": true
+      },
+      {
+        "name": "privacidade.html",
+        "url": "https://pagamentopalf.site/agenda-cheia/privacidade.html",
+        "status": 200,
+        "servedSha256": "2603e896aa4f45fc6ca8b85821ce4cd41955dd0fd729133df36b56c9248da5c5",
+        "repositorySha256": "2603e896aa4f45fc6ca8b85821ce4cd41955dd0fd729133df36b56c9248da5c5",
+        "identical": true
+      }
+    ],
+    "ui": [
+      {
+        "profile": "desktop",
+        "missingPaymentBlocked": true,
+        "requiredFieldsBlocked": true,
+        "recoveredFailure": true,
+        "delivered": true,
+        "simulatedPosts": 2,
+        "productionPosts": 0,
+        "pageErrors": [],
+        "layout": {
+          "width": 1440,
+          "scroll": 1440
+        },
+        "screenshotSha256": "a27148ee2362f79426afabd0d571d278589d3837c4cf7c4cb0b3deb3c2a72c17"
+      },
+      {
+        "profile": "iPhone-15-Pro",
+        "missingPaymentBlocked": true,
+        "requiredFieldsBlocked": true,
+        "recoveredFailure": true,
+        "delivered": true,
+        "simulatedPosts": 2,
+        "productionPosts": 0,
+        "pageErrors": [],
+        "layout": {
+          "width": 393,
+          "scroll": 393
+        },
+        "screenshotSha256": "3db599386ca0e2eb73857febb6cc1e47da3d9f7c2550e1c72998696434608f95"
+      },
+      {
+        "profile": "Pixel-7",
+        "missingPaymentBlocked": true,
+        "requiredFieldsBlocked": true,
+        "recoveredFailure": true,
+        "delivered": true,
+        "simulatedPosts": 2,
+        "productionPosts": 0,
+        "pageErrors": [],
+        "layout": {
+          "width": 412,
+          "scroll": 412
+        },
+        "screenshotSha256": "6dc4f6ebf69919e01cbbde6be6a12201e11b2368c2e49132915d38c757d20641"
+      }
+    ]
+  },
+  "paidCalls": 0,
+  "productionPostPurchaseWrites": 0,
+  "publicationFunctionalContent": {
+    "text": {
+      "matches": true,
+      "expectedSha256": "c03e2456277d02e1dbd9c9f740637c16e704cd9d320f856819d0c6298425a677",
+      "servedSha256": "c03e2456277d02e1dbd9c9f740637c16e704cd9d320f856819d0c6298425a677"
+    },
+    "images": {
+      "matches": true,
+      "expectedSha256": "e3c1d70959d53fa072fc0742dd1f4813eb4cf61f0fc34967c1f0b78670a9ed22",
+      "servedSha256": "e3c1d70959d53fa072fc0742dd1f4813eb4cf61f0fc34967c1f0b78670a9ed22"
+    },
+    "links": {
+      "matches": true,
+      "expectedSha256": "a966e2c449bac80507effa6bd861837a66598cc1bfa86c3ca2e3e7c03ca27460",
+      "servedSha256": "a966e2c449bac80507effa6bd861837a66598cc1bfa86c3ca2e3e7c03ca27460"
+    },
+    "css": {
+      "matches": true,
+      "expectedSha256": "e77f01decda8a7d5263a94b387843e9497c9cd8e08d1dce49d1504cf276b7ed5",
+      "servedSha256": "e77f01decda8a7d5263a94b387843e9497c9cd8e08d1dce49d1504cf276b7ed5"
+    }
+  },
+  "publicationServedIdentity": {
+    "databaseSourceSha256": "dbd8533a7066d3be6b4be8307247844db59e124a05d5919d2e61985e8d83bde4",
+    "expectedPublishedSha256": "46eab4c2b1745821c11d10e55541575b7aa92b572757215dea4205ae9a26438d",
+    "servedSha256": "46e7ef5fe45ddde48fcfa0331ddcab8f787d6a594e7e95c1a5cb504de5cfa465",
+    "identicalAfterCanonicalMetadata": false
+  },
+  "captures": [
+    {
+      "path": "docs/homologacao/evidencias/capella39/publication-current-desktop.png",
+      "sha256": "700164b8f141d762d6f43a5cbafd0f69840c904de4e1abecb0456ad885bc9efb",
+      "bytes": 1861085
+    },
+    {
+      "path": "docs/homologacao/evidencias/capella39/publication-current-iPhone-15-Pro.png",
+      "sha256": "af2610fef56c0ed6f8c9e96d37bfcbf7b5287af711febb625ff6fce40c25c33a",
+      "bytes": 9140251
+    },
+    {
+      "path": "docs/homologacao/evidencias/capella39/postpurchase-current-iPhone-15-Pro.png",
+      "sha256": "3db599386ca0e2eb73857febb6cc1e47da3d9f7c2550e1c72998696434608f95",
+      "bytes": 516780
+    }
+  ],
+  "scope": {
+    "productId": 7,
+    "chainId": 26,
+    "processDefinitionId": 122,
+    "processVersion": 7,
+    "automationRunId": 39,
+    "sourceReference": "experiment:88",
+    "publicationId": 32,
+    "productVersion": "v1"
+  },
+  "capturedAt": "2026-10-04",
+  "commercialProof": false
+}

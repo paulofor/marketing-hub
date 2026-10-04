@@ -36,6 +36,8 @@ const homologationGateCodes = new Set([
   "DATA_FRESHNESS_VALID",
 ]);
 
+const homologationTextLimit = 512;
+
 type HomologationDraft = {
   status: Extract<ExperimentRunGateStatus, "PASS" | "FAIL"> | "";
   summary: string;
@@ -197,7 +199,11 @@ export default function ExperimentRunPanel({
           requiredLandingEvidenceReference,
         );
       return Boolean(
-        draft?.status && draft.summary.trim() && draft.evidenceReference.trim(),
+        draft?.status &&
+          draft.summary.trim() &&
+          draft.evidenceReference.trim() &&
+          draft.summary.trim().length <= homologationTextLimit &&
+          draft.evidenceReference.trim().length <= homologationTextLimit,
       );
     });
 
@@ -485,7 +491,7 @@ export default function ExperimentRunPanel({
                                   <div className="row g-2">
                                     <div className="col-12 col-md-3">
                                       <label className="form-label small fw-semibold">
-                                        Resultado
+                                        Resultado *
                                         <select
                                           className="form-select"
                                           aria-label={`Resultado ${gate.gateCode}`}
@@ -508,10 +514,14 @@ export default function ExperimentRunPanel({
                                     </div>
                                     <div className="col-12 col-md-9">
                                       <label className="form-label small fw-semibold">
-                                        Evidência ou artefato
+                                        Evidência ou artefato *
                                         <input
-                                          className="form-control"
+                                          className={`form-control${draft.evidenceReference.trim().length > homologationTextLimit ? " is-invalid" : ""}`}
                                           aria-label={`Evidência ${gate.gateCode}`}
+                                          aria-invalid={
+                                            draft.evidenceReference.trim()
+                                              .length > homologationTextLimit
+                                          }
                                           value={draft.evidenceReference}
                                           onChange={(event) =>
                                             updateHomologationDraft(
@@ -522,6 +532,21 @@ export default function ExperimentRunPanel({
                                           }
                                           placeholder="URL, contrato ou referência auditável"
                                         />
+                                        <span className="form-text">
+                                          Até 512 caracteres. Use um link para a
+                                          evidência completa.
+                                        </span>
+                                        {draft.evidenceReference.trim().length >
+                                        homologationTextLimit ? (
+                                          <span
+                                            className="invalid-feedback"
+                                            role="alert"
+                                          >
+                                            Reduza a referência a até 512
+                                            caracteres, preservando a prova
+                                            completa no link.
+                                          </span>
+                                        ) : null}
                                         {gate.gateCode ===
                                           "LANDING_QUALITY_REVIEW_APPROVED" &&
                                         requiredLandingEvidenceReference ? (
@@ -535,10 +560,14 @@ export default function ExperimentRunPanel({
                                     </div>
                                     <div className="col-12">
                                       <label className="form-label small fw-semibold">
-                                        Conclusão observada
+                                        Conclusão observada *
                                         <textarea
-                                          className="form-control"
+                                          className={`form-control${draft.summary.trim().length > homologationTextLimit ? " is-invalid" : ""}`}
                                           aria-label={`Conclusão ${gate.gateCode}`}
+                                          aria-invalid={
+                                            draft.summary.trim().length >
+                                            homologationTextLimit
+                                          }
                                           rows={2}
                                           value={draft.summary}
                                           onChange={(event) =>
@@ -549,6 +578,21 @@ export default function ExperimentRunPanel({
                                             )
                                           }
                                         />
+                                        <span className="form-text">
+                                          Até 512 caracteres. Resuma a conclusão
+                                          e mantenha os detalhes na evidência.
+                                        </span>
+                                        {draft.summary.trim().length >
+                                        homologationTextLimit ? (
+                                          <span
+                                            className="invalid-feedback"
+                                            role="alert"
+                                          >
+                                            Reduza a conclusão a até 512
+                                            caracteres, sem alterar a prova
+                                            completa.
+                                          </span>
+                                        ) : null}
                                       </label>
                                     </div>
                                   </div>

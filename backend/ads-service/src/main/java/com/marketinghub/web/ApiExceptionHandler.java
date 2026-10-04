@@ -110,7 +110,7 @@ public class ApiExceptionHandler {
     return buildResponse(HttpStatus.BAD_REQUEST, "Requisição inválida.", request, null);
   }
 
-  /** Devolve ao operador o escopo auditável exigido quando a homologação não pertence ao run. */
+  /** Devolve orientação auditável em recusas funcionais da homologação, sem erro técnico. */
   @ExceptionHandler(ExperimentRunHomologationEvidenceException.class)
   public ResponseEntity<Map<String, Object>> handleExperimentRunHomologationEvidenceException(
       ExperimentRunHomologationEvidenceException exception, HttpServletRequest request) {

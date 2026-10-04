@@ -170,3 +170,69 @@ Registro: [evidências da renovação pendente](capella39-renovacao-pendente-v1.
 O filtro `PREFLIGHT_PROCESS_SCENARIOS=pending` permite repetir só a recuperação
 quando outra alteração não afetar os estados `current` e `stale`; filtro inválido
 falha. Nenhuma nova infraestrutura ou chamada paga foi adicionada.
+
+## Complemento: entrada extensa na homologação
+
+O PR #5489 foi integrado em `1bf506185199d41dd084674e3cb10ebcc9fde994`,
+publicado pelo run `37186558107` e confirmado pelo runtime e pela tela nos três
+perfis. Os dez workflows encadeados terminaram; os oito resolvers de workers
+confirmaram esse SHA sem exigir publicação de módulos não alterados. O head
+padrão dos workflows avançou apenas por um Markdown de pesquisa independente.
+
+O registro das quatro provas pela tela retornou HTTP 500 no request
+`4befe003-c0a8-4d54-a591-2e7fb26144d1`. As referências montadas pelo operador
+ultrapassavam 512 caracteres. O schema MySQL e a validação existente usam esse
+limite tanto para referência quanto para resumo. O log confirma que a validação
+barrou o dado antes da persistência, por `IllegalArgumentException`; o handler
+converteu a recusa funcional em erro interno. O teste antigo de `NOT_APPLICABLE`
+indevido esperava HTTP 5xx, comprovando a mesma falha de classificação histórica.
+A hipótese inicial de falha de gravação foi descartada. A tentativa #17 permanece
+pendente e as provas anteriores não serão reescritas.
+
+| Alternativa | Benefício | Risco | Esforço e aderência |
+| --- | --- | --- | --- |
+| Corrigir somente a referência enviada | Desbloqueia esta submissão | Outros erros de entrada continuam como HTTP 500 | Baixo; incompleta para recorrência |
+| Ampliar as colunas para transportar o manifesto inteiro | Permite texto extenso | Altera schema e incentiva duplicação da evidência | Médio; desnecessária |
+| Reutilizar a recusa HTTP 400 existente e orientar referências curtas na tela | Preserva limites, texto e evidência completa por link | Exige regressões de fronteira e recuperação | Baixo; escolhida |
+
+Matriz definida antes dos testes: referência e resumo com 512/513 caracteres;
+erro no primeiro e último gate sem mutação parcial; gates incompletos,
+duplicados e estado inválido; correção no mesmo run sem nova tentativa, custo ou
+chamada paga; preenchimento de identidade; desktop, iPhone 15 Pro e Pixel 7 com
+bloqueio do envio inválido e recuperação após corrigir o texto. O frontend deve
+preservar a entrada extensa e mostrar orientação, sem truncamento silencioso.
+O backend continua dono dos gates e da disponibilidade do processo.
+
+As onze regressões HTTP e duas regressões de formulário falharam antes do ajuste.
+A primeira rodada corrigida passou com 36 testes backend e 11 frontend; o fluxo
+visual pendente passou nos três perfis, incluindo bloqueio 513 e recuperação 512.
+A suíte global frontend em worker único encontrou nove arquivos com falhas
+(cinco testes e quatro suítes sem coleta): 828 testes passaram. O checkout limpo
+da main `47bfbbbd4f3f4fe8692582765bdb78ea511ed6e8` reproduziu os mesmos nove
+arquivos e cinco testes (826 aprovações, sem os dois novos casos). Essa rodada compartilhava
+worker e acumulava mocks globais/DOM entre arquivos; não confirmou defeito
+nas telas. A execução com isolamento em forks passou integralmente: 845 casos
+em 184 arquivos. O typecheck da entrega passou.
+A primeira suíte Java completa foi interrompida com exit 137 após 2.129 casos,
+sem falha funcional, enquanto a comparação frontend também usava memória.
+As validações foram serializadas e o servidor de preview foi encerrado durante a
+suíte, sem alteração de infraestrutura ou publicação para testar.
+
+Dois casos adicionais de código de gate ausente/nulo reproduziram HTTP 500 por
+`Set.of(...).contains(null)`; o log local confirmou `NullPointerException`. A
+verificação explícita de nulo mantém a mesma recusa funcional, sem alterar o catálogo
+aceito. A regressão também cobre a lista de gates nula. A suíte Java final incluiu
+esses casos e passou isoladamente: 3.887 casos, 3.863 aprovações, 24 skips
+condicionais, nenhuma falha/erro e build aprovado. O JAR conservou 4.206 classes
+idênticas às testadas, 745 recursos íntegros e 511 cartões carregados.
+
+Registro: [evidências da entrada de homologação](capella39-entrada-homologacao-v1.json).
+A suíte global frontend deve usar isolamento; nesta sandbox foi executada com
+`npm test -- --run --pool=forks --maxWorkers=1 --minWorkers=1`. O modo
+`singleThread` foi adequado somente ao teste individual, não à suíte completa.
+
+O build frontend, Spotless final, repacotamento com recursos atualizados, parser
+Swagger, Prettier e revisão do diff passaram antes do commit. Não há alteração de
+changelog ou de limite persistido; a confirmação publicada será vinculada ao PR
+e à retomada pela tela. As referências propostas foram conferidas antes do envio:
+327, 165, 304 e 236 caracteres, com resumos entre 316 e 358 caracteres.

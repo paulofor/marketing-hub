@@ -667,6 +667,14 @@ inclusive depois de recarregar a tela; remover o painel durante a espera impede 
 própria recuperação. Regressão: `TechnicalPreflightCurrentEvidenceFlowTest` e seu
 harness visual, cenário `pending`.
 
+O registro dos quatro gates valida todas as entradas antes de gravar. Referência e
+resumo aceitam até 512 caracteres, conforme o schema persistido; provas completas
+permanecem em manifestos/artefatos auditáveis referenciados por link. Entrada extensa,
+incompleta, duplicada ou com estado inválido é recusa funcional HTTP 400 com orientação,
+nunca falha técnica do run. A tela preserva o texto digitado e bloqueia seu envio até a
+correção, sem truncamento silencioso. Corrigir a entrada reutiliza a mesma tentativa,
+sem recriar run, apagar gates válidos ou autorizar consumo pago.
+
 ## Execuções independentes de produto
 
 Cada versão de processo declara explicitamente `executionScope`, sem inferência por nome, posição na

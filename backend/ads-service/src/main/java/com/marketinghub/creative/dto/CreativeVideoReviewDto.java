@@ -3,6 +3,7 @@ package com.marketinghub.creative.dto;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.CreativeVideoReviewSourceType;
+import com.marketinghub.creative.service.videoreview.VideoReviewEligibility;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.hypothesis.HypothesisStatus;
@@ -47,4 +48,7 @@ public record CreativeVideoReviewDto(
     String visualSourceType,
     String visualSourceKey,
     String visualSourceDescription,
-    String visualSimilarityOverrideReason) {}
+    String visualSimilarityOverrideReason,
+    Long productId,
+    String productName,
+    VideoReviewEligibility eligibility) {}

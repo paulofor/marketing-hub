@@ -360,3 +360,20 @@
   O consumo ampliado depende de publicação pelo PR do usuário; nenhuma imagem ou código foi publicado.
 - [Curadoria, fontes e versões](../marketing/harness-curadoria-agentes-2026-09-10.md) e
   [matriz e evidências](../homologacao/harness-curadoria-agentes-v1.md).
+
+## 2026-10-04 — alerta de aprovação mistura histórico e novas peças
+
+- Causa confirmada por tela, API, banco/MCP e linhagem: o alerta contava oito DRAFT de todo
+  o Hub como aprovações humanas pendentes. Três pertenciam a experimentos encerrados;
+  #534 já tinha o descendente #535 aprovado; #532/#533 dependiam de correção/parecer;
+  apenas #51/#52 eram candidatas disponíveis. Nenhum pertencia a Alcyone/#97.
+- Os contratos publicados consultados apontavam para #42 (Vega) e #49 (Mira), ambos
+  APPROVED. As candidatas novas não foram declaradas em uso apenas por terem URL pública.
+- Correção: elegibilidade e contagens oficiais no backend, filtros por produto/experimento,
+  histórico consultável, comandos que preservam decisões antigas e impedem reanálise paga
+  de tentativa encerrada/substituída ou com copy deterministicamente inválida.
+- Melhoria de harness: testes de contrato com diferentes identidades, linhagem de vários
+  níveis, ciclo, bloqueios e decisões preservadas; navegador contra HTTP/H2 local, sem rede externa.
+- Não houve aprovação de peças, retomada de campanha ou chamada paga em produção. A correção
+  da fila não conclui o processo de comunicação de Alcyone nem comprova aumento de vendas.
+- Matriz e evidências: `docs/homologacao/video-review-readiness-v1.md`.

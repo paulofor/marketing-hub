@@ -17,6 +17,8 @@ import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.creative.service.video.VideoCreativeRequest;
 import com.marketinghub.creative.service.video.VideoCreativeService;
+import com.marketinghub.creative.service.videoreview.VideoReviewState;
+import com.marketinghub.creative.service.videoreview.VideoReviewSummary;
 import com.marketinghub.creative.service.visual.ApprovedVisualAssetCreativeRequest;
 import com.marketinghub.creative.service.visual.ApprovedVisualAssetCreativeService;
 import com.marketinghub.creative.service.visual.ApprovedVisualAssetOption;
@@ -158,11 +160,24 @@ public class CreativeController {
     return dtos;
   }
 
-  /** Lista os criativos de vídeo que precisam de revisão comercial. */
+  /** Lista vídeos com histórico, bloqueios e elegibilidade oficial no escopo consultado. */
+  @Operation(summary = "Consultar revisões de vídeo por produto, experimento e elegibilidade")
   @GetMapping("/api/creatives/video-review")
   public List<CreativeVideoReviewDto> listVideoReview(
-      @RequestParam(value = "status", required = false) CreativeStatus status) {
-    return service.listVideoReviewQueue(status);
+      @RequestParam(value = "status", required = false) CreativeStatus status,
+      @RequestParam(value = "productId", required = false) Long productId,
+      @RequestParam(value = "experimentId", required = false) Long experimentId,
+      @RequestParam(value = "state", required = false) VideoReviewState state) {
+    return service.listVideoReviewQueue(status, productId, experimentId, state);
+  }
+
+  /** Expõe as contagens oficiais sem atribuir pendências de outros produtos ao processo aberto. */
+  @Operation(summary = "Resumir revisões humanas disponíveis, bloqueios e histórico de vídeos")
+  @GetMapping("/api/creatives/video-review/summary")
+  public VideoReviewSummary videoReviewSummary(
+      @RequestParam(value = "productId", required = false) Long productId,
+      @RequestParam(value = "experimentId", required = false) Long experimentId) {
+    return service.videoReviewSummary(productId, experimentId);
   }
 
   /** Atualiza o status de um item da fila única de revisão de vídeos. */

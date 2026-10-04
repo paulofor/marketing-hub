@@ -156,10 +156,11 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
   List<ExperimentVideoAsset> findByExperimentIdAndVisualSourceKey(
       Long experimentId, String visualSourceKey);
 
-  /** Lista vídeos prontos de experimento com contexto comercial para revisão humana. */
+  /** Consulta peças prontas e com áudio no escopo oficial do produto e experimento. */
   @EntityGraph(
       attributePaths = {
         "experiment",
+        "experiment.product",
         "experiment.niche",
         "experiment.hypothesisRef",
         "experiment.hypothesisRef.marketNiche",
@@ -170,45 +171,18 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
       })
   @Query(
       """
-            select v
-              from ExperimentVideoAsset v
-             where v.status = :readyStatus
-               and (
-                    (v.assetUrl is not null and trim(v.assetUrl) <> '')
-                 or v.asset is not null
-               )
-               and v.hasAudio = true
-             order by v.id desc
-            """)
+      select v from ExperimentVideoAsset v
+       where v.status = :readyStatus
+         and (:reviewStatus is null or v.reviewStatus = :reviewStatus)
+         and (:productId is null or v.experiment.product.id = :productId)
+         and (:experimentId is null or v.experiment.id = :experimentId)
+         and ((v.assetUrl is not null and trim(v.assetUrl) <> '') or v.asset is not null)
+         and v.hasAudio = true
+       order by v.id desc
+      """)
   List<ExperimentVideoAsset> findReadyExperimentVideosForReview(
-      @Param("readyStatus") ExperimentVideoStatus readyStatus);
-
-  /** Lista vídeos prontos de experimento em um status de revisão específico. */
-  @EntityGraph(
-      attributePaths = {
-        "experiment",
-        "experiment.niche",
-        "experiment.hypothesisRef",
-        "experiment.hypothesisRef.marketNiche",
-        "salesVideoProfile",
-        "salesVideoJob",
-        "asset",
-        "landingVideoSlot"
-      })
-  @Query(
-      """
-            select v
-              from ExperimentVideoAsset v
-             where v.status = :readyStatus
-               and v.reviewStatus = :reviewStatus
-               and (
-                    (v.assetUrl is not null and trim(v.assetUrl) <> '')
-                 or v.asset is not null
-               )
-               and v.hasAudio = true
-             order by v.id desc
-            """)
-  List<ExperimentVideoAsset> findReadyExperimentVideosForReviewByReviewStatus(
       @Param("readyStatus") ExperimentVideoStatus readyStatus,
-      @Param("reviewStatus") ExperimentVideoReviewStatus reviewStatus);
+      @Param("reviewStatus") ExperimentVideoReviewStatus reviewStatus,
+      @Param("productId") Long productId,
+      @Param("experimentId") Long experimentId);
 }

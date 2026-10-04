@@ -16,24 +16,31 @@ import {
   CreativeVideoReview,
   CreativeAgentReviewStatus,
   CreativeVideoReviewStatus,
+  VideoReviewState,
+  useVideoReviewScope,
+  useVideoReviewSummary,
   useRequestCreativeVideoAgentReview,
   useCreativeVideoReviews,
   useUpdateCreativeVideoReviewStatus,
 } from "../../api/creative/useCreativeVideoReviews";
 import "./CreativeVideoReviewPage.css";
 
-type ReviewFilter = "ALL" | CreativeVideoReviewStatus;
+type ReviewFilter = "ALL" | "READY" | VideoReviewState;
 
 const REVIEW_FILTERS: Array<{ value: ReviewFilter; label: string }> = [
-  { value: "DRAFT", label: "Pendentes" },
+  { value: "AWAITING_REVIEW", label: "Sua revisão" },
+  { value: "BLOCKED", label: "Ajustes e pareceres" },
+  { value: "HISTORICAL", label: "Histórico" },
   { value: "READY", label: "Aprovados" },
   { value: "REJECTED", label: "Reprovados" },
   { value: "ALL", label: "Todos" },
 ];
 
-const STATUS_LABELS: Record<CreativeVideoReviewStatus, string> = {
-  DRAFT: "Pendente",
-  READY: "No portfólio",
+const STATUS_LABELS: Record<VideoReviewState, string> = {
+  AWAITING_REVIEW: "Disponível para sua revisão",
+  BLOCKED: "Aguardando correção ou parecer",
+  HISTORICAL: "Histórico — sem ação pendente",
+  APPROVED: "Aprovado",
   REJECTED: "Reprovado",
 };
 
@@ -89,12 +96,6 @@ const AGENT_REVIEW_LABELS: Record<CreativeAgentReviewStatus, string> = {
   REJECTED: "reprovado",
   FAILED: "falha técnica",
 };
-
-function canRequestAgentReview(
-  status: CreativeAgentReviewStatus | null | undefined,
-) {
-  return status == null || ["ADJUST", "REJECTED", "FAILED"].includes(status);
-}
 
 function apiErrorMessage(error: unknown, fallback: string) {
   if (axios.isAxiosError<{ message?: string }>(error)) {
@@ -184,12 +185,21 @@ function costReferenceDate(video: CreativeVideoReview) {
 }
 
 export default function CreativeVideoReviewPage() {
-  const [filter, setFilter] = useState<ReviewFilter>("DRAFT");
+  const [filter, setFilter] = useState<ReviewFilter>("AWAITING_REVIEW");
   const [rejectionReasons, setRejectionReasons] = useState<
     Record<string, string>
   >({});
-  const reviewQuery = useCreativeVideoReviews(filter);
-  const summaryQuery = useCreativeVideoReviews("ALL");
+  const scope = useVideoReviewScope();
+  const state = ["AWAITING_REVIEW", "BLOCKED", "HISTORICAL"].includes(filter)
+    ? (filter as VideoReviewState)
+    : undefined;
+  const reviewQuery = useCreativeVideoReviews(
+    filter === "READY" || filter === "REJECTED" ? filter : "ALL",
+    scope,
+    state,
+  );
+  const summaryQuery = useCreativeVideoReviews("ALL", scope);
+  const countsQuery = useVideoReviewSummary(scope);
   const updateStatus = useUpdateCreativeVideoReviewStatus();
   const requestAgentReview = useRequestCreativeVideoAgentReview();
   const videos = useMemo(() => reviewQuery.data ?? [], [reviewQuery.data]);
@@ -197,15 +207,9 @@ export default function CreativeVideoReviewPage() {
     () => summaryQuery.data ?? videos,
     [summaryQuery.data, videos],
   );
-  const pendingCount = summaryVideos.filter(
-    (video) => video.status === "DRAFT",
-  ).length;
-  const approvedCount = summaryVideos.filter(
-    (video) => video.status === "READY",
-  ).length;
-  const rejectedCount = summaryVideos.filter(
-    (video) => video.status === "REJECTED",
-  ).length;
+  const pendingCount = countsQuery.data?.awaitingReviewCount;
+  const approvedCount = countsQuery.data?.approvedCount;
+  const rejectedCount = countsQuery.data?.rejectedCount;
   const totalProductionCost = summaryVideos.reduce(
     (sum, video) => sum + (toNumber(video.totalProductionCostUsd) ?? 0),
     0,
@@ -279,8 +283,12 @@ export default function CreativeVideoReviewPage() {
         <div>
           <PageTitle title="Aprovação de vídeos" />
           <p className="creative-video-review-page__subtitle">
-            Fila humana final: só vídeos aprovados aqui entram no portfólio do
-            produto para campanhas ou PDEs.
+            {scope.productId || scope.experimentId
+              ? "Revisões deste contexto."
+              : "Fila geral de vídeos do Hub."}{" "}
+            Revise novas peças disponíveis. Aprovações existentes, pareceres de
+            Têmis e tentativas históricas são preservados. Aprovar uma peça não
+            publica campanha nem autoriza gasto.
           </p>
         </div>
       </div>
@@ -290,16 +298,24 @@ export default function CreativeVideoReviewPage() {
         aria-label="Resumo da fila"
       >
         <div className="creative-video-review-page__metric">
-          <span>Pendentes</span>
-          <strong>{pendingCount}</strong>
+          <span>Sua revisão</span>
+          <strong>{pendingCount ?? "—"}</strong>
+        </div>
+        <div className="creative-video-review-page__metric">
+          <span>Ajustes e pareceres</span>
+          <strong>{countsQuery.data?.blockedCount ?? "—"}</strong>
+        </div>
+        <div className="creative-video-review-page__metric">
+          <span>Histórico sem ação</span>
+          <strong>{countsQuery.data?.historicalCount ?? "—"}</strong>
         </div>
         <div className="creative-video-review-page__metric">
           <span>Aprovados</span>
-          <strong>{approvedCount}</strong>
+          <strong>{approvedCount ?? "—"}</strong>
         </div>
         <div className="creative-video-review-page__metric">
           <span>Reprovados</span>
-          <strong>{rejectedCount}</strong>
+          <strong>{rejectedCount ?? "—"}</strong>
         </div>
         <div className="creative-video-review-page__metric">
           <span>Custo total</span>
@@ -347,15 +363,30 @@ export default function CreativeVideoReviewPage() {
           <button
             type="button"
             className="btn btn-outline-secondary btn-sm"
-            onClick={() => reviewQuery.refetch()}
+            onClick={() => {
+              reviewQuery.refetch();
+              summaryQuery.refetch();
+              countsQuery.refetch();
+            }}
             disabled={reviewQuery.isFetching}
           >
             <RefreshCcw size={16} aria-hidden="true" />
+            {reviewQuery.isFetching && (
+              <span
+                className="spinner-border spinner-border-sm"
+                aria-hidden="true"
+              />
+            )}
             {reviewQuery.isFetching ? "Atualizando..." : "Atualizar"}
           </button>
         </div>
       </div>
 
+      {countsQuery.isError && (
+        <div className="alert alert-warning">
+          Não foi possível atualizar o resumo da fila.
+        </div>
+      )}
       {reviewQuery.isLoading ? (
         <div className="creative-video-review-page__empty-state">
           Carregando vídeos...
@@ -398,19 +429,29 @@ export default function CreativeVideoReviewPage() {
                 <div className="creative-video-review-page__body">
                   <div className="creative-video-review-page__topline">
                     <span className={statusClassName(video.status)}>
-                      {STATUS_LABELS[video.status]}
+                      {video.eligibility
+                        ? STATUS_LABELS[video.eligibility.state]
+                        : "Elegibilidade não informada"}
                     </span>
                     <span>
                       {SOURCE_LABELS[video.sourceType]} #{video.id}
                     </span>
                   </div>
 
+                  <p className="mb-2" role="status">
+                    {video.eligibility?.reason ??
+                      "Atualize a fila para consultar a elegibilidade no backend."}
+                  </p>
                   <div className="creative-video-review-page__copy">
                     <h2>{video.headline || "Criativo sem headline"}</h2>
                     {video.primaryText ? <p>{video.primaryText}</p> : null}
                   </div>
 
                   <dl className="creative-video-review-page__context">
+                    <div>
+                      <dt>Produto</dt>
+                      <dd>{video.productName ?? "Não vinculado"}</dd>
+                    </div>
                     <div>
                       <dt>Origem</dt>
                       <dd>{SOURCE_LABELS[video.sourceType]}</dd>
@@ -491,6 +532,7 @@ export default function CreativeVideoReviewPage() {
                   ) : null}
 
                   {video.sourceType === "CREATIVE" &&
+                  video.eligibility?.state !== "HISTORICAL" &&
                   video.agentReviewStatus ? (
                     <div
                       className={`alert py-2 ${
@@ -520,7 +562,8 @@ export default function CreativeVideoReviewPage() {
                     </div>
                   ) : null}
 
-                  {video.status === "DRAFT" ? (
+                  {video.status === "DRAFT" &&
+                  video.eligibility?.state !== "HISTORICAL" ? (
                     <label className="creative-video-review-page__reject-reason">
                       <span>
                         Motivo da reprovação <b aria-hidden="true">*</b>
@@ -542,7 +585,8 @@ export default function CreativeVideoReviewPage() {
                   <div className="creative-video-review-page__actions">
                     {video.sourceType === "CREATIVE" &&
                     video.status === "DRAFT" &&
-                    video.approvalBlockedReason ? (
+                    video.approvalBlockedReason &&
+                    video.eligibility?.state !== "HISTORICAL" ? (
                       <Link
                         className="btn btn-outline-primary btn-sm"
                         to={`/experiments/${video.experimentId}?tab=creatives`}
@@ -550,14 +594,15 @@ export default function CreativeVideoReviewPage() {
                         Corrigir na aba Criativos
                       </Link>
                     ) : null}
-                    {video.status !== "READY" ? (
+                    {video.status !== "READY" &&
+                    video.eligibility?.state !== "HISTORICAL" ? (
                       <button
                         type="button"
                         className="btn btn-success btn-sm"
                         disabled={
                           isPending ||
                           !mediaUrl ||
-                          Boolean(video.approvalBlockedReason)
+                          !video.eligibility?.approvalAvailable
                         }
                         title={video.approvalBlockedReason ?? undefined}
                         onClick={() => handleStatusChange(video, "READY")}
@@ -573,7 +618,7 @@ export default function CreativeVideoReviewPage() {
                         )}
                         {isPending ? "Aprovando..." : "Aprovar para portfólio"}
                       </button>
-                    ) : (
+                    ) : video.status === "READY" ? (
                       <button
                         type="button"
                         className="btn btn-outline-warning btn-sm"
@@ -591,9 +636,9 @@ export default function CreativeVideoReviewPage() {
                         )}
                         {isPending ? "Atualizando..." : "Voltar para revisão"}
                       </button>
-                    )}
+                    ) : null}
                     {video.sourceType === "CREATIVE" &&
-                    canRequestAgentReview(video.agentReviewStatus) ? (
+                    video.eligibility?.agentReviewRequestAvailable ? (
                       <button
                         type="button"
                         className="btn btn-outline-warning btn-sm"
@@ -614,7 +659,8 @@ export default function CreativeVideoReviewPage() {
                           : "Reavaliar com Têmis"}
                       </button>
                     ) : null}
-                    {video.status === "DRAFT" ? (
+                    {video.status === "DRAFT" &&
+                    video.eligibility?.state !== "HISTORICAL" ? (
                       <button
                         type="button"
                         className="btn btn-outline-danger btn-sm"

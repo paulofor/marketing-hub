@@ -87,3 +87,30 @@ agora de parecer econômico e prova funcional comercial. Íris permanece bloquea
 aprovação comercial fabricada a partir do teste de interface. STOP preservado. A preparação
 e as correções não comprovam venda, contribuição ou preferência humana. PR, SHA e evidências
 de publicação devem ser conferidos no registro de entrega, após os workflows concluírem.
+
+
+## Correção complementar — encerramento concorrente do navegador
+
+Após o merge #5493, uma verificação adicional local reproduziu o container com raiz somente
+leitura, tmpfs de 128 MB/noexec/nosuid e usuário sem privilégios, conforme o Compose produtivo.
+O primeiro teste do pacote já havia lido as três fontes; a nova rodada revelou uma corrida:
+quando uma página encerrava com subrecursos em andamento, `fulfill` podia consumir a rota e
+falhar. O `catch` chamava `abort` de novo, provocando `Route is already handled!` e encerrando
+Node. A restrição de filesystem não foi confirmada como causa; a dupla finalização é a causa
+comprovada pelo stack trace e pela regressão determinística.
+
+Alternativas: aguardar indefinidamente todos os subrecursos amplia latência e não fecha a
+corrida; ignorar globalmente exceções encobre outras falhas; controlar a finalização de cada
+rota e tolerar apenas erros da limpeza mantém os limites. Adotada a terceira. Falhas de
+navegação continuam como `FAILED` por URL, sem repetição de modelo ou sucesso fabricado.
+
+O teste adicional simula fechamento em fetch, fulfill, abort de redirect, POST e dispose.
+Exige no máximo uma tentativa de aborto, liberação de resposta e continuidade do MCP.
+A homologação do pacote é repetida com as restrições produtivas antes do PR complementar.
+Essa descoberta local não é uma falha de CI/deploy nem altera o parecer comercial #17.
+
+
+Resultado complementar: sete testes Node/Chromium e 45 testes Java passaram. O Dockerfile
+versionado gerou a imagem local `sha256:795d0b0a6387ad393b62fb0f916c45c2f387ad29ee86af8545fa3c346bce72c3`.
+Executada com as restrições produtivas, leu as três fontes como READ/HTTP 200 e respondeu ao
+ping MCP depois de fechar o navegador. Nenhuma chamada de modelo foi usada nessa verificação.

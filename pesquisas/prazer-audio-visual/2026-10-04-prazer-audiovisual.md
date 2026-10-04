@@ -9,3 +9,10 @@ Riegel et al., *European Journal of Neuroscience*. https://doi.org/10.1111/ejn.7
 Trinta e dois adultos ouviram fala em ruído com imagem estática, avatar, vídeo degradado ou natural. Avatar e vídeo degradado melhoraram compreensão; vídeo natural melhorou ainda mais. Uma resposta cortical auditiva precoce por MEG não acompanhou o ganho.
 
 **Força:** média-alta. **Limites:** adultos jovens, alemão e um sistema de avatar. **Aplicação:** comparar naturalidade e sincronização medindo compreensão, erro e esforço.
+
+## Cenas com vários locutores
+Lewkowicz & McClellan, *PLOS ONE* 21:e0354673. https://doi.org/10.1371/journal.pone.0354673
+
+Dois experimentos com rastreamento ocular mostraram que o alinhamento temporal entre voz e movimento facial ajudou a separar fluxos de fala concorrentes. Informações linguísticas coerentes também ajudaram em parte das condições, e o olhar foi dirigido especialmente para a boca.
+
+**Força:** média-alta no paradigma. **Limites:** o principal desfecho foi o padrão de olhar. **Aplicação:** manter voz e movimento facial bem sincronizados e deixar claros os turnos de fala.

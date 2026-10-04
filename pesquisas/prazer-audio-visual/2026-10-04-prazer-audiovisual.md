@@ -29,3 +29,6 @@ Dois experimentos de EEG, com 21 e 31 participantes, não encontraram diferença
 - `sincronia-fala-multiplas-fontes`: testar se alinhamento entre voz e movimento facial melhora a separação de fluxos. Fonte SHA-256: `91e91322661a491e0f11e0059e94384d204e9bbc35ad6850984bb8ab6839ed16`.
 
 Nenhuma revisão, ativação ou arquivamento foi executado.
+
+## Dopamina
+Não houve novo estudo humano direto de liberação de dopamina em música ou vídeo selecionado nesta rodada.

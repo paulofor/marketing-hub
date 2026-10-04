@@ -2338,12 +2338,7 @@ function CommercialPlanDetailPage({
     useState<SaveCommercialPlanPayload>(emptyCommercialPlan);
   const currentMonthPlan = useMemo<CommercialPlan>(
     () =>
-      plans.find((plan) => plan.id === selectedPlanId) ??
-      plans.find(
-        (plan) => resolvePlanReferenceMonth(plan) === CURRENT_OPERATIONAL_MONTH,
-      ) ??
-      plans[0] ??
-      fallbackMonthPlan(),
+      plans.find((plan) => plan.id === selectedPlanId) ?? fallbackMonthPlan(),
     [plans, selectedPlanId],
   );
   const planReferenceMonth = resolvePlanReferenceMonth(currentMonthPlan);
@@ -2497,6 +2492,18 @@ function CommercialPlanDetailPage({
   );
 
   const navigate = useNavigate();
+
+  if (!plans.some((plan) => plan.id === selectedPlanId)) {
+    return (
+      <div role={plansQuery.isLoading ? "status" : "alert"}>
+        {plansQuery.isLoading
+          ? "Carregando plano comercial..."
+          : plansQuery.isError
+            ? "Não foi possível carregar o plano comercial."
+            : "Plano comercial não encontrado."}
+      </div>
+    );
+  }
 
   return (
     <div className="commercial-planning-page d-flex flex-column gap-4">
@@ -3800,6 +3807,7 @@ function CommercialPlanDetailPage({
               defaultObjective={currentMonthPlan.nextAction}
             />
             <ExperimentStrategistPanel
+              key={currentMonthPlan.id}
               planId={currentMonthPlan.id}
               defaultQuestion={currentMonthPlan.currentBlocker}
             />

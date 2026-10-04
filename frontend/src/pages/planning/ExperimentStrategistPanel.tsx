@@ -21,10 +21,12 @@ export default function ExperimentStrategistPanel({
   planId: number;
   defaultQuestion?: string | null;
 }) {
-  const [question, setQuestion] = useState(
-    defaultQuestion ||
-      "O que o portfólio aprendeu e qual formato devemos testar em seguida com as evidências atuais?",
-  );
+  const [draft, setDraft] = useState<{ planId: number; text: string }>();
+  const question =
+    draft?.planId === planId
+      ? draft.text
+      : defaultQuestion?.trim() ||
+        "O que o portfólio aprendeu e qual formato devemos testar em seguida com as evidências atuais?";
   const executions = useExperimentStrategistExecutions(planId);
   const start = useStartExperimentStrategist(planId);
 
@@ -58,14 +60,14 @@ export default function ExperimentStrategistPanel({
             className="form-control"
             rows={3}
             value={question}
-            onChange={(event) => setQuestion(event.target.value)}
+            onChange={(event) => setDraft({ planId, text: event.target.value })}
           />
         </div>
         <div>
           <button
             className="btn btn-outline-primary"
             type="button"
-            disabled={start.isPending || !question.trim()}
+            disabled={planId <= 0 || start.isPending || !question.trim()}
             onClick={() => start.mutate(question.trim())}
           >
             {start.isPending ? (

@@ -10,7 +10,7 @@ Pergunta de pesquisa: {{RESEARCH_QUESTION}}
 
 Capacidades externas disponíveis:
 - busca pública na internet;
-- Chromium/Playwright somente leitura pelo comando `node /app/browser/public-research.mjs '<JSON com array urls>'`;
+- Chromium/Playwright somente leitura pela ferramenta MCP `consultar_paginas_publicas` (até três URLs);
 - consulta de páginas públicas, resultados de busca, bibliotecas de anúncios, marketplaces, relatórios econômicos e sinais públicos de redes sociais, respeitando termos e sem login.
 
 Roteiro obrigatório de pesquisa:

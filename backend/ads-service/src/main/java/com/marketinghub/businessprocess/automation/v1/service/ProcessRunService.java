@@ -331,7 +331,10 @@ public class ProcessRunService {
       }
     }
     var active =
-        ordered.stream().filter(a -> ACTIVE_TASK.contains(a.operationalState())).findFirst();
+        ordered.stream()
+            .filter(
+                a -> ACTIVE_TASK.contains(a.operationalState()) && !projectionWithoutExecution(a))
+            .findFirst();
     if (active.isPresent()) {
       current(run, active.get());
       var userAction = guidance.resolve(run);
@@ -902,14 +905,23 @@ public class ProcessRunService {
             .anyMatch(child -> inFlight(child, seen, refreshProgress));
   }
 
-  /** Preserva tarefas reais em curso sem confundir o estado geral do ciclo com uma execução. */
+  /** Protege tarefas e instâncias reais; projeção da medição não é execução nem delegação. */
   private boolean activityInFlight(
       ProcessRun run, ProductProcessActivityExecutionGroupResponse activity) {
     if (!ACTIVE_TASK.contains(activity.operationalState())) return false;
     if (activity.tasks().stream().anyMatch(task -> ACTIVE_TASK.contains(task.status())))
       return true;
+    if (projectionWithoutExecution(activity)) return false;
     return !Objects.equals(run.getCurrentActivityId(), activity.activityId())
         || !guidance.awaitingInput(run);
+  }
+
+  /** Identifica exclusivamente a medição projetada, preservando trabalho e demais contratos. */
+  private boolean projectionWithoutExecution(
+      ProductProcessActivityExecutionGroupResponse activity) {
+    return "SALES_FLOW_EVENT".equals(activity.stateEvidence())
+        && activity.activityInstanceId() == null
+        && activity.tasks().stream().noneMatch(task -> ACTIVE_TASK.contains(task.status()));
   }
 
   /** Registra apenas alterações de estado e causa, mantendo o diário legível durante esperas. */

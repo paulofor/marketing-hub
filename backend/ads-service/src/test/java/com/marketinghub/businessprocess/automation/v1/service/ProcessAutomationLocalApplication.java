@@ -102,12 +102,12 @@ public class ProcessAutomationLocalApplication {
       jdbc.execute(
           "CREATE TABLE IF NOT EXISTS " + table + " (id BIGINT PRIMARY KEY) ENGINE=InnoDB");
     jdbc.execute(
-        "CREATE TABLE IF NOT EXISTS fixture_product (id BIGINT PRIMARY KEY, enabled BIT NOT NULL DEFAULT 1, version_number INT NOT NULL DEFAULT 1, cycle_status VARCHAR(32) NOT NULL DEFAULT 'OPEN', destination_code VARCHAR(32) NOT NULL DEFAULT 'LANDING', pinned_process_id BIGINT NULL) ENGINE=InnoDB");
+        "CREATE TABLE IF NOT EXISTS fixture_product (id BIGINT PRIMARY KEY, enabled BIT NOT NULL DEFAULT 1, version_number INT NOT NULL DEFAULT 1, cycle_status VARCHAR(32) NOT NULL DEFAULT 'OPEN', destination_code VARCHAR(32) NOT NULL DEFAULT 'LANDING', pinned_process_id BIGINT NULL, projected_process_id BIGINT NULL, projected_state VARCHAR(32) NULL, blocked_process_id BIGINT NULL) ENGINE=InnoDB");
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS fixture_task (id BIGINT AUTO_INCREMENT PRIMARY KEY, product_id BIGINT NOT NULL, process_id BIGINT NOT NULL, activity_id VARCHAR(100) NOT NULL, status VARCHAR(32) NOT NULL, achieved BIT NOT NULL DEFAULT 0, reason VARCHAR(300) NOT NULL, KEY ix_fixture_task(product_id,process_id,activity_id,id)) ENGINE=InnoDB");
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS fixture_process (id BIGINT PRIMARY KEY, status VARCHAR(32) NOT NULL DEFAULT 'PUBLISHED') ENGINE=InnoDB");
-    for (long id = 92001; id <= 92040; id++) {
+    for (long id = 92001; id <= 92048; id++) {
       jdbc.update("INSERT IGNORE INTO product VALUES (?)", id);
       jdbc.update("INSERT IGNORE INTO fixture_product(id) VALUES (?)", id);
       jdbc.update("INSERT IGNORE INTO business_process_definition VALUES (?)", id);
@@ -289,10 +289,13 @@ public class ProcessAutomationLocalApplication {
                 return Optional.empty();
               var pinned =
                   jdbc.queryForObject(
-                      "SELECT pinned_process_id FROM fixture_product WHERE id=?", Long.class, product);
+                      "SELECT pinned_process_id FROM fixture_product WHERE id=?",
+                      Long.class,
+                      product);
               return pinned == null
                   ? Optional.empty()
-                  : Optional.of(new com.marketinghub.product.executionprofile.v1.ExecutionProfile());
+                  : Optional.of(
+                      new com.marketinghub.product.executionprofile.v1.ExecutionProfile());
             });
     when(profiles.pins(anyString(), anyLong()))
         .thenAnswer(
@@ -301,7 +304,9 @@ public class ProcessAutomationLocalApplication {
               Long product = Long.valueOf(reference.substring("experiment:".length()));
               var pinned =
                   jdbc.queryForObject(
-                      "SELECT pinned_process_id FROM fixture_product WHERE id=?", Long.class, product);
+                      "SELECT pinned_process_id FROM fixture_product WHERE id=?",
+                      Long.class,
+                      product);
               return Objects.equals(pinned, inv.getArgument(1));
             });
     return profiles;
@@ -338,7 +343,7 @@ public class ProcessAutomationLocalApplication {
     var chain = new BusinessProcessChainDefinition();
     chain.setId(92014L);
     chain.setStatus("PUBLISHED");
-    for (long id = 92001; id <= 92040; id++) {
+    for (long id = 92001; id <= 92048; id++) {
       var item = new BusinessProcessChainItem();
       item.setProcessDefinition(definition(id));
       item.setSequenceNumber((int) (id - 92000));
@@ -475,10 +480,12 @@ public class ProcessAutomationLocalApplication {
     return tasks.isEmpty() ? null : tasks.getFirst();
   }
 
-  /** Projeta publicação, prontidão e objetivo sem decidir a ordem pelo executor. */
+  /** Projeta contratos e medição sem tarefa real, preservando a distinção do estado persistido. */
   static ProductProcessActivityExecutionHistoryResponse snapshot(
       JdbcTemplate jdbc, Long product, Long process, String sourceReference) {
     List<ProductProcessActivityExecutionGroupResponse> groups = new ArrayList<>();
+    var productState = jdbc.queryForMap("SELECT * FROM fixture_product WHERE id=?", product);
+    boolean blockedInput = Objects.equals(productState.get("blocked_process_id"), process);
     boolean needsFix =
         process == 92003
             && latest(jdbc, product, process, "a") != null
@@ -489,6 +496,11 @@ public class ProcessAutomationLocalApplication {
       var task = latest(jdbc, product, process, id);
       boolean achieved = task != null && Boolean.TRUE.equals(task.get("achieved"));
       String state = task == null ? "NOT_STARTED" : task.get("status").toString();
+      boolean projected =
+          id.equals("a")
+              && !achieved
+              && Objects.equals(productState.get("projected_process_id"), process);
+      if (projected) state = productState.get("projected_state").toString();
       boolean selected = !id.equals("fix") || needsFix || task != null;
       boolean approvedPrivateDestination =
           process == 92004 && id.equals("a") && privateDestination(jdbc, product);
@@ -500,7 +512,8 @@ public class ProcessAutomationLocalApplication {
                   : process == 92010 && id.equals("gate") ? "WORKSPACE" : "COMMAND";
       boolean available =
           !achieved
-              && Set.of("NOT_STARTED", "BLOCKED").contains(state)
+              && !blockedInput
+              && (projected || Set.of("NOT_STARTED", "BLOCKED").contains(state))
               && (!id.equals("fix") || needsFix);
       var control =
           new ProductProcessActivityExecutionControlResponse(
@@ -511,7 +524,9 @@ public class ProcessAutomationLocalApplication {
               approvedPrivateDestination ? "Abrir destino aprovado" : "Executar atividade",
               "Contrato local",
               available,
-              "Preencha os critérios da atividade",
+              blockedInput
+                  ? "Estratégia vigente pendente; não chamar modelo."
+                  : "Preencha os critérios da atividade",
               interaction.equals("APPROVAL"),
               null,
               null,
@@ -535,7 +550,7 @@ public class ProcessAutomationLocalApplication {
               achieved ? "COMPLETED" : state,
               task == null ? "Sem tarefa" : task.get("reason").toString(),
               achieved,
-              "LOCAL_CONTRACT",
+              projected ? "SALES_FLOW_EVENT" : "LOCAL_CONTRACT",
               task == null ? null : ((Number) task.get("id")).longValue(),
               1,
               task == null ? 0 : 1,
@@ -642,7 +657,7 @@ public class ProcessAutomationLocalApplication {
       return Map.of("ok", true);
     }
 
-    /** Permite testar STOP, encerramento, ficha e mudança de entrada sem editar a execução. */
+    /** Simula controle, projeção e entrada ausente sem editar a execução nem seus objetivos. */
     @PostMapping("/fixture/products/{product}")
     Object productState(@PathVariable Long product, @RequestBody Map<String, Object> state) {
       if (state.containsKey("play"))
@@ -666,6 +681,20 @@ public class ProcessAutomationLocalApplication {
         jdbc.update(
             "UPDATE fixture_product SET pinned_process_id=? WHERE id=?",
             state.get("pinnedProcessId"),
+            product);
+      if (state.containsKey("projectedProcessId")) {
+        if (!Set.of("PENDING", "IN_PROGRESS").contains(state.get("projectedState")))
+          throw new IllegalArgumentException("Estado de projeção inválido.");
+        jdbc.update(
+            "UPDATE fixture_product SET projected_process_id=?,projected_state=? WHERE id=?",
+            state.get("projectedProcessId"),
+            state.get("projectedState"),
+            product);
+      }
+      if (state.containsKey("blockedProcessId"))
+        jdbc.update(
+            "UPDATE fixture_product SET blocked_process_id=? WHERE id=?",
+            state.get("blockedProcessId"),
             product);
       return Map.of("ok", true);
     }

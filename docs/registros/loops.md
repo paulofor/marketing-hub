@@ -1,5 +1,29 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-BPM-MEDICAO-PROJETADA-RESERVA-FILA — 03/10/2026
+
+- **Evidência:** Vega #4, cadeia #14, ciclo #2, `experiment:92`; execução #42 do
+  processo #123 v8 aguardava a raiz #4, processo #75 v6 retirado e sem ficha.
+  A raiz aguardava `optimization` desde 19/09, sem tarefa, instância ou filho.
+  Banco e tela confirmaram `stateEvidence=SALES_FLOW_EVENT`, `IN_PROGRESS` por
+  medição. O conciliador estava ativo; outros controles retirados já encerraram.
+- **Causa:** o motor aceitava todo estado ativo da atividade antes de verificar
+  autorização e também o usava para drenar/pausar. A projeção do ciclo virava
+  trabalho inexistente, impedindo o encerramento e a passagem da fila.
+- **Correção:** avanço e drenagem distinguem a projeção do trabalho em curso,
+  sem mudar os demais contratos. Medição sem tarefa ativa e sem instância não é execução;
+  tarefa ou instância registrada continuam protegidas. Contexto retirado sem
+  ficha encerra com pendências; versão autorizada pode delegar e reutilizar o filho.
+- **Prevenção/harness:** regressão JPA com estados projetados, trabalho real,
+  pausa, liberação, gate próprio e retorno ao pai; fixture MySQL 5.7 agora reproduz
+  projeção independente da tarefa, com cenários genéricos e desktop/iPhone/Pixel.
+  Novos cenários têm identidades segregadas e devem ser validados com as famílias
+  anteriores na mesma sequência do runner, para detectar interferência de reservas.
+  Nenhuma exceção por produto, autorização retroativa ou chamada paga.
+- **Limite:** estratégia operacional de Atena é requisito distinto da #42.
+  Liberação de fila não aprova campanha nem transforma testes em venda.
+  [Matriz e evidências](../homologacao/vega42-fila-projecao-medicao-2026-10-03.md).
+
 ## LOOP-BPM-FILA-SEM-RESERVA-IDENTIFICAVEL — 03/10/2026
 
 - **Evidência:** Capella #7, execução #40, processo #81 v1, cadeia #26 e `experiment:94`

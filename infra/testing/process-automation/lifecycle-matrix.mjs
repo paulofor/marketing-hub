@@ -508,6 +508,116 @@ await scenario(
   },
 );
 
+for (const [product, state] of [
+  [92039, "IN_PROGRESS"],
+  [92041, "PENDING"],
+]) {
+  await scenario(
+    `medição projetada ${state} sem tarefa encerra reserva retirada e preserva gate seguinte`,
+    () =>
+      withRetirement(92001, async (retire) => {
+        await request(`/fixture/products/${product}`, {
+          projectedProcessId: 92001,
+          projectedState: state,
+          blockedProcessId: 92006,
+        });
+        const old = await start(product);
+        const next = await start(product, 92006);
+        assert.equal((await tick(next.id)).status, "QUEUED");
+        await retire();
+        const closed = await tick(old.id);
+        assert.equal(closed.status, "CLOSED");
+        assert.equal(closed.completedActivities, 0);
+        assert.equal(closed.remainingActivities, 3);
+        assert.equal(closed.childRunId, null);
+        const released = await tick(next.id);
+        assert.equal(released.status, "WAITING_INPUT");
+        assert.match(released.reason, /Estratégia vigente pendente/);
+        assert.equal(released.queueBlocker, null);
+        await tick(old.id);
+        const history = await request(root(product) + `/${old.id}/events`);
+        assert.equal(
+          history.filter((e) => e.eventType === "CONTEXT_CLOSED").length,
+          1,
+        );
+        assert.equal((await tasks(product)).length, 0);
+        console.log(
+          JSON.stringify({
+            projectedReservation: {
+              product,
+              oldId: old.id,
+              nextId: next.id,
+              state,
+            },
+          }),
+        );
+      }),
+  );
+}
+
+await scenario(
+  "subprocesso com projeção de medição reutiliza filho e retorna prova ao pai",
+  async () => {
+    const product = 92040;
+    await request(`/fixture/products/${product}`, {
+      projectedProcessId: 92004,
+      projectedState: "IN_PROGRESS",
+    });
+    const parent = await start(product, 92004);
+    const child = await start(product, 92005);
+    assert.equal((await tick(child.id)).status, "QUEUED");
+    const delegated = await tick(parent.id);
+    assert.equal(delegated.status, "WAITING_SUBPROCESS");
+    assert.equal(delegated.childRunId, child.id);
+    await prove(child, product, 92005);
+    assert.equal((await tick(child.id)).status, "COMPLETED");
+    assert.equal((await tick(parent.id)).status, "RUNNING");
+    await tick(parent.id);
+    await callback(product, "b", 92004);
+    await tick(parent.id);
+    assert.equal((await tick(parent.id)).status, "COMPLETED");
+    const history = await request(root(product, 92005) + `/${child.id}/events`);
+    assert.equal(
+      history.filter((e) => e.eventType === "DELEGATION_LINKED").length,
+      1,
+    );
+    assert.equal(
+      (await tasks(product)).filter((t) => t.process_id === 92005).length,
+      3,
+    );
+  },
+);
+
+await scenario(
+  "pausa de medição projetada não espera callback inexistente",
+  async () => {
+    const product = 92042;
+    await request(`/fixture/products/${product}`, {
+      projectedProcessId: 92001,
+      projectedState: "IN_PROGRESS",
+    });
+    const run = await start(product);
+    await request(root(product) + `/${run.id}/pause`, {});
+    assert.equal((await tick(run.id)).status, "PAUSED");
+    assert.equal((await tasks(product)).length, 0);
+  },
+);
+
+await scenario(
+  "ciclo encerrado com medição projetada libera reserva sem fabricar conclusão",
+  async () => {
+    const product = 92043;
+    await request(`/fixture/products/${product}`, {
+      projectedProcessId: 92001,
+      projectedState: "PENDING",
+    });
+    const run = await start(product);
+    await request(`/fixture/products/${product}`, { cycleStatus: "CLOSED" });
+    assert.equal((await tick(run.id)).status, "CLOSED");
+    assert.equal((await tasks(product)).length, 0);
+  },
+);
+
 console.log(
   JSON.stringify({
     passed,

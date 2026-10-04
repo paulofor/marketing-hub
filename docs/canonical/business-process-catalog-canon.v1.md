@@ -993,6 +993,11 @@ seus contratos; a automação não preenche provas nem autoriza publicação por
   silenciosa para a versão nova. Encerramento e motivo são persistidos uma única vez no diário.
 - Produtos diferentes avançam em paralelo. Processos do mesmo produto aguardam uma execução
   anterior terminar ou pausar; subprocessos da mesma raiz compartilham a autorização da chamada.
+- O estado ativo projetado por `SALES_FLOW_EVENT`, sem tarefa ativa nem instância registrada,
+  representa medição do ciclo, não execução de trabalho. Essa projeção não impede pausa,
+  encerramento de contexto sem autorização ou delegação canônica ao subprocesso. Tarefas e
+  instâncias reais continuam protegidas até seu retorno; liberar a reserva não comprova
+  objetivo nem satisfaz estratégia, finanças, publicação ou autorização da execução seguinte.
 - Na consulta de uma execução `QUEUED`, expor `queueBlocker` com a raiz que efetivamente reserva
   o produto, processo/versão, cadeia, ciclo quando registrado, referência, estado, causa persistida
   e link oficial com `sourceReference` explícita. A mesma regra de dependência comercial usada

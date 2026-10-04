@@ -250,3 +250,22 @@ Este documento complementa e deve ser usado junto com:
 - `docs/canonical/pipeline-operacional-canon.v1.md`
 
 Em caso de conflito operacional geral, prevalece o `system-governance-canon.v3.md`; em caso de conteúdo específico de avatar de venda, prevalece este documento no escopo do módulo.
+
+## Revisão humana disponível versus histórico — 04/10/2026
+
+O backend classifica cada peça da fila em `AWAITING_REVIEW`, `BLOCKED`, `HISTORICAL`,
+`APPROVED` ou `REJECTED`. O estado `DRAFT` sozinho não autoriza solicitar aprovação humana:
+copy inválida, parecer independente pendente e trava audiovisual são bloqueios anteriores.
+Experimentos `USER_STOPPED`, `VALIDATED`, `INVALIDATED`, `INCONCLUSIVE`, `FINISHED` ou `FAILED`
+não exigem aprovação de novos rascunhos para um fluxo corrente. Ancestral com descendente
+aprovado no mesmo experimento permanece histórico, sem reaprová-lo. Uma aprovação existente
+continua registrada e não deve ser inferida ou repetida porque a mesma mídia aparece em outra peça.
+
+O alerta mostra somente a contagem oficial de decisões humanas disponíveis no produto e,
+quando presente, no experimento da navegação. A fila geral se identifica como tal e mantém
+bloqueios e histórico consultáveis. Aprovar uma peça nunca significa liberar campanha ou gasto.
+Comandos de aprovação/reanálise de vídeo recusam tentativas encerradas ou substituídas; copy
+reprovada deterministicamente não pode ser reenviada ao parecer pago sem correção.
+
+Contrato: `docs/swagger/creative-video-review-swagger.yaml`. Regressões e limites:
+`docs/homologacao/video-review-readiness-v1.md`. Nenhuma decisão histórica é reescrita.

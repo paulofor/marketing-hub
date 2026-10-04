@@ -16,6 +16,7 @@ import com.marketinghub.creative.dto.CreativeAgentReviewResultRequest;
 import com.marketinghub.creative.dto.CreativeImprovementPendingDto;
 import com.marketinghub.creative.dto.CreativeImprovementResultRequest;
 import com.marketinghub.creative.dto.CreativeVideoReviewDto;
+import com.marketinghub.creative.service.videoreview.*;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
@@ -293,22 +294,34 @@ public class CreativeService {
     return saved;
   }
 
-  /** Lista criativos de vídeo publicáveis para aprovação operacional. */
+  /** Preserva o contrato legado de consulta de todas as revisões de vídeo. */
+  @Transactional(readOnly = true)
   public List<CreativeVideoReviewDto> listVideoReviewQueue(CreativeStatus status) {
+    return listVideoReviewQueue(status, null, null, null);
+  }
+
+  /** Classifica a fila no backend e limita a consulta ao produto e experimento informados. */
+  @Transactional(readOnly = true)
+  public List<CreativeVideoReviewDto> listVideoReviewQueue(
+      CreativeStatus status, Long productId, Long experimentId, VideoReviewState state) {
     List<Creative> creatives =
-        status == null
-            ? repository.findVideoCreativesForReview()
-            : repository.findVideoCreativesForReviewByStatus(status);
-    ExperimentVideoReviewStatus reviewStatus = toExperimentVideoReviewStatus(status);
-    List<ExperimentVideoAsset> experimentVideos =
-        reviewStatus == null
-            ? experimentVideoAssetRepository.findReadyExperimentVideosForReview(
-                ExperimentVideoStatus.READY)
-            : experimentVideoAssetRepository.findReadyExperimentVideosForReviewByReviewStatus(
-                ExperimentVideoStatus.READY, reviewStatus);
+        repository.findVideoCreativesForReview(status, productId, experimentId);
+    Map<Long, Long> replacements =
+        VideoReviewPolicy.supersededBy(
+            status == null
+                ? creatives
+                : repository.findVideoCreativesForReview(
+                    CreativeStatus.READY, productId, experimentId));
+    List<ExperimentVideoAsset> videos =
+        experimentVideoAssetRepository.findReadyExperimentVideosForReview(
+            ExperimentVideoStatus.READY,
+            toExperimentVideoReviewStatus(status),
+            productId,
+            experimentId);
     return java.util.stream.Stream.concat(
-            creatives.stream().map(this::toVideoReviewDto),
-            experimentVideos.stream().map(this::toVideoReviewDto))
+            creatives.stream().map(creative -> toVideoReviewDto(creative, replacements)),
+            videos.stream().map(this::toVideoReviewDto))
+        .filter(video -> state == null || video.eligibility().state() == state)
         .sorted(
             Comparator.comparing(
                     CreativeVideoReviewDto::experimentId,
@@ -316,6 +329,24 @@ public class CreativeService {
                 .thenComparing(
                     CreativeVideoReviewDto::id, Comparator.nullsLast(Comparator.reverseOrder())))
         .toList();
+  }
+
+  /** Consolida contagens oficiais para que a tela não deduza pendências a partir de DRAFT. */
+  @Transactional(readOnly = true)
+  public VideoReviewSummary videoReviewSummary(Long productId, Long experimentId) {
+    Map<VideoReviewState, Long> counts =
+        listVideoReviewQueue(null, productId, experimentId, null).stream()
+            .collect(
+                java.util.stream.Collectors.groupingBy(
+                    video -> video.eligibility().state(), java.util.stream.Collectors.counting()));
+    return new VideoReviewSummary(
+        productId,
+        experimentId,
+        counts.getOrDefault(VideoReviewState.AWAITING_REVIEW, 0L),
+        counts.getOrDefault(VideoReviewState.BLOCKED, 0L),
+        counts.getOrDefault(VideoReviewState.HISTORICAL, 0L),
+        counts.getOrDefault(VideoReviewState.APPROVED, 0L),
+        counts.getOrDefault(VideoReviewState.REJECTED, 0L));
   }
 
   /** Atualiza a revisão de um item da fila única de vídeos pela origem persistida. */
@@ -337,7 +368,7 @@ public class CreativeService {
     return updateStatus(id, status, null);
   }
 
-  /** Atualiza o status de revisão do criativo e persiste o motivo quando ele for reprovado. */
+  /** Atualiza a decisão e seu motivo sem aprovar tentativas históricas de vídeo. */
   @Transactional
   public Creative updateStatus(Long id, CreativeStatus status, String rejectionReason) {
     try {
@@ -345,6 +376,9 @@ public class CreativeService {
         throw new IllegalArgumentException("Status do criativo é obrigatório.");
       }
       Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
+      if (status == CreativeStatus.READY && creative.getStatus() != CreativeStatus.READY) {
+        validateVideoReviewIsCurrent(creative);
+      }
       validateReadyCreativeHasMedia(creative, status);
       validateAgentReviewGate(creative, status);
       String normalizedRejectionReason = normalizeRejectionReason(status, rejectionReason);
@@ -496,10 +530,12 @@ public class CreativeService {
         : null;
   }
 
-  /** Enfileira explicitamente um criativo legado ou com falha para nova revisão do agente. */
+  /** Reenfileira a revisão após validar copy, sem reabrir vídeos encerrados ou substituídos. */
   @Transactional
   public Creative requestAgentReview(Long id) {
     Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
+    validateVideoReviewIsCurrent(creative);
+    if ("VIDEO".equalsIgnoreCase(creative.getFormat())) validatePublicationCopy(creative);
     CreativeAgentReviewStatus current = creative.getAgentReviewStatus();
     if (current == CreativeAgentReviewStatus.PENDING
         || current == CreativeAgentReviewStatus.PROCESSING) {
@@ -1261,13 +1297,20 @@ public class CreativeService {
     creative.setReviewedAt(null);
   }
 
-  /** Atualiza a revisão humana de um vídeo de experimento e preserva o motivo da reprovação. */
+  /**
+   * Registra a revisão humana da peça atual, preservando os gates e impedindo aprovação histórica.
+   */
   private CreativeVideoReviewDto updateExperimentVideoReviewStatus(
       Long id, CreativeStatus status, String rejectionReason) {
     if (status == null) {
       throw new IllegalArgumentException("Status do vídeo é obrigatório.");
     }
     ExperimentVideoAsset videoAsset = experimentVideoAssetRepository.findById(id).orElseThrow();
+    if (status == CreativeStatus.READY
+        && videoAsset.getReviewStatus() != ExperimentVideoReviewStatus.APPROVED) {
+      String reason = VideoReviewPolicy.historicalReason(videoAsset.getExperiment(), null);
+      if (reason != null) throw new ResponseStatusException(HttpStatus.CONFLICT, reason);
+    }
     if (status == CreativeStatus.READY && !hasPublicExperimentVideoUrl(videoAsset)) {
       throw new IllegalArgumentException("Vídeo de experimento aprovado precisa ter URL pública.");
     }
@@ -1295,15 +1338,30 @@ public class CreativeService {
     return toVideoReviewDto(experimentVideoAssetRepository.save(videoAsset));
   }
 
+  /** Usa na tela as mesmas verificações de mídia, áudio e origem visual exigidas pelo comando. */
+  private String experimentVideoApprovalBlockReason(ExperimentVideoAsset videoAsset) {
+    if (videoAsset.getStatus() != ExperimentVideoStatus.READY
+        || !hasPublicExperimentVideoUrl(videoAsset))
+      return "Vídeo ainda não está pronto com URL pública.";
+    if (!Boolean.TRUE.equals(videoAsset.getHasAudio())) return "Vídeo precisa ter áudio validado.";
+    return experimentVideoVisualSourceBlockReason(videoAsset);
+  }
+
   /** Bloqueia aprovação de anúncio e hero com a mesma origem visual sem justificativa comercial. */
   private void validateExperimentVideoVisualSourceDiversity(ExperimentVideoAsset videoAsset) {
+    String reason = experimentVideoVisualSourceBlockReason(videoAsset);
+    if (reason != null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
+  }
+
+  /** Compartilha a trava de diversidade visual entre consulta e aprovação. */
+  private String experimentVideoVisualSourceBlockReason(ExperimentVideoAsset videoAsset) {
     Experiment experiment = videoAsset.getExperiment();
     String visualSourceKey = normalizeVisualSourceKey(videoAsset.getVisualSourceKey());
     if (experiment == null
         || experiment.getId() == null
         || visualSourceKey == null
         || !isAdOrHero(videoAsset.getSlot())) {
-      return;
+      return null;
     }
     boolean hasConflictingSlot =
         experimentVideoAssetRepository
@@ -1317,11 +1375,10 @@ public class CreativeService {
             .anyMatch(candidate -> isAdHeroPair(videoAsset.getSlot(), candidate.getSlot()));
     if (hasConflictingSlot
         && !StringUtils.hasText(videoAsset.getVisualSimilarityOverrideReason())) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST,
-          "Aprovação bloqueada: vídeo de campanha e hero do PDE usam a mesma origem visual. "
-              + "Informe uma justificativa de exceção ou gere uma variação visual distinta.");
+      return "Aprovação bloqueada: vídeo de campanha e hero do PDE usam a mesma origem visual. "
+          + "Informe uma justificativa de exceção ou gere uma variação visual distinta.";
     }
+    return null;
   }
 
   /** Identifica slots que exigem diversidade visual entre mídia paga e hero de página. */
@@ -1425,8 +1482,34 @@ public class CreativeService {
     }
   }
 
-  /** Converte o criativo de vídeo em contrato de revisão com hipótese, nicho e dados de custo. */
+  /** Reavalia a elegibilidade após um comando sem perder a linhagem persistida. */
   private CreativeVideoReviewDto toVideoReviewDto(Creative creative) {
+    return toVideoReviewDto(creative, approvedVideoReplacements(creative.getExperiment()));
+  }
+
+  /**
+   * Consulta apenas os descendentes aprovados do mesmo experimento para reconhecer substituições.
+   */
+  private Map<Long, Long> approvedVideoReplacements(Experiment experiment) {
+    if (experiment == null) return Map.of();
+    return VideoReviewPolicy.supersededBy(
+        repository.findVideoCreativesForReview(CreativeStatus.READY, null, experiment.getId()));
+  }
+
+  /**
+   * Bloqueia decisões sobre vídeo histórico antes de alterar aprovação ou enfileirar análise paga.
+   */
+  private void validateVideoReviewIsCurrent(Creative creative) {
+    if (!"VIDEO".equalsIgnoreCase(creative.getFormat())) return;
+    String reason =
+        VideoReviewPolicy.historicalReason(
+            creative.getExperiment(),
+            approvedVideoReplacements(creative.getExperiment()).get(creative.getId()));
+    if (reason != null) throw new ResponseStatusException(HttpStatus.CONFLICT, reason);
+  }
+
+  /** Converte o anúncio em revisão com a decisão canônica e o contexto do produto de origem. */
+  private CreativeVideoReviewDto toVideoReviewDto(Creative creative, Map<Long, Long> replacements) {
     Experiment experiment = creative.getExperiment();
     Hypothesis hypothesis = experiment != null ? experiment.getHypothesisRef() : null;
     MarketNiche niche =
@@ -1466,7 +1549,24 @@ public class CreativeService {
         null,
         null,
         null,
-        null);
+        null,
+        experiment != null && experiment.getProduct() != null
+            ? experiment.getProduct().getId()
+            : null,
+        experiment != null && experiment.getProduct() != null
+            ? experiment.getProduct().getName()
+            : null,
+        VideoReviewPolicy.classify(
+            creative.getStatus(),
+            VideoReviewPolicy.historicalReason(experiment, replacements.get(creative.getId())),
+            agentReviewApprovalBlockReason(creative),
+            CreativePublicationCopyPolicy.violations(creative).isEmpty()
+                && (creative.getAgentReviewStatus() == null
+                    || java.util.Set.of(
+                            CreativeAgentReviewStatus.ADJUST,
+                            CreativeAgentReviewStatus.REJECTED,
+                            CreativeAgentReviewStatus.FAILED)
+                        .contains(creative.getAgentReviewStatus()))));
   }
 
   /**
@@ -1502,7 +1602,7 @@ public class CreativeService {
         toCreativeStatus(videoAsset.getReviewStatus()),
         null,
         null,
-        null,
+        experimentVideoApprovalBlockReason(videoAsset),
         videoAsset.getRejectionReason(),
         videoAsset.getReviewedAt(),
         videoAsset.getCreatedAt(),
@@ -1512,7 +1612,18 @@ public class CreativeService {
         videoAsset.getVisualSourceType(),
         videoAsset.getVisualSourceKey(),
         videoAsset.getVisualSourceDescription(),
-        videoAsset.getVisualSimilarityOverrideReason());
+        videoAsset.getVisualSimilarityOverrideReason(),
+        experiment != null && experiment.getProduct() != null
+            ? experiment.getProduct().getId()
+            : null,
+        experiment != null && experiment.getProduct() != null
+            ? experiment.getProduct().getName()
+            : null,
+        VideoReviewPolicy.classify(
+            toCreativeStatus(videoAsset.getReviewStatus()),
+            VideoReviewPolicy.historicalReason(experiment, null),
+            experimentVideoApprovalBlockReason(videoAsset),
+            false));
   }
 
   /** Resume o parecer mais recente de Têmis sem expor o payload técnico integral na fila. */

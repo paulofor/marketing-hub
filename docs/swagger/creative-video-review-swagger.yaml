@@ -1,0 +1,135 @@
+openapi: 3.0.3
+info:
+  title: Revisão de vídeos e pendências reais
+  version: 1.1.0
+paths:
+  /api/creatives/video-review:
+    get:
+      summary: Consultar vídeos com elegibilidade calculada pelo backend
+      description: >-
+        Preserva o filtro legado status e adiciona escopo por produto/experimento e estado de revisão.
+        DRAFT não significa aprovação humana pendente: inclui bloqueios e tentativas históricas.
+        A consulta nunca aprova, rejeita, reabre pareceres ou altera custos e campanhas.
+      parameters:
+        - {
+            name: status,
+            in: query,
+            schema: { type: string, enum: [DRAFT, READY, REJECTED] },
+          }
+        - { $ref: "#/components/parameters/productId" }
+        - { $ref: "#/components/parameters/experimentId" }
+        - {
+            name: state,
+            in: query,
+            schema: { $ref: "#/components/schemas/VideoReviewState" },
+          }
+      responses:
+        "200":
+          description: Lista CreativeVideoReviewDto com productId, productName e eligibility.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, sourceType, status, eligibility]
+                  properties:
+                    id: { type: integer, format: int64 }
+                    sourceType:
+                      { type: string, enum: [CREATIVE, EXPERIMENT_VIDEO_ASSET] }
+                    status: { type: string, enum: [DRAFT, READY, REJECTED] }
+                    productId: { type: integer, format: int64, nullable: true }
+                    productName: { type: string, nullable: true }
+                    eligibility: { $ref: "#/components/schemas/Eligibility" }
+  /api/creatives/video-review/summary:
+    get:
+      summary: Contagens oficiais da fila no escopo consultado
+      parameters:
+        - { $ref: "#/components/parameters/productId" }
+        - { $ref: "#/components/parameters/experimentId" }
+      responses:
+        "200":
+          description: Contagens sem inferência de prontidão por status DRAFT.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  [
+                    awaitingReviewCount,
+                    blockedCount,
+                    historicalCount,
+                    approvedCount,
+                    rejectedCount,
+                  ]
+                properties:
+                  productId: { type: integer, format: int64, nullable: true }
+                  experimentId: { type: integer, format: int64, nullable: true }
+                  awaitingReviewCount:
+                    { type: integer, format: int64, minimum: 0 }
+                  blockedCount: { type: integer, format: int64, minimum: 0 }
+                  historicalCount: { type: integer, format: int64, minimum: 0 }
+                  approvedCount: { type: integer, format: int64, minimum: 0 }
+                  rejectedCount: { type: integer, format: int64, minimum: 0 }
+  /api/creatives/video-review/{sourceType}/{id}/status:
+    patch:
+      summary: Registrar decisão mantendo gates de mídia, áudio, origem visual e Têmis
+      parameters:
+        - {
+            name: sourceType,
+            in: path,
+            required: true,
+            schema: { type: string, enum: [CREATIVE, EXPERIMENT_VIDEO_ASSET] },
+          }
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: integer, format: int64 },
+          }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [DRAFT, READY, REJECTED] }
+                rejectionReason: { type: string }
+      responses:
+        "200": { description: Revisão atualizada com elegibilidade oficial. }
+        "400":
+          {
+            description: Mídia,
+            áudio,
+            origem visual ou motivo de reprovação inválidos.,
+          }
+        "409":
+          {
+            description: Tentativa histórica,
+            versão substituída,
+            copy inválida ou parecer independente ausente.,
+          }
+components:
+  parameters:
+    productId:
+      name: productId
+      in: query
+      schema: { type: integer, format: int64 }
+    experimentId:
+      name: experimentId
+      in: query
+      schema: { type: integer, format: int64 }
+  schemas:
+    VideoReviewState:
+      type: string
+      enum: [AWAITING_REVIEW, BLOCKED, HISTORICAL, APPROVED, REJECTED]
+    Eligibility:
+      type: object
+      required: [state, reason, approvalAvailable, agentReviewRequestAvailable]
+      properties:
+        state: { $ref: "#/components/schemas/VideoReviewState" }
+        reason: { type: string }
+        approvalAvailable: { type: boolean }
+        agentReviewRequestAvailable: { type: boolean }

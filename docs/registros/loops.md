@@ -1,5 +1,18 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-VIDEO-FILA-HISTORICA-COMO-APROVACAO — rascunhos antigos parecem bloquear outro produto
+
+- **Data:** 04/10/2026. Tela, API e MCP confirmaram oito DRAFT, mas apenas duas novas peças
+  estavam disponíveis para revisão; as demais eram histórico ou dependiam de correção/parecer.
+  Nenhuma pertencia ao experimento #97 aberto na tela. As aprovações publicadas estavam preservadas.
+- **Causa:** alerta global contava DRAFT como aprovação humana, sem escopo, estado do experimento
+  ou linhagem. O mesmo ancestral #528 já causara confusão na projeção comercial de versões.
+- **Correção:** elegibilidade e contagens no backend, histórico consultável e escopo explícito;
+  comandos recusam reaprovação/reanálise de vídeo encerrado/substituído e copy inválida antes do modelo.
+- **Prevenção:** casos genéricos de linhagem, estados finais, filtros, gates e leitura sem mutação;
+  homologação do build da tela com backend HTTP/H2 em desktop e celulares. Referência:
+  `docs/homologacao/video-review-readiness-v1.md` e `docs/registros/sales-video.md`.
+
 ## LOOP-IRIS-PESQUISA-CONCLUIDA-SEM-ACEITE — 04/10/2026
 
 - **Evidência:** Alcyone #11 / Look para a Ocasião, processo #113 v11, execução #44,

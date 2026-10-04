@@ -53,8 +53,17 @@ describe("CreativeVideoReviewPage", () => {
     const createdAt = new Date().toISOString();
     mockedAxiosGet.mockImplementation(
       async (_url: string, config?: AxiosRequestConfig) => {
-        const status = config?.params?.status;
-        if (status === "DRAFT") {
+        if (_url.endsWith("/summary"))
+          return {
+            data: {
+              awaitingReviewCount: 0,
+              blockedCount: 0,
+              historicalCount: 0,
+              approvedCount: 0,
+              rejectedCount: 2,
+            },
+          };
+        if (config?.params?.state === "AWAITING_REVIEW") {
           return { data: [] };
         }
         return {
@@ -73,6 +82,12 @@ describe("CreativeVideoReviewPage", () => {
               primaryText: "Texto do criativo",
               videoUrl: "https://example.com/video-243.mp4",
               status: "REJECTED",
+              eligibility: {
+                state: "REJECTED",
+                reason: "Reprovado",
+                approvalAvailable: false,
+                agentReviewRequestAvailable: false,
+              },
               rejectionReason: "A legenda ta ruim",
               reviewedAt: "2026-07-25T15:10:00Z",
               createdAt,
@@ -94,6 +109,12 @@ describe("CreativeVideoReviewPage", () => {
               primaryText: "Texto do criativo",
               videoUrl: "https://example.com/video-242.mp4",
               status: "REJECTED",
+              eligibility: {
+                state: "REJECTED",
+                reason: "Reprovado",
+                approvalAvailable: false,
+                agentReviewRequestAvailable: false,
+              },
               rejectionReason: "O audio esta em ingles",
               reviewedAt: "2026-07-25T15:20:00Z",
               createdAt,
@@ -147,6 +168,12 @@ describe("CreativeVideoReviewPage", () => {
           primaryText: "Texto do video produzido",
           videoUrl: "https://example.com/video-21.mp4",
           status: "DRAFT",
+          eligibility: {
+            state: "AWAITING_REVIEW",
+            reason: "Nova peça",
+            approvalAvailable: true,
+            agentReviewRequestAvailable: false,
+          },
           videoCostUsd: 0.08,
           totalProductionCostUsd: 0.08,
         },
@@ -177,6 +204,12 @@ describe("CreativeVideoReviewPage", () => {
           videoUrl: "https://example.com/video-524.mp4",
           status: "DRAFT",
           agentReviewStatus: "ADJUST",
+          eligibility: {
+            state: "BLOCKED",
+            reason: "Corrigir antes da revisão humana",
+            approvalAvailable: false,
+            agentReviewRequestAvailable: true,
+          },
           agentReviewSummary: "A inspeção visual precisa ser repetida.",
           approvalBlockedReason:
             "Aprovação bloqueada: Têmis, Agente Especialista em Anúncios, ainda não aprovou o anúncio. Reenvie-o para a revisão independente.",
@@ -233,6 +266,12 @@ describe("CreativeVideoReviewPage", () => {
           videoUrl: "https://example.com/video-524.mp4",
           status: "DRAFT",
           agentReviewStatus: "APPROVED",
+          eligibility: {
+            state: "AWAITING_REVIEW",
+            reason: "Nova peça",
+            approvalAvailable: true,
+            agentReviewRequestAvailable: false,
+          },
         },
       ],
     });
@@ -255,5 +294,113 @@ describe("CreativeVideoReviewPage", () => {
         "Aprovação bloqueada por um gate comercial vigente.",
       );
     });
+  });
+  it("mantém a tentativa histórica sem oferecer aprovação, reprovação ou reanálise", async () => {
+    mockedAxiosGet.mockResolvedValue({
+      data: [
+        {
+          id: 818,
+          sourceType: "CREATIVE",
+          experimentId: 320,
+          experimentName: "Experimento encerrado",
+          experimentStatus: "INVALIDATED",
+          format: "VIDEO",
+          headline: "Versão anterior",
+          primaryText: "Demonstração",
+          videoUrl: "https://fixture.invalid/demo.mp4",
+          status: "DRAFT",
+          agentReviewStatus: "FAILED",
+          eligibility: {
+            state: "HISTORICAL",
+            reason: "Substituída pelo criativo aprovado #819.",
+            approvalAvailable: false,
+            agentReviewRequestAvailable: false,
+          },
+        },
+      ],
+    });
+    setup();
+    expect(
+      await screen.findByText("Histórico — sem ação pendente"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Substituída pelo criativo aprovado #819."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Aprovar para portfólio" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Reavaliar com Têmis" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Reprovar" }),
+    ).not.toBeInTheDocument();
+    expect(mockedAxiosPatch).not.toHaveBeenCalled();
+    expect(mockedAxiosPost).not.toHaveBeenCalled();
+  });
+
+  it("solicita cada classificação ao backend sem deduzir elegibilidade de DRAFT", async () => {
+    const user = userEvent.setup();
+    mockedAxiosGet.mockImplementation(async (url: string) => ({
+      data: url.endsWith("/summary")
+        ? {
+            awaitingReviewCount: 0,
+            blockedCount: 3,
+            historicalCount: 4,
+            approvedCount: 8,
+            rejectedCount: 1,
+          }
+        : [],
+    }));
+    setup();
+    await user.click(
+      screen.getByRole("button", { name: "Ajustes e pareceres" }),
+    );
+    await waitFor(() =>
+      expect(mockedAxiosGet).toHaveBeenCalledWith(
+        "/api/creatives/video-review",
+        { params: { state: "BLOCKED" } },
+      ),
+    );
+    await user.click(screen.getByRole("button", { name: "Histórico" }));
+    await waitFor(() =>
+      expect(mockedAxiosGet).toHaveBeenCalledWith(
+        "/api/creatives/video-review",
+        { params: { state: "HISTORICAL" } },
+      ),
+    );
+  });
+  it("preserva a exigência de prévia para a decisão humana", async () => {
+    mockedAxiosGet.mockResolvedValue({
+      data: [
+        {
+          id: 825,
+          sourceType: "CREATIVE",
+          experimentId: 325,
+          experimentName: "Contexto sintético",
+          experimentStatus: "PLANNED",
+          format: "VIDEO",
+          headline: "Mídia sem prévia",
+          primaryText: "Demonstração",
+          videoId: "meta-fixture",
+          videoUrl: null,
+          status: "DRAFT",
+          agentReviewStatus: "APPROVED",
+          eligibility: {
+            state: "AWAITING_REVIEW",
+            reason: "Nova peça",
+            approvalAvailable: true,
+            agentReviewRequestAvailable: false,
+          },
+        },
+      ],
+    });
+    setup();
+    expect(
+      await screen.findByText("Vídeo sem URL pública"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Aprovar para portfólio" }),
+    ).toBeDisabled();
   });
 });

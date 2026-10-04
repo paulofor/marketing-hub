@@ -10,22 +10,27 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.FixtureUtils;
 import com.marketinghub.ads.AdsServiceApplication;
+import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
 import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.math.BigDecimal;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,8 +74,11 @@ class CreativeControllerTest {
   @Autowired
   com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository leadPortalFlowRepository;
 
+  @Autowired ProductRepository productRepository;
+
   Long expId;
 
+  /** Isola contextos persistidos para que uma revisão não contamine outro cenário. */
   @BeforeEach
   void setup() {
     videoAssetRepository.deleteAll();
@@ -600,5 +608,175 @@ class CreativeControllerTest {
     assertThat(found.getAngles()).hasSize(1);
     assertThat(found.getVisualProofs()).hasSize(1);
     assertThat(found.getEmotionalTriggers()).hasSize(1);
+  }
+
+  /** Reproduz a mistura de oito rascunhos sem fixar os identificadores do incidente. */
+  @Test
+  void summarySeparatesHumanDecisionsBlocksAndHistoricalAttempts() throws Exception {
+    Experiment current = experimentRepository.findById(expId).orElseThrow();
+    Product product =
+        productRepository.save(Product.builder().name("Produto de homologação").build());
+    current.setProduct(product);
+    experimentRepository.saveAndFlush(current);
+    Experiment closed = fixtures.createAndSaveExperiment(fixtures.createAndSaveNiche());
+    closed.setStatus(ExperimentStatus.INVALIDATED);
+    experimentRepository.saveAndFlush(closed);
+    reviewCreative(closed, CreativeAgentReviewStatus.ADJUST);
+    reviewCreative(closed, CreativeAgentReviewStatus.FAILED);
+    reviewVideo(closed);
+    Creative ancestor = reviewCreative(current, CreativeAgentReviewStatus.FAILED);
+    Creative approved = reviewCreative(current, CreativeAgentReviewStatus.APPROVED);
+    approved.setSourceCreative(ancestor);
+    approved.setStatus(CreativeStatus.READY);
+    approved.setReviewedAt(Instant.parse("2026-08-01T12:00:00Z"));
+    repository.saveAndFlush(approved);
+    reviewCreative(current, CreativeAgentReviewStatus.ADJUST);
+    reviewCreative(current, CreativeAgentReviewStatus.PENDING);
+    reviewVideo(current);
+    reviewVideo(current);
+    mockMvc
+        .perform(get("/api/creatives/video-review/summary"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.awaitingReviewCount").value(2))
+        .andExpect(jsonPath("$.blockedCount").value(2))
+        .andExpect(jsonPath("$.historicalCount").value(4))
+        .andExpect(jsonPath("$.approvedCount").value(1));
+    mockMvc
+        .perform(get("/api/creatives/video-review").param("state", "AWAITING_REVIEW"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].eligibility.approvalAvailable").value(true));
+    mockMvc
+        .perform(
+            get("/api/creatives/video-review/summary")
+                .param("productId", product.getId().toString()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.historicalCount").value(1));
+    mockMvc
+        .perform(
+            get("/api/creatives/video-review/summary")
+                .param("productId", product.getId().toString())
+                .param("experimentId", closed.getId().toString()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.awaitingReviewCount").value(0))
+        .andExpect(jsonPath("$.historicalCount").value(0));
+    mockMvc
+        .perform(get("/api/creatives/video-review").param("status", "DRAFT"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(8));
+    assertThat(repository.findById(approved.getId()).orElseThrow().getReviewedAt())
+        .isEqualTo(approved.getReviewedAt());
+    assertThat(repository.findById(ancestor.getId()).orElseThrow().getStatus())
+        .isEqualTo(CreativeStatus.DRAFT);
+    mockMvc
+        .perform(post("/api/creatives/" + ancestor.getId() + "/agent-review/request"))
+        .andExpect(status().isConflict());
+    assertThat(repository.findById(ancestor.getId()).orElseThrow().getAgentReviewStatus())
+        .isEqualTo(CreativeAgentReviewStatus.FAILED);
+  }
+
+  /**
+   * Bloqueia reaprovacão e reanálise de tentativas encerradas sem alterar o resultado persistido.
+   */
+  @Test
+  void historicalVideoCommandsDoNotReopenApprovalsOrPaidReviews() throws Exception {
+    Experiment closed = experimentRepository.findById(expId).orElseThrow();
+    closed.setStatus(ExperimentStatus.FINISHED);
+    experimentRepository.saveAndFlush(closed);
+    Creative creative = reviewCreative(closed, CreativeAgentReviewStatus.APPROVED);
+    ExperimentVideoAsset video = reviewVideo(closed);
+    mockMvc
+        .perform(
+            patch("/api/creatives/video-review/CREATIVE/" + creative.getId() + "/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"READY\"}"))
+        .andExpect(status().isConflict());
+    mockMvc
+        .perform(
+            patch("/api/creatives/video-review/EXPERIMENT_VIDEO_ASSET/" + video.getId() + "/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"READY\"}"))
+        .andExpect(status().isConflict());
+    mockMvc
+        .perform(post("/api/creatives/" + creative.getId() + "/agent-review/request"))
+        .andExpect(status().isConflict());
+    assertThat(repository.findById(creative.getId()).orElseThrow().getStatus())
+        .isEqualTo(CreativeStatus.DRAFT);
+    assertThat(videoAssetRepository.findById(video.getId()).orElseThrow().getReviewStatus())
+        .isEqualTo(ExperimentVideoReviewStatus.PENDING);
+  }
+
+  /** Evita nova chamada paga quando a copy ainda viola um limite determinístico conhecido. */
+  @Test
+  void invalidCopyCannotBeRequeuedForPaidReview() throws Exception {
+    Creative creative =
+        reviewCreative(
+            experimentRepository.findById(expId).orElseThrow(), CreativeAgentReviewStatus.FAILED);
+    creative.setPrimaryText("Texto longo ".repeat(30));
+    repository.saveAndFlush(creative);
+    mockMvc
+        .perform(get("/api/creatives/video-review").param("state", "BLOCKED"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].eligibility.agentReviewRequestAvailable").value(false));
+    mockMvc
+        .perform(post("/api/creatives/" + creative.getId() + "/agent-review/request"))
+        .andExpect(status().isConflict());
+    assertThat(repository.findById(creative.getId()).orElseThrow().getAgentReviewStatus())
+        .isEqualTo(CreativeAgentReviewStatus.FAILED);
+  }
+
+  /** Garante que aprovação legítima atualiza a contagem sem precisar de um novo experimento. */
+  @Test
+  void approvalOfCurrentPieceRemovesOnlyThatPieceFromHumanQueue() throws Exception {
+    ExperimentVideoAsset video = reviewVideo(experimentRepository.findById(expId).orElseThrow());
+    mockMvc
+        .perform(
+            patch("/api/creatives/video-review/EXPERIMENT_VIDEO_ASSET/" + video.getId() + "/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"READY\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.eligibility.state").value("APPROVED"));
+    mockMvc
+        .perform(get("/api/creatives/video-review/summary"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.awaitingReviewCount").value(0))
+        .andExpect(jsonPath("$.approvedCount").value(1));
+    assertThat(videoAssetRepository.findById(video.getId()).orElseThrow().getExperiment().getId())
+        .isEqualTo(expId);
+  }
+
+  /**
+   * Cria anúncio sintético com mídia e copy válidas, mantendo parecer explicitamente controlado.
+   */
+  private Creative reviewCreative(Experiment experiment, CreativeAgentReviewStatus reviewStatus) {
+    return repository.saveAndFlush(
+        Creative.builder()
+            .experiment(experiment)
+            .format("VIDEO")
+            .headline("Veja uma demonstração")
+            .primaryText("Conheça o resultado e as condições.")
+            .videoUrl("https://fixture.invalid/demo.mp4")
+            .status(CreativeStatus.DRAFT)
+            .agentReviewStatus(reviewStatus)
+            .build());
+  }
+
+  /** Cria peça sintética pronta para testar exclusivamente os contratos internos de revisão. */
+  private ExperimentVideoAsset reviewVideo(Experiment experiment) {
+    return videoAssetRepository.saveAndFlush(
+        ExperimentVideoAsset.builder()
+            .experiment(experiment)
+            .slot(ExperimentVideoSlot.AD)
+            .objective("Demonstrar o benefício")
+            .primaryMetric("checkout")
+            .script("Demonstração sintética")
+            .provider("LOCAL_FIXTURE")
+            .model("fixture")
+            .status(ExperimentVideoStatus.READY)
+            .assetUrl("https://fixture.invalid/demo.mp4")
+            .hasAudio(true)
+            .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+            .requiredForRelease(false)
+            .build());
   }
 }

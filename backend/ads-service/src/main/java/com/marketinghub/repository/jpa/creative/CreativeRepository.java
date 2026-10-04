@@ -149,42 +149,28 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
   List<Creative> findAgentImprovementQueue(
       @Param("statuses") java.util.Set<CreativeImprovementStatus> statuses);
 
-  /** Lista criativos de vídeo com o contexto comercial necessário para revisão. */
+  /** Consulta vídeos no escopo solicitado, preservando os filtros no banco. */
   @Query(
       """
-            select c
-              from Creative c
-              join fetch c.experiment e
-              join fetch e.niche n
-              left join fetch e.hypothesisRef h
-              left join fetch h.marketNiche hn
-             where upper(coalesce(c.format, '')) = 'VIDEO'
-               and (
-                    (c.videoId is not null and trim(c.videoId) <> '')
-                 or (c.videoUrl is not null and trim(c.videoUrl) <> '')
-               )
-             order by c.id desc
-            """)
-  List<Creative> findVideoCreativesForReview();
-
-  /** Lista criativos de vídeo em um status específico com contexto comercial para revisão. */
-  @Query(
-      """
-            select c
-              from Creative c
-              join fetch c.experiment e
-              join fetch e.niche n
-              left join fetch e.hypothesisRef h
-              left join fetch h.marketNiche hn
-             where upper(coalesce(c.format, '')) = 'VIDEO'
-               and c.status = :status
-               and (
-                    (c.videoId is not null and trim(c.videoId) <> '')
-                 or (c.videoUrl is not null and trim(c.videoUrl) <> '')
-               )
-             order by c.id desc
-            """)
-  List<Creative> findVideoCreativesForReviewByStatus(@Param("status") CreativeStatus status);
+      select c from Creative c
+        join fetch c.experiment e
+        join fetch e.niche n
+        left join fetch e.product p
+        left join fetch e.hypothesisRef h
+        left join fetch h.marketNiche hn
+        left join fetch c.sourceCreative
+       where upper(coalesce(c.format, '')) = 'VIDEO'
+         and (:status is null or c.status = :status)
+         and (:productId is null or p.id = :productId)
+         and (:experimentId is null or e.id = :experimentId)
+         and ((c.videoId is not null and trim(c.videoId) <> '')
+           or (c.videoUrl is not null and trim(c.videoUrl) <> ''))
+       order by c.id desc
+      """)
+  List<Creative> findVideoCreativesForReview(
+      @Param("status") CreativeStatus status,
+      @Param("productId") Long productId,
+      @Param("experimentId") Long experimentId);
 
   /** Conta todos os criativos vinculados ao experimento informado. */
   long countByExperimentId(Long experimentId);

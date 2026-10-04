@@ -185,6 +185,12 @@ public class ExperimentTechnicalPreflightEvidenceService {
     return new Evidence(experiment.getId(), run.getId(), fingerprint, evidence);
   }
 
+  /** Resolve o workspace do produto sem exigir gates aprovados nem disparar outra tentativa. */
+  @Transactional(readOnly = true, noRollbackFor = RuntimeException.class)
+  public Long referencedExperimentId(Product product, String sourceReference) {
+    return referencedExperiment(product, sourceReference).getId();
+  }
+
   /** Resolve a referência explícita e impede mistura de produto ou experimento. */
   private Experiment referencedExperiment(Product product, String sourceReference) {
     var matcher = EXPERIMENT_REFERENCE.matcher(Objects.toString(sourceReference, ""));

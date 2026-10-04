@@ -138,6 +138,25 @@ class ExperimentTechnicalPreflightEvidenceServiceTest {
         .isEqualTo("2026-09-23T12:00:00Z");
   }
 
+  /** A identidade do workspace independe da conclusão dos gates e não consulta outras fontes. */
+  @Test
+  void resolvesWorkspaceBeforeHomologationIsComplete() {
+    run.setStatus(ExperimentRunStatus.PREFLIGHT_PENDING);
+
+    assertThat(service.referencedExperimentId(product, "experiment:88")).isEqualTo(88L);
+    verifyNoInteractions(runs, gates, plans, quartzoContext, quartzoChecks);
+  }
+
+  /** Recusa referência inválida e vínculo de outro produto antes de expor o workspace. */
+  @Test
+  void rejectsUnrelatedWorkspaceIdentity() {
+    assertThatThrownBy(() -> service.referencedExperimentId(product, "plan:88"))
+        .hasMessageContaining("experiment:<id>");
+    experiment.setProduct(Product.builder().id(91077L).build());
+    assertThatThrownBy(() -> service.referencedExperimentId(product, "experiment:88"))
+        .hasMessageContaining("outro produto");
+  }
+
   /** Recusa gate sem evidência mesmo quando seu status textual foi aprovado. */
   @Test
   void blocksApprovedGateWithoutVerifiableReference() {

@@ -657,6 +657,16 @@ A retomada concilia as atividades já persistidas e registra a pendência funcio
 substituir seu histórico por falha técnica. Homologação incompleta não comprova conclusão do pai.
 Regressão e evidências: `docs/homologacao/mira93-processo54-bloqueio-financeiro-v1.md`.
 
+No subprocesso técnico, o workspace `EXPERIMENT_PREFLIGHT` permanece disponível quando
+as provas ou predecessoras estão pendentes. Sua referência é resolvida pelo backend,
+validando a pertença do experimento ao produto antes de expô-la. Abrir o workspace
+permite registrar a homologação e não torna o comando da atividade disponível, não
+comprova o objetivo e não autoriza gasto. Uma referência inválida ou de outro produto
+não recebe workspace. A renovação deve conservar esse acesso até registrar os gates,
+inclusive depois de recarregar a tela; remover o painel durante a espera impede sua
+própria recuperação. Regressão: `TechnicalPreflightCurrentEvidenceFlowTest` e seu
+harness visual, cenário `pending`.
+
 ## Execuções independentes de produto
 
 Cada versão de processo declara explicitamente `executionScope`, sem inferência por nome, posição na

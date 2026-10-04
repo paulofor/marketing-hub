@@ -97,7 +97,9 @@ public class ExperimentTechnicalPreflightActivityExecutor
     }
   }
 
-  /** Exige predecessoras concluídas e uma prova vigente antes de liberar o comando. */
+  /**
+   * Preserva o workspace validado; predecessoras e prova vigente continuam exigidas pelo comando.
+   */
   @Override
   @Transactional(readOnly = true)
   public BackendProductProcessActivityReadiness readiness(
@@ -105,9 +107,28 @@ public class ExperimentTechnicalPreflightActivityExecutor
       BusinessProcessActivityDefinition activity,
       Product product,
       String sourceReference) {
+    Long experimentId;
+    try {
+      experimentId = evidenceService.referencedExperimentId(product, sourceReference);
+    } catch (RuntimeException ex) {
+      log.warn(
+          "Workspace técnico exige referência do produto. productId={} processDefinitionId={} activityId={} sourceReference={}",
+          product == null ? null : product.getId(),
+          process == null ? null : process.getId(),
+          activity == null ? null : activity.getActivityId(),
+          sourceReference,
+          ex);
+      return response(false, ex.getMessage(), false, ex.getMessage(), null, null);
+    }
     var predecessor = predecessors.readiness(process, activity, sourceReference);
     if (!predecessor.ready()) {
-      return response(false, predecessor.reason(), false, predecessor.reason(), null, null);
+      return response(
+          false,
+          predecessor.reason(),
+          false,
+          predecessor.reason(),
+          experimentId,
+          activity.getActivityId());
     }
     try {
       var evidence = evidenceService.evaluate(activity.getActivityId(), product, sourceReference);
@@ -131,7 +152,7 @@ public class ExperimentTechnicalPreflightActivityExecutor
           ex.getMessage(),
           false,
           ex.getMessage(),
-          null,
+          experimentId,
           activity == null ? null : activity.getActivityId());
     }
   }

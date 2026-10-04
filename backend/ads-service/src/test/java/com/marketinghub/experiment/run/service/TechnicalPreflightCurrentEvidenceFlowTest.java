@@ -253,6 +253,37 @@ class TechnicalPreflightCurrentEvidenceFlowTest {
     writeReport("stale-report.json", report);
   }
 
+  /** A tentativa pendente preserva o workspace mesmo quando predecessoras impedem o comando. */
+  @Test
+  void pendingRenewalKeepsWorkspaceAndHistoryWithoutCompletingActivities() throws Exception {
+    current.clear();
+    for (String code : List.of("transaction", "measurement", "financialGuardrails")) {
+      when(predecessors.readiness(process, stages.get(code), reference))
+          .thenReturn(
+              new ProductProcessActivityPredecessorReadiness(
+                  false, "Conclua a atividade anterior."));
+    }
+
+    var report = report();
+
+    assertThat(report.completedActivityCount()).isZero();
+    assertThat(report.objectiveAchieved()).isFalse();
+    assertThat(report.activities())
+        .allSatisfy(
+            a -> {
+              assertThat(a.executionControl().workspaceCode()).isEqualTo("EXPERIMENT_PREFLIGHT");
+              assertThat(a.executionControl().workspaceReferenceId()).isEqualTo(96002L);
+              assertThat(a.executionRequestAvailable()).isFalse();
+              assertThat(a.objectiveAchieved()).isFalse();
+            });
+    assertThat(history)
+        .hasSize(3)
+        .allSatisfy(i -> assertThat(i.getStatus()).isEqualTo("COMPLETED"));
+    verify(instances, never()).saveAndFlush(any());
+    verifyNoInteractions(paidTasks);
+    writeReport("pending-report.json", report);
+  }
+
   /** Prova renovada passa pelo comando oficial e repetição conserva uma única nova ocorrência. */
   @Test
   void renewsThroughCanonicalCommandAndRemainsIdempotent() {
@@ -283,6 +314,7 @@ class TechnicalPreflightCurrentEvidenceFlowTest {
     var experiment = Experiment.builder().id(experimentId).product(product).build();
     when(products.findById(productId)).thenReturn(Optional.of(product));
     when(experiments.findById(experimentId)).thenReturn(Optional.of(experiment));
+    when(evidence.referencedExperimentId(product, reference)).thenReturn(experimentId);
     when(experiments.existsByIdAndProductId(experimentId, productId)).thenReturn(true);
     when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(productId))
         .thenReturn(List.of(experiment));

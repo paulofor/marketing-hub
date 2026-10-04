@@ -4,6 +4,7 @@ import { chromium } from "playwright-core";
 import { createStrategistServer } from "../../main/resources/mcp/experiment-strategist.mjs";
 import {
   readPublicPages,
+  handlePublicRoute,
   validateArguments,
   validatePublicUrl,
 } from "../../main/resources/browser/public-research.mjs";
@@ -216,4 +217,57 @@ test("MCP e Chromium reais preservam sucesso, falha e proteção contra escrita/
   assert.ok(requests.every((r) => r.action !== "READ" || r.method === "GET"));
   assert.ok(requests.every((r) => !r.url.includes("127.0.0.1")));
   assert.equal(closed, true);
+});
+
+test("encerramento concorrente não aborta rota consumida nem encerra o MCP", async () => {
+  for (const scenario of ["fulfill", "redirect", "fetch", "dispose", "post"]) {
+    let aborts = 0,
+      disposals = 0,
+      reads = 0,
+      fulfills = 0;
+    const response = {
+      status: () => (scenario === "redirect" ? 302 : 200),
+      dispose: async () => {
+        disposals++;
+        if (scenario === "dispose") throw new Error("Contexto encerrado");
+      },
+    };
+    const route = {
+      request: () => ({
+        method: () => (scenario === "post" ? "POST" : "GET"),
+        url: () => "https://source.example/page",
+      }),
+      fetch: async () => {
+        reads++;
+        if (scenario === "fetch") throw new Error("Página encerrada");
+        return response;
+      },
+      fulfill: async () => {
+        fulfills++;
+        if (scenario === "fulfill")
+          throw new Error("Route is already handled!");
+      },
+      abort: async () => {
+        aborts++;
+        throw new Error("Route is already handled!");
+      },
+    };
+    await assert.doesNotReject(handlePublicRoute(route, publicDns), scenario);
+    assert.equal(
+      aborts,
+      ["redirect", "fetch", "post"].includes(scenario) ? 1 : 0,
+      scenario,
+    );
+    assert.equal(
+      disposals,
+      ["fetch", "post"].includes(scenario) ? 0 : 1,
+      scenario,
+    );
+    assert.equal(reads, scenario === "post" ? 0 : 1, scenario);
+    assert.equal(
+      fulfills,
+      ["fulfill", "dispose"].includes(scenario) ? 1 : 0,
+      scenario,
+    );
+  }
 });

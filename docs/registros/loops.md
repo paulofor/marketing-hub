@@ -4057,6 +4057,11 @@ Use este checklist quando o problema estiver em algum loop acima:
   Limite de três URLs, validação de rede pública, bloqueio de escrita/redirect e falha por URL.
   Testes `public-research.test.mjs` exercitam MCP + Chromium com sucesso e falhas isoladas;
   testes Java protegem comando e prompt. Fonte inacessível não vira reprovação comercial.
+- **Encerramento concorrente validado em 04/10/2026:** subrecurso pendente podia consumir
+  a rota em `fulfill` e falhar quando a página fechava; o tratamento tentava `abort` novamente,
+  encerrando Node com `Route is already handled!`. Cada rota agora é finalizada uma vez;
+  erros de limpeza não encerram o MCP nem apagam leituras válidas. A regressão cobre fechamento
+  em fetch/fulfill/abort/dispose e o pacote é conferido com filesystem somente leitura e tmpfs.
 - **Lacuna de contexto associada:** formulário de Atena retinha a pergunta inicial de fallback
   após receber o plano correto. Agora deriva o padrão do plano atual, preserva edição manual
   somente na mesma identidade e não oferece pesquisa para plano ausente. Testes de formulário

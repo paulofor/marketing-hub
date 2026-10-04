@@ -66,6 +66,31 @@ export function validateArguments(args) {
   return args.urls;
 }
 
+// Finaliza cada rota uma única vez, mesmo quando a página fecha durante fetch/fulfill.
+export async function handlePublicRoute(route, resolve = lookup) {
+  let response;
+  let handled = false;
+  try {
+    if (!["GET", "HEAD"].includes(route.request().method())) {
+      handled = true;
+      return await route.abort();
+    }
+    await validatePublicUrl(route.request().url(), resolve);
+    // Chromium não intercepta novamente todos os redirects de rede.
+    response = await route.fetch({ maxRedirects: 0, timeout: 15000 });
+    handled = true;
+    if (response.status() >= 300 && response.status() < 400)
+      await route.abort();
+    else await route.fulfill({ response });
+  } catch {
+    // Não aborta uma rota já consumida por fulfill/abort ou pelo fechamento do contexto.
+    if (!handled) await route.abort().catch(() => {});
+  } finally {
+    // Limpeza não pode invalidar uma leitura já concluída nem encerrar o servidor MCP.
+    if (response) await response.dispose().catch(() => {});
+  }
+}
+
 // Reutiliza o navegador do executor; o modelo não recebe shell nem controles de interação.
 export async function readPublicPages(urls, options = {}) {
   validateArguments({ urls });
@@ -91,23 +116,7 @@ export async function readPublicPages(urls, options = {}) {
       serviceWorkers: "block",
       acceptDownloads: false,
     });
-    await context.route("**/*", async (route) => {
-      try {
-        if (!["GET", "HEAD"].includes(route.request().method()))
-          return await route.abort();
-        await validatePublicUrl(route.request().url(), resolve);
-        // Chromium não intercepta novamente todos os redirects de rede; não os siga implicitamente.
-        const response = await route.fetch({ maxRedirects: 0, timeout: 15000 });
-        if (response.status() >= 300 && response.status() < 400) {
-          await response.dispose();
-          return await route.abort();
-        }
-        await route.fulfill({ response });
-        await response.dispose();
-      } catch {
-        await route.abort();
-      }
-    });
+    await context.route("**/*", (route) => handlePublicRoute(route, resolve));
     await context.routeWebSocket("**/*", (socket) => socket.close());
     for (const target of targets) {
       const page = await context.newPage();

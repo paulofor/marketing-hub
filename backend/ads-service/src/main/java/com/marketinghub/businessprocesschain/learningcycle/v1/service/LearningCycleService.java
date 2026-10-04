@@ -689,7 +689,7 @@ public class LearningCycleService {
             data));
   }
 
-  /** Renova uma janela expirada antes da ativação, sem mudar produto, versão, hipótese ou teto. */
+  /** Renova somente a janela legada elegível, respeitando a política vigente e a exposição. */
   @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public LearningCycleResponse revalidateWindow(
       Long productId, Long cycleId, RevalidateCycleWindowRequest request, String operatorName) {
@@ -715,15 +715,9 @@ public class LearningCycleService {
     require(
         cycle.getRevision() == request.expectedRevision(),
         "O ciclo mudou. Atualize a tela antes de revalidar a janela.");
-    require("OPEN".equals(cycle.getStatus()), "Somente ciclo aberto pode renovar a janela.");
-    require(
-        java.util.Set.of("AUTHORIZATION", "PUBLICATION").contains(cycle.getStage()),
-        "A janela só pode ser renovada antes da operação comercial.");
     var experiment = requiredExperiment(productId, cycle.getExperimentId());
-    require(
-        experiment.getStatus() == com.marketinghub.experiment.ExperimentStatus.PLANNED
-            && experiment.getFacebookReleaseRequestedAt() == null,
-        "O experimento já iniciou liberação e não pode ter a janela reescrita.");
+    String blocker = windowRevalidationBlocker(cycle, experiment);
+    require(blocker == null, blocker);
     require(
         !request.endDate().isBefore(request.startDate()),
         "O fim da janela deve ser igual ou posterior ao início.");
@@ -1510,7 +1504,42 @@ public class LearningCycleService {
         cycle.getClosedAt(),
         automaticVideoContinuation(cycle),
         authorizationReview(cycle),
-        commercialPreparation);
+        commercialPreparation,
+        windowRevalidation(cycle));
+  }
+
+  /** Expõe a decisão da janela encerrada sem inferência de data ou elegibilidade no frontend. */
+  private LearningCycleResponse.WindowRevalidation windowRevalidation(LearningSalesCycle cycle) {
+    if (!"OPEN".equals(cycle.getStatus())
+        || cycle.getWindowEnd() == null
+        || cycle.getWindowEnd().isAfter(Instant.now(clock))) return null;
+    String blocker =
+        windowRevalidationBlocker(
+            cycle, experiments.findById(cycle.getExperimentId()).orElse(null));
+    return new LearningCycleResponse.WindowRevalidation(
+        blocker == null,
+        blocker == null
+            ? "Janela legada encerrada antes da liberação; a renovação não autoriza gasto."
+            : blocker);
+  }
+
+  /** Compartilha entre leitura e comando as regras de preservação do ciclo e do experimento. */
+  private String windowRevalidationBlocker(LearningSalesCycle cycle, Experiment experiment) {
+    if (!"OPEN".equals(cycle.getStatus())) return "Somente ciclo aberto pode renovar a janela.";
+    if (separateChanges(cycle))
+      return "Uma nova janela exige novo ciclo e novo experimento. Preserve os resultados e registre a decisão de ajuste para preparar o sucessor, com orçamento e autorização próprios.";
+    if (cycle.isBaseline())
+      return "A referência histórica não pode ter a janela reescrita. Concilie os resultados e prepare um sucessor com autorização própria.";
+    if (!Set.of("AUTHORIZATION", "PUBLICATION").contains(cycle.getStage()))
+      return "A janela só pode ser renovada antes da operação comercial.";
+    if (experiment == null) return "O experimento da janela não está disponível para conferência.";
+    if (experiment.getStatus() != ExperimentStatus.PLANNED
+        || experiment.getFacebookReleaseRequestedAt() != null
+        || evidence.historicalPublication(experiment).isPresent())
+      return "O experimento já iniciou liberação e não pode ter a janela reescrita.";
+    if (cycle.getWindowEnd() == null || cycle.getWindowEnd().isAfter(Instant.now(clock)))
+      return "A janela ainda não encerrou; preserve o período registrado.";
+    return null;
   }
 
   /** Prepara a síntese com a prova registrada sem transformar a leitura em uma autorização. */

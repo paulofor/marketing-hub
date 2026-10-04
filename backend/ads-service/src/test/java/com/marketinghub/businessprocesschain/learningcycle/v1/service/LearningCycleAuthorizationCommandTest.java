@@ -404,7 +404,7 @@ class LearningCycleAuthorizationCommandTest {
 
   /**
    * Renova um ciclo ainda planejado, redistribuindo o teto pela janela sem ampliar verba nem
-   * liberar mídia.
+   * liberar mídia, e preserva o replay após a publicação da política de sucessor.
    */
   @Test
   void revalidatesExpiredWindowBeforePublicationWithoutChangingBudget() {
@@ -415,6 +415,7 @@ class LearningCycleAuthorizationCommandTest {
     experiment.setPlatform(com.marketinghub.experiment.ExperimentPlatform.FACEBOOK);
     experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
     experiment.setDailyBudget(new BigDecimal("20"));
+    assertThat(service.list(4L).getFirst().windowRevalidation().available()).isTrue();
     when(products.findLockedById(4L)).thenReturn(Optional.of(experiment.getProduct()));
     when(cycles.findLocked(4L, 2L)).thenReturn(Optional.of(cycle));
     when(events.findByCycleIdAndRequestKey(
@@ -436,6 +437,7 @@ class LearningCycleAuthorizationCommandTest {
     assertThat(response.stage()).isEqualTo("PUBLICATION");
     assertThat(response.revision()).isEqualTo(14);
     assertThat(response.budgetLimitBrl()).isEqualByComparingTo("100");
+    assertThat(response.windowRevalidation()).isNull();
     assertThat(experiment.getStatus())
         .isEqualTo(com.marketinghub.experiment.ExperimentStatus.PLANNED);
     assertThat(experiment.getDailyBudget()).isEqualByComparingTo("14.28");
@@ -447,6 +449,21 @@ class LearningCycleAuthorizationCommandTest {
     assertThat(eventCaptor.getValue().getAction()).isEqualTo("REVALIDATE_WINDOW");
     assertThat(eventCaptor.getValue().getEvidenceJson())
         .contains("\"externalSpendAuthorized\":false");
+    when(events.findByCycleIdAndRequestKey(2L, request.requestKey().toString()))
+        .thenReturn(Optional.of(eventCaptor.getValue()));
+    var current = new BusinessProcessDefinition();
+    current.setDiagramJson("{\"experimentChangePolicy\":\"CHANGE_PER_CYCLE_V1\"}");
+    when(processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+            LearningCycleRules.PROCESS_CODE, "PUBLISHED"))
+        .thenReturn(Optional.of(current));
+    assertThat(service.revalidateWindow(4L, 2L, request, "Operador sintético").revision())
+        .isEqualTo(14);
+    org.mockito.Mockito.verify(events, org.mockito.Mockito.times(1))
+        .saveAndFlush(org.mockito.ArgumentMatchers.any());
+    org.mockito.Mockito.verify(cycles, org.mockito.Mockito.times(1))
+        .saveAndFlush(org.mockito.ArgumentMatchers.any());
+    org.mockito.Mockito.verify(experiments, org.mockito.Mockito.times(1))
+        .save(org.mockito.ArgumentMatchers.any());
   }
 
   /** Recusa renovar depois que a liberação externa começou. */
@@ -470,6 +487,155 @@ class LearningCycleAuthorizationCommandTest {
     org.assertj.core.api.Assertions.assertThatThrownBy(
             () -> service.revalidateWindow(4L, 2L, request, "Operador sintético"))
         .hasMessageContaining("já iniciou liberação");
+  }
+
+  /** A política publicada bloqueia também a renovação direta de um ciclo legado. */
+  @Test
+  void currentChangePolicyBlocksWindowRewriteInReadAndCommand() {
+    cycle.setWindowEnd(Instant.now().minusSeconds(60));
+    experiment.setProduct(Product.builder().id(4L).build());
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    var current = new BusinessProcessDefinition();
+    current.setDiagramJson("{\"experimentChangePolicy\":\"CHANGE_PER_CYCLE_V1\"}");
+    when(processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+            LearningCycleRules.PROCESS_CODE, "PUBLISHED"))
+        .thenReturn(Optional.of(current));
+    var response = service.list(4L).getFirst();
+    assertThat(response.windowRevalidation().available()).isFalse();
+    assertThat(response.windowRevalidation().reason()).contains("novo ciclo e novo experimento");
+    assertWindowRejected("novo ciclo e novo experimento");
+  }
+
+  /** A referência histórica permanece imutável mesmo sob uma política legada. */
+  @Test
+  void historicalBaselineDoesNotOfferOrAcceptWindowRewrite() {
+    cycle.setBaseline(true);
+    cycle.setStage("DECISION");
+    cycle.setWindowEnd(Instant.now().minusSeconds(60));
+    experiment.setProduct(Product.builder().id(4L).build());
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.INVALIDATED);
+    assertThat(service.list(4L).getFirst().windowRevalidation().available()).isFalse();
+    assertWindowRejected("referência histórica");
+  }
+
+  /**
+   * A exposição comprovada impede renovação mesmo se o status administrativo voltar a planejado.
+   */
+  @Test
+  void recordedPublicationPreventsWindowRewriteWithoutReleaseTimestamp() {
+    cycle.setWindowEnd(Instant.now().minusSeconds(60));
+    experiment.setProduct(Product.builder().id(4L).build());
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    when(evidence.historicalPublication(experiment))
+        .thenReturn(
+            Optional.of(
+                new com.marketinghub
+                    .businessprocesschain
+                    .learningcycle
+                    .v1
+                    .service
+                    .getCycles
+                    .LearningCycleHistoricalPublication(
+                    "PRODUCTION_RUN",
+                    92L,
+                    "experiment_run:902",
+                    Instant.now().minusSeconds(120),
+                    true,
+                    "Publicação sintética comprovada para este contrato.")));
+    assertThat(service.list(4L).getFirst().windowRevalidation().available()).isFalse();
+    assertWindowRejected("já iniciou liberação");
+  }
+
+  /** Mantém a janela futura fora da interface e recusa o comando que tente antecipar renovação. */
+  @Test
+  void futureWindowDoesNotOfferOrAcceptRenewal() {
+    experiment.setProduct(Product.builder().id(4L).build());
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    assertThat(service.list(4L).getFirst().windowRevalidation()).isNull();
+    assertWindowRejected("ainda não encerrou");
+  }
+
+  /** Compara estado e ausência de efeitos após recusa do mesmo comando usado pela tela. */
+  private void assertWindowRejected(String reason) {
+    var previousStart = cycle.getWindowStart();
+    var previousEnd = cycle.getWindowEnd();
+    when(products.findLockedById(4L)).thenReturn(Optional.of(experiment.getProduct()));
+    when(cycles.findLocked(4L, 2L)).thenReturn(Optional.of(cycle));
+    var request =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+            .RevalidateCycleWindowRequest(
+            java.util.UUID.randomUUID(),
+            13,
+            java.time.LocalDate.now(),
+            java.time.LocalDate.now().plusDays(1),
+            "Homologação local sintética.");
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> service.revalidateWindow(4L, 2L, request, "Operador sintético"))
+        .hasMessageContaining(reason);
+    assertThat(cycle.getRevision()).isEqualTo(13);
+    assertThat(cycle.getWindowStart()).isEqualTo(previousStart);
+    assertThat(cycle.getWindowEnd()).isEqualTo(previousEnd);
+    org.mockito.Mockito.verify(experiments, org.mockito.Mockito.never())
+        .save(org.mockito.ArgumentMatchers.any());
+    org.mockito.Mockito.verify(events, org.mockito.Mockito.never())
+        .saveAndFlush(org.mockito.ArgumentMatchers.any());
+    org.mockito.Mockito.verify(cycles, org.mockito.Mockito.never())
+        .saveAndFlush(org.mockito.ArgumentMatchers.any());
+  }
+
+  /** Exporta respostas reais do serviço para conferir seu consumo pela interface local. */
+  @Test
+  void serializesWindowGuidanceForLocalInterface() throws Exception {
+    cycle.setProductVersion("contrato-sintetico-v1");
+    cycle.setBriefJson(
+        """
+        {"hypothesis":"Hipótese sintética sem exposição real.",
+         "mainChange":"Uma mensagem de teste.",
+         "successCriterion":"Preservar a decisão oficial da janela."}
+        """);
+    cycle.setWindowStart(Instant.parse("2000-12-30T00:00:00Z"));
+    cycle.setWindowEnd(Instant.parse("2001-01-01T00:00:00Z"));
+    experiment.setProduct(Product.builder().id(4L).build());
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    var mapper = new ObjectMapper().findAndRegisterModules();
+    mapper.disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    var legacy = service.list(4L).getFirst();
+    assertThat(mapper.valueToTree(legacy).path("windowRevalidation").path("available").asBoolean())
+        .isTrue();
+    exportWindowFixture("legacy", legacy, mapper);
+
+    cycle.setBaseline(true);
+    cycle.setStage("DECISION");
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.INVALIDATED);
+    var historical = service.list(4L).getFirst();
+    assertThat(
+            mapper.valueToTree(historical).path("windowRevalidation").path("available").asBoolean())
+        .isFalse();
+    exportWindowFixture("historical", historical, mapper);
+
+    var current = new BusinessProcessDefinition();
+    current.setDiagramJson("{\"experimentChangePolicy\":\"CHANGE_PER_CYCLE_V1\"}");
+    when(processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+            LearningCycleRules.PROCESS_CODE, "PUBLISHED"))
+        .thenReturn(Optional.of(current));
+    cycle.setBaseline(false);
+    cycle.setStage("AUTHORIZATION");
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    var governed = service.list(4L).getFirst();
+    assertThat(mapper.valueToTree(governed).path("windowRevalidation").path("reason").asText())
+        .contains("novo ciclo");
+    exportWindowFixture("current-policy", governed, mapper);
+  }
+
+  /** Grava apenas fixtures sintéticas quando a homologação integrada solicita um diretório. */
+  private void exportWindowFixture(String name, LearningCycleResponse response, ObjectMapper mapper)
+      throws Exception {
+    String output = System.getProperty("cycle.window.fixtureDir");
+    if (output == null) return;
+    var directory = java.nio.file.Path.of(output);
+    java.nio.file.Files.createDirectories(directory);
+    java.nio.file.Files.writeString(
+        directory.resolve(name + ".json"), mapper.writeValueAsString(response));
   }
 
   /** Obtém a opção exibida pela API para concluir a etapa de autorização. */

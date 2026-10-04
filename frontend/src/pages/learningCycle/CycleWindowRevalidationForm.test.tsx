@@ -35,6 +35,7 @@ it("revalida a janela sem oferecer alteração de orçamento ou liberação de m
     experimentId: 92,
     revision: 3233,
     budgetLimitBrl: 100,
+    windowRevalidation: { available: true, reason: "Janela legada elegível." },
   } as LearningCycle;
   render(<CycleWindowRevalidationForm cycle={cycle} onUpdated={() => {}} />);
 
@@ -59,4 +60,32 @@ it("revalida a janela sem oferecer alteração de orçamento ou liberação de m
     endDate: "2099-10-07",
   });
   expect(mutateAsync.mock.calls[0][0]).not.toHaveProperty("budgetLimitBrl");
+});
+
+it("preserva a orientação do backend sem oferecer renovação bloqueada", () => {
+  const cycle = {
+    id: 702,
+    productId: 704,
+    windowRevalidation: {
+      available: false,
+      reason: "Uma nova janela exige novo ciclo e novo experimento.",
+    },
+  } as LearningCycle;
+  render(<CycleWindowRevalidationForm cycle={cycle} onUpdated={() => {}} />);
+  expect(screen.getByRole("status")).toHaveTextContent(
+    cycle.windowRevalidation!.reason,
+  );
+  expect(screen.queryByRole("form")).not.toBeInTheDocument();
+  expect(mutateAsync).not.toHaveBeenCalled();
+});
+
+it("não oferece comando quando o backend não informou elegibilidade", () => {
+  render(
+    <CycleWindowRevalidationForm
+      cycle={{ id: 702, productId: 704 } as LearningCycle}
+      onUpdated={() => {}}
+    />,
+  );
+  expect(screen.queryByRole("form")).not.toBeInTheDocument();
+  expect(mutateAsync).not.toHaveBeenCalled();
 });

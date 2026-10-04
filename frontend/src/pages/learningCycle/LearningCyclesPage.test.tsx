@@ -179,6 +179,49 @@ beforeEach(() => {
   });
 });
 describe("Ciclos de aprendizado e vendas", () => {
+  it("não deduz renovação pela data de uma referência histórica", async () => {
+    wrapper(<LearningCyclesPage />);
+    await screen.findByRole("heading", { name: "Ciclo #2 · experimento #91" });
+    expect(
+      screen.queryByRole("form", { name: "Revalidar janela comercial" }),
+    ).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("exibe o motivo oficial de preservação da janela e mantém a decisão disponível", async () => {
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, ...args) =>
+      url === `${cycleApi}/products/4`
+        ? {
+            data: [
+              {
+                ...cycle,
+                baseline: true,
+                windowRevalidation: {
+                  available: false,
+                  reason:
+                    "Uma nova janela exige novo ciclo e novo experimento.",
+                },
+              },
+            ],
+          }
+        : original(url, ...args),
+    );
+    wrapper(<LearningCyclesPage />);
+    expect(
+      await screen.findByText(/Uma nova janela exige novo ciclo/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("form", { name: "Revalidar janela comercial" }),
+    ).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", {
+        name: "Atena prepara; você edita e aprova",
+      }),
+    ).toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
   it("acompanha a continuidade do backend sem pedir outra aprovação nem gravar ao abrir a tela", async () => {
     const original = vi.mocked(axios.get).getMockImplementation()!;
     vi.mocked(axios.get).mockImplementation(async (url, ...args) =>

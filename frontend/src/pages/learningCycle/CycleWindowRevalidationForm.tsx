@@ -10,7 +10,7 @@ function isoDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-/** Permite ao operador renovar o período planejado sem ampliar orçamento ou liberar mídia. */
+/** Apresenta a orientação do backend e renova somente uma janela explicitamente elegível. */
 export default function CycleWindowRevalidationForm({
   cycle,
   onUpdated,
@@ -39,6 +39,13 @@ export default function CycleWindowRevalidationForm({
     } catch {
       /* O backend informa a causa contratual no próprio formulário. */
     }
+  }
+  if (!cycle.windowRevalidation?.available) {
+    return cycle.windowRevalidation ? (
+      <div className="alert alert-info" role="status">
+        <strong>Janela encerrada.</strong> {cycle.windowRevalidation.reason}
+      </div>
+    ) : null;
   }
   return (
     <form

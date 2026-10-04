@@ -24,6 +24,14 @@ Publicada a política, ela governa também novas decisões em ciclos ainda abert
 anteriores: seus BPMs, versões, eventos e aprovações permanecem intactos, mas uma nova mudança
 segue para sucessor. A leitura histórica não executa nem migra ocorrências.
 
+A janela é uma condição do experimento. A política vigente também governa o endpoint legado
+de revalidação: nova janela exige sucessor, inclusive para ciclos de versões anteriores. A API
+expõe `windowRevalidation` apenas para orientar uma janela encerrada; `available` e `reason`
+usam a mesma regra do comando. O frontend não decide elegibilidade pelo relógio local. Referência
+histórica, exposição comprovada, liberação iniciada ou etapa posterior à publicação impedem
+reescrita mesmo quando a política antiga ainda se aplica. Replays já confirmados preservam sua
+idempotência e evidência; a leitura não executa renovação, modelo nem gasto.
+
 O fluxo continua dentro do Processo 6 e dos BPMs existentes. Preparar o sucessor não
 autoriza mídia, produção paga ou publicação comercial. Para um criativo novo, o retorno
 é ao Processo 4 no contexto do novo ciclo/experimento; não mudar simultaneamente produto,

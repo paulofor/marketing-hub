@@ -73,6 +73,7 @@ export type CycleEvent = {
   createdAt: string;
 };
 export type LearningCycle = {
+  windowRevalidation?: { available: boolean; reason: string } | null;
   authorizationReview?: {
     dailyBudgetBrl?: number | null;
     summary: string;
@@ -96,7 +97,8 @@ export type LearningCycle = {
   } | null;
   automaticContinuation?: boolean;
   videoBudget?:
-    import("../financial/useVideoBudget").VideoBudgetAuthorization | null;
+    | import("../financial/useVideoBudget").VideoBudgetAuthorization
+    | null;
   id: number;
   productId: number;
   experimentId: number;

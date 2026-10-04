@@ -406,8 +406,7 @@ export default function LearningCyclesPage() {
               ) : null}
             </div>
           </section>
-          {cycle.status === "OPEN" &&
-          new Date(cycle.windowEnd).getTime() <= Date.now() ? (
+          {cycle.windowRevalidation ? (
             <CycleWindowRevalidationForm cycle={cycle} onUpdated={updated} />
           ) : null}
           {cycle.inheritedLearning.cycleId ? (

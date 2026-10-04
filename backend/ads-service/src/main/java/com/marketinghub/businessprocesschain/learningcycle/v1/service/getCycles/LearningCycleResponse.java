@@ -51,7 +51,11 @@ public record LearningCycleResponse(
     Instant closedAt,
     boolean automaticContinuation,
     AuthorizationReview authorizationReview,
-    LearningCycleCommercialPreparation commercialPreparation) {
+    LearningCycleCommercialPreparation commercialPreparation,
+    WindowRevalidation windowRevalidation) {
+  /** Informa se a janela encerrada admite renovação ou exige preservar a tentativa anterior. */
+  public record WindowRevalidation(boolean available, String reason) {}
+
   /**
    * Evita redigitação de evidências existentes; o envio ainda exige confirmação humana explícita.
    */

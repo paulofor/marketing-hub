@@ -8735,3 +8735,15 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
   rollback integral, correção na mesma tentativa, duplicidade, ausência, gate desconhecido
   e estado indevido. O harness visual existente protege referência e conclusão extensas
   nos três dispositivos, sem escrita externa e sem cobrança.
+
+# LOOP-CICLO-JANELA-HISTORICA-OFERECIDA — 04/10/2026
+
+- **Evidência:** Mira/#93, ciclo histórico #3, tinha exposição e run #14 concluídos, mas a tela
+  oferecia renovar período como se ainda estivesse antes da ativação.
+- **Causa:** a UI deduzia elegibilidade apenas por data/status. O comando legado não aplicava
+  `CHANGE_PER_CYCLE_V1`, já usada nos demais movimentos do ciclo.
+- **Correção:** uma regra no backend governa `windowRevalidation` e a execução. A política vigente
+  exige sucessor; referências históricas e exposição/liberação impedem renovação mesmo no legado.
+- **Harness:** contrato e regressões impedem orientar agentes/operadores a uma ação indevida,
+  sem repetir proposta, homologação, campanha ou custo para corrigir o diagnóstico.
+- **Matriz:** `docs/homologacao/mira-conciliacao-janela-v1.md`.

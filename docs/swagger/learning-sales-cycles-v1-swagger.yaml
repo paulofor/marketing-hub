@@ -24,6 +24,37 @@ info:
 servers:
   - url: /api/business-process-chains/learning-cycles/v1
 paths:
+  /products/{productId}/{cycleId}/window-revalidation:
+    parameters:
+      - {$ref: '#/components/parameters/ProductId'}
+      - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+    post:
+      summary: Revalidar somente uma janela legada elegível
+      description: >-
+        Usa a mesma regra exposta em windowRevalidation. A política publicada CHANGE_PER_CYCLE_V1
+        exige sucessor inclusive em ciclos legados. Sem essa política, exige ciclo aberto em
+        AUTHORIZATION/PUBLICATION, período encerrado, experimento PLANNED sem liberação nem
+        exposição e nenhuma referência histórica. Não autoriza gasto. Preserva replays confirmados.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestKey, expectedRevision, startDate, endDate, reason]
+              properties:
+                requestKey: {type: string, format: uuid}
+                expectedRevision: {type: integer, format: int64}
+                startDate: {type: string, format: date}
+                endDate: {type: string, format: date}
+                reason: {type: string}
+      responses:
+        '200':
+          description: Janela legada revalidada ou replay reconhecido, sem publicação
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Cycle'}
+        '409': {description: Política exige sucessor, exposição, referência histórica, etapa ou revisão incompatível}
   /products/{productId}/{cycleId}/budget-authorization:
     parameters:
       - {$ref: '#/components/parameters/ProductId'}
@@ -494,6 +525,17 @@ components:
         events: {type: array, items: {type: object, description: 'id, revision, fromStage, toStage, action, operatorName, summary, evidenceReference, evidence (objeto), createdAt'}}
         commands: {type: array, items: {type: object, properties: {action: {type: string}, label: {type: string}, available: {type: boolean}, reason: {type: string}}}}
         canCreateSuccessor: {type: boolean}
+        windowRevalidation:
+          type: object
+          nullable: true
+          description: >-
+            Orientação oficial para janela encerrada de ciclo aberto. Leitura e comando aplicam
+            a mesma política vigente; CHANGE_PER_CYCLE_V1 exige sucessor. Referências históricas
+            e exposição/liberação comprovadas não podem renovar a janela. Ausência não libera ação.
+          required: [available, reason]
+          properties:
+            available: {type: boolean}
+            reason: {type: string}
         createdAt: {type: string, format: date-time}
         closedAt: {type: string, format: date-time, nullable: true}
 

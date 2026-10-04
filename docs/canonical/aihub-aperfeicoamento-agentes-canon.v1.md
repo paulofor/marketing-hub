@@ -252,6 +252,11 @@ Uma referência nova exige decisão e limites próprios. O parecer vencido conti
 bloqueando referências ainda abertas; aprovações históricas não ganham nova validade.
 Regressões e alternativas: [homologação de referência encerrada](../homologacao/homologacao-experimento-encerrado-v1.md).
 
+Ao acrescentar dependência obrigatória ao contexto, conferir também fixtures que
+importam o serviço pelo Spring, além de chamadas diretas ao construtor. O harness
+de processos verifica a resolução dessas dependências nos unitários antes de
+iniciar a rodada completa de MySQL, HTTP e navegador.
+
 ### Identidade de páginas transformadas — decisão de 21/09/2026
 
 Quando uma página auditada atravessar transformações legítimas de publicação, como injeção de

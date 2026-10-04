@@ -52,12 +52,12 @@ nesta entrega, pois não houve chamada de modelo. Casos independentes são sint�
 
 ## Verificações locais
 
-Rodada completa backend: 622 classes de teste, com 25 testes previamente desabilitados.
+Rodada completa backend: 623 classes de teste, com 25 testes previamente desabilitados.
 As duas falhas da primeira rodada foram uma configuração de mock do novo teste de
 persistência e a fixture histórica que permitia renovar `INVALIDATED`. Corrigidas;
 o teste concorrente agora cobre `PAUSED` (uma renovação) e `INVALIDATED` (nenhuma).
 Após corrigir a apresentação do resumo, os testes de processos/preflight passaram.
-Resultado consolidado: 3.939 testes, 3.914 aprovados, 25 já desabilitados e nenhuma falha.
+Resultado consolidado: 3.940 testes, 3.915 aprovados, 25 já desabilitados e nenhuma falha.
 A suíte frontend completa passou (866 testes), assim como tipos/build e 57 regressões
 focadas após o ajuste do resumo. O motor persistiu CLOSED com 3/4 provas e um único
 evento, sem tarefa nova nem retorno de sucesso ao pai. HTTP recusou os quatro comandos
@@ -82,3 +82,27 @@ A consulta da ficha oficial `/api/products/7/execution-profiles/v1` retornou lis
 Não foi criada ficha nem deduzido outro formato. O contrato cadastrado Quartzo e os
 vínculos existentes foram preservados. Produção só será considerada confirmada após
 PR/merge, workflows e conferência do estado persistido/tela.
+
+## Inicialização da fixture MySQL
+
+O run de CI `37237551461` detectou a ausência de `ExperimentRepository` no contexto
+isolado `ProcessAutomationLocalApplication`. A aplicação real fornece esse bean;
+a fixture exclui a descoberta JPA e precisa declarar suas dependências simuladas.
+O teste rápido `ProcessAutomationFixtureWiringTest` reproduziu localmente a mesma
+`UnsatisfiedDependencyException` antes da correção e inicializou depois dela.
+
+Foram comparadas três opções: tornar a dependência produtiva opcional enfraqueceria
+o gate; simular todo o contexto retiraria o coordenador real da homologação;
+registrar o repositório na fixture e testar sua inicialização preserva ambos os
+contratos com ajuste pequeno. Essa última opção foi adotada. A verificação usa os
+métodos de beans da própria fixture e a resolução de construtor real do Spring,
+para que novas dependências ausentes falhem antes da rodada MySQL completa.
+
+Rodada local `capella39` aprovada em Node 22.23.3 e MySQL 5.7: unitários completos,
+worker, tipos/build, contratos, imagem temporária, persistência, 19 cenários HTTP,
+ciclo de vida, concorrência, reinício e quatro matrizes de navegador em desktop,
+iPhone e Pixel. Os cenários incluem versões retiradas e reservas projetadas sem
+chamada paga. A sandbox precisou instalar `rsync`; as etapas já aprovadas foram
+preservadas e a execução continuou da primeira etapa pendente. Não houve alteração
+dos scripts do runner. `bash -n` e ShellCheck passaram nos scripts examinados.
+Containers, rede e volumes temporários do projeto exclusivo foram removidos.

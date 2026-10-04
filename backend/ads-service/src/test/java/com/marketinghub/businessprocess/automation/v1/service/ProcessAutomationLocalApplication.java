@@ -240,6 +240,12 @@ public class ProcessAutomationLocalApplication {
     return products;
   }
 
+  /** Isola o catálogo de experimentos exigido pelo contexto; a política real permanece ativa. */
+  @Bean
+  com.marketinghub.repository.jpa.experiment.ExperimentRepository experiments() {
+    return mock(com.marketinghub.repository.jpa.experiment.ExperimentRepository.class);
+  }
+
   /** Retorna o produto sintético preservando o lock de linha dentro da transação JPA. */
   static Optional<Product> product(JdbcTemplate jdbc, Long id, boolean locked) {
     var values =

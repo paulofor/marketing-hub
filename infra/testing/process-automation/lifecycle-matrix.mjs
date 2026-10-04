@@ -508,9 +508,11 @@ await scenario(
   },
 );
 
+// Os produtos 92001–92040 pertencem às matrizes e navegadores anteriores.
+// Projeções usam 92041–92045 para não disputar a reserva de outro cenário.
 for (const [product, state] of [
-  [92039, "IN_PROGRESS"],
-  [92041, "PENDING"],
+  [92041, "IN_PROGRESS"],
+  [92042, "PENDING"],
 ]) {
   await scenario(
     `medição projetada ${state} sem tarefa encerra reserva retirada e preserva gate seguinte`,
@@ -558,7 +560,7 @@ for (const [product, state] of [
 await scenario(
   "subprocesso com projeção de medição reutiliza filho e retorna prova ao pai",
   async () => {
-    const product = 92040;
+    const product = 92043;
     await request(`/fixture/products/${product}`, {
       projectedProcessId: 92004,
       projectedState: "IN_PROGRESS",
@@ -591,7 +593,7 @@ await scenario(
 await scenario(
   "pausa de medição projetada não espera callback inexistente",
   async () => {
-    const product = 92042;
+    const product = 92044;
     await request(`/fixture/products/${product}`, {
       projectedProcessId: 92001,
       projectedState: "IN_PROGRESS",
@@ -606,7 +608,7 @@ await scenario(
 await scenario(
   "ciclo encerrado com medição projetada libera reserva sem fabricar conclusão",
   async () => {
-    const product = 92043;
+    const product = 92045;
     await request(`/fixture/products/${product}`, {
       projectedProcessId: 92001,
       projectedState: "PENDING",

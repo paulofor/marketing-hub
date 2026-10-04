@@ -42,8 +42,8 @@ try {
       if (url.pathname.endsWith("/process-context"))
         return route.fulfill({
           json: {
-            cycleId: 92039,
-            experimentId: 92039,
+            cycleId: 92041,
+            experimentId: 92041,
             chainDefinitionId: 92014,
             productVersion: "local-v1",
             status: "OPEN",
@@ -54,7 +54,7 @@ try {
     });
     const open = (process) =>
       page.goto(
-        `${base}/products/92039/value-chain-history/processes/${process}/activities?chainId=92014&learningCycleId=92039&sourceReference=experiment%3A92039`,
+        `${base}/products/92041/value-chain-history/processes/${process}/activities?chainId=92014&learningCycleId=92041&sourceReference=experiment%3A92041`,
       );
     await open(92001);
     const panel = page.getByRole("region", {

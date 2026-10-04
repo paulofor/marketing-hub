@@ -78,3 +78,32 @@ são distintos. O experimento #92 segue `INVALIDATED`, com janela encerrada.
 Não foi solicitado novo parecer pago nem reativada campanha. A solução local
 comprova a correção da fila; a publicação e o estado produtivo serão verificados
 pelo PR, pelo build servido, pelo banco e pela tela antes de declarar a entrega.
+
+## Isolamento confirmado pela sequência do harness
+
+O primeiro CI do PR #5486 confirmou o motor, mas revelou interferência entre
+cenários: a nova projeção usava o produto de teste #92039, já utilizado pelo
+navegador da fila. A candidata com gate legítimo do cenário novo reservava o
+produto e impedia a tarefa esperada pelo cenário antigo, gerando callback sem
+tarefa. Os testes inicialmente executados de forma separada não cobriam essa
+interação. O artefato do run `37164042281` e a reprodução local confirmaram a causa.
+
+Foram comparadas três opções: reiniciar a base por família (isolamento forte,
+mas recomposição cara e perda das provas para o navegador após reinício), alterar
+o identificador do teste anterior (pequeno, mas desloca a dependência para outro
+consumidor) e reservar identidades próprias para os novos cenários (pequeno,
+preserva os contratos anteriores e a persistência exigida). A terceira foi escolhida:
+as projeções usam #92041–#92045, fora da faixa anterior #92001–#92040.
+
+A validação final inclui API e ciclo de vida na mesma base, reinício e as quatro
+famílias de navegadores na ordem do runner, incluindo a fila anterior e a projeção.
+A falha original do CI permanece no histórico; a atualização do PR depende dessa
+validação local integrada, sem mudança adicional no comportamento produtivo.
+
+Rodada integrada final aprovada: 19 cenários de API, 22 de ciclo de vida,
+reinício, interface geral, versões encerradas, reserva anterior e medição
+projetada, nessa ordem. As quatro famílias passaram em desktop/iPhone/Pixel,
+incluindo histórico, retorno, segregação e nenhuma mutação por consulta.
+Prettier, contratos do runner e revisão do diff também passaram. A falta de
+espaço temporário na sandbox foi resolvida com remoção de cache de builds não
+utilizado há mais de 24 horas; nenhum dado produtivo foi afetado.

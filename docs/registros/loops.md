@@ -17,6 +17,8 @@
 - **Prevenção/harness:** regressão JPA com estados projetados, trabalho real,
   pausa, liberação, gate próprio e retorno ao pai; fixture MySQL 5.7 agora reproduz
   projeção independente da tarefa, com cenários genéricos e desktop/iPhone/Pixel.
+  Novos cenários têm identidades segregadas e devem ser validados com as famílias
+  anteriores na mesma sequência do runner, para detectar interferência de reservas.
   Nenhuma exceção por produto, autorização retroativa ou chamada paga.
 - **Limite:** estratégia operacional de Atena é requisito distinto da #42.
   Liberação de fila não aprova campanha nem transforma testes em venda.

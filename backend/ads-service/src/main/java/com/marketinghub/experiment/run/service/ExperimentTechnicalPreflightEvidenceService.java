@@ -185,6 +185,13 @@ public class ExperimentTechnicalPreflightEvidenceService {
     return new Evidence(experiment.getId(), run.getId(), fingerprint, evidence);
   }
 
+  /** Expõe o encerramento antes de pedir outra prova ou análise financeira. */
+  @Transactional(readOnly = true)
+  public String executionBlockReason(Product product, String sourceReference) {
+    return ExperimentHomologationLifecycle.blockReason(
+        referencedExperiment(product, sourceReference), java.time.LocalDate.now(clock));
+  }
+
   /** Resolve o workspace do produto sem exigir gates aprovados nem disparar outra tentativa. */
   @Transactional(readOnly = true, noRollbackFor = RuntimeException.class)
   public Long referencedExperimentId(Product product, String sourceReference) {
@@ -244,9 +251,12 @@ public class ExperimentTechnicalPreflightEvidenceService {
         : ExperimentRunGateCodes.META_EFFECTIVE_STATUS_CONFIRMED;
   }
 
-  /** Confere orçamento, janela, paradas, plano governante e parecer financeiro do tipo. */
+  /** Confere referência aberta antes de orçamento, janela, paradas, plano e parecer do tipo. */
   private void validateFinancialGuardrails(
       Experiment experiment, Product product, String sourceReference) {
+    String blocker =
+        ExperimentHomologationLifecycle.blockReason(experiment, java.time.LocalDate.now(clock));
+    require(blocker == null, blocker);
     if (experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE) {
       require(
           nonPositive(experiment.getDailyBudget()) && nonPositive(experiment.getMediaSpendLimit()),

@@ -533,7 +533,8 @@ export type ProductProcessActivityExecutionHistory = {
     | "IN_PROGRESS"
     | "BLOCKED"
     | "COMPLETED"
-    | "CANCELLED";
+    | "CANCELLED"
+    | "CLOSED";
   objectiveAchieved: boolean;
   selectedActivityCount: number;
   completedActivityCount: number;

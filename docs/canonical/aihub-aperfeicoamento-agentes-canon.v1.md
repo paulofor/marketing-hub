@@ -237,6 +237,21 @@ orçamento e aprovações anteriores. Ausência de histórico ou de publicação
 identificada não permite criar aprovação retroativa; outra tentativa independente
 mais recente gera conflito acionável. O frontend não orquestra os próximos gates.
 
+### Homologação de experimento encerrado — aprendizado de 04/10/2026
+
+Antes de orientar renovação financeira, criação de tentativa ou repetição técnica,
+conferir o estado e a janela do experimento da referência exata. Estado comercial
+terminal ou janela expirada impede novos comandos de homologação. O backend encerra
+a espera automática após receber tarefas já iniciadas, preservando custos e provas,
+sem marcar a atividade pendente como concluída nem retornar sucesso ao processo pai.
+O encerramento não impede conciliação ou aprendizado, nem autoriza iniciar sucessor.
+
+O contrato `executionBlockReason` do preflight governa os comandos na tela e expõe
+a causa ao AIHUB; não depende de inferência do agente nem de nova chamada de Plutus.
+Uma referência nova exige decisão e limites próprios. O parecer vencido continua
+bloqueando referências ainda abertas; aprovações históricas não ganham nova validade.
+Regressões e alternativas: [homologação de referência encerrada](../homologacao/homologacao-experimento-encerrado-v1.md).
+
 ### Identidade de páginas transformadas — decisão de 21/09/2026
 
 Quando uma página auditada atravessar transformações legítimas de publicação, como injeção de

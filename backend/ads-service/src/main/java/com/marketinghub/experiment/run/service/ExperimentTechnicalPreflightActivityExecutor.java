@@ -97,9 +97,7 @@ public class ExperimentTechnicalPreflightActivityExecutor
     }
   }
 
-  /**
-   * Preserva o workspace validado; predecessoras e prova vigente continuam exigidas pelo comando.
-   */
+  /** Preserva o workspace e expõe o encerramento antes de conferir predecessoras ou outra prova. */
   @Override
   @Transactional(readOnly = true)
   public BackendProductProcessActivityReadiness readiness(
@@ -110,6 +108,22 @@ public class ExperimentTechnicalPreflightActivityExecutor
     Long experimentId;
     try {
       experimentId = evidenceService.referencedExperimentId(product, sourceReference);
+      String blocker = evidenceService.executionBlockReason(product, sourceReference);
+      if (blocker != null)
+        return new BackendProductProcessActivityReadiness(
+            false,
+            blocker,
+            "Comprovar atividade",
+            "Preserva as provas da referência encerrada.",
+            "EXPERIMENT_PREFLIGHT",
+            experimentId,
+            List.of(
+                new ProductProcessActivityRequirementResponse(
+                    "EXPERIMENT_REFERENCE_CLOSED",
+                    "Experimento encerrado",
+                    false,
+                    blocker,
+                    "Consulte o histórico e a decisão de aprendizado; nenhuma nova homologação ou análise financeira deve ser iniciada nesta referência.")));
     } catch (RuntimeException ex) {
       log.warn(
           "Workspace técnico exige referência do produto. productId={} processDefinitionId={} activityId={} sourceReference={}",
@@ -157,7 +171,7 @@ public class ExperimentTechnicalPreflightActivityExecutor
     }
   }
 
-  /** Registra custo incremental zero sem repetir gates, transação ou tráfego. */
+  /** Recusa referência encerrada e registra prova sem repetir gates, transação ou tráfego. */
   @Override
   @Transactional
   public BackendProductProcessActivityExecutionResult execute(
@@ -165,6 +179,8 @@ public class ExperimentTechnicalPreflightActivityExecutor
       BusinessProcessActivityDefinition activity,
       Product product,
       String sourceReference) {
+    String blocker = evidenceService.executionBlockReason(product, sourceReference);
+    if (blocker != null) throw new IllegalStateException(blocker);
     var predecessor = predecessors.readiness(process, activity, sourceReference);
     if (!predecessor.ready()) throw new IllegalStateException(predecessor.reason());
     var evidence = evidenceService.evaluate(activity.getActivityId(), product, sourceReference);

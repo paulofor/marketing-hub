@@ -167,6 +167,7 @@ export default function ExperimentRunPanel({
   const recordHomologation = useRecordExperimentRunHomologation(experimentId);
   const renewHomologation = useRenewTechnicalHomologation(experimentId);
   const preflight = preflightQuery.data;
+  const executionBlockReason = preflight?.executionBlockReason;
   const requiredLandingEvidenceReference =
     preflight?.requiredLandingEvidenceReference?.trim() ?? "";
   const gateGroups = groupGates(preflight?.gates ?? []);
@@ -190,6 +191,7 @@ export default function ExperimentRunPanel({
     ].includes((experimentStatus ?? "").toUpperCase());
 
   const homologationReady =
+    !executionBlockReason &&
     homologationGates.length === 4 &&
     homologationGates.every((gate) => {
       const draft =
@@ -200,21 +202,21 @@ export default function ExperimentRunPanel({
         );
       return Boolean(
         draft?.status &&
-          draft.summary.trim() &&
-          draft.evidenceReference.trim() &&
-          draft.summary.trim().length <= homologationTextLimit &&
-          draft.evidenceReference.trim().length <= homologationTextLimit,
+        draft.summary.trim() &&
+        draft.evidenceReference.trim() &&
+        draft.summary.trim().length <= homologationTextLimit &&
+        draft.evidenceReference.trim().length <= homologationTextLimit,
       );
     });
 
   const handleCreateRun = () => {
-    if (!createRun.isPending) {
+    if (!executionBlockReason && !createRun.isPending) {
       createRun.mutate("PRODUCTION");
     }
   };
 
   const handleRunPreflight = () => {
-    if (currentRun && !runPreflight.isPending) {
+    if (!executionBlockReason && currentRun && !runPreflight.isPending) {
       runPreflight.mutate(currentRun.id);
     }
   };
@@ -260,13 +262,17 @@ export default function ExperimentRunPanel({
       <div className="card-body">
         <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
           <div>
-            <h5 className="card-title mb-1">Execução atual</h5>
+            <h5 className="card-title mb-1">
+              {executionBlockReason
+                ? "Histórico de homologação"
+                : "Execução atual"}
+            </h5>
             <p className="text-muted small mb-0">
               Verdade operacional do backend sobre a tentativa de colocar este
               experimento no mercado.
             </p>
           </div>
-          {!operationAlreadyPublished ? (
+          {!operationAlreadyPublished && !executionBlockReason ? (
             <div className="d-flex flex-wrap gap-2">
               <button
                 type="button"
@@ -314,11 +320,19 @@ export default function ExperimentRunPanel({
           </div>
         ) : (
           <>
+            {executionBlockReason ? (
+              <div className="alert alert-secondary mt-3 mb-0" role="alert">
+                <strong>Homologação encerrada nesta referência.</strong>{" "}
+                {executionBlockReason}
+              </div>
+            ) : null}
             <div className="row g-3 mt-1">
               <StatusItem label="Run" value={`#${currentRun.runNumber}`} />
               <StatusItem label="Modo" value={currentRun.mode} />
               <StatusItem
-                label="Status"
+                label={
+                  executionBlockReason ? "Status histórico do run" : "Status"
+                }
                 value={label(currentRun.status)}
                 badge={currentRun.status}
               />
@@ -338,7 +352,7 @@ export default function ExperimentRunPanel({
               />
             </div>
 
-            {preflight?.currentEvidenceBlockReason ? (
+            {!executionBlockReason && preflight?.currentEvidenceBlockReason ? (
               <div className="alert alert-warning mt-3 mb-0" role="alert">
                 <strong>Homologação técnica pendente.</strong>{" "}
                 {preflight.currentEvidenceBlockReason}
@@ -459,7 +473,7 @@ export default function ExperimentRunPanel({
                         ),
                       )}
                     </div>
-                    {homologationGates.length > 0 ? (
+                    {!executionBlockReason && homologationGates.length > 0 ? (
                       <section
                         className="card border-primary mt-3"
                         aria-label="Evidências da homologação funcional"

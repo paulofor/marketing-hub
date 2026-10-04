@@ -162,7 +162,14 @@ class PrivateProductCommunicationLifecycleTest {
     when(products.findLockedById(product.getId())).thenReturn(Optional.of(product));
     var runContext =
         new ProcessRunContext(
-            service, processes, chains, mock(LearningSalesCycleRepository.class), products, json);
+            service,
+            processes,
+            chains,
+            mock(LearningSalesCycleRepository.class),
+            products,
+            json,
+            org.mockito.Mockito.mock(
+                com.marketinghub.repository.jpa.experiment.ExperimentRepository.class));
     var runService =
         new ProcessRunService(
             runs,

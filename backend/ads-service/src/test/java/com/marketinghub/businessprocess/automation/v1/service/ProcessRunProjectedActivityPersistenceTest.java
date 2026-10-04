@@ -197,6 +197,64 @@ class ProcessRunProjectedActivityPersistenceTest {
     verifyNoInteractions(activities);
   }
 
+  /**
+   * Encerra espera financeira pelo contrato real do experimento, preservando custos e três provas.
+   */
+  @Test
+  void reconcilesTerminalExperimentWithoutCompletingFinancialGate() throws Exception {
+    var definitions =
+        mock(
+            com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository
+                .class);
+    var experiments = mock(com.marketinghub.repository.jpa.experiment.ExperimentRepository.class);
+    var definition = new BusinessProcessDefinition();
+    definition.setId(parent.getProcessDefinitionId());
+    definition.setProcessCode("experiment-homologation-activation");
+    definition.setStatus("PUBLISHED");
+    when(definitions.findById(definition.getId())).thenReturn(Optional.of(definition));
+    var experiment = new com.marketinghub.experiment.Experiment();
+    experiment.setId(96021L);
+    experiment.setProduct(Product.builder().id(parent.getProductId()).build());
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.INVALIDATED);
+    when(experiments.findById(experiment.getId())).thenReturn(Optional.of(experiment));
+    var identity = new ProcessRunContext(null, definitions, null, null, null, json, experiments);
+    doAnswer(inv -> identity.dispatchBlockReason(inv.getArgument(0)))
+        .when(context)
+        .dispatchBlockReason(any());
+    snapshot(96011L, "NOT_STARTED", false, false, false, false);
+    var value = json.valueToTree(snapshots.get(96011L));
+    ((com.fasterxml.jackson.databind.node.ObjectNode) value)
+        .put("selectedActivityCount", 4)
+        .put("completedActivityCount", 3)
+        .put("remainingActivityCount", 1);
+    snapshots.put(
+        96011L, json.treeToValue(value, ProductProcessActivityExecutionHistoryResponse.class));
+    parent.setStatus("WAITING_INPUT");
+    var result = service.reconcile(parent.getId());
+    assertThat(result.status()).isEqualTo("CLOSED");
+    assertThat(result.reason()).contains("#96021", "não renove Plutus");
+    assertThat(result.completedActivities()).isEqualTo(3);
+    assertThat(result.remainingActivities()).isEqualTo(1);
+    assertThat(result.canResume()).isFalse();
+    service.reconcile(parent.getId());
+    assertThatThrownBy(
+            () ->
+                service.resume(
+                    parent.getProductId(), parent.getProcessDefinitionId(), parent.getId()))
+        .hasMessageContaining("encerrado");
+    entityManager.flush();
+    entityManager.clear();
+    assertThat(runs.findById(parent.getId()).orElseThrow().getStatus()).isEqualTo("CLOSED");
+    assertThat(events.findAll().stream().filter(e -> "CONTEXT_CLOSED".equals(e.getEventType())))
+        .hasSize(1);
+    assertThat(result.knownCostUsd()).isEqualByComparingTo("0.75");
+    verifyNoInteractions(activities, subprocesses);
+    String output = System.getProperty("closed-process.fixture-output");
+    if (output != null)
+      java.nio.file.Files.writeString(
+          java.nio.file.Path.of(output), json.writeValueAsString(result));
+  }
+
   /** Monta a projeção com estado, prova, tarefa e controle independentes, como o contrato real. */
   private void snapshot(
       long process,

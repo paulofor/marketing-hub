@@ -2158,7 +2158,7 @@ public class BusinessProcessActivityExecutionService {
         currentActivity);
   }
 
-  /** Classifica a situação geral sem transformar atividade técnica em objetivo de processo. */
+  /** Classifica progresso e encerramento explícito sem transformar prova parcial em conclusão. */
   private String processOperationalState(
       List<ProductProcessActivityExecutionGroupResponse> activities,
       boolean objectiveAchieved,
@@ -2171,6 +2171,19 @@ public class BusinessProcessActivityExecutionService {
         .anyMatch(activity -> "IN_PROGRESS".equals(activity.operationalState()))) {
       return "IN_PROGRESS";
     }
+    if (activities.stream().noneMatch(activity -> "PENDING".equals(activity.operationalState()))
+        && activities.stream()
+            .map(ProductProcessActivityExecutionGroupResponse::executionControl)
+            .filter(Objects::nonNull)
+            .flatMap(
+                control ->
+                    control.requirements() == null
+                        ? java.util.stream.Stream.empty()
+                        : control.requirements().stream())
+            .anyMatch(
+                requirement ->
+                    "EXPERIMENT_REFERENCE_CLOSED".equals(requirement.code())
+                        && !requirement.satisfied())) return "CLOSED";
     if (completed > 0) return "IN_PROGRESS";
     if (activities.stream().anyMatch(activity -> "PENDING".equals(activity.operationalState()))) {
       return "PENDING";

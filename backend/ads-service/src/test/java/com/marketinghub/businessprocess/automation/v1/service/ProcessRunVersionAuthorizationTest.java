@@ -25,7 +25,15 @@ class ProcessRunVersionAuthorizationTest {
   private final LearningSalesCycleRepository cycles = mock(LearningSalesCycleRepository.class);
   private final ExecutionProfileContext profiles = mock(ExecutionProfileContext.class);
   private final ProcessRunContext context =
-      new ProcessRunContext(null, definitions, null, cycles, null, new ObjectMapper());
+      new ProcessRunContext(
+          null,
+          definitions,
+          null,
+          cycles,
+          null,
+          new ObjectMapper(),
+          org.mockito.Mockito.mock(
+              com.marketinghub.repository.jpa.experiment.ExperimentRepository.class));
   private final ProcessRun run = new ProcessRun();
   private final BusinessProcessDefinition definition = new BusinessProcessDefinition();
 
@@ -52,7 +60,9 @@ class ProcessRunVersionAuthorizationTest {
     verify(profiles, never()).pins(anyString(), anyLong());
   }
 
-  /** Mantém o mesmo bloqueio para ciclos abertos e não confunde ficha com publicação de rascunho. */
+  /**
+   * Mantém o mesmo bloqueio para ciclos abertos e não confunde ficha com publicação de rascunho.
+   */
   @ParameterizedTest
   @ValueSource(strings = {"RETIRED", "DRAFT"})
   void blocksUnpublishedVersionWithOpenCycle(String status) {
@@ -101,5 +111,30 @@ class ProcessRunVersionAuthorizationTest {
     when(cycles.findById(2L)).thenReturn(Optional.of(cycle));
     assertThat(context.dispatchBlockReason(run)).contains("O ciclo está encerrado");
     verifyNoInteractions(definitions, profiles);
+  }
+
+  /** Confere a referência exata em homologação, sem bloquear o processo de aprendizado. */
+  @Test
+  void blocksClosedExperimentOnlyForHomologation() {
+    definition.setStatus("PUBLISHED");
+    definition.setProcessCode("experiment-homologation-activation");
+    var experiments =
+        (com.marketinghub.repository.jpa.experiment.ExperimentRepository)
+            ReflectionTestUtils.getField(context, "experiments");
+    var experiment = new com.marketinghub.experiment.Experiment();
+    experiment.setId(94L);
+    experiment.setProduct(com.marketinghub.product.Product.builder().id(7L).build());
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.INVALIDATED);
+    when(experiments.findById(94L)).thenReturn(Optional.of(experiment));
+    assertThat(context.dispatchBlockReason(run)).contains("#94", "não renove Plutus");
+    definition.setProcessCode("pde-commercial-homologation-activation");
+    assertThat(context.dispatchBlockReason(run)).contains("#94", "não renove Plutus");
+    definition.setProcessCode("pde-sales-delivery-learning");
+    assertThat(context.dispatchBlockReason(run)).isNull();
+    definition.setProcessCode("experiment-homologation-activation");
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PAUSED);
+    assertThat(context.dispatchBlockReason(run)).isNull();
+    experiment.setProduct(com.marketinghub.product.Product.builder().id(97001L).build());
+    assertThatThrownBy(() -> context.dispatchBlockReason(run)).hasMessageContaining("não pertence");
   }
 }

@@ -7498,3 +7498,15 @@ resposta indisponível não comprova zero vendas. Revisão operacional validada:
   orientar a fonte correta e preservar parecer compatível. Regressões transacionais cobrem
   o caso original e identidades independentes, mantendo bloqueios e ausência de nova revisão.
 - [Evidências, comparação de alternativas e matriz local](../homologacao/mira93-processo54-bloqueio-financeiro-v1.md).
+
+
+## 2026-10-04 — Capella #88: impedir nova homologação da tentativa encerrada
+
+Diagnóstico pela tela, endpoints, MCP e histórico: experimento invalidado com janela
+encerrada em 29/09; execução #39/processo #122 em 3/4, sem tarefas e sem ciclo.
+A atividade financeira não pode ser concluída renovando apenas Plutus. Corrigida
+localmente a elegibilidade compartilhada do preflight e motor para preservar provas,
+encerrar a espera indevida e impedir novas tentativas/gates na referência histórica.
+Sem alteração da oferta, preço, campanha ou limites, sem chamada paga e sem iniciar
+processo sucessor. A homologação técnica anterior permanece no histórico.
+Matriz/evidências da entrega: `docs/homologacao/homologacao-experimento-encerrado-v1.md`.

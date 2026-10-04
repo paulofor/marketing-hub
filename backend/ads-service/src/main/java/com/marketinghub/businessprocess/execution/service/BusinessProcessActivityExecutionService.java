@@ -536,7 +536,8 @@ public class BusinessProcessActivityExecutionService {
   }
 
   /**
-   * Resolve o plano comercial do ciclo atual e usa o plano mais recente do produto como fallback.
+   * Resolve o plano da referência explícita; somente contextos sem plano ou experimento usam o
+   * plano mais recente do produto.
    */
   private CommercialPlan currentCommercialPlan(
       List<CommercialPlan> productPlans, String currentExecutionReference) {
@@ -548,7 +549,19 @@ public class BusinessProcessActivityExecutionService {
             productPlans.stream()
                 .filter(plan -> String.valueOf(plan.getId()).equals(referencedPlanId))
                 .findFirst();
-        if (referencedPlan.isPresent()) return referencedPlan.get();
+        return referencedPlan.orElse(null);
+      }
+      Matcher experimentMatcher = EXPERIMENT_REFERENCE.matcher(currentExecutionReference);
+      if (experimentMatcher.matches()) {
+        Long experimentId = Long.valueOf(experimentMatcher.group(1));
+        Set<Long> productPlanIds =
+            productPlans.stream()
+                .map(CommercialPlan::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        return commercialPlanRepository.findByExperimentReference(experimentId).stream()
+            .filter(plan -> productPlanIds.contains(plan.getId()))
+            .findFirst()
+            .orElse(null);
       }
     }
     return productPlans.stream().findFirst().orElse(null);
@@ -815,7 +828,13 @@ public class BusinessProcessActivityExecutionService {
         agentActivityReadinessProviders(process, activityDefinition);
     boolean freshExecutionRequired =
         requiresFreshExecution(
-            agentReadinessProviders, process, activityDefinition, product, sourceReference);
+                agentReadinessProviders, process, activityDefinition, product, sourceReference)
+            || backendExecutor
+                .map(
+                    executor ->
+                        executor.requiresFreshExecution(
+                            process, activityDefinition, product, sourceReference))
+                .orElse(false);
     currentSituation = currentVersionSituation(currentSituation, freshExecutionRequired);
     requireRequestableActivityState(currentSituation.operationalState());
     if (backendExecutor.isPresent()) {
@@ -1673,8 +1692,8 @@ public class BusinessProcessActivityExecutionService {
   }
 
   /**
-   * Projeta o estado pela definição selecionada, preserva versões e encerra retornos condicionais
-   * já superados como auditoria histórica.
+   * Projeta o estado e a validade atual das provas pela definição selecionada, preservando versões
+   * e retornos condicionais superados na auditoria histórica.
    */
   private List<ProductProcessActivityExecutionGroupResponse> activityGroups(
       BusinessProcessDefinition selectedProcess,
@@ -1757,11 +1776,17 @@ public class BusinessProcessActivityExecutionService {
           currentVersionSituation(
               situation,
               requiresFreshExecution(
-                  agentReadinessProviders,
-                  selectedProcess,
-                  definition,
-                  product,
-                  readinessSourceReference));
+                      agentReadinessProviders,
+                      selectedProcess,
+                      definition,
+                      product,
+                      readinessSourceReference)
+                  || backendExecutor
+                      .map(
+                          executor ->
+                              executor.requiresFreshExecution(
+                                  selectedProcess, definition, product, readinessSourceReference))
+                      .orElse(false));
       boolean selectedVersionActivity =
           definition != null
               && conditionalActivitySelected(definition, situation, executions, agentReadiness);
@@ -1836,7 +1861,11 @@ public class BusinessProcessActivityExecutionService {
                           || (!agentReadiness.ready()
                               && "BLOCKED".equals(situation.operationalState())))
                   ? agentReadiness.reason()
-                  : situation.stateReason(),
+                  : backendReadiness != null
+                          && !backendReadiness.ready()
+                          && "NOT_STARTED".equals(situation.operationalState())
+                      ? backendReadiness.reason()
+                      : situation.stateReason(),
               situation.objectiveAchieved(),
               situation.stateEvidence(),
               situation.activityInstanceId(),

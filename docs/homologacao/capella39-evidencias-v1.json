@@ -1,0 +1,560 @@
+{
+  "recordedAt": "2026-10-04T04:56:00Z",
+  "scope": {
+    "productId": 7,
+    "productVersion": "v1",
+    "productType": "LOW_TICKET_DIGITAL_PRODUCT",
+    "chainId": 26,
+    "chainVersion": 26,
+    "processDefinitionId": 122,
+    "processVersion": 7,
+    "automationRunId": 39,
+    "sourceReference": "experiment:88",
+    "commercialPlanId": 2,
+    "incorrectDisplayedCommercialPlanId": 35,
+    "parentProcessDefinitionId": 118,
+    "parentProcessVersion": 12,
+    "parentActivityId": "preflight",
+    "learningCycleId": null,
+    "agentTaskIds": []
+  },
+  "localValidation": {
+    "fullBackend": {
+      "tests": 3862,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 24,
+      "durationSeconds": 421,
+      "skippedConditions": [
+        {
+          "class": "com.marketinghub.facebookads.FacebookCampaignStopReasonMysqlTest",
+          "test": "repairConvergesLegacyEnumsAndAcceptsAuthorizedWindowReason",
+          "reason": null
+        },
+        {
+          "class": "com.marketinghub.pde.service.PdePublishedContractMysql57Test",
+          "test": "restoresHistoricalV5WithoutChangingOtherVersions",
+          "reason": "Environment variable [PDE_CONTRACT_MYSQL] does not exist"
+        },
+        {
+          "class": "com.marketinghub.communication.v1.PrivateCommunicationJourneyReplayTest",
+          "test": "completesUsingExportedEvidenceWithoutCallingProduction",
+          "reason": "Environment variable [PRIVATE_JOURNEY_REPLAY] does not exist"
+        },
+        {
+          "class": "com.marketinghub.product.service.agentvalidation.VegaCycleGateFlowIntegrationTest",
+          "test": "approvesExactOutputsFromLocalWorkers",
+          "reason": "Environment variable [VEGA_GATE_FLOW_ARTIFACTS] does not exist"
+        },
+        {
+          "class": "com.marketinghub.geralanding.CopyProvisionalHtmlAssemblerTest",
+          "test": "assembleMustMatchExpectedHtmlExactlyForOfficialFixtures",
+          "reason": "Desabilitado provisoriamente: comparação literal exata do HTML oficial está em ajuste"
+        },
+        {
+          "class": "com.marketinghub.catalogovivo.v1.service.CatalogoVivoIntegrationTest",
+          "test": "loadsCompleteCatalogAndRejectsInvalidTextThroughHttp",
+          "reason": "Environment variable [CATALOGO_VIVO_MYSQL_URL] does not exist"
+        },
+        {
+          "class": "com.marketinghub.catalogovivo.v1.service.CatalogoVivoIntegrationTest",
+          "test": "rejectsForeignKeysAndDuplicateVersions",
+          "reason": "Environment variable [CATALOGO_VIVO_MYSQL_URL] does not exist"
+        },
+        {
+          "class": "com.marketinghub.catalogovivo.v1.service.CatalogoVivoIntegrationTest",
+          "test": "pinsVersionsAtCreationAndAdvancesRetriesAfterActivation",
+          "reason": "Environment variable [CATALOGO_VIVO_MYSQL_URL] does not exist"
+        },
+        {
+          "class": "com.marketinghub.catalogovivo.v1.service.CatalogoVivoIntegrationTest",
+          "test": "serializesConcurrentActivationsAndRejectsStaleSnapshots",
+          "reason": "Environment variable [CATALOGO_VIVO_MYSQL_URL] does not exist"
+        },
+        {
+          "class": "com.marketinghub.catalogovivo.v1.service.CatalogoVivoIntegrationTest",
+          "test": "persistsResolutionBlockerAndRejectsCrossProduct",
+          "reason": "Environment variable [CATALOGO_VIVO_MYSQL_URL] does not exist"
+        },
+        {
+          "class": "com.marketinghub.catalogovivo.v1.service.CatalogoVivoIntegrationTest",
+          "test": "adoptsHistoricalCycleIdempotentlyWithoutChangingBudgetOrHistory",
+          "reason": "Environment variable [CATALOGO_VIVO_MYSQL_URL] does not exist"
+        },
+        {
+          "class": "com.marketinghub.facebookads.resumption.FacebookCampaignResumptionMysqlTest",
+          "test": "migrationAndJpaAgreeAndReapplyWithoutLosingHistory",
+          "reason": null
+        },
+        {
+          "class": "com.marketinghub.businessprocess.PdeHarnessResponsibilityMysql57Test",
+          "test": "migratesOnlyCurrentMetadataAndCanBeReapplied",
+          "reason": "Environment variable [VEGA377_MYSQL] does not exist"
+        },
+        {
+          "class": "com.marketinghub.agenttask.AgentTaskVisualEvidenceServiceTest",
+          "test": "acceptsRealWorkerCaptureThroughBackendStorageContract",
+          "reason": "Environment variable [PSIQUE_CAPTURE_EVIDENCE_OUTPUT] does not exist"
+        },
+        {
+          "class": "com.marketinghub.creative.web.VideoCreativeControllerTest",
+          "test": "browserJourneyUsesRealLocalBackend",
+          "reason": "System property [videoCreative.browser] does not exist"
+        },
+        {
+          "class": "com.marketinghub.creative.web.VideoCreativeControllerTest",
+          "test": "browserRecoversFailedPublicationWithIndependentCopyReview(String)",
+          "reason": "System property [publicationRecovery.browser] does not exist"
+        },
+        {
+          "class": "com.marketinghub.quartzo.commercial.v1.service.QuartzoCommercialMigrationTest",
+          "test": "migratesTypedSubprocessAndPreservesHistoricalGraphs",
+          "reason": null
+        },
+        {
+          "class": "com.marketinghub.productdiscovery.v1.service.ProductDiscoverySupervisedMetaMySql57IntegrationTest",
+          "test": "persistsAndReadsOnlyTheLinkedInstagramEvidence",
+          "reason": "System property [argos.meta.mysql57] does not exist"
+        },
+        {
+          "class": "com.marketinghub.planning.service.ApprovedCreativePackageArchiveTest",
+          "test": "acceptsGeneratedPackageWhenProvided",
+          "reason": null
+        },
+        {
+          "class": "com.marketinghub.pde.service.VegaV12CandidateMysql57Test",
+          "test": "createsV12CandidateWithoutPublishingOrOverwritingEvidence",
+          "reason": "Environment variable [PDE_CONTRACT_MYSQL] does not exist"
+        },
+        {
+          "class": "com.marketinghub.opala.commercial.v1.service.OpalaCommercialMigrationTest",
+          "test": "migratesAndRollsBackWithoutRewritingHistory",
+          "reason": null
+        },
+        {
+          "class": "com.marketinghub.businessprocess.PdeCommercialPrinciplesMysql57Test",
+          "test": "versionsObjectivesWithoutRewritingHistoryOrExecutionContracts",
+          "reason": "Environment variable [PDE_PRINCIPLES_MYSQL] does not exist"
+        },
+        {
+          "class": "com.marketinghub.businessprocess.PdeCommercialPrinciplesMysql57Test",
+          "test": "versionsSatisfactionIdentityAndReturnWithoutMigratingExistingExecutions",
+          "reason": "Environment variable [PDE_PRINCIPLES_MYSQL] does not exist"
+        },
+        {
+          "class": "com.marketinghub.productdiscovery.v1.service.ProductDiscoveryPublicEvidenceWorkerIntegrationTest",
+          "test": "acceptsWorkerCallbackWithNoInterviewAndPreservesOpenGaps",
+          "reason": "Environment variable [ARGOS_PUBLIC_EVIDENCE_FIXTURE] does not exist"
+        }
+      ]
+    },
+    "targetedTests": {
+      "tests": 73,
+      "failures": 0
+    },
+    "previousImplementation": {
+      "regressionTests": 7,
+      "failures": 7,
+      "errors": 0
+    },
+    "packaging": {
+      "classCount": 4206,
+      "externalResourceCount": 744,
+      "contractTests": 9
+    },
+    "responsive": [
+      {
+        "scenario": "current",
+        "profile": "desktop",
+        "completed": 3,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "pageErrors": 0,
+        "width": 1440,
+        "screenshotSha256": "1e5f3004941f4e4726fab4925c141e0f093dd6197f3f66848ac567caa845d708"
+      },
+      {
+        "scenario": "current",
+        "profile": "iPhone-15-Pro",
+        "completed": 3,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "pageErrors": 0,
+        "width": 393,
+        "screenshotSha256": "983c3c02ac7ec736676d0eaae337d637b761de4987730f45c6f879e6a5c2571e"
+      },
+      {
+        "scenario": "current",
+        "profile": "Pixel-7",
+        "completed": 3,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "pageErrors": 0,
+        "width": 412,
+        "screenshotSha256": "8fe0dc943832bec8a4de925a2ea812d80d8c233505f5ba66fc386391bd933b5f"
+      },
+      {
+        "scenario": "stale",
+        "profile": "desktop",
+        "completed": 2,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "pageErrors": 0,
+        "width": 1440,
+        "screenshotSha256": "5e53a59958018e5439e44f2f67ec1a143bf89c7c77eca96eb5d757992c795ecd"
+      },
+      {
+        "scenario": "stale",
+        "profile": "iPhone-15-Pro",
+        "completed": 2,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "pageErrors": 0,
+        "width": 393,
+        "screenshotSha256": "07176c9c3564df2aa2fa28e903b2cc94cf257c7d4cd68c86da5184d9259826ea"
+      },
+      {
+        "scenario": "stale",
+        "profile": "Pixel-7",
+        "completed": 2,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "pageErrors": 0,
+        "width": 412,
+        "screenshotSha256": "2a4ba84f6e794a8ae1a75bf258802f7f8ab5b3821cf536a44b7162f766d503c5"
+      }
+    ],
+    "paidAgentCalls": 0,
+    "productionWritesDuringQA": 0
+  },
+  "publication": {
+    "publicationId": 32,
+    "db": {
+      "id": 32,
+      "experiment_id": 88,
+      "source_sha256": "dbd8533a7066d3be6b4be8307247844db59e124a05d5919d2e61985e8d83bde4",
+      "sales_page_url": "https://oportunidadebrasil.shop/flows/exp-88-gerasalespage-v1",
+      "checkout_url": "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=133771061-1ff09a0f-332e-43e5-86e4-3712d9904294",
+      "published_at": "2026-09-29T23:03:36.224491"
+    },
+    "browsers": [
+      {
+        "profile": "desktop",
+        "status": 200,
+        "sourceSha256": "dbd8533a7066d3be6b4be8307247844db59e124a05d5919d2e61985e8d83bde4",
+        "servedHtmlSha256": "46e7ef5fe45ddde48fcfa0331ddcab8f787d6a594e7e95c1a5cb504de5cfa465",
+        "screenshotSha256": "700164b8f141d762d6f43a5cbafd0f69840c904de4e1abecb0456ad885bc9efb",
+        "images": [
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-11155257152c-654f5c18c83c-temis-image-studio-32.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-39e37c7c59fb-6e26d1f9d3a0-temis-image-studio-33.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-11155257152c-654f5c18c83c-temis-image-studio-32.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-6f7b0a6b2b14-1fbbfbbb887a-temis-image-studio-9.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-39e37c7c59fb-6e26d1f9d3a0-temis-image-studio-33.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-001fb04853b0-146ee52f8b0b-temis-image-studio-19.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-6f7b0a6b2b14-1fbbfbbb887a-temis-image-studio-9.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-001fb04853b0-146ee52f8b0b-temis-image-studio-19.jpg",
+            "loaded": true,
+            "width": 960
+          }
+        ],
+        "checkoutCount": 6,
+        "assets": [
+          {
+            "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-11155257152c-654f5c18c83c-temis-image-studio-32.jpg",
+            "status": 200,
+            "bytes": 87153,
+            "sha256": "f31bb9c25206b6452e52c87c32e736ab55c9f195657c6ac774f1f34b95428e95"
+          },
+          {
+            "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-39e37c7c59fb-6e26d1f9d3a0-temis-image-studio-33.jpg",
+            "status": 200,
+            "bytes": 196634,
+            "sha256": "ae6b5f5ddf8b475e967979fc46d2c70201baf11a002c5733b6397e34f992a4d0"
+          },
+          {
+            "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-001fb04853b0-146ee52f8b0b-temis-image-studio-19.jpg",
+            "status": 200,
+            "bytes": 129256,
+            "sha256": "99f975e80552605106675180a8cde5ac0e02878207c3d67383c63ccba85335ee"
+          },
+          {
+            "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-6f7b0a6b2b14-1fbbfbbb887a-temis-image-studio-9.jpg",
+            "status": 200,
+            "bytes": 85403,
+            "sha256": "5d9ac22aff61da05f07b66ea3b1a96022378cf3b58b8994e2f6dacb6f6e92e14"
+          }
+        ],
+        "writes": [],
+        "pageErrors": [],
+        "layout": {
+          "scroll": 1440,
+          "width": 1440
+        }
+      },
+      {
+        "profile": "iPhone-15-Pro",
+        "status": 200,
+        "sourceSha256": "dbd8533a7066d3be6b4be8307247844db59e124a05d5919d2e61985e8d83bde4",
+        "servedHtmlSha256": "46e7ef5fe45ddde48fcfa0331ddcab8f787d6a594e7e95c1a5cb504de5cfa465",
+        "screenshotSha256": "af2610fef56c0ed6f8c9e96d37bfcbf7b5287af711febb625ff6fce40c25c33a",
+        "images": [
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-11155257152c-654f5c18c83c-temis-image-studio-32.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-39e37c7c59fb-6e26d1f9d3a0-temis-image-studio-33.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-11155257152c-654f5c18c83c-temis-image-studio-32.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-6f7b0a6b2b14-1fbbfbbb887a-temis-image-studio-9.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-39e37c7c59fb-6e26d1f9d3a0-temis-image-studio-33.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-001fb04853b0-146ee52f8b0b-temis-image-studio-19.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-6f7b0a6b2b14-1fbbfbbb887a-temis-image-studio-9.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-001fb04853b0-146ee52f8b0b-temis-image-studio-19.jpg",
+            "loaded": true,
+            "width": 960
+          }
+        ],
+        "checkoutCount": 6,
+        "assets": [
+          {
+            "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-39e37c7c59fb-6e26d1f9d3a0-temis-image-studio-33.jpg",
+            "status": 200,
+            "bytes": 196634,
+            "sha256": "ae6b5f5ddf8b475e967979fc46d2c70201baf11a002c5733b6397e34f992a4d0"
+          },
+          {
+            "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-11155257152c-654f5c18c83c-temis-image-studio-32.jpg",
+            "status": 200,
+            "bytes": 87153,
+            "sha256": "f31bb9c25206b6452e52c87c32e736ab55c9f195657c6ac774f1f34b95428e95"
+          },
+          {
+            "url": "https://www.facebook.com/tr/?id=1272936690700110&ev=PageView&dl=https%3A%2F%2Foportunidadebrasil.shop%2Fflows%2Fexp-88-gerasalespage-v1%3Fmh_test%3D1&rl=&if=false&ts=1791089631134&iw=false&sw=393&sh=852&v=2.9.414&r=stable&ec=0&o=12318&aems=0%3B0&fbp=fb.1.1791089631128.126601321467965505&ler=empty&cdl=API_unavailable&pmd[title]=Kit%20Agenda%20Cheia%20Nail%20Design&pmd[locale]=pt-BR&pmd[description]=Kit%20personalizado%20para%20nail%20designers%20com%20posts%2C%20stories%2C%20legendas%2C%20mensagens%20de%20WhatsApp%20e%20calend%C3%A1rio%20de%207%20dias%20por%20R%24%2067.&plt=615.8999998569489&iss=1&imft=1&tz=0&it=1791089630977&coo=false&expv2[0]=pl0&expv2[1]=el2&expv2[2]=bc1&expv2[3]=ra2&expv2[4]=rp2&expv2[5]=im0&expv2[6]=hf0&expv2[7]=sd1&expv2[8]=sp1&expv2[9]=ek1&expv2[10]=pc1&expv2[11]=gs1&expv2[12]=zs1&expv2[13]=cp1&expv2[14]=es1&expv2[15]=ac1&expv2[16]=so1&expv2[17]=wc1&expv2[18]=la1&expv2[19]=sf1&expv2[20]=da1&expv2[21]=io1&expv2[22]=ae1&expv2[23]=sx1&expv2[24]=if1&expv2[25]=fd1&expv2[26]=bg1&expv2[27]=mg1&expv2[28]=kl1&expv2[29]=sg1&expv2[30]=mk1&expv2[31]=sn1&expv2[32]=ec1&expv2[33]=mp1&expv2[34]=ps1&expv2[35]=fx1&expv2[36]=vt1&expv2[37]=dp1&expv2[38]=fw1&expv2[39]=cn1&expv2[40]=tz1&expv2[41]=pe1&expv2[42]=ee1&expv2[43]=bu1&expv2[44]=ta1&expv2[45]=mt1&expv2[46]=ot1&expv2[47]=hv1&expv2[48]=ep1&expv2[49]=rh1&expv2[50]=ah0&rqm=GET",
+            "status": 200,
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-6f7b0a6b2b14-1fbbfbbb887a-temis-image-studio-9.jpg",
+            "status": 200,
+            "bytes": 85403,
+            "sha256": "5d9ac22aff61da05f07b66ea3b1a96022378cf3b58b8994e2f6dacb6f6e92e14"
+          },
+          {
+            "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-001fb04853b0-146ee52f8b0b-temis-image-studio-19.jpg",
+            "status": 200,
+            "bytes": 129256,
+            "sha256": "99f975e80552605106675180a8cde5ac0e02878207c3d67383c63ccba85335ee"
+          }
+        ],
+        "writes": [],
+        "pageErrors": [],
+        "layout": {
+          "scroll": 393,
+          "width": 393
+        }
+      },
+      {
+        "profile": "Pixel-7",
+        "status": 200,
+        "sourceSha256": "dbd8533a7066d3be6b4be8307247844db59e124a05d5919d2e61985e8d83bde4",
+        "servedHtmlSha256": "46e7ef5fe45ddde48fcfa0331ddcab8f787d6a594e7e95c1a5cb504de5cfa465",
+        "screenshotSha256": "ac17d5da69e9754eeb5b71bb157ad0274d4ad8425aac3e7bc61b437e513bca5b",
+        "images": [
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-11155257152c-654f5c18c83c-temis-image-studio-32.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-39e37c7c59fb-6e26d1f9d3a0-temis-image-studio-33.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-11155257152c-654f5c18c83c-temis-image-studio-32.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-6f7b0a6b2b14-1fbbfbbb887a-temis-image-studio-9.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-39e37c7c59fb-6e26d1f9d3a0-temis-image-studio-33.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-001fb04853b0-146ee52f8b0b-temis-image-studio-19.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-6f7b0a6b2b14-1fbbfbbb887a-temis-image-studio-9.jpg",
+            "loaded": true,
+            "width": 960
+          },
+          {
+            "src": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-001fb04853b0-146ee52f8b0b-temis-image-studio-19.jpg",
+            "loaded": true,
+            "width": 960
+          }
+        ],
+        "checkoutCount": 6,
+        "assets": [
+          {
+            "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-11155257152c-654f5c18c83c-temis-image-studio-32.jpg",
+            "status": 200,
+            "bytes": 87153,
+            "sha256": "f31bb9c25206b6452e52c87c32e736ab55c9f195657c6ac774f1f34b95428e95"
+          },
+          {
+            "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-39e37c7c59fb-6e26d1f9d3a0-temis-image-studio-33.jpg",
+            "status": 200,
+            "bytes": 196634,
+            "sha256": "ae6b5f5ddf8b475e967979fc46d2c70201baf11a002c5733b6397e34f992a4d0"
+          },
+          {
+            "url": "https://www.facebook.com/tr/?id=1272936690700110&ev=PageView&dl=https%3A%2F%2Foportunidadebrasil.shop%2Fflows%2Fexp-88-gerasalespage-v1%3Fmh_test%3D1&rl=&if=false&ts=1791089637079&iw=false&sw=412&sh=915&v=2.9.414&r=stable&ec=0&o=12318&aems=0%3B0&fbp=fb.1.1791089637073.338882334324481166&ler=empty&cdl=API_unavailable&pmd[title]=Kit%20Agenda%20Cheia%20Nail%20Design&pmd[locale]=pt-BR&pmd[description]=Kit%20personalizado%20para%20nail%20designers%20com%20posts%2C%20stories%2C%20legendas%2C%20mensagens%20de%20WhatsApp%20e%20calend%C3%A1rio%20de%207%20dias%20por%20R%24%2067.&plt=624.3000001907349&iss=1&imft=1&tz=0&it=1791089637024&coo=false&chmd=&chpv=14&chfv=undefined&expv2[0]=pl1&expv2[1]=el2&expv2[2]=bc1&expv2[3]=ra2&expv2[4]=rp2&expv2[5]=im0&expv2[6]=hf0&expv2[7]=sd1&expv2[8]=sp1&expv2[9]=ek1&expv2[10]=pc1&expv2[11]=gs1&expv2[12]=zs1&expv2[13]=cp1&expv2[14]=es1&expv2[15]=ac1&expv2[16]=so1&expv2[17]=wc1&expv2[18]=la1&expv2[19]=sf1&expv2[20]=da1&expv2[21]=io1&expv2[22]=ae1&expv2[23]=sx1&expv2[24]=if1&expv2[25]=fd1&expv2[26]=bg1&expv2[27]=mg1&expv2[28]=kl1&expv2[29]=sg1&expv2[30]=mk1&expv2[31]=sn1&expv2[32]=ec1&expv2[33]=mp1&expv2[34]=ps1&expv2[35]=fx1&expv2[36]=vt1&expv2[37]=dp1&expv2[38]=fw1&expv2[39]=cn1&expv2[40]=tz1&expv2[41]=pe1&expv2[42]=ee1&expv2[43]=bu1&expv2[44]=ta1&expv2[45]=ot1&expv2[46]=hv1&expv2[47]=ep1&expv2[48]=rh0&expv2[49]=ah1&rqm=GET",
+            "status": 200,
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-001fb04853b0-146ee52f8b0b-temis-image-studio-19.jpg",
+            "status": 200,
+            "bytes": 129256,
+            "sha256": "99f975e80552605106675180a8cde5ac0e02878207c3d67383c63ccba85335ee"
+          },
+          {
+            "url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/exp-88-gerasalespage-v1-landing-web-6f7b0a6b2b14-1fbbfbbb887a-temis-image-studio-9.jpg",
+            "status": 200,
+            "bytes": 85403,
+            "sha256": "5d9ac22aff61da05f07b66ea3b1a96022378cf3b58b8994e2f6dacb6f6e92e14"
+          }
+        ],
+        "writes": [],
+        "pageErrors": [],
+        "layout": {
+          "scroll": 412,
+          "width": 412
+        }
+      }
+    ]
+  },
+  "measurement": {
+    "before": [
+      {
+        "total": 711,
+        "last_id": 5299
+      }
+    ],
+    "after": [
+      {
+        "total": 711,
+        "last_id": 5299
+      }
+    ],
+    "qaChangedEvents": false
+  },
+  "observedCampaigns": [
+    {
+      "id": "120251282333490326",
+      "status": "PAUSED",
+      "effective_status": "PAUSED"
+    },
+    {
+      "id": "120251812866290326",
+      "status": "PAUSED",
+      "effective_status": "PAUSED"
+    }
+  ],
+  "financial": {
+    "financialPlanId": 9,
+    "revision": 5,
+    "commercialPlanId": 2,
+    "commercialPlanVersion": 4,
+    "financialExecutionId": 62,
+    "validUntil": "2026-10-02",
+    "expired": true,
+    "reviewCycleLimitBrl": 100,
+    "reviewPurchaseStop": 2,
+    "experimentMediaLimitBrl": 125,
+    "experimentPurchaseStop": 5,
+    "incrementalReviewAuthorized": false,
+    "historicalCostCoverage": "NOT_REPORTED"
+  },
+  "publishedCorrection": {
+    "status": "PENDING_PR",
+    "mainSha": null,
+    "workflowRuns": []
+  },
+  "limitations": [
+    "Vendas, receita e lucro não foram comprovados por esta homologação.",
+    "A expiração e a incompatibilidade financeira continuam bloqueando a conclusão.",
+    "Capturas de desktop/celular permanecem vinculadas aos hashes desta evidência; os arquivos locais não são imagens da oferta.",
+    "Latência comparativa, custo histórico integral e custo por homologação concluída não estão disponíveis."
+  ]
+}

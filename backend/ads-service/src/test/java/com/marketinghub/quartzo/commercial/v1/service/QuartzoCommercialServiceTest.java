@@ -312,6 +312,27 @@ class QuartzoCommercialServiceTest {
     verify(instances, never()).saveAndFlush(any());
   }
 
+  /** O bloqueio identifica a revisão, seu plano e a causa antes de consumir outro parecer. */
+  @Test
+  void staleEconomicsNamesExactRevisionAndPendingAction() {
+    snapshot
+        .withObject("/financialPlan")
+        .put("id", 97009L)
+        .put("revision", 5)
+        .put("commercialPlanId", 97002L)
+        .put("stale", true)
+        .putArray("pendingActions")
+        .add("Plutus: validade encerrada; crie uma revisão com fontes conferidas.");
+
+    var readiness =
+        service.readiness(process, activities.get("economics"), product, "experiment:88");
+
+    assertThat(readiness.ready()).isFalse();
+    assertThat(readiness.reason())
+        .contains("#97009", "revisão 5", "plano comercial #97002", "validade encerrada");
+    verify(instances, never()).saveAndFlush(any());
+  }
+
   /** Exige decisão favorável e cobertura completa no parecer financeiro, não só cenários. */
   @Test
   void economicsRejectsUnapprovedOrIncompletePlutusReview() {

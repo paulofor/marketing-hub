@@ -1,5 +1,25 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-PREFLIGHT-CONCLUSAO-HISTORICA-MASCA-VIGENCIA — 04/10/2026
+
+- **Evidência:** Capella #7, cadeia #26, processo #122/v7, execução #39 e
+  `experiment:88`. A instância #477 aparece concluída mesmo com
+  `CURRENT_TECHNICAL_EVIDENCE=false`. Compra e medição conservam fontes válidas.
+  O relatório indica plano #35/#96; APIs e MCP confirmam plano #2 para #88.
+  Revisão financeira #9/5 e parecer #62 venceram em 02/10.
+- **Causa:** a projeção reconferia freshness apenas por providers de agentes,
+  ignorando a validade das conclusões do executor backend; a resolução do plano
+  só reconhecia referências comerciais e adotava o último plano do produto
+  para uma referência explícita de experimento.
+- **Correção:** usar o vínculo oficial por experimento, sem fallback para outra
+  candidata; permitir ao executor técnico invalidar a comprovação atual e
+  renovar a ocorrência pelo comando canônico após validar fontes. Consultas
+  preservam instâncias, custos e resultados válidos. O bloqueio financeiro
+  identifica revisão/plano e não inicia Plutus nem estende validade.
+- **Prevenção:** fluxo local com executor e serviço BPM reais, caso original e
+  IDs independentes, fonte divergente/válida, plano ausente, recuperação e
+  idempotência. [Matriz](../homologacao/capella39-evidencias-vigentes-v1.md).
+
 ## LOOP-BPM-MEDICAO-PROJETADA-RESERVA-FILA — 03/10/2026
 
 - **Evidência:** Vega #4, cadeia #14, ciclo #2, `experiment:92`; execução #42 do

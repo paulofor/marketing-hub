@@ -188,6 +188,16 @@ condicionados ao orçamento, aos contratos e às aprovações próprias do proce
 
 ### Leitura do preflight e evidência vigente — 02/10/2026
 
+Complemento observado em 04/10/2026: o contexto entregue ao AIHUB e ao conciliador deve
+resolver o plano comercial pela referência exata do experimento, nunca pelo plano mais
+recente de outro experimento do produto. Ausência de vínculo permanece ausente. O executor
+técnico reconfere a prova de cada conclusão histórica: fonte inválida ou fingerprint diferente
+retira a comprovação vigente sem modificar a instância original. Uma fonte renovada permite
+nova ocorrência pelo comando oficial, com idempotência e custo incremental zero; o parecer
+financeiro vencido continua bloqueante e identifica plano/revisão e ação. Esse controle pertence
+ao backend e não exige nova inferência. Matriz:
+[leitura de evidências da execução #39](../homologacao/capella39-evidencias-vigentes-v1.md).
+
 O relatório de preflight verifica a identidade atual pelos validadores oficiais
 Quartzo/Safira e informa `currentEvidenceBlockReason`. `hasBlockers` inclui
 divergência ou ausência dessa identidade, mesmo com gates históricos `PASS`.

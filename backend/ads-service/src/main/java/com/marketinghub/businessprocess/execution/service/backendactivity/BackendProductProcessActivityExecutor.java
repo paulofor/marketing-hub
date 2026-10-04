@@ -16,6 +16,15 @@ public interface BackendProductProcessActivityExecutor {
     return false;
   }
 
+  /** Informa se a conclusão histórica precisa ser renovada pelas fontes atuais do domínio. */
+  default boolean requiresFreshExecution(
+      BusinessProcessDefinition process,
+      BusinessProcessActivityDefinition activityDefinition,
+      Product product,
+      String sourceReference) {
+    return false;
+  }
+
   /** Verifica pré-condições persistidas sem produzir efeito externo ou alterar o processo. */
   BackendProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,

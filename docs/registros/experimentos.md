@@ -1,3 +1,18 @@
+## 2026-10-04 — Capella #88: evidências e contexto do Processo 5.4
+
+- Confirmados produto #7 Quartzo v1, cadeia #26, processo #122/v7 e execução #39,
+  sem ciclo. A referência permanece `experiment:88`; #96/barber-v1 está fora deste escopo.
+- A fonte oficial vincula #88 ao plano #2, enquanto o relatório mostrava #35.
+  O backend passa a resolver o plano pela referência, sem herdar outra candidata.
+- As instâncias #477–#479 permanecem históricas. A superfície não pode continuar
+  contando como objetivo atual quando seu validador rejeita o fingerprint; compra
+  e medição válidas são preservadas. Fonte renovada permite nova ocorrência pelo
+  comando canônico, sem nova tarefa paga.
+- Revisão financeira #9/5 e parecer #62 venceram em 02/10. O limite analítico
+  de R$ 100/duas compras difere de R$ 125/cinco compras do #88, cuja janela terminou.
+  Nenhuma validade, teto, oferta, campanha ou autorização foi alterada para concluir o processo.
+- [Diagnóstico, alternativas e matriz local](../homologacao/capella39-evidencias-vigentes-v1.md).
+
 ## 2026-09-20 — Decisão progressiva por amostra humana no cockpit
 
 - Causa confirmada no código, endpoint e banco: o experimento #92 possuía `sample_size=100` e

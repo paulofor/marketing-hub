@@ -118,7 +118,7 @@ paths:
   /api/business-processes/{processDefinitionId}/products/{productId}/activity-executions:
     get:
       summary: Lista as atividades e tarefas do produto no processo canônico
-      description: Com sourceReference, consulta a referência exata do produto e valida o ciclo e a ficha vinculados. Sem referência explícita, conserva a seleção legada pelo ciclo ou experimento operado. O comando pode receber a mesma referência; sucessor PLANNED não substitui o contexto histórico solicitado.
+      description: Com sourceReference, consulta a referência exata do produto e valida o ciclo e a ficha vinculados. Referência de experimento resolve somente seu plano comercial direto ou de portfólio; ausência de vínculo retorna plano nulo, sem adotar outra candidata do produto. Conclusões técnicas cuja prova vigente divergir do histórico deixam de comprovar o objetivo e podem ser renovadas pelo comando oficial após validar a fonte; nenhuma consulta apaga a ocorrência histórica ou autoriza gasto. Sem referência explícita, conserva a seleção legada pelo ciclo ou experimento operado. O comando pode receber a mesma referência; sucessor PLANNED não substitui o contexto histórico solicitado.
       parameters:
         - name: includePromptAudit
           in: query

@@ -149,6 +149,44 @@ describe("ExperimentRunPanel", () => {
     ).toBeInTheDocument();
   });
 
+  it.each(["Evidência", "Conclusão"])(
+    "preserva %s extensa, bloqueia o envio e recupera no limite de 512 caracteres",
+    (field) => {
+      render(<ExperimentRunPanel experimentId="99" />);
+      for (const code of gateCodes) {
+        fireEvent.change(screen.getByLabelText(`Resultado ${code}`), {
+          target: { value: "PASS" },
+        });
+        fireEvent.change(screen.getByLabelText(`Evidência ${code}`), {
+          target: { value: `fixture://local/${code}` },
+        });
+        fireEvent.change(screen.getByLabelText(`Conclusão ${code}`), {
+          target: { value: "Contrato local comprovado." },
+        });
+      }
+      const input = screen.getByLabelText(`${field} ${gateCodes[3]}`);
+      const button = screen.getByRole("button", {
+        name: "Registrar homologação",
+      });
+      fireEvent.change(input, { target: { value: "a".repeat(513) } });
+      expect(input).toHaveValue("a".repeat(513));
+      expect(input).toHaveAttribute("aria-invalid", "true");
+      expect(button).toBeDisabled();
+      fireEvent.click(button);
+      expect(recordHomologation).not.toHaveBeenCalled();
+      fireEvent.change(input, { target: { value: "a".repeat(512) } });
+      expect(input).toHaveAttribute("aria-invalid", "false");
+      expect(button).toBeEnabled();
+      fireEvent.click(button);
+      expect(recordHomologation).toHaveBeenCalledTimes(1);
+      expect(
+        recordHomologation.mock.calls[0][0].gates[3][
+          field === "Evidência" ? "evidenceReference" : "summary"
+        ],
+      ).toHaveLength(512);
+    },
+  );
+
   it.each([false, true])(
     "apresenta o bloqueio de vigência informado pelo backend sem apagar gates históricos (compacto=%s)",
     (compact) => {

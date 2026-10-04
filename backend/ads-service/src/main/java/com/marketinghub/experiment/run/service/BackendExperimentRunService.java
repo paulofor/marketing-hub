@@ -18,6 +18,7 @@ import com.marketinghub.experiment.run.ExperimentRunStopPolicy;
 import com.marketinghub.experiment.run.service.MoisCommercialDossierPreflightService.CommercialDossierPreflightResult;
 import com.marketinghub.experiment.run.service.create.CreateExperimentRunRequest;
 import com.marketinghub.experiment.run.service.get.ExperimentRunResponse;
+import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationEvidenceException;
 import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationRequest;
 import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationRequest.GateEvidence;
 import com.marketinghub.experiment.run.service.preflight.ExperimentRunGateResultResponse;
@@ -503,47 +504,55 @@ public class BackendExperimentRunService {
         .build();
   }
 
-  /** Valida completude, unicidade e estados aceitos nas evidencias da rodada de homologacao. */
+  /** Recusa entradas incompletas, duplicadas ou inválidas antes de alterar os gates do run. */
   private Map<String, GateEvidence> validateHomologationRequest(
       ExperimentRun run, ExperimentRunHomologationRequest request, Set<String> expectedGateCodes) {
     if (request == null || request.gates() == null) {
-      throw new IllegalArgumentException("Resultados de homologação são obrigatórios");
+      throw new ExperimentRunHomologationEvidenceException(
+          "Resultados de homologação são obrigatórios");
     }
     Map<String, GateEvidence> evidenceByCode = new HashMap<>();
     for (GateEvidence evidence : request.gates()) {
-      if (evidence == null || !expectedGateCodes.contains(evidence.gateCode())) {
-        throw new IllegalArgumentException("Gate funcional desconhecido na homologação");
+      if (evidence == null
+          || evidence.gateCode() == null
+          || !expectedGateCodes.contains(evidence.gateCode())) {
+        throw new ExperimentRunHomologationEvidenceException(
+            "Gate funcional desconhecido na homologação");
       }
       if (evidenceByCode.putIfAbsent(evidence.gateCode(), evidence) != null) {
-        throw new IllegalArgumentException("Gate funcional duplicado na homologação");
+        throw new ExperimentRunHomologationEvidenceException(
+            "Gate funcional duplicado na homologação");
       }
       validateHomologationEvidence(run, evidence);
     }
     if (!evidenceByCode.keySet().equals(expectedGateCodes)) {
-      throw new IllegalArgumentException("A homologação deve informar os quatro gates funcionais");
+      throw new ExperimentRunHomologationEvidenceException(
+          "A homologação deve informar os quatro gates funcionais");
     }
     return evidenceByCode;
   }
 
-  /** Impede evidencias vazias e uso indevido de NOT_APPLICABLE em execucao de producao. */
+  /** Recusa evidência vazia, extensa ou com estado indevido como erro funcional corrigível. */
   private void validateHomologationEvidence(ExperimentRun run, GateEvidence evidence) {
     if (evidence.status() != ExperimentRunGateStatus.PASS
         && evidence.status() != ExperimentRunGateStatus.FAIL
         && evidence.status() != ExperimentRunGateStatus.NOT_APPLICABLE) {
-      throw new IllegalArgumentException(
+      throw new ExperimentRunHomologationEvidenceException(
           "Gate homologado deve terminar como PASS, FAIL ou NOT_APPLICABLE");
     }
     if (evidence.status() == ExperimentRunGateStatus.NOT_APPLICABLE
         && (!META_DISTRIBUTION_GATE.equals(evidence.gateCode())
             || run.getMode() != ExperimentRunMode.TEST)) {
-      throw new IllegalArgumentException(
+      throw new ExperimentRunHomologationEvidenceException(
           "NOT_APPLICABLE só é permitido para Meta em run técnico de teste");
     }
     if (!hasUsefulText(evidence.summary()) || !hasUsefulText(evidence.evidenceReference())) {
-      throw new IllegalArgumentException("Gate homologado exige resumo e referência de evidência");
+      throw new ExperimentRunHomologationEvidenceException(
+          "Gate homologado exige resumo e referência de evidência");
     }
     if (evidence.summary().length() > 512 || evidence.evidenceReference().length() > 512) {
-      throw new IllegalArgumentException("Evidência de homologação excede o limite persistível");
+      throw new ExperimentRunHomologationEvidenceException(
+          "Resumo e referência de evidência devem ter até 512 caracteres. Use um link para a prova completa.");
     }
   }
 

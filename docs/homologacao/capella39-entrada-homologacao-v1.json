@@ -1,0 +1,120 @@
+{
+  "scope": {
+    "productId": 7,
+    "chainId": 26,
+    "processDefinitionId": 122,
+    "processVersion": 7,
+    "automationRunId": 39,
+    "sourceReference": "experiment:88",
+    "technicalRunId": 17
+  },
+  "cause": {
+    "requestId": "4befe003-c0a8-4d54-a591-2e7fb26144d1",
+    "httpStatusBefore": 500,
+    "persistentTextLimit": 512,
+    "validationBeforeWrite": true,
+    "genericExceptionClassifiedAsUnexpected": true,
+    "missingGateCodeCausedNpe": true
+  },
+  "baseline": {
+    "httpRegressionsFailed": 11,
+    "nullCodeRegressionsFailed": 2,
+    "formRegressionsFailed": 2
+  },
+  "validation": {
+    "backendFull": {
+      "tests": 3887,
+      "passed": 3863,
+      "skipped": 24,
+      "failures": 0,
+      "errors": 0
+    },
+    "frontendPanelTests": 11,
+    "typecheck": "PASS",
+    "localUi": [
+      {
+        "scenario": "pending",
+        "profile": "desktop",
+        "completed": 3,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "simulatedPosts": 1,
+        "pageErrors": 0,
+        "width": 1440,
+        "screenshotSha256": "f4b0b5be3efb23d0a8d6518012b061dc9711eefc64a9d6d4eedb22daf1caf2f7"
+      },
+      {
+        "scenario": "pending",
+        "profile": "iPhone-15-Pro",
+        "completed": 3,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "simulatedPosts": 1,
+        "pageErrors": 0,
+        "width": 393,
+        "screenshotSha256": "11ce7a53bf013efa4db2c0cb0b6fa2494e14985575756163a869a61cbbc8d957"
+      },
+      {
+        "scenario": "pending",
+        "profile": "Pixel-7",
+        "completed": 3,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "simulatedPosts": 1,
+        "pageErrors": 0,
+        "width": 412,
+        "screenshotSha256": "66c7bad75db13df84fc39252bf8e3e214c03d75d44db3d357ee6ecf7548dde1b"
+      }
+    ],
+    "jar": {
+      "identicalClasses": 4206,
+      "externalResources": 745,
+      "behaviorCards": 511
+    },
+    "frontendFull": {
+      "testFiles": 184,
+      "tests": 845,
+      "passed": 845,
+      "failures": 0,
+      "isolation": "forks; maxWorkers=1; minWorkers=1"
+    },
+    "frontendSharedWorkerComparison": {
+      "modifiedFailedFiles": 9,
+      "baselineFailedFiles": 9,
+      "notProductFailure": true
+    },
+    "frontendBuild": "PASS",
+    "finalSpotlessAndBackendPackage": "PASS"
+  },
+  "historyPreserved": {
+    "technicalRunId": 17,
+    "status": "PREFLIGHT_PENDING",
+    "manualGatesStillPending": 4,
+    "originalBpmInstances": [477, 478, 479]
+  },
+  "paidCalls": 0,
+  "productionPurchaseWrites": 0,
+  "evidenceDigests": {
+    "gate-registration-runtime.log": "c8f13739c57eeeb24b12cec103a48dbaf618548ce0e9779b4f17da0161a13f4f",
+    "gate-column-contract.json": "6c1809b03c20dee0d919c40fb87babf00df96b351e0978bbf0e975396a4a9acb",
+    "technical-homologation-rejected-original.json": "9765634c968e595bd0dd7f45bc1cd437df1cd0b253f8c5e4727b59715b96fff1",
+    "evidence-input-backend-full-final.log": "79184dfd9521c9e0a6ae483f719e54db7ce9773666960acfcd46c13b44e06f71",
+    "evidence-input-package-verification.log": "3cd73b47d223ed1cacb9dd8086d2ad115b0f131e1310d1f4e0a2c125fc7b1b15",
+    "evidence-input-local-ui.log": "a3ba0de3264f9a7f1b129935d73f60072f2ac836c46e024b3d4a441692cb5621",
+    "evidence-input-typecheck.log": "22d61c288c14288b0b237451ea61eb4e2fc236829eb295fb28a2e2109df4eafb",
+    "evidence-input-frontend-isolated.log": "70e3a9fc2d4920abf9c830e8de8673f3fbd754ce4991493f9f506f88f32e934c",
+    "evidence-input-frontend-build.log": "8313916f0d54966cd7227b69a126b59c8b7022090676a8e4713c8b9b11cda0d6",
+    "evidence-input-final-package.log": "ef88067b82158d233b98b15697ba09b8002c415decd6367460fbcf4a2d4dcb16"
+  },
+  "previousDelivery": {
+    "pr": 5489,
+    "mainCommit": "1bf506185199d41dd084674e3cb10ebcc9fde994",
+    "deployRun": 37186558107,
+    "runtimeConfirmed": true,
+    "workflowsCompleted": 12
+  },
+  "recordedAt": "2026-10-04T08:38:04.966664+00:00"
+}

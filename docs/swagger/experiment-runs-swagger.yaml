@@ -98,6 +98,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExperimentRunPreflightResponse'
+  /api/experiment-runs/{runId}/homologation-results:
+    post:
+      summary: Registra as quatro provas funcionais do run
+      description: Valida todos os gates antes de alterar a tentativa. Resumo e referência aceitam até 512 caracteres; use links para manifestos completos sem truncar sua evidência. Recusas de entrada retornam HTTP 400, preservam o run e permitem corrigir a mesma tentativa sem custo ou autorização comercial.
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExperimentRunHomologationRequest'
+      responses:
+        '200':
+          description: Resultados persistidos; consulte hasBlockers e vigência antes de avançar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentRunPreflightResponse'
+        '400':
+          description: Evidência incompleta, duplicada, inválida, extensa ou incompatível; message informa a correção sem alterar gates ou criar nova tentativa
   /api/experiment-runs/{runId}/technical-homologation-renewal:
     post:
       summary: Renova a homologação técnica vencida em outra tentativa
@@ -121,6 +147,37 @@ paths:
 components:
   schemas:
 
+    ExperimentRunHomologationRequest:
+      type: object
+      required: [gates]
+      properties:
+        gates:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/ExperimentRunHomologationGateEvidence'
+    ExperimentRunHomologationGateEvidence:
+      type: object
+      required: [gateCode, status, summary, evidenceReference]
+      properties:
+        gateCode:
+          type: string
+          description: Código funcional canônico exigido pelo preflight deste experimento, sem duplicidades
+        status:
+          type: string
+          enum: [PASS, FAIL, NOT_APPLICABLE]
+          description: NOT_APPLICABLE somente no gate Meta em modo TEST
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 512
+          description: Conclusão útil e breve; não aceita texto vazio ou placeholders
+        evidenceReference:
+          type: string
+          minLength: 1
+          maxLength: 512
+          description: Referência auditável curta para artefato completo; preserve a identidade imutável informada pelo backend para a landing
     ExperimentRunPreflightResponse:
       type: object
       required: [runId, runStatus, hasBlockers, gates]

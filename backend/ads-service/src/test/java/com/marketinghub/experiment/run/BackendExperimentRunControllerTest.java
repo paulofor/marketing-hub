@@ -38,7 +38,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-/** Valida a API administrativa inicial de execuções operacionais de experimentos. */
+/** Valida contratos HTTP, persistência e recuperação de execuções operacionais de experimentos. */
 @SpringBootTest(classes = AdsServiceApplication.class)
 @AutoConfigureMockMvc
 @TestPropertySource(
@@ -371,7 +371,7 @@ class BackendExperimentRunControllerTest {
         .andExpect(jsonPath("$.hasBlockers").value(false));
   }
 
-  /** Deve impedir que producao use NOT_APPLICABLE para ignorar a confirmacao da Meta. */
+  /** Recusa como HTTP 400 o uso de NOT_APPLICABLE para ignorar a Meta em produção. */
   @Test
   void homologationRejectsMetaNotApplicableInProduction() throws Exception {
     Long experimentId = createExperiment();
@@ -393,7 +393,147 @@ class BackendExperimentRunControllerTest {
             post("/api/experiment-runs/{runId}/homologation-results", runId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(evidence))
-        .andExpect(status().is5xxServerError());
+        .andExpect(status().isBadRequest())
+        .andExpect(
+            jsonPath("$.message")
+                .value("NOT_APPLICABLE só é permitido para Meta em run técnico de teste"));
+  }
+
+  /**
+   * Rejeita texto extenso como erro de entrada e permite corrigir o mesmo run sem mutação parcial.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "summary,0",
+    "summary,3",
+    "evidenceReference,0",
+    "evidenceReference,3"
+  })
+  void rejectsOversizedEvidenceAndRecoversOnSameRun(String field, int gateIndex) throws Exception {
+    Long experimentId = createExperiment();
+    createRelevantCommercialDossier();
+    Long runId = createRun(experimentId);
+    mockMvc.perform(post("/api/experiment-runs/{id}/preflight", runId)).andExpect(status().isOk());
+    String before =
+        mockMvc
+            .perform(get("/api/experiment-runs/{id}/preflight", runId))
+            .andReturn()
+            .getResponse()
+            .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+    var evidence = validHomologationRequest();
+    var gate =
+        (com.fasterxml.jackson.databind.node.ObjectNode) evidence.withArray("gates").get(gateIndex);
+    gate.put(field, "a".repeat(513));
+    mockMvc
+        .perform(
+            post("/api/experiment-runs/{id}/homologation-results", runId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsBytes(evidence)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("512")));
+    String after =
+        mockMvc
+            .perform(get("/api/experiment-runs/{id}/preflight", runId))
+            .andReturn()
+            .getResponse()
+            .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+    assertThat(objectMapper.readTree(after)).isEqualTo(objectMapper.readTree(before));
+    org.mockito.Mockito.verify(quartzoEvidence, org.mockito.Mockito.never())
+        .validateAndBind(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    gate.put(field, "a".repeat(512));
+    mockMvc
+        .perform(
+            post("/api/experiment-runs/{id}/homologation-results", runId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsBytes(evidence)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.runStatus").value("READY_TO_PUBLISH"))
+        .andExpect(jsonPath("$.hasBlockers").value(false));
+    assertThat(experimentRunRepository.findByExperimentIdOrderByRunNumberAsc(experimentId))
+        .hasSize(1);
+    var saved =
+        gateResultRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(runId).stream()
+            .filter(g -> g.getGateCode().equals(gate.path("gateCode").asText()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(field.equals("summary") ? saved.getSummary() : saved.getEvidenceReference())
+        .isEqualTo("a".repeat(512));
+  }
+
+  /** Entradas funcionais inválidas devolvem HTTP 400 e conservam todos os gates pendentes. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {
+        "missing",
+        "duplicate",
+        "unknown",
+        "pending",
+        "empty",
+        "nullGate",
+        "nullCode",
+        "missingCode",
+        "nullGates"
+      })
+  void rejectsInvalidEvidenceWithoutClassifyingItAsTechnicalFailure(String scenario)
+      throws Exception {
+    Long experimentId = createExperiment();
+    createRelevantCommercialDossier();
+    Long runId = createRun(experimentId);
+    mockMvc.perform(post("/api/experiment-runs/{id}/preflight", runId)).andExpect(status().isOk());
+    var evidence = validHomologationRequest();
+    var gates = evidence.withArray("gates");
+    var first = (com.fasterxml.jackson.databind.node.ObjectNode) gates.get(0);
+    switch (scenario) {
+      case "missing" -> gates.remove(3);
+      case "duplicate" -> gates.add(first.deepCopy());
+      case "unknown" -> first.put("gateCode", "UNKNOWN");
+      case "pending" -> first.put("status", "PENDING");
+      case "empty" -> first.put("summary", " ");
+      case "nullGate" -> gates.addNull();
+      case "nullCode" -> first.putNull("gateCode");
+      case "missingCode" -> first.remove("gateCode");
+      case "nullGates" -> evidence.putNull("gates");
+      default -> throw new IllegalArgumentException("Cenário de teste desconhecido");
+    }
+    mockMvc
+        .perform(
+            post("/api/experiment-runs/{id}/homologation-results", runId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsBytes(evidence)))
+        .andExpect(status().isBadRequest());
+    assertThat(experimentRunRepository.findById(runId).orElseThrow().getStatus())
+        .isEqualTo(ExperimentRunStatus.PREFLIGHT_PENDING);
+    assertThat(gateResultRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(runId))
+        .filteredOn(
+            g ->
+                java.util.Set.of(
+                        "LANDING_QUALITY_REVIEW_APPROVED",
+                        "FORM_CAN_BE_SUBMITTED",
+                        "META_EFFECTIVE_STATUS_CONFIRMED",
+                        "DATA_FRESHNESS_VALID")
+                    .contains(g.getGateCode()))
+        .hasSize(4)
+        .allMatch(g -> g.getStatus() == ExperimentRunGateStatus.PENDING);
+  }
+
+  /** Monta quatro provas locais válidas sem fixar produto, versão ou identidade de execução. */
+  private com.fasterxml.jackson.databind.node.ObjectNode validHomologationRequest() {
+    var request = objectMapper.createObjectNode();
+    var gates = request.putArray("gates");
+    for (String code :
+        java.util.List.of(
+            "LANDING_QUALITY_REVIEW_APPROVED",
+            "FORM_CAN_BE_SUBMITTED",
+            "META_EFFECTIVE_STATUS_CONFIRMED",
+            "DATA_FRESHNESS_VALID")) {
+      gates
+          .addObject()
+          .put("gateCode", code)
+          .put("status", "PASS")
+          .put("summary", "Contrato funcional local comprovado.")
+          .put("evidenceReference", "fixture://local/" + code);
+    }
+    return request;
   }
 
   /** Deve bloquear preflight quando não existir dossiê MOIS aderente à hipótese. */

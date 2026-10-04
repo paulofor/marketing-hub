@@ -90,7 +90,11 @@ assert.ok(
               assert.ok(
                 payload.gates.every(
                   (g) =>
-                    g.status === "PASS" && g.evidenceReference && g.summary,
+                    g.status === "PASS" &&
+                    g.evidenceReference &&
+                    g.summary &&
+                    g.evidenceReference.length <= 512 &&
+                    g.summary.length <= 512,
                 ),
               );
               assert.ok(
@@ -227,6 +231,19 @@ assert.ok(
             await panel
               .getByLabel(`Conclusão ${code}`)
               .fill("Comportamento determinístico simulado e segregado.");
+          }
+          for (const field of ["Evidência", "Conclusão"]) {
+            const input = panel.getByLabel(`${field} ${codes[3]}`);
+            const previous = await input.inputValue();
+            await input.fill("a".repeat(513));
+            await expect(input).toHaveValue("a".repeat(513));
+            await expect(input).toHaveAttribute("aria-invalid", "true");
+            await expect(button).toBeDisabled();
+            assert.equal(simulatedPosts, 0);
+            await input.fill("a".repeat(512));
+            await expect(input).toHaveAttribute("aria-invalid", "false");
+            await expect(button).toBeEnabled();
+            await input.fill(previous);
           }
           await expect(button).toBeEnabled();
           await button.click();

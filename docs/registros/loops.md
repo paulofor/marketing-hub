@@ -8702,3 +8702,24 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
   visual desktop/iPhone/Pixel. A matriz permite selecionar um cenário para repetir somente a
   validação necessária; um filtro sem casos falha. Os testes usam somente banco e agentes locais.
 - **Registro do tema:** [homologação da execução automática](../homologacao/execucao-automatica-processos-v1.md).
+
+### LOOP-PREFLIGHT-ENTRADA-INVALIDA-COMO-FALHA-TECNICA — 04/10/2026
+
+- **Evidência:** execução #39/experimento #88, run técnico #17, request
+  `4befe003-c0a8-4d54-a591-2e7fb26144d1`: uma referência acima de 512 caracteres
+  recebeu HTTP 500. Log do backend confirma `IllegalArgumentException` na validação,
+  antes de gravar; schema real mantém resumo e referência em `VARCHAR(512)`.
+- **Histórico:** o teste de `NOT_APPLICABLE` indevido esperava HTTP 5xx; as onze
+  regressões HTTP falharam na versão anterior com 500 em vez de 400. Não se tratava
+  de falha do MySQL nem de necessidade de novo run. A consulta MCP de logs filtrados
+  não retornou linhas; a leitura operacional autorizada confirmou a exceção completa.
+- **Causa:** validações de homologação usavam exceção genérica, enquanto o handler já
+  possuía uma recusa funcional específica. A tela aceitava texto acima do contrato.
+- **Correção:** reutilizar `ExperimentRunHomologationEvidenceException`/HTTP 400,
+  mostrar o limite e impedir envio extenso sem truncar. Detalhes e hashes permanecem
+  em manifestos completos; a referência deve apontar para eles. Não ampliar colunas,
+  repetir pesquisa paga, apagar provas ou interpretar recusa como reprovação comercial.
+- **Prevenção:** contrato HTTP com fronteiras 512/513, erro no primeiro/último gate,
+  rollback integral, correção na mesma tentativa, duplicidade, ausência, gate desconhecido
+  e estado indevido. O harness visual existente protege referência e conclusão extensas
+  nos três dispositivos, sem escrita externa e sem cobrança.

@@ -1,0 +1,18 @@
+{
+  "cardKey": "sincronia-fala-multiplas-fontes",
+  "collection": "prazer-audio-visual",
+  "title": "Sincronia ajuda a separar fontes de fala concorrentes",
+  "finding": "Em cenas com vários rostos falantes, a correspondência temporal entre voz e movimento facial ajudou a segregação das fontes; pistas linguísticas consistentes também contribuíram em parte das condições, e a atenção visual se concentrou especialmente na região da boca.",
+  "mechanism": "O sistema perceptivo usa alinhamento temporal e pistas de identidade para vincular cada fluxo sonoro ao rosto correspondente e separar fontes concorrentes.",
+  "commercialApplication": "Em vídeos, reuniões, interfaces ou experiências com múltiplos locutores ou avatares, preservar sincronização voz-boca e identidade consistente entre turnos, medindo identificação do locutor, compreensão e esforço percebido.",
+  "evidenceStrength": "Média-alta no paradigma experimental: dois experimentos com rastreamento ocular e pupillometria e manipulações explícitas de sincronização e pistas de identidade.",
+  "publishedOn": "2026-10-04",
+  "validUntil": "2026-11-18",
+  "experimentHypothesis": "Fluxos de fala com sincronização voz-boca precisa e identidade consistente reduzirão o tempo para localizar o locutor correto e os erros de atribuição em comparação com versões com maior ambiguidade audiovisual.",
+  "risks": "Otimizar apenas movimento ocular pode não melhorar compreensão; sincronização artificial excessivamente rígida também pode reduzir naturalidade.",
+  "limits": "As escolhas finais de identificação não foram registradas como desfecho principal; o estudo mede sobretudo olhar e pupila e não demonstra prazer, memória, persuasão ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-04-sincronia-fala-multiplas-fontes.md",
+  "sourceTitle": "Fonte revisada — sincronização audiovisual em fala com múltiplas fontes",
+  "sourceSha256": "91e91322661a491e0f11e0059e94384d204e9bbc35ad6850984bb8ab6839ed16"
+}

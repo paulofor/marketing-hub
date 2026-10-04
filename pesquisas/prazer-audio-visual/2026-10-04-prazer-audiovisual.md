@@ -23,3 +23,9 @@ O'Connell et al., *Imaging Neuroscience* 4:IMAG.a.1185. https://doi.org/10.1162/
 Dois experimentos de EEG, com 21 e 31 participantes, não encontraram diferença de lateralized readiness potential entre música de alto e baixo groove. Várias análises Bayesinas favoreceram a ausência de diferença nessa medida.
 
 **Força:** média para a conclusão específica. **Limites:** o marcador mede apenas um aspecto da preparação motora. **Aplicação:** avaliar groove também por vontade de mover, tapping, estabilidade e prazer, sem depender de um único biomarcador.
+
+## Cards candidatos DRAFT
+- `fala-visual-avatar-compreensao-ruido`: testar se movimento facial sincronizado melhora compreensão em ruído. Fonte SHA-256: `fbcd48cf2dc26e273dfbbfee3cab8f844e75f48cb136c3a1995e9495b34d83c0`.
+- `sincronia-fala-multiplas-fontes`: testar se alinhamento entre voz e movimento facial melhora a separação de fluxos. Fonte SHA-256: `91e91322661a491e0f11e0059e94384d204e9bbc35ad6850984bb8ab6839ed16`.
+
+Nenhuma revisão, ativação ou arquivamento foi executado.

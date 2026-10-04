@@ -1,0 +1,18 @@
+{
+  "cardKey": "fala-visual-avatar-compreensao-ruido",
+  "collection": "prazer-audio-visual",
+  "title": "Pistas visuais de fala ajudam compreensão em ruído",
+  "finding": "Em fala apresentada com ruído de quatro falantes, a compreensão aumentou da condição com imagem estática para avatar sintético e vídeo degradado, e aumentou novamente com vídeo natural; a resposta cortical precoce de seguimento da frequência da fala não acompanhou esse ganho.",
+  "mechanism": "Movimento facial informativo pode complementar um sinal acústico degradado por integração audiovisual, enquanto o benefício comportamental pode ocorrer sem alteração detectável do biomarcador cortical precoce medido no estudo.",
+  "commercialApplication": "Em experiências com avatar falante ou vídeo gerado por IA, comparar versões com imagem estática, avatar sincronizado e rosto mais naturalista em condições com ruído, medindo compreensão, erros e esforço percebido.",
+  "evidenceStrength": "Média-alta no paradigma experimental: desenho intraindivíduo com 32 adultos, fala contínua, ruído de quatro falantes, MEG e comparação direta entre quatro condições visuais.",
+  "publishedOn": "2026-10-04",
+  "validUntil": "2026-11-18",
+  "experimentHypothesis": "Um avatar com movimento facial sincronizado aumentará a compreensão de fala em ruído em relação a uma imagem estática, e uma representação visual mais naturalista poderá gerar ganho adicional sem exigir mudança em biomarcador neural precoce.",
+  "risks": "Não assumir que qualquer avatar ajuda; dessincronização, baixa qualidade facial ou interpretação excessiva de biomarcadores podem produzir conclusões erradas.",
+  "limits": "Adultos jovens, frases alemãs padronizadas, um sistema específico de avatar e ambiente laboratorial; não foram medidos prazer, retenção comercial, CTA ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-04-fala-visual-avatar-compreensao-ruido.md",
+  "sourceTitle": "Fonte revisada — fala visual, avatar e compreensão em ruído",
+  "sourceSha256": "fbcd48cf2dc26e273dfbbfee3cab8f844e75f48cb136c3a1995e9495b34d83c0"
+}

@@ -20,6 +20,8 @@ import java.time.ZoneOffset;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 
 /** Responsabilidade: garantir execução sequencial, auditável e idempotente do preflight técnico. */
@@ -50,6 +52,7 @@ class ExperimentTechnicalPreflightActivityExecutorTest {
     process.setProcessCode("experiment-homologation-activation");
     activity.setId(597L);
     activity.setActivityId("surfaces");
+    when(evidenceService.referencedExperimentId(product, "experiment:88")).thenReturn(88L);
     when(predecessors.readiness(process, activity, "experiment:88"))
         .thenReturn(
             new ProductProcessActivityPredecessorReadiness(true, "Primeira atividade pronta."));
@@ -120,11 +123,49 @@ class ExperimentTechnicalPreflightActivityExecutorTest {
 
     assertThat(readiness.ready()).isFalse();
     assertThat(readiness.reason()).contains("atividade anterior");
+    assertThat(readiness.workspaceCode()).isEqualTo("EXPERIMENT_PREFLIGHT");
+    assertThat(readiness.workspaceReferenceId()).isEqualTo(88L);
     verify(evidenceService, never())
         .evaluate(
             org.mockito.ArgumentMatchers.any(),
             org.mockito.ArgumentMatchers.any(),
             org.mockito.ArgumentMatchers.any());
+  }
+
+  /** Mantém a recuperação disponível sem aprovar atividade quando a tentativa está pendente. */
+  @ParameterizedTest
+  @CsvSource({"71001,71002,surfaces", "72001,72002,transaction", "73001,73002,measurement"})
+  void preservesWorkspaceForPendingEvidence(long productId, long experimentId, String code) {
+    product.setId(productId);
+    activity.setActivityId(code);
+    String reference = "experiment:" + experimentId;
+    when(evidenceService.referencedExperimentId(product, reference)).thenReturn(experimentId);
+    when(predecessors.readiness(process, activity, reference))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Ordem válida."));
+    when(evidenceService.evaluate(code, product, reference))
+        .thenThrow(new IllegalStateException("Homologação ainda pendente."));
+
+    var result = executor.readiness(process, activity, product, reference);
+
+    assertThat(result.ready()).isFalse();
+    assertThat(result.workspaceCode()).isEqualTo("EXPERIMENT_PREFLIGHT");
+    assertThat(result.workspaceReferenceId()).isEqualTo(experimentId);
+    assertThat(result.requirements()).allSatisfy(r -> assertThat(r.satisfied()).isFalse());
+    verify(instances, never()).saveAndFlush(org.mockito.ArgumentMatchers.any());
+  }
+
+  /** Não oferece workspace de uma referência inválida ou pertencente a outro produto. */
+  @Test
+  void rejectsWorkspaceWhenIdentityIsInvalid() {
+    when(evidenceService.referencedExperimentId(product, "experiment:88"))
+        .thenThrow(new IllegalStateException("O experimento técnico pertence a outro produto."));
+
+    var result = executor.readiness(process, activity, product, "experiment:88");
+
+    assertThat(result.ready()).isFalse();
+    assertThat(result.workspaceCode()).isNull();
+    assertThat(result.workspaceReferenceId()).isNull();
+    verify(evidenceService, never()).evaluate("surfaces", product, "experiment:88");
   }
 
   /** Não captura atividades de outros processos ou códigos desconhecidos. */

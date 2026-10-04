@@ -1,0 +1,557 @@
+{
+  "scope": {
+    "productId": 7,
+    "chainId": 26,
+    "processDefinitionId": 122,
+    "processVersion": 7,
+    "automationRunId": 39,
+    "sourceReference": "experiment:88",
+    "originalTechnicalRunId": 16,
+    "pendingTechnicalRunId": 17
+  },
+  "originalObservedFailure": {
+    "reportRemovedWorkspaceWhileRunPending": true,
+    "originalInstancesPreserved": [
+      477,
+      478,
+      479
+    ],
+    "gatesSubmittedBeforeFix": 0
+  },
+  "localValidation": {
+    "baselineRegressionsFailed": 6,
+    "targetedTests": 33,
+    "mysql57RunnerTests": 110,
+    "fullSuite": {
+      "tests": 3874,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 24
+    },
+    "ui": [
+      {
+        "scenario": "current",
+        "profile": "desktop",
+        "completed": 3,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "simulatedPosts": 0,
+        "pageErrors": 0,
+        "width": 1440,
+        "screenshotSha256": "6724cc86ff8ccae3479246a009b0f09189b7c8786e47632656076cd4e77562b4"
+      },
+      {
+        "scenario": "current",
+        "profile": "iPhone-15-Pro",
+        "completed": 3,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "simulatedPosts": 0,
+        "pageErrors": 0,
+        "width": 393,
+        "screenshotSha256": "6ebdbc3089f12ecd7b0256e2147030c3d215a4acf685bcbc84a49846d7ddc105"
+      },
+      {
+        "scenario": "current",
+        "profile": "Pixel-7",
+        "completed": 3,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "simulatedPosts": 0,
+        "pageErrors": 0,
+        "width": 412,
+        "screenshotSha256": "602bea3ecf18c9f4bf7cf0f6fdbca35a4e268a905ebed5f940e2325c29078454"
+      },
+      {
+        "scenario": "stale",
+        "profile": "desktop",
+        "completed": 2,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "simulatedPosts": 0,
+        "pageErrors": 0,
+        "width": 1440,
+        "screenshotSha256": "961ac2c01fcae9c03e972def9eec8934b4fb434f32972a69140261c4abb75433"
+      },
+      {
+        "scenario": "stale",
+        "profile": "iPhone-15-Pro",
+        "completed": 2,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "simulatedPosts": 0,
+        "pageErrors": 0,
+        "width": 393,
+        "screenshotSha256": "259d2f059f03e727380f6f8bd2ca47077e8ed338652f869b6a26a65a22957ba4"
+      },
+      {
+        "scenario": "stale",
+        "profile": "Pixel-7",
+        "completed": 2,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "simulatedPosts": 0,
+        "pageErrors": 0,
+        "width": 412,
+        "screenshotSha256": "01ad1c6a81aa3db51b7cc48f2f8be8f4b498d41fd9e74546d0aa9cc5ef197ed0"
+      },
+      {
+        "scenario": "pending",
+        "profile": "desktop",
+        "completed": 3,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "simulatedPosts": 1,
+        "pageErrors": 0,
+        "width": 1440,
+        "screenshotSha256": "c03a29d428f02c71e7f2b24ac47ca0effe230d02377c818add0069eb1ecc77f6"
+      },
+      {
+        "scenario": "pending",
+        "profile": "iPhone-15-Pro",
+        "completed": 3,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "simulatedPosts": 1,
+        "pageErrors": 0,
+        "width": 393,
+        "screenshotSha256": "83c6659c6febc6c2268ead0cc20220df96c2b1e38a020e5a85d70db09845dc44"
+      },
+      {
+        "scenario": "pending",
+        "profile": "Pixel-7",
+        "completed": 3,
+        "planId": 96004,
+        "sourceReference": "experiment:96002",
+        "writes": 0,
+        "simulatedPosts": 1,
+        "pageErrors": 0,
+        "width": 412,
+        "screenshotSha256": "fa2237ecdf600c4a8aa9ab4cce1be697bfcd8871cdb132931cd6c46b400479eb"
+      }
+    ],
+    "finalMysql57AndPackageTests": {
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "packagedClassesIdentical": 4206,
+    "packagedResources": 744,
+    "behaviorCards": 510
+  },
+  "creativeProof": [
+    {
+      "id": 522,
+      "version_number": 10,
+      "source_creative_id": 520,
+      "status": "READY",
+      "agent_review_status": "APPROVED",
+      "headline": "10 posts + 10 stories prontos",
+      "primary_text": "Manicure: ganhe tempo com 10 posts, 10 stories e textos prontos para divulgar seu trabalho. Kit personalizável por R$ 67.",
+      "description": "Kit digital por R$ 67",
+      "image_url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/experiments/creatives/2026/08/17/exp-88/163e8dda6c42-agenda-cheia-creative-feed-v3.png",
+      "video_url": "",
+      "destination_url": "https://oportunidadebrasil.shop/flows/exp-88-gerasalespage-v1",
+      "servedSha256": "1301003493f1b8f9edc13034605d4400113f81144a9b527b6b2e0f753bbbc689",
+      "bytes": 1018591,
+      "metaCreativeId": "1444965961014502",
+      "metaImageHash": "cfd181ecce7e027724c3a730c0e9e91f",
+      "metaTitleMatches": true,
+      "metaBodyMatches": true,
+      "metaDestination": "https://oportunidadebrasil.shop/flows/exp-88-gerasalespage-v1?campaign=exp-88",
+      "expectedDestinationMatches": true,
+      "metaImageSha256": "993d1e6b492783aa8744fa0a32d57d3c4be94f5eb48b5f9b71893ebac9ea2187"
+    },
+    {
+      "id": 523,
+      "version_number": 10,
+      "source_creative_id": 521,
+      "status": "READY",
+      "agent_review_status": "APPROVED",
+      "headline": "Seu kit de conteúdo por R$ 67",
+      "primary_text": "Manicure: ganhe tempo com 10 posts, 10 stories e textos prontos para divulgar seu trabalho. Kit personalizável por R$ 67.",
+      "description": "Post + story por R$ 67",
+      "image_url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/experiments/creatives/2026/08/17/exp-88/2d41f0aa57f9-agenda-cheia-creative-story-v3.png",
+      "video_url": "",
+      "destination_url": "https://oportunidadebrasil.shop/flows/exp-88-gerasalespage-v1",
+      "servedSha256": "99cee8b3e5ab0cd94fec66feca1069c6aa3aeb37df6c6053944dbc04ce2303fa",
+      "bytes": 1249508,
+      "metaCreativeId": "1399338238757778",
+      "metaImageHash": "26294c7b8073dc1e743de9f99ff1aba4",
+      "metaTitleMatches": true,
+      "metaBodyMatches": true,
+      "metaDestination": "https://oportunidadebrasil.shop/flows/exp-88-gerasalespage-v1?campaign=exp-88",
+      "expectedDestinationMatches": true,
+      "metaImageSha256": "b8a520a8975ac4d8af2fa2885217b3b9fa48eebb08f95cc350b351673e81a1f1"
+    }
+  ],
+  "runtimeBeforeComplement": {
+    "version": "0.0.1-SNAPSHOT",
+    "buildTime": "2026-10-04T06:41:51.202Z",
+    "commitId": "d65abcd6946285428cdbbc9fbe25983728710dd5",
+    "commitAbbrev": "d65abcd69462",
+    "branch": "main"
+  },
+  "deliveryBeforeComplement": [
+    {
+      "conclusion": "success",
+      "createdAt": "2026-10-04T06:49:58Z",
+      "databaseId": 37183954096,
+      "event": "workflow_run",
+      "status": "completed",
+      "url": "https://github.com/paulofor/marketing-hub/actions/runs/37183954096",
+      "workflowName": "Product Discovery Worker CI",
+      "attempt": 1,
+      "jobs": [
+        {
+          "name": "Resolve tested worker revision",
+          "conclusion": "success",
+          "status": "completed"
+        },
+        {
+          "name": "test",
+          "conclusion": "skipped",
+          "status": "completed"
+        },
+        {
+          "name": "docker",
+          "conclusion": "skipped",
+          "status": "completed"
+        },
+        {
+          "name": "deploy",
+          "conclusion": "skipped",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-10-04T06:49:58Z",
+      "databaseId": 37183954094,
+      "event": "workflow_run",
+      "status": "completed",
+      "url": "https://github.com/paulofor/marketing-hub/actions/runs/37183954094",
+      "workflowName": "Communication Agent Worker CI/CD",
+      "attempt": 1,
+      "jobs": [
+        {
+          "name": "Resolve tested worker revision",
+          "conclusion": "success",
+          "status": "completed"
+        },
+        {
+          "name": "Test worker",
+          "conclusion": "skipped",
+          "status": "completed"
+        },
+        {
+          "name": "Deploy worker",
+          "conclusion": "skipped",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-10-04T06:49:58Z",
+      "databaseId": 37183954147,
+      "event": "workflow_run",
+      "status": "completed",
+      "url": "https://github.com/paulofor/marketing-hub/actions/runs/37183954147",
+      "workflowName": "Growth Operator Worker CI/CD",
+      "attempt": 1,
+      "jobs": [
+        {
+          "name": "Resolve tested worker revision",
+          "conclusion": "success",
+          "status": "completed"
+        },
+        {
+          "name": "Test worker",
+          "conclusion": "skipped",
+          "status": "completed"
+        },
+        {
+          "name": "Deploy worker",
+          "conclusion": "skipped",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-10-04T06:49:58Z",
+      "databaseId": 37183954083,
+      "event": "workflow_run",
+      "status": "completed",
+      "url": "https://github.com/paulofor/marketing-hub/actions/runs/37183954083",
+      "workflowName": "Landing Generator Agent Worker CI",
+      "attempt": 1,
+      "jobs": [
+        {
+          "name": "Resolve tested worker revision",
+          "conclusion": "success",
+          "status": "completed"
+        },
+        {
+          "name": "test-build",
+          "conclusion": "skipped",
+          "status": "completed"
+        },
+        {
+          "name": "Deploy worker",
+          "conclusion": "skipped",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-10-04T06:49:58Z",
+      "databaseId": 37183954122,
+      "event": "workflow_run",
+      "status": "completed",
+      "url": "https://github.com/paulofor/marketing-hub/actions/runs/37183954122",
+      "workflowName": "Reconcile automatic publishers",
+      "attempt": 1,
+      "jobs": [
+        {
+          "name": "reconcile",
+          "conclusion": "success",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-10-04T06:49:58Z",
+      "databaseId": 37183954102,
+      "event": "workflow_run",
+      "status": "completed",
+      "url": "https://github.com/paulofor/marketing-hub/actions/runs/37183954102",
+      "workflowName": "Experiment Strategist Worker CI/CD",
+      "attempt": 1,
+      "jobs": [
+        {
+          "name": "Resolve tested worker revision",
+          "conclusion": "success",
+          "status": "completed"
+        },
+        {
+          "name": "Test worker",
+          "conclusion": "skipped",
+          "status": "completed"
+        },
+        {
+          "name": "Deploy worker",
+          "conclusion": "skipped",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-10-04T06:49:58Z",
+      "databaseId": 37183954066,
+      "event": "workflow_run",
+      "status": "completed",
+      "url": "https://github.com/paulofor/marketing-hub/actions/runs/37183954066",
+      "workflowName": "Meta Ad Approver Worker CI/CD",
+      "attempt": 1,
+      "jobs": [
+        {
+          "name": "Resolve tested worker revision",
+          "conclusion": "success",
+          "status": "completed"
+        },
+        {
+          "name": "Test independent agent",
+          "conclusion": "skipped",
+          "status": "completed"
+        },
+        {
+          "name": "Deploy independent agent",
+          "conclusion": "skipped",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-10-04T06:49:58Z",
+      "databaseId": 37183954141,
+      "event": "workflow_run",
+      "status": "completed",
+      "url": "https://github.com/paulofor/marketing-hub/actions/runs/37183954141",
+      "workflowName": "Financial Agent Worker CI/CD",
+      "attempt": 1,
+      "jobs": [
+        {
+          "name": "Resolve tested worker revision",
+          "conclusion": "success",
+          "status": "completed"
+        },
+        {
+          "name": "Test and build worker",
+          "conclusion": "skipped",
+          "status": "completed"
+        },
+        {
+          "name": "Deploy worker",
+          "conclusion": "skipped",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-10-04T06:49:58Z",
+      "databaseId": 37183954114,
+      "event": "workflow_run",
+      "status": "completed",
+      "url": "https://github.com/paulofor/marketing-hub/actions/runs/37183954114",
+      "workflowName": "Customer Agent Worker CI/CD",
+      "attempt": 1,
+      "jobs": [
+        {
+          "name": "Resolve tested worker revision",
+          "conclusion": "success",
+          "status": "completed"
+        },
+        {
+          "name": "Test and build worker",
+          "conclusion": "skipped",
+          "status": "completed"
+        },
+        {
+          "name": "Deploy worker",
+          "conclusion": "skipped",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-10-04T06:49:58Z",
+      "databaseId": 37183954059,
+      "event": "workflow_run",
+      "status": "completed",
+      "url": "https://github.com/paulofor/marketing-hub/actions/runs/37183954059",
+      "workflowName": "Production Freshness Watchdog",
+      "attempt": 1,
+      "jobs": [
+        {
+          "name": "Verify production freshness",
+          "conclusion": "success",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-10-04T06:13:04Z",
+      "databaseId": 37182157731,
+      "event": "push",
+      "status": "completed",
+      "url": "https://github.com/paulofor/marketing-hub/actions/runs/37182157731",
+      "workflowName": "Canonical Image Model Contract",
+      "attempt": 1,
+      "jobs": [
+        {
+          "name": "Validar modelo visual canônico",
+          "conclusion": "success",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-10-04T06:13:04Z",
+      "databaseId": 37182157718,
+      "event": "push",
+      "status": "completed",
+      "url": "https://github.com/paulofor/marketing-hub/actions/runs/37182157718",
+      "workflowName": "GitHub Actions Contracts",
+      "attempt": 1,
+      "jobs": [
+        {
+          "name": "Validar contratos dos workflows",
+          "conclusion": "success",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-10-04T06:13:04Z",
+      "databaseId": 37182157691,
+      "event": "push",
+      "status": "completed",
+      "url": "https://github.com/paulofor/marketing-hub/actions/runs/37182157691",
+      "workflowName": "Build & Deploy containers",
+      "attempt": 2,
+      "jobs": [
+        {
+          "name": "Backend – build image",
+          "conclusion": "success",
+          "status": "completed"
+        },
+        {
+          "name": "Video management – build image",
+          "conclusion": "skipped",
+          "status": "completed"
+        },
+        {
+          "name": "Deploy video management",
+          "conclusion": "skipped",
+          "status": "completed"
+        },
+        {
+          "name": "Sync app deployment descriptors",
+          "conclusion": "skipped",
+          "status": "completed"
+        },
+        {
+          "name": "Frontend – build image",
+          "conclusion": "skipped",
+          "status": "completed"
+        },
+        {
+          "name": "Detect changed modules",
+          "conclusion": "success",
+          "status": "completed"
+        },
+        {
+          "name": "Deploy backend + frontend",
+          "conclusion": "success",
+          "status": "completed"
+        }
+      ]
+    }
+  ],
+  "commercialProof": false,
+  "paidCalls": 0,
+  "productionPurchaseWrites": 0,
+  "remainingFinancialDependency": {
+    "financialPlanId": 9,
+    "revision": 5,
+    "commercialPlanId": 2,
+    "commercialPlanVersion": 4,
+    "financialExecutionId": 62,
+    "expiredOn": "2026-10-02",
+    "experimentMediaLimitBrl": 125,
+    "plutusRecommendedCycleLimitBrl": 100,
+    "noSpendAuthorized": true
+  },
+  "capturedOn": "2026-10-04"
+}

@@ -8,6 +8,13 @@ const evidenceDir =
   "/tmp/preflight-current-evidence";
 const frontendUrl =
   process.env.PREFLIGHT_PROCESS_FRONTEND_URL || "http://127.0.0.1:4173";
+const scenarios = (
+  process.env.PREFLIGHT_PROCESS_SCENARIOS || "current,stale,pending"
+).split(",");
+assert.ok(
+  scenarios.length &&
+    scenarios.every((s) => ["current", "stale", "pending"].includes(s)),
+);
 (async () => {
   const browser = await chromium.launch({
     executablePath: "/usr/bin/chromium",
@@ -15,8 +22,8 @@ const frontendUrl =
   });
   const results = [];
   try {
-    for (const scenario of ["current", "stale"]) {
-      const report = JSON.parse(
+    for (const scenario of scenarios) {
+      const originalReport = JSON.parse(
         fs.readFileSync(`${evidenceDir}/${scenario}-report.json`, "utf8"),
       );
       for (const [name, profile] of [
@@ -24,11 +31,45 @@ const frontendUrl =
         ["iPhone-15-Pro", devices["iPhone 15 Pro"]],
         ["Pixel-7", devices["Pixel 7"]],
       ]) {
+        let report = structuredClone(originalReport);
         const context = await browser.newContext(profile);
         const page = await context.newPage();
         const errors = [],
           writes = [],
           calls = [];
+        let accepted = false,
+          simulatedPosts = 0;
+        const runId = 96025;
+        const experimentId = Number(
+          report.currentExecutionReference.split(":")[1],
+        );
+        const identity = `publication:96020;page-sha256:${"a".repeat(64)};quartzo-fingerprint:${"b".repeat(64)}`;
+        const codes = [
+          "LANDING_QUALITY_REVIEW_APPROVED",
+          "CHECKOUT_AND_DELIVERY_CAN_BE_COMPLETED",
+          "META_EFFECTIVE_STATUS_CONFIRMED",
+          "DATA_FRESHNESS_VALID",
+        ];
+        const preflight = () => ({
+          runId,
+          runStatus: accepted ? "READY_TO_PUBLISH" : "PREFLIGHT_PENDING",
+          hasBlockers: !accepted,
+          requiredLandingEvidenceReference: identity,
+          currentEvidenceBlockReason: accepted
+            ? null
+            : "Homologação pendente local.",
+          canRenewTechnicalHomologation: false,
+          gates: codes.map((gateCode) => ({
+            gateCode,
+            gateGroup: "FUNCTIONAL_E2E",
+            status: accepted ? "PASS" : "PENDING",
+            severity: accepted ? "INFO" : "WARNING",
+            summary: "Contrato local simulado.",
+            evaluatedAt: "2026-10-04T00:00:00Z",
+            evaluatorType: "DETERMINISTIC",
+            evaluatorVersion: "local.v1",
+          })),
+        });
         page.on("pageerror", (err) => errors.push(err.message));
         await page.route(
           (url) => url.pathname.startsWith("/api/"),
@@ -36,6 +77,34 @@ const frontendUrl =
             const req = route.request(),
               path = new URL(req.url()).pathname;
             calls.push(path);
+            if (
+              scenario === "pending" &&
+              req.method() === "POST" &&
+              path === `/api/experiment-runs/${runId}/homologation-results`
+            ) {
+              const payload = req.postDataJSON();
+              assert.deepEqual(
+                payload.gates.map((g) => g.gateCode).sort(),
+                [...codes].sort(),
+              );
+              assert.ok(
+                payload.gates.every(
+                  (g) =>
+                    g.status === "PASS" && g.evidenceReference && g.summary,
+                ),
+              );
+              assert.ok(
+                payload.gates
+                  .find((g) => g.gateCode === codes[0])
+                  .evidenceReference.startsWith(identity),
+              );
+              accepted = true;
+              simulatedPosts++;
+              report = JSON.parse(
+                fs.readFileSync(`${evidenceDir}/current-report.json`, "utf8"),
+              );
+              return route.fulfill({ json: preflight() });
+            }
             if (req.method() !== "GET") {
               writes.push({ path, method: req.method() });
               return route.fulfill({
@@ -89,7 +158,32 @@ const frontendUrl =
                   processMeasurements: [],
                 },
               });
-            if (path.endsWith("/runs")) return route.fulfill({ json: [] });
+            if (path.endsWith("/runs"))
+              return route.fulfill({
+                json:
+                  scenario === "pending"
+                    ? [
+                        {
+                          id: runId,
+                          experimentId,
+                          runNumber: 2,
+                          mode: "PRODUCTION",
+                          status: accepted
+                            ? "READY_TO_PUBLISH"
+                            : "PREFLIGHT_PENDING",
+                          evidenceValidity: "NOT_EVALUATED",
+                          dataQualityStatus: accepted ? "VALID" : "UNKNOWN",
+                          stopPolicy: "MANUAL_ONLY",
+                          requestedAt: "2026-10-04T00:00:00Z",
+                        },
+                      ]
+                    : [],
+              });
+            if (
+              scenario === "pending" &&
+              path === `/api/experiment-runs/${runId}/preflight`
+            )
+              return route.fulfill({ json: preflight() });
             return route.fulfill({
               status: 404,
               json: { detail: "Dependência não utilizada neste teste" },
@@ -106,11 +200,42 @@ const frontendUrl =
         await expect(
           page.getByRole("link", { name: "Plano comercial", exact: true }),
         ).toHaveAttribute("href", `/planning/${report.commercialPlanId}`);
-        await expect(
-          page.locator("#activity-financialGuardrails"),
-        ).toContainText("Plano financeiro local vencido");
+        if (scenario !== "pending")
+          await expect(
+            page.locator("#activity-financialGuardrails"),
+          ).toContainText("Plano financeiro local vencido");
         const surface = page.locator("#activity-surfaces");
-        if (scenario === "stale") {
+        if (scenario === "pending") {
+          await expect(surface).toContainText("Não iniciada");
+          const panel = page.locator("#activity-transaction");
+          await expect(panel.getByLabel(`Evidência ${codes[0]}`)).toHaveValue(
+            identity,
+          );
+          const button = panel.getByRole("button", {
+            name: "Registrar homologação",
+            exact: true,
+          });
+          await expect(button).toBeDisabled();
+          for (const code of codes) {
+            await panel.getByLabel(`Resultado ${code}`).selectOption("PASS");
+            await panel
+              .getByLabel(`Evidência ${code}`)
+              .fill(
+                (code === codes[0] ? identity + ";" : "") +
+                  "fixture-local:sem-gasto",
+              );
+            await panel
+              .getByLabel(`Conclusão ${code}`)
+              .fill("Comportamento determinístico simulado e segregado.");
+          }
+          await expect(button).toBeEnabled();
+          await button.click();
+          await expect(surface).toContainText("Concluída");
+          await expect(
+            page.locator("#activity-financialGuardrails"),
+          ).toContainText("Plano financeiro local vencido");
+          assert.equal(simulatedPosts, 1);
+        } else if (scenario === "stale") {
           await expect(surface).toContainText("mudaram após a homologação");
           await expect(surface).toContainText("Não iniciada");
           await expect(
@@ -138,6 +263,7 @@ const frontendUrl =
           planId: report.commercialPlanId,
           sourceReference: report.currentExecutionReference,
           writes: 0,
+          simulatedPosts,
           pageErrors: 0,
           width: dimensions.width,
           screenshotSha256: crypto

@@ -124,6 +124,7 @@ class ExperimentTechnicalPreflightPersistenceTest {
     when(predecessors.readiness(eq(process), any(), eq(SOURCE)))
         .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Prova local"));
     evidence = mock(ExperimentTechnicalPreflightEvidenceService.class);
+    when(evidence.referencedExperimentId(product, SOURCE)).thenReturn(97088L);
     when(evidence.evaluate(anyString(), eq(product), eq(SOURCE))).thenAnswer(invocation -> proof());
     executor =
         new ExperimentTechnicalPreflightActivityExecutor(predecessors, evidence, instances, json);
@@ -183,7 +184,7 @@ class ExperimentTechnicalPreflightPersistenceTest {
     assertConsultativeSql();
   }
 
-  /** Uma pendência financeira continua visível sem atualizar a ocorrência durante a leitura. */
+  /** A espera conserva workspace e histórico sem lock ou atualização durante a leitura. */
   @Test
   void readsUnavailableEvidenceAsFreshExecutionRequired() {
     var activity = activities.get("financialGuardrails");
@@ -194,7 +195,10 @@ class ExperimentTechnicalPreflightPersistenceTest {
     reading.executeWithoutResult(
         status -> {
           assertThat(fresh(activity)).isTrue();
-          assertThat(executor.readiness(process, activity, product, SOURCE).ready()).isFalse();
+          var readiness = executor.readiness(process, activity, product, SOURCE);
+          assertThat(readiness.ready()).isFalse();
+          assertThat(readiness.workspaceCode()).isEqualTo("EXPERIMENT_PREFLIGHT");
+          assertThat(readiness.workspaceReferenceId()).isEqualTo(97088L);
           assertThat(instances.count()).isEqualTo(1);
         });
     assertConsultativeSql();

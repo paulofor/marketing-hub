@@ -8661,6 +8661,21 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
   dos gates anteriores, bloqueio de tentativa independente, UI completa/compacta
   e integração responsiva consumindo respostas HTTP reais em UTF-8.
 
+- **Complemento confirmado em 04/10/2026:** execução #39/procedimento #122 v7,
+  referência `experiment:88`, renovou o run #16 no #17. Ao recarregar, as quatro
+  provas ficaram pendentes e o relatório retirou `workspaceCode` e sua referência.
+  O painel de homologação desapareceu, embora o contrato HTTP e a tela oficial
+  do experimento continuassem disponíveis. A identidade do workspace era obtida
+  somente de uma avaliação de gates já concluída; predecessora pendente e exceção
+  funcional retornavam identidade nula.
+- **Causa e prevenção complementar:** separar resolução validada de identidade
+  da comprovação funcional. Preservar o workspace nas esperas, conservando comando
+  indisponível, objetivo falso e histórico original. Referência inválida/de outro
+  produto não abre o painel. Seis regressões falharam antes da correção; o harness
+  existente passa a cobrir espera, quatro gates e registro pela tela em desktop,
+  iPhone e Pixel, com APIs locais e nenhum custo pago. Evidências no registro da
+  homologação #39; não repetir a criação de tentativa para recuperar o painel.
+
 ## LOOP-BPM-VERSAO-RETIRADA-RESERVA-FILA — 02/10/2026
 
 - **Evidência confirmada:** Capella #7, processo 5.4 v7 (#122), execução #39, cadeia #26 e

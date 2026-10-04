@@ -921,7 +921,11 @@ components:
           type: string
           nullable: true
           enum: [EXPERIMENT_PREFLIGHT, EXPERIMENT_ACTIVATION, PDE_PRIVATE_PROTOTYPE_ACCEPTANCE, PDE_PRIVATE_READING, PDE_PRIVATE_READING_ASSISTED]
-          description: A leitura assistida importa sinais pelo contrato privado do PDE; o operador confirma a observação humana sem transcrever evidência.
+          description: >-
+            EXPERIMENT_PREFLIGHT conserva o painel durante gates ou predecessoras pendentes,
+            após validar a referência e o vínculo com o produto; sua presença não implica
+            actionAvailable ou objetivo comprovado. A leitura assistida importa sinais pelo
+            contrato privado do PDE; o operador confirma a observação humana sem transcrever evidência.
         workspaceReferenceId: { type: integer, format: int64, nullable: true }
         targetProcessDefinitionId:
           { type: integer, format: int64, nullable: true }

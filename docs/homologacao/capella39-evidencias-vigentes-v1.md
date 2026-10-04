@@ -123,3 +123,50 @@ cenários pertinentes sem escrita produtiva. Antes da retomada, o MCP confirma #
 em `WAITING_INPUT`, atividade `surfaces`, duas provas vigentes e o histórico
 #477–#479 preservado. A liberação técnica e a dependência financeira serão
 reconferidas pela tela após a publicação desta correção complementar.
+
+## Complemento: workspace durante a renovação pendente
+
+O PR #5488 foi integrado em `d65abcd6946285428cdbbc9fbe25983728710dd5`;
+o relatório respondeu e foi validado em três dispositivos. O deploy
+`37182157691` sofreu HTTP 500 do GitHub Packages na publicação do SDK, com
+o mesmo POM e workflow anteriormente aprovados. Sua segunda tentativa terminou
+com sucesso; o runtime confirmou o SHA e os 13 workflows aplicáveis terminaram.
+A auditoria agendada de branches de pesquisas tem pendências próprias e não
+pertence aos checks ou ao deploy deste escopo.
+
+A renovação pela atividade `transaction` criou o run #17 e preservou o #16.
+O backend passou a exigir as quatro provas atuais e manteve #477–#479 intactas.
+Ao recarregar a tela, porém, nenhum workspace permaneceu: `readiness` obtinha a
+identidade somente após aprovar a evidência e retornava identidade nula para
+predecessora pendente ou falha funcional. O formulário existia no frontend;
+o contrato do relatório impedia sua montagem. Nenhum gate foi registrado nem
+nova tentativa criada para contornar a falha.
+
+| Alternativa | Benefício | Risco | Esforço e aderência |
+| --- | --- | --- | --- |
+| Expor navegação ao painel oficial do experimento no bloqueio | Reutiliza outra tela pronta | Exige sair e retornar ao subprocesso para sua prova | Baixo; alternativa viável |
+| Criar um workspace específico de recuperação | Distingue espera e execução | Duplica o painel e os contratos existentes | Médio; desnecessário neste caso |
+| Resolver identidade validada antes dos gates e conservar o workspace | Recupera o próprio fluxo sem aprovar pendências | Exige recusar referência inválida ou de outro produto | Baixo; escolhida |
+
+A matriz complementar, definida antes dos testes, cobre: run pendente com
+predecessoras incompletas; fonte inválida e produto divergente; gates vigentes;
+histórico sem escrita; registro dos quatro resultados pela tela e retorno ao
+bloqueio financeiro; leitura transacional sem lock; desktop/iPhone/Pixel, sem
+overflow, erros JavaScript ou writes produtivos. As dependências de IA, pagamentos
+e mídia continuam simuladas. Seis regressões reproduziram a falta de workspace
+no código anterior. Após a correção, os 33 testes direcionados, 110 testes no
+runner MySQL 5.7 e nove cenários visuais passaram. A suíte completa passou com
+3.850 aprovações e 24 skips condicionais (3.874 casos), seguida de build aprovado.
+O harness reutilizado simula somente o callback oficial; comprova uma submissão
+segregada por dispositivo e conserva a pendência financeira após o registro.
+`bash -n`, ShellCheck, parser YAML e Prettier passaram. Spotless seleciona os seis
+arquivos Java por expressão regular e registra explicitamente os arquivos conferidos.
+Após a formatação, 38 casos direcionados passaram novamente com MySQL 5.7,
+incluindo a presença do workspace durante a leitura física. O pacote final conserva
+4.206 classes idênticas às testadas, 744 recursos íntegros e 510 cartões carregados.
+A topologia temporária foi removida com seus volumes.
+
+Registro: [evidências da renovação pendente](capella39-renovacao-pendente-v1.json).
+O filtro `PREFLIGHT_PROCESS_SCENARIOS=pending` permite repetir só a recuperação
+quando outra alteração não afetar os estados `current` e `stale`; filtro inválido
+falha. Nenhuma nova infraestrutura ou chamada paga foi adicionada.

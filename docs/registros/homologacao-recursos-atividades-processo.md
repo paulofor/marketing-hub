@@ -1,5 +1,38 @@
 # Matriz de homologação — recursos especializados por atividade
 
+## 04/10/2026 — título de processo na cadeia histórica
+
+Vega/produto 4, ciclo 2, cadeia 14, definição 75 v6: banco e composição da cadeia
+confirmam posição 6, mas a leitura das atividades retorna `chainPosition: null`.
+A posição corrente pertence à cadeia 26/definição 119 e não identifica a versão histórica.
+O resolvedor consultava apenas chamadas de subprocessos e omitia os membros diretos.
+
+Alternativas: correção somente visual deixaria o contrato incompleto; uma consulta adicional
+de cadeia na interface duplicaria a resolução; completar o resolvedor existente preserva
+a definição exata e serve à tela e ao contexto do AIHUB. Adotada a terceira alternativa.
+
+Matriz definida antes da validação:
+
+| Área | Cenários | Aceite |
+| --- | --- | --- |
+| Caminho feliz | membro direto publicado e retirado, números distintos | posição persistida da definição exata, sem pai inventado |
+| Validações/falhas | outra definição com mesmo código, cadeia ausente/desconhecida | nenhuma posição emprestada; nenhuma mutação |
+| Integração | resolvedor → contrato de atividades → título e contexto AIHUB | mesma posição histórica em ambos, sem consulta paga |
+| Regressão | subprocessos 5.1/5.2/5.4 e ordem causal | posições e adesões anteriores preservadas |
+| Observabilidade/segregação | IDs sintéticos locais; cadeia corrente diferente | referência, ciclo e versões preservados; QA não cria venda |
+| Interfaces | Chromium desktop, iPhone 15 Pro e Pixel 7 | título numerado legível e sem overflow horizontal |
+
+Validação local: suíte do backend com 3.890 testes reportados (3.866 executados e 24
+condicionais não executados), sem falhas; 848 testes do frontend, typecheck e build aprovados.
+Nove cenários visuais em desktop, iPhone 15 Pro e Pixel 7 passaram sem overflow, erro de
+JavaScript ou mutação. Os contratos usados na tela foram serializados pelo resolvedor Java real
+com repositórios simulados; nenhuma API produtiva foi chamada durante esses cenários.
+As regressões reproduziram o defeito antes da correção e preservaram subprocessos aprovados.
+A primeira suíte em paralelo ao build excedeu a memória da sandbox; execução sequencial com
+memória limitada concluiu a suíte. Evidências locais em `.codex/validation/process-title-number/`.
+
+Não há execução de processo, campanha, inferência ou autorização financeira neste ajuste.
+
 ## 02/10/2026 — número do processo na ficha do produto
 
 Mira/produto 10, cadeia 24, definição 58: o título deve mostrar **Processo 5.4 —

@@ -785,12 +785,12 @@ components:
         chainPosition:
           type: object
           nullable: true
-          description: Posição do subprocesso na cadeia consultada, também disponível sem ciclo. Usa a ordem causal da atividade delegadora; preserva adesões históricas comprovadas.
+          description: Posição do processo ou subprocesso na cadeia consultada, também disponível sem ciclo. Membros diretos usam a sequência persistida da definição exata, inclusive em cadeias retiradas, sem pai. Subprocessos usam a ordem causal da atividade delegadora; preserva adesões históricas comprovadas.
           required: [sequenceLabel, parentProcessCode, parentProcessName]
           properties:
             sequenceLabel: { type: string, example: "5.4" }
-            parentProcessCode: { type: string }
-            parentProcessName: { type: string }
+            parentProcessCode: { type: string, nullable: true }
+            parentProcessName: { type: string, nullable: true }
         salesFlow:
           nullable: true
           allOf:

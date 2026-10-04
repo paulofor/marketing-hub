@@ -323,6 +323,9 @@ com resultado verificável. Quantidade de tarefas concluídas não substitui res
 - **Identificação para o usuário:** a tela de atividades deve mostrar, junto ao nome, o número oficial
   do processo ou subprocesso dentro da Cadeia de Valor (por exemplo, `Processo 6` ou `Processo 6.1`).
   O número vem do backend e não pode ser confundido com a versão técnica ou com o identificador do banco.
+  A posição considera a definição exata e a cadeia da consulta, inclusive versões retiradas.
+  `chainPosition` informa também membros diretos, sem inventar processo pai. Título e contexto para
+  AIHUB preservam essa posição histórica; a posição vigente de outra cadeia não a substitui.
 - **Copiar contexto da atividade (10/09/2026):** cada card da tela de atividades do produto
   oferece um ícone de copiar junto ao título. Um clique copia processo (número e nome),
   atividade (número e nome), produto e agente pelos nomes internos e ciclo quando houver.

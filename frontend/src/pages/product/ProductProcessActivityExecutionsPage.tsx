@@ -175,19 +175,23 @@ export default function ProductProcessActivityExecutionsPage() {
     data.currentExecutionReference?.match(/^experiment:([1-9][0-9]*)$/)
       ? Number(data.currentExecutionReference.split(":")[1])
       : null;
-  const resolvedValueChainSequence = data
-    ? [
-        ...(valueChainPosition.data?.processMeasurements ?? []),
-        ...(valueChainPosition.data?.subprocessPosition?.measurements ?? []),
-      ].find(
-        (measurement) =>
-          measurement.processDefinitionId === data.selectedProcessDefinitionId,
-      )?.sequenceLabel ||
-      (valueChainPosition.data?.processDefinitionId ===
-      data.selectedProcessDefinitionId
-        ? valueChainPosition.data.sequenceNumber?.toString()
-        : undefined)
-    : undefined;
+  const resolvedValueChainSequence =
+    data &&
+    (!effectiveChainId ||
+      valueChainPosition.data?.chainDefinitionId === effectiveChainId)
+      ? [
+          ...(valueChainPosition.data?.processMeasurements ?? []),
+          ...(valueChainPosition.data?.subprocessPosition?.measurements ?? []),
+        ].find(
+          (measurement) =>
+            measurement.processDefinitionId ===
+            data.selectedProcessDefinitionId,
+        )?.sequenceLabel ||
+        (valueChainPosition.data?.processDefinitionId ===
+        data.selectedProcessDefinitionId
+          ? valueChainPosition.data.sequenceNumber?.toString()
+          : undefined)
+      : undefined;
   const selectedProcessSequence =
     data?.chainPosition?.sequenceLabel ?? resolvedValueChainSequence;
   const selectedProcessName = data

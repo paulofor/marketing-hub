@@ -41,7 +41,8 @@ export function processContextText(context: ProcessContext, origin: string) {
     position?.productId === h.productId &&
     position.chainDefinitionId === chainId;
   const sequence =
-    position && !samePosition ? undefined : context.processSequence;
+    h.chainPosition?.sequenceLabel ??
+    (position && !samePosition ? undefined : context.processSequence);
   const runMatches =
     receivedRun &&
     receivedRun.productId === h.productId &&

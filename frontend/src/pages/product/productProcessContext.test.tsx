@@ -232,6 +232,22 @@ describe("Contexto do processo", () => {
     expect(text).not.toContain("Atividade: 4.");
   });
 
+  it("preserva a posição oficial do histórico quando a cadeia vigente é diferente", () => {
+    context.position!.chainDefinitionId = 999;
+    context.history.chainPosition = {
+      sequenceLabel: "6",
+      parentProcessCode: null,
+      parentProcessName: null,
+    };
+    const text = processContextText(context, origin);
+    expect(text).toContain(
+      "Processo: 6 — Comunicação e jornada de venda do PDE",
+    );
+    expect(text).toContain("Atividade: 6.1 —");
+    expect(text).not.toContain("Cadeia PDE de teste");
+    expect(text).not.toContain("Atividade: 4.");
+  });
+
   it("mantém falha da consulta explícita e não copia prompts, payloads ou tokens de confirmação", () => {
     context.warnings = [
       "Consulta da execução falhou; exibindo a última leitura disponível.",

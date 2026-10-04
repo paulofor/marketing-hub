@@ -61,7 +61,10 @@ Resultado consolidado: 3.939 testes, 3.914 aprovados, 25 já desabilitados e nen
 A suíte frontend completa passou (866 testes), assim como tipos/build e 57 regressões
 focadas após o ajuste do resumo. O motor persistiu CLOSED com 3/4 provas e um único
 evento, sem tarefa nova nem retorno de sucesso ao pai. HTTP recusou os quatro comandos
-com 409 sem mutação. Os demais gates técnicos/financeiros continuam obrigatórios.
+com 409 sem mutação, inclusive quando a referência encerrada ainda não possui gates.
+Esse caso falhou antes do ajuste da ordem de validação, orientando indevidamente a
+executar preflight, e foi incluído na regressão HTTP. Os demais gates técnicos e
+financeiros continuam obrigatórios.
 
 O bundle local, com respostas produzidas pelos testes HTTP e de persistência,
 passou em desktop, iPhone 15 Pro e Pixel 7: sem erro JavaScript, transbordamento

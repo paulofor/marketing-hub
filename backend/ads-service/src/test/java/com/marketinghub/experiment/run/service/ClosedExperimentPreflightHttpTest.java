@@ -18,7 +18,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /** Responsabilidade: comprovar bloqueio HTTP antes de qualquer gravação no histórico encerrado. */
 class ClosedExperimentPreflightHttpTest {
-  /** Leitura conserva provas; todos os comandos antigos recusam encerramento com a mesma causa. */
+  /** Conserva provas e recusa comandos encerrados, mesmo sem gates, sem orientar nova tentativa. */
   @Test
   void keepsHistoricalProofsAndRejectsEveryMutation() throws Exception {
     var experiments = mock(ExperimentRepository.class);
@@ -64,6 +64,13 @@ class ClosedExperimentPreflightHttpTest {
       http.perform(post(path).contentType(MediaType.APPLICATION_JSON).content("{}"))
           .andExpect(status().isConflict());
     }
+    when(gates.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(run.getId()))
+        .thenReturn(List.of());
+    http.perform(
+            post("/api/experiment-runs/{id}/homologation-results", run.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+        .andExpect(status().isConflict());
     assertThat(run.getStatus()).isEqualTo(ExperimentRunStatus.READY_TO_PUBLISH);
     assertThat(gate.getStatus()).isEqualTo(ExperimentRunGateStatus.PASS);
     verify(runs, never()).save(any());

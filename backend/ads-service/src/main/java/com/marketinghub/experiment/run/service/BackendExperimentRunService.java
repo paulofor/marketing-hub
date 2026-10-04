@@ -207,7 +207,7 @@ public class BackendExperimentRunService {
     return toPreflightResponse(savedRun, savedGates);
   }
 
-  /** Consolida provas em referência aberta e libera o run somente com todos os gates aprovados. */
+  /** Recusa referência encerrada antes de exigir gates e consolida somente provas compatíveis. */
   @Transactional
   public ExperimentRunPreflightResponse recordHomologationResults(
       Long runId, ExperimentRunHomologationRequest request) {
@@ -218,12 +218,12 @@ public class BackendExperimentRunService {
                 () ->
                     new EntityNotFoundException(
                         "Run de experimento %d não encontrado".formatted(runId)));
+    ExperimentHomologationLifecycle.requireOpen(run.getExperiment());
     List<ExperimentRunGateResult> gates =
         gateResultRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(runId);
     if (gates.isEmpty()) {
       throw new IllegalStateException("Execute o preflight inicial antes da homologação funcional");
     }
-    ExperimentHomologationLifecycle.requireOpen(run.getExperiment());
     Set<String> expectedGateCodes = homologationGateCodes(run.getExperiment());
     Map<String, GateEvidence> evidenceByCode =
         validateHomologationRequest(run, request, expectedGateCodes);

@@ -56,6 +56,26 @@ cadastro são sinais intermediários, não vendas rentáveis; custos ou métrica
 permanecem desconhecidos. Os critérios orientam criação e avaliação, sem alegar eficácia
 causal comprovada pelo experimento que motivou o aprendizado.
 
+## Pesquisa pública de Atena sem shell aninhado — aprendizado de 04/10/2026
+
+A pergunta estratégica deve permanecer vinculada ao plano selecionado. O carregamento
+assíncrono não autoriza usar diagnóstico de um plano sugerido ou de outra identidade; edição
+manual permanece no mesmo plano e deve ser descartada ao trocar de plano. Plano ausente ou
+indisponível não oferece comando de pesquisa.
+
+A leitura pública usa a ferramenta MCP `consultar_paginas_publicas`, executada pelo próprio
+worker com Chromium e argumentos limitados a até três URLs diretas. Não depender do shell do
+modelo para abrir navegador em sandbox aninhada. O processo MCP recebe explicitamente a
+identidade da execução e a URL do backend; mantém auditoria por URL, data, status e hash do
+texto. Credenciais, rede privada, escrita, WebSocket e redirects de rede ficam bloqueados.
+A ferramenta não garante que o texto coletado seja verdadeiro: conteúdo externo é evidência
+não confiável, nunca instrução operacional. Fonte indisponível é lacuna técnica; não comprova
+inviabilidade comercial, não aprova oportunidade e não inicia retentativa paga automática.
+
+Regressões devem cobrir contexto assíncrono, troca de identidade, comando MCP, Chromium,
+falha parcial, bloqueio de escrita/redirect e empacotamento. Esta melhoria não muda preços,
+modelo, orçamento, decisão de avanço do backend ou critérios de aprovação de mercado.
+
 ## Primeiro experimento não é sucessor — decisão de 25/09/2026
 
 Uma referência `experiment:*` identifica o alvo da tarefa, mas não comprova retorno de um ciclo de

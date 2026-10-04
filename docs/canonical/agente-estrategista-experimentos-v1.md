@@ -10,6 +10,12 @@ redefinir essa estratégia; o usuário mantém as aprovações de publicação, 
 
 ## Contrato Estratégico de Mercado v2
 
+A pergunta enviada pela tela deve pertencer ao plano selecionado. O carregamento assíncrono
+acompanha o contexto oficial até a edição manual, preservada somente na mesma identidade.
+Plano ausente ou não persistido não solicita pesquisa. A confirmação de páginas públicas usa
+`consultar_paginas_publicas` no MCP do executor, sem shell aninhado do modelo. Contrato,
+auditoria e regressões estão em [aperfeiçoamento dos agentes](aihub-aperfeicoamento-agentes-canon.v1.md#pesquisa-pública-de-atena-sem-shell-aninhado--aprendizado-de-04102026).
+
 Por decisão de 2026-08-28, Atena é a única autora de segmento, comprador, problema, desejo,
 comportamento, concorrência, lacuna, posicionamento, tese de oferta e hipótese causal. Cada pesquisa
 `READ_ONLY_RESEARCH` deve produzir `marketStrategicContract` com versão

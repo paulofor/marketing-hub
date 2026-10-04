@@ -4048,6 +4048,20 @@ Use este checklist quando o problema estiver em algum loop acima:
   recurso visual legado atua sem identidade decisória e Têmis recebe somente o artefato e a
   verificação técnica para decidir integridade comercial.
 
+- **Recorrência confirmada em 04/10/2026 (Atena #17):** o prompt orientava executar
+  `node /app/browser/public-research.mjs` pelo shell do Codex, que falhou com `bwrap:
+  No permissions to create a new namespace`. A pesquisa terminou com lacunas; as três fontes
+  responderam HTTP 200 no Chromium externo à sandbox aninhada. O resultado original permanece.
+- **Correção reutilizável de Atena:** navegador existente exposto por MCP somente leitura,
+  com variáveis de correlação repassadas explicitamente e sem relaxar a sandbox do modelo.
+  Limite de três URLs, validação de rede pública, bloqueio de escrita/redirect e falha por URL.
+  Testes `public-research.test.mjs` exercitam MCP + Chromium com sucesso e falhas isoladas;
+  testes Java protegem comando e prompt. Fonte inacessível não vira reprovação comercial.
+- **Lacuna de contexto associada:** formulário de Atena retinha a pergunta inicial de fallback
+  após receber o plano correto. Agora deriva o padrão do plano atual, preserva edição manual
+  somente na mesma identidade e não oferece pesquisa para plano ausente. Testes de formulário
+  e de carregamento impedem diagnóstico de outra identidade.
+
 ## LOOP-DEDALO-PRODUTO-E-COMUNICACAO-SOBREPOSTOS — um agente otimiza pós e pré-compra
 
 - **Data:** 2026-08-28.

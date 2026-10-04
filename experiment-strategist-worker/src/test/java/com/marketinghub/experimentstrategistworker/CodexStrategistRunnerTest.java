@@ -22,6 +22,9 @@ class CodexStrategistRunnerTest {
 
     assertThat(command).contains("--search", "--sandbox", "read-only", "--output-schema");
     assertThat(command).doesNotContain("danger-full-access");
+    assertThat(command)
+        .contains(
+            "mcp_servers.experiment_strategist.env_vars=[\"MCP_BACKEND_URL\",\"MCP_EXECUTION_ID\"]");
     assertThat(properties.getCodexTimeout().toMinutes()).isEqualTo(40);
   }
 
@@ -70,7 +73,8 @@ class CodexStrategistRunnerTest {
         .doesNotContain("playwright-core install", "apt-get", "chmod -R a+rX /ms-playwright")
         .contains("COPY --from=build /build/src/main/resources/browser /app/browser");
     assertThat(prompt)
-        .contains("node /app/browser/public-research.mjs")
+        .contains("consultar_paginas_publicas")
+        .doesNotContain("node /app/browser/public-research.mjs")
         .contains("duas classes independentes de evidência")
         .contains("mapa comparativo dos concorrentes")
         .contains("linguagem literal pública de clientes")

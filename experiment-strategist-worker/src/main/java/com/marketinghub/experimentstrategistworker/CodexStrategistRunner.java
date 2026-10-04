@@ -143,7 +143,7 @@ public class CodexStrategistRunner {
     return command(output, schema, mcp, Path.of("clarity-aggregate.mjs"), false);
   }
 
-  /** Monta o comando com o MCP interno e o adaptador agregado opcional do Clarity. */
+  /** Monta o MCP de leitura com ambiente explícito e o adaptador agregado opcional do Clarity. */
   List<String> command(
       Path output, Path schema, Path mcp, Path clarityMcp, boolean clarityAvailable) {
     List<String> command = new ArrayList<>();
@@ -166,6 +166,11 @@ public class CodexStrategistRunner {
     command.add("mcp_servers.experiment_strategist.command=\"node\"");
     command.add("--config");
     command.add("mcp_servers.experiment_strategist.args=[\"" + mcp.toAbsolutePath() + "\"]");
+    command.add("--config");
+    command.add(
+        "mcp_servers.experiment_strategist.env_vars=[\"MCP_BACKEND_URL\",\"MCP_EXECUTION_ID\"]");
+    command.add("--config");
+    command.add("mcp_servers.experiment_strategist.tool_timeout_sec=90");
     if (clarityAvailable) {
       command.add("--config");
       command.add("mcp_servers.clarity_aggregate.command=\"node\"");

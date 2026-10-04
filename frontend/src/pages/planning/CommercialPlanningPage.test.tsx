@@ -1333,16 +1333,17 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByText(/hipóteses versionadas/i)).toBeTruthy();
   });
 
-  it("renderiza sugestao de julho quando a API ainda nao retorna planos", () => {
+  it("informa ausência do plano sem inventar contexto para os especialistas", () => {
     mockPlans = [];
-
     renderPage();
-
-    expect(
-      screen.getByRole("link", { name: /todos os planos comerciais/i }),
-    ).toBeTruthy();
-    expect(screen.getByText("Julho 2026")).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toContain(
+      "Plano comercial não encontrado",
+    );
+    expect(screen.queryByText("Julho 2026")).toBeNull();
     expect(screen.queryByText("Plano sugerido")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /Solicitar parecer estratégico/i }),
+    ).toBeNull();
   });
 
   it("mostra agosto de 2026 ao clicar em proximo mes", async () => {
@@ -1360,5 +1361,26 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByText("03/08/2026 até 09/08/2026")).toBeTruthy();
     expect(screen.getByText("31/08/2026 até 06/09/2026")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Mês atual" })).toBeTruthy();
+  });
+  it("não usa outro plano quando a identidade solicitada está ausente", () => {
+    renderPage("/planning/98765");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Plano comercial não encontrado",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Solicitar parecer estratégico" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Plano sem marcos")).not.toBeInTheDocument();
+  });
+
+  it("não apresenta o diagnóstico histórico de fallback enquanto faltam dados", () => {
+    mockPlans = [];
+    renderPage("/planning/701");
+    expect(
+      screen.queryByLabelText(/Pergunta comercial/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Historico recente indicou/),
+    ).not.toBeInTheDocument();
   });
 });

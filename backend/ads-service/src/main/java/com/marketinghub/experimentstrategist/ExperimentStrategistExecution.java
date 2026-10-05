@@ -54,7 +54,7 @@ public class ExperimentStrategistExecution {
   @Column(name = "model_name")
   private String modelName;
 
-  @Column(name = "estimated_cost")
+  @Column(name = "estimated_cost", precision = 18, scale = 8)
   private BigDecimal estimatedCost;
 
   @Column(name = "error_message", columnDefinition = "TEXT")

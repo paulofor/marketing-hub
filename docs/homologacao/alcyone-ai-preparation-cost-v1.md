@@ -94,3 +94,67 @@ todos aprovados. Os dois Dockerfiles construíram imagens locais; o Codex empaco
 `exec --help`/`--json` como usuário sem privilégios em containers sem rede/credenciais. A topologia
 temporária foi removida pelo projeto Compose exclusivo. Nenhuma inferência ocorreu nesses testes.
 Spotless, arquitetura premium, `bash -n` e ShellCheck do validador consultado passaram.
+
+## Correção complementar observada na preparação
+
+Atena #18 completou a revisão da prova isolada e manteve `INSUFFICIENT_EVIDENCE` por fixtures
+no aplicativo e economia incompleta. Plutus #69 completou a conciliação, mas registrou recusa
+de consulta por aprovação `never`. Seu MCP não anotava as ferramentas GET como leitura; o
+snapshot não incluía `nextAction`, onde a autorização USD 10 está persistida na versão 4,
+nem a oferta com acesso/recuperação. Histórico #69 permanece intacto.
+
+O schema real de Atena é DECIMAL(38,2), apesar de Liquibase original DECIMAL(12,4), porque o
+campo JPA omitira precisão/escala. MySQL 5.7 local reproduziu 0,000928 como 0,00. Precisão
+DECIMAL(18,8) é fixada em JPA e migração incremental nos dois especialistas, alinhada ao
+cálculo existente. Valores já arredondados permanecem históricos; não são reconstruídos.
+
+| Extensão da matriz | Aceite |
+| --- | --- |
+| Persistência | Valor positivo inferior a um centavo preservado em JPA e MySQL 5.7; histórico e NULL conservados |
+| Migração | Aplicação real, reaplicação sem duplicação e rollback que recusa perder precisão |
+| Ferramentas | MCP JSON-RPC real → listagem anotada → GET de execução/memória com IDs distintos; nenhuma consulta vira escrita |
+| Política | `read-only` e `approval_policy=never` mantidos; servidor usa `default_tools_approval_mode=writes`, deixando escritas sob aprovação |
+| Contexto | Condições e autorização originais, inclusive campos ausentes de outro plano, presentes no snapshot imutável; texto não cria autorização automática |
+| Antes/depois | Reusar #18 e #69; reavaliar Plutus somente depois da correção e com contexto novo, dentro do mesmo teto USD 10 |
+
+Referência operacional: https://developers.openai.com/codex/mcp, conferida em 05/10/2026.
+Alternativas: repetir o parecer com a mesma fonte incompleta (rejeitada), relaxar aprovação
+global (rejeitada), classificar consultas e transmitir o contexto persistido (escolhida).
+
+Validação complementar local: 3.981 casos do backend, sem falha/erro, com 26 dispensas explícitas;
+47 testes de Atena e 56 de Plutus aprovados. A migração real também passou separadamente no
+MySQL 5.7.44, incluindo precondição de faixa, histórico/nulos, reaplicação e rollback recusado.
+O teste confirma as auditorias novas antes do rollback: a reversão da transação do teste não
+deve ser confundida com perda provocada pela migração. O servidor MCP real passou em dois
+contextos, incluindo fonte HTTP 503 sem sucesso fictício ou escrita.
+
+A primeira suíte completa foi encerrada pelo limite de memória da sandbox (exit 137,
+`memory.events` com `oom_kill=1`). Encerrado o Vite temporário e limitada a oito a retenção de
+contextos de teste, a suíte terminou com sucesso. O teste JPA dedicado encerra seu contexto após
+a classe. As duas imagens locais vieram dos Dockerfiles versionados; o Codex 0.159.3 empacotado
+aceitou a política MCP em containers sem rede/credenciais. Nenhum modelo foi chamado na matriz
+local. MySQL e volume temporários foram removidos pelo projeto Compose autorizado.
+
+O CI do PR #5506 revelou atestação privada v8 com hash antigo de uma classe compartilhada,
+alterada legitimamente nos PRs #5487/#5498. Reproduzido e corrigido localmente por sucessora v9,
+preservando v8 e a mesma alcyone-private-v3. O CI do backend passa a validar o pacote real antes
+de integrar mudanças nas fontes. Relatório específico: `alcyone-agent-validation-v10.md`.
+Não altera fixtures em geração comercial nem transforma a atestação candidata em aprovação.
+
+A extensão passou em 13 testes do contrato de CI, 15 do construtor e no pacote real com 317
+arquivos/61 manifestos. Psique: 150 casos, zero falhas e duas dispensas; Têmis: 108 casos, zero
+falhas e uma dispensa. As capturas foram geradas pelo script versionado
+`infra/testing/commercial-evidence/capture-private-boundary.cjs`, sem mutação ou inferência.
+
+A matriz financeira MySQL do PR encontrou o mock de Plutus sem o bean de preços exigido desde
+a conciliação de custos. A fixture fornece agora esse mock explicitamente; o serviço produtivo
+continua exigindo sua dependência. Dois testes Spring reproduzem a configuração antiga e aprovam
+a nova antes da integração. Dez casos locais afetados passaram. A matriz de persistência local
+passou em 34,11 segundos: API/JPA/MySQL reais, Plutus simulado, concorrência, reinício, migração e
+rollback. É matriz de persistência, não homologação completa de navegador ou produto comercial.
+
+O runner recebe projeto Compose exclusivo por variável explícita, sem ID antigo de sandbox e
+sem simular GitHub Actions para contornar uma trava. Seu fingerprint ignora temporários e
+dependências locais, preservando a verificação das fontes. A rodada anterior passou nos cenários,
+mas foi corretamente invalidada por retirada de formatação em paralelo; nenhuma conclusão foi
+extraída dela. A rodada estável terminou PASS e removeu MySQL/volumes do projeto autorizado.

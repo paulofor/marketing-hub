@@ -403,11 +403,15 @@ public class FinancialCodexRunner {
     return command;
   }
 
-  /** Monta o comando com o servidor MCP exclusivo do agente e suas variáveis permitidas. */
+  /**
+   * Libera leituras do MCP exclusivo e mantém escritas sujeitas à aprovação da política vigente.
+   */
   List<String> buildCommand(Path output, Path schema, Path mcp) {
     List<String> command = new ArrayList<>(buildCommand(output, schema));
     command.addAll(
         List.of(
+            "--config",
+            "mcp_servers.financial_agent.default_tools_approval_mode=\"writes\"",
             "--config",
             "mcp_servers.financial_agent.command=\"node\"",
             "--config",

@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-05-agent-execution-cost-precision-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment_strategist_execution
+        - tableExists:
+            tableName: financial_agent_execution
+        - sqlCheck:
+            expectedResult: '0'
+            sql: >-
+              SELECT COUNT(*) FROM experiment_strategist_execution
+              WHERE ABS(estimated_cost) >= 10000000000
+        - sqlCheck:
+            expectedResult: '0'
+            sql: >-
+              SELECT COUNT(*) FROM financial_agent_execution
+              WHERE ABS(estimated_cost) >= 10000000000
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment_strategist_execution
+                MODIFY COLUMN estimated_cost DECIMAL(18,8) NULL;
+              ALTER TABLE financial_agent_execution
+                MODIFY COLUMN estimated_cost DECIMAL(18,8) NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Reducao de precisao apagaria custos auditados; preservar DECIMAL(18,8)';

@@ -97,6 +97,7 @@ paths:
   /api/financial-agent/v1/internal/commercial-plans/{planId}/intelligence:
     get:
       summary: Consulta snapshot financeiro oficial do planejamento
+      description: Inclui commercialContext com objetivo, oferta, critérios de sucesso/parada, próxima ação e bloqueio da versão persistida. Campos ausentes permanecem nulos. Autorizações são evidências, sem conversão cambial ou criação automática de limite; o teto comercial em BRL não substitui autorização específica de preparação em outra moeda. Estimativas dos especialistas preservam até oito casas decimais.
       parameters:
         - in: path
           name: planId

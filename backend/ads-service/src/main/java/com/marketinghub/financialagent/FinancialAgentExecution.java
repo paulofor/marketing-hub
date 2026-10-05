@@ -64,7 +64,7 @@ public class FinancialAgentExecution {
   @Column(name = "model")
   private String model;
 
-  @Column(name = "estimated_cost", precision = 12, scale = 4)
+  @Column(name = "estimated_cost", precision = 18, scale = 8)
   private BigDecimal estimatedCost;
 
   @Column(name = "error_message", columnDefinition = "TEXT")

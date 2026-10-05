@@ -1,0 +1,18 @@
+{
+  "cardKey": "reposicao-recorrente-carrinho-preenchido",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Antecipe a recompra recorrente com carrinho pré-preenchido",
+  "finding": "A DoorDash informou que mais de 30% dos pedidos de supermercado feitos pelo Ask DoorDash eram reposições rotineiras; carrinhos montados pelo assistente foram cinco vezes mais rápidos, tiveram quase 50% maior valor médio e cerca de 60% mais itens únicos do que pedidos tradicionais dos mesmos consumidores.",
+  "mechanism": "Em necessidades previsíveis, histórico e pré-preenchimento podem reduzir o esforço de lembrar itens, buscar novamente e reconstruir o pedido. Os dados divulgados são observacionais e não demonstram que o assistente causou maior gasto, frequência ou retenção.",
+  "commercialApplication": "No Marketing Hub, identificar janelas prováveis de reposição ou recompra e testar uma mensagem curta com sugestão ou carrinho pré-preenchido, mantendo confirmação explícita antes do pagamento e permitindo remover ou alterar itens com facilidade.",
+  "evidenceStrength": "Moderada como evidência operacional: dados reais divulgados pela DoorDash, incluindo comparação com pedidos tradicionais dos mesmos consumidores, porém sem randomização publicada, grupo de controle equivalente ou validação independente.",
+  "publishedOn": "2026-10-05",
+  "validUntil": "2027-01-03",
+  "experimentHypothesis": "Para uma necessidade recorrente comprovada, uma abordagem no momento provável de reposição com itens pré-selecionados aumentará recompra e pagamento reconciliado versus lembrete genérico, sem piorar margem, remoção de itens, descadastro ou reclamações.",
+  "risks": "Contatar cedo ou tarde demais, inferir hábitos de forma invasiva, estimular compra desnecessária, sugerir quantidade inadequada, criar atrito por itens errados ou usar histórico sem transparência e controle do cliente.",
+  "limits": "Evidência restrita ao ecossistema DoorDash nos EUA e a usuários do Ask DoorDash. Maior valor de cesta pode refletir seleção de usuários, categorias ou ocasiões; não há prova causal de aumento de receita, retenção ou LTV em outros nichos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-10-05-doordash-reposicao-recorrente-carrinho-preenchido.md",
+  "sourceTitle": "Fonte revisada — reposição recorrente com carrinho pré-preenchido",
+  "sourceSha256": "206fe3bf4872aa7abf325ed05c8cf6645ed7c3e17201b07c0004227e76a84428"
+}

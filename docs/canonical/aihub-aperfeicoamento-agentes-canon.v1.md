@@ -522,3 +522,18 @@ A alteração resolve a dependência de recrutamento constatada no ciclo 69; nã
 de vendas nem justifica ignorar os demais gates comerciais, financeiros ou de alto risco.
 Regressões: política legada, nova política, trecho sem suporte, fonte repetida, vendedor, ausência
 de progresso e retorno único por lease. Comparar custo/latência somente após execução auditada.
+
+## Consultas MCP e contexto de autorizações — aprendizado de 05/10/2026
+
+Uma integração deve fornecer metadados de leitura coerentes com o método executado. Plutus e Atena
+usam política MCP `writes` no modo global `never`, com sandbox somente leitura: consultas não
+precisam de aprovação interativa, propostas de memória continuam escritas e protegidas. Não
+substituir uma falha de consulta por fonte ausente nem relaxar a política global para resolvê-la.
+Fonte oficial consultada em 05/10/2026: [configuração MCP do Codex](https://developers.openai.com/codex/mcp).
+
+Congelar também autorizações e condições já persistidas no plano. Limite de preparação em uma
+moeda não autoriza mídia ou muda o orçamento comercial em outra moeda. Corrigir o contexto antes
+de nova inferência; preservar os pareceres anteriores e reutilizar resultados que não mudaram.
+O teste deve exercitar o servidor MCP real com fontes locais e identidades diferentes, não apenas
+a presença textual da ferramenta. Custos positivos preservam oito casas decimais; a precisão nova
+não recupera o histórico arredondado. Matriz: `docs/homologacao/alcyone-ai-preparation-cost-v1.md`.

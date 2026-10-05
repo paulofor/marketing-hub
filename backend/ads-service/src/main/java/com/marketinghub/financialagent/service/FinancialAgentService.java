@@ -499,7 +499,7 @@ public class FinancialAgentService {
     }
   }
 
-  /** Consolida planejamento, campanha, IA, demais provedores, receita e cobertura das fontes. */
+  /** Congela condições e autorizações persistidas junto às fontes, sem inferir novos limites. */
   private String buildSnapshot(CommercialPlan plan) {
     BigDecimal campaign = money(plan.getActualCampaignCost());
     BigDecimal ai = money(plan.getActualAiCost());
@@ -510,6 +510,17 @@ public class FinancialAgentService {
     snapshot.put("capturedAt", Instant.now());
     snapshot.put("planId", plan.getId());
     snapshot.put("planName", plan.getName());
+    LinkedHashMap<String, Object> commercialContext = new LinkedHashMap<>();
+    commercialContext.put("commercialObjective", plan.getCommercialObjective());
+    commercialContext.put("mainOffer", plan.getMainOffer());
+    commercialContext.put("successCriteria", plan.getSuccessCriteria());
+    commercialContext.put("stopCriteria", plan.getStopCriteria());
+    commercialContext.put("nextAction", plan.getNextAction());
+    commercialContext.put("currentBlocker", plan.getCurrentBlocker());
+    snapshot.put("commercialContext", commercialContext);
+    snapshot.put(
+        "authorizationInterpretation",
+        "Conferir autorizações e finalidade nos campos persistidos do plano. Teto em BRL não invalida automaticamente uma autorização específica de preparação em outra moeda; não converter moedas, ampliar finalidade nem autorizar novos gastos por inferência.");
     snapshot.put("periodStart", plan.getCreatedAt());
     snapshot.put("periodEnd", plan.getDeadline());
     snapshot.put("monthlyBudgetCeilingBrl", plan.getMaxBudget());

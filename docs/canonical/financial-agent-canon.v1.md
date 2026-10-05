@@ -255,3 +255,22 @@ derivados, incluindo falha posterior. O comando de conciliação reaproveita aud
 idempotente, sem regeneração. Estimativa tem fonte/data e não substitui cobrança confirmada.
 Modalidade, uso ou tarifa desconhecidos permanecem pendentes. Esta cobertura não altera a
 reserva em BRL de uma ficha nem libera novo consumo: câmbio e checkpoints continuam necessários.
+
+## Contexto e leitura da conciliação — aprendizado de 05/10/2026
+
+O snapshot genérico de Plutus deve preservar objetivo comercial, oferta, critérios de sucesso e
+parada, próxima ação e bloqueio atual do plano na versão analisada. Uma autorização explícita de
+preparação em USD já persistida não é anulada por um teto comercial em BRL; não converter moedas,
+inferir orçamento, ampliar sua finalidade ou substituir o checkpoint financeiro da ficha.
+
+Ferramentas MCP de consulta devem declarar `readOnlyHint: true`; a proposta de memória continua
+escrita. O harness usa `default_tools_approval_mode="writes"`, preservando `approval_policy="never"`
+e sandbox somente leitura. Somente operações classificadas e efetivamente implementadas como
+consulta ficam disponíveis sem aprovação. Falha de leitura deve ser tratada como falha de
+integração e não como inexistência da fonte. Não repetir inferência sem corrigir a causa.
+
+Estimativas dos especialistas devem usar `DECIMAL(18,8)` tanto no mapeamento JPA quanto no
+Liquibase: custo pequeno positivo não pode virar zero. Preservar nulos e valores históricos
+arredondados; ampliar precisão não recupera dígitos já perdidos nem confirma a fatura do provedor.
+Regressões cobrem contexto de planos diferentes, ferramentas reais, custos fracionários,
+idempotência da migração e bloqueio de rollback que apagaria precisão.

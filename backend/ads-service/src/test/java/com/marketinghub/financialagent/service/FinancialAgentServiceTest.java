@@ -31,6 +31,46 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 /** Responsabilidade: proteger a conciliacao honesta das fontes financeiras do planejamento. */
 class FinancialAgentServiceTest {
+  /** Preserva condições e autorização específicas sem confundir orçamento de mídia e IA. */
+  @Test
+  void freezesAuthorizationsAndDeliveryTermsForAnyPlan() throws Exception {
+    var repository = mock(FinancialAgentExecutionRepository.class);
+    var plans = mock(CommercialPlanService.class);
+    var ledger = mock(StudioCostLedgerService.class);
+    when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    var mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    var service = new FinancialAgentService(repository, plans, mapper, ledger);
+    for (long id : new long[] {210L, 830L}) {
+      var plan = new CommercialPlan();
+      plan.setId(id);
+      plan.setName("QA de contexto");
+      plan.setMaxBudget(BigDecimal.ZERO);
+      plan.setMainOffer("Uma ocasião, três resultados, uma recuperação; acesso por sete dias.");
+      plan.setNextAction("Fonte humana: USD 7 somente para preparação, sem mídia.");
+      plan.setStopCriteria("Sem venda, mídia ou cobrança autorizadas.");
+      when(plans.getPlan(id)).thenReturn(plan);
+      var snapshot = mapper.readTree(service.start(id).financialSnapshot());
+      assertThat(snapshot.at("/commercialContext/mainOffer").asText())
+          .isEqualTo(plan.getMainOffer());
+      assertThat(snapshot.at("/commercialContext/nextAction").asText())
+          .isEqualTo(plan.getNextAction());
+      assertThat(snapshot.at("/commercialContext/stopCriteria").asText())
+          .isEqualTo(plan.getStopCriteria());
+      assertThat(snapshot.get("monthlyBudgetCeilingBrl").decimalValue()).isEqualByComparingTo("0");
+      assertThat(snapshot.get("authorizationInterpretation").asText()).contains("não converter");
+    }
+    var empty = new CommercialPlan();
+    empty.setId(900L);
+    empty.setName("Contexto sem autorização");
+    when(plans.getPlan(900L)).thenReturn(empty);
+    assertThat(
+            mapper
+                .readTree(service.start(900L).financialSnapshot())
+                .at("/commercialContext/nextAction")
+                .isNull())
+        .isTrue();
+  }
+
   /** Concilia custo sem tarefa BPM, preservando callbacks legados e entradas sem tarifa. */
   @Test
   void deveEstimarConsumoAuditadoSemTarefaBpm() {

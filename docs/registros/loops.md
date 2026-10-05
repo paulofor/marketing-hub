@@ -8902,3 +8902,22 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
   sem alerta. Nenhum ID recebe exceção, aprovação automática ou consumo pago.
 - Registro: `docs/homologacao/video-review-optional-v1.md` e
   `docs/registros/sales-video.md`.
+
+## LOOP-PLUTUS-CONSULTA-SEM-ANOTACAO-E-CONTEXTO-INCOMPLETO — 05/10/2026
+
+- Evidência: conciliação #69/plano #34 registrou recusa de consultas MCP por aprovação impossível
+  sob `never`. O script não declarava `readOnlyHint`; o snapshot omitia a autorização de USD 10
+  em `nextAction` e condições de entrega em `mainOffer`, embora estivessem persistidas na v4.
+- Causa: classificação incompleta das ferramentas e projeção parcial do plano. A coluna de Atena
+  era `DECIMAL(38,2)` por mapeamento JPA implícito; MySQL local reproduziu consumo positivo virando
+  zero. Plutus conservava apenas quatro casas. O parecer não pode distinguir dado ausente de
+  dado que a integração escondeu.
+- Correção: anotações de consulta no MCP, política específica `writes` sem mudar `never`/sandbox,
+  contexto comercial congelado e custo explícito `DECIMAL(18,8)` nos dois especialistas e Liquibase.
+- Prevenção: servidor MCP real com duas execuções e backend local, consulta da memória sem escrita,
+  contexto nulo e de outros planos, JPA, MySQL 5.7, idempotência, precondição de faixa e rollback
+  bloqueado antes da perda de precisão. Nenhum produto/ID recebe exceção.
+- Limites: pareceres #18/#69 e custos arredondados permanecem históricos; estimativas não são
+  faturas. Corrigir leitura não resolve custos integrais desconhecidos nem aprova uma entrega
+  comercial com fixtures. Repetir apenas Plutus depois da mudança de contexto, dentro do mesmo
+  teto, sem regenerar imagens nem iniciar mídia. Matriz: `docs/homologacao/alcyone-ai-preparation-cost-v1.md`.

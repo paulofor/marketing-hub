@@ -14,6 +14,7 @@ on:
       - "backend/ads-service/src/test/java/com/marketinghub/catalogovivo/**"
       - "backend/ads-service/src/test/resources/catalogo-vivo/**"
       - "backend/ads-service/src/main/resources/db/changelog/**"
+      - "backend/ads-service/src/test/java/com/marketinghub/financialagent/service/AgentExecutionCost*Test.java"
       - "backend/ads-service/src/test/resources/liquibase-mysql57/**"
       - "infra/testing/pde-version-contract/**"
       - "infra/testing/product-financial-plan/**"
@@ -105,6 +106,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-agent-execution-cost-precision:
+    name: Precisão de custos dos agentes com MySQL 5.7
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: synthetic-usage-cost
+          MYSQL_DATABASE: usage_cost_qa
+        ports:
+          - 33343:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -psynthetic-usage-cost --silent"
+          --health-interval=2s --health-timeout=2s --health-retries=40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/ads-service/pom.xml
+      - name: Validar migração, custos pequenos, histórico e rollback protegido
+        working-directory: backend/ads-service
+        env:
+          AGENT_COST_MYSQL: "true"
+          AGENT_COST_DB_HOST: 127.0.0.1
+        run: mvn -B -Dtest=AgentExecutionCostMysql57Test test
+
   validate-agent-runtime:
     name: Runtime dos nove agentes com MySQL 5.7
     runs-on: ubuntu-latest

@@ -190,7 +190,9 @@ public class CodexStrategistRunner {
     return command(output, schema, mcp, Path.of("clarity-aggregate.mjs"), false);
   }
 
-  /** Monta o MCP de leitura com ambiente explícito e o adaptador agregado opcional do Clarity. */
+  /**
+   * Libera consultas anotadas do MCP com ambiente explícito; escritas continuam exigindo aprovação.
+   */
   List<String> command(
       Path output, Path schema, Path mcp, Path clarityMcp, boolean clarityAvailable) {
     List<String> command = new ArrayList<>();
@@ -212,6 +214,8 @@ public class CodexStrategistRunner {
     command.add("never");
     command.add("--config");
     command.add("service_tier=\"default\"");
+    command.add("--config");
+    command.add("mcp_servers.experiment_strategist.default_tools_approval_mode=\"writes\"");
     command.add("--config");
     command.add("mcp_servers.experiment_strategist.command=\"node\"");
     command.add("--config");

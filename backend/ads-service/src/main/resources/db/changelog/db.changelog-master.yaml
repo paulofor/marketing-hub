@@ -2198,3 +2198,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-10-02-pde-satisfaction-continuity-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-10-05-agent-execution-cost-precision-v1.yaml
+      relativeToChangelogFile: true

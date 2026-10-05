@@ -72,6 +72,8 @@ class CodexStrategistRunnerTest {
     var command = runner.command(Path.of("/tmp/output.json"), Path.of("/tmp/schema.json"));
 
     assertThat(command).contains("--search", "--sandbox", "read-only", "--output-schema");
+    assertThat(command)
+        .contains("mcp_servers.experiment_strategist.default_tools_approval_mode=\"writes\"");
     assertThat(command).doesNotContain("danger-full-access");
     assertThat(command)
         .contains(

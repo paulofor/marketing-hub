@@ -51,6 +51,8 @@ class FinancialCodexRunnerTest {
     assertThat(command).containsSubsequence("--model", "gpt-5.6-sol");
     assertThat(command).contains("--json", "approval_policy=\"never\"");
     assertThat(command)
+        .contains("mcp_servers.financial_agent.default_tools_approval_mode=\"writes\"");
+    assertThat(command)
         .contains(
             "service_tier=\"default\"",
             "model_reasoning_effort=\"high\"",

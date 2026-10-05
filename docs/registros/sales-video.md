@@ -377,3 +377,19 @@
 - Não houve aprovação de peças, retomada de campanha ou chamada paga em produção. A correção
   da fila não conclui o processo de comunicação de Alcyone nem comprova aumento de vendas.
 - Matriz e evidências: `docs/homologacao/video-review-readiness-v1.md`.
+
+## 2026-10-05 — candidata opcional não é pendência de aprovação
+
+- A publicação anterior foi confirmada na tela e no build do backend. A fila geral
+  ainda incluía #51/Capella/#94, marcado `required_for_release=0`, entre as duas
+  decisões humanas. #52/Vega/#95 continua obrigatório e sem decisão; não é um dos
+  vídeos previamente aprovados. Alcyone permanece sem aviso de vídeo.
+- Causa: prontidão era suficiente para `AWAITING_REVIEW`; faltava distinguir a
+  obrigatoriedade persistida. Agora a candidata opcional recebe `OPTIONAL_REVIEW`,
+  aba própria e contagem separada; o alerta usa somente aprovações necessárias.
+- Histórico, pareceres, mídia e datas não são alterados. Opcionalidade não libera
+  uso comercial sem aprovação, nem aprova automaticamente qualquer vídeo.
+- Harness: corrigida a fixture que chamava uma peça opcional de obrigatória;
+  regressões de política, HTTP/H2, React e navegador verificam os dois estados,
+  transições, filtros e a preservação dos gates.
+- Matriz e evidências: `docs/homologacao/video-review-optional-v1.md`.

@@ -610,7 +610,7 @@ class CreativeControllerTest {
     assertThat(found.getEmotionalTriggers()).hasSize(1);
   }
 
-  /** Reproduz a mistura de oito rascunhos sem fixar os identificadores do incidente. */
+  /** Reproduz a mistura de rascunhos obrigatórios, opcionais e históricos sem IDs fixos. */
   @Test
   void summarySeparatesHumanDecisionsBlocksAndHistoricalAttempts() throws Exception {
     Experiment current = experimentRepository.findById(expId).orElseThrow();
@@ -633,18 +633,21 @@ class CreativeControllerTest {
     reviewCreative(current, CreativeAgentReviewStatus.ADJUST);
     reviewCreative(current, CreativeAgentReviewStatus.PENDING);
     reviewVideo(current);
-    reviewVideo(current);
+    ExperimentVideoAsset optional = reviewVideo(current);
+    optional.setRequiredForRelease(false);
+    videoAssetRepository.saveAndFlush(optional);
     mockMvc
         .perform(get("/api/creatives/video-review/summary"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.awaitingReviewCount").value(2))
+        .andExpect(jsonPath("$.awaitingReviewCount").value(1))
+        .andExpect(jsonPath("$.optionalReviewCount").value(1))
         .andExpect(jsonPath("$.blockedCount").value(2))
         .andExpect(jsonPath("$.historicalCount").value(4))
         .andExpect(jsonPath("$.approvedCount").value(1));
     mockMvc
         .perform(get("/api/creatives/video-review").param("state", "AWAITING_REVIEW"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$.length()").value(1))
         .andExpect(jsonPath("$[0].eligibility.approvalAvailable").value(true));
     mockMvc
         .perform(
@@ -745,6 +748,56 @@ class CreativeControllerTest {
         .isEqualTo(expId);
   }
 
+  /** Opcionalidade é lida da fonte, muda a fila e nunca reescreve a aprovação ou o experimento. */
+  @Test
+  void optionalCandidatesAreQueryableWithoutBecomingApprovalNotifications() throws Exception {
+    ExperimentVideoAsset video = reviewVideo(experimentRepository.findById(expId).orElseThrow());
+    video.setRequiredForRelease(false);
+    videoAssetRepository.saveAndFlush(video);
+    mockMvc
+        .perform(get("/api/creatives/video-review/summary").param("experimentId", expId.toString()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.awaitingReviewCount").value(0))
+        .andExpect(jsonPath("$.optionalReviewCount").value(1));
+    mockMvc
+        .perform(get("/api/creatives/video-review").param("state", "AWAITING_REVIEW"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+    mockMvc
+        .perform(get("/api/creatives/video-review").param("state", "OPTIONAL_REVIEW"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(video.getId()))
+        .andExpect(jsonPath("$[0].eligibility.approvalAvailable").value(true));
+    assertThat(videoAssetRepository.findById(video.getId()).orElseThrow().getReviewStatus())
+        .isEqualTo(ExperimentVideoReviewStatus.PENDING);
+    video.setRequiredForRelease(true);
+    videoAssetRepository.saveAndFlush(video);
+    mockMvc
+        .perform(get("/api/creatives/video-review/summary"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.awaitingReviewCount").value(1))
+        .andExpect(jsonPath("$.optionalReviewCount").value(0));
+    video.setRequiredForRelease(false);
+    videoAssetRepository.saveAndFlush(video);
+    mockMvc
+        .perform(
+            patch("/api/creatives/video-review/EXPERIMENT_VIDEO_ASSET/" + video.getId() + "/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"READY\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.eligibility.state").value("APPROVED"));
+    mockMvc
+        .perform(get("/api/creatives/video-review/summary"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.awaitingReviewCount").value(0))
+        .andExpect(jsonPath("$.optionalReviewCount").value(0))
+        .andExpect(jsonPath("$.approvedCount").value(1));
+    ExperimentVideoAsset persisted = videoAssetRepository.findById(video.getId()).orElseThrow();
+    assertThat(persisted.isRequiredForRelease()).isFalse();
+    assertThat(persisted.getReviewedAt()).isNotNull();
+    assertThat(persisted.getExperiment().getId()).isEqualTo(expId);
+  }
+
   /**
    * Cria anúncio sintético com mídia e copy válidas, mantendo parecer explicitamente controlado.
    */
@@ -761,7 +814,7 @@ class CreativeControllerTest {
             .build());
   }
 
-  /** Cria peça sintética pronta para testar exclusivamente os contratos internos de revisão. */
+  /** Cria peça obrigatória sintética pronta para testar os contratos internos de revisão. */
   private ExperimentVideoAsset reviewVideo(Experiment experiment) {
     return videoAssetRepository.saveAndFlush(
         ExperimentVideoAsset.builder()
@@ -776,7 +829,7 @@ class CreativeControllerTest {
             .assetUrl("https://fixture.invalid/demo.mp4")
             .hasAudio(true)
             .reviewStatus(ExperimentVideoReviewStatus.PENDING)
-            .requiredForRelease(false)
+            .requiredForRelease(true)
             .build());
   }
 }

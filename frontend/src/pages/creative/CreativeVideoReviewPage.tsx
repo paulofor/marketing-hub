@@ -28,7 +28,8 @@ import "./CreativeVideoReviewPage.css";
 type ReviewFilter = "ALL" | "READY" | VideoReviewState;
 
 const REVIEW_FILTERS: Array<{ value: ReviewFilter; label: string }> = [
-  { value: "AWAITING_REVIEW", label: "Sua revisão" },
+  { value: "AWAITING_REVIEW", label: "Aprovações necessárias" },
+  { value: "OPTIONAL_REVIEW", label: "Candidatas opcionais" },
   { value: "BLOCKED", label: "Ajustes e pareceres" },
   { value: "HISTORICAL", label: "Histórico" },
   { value: "READY", label: "Aprovados" },
@@ -37,7 +38,8 @@ const REVIEW_FILTERS: Array<{ value: ReviewFilter; label: string }> = [
 ];
 
 const STATUS_LABELS: Record<VideoReviewState, string> = {
-  AWAITING_REVIEW: "Disponível para sua revisão",
+  AWAITING_REVIEW: "Precisa da sua aprovação",
+  OPTIONAL_REVIEW: "Candidata opcional — sem aprovação obrigatória",
   BLOCKED: "Aguardando correção ou parecer",
   HISTORICAL: "Histórico — sem ação pendente",
   APPROVED: "Aprovado",
@@ -190,7 +192,12 @@ export default function CreativeVideoReviewPage() {
     Record<string, string>
   >({});
   const scope = useVideoReviewScope();
-  const state = ["AWAITING_REVIEW", "BLOCKED", "HISTORICAL"].includes(filter)
+  const state = [
+    "AWAITING_REVIEW",
+    "OPTIONAL_REVIEW",
+    "BLOCKED",
+    "HISTORICAL",
+  ].includes(filter)
     ? (filter as VideoReviewState)
     : undefined;
   const reviewQuery = useCreativeVideoReviews(
@@ -281,14 +288,15 @@ export default function CreativeVideoReviewPage() {
     <div className="creative-video-review-page">
       <div className="creative-video-review-page__header">
         <div>
-          <PageTitle title="Aprovação de vídeos" />
+          <PageTitle title="Revisão de vídeos" />
           <p className="creative-video-review-page__subtitle">
             {scope.productId || scope.experimentId
               ? "Revisões deste contexto."
               : "Fila geral de vídeos do Hub."}{" "}
-            Revise novas peças disponíveis. Aprovações existentes, pareceres de
-            Têmis e tentativas históricas são preservados. Aprovar uma peça não
-            publica campanha nem autoriza gasto.
+            Aprove as peças necessárias. Candidatas opcionais ficam em uma aba
+            própria e não impedem o fluxo. Aprovações existentes e pareceres são
+            preservados. Aprovar uma peça não publica campanha nem autoriza
+            gasto.
           </p>
         </div>
       </div>
@@ -298,8 +306,12 @@ export default function CreativeVideoReviewPage() {
         aria-label="Resumo da fila"
       >
         <div className="creative-video-review-page__metric">
-          <span>Sua revisão</span>
+          <span>Aprovações necessárias</span>
           <strong>{pendingCount ?? "—"}</strong>
+        </div>
+        <div className="creative-video-review-page__metric">
+          <span>Candidatas opcionais</span>
+          <strong>{countsQuery.data?.optionalReviewCount ?? "—"}</strong>
         </div>
         <div className="creative-video-review-page__metric">
           <span>Ajustes e pareceres</span>
@@ -397,12 +409,14 @@ export default function CreativeVideoReviewPage() {
         </div>
       ) : videos.length === 0 ? (
         <div className="creative-video-review-page__empty-state">
-          Nenhum vídeo encontrado para este filtro.
+          {filter === "AWAITING_REVIEW"
+            ? "Nenhuma aprovação necessária neste contexto."
+            : "Nenhum vídeo encontrado para este filtro."}
         </div>
       ) : (
         <section
           className="creative-video-review-page__list"
-          aria-label="Vídeos para aprovação"
+          aria-label="Vídeos do filtro selecionado"
         >
           {videos.map((video) => {
             const mediaUrl = primaryMediaUrl(video);

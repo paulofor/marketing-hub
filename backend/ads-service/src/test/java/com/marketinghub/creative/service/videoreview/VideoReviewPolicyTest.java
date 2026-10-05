@@ -11,6 +11,36 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 /** Valida a classificação genérica sem confundir histórico, parecer técnico e decisão humana. */
 class VideoReviewPolicyTest {
+  /** Opcionalidade não solicita aprovação obrigatória nem elimina a decisão anterior ao uso. */
+  @Test
+  void separatesOptionalCandidatesFromRequiredApprovals() {
+    var optional = VideoReviewPolicy.classify(CreativeStatus.DRAFT, null, null, false, false);
+    assertThat(optional.state()).isEqualTo(VideoReviewState.OPTIONAL_REVIEW);
+    assertThat(optional.reason()).contains("Não exige sua aprovação", "antes de eventual uso");
+    assertThat(optional.approvalAvailable()).isTrue();
+    assertThat(optional.agentReviewRequestAvailable()).isFalse();
+    var required = VideoReviewPolicy.classify(CreativeStatus.DRAFT, null, null, false, true);
+    assertThat(required.state()).isEqualTo(VideoReviewState.AWAITING_REVIEW);
+    assertThat(required.approvalAvailable()).isTrue();
+  }
+
+  /** Histórico, decisões e gates continuam prevalecendo sobre a obrigatoriedade da candidata. */
+  @Test
+  void optionalityNeverOverridesDecisionsOrBlocks() {
+    assertThat(VideoReviewPolicy.classify(CreativeStatus.READY, null, null, false, false).state())
+        .isEqualTo(VideoReviewState.APPROVED);
+    assertThat(
+            VideoReviewPolicy.classify(CreativeStatus.REJECTED, null, null, false, false).state())
+        .isEqualTo(VideoReviewState.REJECTED);
+    var historical =
+        VideoReviewPolicy.classify(CreativeStatus.DRAFT, "Encerrado", null, false, false);
+    assertThat(historical.state()).isEqualTo(VideoReviewState.HISTORICAL);
+    assertThat(historical.approvalAvailable()).isFalse();
+    var blocked = VideoReviewPolicy.classify(CreativeStatus.DRAFT, null, "Sem áudio", false, false);
+    assertThat(blocked.state()).isEqualTo(VideoReviewState.BLOCKED);
+    assertThat(blocked.approvalAvailable()).isFalse();
+  }
+
   /** Todos os estados finais removem rascunhos da fila humana sem fabricar aprovação. */
   @ParameterizedTest
   @EnumSource(

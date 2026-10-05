@@ -1,14 +1,16 @@
 openapi: 3.0.3
 info:
   title: Revisão de vídeos e pendências reais
-  version: 1.1.0
+  version: 1.2.0
 paths:
   /api/creatives/video-review:
     get:
       summary: Consultar vídeos com elegibilidade calculada pelo backend
       description: >-
         Preserva o filtro legado status e adiciona escopo por produto/experimento e estado de revisão.
-        DRAFT não significa aprovação humana pendente: inclui bloqueios e tentativas históricas.
+        DRAFT não significa aprovação humana necessária: inclui candidatas opcionais,
+        bloqueios e tentativas históricas. OPTIONAL_REVIEW deriva de requiredForRelease=false;
+        aprovar a candidata continua sendo necessário antes de eventual uso comercial.
         A consulta nunca aprova, rejeita, reabre pareceres ou altera custos e campanhas.
       parameters:
         - {
@@ -61,6 +63,7 @@ paths:
                     historicalCount,
                     approvedCount,
                     rejectedCount,
+                    optionalReviewCount,
                   ]
                 properties:
                   productId: { type: integer, format: int64, nullable: true }
@@ -71,6 +74,8 @@ paths:
                   historicalCount: { type: integer, format: int64, minimum: 0 }
                   approvedCount: { type: integer, format: int64, minimum: 0 }
                   rejectedCount: { type: integer, format: int64, minimum: 0 }
+                  optionalReviewCount:
+                    { type: integer, format: int64, minimum: 0 }
   /api/creatives/video-review/{sourceType}/{id}/status:
     patch:
       summary: Registrar decisão mantendo gates de mídia, áudio, origem visual e Têmis
@@ -124,7 +129,15 @@ components:
   schemas:
     VideoReviewState:
       type: string
-      enum: [AWAITING_REVIEW, BLOCKED, HISTORICAL, APPROVED, REJECTED]
+      enum:
+        [
+          AWAITING_REVIEW,
+          OPTIONAL_REVIEW,
+          BLOCKED,
+          HISTORICAL,
+          APPROVED,
+          REJECTED,
+        ]
     Eligibility:
       type: object
       required: [state, reason, approvalAvailable, agentReviewRequestAvailable]

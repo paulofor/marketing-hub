@@ -331,7 +331,7 @@ public class CreativeService {
         .toList();
   }
 
-  /** Consolida contagens oficiais para que a tela não deduza pendências a partir de DRAFT. */
+  /** Consolida decisões necessárias, candidatas opcionais e demais estados oficiais da fila. */
   @Transactional(readOnly = true)
   public VideoReviewSummary videoReviewSummary(Long productId, Long experimentId) {
     Map<VideoReviewState, Long> counts =
@@ -346,7 +346,8 @@ public class CreativeService {
         counts.getOrDefault(VideoReviewState.BLOCKED, 0L),
         counts.getOrDefault(VideoReviewState.HISTORICAL, 0L),
         counts.getOrDefault(VideoReviewState.APPROVED, 0L),
-        counts.getOrDefault(VideoReviewState.REJECTED, 0L));
+        counts.getOrDefault(VideoReviewState.REJECTED, 0L),
+        counts.getOrDefault(VideoReviewState.OPTIONAL_REVIEW, 0L));
   }
 
   /** Atualiza a revisão de um item da fila única de vídeos pela origem persistida. */
@@ -1570,7 +1571,7 @@ public class CreativeService {
   }
 
   /**
-   * Converte vídeo de experimento em item da fila única de aprovação comercial com data de criação.
+   * Converte vídeo de experimento em revisão necessária ou opcional, preservando decisões e gates.
    */
   private CreativeVideoReviewDto toVideoReviewDto(ExperimentVideoAsset videoAsset) {
     Experiment experiment = videoAsset.getExperiment();
@@ -1623,7 +1624,8 @@ public class CreativeService {
             toCreativeStatus(videoAsset.getReviewStatus()),
             VideoReviewPolicy.historicalReason(experiment, null),
             experimentVideoApprovalBlockReason(videoAsset),
-            false));
+            false,
+            videoAsset.isRequiredForRelease()));
   }
 
   /** Resume o parecer mais recente de Têmis sem expor o payload técnico integral na fila. */

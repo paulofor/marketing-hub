@@ -90,7 +90,7 @@ const server = http.createServer(async (req, res) => {
         r.url().includes("/video-review/summary"),
       );
       await expect(
-        page.getByRole("link", { name: "Ver peças para revisão" }),
+        page.getByRole("link", { name: "Ver aprovações necessárias" }),
       ).toHaveCount(0);
       await page.screenshot({ path: path.join(output, `${name}-product.png`) });
       await page.goto(
@@ -98,10 +98,10 @@ const server = http.createServer(async (req, res) => {
           `/creative-video-review?productId=${product}&experimentId=${experiment}`,
       );
       await expect(
-        page.getByText("1 nova peça de vídeo disponível para revisão"),
+        page.getByText("1 vídeo precisa da sua aprovação"),
       ).toBeVisible();
       await expect(
-        page.getByRole("link", { name: "Ver peças para revisão" }),
+        page.getByRole("link", { name: "Ver aprovações necessárias" }),
       ).toHaveAttribute(
         "href",
         `/creative-video-review?productId=${product}&experimentId=${experiment}`,
@@ -112,6 +112,24 @@ const server = http.createServer(async (req, res) => {
       await expect(
         page.getByRole("button", { name: "Aprovar para portfólio" }),
       ).toBeEnabled();
+      await expect(
+        page.getByText("Candidata opcional local", { exact: true }),
+      ).toHaveCount(0);
+      await page
+        .getByRole("button", { name: "Candidatas opcionais", exact: true })
+        .click();
+      await expect(
+        page.getByText("Candidata opcional local", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByText("Candidata opcional — sem aprovação obrigatória", {
+          exact: true,
+        }),
+      ).toBeVisible();
+      await page.screenshot({
+        path: path.join(output, `${name}-optional.png`),
+        fullPage: true,
+      });
       await page.getByRole("button", { name: "Ajustes e pareceres" }).click();
       await expect(
         page.getByText("Anúncio em ajuste", { exact: true }),
@@ -143,13 +161,22 @@ const server = http.createServer(async (req, res) => {
       expect(pageErrors).toEqual([]);
       if (name === "pixel") {
         await page
-          .getByRole("button", { name: "Sua revisão", exact: true })
+          .getByRole("button", { name: "Aprovações necessárias", exact: true })
           .click();
         await page
           .getByRole("button", { name: "Aprovar para portfólio" })
           .click();
         await expect(
-          page.getByText("Nenhum vídeo encontrado para este filtro."),
+          page.getByText("Nenhuma aprovação necessária neste contexto."),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("link", { name: "Ver aprovações necessárias" }),
+        ).toHaveCount(0);
+        await page
+          .getByRole("button", { name: "Candidatas opcionais", exact: true })
+          .click();
+        await expect(
+          page.getByText("Candidata opcional local", { exact: true }),
         ).toBeVisible();
         await page
           .getByRole("button", { name: "Aprovados", exact: true })

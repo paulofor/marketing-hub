@@ -65,8 +65,23 @@ class VideoReviewBrowserTest {
                 .assetUrl("https://fixture.invalid/demo.mp4")
                 .hasAudio(true)
                 .reviewStatus(ExperimentVideoReviewStatus.PENDING)
-                .requiredForRelease(false)
+                .requiredForRelease(true)
                 .build());
+    videos.saveAndFlush(
+        ExperimentVideoAsset.builder()
+            .experiment(current)
+            .slot(ExperimentVideoSlot.AD)
+            .objective("Candidata opcional local")
+            .primaryMetric("checkout")
+            .script("Demonstração opcional de homologação")
+            .provider("LOCAL_FIXTURE")
+            .model("fixture")
+            .status(ExperimentVideoStatus.READY)
+            .assetUrl("https://fixture.invalid/optional.mp4")
+            .hasAudio(true)
+            .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+            .requiredForRelease(false)
+            .build());
     creatives.saveAndFlush(
         Creative.builder()
             .experiment(current)

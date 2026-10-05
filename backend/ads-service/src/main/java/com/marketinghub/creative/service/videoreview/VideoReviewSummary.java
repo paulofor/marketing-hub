@@ -8,4 +8,5 @@ public record VideoReviewSummary(
     long blockedCount,
     long historicalCount,
     long approvedCount,
-    long rejectedCount) {}
+    long rejectedCount,
+    long optionalReviewCount) {}

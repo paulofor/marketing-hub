@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
+import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,25 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ExperimentVideoAssetApprovalCheckerTest {
   @Mock private ExperimentVideoAssetRepository repository;
+
+  /** Candidata opcional deixa de notificar, mas permanece impedida de publicação sem aprovação. */
+  @Test
+  void optionalCandidateStillRequiresApprovalBeforePublication() {
+    var checker = new ExperimentVideoAssetApprovalChecker(repository);
+    var optional =
+        ExperimentVideoAsset.builder()
+            .id(831L)
+            .status(ExperimentVideoStatus.READY)
+            .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+            .requiredForRelease(false)
+            .build();
+    given(repository.findByAssetId(832L)).willReturn(List.of(optional));
+    assertThat(checker.isApprovedForPublication(832L)).isFalse();
+    optional.setReviewStatus(ExperimentVideoReviewStatus.APPROVED);
+    assertThat(checker.isApprovedForPublication(832L)).isTrue();
+    optional.setReviewStatus(ExperimentVideoReviewStatus.REJECTED);
+    assertThat(checker.isApprovedForPublication(832L)).isFalse();
+  }
 
   /** Libera substituição somente quando existe ativo e todos foram explicitamente reprovados. */
   @Test

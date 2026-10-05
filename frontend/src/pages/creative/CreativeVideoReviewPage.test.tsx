@@ -49,6 +49,58 @@ afterEach(() => {
 });
 
 describe("CreativeVideoReviewPage", () => {
+  it("mostra candidatas opcionais somente na aba própria, com decisão explícita", async () => {
+    const optional = {
+      id: 871,
+      sourceType: "EXPERIMENT_VIDEO_ASSET",
+      experimentId: 372,
+      experimentName: "Experimento sintético",
+      experimentStatus: "PLANNED",
+      format: "VIDEO",
+      headline: "Candidata opcional de teste",
+      primaryText: "Demonstração sintética",
+      videoUrl: "https://fixture.invalid/optional.mp4",
+      status: "DRAFT",
+      eligibility: {
+        state: "OPTIONAL_REVIEW",
+        reason: "Não exige sua aprovação para o fluxo continuar.",
+        approvalAvailable: true,
+        agentReviewRequestAvailable: false,
+      },
+    };
+    mockedAxiosGet.mockImplementation(async (url, config) => {
+      if (url.endsWith("/summary"))
+        return { data: { awaitingReviewCount: 0, optionalReviewCount: 1 } };
+      return {
+        data: config?.params?.state === "AWAITING_REVIEW" ? [] : [optional],
+      };
+    });
+    setup();
+    expect(
+      await screen.findByText("Nenhuma aprovação necessária neste contexto."),
+    ).toBeVisible();
+    expect(screen.queryByText(optional.headline)).not.toBeInTheDocument();
+    expect(mockedAxiosPatch).not.toHaveBeenCalled();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Candidatas opcionais" }),
+    );
+    expect(await screen.findByText(optional.headline)).toBeVisible();
+    expect(
+      screen.getByText("Candidata opcional — sem aprovação obrigatória"),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Aprovar para portfólio" }),
+    ).toBeEnabled();
+    expect(mockedAxiosGet).toHaveBeenCalledWith("/api/creatives/video-review", {
+      params: {
+        state: "OPTIONAL_REVIEW",
+        productId: undefined,
+        experimentId: undefined,
+      },
+    });
+    expect(mockedAxiosPatch).not.toHaveBeenCalled();
+  });
+
   it("mostra totais gerais da fila mesmo quando o filtro pendente esta vazio", async () => {
     const createdAt = new Date().toISOString();
     mockedAxiosGet.mockImplementation(
@@ -147,7 +199,7 @@ describe("CreativeVideoReviewPage", () => {
       ).toHaveTextContent(/US\$\s*0,1500.*R\$\s*0,75/);
     });
     expect(
-      screen.getByText("Nenhum vídeo encontrado para este filtro."),
+      screen.getByText("Nenhuma aprovação necessária neste contexto."),
     ).toBeInTheDocument();
   });
 

@@ -11,6 +11,7 @@ import com.marketinghub.experimentstrategist.ExperimentStrategistExecutionStatus
 import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
+import com.marketinghub.planning.service.CommercialPlanVersionService;
 import com.marketinghub.repository.jpa.experimentstrategist.ExperimentStrategistBehavioralSnapshotRepository;
 import com.marketinghub.repository.jpa.experimentstrategist.ExperimentStrategistExecutionRepository;
 import java.math.BigDecimal;
@@ -54,6 +55,7 @@ public class ExperimentStrategistExecutionService {
   private final ObjectMapper json;
   private final ApplicationEventPublisher events;
   @Autowired private OpenAiPricingService pricing;
+  private final CommercialPlanVersionService versions;
 
   /** Configura as fontes e a persistencia da execucao estrategica. */
   @Autowired
@@ -63,13 +65,26 @@ public class ExperimentStrategistExecutionService {
       CommercialPlanService plans,
       ExperimentStrategistContextService contexts,
       ObjectMapper json,
-      ApplicationEventPublisher events) {
+      ApplicationEventPublisher events,
+      CommercialPlanVersionService versions) {
     this.repository = repository;
     this.behavioralSnapshots = behavioralSnapshots;
     this.plans = plans;
     this.contexts = contexts;
     this.json = json;
     this.events = events;
+    this.versions = versions;
+  }
+
+  /** Preserva fixtures diretas que não iniciam a definição conjunta de premissas. */
+  public ExperimentStrategistExecutionService(
+      ExperimentStrategistExecutionRepository repository,
+      ExperimentStrategistBehavioralSnapshotRepository snapshots,
+      CommercialPlanService plans,
+      ExperimentStrategistContextService contexts,
+      ObjectMapper json,
+      ApplicationEventPublisher events) {
+    this(repository, snapshots, plans, contexts, json, events, null);
   }
 
   /** Mantém a construção direta usada pelos testes legados sem barramento de eventos. */
@@ -82,10 +97,38 @@ public class ExperimentStrategistExecutionService {
     this(repository, behavioralSnapshots, plans, contexts, json, event -> {});
   }
 
-  /** Enfileira Atena para propor as premissas ausentes antes da validação de Plutus. */
+  /** Retoma uma proposta vigente sem nova inferência ou abre Atena quando o contexto mudou. */
   @Transactional
   public ExecutionResponse startCommercialAssumptions(Long planId) {
-    CommercialPlan plan = plans.getPlan(planId);
+    CommercialPlan plan = plans.getPlanForUpdate(planId);
+    var current = versions.current(planId);
+    var latest =
+        repository.findFirstByCommercialPlanIdAndAuthorityModeOrderByCreatedAtDescIdDesc(
+            planId, "COMMERCIAL_ASSUMPTIONS_PROPOSAL");
+    if (latest.isPresent()) {
+      var existing = latest.get();
+      boolean sameVersion = CommercialAssumptionVersionCompatibility.matches(existing, current);
+      if (existing.getStatus() == ExperimentStrategistExecutionStatus.PENDING
+          || existing.getStatus() == ExperimentStrategistExecutionStatus.RUNNING) {
+        if (!sameVersion)
+          throw new ResponseStatusException(
+              HttpStatus.CONFLICT,
+              "Existe proposta de Atena em andamento em outro contexto; aguarde sua conclusão.");
+        return response(existing);
+      }
+      if (sameVersion) {
+        if (existing.getStatus() != ExperimentStrategistExecutionStatus.COMPLETED
+            || blank(existing.getRecommendationJson())) {
+          throw new ResponseStatusException(
+              HttpStatus.CONFLICT,
+              "Proposta anterior falhou; corrigir a causa antes de autorizar nova inferência.");
+        }
+        events.publishEvent(
+            new CommercialAssumptionsProposed(
+                planId, existing.getId(), existing.getRecommendationJson()));
+        return response(existing);
+      }
+    }
     ExperimentStrategistExecution value = new ExperimentStrategistExecution();
     value.setCommercialPlan(plan);
     value.setStatus(ExperimentStrategistExecutionStatus.PENDING);

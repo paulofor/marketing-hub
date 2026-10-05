@@ -285,6 +285,17 @@ public class CommercialPlanService {
                     HttpStatus.NOT_FOUND, "Plano comercial nao encontrado: " + id));
   }
 
+  /** Bloqueia o plano durante uma passagem de agentes para impedir tarefas concorrentes. */
+  @Transactional
+  public CommercialPlan getPlanForUpdate(Long id) {
+    return planRepository
+        .findByIdForUpdate(id)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Plano comercial nao encontrado: " + id));
+  }
+
   /** Seleciona explicitamente um experimento em execução compatível e audita a mudança de foco. */
   @Transactional
   public CommercialPlan synchronizeRunningExperiment(Long id) {

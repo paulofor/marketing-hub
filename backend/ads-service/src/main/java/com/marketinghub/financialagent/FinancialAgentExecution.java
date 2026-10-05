@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Getter;
@@ -23,7 +24,12 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "financial_agent_execution")
+@Table(
+    name = "financial_agent_execution",
+    uniqueConstraints =
+        @UniqueConstraint(
+            name = "uk_financial_strategist_execution",
+            columnNames = "strategist_execution_id"))
 public class FinancialAgentExecution {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,6 +51,9 @@ public class FinancialAgentExecution {
 
   @Column(name = "agent_task_id")
   private Long agentTaskId;
+
+  @Column(name = "strategist_execution_id")
+  private Long strategistExecutionId;
 
   @Column(name = "projection_request", columnDefinition = "LONGTEXT")
   private String projectionRequest;

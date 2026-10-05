@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-05-commercial-assumption-handoff-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: financial_agent_execution
+        - not:
+            - columnExists:
+                tableName: financial_agent_execution
+                columnName: strategist_execution_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE financial_agent_execution
+                ADD COLUMN strategist_execution_id BIGINT NULL,
+                ADD UNIQUE KEY uk_financial_strategist_execution (strategist_execution_id);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Preservar vinculacao e deduplicacao das propostas auditadas';

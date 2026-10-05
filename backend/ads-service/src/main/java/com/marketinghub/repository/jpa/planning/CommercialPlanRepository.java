@@ -2,13 +2,21 @@ package com.marketinghub.repository.jpa.planning;
 
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.CommercialPlanStatus;
+import jakarta.persistence.LockModeType;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar planos comerciais. */
 public interface CommercialPlanRepository extends JpaRepository<CommercialPlan, Long> {
+  /** Serializa abertura e retomada das passagens entre agentes do mesmo plano. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select p from CommercialPlan p where p.id = :id")
+  Optional<CommercialPlan> findByIdForUpdate(@Param("id") Long id);
+
   /** Lista planos comerciais por status, priorizando os mais recentes. */
   List<CommercialPlan> findByStatusOrderByUpdatedAtDesc(CommercialPlanStatus status);
 

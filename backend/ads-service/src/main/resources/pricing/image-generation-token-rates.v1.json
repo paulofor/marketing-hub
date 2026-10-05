@@ -1,0 +1,21 @@
+{
+  "checkedOn": "2026-10-05",
+  "source": "https://developers.openai.com/api/docs/pricing",
+  "models": {
+    "gpt-image-2.5-sunburst": {
+      "textInputUsdPerMillion": 5,
+      "imageInputUsdPerMillion": 8,
+      "imageOutputUsdPerMillion": 30
+    },
+    "gpt-image-2.5-flare": {
+      "textInputUsdPerMillion": 5,
+      "imageInputUsdPerMillion": 8,
+      "imageOutputUsdPerMillion": 30
+    },
+    "gpt-image-2": {
+      "textInputUsdPerMillion": 5,
+      "imageInputUsdPerMillion": 8,
+      "imageOutputUsdPerMillion": 30
+    }
+  }
+}

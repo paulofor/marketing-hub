@@ -18,3 +18,17 @@
 
 - Ajustada a tela `/openai-models` para ordenar os modelos do mais caro para o mais barato usando o maior preço cadastrado entre as colunas standard e batch, preservando desempate determinístico por nome.
 - Adicionado teste unitário para garantir a ordenação decrescente por preço e o desempate por nome.
+
+
+## 2026-10-05 — Recuperação do custo auditado de imagem sem regeneração
+
+Na preparação de Alcyone/Look para a Ocasião, os jobs do lote
+`img-batch-51010bf2-9fbb-4dc5-90b5-9e70b97d5670` concluíram e preservaram a resposta,
+mas o ledger não calculava custo do modelo principal nem da ferramenta. Conciliação genérica
+na origem reutiliza os tokens existentes, tarifas multimodais versionadas e o catálogo de texto.
+Não reenvia inferência; preserva cobrança conciliada, mantém lacunas desconhecidas e audita falha
+posterior à geração. A referência de custo cabe na coluna canônica de 64 caracteres.
+Regressões cobrem original, outros IDs, replay, fontes incompletas, callback sem custo e falha de
+extração/derivados. Matriz e limites: `docs/homologacao/alcyone-ai-preparation-cost-v1.md`.
+Painéis produzidos com entrada sintética não comprovam entrega automática no runtime, vendas,
+satisfação ou margem. Aplicar pareceres somente ao que a prova efetivamente demonstra.

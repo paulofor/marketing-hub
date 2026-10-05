@@ -126,6 +126,48 @@ class StudioCostLedgerServiceTest {
     assertThat(cost).isEqualByComparingTo("2.00");
   }
 
+  /** A conciliação reaproveita a mesma tentativa e conserva a cobrança confirmada. */
+  @Test
+  void preservesReconciledChargeAndKnownEstimateOnIncompleteCallback() {
+    var repository = mock(StudioCostLedgerEntryRepository.class);
+    var entry = new StudioCostLedgerEntry();
+    entry.setId(100L);
+    when(repository.findBySourceTypeAndSourceId("IMAGE_GENERATION_REQUEST", "synthetic-job"))
+        .thenReturn(java.util.Optional.of(entry));
+    var service = new StudioCostLedgerService(repository);
+    service.recordImage(
+        "synthetic-job",
+        201L,
+        301L,
+        401L,
+        "gpt-image-2.5-sunburst",
+        "COMPLETED",
+        null,
+        null,
+        new BigDecimal("0.079122"),
+        "AUDITED_TOKEN_RATE_ESTIMATE");
+    service.recordImage(
+        "synthetic-job", 201L, 301L, 401L, "gpt-image-2.5-sunburst", "COMPLETED", null, null);
+    assertThat(entry.getEstimatedCostUsd()).isEqualByComparingTo("0.079122");
+    assertThat(entry.getCostEvidence()).isEqualTo("AUDITED_TOKEN_RATE_ESTIMATE");
+    entry.setProviderCostUsd(new BigDecimal("0.08"));
+    entry.setCostEvidence("PROVIDER_REPORTED");
+    service.recordImage(
+        "synthetic-job",
+        201L,
+        301L,
+        401L,
+        "gpt-image-2.5-sunburst",
+        "COMPLETED",
+        null,
+        null,
+        new BigDecimal("0.10"),
+        "NEW_ESTIMATE");
+    assertThat(entry.getProviderCostUsd()).isEqualByComparingTo("0.08");
+    assertThat(entry.getCostEvidence()).isEqualTo("PROVIDER_REPORTED");
+    org.mockito.Mockito.verify(repository, org.mockito.Mockito.times(3)).save(entry);
+  }
+
   /** Confirma que custo-beneficio usa somente aprovacoes comerciais e explicita lacunas. */
   @Test
   void deveCalcularEficienciaPorProvedorSemInventarCobertura() {

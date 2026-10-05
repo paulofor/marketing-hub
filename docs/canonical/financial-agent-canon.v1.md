@@ -237,3 +237,13 @@ A conciliação de resultados e o aprendizado permanecem consultáveis mesmo com
 bloqueada, para localizar a perda e decidir a correção. Mudança de plano/modelo invalida novas
 chamadas; a revisão de tarifa exige conferência da fonte identificada na ficha, sem alegar
 monitoramento automático de tabelas externas de preços.
+
+## Custo de imagem com modelo principal — aprendizado de 05/10/2026
+
+No gerador administrativo, a Responses API pode cobrar o modelo principal e a ferramenta de
+imagem. Conciliar ambos uma vez pelos tokens auditados; Flex do modelo principal não autoriza
+usar tarifa Batch na ferramenta síncrona de imagem. Preservar resposta antes da extração e dos
+derivados, incluindo falha posterior. O comando de conciliação reaproveita auditoria e ledger
+idempotente, sem regeneração. Estimativa tem fonte/data e não substitui cobrança confirmada.
+Modalidade, uso ou tarifa desconhecidos permanecem pendentes. Esta cobertura não altera a
+reserva em BRL de uma ficha nem libera novo consumo: câmbio e checkpoints continuam necessários.

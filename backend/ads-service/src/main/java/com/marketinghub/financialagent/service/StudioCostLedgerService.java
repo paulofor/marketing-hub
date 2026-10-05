@@ -137,6 +137,35 @@ public class StudioCostLedgerService {
       String status,
       Instant startedAt,
       Instant finishedAt) {
+    recordImage(
+        jobId,
+        productId,
+        commercialPlanId,
+        experimentId,
+        model,
+        status,
+        startedAt,
+        finishedAt,
+        null,
+        null);
+  }
+
+  /**
+   * Atualiza a mesma tentativa com estimativa auditável, preservando cobrança e conciliação
+   * existentes.
+   */
+  @Transactional
+  public void recordImage(
+      String jobId,
+      Long productId,
+      Long commercialPlanId,
+      Long experimentId,
+      String model,
+      String status,
+      Instant startedAt,
+      Instant finishedAt,
+      BigDecimal estimatedCostUsd,
+      String evidence) {
     StudioCostLedgerEntry entry =
         repository
             .findBySourceTypeAndSourceId("IMAGE_GENERATION_REQUEST", jobId)
@@ -151,7 +180,12 @@ public class StudioCostLedgerService {
     entry.setModel(model);
     entry.setStatus(status);
     entry.setCurrency("USD");
-    entry.setCostEvidence("PROVIDER_COST_NOT_REPORTED");
+    if (entry.getProviderCostUsd() == null && estimatedCostUsd != null) {
+      entry.setEstimatedCostUsd(estimatedCostUsd);
+      entry.setCostEvidence(evidence);
+    } else if (entry.getCostEvidence() == null) {
+      entry.setCostEvidence("PROVIDER_COST_NOT_REPORTED");
+    }
     entry.setStartedAt(startedAt);
     entry.setFinishedAt(finishedAt);
     repository.save(entry);

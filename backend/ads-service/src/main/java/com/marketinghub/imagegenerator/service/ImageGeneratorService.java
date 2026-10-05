@@ -72,6 +72,8 @@ public class ImageGeneratorService {
   private com.marketinghub.product.executionprofile.v1.service.ExecutionProfileBudget
       executionProfileBudget;
 
+  @Autowired private ImageGenerationUsageCost usageCost;
+
   /** Inicializa o serviço com cliente OpenAI autenticado e repositório de auditoria. */
   @Autowired
   public ImageGeneratorService(
@@ -330,7 +332,7 @@ public class ImageGeneratorService {
     return "Não foi possível gerar esta imagem.";
   }
 
-  /** Gera uma variação individual da imagem e registra auditoria da chamada OpenAI. */
+  /** Gera uma variação e preserva resposta e custo antes de extrair a imagem e seus derivados. */
   private ImageGeneratorResult generateSingleImage(
       ImageGeneratorRequest request,
       String batchJobId,
@@ -377,9 +379,11 @@ public class ImageGeneratorService {
               .block();
 
       String rawResponse = writeJson(responseBody);
+      audit.setOpenAiResponseBody(rawResponse);
+      repository.save(audit);
+      recordAuditedCost(audit, responseBody);
       String imageBase64 = extractImageBase64(responseBody);
       audit.setStatus("COMPLETED");
-      audit.setOpenAiResponseBody(rawResponse);
       audit.setOpenAiResponseId(
           responseBody != null && responseBody.hasNonNull("id")
               ? responseBody.get("id").asText()
@@ -478,6 +482,61 @@ public class ImageGeneratorService {
       throw new ResponseStatusException(
           HttpStatus.UNPROCESSABLE_ENTITY, "O asset persistido não pôde ser recuperado.", ex);
     }
+  }
+
+  /** Reconcilia a estimativa da auditoria existente, sem chamar modelo nem gerar outra imagem. */
+  public com.marketinghub.imagegenerator.service.reconcileCost.ImageGenerationCostView
+      reconcileCost(Long productId, Long commercialPlanId, Long experimentId, String jobId) {
+    validateCommercialContext(
+        new ImageGeneratorRequest(productId, commercialPlanId, experimentId, "conciliação"));
+    var audit =
+        repository
+            .findCompletedByContextAndJobId(productId, commercialPlanId, experimentId, jobId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Geração concluída não encontrada neste contexto."));
+    try {
+      return recordAuditedCost(audit, objectMapper.readTree(audit.getOpenAiResponseBody()));
+    } catch (IOException | RuntimeException ex) {
+      log.error(
+          "Falha ao conciliar custo auditado. modulo=image-generator jobId={} productId={} experimentId={}",
+          jobId,
+          productId,
+          experimentId,
+          ex);
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY, "Não foi possível conciliar esta auditoria.", ex);
+    }
+  }
+
+  /** Registra a estimativa completa quando possível; ausência não sobrescreve custos conhecidos. */
+  private com.marketinghub.imagegenerator.service.reconcileCost.ImageGenerationCostView
+      recordAuditedCost(ImageGenerationRequest audit, JsonNode response) {
+    var estimate =
+        usageCost == null
+            ? java.util.Optional.<ImageGenerationUsageCost.Estimate>empty()
+            : usageCost.estimate(response, audit.getModel());
+    costLedgerService.recordImage(
+        audit.getJobId(),
+        audit.getProductId(),
+        audit.getCommercialPlanId(),
+        audit.getExperimentId(),
+        audit.getModel(),
+        audit.getStatus(),
+        audit.getStartedAt(),
+        audit.getFinishedAt(),
+        estimate.map(ImageGenerationUsageCost.Estimate::estimatedCostUsd).orElse(null),
+        estimate.map(ImageGenerationUsageCost.Estimate::evidence).orElse(null));
+    return new com.marketinghub.imagegenerator.service.reconcileCost.ImageGenerationCostView(
+        audit.getJobId(),
+        estimate.isPresent() ? "ESTIMATED" : "COST_PENDING",
+        estimate.map(ImageGenerationUsageCost.Estimate::estimatedCostUsd).orElse(null),
+        estimate
+            .map(ImageGenerationUsageCost.Estimate::evidence)
+            .orElse("USAGE_OR_PRICING_MISSING"),
+        estimate.map(ImageGenerationUsageCost.Estimate::pricingSource).orElse(null),
+        estimate.map(ImageGenerationUsageCost.Estimate::pricingCheckedOn).orElse(null));
   }
 
   /** Valida propriedade de plano e experimento antes de consumir crédito ou expor ativos. */

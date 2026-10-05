@@ -52,3 +52,26 @@ export function useRecoverImageGeneration() {
     },
   });
 }
+
+/** Reconcilia somente o consumo já auditado, sem nova chamada ao provedor. */
+export function useReconcileImageGenerationCost() {
+  return useMutation({
+    mutationFn: async ({ jobId, ...context }: Context & { jobId: string }) => {
+      const { data } = await axios.post<{
+        jobId: string;
+        status: "ESTIMATED" | "COST_PENDING";
+        estimatedCostUsd: number | null;
+        evidence: string;
+      }>(
+        buildApiUrl(
+          `/api/image-generator/generations/${jobId}/cost-reconciliation`,
+        ),
+        undefined,
+        {
+          params: params(context),
+        },
+      );
+      return data;
+    },
+  });
+}

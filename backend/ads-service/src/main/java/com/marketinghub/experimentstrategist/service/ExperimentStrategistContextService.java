@@ -4,12 +4,14 @@ import com.marketinghub.experimentstrategist.memory.ExperimentStrategistMemorySe
 import com.marketinghub.growthoperator.service.GrowthOperatorService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
+import com.marketinghub.planning.service.CommercialPlanVersionService;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.service.ProductService;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,19 +26,33 @@ public class ExperimentStrategistContextService {
   private final JdbcTemplate jdbc;
   private final ExperimentStrategistMemoryService memoryService;
   private final ProductService productService;
+  private final CommercialPlanVersionService versions;
 
   /** Configura as fontes canônicas usadas na pesquisa estratégica. */
+  @Autowired
   public ExperimentStrategistContextService(
       CommercialPlanService commercialPlanService,
       GrowthOperatorService growthOperatorService,
       JdbcTemplate jdbc,
       ExperimentStrategistMemoryService memoryService,
-      ProductService productService) {
+      ProductService productService,
+      CommercialPlanVersionService versions) {
     this.commercialPlanService = commercialPlanService;
     this.growthOperatorService = growthOperatorService;
     this.jdbc = jdbc;
     this.memoryService = memoryService;
     this.productService = productService;
+    this.versions = versions;
+  }
+
+  /** Preserva testes diretos sem alterar o contrato das fontes legadas. */
+  public ExperimentStrategistContextService(
+      CommercialPlanService plans,
+      GrowthOperatorService growth,
+      JdbcTemplate jdbc,
+      ExperimentStrategistMemoryService memory,
+      ProductService products) {
+    this(plans, growth, jdbc, memory, products, null);
   }
 
   /** Entrega planejamento, sessões, funil, vídeos e aprendizados sem permitir mutações. */
@@ -92,12 +108,15 @@ public class ExperimentStrategistContextService {
     return item;
   }
 
-  /** Resume apenas os dados comerciais necessários para desenhar um experimento. */
+  /** Preserva versão, oferta e autorização específicas junto aos dados comerciais da pesquisa. */
   private Map<String, Object> planContext(CommercialPlan plan) {
     LinkedHashMap<String, Object> result = new LinkedHashMap<>();
     result.put("id", plan.getId());
     result.put("name", plan.getName());
     result.put("objective", plan.getCommercialObjective());
+    result.put("mainOffer", plan.getMainOffer());
+    result.put("nextAction", plan.getNextAction());
+    result.put("version", versions == null ? null : versions.current(plan.getId()).versionNumber());
     result.put("currentBlocker", plan.getCurrentBlocker());
     result.put("mainMetric", plan.getMainMetric());
     result.put("successCriteria", plan.getSuccessCriteria());

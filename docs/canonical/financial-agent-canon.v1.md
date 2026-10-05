@@ -274,3 +274,15 @@ Liquibase: custo pequeno positivo não pode virar zero. Preservar nulos e valore
 arredondados; ampliar precisão não recupera dígitos já perdidos nem confirma a fatura do provedor.
 Regressões cobrem contexto de planos diferentes, ferramentas reais, custos fracionários,
 idempotência da migração e bloqueio de rollback que apagaria precisão.
+
+## Passagem de premissas Atena → Plutus — 05/10/2026
+
+Uma proposta concluída deve enfileirar a validação em transação própria depois de confirmar
+sua persistência. A execução financeira referencia explicitamente a proposta e usa unicidade
+e serialização do plano para impedir tarefa e consumo duplicados. Retomar pela tela reutiliza
+a resposta vigente de Atena; falha posterior não autoriza repetir sua inferência. Proposta antiga,
+resposta substituída ou plano diferente não podem liberar validação no contexto atual.
+
+Oferta, próxima ação e versão persistidas integram os contextos dos dois agentes. Autorização
+específica de preparação não se confunde com mídia nem transforma hipótese em receita.
+Regressão e matriz: `docs/homologacao/alcyone-assumption-handoff-v1.md`.

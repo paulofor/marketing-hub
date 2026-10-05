@@ -2624,7 +2624,8 @@ function CommercialPlanDetailPage({
                 <p className="text-body-secondary mb-0">
                   Atena pesquisa e propõe; Plutus valida preço, margem, tráfego,
                   conversão e CAC. Os valores são hipóteses versionadas e não
-                  liberam gasto.
+                  liberam gasto. O comando reutiliza a proposta vigente quando
+                  ela existe e retoma Plutus sem repetir a pesquisa de Atena.
                 </p>
               </div>
               <button
@@ -2634,7 +2635,7 @@ function CommercialPlanDetailPage({
                 onClick={() => requestCommercialAssumptions.mutate()}
               >
                 {requestCommercialAssumptions.isPending
-                  ? "Enviando para Atena..."
+                  ? "Enviando para os agentes..."
                   : "Definir premissas ausentes"}
               </button>
             </div>

@@ -4,6 +4,7 @@ import com.marketinghub.financialagent.FinancialAgentExecution;
 import com.marketinghub.financialagent.FinancialAgentExecutionStatus;
 import jakarta.persistence.LockModeType;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -17,6 +18,9 @@ public interface FinancialAgentExecutionRepository
   /** Lista as projeções de receita de um plano sem misturá-las às conciliações realizadas. */
   List<FinancialAgentExecution> findByCommercialPlanIdAndAuthorityModeOrderByCreatedAtDesc(
       Long planId, String authorityMode);
+
+  /** Reutiliza a validação vinculada à mesma proposta sem repetir consumo financeiro. */
+  Optional<FinancialAgentExecution> findByStrategistExecutionId(Long strategistExecutionId);
 
   /** Reserva a conciliacao pendente mais antiga. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)

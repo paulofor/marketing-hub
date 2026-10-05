@@ -8943,3 +8943,15 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
 - O fluxo de persistência inteiro passou localmente com MySQL 5.7 e fontes estáveis, mantendo
   concorrência, revisão, custo, reinício e rollback. O runner usa projeto explicitamente fornecido
   e exclui temporários do fingerprint. Evidência no relatório da preparação de Alcyone.
+
+### Passagem econômica sem persistência após o commit — 05/10/2026
+
+- Evidência: Atena #19/plano #34 e #14/outro plano concluídas; nenhuma execução de validação
+  financeira. A regressão com evento e JPA reais reproduziu fila vazia no código original.
+- Causa: `AFTER_COMMIT` reutilizava recursos da transação já encerrada sem outro commit.
+- Correção: transação própria, proposta referenciada com unicidade, lock do plano e retomada
+  da resposta paga pelo comando existente. Nenhuma exceção por nome ou identificador.
+- Prevenção: outro contexto, concorrência, rollback inicial, falha posterior, custo preservado,
+  contexto alterado e MySQL 5.7. Revisão rejeitada continua rejeitada; não repetir modelos
+  por uma falha de encaminhamento nem misturar versões.
+- Registro: `docs/homologacao/alcyone-assumption-handoff-v1.md`.

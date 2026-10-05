@@ -22,6 +22,11 @@ public interface ExperimentStrategistExecutionRepository
   Optional<ExperimentStrategistExecution> findFirstByCommercialPlanIdOrderByCreatedAtDesc(
       Long planId);
 
+  /** Localiza a proposta econômica mais recente para retomada no mesmo contexto. */
+  Optional<ExperimentStrategistExecution>
+      findFirstByCommercialPlanIdAndAuthorityModeOrderByCreatedAtDescIdDesc(
+          Long planId, String authorityMode);
+
   /** Busca a última estratégia concluída no modo autoritativo de pesquisa. */
   Optional<ExperimentStrategistExecution>
       findFirstByCommercialPlanIdAndStatusAndAuthorityModeOrderByFinishedAtDescIdDesc(

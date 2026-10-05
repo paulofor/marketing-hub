@@ -13,12 +13,15 @@ import com.marketinghub.agenttask.CompleteAgentTaskRequest;
 import com.marketinghub.agenttask.CreateAgentTaskRequest;
 import com.marketinghub.agenttask.FailAgentTaskRequest;
 import com.marketinghub.agenttask.UpdateAgentTaskStatusRequest;
+import com.marketinghub.experimentstrategist.ExperimentStrategistExecutionStatus;
+import com.marketinghub.experimentstrategist.service.CommercialAssumptionVersionCompatibility;
 import com.marketinghub.financialagent.FinancialAgentExecution;
 import com.marketinghub.financialagent.FinancialAgentExecutionStatus;
 import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.planning.service.CommercialPlanVersionService;
+import com.marketinghub.repository.jpa.experimentstrategist.ExperimentStrategistExecutionRepository;
 import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -54,6 +57,7 @@ public class FinancialAgentService {
   private final CommercialPlanVersionService versionService;
   private final AgentTaskService taskService;
   @Autowired private OpenAiPricingService pricing;
+  private final ExperimentStrategistExecutionRepository strategistExecutions;
 
   /** Configura fontes financeiras, versão comercial e integração com a mesa de Plutus. */
   @Autowired
@@ -63,13 +67,26 @@ public class FinancialAgentService {
       ObjectMapper objectMapper,
       StudioCostLedgerService studioCostLedgerService,
       CommercialPlanVersionService versionService,
-      AgentTaskService taskService) {
+      AgentTaskService taskService,
+      ExperimentStrategistExecutionRepository strategistExecutions) {
     this.repository = repository;
     this.commercialPlanService = commercialPlanService;
     this.objectMapper = objectMapper;
     this.studioCostLedgerService = studioCostLedgerService;
     this.versionService = versionService;
     this.taskService = taskService;
+    this.strategistExecutions = strategistExecutions;
+  }
+
+  /** Preserva fixtures legadas que não exercitam a passagem de propostas estratégicas. */
+  public FinancialAgentService(
+      FinancialAgentExecutionRepository repository,
+      CommercialPlanService plans,
+      ObjectMapper mapper,
+      StudioCostLedgerService costs,
+      CommercialPlanVersionService versions,
+      AgentTaskService tasks) {
+    this(repository, plans, mapper, costs, versions, tasks, null);
   }
 
   /** Mantém construção direta dos testes legados de conciliação. */
@@ -126,12 +143,32 @@ public class FinancialAgentService {
     return toResponse(repository.save(execution));
   }
 
-  /** Enfileira Plutus para validar financeiramente a proposta produzida por Atena. */
+  /** Reutiliza ou enfileira uma única validação da proposta persistida no contexto vigente. */
   @Transactional
   public FinancialAgentExecutionResponse startAssumptionValidation(
       Long planId, Long strategistExecutionId, String atenaProposal) {
-    CommercialPlan plan = commercialPlanService.getPlan(planId);
-    int version = currentVersion(planId);
+    CommercialPlan plan = commercialPlanService.getPlanForUpdate(planId);
+    var source =
+        strategistExecutions
+            .findById(strategistExecutionId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Proposta de Atena não encontrada."));
+    var versionContext = versionService.current(planId);
+    if (!source.getCommercialPlan().getId().equals(planId)
+        || source.getStatus() != ExperimentStrategistExecutionStatus.COMPLETED
+        || !"COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(source.getAuthorityMode())
+        || !hasText(atenaProposal)
+        || !atenaProposal.equals(source.getRecommendationJson())
+        || !CommercialAssumptionVersionCompatibility.matches(source, versionContext)) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Proposta de Atena não corresponde ao plano e à versão vigentes; preservar a resposta original.");
+    }
+    var existing = repository.findByStrategistExecutionId(strategistExecutionId);
+    if (existing.isPresent()) return toResponse(existing.get());
+    int version = versionContext.versionNumber();
     AgentTaskResponse task =
         taskService.createByHuman(
             new CreateAgentTaskRequest(
@@ -156,6 +193,7 @@ public class FinancialAgentService {
     execution.setAuthorityMode(ASSUMPTION_DEFINITION);
     execution.setCommercialPlanVersion(version);
     execution.setAgentTaskId(task.id());
+    execution.setStrategistExecutionId(strategistExecutionId);
     execution.setProjectionRequest(atenaProposal);
     execution.setFinancialSnapshot(buildSnapshot(plan));
     return toResponse(repository.save(execution));
@@ -401,6 +439,7 @@ public class FinancialAgentService {
     evidence.put("authorityMode", execution.getAuthorityMode());
     evidence.put("commercialPlanId", execution.getCommercialPlan().getId());
     evidence.put("commercialPlanVersion", execution.getCommercialPlanVersion());
+    evidence.put("strategistExecutionId", execution.getStrategistExecutionId());
     evidence.put("financialSnapshotSha256", sha256(execution.getFinancialSnapshot()));
     evidence.put("externalSideEffects", false);
     evidence.put("publicationPerformed", false);

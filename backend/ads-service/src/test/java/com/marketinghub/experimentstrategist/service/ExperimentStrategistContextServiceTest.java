@@ -9,7 +9,9 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experimentstrategist.memory.ExperimentStrategistMemoryService;
 import com.marketinghub.growthoperator.service.GrowthOperatorService;
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.dto.CommercialPlanVersionDto;
 import com.marketinghub.planning.service.CommercialPlanService;
+import com.marketinghub.planning.service.CommercialPlanVersionService;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.service.ProductService;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
@@ -20,6 +22,40 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 /** Responsabilidade: validar a consolidação somente leitura do contexto do Estrategista. */
 class ExperimentStrategistContextServiceTest {
+
+  /**
+   * Preserva autorização, oferta e versão em planos independentes sem transformar texto em gasto.
+   */
+  @Test
+  void preservesPreparationContextAcrossPlans() {
+    var plans = mock(CommercialPlanService.class);
+    var versions = mock(CommercialPlanVersionService.class);
+    var service =
+        new ExperimentStrategistContextService(
+            plans,
+            mock(GrowthOperatorService.class),
+            mock(JdbcTemplate.class),
+            mock(ExperimentStrategistMemoryService.class),
+            mock(ProductService.class),
+            versions);
+    for (long id : new long[] {501L, 807L}) {
+      var plan = new CommercialPlan();
+      plan.setId(id);
+      plan.setMainOffer("Uma ocasião, três resultados; acesso por sete dias.");
+      plan.setNextAction("Fonte humana: USD 8 somente para preparação.");
+      plan.setMaxBudget(java.math.BigDecimal.ZERO);
+      when(plans.getPlan(id)).thenReturn(plan);
+      when(versions.current(id))
+          .thenReturn(
+              new CommercialPlanVersionDto(
+                  id + 10L, id, 3, "{}", "QA", "Contexto sintético", java.time.Instant.now()));
+      var context = (Map<?, ?>) service.researchContext(id).get("commercialPlan");
+      assertThat(context.get("mainOffer")).isEqualTo(plan.getMainOffer());
+      assertThat(context.get("nextAction")).isEqualTo(plan.getNextAction());
+      assertThat(context.get("version")).isEqualTo(3);
+      assertThat(context.get("maxBudget")).isEqualTo(java.math.BigDecimal.ZERO);
+    }
+  }
 
   /** Garante que sessões, funil, aprendizados e limites sejam entregues no mesmo contrato. */
   @Test

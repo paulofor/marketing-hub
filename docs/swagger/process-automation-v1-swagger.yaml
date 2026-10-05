@@ -163,12 +163,17 @@ components:
                   actionUrl: {type: string, description: Caminho administrativo do contexto exato ou do projeto audiovisual identificado pelo backend na peça e versão vigentes}
                   afterAction: {type: string}
                   evidenceReference: {type: string, nullable: true}
-              currentActivityId: {type: string, nullable: true}
+              currentActivityId:
+                type: string
+                nullable: true
+                description: Nos controles pausados, encerrados e concluídos, acompanha a mesma projeção de provas do relatório consultado; a leitura preserva o estado persistido e não dispara tarefas.
               currentActivityName: {type: string, nullable: true}
               currentOwnerName: {type: string, nullable: true}
               currentSequence: {type: integer, nullable: true}
               totalActivities: {type: integer}
-              completedActivities: {type: integer}
+              completedActivities:
+                type: integer
+                description: Objetivos comprovados no relatório da definição e referência selecionadas; consultar um controle pausado ou encerrado não grava sua contagem histórica.
               remainingActivities: {type: integer}
               omittedActivities: {type: integer}
               completionPercentage: {type: integer, minimum: 0, maximum: 100}

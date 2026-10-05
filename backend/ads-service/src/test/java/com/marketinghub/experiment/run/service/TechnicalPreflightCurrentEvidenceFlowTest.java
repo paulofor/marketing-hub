@@ -3,23 +3,33 @@ package com.marketinghub.experiment.run.service;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocess.automation.v1.ProcessRun;
+import com.marketinghub.businessprocess.automation.v1.controller.ProcessRunController;
+import com.marketinghub.businessprocess.automation.v1.service.*;
+import com.marketinghub.businessprocess.execution.controller.BusinessProcessActivityExecutionController;
 import com.marketinghub.businessprocess.execution.service.BusinessProcessActivityExecutionService;
 import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorReadiness;
 import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorService;
-import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.*;
+import com.marketinghub.experiment.run.*;
+import com.marketinghub.experiment.run.controller.BackendExperimentRunController;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.*;
 import com.marketinghub.repository.jpa.businessprocess.*;
-import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.*;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
+import com.marketinghub.repository.jpa.processautomation.*;
 import com.marketinghub.repository.jpa.product.ProductRepository;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -28,10 +38,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 /** Responsabilidade: homologar plano, relatório e renovação técnica pelo mesmo fluxo BPM local. */
 class TechnicalPreflightCurrentEvidenceFlowTest {
-  private final ObjectMapper json = new ObjectMapper();
+  private final ObjectMapper json = new ObjectMapper().findAndRegisterModules();
   private final BusinessProcessDefinitionRepository processes =
       mock(BusinessProcessDefinitionRepository.class);
   private final BusinessProcessActivityDefinitionRepository definitions =
@@ -183,23 +196,190 @@ class TechnicalPreflightCurrentEvidenceFlowTest {
   }
 
   /**
-   * O relatório deixa de indicar andamento quando a referência encerrou e mantém as três provas.
+   * HTTP e controle pausado preservam as três provas encerradas, mesmo após mudança da superfície.
    */
   @Test
   void reportsClosedReferenceWithoutLosingPartialProgress() throws Exception {
+    current.remove("surfaces");
     when(evidence.executionBlockReason(product, reference))
         .thenReturn("Experimento encerrado; preserve as provas.");
+    var http =
+        MockMvcBuilders.standaloneSetup(new BusinessProcessActivityExecutionController(service))
+            .build();
+    String response =
+        http.perform(
+                get(
+                        "/api/business-processes/{process}/products/{product}/activity-executions",
+                        process.getId(),
+                        product.getId())
+                    .param("sourceReference", reference)
+                    .param("includePromptAudit", "false"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.completedActivityCount").value(3))
+            .andReturn()
+            .getResponse()
+            .getContentAsString(StandardCharsets.UTF_8);
     var result =
-        service.productProcessExecutions(
-            process.getId(), product.getId(), null, null, false, reference);
+        json.readValue(
+            response,
+            com.marketinghub
+                .businessprocess
+                .execution
+                .service
+                .productProcessExecutions
+                .ProductProcessActivityExecutionHistoryResponse
+                .class);
     assertThat(result.operationalState()).isEqualTo("CLOSED");
     assertThat(result.objectiveAchieved()).isFalse();
     assertThat(result.completedActivityCount()).isEqualTo(3);
     assertThat(result.remainingActivityCount()).isEqualTo(1);
+    assertThat(result.currentActivityId()).isEqualTo("financialGuardrails");
+    assertThat(result.activities().getFirst().activityInstanceId()).isEqualTo(96200L);
+    assertThat(result.activities().getFirst().objectiveAchieved()).isTrue();
+    assertThat(result.activities())
+        .allSatisfy(a -> assertThat(a.executionRequestAvailable()).isFalse());
     assertThat(result.currentActivityStateReason()).contains("encerrado");
     String output = System.getProperty("closed-history.fixture-output");
     if (output != null) Files.writeString(Path.of(output), json.writeValueAsString(result));
+    verifiesConsultativeControl(result);
+    verifiesHistoricalWorkspace();
+    verify(evidence, never()).evaluate(anyString(), any(), anyString());
+    verify(instances, never()).saveAndFlush(any());
     verifyNoInteractions(paidTasks);
+  }
+
+  /** Exporta o run e o preflight históricos pelo HTTP real, sem inventar comandos na tela local. */
+  private void verifiesHistoricalWorkspace() throws Exception {
+    var experiment = experiments.findById(96002L).orElseThrow();
+    experiment.setStatus(ExperimentStatus.INVALIDATED);
+    var run = new ExperimentRun();
+    run.setId(96005L);
+    run.setExperiment(experiment);
+    run.setRunNumber(2);
+    run.setMode(ExperimentRunMode.PRODUCTION);
+    run.setStatus(ExperimentRunStatus.COMPLETED);
+    run.setDataQualityStatus(ExperimentRunDataQualityStatus.VALID);
+    run.setPreflightCompletedAt(Instant.parse("2026-10-02T18:00:00Z"));
+    run.setEndedAt(Instant.parse("2026-10-03T18:00:00Z"));
+    var runs = mock(ExperimentRunRepository.class);
+    var gates = mock(ExperimentRunGateResultRepository.class);
+    var dossiers = mock(MoisCommercialDossierPreflightService.class);
+    when(experiments.existsById(experiment.getId())).thenReturn(true);
+    when(runs.findByExperimentIdOrderByRunNumberAsc(experiment.getId())).thenReturn(List.of(run));
+    when(runs.findById(run.getId())).thenReturn(Optional.of(run));
+    var gate = new ExperimentRunGateResult();
+    gate.setExperimentRun(run);
+    gate.setGateCode(ExperimentRunGateCodes.LANDING_QUALITY_REVIEW_APPROVED);
+    gate.setGateGroup(ExperimentRunGateGroup.UPSTREAM_QUALITY);
+    gate.setStatus(ExperimentRunGateStatus.PASS);
+    gate.setSummary("Superfície da versão local comprovada no histórico.");
+    when(gates.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(run.getId()))
+        .thenReturn(List.of(gate));
+    var service = new BackendExperimentRunService(experiments, runs, gates, dossiers);
+    var http = MockMvcBuilders.standaloneSetup(new BackendExperimentRunController(service)).build();
+    String runResponse =
+        http.perform(get("/api/experiments/{id}/runs", experiment.getId()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(run.getId()))
+            .andReturn()
+            .getResponse()
+            .getContentAsString(StandardCharsets.UTF_8);
+    String preflightResponse =
+        http.perform(get("/api/experiment-runs/{id}/preflight", run.getId()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.canRenewTechnicalHomologation").value(false))
+            .andExpect(jsonPath("$.executionBlockReason").isNotEmpty())
+            .andExpect(jsonPath("$.gates[0].status").value("PASS"))
+            .andReturn()
+            .getResponse()
+            .getContentAsString(StandardCharsets.UTF_8);
+    String output = System.getProperty("historical-preflight.workspace-output");
+    if (output != null) {
+      var fixture = json.createObjectNode();
+      fixture.set("runs", json.readTree(runResponse));
+      fixture.set("preflight", json.readTree(preflightResponse));
+      Files.writeString(Path.of(output), json.writeValueAsString(fixture));
+    }
+    verify(runs, never()).save(any());
+    verify(gates, never()).saveAll(any());
+    verifyNoInteractions(dossiers);
+  }
+
+  /** Consulta o motor com a resposta real do BPM, sem mudar pausa, custos, diário ou tarefas. */
+  private void verifiesConsultativeControl(
+      com.marketinghub
+              .businessprocess
+              .execution
+              .service
+              .productProcessExecutions
+              .ProductProcessActivityExecutionHistoryResponse
+          history)
+      throws Exception {
+    var run = new ProcessRun();
+    run.setId(96401L);
+    run.setProductId(product.getId());
+    run.setProcessDefinitionId(process.getId());
+    run.setChainDefinitionId(96402L);
+    run.setSourceReference(reference);
+    run.setTotalActivities(4);
+    run.setCompletedActivities(2);
+    run.setRemainingActivities(2);
+    run.setCurrentActivityId("surfaces");
+    run.setCurrentActivityName("Validar superfícies candidatas");
+    run.setReason("Experimento encerrado; preserve as provas.");
+    var runs = mock(ProcessRunRepository.class);
+    var events = mock(ProcessRunEventRepository.class);
+    var context = mock(ProcessRunContext.class);
+    var subprocesses = mock(ProcessRunSubprocesses.class);
+    var transactions = mock(PlatformTransactionManager.class);
+    when(transactions.getTransaction(any())).thenAnswer(inv -> new SimpleTransactionStatus());
+    when(runs.findByScopeKey(anyString())).thenReturn(Optional.of(run));
+    when(context.read(run, false)).thenReturn(history);
+    when(context.dispatchBlockReason(run)).thenReturn(run.getReason());
+    var motor =
+        new ProcessRunService(
+            runs,
+            events,
+            products,
+            context,
+            mock(ProcessRunNavigation.class),
+            subprocesses,
+            mock(ProcessRunGuidance.class),
+            service,
+            json,
+            transactions);
+    var http =
+        MockMvcBuilders.standaloneSetup(new ProcessRunController(motor, "fixture-only", ""))
+            .build();
+    for (String state : List.of("PAUSED", "CLOSED")) {
+      run.setStatus(state);
+      String response =
+          http.perform(
+                  get(
+                          "/api/business-processes/{process}/products/{product}/automation/v1",
+                          process.getId(),
+                          product.getId())
+                      .param("chainId", run.getChainDefinitionId().toString())
+                      .param("sourceReference", reference))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$.status").value(state))
+              .andExpect(jsonPath("$.completedActivities").value(3))
+              .andExpect(jsonPath("$.remainingActivities").value(1))
+              .andExpect(jsonPath("$.currentActivityId").value("financialGuardrails"))
+              .andExpect(jsonPath("$.currentSequence").value(4))
+              .andExpect(jsonPath("$.canResume").value(false))
+              .andReturn()
+              .getResponse()
+              .getContentAsString(StandardCharsets.UTF_8);
+      assertThat(run.getStatus()).isEqualTo(state);
+      assertThat(run.getCompletedActivities()).isEqualTo(2);
+      assertThat(run.getCurrentActivityId()).isEqualTo("surfaces");
+      String output = System.getProperty("historical-preflight.control-output");
+      if (output != null && "PAUSED".equals(state)) Files.writeString(Path.of(output), response);
+    }
+    verify(runs, never()).save(any());
+    verify(runs, never()).saveAndFlush(any());
+    verifyNoInteractions(events, subprocesses, paidTasks);
   }
 
   /** O relatório usa o plano do experimento mesmo com outra candidata mais recente do produto. */

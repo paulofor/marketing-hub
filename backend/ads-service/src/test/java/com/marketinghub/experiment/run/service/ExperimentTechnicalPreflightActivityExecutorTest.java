@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 /** Responsabilidade: garantir execução sequencial, auditável e idempotente do preflight técnico. */
@@ -203,5 +204,54 @@ class ExperimentTechnicalPreflightActivityExecutorTest {
             org.mockito.ArgumentMatchers.any(),
             org.mockito.ArgumentMatchers.any(),
             org.mockito.ArgumentMatchers.any());
+  }
+
+  /** Uma conclusão encerrada permanece comprovada sem exigir a superfície ou economia atual. */
+  @ParameterizedTest
+  @ValueSource(strings = {"surfaces", "transaction", "measurement", "financialGuardrails"})
+  void preservesOnlyCompletedHistoricalOccurrences(String code) {
+    activity.setActivityId(code);
+    var original = new BusinessProcessActivityInstance();
+    original.setStatus("COMPLETED");
+    original.setObjectiveAchieved(true);
+    original.setObjectiveEvidenceJson("{\"runId\":12,\"inputFingerprint\":\"historical\"}");
+    when(instances.findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            activity.getId(), "experiment:88"))
+        .thenReturn(Optional.of(original));
+    when(evidenceService.executionBlockReason(product, "experiment:88"))
+        .thenReturn("Experimento encerrado.");
+
+    assertThat(executor.requiresFreshExecution(process, activity, product, "experiment:88"))
+        .isFalse();
+    assertThat(executor.readiness(process, activity, product, "experiment:88").ready()).isFalse();
+    verify(evidenceService, never())
+        .evaluate(
+            org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.anyString());
+    verify(instances, never()).saveAndFlush(org.mockito.ArgumentMatchers.any());
+    assertThat(original.getObjectiveEvidenceJson()).contains("historical");
+  }
+
+  /** A identidade incorreta nunca permite reutilizar a prova de outra referência como vigente. */
+  @Test
+  void rejectsHistoricalPreservationWhenProductIdentityIsInvalid() {
+    var original = new BusinessProcessActivityInstance();
+    original.setStatus("COMPLETED");
+    original.setObjectiveAchieved(true);
+    when(instances.findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            activity.getId(), "experiment:88"))
+        .thenReturn(Optional.of(original));
+    when(evidenceService.executionBlockReason(product, "experiment:88"))
+        .thenThrow(new IllegalStateException("O experimento pertence a outro produto."));
+
+    assertThat(executor.requiresFreshExecution(process, activity, product, "experiment:88"))
+        .isTrue();
+    verify(evidenceService, never())
+        .evaluate(
+            org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.anyString());
+    verify(instances, never()).saveAndFlush(org.mockito.ArgumentMatchers.any());
   }
 }

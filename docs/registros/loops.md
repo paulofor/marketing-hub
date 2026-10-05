@@ -12,7 +12,8 @@
   atividade e reserva. Preservar versão delegada, âncora e ausência legítima de referência.
 - **Prevenção:** regressões com/sem ciclo, referências de experimento/produto/plano,
   caracteres reservados, parâmetros sem duplicação, contexto incompatível e navegação
-  local em desktop/iPhone/Pixel. Matriz: `docs/homologacao/alcyone44-contexto-subprocessos-v1.md`.
+  local em desktop/iPhone/Pixel. A matriz integrada com MySQL 5.7 exige a mesma referência
+  na ida, no retorno e nos subprocessos históricos. Matriz: `docs/homologacao/alcyone44-contexto-subprocessos-v1.md`.
 - **Limite:** não resolve a prova personalizada, a economia nem o aceite estratégico
   pendentes; nenhum gasto, parecer ou objetivo comercial é autorizado pelo link.
 

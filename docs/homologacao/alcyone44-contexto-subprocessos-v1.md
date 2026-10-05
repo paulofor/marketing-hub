@@ -87,3 +87,20 @@ O hash identifica o texto observado; não é uma cópia imutável da página nem
 compra, demanda ou preço efetivamente pago. A próxima avaliação deve reutilizar fontes
 ainda válidas e se concentrar na prova real e na economia, sem repetir a mesma pesquisa
 paga com os mesmos impedimentos. O novo teto de consumo permanece pendente de autorização.
+
+## Ajuste da matriz integrada antes do merge
+
+O primeiro CI do PR #5500 falhou em `browser-matrix.mjs`: esperava um retorno ao pai
+sem `sourceReference`, enquanto o backend já devolvia o contrato corrigido. O log do
+run `37250021298` comprovou a diferença; os testes Java, API, reinício e persistência
+haviam passado. Quatro expectativas antigas foram atualizadas, exigindo a referência
+na ida, no retorno, na âncora e no histórico de subprocesso dispensado. Nenhuma
+proteção foi removida; a ida agora exige também o fim exato da URL.
+
+Antes de atualizar o PR, a sandbox executou a fixture Java real com MySQL 5.7 e
+Node 22.23.3, sem credenciais nem serviços externos: 19 cenários HTTP, 22 de ciclo de
+execução, reinício e as quatro matrizes de navegador (fluxo completo, versão retirada,
+reserva de fila e reserva projetada) passaram em desktop, iPhone e Pixel. Os dados
+continuaram restritos ao banco de teste. A formatação, `bash -n` e ShellCheck do
+runner investigado também passaram. A suíte Java completa anterior permanece válida,
+pois este ajuste altera somente expectativas de teste e documentação.

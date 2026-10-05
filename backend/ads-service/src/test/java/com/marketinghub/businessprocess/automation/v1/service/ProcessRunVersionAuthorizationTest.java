@@ -131,6 +131,12 @@ class ProcessRunVersionAuthorizationTest {
     assertThat(context.dispatchBlockReason(run)).contains("#94", "não renove Plutus");
     definition.setProcessCode("safira-commercial-preparation-v1");
     assertThat(context.dispatchBlockReason(run)).contains("#94", "não renove Plutus");
+    definition.setProcessCode("quartzo-commercial-preparation-v1");
+    assertThat(context.dispatchBlockReason(run)).contains("#94", "não renove Plutus");
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    experiment.setEndDate(java.time.LocalDate.now(java.time.ZoneOffset.UTC).minusDays(1));
+    assertThat(context.dispatchBlockReason(run)).contains("#94", "janela terminou");
+    experiment.setEndDate(null);
     definition.setProcessCode("pde-sales-delivery-learning");
     assertThat(context.dispatchBlockReason(run)).isNull();
     definition.setProcessCode("experiment-homologation-activation");
@@ -144,7 +150,7 @@ class ProcessRunVersionAuthorizationTest {
   @Test
   void resolvesClosedCycleEvenWhenNavigationOmitsIt() {
     definition.setStatus("PUBLISHED");
-    definition.setProcessCode("safira-commercial-preparation-v1");
+    definition.setProcessCode("quartzo-commercial-preparation-v1");
     var experiments =
         (com.marketinghub.repository.jpa.experiment.ExperimentRepository)
             ReflectionTestUtils.getField(context, "experiments");

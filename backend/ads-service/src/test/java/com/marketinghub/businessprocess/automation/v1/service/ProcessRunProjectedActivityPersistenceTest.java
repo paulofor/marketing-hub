@@ -256,21 +256,21 @@ class ProcessRunProjectedActivityPersistenceTest {
   }
 
   /**
-   * Concilia cinco provas históricas sem abrir tarefas, renovar pareceres ou repetir o retorno ao
-   * pai.
+   * Concilia provas históricas sem abrir tarefas, renovar pareceres ou repetir o retorno ao pai.
    */
-  @Test
-  void reconcilesHistoricalPreparationWithoutNewTasks() throws Exception {
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(ints = {5, 8})
+  void reconcilesHistoricalPreparationWithoutNewTasks(int activityCount) throws Exception {
     snapshot(96011L, "COMPLETED", false, true, false, true);
     var value =
         (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(snapshots.get(96011L));
-    value.put("selectedActivityCount", 5).put("completedActivityCount", 5);
+    value.put("selectedActivityCount", activityCount).put("completedActivityCount", activityCount);
     var prototype = value.withArray("activities").get(0).deepCopy();
     var activityList = value.withArray("activities").removeAll();
     var diagram = json.createObjectNode();
     var nodes = diagram.putArray("nodes");
     var flows = diagram.putArray("flows");
-    for (int index = 0; index < 5; index++) {
+    for (int index = 0; index < activityCount; index++) {
       String id = String.valueOf((char) ('a' + index));
       var step = (com.fasterxml.jackson.databind.node.ObjectNode) prototype.deepCopy();
       step.put("activityId", id)
@@ -289,7 +289,7 @@ class ProcessRunProjectedActivityPersistenceTest {
     parent.setStatus("WAITING_INPUT");
     var result = service.reconcile(parent.getId());
     assertThat(result.status()).isEqualTo("COMPLETED");
-    assertThat(result.completedActivities()).isEqualTo(5);
+    assertThat(result.completedActivities()).isEqualTo(activityCount);
     assertThat(result.remainingActivities()).isZero();
     assertThat(result.knownCostUsd()).isEqualByComparingTo("0.75");
     assertThat(result.canResume()).isFalse();

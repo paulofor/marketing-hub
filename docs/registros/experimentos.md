@@ -1,3 +1,17 @@
+## 2026-10-05 — Retomada de Alcyone #97 preserva o contexto dos subprocessos
+
+- Execução #44, processo #113 v11, cadeia #26 e plano #34 continuam 0/4. A proteção
+  estratégica de Íris já está publicada; o antigo erro de deploy não é o bloqueio atual.
+- Links do cabeçalho removiam `experiment:97` na ida aos subprocessos #121/#114.
+  O backend passa a preservar a referência no construtor comum, inclusive no retorno
+  ao pai e no contexto copiado para o AIHUB. A correção não altera dados comerciais.
+- O leitor Chromium confirmou acesso às três fontes públicas de Atena. Pesquisa #17,
+  seu custo não informado, fixtures e provas internas permanecem preservados. Não houve
+  nova inferência paga, campanha ou cobrança.
+- Persistem a prova personalizada real, as 29 premissas da revisão financeira #12 r2
+  e o aceite estratégico. Novo consumo depende de teto específico autorizado; não basta
+  retomar Íris com a mesma entrada. [Matriz e evidências](../homologacao/alcyone44-contexto-subprocessos-v1.md).
+
 ## 2026-10-04 — Look para a Ocasião #97: comunicação aguarda prova e economia
 
 - Escopo confirmado pela tela, backend e MCP: Alcyone #11 (Safira), plano #34 v3,

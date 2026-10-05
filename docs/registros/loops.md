@@ -1,5 +1,21 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-BPM-SUBPROCESSO-PERDE-REFERENCIA — 05/10/2026
+
+- **Evidência:** Alcyone #11, execução #44, processo #113 v11, `experiment:97`.
+  API e clique no cabeçalho removeram a referência ao abrir #121/#114, enquanto os links
+  das atividades a preservavam. Não foi constatada mistura de resultados já persistidos.
+- **Causa:** o construtor comum de `ProcessRunNavigation` incluía cadeia e ciclo, mas
+  somente o link de reserva acrescentava `sourceReference`. O destino podia inferir
+  outra execução e o contexto enviado ao AIHUB reproduzia o link incompleto.
+- **Correção:** construir a referência uma única vez no backend para ida, retorno,
+  atividade e reserva. Preservar versão delegada, âncora e ausência legítima de referência.
+- **Prevenção:** regressões com/sem ciclo, referências de experimento/produto/plano,
+  caracteres reservados, parâmetros sem duplicação, contexto incompatível e navegação
+  local em desktop/iPhone/Pixel. Matriz: `docs/homologacao/alcyone44-contexto-subprocessos-v1.md`.
+- **Limite:** não resolve a prova personalizada, a economia nem o aceite estratégico
+  pendentes; nenhum gasto, parecer ou objetivo comercial é autorizado pelo link.
+
 ## LOOP-VIDEO-FILA-HISTORICA-COMO-APROVACAO — rascunhos antigos parecem bloquear outro produto
 
 - **Data:** 04/10/2026. Tela, API e MCP confirmaram oito DRAFT, mas apenas duas novas peças

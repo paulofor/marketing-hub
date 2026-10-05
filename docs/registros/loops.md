@@ -8811,3 +8811,18 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
 - Prevenção: testes de estado/data, API sem mutação, identidade, economia, motor com
   persistência, idempotência e histórico em desktop/mobile. Casos ativos continuam
   sujeitos aos gates existentes. Matriz em `docs/homologacao/homologacao-experimento-encerrado-v1.md`.
+
+### Recorrência na preparação Safira — 04/10/2026
+
+- Mira #93 possui preparação #31 concluída em 29/09, com cinco ocorrências e
+  pareceres #554/#556. A execução #43 encerrou pelo ciclo #3 `ADJUSTED`, enquanto
+  #45 sem ID de ciclo permaneceu em `WAITING_INPUT`. A consulta apagava visualmente
+  as conclusões ao comparar o arquivo com fontes comerciais atuais.
+- A proteção agora inclui Safira e resolve o ciclo pela referência. Consulta
+  preserva objetivos passados; novos comandos continuam bloqueados. O motor concilia
+  os objetivos recebidos, conservando provas, tarefas, custos e a regra existente
+  de conclusão após recebimento de todos os resultados. Encerramento com objetivos
+  ausentes continua `CLOSED`, sem fabricar sucesso.
+- Prevenção: HTTP com contexto e regras reais, cinco atividades, prova ausente,
+  outro produto, candidata aberta, persistência/idempotência e desktop/mobile.
+  Matriz: `docs/homologacao/mira-preparacao-historica-v1.md`. Sem chamada paga.

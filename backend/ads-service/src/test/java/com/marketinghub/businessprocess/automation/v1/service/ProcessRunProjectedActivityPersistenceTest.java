@@ -25,7 +25,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
-/** Responsabilidade: comprovar que projeção de medição não substitui execução real no motor. */
+/** Responsabilidade: comprovar que o motor distingue provas, projeções e tarefas reais. */
 @DataJpaTest(showSql = false)
 @TestPropertySource(
     properties = {
@@ -250,6 +250,59 @@ class ProcessRunProjectedActivityPersistenceTest {
     assertThat(result.knownCostUsd()).isEqualByComparingTo("0.75");
     verifyNoInteractions(activities, subprocesses);
     String output = System.getProperty("closed-process.fixture-output");
+    if (output != null)
+      java.nio.file.Files.writeString(
+          java.nio.file.Path.of(output), json.writeValueAsString(result));
+  }
+
+  /**
+   * Concilia cinco provas históricas sem abrir tarefas, renovar pareceres ou repetir o retorno ao
+   * pai.
+   */
+  @Test
+  void reconcilesHistoricalPreparationWithoutNewTasks() throws Exception {
+    snapshot(96011L, "COMPLETED", false, true, false, true);
+    var value =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(snapshots.get(96011L));
+    value.put("selectedActivityCount", 5).put("completedActivityCount", 5);
+    var prototype = value.withArray("activities").get(0).deepCopy();
+    var activityList = value.withArray("activities").removeAll();
+    var diagram = json.createObjectNode();
+    var nodes = diagram.putArray("nodes");
+    var flows = diagram.putArray("flows");
+    for (int index = 0; index < 5; index++) {
+      String id = String.valueOf((char) ('a' + index));
+      var step = (com.fasterxml.jackson.databind.node.ObjectNode) prototype.deepCopy();
+      step.put("activityId", id)
+          .put("activityDefinitionId", 96051L + index)
+          .put("activityInstanceId", 96031L + index);
+      activityList.add(step);
+      nodes.addObject().put("id", id).put("type", "TASK");
+      if (index > 0)
+        flows.addObject().put("from", String.valueOf((char) ('a' + index - 1))).put("to", id);
+    }
+    when(context.graph(96011L)).thenReturn(new ProcessExecutionGraph(diagram));
+    snapshots.put(
+        96011L, json.treeToValue(value, ProductProcessActivityExecutionHistoryResponse.class));
+    when(context.dispatchBlockReason(parent))
+        .thenReturn("O experimento #96021 está encerrado. Provas preservadas.");
+    parent.setStatus("WAITING_INPUT");
+    var result = service.reconcile(parent.getId());
+    assertThat(result.status()).isEqualTo("COMPLETED");
+    assertThat(result.completedActivities()).isEqualTo(5);
+    assertThat(result.remainingActivities()).isZero();
+    assertThat(result.knownCostUsd()).isEqualByComparingTo("0.75");
+    assertThat(result.canResume()).isFalse();
+    service.reconcile(parent.getId());
+    entityManager.flush();
+    entityManager.clear();
+    assertThat(runs.findById(parent.getId()).orElseThrow().getStatus()).isEqualTo("COMPLETED");
+    assertThat(events.findAll().stream().filter(e -> "CONTEXT_CLOSED".equals(e.getEventType())))
+        .isEmpty();
+    assertThat(events.findAll().stream().filter(e -> "COMPLETED".equals(e.getEventType())))
+        .hasSize(1);
+    verifyNoInteractions(activities, subprocesses);
+    String output = System.getProperty("historical-preparation.fixture-output");
     if (output != null)
       java.nio.file.Files.writeString(
           java.nio.file.Path.of(output), json.writeValueAsString(result));

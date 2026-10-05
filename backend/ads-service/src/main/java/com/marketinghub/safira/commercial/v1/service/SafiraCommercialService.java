@@ -86,7 +86,7 @@ public class SafiraCommercialService
     return true;
   }
 
-  /** Orienta a entrada sem experimento e confere as provas antes de gravar ou liberar revisão. */
+  /** Orienta entrada e histórico, conferindo fontes somente antes de novas provas ou revisões. */
   @Override
   @Transactional(readOnly = true)
   public BackendProductProcessActivityReadiness readiness(
@@ -105,6 +105,19 @@ public class SafiraCommercialService
         return new BackendProductProcessActivityReadiness(
             false,
             "Prepare primeiro o experimento comercial na atividade Conferir jornada pública e prova de valor.");
+      }
+      String closed = context.historicalBlockReason(source, productId);
+      if (closed != null) {
+        return new BackendProductProcessActivityReadiness(
+            false,
+            closed,
+            "Consultar histórico do experimento",
+            "As atividades já comprovadas permanecem no histórico. Esta referência encerrada não recebe novas tarefas ou pareceres.",
+            null,
+            null,
+            List.of(),
+            null,
+            "/experiments/" + source.substring("experiment:".length()));
       }
       var scope = context.scope(source, productId, true);
       var prior = predecessors.readiness(process, activity, source);

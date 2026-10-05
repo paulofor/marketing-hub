@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Execução automática de processos v1
   version: 1.2.0
-  description: Controle durável por produto, processo, cadeia, ciclo e referência. Somente o backend decide a próxima atividade; nenhum comando confirma decisão humana ou autorização comercial implícita.
+  description: Controle durável por produto, processo, cadeia, ciclo e referência. Somente o backend decide a próxima atividade; nenhum comando confirma decisão humana ou autorização comercial implícita. Preparação Safira e homologação verificam o ciclo pelo experimento mesmo quando seu ID foi omitido. Conclusões históricas são conciliadas sem novos disparos; ciclo encerrado com objetivos ausentes permanece CLOSED e não equivale a sucesso.
 paths:
   /api/business-processes/{processId}/products/{productId}/automation/v1:
     parameters:

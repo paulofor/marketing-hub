@@ -7,6 +7,7 @@ import com.marketinghub.financialagent.*;
 import com.marketinghub.financialagent.service.*;
 import com.marketinghub.financialplan.v1.FinancialPlanRevision;
 import com.marketinghub.financialplan.v1.controller.FinancialPlanController;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.planning.*;
 import com.marketinghub.planning.service.CommercialPlanExecutionSyncService;
 import com.marketinghub.product.Product;
@@ -279,6 +280,12 @@ public class FinancialPlanLocalApplication {
               return Optional.of(v);
             });
     return repo;
+  }
+
+  /** Fornece a dependência de preços do serviço simulado, sem modelo ou catálogo produtivo. */
+  @Bean
+  OpenAiPricingService pricing() {
+    return mock(OpenAiPricingService.class);
   }
 
   /** Simula a fronteira da fila Plutus sem invocar modelos ou endpoints externos. */

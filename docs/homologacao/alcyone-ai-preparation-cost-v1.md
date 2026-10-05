@@ -145,3 +145,16 @@ A extensão passou em 13 testes do contrato de CI, 15 do construtor e no pacote 
 arquivos/61 manifestos. Psique: 150 casos, zero falhas e duas dispensas; Têmis: 108 casos, zero
 falhas e uma dispensa. As capturas foram geradas pelo script versionado
 `infra/testing/commercial-evidence/capture-private-boundary.cjs`, sem mutação ou inferência.
+
+A matriz financeira MySQL do PR encontrou o mock de Plutus sem o bean de preços exigido desde
+a conciliação de custos. A fixture fornece agora esse mock explicitamente; o serviço produtivo
+continua exigindo sua dependência. Dois testes Spring reproduzem a configuração antiga e aprovam
+a nova antes da integração. Dez casos locais afetados passaram. A matriz de persistência local
+passou em 34,11 segundos: API/JPA/MySQL reais, Plutus simulado, concorrência, reinício, migração e
+rollback. É matriz de persistência, não homologação completa de navegador ou produto comercial.
+
+O runner recebe projeto Compose exclusivo por variável explícita, sem ID antigo de sandbox e
+sem simular GitHub Actions para contornar uma trava. Seu fingerprint ignora temporários e
+dependências locais, preservando a verificação das fontes. A rodada anterior passou nos cenários,
+mas foi corretamente invalidada por retirada de formatação em paralelo; nenhuma conclusão foi
+extraída dela. A rodada estável terminou PASS e removeu MySQL/volumes do projeto autorizado.

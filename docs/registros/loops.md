@@ -8933,3 +8933,13 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
 - A suíte completa, dois consumidores, pacote real e capturas reproduzíveis passaram localmente.
   Capturas comprovam entrada privada, identidade e zero mutações; não comprovam geração integrada
   ou demanda. Registro: `docs/homologacao/alcyone-agent-validation-v10.md`.
+
+### Dependência de preços na fixture financeira — 05/10/2026
+
+- A matriz do PR #5506 falhou antes da API porque o mock Spring de Plutus ainda exigia
+  `OpenAiPricingService`, ausente na configuração isolada. Produção possuía o bean; tornar a
+  dependência opcional esconderia erros de custo. Fixture atualizada e regressão de inicialização
+  ausente/presente adicionada à suíte normal.
+- O fluxo de persistência inteiro passou localmente com MySQL 5.7 e fontes estáveis, mantendo
+  concorrência, revisão, custo, reinício e rollback. O runner usa projeto explicitamente fornecido
+  e exclui temporários do fingerprint. Evidência no relatório da preparação de Alcyone.

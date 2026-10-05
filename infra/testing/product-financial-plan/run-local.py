@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Homologa planos financeiros com API/JPA/MySQL reais e Plutus simulado, sem publicação."""
-import argparse, hashlib, json, os, pathlib, subprocess, time, urllib.request, xml.etree.ElementTree as ET
+import argparse, hashlib, json, os, pathlib, re, subprocess, time, urllib.request, xml.etree.ElementTree as ET
 ROOT=pathlib.Path(__file__).resolve().parents[3]
-DEFAULT_PROJECT='aihub-339e0d38-fe59-4d38-bc4c-5cbf81bc5012-56dddc3aa6'
-PROJECT=os.environ.get('FINANCIAL_PLAN_COMPOSE_PROJECT',DEFAULT_PROJECT)
-if os.environ.get('GITHUB_ACTIONS')!='true' and PROJECT!=DEFAULT_PROJECT:
-    raise SystemExit('Use o projeto exclusivo desta sandbox.')
+PROJECT=os.environ.get('FINANCIAL_PLAN_COMPOSE_PROJECT')
+if not PROJECT or not re.fullmatch(r'aihub-[a-z0-9]+(?:-[a-z0-9]+)*',PROJECT):
+    raise SystemExit('Informe FINANCIAL_PLAN_COMPOSE_PROJECT com o projeto exclusivo autorizado.')
 COMPOSE=['docker','compose','-p',PROJECT,'-f',str(ROOT/'infra/testing/product-financial-plan/compose.yml')]
 parser=argparse.ArgumentParser()
 parser.add_argument('--rounds',type=int,default=1)
@@ -58,7 +57,7 @@ def fingerprint():
     names+=subprocess.check_output(['git','ls-files','--others','--exclude-standard'],cwd=ROOT,text=True).splitlines()
     h=hashlib.sha256()
     for name in sorted(set(names)):
-        if name.startswith(('docs/','artifacts/')):continue
+        if name.startswith(('docs/','artifacts/','.tmp/')) or '/node_modules/' in name:continue
         path=ROOT/name
         if path.is_file():h.update(name.encode());h.update(path.read_bytes())
     return h.hexdigest()

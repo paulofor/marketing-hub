@@ -44,7 +44,9 @@ class ProcessRunNavigationTest {
             "/products/4/value-chain-history/processes/63/activities?chainId=14&sourceReference=product%3A4%40validation%20v1%26variant%3D2");
   }
 
-  /** Mantém links após conclusão e preserva cadeia e ciclo sem carregar outro contexto. */
+  /**
+   * Mantém links após conclusão e preserva cadeia, ciclo e referência sem carregar outro contexto.
+   */
   @Test
   void linksBothDirectionsBeforeAndAfterCompletion() {
     var parent =
@@ -69,14 +71,15 @@ class ProcessRunNavigationTest {
               assertThat(link.processDefinitionId()).isEqualTo(64L);
               assertThat(link.navigationUrl())
                   .isEqualTo(
-                      "/products/4/value-chain-history/processes/64/activities?chainId=14&learningCycleId=2");
+                      "/products/4/value-chain-history/processes/64/activities?chainId=14&learningCycleId=2&sourceReference=experiment%3A92");
             });
     assertThat(navigation.parents(childRun))
         .singleElement()
         .satisfies(
             link ->
                 assertThat(link.navigationUrl())
-                    .endsWith("/63/activities?chainId=14&learningCycleId=2#activity-creatives"));
+                    .endsWith(
+                        "/63/activities?chainId=14&learningCycleId=2&sourceReference=experiment%3A92#activity-creatives"));
     childRun.setParentRunId(1L);
     childRun.setStatus("COMPLETED");
     when(runs.findById(1L)).thenReturn(Optional.of(parentRun));
@@ -94,6 +97,86 @@ class ProcessRunNavigationTest {
         .satisfies(link -> assertThat(link.processVersion()).isEqualTo(7));
     parentRun.setProductId(10L);
     assertThatThrownBy(() -> navigation.parents(childRun)).hasMessageContaining("outro contexto");
+  }
+
+  /**
+   * Preserva a referência sem ciclo na ida, no retorno e no atalho da atividade, sem duplicá-la.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {
+        "experiment:93097",
+        "product:93011@validation v1&variant=2",
+        "commercial-plan:93034@v3:journey"
+      })
+  void preservesExactReferenceAcrossSubprocessLinksWithoutCycle(String reference) throws Exception {
+    var parent =
+        definition(
+            93013L,
+            "communication",
+            "{\"nodes\":[{\"id\":\"destination\",\"type\":\"TASK\",\"subprocessCode\":\"landing\"}]}");
+    var child = definition(93014L, "landing", "{\"nodes\":[]}");
+    when(processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc("landing", "PUBLISHED"))
+        .thenReturn(Optional.of(child));
+    var parentRun = run(93044L, parent.getId());
+    var childRun = run(93045L, child.getId());
+    parentRun.setLearningCycleId(null);
+    childRun.setLearningCycleId(null);
+    parentRun.setSourceReference(reference);
+    childRun.setSourceReference(reference);
+    parentRun.setCurrentActivityId("communicationContract");
+    childRun.setParentRunId(parentRun.getId());
+    when(runs.findById(parentRun.getId())).thenReturn(Optional.of(parentRun));
+    String encoded =
+        java.net.URLEncoder.encode(reference, java.nio.charset.StandardCharsets.UTF_8)
+            .replace("+", "%20");
+
+    assertThat(navigation.children(parentRun))
+        .singleElement()
+        .satisfies(
+            link ->
+                assertThat(link.navigationUrl())
+                    .isEqualTo(
+                        "/products/4/value-chain-history/processes/93014/activities?chainId=14&sourceReference="
+                            + encoded));
+    assertThat(navigation.parents(childRun))
+        .singleElement()
+        .satisfies(
+            link ->
+                assertThat(link.navigationUrl())
+                    .isEqualTo(
+                        "/products/4/value-chain-history/processes/93013/activities?chainId=14&sourceReference="
+                            + encoded
+                            + "#activity-destination"));
+    assertThat(navigation.activityUrl(parentRun, "communicationContract"))
+        .isEqualTo(navigation.executionUrl(parentRun))
+        .containsOnlyOnce("sourceReference=");
+    assertThat(navigation.activityUrl(childRun, "customer"))
+        .endsWith("&sourceReference=" + encoded + "#activity-customer");
+    verifyNoInteractions(products);
+    String evidence = System.getProperty("process.navigation.evidence");
+    if (evidence != null && reference.startsWith("experiment:")) {
+      java.nio.file.Files.writeString(
+          java.nio.file.Path.of(evidence),
+          new ObjectMapper()
+              .writeValueAsString(
+                  java.util.Map.of(
+                      "sourceReference", reference,
+                      "children", navigation.children(parentRun),
+                      "parents", navigation.parents(childRun),
+                      "activityUrl", navigation.activityUrl(parentRun, "communicationContract"))));
+    }
+  }
+
+  /** Não inventa referência quando a projeção anterior ao início ainda não possui esse vínculo. */
+  @Test
+  void keepsUnboundProjectionWithoutSyntheticReference() {
+    var projected = run(null, 93013L);
+    projected.setLearningCycleId(null);
+    projected.setSourceReference(null);
+    assertThat(navigation.activityUrl(projected, "journey"))
+        .isEqualTo(
+            "/products/4/value-chain-history/processes/93013/activities?chainId=14#activity-journey");
   }
 
   /** Mostra somente chamadas da cadeia selecionada, inclusive quando mais de um pai é legítimo. */

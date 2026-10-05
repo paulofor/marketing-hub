@@ -218,4 +218,4 @@ components:
         processVersion: {type: integer}
         activityId: {type: string}
         activityName: {type: string}
-        navigationUrl: {type: string, description: Caminho oficial para navegar; abrir o link não executa a atividade.}
+        navigationUrl: {type: string, description: Caminho oficial com produto, cadeia, ciclo quando registrado e sourceReference exata da execução; preserva a referência na ida ao subprocesso e no retorno ao pai. Abrir o link não executa a atividade.}

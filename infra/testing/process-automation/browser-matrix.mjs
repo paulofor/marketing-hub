@@ -279,7 +279,7 @@ try {
     await childLink.click();
     await expect(page).toHaveURL(
       new RegExp(
-        `/92005/activities\\?chainId=92014&learningCycleId=${product}`,
+        `/92005/activities\\?chainId=92014&learningCycleId=${product}&sourceReference=experiment%3A${product}$`,
       ),
     );
     const backLink = panel.getByRole("link", {
@@ -287,7 +287,7 @@ try {
     });
     await expect(backLink).toHaveAttribute(
       "href",
-      `/products/${product}/value-chain-history/processes/92004/activities?chainId=92014&learningCycleId=${product}#activity-a`,
+      `/products/${product}/value-chain-history/processes/92004/activities?chainId=92014&learningCycleId=${product}&sourceReference=experiment%3A${product}#activity-a`,
     );
     const reconcile = () =>
       post(
@@ -319,7 +319,7 @@ try {
     await backLink.click();
     await expect(page).toHaveURL(
       new RegExp(
-        `/92004/activities\\?chainId=92014&learningCycleId=${product}#activity-a`,
+        `/92004/activities\\?chainId=92014&learningCycleId=${product}&sourceReference=experiment%3A${product}#activity-a`,
       ),
     );
     await post(
@@ -353,7 +353,7 @@ try {
       panel.getByRole("link", { name: /Voltar ao processo pai/ }),
     ).toHaveAttribute(
       "href",
-      "/products/92027/value-chain-history/processes/92004/activities?chainId=92014&learningCycleId=92027#activity-a",
+      "/products/92027/value-chain-history/processes/92004/activities?chainId=92014&learningCycleId=92027&sourceReference=experiment%3A92027#activity-a",
     );
     await panel.screenshot({ path: `${output}/${name}-unneeded-child.png` });
     assert.equal(

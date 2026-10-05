@@ -33,6 +33,12 @@ quando a navegação declarar um contexto. Validar propriedade, cadeia, ciclo e 
 nunca substituir uma referência explícita pelo ciclo ou experimento mais recente. Ficha
 ainda sem vínculo não oferece navegação operacional que possa inferir outra execução.
 
+Os links oficiais do cabeçalho, de ida ao subprocesso, de retorno ao pai e de atividade
+preservam a mesma `sourceReference`, inclusive sem ciclo. O backend monta essa identidade
+antes da âncora da atividade, com codificação própria de query; consumidores e contexto
+AIHUB não devem depender de inferência da execução mais recente no destino. A projeção
+anterior à definição da referência não inventa esse vínculo.
+
 Na passagem de contexto foram comparados: inferir sempre o mais recente (esforço baixo,
 risco de trocar a execução), exigir ciclo em todo produto (esforço baixo, impede trabalho
 privado anterior ao experimento) e transportar referência explícita com validação canônica

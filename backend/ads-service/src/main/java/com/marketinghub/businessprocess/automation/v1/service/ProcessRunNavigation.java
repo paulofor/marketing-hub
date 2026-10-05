@@ -84,14 +84,7 @@ public class ProcessRunNavigation {
 
   /** Abre a execução exata, incluindo sua referência quando não há ciclo registrado. */
   public String executionUrl(ProcessRun run) {
-    return url(run, run.getProcessDefinitionId(), null)
-        + "&sourceReference="
-        + URLEncoder.encode(run.getSourceReference(), StandardCharsets.UTF_8).replace("+", "%20")
-        + (run.getCurrentActivityId() == null || run.getCurrentActivityId().isBlank()
-            ? ""
-            : "#activity-"
-                + URLEncoder.encode(run.getCurrentActivityId(), StandardCharsets.UTF_8)
-                    .replace("+", "%20"));
+    return url(run, run.getProcessDefinitionId(), run.getCurrentActivityId());
   }
 
   /** Percorre composições aninhadas, impedindo ciclos e duplicação na coleta do catálogo. */
@@ -186,8 +179,8 @@ public class ProcessRunNavigation {
   }
 
   /**
-   * Monta caminho local com produto, cadeia, ciclo e atividade, sem aceitar redirecionamento
-   * externo.
+   * Monta caminho local com produto, cadeia, ciclo, referência exata e atividade, sem inferir outra
+   * execução nem aceitar redirecionamento externo.
    */
   private String url(ProcessRun run, Long processId, String activityId) {
     return "/products/"
@@ -197,6 +190,11 @@ public class ProcessRunNavigation {
         + "/activities?chainId="
         + run.getChainDefinitionId()
         + (run.getLearningCycleId() == null ? "" : "&learningCycleId=" + run.getLearningCycleId())
+        + (run.getSourceReference() == null || run.getSourceReference().isBlank()
+            ? ""
+            : "&sourceReference="
+                + URLEncoder.encode(run.getSourceReference(), StandardCharsets.UTF_8)
+                    .replace("+", "%20"))
         + (activityId == null || activityId.isBlank()
             ? ""
             : "#activity-"

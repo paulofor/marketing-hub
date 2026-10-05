@@ -8921,3 +8921,15 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
   faturas. Corrigir leitura não resolve custos integrais desconhecidos nem aprova uma entrega
   comercial com fixtures. Repetir apenas Plutus depois da mudança de contexto, dentro do mesmo
   teto, sem regenerar imagens nem iniciar mídia. Matriz: `docs/homologacao/alcyone-ai-preparation-cost-v1.md`.
+
+### Pendência encadeada de atestação — 05/10/2026
+
+- Os checks de Psique/Têmis do PR #5506 reproduziram hash antigo em Alcyone v8: o serviço
+  compartilhado mudou nos PRs #5487/#5498, mas os filtros não executaram o pacote consumidor.
+  Quinze testes sintéticos passavam enquanto o pacote real falhava antes de qualquer modelo.
+- Revalidada a mesma alcyone-private-v3 e criada v9 com relatório específico v10, preservando v8.
+  Backend CI executa agora o construtor real antes de integrar fontes/contratos alterados, com
+  teste da ordem; não silencia o check nem afrouxa a exigência de hash.
+- A suíte completa, dois consumidores, pacote real e capturas reproduzíveis passaram localmente.
+  Capturas comprovam entrada privada, identidade e zero mutações; não comprovam geração integrada
+  ou demanda. Registro: `docs/homologacao/alcyone-agent-validation-v10.md`.

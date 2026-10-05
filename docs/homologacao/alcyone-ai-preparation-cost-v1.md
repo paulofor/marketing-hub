@@ -134,3 +134,14 @@ contextos de teste, a suíte terminou com sucesso. O teste JPA dedicado encerra 
 a classe. As duas imagens locais vieram dos Dockerfiles versionados; o Codex 0.159.3 empacotado
 aceitou a política MCP em containers sem rede/credenciais. Nenhum modelo foi chamado na matriz
 local. MySQL e volume temporários foram removidos pelo projeto Compose autorizado.
+
+O CI do PR #5506 revelou atestação privada v8 com hash antigo de uma classe compartilhada,
+alterada legitimamente nos PRs #5487/#5498. Reproduzido e corrigido localmente por sucessora v9,
+preservando v8 e a mesma alcyone-private-v3. O CI do backend passa a validar o pacote real antes
+de integrar mudanças nas fontes. Relatório específico: `alcyone-agent-validation-v10.md`.
+Não altera fixtures em geração comercial nem transforma a atestação candidata em aprovação.
+
+A extensão passou em 13 testes do contrato de CI, 15 do construtor e no pacote real com 317
+arquivos/61 manifestos. Psique: 150 casos, zero falhas e duas dispensas; Têmis: 108 casos, zero
+falhas e uma dispensa. As capturas foram geradas pelo script versionado
+`infra/testing/commercial-evidence/capture-private-boundary.cjs`, sem mutação ou inferência.

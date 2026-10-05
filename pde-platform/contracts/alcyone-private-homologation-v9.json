@@ -1,0 +1,143 @@
+{
+  "contractVersion": "alcyone-private-homologation.v9",
+  "processCode": "pde-private-agent-homologation",
+  "processVersion": 1,
+  "activityId": "commercialIntegrityReview",
+  "sourceReference": "product:11@agent-validation-v1",
+  "product": {
+    "id": 11,
+    "internalName": "Alcyone",
+    "commercialName": "Alcyone",
+    "slug": "pde-planejado-46",
+    "experienceVersion": "alcyone-private-v3",
+    "supersedesExperienceVersions": [
+      "alcyone-private-v2"
+    ],
+    "publicUrl": "https://alcyone.digicomdigital.com.br"
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "boundary": "Autoriza somente a conclusão técnica e a homologação privada por agentes da mesma alcyone-private-v3; não autoriza participante humano, tráfego, venda, pagamento, checkout, campanha, mídia ou alegação de demanda.",
+  "operationalState": {
+    "verifiedAt": "2026-10-05",
+    "productStatus": "PLANNED",
+    "deploymentAuthorized": true,
+    "commercialPublicationAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/alcyone-private-homologation-v8.json",
+    "reason": "Revalida a mesma experiência privada após correções de referências e encerramento no backend compartilhado; não promove geração isolada a entrega comercial.",
+    "includedChanges": [
+      "Atestação sucessora com fonte compartilhada atual e regressão local completa",
+      "Identidade publicada e fronteira privada conferidas sem mutação em desktop/mobile",
+      "CI do backend valida o pacote real antes de integrar alterações das fontes"
+    ],
+    "excludedChanges": [
+      "Entrevista, convite, opinião solicitada, leitura ou piloto humano",
+      "Checkout real, cobrança, publicação comercial, campanha ou mídia",
+      "Evidência de demanda, preferência, disposição a pagar, venda, receita ou margem"
+    ],
+    "excludedMutableReferences": [
+      "docs/registros/loops.md"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "alcyone",
+    "publicUrl": "https://alcyone.digicomdigital.com.br",
+    "requiredFrontendSourceSha256": "30c6fbaaf7888629f5e05819ff3571edc39e10acd8d5757eea94478de53612a7"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "alcyone-private-v3",
+      "experienceVersion": "alcyone-private-v3",
+      "frontendSourceSha256": "30c6fbaaf7888629f5e05819ff3571edc39e10acd8d5757eea94478de53612a7"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/alcyone-private-homologation-v8.json",
+      "sha256": "72bbf21c0359bcdbbbf9efa582877b96e695dee2446e36a77e62676911aa672b",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva a atestação v8 e todos os aceites privados anteriores; esta sucessora não os reexecuta nem os converte em aprovação comercial."
+    },
+    {
+      "path": "docs/homologacao/alcyone-agent-validation-v10.md",
+      "sha256": "c218d7e1724be7766eb756cc9ea2e2fee0ba02d6aad34c781debe42c6f3134f0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/alcyone-private-revalidation-v1/runtime.json",
+      "sha256": "0b931a0cd1c5c566eeba0b96258933c4a1a37f5b01f23bbdb32b6555b5727333",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Diagnóstico e contrato HTTP 200 da mesma versão privada e fingerprint, com chamadas externas, cobrança e mídia desabilitadas."
+    },
+    {
+      "path": "docs/homologacao/evidencias/alcyone-private-revalidation-v1/surfaces.json",
+      "sha256": "e130e564df53997a8e85bf844171be62e4a4b458f049eac9a1624221b4abf521",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Leituras em desktop, iPhone e Pixel sem qualquer escrita; limites da captura descritos no relatório."
+    },
+    {
+      "path": "docs/homologacao/evidencias/alcyone-private-revalidation-v1/desktop.png",
+      "sha256": "6d0c9f80da0874fc7834c21a9fe23153221b97b5ef417d28d8d16d605e17421e",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Captura da fronteira privada desktop, mesma alcyone-private-v3; não é prova de entrega comercial."
+    },
+    {
+      "path": "docs/homologacao/evidencias/alcyone-private-revalidation-v1/iphone.png",
+      "sha256": "24be03fc25ec8f4af13383cb9232314335f5a6d7237b155389f8d5b4da38fea6",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Captura da fronteira privada iphone, mesma alcyone-private-v3; não é prova de entrega comercial."
+    },
+    {
+      "path": "docs/homologacao/evidencias/alcyone-private-revalidation-v1/pixel.png",
+      "sha256": "4494663873a7b1403740e3ae9feed8dba88b8894edd0f4347c82ba8b027f47ae",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Captura da fronteira privada pixel, mesma alcyone-private-v3; não é prova de entrega comercial."
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocess/execution/service/productProcessExecutions/ProductProcessConditionalActivityResolver.java",
+      "sha256": "f8cca4cad27559108798323fcadf806751ab46a4165c36ecb54e2da1741e7578",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocess/execution/service/BusinessProcessActivityExecutionService.java",
+      "sha256": "9e2e5c71662202117a65766524872e985d5a5ce865f08b1f0542f8d86cc45c29",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Integra a projeção condicional à visão persistida e auditável das atividades do Processo 3."
+    },
+    {
+      "path": "scripts/build-commercial-review-evidence.mjs",
+      "sha256": "938c2a12fb73fe02f996e4ac482aa92a2cbef7d57841b72bebc23ba6b49f01b5",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/execution/service/productProcessExecutions/ProductProcessConditionalActivityResolverTest.java",
+      "sha256": "ca40166eebb0031cfef6414e9a5ad6819c1ff1e6bab863fe222e44cd34c7d3cf",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/execution/service/BusinessProcessActivityExecutionServiceTest.java",
+      "sha256": "d66c26e1425c2d8540533284e5fdc07de0f7fa77380d7ebca334a67913d48279",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Comprova que a recuperação cancelada deixa de ser objetivo sem perder sua tarefa, instância e evidência no relatório do processo."
+    },
+    {
+      "path": "scripts/build-commercial-review-evidence.test.mjs",
+      "sha256": "95c7abdb534487a33387a283869c0ed83657e826ca65b9f30e9b1e1f787ea819",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/commercial-evidence/capture-private-boundary.cjs",
+      "sha256": "3b3571053701757e219fd73c71d9681ce533fa3032d27ac936a713bfa43570db",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Captura reprodutível da fronteira privada e diagnóstico/contrato coerentes em três perfis, sem sessões ou geração."
+    }
+  ],
+  "validationReport": "docs/homologacao/alcyone-agent-validation-v10.md"
+}

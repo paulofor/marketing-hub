@@ -24,6 +24,9 @@ class BackendCiWorkflowTest(unittest.TestCase):
             ".github/workflows/deploy-containers.yml",
             "scripts/download-approved-pr-artifact.sh",
             "scripts/test-backend-ci-workflow.py",
+            "scripts/build-commercial-review-evidence*",
+            "pde-platform/contracts/**",
+            "infra/testing/commercial-evidence/**",
             "infra/testing/vega-integrity-cycle/run-round.sh",
             "infra/testing/runway-clip-plan/run-round.sh",
             "infra/testing/runway-gen45/run-round.sh",
@@ -39,6 +42,18 @@ class BackendCiWorkflowTest(unittest.TestCase):
         deployment = (REPO / ".github/workflows/deploy-containers.yml").read_text()
         self.assertIn("mvn -B -q test | tee", deployment)
         self.assertNotRegex(self.workflow, r"-Dtest=|testFailureIgnore|continue-on-error|\|\| true")
+
+    def test_current_attestations_are_validated_before_backend_or_packaging(self):
+        """Detecta fonte compartilhada divergente antes de integrar um PR sem revalidação."""
+        contract = self.workflow.index("node --test scripts/build-commercial-review-evidence.test.mjs")
+        real_bundle = self.workflow.index(
+            "node scripts/build-commercial-review-evidence.mjs . backend/ads-service/target/commercial-review-evidence"
+        )
+        tests = self.workflow.index("run: mvn -B test")
+        package = self.workflow.index("run: mvn -B package -DskipTests")
+        self.assertLess(contract, real_bundle)
+        self.assertLess(real_bundle, tests)
+        self.assertLess(tests, package)
 
     def test_pr_validates_liquibase_and_preserves_reusable_package(self):
         self.assertIn("image: mysql:5.7", self.workflow)

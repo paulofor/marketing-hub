@@ -10,6 +10,9 @@ on:
       - ".github/workflows/deploy-containers.yml"
       - "scripts/download-approved-pr-artifact.sh"
       - "scripts/test-backend-ci-workflow.py"
+      - "scripts/build-commercial-review-evidence*"
+      - "pde-platform/contracts/**"
+      - "infra/testing/commercial-evidence/**"
       - "scripts/test-backend-packaged-resources.py"
       - "scripts/verify-backend-packaged-resources.py"
       - "scripts/BackendResearchPackageSmoke.java"
@@ -58,6 +61,10 @@ jobs:
           cache-dependency-path: backend/ads-service/pom.xml
       - name: Validar contrato do CI
         run: python3 scripts/test-backend-ci-workflow.py
+      - name: Validar atestações vigentes contra as fontes do backend
+        run: |
+          node --test scripts/build-commercial-review-evidence.test.mjs
+          node scripts/build-commercial-review-evidence.mjs . backend/ads-service/target/commercial-review-evidence
       - name: Executar todos os testes do backend
         working-directory: backend/ads-service
         run: mvn -B test

@@ -537,3 +537,11 @@ de nova inferência; preservar os pareceres anteriores e reutilizar resultados q
 O teste deve exercitar o servidor MCP real com fontes locais e identidades diferentes, não apenas
 a presença textual da ferramenta. Custos positivos preservam oito casas decimais; a precisão nova
 não recupera o histórico arredondado. Matriz: `docs/homologacao/alcyone-ai-preparation-cost-v1.md`.
+
+Quando uma fonte compartilhada estiver fixada por hash numa atestação vigente, validar localmente
+o pacote real com o construtor existente antes de publicar. Mudança legítima exige revalidação
+proporcional e atestação sucessora; não reescrever o manifesto histórico nem ignorar a divergência.
+O CI do backend executa essa mesma validação antes de integrar qualquer fonte ou contrato afetado,
+independentemente dos filtros dos workers consumidores. Uma atestação privada sucessora preserva
+os aceites anteriores e não concede aprovação comercial. Evidência: `alcyone-agent-validation-v10.md`
+em `docs/homologacao`, com causa confirmada nos PRs #5487/#5498 e caso detectado no CI do #5506.

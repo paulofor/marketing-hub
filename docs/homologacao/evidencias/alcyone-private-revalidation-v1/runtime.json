@@ -1,0 +1,81 @@
+{
+  "/version-diagnostics.json": {
+    "status": 200,
+    "body": {
+      "status": "UP",
+      "surface": "pde-platform-frontend-alcyone",
+      "productId": 11,
+      "productSlug": "pde-planejado-46",
+      "version": "alcyone-private-v3",
+      "publicUrl": "https://alcyone.digicomdigital.com.br",
+      "experienceVersion": "alcyone-private-v3",
+      "image": "ghcr.io/paulofor/pde-platform-frontend-alcyone:2093f02ccca564a0d5a992e0c563838ead9fe93b",
+      "imageVersionId": "alcyone-private-v3",
+      "imageTag": "2093f02ccca564a0d5a992e0c563838ead9fe93b",
+      "commitSha": "2093f02ccca564a0d5a992e0c563838ead9fe93b",
+      "frontendSourceSha256": "30c6fbaaf7888629f5e05819ff3571edc39e10acd8d5757eea94478de53612a7",
+      "deployedAt": "2026-10-01T01:16:39Z",
+      "containerHostname": "76c4d7f04759"
+    }
+  },
+  "/api/pde/agent-validation/v1/products/pde-planejado-46/contract": {
+    "status": 200,
+    "body": {
+      "productId": 11,
+      "productSlug": "pde-planejado-46",
+      "prototypeVersion": "alcyone-private-v3",
+      "experienceName": "Três combinações para uma ocasião específica",
+      "fixtureContract": "PDE_STATIC_RESULT_FIXTURES_V1",
+      "fixtureManifestPath": "/assets/alcyone/manifest.json",
+      "productStatus": "PLANNED",
+      "checkoutMode": "SIMULATED_NO_CHARGE",
+      "intakeConsentVersion": "ALCYONE_AGENT_INTAKE_CONSENT_V1",
+      "continuityPolicyVersion": "ALCYONE_AGENT_CONTINUITY_V1",
+      "sessionTtlSeconds": 1800,
+      "continuityTtlSeconds": 86400,
+      "instrumentationEvents": [
+        "EXPERIENCE_STARTED",
+        "VALUE_MOMENT",
+        "READY_RESULT_USED",
+        "PREFERRED_OVER_FREE",
+        "CHECKOUT_STARTED"
+      ],
+      "errorStates": [
+        {
+          "code": "ACCESS_INVALID",
+          "message": "Este acesso privado não é válido para esta experiência.",
+          "recoveryAction": "Solicitar ao harness nova concessão para o mesmo cenário e versão."
+        },
+        {
+          "code": "SESSION_EXPIRED",
+          "message": "Sua sessão terminou, mas o trabalho preservado pode ser retomado.",
+          "recoveryAction": "Autenticar a credencial de continuidade e recuperar a mesma execução."
+        },
+        {
+          "code": "INPUT_INCOMPLETE",
+          "message": "Ainda faltam informações necessárias para preparar a seleção.",
+          "recoveryAction": "Destacar os campos faltantes sem chamar o executor."
+        },
+        {
+          "code": "HARNESS_FAILURE",
+          "message": "Não foi possível concluir o processamento agora; sua entrada foi preservada.",
+          "recoveryAction": "Repetir com a mesma execução e sem duplicar pacote ou custo."
+        },
+        {
+          "code": "RESULT_UNAVAILABLE",
+          "message": "Sua seleção está preservada, mas não pode ser exibida neste momento.",
+          "recoveryAction": "Recarregar o mesmo pacote autorizado sem regeneração."
+        },
+        {
+          "code": "RESUME_FAILED",
+          "message": "Não foi possível retomar com esta credencial.",
+          "recoveryAction": "Validar versão e vigência sem criar nova leitura."
+        }
+      ],
+      "published": false,
+      "paymentEnabled": false,
+      "mediaSpendBrl": 0,
+      "providerCallsAuthorized": 0
+    }
+  }
+}

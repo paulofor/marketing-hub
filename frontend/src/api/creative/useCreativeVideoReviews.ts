@@ -4,18 +4,13 @@ import { useLocation, matchPath } from "react-router-dom";
 
 export type CreativeVideoReviewStatus = "DRAFT" | "READY" | "REJECTED";
 export type CreativeVideoReviewSourceType =
-  | "CREATIVE"
-  | "EXPERIMENT_VIDEO_ASSET";
+  "CREATIVE" | "EXPERIMENT_VIDEO_ASSET";
 export type CreativeAgentReviewStatus =
-  | "PENDING"
-  | "PROCESSING"
-  | "APPROVED"
-  | "ADJUST"
-  | "REJECTED"
-  | "FAILED";
+  "PENDING" | "PROCESSING" | "APPROVED" | "ADJUST" | "REJECTED" | "FAILED";
 
 export type VideoReviewState =
   | "AWAITING_REVIEW"
+  | "OPTIONAL_REVIEW"
   | "BLOCKED"
   | "HISTORICAL"
   | "APPROVED"
@@ -32,6 +27,7 @@ export interface VideoReviewSummary {
   historicalCount: number;
   approvedCount: number;
   rejectedCount: number;
+  optionalReviewCount: number;
 }
 
 /** Extrai somente a identidade da navegação; o backend decide a elegibilidade. */

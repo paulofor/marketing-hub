@@ -71,6 +71,16 @@ public final class VideoReviewPolicy {
       String historicalReason,
       String blockedReason,
       boolean agentRetryAvailable) {
+    return classify(status, historicalReason, blockedReason, agentRetryAvailable, true);
+  }
+
+  /** Separa candidatas opcionais das decisões necessárias usando a obrigatoriedade persistida. */
+  public static VideoReviewEligibility classify(
+      CreativeStatus status,
+      String historicalReason,
+      String blockedReason,
+      boolean agentRetryAvailable,
+      boolean requiredForRelease) {
     if (status == CreativeStatus.READY)
       return new VideoReviewEligibility(
           VideoReviewState.APPROVED,
@@ -89,9 +99,17 @@ public final class VideoReviewPolicy {
     if (blockedReason != null)
       return new VideoReviewEligibility(
           VideoReviewState.BLOCKED, blockedReason, false, agentRetryAvailable);
+    if (!requiredForRelease)
+      return new VideoReviewEligibility(
+          VideoReviewState.OPTIONAL_REVIEW,
+          "Candidata opcional. Não exige sua aprovação para o fluxo continuar; "
+              + "precisa de aprovação antes de eventual uso comercial.",
+          true,
+          false);
     return new VideoReviewEligibility(
         VideoReviewState.AWAITING_REVIEW,
-        "Nova peça disponível para revisão. A decisão não publica campanha nem autoriza gasto.",
+        "Peça necessária para a liberação deste experimento, pronta para sua aprovação. "
+            + "A decisão não publica campanha nem autoriza gasto.",
         true,
         false);
   }

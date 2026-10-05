@@ -8843,3 +8843,20 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
 - Prevenção: HTTP com contexto e regras reais, cinco atividades, prova ausente,
   outro produto, candidata aberta, persistência/idempotência e desktop/mobile.
   Matriz: `docs/homologacao/mira-preparacao-historica-v1.md`. Sem chamada paga.
+
+## LOOP-VIDEO-CANDIDATA-OPCIONAL-COMO-APROVACAO-PENDENTE — 05/10/2026
+
+- Evidência: mesmo com o PR #5497 publicado, a fila geral mostrava #51/Capella/#94
+  e #52/Vega/#95 como duas decisões. MCP confirmou `required_for_release=0` no
+  primeiro e `1` no segundo. A consulta de Alcyone já retornava zero.
+- Causa: a classificação compartilhada distinguia histórico, prontidão e gates,
+  mas ignorava a obrigatoriedade. A fixture do navegador também esperava alerta
+  para uma peça marcada como opcional, reproduzindo a lacuna no teste.
+- Correção: `OPTIONAL_REVIEW` e contagem própria derivados do campo persistido;
+  a aba de opcionais preserva a decisão explícita anterior ao uso comercial.
+  O alerta e a fila padrão mostram somente aprovações necessárias.
+- Prevenção: política, API/H2, React e desktop/mobile cobrem mudança de
+  obrigatoriedade, histórico, gates, decisão preservada e candidata consultável
+  sem alerta. Nenhum ID recebe exceção, aprovação automática ou consumo pago.
+- Registro: `docs/homologacao/video-review-optional-v1.md` e
+  `docs/registros/sales-video.md`.

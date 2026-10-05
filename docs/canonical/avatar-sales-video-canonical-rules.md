@@ -269,3 +269,17 @@ reprovada deterministicamente não pode ser reenviada ao parecer pago sem corre�
 
 Contrato: `docs/swagger/creative-video-review-swagger.yaml`. Regressões e limites:
 `docs/homologacao/video-review-readiness-v1.md`. Nenhuma decisão histórica é reescrita.
+
+### Aprovações necessárias e candidatas opcionais — 05/10/2026
+
+Uma peça de experimento pronta e sem bloqueios com `requiredForRelease=false` é
+`OPTIONAL_REVIEW`, não uma pendência de aprovação. Fica consultável em **Candidatas
+opcionais** e pode receber uma decisão explícita para eventual uso no portfólio,
+preservando todos os gates. Não integra `awaitingReviewCount` nem o alerta global.
+Com `requiredForRelease=true`, a peça pronta e ainda sem decisão permanece em
+`AWAITING_REVIEW`. A interface chama essa fila de **Aprovações necessárias**.
+
+A classificação usa a obrigatoriedade persistida, nunca nome, descrição, ID ou
+presença de URL. Histórico, bloqueios e decisões existentes prevalecem sobre essa
+distinção. Uma candidata opcional não recebe aprovação automática e continua
+impedida de uso comercial até a decisão exigida pelo contrato de publicação.

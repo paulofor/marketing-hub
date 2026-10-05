@@ -35,15 +35,13 @@ describe("GlobalAutomationAlerts", () => {
       "/products/81/value-chain-history/processes/25/activities?sourceReference=experiment%3A820",
     );
     expect(
-      await screen.findByText(
-        "2 novas peças de vídeo disponíveis para revisão",
-      ),
+      await screen.findByText("2 vídeos precisam da sua aprovação"),
     ).toBeInTheDocument();
     expect(get).toHaveBeenCalledWith("/api/creatives/video-review/summary", {
       params: { productId: 81, experimentId: 820 },
     });
     expect(
-      screen.getByRole("link", { name: "Ver peças para revisão" }),
+      screen.getByRole("link", { name: "Ver aprovações necessárias" }),
     ).toHaveAttribute(
       "href",
       "/creative-video-review?productId=81&experimentId=820",
@@ -51,7 +49,12 @@ describe("GlobalAutomationAlerts", () => {
   });
   it("não atribui vídeos alheios ou bloqueados ao produto sem revisões humanas", async () => {
     get.mockResolvedValue({
-      data: { awaitingReviewCount: 0, blockedCount: 2, historicalCount: 4 },
+      data: {
+        awaitingReviewCount: 0,
+        optionalReviewCount: 5,
+        blockedCount: 2,
+        historicalCount: 4,
+      },
     });
     setup("/products/82/edit");
     await waitFor(() =>
@@ -65,7 +68,7 @@ describe("GlobalAutomationAlerts", () => {
     get.mockResolvedValue({ data: { awaitingReviewCount: 1 } });
     setup("/creative-video-review");
     expect(
-      await screen.findByText("1 nova peça de vídeo disponível para revisão"),
+      await screen.findByText("1 vídeo precisa da sua aprovação"),
     ).toBeInTheDocument();
     expect(screen.getByText(/Na fila geral do Hub/)).toBeInTheDocument();
     expect(
@@ -73,5 +76,19 @@ describe("GlobalAutomationAlerts", () => {
         ([url]) => url === "/api/creatives/video-review/summary",
       ),
     ).toBe(true);
+  });
+  it("não alerta sobre candidatas opcionais nem na fila geral", async () => {
+    get.mockResolvedValue({
+      data: {
+        awaitingReviewCount: 0,
+        optionalReviewCount: 7,
+        blockedCount: 3,
+        historicalCount: 4,
+      },
+    });
+    setup("/creative-video-review");
+    await waitFor(() => expect(get).toHaveBeenCalledOnce());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText(/precisa.*aprovação/)).not.toBeInTheDocument();
   });
 });

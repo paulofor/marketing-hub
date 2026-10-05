@@ -58,23 +58,23 @@ export default function GlobalAutomationAlerts() {
           <div>
             <div className="fw-bold mb-1">
               {pendingVideoReviewCount === 1
-                ? "1 nova peça de vídeo disponível para revisão"
-                : `${pendingVideoReviewCount} novas peças de vídeo disponíveis para revisão`}
+                ? "1 vídeo precisa da sua aprovação"
+                : `${pendingVideoReviewCount} vídeos precisam da sua aprovação`}
             </div>
             <p className="mb-2">
               {scope.productId || scope.experimentId
                 ? "Neste contexto"
                 : "Na fila geral do Hub"}
-              : somente peças prontas para sua decisão. Vídeos já aprovados não
-              precisam de nova aprovação. Esta revisão não libera campanha nem
-              gasto.
+              : peças necessárias e prontas para sua decisão. Candidatas
+              opcionais ficam na biblioteca de revisão. Esta aprovação não
+              libera campanha nem gasto.
             </p>
             <Link
               className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
               to={reviewUrl}
             >
               <AlertTriangle size={14} aria-hidden="true" />
-              Ver peças para revisão
+              Ver aprovações necessárias
             </Link>
           </div>
         </div>

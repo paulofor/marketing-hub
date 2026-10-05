@@ -7,7 +7,7 @@ Objetivo comercial: nenhum video gerado deve entrar em campanha, PDE ou pagina d
 1. O video deve ser gerado na tela de videos do produto, porque o produto e a fonte do portfolio reutilizavel.
 2. O resultado passa por analise de qualidade visual, audio, clareza da mensagem e aderencia ao papel no funil.
 3. Se a qualidade bloquear o uso, o video deve ser rejeitado com motivo auditavel ou refeito antes de seguir para uso comercial.
-4. Quando o video estiver com `status=READY`, URL publica e `has_audio=true`, ele aparece em `/creative-video-review` para aprovacao humana.
+4. Quando o video estiver com `status=READY`, URL publica, `has_audio=true` e gates atendidos, ele fica consultável em `/creative-video-review`. Com `requiredForRelease=true`, aparece em **Aprovações necessárias** e no alerta; com `false`, fica em **Candidatas opcionais**, sem pendência obrigatória. A candidata continua exigindo aprovação antes de eventual uso comercial.
 5. A aprovacao humana muda `review_status` para `APPROVED` e libera o video para o portfolio do produto.
 6. A reprovacao exige motivo, muda `review_status` para `REJECTED` e impede uso em campanha, PDE ou pagina.
 7. Toda aprovacao ou reprovacao deve registrar data/hora da decisao e manter custo auditavel.

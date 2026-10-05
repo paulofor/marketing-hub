@@ -12,6 +12,7 @@ import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentType;
+import com.marketinghub.experiment.run.service.ExperimentHomologationLifecycle;
 import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
 import com.marketinghub.experiment.service.ExperimentTargetingSelectionService;
 import com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment;
@@ -87,9 +88,14 @@ public class QuartzoCommercialContext {
   /** Responsabilidade: manter a entidade do ciclo junto da projeção pública da referência. */
   private record ResolvedScope(Scope scope, LearningSalesCycle cycle) {}
 
+  /** Responsabilidade: identificar a referência sem depender de fontes comerciais atuais. */
+  private record Reference(Experiment experiment, LearningSalesCycle cycle) {}
+
   /** Responsabilidade: compartilhar fontes e fotografia somente durante a transação corrente. */
   private record TransactionContextCache(
-      Map<String, ResolvedScope> scopes, Map<String, ObjectNode> snapshots) {}
+      Map<String, Reference> references,
+      Map<String, ResolvedScope> scopes,
+      Map<String, ObjectNode> snapshots) {}
 
   /** Reconhece exclusivamente o código oficial do tipo, nunca seu nome comercial. */
   public boolean applies(Product product) {
@@ -98,18 +104,64 @@ public class QuartzoCommercialContext {
         && TYPE.equals(product.getProductTypeDefinition().getCode());
   }
 
-  /** Confere a propriedade da referência e preserva o estado interrompido sem reativá-lo. */
-  public Scope scope(String source, Long productId, boolean mutation) {
+  /** Confere identidade e compartilha apenas a referência da transação corrente. */
+  private Reference reference(String source, Long productId) {
     require(
         source != null && source.matches("experiment:[1-9][0-9]{0,17}"),
         "Selecione o experimento exato do produto Quartzo antes da preparação.");
+    Reference reference =
+        TransactionSynchronizationManager.isSynchronizationActive()
+            ? transactionContextCache().references().computeIfAbsent(source, this::resolveReference)
+            : resolveReference(source);
+    require(
+        productId == null || Objects.equals(productId, reference.experiment().getProduct().getId()),
+        "O experimento pertence a outro produto.");
+    return reference;
+  }
+
+  /** Resolve produto e ciclo oficiais antes de consultar publicação, economia ou ativos. */
+  private Reference resolveReference(String source) {
+    var experiment = experiments.findById(Long.parseLong(source.substring(11))).orElseThrow();
+    var product = experiment.getProduct();
+    require(applies(product), "Este subprocesso exige o tipo cadastrado Quartzo.");
+    require(
+        experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT,
+        "O experimento Quartzo precisa usar o contrato de venda low-ticket.");
+    var cycle = cycles.findByExperimentId(experiment.getId()).orElse(null);
+    require(
+        cycle == null || Objects.equals(cycle.getProductId(), product.getId()),
+        "O ciclo pertence a outro produto.");
+    return new Reference(experiment, cycle);
+  }
+
+  /** Identifica histórico encerrado sem exigir validade atual das fontes já comprovadas. */
+  public String historicalBlockReason(String source, Long productId) {
+    return historicalBlockReason(reference(source, productId));
+  }
+
+  /** Preserva janela e ciclo encerrados sem renovar pareceres ou autorizar nova preparação. */
+  private String historicalBlockReason(Reference reference) {
+    String reason = ExperimentHomologationLifecycle.blockReason(reference.experiment());
+    if (reason != null) return reason;
+    if (reference.cycle() != null && !"OPEN".equals(reference.cycle().getStatus()))
+      return "O ciclo #"
+          + reference.cycle().getId()
+          + " está encerrado. Preserve as provas da preparação comercial; a continuidade exige "
+          + "novo ciclo/experimento com limites próprios, sem repetir pareceres nesta referência.";
+    return null;
+  }
+
+  /** Recusa novas provas em referência encerrada e preserva a leitura e o estado interrompido. */
+  public Scope scope(String source, Long productId, boolean mutation) {
+    var reference = reference(source, productId);
+    if (mutation) {
+      String closed = historicalBlockReason(reference);
+      require(closed == null, closed);
+    }
     ResolvedScope resolved =
         TransactionSynchronizationManager.isSynchronizationActive()
             ? transactionContextCache().scopes().computeIfAbsent(source, this::resolveScope)
-            : resolveScope(source);
-    require(
-        productId == null || Objects.equals(productId, resolved.scope().product().getId()),
-        "O experimento pertence a outro produto.");
+            : resolveScope(reference);
     if (mutation) {
       require(
           List.of(ExperimentStatus.PLANNED, ExperimentStatus.USER_STOPPED, ExperimentStatus.PAUSED)
@@ -127,16 +179,14 @@ public class QuartzoCommercialContext {
 
   /** Resolve uma vez as fontes invariantes da referência dentro da mesma transação. */
   private ResolvedScope resolveScope(String source) {
-    var experiment = experiments.findById(Long.parseLong(source.substring(11))).orElseThrow();
+    return resolveScope(reference(source, null));
+  }
+
+  /** Complementa a identidade validada com a versão e a publicação auditada da preparação. */
+  private ResolvedScope resolveScope(Reference reference) {
+    var experiment = reference.experiment();
     var product = experiment.getProduct();
-    require(applies(product), "Este subprocesso exige o tipo cadastrado Quartzo.");
-    require(
-        experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT,
-        "O experimento Quartzo precisa usar o contrato de venda low-ticket.");
-    var cycle = cycles.findByExperimentId(experiment.getId()).orElse(null);
-    require(
-        cycle == null || Objects.equals(cycle.getProductId(), product.getId()),
-        "O ciclo pertence a outro produto.");
+    var cycle = reference.cycle();
     String version =
         cycle == null ? product.getValidationDefinitionVersion() : cycle.getProductVersion();
     require(version != null && !version.isBlank(), "Registre a versão do contrato do produto.");
@@ -284,7 +334,7 @@ public class QuartzoCommercialContext {
   private TransactionContextCache transactionContextCache() {
     var current = TransactionSynchronizationManager.getResource(TRANSACTION_CACHE_RESOURCE);
     if (current != null) return (TransactionContextCache) current;
-    var cache = new TransactionContextCache(new HashMap<>(), new HashMap<>());
+    var cache = new TransactionContextCache(new HashMap<>(), new HashMap<>(), new HashMap<>());
     TransactionSynchronizationManager.bindResource(TRANSACTION_CACHE_RESOURCE, cache);
     TransactionSynchronizationManager.registerSynchronization(
         new TransactionSynchronization() {

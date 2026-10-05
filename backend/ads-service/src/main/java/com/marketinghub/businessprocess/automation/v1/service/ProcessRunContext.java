@@ -159,12 +159,13 @@ public class ProcessRunContext {
         + "inicie a versão autorizada no contexto correto.";
   }
 
-  /** Protege preparação e homologação pela referência, inclusive quando o ciclo foi omitido. */
+  /** Protege preparações Safira/Quartzo e homologação mesmo quando a navegação omite o ciclo. */
   private String experimentBlockReason(
       BusinessProcessDefinition process, Long productId, String reference) {
     if (!"experiment-homologation-activation".equals(process.getProcessCode())
         && !"pde-commercial-homologation-activation".equals(process.getProcessCode())
-        && !"safira-commercial-preparation-v1".equals(process.getProcessCode())) return null;
+        && !"safira-commercial-preparation-v1".equals(process.getProcessCode())
+        && !"quartzo-commercial-preparation-v1".equals(process.getProcessCode())) return null;
     if (reference == null || !reference.matches("experiment:[1-9][0-9]*")) return null;
     Long id = Long.valueOf(reference.substring("experiment:".length()));
     var experiment =

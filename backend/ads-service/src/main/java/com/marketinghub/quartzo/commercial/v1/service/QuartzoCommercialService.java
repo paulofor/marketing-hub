@@ -78,7 +78,7 @@ public class QuartzoCommercialService
         && REVIEWS.contains(task.getProcessActivityId());
   }
 
-  /** Expõe causa e destino de correção antes de qualquer escrita ou chamada de agente. */
+  /** Preserva histórico e expõe correção somente para candidata ainda aberta, antes de execução. */
   @Override
   @Transactional(readOnly = true)
   public BackendProductProcessActivityReadiness readiness(
@@ -87,6 +87,18 @@ public class QuartzoCommercialService
       Product product,
       String source) {
     try {
+      String closed = context.historicalBlockReason(source, product.getId());
+      if (closed != null)
+        return new BackendProductProcessActivityReadiness(
+            false,
+            closed,
+            "Consultar histórico do experimento",
+            "As atividades já comprovadas permanecem no histórico. Esta referência encerrada não recebe novas tarefas ou pareceres.",
+            null,
+            null,
+            List.of(),
+            null,
+            "/experiments/" + source.substring("experiment:".length()));
       var scope = context.scope(source, product.getId(), true);
       var prior = predecessors.readiness(process, activity, source);
       require(prior.ready(), prior.reason());

@@ -117,6 +117,15 @@ Alternativas consideradas: ampliar as condições de Opala (menor início, maior
 misturar contratos); criar motor separado (maior custo e duplicação); especializar Quartzo
 no BPM existente (contratos claros e reaproveitamento). Escolhida a terceira.
 
+Correção de 05/10/2026: preparação Quartzo de referência com estado terminal, janela
+encerrada ou ciclo fechado preserva ocorrências concluídas da mesma definição e referência.
+Validade financeira e fontes atuais não apagam essa comprovação histórica. A identidade
+do produto, experimento e ciclo é conferida antes de consultar fontes comerciais atuais;
+novas atividades, revisões pagas e comandos continuam bloqueados na referência encerrada.
+Prova ausente ou objetivo não atingido permanece pendente. O motor concilia o histórico
+sem repetir tarefas ou retorno ao pai; candidatas abertas mantêm as validações de fonte,
+fingerprint, economia e revisão independente. Isso não renova parecer, mídia ou orçamento.
+
 ## Preparação comercial Safira — decisão de 23/09/2026
 
 O tipo `AI_PRODUCT` (Safira) usa `safira-commercial-preparation-v1`: v1 no Processo 5 v9

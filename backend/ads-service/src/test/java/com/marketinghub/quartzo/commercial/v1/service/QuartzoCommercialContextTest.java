@@ -92,6 +92,57 @@ class QuartzoCommercialContextTest {
     verify(experiments, never()).save(any());
   }
 
+  /** Janela vencida bloqueia até candidata planejada, antes de consultar ativos ou finanças. */
+  @Test
+  void blocksExpiredPlannedReferenceWithoutRevalidatingCurrentSources() {
+    experiment.setStatus(ExperimentStatus.PLANNED);
+    experiment.setEndDate(java.time.LocalDate.now(java.time.ZoneOffset.UTC).minusDays(1));
+    product.setValidationDefinitionVersion(null);
+    assertThat(context.historicalBlockReason("experiment:88", 7L))
+        .contains("janela terminou", "não renove Plutus");
+    assertThatThrownBy(() -> context.scope("experiment:88", 7L, true))
+        .hasMessageContaining("não renove Plutus");
+    verifyNoInteractions(destinations, creatives);
+    verify(experiments, never()).save(any());
+  }
+
+  /** Estados terminais são históricos mesmo com data futura; data final de hoje segue válida. */
+  @Test
+  void distinguishesTerminalStateFromOpenWindowAndStoppedCandidate() {
+    var today = java.time.LocalDate.now(java.time.ZoneOffset.UTC);
+    experiment.setEndDate(today.plusDays(1));
+    for (var status : List.of(ExperimentStatus.INVALIDATED, ExperimentStatus.FINISHED)) {
+      experiment.setStatus(status);
+      assertThat(context.historicalBlockReason("experiment:88", 7L)).contains("encerrado");
+    }
+    for (var status :
+        List.of(ExperimentStatus.PLANNED, ExperimentStatus.PAUSED, ExperimentStatus.USER_STOPPED)) {
+      experiment.setStatus(status);
+      experiment.setEndDate(today);
+      assertThat(context.historicalBlockReason("experiment:88", 7L)).isNull();
+      assertThat(context.scope("experiment:88", 7L, true)).isNotNull();
+    }
+  }
+
+  /** Ciclo fechado é resolvido pela referência, sem aceitar produto ou ciclo de outra origem. */
+  @Test
+  void blocksClosedCycleAndRejectsForeignIdentityBeforeCurrentSources() {
+    var cycle = new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+    cycle.setId(98321L);
+    cycle.setProductId(product.getId());
+    cycle.setStatus("ADJUSTED");
+    when(cycles.findByExperimentId(experiment.getId())).thenReturn(Optional.of(cycle));
+    assertThat(context.historicalBlockReason("experiment:88", 7L)).contains("#98321", "encerrado");
+    assertThatThrownBy(() -> context.scope("experiment:88", 7L, true))
+        .hasMessageContaining("encerrado");
+    assertThatThrownBy(() -> context.historicalBlockReason("experiment:88", 98399L))
+        .hasMessageContaining("outro produto");
+    cycle.setProductId(98399L);
+    assertThatThrownBy(() -> context.historicalBlockReason("experiment:88", 7L))
+        .hasMessageContaining("outro produto");
+    verifyNoInteractions(destinations, creatives);
+  }
+
   /**
    * A tela recompõe a fotografia uma única vez por transação e nunca compartilha objeto mutável.
    */
@@ -99,6 +150,7 @@ class QuartzoCommercialContextTest {
   void reusesSnapshotOnlyInsideCurrentTransaction() {
     TransactionSynchronizationManager.initSynchronization();
     try {
+      assertThat(context.historicalBlockReason("experiment:88", 7L)).isNull();
       context.scope("experiment:88", 7L, true);
       var first = context.snapshot("experiment:88");
       first.put("destinationUrl", "https://mutated.test");

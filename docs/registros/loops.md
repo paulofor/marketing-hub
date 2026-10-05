@@ -8844,6 +8844,23 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
   outro produto, candidata aberta, persistência/idempotência e desktop/mobile.
   Matriz: `docs/homologacao/mira-preparacao-historica-v1.md`. Sem chamada paga.
 
+### Recorrência na preparação Quartzo — 05/10/2026
+
+- Capella #94 continua PLANNED, mas a janela terminou em 02/10. A execução
+  #33/processo #81 concluiu oito atividades em 29/09; #40/cadeia #26 exibia
+  4/8 e orientava renovar Plutus #62/plano #9/revisão 5. As oito ocorrências
+  persistidas e os pareceres aprovados #563/#564 contradizem falta de preparação.
+- A política de referência encerrada já aplicada a Safira não incluía Quartzo.
+  O reconhecimento do histórico comparava economia/pareceres passados com fontes
+  atuais. A identidade Quartzo agora é resolvida antes das fontes atuais; histórico
+  preserva objetivos concluídos e novas tarefas ficam bloqueadas antes do modelo.
+- A regressão HTTP reproduziu exatamente 4/8 na versão anterior. A candidata exige
+  8/8, recusa todos os comandos e preserva 7/8 quando uma prova falta ou a economia
+  não foi comprovada. Candidata aberta, outro produto, ciclo fechado, cache de
+  transação e persistência idempotente do motor permanecem protegidos.
+- Matriz: `docs/homologacao/capella-preparacao-historica-v1.md`. Não houve renovação
+  paga, alteração de oferta, prorrogação de janela ou autorização de gasto.
+
 ## LOOP-VIDEO-CANDIDATA-OPCIONAL-COMO-APROVACAO-PENDENTE — 05/10/2026
 
 - Evidência: mesmo com o PR #5497 publicado, a fila geral mostrava #51/Capella/#94

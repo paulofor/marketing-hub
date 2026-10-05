@@ -39,9 +39,7 @@ public class QuartzoCommercialAgentReadiness
                     .contains(activity.getActivityId())));
   }
 
-  /**
-   * Libera agentes somente depois das fontes e atividades determinísticas da mesma configuração.
-   */
+  /** Recusa referências encerradas e libera agentes apenas com fontes da candidata aberta. */
   @Override
   public AgentProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,
@@ -52,6 +50,8 @@ public class QuartzoCommercialAgentReadiness
       return new AgentProductProcessActivityReadiness(
           true, "O executor do pai valida a rota do tipo.");
     try {
+      String closed = context.historicalBlockReason(source, product.getId());
+      if (closed != null) return new AgentProductProcessActivityReadiness(false, closed);
       var scope = context.scope(source, product.getId(), true);
       if (QuartzoCommercialService.REVIEWS.contains(activity.getActivityId()))
         preparation.prepared(process, scope, source, context.snapshot(source));
@@ -68,7 +68,7 @@ public class QuartzoCommercialAgentReadiness
     }
   }
 
-  /** Consulta sem reserva de escrita e invalida somente a comprovação afetada e seus gates. */
+  /** Preserva conclusões encerradas e invalida apenas fontes da preparação ainda aberta. */
   @Override
   public boolean requiresFreshExecution(
       BusinessProcessDefinition process,
@@ -81,6 +81,7 @@ public class QuartzoCommercialAgentReadiness
             activity.getId(), source);
     if (previous.isEmpty() || !"COMPLETED".equals(previous.get().getStatus())) return false;
     try {
+      if (context.historicalBlockReason(source, product.getId()) != null) return false;
       if (!QuartzoCommercialContext.CODE.equals(process.getProcessCode()))
         return !preparation.completed(product, source);
       var snapshot = context.snapshot(source);

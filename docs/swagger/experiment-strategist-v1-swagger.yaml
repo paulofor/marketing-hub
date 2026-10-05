@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Estrategista de Experimentos v1
-  version: 1.4.0
+  version: 1.5.0
 paths:
   /api/experiment-strategist/v1/commercial-plans/{planId}/executions:
     post:
@@ -22,6 +22,25 @@ paths:
   /api/experiment-strategist/v1/internal/executions/{id}/complete:
     post:
       summary: Persiste diagnóstico, inteligência de mercado, três alternativas, posicionamento, fontes e recomendação sem executá-la.
+      description: O callback pode informar effectiveServiceTier, inputTokens, cachedInputTokens e outputTokens. Uso completo é estimado pelo catálogo persistido; ausência de uso ou tarifa mantém custo desconhecido e callbacks legados continuam compatíveis.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [alternativesJson, recommendationJson, publicSourcesJson, rawModelResponse, modelName]
+              properties:
+                alternativesJson: {type: string}
+                recommendationJson: {type: string}
+                publicSourcesJson: {type: string}
+                rawModelResponse: {type: string}
+                modelName: {type: string}
+                estimatedCost: {type: number, nullable: true}
+                effectiveServiceTier: {type: string, enum: [STANDARD, FLEX, BATCH], nullable: true}
+                inputTokens: {type: integer, format: int64, minimum: 0, nullable: true}
+                cachedInputTokens: {type: integer, format: int64, minimum: 0, nullable: true}
+                outputTokens: {type: integer, format: int64, minimum: 0, nullable: true}
       responses:
         '200': {description: Parecer persistido}
         '409': {description: Execucao fora do estado RUNNING}

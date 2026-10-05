@@ -15,6 +15,7 @@ import com.marketinghub.agenttask.CompleteAgentTaskRequest;
 import com.marketinghub.agenttask.FailAgentTaskRequest;
 import com.marketinghub.financialagent.FinancialAgentExecution;
 import com.marketinghub.financialagent.FinancialAgentExecutionStatus;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.dto.CommercialPlanVersionDto;
 import com.marketinghub.planning.service.CommercialPlanService;
@@ -26,9 +27,70 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /** Responsabilidade: proteger a conciliacao honesta das fontes financeiras do planejamento. */
 class FinancialAgentServiceTest {
+  /** Concilia custo sem tarefa BPM, preservando callbacks legados e entradas sem tarifa. */
+  @Test
+  void deveEstimarConsumoAuditadoSemTarefaBpm() {
+    var repository = mock(FinancialAgentExecutionRepository.class);
+    var pricing = mock(OpenAiPricingService.class);
+    when(pricing.estimateTaskCost("gpt-5.6-sol", "STANDARD", 100L, 20L, 30L))
+        .thenReturn(Optional.of(new BigDecimal("0.00092800")));
+    var service =
+        new FinancialAgentService(
+            repository,
+            mock(CommercialPlanService.class),
+            new ObjectMapper().registerModule(new JavaTimeModule()),
+            mock(StudioCostLedgerService.class));
+    ReflectionTestUtils.setField(service, "pricing", pricing);
+    when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    for (long id : new long[] {701L, 904L}) {
+      var plan = new CommercialPlan();
+      plan.setId(id + 20L);
+      when(repository.findById(id)).thenReturn(Optional.of(runningExecution(id, null, plan)));
+      service.complete(id, costCompletion(null, 100L, 20L, 30L));
+      assertThat(repository.findById(id).orElseThrow().getEstimatedCost())
+          .isEqualByComparingTo("0.000928");
+    }
+    var plan = new CommercialPlan();
+    plan.setId(920L);
+    when(repository.findById(905L)).thenReturn(Optional.of(runningExecution(905L, null, plan)));
+    service.complete(905L, costCompletion(null, 100L, null, 30L));
+    assertThat(repository.findById(905L).orElseThrow().getEstimatedCost()).isNull();
+    when(repository.findById(906L)).thenReturn(Optional.of(runningExecution(906L, null, plan)));
+    service.complete(906L, costCompletion(new BigDecimal("0.25"), null, null, null));
+    assertThat(repository.findById(906L).orElseThrow().getEstimatedCost())
+        .isEqualByComparingTo("0.25");
+    when(pricing.estimateTaskCost("gpt-5.6-sol", "STANDARD", 100L, 20L, 30L))
+        .thenReturn(Optional.empty());
+    when(repository.findById(907L)).thenReturn(Optional.of(runningExecution(907L, null, plan)));
+    service.complete(907L, costCompletion(null, 100L, 20L, 30L));
+    assertThat(repository.findById(907L).orElseThrow().getEstimatedCost()).isNull();
+  }
+
+  /** Monta callback somente leitura com contadores opcionais para a regressão de custo. */
+  private CompleteFinancialAgentRequest costCompletion(
+      BigDecimal cost, Long input, Long cached, Long output) {
+    return new CompleteFinancialAgentRequest(
+        "{\"decision\":\"BLOCKED_BY_MISSING_SOURCE\"}",
+        "Fonte comercial incompleta.",
+        "{}",
+        "gpt-5.6-sol",
+        cost,
+        null,
+        null,
+        null,
+        null,
+        "default",
+        "STANDARD",
+        "Codex OAuth sem Flex.",
+        input,
+        cached,
+        output);
+  }
+
   /** Abre projeção vinculada à versão oficial e à mesa sem alterar valores realizados. */
   @Test
   void deveEnfileirarProjecaoDeReceitaNaMesaDePlutus() {

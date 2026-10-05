@@ -14,6 +14,7 @@ import { usePromoteGeneratedImage } from "../../api/ai/usePromoteGeneratedImage"
 import { usePromoteGeneratedLandingImage } from "../../api/ai/usePromoteGeneratedLandingImage";
 import {
   useRecentImageGenerations,
+  useReconcileImageGenerationCost,
   useRecoverImageGeneration,
 } from "../../api/ai/useRecentImageGenerations";
 import { useProducts } from "../../api/product/useProducts";
@@ -96,6 +97,7 @@ export default function ImageGeneratorPage() {
   };
   const recentGenerations = useRecentImageGenerations(recentContext);
   const recovery = useRecoverImageGeneration();
+  const costReconciliation = useReconcileImageGenerationCost();
   const promotion = usePromoteGeneratedImage();
   const landingPromotion = usePromoteGeneratedLandingImage();
   const recoveredResult = recovery.data
@@ -353,21 +355,59 @@ export default function ImageGeneratorPage() {
                   ) : (
                     <div className="list-group">
                       {(recentGenerations.data ?? []).map((item) => (
-                        <button
-                          type="button"
-                          className="list-group-item list-group-item-action"
-                          key={item.jobId}
-                          disabled={recovery.isPending}
-                          onClick={() =>
-                            recoverGeneration(item.jobId, item.prompt)
-                          }
-                        >
-                          <span className="fw-semibold">{item.model}</span>
-                          <span className="d-block text-body-secondary small">
-                            Lote {item.batchJobId} · {item.jobId}
-                          </span>
-                        </button>
+                        <div className="list-group-item" key={item.jobId}>
+                          <button
+                            type="button"
+                            className="btn btn-link text-start p-0"
+                            disabled={recovery.isPending}
+                            onClick={() =>
+                              recoverGeneration(item.jobId, item.prompt)
+                            }
+                          >
+                            <span className="fw-semibold">{item.model}</span>
+                            <span className="d-block text-body-secondary small">
+                              Lote {item.batchJobId} · {item.jobId}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary mt-2"
+                            disabled={costReconciliation.isPending}
+                            onClick={() =>
+                              costReconciliation.mutate({
+                                ...recentContext,
+                                jobId: item.jobId,
+                              })
+                            }
+                          >
+                            {costReconciliation.isPending &&
+                            costReconciliation.variables?.jobId ===
+                              item.jobId ? (
+                              <>
+                                <span
+                                  className="spinner-border spinner-border-sm me-2"
+                                  aria-hidden="true"
+                                />
+                                Conciliando...
+                              </>
+                            ) : (
+                              "Conciliar custo sem regenerar"
+                            )}
+                          </button>
+                          {costReconciliation.data?.jobId === item.jobId && (
+                            <p className="small mt-2 mb-0" role="status">
+                              {costReconciliation.data.status === "ESTIMATED"
+                                ? `Custo estimado: USD ${Number(costReconciliation.data.estimatedCostUsd).toFixed(5)}. Tarifa aplicada aos tokens auditados; cobrança final não confirmada.`
+                                : "Custo pendente: faltam tokens ou tarifa verificável. Não considere como zero."}
+                            </p>
+                          )}
+                        </div>
                       ))}
+                    </div>
+                  )}
+                  {costReconciliation.isError && (
+                    <div className="alert alert-danger mt-2" role="alert">
+                      {errorMessage(costReconciliation.error)}
                     </div>
                   )}
                   {recovery.isError ? (
@@ -544,8 +584,7 @@ export default function ImageGeneratorPage() {
                           onChange={(event) =>
                             setLandingSlotId(
                               event.target.value as
-                                | "hero-media-img"
-                                | "prova-img",
+                                "hero-media-img" | "prova-img",
                             )
                           }
                         >

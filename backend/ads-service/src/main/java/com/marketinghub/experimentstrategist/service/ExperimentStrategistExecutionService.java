@@ -8,6 +8,7 @@ import com.marketinghub.experimentstrategist.ExperimentStrategistBehavioralSnaps
 import com.marketinghub.experimentstrategist.ExperimentStrategistBehavioralSnapshotStatus;
 import com.marketinghub.experimentstrategist.ExperimentStrategistExecution;
 import com.marketinghub.experimentstrategist.ExperimentStrategistExecutionStatus;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.experimentstrategist.ExperimentStrategistBehavioralSnapshotRepository;
@@ -52,6 +53,7 @@ public class ExperimentStrategistExecutionService {
   private final ExperimentStrategistContextService contexts;
   private final ObjectMapper json;
   private final ApplicationEventPublisher events;
+  @Autowired private OpenAiPricingService pricing;
 
   /** Configura as fontes e a persistencia da execucao estrategica. */
   @Autowired
@@ -241,7 +243,7 @@ public class ExperimentStrategistExecutionService {
     return behavioralSnapshotResponse(behavioralSnapshots.save(snapshot));
   }
 
-  /** Persiste o parecer estruturado sem aplicar a recomendacao. */
+  /** Persiste parecer e custo estimável sem aplicar a recomendação estratégica. */
   @Transactional
   public ExecutionResponse complete(Long id, CompleteRequest request) {
     ExperimentStrategistExecution value = running(id);
@@ -257,7 +259,7 @@ public class ExperimentStrategistExecutionService {
     value.setPublicSourcesJson(request.publicSourcesJson());
     value.setRawModelResponse(request.rawModelResponse());
     value.setModelName(request.modelName());
-    value.setEstimatedCost(request.estimatedCost());
+    value.setEstimatedCost(estimatedCost(request));
     value.setStatus(ExperimentStrategistExecutionStatus.COMPLETED);
     value.setFinishedAt(Instant.now());
     ExperimentStrategistExecution saved = repository.save(value);
@@ -267,6 +269,23 @@ public class ExperimentStrategistExecutionService {
               saved.getCommercialPlan().getId(), saved.getId(), saved.getRecommendationJson()));
     }
     return response(saved);
+  }
+
+  /** Estima uso completo no catálogo; ausência de contadores mantém o custo desconhecido. */
+  private BigDecimal estimatedCost(CompleteRequest request) {
+    if (pricing == null
+        || request.inputTokens() == null
+        || request.cachedInputTokens() == null
+        || request.outputTokens() == null
+        || blank(request.effectiveServiceTier())) return request.estimatedCost();
+    return pricing
+        .estimateTaskCost(
+            request.modelName(),
+            request.effectiveServiceTier(),
+            request.inputTokens(),
+            request.cachedInputTokens(),
+            request.outputTokens())
+        .orElse(request.estimatedCost());
   }
 
   /** Impede concluir pesquisa v2 sem autoria, evidências e fronteira estratégica verificáveis. */
@@ -448,14 +467,39 @@ public class ExperimentStrategistExecutionService {
   /** Contrato de abertura da pesquisa. */
   public record StartRequest(String researchQuestion) {}
 
-  /** Contrato de conclusao do worker. */
+  /** Contrato de conclusão com consumo opcional, sem transformar ausência histórica em zero. */
   public record CompleteRequest(
       String alternativesJson,
       String recommendationJson,
       String publicSourcesJson,
       String rawModelResponse,
       String modelName,
-      BigDecimal estimatedCost) {}
+      BigDecimal estimatedCost,
+      String effectiveServiceTier,
+      Long inputTokens,
+      Long cachedInputTokens,
+      Long outputTokens) {
+    /** Preserva callbacks legados que ainda não informavam contadores. */
+    public CompleteRequest(
+        String alternativesJson,
+        String recommendationJson,
+        String publicSourcesJson,
+        String rawModelResponse,
+        String modelName,
+        BigDecimal estimatedCost) {
+      this(
+          alternativesJson,
+          recommendationJson,
+          publicSourcesJson,
+          rawModelResponse,
+          modelName,
+          estimatedCost,
+          null,
+          null,
+          null,
+          null);
+    }
+  }
 
   /** Contrato de falha do worker. */
   public record FailRequest(String errorMessage) {}

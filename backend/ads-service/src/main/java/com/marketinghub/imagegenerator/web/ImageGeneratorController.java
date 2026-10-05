@@ -52,6 +52,17 @@ public class ImageGeneratorController {
     return service.getGeneratedImage(productId, commercialPlanId, experimentId, jobId);
   }
 
+  /** Reconcilia custo da resposta persistida no contexto informado sem consumir IA. */
+  @PostMapping("/generations/{jobId}/cost-reconciliation")
+  public com.marketinghub.imagegenerator.service.reconcileCost.ImageGenerationCostView
+      reconcileCost(
+          @PathVariable String jobId,
+          @RequestParam Long productId,
+          @RequestParam Long commercialPlanId,
+          @RequestParam(required = false) Long experimentId) {
+    return service.reconcileCost(productId, commercialPlanId, experimentId, jobId);
+  }
+
   /** Aplica uma geração concluída a um slot da landing sem publicar a página. */
   @PostMapping("/generations/{jobId}/landing-assets")
   public LandingImagePromotionResponse promoteToLanding(

@@ -12,6 +12,27 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger o contrato de seguranca do executor financeiro. */
 class FinancialCodexRunnerTest {
+  /** Evita classificar telemetria parcial ou negativa como uma chamada de custo zero. */
+  @Test
+  void deveManterConsumoIncompletoDesconhecido() throws Exception {
+    Path processLog = Files.createTempFile("plutus-usage-", ".jsonl");
+    try {
+      var runner = new FinancialCodexRunner(new FinancialAgentProperties(), new ObjectMapper());
+      for (String usage :
+          new String[] {
+            "{}",
+            "{\"input_tokens\":12,\"output_tokens\":7}",
+            "{\"input_tokens\":12,\"cached_input_tokens\":13,\"output_tokens\":7}",
+            "{\"input_tokens\":-1,\"cached_input_tokens\":0,\"output_tokens\":7}"
+          }) {
+        Files.writeString(processLog, "{\"usage\":" + usage + "}\n");
+        assertThat(runner.readTokenUsage(processLog).informed()).isFalse();
+      }
+    } finally {
+      Files.deleteIfExists(processLog);
+    }
+  }
+
   /** Confirma pesquisa web, sandbox somente leitura e modelo configurado no comando Codex. */
   @Test
   void deveExecutarSomenteLeitura() {

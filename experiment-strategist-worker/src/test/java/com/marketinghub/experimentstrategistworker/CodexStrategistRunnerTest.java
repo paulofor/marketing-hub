@@ -9,6 +9,57 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger o contrato de isolamento do executor Estrategista. */
 class CodexStrategistRunnerTest {
+  /** Comprova processo local → uso JSONL → callback, sem inferência nem perda da resposta bruta. */
+  @Test
+  void reportsAuditableUsageFromCompletedLocalProcess() throws Exception {
+    WorkerProperties properties = new WorkerProperties();
+    properties.setCodexCommand(
+        Path.of("src/test/resources/research/cost-codex.mjs").toAbsolutePath().toString());
+    properties.setRepositoryPath(Path.of(".").toAbsolutePath().toString());
+    properties.setBackendUrl("http://127.0.0.1:1");
+    properties.setModel("gpt-5.6-sol");
+    var runner = new CodexStrategistRunner(properties, new ObjectMapper());
+    for (long id : new long[] {301L, 809L}) {
+      var callback =
+          runner.run(
+              new StrategistJob(
+                  id, id + 100L, "RUNNING", "READ_ONLY_RESEARCH", "Reavaliar prova local", "{}"));
+      assertThat(callback)
+          .containsEntry("inputTokens", 100L)
+          .containsEntry("cachedInputTokens", 20L)
+          .containsEntry("outputTokens", 30L)
+          .containsEntry("effectiveServiceTier", "STANDARD");
+      assertThat(callback.get("rawModelResponse").toString()).contains("MARKET_STRATEGY_V2");
+      assertThat(callback.get("estimatedCost")).isNull();
+    }
+  }
+
+  /** Conserva ausência ou contradição como desconhecida e não soma eventos cumulativos. */
+  @Test
+  void refusesIncompleteUsageAndReadsLatestTotal() throws Exception {
+    Path output = Files.createTempFile("atena-cost-", ".jsonl");
+    try {
+      var runner = new CodexStrategistRunner(new WorkerProperties(), new ObjectMapper());
+      for (String usage :
+          new String[] {
+            "{}",
+            "{\"input_tokens\":12,\"output_tokens\":7}",
+            "{\"input_tokens\":12,\"cached_input_tokens\":13,\"output_tokens\":7}"
+          }) {
+        Files.writeString(output, "{\"usage\":" + usage + "}\n");
+        assertThat(runner.readTokenUsage(output)).isNull();
+      }
+      Files.writeString(
+          output,
+          "{\"usage\":{\"input_tokens\":100,\"cached_input_tokens\":20,\"output_tokens\":30}}\n"
+              + "{\"usage\":{\"input_tokens\":140,\"cached_input_tokens\":40,\"output_tokens\":50}}\n");
+      assertThat(runner.readTokenUsage(output))
+          .isEqualTo(new CodexStrategistRunner.TokenUsage(140, 40, 50));
+    } finally {
+      Files.deleteIfExists(output);
+    }
+  }
+
   /** Confirma busca publica, sandbox somente leitura e schema versionado. */
   @Test
   void buildsReadOnlyResearchCommand() {

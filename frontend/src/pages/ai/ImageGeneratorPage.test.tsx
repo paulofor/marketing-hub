@@ -2,6 +2,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ImageGeneratorPage from "./ImageGeneratorPage";
 
+const { reconcileCost } = vi.hoisted(() => ({ reconcileCost: vi.fn() }));
+
 vi.mock("../../app/breadcrumbs", () => ({
   useBreadcrumbs: vi.fn(),
 }));
@@ -91,6 +93,13 @@ vi.mock("../../api/ai/useRecentImageGenerations", () => ({
     isError: false,
     isLoading: false,
   })),
+  useReconcileImageGenerationCost: vi.fn(() => ({
+    data: { jobId: "img-old", status: "ESTIMATED", estimatedCostUsd: 0.079122 },
+    error: null,
+    isError: false,
+    isPending: false,
+    mutate: reconcileCost,
+  })),
   useRecoverImageGeneration: vi.fn(() => ({
     data: undefined,
     error: null,
@@ -145,6 +154,29 @@ describe("ImageGeneratorPage", () => {
     expect(
       screen.getByText(/sem gerar novamente nem criar novo custo/i),
     ).toBeTruthy();
+  });
+
+  it("conciliates stored usage within its context without creating another generation", () => {
+    render(<ImageGeneratorPage />);
+    fireEvent.change(screen.getByLabelText(/produto/i), {
+      target: { value: "1" },
+    });
+    fireEvent.change(screen.getByLabelText(/plano comercial/i), {
+      target: { value: "2" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Conciliar custo sem regenerar" }),
+    );
+    expect(reconcileCost).toHaveBeenCalledWith({
+      productId: 1,
+      commercialPlanId: 2,
+      experimentId: undefined,
+      jobId: "img-old",
+    });
+    expect(screen.getByText(/Custo estimado: USD 0.07912/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/cobrança final não confirmada/),
+    ).toBeInTheDocument();
   });
 
   it("offers product-compatible experiment and canonical landing slots", () => {

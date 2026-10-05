@@ -148,6 +148,14 @@ de contrato executável precisa ficar explícita, não pode ser declarada resolv
 
 Cada execução persiste o snapshot recebido, totais reconciliados, cobertura das fontes, divergências, decisão, resposta bruta, modelo, custo da execução, falha e relatório diário com data e hora.
 
+Nas conclusões de Atena e Plutus, mesmo sem tarefa BPM vinculada, contadores completos de entrada,
+cache e saída e o tier efetivo alimentam a estimativa pelo catálogo canônico. O executor não define
+tarifas; o backend concilia a execução. JSONL cumulativo usa o último total, sem somar eventos.
+Telemetria parcial, negativa ou contraditória não representa consumo zero. Callbacks históricos
+sem contadores preservam suas estimativas ou custos desconhecidos; não reiniciar inferência para
+recuperar custos. A estimativa por tarifa continua distinta da cobrança conciliada. Codex OAuth
+permanece Standard quando Flex não é suportado, conforme a exceção já registrada.
+
 Quando uma execução estiver vinculada a `agent_task`, a mesma tentativa deve registrar `receivedAt`,
 `deliveredAt` quando concluída, resultado JSON funcional sem dupla serialização, evidência estruturada
 com referência e SHA-256 do snapshot e da resposta bruta, modelo, esforço, prompt final, tier
@@ -237,3 +245,13 @@ A conciliação de resultados e o aprendizado permanecem consultáveis mesmo com
 bloqueada, para localizar a perda e decidir a correção. Mudança de plano/modelo invalida novas
 chamadas; a revisão de tarifa exige conferência da fonte identificada na ficha, sem alegar
 monitoramento automático de tabelas externas de preços.
+
+## Custo de imagem com modelo principal — aprendizado de 05/10/2026
+
+No gerador administrativo, a Responses API pode cobrar o modelo principal e a ferramenta de
+imagem. Conciliar ambos uma vez pelos tokens auditados; Flex do modelo principal não autoriza
+usar tarifa Batch na ferramenta síncrona de imagem. Preservar resposta antes da extração e dos
+derivados, incluindo falha posterior. O comando de conciliação reaproveita auditoria e ledger
+idempotente, sem regeneração. Estimativa tem fonte/data e não substitui cobrança confirmada.
+Modalidade, uso ou tarifa desconhecidos permanecem pendentes. Esta cobertura não altera a
+reserva em BRL de uma ficha nem libera novo consumo: câmbio e checkpoints continuam necessários.

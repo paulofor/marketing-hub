@@ -67,14 +67,16 @@ public class ProcessRunService {
     this.transaction = new TransactionTemplate(manager);
   }
 
-  /** Mostra progresso e prontidão da versão autorizada, recusando início em contexto encerrado. */
+  /**
+   * Consulta provas também em controles pausados/encerrados, sem alterar estado ou autorizações.
+   */
   public ProcessRunResponse status(Long productId, Long processId, ProcessRunCommand command) {
     return transaction.execute(
         ignored -> {
           var existing = runs.findByScopeKey(scope(productId, processId, command));
           if (existing.isPresent()) {
             var run = existing.get();
-            return "COMPLETED".equals(run.getStatus())
+            return Set.of("COMPLETED", "PAUSED", "CLOSED").contains(run.getStatus())
                 ? response(run, context.read(run, false))
                 : response(run);
           }
@@ -980,7 +982,8 @@ public class ProcessRunService {
   }
 
   /**
-   * Expõe provas, condições e decisão atual sem gravar durante leitura nem disparar nova tarefa.
+   * Expõe progresso e atividade das provas consultadas, preservando o estado persistido do
+   * controle.
    */
   private ProcessRunResponse response(
       ProcessRun run, ProductProcessActivityExecutionHistoryResponse readiness) {
@@ -1003,6 +1006,16 @@ public class ProcessRunService {
             ? dispatchBlockReason(run)
             : null;
     var userAction = guidance.resolve(run);
+    var currentActivity =
+        readiness == null
+            ? null
+            : readiness.activities().stream()
+                .filter(activity -> activity.selectedVersionActivity())
+                .filter(
+                    activity ->
+                        Objects.equals(activity.activityId(), readiness.currentActivityId()))
+                .findFirst()
+                .orElse(null);
     return new ProcessRunResponse(
         run.getId(),
         run.getProductId(),
@@ -1018,10 +1031,16 @@ public class ProcessRunService {
             : revalidation
                 ? "As provas atuais já não comprovam todos os objetivos. Retome o processo para revalidar; as conclusões anteriores permanecem no histórico."
                 : userAction != null ? userAction.reason() : run.getReason(),
-        run.getCurrentActivityId(),
-        run.getCurrentActivityName(),
-        userAction != null ? userAction.responsible() : run.getCurrentOwnerName(),
-        run.getCurrentSequence(),
+        readiness == null ? run.getCurrentActivityId() : readiness.currentActivityId(),
+        readiness == null ? run.getCurrentActivityName() : readiness.currentActivityName(),
+        userAction != null
+            ? userAction.responsible()
+            : readiness == null
+                ? run.getCurrentOwnerName()
+                : currentActivity == null ? null : currentActivity.activityOwnerName(),
+        readiness == null
+            ? run.getCurrentSequence()
+            : currentActivity == null ? null : currentActivity.sequenceNumber(),
         total,
         completed,
         remaining,

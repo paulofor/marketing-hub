@@ -204,6 +204,39 @@ class ExperimentTechnicalPreflightPersistenceTest {
     assertConsultativeSql();
   }
 
+  /** Preserva a prova encerrada sem consultar fontes atuais ou aprovar a atividade ausente. */
+  @Test
+  void readsClosedHistoricalProofWithoutRevalidatingOrWriting() {
+    var activity = activities.get("surfaces");
+    execute(activity);
+    String original =
+        reading.execute(status -> instances.findAll().getFirst().getObjectiveEvidenceJson());
+    when(evidence.executionBlockReason(product, SOURCE)).thenReturn("Experimento encerrado.");
+    when(evidence.evaluate(anyString(), eq(product), eq(SOURCE)))
+        .thenThrow(new IllegalStateException("A superfície atual mudou."));
+    clearInvocations(evidence);
+    statements.clear();
+    reading.executeWithoutResult(
+        status -> {
+          assertThat(fresh(activity)).isFalse();
+          assertThat(instances.findAll())
+              .singleElement()
+              .satisfies(
+                  instance -> {
+                    assertThat(instance.getObjectiveEvidenceJson()).isEqualTo(original);
+                    assertThat(instance.isObjectiveAchieved()).isTrue();
+                  });
+          assertThat(
+                  executor
+                      .readiness(process, activities.get("financialGuardrails"), product, SOURCE)
+                      .ready())
+              .isFalse();
+          assertThat(instances.count()).isEqualTo(1);
+        });
+    verify(evidence, never()).evaluate(anyString(), any(), anyString());
+    assertConsultativeSql();
+  }
+
   /** Concilia após cada comando, conserva o lock de escrita e evita custo ou registro duplicado. */
   @Test
   void renewsProofAndReconcilesAcrossTransactionsIdempotently() {

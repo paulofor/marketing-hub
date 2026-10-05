@@ -74,6 +74,15 @@
   falha no comportamento anterior tanto por SQL em H2 quanto no MySQL 5.7 real.
   O runner existente inclui o preflight para impedir que mocks ocultem o contrato
   físico de leitura, renovação e conciliação entre transações.
+- **Continuidade em 05/10/2026 — Mira #93:** a instância #480 de `surfaces`
+  permanece `COMPLETED`, mas a API mostra 2/4 ao exigir a superfície atual de uma
+  referência encerrada. A proteção de vigência precisa distinguir candidata aberta
+  de prova histórica. O executor técnico conserva conclusões encerradas e continua
+  recusando novos comandos; 5.4.4 sem instância não vira aceite. O cabeçalho pausado
+  consulta a mesma contagem/atividade sem alterar o estado persistido ou criar tarefas.
+  A fixture anterior combinava encerramento apenas com fontes ainda vigentes;
+  a regressão agora reproduz encerramento + superfície alterada, HTTP + controle
+  e leitura JPA. Matriz: `docs/homologacao/mira-homologacao-historica-v1.md`.
 
 ## LOOP-BPM-MEDICAO-PROJETADA-RESERVA-FILA — 03/10/2026
 

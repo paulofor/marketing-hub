@@ -1049,6 +1049,12 @@ seus contratos; a automação não preenche provas nem autoriza publicação por
   parecer usado, e as revisões da nova peça continuam obrigatórias antes da decisão humana.
 - O progresso usa objetivos comprovados; histórico e dispensa explícita são apresentados
   separadamente. Custo desconhecido permanece desconhecido, e conclusão técnica não é venda.
+- Na homologação técnica de referência encerrada, preservar as ocorrências já concluídas
+  da definição e referência consultadas; não exigir a superfície ou o parecer financeiro
+  atuais para reconhecer uma prova passada. A candidata aberta continua exigindo fontes
+  vigentes. Prova ausente permanece pendente e não permite nova homologação no experimento
+  encerrado. Os controles pausados/encerrados consultam o mesmo progresso e atividade do
+  relatório, sem gravar, retomar tarefas, duplicar retorno ao pai ou alterar a pausa.
 - Todas as atividades TASK do BPM precisam ter definição e contrato de acompanhamento, inclusive
   as condicionais atualmente dispensadas. Contrato ausente, duplicado ou fora do BPM impede
   autorização/conclusão, sem omitir silenciosamente uma obrigação do processo.

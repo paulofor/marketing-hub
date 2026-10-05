@@ -66,7 +66,7 @@ public class ExperimentTechnicalPreflightActivityExecutor
             activity.getActivityId());
   }
 
-  /** Reconfere a prova sem lock de escrita, mutação do histórico ou revisão paga. */
+  /** Preserva conclusões encerradas e revalida fontes apenas para referências ainda abertas. */
   @Override
   @Transactional(readOnly = true)
   public boolean requiresFreshExecution(
@@ -82,6 +82,7 @@ public class ExperimentTechnicalPreflightActivityExecutor
         || !"COMPLETED".equals(latest.get().getStatus())
         || !latest.get().isObjectiveAchieved()) return false;
     try {
+      if (evidenceService.executionBlockReason(product, sourceReference) != null) return false;
       var evidence = evidenceService.evaluate(activity.getActivityId(), product, sourceReference);
       return !sameCompletedEvidence(latest.get(), evidence);
     } catch (RuntimeException ex) {

@@ -1,0 +1,18 @@
+{
+  "cardKey": "contexto-semantico-predicao-fala",
+  "collection": "prazer-audio-visual",
+  "title": "Contexto semântico pode reorganizar o processamento fonético",
+  "finding": "Registros intracorticais de 624 neurônios em três participantes mostraram que a dinâmica fonética se alinhou a representações semânticas de palavra em padrão mais compatível com previsão top-down do que com simples acumulação bottom-up.",
+  "mechanism": "O contexto semântico provável pode reorganizar a dinâmica populacional que representa fonemas, aproximando o processamento acústico de uma hipótese lexical/semântica durante o reconhecimento da fala.",
+  "commercialApplication": "Em voz, vídeo e avatares, testar uma preparação semântica curta antes de uma frase crítica, mantendo áudio e texto constantes, e medir compreensão sob ruído ou compressão.",
+  "evidenceStrength": "Média-alta para o mecanismo local: registro intracortical de resolução celular, 624 neurônios e convergência nos três participantes; generalização limitada pelo N=3 clínico.",
+  "publishedOn": "2026-10-05",
+  "validUntil": "2026-11-19",
+  "experimentHypothesis": "Uma pista semântica coerente antes de uma frase-alvo reduzirá erros de transcrição ou compreensão sob áudio degradado em comparação com uma pista neutra, sem aumentar o tempo de resposta.",
+  "risks": "Contexto excessivamente forte pode induzir viés de expectativa e aumentar interpretações erradas quando o áudio é ambíguo; não usar para compensar fala pouco inteligível ou mensagem enganosa.",
+  "limits": "O estudo não mediu prazer, retenção de marca, conversão ou dopamina e foi realizado em três participantes com implantes clínicos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-05-contexto-semantico-predicao-fala.md",
+  "sourceTitle": "Fonte revisada — contexto semântico e previsão na fala",
+  "sourceSha256": "15a359bc6735d87b90cb4b93f033e2fb8a7fa5b7e5969e2fea2c2fab0f3e3668"
+}

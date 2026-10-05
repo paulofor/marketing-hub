@@ -15,6 +15,7 @@ import com.marketinghub.agenttask.FailAgentTaskRequest;
 import com.marketinghub.agenttask.UpdateAgentTaskStatusRequest;
 import com.marketinghub.financialagent.FinancialAgentExecution;
 import com.marketinghub.financialagent.FinancialAgentExecutionStatus;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.planning.service.CommercialPlanVersionService;
@@ -52,6 +53,7 @@ public class FinancialAgentService {
   private final StudioCostLedgerService studioCostLedgerService;
   private final CommercialPlanVersionService versionService;
   private final AgentTaskService taskService;
+  @Autowired private OpenAiPricingService pricing;
 
   /** Configura fontes financeiras, versão comercial e integração com a mesa de Plutus. */
   @Autowired
@@ -262,7 +264,7 @@ public class FinancialAgentService {
     return toResponse(findRunning(id));
   }
 
-  /** Persiste o relatorio sem executar qualquer decisao financeira. */
+  /** Persiste relatório e estima consumo completo sem executar qualquer decisão financeira. */
   @Transactional
   public FinancialAgentExecutionResponse complete(Long id, CompleteFinancialAgentRequest request) {
     FinancialAgentExecution execution = findRunning(id);
@@ -276,7 +278,7 @@ public class FinancialAgentService {
     execution.setDailyReport(request.dailyReport());
     execution.setRawModelResponse(request.rawModelResponse());
     execution.setModel(request.model());
-    execution.setEstimatedCost(request.estimatedCost());
+    execution.setEstimatedCost(estimatedCost(request));
     execution.setStatus(FinancialAgentExecutionStatus.COMPLETED);
     execution.setFinishedAt(Instant.now());
     if (ASSUMPTION_DEFINITION.equals(execution.getAuthorityMode())) {
@@ -289,6 +291,23 @@ public class FinancialAgentService {
           "financial-agent", execution.getAgentTaskId(), taskCompletion(saved, request));
     }
     return toResponse(saved);
+  }
+
+  /** Usa somente contadores completos e preserva estimativas legadas quando não há tarifa. */
+  private BigDecimal estimatedCost(CompleteFinancialAgentRequest request) {
+    if (pricing == null
+        || request.inputTokens() == null
+        || request.cachedInputTokens() == null
+        || request.outputTokens() == null
+        || !hasText(request.effectiveServiceTier())) return request.estimatedCost();
+    return pricing
+        .estimateTaskCost(
+            request.model(),
+            request.effectiveServiceTier(),
+            request.inputTokens(),
+            request.cachedInputTokens(),
+            request.outputTokens())
+        .orElse(request.estimatedCost());
   }
 
   /** Registra falha tecnica preservando o snapshot que a originou. */

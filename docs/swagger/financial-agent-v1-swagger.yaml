@@ -1,8 +1,16 @@
 openapi: 3.0.3
 info:
   title: Agente Financeiro v1
-  version: 1.0.0
+  version: 1.1.0
 paths:
+  /api/financial-agent/v1/internal/executions/{id}/complete:
+    post:
+      summary: Persiste relatório e custo estimável da execução de Plutus.
+      description: Uso completo de inputTokens, cachedInputTokens e outputTokens com model e effectiveServiceTier é estimado pelo catálogo do backend, mesmo sem tarefa BPM. Uso/tarifa ausentes não viram zero; estimatedCost legado é preservado quando não há nova estimativa verificável. Não autoriza gasto.
+      responses:
+        '200': {description: Resultado persistido}
+        '400': {description: Resultado incompleto}
+        '409': {description: Execução fora do estado RUNNING}
   /api/financial-agent/v1/video-providers/credit-balances:
     get:
       summary: Lista saldo estimado, capacidade e divergências dos provedores de vídeo

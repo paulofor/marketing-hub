@@ -31,6 +31,7 @@ reutilizável e escolhida). Não altera retrospectivamente provas privadas em pr
 | Falha após geração | Preservar resposta/estimativa mesmo se extração ou derivado falhar |
 | Retomada | Conciliar e recuperar sem HTTP externo; repetir conciliação sem duplicar ledger |
 | Financeiro | Não substituir cobrança conciliada, nem apagar custo conhecido com callback sem fonte |
+| Pareceres | Processo Codex simulado → JSONL → callback → custo de Atena/Plutus; callbacks antigos compatíveis, contadores parciais desconhecidos, cache separado e contextos independentes |
 | Integração | Cliente HTTP simulado → auditoria → custo → ledger → resposta da tela |
 | UI | Desktop, iPhone 15 Pro e Pixel 7; botão com loading, resultado estimado, pendência e falha visíveis |
 | Isolamento | Recusar outro produto/plano/experimento; QA não alimenta métricas de mercado |
@@ -52,7 +53,7 @@ limitação deve ser fornecida aos agentes em vez de aprovar uma capacidade inex
 
 ## Validação local e arquivos recuperados
 
-- Backend: 3.976 casos na suíte completa, sem falha/erro; 25 dispensas explícitas da suíte.
+- Backend: 3.978 casos na suíte completa final, sem falha/erro; 25 dispensas explícitas da suíte.
 - Frontend: 869 testes aprovados, TypeScript e build aprovados.
 - Integração local: dois contextos distintos, geração → auditoria → ledger → conciliação/replay →
   recuperação; falha de derivação preserva resposta e custo. Nenhum HTTP adicional ao provedor.
@@ -74,3 +75,22 @@ Subtotal estimado: USD 0,157510. Fonte: usage e tool_usage preservados nas respo
 oficial conferida em 05/10 e preços Flex do modelo principal no catálogo. Não é confirmação de
 fatura nem custo zero de outras execuções. Saldo de preparação deve considerar qualquer nova
 execução e pendência; esta correção não altera mídia, preço, aprovações ou o runtime privado.
+
+## Extensão comprovada: consumo dos pareceres
+
+Antes de solicitar novos pareceres, o histórico revelou oito execuções recentes de Atena e seis
+de Plutus concluídas com `estimated_cost` ausente. O runner genérico de Atena não produzia JSONL
+nem enviava tokens; Plutus já os enviava, mas o backend não os usava quando não havia tarefa BPM.
+Ambos agora usam os contadores completos e o catálogo existente, sem nova tabela ou serviço.
+O parser de Plutus passa a recusar uso parcial em vez de completar os campos ausentes com zero.
+
+Alternativas: estimar manualmente cada parecer (não reutilizável), executar somente tarefas BPM
+(não corrige os contratos genéricos existentes), conciliar no callback canônico (escolhida, menor
+mudança com cobertura das duas entradas). Histórico sem telemetria continua desconhecido.
+O Codex OAuth usa Standard pela exceção funcional existente; não assumir preço Flex.
+
+Validação final da extensão: 47 testes de Atena, 55 de Plutus e sete testes dos adaptadores MCP,
+todos aprovados. Os dois Dockerfiles construíram imagens locais; o Codex empacotado aceitou
+`exec --help`/`--json` como usuário sem privilégios em containers sem rede/credenciais. A topologia
+temporária foi removida pelo projeto Compose exclusivo. Nenhuma inferência ocorreu nesses testes.
+Spotless, arquitetura premium, `bash -n` e ShellCheck do validador consultado passaram.

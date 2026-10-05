@@ -1,5 +1,21 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-IA-CONSUMO-CONCLUIDO-SEM-CUSTO — 05/10/2026
+
+- **Evidência:** Alcyone #11, plano #34 v4, experimento #97, imagens auditadas #115/#116
+  concluídas com tokens preservados e ledger #840/#841 sem custo. Atena #10–17 e Plutus #63–68
+  também encerrados com `estimated_cost` ausente; ausência foi confirmada em outros contextos.
+- **Causa:** o Estúdio ignorava `usage`/`tool_usage`; Atena genérica não emitia JSONL nem enviava
+  consumo; Plutus enviava tokens, mas seu callback sem tarefa BPM não os precificava.
+- **Correção:** conciliação idempotente da auditoria de imagem sem regeneração; uso completo do
+  parecer precificado no backend pelo catálogo existente, mantendo callbacks legados compatíveis.
+- **Prevenção:** testes de custo, cache, fonte incompleta, fatura preservada, falha após geração,
+  contexto diferente e processo Codex local simulado até seu callback; casos antes válidos mantidos.
+  UI local em desktop/iPhone/Pixel e builds dos módulos. Matriz:
+  `docs/homologacao/alcyone-ai-preparation-cost-v1.md`.
+- **Limite:** estimativa por tarifa não é fatura; histórico sem uso não recebe custo inventado.
+  Prova do Estúdio não comprova entrega automática; não libera mídia, vendas ou gates comerciais.
+
 ## LOOP-BPM-SUBPROCESSO-PERDE-REFERENCIA — 05/10/2026
 
 - **Evidência:** Alcyone #11, execução #44, processo #113 v11, `experiment:97`.

@@ -11,6 +11,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 /** Responsabilidade: executar pesquisa Codex somente leitura com saida estruturada. */
 @Component
 public class CodexStrategistRunner {
+  private static final Logger log = LoggerFactory.getLogger(CodexStrategistRunner.class);
   private static final long ACTIVITY_POLL_SECONDS = 15L;
   private final WorkerProperties properties;
   private final ObjectMapper json;
@@ -37,7 +40,7 @@ public class CodexStrategistRunner {
     this(properties, json, null);
   }
 
-  /** Executa a pesquisa efemera e devolve o parecer auditavel. */
+  /** Executa pesquisa efêmera e devolve parecer e consumo cumulativo auditáveis. */
   public Map<String, Object> run(StrategistJob job) throws IOException, InterruptedException {
     Path output = Files.createTempFile("experiment-strategist-", ".json");
     Path log = Files.createTempFile("experiment-strategist-", ".log");
@@ -100,6 +103,13 @@ public class CodexStrategistRunner {
         payload.put(
             "modelName", hasText(properties.getModel()) ? properties.getModel() : "codex-default");
         payload.put("estimatedCost", null);
+        payload.put("effectiveServiceTier", "STANDARD");
+        TokenUsage usage = readTokenUsage(log);
+        if (usage != null) {
+          payload.put("inputTokens", usage.inputTokens());
+          payload.put("cachedInputTokens", usage.cachedInputTokens());
+          payload.put("outputTokens", usage.outputTokens());
+        }
         if (session != null) session.success();
         return payload;
       } finally {
@@ -113,6 +123,43 @@ public class CodexStrategistRunner {
       Files.deleteIfExists(clarityMcp);
     }
   }
+
+  /** Lê o último total completo do Codex sem somar eventos cumulativos nem inventar tokens. */
+  TokenUsage readTokenUsage(Path processLog) {
+    TokenUsage latest = null;
+    try {
+      for (String line : Files.readAllLines(processLog)) {
+        if (line.isBlank()) continue;
+        JsonNode event;
+        try {
+          event = json.readTree(line);
+        } catch (IOException ex) {
+          log.debug("Linha não JSON ignorada na telemetria de Atena.", ex);
+          continue;
+        }
+        JsonNode usage = event.path("usage");
+        if (!usage.isObject()) continue;
+        var input = usage.path("input_tokens");
+        var cached = usage.path("cached_input_tokens");
+        var output = usage.path("output_tokens");
+        if (!count(input) || !count(cached) || !count(output) || cached.asLong() > input.asLong())
+          return null;
+        latest = new TokenUsage(input.asLong(), cached.asLong(), output.asLong());
+      }
+    } catch (IOException ex) {
+      log.warn("Falha ao ler consumo Codex de Atena. output={}", processLog, ex);
+      return null;
+    }
+    return latest;
+  }
+
+  /** Exige um contador inteiro não negativo realmente recebido do runtime. */
+  private boolean count(JsonNode value) {
+    return value.isIntegralNumber() && value.canConvertToLong() && value.asLong() >= 0;
+  }
+
+  /** Responsabilidade: transportar o uso cumulativo completo sem atribuir tarifa no executor. */
+  record TokenUsage(long inputTokens, long cachedInputTokens, long outputTokens) {}
 
   /** Aguarda progresso observável e estende a janela até o teto absoluto de três ciclos. */
   boolean waitWhileActive(Process process, Path log) throws IOException, InterruptedException {
@@ -160,8 +207,11 @@ public class CodexStrategistRunner {
     command.add(schema.toString());
     command.add("--output-last-message");
     command.add(output.toString());
+    command.add("--json");
     command.add("--color");
     command.add("never");
+    command.add("--config");
+    command.add("service_tier=\"default\"");
     command.add("--config");
     command.add("mcp_servers.experiment_strategist.command=\"node\"");
     command.add("--config");

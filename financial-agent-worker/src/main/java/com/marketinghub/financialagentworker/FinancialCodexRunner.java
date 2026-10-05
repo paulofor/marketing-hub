@@ -435,9 +435,16 @@ public class FinancialCodexRunner {
         }
         JsonNode usage = event.path("usage");
         if (!usage.isObject()) continue;
-        input = Math.max(input, token(usage, "input_tokens", "inputTokens"));
-        cached = Math.max(cached, token(usage, "cached_input_tokens", "cachedInputTokens"));
-        output = Math.max(output, token(usage, "output_tokens", "outputTokens"));
+        Long receivedInput = token(usage, "input_tokens", "inputTokens");
+        Long receivedCached = token(usage, "cached_input_tokens", "cachedInputTokens");
+        Long receivedOutput = token(usage, "output_tokens", "outputTokens");
+        if (receivedInput == null
+            || receivedCached == null
+            || receivedOutput == null
+            || receivedCached > receivedInput) return TokenUsage.empty();
+        input = receivedInput;
+        cached = receivedCached;
+        output = receivedOutput;
         informed = true;
       }
     } catch (IOException ex) {
@@ -448,9 +455,11 @@ public class FinancialCodexRunner {
   }
 
   /** Lê uma das grafias aceitas de um contador sem inventar consumo ausente. */
-  private long token(JsonNode usage, String snakeCase, String camelCase) {
+  private Long token(JsonNode usage, String snakeCase, String camelCase) {
     JsonNode value = usage.has(snakeCase) ? usage.path(snakeCase) : usage.path(camelCase);
-    return value.canConvertToLong() ? Math.max(0, value.asLong()) : 0;
+    return value.isIntegralNumber() && value.canConvertToLong() && value.asLong() >= 0
+        ? value.asLong()
+        : null;
   }
 
   /** Confirma a exceção explícita enquanto o catálogo Codex OAuth não anunciar Flex. */

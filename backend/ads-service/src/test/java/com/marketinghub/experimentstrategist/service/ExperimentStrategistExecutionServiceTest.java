@@ -12,6 +12,7 @@ import com.marketinghub.experimentstrategist.ExperimentStrategistBehavioralSnaps
 import com.marketinghub.experimentstrategist.ExperimentStrategistBehavioralSnapshotStatus;
 import com.marketinghub.experimentstrategist.ExperimentStrategistExecution;
 import com.marketinghub.experimentstrategist.ExperimentStrategistExecutionStatus;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.experimentstrategist.ExperimentStrategistBehavioralSnapshotRepository;
@@ -24,9 +25,56 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /** Responsabilidade: validar fila e congelamento auditavel da pesquisa estrategica. */
 class ExperimentStrategistExecutionServiceTest {
+  /** Converte uso completo de Atena em custo da execução sem repetir a pesquisa. */
+  @Test
+  void pricesCompletedUsageAndPreservesLegacyCosts() {
+    var repository = mock(ExperimentStrategistExecutionRepository.class);
+    var pricing = mock(OpenAiPricingService.class);
+    when(pricing.estimateTaskCost("gpt-5.6-sol", "STANDARD", 100L, 20L, 30L))
+        .thenReturn(Optional.of(new BigDecimal("0.00092800")));
+    when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    var service = service(repository);
+    ReflectionTestUtils.setField(service, "pricing", pricing);
+    for (long id : new long[] {102L, 407L}) {
+      var plan = new CommercialPlan();
+      plan.setId(id + 30L);
+      when(repository.findById(id)).thenReturn(Optional.of(execution(id, plan)));
+      var base = validCompletionRequest("CUSTOMER_LANGUAGE", "PAID_OFFER");
+      var request =
+          new ExperimentStrategistExecutionService.CompleteRequest(
+              base.alternativesJson(),
+              base.recommendationJson(),
+              base.publicSourcesJson(),
+              base.rawModelResponse(),
+              base.modelName(),
+              null,
+              "STANDARD",
+              100L,
+              20L,
+              30L);
+      assertThat(service.complete(id, request).estimatedCost()).isEqualByComparingTo("0.000928");
+    }
+    var plan = new CommercialPlan();
+    plan.setId(500L);
+    var base = validCompletionRequest("CUSTOMER_LANGUAGE", "PAID_OFFER");
+    when(repository.findById(408L)).thenReturn(Optional.of(execution(408L, plan)));
+    assertThat(service.complete(408L, base).estimatedCost()).isNull();
+    when(repository.findById(409L)).thenReturn(Optional.of(execution(409L, plan)));
+    var legacy =
+        new ExperimentStrategistExecutionService.CompleteRequest(
+            base.alternativesJson(),
+            base.recommendationJson(),
+            base.publicSourcesJson(),
+            base.rawModelResponse(),
+            base.modelName(),
+            new BigDecimal("0.25"));
+    assertThat(service.complete(409L, legacy).estimatedCost()).isEqualByComparingTo("0.25");
+  }
+
   /** Retoma uma lease órfã uma única vez antes de reservar o próximo trabalho. */
   @Test
   void recoversStaleExecutionBeforeClaiming() {

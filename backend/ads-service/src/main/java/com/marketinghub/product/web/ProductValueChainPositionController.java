@@ -19,15 +19,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProductValueChainPositionController {
   private final ProductValueChainPositionService service;
 
-  /** Lista o processo atual de cada produto para as telas operacionais. */
-  @Operation(summary = "Lista a posição dos produtos na cadeia de valor vigente")
+  /** Lista a posição comercial e o destino do ciclo pendente para as telas operacionais. */
+  @Operation(
+      summary = "Lista a posição dos produtos na cadeia de valor vigente",
+      description =
+          "learningCycleNavigation indica a navegação prioritária de um ciclo aberto ou de um ajuste"
+              + " sem sucessor na versão exata da cadeia; a consulta não inicia tarefas nem autoriza gasto.")
   @GetMapping
   public List<ProductValueChainPositionResponse> listPositions(
       @RequestParam(defaultValue = "false") boolean playOnly) {
     return service.listPositions(playOnly);
   }
 
-  /** Retorna a passagem auditável de um produto pelos processos e subprocessos da cadeia. */
+  /** Retorna a passagem auditável e a navegação prioritária do ciclo pendente do produto. */
   @Operation(summary = "Retorna o histórico de um produto na cadeia de valor vigente")
   @GetMapping("/{productId}")
   public ProductValueChainPositionResponse getPosition(@PathVariable Long productId) {

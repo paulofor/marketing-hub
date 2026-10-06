@@ -29,19 +29,22 @@ public class ProductValueChainPositionService {
   private final ProductSubprocessPositionResolver subprocessResolver;
   private final PdeProcessCodeResolver processCodeResolver;
   private final ProductStageMeasurementResolver stageMeasurementResolver;
+  private final ProductLearningCycleNavigationResolver learningCycleNavigationResolver;
 
-  /** Configura as fontes canônicas usadas para resolver a cadeia e os subprocessos. */
+  /** Configura as fontes canônicas da cadeia, dos subprocessos e da navegação dos ciclos. */
   public ProductValueChainPositionService(
       ProductRepository productRepository,
       BusinessProcessChainDefinitionRepository chainRepository,
       ProductSubprocessPositionResolver subprocessResolver,
       PdeProcessCodeResolver processCodeResolver,
-      ProductStageMeasurementResolver stageMeasurementResolver) {
+      ProductStageMeasurementResolver stageMeasurementResolver,
+      ProductLearningCycleNavigationResolver learningCycleNavigationResolver) {
     this.productRepository = productRepository;
     this.chainRepository = chainRepository;
     this.subprocessResolver = subprocessResolver;
     this.processCodeResolver = processCodeResolver;
     this.stageMeasurementResolver = stageMeasurementResolver;
+    this.learningCycleNavigationResolver = learningCycleNavigationResolver;
   }
 
   /** Lista a posição de todos os produtos usando somente a versão publicada da cadeia PDE. */
@@ -146,7 +149,7 @@ public class ProductValueChainPositionService {
         .toList();
   }
 
-  /** Resolve um produto por código canônico ou por um status legado conhecido. */
+  /** Resolve a posição comercial e a navegação da passagem de aprendizado pendente. */
   private ProductValueChainPositionResponse resolvePosition(
       Product product,
       BusinessProcessChainDefinition chain,
@@ -177,7 +180,8 @@ public class ProductValueChainPositionService {
         nextProcess(item, orderedItems),
         stageMeasurementResolver.resolveProcessMeasurements(
             product, orderedItems, process, measurementContext),
-        subprocessResolver.resolve(product, process, item.getSequenceNumber(), measurementContext));
+        subprocessResolver.resolve(product, process, item.getSequenceNumber(), measurementContext),
+        learningCycleNavigationResolver.resolve(product.getId(), chain));
   }
 
   /** Expõe a definição seguinte da cadeia sem antecipar sua entrada ou execução. */

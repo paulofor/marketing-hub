@@ -39,6 +39,63 @@ describe("Card do produto com ciclo", () => {
   });
   afterEach(cleanup);
 
+  it("abre o workspace prioritário também quando o card já apresenta o fluxo do ciclo", async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: contextFixture });
+    const flow = positionFixture.subprocessPosition!.salesFlow!;
+    const url = `/business-process-chains/learning-cycles?productId=${flow.productId}&chainId=${flow.chainDefinitionId}`;
+    renderCard({
+      ...positionFixture,
+      learningCycleNavigation: {
+        productId: flow.productId,
+        cycleId: flow.cycleId!,
+        experimentId: flow.experimentId!,
+        chainDefinitionId: flow.chainDefinitionId,
+        stage: "ADJUSTMENT",
+        status: "OPEN",
+        reason: "Acompanhe a passagem atual.",
+        url,
+      },
+    });
+    expect(
+      await screen.findByRole("link", { name: "Abrir ciclo e decisões" }),
+    ).toHaveAttribute("href", url);
+    expect(await screen.findByText("2º ciclo · Experimento #92")).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: contextFixture.nextWork!.activityName }),
+    ).toHaveAttribute("href", contextFixture.nextWork!.url);
+    expect(
+      screen.queryByRole("link", { name: "Abrir próximo processo" }),
+    ).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("recusa o destino de outro ciclo e conserva o trabalho válido desta passagem", async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: contextFixture });
+    const flow = positionFixture.subprocessPosition!.salesFlow!;
+    renderCard({
+      ...positionFixture,
+      learningCycleNavigation: {
+        productId: flow.productId,
+        chainDefinitionId: flow.chainDefinitionId,
+        cycleId: 92005,
+        experimentId: 92098,
+        stage: "ADJUSTMENT",
+        status: "OPEN",
+        reason: "Outra passagem.",
+        url: "/wrong-cycle",
+      },
+    });
+    expect(
+      await screen.findByRole("link", { name: "Abrir próximo processo" }),
+    ).toHaveAttribute(
+      "href",
+      `${contextFixture.nextWork!.url.split("#")[0]}#process-execution`,
+    );
+    expect(
+      screen.queryByRole("link", { name: "Abrir ciclo e decisões" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("reproduz o #92: contexto oficial, pendência 3.5 e histórico separado", async () => {
     vi.mocked(axios.get).mockResolvedValue({ data: contextFixture });
     renderCard();

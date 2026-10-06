@@ -67,6 +67,104 @@ describe("Acesso ao processo oficial nos cards sem ciclo", () => {
     clients.splice(0).forEach((client) => client.clear());
   });
 
+  it.each([
+    [7, 26, 4, 88, "DECISION", "OPEN"],
+    [7, 26, 5, 98, "ADJUSTMENT", "OPEN"],
+    [10, 26, 3, 93, "DECISION", "ADJUSTED"],
+    [92001, 92026, 92005, 92098, "PLANNING", "OPEN"],
+  ])(
+    "prioriza o ciclo oficial do produto %s e evita consultar a homologação histórica",
+    async (productId, chainId, cycleId, experimentId, stage, status) => {
+      const url = `/business-process-chains/learning-cycles?productId=${productId}&chainId=${chainId}`;
+      renderCard({
+        ...position,
+        productId: Number(productId),
+        chainDefinitionId: Number(chainId),
+        commercialStatus: "VALIDACAO_COMERCIAL",
+        sequenceNumber: 5,
+        learningCycleNavigation: {
+          productId: Number(productId),
+          cycleId: Number(cycleId),
+          experimentId: Number(experimentId),
+          chainDefinitionId: Number(chainId),
+          stage: String(stage),
+          status: String(status),
+          reason: "Acompanhe a próxima ação no ciclo atual.",
+          url,
+        },
+      });
+      expect(
+        await screen.findByRole("link", { name: "Abrir ciclo e decisões" }),
+      ).toHaveAttribute("href", url);
+      expect(
+        screen.getByText(`Ciclo #${cycleId} · Experimento #${experimentId}`),
+      ).toBeVisible();
+      expect(
+        screen.queryByRole("link", { name: "Abrir próximo processo" }),
+      ).not.toBeInTheDocument();
+      expect(axios.get).not.toHaveBeenCalled();
+      expect(axios.post).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    [4, 14],
+    [9, 92026],
+  ])(
+    "recusa navegação de produto ou cadeia divergente (%s/%s)",
+    async (productId, chainId) => {
+      vi.mocked(axios.get).mockResolvedValue({ data: history });
+      renderCard({
+        ...position,
+        learningCycleNavigation: {
+          productId,
+          chainDefinitionId: chainId,
+          cycleId: 92005,
+          experimentId: 92098,
+          stage: "DECISION",
+          status: "OPEN",
+          reason: "Contexto divergente.",
+          url: "/wrong-cycle",
+        },
+      });
+      expect(
+        await screen.findByRole("link", { name: "Abrir próximo processo" }),
+      ).toHaveAttribute(
+        "href",
+        "/products/9/value-chain-history/processes/75/activities?chainId=14#process-execution",
+      );
+      expect(
+        screen.queryByRole("link", { name: "Abrir ciclo e decisões" }),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it("não usa a navegação em cache quando a posição oficial falha", async () => {
+    renderCard(
+      {
+        ...position,
+        learningCycleNavigation: {
+          productId: 9,
+          chainDefinitionId: 14,
+          cycleId: 92005,
+          experimentId: 92098,
+          stage: "DECISION",
+          status: "OPEN",
+          reason: "Analisar.",
+          url: "/cached-cycle",
+        },
+      },
+      true,
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível confirmar",
+    );
+    expect(
+      screen.queryByRole("link", { name: "Abrir ciclo e decisões" }),
+    ).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
   it("abre o painel do processo e preserva produto, cadeia e atividade oficial como contexto", async () => {
     vi.mocked(axios.get).mockResolvedValue({ data: history });
     renderCard();

@@ -9035,3 +9035,18 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
   Os gates dos demais processos permanecem inalterados; o worker mantém sua validação.
 - O harness cobre produto sem versão, outro produto/experimento, planejamento anterior,
   segregação dos gates e worker v12 com HTTP/modelo simulados, auditoria e callback.
+
+## LOOP-PRODUTO-NAVEGACAO-HOMOLOGACAO-OCULTA-CICLO — 06/10/2026
+
+- Evidência: Capella #7/cadeia #26 mantém `VALIDACAO_COMERCIAL`, enquanto o ciclo
+  #5/#98 está aberto em ajuste; #4/#88 foi encerrado com sucessor. Mira #10 tem
+  ajuste #3/#93 sem sucessor. UI e MCP confirmam a diferença entre cadastro e ciclo.
+- Causa: a posição buscava o fluxo comercial somente quando o status apontava ao
+  Processo 6; a homologação histórica acabava comandando o botão azul.
+- Correção: projeção aditiva de navegação na API de posições, filtrada no SQL por
+  produto e versão da cadeia; ciclo pendente precede a continuidade histórica.
+- Harness preventivo: regressões para decisão histórica, sucessor aberto, outro
+  produto/cadeia, ajuste sem sucessor, terminal, ausência de ciclo, contexto
+  divergente, falha de API e caminho anterior válido, com navegação desktop/mobile.
+- Limite: consulta e navegação sem efeitos; decisões, custos e autorizações ficam
+  preservados. Matriz: `docs/homologacao/produto-navegacao-ciclo-v1.md`.

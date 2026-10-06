@@ -28,6 +28,17 @@ export type ProductStageMeasurement = {
   commitRegistrationAllowed: boolean;
 };
 
+export type ProductLearningCycleNavigation = {
+  productId: number;
+  cycleId: number;
+  experimentId: number;
+  chainDefinitionId: number;
+  stage: string;
+  status: string;
+  reason: string;
+  url: string;
+};
+
 export type ProductValueChainPosition = {
   productId: number;
   commercialStatus?: string | null;
@@ -42,6 +53,7 @@ export type ProductValueChainPosition = {
   processVersion?: number | null;
   sequenceNumber?: number | null;
   processCount?: number | null;
+  learningCycleNavigation?: ProductLearningCycleNavigation | null;
   nextProcess?: {
     processDefinitionId: number;
     processCode: string;

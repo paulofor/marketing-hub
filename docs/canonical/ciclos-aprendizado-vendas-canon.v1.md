@@ -594,3 +594,18 @@ cadeia publicada mais recente não troca o grafo de uma passagem anterior. Essa
 regra vale para ciclo explícito e para retomada automática do ciclo existente.
 As consultas de contexto e os links devem respeitar o mesmo par processo/cadeia.
 Publicar subprocesso novo não migra ciclos anteriores nem concede novas aprovações.
+
+### Navegação prioritária do ciclo no painel de produtos — 06/10/2026
+
+O botão azul do produto deve abrir a análise, as decisões e a continuidade da
+passagem pendente, mesmo quando o status comercial ainda descreve homologação.
+O backend fornece `learningCycleNavigation` no contrato existente de posição: última
+passagem do próprio produto na versão exata da cadeia, aberta ou encerrada para
+ajuste ainda sem sucessor. A URL abre o workspace dos ciclos com produto e cadeia
+explícitos. A tela não escolhe essa prioridade por nome, ID ou inferência local.
+
+Sem ciclo pendente, permanece a continuidade oficial dos processos. Uma leitura ou
+abertura do workspace não migra ciclos, altera status comercial, reabre experimento
+encerrado, aprova estratégia, inicia tarefa ou autoriza gasto. No ciclo, a atividade
+delegada e seus critérios continuam vindo dos contratos canônicos do backend.
+Validação: `docs/homologacao/produto-navegacao-ciclo-v1.md`.

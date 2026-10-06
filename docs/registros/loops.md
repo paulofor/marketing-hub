@@ -9068,3 +9068,23 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
   a fornecer o resolvedor de navegação e a verificação de propriedade de referências,
   lacunas observadas na integração da fixture com os contratos já existentes.
 - Matriz e limites: `docs/homologacao/capella-passagem-processos-ciclo-v1.md`.
+
+## LOOP-DEDALO-ESPECIFICACAO-EXIGE-PROVA-POSTERIOR
+
+- **Ocorrência confirmada:** 06/10/2026, Capella, ciclo 5/experimento 98, tarefa 595.
+- **Por que aconteceu:** a arquitetura 594 recebeu produto e tipo de catálogo estruturados;
+  a construção perdeu o tipo e reteve `Quartzo` apenas em `harness.format`. O núcleo genérico
+  exigia prova sem delimitar a etapa. A jornada interpretou identidade divergente, tentou shell
+  em runtime com restrição de namespace e cobrou implementação/testes antes da especificação.
+- **Histórico comparado:** 594 aprovada, 595 bloqueada, e os casos anteriores de Mira/Vega em
+  `LOOP-DEDALO-CONTRATO-MARCADO-COMO-PROTOTIPO`. Não converter contrato em protótipo é obrigatório.
+- **Correção compartilhada:** preservar identidade e tipo no contexto de todos os sucessores;
+  limitar ferramentas e responsabilidades nas três especificações, mantendo sandbox read-only,
+  recusa prévia de identidade divergente e os gates reais de implementação/homologação.
+- **Prevenção:** backend exporta contextos de dois produtos; worker real percorre pending,
+  auditoria, processo simulado e callback; testa bloqueio preservado, recusa antes do modelo,
+  ferramentas e independência de outras atividades. Gate existente continua recusando plano sem
+  URL/aceitação e aceitando a implementação válida. Catálogo registra o recurso de comportamento.
+- **Limite:** nenhum resultado bloqueado é reclassificado, nenhuma prova é inventada e a correção
+  não implementa automaticamente todo protótipo. A tarefa 595 e seu custo permanecem auditáveis.
+- **Evidência:** `docs/homologacao/capella-contratos-construcao-v1.md`.

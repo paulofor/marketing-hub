@@ -29,7 +29,7 @@ class DedaloReasoningContractTest {
 
     List<String> command =
         ReflectionTestUtils.invokeMethod(
-            consumer, "command", Path.of("out"), Path.of("log"), Path.of("schema"));
+            consumer, "command", Path.of("out"), Path.of("schema"), contract());
 
     assertThat(command).containsSubsequence("--config", "model_reasoning_effort=\"max\"");
     assertThat(properties.requiredReasoningEffort()).isEqualTo("max");
@@ -65,8 +65,14 @@ class DedaloReasoningContractTest {
     assertThatThrownBy(
             () ->
                 ReflectionTestUtils.invokeMethod(
-                    pde, "command", Path.of("out"), Path.of("log"), Path.of("schema")))
+                    pde, "command", Path.of("out"), Path.of("schema"), contract()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("deve ser max");
+  }
+
+  /** Identifica a especificação usada para conferir o contrato de execução e sua auditoria. */
+  private PdeConstructionBpmTaskConsumer.BpmContract contract() {
+    return new PdeConstructionBpmTaskConsumer.BpmContract(
+        "pde-construction-approval", "journey", "prompt", "schema", "v2", "READY");
   }
 }

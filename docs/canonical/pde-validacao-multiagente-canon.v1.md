@@ -82,6 +82,20 @@ preço, publicação, campanha e gasto, não para representar uma pessoa fictíc
 
 ### Entrada da homologação técnica
 
+Por correção de 06/10/2026, confirmada pela tarefa 595 de Capella, o contexto da construção
+deve preservar separadamente a identidade do produto e seu tipo de catálogo. O tipo
+`Quartzo`, por exemplo, não representa outro produto. O vínculo vem dos dados estruturados
+do backend; texto livre não resolve divergência entre identificadores.
+
+As atividades `journey`, `deliverables` e `access` no executor atual produzem contratos JSON.
+Seu `READY` significa especificação completa: não afirma arquivos implementados nem testes
+executados. Elas recebem o contexto persistido e não precisam de shell para ler o workspace.
+URL, imagem, manifesto, hashes e provas da implementação permanecem obrigatórios na entrada
+de `technicalHomologation`; antecipá-los como pré-requisito de uma especificação completa cria
+dependência circular. Ausência ou contradição nas entradas da própria atividade continua
+bloqueante. Essa distinção não se aplica a `prototypeCorrection`, cujo `READY` exige a versão
+corrigida executável, nem permite concluir a construção inteira sem implementação real.
+
 Por correção de 2026-09-10 (Vega, tarefa #377), concluir especificações de jornada,
 componentes ou acesso não comprova que o protótipo esteja implementado. Antes de liberar o
 comando de homologação, o backend deve resolver o mesmo alvo entregue à fila e exigir URL

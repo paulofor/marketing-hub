@@ -246,7 +246,7 @@ public class PdeConstructionBpmTaskConsumer {
       recordExecutionStart(
           task, prompt.fullPrompt(), prompt.agentPromptPart(), prompt.activityPromptPart());
       Process process =
-          new ProcessBuilder(command(output, processLog, schema))
+          new ProcessBuilder(command(output, schema, contract))
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
@@ -322,8 +322,8 @@ public class PdeConstructionBpmTaskConsumer {
         .toBodilessEntity();
   }
 
-  /** Monta o processo Codex com filesystem somente leitura e schema obrigatório. */
-  private List<String> command(Path output, Path processLog, Path schema) {
+  /** Mantém sandbox somente leitura e desabilita shell nas etapas de contratos estruturados. */
+  private List<String> command(Path output, Path schema, BpmContract contract) {
     List<String> command =
         new ArrayList<>(
             List.of(
@@ -345,6 +345,9 @@ public class PdeConstructionBpmTaskConsumer {
                 "never",
                 "--config",
                 "approval_policy=\"never\""));
+    if (specificationActivity(contract)) {
+      command.addAll(List.of("--config", "features.shell_tool=false"));
+    }
     command.addAll(
         List.of(
             "--config", "model_reasoning_effort=\"" + properties.requiredReasoningEffort() + "\""));
@@ -358,11 +361,14 @@ public class PdeConstructionBpmTaskConsumer {
   }
 
   /**
-   * Compõe o núcleo de Dédalo com texto fixado pelo catálogo no Opala e arquivo nos demais fluxos.
+   * Compõe núcleo, limite da atividade e contexto, preservando o texto fixado pelo catálogo Opala.
    */
   private PromptComposition promptComposition(Map<String, Object> task) throws IOException {
     BpmContract contract = contractFor(task);
     String agentPromptPart = read("prompts/pde-construction/v1/agent-core.md");
+    if (specificationActivity(contract)) {
+      agentPromptPart += "\n\n" + read("prompts/pde-construction/v2/specification-boundary.md");
+    }
     String activityPromptPart =
         (CatalogPromptInput.migrated(task)
                 ? CatalogPromptInput.text(task, contract.schemaResource())
@@ -370,6 +376,12 @@ public class PdeConstructionBpmTaskConsumer {
             .replace("{{TASK_CONTEXT}}", json.writeValueAsString(CatalogPromptInput.context(task)));
     return new PromptComposition(
         agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
+  }
+
+  /** Identifica os contratos prévios à implementação sem afrouxar correção ou homologação. */
+  private static boolean specificationActivity(BpmContract contract) {
+    return "pde-construction-approval".equals(contract.processCode())
+        && List.of("journey", "deliverables", "access").contains(contract.activityId());
   }
 
   /** Persiste a saída funcional, a evidência e o custo antes de liberar a atividade seguinte. */
@@ -693,6 +705,13 @@ public class PdeConstructionBpmTaskConsumer {
     if (!"pde-construction-approval".equals(contract.processCode())) return;
     JsonNode target = json.valueToTree(task).path("taskTarget");
     JsonNode context = target.path("pdeContext");
+    JsonNode identity = context.path("product");
+    if (identity.isObject()
+        && (identity.path("id").asLong(0) < 1
+            || identity.path("id").asLong() != target.path("productId").asLong(0))) {
+      throw new IllegalArgumentException(
+          "Identidade do catálogo diverge do produto da tarefa; inferência recusada");
+    }
     JsonNode market = context.path("marketStrategy");
     JsonNode economics = context.path("economics");
     JsonNode harness = context.path("harness");

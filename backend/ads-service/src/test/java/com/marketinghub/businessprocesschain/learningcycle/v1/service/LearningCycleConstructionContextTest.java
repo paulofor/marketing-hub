@@ -147,6 +147,64 @@ class LearningCycleConstructionContextTest {
     verify(cycles, never()).save(any());
   }
 
+  /** Reproduz a perda de tipo da tarefa 595 e exporta duas identidades ao executor local real. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "7, Capella, Agenda Cheia Nail Design, LOW_TICKET_DIGITAL_PRODUCT, Quartzo",
+    "97001, Outra identidade QA, Outro resultado QA, PDE, Opala"
+  })
+  void preservesCatalogIdentityWithoutInventingPrototype(
+      long productId, String internalName, String commercialName, String typeCode, String typeName)
+      throws Exception {
+    product.setId(productId);
+    product.setInternalName(internalName);
+    product.setName(commercialName);
+    product.setProductTypeDefinition(
+        com.marketinghub.producttype.ProductTypeDefinition.builder()
+            .id(123L)
+            .code(typeCode)
+            .internalName(typeName)
+            .build());
+    cycle.setProductId(productId);
+    var fixture =
+        mapper.readTree(getClass().getResourceAsStream("/learningcycle/successor-planning.json"));
+    approved.get(0).setResultJson(fixture.path("architecture").toString());
+    approved.get(1).setResultJson(fixture.path("economics").toString());
+    approved.get(2).setResultJson(fixture.path("strategy").toString());
+
+    var result =
+        resolver.resolve("experiment:92", experiment, "pde-construction-approval").orElseThrow();
+    var identity = result.pdeContext().path("product");
+    assertThat(identity.path("id").asLong()).isEqualTo(productId);
+    assertThat(identity.path("internalName").asText()).isEqualTo(internalName);
+    assertThat(identity.path("commercialName").asText()).isEqualTo(commercialName);
+    assertThat(identity.path("productTypeId").asLong()).isEqualTo(123L);
+    assertThat(identity.path("productTypeCode").asText()).isEqualTo(typeCode);
+    assertThat(identity.path("productTypeInternalName").asText()).isEqualTo(typeName);
+    assertThat(result.pdeContext().path("status").asText()).isEqualTo("PLANNED");
+    assertThat(result.pdeContext().has("privatePrototypeAcceptance")).isFalse();
+    assertThat(result.publicUrl()).isNull();
+    assertThat(result.experienceVersion()).isEqualTo(cycle.getProductVersion());
+    String output = System.getProperty("pde.specification.context.output");
+    if (output != null) {
+      var directory = java.nio.file.Path.of(output);
+      java.nio.file.Files.createDirectories(directory);
+      java.nio.file.Files.writeString(
+          directory.resolve(productId + ".json"),
+          mapper.writeValueAsString(Map.of("taskTarget", result)));
+    }
+  }
+
+  /** Não inventa tipo a partir de um mineral mencionado no texto livre da arquitetura. */
+  @Test
+  void keepsMissingCatalogTypeUnknown() {
+    var result =
+        resolver.resolve("experiment:92", experiment, "pde-construction-approval").orElseThrow();
+    assertThat(result.pdeContext().path("product").path("productTypeCode").isNull()).isTrue();
+    assertThat(result.pdeContext().path("product").path("productTypeInternalName").isNull())
+        .isTrue();
+  }
+
   /**
    * Exporta o contrato produzido pelo backend para a validação real do consumidor na matriz local.
    */

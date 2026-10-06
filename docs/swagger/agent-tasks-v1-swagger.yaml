@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Caixa de Entrada dos Agentes
-  version: 1.6.1
+  version: 1.6.2
   description: >-
     Comunicação pré-comercial aceita product:<id>@agent-validation-v1 após o gate
     multiagente do produto. O contexto IRIS_INPUT_V1 usa mode PRODUCT_PRIVATE,
@@ -664,6 +664,12 @@ components:
             PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V2 correlacionado à tarefa,
             somente quando produto, URL, versão, imagem e status do diagnóstico conferem.
             A disponibilidade técnica não representa publicação comercial nem aprovação da homologação.
+            Nos sucessores, product preserva id, slug, internalName, commercialName,
+            type, productTypeId, productTypeCode, productTypeInternalName, format e deliveryMode
+            do cadastro. O nome do tipo não identifica outro produto; ausência permanece nula.
+            journey, deliverables e access entregam especificações estruturadas. READY nessas
+            atividades não cria privatePrototypeAcceptance nem substitui a prova executável
+            exigida por technicalHomologation.
     ExecutionResource:
       type: object
       required:

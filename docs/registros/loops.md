@@ -8995,3 +8995,14 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
 - **Prevenção:** dois produtos/IDs, caminho humano anterior, replay, concorrência,
   STOP, proposta obsoleta, mercado diferente, janela inicial e leitura sem efeitos.
   Matriz: `docs/homologacao/continuidade-autonoma-ciclos-v1.md`.
+
+### Recorrência no contrato de entrada de Atena — 06/10/2026
+
+- Capella avançou ao ciclo #5/experimento #98. Atena #590 recusou a entrada antes do
+  modelo: identidade catalogada ausente no envelope, embora o banco confirme Capella/Quartzo.
+- O provedor descartava todo alvo sem `pdeExperienceJson.experienceVersion`, inclusive
+  planejamento. Mira #496 antes concluída tem essa versão; o histórico confirma a diferença.
+- O planejamento passa a entregar produto, tipo e referências sem inventar versão PDE.
+  Os gates dos demais processos permanecem inalterados; o worker mantém sua validação.
+- O harness cobre produto sem versão, outro produto/experimento, planejamento anterior,
+  segregação dos gates e worker v12 com HTTP/modelo simulados, auditoria e callback.

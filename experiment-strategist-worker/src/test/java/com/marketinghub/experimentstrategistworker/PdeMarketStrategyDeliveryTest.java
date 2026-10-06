@@ -37,6 +37,8 @@ class PdeMarketStrategyDeliveryTest {
   private long targetProductId = 4;
   private boolean initialPlanning;
   private boolean omitInitialPlanningContext;
+  private boolean catalogedSuccessor;
+  private boolean omitCatalogIdentity;
 
   /** Inicia backend HTTP e modelo descartáveis, sem qualquer credencial ou conexão produtiva. */
   @BeforeEach
@@ -117,6 +119,38 @@ class PdeMarketStrategyDeliveryTest {
             "PDE_COMMERCIAL_PLANNING_INPUT_V1",
             "Instagram Ads",
             "Uma referência `experiment:*`, sozinha, não torna a tarefa sucessora");
+  }
+
+  /** Executa o sucessor v12 catalogado sem exigir uma versão PDE que ainda será planejada. */
+  @Test
+  void completesCatalogedSuccessorWithoutPdeVersion() throws Exception {
+    catalogedSuccessor = true;
+    var result = new PdeMarketStrategyBpmTaskConsumerTest().agentValidationResult();
+    result.withObject("/productIdentity").put("mode", "PRESERVE").put("internalName", "Estrela");
+    result.withObject("/productIdentity").put("productTypeCode", "LOW_TICKET_DIGITAL_PRODUCT");
+    result.withObject("/productIdentity").put("productTypeInternalName", "Quartzo");
+    Files.writeString(temporary.resolve("answer.json"), json.writeValueAsString(result));
+
+    consumer().processOne();
+
+    assertThat(invocations()).isEqualTo(1);
+    assertThat(paths).containsExactly("pending", "execution-audit", "result");
+    assertThat(Files.readString(temporary.resolve("prompt.txt")))
+        .contains("learningSalesCycle", "Estrela", "Quartzo", "PDE_COMMERCIAL_PLANNING_INPUT_V1");
+    assertThat(Files.exists(temporary.resolve("state/pending.json"))).isFalse();
+  }
+
+  /** Mantém a recusa prévia quando a identidade catalogada realmente não foi entregue. */
+  @Test
+  void refusesSuccessorWithoutCatalogBeforeModel() throws Exception {
+    catalogedSuccessor = true;
+    omitCatalogIdentity = true;
+
+    consumer().processOne();
+
+    assertThat(invocations()).isZero();
+    assertThat(paths).containsExactly("pending", "failure");
+    assertThat(callbacks.getFirst().path("error").asText()).contains("identidade catalogada");
   }
 
   /** Bloqueia contexto inicial incompleto antes do modelo para não cobrar uma análise inútil. */
@@ -291,6 +325,26 @@ class PdeMarketStrategyDeliveryTest {
         task.put(
             "processContextJson",
             "{\"learningSalesCycle\":{\"productId\":4,\"experimentId\":92,\"productVersion\":\"v8-fixture\"}}");
+      }
+      if (catalogedSuccessor) {
+        task.put("processVersion", 12);
+        if (!omitCatalogIdentity) {
+          var target = json.createObjectNode();
+          target.put("productId", targetProductId);
+          target.put("experimentId", 92);
+          target.put("productInternalName", "Estrela");
+          target.putNull("experienceVersion");
+          var context = target.putObject("pdeContext");
+          context.put("contractVersion", "PDE_COMMERCIAL_PLANNING_INPUT_V1");
+          context.put("mode", "INITIAL_CONTEXT_INCOMPLETE");
+          context.put("mediaSpendAuthorized", false);
+          context
+              .putObject("product")
+              .put("id", targetProductId)
+              .put("productTypeCode", "LOW_TICKET_DIGITAL_PRODUCT")
+              .put("productTypeInternalName", "Quartzo");
+          task.put("taskTarget", target);
+        }
       }
       response = json.writeValueAsBytes(List.of(task));
       status = 200;

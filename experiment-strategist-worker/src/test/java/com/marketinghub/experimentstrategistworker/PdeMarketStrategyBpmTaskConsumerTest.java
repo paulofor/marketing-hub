@@ -276,8 +276,8 @@ class PdeMarketStrategyBpmTaskConsumerTest {
         .doesNotContain("duas leituras", "READY_FOR_PRIVATE_VALIDATION");
   }
 
-  /** Monta uma estratégia v4 completa para o gate multiagente automatizado. */
-  private ObjectNode agentValidationResult() throws Exception {
+  /** Compartilha uma estratégia v4 completa com os testes de contrato e entrega multiagente. */
+  ObjectNode agentValidationResult() throws Exception {
     ObjectNode result = identityResult("CREATE", "Alcyone", "AI_PRODUCT", "Safira");
     ObjectNode contract = (ObjectNode) result.path("marketStrategicContract");
     contract.put("contractVersion", "MARKET_STRATEGY_V4");

@@ -197,9 +197,7 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
                 .anyMatch(experiment -> Objects.equals(experiment.getId(), experimentId)));
   }
 
-  /**
-   * Monta o alvo conforme o tipo: experiência Safira, página Quartzo, candidata Opala ou protótipo.
-   */
+  /** Monta o alvo por tipo e preserva o catálogo no planejamento anterior à experiência PDE. */
   private Optional<AgentTaskTargetResponse> target(
       String sourceReference, Experiment experiment, Product product, String processCode) {
     if (product == null || product.getId() == null || blank(product.getSlug())) {
@@ -272,7 +270,9 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
       processCode = "pde-construction-approval";
     }
     String experienceVersion = experienceVersion(product, processCode);
-    if (blank(experienceVersion)) return Optional.empty();
+    boolean commercialPlanning =
+        "pde-commercial-plan-offer".equals(processCode) && experiment != null;
+    if (blank(experienceVersion) && !commercialPlanning) return Optional.empty();
     boolean privateValidation = isPrivateValidation(product, processCode);
     Optional<CanonicalCheckout> canonicalCheckout =
         canonicalCheckout(experiment, product, processCode);

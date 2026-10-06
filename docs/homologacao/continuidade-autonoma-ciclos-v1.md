@@ -41,7 +41,7 @@ Testes comprovam a preparação e a passagem operacional, nunca demanda ou aumen
   sequencial, com cache de contextos limitado a quatro, concluiu com sucesso.
 - Frontend: 872 testes em 185 arquivos, typecheck e build aprovados. Atena: 47 testes aprovados,
   incluindo o contrato v2 atualizado e a preservação do comportamento v1.
-- MySQL 5.7 físico: nove cenários da decisão, vinte do ciclo e dez do contexto aprovados.
+- MySQL 5.7 físico: dez cenários da decisão, vinte do ciclo e dez do contexto aprovados.
   A preparação foi exercitada em dois produtos distintos, com preservação do caminho humano,
   exclusão do histórico sem adesão, concorrência, replay e primeira janela sem autorização de gasto.
   Um trigger local rejeitou a gravação do sucessor: a decisão e o experimento foram revertidos,
@@ -59,3 +59,20 @@ Testes comprovam a preparação e a passagem operacional, nunca demanda ou aumen
 
 A homologação valida prontidão técnica da passagem. Preço, contribuição, demanda e adequação
 da entrega continuam dependentes dos pareceres e das evidências do próprio sucessor.
+
+## Recuperação de aprovação já registrada
+
+A releitura de produção identificou o evento #30, em 06/10/2026 às 01:32 UTC: outra execução
+registrou ADJUST no ciclo #4 e aprovou a proposta #5, ainda sem criar sucessor. A mesma entrega
+foi ampliada antes do merge para reutilizar esse recibo. Exigir nova aprovação repetiria a
+intervenção; sobrescrever a decisão perderia autoria e edições. A opção adotada materializa
+o sucessor a partir da decisão final vinculada, sem novo ADJUST no predecessor.
+
+Regressões locais confirmam as edições aprovadas, idempotência e recusa de recibo ausente.
+O teste HTTP exercita aprovação seguida de consumo automático pela fila e compara os eventos
+históricos integralmente. A nova leitura de disponibilidade também cobre pareceres ainda sem
+resultado, inválidos ou obsoletos, preservando seus relatórios. Foram revalidados 50 testes
+direcionados de backend, 31 de frontend, typecheck e build; a rodada física final passou os
+dez cenários de decisão, vinte do ciclo e dez de contexto, além das migrações.
+Os três navegadores/dispositivos foram conferidos novamente, com decisão já aprovada no
+iPhone emulado. O pacote atualizado manteve integridade de classes e recursos.

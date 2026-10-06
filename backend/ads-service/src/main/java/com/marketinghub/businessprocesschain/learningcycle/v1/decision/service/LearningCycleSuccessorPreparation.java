@@ -2,7 +2,10 @@ package com.marketinghub.businessprocesschain.learningcycle.v1.decision.service;
 
 import static com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleRules.require;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.businessprocesschain.learningcycle.v1.decision.LearningCycleDecisionProposal;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
@@ -15,6 +18,7 @@ import com.marketinghub.repository.jpa.learningcycle.*;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +32,7 @@ import org.springframework.transaction.annotation.*;
 public class LearningCycleSuccessorPreparation {
   public static final String OPERATOR = "Marketing Hub · preparação automática";
   private final LearningSalesCycleRepository cycles;
+  private final LearningSalesCycleEventRepository events;
   private final LearningCycleDecisionProposalRepository proposals;
   private final ProductRepository products;
   private final AgentRepository agents;
@@ -65,15 +70,32 @@ public class LearningCycleSuccessorPreparation {
             .map(a -> Boolean.TRUE.equals(a.getAutomaticExecutionEnabled()))
             .orElse(false),
         "Atena em STOP; preparação preservada.");
+    boolean approved = "ADJUSTED".equals(cycle.getStatus());
     require(
-        "OPEN".equals(cycle.getStatus()) && "DECISION".equals(cycle.getStage()),
-        "A preparação exige a decisão corrente, sem reabrir ciclos encerrados.");
+        ("OPEN".equals(cycle.getStatus()) || approved) && "DECISION".equals(cycle.getStage()),
+        "A preparação exige decisão corrente ou ajuste aprovado, sem reabrir operação encerrada.");
     var proposal =
-        proposals
-            .findFirstByCycleIdAndCycleRevisionOrderByAttemptDesc(cycleId, cycle.getRevision())
+        (approved
+                ? proposals.findFirstByCycleIdOrderByIdDesc(cycleId)
+                : proposals.findFirstByCycleIdAndCycleRevisionOrderByAttemptDesc(
+                    cycleId, cycle.getRevision()))
             .orElseThrow();
-    require("READY".equals(proposal.getStatus()), "Aguarde o parecer válido de Atena.");
+    require(
+        available(cycle, proposal),
+        "Aguarde o parecer ou a decisão de ajuste vigente e compatível.");
     var decision = (ObjectNode) json.read(proposal.getProposalJson());
+    if (approved) {
+      var evidence = approvedEvidence(cycle, proposal);
+      for (String field :
+          List.of(
+              "rootCause",
+              "learning",
+              "nextHypothesis",
+              "returnProcessId",
+              "returnActivityId",
+              "marketReview")) if (evidence.has(field)) decision.set(field, evidence.get(field));
+      decision.put("sourceDecisionEventId", proposal.getApprovedEventId());
+    }
     require(
         LearningCyclePreparationPolicy.eligible(decision),
         "A proposta requer decisão sobre mercado ou operação; a preparação automática é restrita a ajuste no mesmo foco.");
@@ -94,19 +116,20 @@ public class LearningCycleSuccessorPreparation {
     decision.put("preparationPolicy", LearningCyclePreparationPolicy.CONTRACT);
     decision.put("humanApproved", false);
     decision.put("externalSpendAuthorized", false);
-    service.recordPreparationDecision(
-        productId,
-        cycleId,
-        new LearningCycleCommand(
-            key(cycleId, "decision"),
-            cycle.getRevision(),
-            LearningCycleCommand.Action.ADJUST,
-            OPERATOR,
-            "Preparação automática do sucessor a partir da proposta #"
-                + proposal.getId()
-                + "; sem gasto ou publicação.",
-            "internal://learning-cycles/" + cycleId + "/decision-proposals/" + proposal.getId(),
-            decision));
+    if (!approved)
+      service.recordPreparationDecision(
+          productId,
+          cycleId,
+          new LearningCycleCommand(
+              key(cycleId, "decision"),
+              cycle.getRevision(),
+              LearningCycleCommand.Action.ADJUST,
+              OPERATOR,
+              "Preparação automática do sucessor a partir da proposta #"
+                  + proposal.getId()
+                  + "; sem gasto ou publicação.",
+              "internal://learning-cycles/" + cycleId + "/decision-proposals/" + proposal.getId(),
+              decision));
     proposal.setError(null);
     var successor = experiments.saveAndFlush(plannedExperiment(source, cycleId, decision));
     var prepared =
@@ -156,6 +179,42 @@ public class LearningCycleSuccessorPreparation {
         result.id(),
         successor.getId());
     return result;
+  }
+
+  /**
+   * Expõe recuperação de parecer corrente ou ajuste aprovado, sem duplicar um sucessor existente.
+   */
+  @Transactional(readOnly = true)
+  public boolean available(LearningSalesCycle cycle, LearningCycleDecisionProposal proposal) {
+    if (proposal == null
+        || proposal.getProposalJson() == null
+        || !("READY".equals(proposal.getStatus()) || "APPROVED".equals(proposal.getStatus()))
+        || !LearningCyclePreparationPolicy.eligible(json.read(proposal.getProposalJson()))
+        || cycles.findByPreviousCycleId(cycle.getId()).isPresent()) return false;
+    return ("OPEN".equals(cycle.getStatus())
+            && "DECISION".equals(cycle.getStage())
+            && "READY".equals(proposal.getStatus())
+            && cycle.getRevision() == proposal.getCycleRevision())
+        || approvedEvidence(cycle, proposal) != null;
+  }
+
+  /** Recupera somente o recibo final vinculado à proposta e à revisão encerrada para ajuste. */
+  private JsonNode approvedEvidence(
+      LearningSalesCycle cycle, LearningCycleDecisionProposal proposal) {
+    if (!"ADJUSTED".equals(cycle.getStatus())
+        || !"APPROVED".equals(proposal.getStatus())
+        || proposal.getApprovedEventId() == null
+        || cycle.getRevision() != proposal.getCycleRevision() + 1) return null;
+    return events
+        .findById(proposal.getApprovedEventId())
+        .filter(
+            event ->
+                cycle.getId().equals(event.getCycleId())
+                    && event.getRevision() == cycle.getRevision()
+                    && "ADJUST".equals(event.getAction()))
+        .map(event -> json.read(event.getEvidenceJson()))
+        .filter(evidence -> evidence.path("decisionProposalId").asLong(-1) == proposal.getId())
+        .orElse(null);
   }
 
   /** Copia somente o contexto da oferta; campanha, artefatos, janela e permissões nascem vazios. */

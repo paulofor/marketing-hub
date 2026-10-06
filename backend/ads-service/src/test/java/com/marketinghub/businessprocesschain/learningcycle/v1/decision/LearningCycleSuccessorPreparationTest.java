@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.businessprocesschain.BusinessProcessChainDefinition;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycleEvent;
 import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
@@ -32,6 +33,8 @@ import org.mockito.ArgumentCaptor;
  */
 class LearningCycleSuccessorPreparationTest {
   private final LearningSalesCycleRepository cycles = mock(LearningSalesCycleRepository.class);
+  private final LearningSalesCycleEventRepository events =
+      mock(LearningSalesCycleEventRepository.class);
   private final LearningCycleDecisionProposalRepository proposals =
       mock(LearningCycleDecisionProposalRepository.class);
   private final ProductRepository products = mock(ProductRepository.class);
@@ -44,6 +47,7 @@ class LearningCycleSuccessorPreparationTest {
   private final LearningCycleSuccessorPreparation preparation =
       new LearningCycleSuccessorPreparation(
           cycles,
+          events,
           proposals,
           products,
           agents,
@@ -190,6 +194,57 @@ class LearningCycleSuccessorPreparationTest {
     verifyNoInteractions(service);
   }
 
+  /** Reutiliza a decisão final aprovada sem repetir aprovação ou alterar o registro anterior. */
+  @Test
+  void recoversAlreadyApprovedDecisionWithFinalEdits() throws Exception {
+    var cycle = fixture(7);
+    var proposal =
+        proposals
+            .findFirstByCycleIdAndCycleRevisionOrderByAttemptDesc(cycle.getId(), 4)
+            .orElseThrow();
+    cycle.setStatus("ADJUSTED");
+    cycle.setRevision(5);
+    proposal.setStatus("APPROVED");
+    proposal.setApprovedEventId(800L);
+    when(proposals.findFirstByCycleIdOrderByIdDesc(cycle.getId()))
+        .thenReturn(Optional.of(proposal));
+    var event = new LearningSalesCycleEvent();
+    event.setCycleId(cycle.getId());
+    event.setRevision(5);
+    event.setAction("ADJUST");
+    event.setEvidenceJson(
+        "{\"decisionProposalId\":900,\"humanApproved\":true,\"nextHypothesis\":\"Hipótese final editada e aprovada\"}");
+    when(events.findById(800L)).thenReturn(Optional.of(event));
+    preparation.prepare(7L, cycle.getId());
+    verify(service, never()).recordPreparationDecision(any(), any(), any());
+    var request = ArgumentCaptor.forClass(CreateLearningCycleRequest.class);
+    verify(service).createPreparation(eq(7L), request.capture());
+    assertThat(request.getValue().hypothesis()).isEqualTo("Hipótese final editada e aprovada");
+    assertThat(proposal.getStatus()).isEqualTo("APPROVED");
+    assertThat(proposal.getApprovedEventId()).isEqualTo(800L);
+    assertThat(cycle.getRevision()).isEqualTo(5);
+  }
+
+  /** Recusa aprovação sem recibo canônico, mantendo a integridade do histórico encerrado. */
+  @Test
+  void refusesApprovedProposalWithoutMatchingReceipt() throws Exception {
+    var cycle = fixture(7);
+    cycle.setStatus("ADJUSTED");
+    cycle.setRevision(5);
+    var proposal =
+        proposals
+            .findFirstByCycleIdAndCycleRevisionOrderByAttemptDesc(cycle.getId(), 4)
+            .orElseThrow();
+    proposal.setStatus("APPROVED");
+    proposal.setApprovedEventId(800L);
+    when(proposals.findFirstByCycleIdOrderByIdDesc(cycle.getId()))
+        .thenReturn(Optional.of(proposal));
+    assertThat(preparation.available(cycle, proposal)).isFalse();
+    assertThatThrownBy(() -> preparation.prepare(7L, cycle.getId()))
+        .hasMessageContaining("vigente");
+    verifyNoInteractions(service);
+  }
+
   /** Proposta substituída, incompleta ou outro mercado conserva a decisão para revisão. */
   @ParameterizedTest
   @ValueSource(strings = {"ADJACENT_SEGMENTS", "BROAD_PROBLEM", "INSUFFICIENT_EVIDENCE"})
@@ -202,7 +257,7 @@ class LearningCycleSuccessorPreparationTest {
         .orElseThrow()
         .setProposalJson(value.toString());
     assertThatThrownBy(() -> preparation.prepare(7L, cycle.getId()))
-        .hasMessageContaining("mercado");
+        .hasMessageContaining("compatível");
     verifyNoInteractions(service);
     verify(experiments, never()).saveAndFlush(any());
   }
@@ -213,5 +268,19 @@ class LearningCycleSuccessorPreparationTest {
   void rejectsOtherActions(String action) throws Exception {
     var value = valid().put("action", action);
     assertThat(LearningCyclePreparationPolicy.eligible(value)).isFalse();
+  }
+
+  /** Parecer ainda ausente ou recusado continua legível sem tentar interpretar resposta nula. */
+  @ParameterizedTest
+  @ValueSource(strings = {"QUEUED", "RUNNING", "FAILED", "STALE"})
+  void unavailableResultDoesNotBreakReport(String status) throws Exception {
+    var cycle = fixture(7);
+    var proposal =
+        proposals
+            .findFirstByCycleIdAndCycleRevisionOrderByAttemptDesc(cycle.getId(), 4)
+            .orElseThrow();
+    proposal.setStatus(status);
+    proposal.setProposalJson(null);
+    assertThat(preparation.available(cycle, proposal)).isFalse();
   }
 }

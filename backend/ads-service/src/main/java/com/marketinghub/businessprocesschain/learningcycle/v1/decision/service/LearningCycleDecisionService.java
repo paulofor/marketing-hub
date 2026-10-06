@@ -121,7 +121,7 @@ public class LearningCycleDecisionService {
         if (ex instanceof ResponseStatusException stopped
             && stopped.getReason() != null
             && stopped.getReason().contains("STOP")) continue;
-        // A tarefa permanece READY e conserva o resultado; a recuperação administrativa não consome
+        // O parecer conserva seu status e resultado; a recuperação administrativa não consome
         // modelo.
         proposal.setError(
             ex instanceof ResponseStatusException reason
@@ -543,10 +543,7 @@ public class LearningCycleDecisionService {
         proposal == null ? null : proposal.getFinishedAt(),
         proposal == null ? null : proposal.getApprovedAt(),
         proposal == null ? null : proposal.getApprovedEventId(),
-        "READY".equals(status)
-            && isDecision(cycle)
-            && proposal != null
-            && LearningCyclePreparationPolicy.eligible(json.read(proposal.getProposalJson())));
+        successorPreparation != null && successorPreparation.available(cycle, proposal));
   }
 
   /** Bloqueia ciclo antes da proposta para manter a ordem única de locks também na aprovação. */
@@ -560,7 +557,7 @@ public class LearningCycleDecisionService {
     return proposal;
   }
 
-  /** Atualiza a ocorrência assistida sem marcar objetivo alcançado antes da aprovação humana. */
+  /** Atualiza a ocorrência assistida sem antecipar a decisão humana ou a política preparatória. */
   private void state(LearningCycleDecisionProposal proposal, String status, String description) {
     var instance = instances.findById(proposal.getActivityInstanceId()).orElseThrow();
     instance.setStatus(status);

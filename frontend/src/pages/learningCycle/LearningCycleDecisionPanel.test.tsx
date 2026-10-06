@@ -81,7 +81,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(axios.get).mockResolvedValue({ data: draft });
 });
-function mount() {
+function mount(selectedCycle = cycle) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -90,7 +90,7 @@ function mount() {
     <MemoryRouter>
       <QueryClientProvider client={client}>
         <LearningCycleDecisionPanel
-          cycle={cycle}
+          cycle={selectedCycle}
           catalog={catalog}
           onUpdated={updated}
         />
@@ -307,4 +307,23 @@ it("apresenta bloqueio sem reenviar o modelo nem fabricar sucesso", async () => 
   await screen.findByRole("alert");
   expect(updated).not.toHaveBeenCalled();
   expect(axios.post).toHaveBeenCalledTimes(1);
+});
+
+it("recupera decisão aprovada sem exigir nova aprovação no ciclo encerrado", async () => {
+  vi.mocked(axios.get).mockResolvedValue({
+    data: { ...draft, status: "APPROVED", preparationAvailable: true },
+  });
+  const successor = { ...cycle, id: 13, stage: "PLANNING" };
+  vi.mocked(axios.post).mockResolvedValue({ data: successor });
+  const { updated } = mount({ ...cycle, status: "ADJUSTED", revision: 2 });
+  await userEvent.click(
+    await screen.findByRole("button", {
+      name: "Preparar continuidade sem gasto",
+    }),
+  );
+  await waitFor(() => expect(updated).toHaveBeenCalledWith(successor));
+  expect(axios.post).toHaveBeenCalledTimes(1);
+  expect(
+    screen.queryByRole("button", { name: /Aprovar decisão/ }),
+  ).not.toBeInTheDocument();
 });

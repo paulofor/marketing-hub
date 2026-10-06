@@ -29,7 +29,7 @@ const schema = JSON.parse(
     "utf8",
   ),
 );
-async function seed() {
+async function seed(approved = false) {
   await request("/fixture/reset", {});
   await request("/fixture/experiments/91001/legacy-publication", {});
   const cycle = await request(`${api}/products/91001`, {
@@ -120,6 +120,21 @@ async function seed() {
     error: null,
     costUsd: null,
   });
+  if (approved) {
+    await request(`${api}/products/91001/${cycle.id}/commands`, {
+      requestKey: crypto.randomUUID(),
+      expectedRevision: cycle.revision,
+      action: "ADJUST",
+      operatorName: "Aprovação sintética anterior",
+      summary: "Decisão anterior preservada",
+      evidenceReference: "internal://fixture/decision",
+      evidence: {
+        ...proposal,
+        decisionProposalId: job.proposalId,
+        humanApproved: true,
+      },
+    });
+  }
   return cycle;
 }
 const browser = await chromium.launch({
@@ -132,7 +147,7 @@ try {
     ["iphone", devices["iPhone 15 Pro"]],
     ["pixel", devices["Pixel 7"]],
   ]) {
-    const cycle = await seed();
+    const cycle = await seed(name === "iphone");
     const context = await browser.newContext(device);
     const page = await context.newPage();
     const errors = [],

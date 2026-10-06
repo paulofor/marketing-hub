@@ -24,6 +24,8 @@ paths:
       description: >-
         Sem body. Exige produto e Atena em PLAY, ciclo corrente em DECISION, proposta
         READY v2 com ADJUST/KEEP_FOCUS, dados conciliados e experimento fora de operação.
+        Também recupera ciclo ADJUSTED com proposta APPROVED e recibo final vinculado à
+        mesma revisão, preservando edições e aprovação anteriores sem registrar outro ADJUST.
         A transação registra política automática, cria um experimento PLANNED, ciclo
         vinculado e aprendizado antes de encaminhar ao planejamento. Mídia zero;
         janela nula; não copia campanha, checkout, métricas ou permissões. Replay
@@ -111,7 +113,7 @@ paths:
       description: >-
         Entrada canônica do worker. Inclui ciclos históricos em DECISION com conciliação
         automática válida. A transação bloqueia o ciclo; callbacks exigem a lease reservada.
-        Antes da reserva, recupera propostas READY elegíveis de ciclos novos aderentes à
+        Antes da reserva, recupera propostas READY ou ajustes APPROVED elegíveis de ciclos novos aderentes à
         política preparatória; ciclos históricos não são migrados automaticamente.
         Falha preserva o parecer e oferece recuperação sem modelo. STOP não é revogado.
       responses:

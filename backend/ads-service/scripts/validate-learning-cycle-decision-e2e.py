@@ -92,6 +92,7 @@ assert state['revision']==c['revision'] and state['status']=='OPEN'
 assert http('/fixture/experiments/91001/state')['status']=='USER_STOPPED'
 check('Retentativa auditável, callback idempotente e nenhuma alteração de experimento/ciclo pela proposta')
 cmd=command(c,ready)
+cmd['evidence']['nextHypothesis']='Hipótese final editada: tornar a primeira aplicação mais clara'
 route=f'{API}/products/91001/{c["id"]}/commands'
 http(route,dict(cmd,evidence=dict(cmd['evidence'],humanApproved=False)),409)
 http(route,dict(cmd,evidence=dict(cmd['evidence'],decisionProposalId=failed['id'])),409)
@@ -107,6 +108,16 @@ assert http(url)['status']=='APPROVED' and http(url)['approvedEventId']==closed[
 assert http(url)['proposal']['summary']!=cmd['summary']
 assert len(http(url+'/audit'))==2
 check('Aprovação humana obrigatória; replay concorrente único; original e edição final preservados')
+assert http(url)['preparationAvailable'] is True
+assert http(INTERNAL+'/pending')==[]
+history=http(f'{API}/products/91001')
+prepared=next(x for x in history if x['previousCycleId']==c['id'])
+assert prepared['stage']=='PLANNING' and prepared['brief']['hypothesis']==cmd['evidence']['nextHypothesis']
+assert next(x for x in history if x['id']==c['id'])['events']==closed['events']
+assert http(url)['approvedEventId']==closed['events'][-1]['id']
+assert http(url)['preparationAvailable'] is False
+assert http(url+'/prepare-successor',{})['id']==prepared['id']
+check('Decisão já aprovada prepara sucessor, preserva edição final e não repete aprovação')
 http('/fixture/reset',{})
 c=create();url=proposal_url(c);job=http(INTERNAL+'/pending')[0];audit(job)
 _,failed=result(job,None,'Timeout simulado do executor')

@@ -68,7 +68,7 @@ export default function LearningCycleDecisionPanel({
             ? "O backend preserva o aprendizado e prepara um único sucessor com mídia zero, sem janela comercial herdada. Novas ocorrências seguem automaticamente; esta ação recupera propostas anteriores sem repetir Atena."
             : "A proposta usa os resultados conciliados. Sua aprovação registra a decisão e o retorno no BPM."}
         </p>
-        {ready && value.preparationAvailable ? (
+        {value?.preparationAvailable ? (
           <div>
             <button
               type="button"

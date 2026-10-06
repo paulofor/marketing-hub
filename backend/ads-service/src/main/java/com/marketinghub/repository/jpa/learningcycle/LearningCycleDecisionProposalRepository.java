@@ -15,9 +15,12 @@ public interface LearningCycleDecisionProposalRepository
       value =
           """
       SELECT p.id FROM learning_cycle_decision_proposal_v1 p
-      JOIN learning_sales_cycle_v1 c ON c.id = p.cycle_id AND c.revision = p.cycle_revision
+      JOIN learning_sales_cycle_v1 c ON c.id = p.cycle_id
       JOIN product pr ON pr.id = c.product_id
-      WHERE p.status = 'READY' AND p.error IS NULL AND c.status = 'OPEN' AND c.stage = 'DECISION'
+      LEFT JOIN learning_sales_cycle_v1 successor ON successor.previous_cycle_id = c.id
+      WHERE p.error IS NULL AND c.stage = 'DECISION' AND successor.id IS NULL
+        AND ((p.status = 'READY' AND c.status = 'OPEN' AND c.revision = p.cycle_revision)
+          OR (p.status = 'APPROVED' AND c.status = 'ADJUSTED' AND c.revision = p.cycle_revision + 1))
         AND pr.automatic_execution_enabled = 1
         AND JSON_UNQUOTE(JSON_EXTRACT(c.brief_json, '$.preparationPolicy')) = 'LEARNING_CYCLE_SAFE_PREPARATION_V1'
         AND JSON_UNQUOTE(JSON_EXTRACT(p.proposal_json, '$.contractVersion')) = 'LEARNING_CYCLE_DECISION_PROPOSAL_V2'

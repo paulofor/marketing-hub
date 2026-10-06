@@ -1513,7 +1513,7 @@ public class LearningCycleService {
       responsible = nextWork.responsible();
     }
     if ("ADJUSTED".equals(cycle.getStatus())) {
-      responsible = "Operador do ciclo · preparação do sucessor";
+      responsible = "Backend · preparação do sucessor";
       if (successor.isPresent()) {
         var nextCycle = successor.orElseThrow();
         nextAction =
@@ -1531,7 +1531,7 @@ public class LearningCycleService {
                 + nextCycle.getId();
       } else {
         nextAction =
-            "Ajuste aprovado. Crie um experimento planejado deste produto e vincule-o em «Criar ciclo sucessor com aprendizado». O sucessor receberá a hipótese e o destino de retorno; não repita a decisão nem execute o ajuste no experimento histórico.";
+            "Ajuste aprovado. O backend verifica a preparação do sucessor com base na decisão final. A proposta de Atena apresenta a recuperação quando compatível; preserve a decisão e o experimento histórico.";
         workUrl = null;
       }
     }

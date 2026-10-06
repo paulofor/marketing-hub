@@ -27,6 +27,10 @@ A adesão à política é registrada nas novas ocorrências. O deploy não migra
 históricos: uma recuperação solicitada, como a do Capella, usa o mesmo comando canônico,
 sem renovar o experimento encerrado nem alterar os demais produtos.
 
+Se a decisão já estiver aprovada e ainda não houver sucessor, reutilizar o recibo final
+vinculado ao ciclo e à proposta. Preservar edições aprovadas, autoria, revisão e evento;
+não aprovar novamente nem converter retroativamente a origem humana em automática.
+
 ## Uma mudança por ciclo e experimento — decisão de 02/10/2026
 
 O contrato `CHANGE_PER_CYCLE_V1` exige **novo ciclo e novo experimento para cada mudança

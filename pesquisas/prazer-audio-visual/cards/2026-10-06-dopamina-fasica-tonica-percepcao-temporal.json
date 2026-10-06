@@ -1,0 +1,18 @@
+{
+  "cardKey": "dopamina-fasica-tonica-percepcao-temporal",
+  "collection": "prazer-audio-visual",
+  "title": "Dopamina fásica e tônica se relacionam a componentes diferentes do tempo percebido",
+  "finding": "Medição direta de dopamina no caudado humano durante julgamento temporal mostrou que dopamina fásica e tônica se associaram a aspectos diferentes do desempenho: sinais fásicos mais altos se relacionaram a maior probabilidade de julgar intervalos como curtos, enquanto níveis tônicos mais baixos se associaram a pior precisão temporal.",
+  "mechanism": "A sinalização dopaminérgica opera em múltiplas escalas temporais; flutuações fásicas rápidas podem se relacionar ao viés momentâneo de duração, enquanto o nível tônico pode se relacionar à estabilidade da discriminação temporal.",
+  "commercialApplication": "Em vídeos, interfaces temporizadas e experiências com espera ou ritmo, medir tempo percebido separadamente do tempo físico, retenção e compreensão; não usar fluidez, sensação de rapidez ou engajamento como proxy de dopamina.",
+  "evidenceStrength": "Média para o mecanismo humano: medição estriatal direta com resolução subsegundo e comparação com serotonina, porém em amostra neuroquímica muito pequena.",
+  "publishedOn": "2026-10-06",
+  "validUntil": "2026-11-20",
+  "experimentHypothesis": "Duas variantes audiovisuais com a mesma duração física podem produzir estimativas subjetivas de duração diferentes; a variante superior só deve ser escolhida se também preservar compreensão, lembrança e conforto, sem interpretar a diferença como medida de dopamina.",
+  "risks": "Interpretar percepção temporal como prova de aumento de dopamina, confundir associação neuroquímica com causalidade ou tentar otimizar conteúdo para alterar dopamina sem medição direta.",
+  "limits": "O estudo usa intervalos visuais simples e cinco participantes na análise neuroquímica; não testa música, vídeo naturalístico, prazer, persuasão ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-06-dopamina-tempo-percebido.md",
+  "sourceTitle": "Fonte revisada — dopamina endógena e percepção temporal",
+  "sourceSha256": "a1524289386088becebf99fe4d8fcaa0e1f19f9f16c2b19f48d2ec91b690a72d"
+}

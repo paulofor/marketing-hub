@@ -1,0 +1,18 @@
+{
+  "cardKey": "integracao-multissensorial-baselines-causais",
+  "collection": "prazer-audio-visual",
+  "title": "Integração multissensorial exige baselines unissensoriais antes de atribuir mecanismo",
+  "finding": "Uma revisão metodológica com simulações de inferência causal Bayesiana mostra que medidas como janela temporal de ligação, magnitude de ilusões e facilitação audiovisual podem mudar por precisão unissensorial, expectativas/priores ou binding, produzindo padrões comportamentais semelhantes por mecanismos diferentes.",
+  "mechanism": "O comportamento audiovisual observado resulta da combinação entre fidelidade de cada canal, expectativa de causa comum, tendência de ligação multissensorial e processo decisório; uma única métrica comportamental não identifica isoladamente a força de integração.",
+  "commercialApplication": "Ao testar som + imagem em vídeo, avatar ou interface, incluir condições somente áudio, somente visual e audiovisual e registrar acurácia e erros, evitando escolher uma variante apenas porque tem resposta mais rápida ou janela de simultaneidade maior.",
+  "evidenceStrength": "Alta como orientação metodológica: revisão especializada e demonstrações por simulação formal; não é um novo ensaio de prazer ou marketing.",
+  "publishedOn": "2026-10-06",
+  "validUntil": "2026-11-20",
+  "experimentHypothesis": "Um desenho A/B multissensorial com baselines unissensoriais permitirá distinguir ganho verdadeiramente audiovisual de diferenças de qualidade em um canal, expectativa ou critério de decisão, reduzindo conclusões falsas sobre integração.",
+  "risks": "Rotular qualquer facilitação audiovisual como integração superior, ignorar qualidade basal dos canais ou transformar uma medida intermediária em prova de retenção, preferência ou venda.",
+  "limits": "A fonte é uma revisão metodológica baseada em literatura e modelagem; os parâmetros apropriados dependem da tarefa e do público e não há regra universal de produção audiovisual.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-06-integracao-multissensorial-baselines.md",
+  "sourceTitle": "Fonte revisada — integração multissensorial exige baselines e inferência causal",
+  "sourceSha256": "c9730d5d6685e1ab51409107593aa34bdaa3ad41a97f91043e3fd1907a469bb2"
+}

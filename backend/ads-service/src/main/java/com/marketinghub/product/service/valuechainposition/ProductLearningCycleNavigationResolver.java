@@ -40,10 +40,12 @@ public class ProductLearningCycleNavigationResolver {
         cycle.getStatus(),
         open
             ? "Analise as evidências e acompanhe a próxima ação no ciclo atual."
-            : "O ajuste está registrado; acompanhe a preparação do ciclo sucessor.",
+            : "Ajuste aprovado. Falta o backend preparar o novo ciclo e experimento. Consulte a continuidade e os limites no ciclo; não refaça a homologação anterior.",
         "/business-process-chains/learning-cycles?productId="
             + productId
             + "&chainId="
-            + cycle.getChainDefinitionId());
+            + cycle.getChainDefinitionId()
+            + "&cycleId="
+            + cycle.getId());
   }
 }

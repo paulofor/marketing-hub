@@ -1064,14 +1064,18 @@ public class ProcessRunService {
   }
 
   /**
-   * Expõe progresso e atividade das provas consultadas, preservando o estado persistido do
-   * controle.
+   * Expõe o encerramento e o progresso das provas consultadas sem reescrever a pausa histórica nem
+   * apresentar uma atividade encerrada como trabalho atual.
    */
   private ProcessRunResponse response(
       ProcessRun run, ProductProcessActivityExecutionHistoryResponse readiness) {
     boolean persisted = run.getId() != null;
+    boolean closed = readiness != null && "CLOSED".equals(readiness.operationalState());
     boolean revalidation =
-        readiness != null && "COMPLETED".equals(run.getStatus()) && !readiness.objectiveAchieved();
+        !closed
+            && readiness != null
+            && "COMPLETED".equals(run.getStatus())
+            && !readiness.objectiveAchieved();
     int total = readiness == null ? run.getTotalActivities() : readiness.selectedActivityCount();
     int completed =
         readiness == null ? run.getCompletedActivities() : readiness.completedActivityCount();
@@ -1087,7 +1091,7 @@ public class ProcessRunService {
                         .contains(run.getStatus()))
             ? dispatchBlockReason(run)
             : null;
-    var userAction = guidance.resolve(run);
+    var userAction = closed ? null : guidance.resolve(run);
     var currentActivity =
         readiness == null
             ? null
@@ -1105,24 +1109,36 @@ public class ProcessRunService {
         run.getChainDefinitionId(),
         run.getLearningCycleId(),
         run.getSourceReference(),
-        revalidation
-            ? "REVALIDATION_REQUIRED"
-            : userAction != null ? userAction.waitingStatus() : run.getStatus(),
-        resumeBlocker != null
-            ? resumeBlocker
+        closed
+            ? "CLOSED"
             : revalidation
-                ? "As provas atuais já não comprovam todos os objetivos. Retome o processo para revalidar; as conclusões anteriores permanecem no histórico."
-                : userAction != null ? userAction.reason() : run.getReason(),
-        readiness == null ? run.getCurrentActivityId() : readiness.currentActivityId(),
-        readiness == null ? run.getCurrentActivityName() : readiness.currentActivityName(),
-        userAction != null
-            ? userAction.responsible()
+                ? "REVALIDATION_REQUIRED"
+                : userAction != null ? userAction.waitingStatus() : run.getStatus(),
+        closed
+            ? readiness.currentActivityStateReason()
+            : resumeBlocker != null
+                ? resumeBlocker
+                : revalidation
+                    ? "As provas atuais já não comprovam todos os objetivos. Retome o processo para revalidar; as conclusões anteriores permanecem no histórico."
+                    : userAction != null ? userAction.reason() : run.getReason(),
+        closed
+            ? null
+            : readiness == null ? run.getCurrentActivityId() : readiness.currentActivityId(),
+        closed
+            ? null
+            : readiness == null ? run.getCurrentActivityName() : readiness.currentActivityName(),
+        closed
+            ? null
+            : userAction != null
+                ? userAction.responsible()
+                : readiness == null
+                    ? run.getCurrentOwnerName()
+                    : currentActivity == null ? null : currentActivity.activityOwnerName(),
+        closed
+            ? null
             : readiness == null
-                ? run.getCurrentOwnerName()
-                : currentActivity == null ? null : currentActivity.activityOwnerName(),
-        readiness == null
-            ? run.getCurrentSequence()
-            : currentActivity == null ? null : currentActivity.sequenceNumber(),
+                ? run.getCurrentSequence()
+                : currentActivity == null ? null : currentActivity.sequenceNumber(),
         total,
         completed,
         remaining,
@@ -1130,9 +1146,12 @@ public class ProcessRunService {
         applicable <= 0 ? 0 : Math.min(100, completed * 100 / applicable),
         run.getKnownCostUsd(),
         run.getCostCoverage(),
-        !persisted && "READY".equals(run.getStatus()),
-        persisted && !Set.of("PAUSING", "PAUSED", "COMPLETED", "CLOSED").contains(run.getStatus()),
-        persisted
+        !closed && !persisted && "READY".equals(run.getStatus()),
+        !closed
+            && persisted
+            && !Set.of("PAUSING", "PAUSED", "COMPLETED", "CLOSED").contains(run.getStatus()),
+        !closed
+            && persisted
             && resumeBlocker == null
             && (revalidation
                 || Set.of("PAUSING", "PAUSED", "BLOCKED", "ERROR", "WAITING_INPUT")

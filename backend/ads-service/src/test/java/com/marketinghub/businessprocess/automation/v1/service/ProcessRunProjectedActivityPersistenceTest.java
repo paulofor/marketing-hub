@@ -550,6 +550,51 @@ class ProcessRunProjectedActivityPersistenceTest {
           java.nio.file.Path.of(output), json.writeValueAsString(result));
   }
 
+  /** Distingue pausa legítima de referência encerrada sem alterar o controle ou criar trabalho. */
+  @ParameterizedTest
+  @ValueSource(strings = {"CLOSED", "IN_PROGRESS"})
+  void projectsClosedReferenceWithoutRewritingPausedControl(String operationalState)
+      throws Exception {
+    authorized = true;
+    parent.setStatus("PAUSED");
+    snapshot(96011L, "NOT_STARTED", false, false, false, false);
+    var value =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(snapshots.get(96011L));
+    value
+        .put("operationalState", operationalState)
+        .put("selectedActivityCount", 4)
+        .put("completedActivityCount", 3)
+        .put("remainingActivityCount", 1)
+        .put("currentActivityId", "a")
+        .put("currentActivityName", "Limites financeiros")
+        .put("currentActivityStateReason", "Referência encerrada; preserve as provas.");
+    snapshots.put(
+        96011L, json.treeToValue(value, ProductProcessActivityExecutionHistoryResponse.class));
+    var result = service.status(96001L, 96011L, context.command(parent));
+    boolean closed = "CLOSED".equals(operationalState);
+    assertThat(result.status()).isEqualTo(closed ? "CLOSED" : "PAUSED");
+    assertThat(result.currentActivityId()).isEqualTo(closed ? null : "a");
+    if (closed) {
+      assertThat(result.currentOwnerName()).isNull();
+      assertThat(result.currentSequence()).isNull();
+    }
+    assertThat(result.completedActivities()).isEqualTo(3);
+    assertThat(result.remainingActivities()).isEqualTo(1);
+    assertThat(result.canResume()).isEqualTo(!closed);
+    assertThat(result.canStart()).isFalse();
+    assertThat(result.canPause()).isFalse();
+    assertThat(result.knownCostUsd()).isEqualByComparingTo("0.75");
+    entityManager.flush();
+    entityManager.clear();
+    assertThat(runs.findById(parent.getId()).orElseThrow().getStatus()).isEqualTo("PAUSED");
+    assertThat(events.findAll()).isEmpty();
+    verifyNoInteractions(activities, subprocesses);
+    String output = System.getProperty("historical-guidance.fixture-output");
+    if (closed && output != null)
+      java.nio.file.Files.writeString(
+          java.nio.file.Path.of(output), json.writeValueAsString(result));
+  }
+
   /** Monta a projeção com estado, prova, tarefa e controle independentes, como o contrato real. */
   private void snapshot(
       long process,

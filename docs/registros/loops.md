@@ -9051,6 +9051,16 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
 - Limite: consulta e navegação sem efeitos; decisões, custos e autorizações ficam
   preservados. Matriz: `docs/homologacao/produto-navegacao-ciclo-v1.md`.
 
+### Entrada por homologação pausada antes do encerramento — 06/10/2026
+
+A correção do card não cobria links antigos de Mira #41/#93. O controle mostrava PAUSED,
+o histórico CLOSED, e a atividade prometia execução automática sem destino. A resposta
+agora projeta CLOSED sem reescrever a pausa, preserva 3/4 e remove trabalho atual fictício.
+Cabeçalho, resumo, atividade e contexto AIHUB orientam a continuidade oficial do ciclo.
+Regressão: pausa legítima, pausa histórica, contexto independente e falha de consulta;
+fixture de persistência Java consumida no navegador desktop/mobile. Ver
+`docs/homologacao/mira-continuidade-historica-v1.md`. Nenhuma leitura autoriza gasto.
+
 ## LOOP-CICLO-PROCESSO-CONCLUIDO-SEM-PASSAGEM — 06/10/2026
 
 - Evidência: Capella #7, ciclo #5/#98, execução #46 do processo #116 concluída,

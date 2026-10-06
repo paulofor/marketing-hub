@@ -302,7 +302,10 @@ class ProductValueChainPositionServiceTest {
     assertThat(detail.learningCycleNavigation().cycleId()).isEqualTo(cycleId);
     assertThat(detail.learningCycleNavigation().url())
         .isEqualTo(
-            "/business-process-chains/learning-cycles?productId=" + productId + "&chainId=26");
+            "/business-process-chains/learning-cycles?productId="
+                + productId
+                + "&chainId=26&cycleId="
+                + cycleId);
     verify(products, never()).save(org.mockito.ArgumentMatchers.any());
     verify(cycles, never()).save(org.mockito.ArgumentMatchers.any());
   }

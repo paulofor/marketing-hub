@@ -32,6 +32,33 @@ afterEach(() => {
 });
 
 describe("Contexto do processo", () => {
+  it("identifica pendência histórica e inclui continuidade oficial sem misturar execuções", () => {
+    context.history.operationalState = "CLOSED";
+    const chainId = context.cycle?.chainDefinitionId ?? context.chainId!;
+    context.position = {
+      ...context.position!,
+      productId: context.history.productId,
+      chainDefinitionId: chainId,
+      learningCycleNavigation: {
+        productId: context.history.productId,
+        chainDefinitionId: chainId,
+        cycleId: 998,
+        experimentId: 999,
+        stage: "PLANNING",
+        status: "OPEN",
+        reason: "Planejamento do sucessor",
+        url: "/business-process-chains/learning-cycles?cycleId=998",
+      },
+    };
+    let text = processContextText(context, origin);
+    expect(text).toContain("Pendência histórica registrada");
+    expect(text).toContain("CONTINUIDADE DO PRODUTO (outra passagem");
+    expect(text).toContain("Ciclo #998 · experimento #999");
+    context.position.learningCycleNavigation!.productId = -1;
+    text = processContextText(context, origin);
+    expect(text).not.toContain("Ciclo #998");
+  });
+
   it("leva a reserva da fila ao AIHUB separada da identidade da execução selecionada", () => {
     context.automation!.queueBlocker = {
       runId: 930001,

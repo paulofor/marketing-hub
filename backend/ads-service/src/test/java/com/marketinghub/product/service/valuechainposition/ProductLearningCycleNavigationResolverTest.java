@@ -42,7 +42,9 @@ class ProductLearningCycleNavigationResolverTest {
             "/business-process-chains/learning-cycles?productId="
                 + productId
                 + "&chainId="
-                + chainId);
+                + chainId
+                + "&cycleId="
+                + cycleId);
     verify(cycles).findFirstByProductIdAndChainDefinitionIdOrderByIdDesc(productId, chainId);
     verifyNoMoreInteractions(cycles);
   }
@@ -77,7 +79,7 @@ class ProductLearningCycleNavigationResolverTest {
     when(cycles.findByPreviousCycleId(3L)).thenReturn(Optional.empty());
 
     assertThat(resolver.resolve(10L, chain(26L)).url())
-        .isEqualTo("/business-process-chains/learning-cycles?productId=10&chainId=26");
+        .isEqualTo("/business-process-chains/learning-cycles?productId=10&chainId=26&cycleId=3");
     verify(cycles).findFirstByProductIdAndChainDefinitionIdOrderByIdDesc(10L, 26L);
     verify(cycles).findByPreviousCycleId(3L);
     verifyNoMoreInteractions(cycles);

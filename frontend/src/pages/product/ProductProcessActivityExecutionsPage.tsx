@@ -40,6 +40,7 @@ import { useCycleProcessContext } from "../../api/learningCycle/useCycleProcessC
 import ProductLearningCycleContext from "./ProductLearningCycleContext";
 import ProductActivityContextCopyButton from "./ProductActivityContextCopyButton";
 import ProductProcessAutomationPanel from "./ProductProcessAutomationPanel";
+import ProductHistoricalContinuation from "./ProductHistoricalContinuation";
 
 const usdFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -138,6 +139,17 @@ export default function ProductProcessActivityExecutionsPage() {
     requestExecution.reset();
   }, [productId, processDefinitionId, effectiveCycleId, requestedReference]);
   const data = cycleContextUnavailable ? undefined : history.data;
+  const historical = data?.operationalState === "CLOSED";
+  const continuationCandidate =
+    valueChainPosition.data?.learningCycleNavigation;
+  const continuation =
+    continuationCandidate?.productId === productId &&
+    continuationCandidate?.chainDefinitionId ===
+      (effectiveChainId ?? valueChainPosition.data?.chainDefinitionId)
+      ? continuationCandidate
+      : undefined;
+  const continuationUnavailable =
+    valueChainPosition.isError || valueChainPosition.isLoading;
   const loaded = Boolean(data);
   useEffect(() => {
     if (
@@ -286,6 +298,8 @@ export default function ProductProcessActivityExecutionsPage() {
                 undefined
               }
               sourceReference={data.currentExecutionReference}
+              continuation={historical ? continuation : undefined}
+              continuationUnavailable={continuationUnavailable}
               copyContext={{
                 history: data,
                 processSequence: selectedProcessSequence,
@@ -379,7 +393,11 @@ export default function ProductProcessActivityExecutionsPage() {
                 <span className="product-process-situation__eyebrow">
                   Situação do processo
                 </span>
-                <h2>O que já foi feito e o que falta concluir</h2>
+                <h2>
+                  {historical
+                    ? "Histórico da tentativa encerrada"
+                    : "O que já foi feito e o que falta concluir"}
+                </h2>
               </div>
               <span
                 className={`product-process-situation__process-state product-process-situation__process-state--${data.operationalState.toLowerCase()}`}
@@ -426,11 +444,13 @@ export default function ProductProcessActivityExecutionsPage() {
               </article>
               <article>
                 <span>
-                  {data.operationalState === "BLOCKED"
-                    ? "Atividade que exige correção"
-                    : data.objectiveAchieved
-                      ? "Resultado"
-                      : "Atividade atual"}
+                  {historical
+                    ? "Pendência histórica"
+                    : data.operationalState === "BLOCKED"
+                      ? "Atividade que exige correção"
+                      : data.objectiveAchieved
+                        ? "Resultado"
+                        : "Atividade atual"}
                 </span>
                 <strong>
                   {data.currentActivityName ? (
@@ -450,7 +470,12 @@ export default function ProductProcessActivityExecutionsPage() {
                       ? "Não há atividade pendente nesta versão."
                       : "O backend ainda não registrou uma causa ou próxima atividade.")}
                 </small>
-                {data.currentActivityId ? (
+                {historical ? (
+                  <ProductHistoricalContinuation
+                    navigation={continuation}
+                    unavailable={continuationUnavailable}
+                  />
+                ) : data.currentActivityId ? (
                   <a
                     className="btn btn-outline-primary btn-sm mt-2"
                     href={`#activity-${data.currentActivityId}`}
@@ -656,6 +681,9 @@ export default function ProductProcessActivityExecutionsPage() {
 
                 <ProductProcessActivityExecutionPanel
                   processManaged
+                  historical={historical}
+                  continuation={continuation}
+                  continuationUnavailable={continuationUnavailable}
                   chainId={effectiveChainId}
                   cycleId={effectiveCycleId}
                   activity={activity}

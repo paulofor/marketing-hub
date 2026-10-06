@@ -1050,6 +1050,20 @@ components:
         - resolutionStatus
         - resolutionMessage
       properties:
+        learningCycleNavigation:
+          type: object
+          nullable: true
+          description: Continuidade da versão exata da cadeia; URL preserva produto, cadeia e cycleId. Ajuste sem sucessor é preparação não iniciada, não nova aprovação nem autorização de gasto. Leituras não criam tarefas.
+          properties:
+            productId: {type: integer, format: int64}
+            chainDefinitionId: {type: integer, format: int64}
+            cycleId: {type: integer, format: int64}
+            experimentId: {type: integer, format: int64}
+            stage: {type: string}
+            status: {type: string}
+            reason: {type: string}
+            url: {type: string}
+
         productId:
           type: integer
           format: int64

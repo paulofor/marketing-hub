@@ -546,3 +546,11 @@ O CI do backend executa essa mesma validação antes de integrar qualquer fonte 
 independentemente dos filtros dos workers consumidores. Uma atestação privada sucessora preserva
 os aceites anteriores e não concede aprovação comercial. Evidência: `alcyone-agent-validation-v10.md`
 em `docs/homologacao`, com causa confirmada nos PRs #5487/#5498 e caso detectado no CI do #5506.
+
+### Estado operacional e pausa histórica — regressão de 06/10/2026
+
+Ao montar contexto de um processo encerrado, usar a projeção operacional comprovada do
+backend e preservar a pausa original no diário. O agente não deve receber a atividade
+histórica como trabalho atual para renovar pareceres. O harness integra persistência da
+pausa, provas atuais e tela com dependências simuladas, incluindo um contexto independente
+sem mutações ou inferência paga. Evidência: `docs/homologacao/mira-continuidade-historica-v1.md`.

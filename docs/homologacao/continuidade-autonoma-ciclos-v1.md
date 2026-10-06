@@ -108,3 +108,51 @@ real por HTTP local, em dois produtos/experimentos distintos: uma inferência si
 auditoria e callback `result` por caso, sem versão inventada. A entrada sem catálogo
 permaneceu recusada antes do modelo. Spotless, análise do script de formatação e diff
 aprovados; nenhuma chamada de IA ou comercial externa na validação.
+
+## Compatibilidade econômica e passagem a Dédalo
+
+A entrega #5511 (`fe449e60aad0a9377907451ff931ffba96b7ab90`) teve treze workflows
+concluídos e backend saudável. A retomada pela tela preservou o processo #46 e gerou
+Atena #591, concluída em V4. O backend abriu Plutus #592 automaticamente; o preflight
+recusou V4 antes do modelo por exigir V3. Mira #498, processo v8, comprova o caminho
+histórico que precisa continuar válido. A causa compartilhada está no consumidor econômico
+e nas projeções que fixavam o contrato privado, não na entrada da usuária.
+
+| Alternativa | Benefício | Risco/esforço | Escolha |
+| --- | --- | --- | --- |
+| Adicionar um adaptador econômico V4 separado | Isola o contrato novo e conserva o consumidor atual | Duplica parte do controle de fila, auditoria e callback | Não escolhida |
+| Extrair um contrato econômico comum com adaptadores V3/V4 | Centraliza regras compartilhadas | Refatoração maior e risco nos caminhos já válidos | Não escolhida |
+| Versionar prompt/schema no consumidor existente e preservar a geração | Reutiliza fila/auditoria e conserva o histórico | Mudança menor com testes dos consumidores e projeções | Adotada |
+
+Repetir Atena em V3 ou remover a validação não são alternativas válidas: reintroduziriam
+o gate humano ou esconderiam a incompatibilidade.
+
+Matriz antes da validação: V4 → economia multiagente → arquitetura → contexto de construção;
+segundo produto com IDs distintos; caminho V3 antes válido; envelope obsoleto; cenários repetidos;
+alegação humana; orçamento comercial; auditoria, custo e callback correlacionados. Modelo e HTTP
+locais são doubles; nenhum dado sintético é enviado ao mercado. A interface permanece a já
+homologada em desktop/iPhone/Pixel. Dédalo já possui prompt v6 adequado; sua compatibilidade deve
+ser demonstrada pelo consumidor real antes de retomar o processo publicado.
+
+O teste encadeado encontrou antes da publicação uma perda adicional: a projeção do backend
+substituía o plano rico de Atena por limites mínimos, e Dédalo exigia também cena de compra e
+entrega de valor. O histórico tem sucessos do experimento #92 em setembro e do produto #11
+por outra origem; isso descarta incapacidade geral do executor. A reprodução local confirma
+a falha na projeção atual do sucessor. A correção preserva a orientação específica e aplica
+por cima os limites canônicos sem efeitos externos. Trocar o preflight por uma aceitação
+permissiva esconderia a ausência; buscar de novo no worker duplicaria a fonte de verdade.
+
+Resultado local: 64 testes de Plutus e 85 de Dédalo passaram; o schema v6 e a
+fixture foram validados como JSON Schema estrito. Na passagem encadeada, a saída persistida
+de Atena #591 foi entrada do consumidor real de Plutus com modelo local; seu callback entrou
+no consumidor real de Dédalo e ambos alimentaram o resolvedor do backend. Os contratos finais
+atual e histórico passaram no probe das três atividades de construção, incluindo recusa de
+versão incompatível. Outro produto usa fixture própria e IDs diferentes, sem copiar o conteúdo
+de Capella. Não houve inferência paga nem callback produtivo durante essa homologação.
+
+Backend completo: 4.045 testes, zero falhas/erros e 27 casos condicionais ignorados.
+A primeira execução excedeu a memória compartilhada da sandbox; foi interrompida e a rodada
+completa passou com heap do Maven limitado a 512 MB e cache de dois contextos. Os 57 testes
+direcionados também passaram. Essa limitação de execução não alterou o código de produção.
+Pacote final conferido: 4.225 classes iguais às testadas, 752 recursos externos íntegros,
+catálogo inicializado e prompt/schema econômico v6 presentes no JAR. Diff e formatação aprovados.

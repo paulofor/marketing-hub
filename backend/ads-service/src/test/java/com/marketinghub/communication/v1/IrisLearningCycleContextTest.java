@@ -192,6 +192,17 @@ class IrisLearningCycleContextTest {
         .thenReturn(history);
   }
 
+  /** Preserva a geração econômica vigente na projeção entregue a Íris. */
+  @Test
+  void preservesAgentEconomicsContractVersion() {
+    pde.put("economicsContractVersion", "PDE_AGENT_ECONOMICS_V1");
+    pde.withObject("/marketStrategy").put("contractVersion", "MARKET_STRATEGY_V4");
+    var result = provider.resolve(SOURCE).orElseThrow();
+    assertThat(result.get("approvedUpstreamArtifacts").toString())
+        .contains("PDE_AGENT_ECONOMICS_V1")
+        .doesNotContain("PDE_PRIVATE_ECONOMICS_V1");
+  }
+
   /** Entrega V3 nativo, prova atual e limites privados ao mesmo gate que o worker receberá. */
   @Test
   void exposesApprovedPrivateCycleWithoutCommercialPlanAndExportsWorkerInput() throws Exception {

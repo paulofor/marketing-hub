@@ -174,6 +174,90 @@ class LearningCycleConstructionContextTest {
           java.nio.file.Path.of(output), mapper.writeValueAsString(Map.of("taskTarget", result)));
   }
 
+  /** Valida o encadeamento atual e permite homologar os callbacks reais dos dois executores. */
+  @Test
+  void exportsAgentPlanningWithoutDowngradingEconomics() throws Exception {
+    var fixture =
+        mapper.readTree(getClass().getResourceAsStream("/learningcycle/successor-planning.json"));
+    var strategy = (com.fasterxml.jackson.databind.node.ObjectNode) fixture.path("strategy");
+    var contract = strategy.withObject("/marketStrategicContract");
+    contract
+        .put("contractVersion", "MARKET_STRATEGY_V4")
+        .put("status", "READY_FOR_AGENT_VALIDATION");
+    var historicalPlan = contract.path("privateValidationPlan").deepCopy();
+    contract.remove("privateValidationPlan");
+    contract.set(
+        "agentValidationPlan",
+        mapper.readTree(
+            getClass().getResourceAsStream("/contracts/pde-agent-validation-plan-v1.json")));
+    contract
+        .withObject("/agentValidationPlan")
+        .set("purchaseScene", historicalPlan.path("purchaseScene"));
+    contract
+        .withObject("/agentValidationPlan")
+        .set("customerValueDelivery", historicalPlan.path("humanValueDelivery"));
+    var economics = (com.fasterxml.jackson.databind.node.ObjectNode) fixture.path("economics");
+    economics.put("contractVersion", "PDE_AGENT_ECONOMICS_V1");
+    approved.get(0).setResultJson(fixture.path("architecture").toString());
+    approved.get(1).setResultJson(economics.toString());
+    approved.get(2).setResultJson(strategy.toString());
+    String handoff = System.getProperty("pde.planning.handoff.input");
+    if (handoff != null) {
+      var actual = mapper.readTree(java.nio.file.Files.readString(java.nio.file.Path.of(handoff)));
+      approved.get(0).setResultJson(actual.path("architecture").toString());
+      approved.get(1).setResultJson(actual.path("economics").toString());
+      approved.get(2).setResultJson(actual.path("strategy").toString());
+    }
+    var result =
+        resolver.resolve("experiment:92", experiment, "pde-construction-approval").orElseThrow();
+    assertThat(result.pdeContext()).isNotNull();
+    assertThat(result.pdeContext().path("economicsContractVersion").asText())
+        .isEqualTo("PDE_AGENT_ECONOMICS_V1");
+    assertThat(
+            result
+                .pdeContext()
+                .path("strategyAgentValidationPlan")
+                .path("contractVersion")
+                .asText())
+        .isEqualTo("PDE_AGENT_VALIDATION_V1");
+    assertThat(
+            result
+                .pdeContext()
+                .path("agentValidationPlan")
+                .path("purchaseScene")
+                .path("trigger")
+                .asText())
+        .isNotBlank();
+    assertThat(
+            result
+                .pdeContext()
+                .path("agentValidationPlan")
+                .path("customerValueDelivery")
+                .path("readyMadeOutcome")
+                .asText())
+        .isNotBlank();
+    assertThat(
+            result
+                .pdeContext()
+                .path("agentValidationPlan")
+                .path("humanEvidenceClaimed")
+                .asBoolean(true))
+        .isFalse();
+    String output = System.getProperty("pde.agent.context.output");
+    if (output != null)
+      java.nio.file.Files.writeString(
+          java.nio.file.Path.of(output), mapper.writeValueAsString(Map.of("taskTarget", result)));
+    approved
+        .get(1)
+        .setResultJson(economics.put("contractVersion", "PDE_PRIVATE_ECONOMICS_V1").toString());
+    assertThat(
+            resolver
+                .resolve("experiment:92", experiment, "pde-construction-approval")
+                .orElseThrow()
+                .pdeContext())
+        .isNull();
+  }
+
   /** A ausência de uma aprovação não autoriza usar silenciosamente a versão comercial anterior. */
   @Test
   void missingApprovalKeepsTargetVersionButBlocksContext() {

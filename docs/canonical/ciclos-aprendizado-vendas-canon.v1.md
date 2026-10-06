@@ -1,5 +1,21 @@
 # Ciclos de aprendizado e vendas da Cadeia de Valor — v1
 
+## Compatibilidade do planejamento multiagente — decisão de 06/10/2026
+
+No Processo 2 a partir da versão 10, a estratégia `MARKET_STRATEGY_V4` /
+`READY_FOR_AGENT_VALIDATION` deve ser consumida por Plutus com prompt/schema econômico v6,
+`PDE_AGENT_ECONOMICS_V1` e `AGENT_VALIDATION_HYPOTHESIS`. A homologação cobre os três cenários
+e três dispositivos do `PDE_AGENT_VALIDATION_V1`, sem leituras humanas, recrutamento ou opiniões.
+Os contratos V3/economia privada permanecem somente na leitura/execução de versões históricas
+compatíveis; nunca repetir Atena para rebaixar um contrato atual nem misturar gerações.
+
+Economia aprovada nesta preparação é uma hipótese numérica reconciliada e limitada para
+Dédalo, não margem comprovada, venda ou autorização de gasto. Metas comerciais não aplicáveis
+ficam zero no novo parecer; métricas históricas desconhecidas continuam desconhecidas.
+A origem e a versão econômica acompanham a construção e a comunicação. Os testes devem
+percorrer os consumidores reais com modelo local, auditoria e callbacks, além de preservar
+um caminho histórico válido e outro produto com identificadores diferentes.
+
 ## Preparação autônoma do sucessor — decisão de 06/10/2026
 
 A continuidade preparatória não deve exigir que o usuário transcreva o parecer de Atena,

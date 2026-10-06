@@ -211,7 +211,7 @@ public class IrisLearningCycleContext {
             "agentKey",
             "financial-agent",
             "contractVersion",
-            "PDE_PRIVATE_ECONOMICS_V1",
+            pde.path("economicsContractVersion").asText("PDE_PRIVATE_ECONOMICS_V1"),
             "result",
             pde.path("economics")));
     artifacts.add(

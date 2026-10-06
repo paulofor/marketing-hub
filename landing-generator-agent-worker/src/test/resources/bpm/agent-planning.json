@@ -1,0 +1,117 @@
+{
+  "strategy": {
+    "decision": "APPROVE",
+    "marketStrategicContract": {
+      "contractVersion": "MARKET_STRATEGY_V4",
+      "status": "READY_FOR_AGENT_VALIDATION",
+      "agentValidationPlan": {
+        "contractVersion": "PDE_AGENT_VALIDATION_V1",
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test",
+        "requiredScenarios": [
+          "ADHERENT",
+          "RECOVERY",
+          "SAFETY"
+        ],
+        "requiredDevices": [
+          "DESKTOP_1440",
+          "IPHONE_15_PRO",
+          "PIXEL_7"
+        ],
+        "maxReadyResultSeconds": 600,
+        "humanEvidenceClaimed": false,
+        "commercialEvidenceClaimed": false,
+        "paymentEnabled": false,
+        "publicationAuthorized": false,
+        "campaignAuthorized": false,
+        "mediaSpendAuthorizedBrl": 0,
+        "purchaseScene": {
+          "trigger": "Preparação da divulgação semanal"
+        },
+        "customerValueDelivery": {
+          "minimumCustomerInput": "Serviço e contexto sintéticos",
+          "readyMadeOutcome": "Pacote utilizável sem montagem manual"
+        }
+      },
+      "buyer": "Profissional autônoma sintética",
+      "problem": "Preparar divulgação com menos etapas",
+      "desiredOutcome": "Material personalizado utilizável",
+      "valueMechanism": "Pacote pronto com primeira aplicação identificada"
+    }
+  },
+  "economics": {
+    "contractVersion": "PDE_AGENT_ECONOMICS_V1",
+    "activity": "economics",
+    "mode": "AGENT_VALIDATION_HYPOTHESIS",
+    "decision": "APPROVE",
+    "scenarios": [
+      {
+        "name": "Conservador",
+        "priceBrl": 67,
+        "variableCostBrl": 25,
+        "maxCacBrl": 0,
+        "targetSales": 0,
+        "benefit": "limite inferior",
+        "risk": "hipótese",
+        "recommended": false
+      },
+      {
+        "name": "Base",
+        "priceBrl": 67,
+        "variableCostBrl": 12,
+        "maxCacBrl": 0,
+        "targetSales": 0,
+        "benefit": "teste equilibrado",
+        "risk": "hipótese",
+        "recommended": true
+      },
+      {
+        "name": "Valor percebido",
+        "priceBrl": 67,
+        "variableCostBrl": 8,
+        "maxCacBrl": 0,
+        "targetSales": 0,
+        "benefit": "limite superior",
+        "risk": "hipótese",
+        "recommended": false
+      }
+    ],
+    "economics": {
+      "offerPriceBrl": 67,
+      "variableCostPerSaleBrl": 12,
+      "contributionPerSaleBrl": 55,
+      "contributionMarginPercent": 82.09,
+      "maxCacBrl": 0,
+      "fixedInitialCostBrl": 0,
+      "maxBudgetBrl": 0,
+      "expectedTraffic": 0,
+      "expectedConversionPercent": 0,
+      "expectedRefundPercent": 10,
+      "targetSales": 0,
+      "targetRevenueBrl": 0,
+      "deadline": "2026-09-23",
+      "commercialSpendAuthorized": false,
+      "agentScenariosTarget": 3,
+      "agentDevicesTarget": 3,
+      "humanEvidenceClaimed": false
+    },
+    "metrics": {
+      "primary": "Prontidão dos três cenários em três dispositivos",
+      "leading": [
+        "EXPERIENCE_STARTED"
+      ],
+      "delivery": [
+        "READY_RESULT_USED"
+      ],
+      "continueCriteria": "Nove combinações internas aprovadas com custo finito",
+      "adjustCriteria": "Sem valor percebido",
+      "stopCriteria": "Contrato inválido"
+    },
+    "assumptions": [
+      "Preço é hipótese de checkout simulado."
+    ],
+    "requiredChanges": [],
+    "rationale": "Envelope de homologação interna sem venda, gasto ou prova humana.",
+    "sources": []
+  }
+}

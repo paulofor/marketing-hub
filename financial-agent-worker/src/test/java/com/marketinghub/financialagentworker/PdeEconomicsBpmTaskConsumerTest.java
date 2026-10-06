@@ -13,6 +13,45 @@ import org.junit.jupiter.api.Test;
 class PdeEconomicsBpmTaskConsumerTest {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
+  /** Aceita o parecer multiagente sem converter as metas internas em evidência humana. */
+  @Test
+  void acceptsAgentEconomicsAndRejectsHumanOrCommercialClaims() throws Exception {
+    var result =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            objectMapper.readTree(getClass().getResourceAsStream("/bpm/agent-economics.json"));
+    assertThatCode(() -> PdeEconomicsBpmTaskConsumer.validateAgentValidation(result))
+        .doesNotThrowAnyException();
+    result.withObject("/economics").put("humanEvidenceClaimed", true);
+    assertThatThrownBy(() -> PdeEconomicsBpmTaskConsumer.validateAgentValidation(result))
+        .isInstanceOf(IllegalArgumentException.class);
+    result
+        .withObject("/economics")
+        .put("humanEvidenceClaimed", false)
+        .put("privateReadingsTarget", 2);
+    assertThatThrownBy(() -> PdeEconomicsBpmTaskConsumer.validateAgentValidation(result))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  /** Recusa cenários duplicados na estratégia corrente antes de executar o modelo. */
+  @Test
+  void rejectsDuplicatedAgentScenarios() throws Exception {
+    var contract =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            objectMapper.readTree(getClass().getResourceAsStream("/bpm/agent-strategy.json"));
+    var context = objectMapper.createObjectNode().set("marketStrategicContract", contract);
+    assertThatCode(() -> PdeEconomicsBpmTaskConsumer.validateAgentStrategyContract(context))
+        .doesNotThrowAnyException();
+    contract
+        .withObject("/agentValidationPlan")
+        .putArray("requiredScenarios")
+        .add("ADHERENT")
+        .add("ADHERENT")
+        .add("SAFETY");
+    assertThatThrownBy(() -> PdeEconomicsBpmTaskConsumer.validateAgentStrategyContract(context))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("MARKET_STRATEGY_V4");
+  }
+
   /** Aceita três cenários com contribuição positiva e reconciliada. */
   @Test
   void acceptsReconciledEconomics() throws Exception {

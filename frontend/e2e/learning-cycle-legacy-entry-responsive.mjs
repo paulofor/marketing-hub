@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 const require = createRequire(import.meta.url);
 const { chromium, devices, expect } = require("@playwright/test");
 const base = "http://127.0.0.1:15173";
@@ -9,6 +9,11 @@ const cycleApi = "/api/business-process-chains/learning-cycles/v1";
 const output =
   process.env.LEARNING_CYCLES_EVIDENCE_DIR || "/tmp/cycle-legacy-browser";
 await mkdir(output, { recursive: true });
+const sqlEvidence = process.env.LEAD_PORTAL_CYCLE_SQL_EVIDENCE
+  ? JSON.parse(
+      await readFile(process.env.LEAD_PORTAL_CYCLE_SQL_EVIDENCE, "utf8"),
+    )
+  : undefined;
 
 async function fixture(path, body = {}) {
   const response = await fetch(api + path, {
@@ -32,6 +37,10 @@ try {
   ]) {
     await fixture("/fixture/reset");
     await fixture("/fixture/experiments/91001/legacy-publication");
+    if (sqlEvidence)
+      await fixture("/fixture/experiments/91001/measurement", {
+        evidence: sqlEvidence,
+      });
     const context = await browser.newContext({ ...profile, timezoneId: "UTC" });
     const page = await context.newPage();
     const errors = [],
@@ -85,8 +94,14 @@ try {
         budgetLimitBrl: "100",
         sampleTarget: "10",
         minimumNetSales: "5",
-        windowStart: start,
-        windowEnd: end,
+        windowStart:
+          experimentId === 91001 && sqlEvidence
+            ? sqlEvidence.periodStart.slice(0, 16)
+            : start,
+        windowEnd:
+          experimentId === 91001 && sqlEvidence
+            ? sqlEvidence.periodEnd.slice(0, 16)
+            : end,
       }))
         await form.locator(`[name="${key}"]`).fill(value);
       const result = page.waitForResponse(
@@ -112,7 +127,7 @@ try {
       ).toBeVisible();
       return value;
     }
-    let current = await create(91001, "fixture-v1");
+    let current = await create(91001, sqlEvidence ? "v1" : "fixture-v1");
     assert.equal(current.stage, "DECISION");
     await page
       .getByText("Histórico de decisões e evidências (2)", { exact: true })
@@ -124,6 +139,11 @@ try {
     assert.equal(current.events[0].evidence.source, "LEGACY_META_CAMPAIGN");
     assert.equal(current.events[1].action, "MEASURE");
     assert.equal(current.events[1].evidence.automatic, true);
+    if (sqlEvidence) {
+      assert.deepEqual(current.events[1].evidence, sqlEvidence);
+      assert.equal(current.events[1].evidence.firstResults, null);
+      assert.equal(current.events[1].evidence.humanVisitors, 6);
+    }
     await expect(
       page.getByText(/Leitura automática das fontes oficiais/),
     ).toBeVisible();
@@ -171,6 +191,7 @@ try {
       route.fulfill({
         json: {
           processDefinitionId: catalog.entry.parentProcessDefinitionId,
+          chainDefinitionId: 91002,
           sequenceNumber: catalog.entry.sequenceNumber,
           processMeasurements: [],
         },

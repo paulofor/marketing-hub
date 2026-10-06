@@ -185,7 +185,9 @@ public final class LearningCycleRules {
     return null;
   }
 
-  /** Valida uma fotografia cumulativa do experimento com fontes e denominadores explícitos. */
+  /**
+   * Valida a fotografia e admite apenas métricas PDE explicitamente inaplicáveis ao kit Quartzo.
+   */
   public static void validateMetrics(LearningSalesCycle cycle, JsonNode evidence, Instant now) {
     require(
         evidence.path("experimentId").canConvertToLong()
@@ -206,6 +208,7 @@ public final class LearningCycleRules {
             "checkouts",
             "netSales",
             "refunds")) {
+      if (quartzoMetricNotApplicable(evidence, field)) continue;
       require(
           evidence.path(field).isIntegralNumber()
               && evidence.path(field).canConvertToLong()
@@ -242,6 +245,20 @@ public final class LearningCycleRules {
             && !end.isAfter(observed)
             && !observed.isAfter(now),
         "Período e horário da leitura devem estar dentro do ciclo e não podem estar no futuro.");
+  }
+
+  /** Aceita ausência de degustação exclusivamente na medição automática do kit pós-compra. */
+  private static boolean quartzoMetricNotApplicable(JsonNode evidence, String field) {
+    return List.of("starts", "firstResults").contains(field)
+        && evidence.path(field).isNull()
+        && "LEARNING_CYCLE_AUTOMATIC_MEASUREMENT_V2"
+            .equals(evidence.path("contractVersion").asText())
+        && evidence.path("automatic").asBoolean(false)
+        && evidence.at("/sources/leadPortalAnalytics/publicationId").canConvertToLong()
+        && evidence.path("notApplicableMetrics").isArray()
+        && java.util.stream.StreamSupport.stream(
+                evidence.path("notApplicableMetrics").spliterator(), false)
+            .anyMatch(value -> field.equals(value.asText()));
   }
 
   /** Extrai um campo textual obrigatório sem aceitar tipo ou tamanho arbitrário. */

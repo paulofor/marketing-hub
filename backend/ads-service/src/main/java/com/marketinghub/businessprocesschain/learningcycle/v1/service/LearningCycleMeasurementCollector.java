@@ -13,8 +13,10 @@ import com.marketinghub.experiment.monitoring.ExperimentAcquisitionMetricsSnapsh
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
 import com.marketinghub.experiment.monitoring.pde.PdeExperimentAnalyticsReader;
 import com.marketinghub.experiment.service.ExperimentCostReconciliationService;
+import com.marketinghub.repository.jdbc.learningcycle.LeadPortalCycleMeasurementRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -35,6 +37,7 @@ public class LearningCycleMeasurementCollector {
   private final PdeExperimentAnalyticsReader analytics;
   private final ExperimentAcquisitionMetricsReader acquisition;
   private final ExperimentCostReconciliationService costs;
+  private final LeadPortalCycleMeasurementRepository leadPortal;
   private final ObjectMapper json;
 
   /** Configura as fontes canônicas de funil, desfechos comerciais e custos. */
@@ -42,10 +45,12 @@ public class LearningCycleMeasurementCollector {
       PdeExperimentAnalyticsReader analytics,
       ExperimentAcquisitionMetricsReader acquisition,
       ExperimentCostReconciliationService costs,
+      LeadPortalCycleMeasurementRepository leadPortal,
       ObjectMapper json) {
     this.analytics = analytics;
     this.acquisition = acquisition;
     this.costs = costs;
+    this.leadPortal = leadPortal;
     this.json = json;
   }
 
@@ -78,18 +83,23 @@ public class LearningCycleMeasurementCollector {
     }
   }
 
-  /**
-   * Monta a evidência somente depois de conferir identidade, atualidade e correlação financeira.
-   */
+  /** Seleciona a fonte do formato e confere identidade, atualidade e correlação financeira. */
   private Result collectVerified(LearningSalesCycle cycle, Experiment experiment, Instant now) {
     requireSource(
         experiment.getProduct() != null
             && Objects.equals(experiment.getProduct().getId(), cycle.getProductId()),
         "O experimento não pertence ao produto deste ciclo.");
+    requireSource(
+        Objects.equals(experiment.getId(), cycle.getExperimentId()),
+        "A fonte deve pertencer ao experimento exato deste ciclo.");
     Instant periodEnd = now.isBefore(cycle.getWindowEnd()) ? now : cycle.getWindowEnd();
     requireSource(
         periodEnd.isAfter(cycle.getWindowStart()),
         "A janela de medição ainda não começou; nenhum zero será registrado antes dela.");
+    if (experiment.getProduct().getProductTypeDefinition() != null
+        && "LOW_TICKET_DIGITAL_PRODUCT"
+            .equals(experiment.getProduct().getProductTypeDefinition().getCode()))
+      return collectLeadPortalVerified(cycle, experiment, now, periodEnd);
 
     PdeAnalyticsSummary funnel = analytics.read(experiment, cycle.getWindowStart(), periodEnd);
     requireSource(
@@ -118,19 +128,8 @@ public class LearningCycleMeasurementCollector {
         "Evento de acesso, entrega, uso ou satisfação sem correlação segura impede avaliar o valor entregue.");
 
     MediaEvidence media = media(experiment, now);
-    ExperimentDto costDto = costs.enrich(experiment, new ExperimentDto());
-    requireSource(
-        costDto != null
-            && costDto.getAuditableTotalCost() != null
-            && costDto.getLegacyTotalCost() != null
-            && costDto.getUnreconciledLegacyCost() != null,
-        "O ledger de custos não devolveu uma conciliação completa para o experimento.");
+    ExperimentDto costDto = reconciledCosts(experiment);
     BigDecimal auditableCost = money(costDto.getAuditableTotalCost());
-    requireSource(
-        auditableCost.signum() >= 0
-            && costDto.getLegacyTotalCost().signum() >= 0
-            && costDto.getUnreconciledLegacyCost().signum() >= 0,
-        "O ledger de custos devolveu valor negativo e precisa ser corrigido.");
     BigDecimal revenue = money(outcomes.netRevenueBrl());
     BigDecimal contribution = revenue.subtract(auditableCost).setScale(2, RoundingMode.HALF_UP);
     long netSales = Math.max(0, outcomes.purchases() - outcomes.refunds());
@@ -254,6 +253,178 @@ public class LearningCycleMeasurementCollector {
             + experiment.getId()
             + "/measurements/"
             + fingerprint);
+  }
+
+  /** Concilia kits Quartzo pelas fontes do Lead Portal sem exigir uma aplicação PDE artificial. */
+  private Result collectLeadPortalVerified(
+      LearningSalesCycle cycle, Experiment experiment, Instant now, Instant periodEnd) {
+    requireSource(
+        Objects.equals(
+            cycle.getProductVersion(), experiment.getProduct().getValidationDefinitionVersion()),
+        "A versão do kit diverge da versão registrada no ciclo; preserve o histórico e concilie a identidade.");
+    var funnel = leadPortal.read(experiment.getId(), cycle.getWindowStart(), periodEnd);
+    requireSource(
+        funnel.publicationId() != null
+            && samePage(funnel.publicationUrl(), experiment.getFollowUpActionUrl()),
+        "A publicação auditada do Lead Portal está ausente ou diverge da página do experimento.");
+    requireSource(
+        funnel.paymentSourceAvailable(),
+        "O experimento não possui fluxo de pagamento persistido no Lead Portal.");
+    var payments = funnel.payments();
+    requireSource(payments.blocker() == null, payments.blocker());
+    MediaEvidence media = media(experiment, now);
+    var costDto = reconciledCosts(experiment);
+    BigDecimal auditableCost = money(costDto.getAuditableTotalCost());
+    BigDecimal revenue = money(payments.grossRevenueBrl().subtract(payments.refundedRevenueBrl()));
+    BigDecimal contribution = revenue.subtract(auditableCost).setScale(2, RoundingMode.HALF_UP);
+    long netSales = payments.purchases() - payments.refunds();
+    String fingerprint =
+        fingerprint(
+            experiment.getId(),
+            cycle.getProductVersion(),
+            funnel.publicationId(),
+            funnel.humanEvents(),
+            funnel.humanVisitors(),
+            funnel.humanSessions(),
+            funnel.pageViews(),
+            funnel.checkouts(),
+            payments.checkoutAccesses(),
+            funnel.lastHumanEventAt(),
+            payments.purchases(),
+            payments.refunds(),
+            payments.deliveredNetSales(),
+            revenue,
+            media.spendBrl(),
+            media.observedAt(),
+            auditableCost,
+            !now.isBefore(cycle.getWindowEnd()));
+    ObjectNode evidence = json.createObjectNode();
+    evidence.put("contractVersion", CONTRACT);
+    evidence.put("automatic", true);
+    evidence.put("sourceFingerprint", fingerprint);
+    evidence.put("experimentId", experiment.getId());
+    evidence.put("currency", "BRL");
+    evidence.put(
+        "source",
+        "Lead Portal atribuído ao experimento + métricas oficiais do canal + ledger de custos auditáveis");
+    evidence.put("periodStart", cycle.getWindowStart().toString());
+    evidence.put("periodEnd", periodEnd.toString());
+    evidence.put("observedAt", now.toString());
+    evidence.put("humanVisitors", funnel.humanVisitors());
+    evidence.put("sessions", funnel.humanSessions());
+    evidence.putNull("starts");
+    evidence.putNull("firstResults");
+    evidence.putArray("notApplicableMetrics").add("starts").add("firstResults");
+    evidence.put("checkouts", funnel.checkouts() + payments.checkoutAccesses());
+    evidence.put("netSales", netSales);
+    evidence.put("refunds", payments.refunds());
+    evidence.put("spendBrl", media.spendBrl());
+    evidence.put("revenueBrl", revenue);
+    evidence.put("contributionBrl", contribution);
+    evidence.put("dataValid", true);
+    evidence.put("testDataExcluded", true);
+    evidence.put("deliveryVerified", netSales > 0 && payments.deliveredNetSales() == netSales);
+    evidence.put("useVerified", false);
+    evidence.put("satisfactionVerified", false);
+    ObjectNode sources = evidence.putObject("sources");
+    ObjectNode portal = sources.putObject("leadPortalAnalytics");
+    portal.put("publicationId", funnel.publicationId());
+    portal.put("publicationUrl", funnel.publicationUrl());
+    portal.put("productVersion", cycle.getProductVersion());
+    portal.put("attribution", "EXPERIMENT_ID_OR_LINKED_CAMPAIGN_IDENTIFIERS");
+    portal.put("trafficQualityIncluded", "HUMAN_WITHOUT_INTERNAL_TEST_MARKERS");
+    portal.put("humanEvents", funnel.humanEvents());
+    portal.put("rawEvents", funnel.rawEvents());
+    portal.put("pageViews", funnel.pageViews());
+    portal.put("humanSessions", funnel.humanSessions());
+    portal.put("rawSessions", funnel.rawSessions());
+    putNullable(portal, "lastEventAt", funnel.lastHumanEventAt());
+    ObjectNode channel = sources.putObject("acquisition");
+    channel.put("platform", String.valueOf(experiment.getPlatform()));
+    channel.put("mode", media.mode());
+    channel.put("spendBrl", media.spendBrl());
+    putNullable(channel, "observedAt", media.observedAt());
+    channel.put("finalSnapshot", media.finalSnapshot());
+    channel.put("impressions", media.impressions());
+    channel.put("clicks", media.clicks());
+    ObjectNode financial = sources.putObject("financialOutcomes");
+    financial.put("purchaseEvents", payments.purchases());
+    financial.put("checkoutAccessEvents", payments.checkoutAccesses());
+    financial.put("refundEvents", payments.refunds());
+    financial.put("grossRevenueBrl", payments.grossRevenueBrl());
+    financial.put("refundedRevenueBrl", payments.refundedRevenueBrl());
+    financial.put("referencesComplete", true);
+    financial.put("amountsComplete", true);
+    financial.put("refundsMatchPurchases", true);
+    ObjectNode cost = sources.putObject("costLedger");
+    cost.put("auditableTotalBrl", auditableCost);
+    cost.put("legacyTotalBrl", money(costDto.getLegacyTotalCost()));
+    cost.put("unreconciledLegacyBrl", money(costDto.getUnreconciledLegacyCost()));
+    ObjectNode value = sources.putObject("valueDelivery");
+    value.put("deliveries", payments.deliveredNetSales());
+    value.putNull("firstUses");
+    value.putNull("satisfactionResponses");
+    value.putNull("positiveSatisfactionResponses");
+    evidence
+        .putArray("measurementLimitations")
+        .add(
+            "Kit entregue após a compra: degustação PDE, início e primeiro resultado pré-compra não se aplicam.")
+        .add(
+            "Entrega exige pagamento aprovado, ZIP gerado e envio registrado; não comprova uso ou satisfação.")
+        .add(
+            "Página histórica pode reunir revisões: publicação auditada identifica a fonte, sem provar causalidade entre versões.");
+    String summary =
+        "Conciliação automática do Lead Portal: "
+            + funnel.humanVisitors()
+            + " visitantes humanos distintos em "
+            + funnel.humanSessions()
+            + " sessões, "
+            + netSales
+            + " vendas líquidas, R$ "
+            + revenue
+            + " de receita e R$ "
+            + contribution
+            + " de contribuição. Uso e satisfação não comprovados.";
+    return new Result(
+        true,
+        evidence,
+        summary,
+        "internal://learning-cycles/"
+            + cycle.getId()
+            + "/experiments/"
+            + experiment.getId()
+            + "/measurements/"
+            + fingerprint);
+  }
+
+  /** Confere a página publicada sem transformar parâmetros de tracking em outra identidade. */
+  private boolean samePage(String published, String expected) {
+    if (published == null || expected == null) return false;
+    URI actual = URI.create(published);
+    URI target = URI.create(expected);
+    return actual.getHost() != null
+        && target.getHost() != null
+        && actual.getHost().equalsIgnoreCase(target.getHost())
+        && Objects.equals(actual.getScheme(), target.getScheme())
+        && actual.getPort() == target.getPort()
+        && Objects.equals(actual.getPath(), target.getPath());
+  }
+
+  /** Exige custos conciliados para ambos os formatos, sem converter ausência em custo zero. */
+  private ExperimentDto reconciledCosts(Experiment experiment) {
+    ExperimentDto dto = costs.enrich(experiment, new ExperimentDto());
+    requireSource(
+        dto != null
+            && dto.getAuditableTotalCost() != null
+            && dto.getLegacyTotalCost() != null
+            && dto.getUnreconciledLegacyCost() != null,
+        "O ledger de custos não devolveu uma conciliação completa para o experimento.");
+    requireSource(
+        dto.getAuditableTotalCost().signum() >= 0
+            && dto.getLegacyTotalCost().signum() >= 0
+            && dto.getUnreconciledLegacyCost().signum() >= 0,
+        "O ledger de custos devolveu valor negativo e precisa ser corrigido.");
+    return dto;
   }
 
   /** Confere a fonte de aquisição sem tratar sincronização ausente como gasto zero. */

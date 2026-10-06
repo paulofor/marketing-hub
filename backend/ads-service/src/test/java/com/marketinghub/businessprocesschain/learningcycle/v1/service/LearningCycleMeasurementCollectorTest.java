@@ -4,10 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.reconcileMeasurement.LeadPortalCycleMeasurement;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.reconcileMeasurement.LeadPortalCycleMeasurement.Payments;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
@@ -19,6 +23,8 @@ import com.marketinghub.experiment.monitoring.pde.PdeCommercialOutcomeSummary;
 import com.marketinghub.experiment.monitoring.pde.PdeExperimentAnalyticsReader;
 import com.marketinghub.experiment.service.ExperimentCostReconciliationService;
 import com.marketinghub.product.Product;
+import com.marketinghub.producttype.ProductTypeDefinition;
+import com.marketinghub.repository.jdbc.learningcycle.LeadPortalCycleMeasurementRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -33,19 +39,27 @@ class LearningCycleMeasurementCollectorTest {
       mock(ExperimentAcquisitionMetricsReader.class);
   private final ExperimentCostReconciliationService costs =
       mock(ExperimentCostReconciliationService.class);
+  private final LeadPortalCycleMeasurementRepository leadPortal =
+      mock(LeadPortalCycleMeasurementRepository.class);
   private final ObjectMapper json = new ObjectMapper().findAndRegisterModules();
   private LearningCycleMeasurementCollector collector;
   private Experiment experiment;
   private LearningSalesCycle cycle;
 
-  /** Monta o recorte histórico do Vega com fontes determinísticas. */
+  /** Monta o recorte histórico e o tipo canônico PDE do Vega com fontes determinísticas. */
   @BeforeEach
   void setUp() {
-    collector = new LearningCycleMeasurementCollector(analytics, acquisition, costs, json);
+    collector =
+        new LearningCycleMeasurementCollector(analytics, acquisition, costs, leadPortal, json);
     experiment =
         Experiment.builder()
             .id(91L)
-            .product(Product.builder().id(4L).slug("metodo-musa-7-dias").build())
+            .product(
+                Product.builder()
+                    .id(4L)
+                    .slug("metodo-musa-7-dias")
+                    .productTypeDefinition(ProductTypeDefinition.builder().code("PDE").build())
+                    .build())
             .platform(ExperimentPlatform.FACEBOOK)
             .status(ExperimentStatus.USER_STOPPED)
             .build();
@@ -120,6 +134,140 @@ class LearningCycleMeasurementCollectorTest {
     assertThat(result.evidence().at("/sources/pdeAnalytics/uniqueVisitors").asLong()).isEqualTo(4);
     assertThat(result.summary()).contains("4 visitantes humanos distintos em 7 sessões");
     assertThat(result.evidence().path("sourceFingerprint").asText()).hasSize(64);
+  }
+
+  /** Reproduz o kit Quartzo sem slot, cuja fonte canônica está no Lead Portal. */
+  @Test
+  void reconcilesQuartzoWithoutInventingPdeSlot() {
+    quartzo(7L, 88L);
+    cycle.setWindowStart(Instant.parse("2026-08-20T00:00:00Z"));
+    cycle.setWindowEnd(Instant.parse("2026-09-30T02:59:00Z"));
+    Instant observed = Instant.parse("2026-10-05T23:00:00Z");
+
+    var result = collector.collect(cycle, experiment, observed);
+
+    assertThat(result.ready()).isTrue();
+    assertThat(result.evidence().path("humanVisitors").asLong()).isEqualTo(6);
+    assertThat(result.evidence().path("netSales").asLong()).isZero();
+    assertThat(result.evidence().path("starts").isNull()).isTrue();
+    assertThat(result.evidence().path("firstResults").isNull()).isTrue();
+    assertThat(result.evidence().at("/sources/leadPortalAnalytics/publicationId").asLong())
+        .isEqualTo(32);
+    LearningCycleRules.validateMetrics(cycle, result.evidence(), observed);
+    verify(analytics, never()).read(any(), any(), any());
+  }
+
+  /** Comprova a correção reutilizável em outro kit, sem condicionar o adaptador ao Capella. */
+  @Test
+  void reconcilesAnotherQuartzoAndNeverTreatsDeliveryAsUsage() {
+    quartzo(22L, 117L);
+    when(leadPortal.read(eq(117L), any(), any()))
+        .thenReturn(
+            portal(200, new Payments(1, 1, 0, new BigDecimal("67.00"), BigDecimal.ZERO, 1, null)));
+
+    var result = collector.collect(cycle, experiment, NOW);
+
+    assertThat(result.ready()).isTrue();
+    assertThat(result.evidence().path("netSales").asLong()).isEqualTo(1);
+    assertThat(result.evidence().path("checkouts").asLong()).isEqualTo(1);
+    assertThat(result.evidence().path("deliveryVerified").asBoolean()).isTrue();
+    assertThat(result.evidence().path("useVerified").asBoolean()).isFalse();
+    assertThat(result.evidence().path("satisfactionVerified").asBoolean()).isFalse();
+    assertThat(result.evidence().at("/sources/valueDelivery/firstUses").isNull()).isTrue();
+    verify(leadPortal).read(eq(117L), eq(cycle.getWindowStart()), eq(NOW));
+    verify(analytics, never()).read(any(), any(), any());
+  }
+
+  /** Impede falsa medição quando a página, a versão ou o pagamento do kit está inconsistente. */
+  @Test
+  void blocksQuartzoVersionPublicationAndFinancialMismatch() {
+    quartzo(7L, 88L);
+    cycle.setProductVersion("v2");
+    assertThat(collector.collect(cycle, experiment, NOW).evidence().path("blocker").asText())
+        .contains("versão do kit");
+    cycle.setProductVersion("v1");
+    experiment.setFollowUpActionUrl("https://different.example.test/flows/88");
+    assertThat(collector.collect(cycle, experiment, NOW).evidence().path("blocker").asText())
+        .contains("publicação auditada");
+    experiment.setFollowUpActionUrl("https://kit.example.test/flows/88");
+    when(leadPortal.read(eq(88L), any(), any()))
+        .thenReturn(
+            portal(100, new Payments(0, 0, 0, null, null, 0, "Compra sem referência única")));
+    var blocked = collector.collect(cycle, experiment, NOW);
+    assertThat(blocked.ready()).isFalse();
+    assertThat(blocked.evidence().has("netSales")).isFalse();
+    assertThat(blocked.evidence().path("blocker").asText()).contains("referência única");
+  }
+
+  /** Preserva indisponibilidade da fonte do kit sem publicar contagens presumidas. */
+  @Test
+  void blocksUnavailableLeadPortal() {
+    quartzo(7L, 88L);
+    when(leadPortal.read(eq(88L), any(), any()))
+        .thenThrow(new IllegalStateException("SQL indisponível"));
+    var result = collector.collect(cycle, experiment, NOW);
+    assertThat(result.ready()).isFalse();
+    assertThat(result.evidence().has("revenueBrl")).isFalse();
+    assertThat(result.evidence().path("blocker").asText()).contains("fonte oficial");
+  }
+
+  /** Tráfego bruto de QA não altera a assinatura comercial do kit. */
+  @Test
+  void ignoresQuartzoQaInFingerprint() {
+    quartzo(7L, 88L);
+    var first = collector.collect(cycle, experiment, NOW);
+    when(leadPortal.read(eq(88L), any(), any()))
+        .thenReturn(portal(999, new Payments(0, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO, 0, null)));
+    var second = collector.collect(cycle, experiment, NOW);
+    assertThat(second.evidence().at("/sources/leadPortalAnalytics/rawEvents").asLong())
+        .isEqualTo(999);
+    assertThat(second.evidence().path("sourceFingerprint"))
+        .isEqualTo(first.evidence().path("sourceFingerprint"));
+  }
+
+  /** Monta a identidade de um kit pós-compra e sua fonte oficial, sem slot PDE. */
+  private void quartzo(Long productId, Long experimentId) {
+    experiment.setId(experimentId);
+    experiment.getProduct().setId(productId);
+    experiment
+        .getProduct()
+        .setProductTypeDefinition(
+            ProductTypeDefinition.builder().code("LOW_TICKET_DIGITAL_PRODUCT").build());
+    experiment.getProduct().setValidationDefinitionVersion("v1");
+    experiment.setFollowUpActionUrl("https://kit.example.test/flows/88");
+    cycle.setProductId(productId);
+    cycle.setExperimentId(experimentId);
+    cycle.setProductVersion("v1");
+    when(leadPortal.read(eq(experimentId), any(), any()))
+        .thenReturn(portal(100, new Payments(0, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO, 0, null)));
+  }
+
+  /** Produz a fotografia segregada para testar somente o contrato do coletor. */
+  private LeadPortalCycleMeasurement portal(long rawEvents, Payments payments) {
+    return new LeadPortalCycleMeasurement(
+        32L,
+        "https://kit.example.test/flows/88",
+        true,
+        20,
+        rawEvents,
+        6,
+        6,
+        40,
+        7,
+        0,
+        NOW.minusSeconds(3600),
+        payments);
+  }
+
+  /** Impede misturar a fonte de outro experimento mesmo quando pertence ao mesmo produto. */
+  @Test
+  void blocksAnotherExperimentBeforeReadingSources() {
+    cycle.setExperimentId(92L);
+    var result = collector.collect(cycle, experiment, NOW);
+    assertThat(result.ready()).isFalse();
+    assertThat(result.evidence().path("blocker").asText()).contains("experimento exato");
+    verify(analytics, never()).read(any(), any(), any());
+    verify(leadPortal, never()).read(any(), any(), any());
   }
 
   /** Bloqueia aprovação legada sem compra canônica em vez de registrá-la como zero vendas. */

@@ -6,6 +6,7 @@ import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.agenttask.AgentTaskTargetResponse;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
@@ -52,7 +53,7 @@ public class LearningCycleConstructionContext {
     var product = experiment.getProduct();
     if (product == null || !Objects.equals(cycle.getProductId(), product.getId()))
       throw new IllegalStateException("Ciclo e experimento pertencem a produtos diferentes.");
-    JsonNode privateContext = context(cycle);
+    JsonNode privateContext = context(cycle, product);
     String privateUrl =
         privateContext == null
             ? null
@@ -78,10 +79,10 @@ public class LearningCycleConstructionContext {
   }
 
   /**
-   * Preserva orientação de Atena, aplica limites multiagente e compõe linhagem; mantém ausência se
-   * as aprovações falharem.
+   * Preserva identidade do catálogo, orientação de Atena, limites e linhagem; mantém ausência se as
+   * aprovações falharem, sem transformar contratos em prova de implementação.
    */
-  private JsonNode context(LearningSalesCycle cycle) {
+  private JsonNode context(LearningSalesCycle cycle, Product product) {
     try {
       if (!"OPEN".equals(cycle.getStatus()) || cycle.isBaseline()) return null;
       var chain = chains.findById(cycle.getChainDefinitionId()).orElseThrow();
@@ -129,6 +130,29 @@ public class LearningCycleConstructionContext {
       context.put("contractVersion", "PDE_HARNESS_PLAN_V1");
       context.put("experienceVersion", cycle.getProductVersion());
       context.put("status", "PLANNED");
+      var identity = context.putObject("product");
+      identity.put("id", product.getId());
+      identity.put("slug", product.getSlug());
+      identity.put("internalName", product.getInternalName());
+      identity.put("commercialName", product.getName());
+      identity.put("type", product.getProductType());
+      identity.put(
+          "productTypeId",
+          product.getProductTypeDefinition() == null
+              ? null
+              : product.getProductTypeDefinition().getId());
+      identity.put(
+          "productTypeCode",
+          product.getProductTypeDefinition() == null
+              ? null
+              : product.getProductTypeDefinition().getCode());
+      identity.put(
+          "productTypeInternalName",
+          product.getProductTypeDefinition() == null
+              ? null
+              : product.getProductTypeDefinition().getInternalName());
+      identity.put("format", product.getProductFormat());
+      identity.put("deliveryMode", product.getDeliveryMode());
       try (var input =
           getClass().getResourceAsStream("/contracts/pde-agent-validation-plan-v1.json")) {
         var plan =

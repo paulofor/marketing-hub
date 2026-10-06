@@ -180,6 +180,9 @@ class PdeConstructionBpmTaskConsumerTest {
           .isEqualTo(source);
       String prompt = java.nio.file.Files.readString(directory.resolve("prompt.txt"));
       assertThat(prompt).contains("MARKET_STRATEGY_V4", "PDE_AGENT_ECONOMICS_V1");
+      assertThat(java.nio.file.Files.readString(directory.resolve("arguments.json")))
+          .doesNotContain("features.shell_tool=false");
+      assertThat(prompt).doesNotContain("Limite executável das atividades de especificação");
       assertThat(callback.get().path("executionAudit").path("promptSent").asText())
           .isEqualTo(prompt);
       assertThat(callback.get().path("modelUsages").get(0).path("inputTokens").asInt())

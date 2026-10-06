@@ -1,0 +1,73 @@
+{
+  "taskTarget": {
+    "productId": 7,
+    "experienceVersion": "specification-v1",
+    "publicUrl": null,
+    "pdeContext": {
+      "contractVersion": "PDE_HARNESS_PLAN_V1",
+      "experienceVersion": "specification-v1",
+      "status": "PLANNED",
+      "product": {
+        "id": 7,
+        "internalName": "Capella",
+        "productTypeInternalName": "Quartzo"
+      },
+      "marketStrategy": {
+        "buyer": "Profissional sintética",
+        "problem": "Esforço para aplicar o primeiro material",
+        "desiredOutcome": "Aplicação identificada",
+        "valueMechanism": "Entrada simples e materiais associados"
+      },
+      "economics": {
+        "commercialSpendAuthorized": false,
+        "offerPriceBrl": 67
+      },
+      "harness": {
+        "audiovisualRequired": false,
+        "privatePrototype": {
+          "simpleInput": "Ocasião e peça",
+          "readyResult": "Cartão aplicável",
+          "maxValueTimeMinutes": 5,
+          "instrumentationEvents": [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED"
+          ],
+          "checkoutMode": "SIMULATED_NO_CHARGE"
+        }
+      },
+      "agentValidationPlan": {
+        "contractVersion": "PDE_AGENT_VALIDATION_V1",
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test",
+        "requiredScenarios": [
+          "ADHERENT",
+          "RECOVERY",
+          "SAFETY"
+        ],
+        "requiredDevices": [
+          "DESKTOP_1440",
+          "IPHONE_15_PRO",
+          "PIXEL_7"
+        ],
+        "maxReadyResultSeconds": 600,
+        "humanEvidenceClaimed": false,
+        "commercialEvidenceClaimed": false,
+        "paymentEnabled": false,
+        "publicationAuthorized": false,
+        "campaignAuthorized": false,
+        "mediaSpendAuthorizedBrl": 0,
+        "purchaseScene": {
+          "trigger": "Preparar uma divulgação de teste"
+        },
+        "customerValueDelivery": {
+          "minimumCustomerInput": "Contexto sintético",
+          "readyMadeOutcome": "Resultado técnico utilizável"
+        }
+      },
+      "publicationBoundary": "Sem publicação, cobrança ou mídia"
+    }
+  }
+}

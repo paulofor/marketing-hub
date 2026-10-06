@@ -53,7 +53,13 @@ public record LearningCycleResponse(
     AuthorizationReview authorizationReview,
     LearningCycleCommercialPreparation commercialPreparation,
     WindowRevalidation windowRevalidation,
-    LearningCycleProcessContext.Work delegatedWork) {
+    LearningCycleProcessContext.Work delegatedWork,
+    PrototypeRegistration prototypeRegistration) {
+  /**
+   * Informa disponibilidade real do registro inicial da mesma candidata, sem aprovação comercial.
+   */
+  public record PrototypeRegistration(boolean available, String reason) {}
+
   /** Informa se a janela encerrada admite renovação ou exige preservar a tentativa anterior. */
   public record WindowRevalidation(boolean available, String reason) {}
 

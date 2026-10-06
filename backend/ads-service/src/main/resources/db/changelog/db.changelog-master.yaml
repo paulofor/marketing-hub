@@ -2207,3 +2207,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-10-06-learning-cycle-preparation-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-10-06-mira-private-candidate-v1.yaml
+      relativeToChangelogFile: true

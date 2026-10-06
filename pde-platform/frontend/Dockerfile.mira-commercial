@@ -6,6 +6,7 @@ RUN apk add --no-cache bash ffmpeg
 COPY . .
 RUN node scripts/source-fingerprint.mjs > /app/frontend-source.sha256 \
     && npm run build:mira-commercial \
+    && node scripts/write-mira-candidate-diagnostics.mjs dist-mira-commercial "$(cat /app/frontend-source.sha256)" \
     && mv dist-mira-commercial/mira-commercial.html dist-mira-commercial/index.html
 
 FROM nginx:1.27-alpine
@@ -15,6 +16,7 @@ COPY --from=build /app/frontend-source.sha256 /usr/share/nginx/html/frontend-sou
 COPY nginx.mira-commercial.conf /etc/nginx/templates/default.conf.template
 COPY docker-entrypoint-mira-commercial.d/ /docker-entrypoint.d/
 ENV PDE_BACKEND_UPSTREAM=pde-platform-backend:8096
+ENV MIRA_CANDIDATE_BACKEND_UPSTREAM=191.252.181.168:80
 ENV PDE_FRONTEND_VERSION_ID=${PDE_FRONTEND_VERSION_ID}
 RUN chmod +x /docker-entrypoint.d/10-runtime-config.sh \
     && printf '{"versionId":"%s"}\n' "${PDE_FRONTEND_VERSION_ID}" > /usr/share/nginx/html/pde-image-version.json

@@ -222,6 +222,15 @@ sob demanda conforme as regras existentes. Especificações prontas de Dédalo n
 a orientação deve nomear essa dependência antes da homologação de Psique, sem exigir um formulário
 de conclusão nem sugerir que repetir revisão produzirá o protótipo. A leitura não dispara trabalho.
 
+O primeiro handoff de implementação da candidata já declarada usa o registro administrativo
+`private-prototype`, disponibilizado pelo backend somente no ciclo aberto em ajuste, sem prova
+anterior e com experimento planejado sem exposição ou liberação. Exige a mesma versão, URL HTTPS,
+imagem construída pelo repositório e evidência recente de testes segregados. Registra um evento
+auditável `REGISTER_PROTOTYPE`, sem trocar versão, hipótese, etapa, orçamento ou aprovação e sem
+iniciar gasto. Psique e Têmis mantêm seus aceites independentes. Substituir uma candidata já entregue
+continua exigindo ciclo e experimento sucessores; o registro inicial não constitui exceção à política
+`CHANGE_PER_CYCLE_V1`.
+
 Quando houver ciclo identificado, os cards de início e catálogo devem destacar o número ordinal
 da passagem, experimento, etapa e trabalho atual fornecidos pelo backend. O Processo 6 permanece
 como coordenação do ciclo; seu vínculo comercial não significa que o sucessor já está em vendas.

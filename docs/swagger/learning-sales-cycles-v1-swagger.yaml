@@ -29,6 +29,41 @@ info:
 servers:
   - url: /api/business-process-chains/learning-cycles/v1
 paths:
+  /products/{productId}/{cycleId}/private-prototype:
+    parameters:
+      - {$ref: '#/components/parameters/ProductId'}
+      - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+    post:
+      summary: Registrar a primeira implementação privada da candidata declarada
+      description: >-
+        Somente ciclo aberto em ADJUSTMENT, experimento PLANNED sem exposição/liberação e sem
+        prova anterior. prototypeVersion deve coincidir com a versão já declarada. Persiste
+        REGISTER_PROTOTYPE com revisão, autoria, prova e chave idempotente, sem trocar versão,
+        etapa, hipótese ou teto; não inicia tarefa, aprova Psique/Têmis nem autoriza mercado.
+        A disponibilidade vem em prototypeRegistration no contrato Cycle. Alteração posterior
+        da candidata continua exigindo sucessor conforme CHANGE_PER_CYCLE_V1.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestKey, expectedRevision, operatorName, privatePrototype]
+              properties:
+                requestKey: {type: string, format: uuid}
+                expectedRevision: {type: integer, minimum: 0}
+                operatorName: {type: string, minLength: 1, maxLength: 160}
+                privatePrototype:
+                  type: object
+                  description: >-
+                    prototypeVersion exato, privateAccessUrl HTTPS sem parâmetros/segredo,
+                    image, evidenceReference (20–1200 caracteres), observedAt ISO recente até
+                    sete dias; desktopValidated, mobileValidated, firstResultValidated,
+                    resumeValidated, failuresValidated, testDataExcluded e noExternalSideEffects
+                    devem ser verdadeiros. Evidência segregada nunca comprova venda.
+      responses:
+        '200': {description: Prova inicial registrada ou replay reconhecido, sem aprovação comercial}
+        '409': {description: Versão, etapa, revisão ou prova incompatível; candidata já registrada ou experimento exposto}
   /products/{productId}/{cycleId}/window-revalidation:
     parameters:
       - {$ref: '#/components/parameters/ProductId'}

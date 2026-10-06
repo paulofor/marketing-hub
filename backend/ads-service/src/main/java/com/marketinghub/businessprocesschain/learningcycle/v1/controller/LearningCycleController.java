@@ -77,6 +77,20 @@ public class LearningCycleController {
     return service.command(productId, cycleId, request);
   }
 
+  /** Registra a primeira implementação da versão planejada, sem concluir revisões independentes. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Registrar prova privada da mesma candidata planejada")
+  @PostMapping("/products/{productId}/{cycleId}/private-prototype")
+  public LearningCycleResponse registerPrototype(
+      @PathVariable Long productId,
+      @PathVariable Long cycleId,
+      @Valid @RequestBody
+          com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+                  .RegisterCyclePrototypeRequest
+              request) {
+    return service.registerPrototype(productId, cycleId, request);
+  }
+
   /** Recebe somente os valores e registra o aceite no fluxo canônico de decisões. */
   @io.swagger.v3.oas.annotations.Operation(summary = "Aprovar orçamento diário e total do ciclo")
   @PostMapping("/products/{productId}/{cycleId}/budget-authorization")

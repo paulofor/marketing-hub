@@ -449,10 +449,14 @@ public class PdeAgentValidationGateActivityExecutor
   }
 
   /**
-   * Aceita a matriz histórica de cinco provas e exige nove combinações isoladas no contrato
-   * estendido.
+   * Preserva as matrizes históricas de cinco e nove provas e aceita a comparação documental de
+   * dezoito combinações somente pelo contrato explícito correspondente.
    */
   private boolean validTechnicalScenarioMatrix(JsonNode result) {
+    if (PdeInputComparisonScenarioMatrixV1.CONTRACT.equals(
+        result.path("fixtureContract").asText())) {
+      return PdeInputComparisonScenarioMatrixV1.valid(result);
+    }
     JsonNode scenarios = result.path("scenarios");
     JsonNode checks = result.path("checks");
     boolean extended =

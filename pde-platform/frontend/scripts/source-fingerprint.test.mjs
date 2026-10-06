@@ -28,6 +28,7 @@ async function fixture(t) {
     "index.html",
     "mira.html",
     "mira-commercial.html",
+    "mira-candidate.html",
     "alcyone.html",
     "nginx.conf",
     "nginx.mira.conf",
@@ -98,4 +99,11 @@ test("recusa links na árvore de fontes", async (t) => {
   const root = await fixture(t);
   await fs.symlink(path.join(root, "src", "App.tsx"), path.join(root, "src", "alias.tsx"));
   await assert.rejects(sourceFingerprint(root), /não regular/);
+});
+
+test("muda a identidade quando a entrada HTML da candidata de Mira muda", async (t) => {
+  const root = await fixture(t);
+  const original = await sourceFingerprint(root);
+  await fs.writeFile(path.join(root, "mira-candidate.html"), "entrada privada corrigida");
+  assert.notEqual(await sourceFingerprint(root), original);
 });

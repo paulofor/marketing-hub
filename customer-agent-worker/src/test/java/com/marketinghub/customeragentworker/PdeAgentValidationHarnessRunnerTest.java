@@ -299,6 +299,106 @@ class PdeAgentValidationHarnessRunnerTest {
     assertThat(execution.result().path("checks").path("responsiveLayout").asBoolean()).isFalse();
   }
 
+  /** Aceita a candidata somente com linhagem compatível, script próprio e matriz completa. */
+  @Test
+  void rejectsMiraCandidateWithoutItsFullMatrix() throws Exception {
+    Path legacy = fakeHarness(false, true);
+    Path candidate = legacy.resolveSibling("mira-candidate-harness.mjs");
+    String fixture =
+        Files.readString(legacy)
+            .replace("product:10@agent-validation-v1", "experiment:9006")
+            .replace("orientacao-digital-rotina-pele-madura", "pde-planejado-36")
+            .replace("mira-private-v1", "mira-commercial-v2")
+            .replace("http://127.0.0.1:5176/mira-private", "http://127.0.0.1:57181/mira-candidate")
+            .replace("\"productId\":10", "\"productId\":8006");
+    Files.writeString(candidate, fixture);
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/bin/sh", legacy.toString(), "synthetic", true);
+    assertThatThrownBy(
+            () ->
+                runner.run(
+                    miraCandidateTask(),
+                    "TECHNICAL",
+                    null,
+                    temporaryDirectory.resolve("mira-candidate")))
+        .hasMessageContaining("Cobertura técnica");
+  }
+
+  /** Recusa linhagem de outro produto antes de iniciar qualquer navegador. */
+  @Test
+  void rejectsMiraCandidateWithMismatchedLineage() {
+    var task = new HashMap<>(miraCandidateTask());
+    task.put("sourceReference", "experiment:9199");
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/must-not-run", "/absent", "synthetic", true);
+    assertThatThrownBy(() -> runner.run(task, "TECHNICAL", null, temporaryDirectory))
+        .hasMessageContaining("não corresponde ao produto alvo");
+  }
+
+  /** Valida as capturas da rodada local real sem executar outra inferência ou repetir a matriz. */
+  @Test
+  void validatesExistingLocalCandidateEvidenceWhenProvided() throws Exception {
+    String path = System.getenv("MIRA_LOCAL_REPORT");
+    org.junit.jupiter.api.Assumptions.assumeTrue(path != null && !path.isBlank());
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/must-not-run", "/absent", "synthetic", true);
+    var method =
+        PdeAgentValidationHarnessRunner.class.getDeclaredMethod(
+            "validateOutput",
+            com.fasterxml.jackson.databind.JsonNode.class,
+            String.class,
+            Path.class,
+            String.class,
+            String.class,
+            Map.class);
+    method.setAccessible(true);
+    Path inputFile = Path.of(path).resolveSibling("input.json");
+    if (!Files.exists(inputFile)) inputFile = Path.of(path).resolveSibling("candidate-input.json");
+    var input = json.readTree(inputFile.toFile());
+    var expected =
+        json.convertValue(
+            input, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+    Object artifacts =
+        method.invoke(
+            runner,
+            json.readTree(Path.of(path).toFile()),
+            input.path("captureSessionId").asText(),
+            Path.of(path)
+                .resolveSibling(
+                    Files.exists(Path.of(path).resolveSibling("captures"))
+                        ? "captures"
+                        : "candidate-captures"),
+            "TECHNICAL",
+            null,
+            expected);
+    assertThat((java.util.List<?>) artifacts).hasSize(18);
+  }
+
+  /** Descreve identidades sintéticas distintas do produto operacional e de sua história. */
+  private Map<String, Object> miraCandidateTask() {
+    return Map.of(
+        "taskId",
+        902L,
+        "sourceReference",
+        "experiment:9006",
+        "taskTarget",
+        Map.of(
+            "productId",
+            8006L,
+            "productSlug",
+            "pde-planejado-36",
+            "experienceVersion",
+            "mira-commercial-v2",
+            "experimentId",
+            9006L,
+            "publicUrl",
+            "http://127.0.0.1:57181/mira-candidate",
+            "pdeContext",
+            Map.of(
+                "lineage",
+                Map.of("learningCycleId", 7006L, "experimentId", 9006L, "productId", 8006L))));
+  }
+
   /** Cria uma tarefa sintética com o alvo público exato do produto. */
   private Map<String, Object> task() {
     return Map.of(

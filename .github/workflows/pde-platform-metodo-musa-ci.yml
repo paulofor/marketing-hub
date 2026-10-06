@@ -238,6 +238,27 @@ jobs:
         run: npm run test:mira-private:local
       - name: Validate commercial Mira journey in desktop and mobile
         run: npm run test:mira-commercial:local
+      - name: Set up Java for Mira private candidate
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Validate Mira candidate with MySQL 5.7 and eighteen real browser paths
+        working-directory: ${{ github.workspace }}
+        env:
+          MIRA_TEST_COMPOSE_PROJECT: mira-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          MIRA_TEST_EVIDENCE_DIR: artifacts/mira-candidate
+        run: |
+          npm ci --prefix customer-agent-worker --omit=dev --no-audit --no-fund
+          export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="$(node -p 'require("./pde-platform/frontend/node_modules/playwright").chromium.executablePath()')"
+          bash infra/testing/mira-candidate/run-local.sh
+      - name: Preserve Mira candidate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mira-candidate-local-evidence
+          path: artifacts/mira-candidate
+          if-no-files-found: warn
       - name: Validate product-exclusive build artifacts
         run: node ../scripts/test-product-build-artifacts.mjs
       - name: Validate Alcyone agent journey in desktop and mobile

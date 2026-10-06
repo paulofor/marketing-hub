@@ -24,9 +24,14 @@ function miraCommercialRoutes() {
         const original = request.url || "";
         const [path, query = ""] = original.split("?", 2);
         if (
-          ["/", "/access", "/terms", "/privacy", "/refund-policy"].includes(
-            path,
-          )
+          [
+            "/",
+            "/access",
+            "/terms",
+            "/privacy",
+            "/refund-policy",
+            "/mira-candidate",
+          ].includes(path)
         ) {
           request.url = `/mira-commercial.html${query ? `?${query}` : ""}`;
         }
@@ -41,6 +46,10 @@ export default defineConfig(() => ({
   base: "/",
   publicDir: "public-mira-commercial",
   plugins: [miraCommercialRoutes(), react()],
+  preview: {
+    proxy: { "/api/pde/mira/candidate/v1": "http://127.0.0.1:57182" },
+  },
+  server: { proxy: { "/api/pde/mira/candidate/v1": "http://127.0.0.1:57182" } },
   build: {
     outDir: "dist-mira-commercial",
     rollupOptions: {

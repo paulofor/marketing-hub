@@ -1,0 +1,123 @@
+{
+  "contractVersion": "mira-private-candidate.v1",
+  "processCode": "pde-construction-approval",
+  "processVersion": 4,
+  "activityId": "technicalHomologation",
+  "sourceReference": "experiment:99",
+  "experimentId": 99,
+  "product": {
+    "id": 10,
+    "internalName": "Mira",
+    "commercialName": "Mira · sua rotina organizada",
+    "slug": "pde-planejado-36",
+    "experienceVersion": "mira-commercial-v2",
+    "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate"
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "boundary": "Candidata privada determinística a partir do texto documental. Sem provedor pago, compra, publicação comercial, mídia ou evidência humana. A autorização de IA pertence à preparação e revisão do ciclo 6.",
+  "operationalState": {
+    "verifiedAt": "2026-10-06",
+    "experimentStatus": "PLANNED",
+    "commercialPublicationAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "mira-commercial",
+    "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+    "requiredFrontendSourceSha256": "08bae3a5c90ecfa9eb14d5b0e0e75afb81c8d8cc5f18eb5fc969cb1348d0c49e"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "mira-commercial-v2",
+      "experienceVersion": "mira-commercial-v2",
+      "frontendSourceSha256": "08bae3a5c90ecfa9eb14d5b0e0e75afb81c8d8cc5f18eb5fc969cb1348d0c49e"
+    },
+    "diagnosticsUrl": "https://mira.digicomdigital.com.br/mira-candidate/version-diagnostics.json"
+  },
+  "implementationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeInputComparisonScenarioMatrixV1.java",
+      "sha256": "322c9d126230205cb7d3a8e6b6c84a445f12a7122c729b99617c1c945aaf70c9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutor.java",
+      "sha256": "d6a561e7abd9d82571bfb0e05393d5d6240b1482b5d443ec696fb62e9a85b91e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/controller/MiraPrivateController.java",
+      "sha256": "ebfd3da9a40bf721b331bf0d7d2acdad4e099ab317ca4a5564974983255e3ce9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MiraCandidateApp.tsx",
+      "sha256": "86021c64198ad31781adb174c8108868366db3fa188f774ae27dbf0bc477bca6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/mira-candidate.css",
+      "sha256": "6852591ff91cb5c3681cb54fbe063a26af3c019c6bde11b424aa46cacd6c721d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/nginx.mira-commercial.conf",
+      "sha256": "07834639bb7630bd32544678e40b9d7250da6a314b0aa7dcbf315d3e3a589c10",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/service/MiraPrivateService.java",
+      "sha256": "a5f1e3f860d228cc602e8b0d2f02cc96f4d486746849420de701942e4a9bf487",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/mira-candidate-harness.mjs",
+      "sha256": "7b4dd7418ae588b705a2c4f33dd8266da400ac457c08e6751b8e724cb66c244c",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeInputComparisonScenarioMatrixV1Test.java",
+      "sha256": "6b9e3047cb41523be7a67cfc41006529cdd136cef5df1c16d5a058e31e715dd6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutorTest.java",
+      "sha256": "1e1a41caec551c480fc72d7e44a7ac9945549e0c57308e2da5a730e32e7f08af",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/mira-candidate/history-browser-test.mjs",
+      "sha256": "ae427f4f3a795b190d111df3f565aec8c71e1770e53a801ab7b91cf67fb6a3cc",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/mira-candidate/run-local.sh",
+      "sha256": "5d869336ce5b187e08dc4eda7651aae5686f968aa144c47c81e05d81366b3e4e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateServiceTest.java",
+      "sha256": "0fcb63300b12213661c9d186d11d2ced31718c430dd2f2a15de5977d30ebcc45",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateControllerTest.java",
+      "sha256": "b68fd81b407658ba4781ccd5fe493bdb369d074c2db72a1cfe559107e658cc4f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunnerTest.java",
+      "sha256": "4d30e862fc00fcc5f1b10f49656e65cd1e3e2d13d9bec8386c3be559617a3135",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/registros/mira-candidate-v2-homologacao.md",
+  "limitations": [
+    "Somente organização determinística; não comprova integração ou custo de modelo de IA.",
+    "Emulação mobile usa Chromium; não comprova Safari nativo.",
+    "Candidata precisa de Psique e Têmis independentes; não autoriza oferta ou aquisição."
+  ]
+}

@@ -1,0 +1,15 @@
+services:
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: local-test-root
+      MYSQL_DATABASE: mira_local
+      MYSQL_USER: mira
+      MYSQL_PASSWORD: mira-local-only
+    ports:
+      - '57183:3306'
+    healthcheck:
+      test: ['CMD','mysqladmin','ping','-h','127.0.0.1','-uroot','-plocal-test-root']
+      interval: 5s
+      retries: 30
+    mem_limit: 512m

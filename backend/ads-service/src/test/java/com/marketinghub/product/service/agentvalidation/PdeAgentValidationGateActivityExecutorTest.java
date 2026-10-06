@@ -389,6 +389,27 @@ class PdeAgentValidationGateActivityExecutorTest {
     assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
   }
 
+  /** Aceita a comparação explícita de dezoito provas e bloqueia inventários não equivalentes. */
+  @Test
+  void approvesDocumentedInputComparisonWithoutChangingLegacyContracts() throws Exception {
+    AgentTask technical = completedTasks.get(0);
+    var result = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(technicalResult());
+    var comparison = PdeInputComparisonScenarioMatrixV1Test.matrix("mira-private-v2");
+    result.set("scenarios", comparison.path("scenarios"));
+    result.set("fixtureContract", comparison.path("fixtureContract"));
+    result.set("generationMode", comparison.path("generationMode"));
+    result.set("providerCalls", comparison.path("providerCalls"));
+    technical.setResultJson(result.toString());
+
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isTrue();
+
+    ((com.fasterxml.jackson.databind.node.ObjectNode)
+            result.path("scenarios").get(1).path("products").get(0))
+        .put("name", "Inventário divergente");
+    technical.setResultJson(result.toString());
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
+  }
+
   /** Impede que uma versão anterior reutilize silenciosamente o executor e o contrato do v8. */
   @Test
   void preservesVersionEightAndRejectsPreviousContracts() {

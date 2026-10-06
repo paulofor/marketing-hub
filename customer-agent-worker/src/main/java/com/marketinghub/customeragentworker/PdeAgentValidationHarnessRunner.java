@@ -121,14 +121,24 @@ public class PdeAgentValidationHarnessRunner {
         "orientacao-digital-rotina-pele-madura".equals(productSlug)
             && prototypeVersion.startsWith("mira-private-v")
             && "/mira-private".equals(URI.create(sourceUrl).getPath());
+    boolean miraCandidate =
+        "pde-planejado-36".equals(productSlug)
+            && "mira-commercial-v2".equals(prototypeVersion)
+            && "/mira-candidate".equals(URI.create(sourceUrl).getPath())
+            && sourceReference.equals("experiment:" + target.path("experimentId").asLong())
+            && lineage.path("learningCycleId").asLong() > 0
+            && lineage.path("experimentId").asLong() == target.path("experimentId").asLong()
+            && lineage.path("productId").asLong() == productId;
     boolean alcyone =
         "pde-planejado-46".equals(productSlug)
             && prototypeVersion.matches("alcyone-private-v(?:[2-9]|[1-9][0-9]+)")
             && List.of("", "/").contains(URI.create(sourceUrl).getPath());
-    if (!("product:" + productId + "@agent-validation-v1").equals(sourceReference) && !vega) {
+    if (!("product:" + productId + "@agent-validation-v1").equals(sourceReference)
+        && !vega
+        && !miraCandidate) {
       throw new HarnessException("A referência da homologação não corresponde ao produto alvo.");
     }
-    if (!vega && !mira && !alcyone) {
+    if (!vega && !mira && !alcyone && !miraCandidate) {
       throw HarnessException.executor(
           "O harness instalado não possui cenários próprios para este produto. "
               + "Implemente-os antes da homologação; não reutilize outro PDE.");
@@ -157,13 +167,15 @@ public class PdeAgentValidationHarnessRunner {
                 productSlug,
                 "prototypeVersion",
                 prototypeVersion));
-    if (vega) {
+    if (vega || miraCandidate) {
       input.put("cycleId", lineage.path("learningCycleId").asLong());
       var videoIntegration = target.path("pdeContext").path("videoIntegration");
       if (videoIntegration.isObject()) input.put("videoIntegration", videoIntegration);
     }
     String executionScript;
-    if (vega) {
+    if (miraCandidate) {
+      executionScript = Path.of(scriptPath).resolveSibling("mira-candidate-harness.mjs").toString();
+    } else if (vega) {
       executionScript =
           Path.of(scriptPath).resolveSibling("vega-agent-validation-harness.mjs").toString();
     } else if (alcyone) {
@@ -209,7 +221,7 @@ public class PdeAgentValidationHarnessRunner {
   }
 
   /**
-   * Exige contrato, mídias integradas, cenários, dispositivos, efeitos nulos e capturas da
+   * Exige contrato, mídias integradas, condições de entrada, cenários, dispositivos e capturas da
    * execução.
    */
   private List<BpmVisualEvidenceRunner.VisualArtifact> validateOutput(
@@ -255,6 +267,9 @@ public class PdeAgentValidationHarnessRunner {
         && REQUIRED_CHECKS.stream().anyMatch(check -> !checks.path(check).asBoolean(false))) {
       throw new HarnessException("O harness aprovou a execução com gate reprovado.");
     }
+    boolean miraCandidate =
+        "pde-planejado-36".equals(String.valueOf(expected.get("productSlug")))
+            && "mira-commercial-v2".equals(String.valueOf(expected.get("prototypeVersion")));
     boolean alcyone = "pde-planejado-46".equals(String.valueOf(expected.get("productSlug")));
     if (alcyone
         && (ALCYONE_CONTINUITY_CHECKS.stream().anyMatch(check -> !checks.path(check).isBoolean())
@@ -290,7 +305,7 @@ public class PdeAgentValidationHarnessRunner {
     if ("TECHNICAL".equals(mode)) {
       Set<String> devices = textSet(result.path("devices"), "deviceProfile", null);
       Set<String> scenarios = textSet(result.path("scenarios"), "scenarioCode", null);
-      int expectedScenarioDeviceGates = alcyone ? 9 : 5;
+      int expectedScenarioDeviceGates = miraCandidate ? 18 : (alcyone ? 9 : 5);
       if (result.path("devices").size() != 3
           || result.path("scenarios").size() != expectedScenarioDeviceGates
           || result.path("artifacts").size() != expectedScenarioDeviceGates
@@ -305,6 +320,31 @@ public class PdeAgentValidationHarnessRunner {
               || result.path("scenarios").findValues("status").stream()
                   .anyMatch(status -> !"PASS".equals(status.asText())))) {
         throw new HarnessException("O harness aprovou uma cobertura com percurso reprovado.");
+      }
+      if (miraCandidate) {
+        var expectedCases = new java.util.HashSet<String>();
+        for (String scenario : List.of("ADHERENT", "RECOVERY", "SAFETY"))
+          for (String device : List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7"))
+            for (String condition : List.of("REFERENCE", "REDUCED"))
+              expectedCases.add(scenario + "|" + device + "|" + condition);
+        var observedCases = new java.util.HashSet<String>();
+        result
+            .path("scenarios")
+            .forEach(
+                scenario ->
+                    observedCases.add(
+                        scenario.path("scenarioCode").asText()
+                            + "|"
+                            + scenario.path("deviceProfile").asText()
+                            + "|"
+                            + scenario.path("condition").asText()));
+        if (!expectedCases.equals(observedCases)
+            || !"PDE_DOCUMENTED_INPUT_COMPARISON_V1".equals(result.path("fixtureContract").asText())
+            || !"DETERMINISTIC_DOCUMENTED_LABELS".equals(result.path("generationMode").asText())
+            || result.path("providerCalls").asInt(-1) != 0) {
+          throw new HarnessException(
+              "Mira não comprovou as dezoito combinações segregadas sem provedor pago.");
+        }
       }
       if (alcyone
           && (!"PDE_STATIC_RESULT_FIXTURES_V1".equals(result.path("fixtureContract").asText())

@@ -1,0 +1,34 @@
+[
+  {
+    "name": "CeraVe Loção de Limpeza Hidratante",
+    "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+    "url": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante",
+    "observedAt": "2026-10-06T21:13:35.736157+00:00",
+    "editorialDate": null,
+    "publisher": "CeraVe Brasil",
+    "sourceKind": "PUBLIC_MANUFACTURER_PAGE",
+    "sourceExcerptSha256": "8a2c9a097ed0d087f672daf2b44ad6d5ee55bff6ad8ee633b0931cf3a12cb7ff",
+    "usage": "Fixture documental de teste; não representa inventário real, recomendação ou comprovação de compatibilidade clínica.",
+    "limits": [
+      "Página oficial consultada; embalagem específica não foi inspecionada.",
+      "Não estender orientação para outros produtos ou fórmulas.",
+      "Compatibilidade entre itens, condição clínica e adequação pessoal não são comprovadas por esta fonte."
+    ]
+  },
+  {
+    "name": "CeraVe Loção Hidratante",
+    "labelDirections": "Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+    "url": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante",
+    "observedAt": "2026-10-06T21:13:35.736197+00:00",
+    "editorialDate": null,
+    "publisher": "CeraVe Brasil",
+    "sourceKind": "PUBLIC_MANUFACTURER_PAGE",
+    "sourceExcerptSha256": "50ec1cb9efde1aafcf9ef3e12584a0aa689a96874f687d9d9f8e8ac47cae707e",
+    "usage": "Fixture documental de teste; não representa inventário real, recomendação ou comprovação de compatibilidade clínica.",
+    "limits": [
+      "Página oficial consultada; embalagem específica não foi inspecionada.",
+      "Não estender orientação para outros produtos ou fórmulas.",
+      "Compatibilidade entre itens, condição clínica e adequação pessoal não são comprovadas por esta fonte."
+    ]
+  }
+]

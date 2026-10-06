@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: mira-local-cycle-fixture
+      author: local-test
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE learning_sales_cycle_v1 (id BIGINT NOT NULL PRIMARY KEY);
+              INSERT INTO learning_sales_cycle_v1 (id) VALUES (7006),(7017);
+  - include:
+      file: db/changelog/changesets/2026-10-06-mira-private-candidate-v1.yaml

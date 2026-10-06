@@ -1,0 +1,16 @@
+services:
+  frontend:
+    image: ${MIRA_TEST_FRONTEND_IMAGE:?Imagem construída pelo Dockerfile do repositório}
+    ports: ['57184:80']
+    environment:
+      PDE_BACKEND_UPSTREAM: pde:8080
+      MIRA_CANDIDATE_BACKEND_UPSTREAM: principal:8080
+    mem_limit: 128m
+  principal:
+    image: ${MIRA_TEST_PROXY_IMAGE:?Imagem da fixture local}
+    command: ['principal']
+    mem_limit: 64m
+  pde:
+    image: ${MIRA_TEST_PROXY_IMAGE:?Imagem da fixture local}
+    command: ['pde']
+    mem_limit: 64m

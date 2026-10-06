@@ -1,0 +1,156 @@
+openapi: 3.0.3
+info:
+  title: Mira — candidata privada determinística
+  version: v1
+  description: Experiência mira-commercial-v2 no backend principal. Testes segregados; sem geração paga, cobrança, publicação comercial ou mídia.
+paths:
+  /api/pde/mira/candidate/v1/contract:
+    get:
+      summary: Consultar capacidades sem abrir sessão
+      responses:
+        "200":
+          {
+            description: Identidade,
+            limites,
+            modo determinístico e efeitos externos desativados,
+          }
+  /api/pde/mira/candidate/v1/internal/sessions:
+    post:
+      summary: Emitir pacote sintético para ciclo aberto e versão compatível
+      security: [{ InternalToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                [
+                  cycleId,
+                  sourceReference,
+                  prototypeVersion,
+                  condition,
+                  scenarioCode,
+                  deviceProfile,
+                ]
+              properties:
+                cycleId: { type: integer, format: int64, minimum: 1 }
+                sourceReference: { type: string, example: "experiment:9006" }
+                prototypeVersion: { type: string, enum: [mira-commercial-v2] }
+                condition: { type: string, enum: [REFERENCE, REDUCED] }
+                scenarioCode:
+                  { type: string, enum: [ADHERENT, RECOVERY, SAFETY] }
+                deviceProfile:
+                  { type: string, enum: [DESKTOP_1440, IPHONE_15_PRO, PIXEL_7] }
+      responses:
+        "200":
+          {
+            description: Credencial opaca e checkpoint; segredo não entra no relatório,
+          }
+        "401": { description: Integração sem autenticação válida }
+        "409": { description: Contexto fechado ou identidade/versão divergente }
+  /api/pde/mira/candidate/v1/session:
+    get:
+      summary: Recuperar checkpoint sem regenerar nem consumir outra organização
+      security: [{ MiraSession: [] }]
+      responses:
+        "200": { description: Estado persistido e resultado da própria sessão }
+        "401": { description: Acesso ausente, inválido, revogado ou expirado }
+  /api/pde/mira/candidate/v1/input:
+    put:
+      summary: Persistir objetivo e todos os produtos incluídos
+      security: [{ MiraSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [objective, products]
+              properties:
+                objective: { type: string, minLength: 1, maxLength: 500 }
+                products:
+                  type: array
+                  minItems: 1
+                  maxItems: 12
+                  items:
+                    type: object
+                    required: [name, labelDirections]
+                    properties:
+                      name: { type: string, minLength: 1, maxLength: 160 }
+                      labelDirections:
+                        { type: string, minLength: 1, maxLength: 600 }
+      responses:
+        "200": { description: Entrada preservada com identidade e limites }
+        "400":
+          {
+            description: Validação recursiva rejeitou item incompleto ou limites,
+          }
+        "409": { description: Organizações incluídas esgotadas }
+  /api/pde/mira/candidate/v1/generate:
+    post:
+      summary: Organizar textos documentais ou preservar bloqueio explicável
+      description: Transação serializada no banco; READY é reutilizado após repetição, perda da resposta ou retomada. Não acessa provedor de IA. Bloqueio funcional não consome organização útil.
+      security: [{ MiraSession: [] }]
+      responses:
+        "200": { description: Resultado READY ou bloqueio BLOCKED persistido }
+        "409":
+          {
+            description: Entrada ausente ou limite de duas organizações atingido,
+          }
+  /api/pde/mira/candidate/v1/events:
+    post:
+      summary: Registrar uma ação funcional idempotente do teste
+      security: [{ MiraSession: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventType]
+              properties:
+                eventType:
+                  {
+                    type: string,
+                    enum:
+                      [
+                        READY_RESULT_USED,
+                        RECOVERY_COMPLETED,
+                        SAFETY_LIMIT_BLOCKED,
+                        AGENT_SCENARIO_COMPLETED,
+                      ],
+                  }
+      responses:
+        "200": { description: Evento coerente com o percurso preservado }
+        "409": { description: Evento fora de ordem ou resultado ausente }
+  /api/pde/mira/candidate/v1/internal/sessions/{id}:
+    delete:
+      summary: Revogar credencial preservando auditoria
+      security: [{ InternalToken: [] }]
+      parameters:
+        [{ in: path, name: id, required: true, schema: { type: string } }]
+      responses:
+        "200": { description: Acesso revogado }
+  /api/pde/mira/candidate/v1/internal/cycles/{cycleId}/report:
+    get:
+      summary: Consultar entradas, resultados e auditoria do ciclo sem credenciais
+      security: [{ InternalToken: [] }]
+      parameters:
+        [
+          {
+            in: path,
+            name: cycleId,
+            required: true,
+            schema: { type: integer, format: int64 },
+          },
+        ]
+      responses:
+        "200":
+          {
+            description: Provas AGENT_VALIDATION,
+            sem alegações humanas ou comerciais,
+          }
+components:
+  securitySchemes:
+    InternalToken: { type: apiKey, in: header, name: X-PDE-Internal-Token }
+    MiraSession: { type: apiKey, in: header, name: X-Mira-Session }

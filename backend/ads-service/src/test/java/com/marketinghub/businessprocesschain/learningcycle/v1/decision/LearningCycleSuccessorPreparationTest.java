@@ -56,6 +56,19 @@ class LearningCycleSuccessorPreparationTest {
           service,
           new LearningCycleJson(mapper));
 
+  private final com.marketinghub.businessprocess.automation.v1.service.ProcessRunService
+      processRuns =
+          mock(com.marketinghub.businessprocess.automation.v1.service.ProcessRunService.class);
+  private final LearningCycleWorkResolver work = mock(LearningCycleWorkResolver.class);
+
+  /** Conecta a continuidade sem executar agentes reais durante a homologação. */
+  @org.junit.jupiter.api.BeforeEach
+  void configureContinuation() {
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        preparation, "processRuns", processRuns);
+    org.springframework.test.util.ReflectionTestUtils.setField(preparation, "workResolver", work);
+  }
+
   /**
    * Monta duas identidades independentes com contrato histórico e resultado de agente persistido.
    */
@@ -114,6 +127,31 @@ class LearningCycleSuccessorPreparationTest {
     var response = mock(LearningCycleResponse.class);
     when(response.id()).thenReturn(productId + 400);
     when(response.revision()).thenReturn(0L);
+    when(response.experimentId()).thenReturn(productId + 300);
+    when(response.chainDefinitionId()).thenReturn(26L);
+    var prepared = new LearningSalesCycle();
+    prepared.setId(productId + 400);
+    when(cycles.findById(productId + 400)).thenReturn(Optional.of(prepared));
+    when(work.resolve(prepared))
+        .thenReturn(
+            new com.marketinghub
+                .businessprocesschain
+                .learningcycle
+                .v1
+                .service
+                .getCycles
+                .LearningCycleProcessContext
+                .Work(
+                116L,
+                2,
+                "Planejamento",
+                "marketStrategy",
+                1,
+                "Estratégia",
+                "Atena",
+                "NOT_STARTED",
+                "Pronto",
+                "/local"));
     when(service.createPreparation(eq(productId), any())).thenReturn(response);
     when(service.carryPreparedLearning(eq(productId), eq(productId + 400), any()))
         .thenReturn(response);
@@ -166,6 +204,7 @@ class LearningCycleSuccessorPreparationTest {
     assertThat(decision.getValue().evidence().path("humanApproved").asBoolean()).isFalse();
     assertThat(decision.getValue().evidence().path("preparationPolicy").asText())
         .isEqualTo(LearningCyclePreparationPolicy.CONTRACT);
+    verifyNoInteractions(processRuns);
     assertThat(cycle.getStatus())
         .isEqualTo("OPEN"); // O double não executa o comando; não alteramos a entidade diretamente.
   }
@@ -216,6 +255,13 @@ class LearningCycleSuccessorPreparationTest {
         "{\"decisionProposalId\":900,\"humanApproved\":true,\"nextHypothesis\":\"Hipótese final editada e aprovada\"}");
     when(events.findById(800L)).thenReturn(Optional.of(event));
     preparation.prepare(7L, cycle.getId());
+    verify(processRuns)
+        .start(
+            eq(7L),
+            eq(116L),
+            eq(
+                new com.marketinghub.businessprocess.automation.v1.service.commands
+                    .ProcessRunCommand(26L, 407L, "experiment:307")));
     verify(service, never()).recordPreparationDecision(any(), any(), any());
     var request = ArgumentCaptor.forClass(CreateLearningCycleRequest.class);
     verify(service).createPreparation(eq(7L), request.capture());

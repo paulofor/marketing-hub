@@ -7539,3 +7539,22 @@ O harness de entrada de Psique/Têmis conserva a auditoria e não pede nova infe
 para um arquivo encerrado. A matriz e os resultados da entrega ficam em
 [`mira-preparacao-historica-v1.md`](../homologacao/mira-preparacao-historica-v1.md).
 Testes não representam venda, receita ou margem; nenhum novo consumo pago foi iniciado.
+
+## 2026-10-06 — Capella: continuidade do ciclo aprovado entre processos
+
+A aprovação do ciclo #4 foi preservada no evento #30. Seu sucessor #5/experimento
+#98 já tinha planejamento concluído na execução #46 (Atena #591, Plutus #593 e
+Dédalo #594), mas a construção #117 permanecia sem execução. O histórico confirmou
+uma lacuna entre processos irmãos, não falta de aprovação nem falha da fila.
+
+O motor existente passa a registrar o aceite preparatório e enfileirar o próximo
+processo pelo mesmo resolvedor usado na tela. A preparação de um sucessor com decisão
+humana já aprovada registra sua execução inicial. Preserva ciclo, produto, experimento,
+versão da cadeia, pausas, STOP, tarefas e pareceres existentes. Não herda limite de
+mídia do #88, não reabre esse experimento e não concede orçamento audiovisual.
+
+Regressão local: dois produtos com IDs distintos, MySQL 5.7, execução concorrente,
+falha e rollback, replay, destino pausado e navegação desktop/celular. O harness foi
+ampliado no runner existente para prevenir nova conclusão sem passagem. Evidências
+e limites: `docs/homologacao/capella-passagem-processos-ciclo-v1.md` e
+`LOOP-CICLO-PROCESSO-CONCLUIDO-SEM-PASSAGEM` em `docs/registros/loops.md`.

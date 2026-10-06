@@ -9050,3 +9050,21 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
   divergente, falha de API e caminho anterior válido, com navegação desktop/mobile.
 - Limite: consulta e navegação sem efeitos; decisões, custos e autorizações ficam
   preservados. Matriz: `docs/homologacao/produto-navegacao-ciclo-v1.md`.
+
+## LOOP-CICLO-PROCESSO-CONCLUIDO-SEM-PASSAGEM — 06/10/2026
+
+- Evidência: Capella #7, ciclo #5/#98, execução #46 do processo #116 concluída,
+  eventos #30/#32 preservados; construção #117 sem tarefa. Backend publicado
+  `1f8a8f3380057128547aad938a5c3d567778bbab`. Subprocessos históricos retornaram ao
+  pai normalmente, descartando falha geral da fila.
+- Causa: a conclusão retira o processo da fila, mas não usa a orientação do ciclo
+  para registrar a etapa e abrir o processo irmão. A aprovação cria decisão; a
+  preparação aprovada não registrava a execução inicial.
+- Correção: reaproveitar motor, resolvedor, transação e diário; passagem explícita
+  `CYCLE_PROCESS_CONTINUED`, sem tarefas por nome/ID, reaprovação ou novo orçamento.
+  Preparação sem decisão humana continua limitada ao cadastro sem tarefas pagas.
+- Harness: regressões de produto alternativo, referências canônicas de construção,
+  pausa/STOP, replay, MySQL e objetivos incompletos. A aplicação local também passa
+  a fornecer o resolvedor de navegação e a verificação de propriedade de referências,
+  lacunas observadas na integração da fixture com os contratos já existentes.
+- Matriz e limites: `docs/homologacao/capella-passagem-processos-ciclo-v1.md`.

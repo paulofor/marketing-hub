@@ -49,6 +49,8 @@ import org.springframework.web.bind.annotation.*;
     exclude = {HibernateJpaAutoConfiguration.class, JpaRepositoriesAutoConfiguration.class})
 @EnableTransactionManagement
 @Import({
+  LearningCycleProcessContinuation.class,
+  com.marketinghub.product.service.valuechainposition.ProductLearningCycleNavigationResolver.class,
   LearningCycleService.class,
   com.marketinghub.businessprocesschain.learningcycle.v1.decision.service
       .LearningCycleSuccessorPreparation.class,
@@ -428,14 +430,20 @@ public class LearningCycleLocalApplication {
     return repository(factory, BusinessProcessActivityInstanceRepository.class);
   }
 
-  /** Simula apenas identidade e bloqueio de produto, preservando a persistência do ciclo. */
+  /** Simula identidade, mantendo o lock físico do produto na mesma transação do ciclo. */
   @Bean
-  ProductRepository products() {
+  ProductRepository products(DataSource source) {
     var repository = mock(ProductRepository.class);
     when(repository.findById(anyLong()))
         .thenAnswer(call -> Optional.ofNullable(product(call.getArgument(0))));
+    var jdbc = new org.springframework.jdbc.core.JdbcTemplate(source);
     when(repository.findLockedById(anyLong()))
-        .thenAnswer(call -> Optional.ofNullable(product(call.getArgument(0))));
+        .thenAnswer(
+            call -> {
+              Long id = call.getArgument(0);
+              jdbc.queryForObject("SELECT id FROM product WHERE id = ? FOR UPDATE", Long.class, id);
+              return Optional.ofNullable(product(id));
+            });
     when(repository.findValueChainSummaryById(anyLong()))
         .thenAnswer(
             call -> {
@@ -490,6 +498,13 @@ public class LearningCycleLocalApplication {
     var repository = mock(ExperimentRepository.class);
     when(repository.findById(anyLong()))
         .thenAnswer(call -> Optional.ofNullable(EXPERIMENTS.get(call.getArgument(0))));
+    when(repository.existsByIdAndProductId(anyLong(), anyLong()))
+        .thenAnswer(
+            call -> {
+              var experiment = EXPERIMENTS.get(call.<Long>getArgument(0));
+              return experiment != null
+                  && experiment.getProduct().getId().equals(call.getArgument(1));
+            });
     var jdbc = new org.springframework.jdbc.core.JdbcTemplate(source);
     var nextId =
         new java.util.concurrent.atomic.AtomicLong(

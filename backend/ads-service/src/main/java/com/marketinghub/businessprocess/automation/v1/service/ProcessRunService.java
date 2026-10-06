@@ -46,6 +46,11 @@ public class ProcessRunService {
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private ProcessRunAssumptionRecovery assumptionRecovery;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service
+          .LearningCycleProcessContinuation
+      cycleContinuation;
+
   /** Configura transações curtas e os contratos responsáveis pela execução real das atividades. */
   public ProcessRunService(
       ProcessRunRepository runs,
@@ -131,7 +136,7 @@ public class ProcessRunService {
         });
   }
 
-  /** Registra autorização durável no contexto e na versão publicada ou fixada pela ficha. */
+  /** Registra execução no contexto autorizado e continua a preparação cujas provas já existem. */
   public ProcessRunResponse start(Long productId, Long processId, ProcessRunCommand command) {
     return transaction.execute(
         ignored -> {
@@ -164,6 +169,7 @@ public class ProcessRunService {
                   run.getSourceReference(),
                   "chainId",
                   run.getChainDefinitionId()));
+          if ("COMPLETED".equals(run.getStatus())) continueCycle(run);
           return response(run);
         });
   }
@@ -187,7 +193,7 @@ public class ProcessRunService {
 
   /**
    * Confere resultados antes de nova tentativa e recusa contextos sem autorização, inclusive na
-   * origem de uma delegação, preservando conclusões já comprovadas.
+   * origem de uma delegação, preservando conclusões e recuperando sua passagem no ciclo aberto.
    */
   public ProcessRunResponse resume(Long productId, Long processId, Long runId) {
     return locked(
@@ -205,7 +211,7 @@ public class ProcessRunService {
               if (!revalidation) {
                 updateCounts(run, readiness);
                 complete(run);
-              }
+              } else continueCycle(run);
               return response(run);
             }
             requirePlay(productId);
@@ -764,8 +770,9 @@ public class ProcessRunService {
             .noneMatch(a -> ACTIVE_TASK.contains(a.operationalState()));
   }
 
-  /** Registra conclusão comprovada e remove os atalhos que já não representam pendências. */
+  /** Registra conclusão comprovada e encaminha a preparação restante do mesmo ciclo. */
   private void complete(ProcessRun run) {
+    boolean continuePreparation = !"PAUSING".equals(run.getStatus());
     run.setCurrentActivityId(null);
     run.setCurrentActivityName(null);
     run.setCurrentOwnerName(null);
@@ -777,6 +784,55 @@ public class ProcessRunService {
         "COMPLETED",
         "Todos os objetivos aplicáveis foram comprovados pelos contratos do processo.",
         "COMPLETED");
+    if (continuePreparation) continueCycle(run);
+  }
+
+  /** Enfileira um único processo irmão pelo contrato existente e registra o vínculo no diário. */
+  private void continueCycle(ProcessRun run) {
+    if (cycleContinuation == null
+        || run.getLearningCycleId() == null
+        || run.getParentRunId() != null
+        || dispatchBlockReason(run) != null
+        || ancestorPaused(run)) return;
+    var continuation = cycleContinuation.next(run);
+    if (continuation == null) return;
+    var next = continuation.work();
+    var destination =
+        start(
+            run.getProductId(),
+            next.processDefinitionId(),
+            new ProcessRunCommand(
+                run.getChainDefinitionId(),
+                run.getLearningCycleId(),
+                continuation.sourceReference()));
+    String key = "cycle-continuation:" + destination.id();
+    if (events.existsByRunIdAndActionKey(run.getId(), key)) return;
+    run.setNavigationUrl(next.url());
+    event(
+        run,
+        "CYCLE_PROCESS_CONTINUED",
+        "Preparação encaminhada ao processo "
+            + next.processName()
+            + " · execução #"
+            + destination.id()
+            + ".",
+        key,
+        Map.of(
+            "cycleId",
+            run.getLearningCycleId(),
+            "sourceReference",
+            run.getSourceReference(),
+            "nextRunId",
+            destination.id(),
+            "nextProcessDefinitionId",
+            next.processDefinitionId()));
+    log.info(
+        "Continuidade do ciclo productId={} cycleId={} originRunId={} nextRunId={} processId={}",
+        run.getProductId(),
+        run.getLearningCycleId(),
+        run.getId(),
+        destination.id(),
+        next.processDefinitionId());
   }
 
   /** Consolida contagens e custo oficiais sem tratar omissão como sucesso ou ausência como zero. */

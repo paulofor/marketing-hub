@@ -609,3 +609,26 @@ abertura do workspace não migra ciclos, altera status comercial, reabre experim
 encerrado, aprova estratégia, inicia tarefa ou autoriza gasto. No ciclo, a atividade
 delegada e seus critérios continuam vindo dos contratos canônicos do backend.
 Validação: `docs/homologacao/produto-navegacao-ciclo-v1.md`.
+
+## Passagem automática entre processos preparatórios — decisão de 06/10/2026
+
+A aprovação do ajuste e a execução autorizada de seu sucessor não devem exigir um
+novo clique ao terminar cada processo. O backend reutiliza o motor durável existente:
+comprova a conclusão do planejamento, registra a passagem no ciclo e enfileira a
+construção; concluída a construção, encaminha a comunicação no mesmo contexto.
+O mesmo resolvedor determina a próxima atividade na tela e na execução. A preparação
+que reutiliza decisão humana aprovada registra a execução inicial na mesma transação.
+A preparação automática sem essa decisão continua sem iniciar novas tarefas pagas.
+
+Somente processos preparatórios do ciclo aberto participam. Produto, experimento,
+versão da cadeia e ciclo permanecem fixos; não adotar tarefas de outra ocorrência.
+STOP, pausa, reprovação, entradas ausentes, limites de consumo e aprovações comerciais
+continuam válidos. Parecer econômico é evidência, nunca autorização de desembolso.
+A política não reabre processos históricos nem dispara retentativa paga; recuperação
+explícita de uma execução concluída confere suas provas e reaproveita a próxima
+execução, inclusive se estiver pausada. Leituras administrativas não geram efeitos.
+
+A passagem e a execução de destino ficam no diário existente, com origem automática,
+sem fingir aprovação humana. Somente os trabalhos comprovados concluem a etapa do
+ciclo. Audiovisual, homologação final, orçamento, janela e publicação conservam seus
+contratos próprios; o avanço preparatório não amplia os limites autorizados.

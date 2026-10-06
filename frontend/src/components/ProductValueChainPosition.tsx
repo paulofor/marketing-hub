@@ -202,6 +202,7 @@ export default function ProductValueChainPosition({
               : undefined
           }
           isPositionError={isError}
+          navigation={position.learningCycleNavigation}
         />
         <details className="product-value-chain-position__history">
           <summary>Histórico da cadeia · tempo e custo acumulados</summary>

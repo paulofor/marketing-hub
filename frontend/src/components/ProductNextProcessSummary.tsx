@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { useProductProcessActivityHistory } from "../api/businessProcess/useProductProcessActivityExecutions";
 import type { ProductValueChainPosition } from "../api/product/useProductValueChainPositions";
 import ProductNextProcessLink from "./ProductNextProcessLink";
+import ProductLearningCycleNavigationLink from "./ProductLearningCycleNavigationLink";
 
-/** Abre o processo do trabalho oficial dos produtos que ainda não possuem ciclo de vendas. */
+/** Prioriza o ciclo pendente do backend e preserva o processo oficial quando não existe ciclo. */
 export default function ProductNextProcessSummary({
   position,
   isPositionError = false,
@@ -15,6 +16,12 @@ export default function ProductNextProcessSummary({
   onParentProcessCompletionChange?: (completed: boolean) => void;
 }) {
   const subprocess = position.subprocessPosition;
+  const navigation = position.learningCycleNavigation;
+  const cycleNavigation =
+    navigation?.productId === position.productId &&
+    navigation.chainDefinitionId === position.chainDefinitionId
+      ? navigation
+      : null;
   const processId =
     subprocess?.currentSubprocessDefinitionId ?? position.processDefinitionId;
   const processNumber = subprocess?.currentSubprocessDefinitionId
@@ -24,7 +31,7 @@ export default function ProductNextProcessSummary({
       : null
     : position.sequenceNumber;
   const query = useProductProcessActivityHistory(
-    isPositionError ? undefined : position.productId,
+    isPositionError || cycleNavigation ? undefined : position.productId,
     processId ?? undefined,
     undefined,
     position.chainDefinitionId ?? undefined,
@@ -88,6 +95,9 @@ export default function ProductNextProcessSummary({
     query.isError ||
     !consistent ||
     Boolean(data?.currentActivityId && !activity);
+
+  if (cycleNavigation && !isPositionError)
+    return <ProductLearningCycleNavigationLink navigation={cycleNavigation} />;
 
   if (isPositionError || processId == null)
     return (

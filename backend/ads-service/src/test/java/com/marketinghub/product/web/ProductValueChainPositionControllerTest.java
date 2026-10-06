@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.marketinghub.product.service.valuechainposition.ProductLearningCycleNavigationResponse;
 import com.marketinghub.product.service.valuechainposition.ProductProcessContinuationResponse;
 import com.marketinghub.product.service.valuechainposition.ProductValueChainPositionResponse;
 import com.marketinghub.product.service.valuechainposition.ProductValueChainPositionService;
@@ -18,7 +19,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /** Responsabilidade: validar o contrato HTTP da posição do produto na cadeia de valor. */
 class ProductValueChainPositionControllerTest {
-  /** Expõe posição, nome humano e navegação canônica do processo atual. */
+  /** Expõe posição, continuação do processo e navegação do ciclo no contrato HTTP existente. */
   @Test
   void listsProductValueChainPositions() throws Exception {
     ProductValueChainPositionService service = mock(ProductValueChainPositionService.class);
@@ -46,7 +47,16 @@ class ProductValueChainPositionControllerTest {
                         4,
                         5),
                     List.of(),
-                    null)));
+                    null,
+                    new ProductLearningCycleNavigationResponse(
+                        9L,
+                        92005L,
+                        92098L,
+                        5L,
+                        "DECISION",
+                        "OPEN",
+                        "Analisar o ciclo.",
+                        "/business-process-chains/learning-cycles?productId=9&chainId=5"))));
     var mockMvc =
         MockMvcBuilders.standaloneSetup(new ProductValueChainPositionController(service)).build();
 
@@ -59,6 +69,10 @@ class ProductValueChainPositionControllerTest {
         .andExpect(jsonPath("$[0].sequenceNumber").value(4))
         .andExpect(jsonPath("$[0].nextProcess.processDefinitionId").value(45L))
         .andExpect(jsonPath("$[0].nextProcess.sequenceNumber").value(5))
+        .andExpect(jsonPath("$[0].learningCycleNavigation.cycleId").value(92005L))
+        .andExpect(
+            jsonPath("$[0].learningCycleNavigation.url")
+                .value("/business-process-chains/learning-cycles?productId=9&chainId=5"))
         .andExpect(jsonPath("$[0].processCount").value(6));
   }
 

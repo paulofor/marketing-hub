@@ -9,14 +9,18 @@ import static org.mockito.Mockito.when;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocesschain.BusinessProcessChainDefinition;
 import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
+import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
+import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.product.ProductValueChainSummaryProduct;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /** Responsabilidade: comprovar a resolução canônica do produto na cadeia de valor PDE. */
 class ProductValueChainPositionServiceTest {
@@ -44,7 +48,8 @@ class ProductValueChainPositionServiceTest {
             chainRepository,
             mock(ProductSubprocessPositionResolver.class),
             new PdeProcessCodeResolver(),
-            mock(ProductStageMeasurementResolver.class));
+            mock(ProductStageMeasurementResolver.class),
+            mock(ProductLearningCycleNavigationResolver.class));
 
     var positions = service.listPositions();
 
@@ -87,7 +92,8 @@ class ProductValueChainPositionServiceTest {
             chainRepository,
             mock(ProductSubprocessPositionResolver.class),
             new PdeProcessCodeResolver(),
-            mock(ProductStageMeasurementResolver.class));
+            mock(ProductStageMeasurementResolver.class),
+            mock(ProductLearningCycleNavigationResolver.class));
 
     var position = service.listPositions().getFirst();
 
@@ -112,7 +118,8 @@ class ProductValueChainPositionServiceTest {
             chainRepository,
             mock(ProductSubprocessPositionResolver.class),
             new PdeProcessCodeResolver(),
-            mock(ProductStageMeasurementResolver.class));
+            mock(ProductStageMeasurementResolver.class),
+            mock(ProductLearningCycleNavigationResolver.class));
 
     var position = service.listPositions().getFirst();
 
@@ -145,7 +152,8 @@ class ProductValueChainPositionServiceTest {
             chainRepository,
             mock(ProductSubprocessPositionResolver.class),
             new PdeProcessCodeResolver(),
-            measurementResolver);
+            measurementResolver,
+            mock(ProductLearningCycleNavigationResolver.class));
 
     var position = service.getPosition(9L);
 
@@ -179,7 +187,8 @@ class ProductValueChainPositionServiceTest {
             chainRepository,
             subprocessResolver,
             new PdeProcessCodeResolver(),
-            measurementResolver);
+            measurementResolver,
+            mock(ProductLearningCycleNavigationResolver.class));
 
     var summary = service.getSummary(4L);
 
@@ -223,7 +232,8 @@ class ProductValueChainPositionServiceTest {
             chainRepository,
             subprocessResolver,
             new PdeProcessCodeResolver(),
-            measurementResolver);
+            measurementResolver,
+            mock(ProductLearningCycleNavigationResolver.class));
 
     var positions = service.listPositions(true);
 
@@ -246,6 +256,55 @@ class ProductValueChainPositionServiceTest {
             org.mockito.ArgumentMatchers.any(BusinessProcessDefinition.class),
             org.mockito.ArgumentMatchers.eq(4),
             org.mockito.ArgumentMatchers.same(context));
+  }
+
+  /** Expõe o ciclo pendente na listagem e no detalhe sem alterar a posição comercial histórica. */
+  @ParameterizedTest
+  @CsvSource({"7,5,98", "92001,92005,92098"})
+  void projectsPendingCycleIndependentlyOfCommercialStatus(
+      Long productId, Long cycleId, Long experimentId) {
+    var products = mock(ProductRepository.class);
+    var chains = mock(BusinessProcessChainDefinitionRepository.class);
+    var cycles = mock(LearningSalesCycleRepository.class);
+    var product = product(productId, "VALIDACAO_COMERCIAL");
+    var chain = chain();
+    chain.setId(26L);
+    var cycle = new LearningSalesCycle();
+    cycle.setId(cycleId);
+    cycle.setProductId(productId);
+    cycle.setChainDefinitionId(26L);
+    cycle.setChainCode(chain.getChainCode());
+    cycle.setExperimentId(experimentId);
+    cycle.setStage("ADJUSTMENT");
+    cycle.setStatus("OPEN");
+    when(products.findAllInPlayState()).thenReturn(List.of(product));
+    when(products.findById(productId)).thenReturn(Optional.of(product));
+    when(chains.findAllByChainCodeAndStatusOrderByVersionNumberDesc(
+            chain.getChainCode(), "PUBLISHED"))
+        .thenReturn(List.of(chain));
+    when(cycles.findFirstByProductIdAndChainDefinitionIdOrderByIdDesc(productId, 26L))
+        .thenReturn(Optional.of(cycle));
+    var service =
+        new ProductValueChainPositionService(
+            products,
+            chains,
+            mock(ProductSubprocessPositionResolver.class),
+            new PdeProcessCodeResolver(),
+            mock(ProductStageMeasurementResolver.class),
+            new ProductLearningCycleNavigationResolver(cycles));
+
+    var listed = service.listPositions(true).getFirst();
+    var detail = service.getPosition(productId);
+
+    assertThat(listed).isEqualTo(detail);
+    assertThat(detail.sequenceNumber()).isEqualTo(5);
+    assertThat(detail.commercialStatus()).isEqualTo("VALIDACAO_COMERCIAL");
+    assertThat(detail.learningCycleNavigation().cycleId()).isEqualTo(cycleId);
+    assertThat(detail.learningCycleNavigation().url())
+        .isEqualTo(
+            "/business-process-chains/learning-cycles?productId=" + productId + "&chainId=26");
+    verify(products, never()).save(org.mockito.ArgumentMatchers.any());
+    verify(cycles, never()).save(org.mockito.ArgumentMatchers.any());
   }
 
   /** Monta um produto enxuto para representar um estado comercial. */

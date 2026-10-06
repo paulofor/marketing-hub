@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import type { SalesFlow } from "../api/learningCycle/salesFlow";
 import { useCycleProcessContext } from "../api/learningCycle/useCycleProcessContext";
 import ProductNextProcessLink from "./ProductNextProcessLink";
+import ProductLearningCycleNavigationLink from "./ProductLearningCycleNavigationLink";
+import type { ProductLearningCycleNavigation } from "../api/product/useProductValueChainPositions";
 import "./ProductValueChainCycleSummary.css";
 
 const cycleStatuses: Record<string, string> = {
@@ -17,11 +19,13 @@ export default function ProductValueChainCycleSummary({
   processNumber,
   processName,
   isPositionError = false,
+  navigation,
 }: {
   flow: SalesFlow;
   processNumber?: number | null;
   processName?: string | null;
   isPositionError?: boolean;
+  navigation?: ProductLearningCycleNavigation | null;
 }) {
   const query = useCycleProcessContext(
     flow.productId,
@@ -35,6 +39,14 @@ export default function ProductValueChainCycleSummary({
     context?.experimentId === flow.experimentId &&
     context?.chainDefinitionId === flow.chainDefinitionId;
   const unavailable = query.isError || isPositionError || !consistent;
+  const cycleNavigation =
+    navigation?.productId === flow.productId &&
+    navigation.chainDefinitionId === flow.chainDefinitionId &&
+    navigation.cycleId === flow.cycleId &&
+    navigation.experimentId === flow.experimentId &&
+    !isPositionError
+      ? navigation
+      : null;
   const current = context?.status === "OPEN";
   const work = current ? context?.nextWork : null;
   const previousExperiments = [
@@ -65,6 +77,9 @@ export default function ProductValueChainCycleSummary({
         · Experimento #{flow.experimentId}
       </h3>
 
+      {cycleNavigation ? (
+        <ProductLearningCycleNavigationLink navigation={cycleNavigation} />
+      ) : null}
       {query.isLoading && !query.isFetched ? (
         <p role="status">
           Consultando o processo e o aprendizado deste ciclo...
@@ -94,7 +109,17 @@ export default function ProductValueChainCycleSummary({
         </div>
       ) : (
         <>
-          {work ? (
+          {cycleNavigation && work ? (
+            <p className="product-cycle-summary__stage">
+              Próxima atividade no ciclo:{" "}
+              <Link to={work.url}>{work.activityName}</Link>
+              <small>
+                {" "}
+                · Responsável: {work.responsible || "Não informado"}
+              </small>
+            </p>
+          ) : null}
+          {cycleNavigation ? null : work ? (
             <ProductNextProcessLink {...work} />
           ) : current ? (
             <>

@@ -90,6 +90,41 @@ class LearningCycleRulesTest {
     assertDoesNotThrow(() -> LearningCycleRules.validateMetrics(cycle(), metrics(), NOW));
   }
 
+  /** Métricas de degustação inaplicáveis ao kit ficam ausentes, sem fingir zero comercial. */
+  @Test
+  void acceptsOnlyExplicitAutomaticQuartzoNotApplicableMetrics() {
+    var data = metrics();
+    data.put("contractVersion", "LEARNING_CYCLE_AUTOMATIC_MEASUREMENT_V2");
+    data.put("automatic", true);
+    data.putObject("sources").putObject("leadPortalAnalytics").put("publicationId", 32);
+    data.putArray("notApplicableMetrics").add("starts").add("firstResults");
+    data.putNull("starts");
+    data.putNull("firstResults");
+    assertDoesNotThrow(() -> LearningCycleRules.validateMetrics(cycle(), data, NOW));
+    data.putNull("netSales");
+    data.withArray("notApplicableMetrics").add("netSales");
+    assertThrows(
+        ResponseStatusException.class,
+        () -> LearningCycleRules.validateMetrics(cycle(), data, NOW));
+    data.put("netSales", 10);
+    data.put("automatic", false);
+    assertThrows(
+        ResponseStatusException.class,
+        () -> LearningCycleRules.validateMetrics(cycle(), data, NOW));
+  }
+
+  /** A origem PDE e ausência sem declaração continuam exigindo as contagens completas. */
+  @Test
+  void doesNotAllowUnknownOrPdeMetricsToBecomeNotApplicable() {
+    var data = metrics();
+    data.putNull("starts");
+    data.putNull("firstResults");
+    data.putArray("notApplicableMetrics").add("starts").add("firstResults");
+    assertThrows(
+        ResponseStatusException.class,
+        () -> LearningCycleRules.validateMetrics(cycle(), data, NOW));
+  }
+
   /** Orçamento zero permite coleta orgânica, mas não disfarça gasto de mídia não autorizado. */
   @Test
   void zeroBudgetNeverAuthorizesPositiveMediaSpend() {

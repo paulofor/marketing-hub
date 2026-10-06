@@ -361,6 +361,25 @@ evidência e decide o próximo movimento comercial. O BPM v3 torna essa responsa
   anterior conservam sua definição original, mas usam a reconciliação automática compatível antes
   de decidir; novas ocorrências usam o BPM v3 publicado.
 
+### Fonte da medição conforme o formato — conciliação Quartzo em 05/10/2026
+
+- O kit `LOW_TICKET_DIGITAL_PRODUCT` usa publicação GeraSalesPage auditada, eventos normalizados
+  do experimento e pagamentos persistidos do Lead Portal. Não exige slot nem assinatura PDE.
+  Os produtos que usam PDE continuam no leitor de slot, versão e eventos canônicos já existente.
+- O contrato `LEARNING_CYCLE_AUTOMATIC_MEASUREMENT_V2` preserva visitantes, sessões, checkouts,
+  vendas, moeda, custos e assinatura. Em kits pós-compra, `starts` e `firstResults` são `null`,
+  declarados em `notApplicableMetrics`; não são zero nem prova de experiência sem resultado.
+  A exceção exige fonte automática do Lead Portal e publicação auditada, e nunca dispensa vendas,
+  receita ou denominadores. Os eventos brutos continuam auditáveis, com QA, bots e desconhecidos
+  fora dos totais comerciais.
+- Checkout compartilhado só atribui compra por experimento/campanha explícitos ou fluxo exclusivo.
+  Pagamento exige referência única, data de aprovação, valor positivo e BRL. Reembolso ou chargeback
+  sem conciliação temporal suficiente bloqueia a fotografia, sem presumir receita líquida.
+  Entrega exige ZIP gerado e envio registrado até o fim da janela; não comprova uso ou satisfação.
+- Conciliação histórica permite decidir o aprendizado e preserva revisões e limites anteriores.
+  Ela não renova aprovação vencida, publica campanha nem autoriza gasto do sucessor. Revisões da
+  mesma página podem coexistir na história; a leitura agregada não prova efeito causal de uma delas.
+
 ### Publicação histórica sem run — contrato de adoção
 
 Uma campanha antiga pode ter sido publicada pelo callback oficial antes de possuir run no modelo

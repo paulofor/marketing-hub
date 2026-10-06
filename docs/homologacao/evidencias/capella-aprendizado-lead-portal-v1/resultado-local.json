@@ -1,0 +1,51 @@
+{
+  "recordedAt": "2026-10-06T00:05:26.778584+00:00",
+  "commercialEvidence": false,
+  "scope": "Conciliação de ciclos Quartzo pelo Lead Portal; ambiente local isolado",
+  "backendSuite": {
+    "tests": 4020,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 27,
+    "executedPassed": 3993,
+    "skippedScope": "Casos condicionais de outros fluxos; nenhum aceite desta solicitação depende deles."
+  },
+  "mysql57Contract": {
+    "tests": 17,
+    "failures": 0,
+    "errors": 0
+  },
+  "pdeRegressionAndArchitecture": true,
+  "browserProfiles": [
+    "Chromium desktop",
+    "iPhone 15 Pro",
+    "Pixel 7"
+  ],
+  "externalProductionCallsFromBrowser": 0,
+  "simulatedModel": true,
+  "bpmPassages": [
+    "ADOPT_BASELINE",
+    "MEASURE",
+    "DECISION",
+    "ADJUST",
+    "SUCCESSOR_LINKED",
+    "LEARNING_TO_PLANNING"
+  ],
+  "h2Contract": {
+    "tests": 59,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "finalMysql57ContractAndArchitecture": {
+    "tests": 151,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "limitations": [
+    "Modelo Atena simulado apenas em sandbox; não comprova parecer comercial.",
+    "Resultados de fixtures não são dados de venda.",
+    "Publicação e execução real do Capella ainda dependem da entrega pelo PR."
+  ]
+}

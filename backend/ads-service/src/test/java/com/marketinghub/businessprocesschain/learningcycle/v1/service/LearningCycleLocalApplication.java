@@ -302,7 +302,9 @@ public class LearningCycleLocalApplication {
     return repository(factory, LearningSalesCycleEventRepository.class);
   }
 
-  /** Simula as fontes oficiais já conciliadas sem acessar Meta, checkout ou tráfego reais. */
+  /**
+   * Simula fontes externas ou reutiliza fotografia exportada pelo teste SQL sem acesso produtivo.
+   */
   @Bean
   LearningCycleMeasurementCollector measurements(ObjectMapper mapper) {
     var collector = mock(LearningCycleMeasurementCollector.class);
@@ -316,6 +318,15 @@ public class LearningCycleLocalApplication {
               Instant periodEnd =
                   observedAt.isBefore(cycle.getWindowEnd()) ? observedAt : cycle.getWindowEnd();
               Map<String, Object> source = MEASUREMENTS.getOrDefault(experiment.getId(), Map.of());
+              if (source.containsKey("evidence")) {
+                var verified = mapper.valueToTree(source.get("evidence"));
+                LearningCycleRules.validateMetrics(cycle, verified, observedAt);
+                return new LearningCycleMeasurementCollector.Result(
+                    true,
+                    verified,
+                    "Conciliação local exportada do teste SQL do Lead Portal.",
+                    "internal://fixture/sql-measurement/" + experiment.getId());
+              }
               String snapshot = String.valueOf(source.getOrDefault("snapshot", "v1"));
               var evidence = mapper.createObjectNode();
               evidence.put("contractVersion", LearningCycleMeasurementCollector.CONTRACT);

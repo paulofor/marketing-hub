@@ -18,6 +18,11 @@ info:
     Ao entrar em MEASUREMENT, o backend concilia automaticamente analytics atribuído,
     canal, desfechos financeiros, custos e valor entregue. A tela não envia métricas.
     Fonte indisponível ou inconsistente persiste MEASUREMENT_BLOCKED e nunca vira zero.
+    Kits LOW_TICKET_DIGITAL_PRODUCT usam publicação auditada, analytics e pagamentos do Lead Portal,
+    sem exigir slot PDE. Na fotografia automática v2, starts e firstResults ficam null com
+    notApplicableMetrics explícito, exclusivamente para métricas de degustação inaplicáveis ao kit.
+    Visitas, sessões, checkouts, vendas, receita e custos continuam obrigatórios. Checkout compartilhado
+    sem atribuição, pagamento sem referência/data/valor/BRL e reembolso não conciliável bloqueiam.
     Adoção histórica aceita run produtivo publicado ou recibo externo datado da campanha Meta
     do próprio experimento. Persiste evento ADOPT_BASELINE com source, experimentId, reference,
     recordedAt, preflightRecorded e summary. A lacuna histórica não dispensa run/preflight do sucessor.

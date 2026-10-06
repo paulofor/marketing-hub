@@ -7274,6 +7274,28 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   reutilização leem somente a última revisão por SQL, prevenindo também
   `LOOP-OPALA-HISTORICO-RECARREGA-PROMPTS-POR-ATIVIDADE`.
 
+### Recorrência na conciliação do aprendizado — 05/10/2026
+
+- **Histórico confirmado:** Capella #7/#88 permanece encerrado, com página auditada do
+  GeraSalesPage e dados comerciais no Lead Portal: seis visitantes humanos distintos em seis
+  sessões, sete page_views e nenhuma compra. A preparação #94 foi concluída no contrato Quartzo;
+  o coletor de ciclos ainda exigia slot PDE. O caminho PDE de Vega já conciliava corretamente.
+- **Causa reproduzida:** a medição automática reaplicava um contrato de aplicação a um kit
+  pós-compra. O teste local original falhou com `PDE_ANALYTICS_SLOT_REQUIRED`; inventar slot,
+  repetir homologação ou digitar métricas manualmente não corrigiria a fonte.
+- **Correção reutilizável:** seleção pelo tipo canônico, leitura JDBC do Lead Portal, publicação
+  auditada, identidade e janela exatas, pagamentos atribuídos, mídia e ledger existentes. Métricas
+  de degustação inaplicáveis ficam `null`; entrega nunca substitui uso ou satisfação. Checkout
+  compartilhado, moeda, referência, data ausente, reembolso e falha de fonte bloqueiam a leitura.
+- **Prevenção:** testes do coletor e SQL cobrem o Capella, outro kit e IDs de fixture; o caminho
+  PDE anterior permanece validado. MySQL 5.7 reproduziu conflito entre a collation da conexão e
+  a da coluna ao usar `CAST(id AS CHAR)`; `CONCAT(id, '')` conserva a comparação textual sem impor
+  a collation da conexão e funciona no H2 de testes. Fixtures exercitam a conexão real, QA/bots,
+  recorte e compartilhamento.
+  A fotografia SQL alimenta o harness já existente do BPM e da UI, sem duplicar conciliadores.
+- **Limites:** não conclui demanda com amostra pequena, não renova #88 nem atribui orçamento
+  histórico ao #94/#96. Matriz e resultados: `docs/homologacao/capella-aprendizado-lead-portal-v1.md`.
+
 ### Comprovação Quartzo descartada após serialização — 20/09/2026
 
 - **Histórico confirmado:** a execução #12 de Capella persistiu a instância #318

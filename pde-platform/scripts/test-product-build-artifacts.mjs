@@ -34,6 +34,38 @@ async function compiledSurface(relativeDirectory) {
   };
 }
 
+/** Percorre apenas o grafo de recursos carregado por uma entrada HTML, incluindo chunks compartilhados. */
+async function compiledEntry(relativeDirectory, entry) {
+  const directory = path.join(repositoryRoot, relativeDirectory);
+  const pending = [path.join(directory, entry)];
+  const seen = new Set();
+  const contents = [];
+  while (pending.length) {
+    const file = pending.pop();
+    if (seen.has(file)) continue;
+    assert.ok(
+      !path.relative(directory, file).startsWith(".."),
+      "[ARQUITETURA] Recurso compilado escapou do diretório da superfície.",
+    );
+    seen.add(file);
+    const text = await readFile(file, "utf8");
+    contents.push(text);
+    for (const match of text.matchAll(
+      /["']((?:\/assets\/|\.\.?\/)[^"']+\.(?:js|css))["']/g,
+    )) {
+      pending.push(
+        match[1].startsWith("/")
+          ? path.join(directory, match[1].slice(1))
+          : path.resolve(path.dirname(file), match[1]),
+      );
+    }
+  }
+  return {
+    names: [...seen].map((file) => path.relative(directory, file)).join("\n"),
+    text: contents.join("\n"),
+  };
+}
+
 test("o bundle de Vega não contém a superfície de Mira", async () => {
   const vega = await compiledSurface("pde-platform/frontend/dist");
   assert.doesNotMatch(
@@ -62,8 +94,9 @@ test("o bundle comercial de Mira não contém a pesquisa privada nem Vega", asyn
     ),
     "utf8",
   );
-  const commercial = await compiledSurface(
+  const commercial = await compiledEntry(
     "pde-platform/frontend/dist-mira-commercial",
+    "mira-commercial.html",
   );
   assert.match(commercial.names, /mira-commercial\.html/);
   assert.match(commercial.text, /Cuide de você com mais clareza/);
@@ -75,8 +108,22 @@ test("o bundle comercial de Mira não contém a pesquisa privada nem Vega", asyn
   );
   assert.doesNotMatch(
     `${commercial.names}\n${commercial.text}`,
-    /mira-private|acesso privado|Clube MUSA|metodo-musa-7-dias|musa-pde-entry/i,
+    /mira-private|mira-candidate|acesso privado|Clube MUSA|metodo-musa-7-dias|musa-pde-entry/i,
     "[ARQUITETURA] A imagem comercial de Mira contém artefato privado ou de Vega.",
+  );
+});
+
+test("a candidata de Mira usa entrada própria sem carregar a página comercial ou outros produtos", async () => {
+  const candidate = await compiledEntry(
+    "pde-platform/frontend/dist-mira-commercial",
+    "mira-candidate.html",
+  );
+  assert.match(candidate.text, /Coloque ordem nos cuidados que você já tem/);
+  assert.match(candidate.text, /noindex, nofollow, noarchive/);
+  assert.doesNotMatch(
+    `${candidate.names}\n${candidate.text}`,
+    /Cuide de você com mais clareza|mira-commercial|mira-private|Clube MUSA|metodo-musa-7-dias/i,
+    "[ARQUITETURA] A candidata privada de Mira carregou uma superfície histórica ou de outro produto.",
   );
 });
 

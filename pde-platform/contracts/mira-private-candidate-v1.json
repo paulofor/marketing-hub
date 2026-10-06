@@ -25,17 +25,32 @@
     "automaticDeployOnMerge": false,
     "frontendVersion": "mira-commercial",
     "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate",
-    "requiredFrontendSourceSha256": "634e6fb136cba3d5ac322b07646ee390e455c5a8d0c672dedfb9ee1806e46827"
+    "requiredFrontendSourceSha256": "3d96f6e5a4f46ce615b761de16764587db2e6d268cc63648ec562480c384a822"
   },
   "liveVisualContract": {
     "runtimeIdentity": {
       "version": "mira-commercial-v1",
       "experienceVersion": "mira-commercial-v1",
-      "frontendSourceSha256": "634e6fb136cba3d5ac322b07646ee390e455c5a8d0c672dedfb9ee1806e46827"
+      "frontendSourceSha256": "3d96f6e5a4f46ce615b761de16764587db2e6d268cc63648ec562480c384a822"
     },
     "diagnosticsUrl": "https://mira.digicomdigital.com.br/mira-candidate/version-diagnostics.json"
   },
   "implementationEvidence": [
+    {
+      "path": "pde-platform/frontend/mira-candidate.html",
+      "sha256": "56023ac769d7b41c0f03a285d9af803293583e5ee6e4febfd5541a99333a6207",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MiraCandidateEntry.tsx",
+      "sha256": "266bb93ab40eb151fa7aa9b2cc9d2d1d19c6a70ff8c859f72bc320d9f2f41173",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/vite.mira-commercial.config.ts",
+      "sha256": "d97422427de7433508cf72456b23095d507a5139a2272671a4e048c7658ae002",
+      "promptMode": "FULL"
+    },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleService.java",
       "sha256": "b7b88a338dd96ac8bfadb896adc7ab7954360b68353be24f9f18f84265c1925c",
@@ -78,7 +93,7 @@
     },
     {
       "path": "pde-platform/frontend/nginx.mira-commercial.conf",
-      "sha256": "07834639bb7630bd32544678e40b9d7250da6a314b0aa7dcbf315d3e3a589c10",
+      "sha256": "1f8e0ae0e2cde3e3cc36a48caa54e9f827196e7add05bb52ec261bc674e2b665",
       "promptMode": "FULL"
     },
     {
@@ -93,6 +108,11 @@
     }
   ],
   "executableEvidence": [
+    {
+      "path": "pde-platform/scripts/test-product-build-artifacts.mjs",
+      "sha256": "e550e660fb0ad8516ede597d3174b388b0f0a01ff0c837419f2386f4e76362a8",
+      "promptMode": "FULL"
+    },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePrototypeRegistrationTest.java",
       "sha256": "c8dc7e007ecc57a20b79f5983b672de7992144211e9564c4682ed355a069b013",

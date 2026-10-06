@@ -15,7 +15,7 @@
     "publicUrl": "https://mira.digicomdigital.com.br/"
   },
   "status": "READY_FOR_INDEPENDENT_REVIEW",
-  "boundary": "Publica código privado no runtime próprio de Mira, preservando byte a byte a aplicação comercial e seus ativos históricos. A candidata privada usa rota e backend próprios; nenhum experimento é ativado nem nova mídia/cobrança autorizada.",
+  "boundary": "Publica código privado no runtime próprio de Mira, preservando o código fonte comercial, seu fluxo e os ativos históricos. A candidata privada usa rota e backend próprios; nenhum experimento é ativado nem nova mídia/cobrança autorizada.",
   "operationalState": {
     "verifiedAt": "2026-10-06",
     "experimentStatus": "PAUSED",
@@ -41,7 +41,7 @@
     "automaticDeployOnMerge": true,
     "frontendVersion": "mira-commercial",
     "publicUrl": "https://mira.digicomdigital.com.br/",
-    "requiredFrontendSourceSha256": "634e6fb136cba3d5ac322b07646ee390e455c5a8d0c672dedfb9ee1806e46827"
+    "requiredFrontendSourceSha256": "3d96f6e5a4f46ce615b761de16764587db2e6d268cc63648ec562480c384a822"
   },
   "liveVisualContract": {
     "devices": [
@@ -75,7 +75,7 @@
     "runtimeIdentity": {
       "version": "mira-commercial-v1",
       "experienceVersion": "mira-commercial-v1",
-      "frontendSourceSha256": "634e6fb136cba3d5ac322b07646ee390e455c5a8d0c672dedfb9ee1806e46827"
+      "frontendSourceSha256": "3d96f6e5a4f46ce615b761de16764587db2e6d268cc63648ec562480c384a822"
     }
   },
   "mediaContract": {
@@ -127,7 +127,7 @@
   "homologationEvidence": [
     {
       "path": "pde-platform/contracts/mira-private-candidate-v1.json",
-      "sha256": "3b93b1cdd57a8dac840a694ba71640c5dde0cfa3ade68ee97efe620c4d9bf48d",
+      "sha256": "f08cb016c188ec85e7bfac3b9a31b96559341fc19b906eecc53602535b330ee2",
       "promptMode": "FULL"
     }
   ],
@@ -139,12 +139,12 @@
     },
     {
       "path": "pde-platform/frontend/src/MiraCommercialEntry.tsx",
-      "sha256": "8d39cdc994a19881df25e9cf65f800279a1ff07471003fad006266b2b8c82646",
+      "sha256": "50c40288beeb40593e43e88a78a995bfe3aa7499f057dc19031d44d4c8a6ba36",
       "promptMode": "FULL"
     },
     {
       "path": "pde-platform/frontend/nginx.mira-commercial.conf",
-      "sha256": "07834639bb7630bd32544678e40b9d7250da6a314b0aa7dcbf315d3e3a589c10",
+      "sha256": "1f8e0ae0e2cde3e3cc36a48caa54e9f827196e7add05bb52ec261bc674e2b665",
       "promptMode": "FULL"
     },
     {

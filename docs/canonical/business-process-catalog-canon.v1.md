@@ -100,6 +100,22 @@ Matriz, recuperação e evidências complementares:
 
 ### Execução automática por processo — decisão de 12/09/2026
 
+**Recuperação de pré-requisitos — decisão de 06/10/2026:** uma execução autorizada
+deve encaminhar automaticamente o trabalho aos agentes responsáveis quando não houver
+decisão comercial pendente. O usuário não coordena Dédalo, Plutus, Atena e Íris nem
+repete comandos para transportar resultados entre eles. O backend distingue entrada
+ausente, trabalho técnico, tarefa em andamento, rejeição funcional e decisão humana real;
+conserva responsáveis, fontes, contexto e motivos no acompanhamento persistido.
+
+Antes de enfileirar, reutilizar a saída compatível e conferir se já existe execução
+equivalente. Recuperação de passagem não repete inferência concluída. Nova avaliação
+paga exige causa alterada, entrada suficiente e orçamento autorizado com consumo
+delimitado; autorização em texto não constitui, sozinha, reserva financeira executável.
+STOP, pausa, histórico encerrado, versões e autorizações comerciais continuam válidos.
+Incapacidade técnica do executor é uma lacuna a corrigir no sistema, não uma decisão
+de produto a transferir ao usuário. Não anunciar automação só por registrar esta regra:
+a entrega deve demonstrar o encaminhamento pelos contratos executáveis e seus testes.
+
 O usuário inicia o **processo**, pelo cabeçalho da tela de atividades do produto. O backend
 controla a sequência e só avança após comprovação do objetivo da atividade pelos contratos
 canônicos. O painel informa a atividade atual, concluídas, restantes, bloqueios e decisões

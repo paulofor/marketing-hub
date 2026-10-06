@@ -43,6 +43,9 @@ public class ProcessRunService {
           .LearningCycleVideoContinuation
       videoContinuation;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private ProcessRunAssumptionRecovery assumptionRecovery;
+
   /** Configura transações curtas e os contratos responsáveis pela execução real das atividades. */
   public ProcessRunService(
       ProcessRunRepository runs,
@@ -304,8 +307,8 @@ public class ProcessRunService {
   }
 
   /**
-   * Observa provas e retornos condicionais antes de disparar na referência congelada e encerra
-   * contextos sem autorização somente depois de receber o trabalho em curso nas delegações.
+   * Observa provas, recupera passagens compatíveis e trata retornos condicionais na referência
+   * congelada; encerra contextos sem autorização após receber o trabalho das delegações.
    */
   private ProcessRunResponse advance(ProcessRun run) {
     if (Set.of("PAUSED", "COMPLETED", "ERROR", "CLOSED").contains(run.getStatus()))
@@ -528,6 +531,7 @@ public class ProcessRunService {
     if (!Set.of("COMMAND", "WORKSPACE").contains(control.interactionType())
         || !control.actionAvailable()
         || !activity.executionRequestAvailable()) {
+      recoverAssumptionHandoff(run);
       transition(run, "WAITING_INPUT", control.availabilityReason(), "WAITING");
       return response(run);
     }
@@ -577,6 +581,28 @@ public class ProcessRunService {
             "correctionInputHash",
             correctionInputs.isEmpty() ? "" : hash(correctionInputs.toString())));
     return response(run);
+  }
+
+  /** Recupera a passagem autorizada após verificar PLAY, pausa, versão, contexto e vez na fila. */
+  private void recoverAssumptionHandoff(ProcessRun run) {
+    if (assumptionRecovery == null) return;
+    assumptionRecovery
+        .recover(run, context.process(run.getProcessDefinitionId()).getProcessCode())
+        .ifPresent(
+            recovered -> {
+              String key = "ASSUMPTION_HANDOFF:" + recovered.proposalId();
+              if (!events.existsByRunIdAndActionKey(run.getId(), key))
+                event(
+                    run,
+                    "PREREQUISITE_RECOVERED",
+                    "Proposta concluída de Atena encaminhada a Plutus sem repetir Atena. A comunicação continua sujeita aos demais pré-requisitos.",
+                    key,
+                    Map.of(
+                        "sourceReference", run.getSourceReference(),
+                        "strategistExecutionId", recovered.proposalId(),
+                        "financialExecutionId", recovered.financialExecutionId(),
+                        "agentTaskId", recovered.taskId()));
+            });
   }
 
   /** Propaga o bloqueio da origem sem autorizar novos disparos em subprocessos já delegados. */

@@ -149,10 +149,11 @@ public class IrisCommunicationMaterializationContextProvider
         }
       } else {
         if (!upstreamAgentKeys.contains("financial-agent")) {
-          missingPredecessors.add("Parecer econômico concluído de Plutus");
+          missingPredecessors.add(
+              financialDependencyReason(scope.plan().getId(), version.versionNumber()));
         }
         if (!upstreamAgentKeys.contains("landing-generator")) {
-          missingPredecessors.add("PDE e prova funcional concluídos de Dédalo");
+          missingPredecessors.add(deliveryDependencyReason(product));
         }
       }
       Map<String, Object> result = new LinkedHashMap<>();
@@ -223,6 +224,64 @@ public class IrisCommunicationMaterializationContextProvider
           ex);
       return unavailable(sourceReference, "A entrada de comunicação não pôde ser consolidada.");
     }
+  }
+
+  /** Explica a avaliação existente sem tratar rejeição, falha ou tarefa em curso como ausência. */
+  private String financialDependencyReason(Long planId, Integer planVersion) {
+    var existing =
+        financialExecutions
+            .findFirstByCommercialPlanIdAndCommercialPlanVersionAndAuthorityModeOrderByCreatedAtDescIdDesc(
+                planId, planVersion, "COMMERCIAL_ASSUMPTIONS_VALIDATION")
+            .orElse(null);
+    if (existing == null) return "Parecer econômico concluído de Plutus";
+    String label = "Plutus #" + existing.getId() + ": ";
+    if (existing.getStatus() == FinancialAgentExecutionStatus.PENDING
+        || existing.getStatus() == FinancialAgentExecutionStatus.RUNNING) {
+      return label + "validação das premissas em andamento; aguardar a tarefa existente";
+    }
+    if (existing.getStatus() == FinancialAgentExecutionStatus.FAILED) {
+      return label
+          + "falha na validação das premissas; recuperar a execução preservando resposta e custo";
+    }
+    try {
+      JsonNode result = objectMapper.readTree(existing.getReconciliationJson());
+      if (result != null && "REJECT".equals(result.path("decision").asText())) {
+        return label
+            + "premissas reprovadas; resolver as lacunas do parecer antes de nova avaliação";
+      }
+      if (result == null || !"APPROVE".equals(result.path("decision").asText())) {
+        return label + "parecer sem decisão válida; recuperar o resultado antes de nova avaliação";
+      }
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao ler diagnóstico financeiro de Íris. commercialPlanId={} commercialPlanVersion={} financialExecutionId={}",
+          planId,
+          planVersion,
+          existing.getId(),
+          ex);
+      return label + "parecer sem resposta válida; recuperar o resultado antes de nova avaliação";
+    }
+    return label + "premissas avaliadas; falta o parecer econômico de projeção de receita";
+  }
+
+  /** Mantém a homologação privada sem equiparar fixtures à entrega personalizada integrada. */
+  private String deliveryDependencyReason(Product product)
+      throws com.fasterxml.jackson.core.JsonProcessingException {
+    if (product.getPdeExperienceJson() == null || product.getPdeExperienceJson().isBlank()) {
+      return "PDE e prova funcional concluídos de Dédalo";
+    }
+    JsonNode experience = objectMapper.readTree(product.getPdeExperienceJson());
+    if (experience != null
+        && "DETERMINISTIC_HOMOLOGATION_ONLY"
+            .equals(
+                experience.path("harness").path("staticResultFixtures").path("mode").asText())) {
+      return "Dédalo: "
+          + ("PASS".equals(experience.path("agentValidation").path("status").asText())
+              ? "homologação privada preservada; "
+              : "")
+          + "falta comprovar a geração personalizada integrada; imagens de teste não comprovam essa entrega";
+    }
+    return "PDE e prova funcional concluídos de Dédalo";
   }
 
   /** Expõe somente a última comunicação concluída sem incluí-la no hash da própria entrada. */

@@ -38,7 +38,10 @@ class ProcessRunProjectedActivityPersistenceTest {
   @Autowired private ProcessRunEventRepository events;
   @Autowired private PlatformTransactionManager transactions;
   @Autowired private EntityManager entityManager;
-  private final ObjectMapper json = new ObjectMapper().findAndRegisterModules();
+  private final ObjectMapper json =
+      new ObjectMapper()
+          .findAndRegisterModules()
+          .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
   private final ProcessRunContext context = mock(ProcessRunContext.class);
   private final ProcessRunNavigation navigation = mock(ProcessRunNavigation.class);
   private final ProcessRunSubprocesses subprocesses = mock(ProcessRunSubprocesses.class);
@@ -51,6 +54,118 @@ class ProcessRunProjectedActivityPersistenceTest {
   private ProcessRun parent;
   private ProcessRun next;
   private boolean authorized;
+
+  /** Persiste a recuperação uma única vez e não transforma o pré-requisito em aceite de Íris. */
+  @Test
+  void automaticallyRecoversMissingHandoffWithoutRepeatingAudit() throws Exception {
+    authorized = true;
+    snapshot(96011L, "NOT_STARTED", false, false, false, false);
+    var source =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(snapshots.get(96011L));
+    var namedActivity =
+        (com.fasterxml.jackson.databind.node.ObjectNode) source.path("activities").get(0);
+    namedActivity.put("activityName", "Preparar comunicação");
+    namedActivity.put("activityOwnerName", "Íris");
+    namedActivity.put("sequenceNumber", 1);
+    snapshots.put(
+        96011L, json.treeToValue(source, ProductProcessActivityExecutionHistoryResponse.class));
+    var recovery = mock(ProcessRunAssumptionRecovery.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "assumptionRecovery", recovery);
+    when(recovery.recover(any(), any()))
+        .thenReturn(
+            Optional.of(new ProcessRunAssumptionRecovery.Recovered(96119L, 96171L, 96589L)));
+    var result = service.reconcile(parent.getId());
+    assertThat(result.status()).isEqualTo("WAITING_INPUT");
+    assertThat(result.completedActivities()).isZero();
+    service.reconcile(parent.getId());
+    entityManager.flush();
+    entityManager.clear();
+    var recovered =
+        events.findAll().stream()
+            .filter(e -> "PREREQUISITE_RECOVERED".equals(e.getEventType()))
+            .toList();
+    assertThat(recovered).hasSize(1);
+    assertThat(recovered.getFirst().getDetailsJson())
+        .contains("experiment:96021", "96119", "96171", "96589");
+    assertThat(runs.findById(parent.getId()).orElseThrow().getCompletedActivities()).isZero();
+    verifyNoInteractions(activities);
+    String output = System.getProperty("preparation-recovery.fixture-output");
+    if (output != null) {
+      var history =
+          (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(snapshots.get(96011L));
+      history.put("productId", 96001L);
+      history.put("productName", "Produto sintético");
+      history.put("selectedProcessDefinitionId", 96011L);
+      history.put("selectedProcessVersionNumber", 2);
+      history.put("selectedProcessStatus", "PUBLISHED");
+      history.put("currentExecutionReference", "experiment:96021");
+      history.put("operationalState", "BLOCKED");
+      java.nio.file.Files.writeString(
+          java.nio.file.Path.of(output),
+          json.writeValueAsString(
+              Map.of(
+                  "control", result,
+                  "history", history,
+                  "events", service.history(96001L, 96011L, parent.getId(), null))));
+    }
+  }
+
+  /** STOP, pausa, versão encerrada e falta de vez impedem recuperar passagem ou criar tarefa. */
+  @ParameterizedTest
+  @ValueSource(strings = {"STOP", "PAUSED", "CLOSED", "QUEUED", "RETIRED"})
+  void guardsAutomaticHandoffRecovery(String guard) throws Exception {
+    authorized = !"RETIRED".equals(guard);
+    snapshot(96011L, "NOT_STARTED", false, false, false, false);
+    var recovery = mock(ProcessRunAssumptionRecovery.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "assumptionRecovery", recovery);
+    if (Set.of("PAUSED", "CLOSED").contains(guard)) parent.setStatus(guard);
+    if ("STOP".equals(guard)) {
+      var products =
+          (ProductRepository)
+              org.springframework.test.util.ReflectionTestUtils.getField(service, "products");
+      products.findById(96001L).orElseThrow().setAutomaticExecutionEnabled(false);
+    }
+    service.reconcile("QUEUED".equals(guard) ? next.getId() : parent.getId());
+    verifyNoInteractions(recovery, activities);
+  }
+
+  /** Contratos prontos seguem automaticamente para a tarefa, sem comando humano por agente. */
+  @Test
+  void readyInputsAutomaticallyDispatchOnceAndWaitForRealTask() throws Exception {
+    authorized = true;
+    snapshot(96011L, "NOT_STARTED", false, false, false, false);
+    var value =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(snapshots.get(96011L));
+    var activity = (com.fasterxml.jackson.databind.node.ObjectNode) value.path("activities").get(0);
+    activity.put("executionRequestAvailable", true);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) activity.path("executionControl"))
+        .put("actionAvailable", true)
+        .put("executorType", "AGENT");
+    snapshots.put(
+        96011L, json.treeToValue(value, ProductProcessActivityExecutionHistoryResponse.class));
+    var dispatched =
+        mock(
+            com.marketinghub
+                .businessprocess
+                .execution
+                .service
+                .requestProductProcessActivityExecution
+                .ProductProcessActivityExecutionRequestResponse
+                .class);
+    when(dispatched.sourceReference()).thenReturn("experiment:96021");
+    when(dispatched.tasks()).thenReturn(List.of());
+    when(activities.requestProductActivityExecution(
+            eq(96011L), eq(96001L), eq("a"), isNull(), isNull(), eq("experiment:96021")))
+        .thenReturn(dispatched);
+    assertThat(service.reconcile(parent.getId()).status()).isEqualTo("WAITING_ACTIVITY");
+    snapshot(96011L, "PENDING", true, true, false, false);
+    assertThat(service.reconcile(parent.getId()).status()).isEqualTo("WAITING_ACTIVITY");
+    verify(activities, times(1))
+        .requestProductActivityExecution(
+            eq(96011L), eq(96001L), eq("a"), isNull(), isNull(), eq("experiment:96021"));
+  }
 
   /** Persiste uma reserva antiga e sua candidata em identidades exclusivamente locais. */
   @BeforeEach

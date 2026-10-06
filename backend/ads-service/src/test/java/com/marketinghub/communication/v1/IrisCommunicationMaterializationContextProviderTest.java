@@ -28,6 +28,83 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: validar o contexto segregado que o backend entrega à Íris. */
 class IrisCommunicationMaterializationContextProviderTest {
 
+  /** Distingue rejeição econômica e prova sintética sem dispensar os aceites de Íris. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {11L, 82011L})
+  void explainsRejectedAssumptionsAndPreservesPrivateProof(long productId) {
+    Fixture fixture = fixture(List.of(), false);
+    fixture.plan().getExperiment().getProduct().setId(productId);
+    fixture
+        .plan()
+        .getExperiment()
+        .getProduct()
+        .setPdeExperienceJson(
+            """
+        {"agentValidation":{"status":"PASS"},
+         "harness":{"staticResultFixtures":{"mode":"DETERMINISTIC_HOMOLOGATION_ONLY"}}}
+        """);
+    var rejected = financialExecution(fixture.plan());
+    rejected.setAuthorityMode("COMMERCIAL_ASSUMPTIONS_VALIDATION");
+    rejected.setReconciliationJson("{\"decision\":\"REJECT\"}");
+    when(fixture
+            .financial()
+            .findFirstByCommercialPlanIdAndCommercialPlanVersionAndAuthorityModeOrderByCreatedAtDescIdDesc(
+                1L, 2, "COMMERCIAL_ASSUMPTIONS_VALIDATION"))
+        .thenReturn(Optional.of(rejected));
+
+    Map<String, Object> context = fixture.provider().resolve("commercial-plan:1@v2").orElseThrow();
+
+    assertThat(context).containsEntry("inputReadiness", "BLOCKED");
+    assertThat(context.get("missingRequiredPredecessors").toString())
+        .contains(
+            "Plutus #21: premissas reprovadas",
+            "Dédalo: homologação privada preservada",
+            "geração personalizada integrada")
+        .doesNotContain("Parecer econômico concluído de Plutus");
+    assertThat(context.get("approvedUpstreamArtifacts")).isEqualTo(List.of());
+    org.mockito.Mockito.verify(fixture.financial(), org.mockito.Mockito.never())
+        .save(org.mockito.ArgumentMatchers.any());
+  }
+
+  /** Aguarda a validação financeira já em curso sem orientar outro disparo. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.EnumSource(
+      value = FinancialAgentExecutionStatus.class,
+      names = {"PENDING", "RUNNING"})
+  void pointsToExistingFinancialValidation(FinancialAgentExecutionStatus status) {
+    Fixture fixture = fixture(List.of(task(12L, "landing-generator")), false);
+    var pending = financialExecution(fixture.plan());
+    pending.setStatus(status);
+    when(fixture
+            .financial()
+            .findFirstByCommercialPlanIdAndCommercialPlanVersionAndAuthorityModeOrderByCreatedAtDescIdDesc(
+                1L, 2, "COMMERCIAL_ASSUMPTIONS_VALIDATION"))
+        .thenReturn(Optional.of(pending));
+    var context = fixture.provider().resolve("commercial-plan:1@v2").orElseThrow();
+    assertThat(context).containsEntry("inputReadiness", "BLOCKED");
+    assertThat(context.get("missingRequiredPredecessors").toString())
+        .contains("Plutus #21: validação das premissas em andamento; aguardar a tarefa existente");
+  }
+
+  /** Não transforma premissas aprovadas em projeção financeira nem em permissão comercial. */
+  @Test
+  void approvedAssumptionsStillRequireTheCanonicalFinancialProjection() {
+    Fixture fixture = fixture(List.of(task(12L, "landing-generator")), false);
+    var approved = financialExecution(fixture.plan());
+    approved.setReconciliationJson("{\"decision\":\"APPROVE\"}");
+    when(fixture
+            .financial()
+            .findFirstByCommercialPlanIdAndCommercialPlanVersionAndAuthorityModeOrderByCreatedAtDescIdDesc(
+                1L, 2, "COMMERCIAL_ASSUMPTIONS_VALIDATION"))
+        .thenReturn(Optional.of(approved));
+    var context = fixture.provider().resolve("commercial-plan:1@v2").orElseThrow();
+    assertThat(context)
+        .containsEntry("inputReadiness", "BLOCKED")
+        .containsEntry("externalMediaSpendAuthorized", false);
+    assertThat(context.get("missingRequiredPredecessors").toString())
+        .contains("falta o parecer econômico de projeção de receita");
+  }
+
   /**
    * Mantém o contrato privado ou seu bloqueio explícito, sem recorrer a um plano de outro regime.
    */
@@ -351,7 +428,7 @@ class IrisCommunicationMaterializationContextProviderTest {
     IrisCommunicationMaterializationContextProvider provider =
         new IrisCommunicationMaterializationContextProvider(
             plans, versions, assets, tasks, financialExecutions, new ObjectMapper());
-    return new Fixture(provider, plans, plan, tasks);
+    return new Fixture(provider, plans, plan, tasks, financialExecutions);
   }
 
   /** Cria uma tarefa privada com a definição compartilhada do planejamento v8. */
@@ -489,5 +566,6 @@ class IrisCommunicationMaterializationContextProviderTest {
       IrisCommunicationMaterializationContextProvider provider,
       CommercialPlanRepository plans,
       CommercialPlan plan,
-      AgentTaskRepository tasks) {}
+      AgentTaskRepository tasks,
+      FinancialAgentExecutionRepository financial) {}
 }

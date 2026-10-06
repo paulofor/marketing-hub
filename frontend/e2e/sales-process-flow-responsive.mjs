@@ -197,10 +197,21 @@ try {
     const childLink = delivery.getByRole("link", { name: /subprocesso/ });
     await expect(childLink).toHaveAttribute(
       "href",
-      new RegExp(`learningCycleId=${cycle.id}$`),
+      new RegExp(`[?&]learningCycleId=${cycle.id}(?:[&#]|$)`),
     );
+    const childUrl = new URL(await childLink.getAttribute("href"), base);
+    assert.equal(
+      childUrl.searchParams.get("chainId"),
+      String(cycle.chainDefinitionId),
+    );
+    assert(childUrl.pathname.startsWith(`/products/${cycle.productId}/`));
     await childLink.click();
-    assert(page.url().includes(`learningCycleId=${cycle.id}`));
+    const opened = new URL(page.url());
+    assert.equal(opened.searchParams.get("learningCycleId"), String(cycle.id));
+    assert.equal(
+      opened.searchParams.get("chainId"),
+      String(cycle.chainDefinitionId),
+    );
     await page.screenshot({
       path: `${output}/${name}-delivery.png`,
       fullPage: true,

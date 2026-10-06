@@ -92,7 +92,7 @@ public class LearningCycleVideoFixtures {
       this.mapper = mapper;
     }
 
-    /** Instala dois vídeos e uma integração fictícios para o experimento de teste selecionado. */
+    /** Instala vídeos e integração com preflight sintético completo da mesma versão de teste. */
     @PostMapping("/fixture/videos")
     Map<String, Object> seed(@RequestBody Map<String, Object> body) throws Exception {
       long experimentId = ((Number) body.get("experimentId")).longValue();
@@ -149,6 +149,10 @@ public class LearningCycleVideoFixtures {
       slot.setPublishedExperienceJson(slot.getDraftExperienceJson());
       slot.setStatus(com.marketinghub.pde.PdeProductionSlotStatus.READY);
       slot.setValidationStatus("OK");
+      slot.setValidationCheckedAt(java.time.Instant.now());
+      slot.setValidationHttpStatus(200);
+      slot.setValidationContractSlug(slot.getProductSlug());
+      slot.setValidationResolvedUrl(slot.getPublicUrl());
       slot.setPublishedAt(java.time.Instant.now());
       SLOTS.put(heroId, slot);
       return Map.of(

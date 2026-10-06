@@ -288,8 +288,12 @@ try {
       page.getByRole("link", { name: "Abrir atividade orientada" }),
     ).toHaveCount(0);
     await expect(
-      page.getByText(/Ajuste aprovado\. Crie um experimento planejado/),
+      page.getByText(current.nextAction, { exact: true }).first(),
     ).toBeVisible();
+    assert.equal(current.responsible, "Backend · preparação do sucessor");
+    await expect(
+      page.getByRole("button", { name: "Preparar continuidade sem gasto" }),
+    ).toHaveCount(0);
     await page
       .getByRole("button", {
         name: "Criar ciclo sucessor com aprendizado",

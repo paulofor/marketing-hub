@@ -49,7 +49,7 @@ public class LearningCycleSuccessorPreparation {
   private LearningCycleWorkResolver workResolver;
 
   /**
-   * Serializa a preparação elegível e enfileira o planejamento quando há decisão humana aprovada.
+   * Serializa a preparação ou o inconclusivo aprovado e enfileira o planejamento no novo contexto.
    */
   @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
   public LearningCycleResponse prepare(Long productId, Long cycleId) {
@@ -79,10 +79,10 @@ public class LearningCycleSuccessorPreparation {
             .map(a -> Boolean.TRUE.equals(a.getAutomaticExecutionEnabled()))
             .orElse(false),
         "Atena em STOP; preparação preservada.");
-    boolean approved = "ADJUSTED".equals(cycle.getStatus());
+    boolean approved = List.of("ADJUSTED", "INCONCLUSIVE").contains(cycle.getStatus());
     require(
         ("OPEN".equals(cycle.getStatus()) || approved) && "DECISION".equals(cycle.getStage()),
-        "A preparação exige decisão corrente ou ajuste aprovado, sem reabrir operação encerrada.");
+        "A preparação exige decisão corrente ou parecer aprovado compatível, sem reabrir operação encerrada.");
     var proposal =
         (approved
                 ? proposals.findFirstByCycleIdOrderByIdDesc(cycleId)
@@ -90,26 +90,12 @@ public class LearningCycleSuccessorPreparation {
                     cycleId, cycle.getRevision()))
             .orElseThrow();
     require(
-        available(cycle, proposal),
-        "Aguarde o parecer ou a decisão de ajuste vigente e compatível.");
-    var decision = (ObjectNode) json.read(proposal.getProposalJson());
-    boolean humanApproved =
-        approved && approvedEvidence(cycle, proposal).path("humanApproved").asBoolean(false);
-    if (approved) {
-      var evidence = approvedEvidence(cycle, proposal);
-      for (String field :
-          List.of(
-              "rootCause",
-              "learning",
-              "nextHypothesis",
-              "returnProcessId",
-              "returnActivityId",
-              "marketReview")) if (evidence.has(field)) decision.set(field, evidence.get(field));
-      decision.put("sourceDecisionEventId", proposal.getApprovedEventId());
-    }
-    require(
-        LearningCyclePreparationPolicy.eligible(decision),
-        "A proposta requer decisão sobre mercado ou operação; a preparação automática é restrita a ajuste no mesmo foco.");
+        available(cycle, proposal), "Aguarde o parecer ou a decisão final vigente e compatível.");
+    var decision =
+        approved
+            ? approvedDecision(cycle, proposal)
+            : (ObjectNode) json.read(proposal.getProposalJson());
+    boolean humanApproved = approved && decision.path("humanApproved").asBoolean(false);
     var source = experiments.findById(cycle.getExperimentId()).orElseThrow();
     require(
         source.getProduct() != null && productId.equals(source.getProduct().getId()),
@@ -202,27 +188,50 @@ public class LearningCycleSuccessorPreparation {
     return result;
   }
 
-  /**
-   * Expõe recuperação de parecer corrente ou ajuste aprovado, sem duplicar um sucessor existente.
-   */
+  /** Expõe recuperação de parecer corrente ou encerramento aprovado, sem duplicar o sucessor. */
   @Transactional(readOnly = true)
   public boolean available(LearningSalesCycle cycle, LearningCycleDecisionProposal proposal) {
     if (proposal == null
         || proposal.getProposalJson() == null
         || !("READY".equals(proposal.getStatus()) || "APPROVED".equals(proposal.getStatus()))
-        || !LearningCyclePreparationPolicy.eligible(json.read(proposal.getProposalJson()))
         || cycles.findByPreviousCycleId(cycle.getId()).isPresent()) return false;
-    return ("OPEN".equals(cycle.getStatus())
-            && "DECISION".equals(cycle.getStage())
-            && "READY".equals(proposal.getStatus())
-            && cycle.getRevision() == proposal.getCycleRevision())
-        || approvedEvidence(cycle, proposal) != null;
+    if ("OPEN".equals(cycle.getStatus()))
+      return "DECISION".equals(cycle.getStage())
+          && "READY".equals(proposal.getStatus())
+          && cycle.getRevision() == proposal.getCycleRevision()
+          && LearningCyclePreparationPolicy.eligible(json.read(proposal.getProposalJson()));
+    var decision = approvedDecision(cycle, proposal);
+    return decision != null && LearningCyclePreparationPolicy.eligibleApproved(decision);
   }
 
-  /** Recupera somente o recibo final vinculado à proposta e à revisão encerrada para ajuste. */
+  /** Combina o parecer com a edição final, preservando a ação e a autoria do encerramento. */
+  private ObjectNode approvedDecision(
+      LearningSalesCycle cycle, LearningCycleDecisionProposal proposal) {
+    var evidence = approvedEvidence(cycle, proposal);
+    if (evidence == null) return null;
+    var decision = (ObjectNode) json.read(proposal.getProposalJson());
+    for (String field :
+        List.of(
+            "rootCause",
+            "learning",
+            "nextHypothesis",
+            "returnProcessId",
+            "returnActivityId",
+            "marketReview",
+            "evidenceLimits")) if (evidence.has(field)) decision.set(field, evidence.get(field));
+    decision.put("action", "ADJUSTED".equals(cycle.getStatus()) ? "ADJUST" : "INCONCLUSIVE");
+    decision.put("humanApproved", evidence.path("humanApproved").asBoolean(false));
+    decision.put("sourceDecisionEventId", proposal.getApprovedEventId());
+    return decision;
+  }
+
+  /**
+   * Recupera apenas recibo da mesma proposta, ação, ciclo e revisão final, sem reabrir histórico.
+   */
   private JsonNode approvedEvidence(
       LearningSalesCycle cycle, LearningCycleDecisionProposal proposal) {
-    if (!"ADJUSTED".equals(cycle.getStatus())
+    if (!List.of("ADJUSTED", "INCONCLUSIVE").contains(cycle.getStatus())
+        || !"DECISION".equals(cycle.getStage())
         || !"APPROVED".equals(proposal.getStatus())
         || proposal.getApprovedEventId() == null
         || cycle.getRevision() != proposal.getCycleRevision() + 1) return null;
@@ -232,7 +241,9 @@ public class LearningCycleSuccessorPreparation {
             event ->
                 cycle.getId().equals(event.getCycleId())
                     && event.getRevision() == cycle.getRevision()
-                    && "ADJUST".equals(event.getAction()))
+                    && ("ADJUSTED".equals(cycle.getStatus())
+                        ? "ADJUST".equals(event.getAction())
+                        : "INCONCLUSIVE".equals(event.getAction())))
         .map(event -> json.read(event.getEvidenceJson()))
         .filter(evidence -> evidence.path("decisionProposalId").asLong(-1) == proposal.getId())
         .orElse(null);

@@ -119,6 +119,17 @@
 
 ## LOOP-BPM-MEDICAO-PROJETADA-RESERVA-FILA — 03/10/2026
 
+- **Regressão confirmada em 06/10/2026:** a homologação MySQL do ciclo comercial
+  reproduziu `AUTHORIZATION` com pendências válidas e `learningCycle` projetada.
+  A exclusão introduzida em #5486 também removia essa espera da seleção e abria
+  `optimization` antes das condições de aquisição. O motor agora reconhece
+  entradas projetadas pelo contrato de orientação e pelo contexto autorizado,
+  sem tratá-las como trabalho em curso na drenagem. Contexto retirado ainda
+  encerra, tarefas reais continuam protegidas e mídia não recebe autorização.
+  Regressões: `ProcessRunGuidanceTest`, `ProcessRunProjectedActivityPersistenceTest`
+  e `infra/testing/cycle-commercial/validate.py`, com pausa, retomada, outra
+  identidade, orçamento e ausência de revisores antes das condições comerciais.
+
 - **Evidência:** Vega #4, cadeia #14, ciclo #2, `experiment:92`; execução #42 do
   processo #123 v8 aguardava a raiz #4, processo #75 v6 retirado e sem ficha.
   A raiz aguardava `optimization` desde 19/09, sem tarefa, instância ou filho.
@@ -9024,6 +9035,23 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
 - **Prevenção:** dois produtos/IDs, caminho humano anterior, replay, concorrência,
   STOP, proposta obsoleta, mercado diferente, janela inicial e leitura sem efeitos.
   Matriz: `docs/homologacao/continuidade-autonoma-ciclos-v1.md`.
+
+### Recorrência no inconclusivo aprovado — 06/10/2026
+
+- Vega, ciclo #2/experimento #92, encerrou como INCONCLUSIVE com proposta Atena #4
+  aprovada no evento #33 e recomendação KEEP_FOCUS/requiresNewCycle. A aprovação
+  estava persistida; a política aceitava somente ADJUST/ADJUSTED, e a tela ainda
+  solicitava aprovação. O recibo mínimo não repetia o parecer completo preservado.
+- A recuperação usa proposta e edição final vinculadas à mesma revisão, sem mudar
+  o encerramento, a autoria ou os resultados. Prepara um sucessor único pelo motor
+  existente, começando no planejamento, com mídia zero e sem janela herdada.
+- A fila cobre novas ocorrências aderentes à política; históricos sem adesão só
+  são recuperados por comando explícito. STOP, mudança de foco, hipótese ausente,
+  recibo inválido e parecer inconclusivo ainda não aprovado continuam bloqueados.
+- Harness: recibo mínimo, dois produtos, caminho ADJUST anterior, concorrência,
+  rollback e passagem planejamento/construção/comunicação no MySQL 5.7;
+  orientação desktop/iPhone/Pixel. Matriz e resultados:
+  `docs/homologacao/vega-inconclusivo-continuacao-v1.md`.
 
 ### Recorrência no contrato de entrada de Atena — 06/10/2026
 

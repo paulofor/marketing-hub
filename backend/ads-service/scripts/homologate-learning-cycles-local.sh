@@ -20,6 +20,8 @@ cleanup() {
   if [[ -n "$cycle_atena_pid" ]]; then kill "$cycle_atena_pid" 2>/dev/null || true; wait "$cycle_atena_pid" 2>/dev/null || true; fi
   if [[ -n "$cycle_api_pid" ]]; then kill "$cycle_api_pid" 2>/dev/null || true; wait "$cycle_api_pid" 2>/dev/null || true; fi
   if [[ -n "$cycle_ui_pid" ]]; then kill "$cycle_ui_pid" 2>/dev/null || true; wait "$cycle_ui_pid" 2>/dev/null || true; fi
+  # Preserva a causa do banco antes de remover a topologia, inclusive em falha de inicialização.
+  "${compose[@]}" logs --no-color --tail 120 > "$cycle_output/mysql.log" 2>&1 || true
   "${compose[@]}" down --volumes --remove-orphans > "$cycle_output/cleanup.log" 2>&1 || result=1
   printf 'Resultado=%s Evidências=%s\n' "$result" "$cycle_output"
   exit "$result"

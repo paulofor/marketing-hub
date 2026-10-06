@@ -131,7 +131,16 @@ public class ProcessRunGuidance {
 
   /** Reconhece entrada ou correção pendente durante a pausa, sem confundir com preflight ativo. */
   public boolean awaitingInput(ProcessRun run) {
-    var cycle = manualCycle(run);
+    return awaitingCycleInput(manualCycle(run));
+  }
+
+  /** Reconhece a espera projetada antes da seleção, sem alterar atividade ou comprovar execução. */
+  public boolean awaitingProjectedInput(ProcessRun run, String activityId) {
+    return awaitingCycleInput(manualCycle(run, activityId));
+  }
+
+  /** Distingue entradas e correções legítimas de produção automática em curso no ciclo. */
+  private boolean awaitingCycleInput(LearningSalesCycle cycle) {
     if (cycle != null
         && "VIDEO_APPROVAL".equals(cycle.getStage())
         && videoBinding != null
@@ -144,8 +153,12 @@ public class ProcessRunGuidance {
 
   /** Confere vínculo, versão e etapas elegíveis para orientar uma intervenção do operador. */
   private LearningSalesCycle manualCycle(ProcessRun run) {
-    if (run.getLearningCycleId() == null || !"learningCycle".equals(run.getCurrentActivityId()))
-      return null;
+    return manualCycle(run, run.getCurrentActivityId());
+  }
+
+  /** Valida o contexto da atividade candidata sem depender de uma seleção já persistida. */
+  private LearningSalesCycle manualCycle(ProcessRun run, String activityId) {
+    if (run.getLearningCycleId() == null || !"learningCycle".equals(activityId)) return null;
     var process = processes.findById(run.getProcessDefinitionId()).orElseThrow();
     if (!"pde-sales-delivery-learning".equals(process.getProcessCode())) return null;
     var cycle = cycles.findById(run.getLearningCycleId()).orElseThrow();

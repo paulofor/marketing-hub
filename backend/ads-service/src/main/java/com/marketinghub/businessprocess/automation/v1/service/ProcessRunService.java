@@ -314,7 +314,8 @@ public class ProcessRunService {
 
   /**
    * Observa provas, recupera passagens compatíveis e trata retornos condicionais na referência
-   * congelada; encerra contextos sem autorização após receber o trabalho das delegações.
+   * congelada; preserva esperas legítimas e encerra contextos sem autorização após receber o
+   * trabalho das delegações.
    */
   private ProcessRunResponse advance(ProcessRun run) {
     if (Set.of("PAUSED", "COMPLETED", "ERROR", "CLOSED").contains(run.getStatus()))
@@ -351,7 +352,11 @@ public class ProcessRunService {
     var active =
         ordered.stream()
             .filter(
-                a -> ACTIVE_TASK.contains(a.operationalState()) && !projectionWithoutExecution(a))
+                a ->
+                    ACTIVE_TASK.contains(a.operationalState())
+                        && (!projectionWithoutExecution(a)
+                            || (dispatchBlockReason(run) == null
+                                && guidance.awaitingProjectedInput(run, a.activityId()))))
             .findFirst();
     if (active.isPresent()) {
       current(run, active.get());
@@ -1007,7 +1012,7 @@ public class ProcessRunService {
         || !guidance.awaitingInput(run);
   }
 
-  /** Identifica exclusivamente a medição projetada, preservando trabalho e demais contratos. */
+  /** Identifica estado projetado sem execução, distinguindo-o de tarefas e instâncias reais. */
   private boolean projectionWithoutExecution(
       ProductProcessActivityExecutionGroupResponse activity) {
     return "SALES_FLOW_EVENT".equals(activity.stateEvidence())

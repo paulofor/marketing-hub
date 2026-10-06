@@ -106,12 +106,13 @@ public class LearningCycleDecisionService {
     return List.of();
   }
 
-  /** Recupera a passagem pela fila existente, isolando falhas sem repetir o modelo. */
+  /** Recupera preparação e encerramento aprovado pela fila existente sem repetir o modelo. */
   private void prepareReadySuccessors() {
     if (successorPreparation == null) return;
     for (Long id : proposals.findAutomaticPreparationPending(PageRequest.of(0, 10))) {
       var proposal = proposals.findById(id).orElseThrow();
-      if (!LearningCyclePreparationPolicy.eligible(json.read(proposal.getProposalJson()))) continue;
+      var cycle = cycles.findById(proposal.getCycleId()).orElseThrow();
+      if (!successorPreparation.available(cycle, proposal)) continue;
       var context = json.read(proposal.getContextJson());
       try {
         successorPreparation.prepare(context.path("productId").asLong(), proposal.getCycleId());

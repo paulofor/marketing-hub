@@ -11,8 +11,20 @@ public final class LearningCyclePreparationPolicy {
 
   /** Recusa propostas legadas, expansão de mercado e ações que possam alterar gasto ou operação. */
   public static boolean eligible(JsonNode proposal) {
+    return "ADJUST".equals(proposal.path("action").asText()) && sameFocus(proposal);
+  }
+
+  /** Reutiliza inconclusivo apenas após recibo humano, sem convertê-lo em ajuste automático. */
+  public static boolean eligibleApproved(JsonNode decision) {
+    return ("ADJUST".equals(decision.path("action").asText())
+            || ("INCONCLUSIVE".equals(decision.path("action").asText())
+                && decision.path("humanApproved").asBoolean(false)))
+        && sameFocus(decision);
+  }
+
+  /** Exige aprendizado e hipótese completos no foco existente, sem autorizar nova operação. */
+  private static boolean sameFocus(JsonNode proposal) {
     return "LEARNING_CYCLE_DECISION_PROPOSAL_V2".equals(proposal.path("contractVersion").asText())
-        && "ADJUST".equals(proposal.path("action").asText())
         && "KEEP_FOCUS".equals(proposal.path("marketReview").path("recommendedScope").asText())
         && proposal.path("marketReview").path("requiresNewCycle").asBoolean(false)
         && !proposal.path("nextHypothesis").asText().isBlank()

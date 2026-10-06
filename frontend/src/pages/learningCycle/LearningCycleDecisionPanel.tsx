@@ -51,8 +51,10 @@ export default function LearningCycleDecisionPanel({
       <div className="card card-body mb-3">
         <h3 className="h5">
           {value?.preparationAvailable
-            ? "Continuidade preparada pelo sistema"
-            : "Atena prepara; você edita e aprova"}
+            ? "Preparar continuidade do produto"
+            : value?.status === "APPROVED"
+              ? "Decisão aprovada; continuidade do produto"
+              : "Atena prepara; você edita e aprova"}
         </h3>
         <p>
           Atividade 6.4 · decisão do ciclo #{cycle.id} · experimento #
@@ -66,7 +68,9 @@ export default function LearningCycleDecisionPanel({
         <p>
           {value?.preparationAvailable
             ? "O backend preserva o aprendizado e prepara um único sucessor com mídia zero, sem janela comercial herdada. Novas ocorrências seguem automaticamente; esta ação recupera propostas anteriores sem repetir Atena."
-            : "A proposta usa os resultados conciliados. Sua aprovação registra a decisão e o retorno no BPM."}
+            : value?.status === "APPROVED"
+              ? cycle.nextAction
+              : "A proposta usa os resultados conciliados. Sua aprovação registra a decisão e o retorno no BPM."}
         </p>
         {value?.preparationAvailable ? (
           <div>

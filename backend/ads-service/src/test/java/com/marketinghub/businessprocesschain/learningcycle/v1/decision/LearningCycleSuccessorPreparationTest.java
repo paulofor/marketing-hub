@@ -271,6 +271,89 @@ class LearningCycleSuccessorPreparationTest {
     assertThat(cycle.getRevision()).isEqualTo(5);
   }
 
+  /** Preserva inconclusivo aprovado e prepara o próximo contexto em produtos independentes. */
+  @ParameterizedTest
+  @ValueSource(longs = {4, 83})
+  void recoversApprovedInconclusiveWithoutReopeningHistory(long productId) throws Exception {
+    var cycle = fixture(productId);
+    var proposal = approvedInconclusive(cycle);
+    assertThat(preparation.available(cycle, proposal)).isTrue();
+    preparation.prepare(productId, cycle.getId());
+    verify(service, never()).recordPreparationDecision(any(), any(), any());
+    var request = ArgumentCaptor.forClass(CreateLearningCycleRequest.class);
+    verify(service).createPreparation(eq(productId), request.capture());
+    assertThat(request.getValue().hypothesis()).isEqualTo("Novo teste aprovado no mesmo foco");
+    assertThat(request.getValue().budgetLimitBrl()).isZero();
+    assertThat(request.getValue().windowStart()).isNull();
+    assertThat(request.getValue().windowEnd()).isNull();
+    assertThat(cycle.getStatus()).isEqualTo("INCONCLUSIVE");
+    assertThat(cycle.getRevision()).isEqualTo(5);
+    assertThat(cycle.getReturnProcessId()).isNull();
+    assertThat(proposal.getApprovedEventId()).isEqualTo(800L);
+    verify(processRuns).start(eq(productId), eq(116L), any());
+  }
+
+  /** Monta recibo humano correspondente ao inconclusivo, com edição final da hipótese. */
+  private LearningCycleDecisionProposal approvedInconclusive(LearningSalesCycle cycle)
+      throws Exception {
+    var proposal =
+        proposals
+            .findFirstByCycleIdAndCycleRevisionOrderByAttemptDesc(cycle.getId(), 4)
+            .orElseThrow();
+    cycle.setStatus("INCONCLUSIVE");
+    cycle.setRevision(5);
+    proposal.setStatus("APPROVED");
+    proposal.setApprovedEventId(800L);
+    proposal.setProposalJson(valid().put("action", "INCONCLUSIVE").toString());
+    when(proposals.findFirstByCycleIdOrderByIdDesc(cycle.getId()))
+        .thenReturn(Optional.of(proposal));
+    var event = new LearningSalesCycleEvent();
+    event.setCycleId(cycle.getId());
+    event.setRevision(5);
+    event.setAction("INCONCLUSIVE");
+    event.setEvidenceJson(
+        "{\"decisionProposalId\":900,\"humanApproved\":true,\"nextHypothesis\":\"Novo teste aprovado no mesmo foco\"}");
+    when(events.findById(800L)).thenReturn(Optional.of(event));
+    return proposal;
+  }
+
+  /** Edição final de mercado, hipótese vazia ou aprovação ausente não libera o sucessor. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "STOP",
+        "ADJACENT_SEGMENTS",
+        "EMPTY_HYPOTHESIS",
+        "NOT_HUMAN",
+        "OTHER_CYCLE",
+        "STALE_REVISION"
+      })
+  void rejectsUnsafeInconclusiveReceipts(String scenario) throws Exception {
+    var cycle = fixture(4);
+    var proposal = approvedInconclusive(cycle);
+    var event = events.findById(800L).orElseThrow();
+    var finalEvidence = (ObjectNode) mapper.readTree(event.getEvidenceJson());
+    switch (scenario) {
+      case "STOP" -> event.setAction("STOP");
+      case "ADJACENT_SEGMENTS" ->
+          finalEvidence.set(
+              "marketReview",
+              mapper.readTree(
+                  "{\"recommendedScope\":\"ADJACENT_SEGMENTS\",\"requiresNewCycle\":true}"));
+      case "EMPTY_HYPOTHESIS" -> finalEvidence.put("nextHypothesis", "");
+      case "NOT_HUMAN" -> finalEvidence.put("humanApproved", false);
+      case "OTHER_CYCLE" -> event.setCycleId(cycle.getId() + 1);
+      case "STALE_REVISION" -> cycle.setRevision(6);
+      default -> throw new IllegalArgumentException("Cenário desconhecido");
+    }
+    event.setEvidenceJson(finalEvidence.toString());
+    assertThat(preparation.available(cycle, proposal)).isFalse();
+    assertThatThrownBy(() -> preparation.prepare(4L, cycle.getId()))
+        .hasMessageContaining("compatível");
+    verify(experiments, never()).saveAndFlush(any());
+    verifyNoInteractions(service, processRuns);
+  }
+
   /** Recusa aprovação sem recibo canônico, mantendo a integridade do histórico encerrado. */
   @Test
   void refusesApprovedProposalWithoutMatchingReceipt() throws Exception {

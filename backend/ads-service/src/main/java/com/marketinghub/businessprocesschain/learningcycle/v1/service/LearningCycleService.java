@@ -922,6 +922,103 @@ public class LearningCycleService {
     return response(cycle);
   }
 
+  /**
+   * Persiste a primeira prova da versão já planejada sem alterar candidata, etapa ou autorizações.
+   */
+  @Transactional
+  public LearningCycleResponse registerPrototype(
+      Long productId,
+      Long cycleId,
+      com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+              .RegisterCyclePrototypeRequest
+          request) {
+    requireProduct(productId, true);
+    var cycle =
+        cycles
+            .findLocked(productId, cycleId)
+            .orElseThrow(() -> notFound("Ciclo não encontrado neste produto."));
+    String input = json.write(request);
+    var replay = events.findByCycleIdAndRequestKey(cycleId, request.requestKey().toString());
+    if (replay.isPresent()) {
+      require(
+          json.read(input).equals(json.read(replay.get().getRequestJson())),
+          "A chave desta prova já foi usada com outro conteúdo.");
+      return response(cycle);
+    }
+    require(
+        cycle.getRevision() == request.expectedRevision(),
+        "O ciclo mudou. Atualize a tela antes de registrar a prova.");
+    var availability = prototypeRegistration(cycle);
+    require(
+        availability != null && availability.available(),
+        availability == null ? "Registro inicial indisponível." : availability.reason());
+    require(
+        request.privatePrototype().isObject() && input.length() <= 64000,
+        "Envie prova estruturada de até 64 KB.");
+    require(
+        request.privatePrototype().path("evidenceReference").asText().length() <= 1200,
+        "A referência da prova deve ter até 1200 caracteres.");
+    prototypeContext.validate(request.privatePrototype(), cycle.getProductVersion());
+    var proof = com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+    proof.put("productVersion", cycle.getProductVersion());
+    proof.put("experimentId", cycle.getExperimentId());
+    proof.put("chainDefinitionId", cycle.getChainDefinitionId());
+    proof.set("privatePrototype", request.privatePrototype());
+    proof.put("externalSpendAuthorized", false);
+    Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+    cycle.setRevision(cycle.getRevision() + 1);
+    cycle.setUpdatedAt(now);
+    var event = new LearningSalesCycleEvent();
+    event.setCycleId(cycleId);
+    event.setRequestKey(request.requestKey().toString());
+    event.setRequestJson(input);
+    event.setRevision(cycle.getRevision());
+    event.setFromStage(cycle.getStage());
+    event.setToStage(cycle.getStage());
+    event.setAction("REGISTER_PROTOTYPE");
+    event.setOperatorName(request.operatorName().trim());
+    event.setSummary(
+        "Primeira implementação privada registrada. Revisões independentes permanecem obrigatórias; nenhuma autorização comercial foi ampliada.");
+    event.setEvidenceReference(request.privatePrototype().path("evidenceReference").asText());
+    event.setEvidenceJson(json.write(proof));
+    event.setCreatedAt(now);
+    events.saveAndFlush(event);
+    cycles.saveAndFlush(cycle);
+    log.info(
+        "Ciclos: prova privada inicial registrada productId={} cycleId={} experimentId={} version={} revision={}",
+        productId,
+        cycleId,
+        cycle.getExperimentId(),
+        cycle.getProductVersion(),
+        cycle.getRevision());
+    return response(cycle);
+  }
+
+  /**
+   * Oferece somente o registro inicial de implementação ainda não exposta, preservando a história.
+   */
+  private LearningCycleResponse.PrototypeRegistration prototypeRegistration(
+      LearningSalesCycle cycle) {
+    if (prototypeContext == null
+        || !"OPEN".equals(cycle.getStatus())
+        || !"ADJUSTMENT".equals(cycle.getStage())
+        || cycle.isBaseline()) return null;
+    var experiment = requiredExperiment(cycle.getProductId(), cycle.getExperimentId());
+    if (experiment.getStatus() != ExperimentStatus.PLANNED
+        || experiment.getFacebookReleaseRequestedAt() != null
+        || evidence.operated(experiment))
+      return new LearningCycleResponse.PrototypeRegistration(
+          false,
+          "O experimento já possui exposição ou liberação. Preserve sua história e prepare um sucessor para mudanças.");
+    if (prototypeContext.resolve(cycle).isPresent())
+      return new LearningCycleResponse.PrototypeRegistration(
+          false,
+          "A primeira prova desta candidata já foi registrada. Acompanhe as revisões; outra candidata exige sucessor.");
+    return new LearningCycleResponse.PrototypeRegistration(
+        true,
+        "Registre a primeira implementação testada da versão já declarada neste ciclo. Isso disponibiliza a prova para Psique e Têmis, sem aprová-la ou iniciar gasto.");
+  }
+
   /** Aplica exclusivamente o ajuste derivado do parecer persistido pela preparação interna. */
   @Transactional
   public LearningCycleResponse recordPreparationDecision(
@@ -1636,7 +1733,8 @@ public class LearningCycleService {
         authorizationReview(cycle),
         commercialPreparation,
         windowRevalidation(cycle),
-        nextWork);
+        nextWork,
+        prototypeRegistration(cycle));
   }
 
   /** Impede que texto livre conclua uma etapa com trabalho delegado ainda não comprovado. */

@@ -69,7 +69,7 @@ public class LearningCyclePrototypeContext {
       try {
         JsonNode evidence = json.readTree(event.getEvidenceJson());
         JsonNode proof = evidence.path("privatePrototype");
-        if (!"REWORK".equals(event.getAction())
+        if (!("REWORK".equals(event.getAction()) || "REGISTER_PROTOTYPE".equals(event.getAction()))
             || !cycle.getProductVersion().equals(evidence.path("productVersion").asText())
             || !proof.isObject()) continue;
         if (!cycle.getProductVersion().equals(proof.path("prototypeVersion").asText()))

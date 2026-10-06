@@ -3,7 +3,7 @@
   "processCode": "pde-commercial-homologation-activation",
   "processVersion": 4,
   "activityId": "pdeGate",
-  "sourceReference": "product:10@mira-private-candidate-v2-build",
+  "sourceReference": "product:10@mira-private-candidate-v1-build",
   "experimentId": 93,
   "product": {
     "id": 10,
@@ -15,7 +15,7 @@
     "publicUrl": "https://mira.digicomdigital.com.br/"
   },
   "status": "READY_FOR_INDEPENDENT_REVIEW",
-  "boundary": "Publica código privado no runtime próprio de Mira, preservando byte a byte a aplicação comercial e seus ativos históricos. A candidata v2 usa rota e backend próprios; nenhum experimento é ativado nem nova mídia/cobrança autorizada.",
+  "boundary": "Publica código privado no runtime próprio de Mira, preservando byte a byte a aplicação comercial e seus ativos históricos. A candidata privada usa rota e backend próprios; nenhum experimento é ativado nem nova mídia/cobrança autorizada.",
   "operationalState": {
     "verifiedAt": "2026-10-06",
     "experimentStatus": "PAUSED",
@@ -41,7 +41,7 @@
     "automaticDeployOnMerge": true,
     "frontendVersion": "mira-commercial",
     "publicUrl": "https://mira.digicomdigital.com.br/",
-    "requiredFrontendSourceSha256": "08bae3a5c90ecfa9eb14d5b0e0e75afb81c8d8cc5f18eb5fc969cb1348d0c49e"
+    "requiredFrontendSourceSha256": "634e6fb136cba3d5ac322b07646ee390e455c5a8d0c672dedfb9ee1806e46827"
   },
   "liveVisualContract": {
     "devices": [
@@ -75,7 +75,7 @@
     "runtimeIdentity": {
       "version": "mira-commercial-v1",
       "experienceVersion": "mira-commercial-v1",
-      "frontendSourceSha256": "08bae3a5c90ecfa9eb14d5b0e0e75afb81c8d8cc5f18eb5fc969cb1348d0c49e"
+      "frontendSourceSha256": "634e6fb136cba3d5ac322b07646ee390e455c5a8d0c672dedfb9ee1806e46827"
     }
   },
   "mediaContract": {
@@ -127,7 +127,7 @@
   "homologationEvidence": [
     {
       "path": "pde-platform/contracts/mira-private-candidate-v1.json",
-      "sha256": "0273a194a97b885f38889f2feee35c69d45fecc6a603fd9678b55541d86fa4e4",
+      "sha256": "3b93b1cdd57a8dac840a694ba71640c5dde0cfa3ade68ee97efe620c4d9bf48d",
       "promptMode": "FULL"
     }
   ],
@@ -154,8 +154,26 @@
     },
     {
       "path": ".github/workflows/pde-platform-metodo-musa-ci.yml",
-      "sha256": "f6e03a9cff726c71d60824d349ef0e90d32a1771fad81f1edd24a25b243cae8a",
+      "sha256": "2060262b0f3cda4f4e26857cdf1e9553e91c015e0bad4e7a47e65f8179a6556a",
       "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-product-proof-v1.png",
+      "sha256": "4ffda62d502d8ea644fa06a0cd6cf0768c39c4278b43bdcefa3665e9d578c2f3",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Captura determinística da aplicação paga real com dados de QA segregados; comprova somente interface e entrega, sem representar cliente, venda ou resultado de mercado."
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-control-v4.png",
+      "sha256": "66482a136dce80aa14121417b3229e8b70c0b575e3879b8e4fffe861faa65fcc",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Controle 4:5 preservado sem alteração visual; declara preço, direito e limite no tamanho real do feed."
+    },
+    {
+      "path": "pde-platform/frontend/public-mira-commercial/media/mira-commercial-demo-v3.mp4",
+      "sha256": "0ba5720d4e3ec6beeed4ee76430a6be47b681a36eca9dfefe349d3a66aee3377",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Vídeo #49 preservado byte a byte; a revisão v14 altera somente a linhagem limitada das provas."
     }
   ],
   "executableEvidence": [
@@ -166,7 +184,7 @@
     },
     {
       "path": "infra/testing/mira-candidate/run-local.sh",
-      "sha256": "5d869336ce5b187e08dc4eda7651aae5686f968aa144c47c81e05d81366b3e4e",
+      "sha256": "fbb2a1a7e85395b1f512371d6c246cc8a6e330428c188321caf61ee8ee1dc428",
       "promptMode": "FULL"
     }
   ],

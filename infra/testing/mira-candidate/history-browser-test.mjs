@@ -2,7 +2,9 @@ import { createRequire } from "node:module";
 import { readFile, writeFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 
-const require = createRequire(import.meta.url);
+const require = createRequire(
+  new URL("../../../customer-agent-worker/package.json", import.meta.url),
+);
 let library;
 try {
   library = require("playwright-core");

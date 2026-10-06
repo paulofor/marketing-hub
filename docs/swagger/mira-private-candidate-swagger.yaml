@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Mira — candidata privada determinística
   version: v1
-  description: Experiência mira-commercial-v2 no backend principal. Testes segregados; sem geração paga, cobrança, publicação comercial ou mídia.
+  description: Experiência mira-commercial-v1 no backend principal. Testes segregados; sem geração paga, cobrança, publicação comercial ou mídia.
 paths:
   /api/pde/mira/candidate/v1/contract:
     get:
@@ -36,7 +36,7 @@ paths:
               properties:
                 cycleId: { type: integer, format: int64, minimum: 1 }
                 sourceReference: { type: string, example: "experiment:9006" }
-                prototypeVersion: { type: string, enum: [mira-commercial-v2] }
+                prototypeVersion: { type: string, enum: [mira-commercial-v1] }
                 condition: { type: string, enum: [REFERENCE, REDUCED] }
                 scenarioCode:
                   { type: string, enum: [ADHERENT, RECOVERY, SAFETY] }

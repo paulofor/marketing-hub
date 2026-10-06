@@ -1,4 +1,4 @@
-# Mira — candidata privada v2
+# Mira — nova candidata privada do experimento 99
 
 ## Escopo e evidência
 
@@ -46,3 +46,15 @@ A validação integrada encontrou uma divergência entre executor e backend: o h
 A rodada final de construção de produção, MySQL 5.7, browser e contratos backend/executor passou nos 18 percursos. O percurso adicional da segunda organização passou após bloqueio, recarga e correção, preservando o primeiro resultado. As suites locais acumuladas registram 4.165 testes de backend e 153 do executor, sem falhas ou erros; exclusões condicionais históricas permanecem explícitas nos relatórios. O proxy da imagem construída pelo Dockerfile encaminha a candidata ao backend principal, preserva a rota histórica e aplica cache privado e exclusão de indexação. Validadores Liquibase, Bash, ShellCheck, seleção de publicação, contratos de release e pacote de provas também passaram.
 
 O runner é `bash infra/testing/mira-candidate/run-local.sh`, com `MIRA_TEST_COMPOSE_PROJECT` exclusivo. Na sandbox com engine remota, usar `MIRA_TEST_DB_HOST=sandbox-docker`; no GitHub Actions, o padrão é `127.0.0.1`. Evidências são copiadas para `MIRA_TEST_EVIDENCE_DIR`, e a topologia é removida no encerramento. O teste não usa credenciais ou cadastros comerciais.
+
+## Registro inicial da implementação
+
+A cadeia v26 impede REWORK porque alterações em uma candidata já entregue exigem sucessor. Esse comando também era a única origem reconhecida da prova, deixando a primeira implementação de um ciclo preparado sem handoff pela tela. O registro inicial agora tem contrato próprio: mesma versão declarada, ciclo aberto em ajuste, experimento planejado sem exposição/liberação e nenhuma prova anterior. Não troca versão, candidata, hipótese, etapa, orçamento ou aprovação. Mudanças posteriores continuam exigindo sucessor.
+
+A candidata preserva o rótulo de versão já declarado no ciclo 6 (`mira-commercial-v1`), com build privado `mira-private-candidate-v1`, rota própria e fingerprint novo. A identidade inclui experimento 99 e ciclo 6; não usa a prova comercial do experimento 93. O cadastro global e os ciclos encerrados permanecem intactos.
+
+O CI detectou a retirada de três referências compactas das mídias históricas no manifesto novo. Foram restabelecidas como `ATTESTED_REFERENCE`, com hashes e limites de revisão preservados; isso evita enviar mídia binária como texto aos agentes.
+
+O teste de retomada também dependia por acidente do `NODE_PATH` da sandbox. A resolução de Playwright agora parte do pacote do executor, o mesmo instalado no CI. O percurso de preservação foi validado com `NODE_PATH` vazio, backend real e MySQL 5.7. A atribuição e exportação da variável de projeto Compose no workflow foram separadas para não esconder erro de comando; Actionlint, Bash e ShellCheck passaram.
+
+O registro inicial tem testes de serviço e HTTP para replay, revisão concorrente, versão divergente, exposição comercial, histórico encerrado e segregação de produto. A tela passou por 31 testes relevantes, typecheck, build e uma simulação de interação em desktop, iPhone e Pixel: bloqueio de envio incompleto, erro de conflito visível, retomada com a mesma chave e nenhuma alteração de etapa ou orçamento. Esses testes da tela usam respostas sintéticas; não representam registro ou aprovação de Mira em produção.

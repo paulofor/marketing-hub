@@ -10,7 +10,7 @@
     "internalName": "Mira",
     "commercialName": "Mira · sua rotina organizada",
     "slug": "pde-planejado-36",
-    "experienceVersion": "mira-commercial-v2",
+    "experienceVersion": "mira-commercial-v1",
     "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate"
   },
   "status": "READY_FOR_INDEPENDENT_REVIEW",
@@ -25,17 +25,32 @@
     "automaticDeployOnMerge": false,
     "frontendVersion": "mira-commercial",
     "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate",
-    "requiredFrontendSourceSha256": "08bae3a5c90ecfa9eb14d5b0e0e75afb81c8d8cc5f18eb5fc969cb1348d0c49e"
+    "requiredFrontendSourceSha256": "634e6fb136cba3d5ac322b07646ee390e455c5a8d0c672dedfb9ee1806e46827"
   },
   "liveVisualContract": {
     "runtimeIdentity": {
-      "version": "mira-commercial-v2",
-      "experienceVersion": "mira-commercial-v2",
-      "frontendSourceSha256": "08bae3a5c90ecfa9eb14d5b0e0e75afb81c8d8cc5f18eb5fc969cb1348d0c49e"
+      "version": "mira-commercial-v1",
+      "experienceVersion": "mira-commercial-v1",
+      "frontendSourceSha256": "634e6fb136cba3d5ac322b07646ee390e455c5a8d0c672dedfb9ee1806e46827"
     },
     "diagnosticsUrl": "https://mira.digicomdigital.com.br/mira-candidate/version-diagnostics.json"
   },
   "implementationEvidence": [
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleService.java",
+      "sha256": "b7b88a338dd96ac8bfadb896adc7ab7954360b68353be24f9f18f84265c1925c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePrototypeContext.java",
+      "sha256": "9e6133028b84a2b815c885cf04b6b2f2a6cf4bb4cf97af6fed7f42223a743976",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CyclePrototypeRegistrationForm.tsx",
+      "sha256": "257e2750c1d3b8f5492ebc94fac776872c436c0d71da31539f41ff4e6caf0cad",
+      "promptMode": "FULL"
+    },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeInputComparisonScenarioMatrixV1.java",
       "sha256": "322c9d126230205cb7d3a8e6b6c84a445f12a7122c729b99617c1c945aaf70c9",
@@ -68,7 +83,7 @@
     },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/service/MiraPrivateService.java",
-      "sha256": "a5f1e3f860d228cc602e8b0d2f02cc96f4d486746849420de701942e4a9bf487",
+      "sha256": "c2282888bf648cf7f6811a62526caa5708e4da9349fc45f821be2e1826bd83ff",
       "promptMode": "FULL"
     },
     {
@@ -78,6 +93,21 @@
     }
   ],
   "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePrototypeRegistrationTest.java",
+      "sha256": "c8dc7e007ecc57a20b79f5983b672de7992144211e9564c4682ed355a069b013",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/controller/LearningCyclePrototypeControllerTest.java",
+      "sha256": "bb671f3d59711762333b6719105fcb049692b3a8fe1c01feb60ec0c0ba4f1df5",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CyclePrototypeRegistrationForm.test.tsx",
+      "sha256": "45256f168f755ce35d9a100fb4d5a0bd35a0c04e2b1c5d7637c2c7c615a681d7",
+      "promptMode": "FULL"
+    },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeInputComparisonScenarioMatrixV1Test.java",
       "sha256": "6b9e3047cb41523be7a67cfc41006529cdd136cef5df1c16d5a058e31e715dd6",
@@ -90,17 +120,17 @@
     },
     {
       "path": "infra/testing/mira-candidate/history-browser-test.mjs",
-      "sha256": "ae427f4f3a795b190d111df3f565aec8c71e1770e53a801ab7b91cf67fb6a3cc",
+      "sha256": "082b558a6517d603a46517f9d24d937e889f7467a38e39c3c537aaae51d6a04d",
       "promptMode": "FULL"
     },
     {
       "path": "infra/testing/mira-candidate/run-local.sh",
-      "sha256": "5d869336ce5b187e08dc4eda7651aae5686f968aa144c47c81e05d81366b3e4e",
+      "sha256": "fbb2a1a7e85395b1f512371d6c246cc8a6e330428c188321caf61ee8ee1dc428",
       "promptMode": "FULL"
     },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateServiceTest.java",
-      "sha256": "0fcb63300b12213661c9d186d11d2ced31718c430dd2f2a15de5977d30ebcc45",
+      "sha256": "176a60f78f9716cdd5d932e820e800472d2891dd16f9753e7c26d049a49ee28b",
       "promptMode": "FULL"
     },
     {
@@ -110,7 +140,7 @@
     },
     {
       "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunnerTest.java",
-      "sha256": "4d30e862fc00fcc5f1b10f49656e65cd1e3e2d13d9bec8386c3be559617a3135",
+      "sha256": "8cd5236849f7e044bdd74e917c83447fc11279e3c3bcecf9bd1e7ff11440dd9f",
       "promptMode": "FULL"
     }
   ],

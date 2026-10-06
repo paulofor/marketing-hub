@@ -85,6 +85,7 @@ export type LearningCycle = {
     reason: string;
     url: string;
   } | null;
+  prototypeRegistration?: { available: boolean; reason: string } | null;
   windowRevalidation?: { available: boolean; reason: string } | null;
   authorizationReview?: {
     dailyBudgetBrl?: number | null;
@@ -235,11 +236,13 @@ export function useCycleMutation(productId?: number, cycleId?: number) {
     mutationFn: async (body: Record<string, unknown>) =>
       (
         await axios.post<LearningCycle>(
-          `${cycleApi}/products/${productId}${cycleId ? `/${cycleId}/${body.budgetAuthorization ? "budget-authorization" : "commands"}` : ""}`,
-          body.budgetAuthorization
+          `${cycleApi}/products/${productId}${cycleId ? `/${cycleId}/${body.budgetAuthorization ? "budget-authorization" : body.prototypeRegistration ? "private-prototype" : "commands"}` : ""}`,
+          body.budgetAuthorization || body.prototypeRegistration
             ? Object.fromEntries(
                 Object.entries(body).filter(
-                  ([key]) => key !== "budgetAuthorization",
+                  ([key]) =>
+                    key !== "budgetAuthorization" &&
+                    key !== "prototypeRegistration",
                 ),
               )
             : body,

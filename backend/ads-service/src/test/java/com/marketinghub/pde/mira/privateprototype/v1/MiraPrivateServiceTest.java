@@ -235,7 +235,7 @@ class MiraPrivateServiceTest {
                     new Create(
                         6L,
                         "experiment:206",
-                        "mira-commercial-v1",
+                        "incompatible-version",
                         "REDUCED",
                         "ADHERENT",
                         "DESKTOP_1440")))

@@ -308,7 +308,7 @@ class PdeAgentValidationHarnessRunnerTest {
         Files.readString(legacy)
             .replace("product:10@agent-validation-v1", "experiment:9006")
             .replace("orientacao-digital-rotina-pele-madura", "pde-planejado-36")
-            .replace("mira-private-v1", "mira-commercial-v2")
+            .replace("mira-private-v1", "mira-commercial-v1")
             .replace("http://127.0.0.1:5176/mira-private", "http://127.0.0.1:57181/mira-candidate")
             .replace("\"productId\":10", "\"productId\":8006");
     Files.writeString(candidate, fixture);
@@ -388,7 +388,7 @@ class PdeAgentValidationHarnessRunnerTest {
             "productSlug",
             "pde-planejado-36",
             "experienceVersion",
-            "mira-commercial-v2",
+            "mira-commercial-v1",
             "experimentId",
             9006L,
             "publicUrl",

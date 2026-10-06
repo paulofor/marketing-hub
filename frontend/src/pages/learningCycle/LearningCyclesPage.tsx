@@ -13,6 +13,7 @@ import PageTitle from "../../components/PageTitle";
 import LearningCycleCreateForm from "./LearningCycleCreateForm";
 import LearningCycleDecisionPanel from "./LearningCycleDecisionPanel";
 import LearningCycleCommandForm from "./LearningCycleCommandForm";
+import CyclePrototypeRegistrationForm from "./CyclePrototypeRegistrationForm";
 import CycleWindowRevalidationForm from "./CycleWindowRevalidationForm";
 import LearningCycleAutomaticMeasurement from "./LearningCycleAutomaticMeasurement";
 import LearningCycleDiagram from "./LearningCycleDiagram";
@@ -448,6 +449,7 @@ export default function LearningCyclesPage() {
               ) : null}
             </div>
           </section>
+          <CyclePrototypeRegistrationForm cycle={cycle} onUpdated={updated} />
           {cycle.windowRevalidation ? (
             <CycleWindowRevalidationForm cycle={cycle} onUpdated={updated} />
           ) : null}

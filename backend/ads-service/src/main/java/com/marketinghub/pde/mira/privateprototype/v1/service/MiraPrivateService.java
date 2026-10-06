@@ -26,7 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Slf4j
 public class MiraPrivateService {
-  public static final String VERSION = "mira-commercial-v2";
+  public static final String VERSION = "mira-commercial-v1";
   public static final String PRODUCT_SLUG = "pde-planejado-36";
   private final MiraPrivateSessionRepository sessions;
   private final LearningSalesCycleRepository cycles;

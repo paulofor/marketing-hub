@@ -38,7 +38,7 @@ for attempt in {1..60}; do
   sleep 1
 done
 cat >"$round_dir/input.json" <<'JSON'
-{"mode":"TECHNICAL","sourceReference":"experiment:9006","productId":8006,"productSlug":"pde-planejado-36","cycleId":7006,"prototypeVersion":"mira-commercial-v2","captureSessionId":"mira-local-round","sourceUrl":"http://127.0.0.1:57181/mira-candidate"}
+{"mode":"TECHNICAL","sourceReference":"experiment:9006","productId":8006,"productSlug":"pde-planejado-36","cycleId":7006,"prototypeVersion":"mira-commercial-v1","captureSessionId":"mira-local-round","sourceUrl":"http://127.0.0.1:57181/mira-candidate"}
 JSON
 PDE_INTERNAL_API_TOKEN=mira-local-internal-only node customer-agent-worker/src/main/resources/browser/mira-candidate-harness.mjs "$round_dir/input.json" "$round_dir/report.json" "$round_dir/captures"
 PDE_INTERNAL_API_TOKEN=mira-local-internal-only node infra/testing/mira-candidate/history-browser-test.mjs "$round_dir/input.json" "$round_dir/history.json"

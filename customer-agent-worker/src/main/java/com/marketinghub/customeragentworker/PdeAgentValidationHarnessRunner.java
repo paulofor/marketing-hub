@@ -123,7 +123,7 @@ public class PdeAgentValidationHarnessRunner {
             && "/mira-private".equals(URI.create(sourceUrl).getPath());
     boolean miraCandidate =
         "pde-planejado-36".equals(productSlug)
-            && "mira-commercial-v2".equals(prototypeVersion)
+            && "mira-commercial-v1".equals(prototypeVersion)
             && "/mira-candidate".equals(URI.create(sourceUrl).getPath())
             && sourceReference.equals("experiment:" + target.path("experimentId").asLong())
             && lineage.path("learningCycleId").asLong() > 0
@@ -269,7 +269,7 @@ public class PdeAgentValidationHarnessRunner {
     }
     boolean miraCandidate =
         "pde-planejado-36".equals(String.valueOf(expected.get("productSlug")))
-            && "mira-commercial-v2".equals(String.valueOf(expected.get("prototypeVersion")));
+            && "mira-commercial-v1".equals(String.valueOf(expected.get("prototypeVersion")));
     boolean alcyone = "pde-planejado-46".equals(String.valueOf(expected.get("productSlug")));
     if (alcyone
         && (ALCYONE_CONTINUITY_CHECKS.stream().anyMatch(check -> !checks.path(check).isBoolean())

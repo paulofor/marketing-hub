@@ -250,7 +250,8 @@ jobs:
           MIRA_TEST_EVIDENCE_DIR: artifacts/mira-candidate
         run: |
           npm ci --prefix customer-agent-worker --omit=dev --no-audit --no-fund
-          export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="$(node -p 'require("./pde-platform/frontend/node_modules/playwright").chromium.executablePath()')"
+          PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="$(node -p 'require("./pde-platform/frontend/node_modules/playwright").chromium.executablePath()')"
+          export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
           bash infra/testing/mira-candidate/run-local.sh
       - name: Preserve Mira candidate evidence
         if: always()

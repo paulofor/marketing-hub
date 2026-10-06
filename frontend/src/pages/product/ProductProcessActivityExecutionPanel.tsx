@@ -20,6 +20,8 @@ import ProductProcessTaskTracking, {
 } from "./ProductProcessTaskTracking";
 import ExperimentRunPanel from "../experiment/ExperimentRunPanel";
 import PrivateReadingAssistant from "./PrivateReadingAssistant";
+import ProductHistoricalContinuation from "./ProductHistoricalContinuation";
+import type { ProductLearningCycleNavigation } from "../../api/product/useProductValueChainPositions";
 
 type Props = {
   activity: ProductProcessActivityExecutionGroup;
@@ -32,6 +34,9 @@ type Props = {
   trackingError?: boolean;
   currentTask?: ProductProcessRecoveryTask | null;
   processManaged?: boolean;
+  historical?: boolean;
+  continuation?: ProductLearningCycleNavigation;
+  continuationUnavailable?: boolean;
   chainId?: number;
   cycleId?: number;
 };
@@ -64,6 +69,9 @@ export default function ProductProcessActivityExecutionPanel({
   trackingError,
   currentTask,
   processManaged = false,
+  historical = false,
+  continuation,
+  continuationUnavailable,
   chainId,
   cycleId,
 }: Props) {
@@ -98,7 +106,7 @@ export default function ProductProcessActivityExecutionPanel({
     });
     subprocessUrl = `${supplied.pathname}${supplied.search}${supplied.hash}`;
   }
-  const recovery = activity.recoveryAction;
+  const recovery = historical ? null : activity.recoveryAction;
   const controlCompleted = activity.operationalState === "COMPLETED";
   const recoveryLabel = recovery
     ? `${recovery.sequenceNumber ? `${processSequence ? `${processSequence}.` : ""}${recovery.sequenceNumber} — ` : ""}${recovery.activityName}`
@@ -135,6 +143,12 @@ export default function ProductProcessActivityExecutionPanel({
           : control.description}
       </p>
 
+      {historical && !activity.objectiveAchieved && (
+        <ProductHistoricalContinuation
+          navigation={continuation}
+          unavailable={continuationUnavailable}
+        />
+      )}
       <ActivityRequirements activity={activity} />
 
       {!recovery ? (
@@ -150,7 +164,8 @@ export default function ProductProcessActivityExecutionPanel({
         </p>
       ) : null}
 
-      {!recovery &&
+      {!historical &&
+        !recovery &&
         (control.interactionType === "APPROVAL" ? (
           <HumanDecisionForm
             activity={activity}
@@ -189,7 +204,8 @@ export default function ProductProcessActivityExecutionPanel({
           </button>
         ) : null)}
 
-      {processManaged &&
+      {!historical &&
+        processManaged &&
         ["COMMAND", "WORKSPACE"].includes(control.interactionType) &&
         !control.navigationUrl && (
           <p className="small text-body-secondary mb-2">

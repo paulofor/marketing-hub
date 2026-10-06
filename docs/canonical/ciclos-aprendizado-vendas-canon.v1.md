@@ -632,3 +632,17 @@ A passagem e a execução de destino ficam no diário existente, com origem auto
 sem fingir aprovação humana. Somente os trabalhos comprovados concluem a etapa do
 ciclo. Audiovisual, homologação final, orçamento, janela e publicação conservam seus
 contratos próprios; o avanço preparatório não amplia os limites autorizados.
+
+## Orientação em referências encerradas — decisão de 06/10/2026
+
+As telas de produto, processo e atividade devem distinguir o histórico da continuidade
+executável. Se o backend comprovar que a referência está encerrada, uma pausa administrativa
+anterior permanece no diário, mas o estado operacional exibido é encerrado. Não apresentar
+uma pendência histórica como atividade atual executável nem prometer execução automática
+naquela referência. As provas, custos e pendências não comprovadas permanecem visíveis.
+
+O cabeçalho, o resumo e a atividade pendente oferecem a continuidade fornecida pelo backend,
+com produto, cadeia e ciclo explícitos. Ajuste aprovado sem sucessor é preparação ainda não
+iniciada; não significa nova decisão humana pendente nem preparação em andamento. Falha de
+consulta impede oferecer um destino não confirmado. Abrir o ciclo não cria tarefas, não
+reabre o experimento e não transfere autorizações de IA ou mídia entre produtos.

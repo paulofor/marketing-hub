@@ -6,6 +6,8 @@ import { Loader2, PauseCircle, PlayCircle } from "lucide-react";
 import axios from "axios";
 import ProductProcessContextCopy from "./ProductProcessContextCopy";
 import type { ProcessContext } from "./productProcessContext";
+import ProductHistoricalContinuation from "./ProductHistoricalContinuation";
+import type { ProductLearningCycleNavigation } from "../../api/product/useProductValueChainPositions";
 import {
   useProcessAutomation,
   useProcessAutomationEvents,
@@ -20,6 +22,8 @@ export default function ProductProcessAutomationPanel({
   sourceReference,
   copyContext,
   contextLoading,
+  continuation,
+  continuationUnavailable,
 }: {
   productId: number;
   processId: number;
@@ -28,6 +32,8 @@ export default function ProductProcessAutomationPanel({
   sourceReference?: string | null;
   copyContext?: Omit<ProcessContext, "automation">;
   contextLoading?: boolean;
+  continuation?: ProductLearningCycleNavigation;
+  continuationUnavailable?: boolean;
 }) {
   const { status, command, root } = useProcessAutomation(
     productId,
@@ -161,7 +167,7 @@ export default function ProductProcessAutomationPanel({
               ? ` · ${data.omittedActivities} dispensadas pelo fluxo`
               : ""}
           </p>
-          {data.currentActivityId && (
+          {data.status !== "CLOSED" && data.currentActivityId && (
             <Link
               className="product-process-automation__current"
               to={{
@@ -176,7 +182,15 @@ export default function ProductProcessAutomationPanel({
               </span>
             </Link>
           )}
-          {data.userAction ? (
+          {data.status === "CLOSED" ? (
+            <>
+              {data.reason && <p className="mt-2 mb-2">{data.reason}</p>}
+              <ProductHistoricalContinuation
+                navigation={continuation}
+                unavailable={continuationUnavailable}
+              />
+            </>
+          ) : data.userAction ? (
             <div
               className="alert alert-warning mt-2 mb-3"
               aria-label="Próxima ação necessária"

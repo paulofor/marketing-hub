@@ -180,10 +180,29 @@ export function processContextText(context: ProcessContext, origin: string) {
     `Objetivo do processo comprovado: ${yesNo(h.objectiveAchieved)}`,
     `Atividades da versão selecionada: ${h.selectedActivityCount} · concluídas: ${h.completedActivityCount} · restantes: ${h.remainingActivityCount} · bloqueadas: ${h.blockedActivityCount}`,
     `Registros de atividades incluindo histórico: ${h.activityCount} · com tarefas: ${h.activitiesWithTasksCount} · tarefas únicas: ${h.uniqueTaskCount}`,
-    `Atividade atual registrada: ${h.currentActivityId ? `${value(h.currentActivityName)} (${h.currentActivityId}) · ${state(activityStateLabels, h.currentActivityState)}` : "Nenhuma informada"}`,
+    `${h.operationalState === "CLOSED" ? "Pendência histórica registrada" : "Atividade atual registrada"}: ${h.currentActivityId ? `${value(h.currentActivityName)} (${h.currentActivityId}) · ${state(activityStateLabels, h.currentActivityState)}` : "Nenhuma informada"}`,
     `Motivo da atividade atual: ${value(h.currentActivityStateReason)}`,
     `Custo conhecido das tarefas: ${cost(h.knownEstimatedCostUsd)} · cobertura: ${h.costCoverage}`,
   );
+  if (h.operationalState === "CLOSED") {
+    lines.push(
+      "Referência encerrada: nenhuma atividade deve ser retomada aqui; provas e pendências são históricas.",
+    );
+    const continuation = samePosition
+      ? position?.learningCycleNavigation
+      : null;
+    if (
+      continuation?.productId === h.productId &&
+      continuation.chainDefinitionId === chainId
+    ) {
+      lines.push(
+        "CONTINUIDADE DO PRODUTO (outra passagem, não substitui este histórico)",
+        `Ciclo #${continuation.cycleId} · experimento #${continuation.experimentId}`,
+        continuation.reason,
+        `Link da continuidade: ${new URL(continuation.url, origin).href}`,
+      );
+    }
+  }
   for (const activity of h.activities) {
     lines.push(
       "",

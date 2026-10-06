@@ -196,7 +196,8 @@ class TechnicalPreflightCurrentEvidenceFlowTest {
   }
 
   /**
-   * HTTP e controle pausado preservam as três provas encerradas, mesmo após mudança da superfície.
+   * HTTP e controle encerrado preservam as três provas históricas, mesmo após mudança da
+   * superfície.
    */
   @Test
   void reportsClosedReferenceWithoutLosingPartialProgress() throws Exception {
@@ -305,7 +306,9 @@ class TechnicalPreflightCurrentEvidenceFlowTest {
     verifyNoInteractions(dossiers);
   }
 
-  /** Consulta o motor com a resposta real do BPM, sem mudar pausa, custos, diário ou tarefas. */
+  /**
+   * Projeta encerramento com a resposta real do BPM, sem mudar pausa, custos, diário ou tarefas.
+   */
   private void verifiesConsultativeControl(
       com.marketinghub
               .businessprocess
@@ -362,11 +365,11 @@ class TechnicalPreflightCurrentEvidenceFlowTest {
                       .param("chainId", run.getChainDefinitionId().toString())
                       .param("sourceReference", reference))
               .andExpect(status().isOk())
-              .andExpect(jsonPath("$.status").value(state))
+              .andExpect(jsonPath("$.status").value("CLOSED"))
               .andExpect(jsonPath("$.completedActivities").value(3))
               .andExpect(jsonPath("$.remainingActivities").value(1))
-              .andExpect(jsonPath("$.currentActivityId").value("financialGuardrails"))
-              .andExpect(jsonPath("$.currentSequence").value(4))
+              .andExpect(jsonPath("$.currentActivityId").isEmpty())
+              .andExpect(jsonPath("$.currentSequence").isEmpty())
               .andExpect(jsonPath("$.canResume").value(false))
               .andReturn()
               .getResponse()

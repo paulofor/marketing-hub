@@ -73,6 +73,18 @@ export type CycleEvent = {
   createdAt: string;
 };
 export type LearningCycle = {
+  delegatedWork?: {
+    processDefinitionId: number;
+    processNumber: number;
+    processName: string;
+    activityId: string;
+    activityNumber: number;
+    activityName: string;
+    responsible: string;
+    state: string;
+    reason: string;
+    url: string;
+  } | null;
   windowRevalidation?: { available: boolean; reason: string } | null;
   authorizationReview?: {
     dailyBudgetBrl?: number | null;

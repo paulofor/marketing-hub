@@ -34,6 +34,8 @@ class PdeTechnicalHomologationReadinessProviderTest {
     var result = provider.readiness(process(), activity(), product(4L), "experiment:92");
     assertThat(result.ready()).isFalse();
     assertThat(result.reason()).contains("URL executável", "Dédalo", "implementação", "Repetir");
+    assertThat(result.reason())
+        .contains("Psique só pode homologar depois", "não precisa preencher outro formulário");
   }
 
   /** Mantém o caminho histórico válido quando URL e versão correspondem à aceitação privada. */

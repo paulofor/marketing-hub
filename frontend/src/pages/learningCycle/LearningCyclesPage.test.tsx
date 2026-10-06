@@ -1,5 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import axios from "axios";
@@ -770,6 +777,203 @@ describe("Ciclos de aprendizado e vendas", () => {
     expect(
       screen.getByText("Aprendizado: Comprovar utilidade"),
     ).toBeInTheDocument();
+  });
+});
+
+/** Reproduz a pendência de Capella com identidade substituível e fontes sintéticas. */
+function delegatedCycle(productId: number): LearningCycle {
+  const url = `/products/${productId}/value-chain-history/processes/117/activities?learningCycleId=5&chainId=26#activity-technicalHomologation`;
+  return {
+    ...cycle,
+    id: 5,
+    productId,
+    chainDefinitionId: 26,
+    experimentId: productId + 91,
+    stage: "ADJUSTMENT",
+    stageLabel: "Ajustar produto e comunicação",
+    budgetLimitBrl: 0,
+    windowStart: "2026-10-08T03:00:00Z",
+    windowEnd: "2026-10-16T03:00:00Z",
+    workUrl: url,
+    inheritedLearning: { cycleId: 4, experimentId: productId + 81, events: [] },
+    events: [
+      {
+        id: 34,
+        revision: 3,
+        action: "DEFINE_INITIAL_WINDOW",
+        fromStage: "ADJUSTMENT",
+        toStage: "ADJUSTMENT",
+        operatorName: "Operador de teste",
+        summary: "Janela salva",
+        evidenceReference: "internal://fixture/window",
+        evidence: {},
+        createdAt: "2026-10-06T17:39:07Z",
+      },
+    ],
+    delegatedWork: {
+      processDefinitionId: 117,
+      processNumber: 3,
+      processName: "Construção",
+      activityId: "technicalHomologation",
+      activityNumber: 6,
+      activityName: "Homologar tecnicamente a versão real",
+      responsible: "Psique",
+      state: "NOT_STARTED",
+      reason:
+        "Dédalo precisa concluir a implementação. Psique só pode homologar depois dessa entrega.",
+      url,
+    },
+    commands: [
+      {
+        action: "COMPLETE",
+        label: "Concluir etapa com evidência",
+        available: false,
+        reason: "Entrega pendente",
+      },
+      {
+        action: "STOP",
+        label: "Encerrar ciclo",
+        available: true,
+        reason: "Com decisão",
+      },
+    ],
+  };
+}
+
+describe("Continuação após definir a janela", () => {
+  it.each([7, 7007])(
+    "destaca a entrega pendente no produto %s sem pedir conclusão manual",
+    async (productId) => {
+      const current = delegatedCycle(productId);
+      const original = vi.mocked(axios.get).getMockImplementation()!;
+      vi.mocked(axios.get).mockImplementation(async (url, ...args) =>
+        url === `${cycleApi}/products/${productId}`
+          ? { data: [current] }
+          : original(url, ...args),
+      );
+      wrapper(
+        <LearningCyclesPage />,
+        `/business-process-chains/learning-cycles?productId=${productId}&chainId=26&cycleId=5`,
+      );
+      const region = await screen.findByRole("region", {
+        name: "Trabalho atual do ciclo",
+      });
+      expect(region).toHaveTextContent(
+        "Dédalo precisa concluir a implementação",
+      );
+      expect(
+        screen.getByText(/Janela registrada: 08\/10\/2026 a 16\/10\/2026/),
+      ).toBeVisible();
+      expect(screen.getByText(/As datas planejam o período/)).toHaveTextContent(
+        "não iniciam a campanha",
+      );
+      expect(
+        screen.getByRole("link", { name: "Ver atividade e pendência" }),
+      ).toHaveAttribute("href", current.workUrl);
+      expect(
+        screen.queryByLabelText("Responsável pela decisão *"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Concluir etapa com evidência" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen
+          .getByText(/Aprendizado recebido/)
+          .compareDocumentPosition(region) & Node.DOCUMENT_POSITION_PRECEDING,
+      ).toBeTruthy();
+      await userEvent.click(
+        await screen.findByText("Alterar ou encerrar este ciclo"),
+      );
+      expect(
+        await screen.findByLabelText("Responsável pela decisão *"),
+      ).toBeVisible();
+      expect(
+        screen.queryByRole("option", { name: "Concluir etapa com evidência" }),
+      ).not.toBeInTheDocument();
+      expect(axios.post).not.toHaveBeenCalled();
+    },
+  );
+
+  it("mostra a confirmação e a continuação depois de salvar a janela uma única vez", async () => {
+    let current: LearningCycle = {
+      ...delegatedCycle(7),
+      windowStart: null,
+      windowEnd: null,
+      events: [],
+      windowRevalidation: {
+        available: true,
+        reason: "Defina a primeira janela",
+      },
+    };
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, ...args) =>
+      url === `${cycleApi}/products/7`
+        ? { data: [current] }
+        : original(url, ...args),
+    );
+    vi.mocked(axios.post).mockImplementation(async (url, body) => {
+      expect(url).toBe(`${cycleApi}/products/7/5/window-revalidation`);
+      expect(body).toMatchObject({
+        expectedRevision: 3,
+        startDate: "2026-10-08",
+        endDate: "2026-10-16",
+      });
+      current = { ...delegatedCycle(7), revision: 4, windowRevalidation: null };
+      return { data: current };
+    });
+    wrapper(
+      <LearningCyclesPage />,
+      "/business-process-chains/learning-cycles?productId=7&chainId=26&cycleId=5",
+    );
+    const form = await screen.findByRole("form", {
+      name: "Definir primeira janela comercial",
+    });
+    fireEvent.change(screen.getByLabelText("Início *"), {
+      target: { value: "2026-10-08" },
+    });
+    fireEvent.change(screen.getByLabelText("Fim *"), {
+      target: { value: "2026-10-16" },
+    });
+    fireEvent.submit(form);
+    expect(
+      await screen.findByText(/Janela registrada: 08\/10\/2026 a 16\/10\/2026/),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("region", { name: "Trabalho atual do ciclo" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("form", { name: "Definir primeira janela comercial" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Concluir etapa com evidência" }),
+    ).not.toBeInTheDocument();
+    expect(axios.post).toHaveBeenCalledTimes(1);
+  });
+
+  it("distingue uma tarefa em andamento de uma entrega ausente", async () => {
+    const current = delegatedCycle(7);
+    current.delegatedWork = {
+      ...current.delegatedWork!,
+      state: "IN_PROGRESS",
+      reason: "Psique está executando os testes da versão aceita.",
+    };
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, ...args) =>
+      url === `${cycleApi}/products/7`
+        ? { data: [current] }
+        : original(url, ...args),
+    );
+    wrapper(
+      <LearningCyclesPage />,
+      "/business-process-chains/learning-cycles?productId=7&chainId=26&cycleId=5",
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Atividade em andamento" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Acompanhar atividade" }),
+    ).toHaveAttribute("href", current.workUrl);
+    expect(axios.post).not.toHaveBeenCalled();
   });
 });
 

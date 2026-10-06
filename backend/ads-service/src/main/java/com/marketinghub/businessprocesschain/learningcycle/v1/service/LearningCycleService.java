@@ -1133,7 +1133,7 @@ public class LearningCycleService {
 
   /**
    * Valida movimento e prova da versão; mudanças seguem a política vigente e preservam o
-   * predecessor. O aceite financeiro não substitui a preparação comercial.
+   * predecessor. Trabalho delegado pendente e aceite financeiro não substituem a preparação.
    */
   private void apply(
       LearningSalesCycle cycle, Experiment experiment, LearningCycleCommand request, Instant now) {
@@ -1144,6 +1144,10 @@ public class LearningCycleService {
     }
     switch (request.action()) {
       case COMPLETE -> {
+        String pending =
+            preparationBlocker(
+                workResolver == null ? null : workResolver.resolvePreparation(cycle));
+        require(pending == null, pending);
         switch (cycle.getStage()) {
           case "LEARNING" -> {
             text(data, "learning");
@@ -1444,7 +1448,7 @@ public class LearningCycleService {
         : "A homologação utilizada deixou de ser vigente. Retorne para correção e homologue novamente antes de publicar ou expandir.";
   }
 
-  /** Expõe comandos e continuidade do resultado aprovado, preservando autorizações comerciais. */
+  /** Expõe trabalho delegado e comandos coerentes com as provas e autorizações atuais. */
   private LearningCycleResponse response(LearningSalesCycle cycle) {
     var commercialPreparation =
         commercialReadiness != null
@@ -1463,6 +1467,7 @@ public class LearningCycleService {
         "VALIDATION".equals(cycle.getStage())
             ? evidence.approvals(cycle)
             : List.<LearningCycleResponse.ApprovalOption>of();
+    var preparation = workResolver == null ? null : workResolver.resolvePreparation(cycle);
     var commands =
         "OPEN".equals(cycle.getStatus())
             ? cycleActions(cycle).stream()
@@ -1480,6 +1485,8 @@ public class LearningCycleService {
                                       : null;
                       if (blocker == null && requiresCurrentApproval(action, cycle.getStage()))
                         blocker = approvalBlocker(cycle);
+                      if (blocker == null && action == Action.COMPLETE)
+                        blocker = preparationBlocker(preparation);
                       if (blocker == null
                           && action == Action.COMPLETE
                           && "AUTHORIZATION".equals(cycle.getStage()))
@@ -1531,7 +1538,6 @@ public class LearningCycleService {
       nextAction = "Abra a atividade orientada e execute «" + target.getName() + "». " + nextAction;
       responsible = target.getOwnerName();
     }
-    var preparation = workResolver == null ? null : workResolver.resolvePreparation(cycle);
     var nextWork = preparation == null ? null : preparation.nextWork();
     if (preparation != null && preparation.completed()) {
       workUrl = null;
@@ -1629,7 +1635,23 @@ public class LearningCycleService {
         automaticVideoContinuation(cycle),
         authorizationReview(cycle),
         commercialPreparation,
-        windowRevalidation(cycle));
+        windowRevalidation(cycle),
+        nextWork);
+  }
+
+  /** Impede que texto livre conclua uma etapa com trabalho delegado ainda não comprovado. */
+  private String preparationBlocker(LearningCycleWorkResolver.Resolution preparation) {
+    if (preparation == null || preparation.nextWork() == null) return null;
+    var work = preparation.nextWork();
+    return "A atividade "
+        + work.processNumber()
+        + "."
+        + work.activityNumber()
+        + " — "
+        + work.activityName()
+        + " ainda não comprovou seu objetivo. Acompanhe o trabalho na atividade indicada; "
+        + "um formulário de conclusão não substitui essa entrega. "
+        + work.reason();
   }
 
   /** Expõe a primeira janela pendente ou a renovação legada, sem decidir datas no frontend. */

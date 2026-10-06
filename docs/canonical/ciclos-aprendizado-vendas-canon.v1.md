@@ -213,6 +213,15 @@ uma referência histórica ou retoma o ciclo existente, sem fingir aprovações 
 
 ### Cards de produto orientados pelo ciclo — decisão de 10/09/2026
 
+Esclarecimento de 06/10/2026: a página do ciclo deve destacar o trabalho delegado atual antes
+da hipótese longa e da memória histórica. Registrar datas confirma apenas o período planejado,
+em horário de Brasília; não inicia experimento nem prova prontidão. Enquanto uma atividade delegada
+estiver pendente, o backend deve expô-la no contrato `delegatedWork`, manter `COMPLETE` indisponível
+e rejeitar conclusão textual que ignore essa entrega. Alteração e encerramento continuam disponíveis
+sob demanda conforme as regras existentes. Especificações prontas de Dédalo não são implementação:
+a orientação deve nomear essa dependência antes da homologação de Psique, sem exigir um formulário
+de conclusão nem sugerir que repetir revisão produzirá o protótipo. A leitura não dispara trabalho.
+
 Quando houver ciclo identificado, os cards de início e catálogo devem destacar o número ordinal
 da passagem, experimento, etapa e trabalho atual fornecidos pelo backend. O Processo 6 permanece
 como coordenação do ciclo; seu vínculo comercial não significa que o sucessor já está em vendas.

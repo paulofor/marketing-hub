@@ -51,10 +51,13 @@ public class PdeTechnicalHomologationReadinessProvider
       var target = targets.resolve(sourceReference, process.getProcessCode()).orElse(null);
       if (target == null || target.publicUrl() == null || target.publicUrl().isBlank()) {
         return blocked(
-            "O protótipo desta passagem ainda não possui uma URL executável aceita. "
-                + "As especificações concluídas por Dédalo não comprovam implementação. "
-                + "Conclua a implementação da versão do ciclo e registre sua aceitação privada "
-                + "antes de executar Psique com o harness. Repetir a tarefa agora não resolve a pendência.");
+            "Dédalo precisa concluir a implementação desta versão e registrar sua prova privada: "
+                + "o protótipo ainda não possui uma URL executável aceita. "
+                + "As especificações concluídas não comprovam implementação. "
+                + "Psique só pode homologar depois dessa entrega. "
+                + "Você não precisa preencher outro formulário de conclusão nesta etapa. "
+                + "Repetir a tarefa de Psique ou definir datas não resolve esta pendência; "
+                + "a execução aguarda a implementação comprovada.");
       }
       if (!Objects.equals(product.getId(), target.productId())
           || target.productSlug() == null

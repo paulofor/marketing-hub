@@ -90,10 +90,46 @@ def reconcile(cycle, expected=200, request=None, product=None):
         expected)
 
 
+def proven_preparation(cycle):
+    # Simula os callbacks anteriores no banco local, sem substituir a guarda por texto livre.
+    # Reutiliza a mesma prova sintética da regressão de continuidade entre processos.
+    for _ in range(10):
+        work = cycle.get('delegatedWork')
+        if work is None:
+            return cycle
+        assert cycle['productId'] in (91001, 91002), 'Prova permitida somente para fixtures locais'
+        assert work['processNumber'] in (2, 3, 4), work
+        option = next(c for c in cycle['commands'] if c['action'] == 'COMPLETE')
+        assert not option['available'] and 'não comprovou' in option['reason'], option
+        before = sql(f"SELECT COUNT(*) FROM learning_sales_cycle_event_v1 WHERE cycle_id={cycle['id']}")
+        command(cycle, evidence=dict(planReference='internal://fixture/no-proof',
+            stopRule='Parar no limite', productVersion=cycle['productVersion'],
+            changeEvidence='Declaração sem callback'), expected=409)
+        assert sql(f"SELECT COUNT(*) FROM learning_sales_cycle_event_v1 WHERE cycle_id={cycle['id']}") == before
+        process, experiment = int(work['processDefinitionId']), int(cycle['experimentId'])
+        sql(f"""INSERT INTO business_process_activity_instance
+          (activity_definition_id,source_reference,occurrence_number,status,entered_at,exited_at,
+           objective_achieved,objective_evidence_json,known_cost_usd,cost_coverage,evidence_quality,created_at,updated_at)
+          SELECT d.id,'experiment:{experiment}',COALESCE(previous.last_occurrence,0)+1,
+            'COMPLETED',NOW(6),NOW(6),1,
+            '{{"evidenceType":"LOCAL_SYNTHETIC_CALLBACK","testDataExcluded":true}}',
+            0,'COMPLETE','AUTOMATIC',NOW(6),NOW(6)
+          FROM business_process_activity_definition d
+          LEFT JOIN (SELECT activity_definition_id,MAX(occurrence_number) last_occurrence
+            FROM business_process_activity_instance WHERE source_reference='experiment:{experiment}'
+            GROUP BY activity_definition_id) previous ON previous.activity_definition_id=d.id
+          WHERE d.process_definition_id={process}""")
+        refreshed = next(c for c in http(f'{API}/products/{cycle["productId"]}') if c['id'] == cycle['id'])
+        assert refreshed['stage'] == cycle['stage'] and refreshed['revision'] == cycle['revision']
+        assert refreshed.get('delegatedWork') != work, 'O callback não comprovou a atividade'
+        cycle = refreshed
+    raise AssertionError('Preparação local não convergiu')
+
+
 def to_validation(cycle):
     cycle=command(cycle,evidence=dict(learning='Valor precisa ser mais concreto',competingExplanation='Tráfego pequeno também explica o resultado'))
-    cycle=command(cycle,evidence=dict(planReference='internal://plan/v1',stopRule='Parar no teto ou fim da janela'))
-    return with_videos(command(cycle,evidence=dict(productVersion=cycle['productVersion'],changeEvidence='internal://release/v1')))
+    cycle=command(proven_preparation(cycle),evidence=dict(planReference='internal://plan/v1',stopRule='Parar no teto ou fim da janela'))
+    return with_videos(command(proven_preparation(cycle),evidence=dict(productVersion=cycle['productVersion'],changeEvidence='internal://release/v1')))
 
 
 def with_videos(cycle):
@@ -211,7 +247,7 @@ cycle=to_validation(cycle)
 old_gate=approval(cycle)
 cycle=command(cycle,'REWORK',dict(return_to,productVersion='fixture-v2'))
 assert cycle['stage']=='ADJUSTMENT' and cycle['experimentId']==91001
-cycle=with_videos(command(cycle,evidence=dict(productVersion='fixture-v2',changeEvidence='Correção aplicada')))
+cycle=with_videos(command(proven_preparation(cycle),evidence=dict(productVersion='fixture-v2',changeEvidence='Correção aplicada')))
 command(cycle,evidence=validation_data(cycle,old_gate),expected=409)
 command(cycle,evidence=validation_data(cycle,approval(cycle,product=91002)),expected=409)
 foreign_proof=http('/fixture/approval',dict(productId=cycle['productId'],
@@ -229,7 +265,7 @@ assert cycle['stage']=='AUTHORIZATION'
 http('/fixture/approval',dict(productId=cycle['productId'],productVersion=cycle['productVersion'],approved=False))
 command(cycle,evidence=authorization_data(cycle),expected=409)
 cycle=command(cycle,'REWORK',dict(return_to,productVersion='fixture-v3'))
-cycle=with_videos(command(cycle,evidence=dict(productVersion='fixture-v3',changeEvidence='Correção final aplicada')))
+cycle=with_videos(command(proven_preparation(cycle),evidence=dict(productVersion='fixture-v3',changeEvidence='Correção final aplicada')))
 cycle=command(cycle,evidence=validation_data(cycle))
 check('Reprovação retorna ao ajuste sem duplicar experimento; aprovação antiga ou de outro produto bloqueada')
 
@@ -255,7 +291,7 @@ command(cycle,'REWORK',dict(return_to,productVersion='fixture-v4',technicalOnly=
 http('/fixture/experiments/91001/stop',{})
 command(cycle,'REWORK',dict(return_to,productVersion='fixture-v4'),expected=409)
 cycle=command(cycle,'REWORK',dict(return_to,productVersion='fixture-v4',technicalOnly=True))
-cycle=with_videos(command(cycle,evidence=dict(productVersion='fixture-v4',changeEvidence='Correção técnica sem mudar a hipótese')))
+cycle=with_videos(command(proven_preparation(cycle),evidence=dict(productVersion='fixture-v4',changeEvidence='Correção técnica sem mudar a hipótese')))
 proof=validation_data(cycle); proof.pop('humanObservationEvidence')
 cycle=command(cycle,evidence=proof)
 cycle=command(cycle,evidence=authorization_data(cycle))

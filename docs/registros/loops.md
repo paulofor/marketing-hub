@@ -15,7 +15,9 @@
   nomeia implementação de Dédalo antes da revisão de Psique e não recomenda repetir essa revisão.
 - **Harness e prevenção:** testes substituem produto/ciclo/experimento, rejeitam conclusão textual
   sem gravar evento e preservam o caminho de preparação comprovada. Leitura e registro de datas não
-  criam inferência, custo ou campanha. A capacidade de implementação continua uma pendência real,
+  criam inferência, custo ou campanha. A fixture REST antiga foi corrigida para registrar callback
+  sintético da entrega antes de concluir a etapa; a recusa sem evento foi reproduzida e testada no
+  MySQL local. A capacidade de implementação continua uma pendência real,
   não resolvida por esta alteração de orientação. Matriz: `docs/homologacao/ciclos-orientacao-trabalho-delegado-v1.md`.
 
 ## LOOP-PREPARACAO-PASSAGEM-SEM-RECUPERACAO — 06/10/2026

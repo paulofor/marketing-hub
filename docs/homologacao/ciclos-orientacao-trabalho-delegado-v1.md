@@ -57,5 +57,18 @@ Rodada local de 06/10/2026:
 - As emulações usam Chromium; não equivalem a teste no Safari nativo. Fixtures e respostas
   simuladas não são artefatos aceitos do produto nem evidência de venda, custo ou margem.
 
+Complemento de integração: o primeiro CI identificou que a fixture REST antiga usava COMPLETE
+sem registrar a entrega delegada. A mesma recusa 409 foi reproduzida no MySQL local. A fixture
+passa a simular os callbacks anteriores com o padrão sintético já existente, testar a recusa
+sem evento antes de cada comprovação e só então completar a etapa. Não foi flexibilizada a guarda.
+O runner local usa `LEARNING_CYCLES_DB_HOST=sandbox-docker` nesta sandbox; a tentativa com
+localhost não alcançava a porta publicada pela engine dedicada. Com esse endereço correto,
+passaram a preparação do runner, a integração de analytics e a regressão de continuidade.
+
+Após a correção, repetidos os cenários REST/MySQL afetados: 20 cenários aprovados, contexto de
+ciclo segregado aprovado, rollback/reaplicação/idempotência das migrações aprovados, zero
+chamadas externas. Topologia removida com volumes ao final. Bash e ShellCheck aprovados para
+o runner inspecionado e para a orquestração temporária; Python compilado sem erro.
+
 Capella permanece com a implementação pendente. A conferência publicada e os links dos
 workflows serão registrados no PR depois do merge e da conclusão dos deploys.

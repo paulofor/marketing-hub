@@ -183,10 +183,13 @@ export default function ProductProcessAutomationPanel({
             </Link>
           )}
           {data.status === "CLOSED" ? (
-            <ProductHistoricalContinuation
-              navigation={continuation}
-              unavailable={continuationUnavailable}
-            />
+            <>
+              {data.reason && <p className="mt-2 mb-2">{data.reason}</p>}
+              <ProductHistoricalContinuation
+                navigation={continuation}
+                unavailable={continuationUnavailable}
+              />
+            </>
           ) : data.userAction ? (
             <div
               className="alert alert-warning mt-2 mb-3"

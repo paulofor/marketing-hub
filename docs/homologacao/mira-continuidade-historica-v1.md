@@ -64,3 +64,18 @@ mercado continua dependendo da execução do sucessor e dos gates e limites pró
 
 A prova de publicação e a nova leitura de produção serão vinculadas ao PR desta entrega.
 Testes locais não comprovam chegada ao mercado, vendas ou margem.
+
+## Regressão adicional encontrada no CI e resolvida localmente
+
+O job integrado de automação do PR #5517 identificou que o novo aviso escondia o
+motivo de um subprocesso dispensado (`CLOSED`, destino já aprovado). A causa estava
+na renderização do cabeçalho, não no avanço ou na persistência. Teste unitário
+reproduziu a ausência antes da correção; o motivo passou a ser preservado junto da
+orientação de continuidade. As verificações anteriores não foram enfraquecidas.
+
+Validação adicional local: 28 testes dos dois componentes (total afetado agora 130),
+typecheck/build, 41 cenários de API/ciclo de vida com MySQL 5.7 real e dependências
+simuladas, reinício do backend, matriz de automação, versões retiradas, reserva de
+fila e reserva projetada em desktop/iPhone/Pixel. O mesmo browser-matrix que falhou
+no CI passou integralmente, incluindo o retorno ao pai. A matriz de Mira também
+passou novamente com o bundle corrigido. Topologia temporária isolada e removida.

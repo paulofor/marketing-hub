@@ -101,6 +101,26 @@ afterEach(() => {
 });
 
 describe("Controle de processo", () => {
+  it("preserva a causa de encerramento de subprocesso dispensado", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...running,
+        status: "CLOSED",
+        canPause: false,
+        canResume: false,
+        reason: "Subprocesso não necessário: destino já aprovado.",
+      },
+    });
+    setup();
+    expect(
+      await screen.findByText(
+        "Subprocesso não necessário: destino já aprovado.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText(/Não há ação sua nesta atividade/)).toBeVisible();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
   const queueBlocker = {
     runId: 19,
     processDefinitionId: 92002,

@@ -18,6 +18,7 @@ export default function CycleWindowRevalidationForm({
   cycle: LearningCycle;
   onUpdated: (cycle: LearningCycle) => void;
 }) {
+  const initial = cycle.windowStart === null && cycle.windowEnd === null;
   const mutation = useWindowRevalidation(cycle.productId, cycle.id);
   const [requestKey] = useState(createCycleRequestKey);
   const today = new Date();
@@ -50,13 +51,22 @@ export default function CycleWindowRevalidationForm({
   return (
     <form
       className="card card-body mb-3"
-      aria-label="Revalidar janela comercial"
+      aria-label={
+        initial
+          ? "Definir primeira janela comercial"
+          : "Revalidar janela comercial"
+      }
       onSubmit={submit}
     >
-      <h3 className="h5">Revalidar janela comercial</h3>
+      <h3 className="h5">
+        {initial
+          ? "Primeira janela comercial do sucessor"
+          : "Revalidar janela comercial"}
+      </h3>
       <p>
-        O período anterior venceu antes da ativação. Esta ação preserva produto,
-        versão e teto de{" "}
+        {initial
+          ? "O sucessor está em preparação. Defina a janela quando o planejamento estiver pronto. O teto permanece "
+          : "O período anterior venceu antes da ativação. Esta ação preserva produto, versão e teto de "}
         {cycle.budgetLimitBrl.toLocaleString("pt-BR", {
           style: "currency",
           currency: "BRL",
@@ -71,7 +81,7 @@ export default function CycleWindowRevalidationForm({
             name="startDate"
             type="date"
             min={isoDate(today)}
-            defaultValue={isoDate(today)}
+            defaultValue={initial ? undefined : isoDate(today)}
             required
           />
         </label>
@@ -82,7 +92,7 @@ export default function CycleWindowRevalidationForm({
             name="endDate"
             type="date"
             min={isoDate(today)}
-            defaultValue={isoDate(end)}
+            defaultValue={initial ? undefined : isoDate(end)}
             required
           />
         </label>
@@ -93,7 +103,11 @@ export default function CycleWindowRevalidationForm({
           className="form-control"
           name="reason"
           required
-          defaultValue="Janela anterior venceu durante a preparação comercial; renovar o mesmo teste após corrigir os gates, sem alterar hipótese, público, oferta, preço ou teto."
+          defaultValue={
+            initial
+              ? "Primeira janela planejada para este sucessor; sem autorização de gasto."
+              : "Janela anterior venceu durante a preparação comercial; renovar o mesmo teste após corrigir os gates, sem alterar hipótese, público, oferta, preço ou teto."
+          }
         />
       </label>
       {mutation.isError ? (
@@ -105,7 +119,11 @@ export default function CycleWindowRevalidationForm({
         className="btn btn-primary align-self-start"
         disabled={mutation.isPending}
       >
-        {mutation.isPending ? "Revalidando…" : "Revalidar janela"}
+        {mutation.isPending
+          ? "Registrando…"
+          : initial
+            ? "Definir primeira janela"
+            : "Revalidar janela"}
       </button>
     </form>
   );

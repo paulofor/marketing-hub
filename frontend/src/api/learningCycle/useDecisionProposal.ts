@@ -61,6 +61,7 @@ const proposalSchema = z.object({
   finishedAt: z.string().nullable(),
   approvedAt: z.string().nullable(),
   approvedEventId: z.number().nullable(),
+  preparationAvailable: z.boolean().default(false),
   proposal: z
     .object({
       contractVersion: z.enum([
@@ -118,7 +119,9 @@ export function useDecisionProposal(cycle: LearningCycle) {
     queryFn: async () =>
       proposalSchema.parse((await axios.get(url(cycle))).data),
     refetchInterval: (query) =>
-      ["WAITING", "QUEUED", "RUNNING"].includes(query.state.data?.status ?? "")
+      ["WAITING", "QUEUED", "RUNNING", "READY"].includes(
+        query.state.data?.status ?? "",
+      )
         ? 3000
         : false,
   });
@@ -151,5 +154,21 @@ export function useDecisionProposalAudit(
     enabled,
     queryFn: async () =>
       (await axios.get(`${url(cycle)}/audit`)).data as unknown,
+  });
+}
+
+/** Recupera a preparação canônica sem transcrever parecer ou solicitar outra inferência. */
+export function usePrepareCycleSuccessor(cycle: LearningCycle) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async () =>
+      (await axios.post<LearningCycle>(`${url(cycle)}/prepare-successor`)).data,
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["learning-cycles"] }),
+        client.invalidateQueries({ queryKey: ["learning-cycle-catalog"] }),
+        client.invalidateQueries({ queryKey: ["cycle-decision-proposal"] }),
+      ]);
+    },
   });
 }

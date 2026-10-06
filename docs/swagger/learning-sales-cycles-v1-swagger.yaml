@@ -34,9 +34,12 @@ paths:
       - {$ref: '#/components/parameters/ProductId'}
       - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
     post:
-      summary: Revalidar somente uma janela legada elegível
+      summary: Definir a primeira janela preparatória ou revalidar janela legada elegível
       description: >-
-        Usa a mesma regra exposta em windowRevalidation. A política publicada CHANGE_PER_CYCLE_V1
+        Usa a mesma regra exposta em windowRevalidation. O sucessor preparatório sem datas pode
+        receber sua primeira janela em LEARNING/PLANNING/ADJUSTMENT/VALIDATION/AUTHORIZATION,
+        com experimento PLANNED, sem liberação ou exposição. Registra DEFINE_INITIAL_WINDOW,
+        preserva teto zero e não concede autorização comercial. A política publicada CHANGE_PER_CYCLE_V1
         exige sucessor inclusive em ciclos legados. Sem essa política, exige ciclo aberto em
         AUTHORIZATION/PUBLICATION, período encerrado, experimento PLANNED sem liberação nem
         exposição e nenhuma referência histórica. Não autoriza gasto. Preserva replays confirmados.
@@ -55,7 +58,7 @@ paths:
                 reason: {type: string}
       responses:
         '200':
-          description: Janela legada revalidada ou replay reconhecido, sem publicação
+          description: Primeira janela definida, janela legada revalidada ou replay reconhecido, sem publicação
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Cycle'}
@@ -478,8 +481,8 @@ components:
         baseline: {type: boolean}
         productVersion: {type: string}
         budgetLimitBrl: {type: number}
-        windowStart: {type: string, format: date-time}
-        windowEnd: {type: string, format: date-time}
+        windowStart: {type: string, format: date-time, nullable: true, description: Ausente na preparação até a primeira janela própria.}
+        windowEnd: {type: string, format: date-time, nullable: true, description: Ausente na preparação; nenhuma autorização herdada.}
         nextAction: {type: string}
         responsible: {type: string}
         workUrl: {type: string, nullable: true, description: 'Nulo enquanto o ajuste encerrado ainda exige criar sucessor; depois aponta à ocorrência sucessora. Ajuste aberto inclui ciclo, cadeia e atividade de retorno.'}

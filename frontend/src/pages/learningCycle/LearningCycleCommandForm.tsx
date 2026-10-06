@@ -365,13 +365,17 @@ export default function LearningCycleCommandForm({
             </p>
             <p>
               <strong>Janela (horário de Brasília):</strong>{" "}
-              {new Date(cycle.windowStart).toLocaleString("pt-BR", {
-                timeZone: "America/Sao_Paulo",
-              })}
+              {cycle.windowStart
+                ? new Date(cycle.windowStart).toLocaleString("pt-BR", {
+                    timeZone: "America/Sao_Paulo",
+                  })
+                : "A definir"}
               {" a "}
-              {new Date(cycle.windowEnd).toLocaleString("pt-BR", {
-                timeZone: "America/Sao_Paulo",
-              })}
+              {cycle.windowEnd
+                ? new Date(cycle.windowEnd).toLocaleString("pt-BR", {
+                    timeZone: "America/Sao_Paulo",
+                  })
+                : "A definir"}
             </p>
             <details>
               <summary>Evidências que serão registradas</summary>

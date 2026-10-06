@@ -1,17 +1,42 @@
 openapi: 3.0.3
 info:
   title: Proposta comercial de Atena no ciclo da Cadeia de Valor
-  version: 1.1.0
+  version: 1.2.0
   description: >-
     A atividade DECISION do subprocesso chamado por 6.4 recebe uma proposta de Atena.
-    O worker apenas prepara; a pessoa edita e aprova pelo comando canônico do ciclo.
-    A proposta nunca publica, autoriza gasto, cria sucessor ou altera o experimento.
+    O worker apenas propõe. O backend pode preparar sucessor de ajuste KEEP_FOCUS pela
+    política LEARNING_CYCLE_SAFE_PREPARATION_V1, sem nova inferência, mídia, janela,
+    publicação ou aprovação humana simulada. Outras decisões conservam aprovação explícita.
+    A proposta original e o experimento predecessor permanecem preservados.
     Novas execuções usam LEARNING_CYCLE_DECISION_PROPOSAL_V2 e exigem marketReview;
     snapshots v1 permanecem válidos. A revisão compara KEEP_FOCUS, ADJACENT_SEGMENTS e
     BROAD_PROBLEM. Expansão exige ADJUST e retorno marketStrategy do processo
     pde-commercial-plan-offer, com novo ciclo/experimento. A métrica principal é
     NET_CONTRIBUTION_AFTER_ACQUISITION; cliques não comprovam sucesso comercial.
 paths:
+  /api/business-process-chains/learning-cycles/v1/products/{productId}/{cycleId}/decision-proposal/prepare-successor:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+      - $ref: '#/components/parameters/CycleId'
+    post:
+      operationId: prepareLearningCycleSuccessor
+      summary: Recuperar preparação do parecer vigente sem repetir inferência
+      description: >-
+        Sem body. Exige produto e Atena em PLAY, ciclo corrente em DECISION, proposta
+        READY v2 com ADJUST/KEEP_FOCUS, dados conciliados e experimento fora de operação.
+        Também recupera ciclo ADJUSTED com proposta APPROVED e recibo final vinculado à
+        mesma revisão, preservando edições e aprovação anteriores sem registrar outro ADJUST.
+        A transação registra política automática, cria um experimento PLANNED, ciclo
+        vinculado e aprendizado antes de encaminhar ao planejamento. Mídia zero;
+        janela nula; não copia campanha, checkout, métricas ou permissões. Replay
+        retorna o sucessor existente inclusive após encerramento do predecessor.
+      responses:
+        '200':
+          description: LearningCycleResponse do sucessor com eventos, retorno e bloqueios próprios
+        '404':
+          description: Produto ou ciclo ausente ou identidade cruzada
+        '409':
+          description: STOP, proposta não vigente, dados inválidos ou decisão fora da política preparatória
   /api/business-process-chains/learning-cycles/v1/products/{productId}/{cycleId}/decision-proposal:
     parameters:
       - $ref: '#/components/parameters/ProductId'
@@ -88,6 +113,9 @@ paths:
       description: >-
         Entrada canônica do worker. Inclui ciclos históricos em DECISION com conciliação
         automática válida. A transação bloqueia o ciclo; callbacks exigem a lease reservada.
+        Antes da reserva, recupera propostas READY ou ajustes APPROVED elegíveis de ciclos novos aderentes à
+        política preparatória; ciclos históricos não são migrados automaticamente.
+        Falha preserva o parecer e oferece recuperação sem modelo. STOP não é revogado.
       responses:
         '200':
           description: Lista vazia ou uma execução com entrada congelada
@@ -182,4 +210,7 @@ components:
         createdAt: {type: string, format: date-time, nullable: true}
         finishedAt: {type: string, format: date-time, nullable: true}
         approvedAt: {type: string, format: date-time, nullable: true}
+        preparationAvailable:
+          type: boolean
+          description: Preparação disponível pelo contrato vigente; comando revalida STOP, dados e identidade sob lock.
         approvedEventId: {type: integer, format: int64, nullable: true}

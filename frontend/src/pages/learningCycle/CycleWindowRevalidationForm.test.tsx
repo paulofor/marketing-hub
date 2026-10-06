@@ -89,3 +89,28 @@ it("não oferece comando quando o backend não informou elegibilidade", () => {
   expect(screen.queryByRole("form")).not.toBeInTheDocument();
   expect(mutateAsync).not.toHaveBeenCalled();
 });
+
+it("não inventa datas na preparação do sucessor sem janela", () => {
+  const cycle = {
+    id: 12,
+    productId: 7,
+    budgetLimitBrl: 0,
+    windowStart: null,
+    windowEnd: null,
+    windowRevalidation: { available: true, reason: "Primeira janela própria." },
+  } as LearningCycle;
+  render(<CycleWindowRevalidationForm cycle={cycle} onUpdated={() => {}} />);
+  const form = screen.getByRole("form", {
+    name: "Definir primeira janela comercial",
+  }) as HTMLFormElement;
+  expect((form.elements.namedItem("startDate") as HTMLInputElement).value).toBe(
+    "",
+  );
+  expect((form.elements.namedItem("endDate") as HTMLInputElement).value).toBe(
+    "",
+  );
+  expect(mutateAsync).not.toHaveBeenCalled();
+  expect(
+    screen.queryByText(/O período anterior venceu/),
+  ).not.toBeInTheDocument();
+});

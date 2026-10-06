@@ -1,5 +1,36 @@
 # Ciclos de aprendizado e vendas da Cadeia de Valor — v1
 
+## Preparação autônoma do sucessor — decisão de 06/10/2026
+
+A continuidade preparatória não deve exigir que o usuário transcreva o parecer de Atena,
+aprove uma passagem sem gasto ou cadastre manualmente seu ciclo e experimento. Com produto
+e agente em PLAY, proposta vigente e válida de ajuste que preserve o foco, o backend deve
+registrar a decisão de preparação, criar uma única referência planejada e encaminhar o
+aprendizado ao processo responsável. A origem é uma política automática identificada,
+nunca uma aprovação humana fictícia nem um parecer emitido em nome de outro agente.
+
+O sucessor começa com teto de mídia zero, sem janela comercial definida e sem campanha,
+publicação, tarefas pagas, aprovação financeira ou autorização herdada. A primeira janela
+será declarada no próprio sucessor antes da homologação comercial; não é renovação do
+experimento encerrado. O produto, a hipótese de origem e a oferta são referências para
+planejamento; a proposta completa, contrapontos e condições mantidas permanecem auditáveis.
+Uma mudança de mercado, decisão ambígua, STOP, proposta obsoleta ou evidência inválida
+permanece bloqueada com motivo explícito. A preparação não consome IA adicional.
+
+Reutilizar o sucessor do mesmo ciclo em replays. Sucessores de canal ou candidatas anteriores
+com outra hipótese não devem ser adotados por proximidade de nome ou produto. Leituras
+administrativas continuam sem efeitos; a fila existente coordena a preparação, e a tela
+oferece recuperação da mesma proposta sem repetir inferência. O gasto e a publicação
+continuam sujeitos a limites, gates e autorização próprios.
+
+A adesão à política é registrada nas novas ocorrências. O deploy não migra ciclos
+históricos: uma recuperação solicitada, como a do Capella, usa o mesmo comando canônico,
+sem renovar o experimento encerrado nem alterar os demais produtos.
+
+Se a decisão já estiver aprovada e ainda não houver sucessor, reutilizar o recibo final
+vinculado ao ciclo e à proposta. Preservar edições aprovadas, autoria, revisão e evento;
+não aprovar novamente nem converter retroativamente a origem humana em automática.
+
 ## Uma mudança por ciclo e experimento — decisão de 02/10/2026
 
 O contrato `CHANGE_PER_CYCLE_V1` exige **novo ciclo e novo experimento para cada mudança
@@ -26,7 +57,8 @@ segue para sucessor. A leitura histórica não executa nem migra ocorrências.
 
 A janela é uma condição do experimento. A política vigente também governa o endpoint legado
 de revalidação: nova janela exige sucessor, inclusive para ciclos de versões anteriores. A API
-expõe `windowRevalidation` apenas para orientar uma janela encerrada; `available` e `reason`
+expõe `windowRevalidation` para orientar uma janela encerrada ou a primeira definição no
+sucessor preparatório sem datas; `available` e `reason`
 usam a mesma regra do comando. O frontend não decide elegibilidade pelo relógio local. Referência
 histórica, exposição comprovada, liberação iniciada ou etapa posterior à publicação impedem
 reescrita mesmo quando a política antiga ainda se aplica. Replays já confirmados preservam sua
@@ -238,11 +270,12 @@ predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.
 
 ## Losango de decisão
 
-### Proposta de Atena e aprovação humana — decisão de 09/09/2026
+### Proposta de Atena e autoridade da decisão — evolução de 06/10/2026
 
 Na atividade **6.4 — Conduzir o ciclo de aprendizado e vendas**, a decisão comercial deve
 ser preparada automaticamente por **Atena (`experiment-strategist`)**, dentro do subprocesso
-do ciclo. O usuário recebe o formulário preenchido para **editar e aprovar**. Hermes continua
+do ciclo. Fora da política preparatória acima, o usuário recebe o formulário preenchido
+para **editar e aprovar**. Hermes continua
 responsável pela leitura operacional e Plutus pelos limites econômicos; Atena propõe o
 aprendizado, a hipótese e o retorno comercial com base nessas evidências.
 
@@ -252,8 +285,9 @@ aprendizado, a hipótese e o retorno comercial com base nessas evidências.
 - A execução pertence à atividade de decisão do subprocesso, associada a Atena. O worker
   consome sua fila `pending`; o backend mantém identidade, entrada, proposta original, auditoria,
   falhas e aprovação. A navegação é somente leitura e não dispara modelo nem aprova decisão.
-- A proposta não encerra o ciclo, cria sucessor, altera experimento, autoriza orçamento ou publica.
-  Somente o envio explícito da aprovação humana registra a decisão e o retorno no BPM.
+- O worker não encerra ciclos nem cria sucessores. O backend registra a decisão e o retorno
+  pela política preparatória restrita ou por aprovação humana explícita, com origens distintas.
+  A proposta nunca autoriza orçamento ou publicação.
 - O formulário apresenta o responsável declarado do ciclo como sugestão editável de aprovador,
   distinguindo-o da autora Atena; essa declaração não é identidade autenticada.
 - Revisão do ciclo, versão da proposta e evidência precisam coincidir. Resposta inválida, fonte

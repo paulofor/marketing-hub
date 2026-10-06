@@ -64,12 +64,14 @@ class LearningCycleContinuationTest {
     return cycle;
   }
 
-  /** Sem sucessor, oferece sua criação e não encaminha trabalho ao experimento encerrado. */
+  /** Sem sucessor, orienta a preparação pela decisão final sem reabrir o experimento encerrado. */
   @Test
   void adjustedCycleRequiresSuccessorInsteadOfAnotherApproval() {
     adjustedCycle();
     var result = service.list(4L).getFirst();
-    assertThat(result.nextAction()).contains("Ajuste aprovado", "experimento planejado");
+    assertThat(result.nextAction())
+        .contains("Ajuste aprovado", "preparação do sucessor", "decisão final");
+    assertThat(result.nextAction()).doesNotContain("Crie um experimento");
     assertThat(result.nextAction()).doesNotContain("Atena prepara a proposta");
     assertThat(result.workUrl()).isNull();
     assertThat(result.canCreateSuccessor()).isTrue();

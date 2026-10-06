@@ -52,6 +52,7 @@ public class LearningCycleDecisionService {
   private final LearningCycleService cycleService;
   private final LearningCycleJson json;
   @Autowired private ResearchIntelligenceService researchIntelligenceService;
+  @Autowired private LearningCycleSuccessorPreparation successorPreparation;
 
   /** Reserva o contrato atual para consumidores internos com suporte à revisão de mercado. */
   @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -66,6 +67,7 @@ public class LearningCycleDecisionService {
         Set.of(LEGACY_CONTRACT, CONTRACT).contains(supportedContract),
         "Contrato de decisão não suportado.");
     if (!enabled()) return List.of();
+    prepareReadySuccessors();
     for (Long id : cycles.findDecisionPending(PageRequest.of(0, 10))) {
       var cycle = cycles.findLockedById(id).orElseThrow();
       if (!isDecision(cycle)) continue;
@@ -81,7 +83,10 @@ public class LearningCycleDecisionService {
       proposal.setLeaseToken(UUID.randomUUID().toString());
       proposal.setStartedAt(now());
       proposals.saveAndFlush(proposal);
-      state(proposal, "RUNNING", "Atena está preparando a proposta; aprovação humana pendente.");
+      state(
+          proposal,
+          "RUNNING",
+          "Atena está preparando a proposta; o backend verificará a continuidade permitida.");
       log.info(
           "Ciclo: proposta reservada agent={} proposalId={} cycleId={} experimentId={} revision={}",
           AGENT,
@@ -99,6 +104,32 @@ public class LearningCycleDecisionService {
               json.read(proposal.getContextJson())));
     }
     return List.of();
+  }
+
+  /** Recupera a passagem pela fila existente, isolando falhas sem repetir o modelo. */
+  private void prepareReadySuccessors() {
+    if (successorPreparation == null) return;
+    for (Long id : proposals.findAutomaticPreparationPending(PageRequest.of(0, 10))) {
+      var proposal = proposals.findById(id).orElseThrow();
+      if (!LearningCyclePreparationPolicy.eligible(json.read(proposal.getProposalJson()))) continue;
+      var context = json.read(proposal.getContextJson());
+      try {
+        successorPreparation.prepare(context.path("productId").asLong(), proposal.getCycleId());
+      } catch (RuntimeException ex) {
+        log.error(
+            "Ciclo: preparação bloqueada proposalId={} cycleId={}", id, proposal.getCycleId(), ex);
+        if (ex instanceof ResponseStatusException stopped
+            && stopped.getReason() != null
+            && stopped.getReason().contains("STOP")) continue;
+        // O parecer conserva seu status e resultado; a recuperação administrativa não consome
+        // modelo.
+        proposal.setError(
+            ex instanceof ResponseStatusException reason
+                ? reason.getReason()
+                : "Falha na preparação do sucessor; consulte a auditoria e recupere o mesmo parecer.");
+        proposals.save(proposal);
+      }
+    }
   }
 
   /** Expõe o andamento sem criar tarefa, consumir modelo ou sobrescrever a decisão do usuário. */
@@ -199,7 +230,9 @@ public class LearningCycleDecisionService {
       state(
           proposal,
           "PENDING",
-          "Proposta de Atena concluída; aguardando edição e aprovação humana.");
+          LearningCyclePreparationPolicy.eligible(result)
+              ? "Proposta de Atena concluída; preparação do sucessor disponível sem gasto."
+              : "Proposta de Atena concluída; aguardando decisão humana sobre operação ou mercado.");
     } catch (RuntimeException ex) {
       log.error(
           "Ciclo: resposta de Atena bloqueada proposalId={} cycleId={} revision={}",
@@ -509,7 +542,8 @@ public class LearningCycleDecisionService {
         proposal == null ? null : proposal.getCreatedAt(),
         proposal == null ? null : proposal.getFinishedAt(),
         proposal == null ? null : proposal.getApprovedAt(),
-        proposal == null ? null : proposal.getApprovedEventId());
+        proposal == null ? null : proposal.getApprovedEventId(),
+        successorPreparation != null && successorPreparation.available(cycle, proposal));
   }
 
   /** Bloqueia ciclo antes da proposta para manter a ordem única de locks também na aprovação. */
@@ -523,7 +557,7 @@ public class LearningCycleDecisionService {
     return proposal;
   }
 
-  /** Atualiza a ocorrência assistida sem marcar objetivo alcançado antes da aprovação humana. */
+  /** Atualiza a ocorrência assistida sem antecipar a decisão humana ou a política preparatória. */
   private void state(LearningCycleDecisionProposal proposal, String status, String description) {
     var instance = instances.findById(proposal.getActivityInstanceId()).orElseThrow();
     instance.setStatus(status);

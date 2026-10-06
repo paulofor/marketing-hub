@@ -92,6 +92,7 @@ assert state['revision']==c['revision'] and state['status']=='OPEN'
 assert http('/fixture/experiments/91001/state')['status']=='USER_STOPPED'
 check('Retentativa auditável, callback idempotente e nenhuma alteração de experimento/ciclo pela proposta')
 cmd=command(c,ready)
+cmd['evidence']['nextHypothesis']='Hipótese final editada: tornar a primeira aplicação mais clara'
 route=f'{API}/products/91001/{c["id"]}/commands'
 http(route,dict(cmd,evidence=dict(cmd['evidence'],humanApproved=False)),409)
 http(route,dict(cmd,evidence=dict(cmd['evidence'],decisionProposalId=failed['id'])),409)
@@ -107,6 +108,16 @@ assert http(url)['status']=='APPROVED' and http(url)['approvedEventId']==closed[
 assert http(url)['proposal']['summary']!=cmd['summary']
 assert len(http(url+'/audit'))==2
 check('Aprovação humana obrigatória; replay concorrente único; original e edição final preservados')
+assert http(url)['preparationAvailable'] is True
+assert http(INTERNAL+'/pending')==[]
+history=http(f'{API}/products/91001')
+prepared=next(x for x in history if x['previousCycleId']==c['id'])
+assert prepared['stage']=='PLANNING' and prepared['brief']['hypothesis']==cmd['evidence']['nextHypothesis']
+assert next(x for x in history if x['id']==c['id'])['events']==closed['events']
+assert http(url)['approvedEventId']==closed['events'][-1]['id']
+assert http(url)['preparationAvailable'] is False
+assert http(url+'/prepare-successor',{})['id']==prepared['id']
+check('Decisão já aprovada prepara sucessor, preserva edição final e não repete aprovação')
 http('/fixture/reset',{})
 c=create();url=proposal_url(c);job=http(INTERNAL+'/pending')[0];audit(job)
 _,failed=result(job,None,'Timeout simulado do executor')
@@ -131,5 +142,67 @@ sql(f"UPDATE learning_sales_cycle_v1 SET revision=revision+1 WHERE id={c['id']}"
 _,failed=result(newjob,valid(newjob))
 assert failed['status']=='STALE' and 'ciclo mudou' in failed['error']
 check('Lease vencida e resposta atrasada não substituem nova tentativa nem outra revisão')
+
+# Preparação determinística: duas identidades, fila automática, replay e janela própria.
+for product,experiment,fail_write in [(91001,91001,False),(91002,91006,False),(91001,91001,True)]:
+    http('/fixture/reset',{})
+    c=create(product,experiment);url=proposal_url(c)
+    job=http(INTERNAL+'/pending')[0];audit(job)
+    receipt,ready=result(job,valid(job))
+    if product==91002:
+        sql(f"UPDATE learning_sales_cycle_v1 SET brief_json=JSON_REMOVE(brief_json,'$.preparationPolicy') WHERE id={c['id']}")
+    assert ready['preparationAvailable'] is True
+    assert http(f'{API}/products/{product}')[0]['id']==c['id']
+    http(proposal_url(dict(c,productId=91002 if product==91001 else 91001))+'/prepare-successor',{},404)
+    if fail_write:
+        # Falha real na gravação posterior à decisão: toda a preparação deve ser revertida.
+        sql("CREATE TRIGGER reject_preparation_fixture BEFORE INSERT ON learning_sales_cycle_v1 FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Falha sintética de persistência'")
+        try:
+            assert http(INTERNAL+'/pending')==[]
+            unchanged=http(f'{API}/products/{product}')
+            assert len(unchanged)==1 and unchanged[0]['status']=='OPEN' and unchanged[0]['stage']=='DECISION'
+            blocked=http(url)
+            assert blocked['status']=='READY' and blocked['error']
+            assert http(url+'/audit')[0]['rawResponse']==receipt['rawResponse']
+        finally:
+            sql('DROP TRIGGER reject_preparation_fixture')
+        assert http(INTERNAL+'/pending')==[]
+        assert len(http(f'{API}/products/{product}'))==1
+        http(url+'/prepare-successor',{})
+    # A fila existente coordena a continuidade; não há nova reserva de modelo.
+    assert http(INTERNAL+'/pending')==[]
+    history=http(f'{API}/products/{product}')
+    if product==91002:
+        assert len(history)==1, 'Histórico sem adesão não pode ser migrado pelo polling'
+        http(url+'/prepare-successor',{})
+        history=http(f'{API}/products/{product}')
+    assert len(history)==2,[(x['id'],x['status']) for x in history]
+    successor=next(x for x in history if x['previousCycleId']==c['id'])
+    assert successor['stage']=='PLANNING' and successor['budgetLimitBrl']==0
+    assert successor['windowStart'] is None and successor['windowEnd'] is None
+    assert successor['inheritedLearning']['cycleId']==c['id']
+    assert successor['workUrl'] and 'learningCycleId='+str(successor['id']) in successor['workUrl']
+    assert http('/fixture/experiments/'+str(successor['experimentId'])+'/state')==dict(status='PLANNED',runCount=0,campaignCount=0)
+    limits=http('/fixture/experiments/'+str(successor['experimentId'])+'/budget-state')
+    assert limits['dailyBudget']==0 and limits['mediaSpendLimit']==0 and limits['startDate'] is None
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        replays=list(pool.map(lambda _:http(url+'/prepare-successor',{}),range(2)))
+    assert all(x['id']==successor['id'] for x in replays)
+    assert len(http(f'{API}/products/{product}'))==2
+    assert http(url+'/audit')[0]['rawResponse']==receipt['rawResponse']
+    closed=next(x for x in http(f'{API}/products/{product}') if x['id']==c['id'])
+    decision=closed['events'][-1]
+    assert decision['evidence']['humanApproved'] is False
+    assert decision['evidence']['externalSpendAuthorized'] is False
+    assert decision['evidence']['preparationPolicy']=='LEARNING_CYCLE_SAFE_PREPARATION_V1'
+    today=dt.datetime.now(dt.timezone.utc).date()
+    body=dict(requestKey=str(uuid.uuid4()),expectedRevision=successor['revision'],startDate=str(today),endDate=str(today+dt.timedelta(days=6)),reason='Primeira janela sintética, sem gasto')
+    window=f'{API}/products/{product}/{successor["id"]}/window-revalidation'
+    configured=http(window,body)
+    assert configured['events'][-1]['action']=='DEFINE_INITIAL_WINDOW'
+    assert configured['budgetLimitBrl']==0
+    assert http(window,body)['revision']==configured['revision']
+    check('Preparação, memória, retorno, replay e primeira janela sem gasto: produto '+str(product)+(' após rollback real' if fail_write else ''))
+
 http('/fixture/reset',{})
 print(json.dumps({'checks':len(checks),'status':'PASS','externalModel':'SIMULATED'},ensure_ascii=False))

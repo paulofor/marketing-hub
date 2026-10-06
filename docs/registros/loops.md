@@ -8977,3 +8977,21 @@ O caso falhou localmente antes da correção e verifica monitor, funil, origens 
   contexto alterado e MySQL 5.7. Revisão rejeitada continua rejeitada; não repetir modelos
   por uma falha de encaminhamento nem misturar versões.
 - Registro: `docs/homologacao/alcyone-assumption-handoff-v1.md`.
+
+
+## LOOP-CICLO-PREPARACAO-MANUAL — parecer pronto sem passagem para o sucessor
+
+- **Evidência (06/10/2026):** Capella, ciclo #4/experimento #88, medição #29 e
+  proposta Atena #5 READY. Callback concluído; a homologação histórica permanece
+  encerrada corretamente. Vega/Mira confirmam que aprovar a decisão não cria o sucessor.
+- **Causa:** aprovação humana indiscriminada e cadastro separado de experimento/ciclo
+  também para preparação sem gasto; campos de janela obrigatórios antecipavam decisão comercial.
+- **Correção:** política backend para ADJUST/KEEP_FOCUS, transação e replay por predecessor,
+  mídia zero, janela ausente, origem AUTOMATIC e aprendizado encaminhado ao planejamento.
+  A fila existente atende novas ocorrências; recuperação administrativa não repete Atena
+  nem migra outros históricos. Campanha, publicação, IA paga e mudança de mercado mantêm gates.
+- **Harness:** fixture antes incapaz de persistir identidade de experimento novo violava FK;
+  passou a inserir identidade no MySQL na mesma transação e desfazer o double no rollback.
+- **Prevenção:** dois produtos/IDs, caminho humano anterior, replay, concorrência,
+  STOP, proposta obsoleta, mercado diferente, janela inicial e leitura sem efeitos.
+  Matriz: `docs/homologacao/continuidade-autonoma-ciclos-v1.md`.

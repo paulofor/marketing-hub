@@ -92,6 +92,9 @@ public class LearningCycleMeasurementCollector {
     requireSource(
         Objects.equals(experiment.getId(), cycle.getExperimentId()),
         "A fonte deve pertencer ao experimento exato deste ciclo.");
+    requireSource(
+        cycle.getWindowStart() != null && cycle.getWindowEnd() != null,
+        "A preparação ainda não possui janela comercial; não há medição ou zeros presumidos.");
     Instant periodEnd = now.isBefore(cycle.getWindowEnd()) ? now : cycle.getWindowEnd();
     requireSource(
         periodEnd.isAfter(cycle.getWindowStart()),

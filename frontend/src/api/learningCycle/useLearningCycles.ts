@@ -113,8 +113,8 @@ export type LearningCycle = {
   baseline: boolean;
   productVersion: string;
   budgetLimitBrl: number;
-  windowStart: string;
-  windowEnd: string;
+  windowStart: string | null;
+  windowEnd: string | null;
   nextAction: string;
   responsible: string;
   returnProcessId?: number;

@@ -104,6 +104,29 @@ class ProcessRunGuidanceTest {
     verify(cycles, never()).save(any());
   }
 
+  /** Seleciona uma espera comercial projetada sem depender da atividade anterior do motor. */
+  @ParameterizedTest
+  @ValueSource(strings = {"AUTHORIZATION", "PUBLICATION", "VIDEO_BRIEF", "VIDEO_APPROVAL"})
+  void projectedInputPreservesContextBeforeSelection(String stage) {
+    cycle.setStage(stage);
+    run.setCurrentActivityId("optimization");
+    assertThat(guidance.awaitingProjectedInput(run, "learningCycle")).isTrue();
+    assertThat(guidance.awaitingProjectedInput(run, "optimization")).isFalse();
+    assertThat(run.getCurrentActivityId()).isEqualTo("optimization");
+    verify(cycles, never()).save(any());
+    verifyNoInteractions(events, commercialReadiness);
+  }
+
+  /** Medição, ciclo encerrado e produção sem bloqueio não viram intervenção projetada. */
+  @ParameterizedTest
+  @ValueSource(strings = {"MEASUREMENT", "DECISION", "CAMPAIGN_VIDEO", "CLOSED"})
+  void excludesProjectionWithoutRequiredInput(String condition) {
+    if ("CLOSED".equals(condition)) cycle.setStatus(condition);
+    else cycle.setStage(condition);
+    assertThat(guidance.awaitingProjectedInput(run, "learningCycle")).isFalse();
+    verifyNoInteractions(events, commercialReadiness);
+  }
+
   /** IDs novos e ciclo sem etapas de vídeo recebem a mesma orientação comercial. */
   @Test
   void commercialGuidanceWorksForAnotherProductAndLegacyCycle() {
@@ -122,6 +145,7 @@ class ProcessRunGuidanceTest {
     when(processes.findById(76L)).thenReturn(Optional.of(legacy));
     assertThat(guidance.resolve(run).actionUrl()).contains("chainId=114&productId=104&cycleId=302");
     assertThat(guidance.resolve(run).reason()).contains("#192").doesNotContain("#92");
+    assertThat(guidance.awaitingProjectedInput(run, "learningCycle")).isTrue();
   }
 
   /** Expõe pendência operacional antes da decisão, sem ocultar erro técnico nem repetir IA. */
@@ -207,6 +231,8 @@ class ProcessRunGuidanceTest {
       default -> throw new AssertionError(field);
     }
     assertThatThrownBy(() -> guidance.resolve(run)).hasMessageContaining("outro contexto");
+    assertThatThrownBy(() -> guidance.awaitingProjectedInput(run, "learningCycle"))
+        .hasMessageContaining("outro contexto");
     verifyNoInteractions(events);
   }
 

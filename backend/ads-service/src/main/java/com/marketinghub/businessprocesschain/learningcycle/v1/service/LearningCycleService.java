@@ -457,7 +457,9 @@ public class LearningCycleService {
     return create(productId, request, true);
   }
 
-  /** Compartilha locks, linhagem e validações entre cadastro explícito e preparação interna. */
+  /**
+   * Compartilha locks e linhagem; inconclusivo só aceita preparação interna sem gasto ou janela.
+   */
   private LearningCycleResponse create(
       Long productId, CreateLearningCycleRequest request, boolean preparation) {
     requireProduct(productId, true);
@@ -518,8 +520,9 @@ public class LearningCycleService {
     if (request.previousCycleId() != null) {
       previous = requiredCycle(productId, request.previousCycleId());
       require(
-          "ADJUSTED".equals(previous.getStatus()),
-          "O predecessor precisa terminar com decisão de ajuste e aprendizado.");
+          "ADJUSTED".equals(previous.getStatus())
+              || (preparation && "INCONCLUSIVE".equals(previous.getStatus())),
+          "O predecessor precisa terminar com ajuste ou inconclusivo aprovado para preparação.");
       require(
           previous.getChainCode().equals(chain.getChainCode()),
           "O sucessor deve continuar a mesma cadeia de valor.");
@@ -569,7 +572,8 @@ public class LearningCycleService {
                     eventResponses(previous),
                     "priorCycleReference",
                     previous.getPreviousCycleId() == null ? "" : previous.getPreviousCycleId())));
-    if (previous != null) {
+    // O inconclusivo não declarou correção: o sucessor começa pelo planejamento canônico.
+    if (previous != null && !"INCONCLUSIVE".equals(previous.getStatus())) {
       String returnCode =
           processes.findById(previous.getReturnProcessId()).orElseThrow().getProcessCode();
       String activityId = previous.getReturnActivityId();
@@ -1440,7 +1444,7 @@ public class LearningCycleService {
         : "A homologação utilizada deixou de ser vigente. Retorne para correção e homologue novamente antes de publicar ou expandir.";
   }
 
-  /** Expõe comandos pelo estado persistido, separando aceite financeiro e prontidão comercial. */
+  /** Expõe comandos e continuidade do resultado aprovado, preservando autorizações comerciais. */
   private LearningCycleResponse response(LearningSalesCycle cycle) {
     var commercialPreparation =
         commercialReadiness != null
@@ -1551,12 +1555,17 @@ public class LearningCycleService {
               + nextWork.reason();
       responsible = nextWork.responsible();
     }
-    if ("ADJUSTED".equals(cycle.getStatus())) {
+    if (Set.of("ADJUSTED", "INCONCLUSIVE").contains(cycle.getStatus())) {
       responsible = "Backend · preparação do sucessor";
+      String outcome =
+          "ADJUSTED".equals(cycle.getStatus())
+              ? "Ajuste aprovado."
+              : "Resultado inconclusivo preservado.";
       if (successor.isPresent()) {
         var nextCycle = successor.orElseThrow();
         nextAction =
-            "Ajuste aprovado. Continue no ciclo #"
+            outcome
+                + " Continue no ciclo #"
                 + nextCycle.getId()
                 + " · experimento #"
                 + nextCycle.getExperimentId()
@@ -1570,7 +1579,8 @@ public class LearningCycleService {
                 + nextCycle.getId();
       } else {
         nextAction =
-            "Ajuste aprovado. O backend verifica a preparação do sucessor com base na decisão final. A proposta de Atena apresenta a recuperação quando compatível; preserve a decisão e o experimento histórico.";
+            outcome
+                + " O backend verifica a preparação do sucessor com base na decisão final. A proposta aprovada de Atena apresenta a recuperação quando houver hipótese compatível de novo teste no mesmo foco; preserve a decisão e o experimento histórico.";
         workUrl = null;
       }
     }

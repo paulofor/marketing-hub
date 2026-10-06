@@ -38,14 +38,20 @@ def proof(process_id, experiment_id):
       FROM business_process_activity_definition WHERE process_definition_id={process_id}""")
 
 
-for product, experiment in [(91001, 91001), (91002, 91006)]:
+for product, experiment, action in [(91001, 91001, "ADJUST"), (91002, 91006, "INCONCLUSIVE")]:
     http('/fixture/reset', {})
     cycle = create(product, experiment)
     job = http(INTERNAL + '/pending')[0]
     audit(job)
-    _, proposal = result(job, valid(job))
-    approved = http(f'{API}/products/{product}/{cycle["id"]}/commands', command(cycle, proposal))
-    assert approved['status'] == 'ADJUSTED'
+    draft = valid(job)
+    if action == "INCONCLUSIVE":
+        draft.update(action=action, returnProcessId=None, returnActivityId=None)
+    _, proposal = result(job, draft)
+    decision = command(cycle, proposal, action=action)
+    if action == "INCONCLUSIVE":
+        decision['evidence'] = dict(decisionProposalId=proposal['id'], humanApproved=True)
+    approved = http(f'{API}/products/{product}/{cycle["id"]}/commands', decision)
+    assert approved['status'] == ('ADJUSTED' if action == 'ADJUST' else 'INCONCLUSIVE')
     assert http(INTERNAL + '/pending') == []
     successor = next(c for c in http(f'{API}/products/{product}') if c['previousCycleId'] == cycle['id'])
     cycle_id, experiment_id, chain_id = successor['id'], successor['experimentId'], successor['chainDefinitionId']

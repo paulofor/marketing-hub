@@ -97,6 +97,32 @@ class LearningCycleContinuationTest {
     assertThat(result.commands()).isEmpty();
   }
 
+  /** Inconclusivo aprovado deixa de pedir nova decisão e aponta ao sucessor quando vinculado. */
+  @Test
+  void inconclusiveCycleExplainsPreparationAndResumesSuccessor() {
+    var cycle = adjustedCycle();
+    cycle.setStatus("INCONCLUSIVE");
+    var before = service.list(4L).getFirst();
+    assertThat(before.nextAction())
+        .contains("Resultado inconclusivo preservado", "proposta aprovada", "novo teste");
+    assertThat(before.nextAction()).doesNotContain("Atena prepara a proposta");
+    assertThat(before.commands()).isEmpty();
+    assertThat(before.canCreateSuccessor()).isFalse();
+    var successor = new LearningSalesCycle();
+    successor.setId(9L);
+    successor.setProductId(4L);
+    successor.setExperimentId(109L);
+    successor.setChainDefinitionId(26L);
+    when(cycles.findByPreviousCycleId(1L)).thenReturn(Optional.of(successor));
+    var after = service.list(4L).getFirst();
+    assertThat(after.nextAction())
+        .contains("inconclusivo preservado", "ciclo #9", "experimento #109");
+    assertThat(after.workUrl())
+        .isEqualTo("/business-process-chains/learning-cycles?chainId=26&productId=4&cycleId=9");
+    assertThat(cycle.getStatus()).isEqualTo("INCONCLUSIVE");
+    verify(cycles, never()).save(any());
+  }
+
   /** Preparação comprovada orienta seu registro e não encaminha à correção já terminada. */
   @Test
   void completedPreparationDirectsToEvidenceRegistration() {

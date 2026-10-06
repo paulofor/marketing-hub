@@ -204,5 +204,51 @@ for product,experiment,fail_write in [(91001,91001,False),(91002,91006,False),(9
     assert http(window,body)['revision']==configured['revision']
     check('Preparação, memória, retorno, replay e primeira janela sem gasto: produto '+str(product)+(' após rollback real' if fail_write else ''))
 
+# Inconclusivo é encerramento verdadeiro: apenas o recibo aprovado libera a nova preparação.
+for product, experiment in [(91001, 91001), (91002, 91006)]:
+    http('/fixture/reset', {})
+    c=create(product, experiment)
+    job=http(INTERNAL+'/pending')[0]
+    audit(job)
+    draft=valid(job)
+    draft.update(action='INCONCLUSIVE',returnProcessId=None,returnActivityId=None)
+    _, ready=result(job,draft)
+    url=proposal_url(c)
+    assert ready['preparationAvailable'] is False
+    assert http(INTERNAL+'/pending')==[]
+    assert len(http(f'{API}/products/{product}'))==1
+    http(url+'/prepare-successor',{},409)
+    # A aprovação contém somente a identidade e a confirmação, como o caso real de Vega.
+    approved=http(f'{API}/products/{product}/{c["id"]}/commands', command(c,ready,action='INCONCLUSIVE',evidence=dict(decisionProposalId=ready['id'],humanApproved=True)))
+    assert approved['status']=='INCONCLUSIVE' and approved['returnProcessId'] is None
+    approval_event=approved['events'][-1]
+    receipt=http(url+'/audit')[0]
+    assert http(url)['preparationAvailable'] is True
+    if product==91002:
+        sql(f"UPDATE learning_sales_cycle_v1 SET brief_json=JSON_REMOVE(brief_json,'$.preparationPolicy') WHERE id={c['id']}")
+    assert http(INTERNAL+'/pending')==[]
+    history=http(f'{API}/products/{product}')
+    if product==91002:
+        assert len(history)==1, 'A fila não migra o histórico sem adesão'
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            replays=list(pool.map(lambda _:http(url+'/prepare-successor',{}),range(2)))
+        assert len({r['id'] for r in replays})==1
+        history=http(f'{API}/products/{product}')
+    successor=next(x for x in history if x['previousCycleId']==c['id'])
+    assert successor['stage']=='PLANNING' and successor['budgetLimitBrl']==0
+    assert successor['windowStart'] is None and successor['windowEnd'] is None
+    assert successor['returnProcessId'] is None
+    assert successor['brief']['hypothesis']==ready['proposal']['nextHypothesis']
+    assert successor['inheritedLearning']['events'][-1]==approval_event
+    closed=next(x for x in history if x['id']==c['id'])
+    assert closed['status']=='INCONCLUSIVE' and closed['revision']==approved['revision']
+    assert closed['events']==approved['events']
+    assert http(url+'/audit')[0]==receipt
+    assert http(url+'/prepare-successor',{})['id']==successor['id']
+    assert len(http(f'{API}/products/{product}'))==2
+    limits=http('/fixture/experiments/'+str(successor['experimentId'])+'/budget-state')
+    assert limits['dailyBudget']==0 and limits['mediaSpendLimit']==0
+    check('Inconclusivo aprovado → sucessor único; recibo, memória, foco e orçamento preservados: produto '+str(product))
+
 http('/fixture/reset',{})
 print(json.dumps({'checks':len(checks),'status':'PASS','externalModel':'SIMULATED'},ensure_ascii=False))

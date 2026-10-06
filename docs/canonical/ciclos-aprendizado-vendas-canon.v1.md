@@ -1,5 +1,35 @@
 # Ciclos de aprendizado e vendas da Cadeia de Valor — v1
 
+## Continuidade do inconclusivo aprovado — decisão de 06/10/2026
+
+Aprovar um resultado inconclusivo com proposta vigente de novo teste no mesmo foco
+não deve deixar o produto sem passagem preparatória. O backend reutiliza o recibo
+humano final e o parecer completo de Atena, prepara um único sucessor e encaminha
+seu planejamento pelo BPM existente. O predecessor conserva `INCONCLUSIVE`,
+a autoria, o evento de aprovação, as fontes, os custos e as limitações da amostra.
+Não converter esse encerramento em ajuste nem repetir a análise ou a aprovação.
+
+A preparação exige contrato V2, `KEEP_FOCUS`, `requiresNewCycle`, hipótese,
+aprendizado e explicação concorrente/causa com limites explícitos, além do recibo
+compatível com a revisão encerrada. Sem destino de retorno no encerramento,
+o sucessor segue para a estratégia da cadeia publicada correspondente, sem
+escrever um retorno fictício no predecessor. STOP, expansão, decisão sem hipótese,
+recibo incompatível ou produto/agente pausado impedem a passagem e devem ter
+orientação explícita na tela. A decisão editada prevalece sobre o rascunho.
+
+Novas ocorrências aderentes seguem pela fila canônica após aprovação. A recuperação
+solicitada de um ciclo histórico usa o comando existente de preparação; leituras
+e deploys não migram decisões históricas. O sucessor começa planejado, sem janela,
+com mídia zero e sem aprovações ou autorização herdadas. Tarefas pagas e publicação
+continuam sujeitas aos limites próprios; preparar não comprova venda nem margem.
+
+Uma espera comercial projetada no ciclo autorizado deve orientar a atividade
+correspondente antes de delegar a operação. Conferir produto, cadeia, experimento,
+versão e etapa pelo contrato de orientação existente; não confundir condição
+pendente com execução ativa nem abrir aquisição enquanto faltam suas condições.
+Medições sem tarefa ou instância continuam sem reservar trabalho. Contextos
+encerrados ou sem autorização não são mantidos abertos por uma orientação projetada.
+
 ## Compatibilidade do planejamento multiagente — decisão de 06/10/2026
 
 No Processo 2 a partir da versão 10, a estratégia `MARKET_STRATEGY_V4` /

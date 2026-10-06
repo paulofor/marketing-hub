@@ -29,7 +29,7 @@ const schema = JSON.parse(
     "utf8",
   ),
 );
-async function seed(approved = false) {
+async function seed(approved = false, inconclusive = false) {
   await request("/fixture/reset", {});
   await request("/fixture/experiments/91001/legacy-publication", {});
   const cycle = await request(`${api}/products/91001`, {
@@ -83,9 +83,9 @@ async function seed(approved = false) {
   );
   Object.assign(proposal, {
     contractVersion: job.context.contractVersion,
-    action: "ADJUST",
-    returnProcessId: target.processDefinitionId,
-    returnActivityId: target.activityId,
+    action: inconclusive ? "INCONCLUSIVE" : "ADJUST",
+    returnProcessId: inconclusive ? null : target.processDefinitionId,
+    returnActivityId: inconclusive ? null : target.activityId,
     selectedAlternative: 0,
     evidenceEventIds: [job.context.measurementEventId],
     alternatives: ["KEEP_FOCUS", "ADJACENT_SEGMENTS", "BROAD_PROBLEM"].map(
@@ -124,15 +124,17 @@ async function seed(approved = false) {
     await request(`${api}/products/91001/${cycle.id}/commands`, {
       requestKey: crypto.randomUUID(),
       expectedRevision: cycle.revision,
-      action: "ADJUST",
+      action: inconclusive ? "INCONCLUSIVE" : "ADJUST",
       operatorName: "Aprovação sintética anterior",
       summary: "Decisão anterior preservada",
       evidenceReference: "internal://fixture/decision",
-      evidence: {
-        ...proposal,
-        decisionProposalId: job.proposalId,
-        humanApproved: true,
-      },
+      evidence: inconclusive
+        ? { decisionProposalId: job.proposalId, humanApproved: true }
+        : {
+            ...proposal,
+            decisionProposalId: job.proposalId,
+            humanApproved: true,
+          },
     });
   }
   return cycle;
@@ -147,7 +149,7 @@ try {
     ["iphone", devices["iPhone 15 Pro"]],
     ["pixel", devices["Pixel 7"]],
   ]) {
-    const cycle = await seed(name === "iphone");
+    const cycle = await seed(name !== "desktop", name === "pixel");
     const context = await browser.newContext(device);
     const page = await context.newPage();
     const errors = [],

@@ -69,24 +69,65 @@ public class LearningCycleCommercialTaskFixtures {
     TASKS.clear();
   }
 
-  /** Filtra tarefas simuladas pelo mesmo contrato de identidade usado pela projeção real. */
+  /** Simula leitura integral e resumo leve com a mesma identidade e estado das tarefas locais. */
   @Bean
   AgentTaskRepository agentTasks() {
     var repository = mock(AgentTaskRepository.class);
     when(repository.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
             anyString(), anyString()))
+        .thenAnswer(call -> filteredTasks(call.getArgument(0), call.getArgument(1)));
+    when(repository.findProcessExecutionListSnapshots(anyString(), anyString()))
         .thenAnswer(
             call ->
-                TASKS.values().stream()
-                    .filter(
-                        task ->
-                            task.getSourceReference().equals(call.getArgument(0))
-                                && task.getProcessDefinition()
-                                    .getProcessCode()
-                                    .equals(call.getArgument(1)))
-                    .sorted(Comparator.comparing(AgentTask::getId))
+                filteredTasks(call.getArgument(0), call.getArgument(1)).stream()
+                    .map(LearningCycleCommercialTaskFixtures::summary)
                     .toList());
     return repository;
+  }
+
+  /** Filtra apenas a ocorrência solicitada sem permitir interferência entre produtos de teste. */
+  private static List<AgentTask> filteredTasks(String reference, String processCode) {
+    return TASKS.values().stream()
+        .filter(
+            task ->
+                task.getSourceReference().equals(reference)
+                    && task.getProcessDefinition().getProcessCode().equals(processCode))
+        .sorted(Comparator.comparing(AgentTask::getId))
+        .toList();
+  }
+
+  /**
+   * Preserva status, datas e custo no contrato leve, sem carregar resultado ou prompt sintético.
+   */
+  private static AgentTaskProcessExecutionListSnapshot summary(AgentTask task) {
+    return new AgentTaskProcessExecutionListSnapshot(
+        task.getId(),
+        task.getProcessDefinition().getId(),
+        task.getProcessDefinition().getProcessCode(),
+        task.getProcessDefinition().getVersionNumber(),
+        task.getTitle(),
+        task.getStatus(),
+        task.getSourceReference(),
+        task.getAssignedAgent().getAgentKey(),
+        task.getAssignedAgent().getNickname(),
+        task.getProcessActivityId(),
+        task.getProcessActivityName(),
+        task.getExecutionError(),
+        task.getInputTokens(),
+        task.getCachedInputTokens(),
+        task.getOutputTokens(),
+        task.getEstimatedCostUsd(),
+        task.getCostEstimationStatus(),
+        task.getCreatedAt(),
+        task.getReceivedAt(),
+        task.getDeliveredAt(),
+        task.getUpdatedAt(),
+        task.getExecutionModelCode(),
+        task.getExecutionMode(),
+        task.getExecutionReasoningEffort(),
+        task.getBlockerCategory(),
+        task.getBlockerAction(),
+        null);
   }
 
   /**

@@ -369,6 +369,47 @@ class ProcessRunProjectedActivityPersistenceTest {
     verifyNoInteractions(activities, subprocesses);
   }
 
+  /** Uma espera projetada legítima orienta o ciclo sem abrir a operação nem fabricar conclusão. */
+  @ParameterizedTest
+  @ValueSource(strings = {"WAITING_INPUT", "WAITING_HUMAN"})
+  void preservesRequiredProjectedInputWithoutOpeningOperation(String waitingStatus)
+      throws Exception {
+    authorized = true;
+    snapshot(96011L, "IN_PROGRESS", false, false, true, false);
+    when(guidance.awaitingProjectedInput(parent, "a")).thenReturn(true);
+    var action =
+        new com.marketinghub.businessprocess.automation.v1.service.status.ProcessRunUserAction(
+            "WAITING_HUMAN".equals(waitingStatus)
+                ? "AUTHORIZE_CYCLE_MEDIA"
+                : "PREPARE_CYCLE_COMMERCIAL",
+            "Condições comerciais pendentes",
+            "Confira as pendências da mesma versão antes da operação.",
+            "Responsável pelas condições comerciais",
+            "Consultar ciclo",
+            "/business-process-chains/learning-cycles?productId=96001&cycleId=96031",
+            "Esta espera não autoriza gasto.",
+            "internal://learning-cycles/96031");
+    when(guidance.resolve(parent)).thenReturn(action);
+    var result = service.reconcile(parent.getId());
+    assertThat(result.status()).isEqualTo(waitingStatus);
+    assertThat(result.userAction()).isEqualTo(action);
+    assertThat(result.completedActivities()).isZero();
+    service.reconcile(parent.getId());
+    assertThat(events.findAll()).hasSize(1);
+    verifyNoInteractions(activities, subprocesses);
+    when(guidance.resolve(parent)).thenReturn(null);
+    service.pause(parent.getProductId(), parent.getProcessDefinitionId(), parent.getId());
+    assertThat(service.reconcile(parent.getId()).status()).isEqualTo("PAUSED");
+  }
+
+  /** Uma orientação projetada não mantém aberta uma versão que já perdeu autorização. */
+  @Test
+  void closesUnauthorizedContextEvenWithProjectedInput() {
+    when(guidance.awaitingProjectedInput(parent, "a")).thenReturn(true);
+    assertThat(service.reconcile(parent.getId()).status()).isEqualTo("CLOSED");
+    verifyNoInteractions(activities, subprocesses);
+  }
+
   /** Tarefa real continua em curso mesmo quando a medição é a fonte do estado exibido. */
   @ParameterizedTest
   @ValueSource(strings = {"PENDING", "IN_PROGRESS"})

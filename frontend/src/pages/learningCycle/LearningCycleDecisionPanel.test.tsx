@@ -327,3 +327,63 @@ it("recupera decisão aprovada sem exigir nova aprovação no ciclo encerrado", 
     screen.queryByRole("button", { name: /Aprovar decisão/ }),
   ).not.toBeInTheDocument();
 });
+
+it("mostra a continuidade do inconclusivo aprovado sem pedir a mesma decisão novamente", async () => {
+  vi.mocked(axios.get).mockResolvedValue({
+    data: {
+      ...draft,
+      status: "APPROVED",
+      preparationAvailable: true,
+      proposal: { ...draft.proposal, action: "INCONCLUSIVE" },
+    },
+  });
+  const ended = {
+    ...cycle,
+    status: "INCONCLUSIVE",
+    revision: 2,
+    commands: [],
+    nextAction:
+      "Resultado inconclusivo preservado. Preparação do sucessor pelo backend.",
+  };
+  mount(ended);
+  await screen.findByRole("button", {
+    name: "Preparar continuidade sem gasto",
+  });
+  expect(
+    screen.getByRole("heading", { name: "Preparar continuidade do produto" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Proposta #5 aprovada. A decisão final está no histórico do ciclo.",
+    ),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", {
+      name: "Aprovar decisão e registrar no BPM",
+    }),
+  ).not.toBeInTheDocument();
+  expect(axios.post).not.toHaveBeenCalled();
+});
+
+it("apresenta a passagem persistida depois da aprovação sem sugerir outra análise", async () => {
+  vi.mocked(axios.get).mockResolvedValue({
+    data: { ...draft, status: "APPROVED", preparationAvailable: false },
+  });
+  mount({
+    ...cycle,
+    status: "INCONCLUSIVE",
+    commands: [],
+    nextAction:
+      "Continue no ciclo #9 · experimento #109, que recebeu o aprendizado.",
+  });
+  await screen.findByText("Decisão aprovada; continuidade do produto");
+  expect(
+    screen.getByText(
+      "Continue no ciclo #9 · experimento #109, que recebeu o aprendizado.",
+    ),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByText("Atena prepara; você edita e aprova"),
+  ).not.toBeInTheDocument();
+  expect(axios.post).not.toHaveBeenCalled();
+});

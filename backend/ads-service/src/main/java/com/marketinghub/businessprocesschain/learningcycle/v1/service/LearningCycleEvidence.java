@@ -183,6 +183,8 @@ public class LearningCycleEvidence {
         "Ainda não existe publicação produtiva com preflight comprovado para este experimento.");
     require(
         authorizedAt != null
+            && cycle.getWindowStart() != null
+            && cycle.getWindowEnd() != null
             && !run.getPublishedAt().isBefore(authorizedAt)
             && !run.getPublishedAt().isBefore(cycle.getWindowStart())
             && !run.getPublishedAt().isAfter(cycle.getWindowEnd()),

@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-06-learning-cycle-preparation-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: learning_sales_cycle_v1
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE learning_sales_cycle_v1
+                MODIFY COLUMN window_start DATETIME(6) NULL,
+                MODIFY COLUMN window_end DATETIME(6) NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              -- Expansao compativel: preservar ausencia de datas e historico no rollback.
+              SELECT 1;

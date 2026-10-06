@@ -51,6 +51,8 @@ import org.springframework.web.bind.annotation.*;
 @Import({
   LearningCycleService.class,
   com.marketinghub.businessprocesschain.learningcycle.v1.decision.service
+      .LearningCycleSuccessorPreparation.class,
+  com.marketinghub.businessprocesschain.learningcycle.v1.decision.service
       .LearningCycleDecisionService.class,
   com.marketinghub.businessprocesschain.learningcycle.v1.decision.service
       .LearningCycleDecisionApproval.class,
@@ -483,11 +485,34 @@ public class LearningCycleLocalApplication {
 
   /** Simula o cadastro oficial e estados externos que o ciclo apenas consulta. */
   @Bean
-  ExperimentRepository experiments() {
+  ExperimentRepository experiments(DataSource source) {
     resetExperiments();
     var repository = mock(ExperimentRepository.class);
     when(repository.findById(anyLong()))
         .thenAnswer(call -> Optional.ofNullable(EXPERIMENTS.get(call.getArgument(0))));
+    var jdbc = new org.springframework.jdbc.core.JdbcTemplate(source);
+    var nextId =
+        new java.util.concurrent.atomic.AtomicLong(
+            jdbc.queryForObject("SELECT COALESCE(MAX(id), 92000) FROM experiment", Long.class));
+    when(repository.saveAndFlush(any(Experiment.class)))
+        .thenAnswer(
+            call -> {
+              Experiment value = call.getArgument(0);
+              value.setId(nextId.incrementAndGet());
+              jdbc.update("INSERT INTO experiment (id) VALUES (?)", value.getId());
+              EXPERIMENTS.put(value.getId(), value);
+              org.springframework.transaction.support.TransactionSynchronizationManager
+                  .registerSynchronization(
+                      new org.springframework.transaction.support.TransactionSynchronization() {
+                        /** Desfaz também o double quando a transação real recusa o sucessor. */
+                        @Override
+                        public void afterCompletion(int status) {
+                          if (status != STATUS_COMMITTED) EXPERIMENTS.remove(value.getId());
+                        }
+                      });
+              return value;
+            });
+    when(repository.save(any(Experiment.class))).thenAnswer(call -> call.getArgument(0));
     when(repository.findByProductIdOrderByUpdatedAtDescIdDesc(anyLong()))
         .thenAnswer(
             call ->

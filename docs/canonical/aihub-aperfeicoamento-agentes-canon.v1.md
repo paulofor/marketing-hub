@@ -103,7 +103,8 @@ nunca usar bypass nem desabilitar checks.
 Antes da execução, publicar um checklist com `update_plan` e objetivos verificáveis; atualizar
 o mesmo plano a cada conclusão ou mudança de escopo. Se a ferramenta estiver ausente, declarar
 essa limitação e manter checklist textual, sem afirmar que chamou uma ferramenta indisponível.
-Resumos públicos contêm apenas ação e **Objetivo:**, sem raciocínio interno. Confirmar produto,
+Resumos públicos descrevem ações, achados e bloqueios em português, sem raciocínio interno
+nem campo de objetivo. Os objetivos concretos ficam exclusivamente no checklist de `update_plan`. Confirmar produto,
 tipo, processo/versão, cadeia/ciclo, execução, atividades/tarefas e subprocessos com retorno ao pai
 no backend. Campo ausente permanece desconhecido até consulta; nomes não substituem IDs.
 

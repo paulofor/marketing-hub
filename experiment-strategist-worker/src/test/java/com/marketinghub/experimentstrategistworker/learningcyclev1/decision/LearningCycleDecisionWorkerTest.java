@@ -105,7 +105,8 @@ class LearningCycleDecisionWorkerTest {
   }
 
   /**
-   * Prompt e schema versionados preservam fonte, hipótese, três alternativas e aprovação humana.
+   * Prompt e schema preservam fontes e alternativas, separando preparação backend de aprovação
+   * humana.
    */
   @Test
   void preparesCompleteVersionedContract() throws Exception {
@@ -131,7 +132,7 @@ class LearningCycleDecisionWorkerTest {
             "--output-schema");
   }
 
-  /** Revisão v2 exige mercado, três escopos, resultado econômico e segregação de testes. */
+  /** Revisão v2 exige mercado e economia, distinguindo preparação backend de autorização humana. */
   @Test
   void preparesMarketReviewV2WithoutChangingLegacySchema() throws Exception {
     var runner = new LearningCycleDecisionRunner(properties(), json);
@@ -149,7 +150,10 @@ class LearningCycleDecisionWorkerTest {
             "INSUFFICIENT_EVIDENCE",
             "AGENT_VALIDATION",
             "capacidade",
-            "Não solicite entrevistas");
+            "Não solicite entrevistas",
+            "LEARNING_CYCLE_SAFE_PREPARATION_V1",
+            "backend",
+            "sem nova inferência");
     var v1 =
         runner.prepare(
             json.createObjectNode().put("contractVersion", "LEARNING_CYCLE_DECISION_PROPOSAL_V1"));

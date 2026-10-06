@@ -153,7 +153,10 @@ public final class LearningCycleRules {
       return "Corrija e reconcilie a medição antes de continuar.";
     if (!metrics.path("testDataExcluded").asBoolean(false))
       return "Separe os dados de teste da leitura comercial.";
-    if (now.isBefore(cycle.getWindowStart()) || !now.isBefore(cycle.getWindowEnd()))
+    if (cycle.getWindowStart() == null
+        || cycle.getWindowEnd() == null
+        || now.isBefore(cycle.getWindowStart())
+        || !now.isBefore(cycle.getWindowEnd()))
       return "Janela autorizada encerrada ou ainda não iniciada.";
     if (metrics.path("spendBrl").decimalValue().compareTo(cycle.getBudgetLimitBrl()) > 0
         || (metrics.path("spendBrl").decimalValue().compareTo(cycle.getBudgetLimitBrl()) == 0
@@ -239,7 +242,9 @@ public final class LearningCycleRules {
     Instant end = parseInstant(evidence, "periodEnd");
     Instant observed = parseInstant(evidence, "observedAt");
     require(
-        !start.isBefore(cycle.getWindowStart())
+        cycle.getWindowStart() != null
+            && cycle.getWindowEnd() != null
+            && !start.isBefore(cycle.getWindowStart())
             && end.isAfter(start)
             && !end.isAfter(cycle.getWindowEnd())
             && !end.isAfter(observed)

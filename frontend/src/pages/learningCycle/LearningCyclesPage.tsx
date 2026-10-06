@@ -22,7 +22,8 @@ const money = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
-const date = (value: string) => new Date(value).toLocaleString("pt-BR");
+const date = (value: string | null) =>
+  value ? new Date(value).toLocaleString("pt-BR") : "A definir";
 const statuses: Record<string, string> = {
   OPEN: "Em andamento",
   ADJUSTED: "Encerrado para ajuste",

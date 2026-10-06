@@ -121,6 +121,9 @@ fi
 kill "$cycle_atena_pid"
 wait "$cycle_atena_pid" || true
 cycle_atena_pid=""
+if [[ "$cycle_scope" != --persistence-only ]]; then
+run preparation-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/preparation-browser" node frontend/e2e/learning-cycle-preparation-responsive.mjs
+fi
 kill "$cycle_api_pid"
 wait "$cycle_api_pid" || true
 cycle_api_pid=""

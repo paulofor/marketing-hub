@@ -58,10 +58,10 @@ public class LearningSalesCycle {
   @Column(name = "budget_limit_brl", nullable = false, precision = 12, scale = 2)
   private BigDecimal budgetLimitBrl;
 
-  @Column(name = "window_start", nullable = false)
+  @Column(name = "window_start")
   private Instant windowStart;
 
-  @Column(name = "window_end", nullable = false)
+  @Column(name = "window_end")
   private Instant windowEnd;
 
   @Column(name = "return_process_id")

@@ -4,6 +4,7 @@ import {
   useDecisionProposal,
   useDecisionProposalAudit,
   useRetryDecisionProposal,
+  usePrepareCycleSuccessor,
 } from "../../api/learningCycle/useDecisionProposal";
 import {
   cycleError,
@@ -35,6 +36,7 @@ export default function LearningCycleDecisionPanel({
 }) {
   const query = useDecisionProposal(cycle);
   const retry = useRetryDecisionProposal(cycle);
+  const preparation = usePrepareCycleSuccessor(cycle);
   const [showAudit, setShowAudit] = useState(false);
   const audit = useDecisionProposalAudit(cycle, showAudit);
   const value = query.data;
@@ -47,7 +49,11 @@ export default function LearningCycleDecisionPanel({
   return (
     <section aria-label="Proposta comercial de Atena">
       <div className="card card-body mb-3">
-        <h3 className="h5">Atena prepara; você edita e aprova</h3>
+        <h3 className="h5">
+          {value?.preparationAvailable
+            ? "Continuidade preparada pelo sistema"
+            : "Atena prepara; você edita e aprova"}
+        </h3>
         <p>
           Atividade 6.4 · decisão do ciclo #{cycle.id} · experimento #
           {cycle.experimentId}.
@@ -58,9 +64,34 @@ export default function LearningCycleDecisionPanel({
           <p>Agente responsável: Atena</p>
         )}
         <p>
-          A proposta usa os resultados conciliados. Sua aprovação registra a
-          decisão e o retorno no BPM.
+          {value?.preparationAvailable
+            ? "O backend preserva o aprendizado e prepara um único sucessor com mídia zero, sem janela comercial herdada. Novas ocorrências seguem automaticamente; esta ação recupera propostas anteriores sem repetir Atena."
+            : "A proposta usa os resultados conciliados. Sua aprovação registra a decisão e o retorno no BPM."}
         </p>
+        {ready && value.preparationAvailable ? (
+          <div>
+            <button
+              type="button"
+              className="btn btn-primary mb-3"
+              disabled={preparation.isPending}
+              onClick={async () => {
+                try {
+                  onUpdated(await preparation.mutateAsync());
+                } catch {
+                  /* A causa persistida é apresentada abaixo, sem repetir o modelo. */
+                }
+              }}
+            >
+              {preparation.isPending
+                ? "Preparando…"
+                : "Preparar continuidade sem gasto"}
+            </button>
+            {preparation.isError ? (
+              <p role="alert">{cycleError(preparation.error)}</p>
+            ) : null}
+            {value.error ? <p role="status">{value.error}</p> : null}
+          </div>
+        ) : null}
         {query.isPending ? (
           <p role="status">Carregando a proposta de Atena…</p>
         ) : null}
@@ -195,7 +226,7 @@ export default function LearningCycleDecisionPanel({
           </details>
         ) : null}
       </div>
-      {ready ? (
+      {ready && !value.preparationAvailable ? (
         <LearningCycleCommandForm
           key={`${cycle.id}-${cycle.revision}-${value.id}`}
           cycle={cycle}

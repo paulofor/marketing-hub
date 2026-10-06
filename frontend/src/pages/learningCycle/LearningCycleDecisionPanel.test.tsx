@@ -270,3 +270,41 @@ it("identifica a ausência de revisão de mercado no histórico v1", async () =>
   mount();
   expect(await screen.findByText(/Proposta histórica/)).toBeInTheDocument();
 });
+
+it("recupera o mesmo parecer sem transcrição, aprovação fictícia ou inferência", async () => {
+  vi.mocked(axios.get).mockResolvedValue({
+    data: { ...draft, preparationAvailable: true },
+  });
+  const successor = { ...cycle, id: 12, experimentId: 101, stage: "PLANNING" };
+  vi.mocked(axios.post).mockResolvedValue({ data: successor });
+  const { updated } = mount();
+  const button = await screen.findByRole("button", {
+    name: "Preparar continuidade sem gasto",
+  });
+  expect(axios.post).not.toHaveBeenCalled();
+  expect(
+    screen.queryByLabelText("Responsável pela decisão *"),
+  ).not.toBeInTheDocument();
+  await userEvent.click(button);
+  await waitFor(() => expect(updated).toHaveBeenCalledWith(successor));
+  expect(axios.post).toHaveBeenCalledTimes(1);
+  expect(axios.post).toHaveBeenCalledWith(
+    "/api/business-process-chains/learning-cycles/v1/products/4/1/decision-proposal/prepare-successor",
+  );
+});
+
+it("apresenta bloqueio sem reenviar o modelo nem fabricar sucesso", async () => {
+  vi.mocked(axios.get).mockResolvedValue({
+    data: { ...draft, preparationAvailable: true },
+  });
+  vi.mocked(axios.post).mockRejectedValue(new Error("Produto em STOP"));
+  const { updated } = mount();
+  await userEvent.click(
+    await screen.findByRole("button", {
+      name: "Preparar continuidade sem gasto",
+    }),
+  );
+  await screen.findByRole("alert");
+  expect(updated).not.toHaveBeenCalled();
+  expect(axios.post).toHaveBeenCalledTimes(1);
+});

@@ -434,7 +434,39 @@ public class LearningCycleService {
   /** Abre uma iteração atômica, sem criar campanha nem alterar a seleção comercial do produto. */
   @Transactional
   public LearningCycleResponse create(Long productId, CreateLearningCycleRequest request) {
+    return create(productId, request, false);
+  }
+
+  /** Lê uma única ocorrência do próprio produto sem carregar históricos alheios à recuperação. */
+  @Transactional(readOnly = true)
+  public LearningCycleResponse get(Long productId, Long cycleId) {
+    return response(requiredCycle(productId, cycleId));
+  }
+
+  /** Prepara somente sucessor sem janela ou gasto, sem aceitar esse modo pelo cadastro público. */
+  @Transactional
+  public LearningCycleResponse createPreparation(
+      Long productId, CreateLearningCycleRequest request) {
+    require(
+        request.previousCycleId() != null
+            && !request.baseline()
+            && request.windowStart() == null
+            && request.windowEnd() == null
+            && request.budgetLimitBrl().signum() == 0,
+        "Preparação exige predecessor, teto zero e nenhuma janela comercial herdada.");
+    return create(productId, request, true);
+  }
+
+  /** Compartilha locks, linhagem e validações entre cadastro explícito e preparação interna. */
+  private LearningCycleResponse create(
+      Long productId, CreateLearningCycleRequest request, boolean preparation) {
     requireProduct(productId, true);
+    var creation = (com.fasterxml.jackson.databind.node.ObjectNode) json.read(json.write(request));
+    creation.put(
+        "preparationPolicy",
+        com.marketinghub.businessprocesschain.learningcycle.v1.decision.service
+            .LearningCyclePreparationPolicy.CONTRACT);
+    if (preparation) creation.put("preparationOnly", true);
     String input = json.write(request);
     var replay = cycles.findByProductIdAndRequestKey(productId, request.requestKey().toString());
     if (replay.isPresent()) {
@@ -461,7 +493,10 @@ public class LearningCycleService {
         !cycles.existsByExperimentId(experiment.getId()),
         "Este experimento já possui um ciclo. Use outro experimento para a nova hipótese.");
     require(
-        request.windowEnd().isAfter(request.windowStart()),
+        preparation
+            || (request.windowStart() != null
+                && request.windowEnd() != null
+                && request.windowEnd().isAfter(request.windowStart())),
         "A janela precisa terminar depois do início.");
     Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
     var historicalPublication = evidence.historicalPublication(experiment);
@@ -476,7 +511,8 @@ public class LearningCycleService {
           experiment.getStatus() == ExperimentStatus.PLANNED && historicalPublication.isEmpty(),
           "Um novo ciclo exige experimento planejado sem exposição anterior.");
       require(
-          request.windowEnd().isAfter(now), "Defina uma janela futura para o novo experimento.");
+          preparation || request.windowEnd().isAfter(now),
+          "Defina uma janela futura para o novo experimento.");
     }
     LearningSalesCycle previous = null;
     if (request.previousCycleId() != null) {
@@ -503,7 +539,7 @@ public class LearningCycleService {
     cycle.setPreviousCycleId(request.previousCycleId());
     cycle.setRequestKey(request.requestKey().toString());
     cycle.setCreationJson(input);
-    cycle.setBriefJson(input);
+    cycle.setBriefJson(json.write(creation));
     cycle.setBaseline(request.baseline());
     cycle.setProductVersion(request.productVersion().trim());
     cycle.setBudgetLimitBrl(request.budgetLimitBrl());
@@ -689,7 +725,7 @@ public class LearningCycleService {
             data));
   }
 
-  /** Renova somente a janela legada elegível, respeitando a política vigente e a exposição. */
+  /** Define a primeira janela do rascunho ou renova a janela legada elegível sem herdar gasto. */
   @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public LearningCycleResponse revalidateWindow(
       Long productId, Long cycleId, RevalidateCycleWindowRequest request, String operatorName) {
@@ -729,11 +765,16 @@ public class LearningCycleService {
     Instant end = request.endDate().plusDays(1).atStartOfDay(zone).toInstant();
     Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
     require(end.isAfter(now) && end.isAfter(start), "A nova janela precisa possuir tempo futuro.");
+    boolean initialWindow = initialPreparationWindow(cycle);
     Instant previousStart = cycle.getWindowStart();
     Instant previousEnd = cycle.getWindowEnd();
     cycle.setWindowStart(start);
     cycle.setWindowEnd(end);
-    commercialAuthorization.apply(cycle, experiment, now);
+    if (initialWindow) {
+      experiment.setStartDate(request.startDate());
+      experiment.setEndDate(request.endDate());
+      experiments.save(experiment);
+    } else commercialAuthorization.apply(cycle, experiment, now);
     cycle.setRevision(cycle.getRevision() + 1);
     cycle.setUpdatedAt(now);
     cycles.saveAndFlush(cycle);
@@ -743,8 +784,9 @@ public class LearningCycleService {
     evidenceJson.put("productId", productId);
     evidenceJson.put("experimentId", cycle.getExperimentId());
     evidenceJson.put("productVersion", cycle.getProductVersion());
-    evidenceJson.put("previousWindowStart", previousStart.toString());
-    evidenceJson.put("previousWindowEnd", previousEnd.toString());
+    evidenceJson.put(
+        "previousWindowStart", previousStart == null ? null : previousStart.toString());
+    evidenceJson.put("previousWindowEnd", previousEnd == null ? null : previousEnd.toString());
     evidenceJson.put("windowStart", start.toString());
     evidenceJson.put("windowEnd", end.toString());
     evidenceJson.put("budgetLimitBrl", cycle.getBudgetLimitBrl());
@@ -757,10 +799,12 @@ public class LearningCycleService {
     event.setRevision(cycle.getRevision());
     event.setFromStage(cycle.getStage());
     event.setToStage(cycle.getStage());
-    event.setAction("REVALIDATE_WINDOW");
+    event.setAction(initialWindow ? "DEFINE_INITIAL_WINDOW" : "REVALIDATE_WINDOW");
     event.setOperatorName(operatorName.trim());
     event.setSummary(
-        "Janela revalidada sem alterar o teto financeiro e sem liberar campanha ou gasto.");
+        initialWindow
+            ? "Primeira janela do sucessor definida sem autorização de gasto."
+            : "Janela revalidada sem alterar o teto financeiro e sem liberar campanha ou gasto.");
     event.setEvidenceReference("internal://learning-cycles/" + cycleId + "/window-revalidation");
     event.setEvidenceJson(json.write(evidenceJson));
     event.setCreatedAt(now);
@@ -822,7 +866,16 @@ public class LearningCycleService {
     String from = cycle.getStage();
     Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
     var experiment = requiredExperiment(productId, cycle.getExperimentId());
-    var approvedProposal = decisionApproval.validate(cycle, request);
+    boolean preparation =
+        automatic
+            && request
+                .evidence()
+                .path("preparationPolicy")
+                .asText()
+                .equals(
+                    com.marketinghub.businessprocesschain.learningcycle.v1.decision.service
+                        .LearningCyclePreparationPolicy.CONTRACT);
+    var approvedProposal = decisionApproval.validate(cycle, request, preparation);
     apply(cycle, experiment, request, now);
     cycle.setRevision(cycle.getRevision() + 1);
     cycle.setUpdatedAt(now);
@@ -840,7 +893,7 @@ public class LearningCycleService {
     event.setEvidenceJson(json.write(request.evidence()));
     event.setCreatedAt(now);
     events.saveAndFlush(event);
-    decisionApproval.record(approvedProposal, event.getId(), input, now);
+    decisionApproval.record(approvedProposal, event.getId(), input, now, preparation);
     String completion =
         request.action() == Action.REWORK || request.action() == Action.FIX_MEASUREMENT
             ? "BLOCKED"
@@ -863,6 +916,28 @@ public class LearningCycleService {
         cycle.getStage(),
         cycle.getRevision());
     return response(cycle);
+  }
+
+  /** Aplica exclusivamente o ajuste derivado do parecer persistido pela preparação interna. */
+  @Transactional
+  public LearningCycleResponse recordPreparationDecision(
+      Long productId, Long cycleId, LearningCycleCommand command) {
+    require(
+        command.action() == Action.ADJUST, "Preparação automática não autoriza outras decisões.");
+    return command(productId, cycleId, command, true);
+  }
+
+  /** Encaminha o aprendizado já preservado ao planejamento, sem concluir o trabalho dos agentes. */
+  @Transactional
+  public LearningCycleResponse carryPreparedLearning(
+      Long productId, Long cycleId, LearningCycleCommand command) {
+    var cycle = requiredCycle(productId, cycleId);
+    require(
+        "LEARNING".equals(cycle.getStage())
+            && command.action() == Action.COMPLETE
+            && json.read(cycle.getBriefJson()).path("preparationOnly").asBoolean(false),
+        "Continuidade restrita ao aprendizado de um sucessor preparado.");
+    return command(productId, cycleId, command, true);
   }
 
   /**
@@ -1396,8 +1471,8 @@ public class LearningCycleService {
     }
     if ("DECISION".equals(cycle.getStage())) {
       nextAction =
-          "Atena prepara a proposta com as evidências conciliadas. Revise, edite e aprove para registrar a decisão e o retorno no BPM.";
-      responsible = "Atena · proposta; usuário · edição e aprovação";
+          "Atena prepara a proposta com as evidências conciliadas. O backend verifica a preparação automática do sucessor sem gasto; decisões sobre mercado ou operação permanecem explícitas.";
+      responsible = "Atena · proposta; backend · continuidade preparatória";
     }
     if ("MEASUREMENT".equals(cycle.getStage())) {
       nextAction =
@@ -1508,24 +1583,36 @@ public class LearningCycleService {
         windowRevalidation(cycle));
   }
 
-  /** Expõe a decisão da janela encerrada sem inferência de data ou elegibilidade no frontend. */
+  /** Expõe a primeira janela pendente ou a renovação legada, sem decidir datas no frontend. */
   private LearningCycleResponse.WindowRevalidation windowRevalidation(LearningSalesCycle cycle) {
     if (!"OPEN".equals(cycle.getStatus())
-        || cycle.getWindowEnd() == null
-        || cycle.getWindowEnd().isAfter(Instant.now(clock))) return null;
+        || (!initialPreparationWindow(cycle)
+            && (cycle.getWindowEnd() == null || cycle.getWindowEnd().isAfter(Instant.now(clock)))))
+      return null;
     String blocker =
         windowRevalidationBlocker(
             cycle, experiments.findById(cycle.getExperimentId()).orElse(null));
     return new LearningCycleResponse.WindowRevalidation(
         blocker == null,
         blocker == null
-            ? "Janela legada encerrada antes da liberação; a renovação não autoriza gasto."
+            ? (initialPreparationWindow(cycle)
+                ? "Sucessor preparado sem gasto. Defina sua primeira janela antes da homologação comercial; isso não autoriza mídia."
+                : "Janela legada encerrada antes da liberação; a renovação não autoriza gasto.")
             : blocker);
   }
 
   /** Compartilha entre leitura e comando as regras de preservação do ciclo e do experimento. */
   private String windowRevalidationBlocker(LearningSalesCycle cycle, Experiment experiment) {
     if (!"OPEN".equals(cycle.getStatus())) return "Somente ciclo aberto pode renovar a janela.";
+    if (initialPreparationWindow(cycle)) {
+      if (experiment != null
+          && experiment.getStatus() == ExperimentStatus.PLANNED
+          && experiment.getFacebookReleaseRequestedAt() == null
+          && evidence.historicalPublication(experiment).isEmpty()
+          && Set.of("LEARNING", "PLANNING", "ADJUSTMENT", "VALIDATION", "AUTHORIZATION")
+              .contains(cycle.getStage())) return null;
+      return "A primeira janela exige sucessor planejado sem liberação ou exposição.";
+    }
     if (separateChanges(cycle))
       return "Uma nova janela exige novo ciclo e novo experimento. Preserve os resultados e registre a decisão de ajuste para preparar o sucessor, com orçamento e autorização próprios.";
     if (cycle.isBaseline())
@@ -1540,6 +1627,15 @@ public class LearningCycleService {
     if (cycle.getWindowEnd() == null || cycle.getWindowEnd().isAfter(Instant.now(clock)))
       return "A janela ainda não encerrou; preserve o período registrado.";
     return null;
+  }
+
+  /** Distingue ausência inicial de janela de renovação de um contrato já definido. */
+  private boolean initialPreparationWindow(LearningSalesCycle cycle) {
+    return !cycle.isBaseline()
+        && cycle.getPreviousCycleId() != null
+        && cycle.getWindowStart() == null
+        && cycle.getWindowEnd() == null
+        && json.read(cycle.getBriefJson()).path("preparationOnly").asBoolean(false);
   }
 
   /** Prepara a síntese com a prova registrada sem transformar a leitura em uma autorização. */

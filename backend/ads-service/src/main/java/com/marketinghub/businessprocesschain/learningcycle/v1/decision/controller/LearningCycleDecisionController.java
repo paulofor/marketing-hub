@@ -1,18 +1,20 @@
 package com.marketinghub.businessprocesschain.learningcycle.v1.decision.controller;
 
 import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.LearningCycleDecisionService;
+import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.LearningCycleSuccessorPreparation;
 import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.audit.DecisionProposalAudit;
 import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.get.DecisionProposalResponse;
 import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.pending.PendingDecisionProposal;
 import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.result.DecisionProposalResult;
 import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.retry.RetryDecisionProposal;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.LearningCycleResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-/** Responsabilidade: expor a fila de Atena e a leitura administrativa da proposta da decisão. */
+/** Responsabilidade: expor fila, proposta e recuperação canônica da decisão de Atena. */
 @RestController
 @RequiredArgsConstructor
 public class LearningCycleDecisionController {
@@ -21,6 +23,15 @@ public class LearningCycleDecisionController {
   private static final String INTERNAL =
       "/api/internal/business-process-chains/learning-cycles/v1/decision/stage-executions";
   private final LearningCycleDecisionService service;
+  private final LearningCycleSuccessorPreparation preparation;
+
+  /**
+   * Recupera a preparação sem inferência, sem aprovação fictícia e com replay do sucessor único.
+   */
+  @PostMapping(ADMIN + "/prepare-successor")
+  public LearningCycleResponse prepare(@PathVariable Long productId, @PathVariable Long cycleId) {
+    return preparation.prepare(productId, cycleId);
+  }
 
   /** Mostra a proposta e seu estado sem disparar execução pela navegação. */
   @GetMapping(ADMIN)

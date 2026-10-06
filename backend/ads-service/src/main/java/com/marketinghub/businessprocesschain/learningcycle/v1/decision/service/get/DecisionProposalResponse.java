@@ -20,4 +20,5 @@ public record DecisionProposalResponse(
     Instant createdAt,
     Instant finishedAt,
     Instant approvedAt,
-    Long approvedEventId) {}
+    Long approvedEventId,
+    boolean preparationAvailable) {}

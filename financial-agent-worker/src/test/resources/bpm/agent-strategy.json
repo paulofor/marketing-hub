@@ -1,0 +1,37 @@
+{
+  "contractVersion": "MARKET_STRATEGY_V4",
+  "status": "READY_FOR_AGENT_VALIDATION",
+  "agentValidationPlan": {
+    "contractVersion": "PDE_AGENT_VALIDATION_V1",
+    "trafficClass": "AGENT_VALIDATION",
+    "internalMarker": "mh_internal_test",
+    "requiredScenarios": [
+      "ADHERENT",
+      "RECOVERY",
+      "SAFETY"
+    ],
+    "requiredDevices": [
+      "DESKTOP_1440",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "maxReadyResultSeconds": 600,
+    "humanEvidenceClaimed": false,
+    "commercialEvidenceClaimed": false,
+    "paymentEnabled": false,
+    "publicationAuthorized": false,
+    "campaignAuthorized": false,
+    "mediaSpendAuthorizedBrl": 0,
+    "purchaseScene": {
+      "trigger": "Preparação da divulgação semanal"
+    },
+    "customerValueDelivery": {
+      "minimumCustomerInput": "Serviço e contexto sintéticos",
+      "readyMadeOutcome": "Pacote utilizável sem montagem manual"
+    }
+  },
+  "buyer": "Profissional autônoma sintética",
+  "problem": "Preparar divulgação com menos etapas",
+  "desiredOutcome": "Material personalizado utilizável",
+  "valueMechanism": "Pacote pronto com primeira aplicação identificada"
+}

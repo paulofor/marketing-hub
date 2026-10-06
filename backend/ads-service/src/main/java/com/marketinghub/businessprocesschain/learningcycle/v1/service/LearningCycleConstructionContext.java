@@ -78,8 +78,8 @@ public class LearningCycleConstructionContext {
   }
 
   /**
-   * Publica plano multiagente e linhagem por projeções sem prompts; mantém ausência se as
-   * aprovações falharem.
+   * Preserva orientação de Atena, aplica limites multiagente e compõe linhagem; mantém ausência se
+   * as aprovações falharem.
    */
   private JsonNode context(LearningSalesCycle cycle) {
     try {
@@ -115,7 +115,8 @@ public class LearningCycleConstructionContext {
       if (!"APPROVE".equals(strategyResult.path("decision").asText())
           || (!agentStrategy && !historicalStrategy)
           || !"APPROVE".equals(economicsResult.path("decision").asText())
-          || !"PDE_PRIVATE_ECONOMICS_V1".equals(economicsResult.path("contractVersion").asText())
+          || !(agentStrategy ? "PDE_AGENT_ECONOMICS_V1" : "PDE_PRIVATE_ECONOMICS_V1")
+              .equals(economicsResult.path("contractVersion").asText())
           || !economics.isObject()
           || economics.path("commercialSpendAuthorized").asBoolean(true)
           || !"APPROVE".equals(architectureResult.path("decision").asText())
@@ -130,7 +131,17 @@ public class LearningCycleConstructionContext {
       context.put("status", "PLANNED");
       try (var input =
           getClass().getResourceAsStream("/contracts/pde-agent-validation-plan-v1.json")) {
-        var plan = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(input);
+        var plan =
+            agentStrategy
+                ? (com.fasterxml.jackson.databind.node.ObjectNode)
+                    strategy.path("agentValidationPlan").deepCopy()
+                : mapper.createObjectNode();
+        if (!agentStrategy) {
+          var historicalPlan = strategy.path("privateValidationPlan");
+          plan.set("purchaseScene", historicalPlan.path("purchaseScene"));
+          plan.set("customerValueDelivery", historicalPlan.path("humanValueDelivery"));
+        }
+        plan.setAll((com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(input));
         plan.put("sourceReference", "experiment:" + cycle.getExperimentId());
         context.set("agentValidationPlan", plan);
       }
@@ -154,6 +165,7 @@ public class LearningCycleConstructionContext {
           .put("architectureTaskId", architectureTask.id());
       context.set("marketStrategy", strategy);
       context.set("economics", economics);
+      context.put("economicsContractVersion", economicsResult.path("contractVersion").asText());
       context.set("metrics", economicsResult.path("metrics"));
       context.set("harness", architecture);
       if (agentStrategy) {

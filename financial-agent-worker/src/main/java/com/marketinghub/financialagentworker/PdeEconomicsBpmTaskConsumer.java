@@ -36,6 +36,10 @@ public class PdeEconomicsBpmTaskConsumer {
       "prompts/pde-commercial-plan/v5/economics.md";
   private static final String PRIVATE_VALIDATION_SCHEMA =
       "prompts/pde-commercial-plan/v5/economics-schema.json";
+  private static final String AGENT_VALIDATION_PROMPT =
+      "prompts/pde-commercial-plan/v6/economics.md";
+  private static final String AGENT_VALIDATION_SCHEMA =
+      "prompts/pde-commercial-plan/v6/economics-schema.json";
   private static final String OPALA_SCHEMA =
       "prompts/opala-commercial-preparation/v1/economics-schema.json";
   private static final List<String> PRIVATE_VALIDATION_SIGNALS =
@@ -72,7 +76,7 @@ public class PdeEconomicsBpmTaskConsumer {
       if (task == null) return;
       validateTaskContract(task);
       execution = execute(task);
-      validate(execution.result(), isPrivateValidationTask(task));
+      validate(execution.result(), isPrivateValidationTask(task), isAgentValidationTask(task));
       if (isOpalaTask(task)) validateOpalaResultAgainstPlan(execution.result(), taskContext(task));
       if ("APPROVE".equals(execution.result().path("decision").asText())) {
         complete(task, execution);
@@ -196,13 +200,17 @@ public class PdeEconomicsBpmTaskConsumer {
   private String promptResource(Map<String, Object> task) {
     if ("opala-commercial-preparation-v1".equals(task.get("processCode")))
       return "catalogo-vivo:opala/economics";
-    return isPrivateValidationTask(task) ? PRIVATE_VALIDATION_PROMPT : LEGACY_PROMPT;
+    return isAgentValidationTask(task)
+        ? AGENT_VALIDATION_PROMPT
+        : isPrivateValidationTask(task) ? PRIVATE_VALIDATION_PROMPT : LEGACY_PROMPT;
   }
 
   /** Seleciona o schema econômico compatível com a versão imutável do processo. */
   private String schemaResource(Map<String, Object> task) {
     if ("opala-commercial-preparation-v1".equals(task.get("processCode"))) return OPALA_SCHEMA;
-    return isPrivateValidationTask(task) ? PRIVATE_VALIDATION_SCHEMA : LEGACY_SCHEMA;
+    return isAgentValidationTask(task)
+        ? AGENT_VALIDATION_SCHEMA
+        : isPrivateValidationTask(task) ? PRIVATE_VALIDATION_SCHEMA : LEGACY_SCHEMA;
   }
 
   /** Persiste economia, evidência, auditoria e tokens antes de liberar Dédalo. */
@@ -262,7 +270,7 @@ public class PdeEconomicsBpmTaskConsumer {
               "TECHNICAL_FAILURE",
               "recommendedAction",
               isStrategyContractDrift(ex)
-                  ? "Retome a execução com Atena para gerar MARKET_STRATEGY_V3 antes de reiniciar Plutus."
+                  ? "Confira a compatibilidade do executor com o contrato vigente de Atena; preserve o parecer concluído e não repita inferência para produzir uma versão histórica."
                   : "Corrija a falha técnica registrada e reinicie a atividade de Plutus.",
               "helpLinks",
               List.of(taskLink())));
@@ -327,7 +335,11 @@ public class PdeEconomicsBpmTaskConsumer {
             "agent",
             "Plutus",
             "promptVersion",
-            isPrivateValidationTask(task) ? "pde-commercial-plan-v5" : "pde-commercial-plan-v4",
+            isAgentValidationTask(task)
+                ? "pde-commercial-plan-v6"
+                : isPrivateValidationTask(task)
+                    ? "pde-commercial-plan-v5"
+                    : "pde-commercial-plan-v4",
             "sourceReference",
             sourceReference(task),
             "processCode",
@@ -354,6 +366,17 @@ public class PdeEconomicsBpmTaskConsumer {
 
   /** Valida o envelope comum e aplica as travas específicas da versão do processo. */
   private static void validate(JsonNode result, boolean privateValidation) {
+    validate(result, privateValidation, false);
+  }
+
+  /** Valida economia da homologação por agentes sem introduzir leituras humanas ou mídia. */
+  static void validateAgentValidation(JsonNode result) {
+    validate(result, true, true);
+  }
+
+  /** Aplica o envelope econômico correspondente à versão do processo sem reescrever o legado. */
+  private static void validate(
+      JsonNode result, boolean privateValidation, boolean agentValidation) {
     JsonNode economics = result.path("economics");
     if (!List.of("APPROVE", "ADJUST", "REJECT").contains(result.path("decision").asText())
         || result.path("scenarios").size() != 3
@@ -380,12 +403,16 @@ public class PdeEconomicsBpmTaskConsumer {
       throw new IllegalArgumentException("Plutus não pode aprovar contribuição não positiva.");
     }
     if (privateValidation)
-      validatePrivateValidationEnvelope(result, economics, price, contribution);
+      validatePrivateValidationEnvelope(result, economics, price, contribution, agentValidation);
   }
 
-  /** Confirma que a hipótese privada não foi convertida em operação ou resultado comercial. */
+  /** Confirma a geração da hipótese e impede convertê-la em operação ou resultado comercial. */
   private static void validatePrivateValidationEnvelope(
-      JsonNode result, JsonNode economics, BigDecimal price, BigDecimal contribution) {
+      JsonNode result,
+      JsonNode economics,
+      BigDecimal price,
+      BigDecimal contribution,
+      boolean agentValidation) {
     long recommendedScenarios =
         java.util.stream.StreamSupport.stream(result.path("scenarios").spliterator(), false)
             .filter(scenario -> scenario.path("recommended").asBoolean(false))
@@ -398,10 +425,21 @@ public class PdeEconomicsBpmTaskConsumer {
                 == 0
             && economics.path("targetSales").asInt(-1) == 0
             && economics.path("targetRevenueBrl").decimalValue().compareTo(BigDecimal.ZERO) == 0;
-    if (!"PDE_PRIVATE_ECONOMICS_V1".equals(result.path("contractVersion").asText())
-        || !"PRIVATE_VALIDATION_HYPOTHESIS".equals(result.path("mode").asText())
+    String expectedVersion =
+        agentValidation ? "PDE_AGENT_ECONOMICS_V1" : "PDE_PRIVATE_ECONOMICS_V1";
+    String expectedMode =
+        agentValidation ? "AGENT_VALIDATION_HYPOTHESIS" : "PRIVATE_VALIDATION_HYPOTHESIS";
+    boolean validValidationTargets =
+        agentValidation
+            ? economics.path("agentScenariosTarget").asInt(0) == 3
+                && economics.path("agentDevicesTarget").asInt(0) == 3
+                && !economics.path("humanEvidenceClaimed").asBoolean(true)
+                && !economics.has("privateReadingsTarget")
+            : economics.path("privateReadingsTarget").asInt(0) == 2;
+    if (!expectedVersion.equals(result.path("contractVersion").asText())
+        || !expectedMode.equals(result.path("mode").asText())
         || economics.path("commercialSpendAuthorized").asBoolean(true)
-        || economics.path("privateReadingsTarget").asInt(0) != 2
+        || !validValidationTargets
         || !zeroCommercialTargets
         || recommendedScenarios != 1) {
       throw new IllegalArgumentException(
@@ -415,11 +453,12 @@ public class PdeEconomicsBpmTaskConsumer {
     }
   }
 
-  /** Exige estratégia v3 antes de consumir tokens no processo de validação privada. */
+  /** Exige a estratégia da mesma geração do processo antes de consumir tokens. */
   private void validateTaskContract(Map<String, Object> task) throws IOException {
     JsonNode context = taskContext(task);
     if (isOpalaTask(task)) validateOpalaPlanContract(context);
-    if (isPrivateValidationTask(task)) validatePrivateStrategyContract(context);
+    if (isAgentValidationTask(task)) validateAgentStrategyContract(context);
+    else if (isPrivateValidationTask(task)) validatePrivateStrategyContract(context);
   }
 
   /** Converte o contexto estruturado sem perder o contrato persistido pelo backend. */
@@ -529,6 +568,37 @@ public class PdeEconomicsBpmTaskConsumer {
     }
   }
 
+  /** Aceita a estratégia multiagente vigente e recusa efeitos externos ou plano humano legado. */
+  static void validateAgentStrategyContract(JsonNode context) {
+    JsonNode contract = privateStrategyContract(context);
+    JsonNode plan = contract.path("agentValidationPlan");
+    if (!"MARKET_STRATEGY_V4".equals(contract.path("contractVersion").asText())
+        || !"READY_FOR_AGENT_VALIDATION".equals(contract.path("status").asText())
+        || !"PDE_AGENT_VALIDATION_V1".equals(plan.path("contractVersion").asText())
+        || !exactValues(plan.path("requiredScenarios"), List.of("ADHERENT", "RECOVERY", "SAFETY"))
+        || !exactValues(
+            plan.path("requiredDevices"), List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7"))
+        || plan.path("humanEvidenceClaimed").asBoolean(true)
+        || plan.path("commercialEvidenceClaimed").asBoolean(true)
+        || plan.path("paymentEnabled").asBoolean(true)
+        || plan.path("publicationAuthorized").asBoolean(true)
+        || plan.path("campaignAuthorized").asBoolean(true)
+        || !plan.path("mediaSpendAuthorizedBrl").isNumber()
+        || plan.path("mediaSpendAuthorizedBrl").decimalValue().signum() != 0
+        || contract.has("privateValidationPlan")) {
+      throw new IllegalArgumentException(
+          "Contrato de Atena incompatível com a homologação multiagente: MARKET_STRATEGY_V4 e três cenários/dispositivos sem efeitos externos são obrigatórios.");
+    }
+  }
+
+  /** Compara o conjunto canônico sem permitir ausências, duplicações ou aliases. */
+  private static boolean exactValues(JsonNode values, List<String> expected) {
+    if (!values.isArray() || values.size() != expected.size()) return false;
+    var actual = new ArrayList<String>();
+    values.forEach(value -> actual.add(value.asText()));
+    return actual.stream().distinct().count() == expected.size() && actual.containsAll(expected);
+  }
+
   /**
    * Prioriza a estratégia persistida pela predecessora concluída e só então usa o provedor direto.
    */
@@ -568,6 +638,11 @@ public class PdeEconomicsBpmTaskConsumer {
         && !"opala-commercial-preparation-v1".equals(task.get("processCode"))
         && version instanceof Number number
         && number.intValue() >= 6;
+  }
+
+  /** Reconhece a versão que substituiu leituras humanas por homologação interna de agentes. */
+  private static boolean isAgentValidationTask(Map<String, Object> task) {
+    return isPrivateValidationTask(task) && ((Number) task.get("processVersion")).intValue() >= 10;
   }
 
   /** Distingue incompatibilidade entre etapas para recomendar a correção operacional adequada. */

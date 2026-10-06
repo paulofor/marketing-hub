@@ -8316,6 +8316,18 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   histórica #506 permanece cancelada e imutável; #534 troca para a referência multiagente sem
   depender de estar pendente ou já reservada no instante da migração.
 
+- **Recorrência confirmada em 06/10/2026:** Capella, processo #116 v12, Atena #591 concluída
+  com V4; Plutus #592 recusou a entrada em `NOT_STARTED` exigindo V3. O histórico Mira #498
+  concluiu com V3 na versão 8. Por que aconteceu: a migração multiagente não incluiu o roteamento
+  do prompt/schema econômico nem as projeções de construção/comunicação, ainda fixadas no
+  contrato privado. A nova versão econômica v6 aceita V4 e preserva V3 para processos antigos.
+  Testes HTTP/modelo local exercitam a passagem a Dédalo, outro produto, envelopes obsoletos,
+  dados inválidos e ausência de gasto; projeções recusam mistura de gerações. O parecer de Atena
+  já concluído é reutilizado. Não há exceção por nome ou ID de produto. A homologação encadeada
+  também detectou perda de cena de compra/entrega de valor na projeção do sucessor: o backend
+  agora conserva o plano específico de Atena e sobrepõe os limites canônicos, em vez de entregar
+  somente flags. O probe do consumidor real valida as três entradas de construção.
+
 ## LOOP-DEDALO-POLLING-SEM-TIMEOUT — 30/09/2026
 
 - **Evidência confirmada:** o backend respondia ao comando `PLAY`, não havia tarefa Dédalo em

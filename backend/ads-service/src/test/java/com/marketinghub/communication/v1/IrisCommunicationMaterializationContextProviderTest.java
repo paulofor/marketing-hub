@@ -151,9 +151,27 @@ class IrisCommunicationMaterializationContextProviderTest {
     assertThat(fixture.provider().experimentId("experiment:88")).contains(88L);
   }
 
-  /** Reutiliza estratégia, economia e arquitetura privadas do experimento inicial sem legado. */
-  @Test
-  void shouldResolveInitialPrivateExperimentPlanning() {
+  /** Aceita pares de estratégia/economia da mesma geração e bloqueia a mistura de contratos. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "false,false,true",
+    "true,true,true",
+    "true,false,false",
+    "false,true,false"
+  })
+  void shouldResolveInitialPrivateExperimentPlanning(
+      boolean agentStrategy, boolean agentEconomics, boolean ready) {
+    String strategyResult =
+        agentStrategy
+            ? strategy()
+                .replace("MARKET_STRATEGY_V3", "MARKET_STRATEGY_V4")
+                .replace("READY_FOR_PRIVATE_VALIDATION", "READY_FOR_AGENT_VALIDATION")
+                .replace("privateValidationPlan", "agentValidationPlan")
+            : strategy();
+    String economicsResult =
+        agentEconomics
+            ? economics().replace("PDE_PRIVATE_ECONOMICS_V1", "PDE_AGENT_ECONOMICS_V1")
+            : economics();
     Fixture fixture = fixture(List.of(), false);
     var privateProducts = mock(IrisPrivateProductContext.class);
     org.springframework.test.util.ReflectionTestUtils.setField(
@@ -165,8 +183,9 @@ class IrisCommunicationMaterializationContextProviderTest {
     when(fixture.tasks().findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:88"))
         .thenReturn(
             List.of(
-                privatePlanningTask(496L, "marketStrategy", "experiment-strategist", strategy()),
-                privatePlanningTask(498L, "economics", "financial-agent", economics()),
+                privatePlanningTask(
+                    496L, "marketStrategy", "experiment-strategist", strategyResult),
+                privatePlanningTask(498L, "economics", "financial-agent", economicsResult),
                 privatePlanningTask(
                     499L, "productArchitecture", "landing-generator", architecture())));
     when(fixture
@@ -175,8 +194,8 @@ class IrisCommunicationMaterializationContextProviderTest {
                 "experiment:88", java.util.Set.of("pde-commercial-plan-offer"), null))
         .thenReturn(
             List.of(
-                snapshot(496L, "marketStrategy", "experiment-strategist", strategy()),
-                snapshot(498L, "economics", "financial-agent", economics()),
+                snapshot(496L, "marketStrategy", "experiment-strategist", strategyResult),
+                snapshot(498L, "economics", "financial-agent", economicsResult),
                 snapshot(499L, "productArchitecture", "landing-generator", architecture())));
     when(fixture
             .tasks()
@@ -186,6 +205,11 @@ class IrisCommunicationMaterializationContextProviderTest {
 
     Map<String, Object> context = fixture.provider().resolve("experiment:88").orElseThrow();
 
+    if (!ready) {
+      assertThat(context).containsEntry("inputReadiness", "BLOCKED");
+      assertThat(context.get("missingRequiredPredecessors").toString()).contains("Plutus");
+      return;
+    }
     assertThat(context)
         .containsEntry("availability", "AVAILABLE")
         .containsEntry("inputReadiness", "READY")
@@ -206,7 +230,10 @@ class IrisCommunicationMaterializationContextProviderTest {
     assertThat(context.get("communicationArtifacts").toString())
         .contains("taskId=500", "COMMUNICATION_PACKAGE");
     assertThat(context.get("marketStrategicContract").toString())
-        .contains("MARKET_STRATEGY_V3", "strategistTaskId=496", "contentHash");
+        .contains(
+            agentStrategy ? "MARKET_STRATEGY_V4" : "MARKET_STRATEGY_V3",
+            "strategistTaskId=496",
+            "contentHash");
     assertThat(context.get("approvedUpstreamArtifacts").toString())
         .contains("experiment-strategist", "financial-agent", "landing-generator")
         .doesNotContain("FINANCIAL_AGENT_EXECUTION");

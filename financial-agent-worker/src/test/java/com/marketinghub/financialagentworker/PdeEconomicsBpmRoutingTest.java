@@ -10,6 +10,12 @@ class PdeEconomicsBpmRoutingTest {
   @ParameterizedTest
   @ValueSource(
       strings = {
+        "agent-successor",
+        "agent-other",
+        "agent-stale-envelope",
+        "agent-human",
+        "agent-legacy",
+        "agent-budget",
         "opala",
         "successor",
         "discovery",

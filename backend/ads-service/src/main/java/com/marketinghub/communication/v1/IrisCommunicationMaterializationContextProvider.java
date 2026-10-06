@@ -351,11 +351,11 @@ public class IrisCommunicationMaterializationContextProvider
     artifacts.add(functionalArtifact(strategyTask, strategyResult));
     List<String> missing = new java.util.ArrayList<>();
     var economicsTask = latest.get("economics");
-    if (validPrivateEconomics(economicsTask, strategyTask.processDefinitionId())) {
+    if (validPrivateEconomics(economicsTask, strategyTask.processDefinitionId(), strategyVersion)) {
       artifacts.add(
           functionalArtifact(economicsTask, objectMapper.readTree(economicsTask.resultJson())));
     } else {
-      missing.add("Parecer econômico privado V1 concluído de Plutus");
+      missing.add("Parecer econômico de Plutus compatível com a versão da estratégia");
     }
     var architectureTask = latest.get("productArchitecture");
     if (validPrivateArchitecture(architectureTask, strategyTask.processDefinitionId())) {
@@ -380,9 +380,11 @@ public class IrisCommunicationMaterializationContextProvider
             List.copyOf(missing)));
   }
 
-  /** Confirma a economia privada aprovada, sem orçamento ou autorização de gasto comercial. */
+  /** Confirma economia da mesma geração da estratégia, sem autorização de gasto comercial. */
   private boolean validPrivateEconomics(
-      com.marketinghub.agenttask.AgentTaskFunctionalSnapshot task, Long processDefinitionId)
+      com.marketinghub.agenttask.AgentTaskFunctionalSnapshot task,
+      Long processDefinitionId,
+      String strategyVersion)
       throws Exception {
     if (task == null
         || !processDefinitionId.equals(task.processDefinitionId())
@@ -391,7 +393,10 @@ public class IrisCommunicationMaterializationContextProvider
     JsonNode result = objectMapper.readTree(task.resultJson());
     JsonNode economics = result.path("economics");
     return "APPROVE".equals(result.path("decision").asText())
-        && "PDE_PRIVATE_ECONOMICS_V1".equals(result.path("contractVersion").asText())
+        && ("MARKET_STRATEGY_V4".equals(strategyVersion)
+                ? "PDE_AGENT_ECONOMICS_V1"
+                : "PDE_PRIVATE_ECONOMICS_V1")
+            .equals(result.path("contractVersion").asText())
         && economics.path("commercialSpendAuthorized").isBoolean()
         && !economics.path("commercialSpendAuthorized").asBoolean()
         && economics.path("maxBudgetBrl").isNumber()

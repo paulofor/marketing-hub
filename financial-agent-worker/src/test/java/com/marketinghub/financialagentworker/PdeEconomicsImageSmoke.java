@@ -16,6 +16,12 @@ import java.util.Map;
 public final class PdeEconomicsImageSmoke {
   static final List<String> CASES =
       List.of(
+          "agent-successor",
+          "agent-other",
+          "agent-stale-envelope",
+          "agent-human",
+          "agent-legacy",
+          "agent-budget",
           "successor",
           "discovery",
           "stale-envelope",
@@ -43,17 +49,23 @@ public final class PdeEconomicsImageSmoke {
 
   /** Percorre PLAY, pending, prompt, schema, validação e callback com correlação isolada. */
   static void runScenario(String scenario, Path resources) throws Exception {
+    boolean agent = scenario.startsWith("agent-");
     boolean opala = scenario.startsWith("opala");
     boolean legacy = "legacy".equals(scenario) || opala;
-    boolean beforeModel = List.of("drift", "missing").contains(scenario);
+    boolean beforeModel =
+        List.of("drift", "missing", "agent-human", "agent-legacy").contains(scenario);
     boolean invalid =
-        List.of("timestamp", "opala-timestamp", "contribution", "budget").contains(scenario);
+        List.of("timestamp", "opala-timestamp", "contribution", "budget", "agent-budget")
+            .contains(scenario);
     boolean stopped = "stop".equals(scenario);
     var json = new ObjectMapper();
     Path directory = Files.createTempDirectory("plutus-economics-smoke-");
     ObjectNode response =
         (ObjectNode)
-            json.readTree(Files.readString(resources.resolve("bpm/private-economics.json")));
+            json.readTree(
+                Files.readString(
+                    resources.resolve(
+                        agent ? "bpm/agent-economics.json" : "bpm/private-economics.json")));
     ObjectNode economics = (ObjectNode) response.path("economics");
     if (legacy) {
       response.remove("contractVersion");
@@ -61,7 +73,8 @@ public final class PdeEconomicsImageSmoke {
     }
     if (scenario.endsWith("timestamp")) economics.put("deadline", "2026-09-17T02:59:00Z");
     if ("contribution".equals(scenario)) economics.put("contributionPerSaleBrl", 26.95);
-    if ("budget".equals(scenario)) economics.put("maxBudgetBrl", 100);
+    if ("budget".equals(scenario) || "agent-budget".equals(scenario))
+      economics.put("maxBudgetBrl", 100);
     Files.writeString(directory.resolve("response.json"), response.toString());
     var contract = json.createObjectNode();
     contract.put(
@@ -76,8 +89,27 @@ public final class PdeEconomicsImageSmoke {
         .add("READY_RESULT_USED")
         .add("PREFERRED_OVER_FREE")
         .add("CHECKOUT_STARTED");
+    if (agent && !"agent-legacy".equals(scenario)) {
+      contract =
+          (ObjectNode)
+              json.readTree(Files.readString(resources.resolve("bpm/agent-strategy.json")));
+      String strategyHandoff = System.getProperty("pde.strategy.handoff.input");
+      if (strategyHandoff != null && "agent-successor".equals(scenario))
+        contract =
+            (ObjectNode)
+                json.readTree(Files.readString(Path.of(strategyHandoff)))
+                    .path("marketStrategicContract");
+      if ("agent-human".equals(scenario))
+        contract.withObject("/agentValidationPlan").put("humanEvidenceClaimed", true);
+    }
     var context = json.createObjectNode();
-    context.putObject("learningSalesCycle").put("productId", 900004).put("experimentId", 900092);
+    long productId = "agent-other".equals(scenario) ? 800071 : 900004;
+    long experimentId = "agent-other".equals(scenario) ? 800087 : 900092;
+    long currentTaskId = "agent-other".equals(scenario) ? 800088 : 900360;
+    context
+        .putObject("learningSalesCycle")
+        .put("productId", productId)
+        .put("experimentId", experimentId);
     if (!"missing".equals(scenario)) {
       context
           .putArray("completedActivities")
@@ -87,7 +119,7 @@ public final class PdeEconomicsImageSmoke {
           .putObject("result")
           .set("marketStrategicContract", contract);
     }
-    if ("stale-envelope".equals(scenario)) {
+    if ("stale-envelope".equals(scenario) || "agent-stale-envelope".equals(scenario)) {
       context
           .putObject("marketStrategicContract")
           .put("availability", "MISSING")
@@ -95,15 +127,17 @@ public final class PdeEconomicsImageSmoke {
     }
     if (opala) addViableOpalaFinancialPlan(context);
     String source =
-        "discovery".equals(scenario) ? "product-discovery-cycle:900064" : "experiment:900092";
+        "discovery".equals(scenario)
+            ? "product-discovery-cycle:900064"
+            : "experiment:" + experimentId;
     Map<String, Object> task =
         Map.of(
             "processCode",
             opala ? "opala-commercial-preparation-v1" : "pde-commercial-plan-offer",
             "taskId",
-            900360,
+            currentTaskId,
             "processVersion",
-            legacy ? 5 : "later-version".equals(scenario) ? 7 : 6,
+            agent ? 12 : legacy ? 5 : "later-version".equals(scenario) ? 7 : 6,
             "sourceReference",
             source,
             "processContextJson",
@@ -146,7 +180,7 @@ public final class PdeEconomicsImageSmoke {
                         : List.of(pendingTask));
           } else if (List.of("result", "failure").contains(operation)) {
             require(
-                path.contains("financial-agent/stage-executions/900360/"),
+                path.contains("financial-agent/stage-executions/" + currentTaskId + "/"),
                 "Callback sem correlação");
             callbacks.add(json.readTree(exchange.getRequestBody().readAllBytes()));
           } else {
@@ -189,7 +223,9 @@ public final class PdeEconomicsImageSmoke {
       require(
           (opala
                   ? "opala-commercial-preparation-v1"
-                  : legacy ? "pde-commercial-plan-v4" : "pde-commercial-plan-v5")
+                  : agent
+                      ? "pde-commercial-plan-v6"
+                      : legacy ? "pde-commercial-plan-v4" : "pde-commercial-plan-v5")
               .equals(evidence.path("promptVersion").asText()),
           "Versão indevida para a origem da tarefa");
       if (beforeModel) {
@@ -199,6 +235,25 @@ public final class PdeEconomicsImageSmoke {
             "TECHNICAL_FAILURE".equals(callback.path("blockerGuidance").path("category").asText()),
             "Causa do bloqueio perdida");
         return;
+      }
+      if (agent) {
+        require(
+            Files.readString(directory.resolve("prompt.txt")).contains("MARKET_STRATEGY_V4"),
+            "Prompt vigente ausente");
+        require(
+            "PDE_AGENT_ECONOMICS_V1"
+                .equals(
+                    json.readTree(Files.readString(directory.resolve("schema.json")))
+                        .path("properties")
+                        .path("contractVersion")
+                        .path("const")
+                        .asText()),
+            "Schema vigente ausente");
+        String export = System.getProperty("pde.economics.handoff.output");
+        if (export != null && "agent-successor".equals(scenario))
+          Files.writeString(
+              Path.of(export),
+              json.writeValueAsString(Map.of("input", context, "callback", callback)));
       }
       require(
           response.equals(json.readTree(callback.path("resultJson").asText())),
@@ -224,7 +279,7 @@ public final class PdeEconomicsImageSmoke {
                 .has("pattern"),
             "Schema Opala perdeu prazo ISO date-only");
       }
-      if (!legacy) {
+      if (!legacy && !agent) {
         require(
             prompt.contains("YYYY-MM-DD") && prompt.contains("checkout **simulado**"),
             "Prompt privado não utilizado");

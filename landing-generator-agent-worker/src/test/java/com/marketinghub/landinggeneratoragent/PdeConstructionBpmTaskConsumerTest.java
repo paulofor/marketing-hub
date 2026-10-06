@@ -2,6 +2,7 @@ package com.marketinghub.landinggeneratoragent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -66,6 +67,128 @@ class PdeConstructionBpmTaskConsumerTest {
           .isEqualTo("Núcleo de Dédalo.\n\nConstruir a jornada.");
       assertThat(audit.path("agentPromptPart").asText()).isEqualTo("Núcleo de Dédalo.");
       assertThat(audit.path("activityPromptPart").asText()).isEqualTo("Construir a jornada.");
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  /**
+   * Percorre fila, modelo local, auditoria e callback com a economia vigente e identidades
+   * distintas.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {900092L, 800087L})
+  void consumesAgentPlanningThroughRealWorker(
+      long experimentId, @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory)
+      throws Exception {
+    var planning =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            json.readTree(getClass().getResourceAsStream("/bpm/agent-planning.json"));
+    String handoff = System.getProperty("pde.economics.handoff.input");
+    if (handoff != null && experimentId == 900092L) {
+      var actual = json.readTree(java.nio.file.Files.readString(java.nio.file.Path.of(handoff)));
+      planning.set(
+          "strategy", actual.path("input").path("completedActivities").get(0).path("result"));
+      planning.withObject("/strategy").put("decision", "APPROVE");
+      planning.set("economics", json.readTree(actual.path("callback").path("resultJson").asText()));
+    }
+    var context = json.createObjectNode();
+    context.putObject("learningSalesCycle").put("experimentId", experimentId);
+    var predecessors = context.putArray("completedActivities");
+    predecessors
+        .addObject()
+        .put("activityId", "marketStrategy")
+        .set("result", planning.path("strategy"));
+    predecessors
+        .addObject()
+        .put("activityId", "economics")
+        .set("result", planning.path("economics"));
+    long taskId = experimentId + 1000;
+    String source = "experiment:" + experimentId;
+    var task =
+        Map.of(
+            "taskId",
+            taskId,
+            "sourceReference",
+            source,
+            "processCode",
+            "pde-commercial-plan-offer",
+            "activityId",
+            "productArchitecture",
+            "processVersion",
+            12,
+            "processContextJson",
+            context.toString());
+    java.nio.file.Files.writeString(
+        directory.resolve("response.json"), validProductArchitectureResult());
+    var executable = directory.resolve("fake-codex.mjs");
+    java.nio.file.Files.copy(getClass().getResourceAsStream("/bpm/fake-codex.mjs"), executable);
+    assertThat(executable.toFile().setExecutable(true)).isTrue();
+    var operations = new java.util.ArrayList<String>();
+    var callback = new AtomicReference<JsonNode>();
+    var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext(
+        "/",
+        exchange -> {
+          String path = exchange.getRequestURI().getPath();
+          byte[] response = new byte[0];
+          int status = 204;
+          if (path.endsWith("/automatic-execution")) {
+            response = json.writeValueAsBytes(Map.of("automaticExecutionEnabled", true));
+            status = 200;
+          } else if (path.endsWith("/pending")) {
+            boolean selected =
+                exchange.getRequestURI().getQuery().contains("activityId=productArchitecture");
+            response = json.writeValueAsBytes(selected ? List.of(task) : List.of());
+            status = 200;
+          } else {
+            assertThat(path).contains("landing-generator/stage-executions/" + taskId + "/");
+            String operation = java.nio.file.Path.of(path).getFileName().toString();
+            operations.add(operation);
+            var payload = json.readTree(exchange.getRequestBody().readAllBytes());
+            if (!"execution-audit".equals(operation)) callback.set(payload);
+          }
+          exchange.getResponseHeaders().set("Content-Type", "application/json");
+          exchange.sendResponseHeaders(status, response.length == 0 ? -1 : response.length);
+          if (response.length > 0) exchange.getResponseBody().write(response);
+          exchange.close();
+        });
+    server.start();
+    try {
+      var properties = new LandingGeneratorAgentProperties();
+      properties.setBackendUrl("http://127.0.0.1:" + server.getAddress().getPort());
+      properties.setRepositoryPath(directory.toString());
+      properties.setCodexCommand(executable.toString());
+      properties.setModel("fixture-dedalo-no-network");
+      properties.setCodexTimeout(java.time.Duration.ofSeconds(10));
+      var telemetry = mock(CodexTelemetryReporter.class);
+      when(telemetry.monitorBpmTask(anyLong(), any(), any()))
+          .thenReturn(mock(CodexTelemetryReporter.Session.class));
+      new PdeConstructionBpmTaskConsumer(
+              properties,
+              json,
+              new AutomaticExecutionControl(properties.getBackendUrl()),
+              telemetry)
+          .processOne();
+      assertThat(operations).containsExactly("execution-audit", "result");
+      var result = json.readTree(callback.get().path("resultJson").asText());
+      assertThat(result.path("decision").asText()).isEqualTo("APPROVE");
+      assertThat(
+              json.readTree(callback.get().path("evidenceJson").asText())
+                  .path("sourceReference")
+                  .asText())
+          .isEqualTo(source);
+      String prompt = java.nio.file.Files.readString(directory.resolve("prompt.txt"));
+      assertThat(prompt).contains("MARKET_STRATEGY_V4", "PDE_AGENT_ECONOMICS_V1");
+      assertThat(callback.get().path("executionAudit").path("promptSent").asText())
+          .isEqualTo(prompt);
+      assertThat(callback.get().path("modelUsages").get(0).path("inputTokens").asInt())
+          .isEqualTo(7);
+      String output = System.getProperty("pde.planning.handoff.output");
+      if (output != null && experimentId == 900092L) {
+        planning.set("architecture", result);
+        java.nio.file.Files.writeString(java.nio.file.Path.of(output), planning.toString());
+      }
     } finally {
       server.stop(0);
     }

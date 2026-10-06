@@ -167,6 +167,133 @@ class ProcessRunProjectedActivityPersistenceTest {
             eq(96011L), eq(96001L), eq("a"), isNull(), isNull(), eq("experiment:96021"));
   }
 
+  /**
+   * Conclusão, início com provas e recuperação explícita preservam o destino, inclusive pausado.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "QUEUED, reconcile",
+    "PAUSED, reconcile",
+    "QUEUED, resume",
+    "PAUSED, resume",
+    "QUEUED, start",
+    "PAUSED, start"
+  })
+  void continuesCycleToExistingProcessWithoutResumingIt(String destinationStatus, String command)
+      throws Exception {
+    authorized = true;
+    parent.setLearningCycleId(96031L);
+    next.setStatus(destinationStatus);
+    next.setLearningCycleId(96031L);
+    next.setScopeKey(
+        HexFormat.of()
+            .formatHex(
+                MessageDigest.getInstance("SHA-256")
+                    .digest(
+                        "96001|96012|96014|96031|experiment:96021"
+                            .getBytes(StandardCharsets.UTF_8))));
+    when(context.command(any()))
+        .thenReturn(
+            new com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunCommand(
+                96014L, 96031L, "experiment:96021"));
+    snapshot(96011L, "COMPLETED", false, true, false, true);
+    var pending =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.valueToTree(snapshots.get(96012L));
+    pending.put("currentActivityId", "a");
+    snapshots.put(
+        96012L, json.treeToValue(pending, ProductProcessActivityExecutionHistoryResponse.class));
+    var cycle = new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+    cycle.setId(96031L);
+    cycle.setProductId(96001L);
+    cycle.setChainDefinitionId(96014L);
+    cycle.setExperimentId(96021L);
+    cycle.setStatus("OPEN");
+    cycle.setStage("ADJUSTMENT");
+    cycle.setReturnProcessId(96011L);
+    var cycles =
+        mock(com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository.class);
+    when(cycles.findLocked(96001L, 96031L)).thenReturn(Optional.of(cycle));
+    var chains =
+        mock(
+            com.marketinghub.repository.jpa.businessprocesschain
+                .BusinessProcessChainDefinitionRepository.class);
+    var chain = new com.marketinghub.businessprocesschain.BusinessProcessChainDefinition();
+    chain.setItems(new ArrayList<>());
+    for (long id : List.of(96011L, 96012L)) {
+      var definition = new BusinessProcessDefinition();
+      definition.setId(id);
+      definition.setProcessCode(
+          id == 96011L ? "pde-commercial-plan-offer" : "pde-construction-approval");
+      var item = new com.marketinghub.businessprocesschain.BusinessProcessChainItem();
+      item.setProcessDefinition(definition);
+      item.setSequenceNumber((int) (id - 96009));
+      chain.getItems().add(item);
+      when(activities.productProcessExecutions(id, 96001L, 96031L, 96014L))
+          .thenAnswer(inv -> snapshots.get(id));
+    }
+    when(chains.findById(96014L)).thenReturn(Optional.of(chain));
+    var cycleService =
+        mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleService
+                .class);
+    var continuation =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service
+            .LearningCycleProcessContinuation(
+            cycles,
+            chains,
+            (ProductRepository)
+                org.springframework.test.util.ReflectionTestUtils.getField(service, "products"),
+            new com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleWorkResolver(chains, activities),
+            cycleService);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "cycleContinuation", continuation);
+    if ("start".equals(command)) {
+      runs.delete(parent);
+      runs.flush();
+      when(context.executableVersion(eq(96001L), eq(96011L), any(), any())).thenReturn(true);
+      var started = service.start(96001L, 96011L, context.command(parent));
+      assertThat(started.status()).isEqualTo("COMPLETED");
+      parent = runs.findById(started.id()).orElseThrow();
+    } else if ("resume".equals(command)) {
+      parent.setStatus("COMPLETED");
+      assertThat(service.resume(96001L, 96011L, parent.getId()).status()).isEqualTo("COMPLETED");
+      service.resume(96001L, 96011L, parent.getId());
+    } else assertThat(service.reconcile(parent.getId()).status()).isEqualTo("COMPLETED");
+    service.reconcile(parent.getId());
+    entityManager.flush();
+    entityManager.clear();
+    assertThat(runs.count()).isEqualTo(2);
+    assertThat(runs.findById(next.getId()).orElseThrow().getStatus()).isEqualTo(destinationStatus);
+    assertThat(
+            events.findAll().stream()
+                .filter(e -> "CYCLE_PROCESS_CONTINUED".equals(e.getEventType())))
+        .hasSize(1)
+        .allSatisfy(
+            e -> assertThat(e.getDetailsJson()).contains("96031", "experiment:96021", "nextRunId"));
+    verifyNoInteractions(cycleService);
+  }
+
+  /**
+   * Uma pausa pedida durante o último trabalho não dispara o processo seguinte ao receber sua
+   * prova.
+   */
+  @Test
+  void completionWhilePausingDoesNotContinueCycle() throws Exception {
+    authorized = true;
+    parent.setStatus("PAUSING");
+    parent.setLearningCycleId(96031L);
+    snapshot(96011L, "COMPLETED", false, true, false, true);
+    var continuation =
+        mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleProcessContinuation.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "cycleContinuation", continuation);
+    assertThat(service.reconcile(parent.getId()).status()).isEqualTo("COMPLETED");
+    verifyNoInteractions(continuation);
+  }
+
   /** Persiste uma reserva antiga e sua candidata em identidades exclusivamente locais. */
   @BeforeEach
   void setup() throws Exception {

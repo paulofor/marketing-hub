@@ -41,7 +41,16 @@ public class LearningCycleSuccessorPreparation {
   private final LearningCycleService service;
   private final LearningCycleJson json;
 
-  /** Serializa produto e ciclo, reaproveita sucessor e só materializa proposta vigente elegível. */
+  @org.springframework.beans.factory.annotation.Autowired
+  @org.springframework.context.annotation.Lazy
+  private com.marketinghub.businessprocess.automation.v1.service.ProcessRunService processRuns;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  private LearningCycleWorkResolver workResolver;
+
+  /**
+   * Serializa a preparação elegível e enfileira o planejamento quando há decisão humana aprovada.
+   */
   @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
   public LearningCycleResponse prepare(Long productId, Long cycleId) {
     var product =
@@ -84,6 +93,8 @@ public class LearningCycleSuccessorPreparation {
         available(cycle, proposal),
         "Aguarde o parecer ou a decisão de ajuste vigente e compatível.");
     var decision = (ObjectNode) json.read(proposal.getProposalJson());
+    boolean humanApproved =
+        approved && approvedEvidence(cycle, proposal).path("humanApproved").asBoolean(false);
     if (approved) {
       var evidence = approvedEvidence(cycle, proposal);
       for (String field :
@@ -170,6 +181,16 @@ public class LearningCycleSuccessorPreparation {
                 "Aprendizado preservado; planejamento encaminhado ao processo responsável sem executar tarefas pagas.",
                 "internal://learning-cycles/" + cycleId + "/decision-proposals/" + proposal.getId(),
                 learning));
+    if (humanApproved) {
+      var preparedCycle = cycles.findById(result.id()).orElseThrow();
+      var next = workResolver.resolve(preparedCycle);
+      require(next != null, "O sucessor aprovado precisa de um processo preparatório disponível.");
+      processRuns.start(
+          productId,
+          next.processDefinitionId(),
+          new com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunCommand(
+              result.chainDefinitionId(), result.id(), "experiment:" + result.experimentId()));
+    }
     log.info(
         "Ciclo: sucessor preparado policy={} productId={} predecessor={} proposalId={} cycleId={} experimentId={} spendAuthorized=false",
         LearningCyclePreparationPolicy.CONTRACT,

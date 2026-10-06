@@ -99,7 +99,7 @@ run pde-mysql env \
 java -Xmx512m -cp "$cycle_test_classpath" com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleLocalApplication > "$cycle_output/api.log" 2>&1 &
 cycle_api_pid=$!
 wait_http 'http://127.0.0.1:18091/api/products'
-run decision-rest python3 backend/ads-service/scripts/validate-learning-cycle-decision-e2e.py
+run decision-rest python3 backend/ads-service/scripts/validate-learning-cycle-process-continuation-e2e.py
 java -Xmx256m -cp "experiment-strategist-worker/target/test-classes:experiment-strategist-worker/target/classes:$(cat experiment-strategist-worker/target/decision-classpath)" com.marketinghub.experimentstrategistworker.learningcyclev1.decision.LearningCycleDecisionLocalRunner > "$cycle_output/atena-local.log" 2>&1 &
 cycle_atena_pid=$!
 run rest-mysql python3 backend/ads-service/scripts/validate-learning-cycles-e2e.py

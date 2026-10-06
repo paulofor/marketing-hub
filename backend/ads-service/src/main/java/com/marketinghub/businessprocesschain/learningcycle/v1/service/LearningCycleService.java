@@ -940,6 +940,45 @@ public class LearningCycleService {
     return command(productId, cycleId, command, true);
   }
 
+  /** Registra planejamento ou ajuste somente depois de conferir todas as provas dos processos. */
+  @Transactional
+  public LearningCycleResponse completePreparationFromProcesses(
+      Long productId, Long cycleId, Long processRunId) {
+    var cycle = cycles.findLocked(productId, cycleId).orElseThrow();
+    require(
+        Set.of("PLANNING", "ADJUSTMENT").contains(cycle.getStage()),
+        "A passagem automática não autoriza etapas comerciais.");
+    require(
+        workResolver.resolvePreparation(cycle).completed(),
+        "Os processos delegados ainda não comprovaram todos os objetivos.");
+    String reference = "internal://process-runs/" + processRunId;
+    var proof = com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+    proof.put("processRunId", processRunId);
+    proof.put("experimentId", cycle.getExperimentId());
+    proof.put("chainDefinitionId", cycle.getChainDefinitionId());
+    proof.put("productVersion", cycle.getProductVersion());
+    proof.put("externalSpendAuthorized", false);
+    proof.put("planReference", reference);
+    proof.put(
+        "stopRule",
+        "Preservar os limites dos pareceres e bloquear gasto ou publicação sem autorização própria.");
+    proof.put("changeEvidence", reference);
+    return command(
+        productId,
+        cycleId,
+        new LearningCycleCommand(
+            UUID.nameUUIDFromBytes(
+                ("process-continuation:" + cycleId + ":" + cycle.getRevision())
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+            cycle.getRevision(),
+            Action.COMPLETE,
+            "Marketing Hub · continuidade entre processos",
+            "Objetivos dos processos preparatórios comprovados. Passagem automática sem ampliar autorizações.",
+            reference,
+            proof),
+        true);
+  }
+
   /**
    * Reconcilia novamente as fontes oficiais de uma medição bloqueada sem receber números do
    * navegador.

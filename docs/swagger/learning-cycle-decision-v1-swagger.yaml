@@ -30,6 +30,9 @@ paths:
         vinculado e aprendizado antes de encaminhar ao planejamento. Mídia zero;
         janela nula; não copia campanha, checkout, métricas ou permissões. Replay
         retorna o sucessor existente inclusive após encerramento do predecessor.
+        Com decisão humana de ajuste já aprovada, registra também a execução do
+        planejamento no motor existente, sem duplicar o processo nem liberar mídia.
+        A preparação apenas automática continua sem disparar novas tarefas pagas.
       responses:
         '200':
           description: LearningCycleResponse do sucessor com eventos, retorno e bloqueios próprios

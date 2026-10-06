@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Execução automática de processos v1
-  version: 1.2.1
-  description: Controle durável por produto, processo, cadeia, ciclo e referência. Somente o backend decide a próxima atividade; nenhum comando confirma decisão humana ou autorização comercial implícita. Preparação Safira e homologação verificam o ciclo pelo experimento mesmo quando seu ID foi omitido. Conclusões históricas são conciliadas sem novos disparos; ciclo encerrado com objetivos ausentes permanece CLOSED e não equivale a sucesso.
+  version: 1.2.2
+  description: Controle durável por produto, processo, cadeia, ciclo e referência. Somente o backend decide a próxima atividade; nenhum comando confirma decisão humana ou autorização comercial implícita. Preparação Safira e homologação verificam o ciclo pelo experimento mesmo quando seu ID foi omitido. Conclusões históricas são conciliadas sem novos disparos; ciclo encerrado com objetivos ausentes permanece CLOSED e não equivale a sucesso. A conclusão de processo preparatório autorizado em ciclo aberto registra automaticamente sua passagem e enfileira o próximo processo indicado pelo resolvedor do ciclo. O evento CYCLE_PROCESS_CONTINUED vincula origem e destino; STOP e pausas são preservados, e leitura não inicia trabalho.
 paths:
   /api/business-processes/{processId}/products/{productId}/automation/v1:
     parameters:
@@ -60,6 +60,7 @@ paths:
       - $ref: '#/components/parameters/runId'
     post:
       summary: Retoma e revalida condições preservando tentativas anteriores
+      description: Em processo preparatório concluído de ciclo aberto, o comando explícito confere as provas e recupera a passagem para o próximo processo; não reabre tarefas concluídas nem retoma um destino pausado. Contextos históricos encerrados continuam protegidos.
       responses:
         '200': {$ref: '#/components/responses/run'}
         '404': {description: Execução fora do produto ou processo}

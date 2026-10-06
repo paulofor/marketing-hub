@@ -22,6 +22,11 @@ public interface FinancialAgentExecutionRepository
   /** Reutiliza a validação vinculada à mesma proposta sem repetir consumo financeiro. */
   Optional<FinancialAgentExecution> findByStrategistExecutionId(Long strategistExecutionId);
 
+  /** Localiza o último parecer do contrato e da versão atuais, sem confundir outro histórico. */
+  Optional<FinancialAgentExecution>
+      findFirstByCommercialPlanIdAndCommercialPlanVersionAndAuthorityModeOrderByCreatedAtDescIdDesc(
+          Long planId, Integer planVersion, String authorityMode);
+
   /** Reserva a conciliacao pendente mais antiga. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   List<FinancialAgentExecution> findByStatusOrderByCreatedAtAsc(

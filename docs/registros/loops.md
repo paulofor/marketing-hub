@@ -1,5 +1,22 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-PREPARACAO-PASSAGEM-SEM-RECUPERACAO — 06/10/2026
+
+- **Evidência:** Atena #19/#14 tiveram propostas concluídas sem validação persistida de Plutus;
+  a retomada manual resolveu #19 → #71. A transação própria corrigida em 05/10 não recupera
+  sozinha uma interrupção entre o commit e o evento. Em Alcyone #44, porém, #71 já existe e rejeitou
+  as premissas; a mensagem genérica de parecer ausente confundia rejeição com passagem perdida.
+- **Correção:** o conciliador da comunicação ativa reutiliza a proposta compatível e aciona a
+  validação idempotente somente quando ela ainda não existe. Preserva PLAY/STOP, pausa, contexto,
+  versão, vez na fila e pareceres existentes. O diagnóstico identifica Plutus e distingue a
+  homologação privada com fixtures da geração integrada ainda não comprovada.
+- **Prevenção:** regressões JPA da fila e do diário, identidades distintas, concorrência,
+  rejeição, versão antiga, contexto encerrado e caminho antes válido. A tela usa os contratos
+  exportados pelo teste em desktop/iPhone/Pixel; leitura não cria tarefas. Matriz:
+  `docs/homologacao/alcyone-recuperacao-autonoma-v1.md`.
+- **Limite:** não integra a geração personalizada, define margem, aprova parecer ou inventa saldo
+  financeiro. Não repete Atena/Plutus concluídos nem atribui à técnica uma decisão comercial.
+
 ## LOOP-IA-CONSUMO-CONCLUIDO-SEM-CUSTO — 05/10/2026
 
 - **Evidência:** Alcyone #11, plano #34 v4, experimento #97, imagens auditadas #115/#116

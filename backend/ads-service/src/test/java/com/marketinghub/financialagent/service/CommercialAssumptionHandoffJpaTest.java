@@ -67,6 +67,12 @@ class CommercialAssumptionHandoffJpaTest {
   @Autowired private FinancialAgentExecutionRepository financial;
   @Autowired private FinancialAgentService plutus;
   @Autowired private ExperimentStrategistExecutionService atena;
+
+  @Autowired
+  private com.marketinghub.repository.jpa.experimentstrategist
+          .ExperimentStrategistExecutionRepository
+      proposalRepository;
+
   @MockBean private CommercialPlanService plans;
   @MockBean private CommercialPlanVersionService versions;
   @MockBean private AgentTaskService tasks;
@@ -74,6 +80,72 @@ class CommercialAssumptionHandoffJpaTest {
   @MockBean private OpenAiPricingService pricing;
   @MockBean private ExperimentStrategistContextService contexts;
   private final AtomicLong taskCount = new AtomicLong();
+
+  /**
+   * Recupera o evento perdido pela conciliação automática, sem novo comando ou pesquisa de Atena.
+   */
+  @Test
+  void automaticRecoveryPersistsOneHandoffForIndependentProducts() {
+    for (long productId : new long[] {81011L, 82011L}) {
+      var source = seed("QA recuperação automática " + productId);
+      var planRepository =
+          mock(com.marketinghub.repository.jpa.planning.CommercialPlanRepository.class);
+      var experiments = mock(com.marketinghub.repository.jpa.experiment.ExperimentRepository.class);
+      var product = new com.marketinghub.product.Product();
+      product.setId(productId);
+      product.setAutomaticExecutionEnabled(true);
+      var experiment = new com.marketinghub.experiment.Experiment();
+      experiment.setId(productId + 86);
+      experiment.setProduct(product);
+      experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+      when(experiments.findById(experiment.getId())).thenReturn(java.util.Optional.of(experiment));
+      when(planRepository.findByExperimentReference(experiment.getId()))
+          .thenReturn(java.util.List.of(source.getCommercialPlan()));
+      var recovery =
+          new com.marketinghub.businessprocess.automation.v1.service.ProcessRunAssumptionRecovery(
+              planRepository, experiments, proposalRepository, financial, versions, plutus);
+      var run = new com.marketinghub.businessprocess.automation.v1.ProcessRun();
+      run.setProductId(productId);
+      run.setSourceReference("experiment:" + experiment.getId());
+      run.setCreatedAt(source.getCreatedAt().minusSeconds(1));
+      run.setStatus("WAITING_INPUT");
+      run.setCurrentActivityId("communicationContract");
+      var tx = new TransactionTemplate(transactions);
+      var result = tx.execute(ignored -> recovery.recover(run, "pde-communication-sales-journey"));
+      assertThat(result).isPresent();
+      assertThat(queue(source)).hasSize(1);
+      var executionId = queue(source).getFirst().getId();
+      assertThat(result.orElseThrow().financialExecutionId()).isEqualTo(executionId);
+      assertThat(
+              financial
+                  .findFirstByCommercialPlanIdAndCommercialPlanVersionAndAuthorityModeOrderByCreatedAtDescIdDesc(
+                      source.getCommercialPlan().getId(), 3, "COMMERCIAL_ASSUMPTIONS_VALIDATION"))
+          .isPresent();
+      assertThat(
+              financial
+                  .findFirstByCommercialPlanIdAndCommercialPlanVersionAndAuthorityModeOrderByCreatedAtDescIdDesc(
+                      source.getCommercialPlan().getId(), 2, "COMMERCIAL_ASSUMPTIONS_VALIDATION"))
+          .isEmpty();
+      var repeated =
+          tx.execute(ignored -> recovery.recover(run, "pde-communication-sales-journey"));
+      assertThat(repeated).isEmpty();
+      tx.executeWithoutResult(
+          ignored -> {
+            var rejected = financial.findById(executionId).orElseThrow();
+            rejected.setStatus(
+                com.marketinghub.financialagent.FinancialAgentExecutionStatus.COMPLETED);
+            rejected.setReconciliationJson("{\"decision\":\"REJECT\"}");
+          });
+      var rejectedRecovery =
+          tx.execute(ignored -> recovery.recover(run, "pde-communication-sales-journey"));
+      assertThat(rejectedRecovery).isEmpty();
+      assertThat(queue(source)).hasSize(1);
+      var preserved = proposalRepository.findById(source.getId()).orElseThrow();
+      assertThat(preserved.getRecommendationJson()).isEqualTo(source.getRecommendationJson());
+      assertThat(preserved.getEstimatedCost()).isEqualByComparingTo("0.03124440");
+    }
+    assertThat(taskCount.get()).isEqualTo(2);
+  }
 
   /** Percorre HTTP, evento e JPA e exporta respostas UTF-8 reais para a matriz da tela. */
   @Test

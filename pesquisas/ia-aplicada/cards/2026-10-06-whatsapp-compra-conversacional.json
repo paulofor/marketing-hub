@@ -1,0 +1,18 @@
+{
+  "cardKey": "whatsapp-compra-conversacional",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Compra conversacional no WhatsApp ganha evidência de GMV no Brasil",
+  "finding": "Em 06/10/2026, o Magazine Luiza informou que o WhatsApp da Lu acumulou R$ 200 milhões em vendas desde o lançamento, 100 mil pedidos em setembro e uso por mais de 9,7 milhões de clientes. Em julho, a empresa já reportava conversão cerca de 3 vezes superior aos demais canais digitais, recompra de aproximadamente 20% e NPS em torno de 85 no canal.",
+  "mechanism": "Manter descoberta, recomendação, resposta a objeções, pagamento e pós-venda em um canal de mensagens já habitual pode reduzir troca de contexto, espera e esforço no trecho final da compra. A trajetória observada é compatível com esse mecanismo, mas não o isola causalmente.",
+  "commercialApplication": "No Marketing Hub, comparar para uma oferta elegível um fluxo conversacional no WhatsApp que qualifica a necessidade, apresenta poucas opções e conduz ao pagamento ou agendamento contra um fluxo equivalente que redireciona cedo para landing page. Medir lead qualificado, checkout, pagamento reconciliado, CAC, recompra, satisfação e abandono.",
+  "evidenceStrength": "Moderada para tração comercial observada e continuidade de uso do canal; baixa a moderada para atribuir causalmente os resultados ao WhatsApp ou à IA, pois os dados são divulgados pela própria companhia e não há experimento randomizado público.",
+  "publishedOn": "2026-10-06",
+  "validUntil": "2027-01-04",
+  "experimentHypothesis": "Para uma oferta de baixa ou média complexidade, manter qualificação, objeções e fechamento no WhatsApp elevará checkout e pagamento reconciliado em relação a um redirecionamento precoce para landing page, sem piorar satisfação, reembolso ou abandono.",
+  "risks": "Excesso de mensagens, personalização invasiva, tratamento inadequado de dados, recomendação incorreta ou pressão comercial podem reduzir confiança. Não extrapolar a escala e a marca do Magazine Luiza para pequenos negócios.",
+  "limits": "Não foram divulgados CAC, margem, composição detalhada das coortes nem teste controlado que separe os efeitos do canal, da IA, da marca, da logística, do crédito ou da base instalada. O efeito deve ser validado no público e na oferta reais.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-10-06-whatsapp-compra-conversacional-magalu.md",
+  "sourceTitle": "Fonte revisada — WhatsApp da Lu e compra conversacional no Brasil",
+  "sourceSha256": "5b39fa9761c65e75b6f1fc31ff22935fd02d2ea905e5464f251853c7353ae167"
+}

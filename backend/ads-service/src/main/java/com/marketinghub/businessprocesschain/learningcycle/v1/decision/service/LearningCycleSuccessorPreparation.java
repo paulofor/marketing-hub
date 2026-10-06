@@ -53,6 +53,17 @@ public class LearningCycleSuccessorPreparation {
    */
   @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
   public LearningCycleResponse prepare(Long productId, Long cycleId) {
+    return prepare(productId, cycleId, true);
+  }
+
+  /** Prepara pela tela sem iniciar execução, mesmo quando a decisão histórica foi aprovada. */
+  @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
+  public LearningCycleResponse prepareOnly(Long productId, Long cycleId) {
+    return prepare(productId, cycleId, false);
+  }
+
+  /** Compartilha a preparação atômica e separa o cadastro da execução dos agentes. */
+  private LearningCycleResponse prepare(Long productId, Long cycleId, boolean startExecution) {
     var product =
         products
             .findLockedById(productId)
@@ -167,7 +178,7 @@ public class LearningCycleSuccessorPreparation {
                 "Aprendizado preservado; planejamento encaminhado ao processo responsável sem executar tarefas pagas.",
                 "internal://learning-cycles/" + cycleId + "/decision-proposals/" + proposal.getId(),
                 learning));
-    if (humanApproved) {
+    if (humanApproved && startExecution) {
       var preparedCycle = cycles.findById(result.id()).orElseThrow();
       var next = workResolver.resolve(preparedCycle);
       require(next != null, "O sucessor aprovado precisa de um processo preparatório disponível.");
@@ -178,13 +189,14 @@ public class LearningCycleSuccessorPreparation {
               result.chainDefinitionId(), result.id(), "experiment:" + result.experimentId()));
     }
     log.info(
-        "Ciclo: sucessor preparado policy={} productId={} predecessor={} proposalId={} cycleId={} experimentId={} spendAuthorized=false",
+        "Ciclo: sucessor preparado policy={} productId={} predecessor={} proposalId={} cycleId={} experimentId={} executionStarted={} mediaSpendAuthorized=false",
         LearningCyclePreparationPolicy.CONTRACT,
         productId,
         cycleId,
         proposal.getId(),
         result.id(),
-        successor.getId());
+        successor.getId(),
+        humanApproved && startExecution);
     return result;
   }
 

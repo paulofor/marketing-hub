@@ -316,6 +316,9 @@ it("recupera decisão aprovada sem exigir nova aprovação no ciclo encerrado", 
   const successor = { ...cycle, id: 13, stage: "PLANNING" };
   vi.mocked(axios.post).mockResolvedValue({ data: successor });
   const { updated } = mount({ ...cycle, status: "ADJUSTED", revision: 2 });
+  expect(
+    await screen.findByText(/Você não precisa preencher um novo formulário/),
+  ).toHaveTextContent("sem iniciar agentes, consumir IA ou liberar mídia");
   await userEvent.click(
     await screen.findByRole("button", {
       name: "Preparar continuidade sem gasto",

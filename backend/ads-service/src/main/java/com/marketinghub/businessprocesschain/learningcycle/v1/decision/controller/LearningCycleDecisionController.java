@@ -25,12 +25,10 @@ public class LearningCycleDecisionController {
   private final LearningCycleDecisionService service;
   private final LearningCycleSuccessorPreparation preparation;
 
-  /**
-   * Recupera a preparação sem inferência, sem aprovação fictícia e com replay do sucessor único.
-   */
+  /** Recupera somente o cadastro e o aprendizado, sem iniciar agentes nem repetir aprovação. */
   @PostMapping(ADMIN + "/prepare-successor")
   public LearningCycleResponse prepare(@PathVariable Long productId, @PathVariable Long cycleId) {
-    return preparation.prepare(productId, cycleId);
+    return preparation.prepareOnly(productId, cycleId);
   }
 
   /** Mostra a proposta e seu estado sem disparar execução pela navegação. */

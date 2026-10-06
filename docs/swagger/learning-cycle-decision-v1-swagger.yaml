@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Proposta comercial de Atena no ciclo da Cadeia de Valor
-  version: 1.3.0
+  version: 1.4.0
   description: >-
     A atividade DECISION do subprocesso chamado por 6.4 recebe uma proposta de Atena.
     O worker apenas propõe. O backend pode preparar sucessor de ajuste KEEP_FOCUS ou inconclusivo humano aprovado com nova hipótese no mesmo foco pela
@@ -33,9 +33,10 @@ paths:
         Inconclusivo requer recibo humano da revisão final, hipótese de novo teste KEEP_FOCUS
         e requiresNewCycle. Preserva o resultado INCONCLUSIVE e começa pelo planejamento
         da cadeia publicada, sem inventar retorno ou renovar permissões anteriores.
-        Com decisão humana compatível já aprovada, registra também a execução do
-        planejamento no motor existente, sem duplicar o processo nem liberar mídia.
-        A preparação apenas automática continua sem disparar novas tarefas pagas.
+        Este comando administrativo nunca inicia execução de processo nem tarefas pagas,
+        inclusive quando a decisão histórica está aprovada. O início ocorre pelo comando
+        oficial do processo, condicionado aos limites próprios. A continuidade automática
+        de novas aprovações permanece no motor existente; não é disparada por este endpoint.
       responses:
         '200':
           description: LearningCycleResponse do sucessor com eventos, retorno e bloqueios próprios

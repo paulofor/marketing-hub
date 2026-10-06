@@ -242,11 +242,23 @@ export default function LearningCyclesPage() {
           aberto automaticamente.
         </p>
       ) : null}
+      {cycle &&
+      catalog.data &&
+      (cycle.stage === "DECISION" ||
+        (cycle.status !== "OPEN" &&
+          cycle.events.some((event) => event.evidence.decisionProposalId))) ? (
+        <LearningCycleDecisionPanel
+          key={`${cycle.id}-${cycle.revision}`}
+          cycle={cycle}
+          catalog={catalog.data}
+          onUpdated={updated}
+        />
+      ) : null}
       {productId && catalog.data ? (
         <div className="d-flex flex-wrap gap-2 mb-3">
           <button
             type="button"
-            className="btn btn-primary"
+            className="btn btn-outline-secondary"
             disabled={!catalog.data.entry?.canStartCycle}
             onClick={() => {
               setPredecessor(undefined);
@@ -373,7 +385,7 @@ export default function LearningCyclesPage() {
               ) : null}
               {cycle.canCreateSuccessor ? (
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-outline-secondary"
                   type="button"
                   onClick={() => {
                     setPredecessor(cycle);
@@ -426,16 +438,6 @@ export default function LearningCyclesPage() {
           {cycle.stage === "MEASUREMENT" ? (
             <LearningCycleAutomaticMeasurement
               cycle={cycle}
-              onUpdated={updated}
-            />
-          ) : null}
-          {catalog.data &&
-          (cycle.stage === "DECISION" ||
-            cycle.events.some((event) => event.evidence.decisionProposalId)) ? (
-            <LearningCycleDecisionPanel
-              key={`${cycle.id}-${cycle.revision}`}
-              cycle={cycle}
-              catalog={catalog.data}
               onUpdated={updated}
             />
           ) : null}

@@ -7558,3 +7558,16 @@ falha e rollback, replay, destino pausado e navegação desktop/celular. O harne
 ampliado no runner existente para prevenir nova conclusão sem passagem. Evidências
 e limites: `docs/homologacao/capella-passagem-processos-ciclo-v1.md` e
 `LOOP-CICLO-PROCESSO-CONCLUIDO-SEM-PASSAGEM` em `docs/registros/loops.md`.
+
+## 2026-10-06 — Mira: preparação da próxima versão sem presumir consumo
+
+Ciclo #3/#93 encerrado para ajuste e sem sucessor na consulta inicial. Duas sessões, zero
+vendas e contribuição de R$ -27,19 não determinam causa de não conversão. A proposta #3,
+aprovada no evento #26, prioriza reduzir informação exigida antes do primeiro resultado.
+O cadastro manual dificultava a continuidade e o botão anunciado sem gasto iniciava agentes
+quando reutilizava aprovação histórica. A recuperação administrativa foi separada do início
+do processo, reutilizando o mesmo preparo, memória e idempotência. Harness reforçado para
+recibo aprovado e outro produto, preservando o caminho automático anterior.
+A direção de produto/comunicação segue os cinco pontos solicitados e demonstração real em
+vídeo; mídia, IA adicional e produção paga não herdam limites do experimento encerrado.
+Matriz e comprovação da entrega: `docs/homologacao/mira-preparacao-sem-consumo-v1.md`.

@@ -16,6 +16,7 @@ import LearningCycleCommandForm from "./LearningCycleCommandForm";
 import CycleWindowRevalidationForm from "./CycleWindowRevalidationForm";
 import LearningCycleAutomaticMeasurement from "./LearningCycleAutomaticMeasurement";
 import LearningCycleDiagram from "./LearningCycleDiagram";
+import LearningCycleCurrentWork from "./LearningCycleCurrentWork";
 import "./LearningCyclesPage.css";
 
 const money = new Intl.NumberFormat("pt-BR", {
@@ -23,7 +24,13 @@ const money = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 const date = (value: string | null) =>
-  value ? new Date(value).toLocaleString("pt-BR") : "A definir";
+  value
+    ? new Date(value).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
+    : "A definir";
+const windowDate = (value: string) =>
+  new Date(value).toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+  });
 const statuses: Record<string, string> = {
   OPEN: "Em andamento",
   ADJUSTED: "Encerrado para ajuste",
@@ -106,6 +113,7 @@ export default function LearningCyclesPage() {
   const cycles = useLearningCycles(productId, queryChainId);
   const [creating, setCreating] = useState(false);
   const [showAutomaticCorrection, setShowAutomaticCorrection] = useState(false);
+  const [showDelegatedCorrection, setShowDelegatedCorrection] = useState(false);
   const [predecessor, setPredecessor] = useState<LearningCycle>();
   const cycle = explicitCycle
     ? cycles.data?.find((item) => item.id === selectedId)
@@ -367,9 +375,30 @@ export default function LearningCyclesPage() {
               {money.format(cycle.budgetLimitBrl)} · {date(cycle.windowStart)} a{" "}
               {date(cycle.windowEnd)}
             </p>
-            <p>Hipótese: {String(cycle.brief.hypothesis)}</p>
-            <p>Variável: {String(cycle.brief.mainChange)}</p>
-            <p>Critério: {String(cycle.brief.successCriterion)}</p>
+            {cycle.status === "OPEN" &&
+            cycle.windowStart &&
+            cycle.windowEnd &&
+            cycle.events.some((event) =>
+              ["DEFINE_INITIAL_WINDOW", "REVALIDATE_WINDOW"].includes(
+                event.action,
+              ),
+            ) ? (
+              <p className="alert alert-success" role="status">
+                <strong>
+                  Janela registrada: {windowDate(cycle.windowStart)} a{" "}
+                  {windowDate(cycle.windowEnd)} (horário de Brasília).
+                </strong>{" "}
+                As datas planejam o período do teste; não iniciam a campanha nem
+                autorizam gasto. O próximo trabalho está indicado abaixo.
+              </p>
+            ) : null}
+            <LearningCycleCurrentWork cycle={cycle} />
+            <details className="mb-3">
+              <summary>Hipótese e critérios deste teste</summary>
+              <p>Hipótese: {String(cycle.brief.hypothesis)}</p>
+              <p>Variável: {String(cycle.brief.mainChange)}</p>
+              <p>Critério: {String(cycle.brief.successCriterion)}</p>
+            </details>
             {cycle.status !== "OPEN" ? <p>{cycle.nextAction}</p> : null}
             <div className="d-flex flex-wrap gap-2">
               <Link
@@ -378,7 +407,7 @@ export default function LearningCyclesPage() {
               >
                 Abrir experimento
               </Link>
-              {cycle.workUrl ? (
+              {cycle.workUrl && !cycle.delegatedWork ? (
                 <Link to={cycle.workUrl} className="btn btn-outline-secondary">
                   Abrir atividade orientada
                 </Link>
@@ -423,17 +452,17 @@ export default function LearningCyclesPage() {
             <CycleWindowRevalidationForm cycle={cycle} onUpdated={updated} />
           ) : null}
           {cycle.inheritedLearning.cycleId ? (
-            <section className="card card-body mb-3">
-              <h3 className="h5">
+            <details className="card card-body mb-3">
+              <summary>
                 Aprendizado recebido do experimento #
                 {cycle.inheritedLearning.experimentId}
-              </h3>
+              </summary>
               <p>
                 Versão anterior: {cycle.inheritedLearning.productVersion}.
                 Evidência histórica preservada para orientar esta hipótese.
               </p>
               <Audit events={cycle.inheritedLearning.events ?? []} />
-            </section>
+            </details>
           ) : null}
           {cycle.stage === "MEASUREMENT" ? (
             <LearningCycleAutomaticMeasurement
@@ -488,7 +517,31 @@ export default function LearningCyclesPage() {
               ) : null}
             </section>
           ) : null}
+          {catalog.data && cycle.delegatedWork && cycle.status === "OPEN" ? (
+            <details
+              className="card card-body mb-3"
+              onToggle={(event) =>
+                setShowDelegatedCorrection(event.currentTarget.open)
+              }
+            >
+              <summary>Alterar ou encerrar este ciclo</summary>
+              {showDelegatedCorrection ? (
+                <LearningCycleCommandForm
+                  key={`${cycle.id}-${cycle.revision}-delegated-correction`}
+                  cycle={{
+                    ...cycle,
+                    commands: cycle.commands.filter(
+                      (command) => command.action !== "COMPLETE",
+                    ),
+                  }}
+                  catalog={catalog.data}
+                  onUpdated={updated}
+                />
+              ) : null}
+            </details>
+          ) : null}
           {catalog.data &&
+          !cycle.delegatedWork &&
           !cycle.automaticContinuation &&
           cycle.stage !== "DECISION" &&
           (cycle.stage !== "MEASUREMENT" ||

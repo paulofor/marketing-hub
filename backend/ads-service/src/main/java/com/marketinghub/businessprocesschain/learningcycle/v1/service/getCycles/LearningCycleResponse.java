@@ -52,7 +52,8 @@ public record LearningCycleResponse(
     boolean automaticContinuation,
     AuthorizationReview authorizationReview,
     LearningCycleCommercialPreparation commercialPreparation,
-    WindowRevalidation windowRevalidation) {
+    WindowRevalidation windowRevalidation,
+    LearningCycleProcessContext.Work delegatedWork) {
   /** Informa se a janela encerrada admite renovação ou exige preservar a tentativa anterior. */
   public record WindowRevalidation(boolean available, String reason) {}
 

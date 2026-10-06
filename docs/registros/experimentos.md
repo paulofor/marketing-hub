@@ -7571,3 +7571,22 @@ recibo aprovado e outro produto, preservando o caminho automático anterior.
 A direção de produto/comunicação segue os cinco pontos solicitados e demonstração real em
 vídeo; mídia, IA adicional e produção paga não herdam limites do experimento encerrado.
 Matriz e comprovação da entrega: `docs/homologacao/mira-preparacao-sem-consumo-v1.md`.
+
+## 2026-10-06 — Capella: orientação depois de registrar a janela
+
+O ciclo #5/experimento #98 já tinha o evento #34 de definição da primeira janela,
+08/10 a 16/10 em Brasília. A tela, porém, destacava memória histórica e um formulário
+de conclusão mesmo com a construção #47 aguardando implementação privada. As tarefas
+#596, #597 e #599 concluíram especificações, sem URL executável, arquivos ou testes.
+Não era falta de registro das datas nem nova decisão comercial do usuário.
+
+A leitura do ciclo passa a expor o trabalho delegado tipado, destacar o período salvo e
+mostrar a dependência de Dédalo antes da homologação de Psique. O backend recusa COMPLETE
+enquanto essa atividade não comprovar o objetivo. Harness reforçado com casos de Capella,
+outro produto e caminho antes válido; o formulário excepcional continua disponível para
+alterar ou encerrar. Sem repetir inferência, produzir vídeo, autorizar gasto ou ativar mídia.
+
+A correção de orientação não implementa o produto. O bloqueio técnico permanece real e
+não deve ser apresentado como ação manual necessária ao usuário. Matriz, evidências e
+limites em `docs/homologacao/ciclos-orientacao-trabalho-delegado-v1.md` e
+`LOOP-CICLO-JANELA-SEM-ORIENTACAO` em `docs/registros/loops.md`.

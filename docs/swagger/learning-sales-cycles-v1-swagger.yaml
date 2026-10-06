@@ -485,6 +485,26 @@ components:
         windowEnd: {type: string, format: date-time, nullable: true, description: Ausente na preparação; nenhuma autorização herdada.}
         nextAction: {type: string}
         responsible: {type: string}
+        delegatedWork:
+          type: object
+          nullable: true
+          description: >-
+            Trabalho restante calculado pela projeção oficial da mesma cadeia, produto e ciclo.
+            Enquanto presente, COMPLETE é indisponível e o comando rejeita conclusão textual.
+            A tela destaca a atividade e mantém alterações excepcionais recolhidas.
+            Leitura não cria tarefa, não retenta inferência e não comprova implementação.
+          required: [processDefinitionId, processNumber, processName, activityId, activityNumber, activityName, responsible, state, reason, url]
+          properties:
+            processDefinitionId: {type: integer, format: int64}
+            processNumber: {type: integer}
+            processName: {type: string}
+            activityId: {type: string}
+            activityNumber: {type: integer}
+            activityName: {type: string}
+            responsible: {type: string}
+            state: {type: string}
+            reason: {type: string}
+            url: {type: string, description: Link oficial preservando produto, ciclo, cadeia e atividade}
         workUrl: {type: string, nullable: true, description: 'Nulo enquanto o ajuste encerrado ainda exige criar sucessor; depois aponta à ocorrência sucessora. Ajuste aberto inclui ciclo, cadeia e atividade de retorno.'}
         returnProcessId: {type: integer, format: int64, nullable: true}
         returnActivityId: {type: string, nullable: true}

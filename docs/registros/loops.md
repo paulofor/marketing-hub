@@ -1,5 +1,23 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-CICLO-JANELA-SEM-ORIENTACAO — 06/10/2026
+
+- **Histórico confirmado:** Capella, ciclo 5/experimento 98, salvou a primeira janela no evento 34,
+  mas permaneceu ADJUSTMENT/OPEN e execução 47/WAITING_INPUT. As tarefas 596/597/599 registraram
+  contratos de especificação, sem URL ou implementação; o gate técnico corretamente não criou Psique.
+  A página deixava memória extensa antes do próximo trabalho e oferecia COMPLETE como disponível.
+- **Causa:** a leitura tinha o resolvedor correto, mas não transportava o trabalho delegado de forma
+  estruturada à página; o formulário e o comando manual não aplicavam a mesma guarda da passagem
+  automática. Datas salvas não são prontidão e texto de conclusão não substitui a entrega.
+- **Correção reutilizável:** `delegatedWork` reutiliza a projeção oficial, destaca pendência e link
+  com contexto preservado, recolhe memória/alterações excepcionais e confirma datas em Brasília.
+  A API bloqueia COMPLETE quando a atividade ainda não comprovou o objetivo. A orientação do gate
+  nomeia implementação de Dédalo antes da revisão de Psique e não recomenda repetir essa revisão.
+- **Harness e prevenção:** testes substituem produto/ciclo/experimento, rejeitam conclusão textual
+  sem gravar evento e preservam o caminho de preparação comprovada. Leitura e registro de datas não
+  criam inferência, custo ou campanha. A capacidade de implementação continua uma pendência real,
+  não resolvida por esta alteração de orientação. Matriz: `docs/homologacao/ciclos-orientacao-trabalho-delegado-v1.md`.
+
 ## LOOP-PREPARACAO-PASSAGEM-SEM-RECUPERACAO — 06/10/2026
 
 - **Evidência:** Atena #19/#14 tiveram propostas concluídas sem validação persistida de Plutus;

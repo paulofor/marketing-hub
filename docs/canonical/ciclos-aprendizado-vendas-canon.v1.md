@@ -31,6 +31,12 @@ Se a decisão já estiver aprovada e ainda não houver sucessor, reutilizar o re
 vinculado ao ciclo e à proposta. Preservar edições aprovadas, autoria, revisão e evento;
 não aprovar novamente nem converter retroativamente a origem humana em automática.
 
+No retorno ao planejamento, a identidade vem do cadastro do produto e do catálogo de
+tipos. A ausência de `experienceVersion` em `pdeExperienceJson` não apaga esse contexto:
+um produto Quartzo, por exemplo, pode voltar à estratégia antes de ter uma experiência
+PDE. A versão alvo permanece no ciclo, sem inventar uma versão publicada ou relaxar os
+gates de construção, comunicação e homologação.
+
 ## Uma mudança por ciclo e experimento — decisão de 02/10/2026
 
 O contrato `CHANGE_PER_CYCLE_V1` exige **novo ciclo e novo experimento para cada mudança

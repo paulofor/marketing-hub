@@ -76,3 +76,35 @@ direcionados de backend, 31 de frontend, typecheck e build; a rodada física fin
 dez cenários de decisão, vinte do ciclo e dez de contexto, além das migrações.
 Os três navegadores/dispositivos foram conferidos novamente, com decisão já aprovada no
 iPhone emulado. O pacote atualizado manteve integridade de classes e recursos.
+
+## Entrada de planejamento sem experiência PDE
+
+Após o PR #5510, os dezesseis workflows da main `a1a831ec78b68eecda43b7710fef166c3b465801`
+concluíram com sucesso. A recuperação pela tela criou o ciclo #5/experimento #98, em
+PLANNING e mídia zero, preservando o evento #30 e vinculando-o ao evento #31. O processo
+#46 abriu Atena #590. O worker recusou a entrada antes da inferência (`NOT_STARTED`).
+
+Banco, código e histórico confirmaram a causa: Capella tem identidade catalogada Quartzo,
+mas não tem `experienceVersion` no contrato PDE. O resolvedor descartava o alvo inteiro
+antes de montar o contexto de planejamento. Mira #496, anteriormente concluída, possui
+essa versão e não atravessava o descarte. Não faltava preencher o cadastro do Capella.
+
+| Alternativa | Benefício | Risco/esforço | Escolha |
+| --- | --- | --- | --- |
+| Criar versão PDE fictícia | Desbloqueio pontual | Inventaria publicação e esconderia o erro | Rejeitada |
+| Remover validação de identidade no worker | Pouca alteração | Permitiria perda de tipo/nome e mistura de produtos | Rejeitada |
+| Preservar catálogo no planejamento sem exigir versão PDE | Corrige a origem para outros produtos | Alteração restrita ao provedor e testes de contrato | Adotada |
+
+Matriz da correção: reproduzir o descarte com os dados estruturais do Capella; repetir
+com outro produto/experimento; preservar planejamento inicial antes válido; garantir
+que construção/comunicação ainda exijam seus contratos; passar entrada com ciclo e
+identidade pelo worker real com modelo e HTTP locais simulados; recusar ausência real
+de catálogo antes da inferência; conferir auditoria e callback sem gasto externo.
+
+Resultado local: os dois novos cenários reproduziram a ausência do alvo antes da correção.
+Depois dela, passaram 38 testes direcionados de backend e os 49 testes do worker. Uma
+execução adicional serializou o alvo produzido pelo provedor real e entregou-o ao worker
+real por HTTP local, em dois produtos/experimentos distintos: uma inferência simulada,
+auditoria e callback `result` por caso, sem versão inventada. A entrada sem catálogo
+permaneceu recusada antes do modelo. Spotless, análise do script de formatação e diff
+aprovados; nenhuma chamada de IA ou comercial externa na validação.

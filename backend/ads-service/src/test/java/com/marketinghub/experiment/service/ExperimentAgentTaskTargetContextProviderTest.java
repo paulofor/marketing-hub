@@ -30,6 +30,52 @@ import org.junit.jupiter.params.provider.CsvSource;
 /** Responsabilidade: impedir que tarefas comerciais percam ou misturem a identidade do PDE. */
 class ExperimentAgentTaskTargetContextProviderTest {
 
+  /** Planejamento preserva o catálogo mesmo quando o produto não possui experiência PDE. */
+  @ParameterizedTest
+  @CsvSource({"7,98,Capella,LOW_TICKET_DIGITAL_PRODUCT,Quartzo", "83,207,Estrela,PDE,Opala"})
+  void resolvesPlanningIdentityWithoutPdeExperience(
+      long productId, long experimentId, String name, String typeCode, String typeName) {
+    var experiments = mock(ExperimentRepository.class);
+    var products = mock(ProductRepository.class);
+    var product =
+        Product.builder()
+            .id(productId)
+            .slug("produto-fixture-" + productId)
+            .name("Oferta de teste")
+            .internalName(name)
+            .productTypeDefinition(
+                ProductTypeDefinition.builder().code(typeCode).internalName(typeName).build())
+            .pdeExperienceJson("{}")
+            .build();
+    var experiment =
+        Experiment.builder()
+            .id(experimentId)
+            .product(product)
+            .status(ExperimentStatus.PLANNED)
+            .dailyBudget(BigDecimal.ZERO)
+            .mediaSpendLimit(BigDecimal.ZERO)
+            .build();
+    when(experiments.findById(experimentId)).thenReturn(Optional.of(experiment));
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(experiments, products, new ObjectMapper());
+    String reference = "experiment:" + experimentId;
+
+    var target = provider.resolve(reference, "pde-commercial-plan-offer").orElseThrow();
+
+    assertThat(target.productId()).isEqualTo(productId);
+    assertThat(target.productInternalName()).isEqualTo(name);
+    assertThat(target.experienceVersion()).isNull();
+    assertThat(target.pdeContext().path("product").path("productTypeCode").asText())
+        .isEqualTo(typeCode);
+    assertThat(target.pdeContext().path("product").path("productTypeInternalName").asText())
+        .isEqualTo(typeName);
+    assertThat(target.pdeContext().path("experiment").path("id").asLong()).isEqualTo(experimentId);
+    assertThat(target.pdeContext().path("mediaSpendAuthorized").asBoolean()).isFalse();
+    assertThat(target.pdeContext().path("publicationAuthorized").asBoolean()).isFalse();
+    assertThat(provider.resolve(reference, "pde-construction-approval")).isEmpty();
+    assertThat(provider.resolve(reference, "pde-communication-sales-journey")).isEmpty();
+  }
+
   /** O primeiro experimento recebe hipótese e plano rastreáveis sem fingir um ciclo de vendas. */
   @Test
   void resolvesInitialCommercialPlanningContextWithoutFakeLearningCycle() {

@@ -180,6 +180,21 @@ try {
       name: "Preparar continuidade sem gasto",
     });
     await expect(button).toBeVisible();
+    await expect(
+      page.getByText(/Você não precisa preencher um novo formulário/),
+    ).toBeVisible();
+    assert.equal(
+      await button.evaluate((element) =>
+        Boolean(
+          element.compareDocumentPosition(
+            [...document.querySelectorAll("button")].find(
+              (candidate) => candidate.textContent === "Abrir ciclo",
+            ),
+          ) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+      ),
+      true,
+    );
     assert.equal(writes.length, 0);
     await expect(page.getByLabel("Responsável pela decisão *")).toHaveCount(0);
     const response = page.waitForResponse(
@@ -193,7 +208,18 @@ try {
     const prepared = await received.json();
     assert.equal(prepared.stage, "PLANNING");
     assert.equal(prepared.previousCycleId, cycle.id);
+    const automation = await request(
+      `/api/business-processes/2/products/91001/automation/v1?chainId=${prepared.chainDefinitionId}&learningCycleId=${prepared.id}&sourceReference=experiment:${prepared.experimentId}`,
+    );
+    assert.equal(
+      automation.id,
+      null,
+      "Preparação administrativa não inicia o planejamento pago",
+    );
     await expect(page).toHaveURL(new RegExp(`cycleId=${prepared.id}`));
+    await expect(
+      page.getByRole("region", { name: "Proposta comercial de Atena" }),
+    ).toHaveCount(0);
     await expect(
       page.getByText("Primeira janela comercial do sucessor", { exact: true }),
     ).toBeVisible();

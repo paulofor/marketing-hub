@@ -260,6 +260,34 @@ describe("Ciclos de aprendizado e vendas", () => {
     expect(axios.post).not.toHaveBeenCalled();
   });
 
+  it("não apresenta o parecer herdado como nova execução automática no planejamento", async () => {
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, ...args) =>
+      url === `${cycleApi}/products/4`
+        ? {
+            data: [
+              {
+                ...cycle,
+                stage: "PLANNING",
+                stageLabel: "Planejar o experimento",
+                events: [{ id: 42, evidence: { decisionProposalId: 9 } }],
+                commands: [],
+              },
+            ],
+          }
+        : original(url, ...args),
+    );
+    wrapper(<LearningCyclesPage />);
+    await screen.findByRole("heading", { name: "Ciclo #2 · experimento #91" });
+    expect(
+      screen.queryByRole("region", { name: "Proposta comercial de Atena" }),
+    ).not.toBeInTheDocument();
+    expect(axios.get).not.toHaveBeenCalledWith(
+      expect.stringContaining("/decision-proposal"),
+    );
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
   it("orienta ajuste aprovado para sucessor do produto, sem repetir a decisão", async () => {
     const original = vi.mocked(axios.get).getMockImplementation()!;
     vi.mocked(axios.get).mockImplementation(async (url, ...args) =>

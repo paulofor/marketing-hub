@@ -9126,3 +9126,15 @@ fixture de persistência Java consumida no navegador desktop/mobile. Ver
 - **Limite:** nenhum resultado bloqueado é reclassificado, nenhuma prova é inventada e a correção
   não implementa automaticamente todo protótipo. A tarefa 595 e seu custo permanecem auditáveis.
 - **Evidência:** `docs/homologacao/capella-contratos-construcao-v1.md`.
+
+### Preparação “sem gasto” iniciava tarefas após aprovação histórica — 06/10/2026
+
+Recorrência de LOOP-CICLO-PREPARACAO-MANUAL: Mira #3/#93, proposta #3 aprovada, sem sucessor.
+A mesma operação da UI reutilizava o caminho automático e iniciava processo quando havia
+recibo humano. Sem esse recibo, Capella já tinha preparação sem tarefas. A diferença explica
+por que a cobertura anterior não protegia a promessa da tela para históricos aprovados.
+A recuperação administrativa passa a preparar somente cadastro/aprendizado; o comando de
+execução e novas aprovações automáticas mantêm seus contratos. A UI prioriza o parecer sobre
+o formulário manual. Regressões cobrem Mira, IDs independentes, ADJUST/INCONCLUSIVE, HTTP,
+MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados em
+`docs/homologacao/mira-preparacao-sem-consumo-v1.md`.

@@ -250,5 +250,41 @@ for product, experiment in [(91001, 91001), (91002, 91006)]:
     assert limits['dailyBudget']==0 and limits['mediaSpendLimit']==0
     check('Inconclusivo aprovado → sucessor único; recibo, memória, foco e orçamento preservados: produto '+str(product))
 
+# Recuperação administrativa de decisões históricas aprovadas não inicia agentes.
+for product, experiment, action in [(91001, 91001, 'ADJUST'), (91002, 91006, 'INCONCLUSIVE')]:
+    http('/fixture/reset', {})
+    c=create(product, experiment)
+    job=http(INTERNAL+'/pending')[0]
+    audit(job)
+    draft=valid(job)
+    if action=='INCONCLUSIVE':
+        draft.update(action=action, returnProcessId=None, returnActivityId=None)
+    _, ready=result(job,draft)
+    # Retira apenas a adesão automática da fixture, reproduzindo o histórico aprovado de Mira.
+    sql(f"UPDATE learning_sales_cycle_v1 SET brief_json=JSON_REMOVE(brief_json,'$.preparationPolicy') WHERE id={c['id']}")
+    approved=http(f'{API}/products/{product}/{c["id"]}/commands', command(c,ready,action=action))
+    url=proposal_url(c)
+    assert http(INTERNAL+'/pending')==[]
+    assert len(http(f'{API}/products/{product}'))==1
+    def execution_counts():
+        query=f"SELECT (SELECT COUNT(*) FROM product_process_run_v1 WHERE product_id={product}), (SELECT COUNT(*) FROM agent_task)"
+        output=subprocess.check_output(compose+['exec','-T','learning-cycles-mysql','mysql','-ucycles_local','-pcycles-local-only','learning_cycles_local','-N','-B','-e',query],text=True,stderr=subprocess.DEVNULL)
+        return output.strip()
+    before=execution_counts()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        prepared=list(pool.map(lambda _:http(url+'/prepare-successor',{}),range(2)))
+    assert len({s['id'] for s in prepared})==1
+    successor=prepared[0]
+    assert successor['stage']=='PLANNING' and successor['budgetLimitBrl']==0
+    assert successor['windowStart'] is None and successor['windowEnd'] is None
+    assert successor['inheritedLearning']['events'][-1]==approved['events'][-1]
+    assert http(INTERNAL+'/pending')==[]
+    history=http(f'{API}/products/{product}')
+    assert len(history)==2 and next(s for s in history if s['id']==c['id'])['events']==approved['events']
+    assert execution_counts()==before, 'Preparar sem gasto não pode iniciar processo ou tarefa paga'
+    assert http(url+'/prepare-successor',{})['id']==successor['id']
+    assert execution_counts()==before
+    check('Recuperação histórica sem processo/tarefa paga, preservando decisão e replay: '+str(product))
+
 http('/fixture/reset',{})
 print(json.dumps({'checks':len(checks),'status':'PASS','externalModel':'SIMULATED'},ensure_ascii=False))

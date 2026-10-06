@@ -676,3 +676,16 @@ com produto, cadeia e ciclo explícitos. Ajuste aprovado sem sucessor é prepara
 iniciada; não significa nova decisão humana pendente nem preparação em andamento. Falha de
 consulta impede oferecer um destino não confirmado. Abrir o ciclo não cria tarefas, não
 reabre o experimento e não transfere autorizações de IA ou mídia entre produtos.
+
+## Recuperação administrativa realmente sem consumo — 06/10/2026
+
+O comando administrativo `decision-proposal/prepare-successor`, apresentado como
+**Preparar continuidade sem gasto**, prepara somente experimento, ciclo e aprendizado.
+Mesmo com decisão histórica aprovada, ele não inicia processo nem tarefas de agentes.
+A aprovação da hipótese anterior não é autorização implícita de consumo futuro.
+O início de execução continua no comando oficial do processo, com seus limites próprios.
+A passagem automática de novas aprovações não muda, nem se cancelam execuções existentes.
+Replays reutilizam o sucessor. A tela apresenta primeiro essa preparação baseada no parecer,
+sem exigir transcrição ou janela/mídia prematuras; o cadastro manual permanece disponível.
+O log distingue início de execução de autorização de mídia. Testes cobrem decisão histórica
+aprovada, outro produto, HTTP, persistência e continuação automática anteriormente válida.

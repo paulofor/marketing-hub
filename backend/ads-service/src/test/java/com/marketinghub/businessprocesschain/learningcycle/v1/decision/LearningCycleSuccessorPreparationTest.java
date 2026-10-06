@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
@@ -291,6 +292,32 @@ class LearningCycleSuccessorPreparationTest {
     assertThat(cycle.getReturnProcessId()).isNull();
     assertThat(proposal.getApprovedEventId()).isEqualTo(800L);
     verify(processRuns).start(eq(productId), eq(116L), any());
+  }
+
+  /** A recuperação administrativa de Mira e outro produto preserva aprovação sem iniciar IA. */
+  @ParameterizedTest
+  @CsvSource({"10,ADJUSTED,ADJUST", "83,INCONCLUSIVE,INCONCLUSIVE"})
+  void preparesApprovedHistoryWithoutStartingAgents(long productId, String status, String action)
+      throws Exception {
+    var cycle = fixture(productId);
+    var proposal = approvedInconclusive(cycle);
+    cycle.setStatus(status);
+    events.findById(800L).orElseThrow().setAction(action);
+    String originalProposal = proposal.getProposalJson();
+    preparation.prepareOnly(productId, cycle.getId());
+    var request = ArgumentCaptor.forClass(CreateLearningCycleRequest.class);
+    verify(service).createPreparation(eq(productId), request.capture());
+    assertThat(request.getValue().previousCycleId()).isEqualTo(cycle.getId());
+    assertThat(request.getValue().hypothesis()).isEqualTo("Novo teste aprovado no mesmo foco");
+    assertThat(request.getValue().budgetLimitBrl()).isZero();
+    assertThat(request.getValue().windowStart()).isNull();
+    assertThat(request.getValue().windowEnd()).isNull();
+    verify(service, never()).recordPreparationDecision(any(), any(), any());
+    verifyNoInteractions(processRuns);
+    assertThat(proposal.getProposalJson()).isEqualTo(originalProposal);
+    assertThat(proposal.getApprovedEventId()).isEqualTo(800L);
+    assertThat(cycle.getStatus()).isEqualTo(status);
+    assertThat(cycle.getRevision()).isEqualTo(5);
   }
 
   /** Monta recibo humano correspondente ao inconclusivo, com edição final da hipótese. */

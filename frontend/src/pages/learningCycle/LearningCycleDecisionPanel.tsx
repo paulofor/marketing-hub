@@ -67,7 +67,7 @@ export default function LearningCycleDecisionPanel({
         )}
         <p>
           {value?.preparationAvailable
-            ? "O backend preserva o aprendizado e prepara um único sucessor com mídia zero, sem janela comercial herdada. Novas ocorrências seguem automaticamente; esta ação recupera propostas anteriores sem repetir Atena."
+            ? "Você não precisa preencher um novo formulário. Esta ação cria o ciclo e o experimento a partir do aprendizado registrado, sem iniciar agentes, consumir IA ou liberar mídia. A execução é iniciada na atividade de planejamento, com seus limites próprios."
             : value?.status === "APPROVED"
               ? cycle.nextAction
               : "A proposta usa os resultados conciliados. Sua aprovação registra a decisão e o retorno no BPM."}
@@ -86,9 +86,18 @@ export default function LearningCycleDecisionPanel({
                 }
               }}
             >
-              {preparation.isPending
-                ? "Preparando…"
-                : "Preparar continuidade sem gasto"}
+              {preparation.isPending ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-label="Preparando"
+                  />
+                  Preparando…
+                </>
+              ) : (
+                "Preparar continuidade sem gasto"
+              )}
             </button>
             {preparation.isError ? (
               <p role="alert">{cycleError(preparation.error)}</p>

@@ -135,3 +135,13 @@ já estava `RELEASED` e todos os workflows ativos; não foi necessário reativá
 
 Fontes oficiais: [API de workflows](https://docs.github.com/en/rest/actions/workflows)
 e [gatilhos com GITHUB_TOKEN](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow).
+
+## Recibo de Dédalo com nome antigo — 07/10/2026
+
+O reconciliador `37548965503` bloqueou o encerramento da intervenção de Mira após todas as imagens estarem publicadas e saudáveis. O run `37546952344` de Dédalo, no SHA `f069a1acd7ffe71dcd71b1ceaed462b76e44123c`, tinha o job `Deploy worker` concluído com sucesso; a política procurava `deploy`. O histórico confirma que o commit `99ad43b73b8564ddc32d5cb55b8ecbce272533e4`, de 01/10/2026, adicionou o nome público ao job, sem atualizar a política anterior.
+
+Alternativas: republicar a imagem; aceitar apenas o sucesso global do run; corrigir o catálogo e reutilizar o recibo comprovado. Adotada a terceira, que elimina a divergência sem duplicar publicação nem aceitar build verde como prova de deploy. A política passa a reconhecer o nome retornado pelo GitHub.
+
+O teste anterior reconhecia o identificador YAML e suas fixtures derivavam o nome da própria política, escondendo a divergência. A regressão agora compara todos os publicadores com os nomes públicos dos workflows. Fixtures independentes reproduzem o recibo real de Dédalo e o caso com build aprovado e deploy pulado: o primeiro conclui sem dispatch; o segundo continua bloqueado. Os 60 testes locais da recuperação passaram.
+
+O encerramento operacional deve reutilizar os runs já comprovados no mesmo SHA e registrar a conciliação sob o lock existente. Isso altera metadados de coordenação; não instala código ou imagem pelo SSH. A correção versionada continua sujeita a PR, revisão, checks e merge, e intervenções posteriores mantêm o procedimento canônico de pausa e retomada.

@@ -9276,3 +9276,20 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   também exigem as imagens antes do upload. Hash não substitui a saúde posterior do runtime.
 - **Registro:** docs/registros/mira-download-pacote-deploy-2026-10-07.md. Sem novo consumo de
   IA, alteração de orçamento, imagem produtiva manual ou migração de execuções de produto.
+
+
+## LOOP-ACTIONS-PACKAGES-HTTP-STATUS-NAO-RECONHECIDO
+
+- **Data:** 07/10/2026. O run 37648024303 conferiu JAR/catálogo e falhou na publicação
+  Maven: GitHub Packages retornou `HTTP Status: 500`. O anterior 37637394844 publicou
+  a mesma biblioteca com sucesso; não foi identificado erro de código ou credencial.
+- **Por que aconteceu:** o loop de recuperação reconhecia somente `status code: 5xx`,
+  fazendo o formato atual do Maven virar falso erro permanente.
+- **Correção compartilhada:** reconhecer ambos os formatos e capitalizações no loop
+  existente, mantendo três tentativas e esperas de 20/40 segundos. 401/403 e erros
+  funcionais continuam encerrando sem retry. Não muda artefato, experiência ou orçamento.
+- **Prevenção:** contrato transacional existente executa seu próprio bloco Maven com
+  doubles locais, incluindo log ANSI original, outro artefato/URL, formato legado,
+  persistência limitada, transportes, erros permanentes, sucesso e limpeza dos logs.
+- **Registro e limites:** `docs/registros/mira-github-packages-http-status-2026-10-07.md`.
+  O teste prova a recuperação; não garante disponibilidade externa do registry.

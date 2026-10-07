@@ -9158,3 +9158,19 @@ execução e novas aprovações automáticas mantêm seus contratos. A UI priori
 o formulário manual. Regressões cobrem Mira, IDs independentes, ADJUST/INCONCLUSIVE, HTTP,
 MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados em
 `docs/homologacao/mira-preparacao-sem-consumo-v1.md`.
+# LOOP-CODEX-TIER-AUDITORIA-DIVERGENTE — comando solicita opção recusada pelo transporte
+
+- **Observado em 07/10/2026:** Mira #10, ciclo #6, experimento #99, tarefa Psique #610.
+- **Sintoma:** captura persistida, seguida de HTTP 400 `Unsupported service_tier: flex`,
+  antes da resposta funcional; ausência de custo informado não representa custo zero.
+- **Causa confirmada:** comandos de Psique e do gate comercial de Têmis enviavam Flex,
+  apesar da exceção já registrada que afirmava usar o padrão e auditar `STANDARD`.
+  Atena #600 e Plutus #601 haviam concluído em `default`; doubles antigos aceitavam
+  argumentos incompatíveis e não protegiam o contrato executável do transporte.
+- **Correção:** solicitar `default` explicitamente nos dois consumidores, registrar
+  preferência FLEX, solicitação DEFAULT e classificação STANDARD, sem trocar modelo
+  ou aplicar priority. APIs que suportam Flex mantêm seu contrato próprio.
+- **Prevenção:** `CodexTransportIntegrationTest` nos dois módulos percorre fila,
+  subprocesso restritivo, schema, auditoria, tokens e callback para Mira, outra
+  identidade e um caminho antes válido; o double reproduz a recusa de Flex.
+- **Registro:** `docs/registros/mira-codex-transporte-2026-10-07.md`.

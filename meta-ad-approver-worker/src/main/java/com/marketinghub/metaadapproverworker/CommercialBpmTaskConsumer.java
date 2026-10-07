@@ -32,10 +32,10 @@ public class CommercialBpmTaskConsumer {
   private static final Logger log = LoggerFactory.getLogger(CommercialBpmTaskConsumer.class);
   private static final String AGENT_KEY = "meta-ad-approver";
   private static final String WORKER_CONTRACT = "TEMIS_BPM_LEASE_V1";
-  private static final String REQUESTED_SERVICE_TIER = "flex";
+  private static final String REQUESTED_SERVICE_TIER = "default";
   private static final String EFFECTIVE_SERVICE_TIER = "STANDARD";
   private static final String SERVICE_TIER_EXCEPTION =
-      "O catálogo do Codex OAuth não anuncia Flex para o modelo do harness; a CLI usa o tier padrão.";
+      "O transporte Codex OAuth deste harness recusa Flex; a CLI solicita default explicitamente, sem priority e sem desconto Flex.";
   private static final int MAX_PROMPT_CHARACTERS = 900_000;
   private static final List<BpmContract> CONTRACTS =
       List.of(
@@ -337,7 +337,7 @@ public class CommercialBpmTaskConsumer {
         !"BLOCKED".equals(result.path("decision").asText()));
   }
 
-  /** Monta o comando imutável usado por cada tentativa de revisão comercial. */
+  /** Monta a chamada Codex no tier padrão compatível para cada tentativa de revisão comercial. */
   private List<String> command(Path output, Path schema) {
     List<String> command =
         new ArrayList<>(
@@ -881,6 +881,7 @@ public class CommercialBpmTaskConsumer {
     evidence.put("activityId", String.valueOf(task.get("activityId")));
     evidence.put("accessMode", "READ_ONLY");
     evidence.put("externalSideEffects", false);
+    evidence.put("preferredServiceTier", "FLEX");
     evidence.put("requestedServiceTier", REQUESTED_SERVICE_TIER.toUpperCase(java.util.Locale.ROOT));
     evidence.put("effectiveServiceTier", EFFECTIVE_SERVICE_TIER);
     evidence.put("serviceTierException", SERVICE_TIER_EXCEPTION);
@@ -907,7 +908,7 @@ public class CommercialBpmTaskConsumer {
     return REQUESTED_SERVICE_TIER;
   }
 
-  /** Informa o tier aplicado quando o modelo Codex não anuncia suporte ao Flex solicitado. */
+  /** Informa a classificação de custo da chamada Codex, sem declarar desconto Flex. */
   static String effectiveServiceTier() {
     return EFFECTIVE_SERVICE_TIER;
   }

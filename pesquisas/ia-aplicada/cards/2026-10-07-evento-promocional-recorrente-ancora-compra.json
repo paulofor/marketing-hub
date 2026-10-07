@@ -1,0 +1,18 @@
+{
+  "cardKey": "evento-promocional-recorrente-ancora-compra",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Datas recorrentes podem concentrar intenção já existente",
+  "finding": "Em 19 datas promocionais recorrentes analisadas pela Elo, grandes marketplaces tiveram em 2026 vendas 38,7% acima de dias normais comparáveis; 26,2% dos consumidores que conheciam essas datas disseram ter adiado uma compra já planejada para aproveitar benefícios.",
+  "mechanism": "Uma data simples e recorrente pode atuar como âncora temporal de decisão ao concentrar atenção, expectativa de benefício e mídia; a evidência não isola causalmente esses fatores nem separa demanda incremental de compras apenas deslocadas no tempo.",
+  "commercialApplication": "Testar no Marketing Hub uma campanha ancorada em momento real e memorável, capturando intenção antes da janela e ativando a oferta nela; comparar com campanha equivalente em dia comum e medir pagamento reconciliado, CAC, margem e deslocamento de compras de dias vizinhos.",
+  "evidenceStrength": "Moderada: combina transações observadas em 19 datas e pesquisa com 1.500 compradores, mas é observacional, concentrada em grandes marketplaces e não demonstra causalidade para outros negócios.",
+  "publishedOn": "2026-10-07",
+  "validUntil": "2027-02-28",
+  "experimentHypothesis": "Uma janela promocional recorrente e memorável elevará pagamentos durante o período frente a um dia comum comparável, mas só será considerada incremental se o ganho permanecer após ajustar por antecipação ou adiamento de compras e por margem.",
+  "risks": "Descontos podem apenas deslocar compras, reduzir margem e treinar o cliente a esperar promoções; não usar urgência falsa, escassez artificial nem benefícios inexistentes.",
+  "limits": "Os dados vêm de grandes marketplaces brasileiros e podem refletir mídia, preço, logística e força de plataforma; não provam que uma nova data criada por um produto digital gere o mesmo efeito.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-10-07-datas-promocionais-recorrentes-momento-compra.md",
+  "sourceTitle": "Fonte revisada — datas promocionais recorrentes como momento de compra",
+  "sourceSha256": "72fa52a4195438505a229c49d4ee3873eb7063c8d277249b0f7aa91e8a0a989d"
+}

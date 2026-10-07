@@ -21,7 +21,14 @@ public final class MiraPrivateContract {
 
   /** Representa um produto cuja orientação documental será preservada integralmente. */
   public record ProductInput(
-      @NotBlank @Size(max = 160) String name, @NotBlank @Size(max = 600) String labelDirections) {}
+      @NotBlank @Size(max = 160) String name,
+      @NotBlank @Size(max = 600) String labelDirections,
+      @Size(max = 1200) String sourceUrl) {
+    /** Preserva a entrada legada quando a cliente informa somente o próprio rótulo. */
+    public ProductInput(String name, String labelDirections) {
+      this(name, labelDirections, null);
+    }
+  }
 
   /** Valida também os elementos da lista, incluindo os produtos opcionais acrescentados. */
   public record Input(

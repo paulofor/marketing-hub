@@ -106,7 +106,7 @@ public class MiraPrivateLocalApplication {
               cycle.setExperimentId(id + 2000);
               cycle.setStage("ADJUSTMENT");
               cycle.setStatus("OPEN");
-              cycle.setProductVersion("mira-commercial-v1");
+              cycle.setProductVersion(MiraPrivateService.VERSION);
               return Optional.of(cycle);
             });
     return repository;

@@ -9,6 +9,7 @@ import java.util.Map;
 /** Valida a comparação documental isolada entre duas condições de entrada do mesmo protótipo. */
 final class PdeInputComparisonScenarioMatrixV1 {
   static final String CONTRACT = "PDE_DOCUMENTED_INPUT_COMPARISON_V1";
+  static final String MEASURED_CONTRACT = "PDE_DOCUMENTED_INPUT_COMPARISON_V2";
   private static final List<String> SCENARIOS = List.of("ADHERENT", "RECOVERY", "SAFETY");
   private static final List<String> DEVICES = List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7");
   private static final List<String> CONDITIONS = List.of("REFERENCE", "REDUCED");
@@ -17,11 +18,15 @@ final class PdeInputComparisonScenarioMatrixV1 {
   private PdeInputComparisonScenarioMatrixV1() {}
 
   /**
-   * Exige as dezoito combinações e compara entradas e saídas reais, sem confiar apenas em flags.
+   * Exige dezoito combinações e medições explícitas nas versões novas, preservando provas legadas.
    */
   static boolean valid(JsonNode result) {
     JsonNode scenarios = result.path("scenarios");
-    if (!CONTRACT.equals(result.path("fixtureContract").asText())
+    String contract = result.path("fixtureContract").asText();
+    boolean measured = MEASURED_CONTRACT.equals(contract);
+    if ((!CONTRACT.equals(contract) && !measured)
+        || (result.path("prototypeVersion").asText().startsWith("mira-private-candidate-v")
+            && !measured)
         || !"DETERMINISTIC_DOCUMENTED_LABELS".equals(result.path("generationMode").asText())
         || result.path("providerCalls").asInt(-1) != 0
         || !scenarios.isArray()
@@ -37,6 +42,7 @@ final class PdeInputComparisonScenarioMatrixV1 {
       if (!SCENARIOS.contains(code)
           || !DEVICES.contains(device)
           || !CONDITIONS.contains(condition)
+          || (measured && !validMeasurements(scenario))
           || !validScenario(scenario, result.path("prototypeVersion").asText())
           || !evidenceIds.add(scenario.path("evidenceId").asText())
           || cases.putIfAbsent(code + "|" + device + "|" + condition, scenario) != null) {
@@ -49,8 +55,10 @@ final class PdeInputComparisonScenarioMatrixV1 {
         JsonNode reduced = cases.get(code + "|" + device + "|REDUCED");
         if (reference == null
             || reduced == null
-            || reduced.path("manualFields").asInt(-1) < 1
-            || reference.path("manualFields").asInt(-1) <= reduced.path("manualFields").asInt(-1)
+            || (!measured
+                && (reduced.path("manualFields").asInt(-1) < 1
+                    || reference.path("manualFields").asInt(-1)
+                        <= reduced.path("manualFields").asInt(-1)))
             || !reference.path("products").equals(reduced.path("products"))
             || !reference.path("routine").equals(reduced.path("routine"))) {
           return false;
@@ -58,6 +66,34 @@ final class PdeInputComparisonScenarioMatrixV1 {
       }
     }
     return true;
+  }
+
+  /** Concilia mínimo, preenchimentos reais e latência monotônica sem reinterpretar o histórico. */
+  private static boolean validMeasurements(JsonNode value) {
+    int supplied = value.path("products").size();
+    int productFields = value.path("filledProductFields").asInt(-1);
+    int sourceFields = value.path("filledOptionalSourceFields").asInt(-1);
+    int objectiveFields = value.path("editedObjectiveFields").asInt(-1);
+    return !value.has("manualFields")
+        && value.path("minimumRequiredProductFields").asInt(-1)
+            == ("REFERENCE".equals(value.path("condition").asText()) ? 4 : 2)
+        && value.path("providedProductCount").asInt(-1) == supplied
+        && productFields == supplied * 2
+        && productFields >= value.path("minimumRequiredProductFields").asInt(Integer.MAX_VALUE)
+        && sourceFields >= 0
+        && sourceFields <= supplied
+        && objectiveFields >= 0
+        && objectiveFields <= 1
+        && value.path("actualFilledFields").asInt(-1)
+            == productFields + sourceFields + objectiveFields
+        && value.path("requiredObjectiveFields").asInt(-1) == 1
+        && value.path("objectivePrefilled").isBoolean()
+        && value.path("corrections").asInt(-1) >= 0
+        && "MONOTONIC_WORKER".equals(value.path("measurementClock").asText())
+        && "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK".equals(value.path("outcomeBoundary").asText())
+        && value.path("scenarioCompletedSeconds").isNumber()
+        && value.path("scenarioCompletedSeconds").asDouble(-1)
+            >= value.path("resultReadySeconds").asDouble(601);
   }
 
   /** Confirma prazo, segregação, consumo útil e recuperação ou bloqueio de cada cenário. */

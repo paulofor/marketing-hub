@@ -26,7 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Slf4j
 public class MiraPrivateService {
-  public static final String VERSION = "mira-commercial-v1";
+  public static final String VERSION = "mira-private-candidate-v2";
   public static final String PRODUCT_SLUG = "pde-planejado-36";
   private final MiraPrivateSessionRepository sessions;
   private final LearningSalesCycleRepository cycles;
@@ -124,22 +124,25 @@ public class MiraPrivateService {
     return view(active(secret));
   }
 
-  /** Persiste todos os produtos incluídos e permite correção antes do resultado útil. */
+  /** Persiste os produtos e referências seguras, permitindo correção antes do resultado útil. */
   public SessionView input(String secret, Input request) {
     var row = active(secret);
     mutableContext(row);
     var data = read(row);
+    var normalized =
+        new Input(
+            request.objective().trim(),
+            request.products().stream()
+                .map(
+                    p ->
+                        new ProductInput(
+                            p.name().trim(), p.labelDirections().trim(), sourceUrl(p.sourceUrl())))
+                .toList());
     log.info(
         "Mira entrada bruta sessionId={} cycleId={} payload={}",
         row.getId(),
         row.getCycleId(),
         request);
-    var normalized =
-        new Input(
-            request.objective().trim(),
-            request.products().stream()
-                .map(p -> new ProductInput(p.name().trim(), p.labelDirections().trim()))
-                .toList());
     boolean same =
         normalized.objective().equals(data.path("objective").asText())
             && json.valueToTree(normalized.products()).equals(data.path("products"));
@@ -190,7 +193,9 @@ public class MiraPrivateService {
             p ->
                 inputs.add(
                     new MiraRoutinePolicy.ProductInput(
-                        p.path("name").asText(), p.path("labelDirections").asText())));
+                        p.path("name").asText(),
+                        p.path("labelDirections").asText(),
+                        p.path("sourceUrl").asText(null))));
     var decision = MiraRoutinePolicy.organize(data.path("objective").asText(), inputs);
     data.set("routine", json.valueToTree(decision.routine()));
     if (decision.blocked()) {
@@ -248,7 +253,10 @@ public class MiraPrivateService {
           "Conclua o percurso funcional antes de encerrar o cenário.");
     else require("READY".equals(status), "O resultado precisa estar pronto antes desta ação.");
     if ("RECOVERY_COMPLETED".equals(name))
-      require(hasEvent(data, "READY_RESULT_USED"), "Confirme o uso do resultado retomado.");
+      require(
+          "RECOVERY".equals(data.path("scenarioCode").asText())
+              && hasEvent(data, "READY_RESULT_USED"),
+          "Confirme a consulta no cenário de recuperação.");
     eventOnce(data, name);
     audit(data, "EVENT_RECORDED", request, json.createObjectNode().put("status", status));
     save(row, data);
@@ -412,6 +420,24 @@ public class MiraPrivateService {
   /** Recusa contrato inválido antes de persistir efeito. */
   private void require(boolean valid, String message) {
     if (!valid) throw fail(409, message);
+  }
+
+  /** Aceita referência HTTPS sem credenciais, sem acessar ou interpretar o endereço informado. */
+  private String sourceUrl(String value) {
+    if (value == null || value.isBlank()) return null;
+    try {
+      var uri = java.net.URI.create(value.trim());
+      require(
+          "https".equals(uri.getScheme())
+              && uri.getHost() != null
+              && uri.getUserInfo() == null
+              && uri.getFragment() == null,
+          "A referência do fabricante precisa ser HTTPS e não conter credenciais.");
+      return uri.toString();
+    } catch (IllegalArgumentException ex) {
+      log.warn("Mira recebeu referência documental inválida", ex);
+      throw fail(409, "Informe um endereço HTTPS válido para a referência documental.");
+    }
   }
 
   /** Cria erro HTTP coerente com o limite funcional. */

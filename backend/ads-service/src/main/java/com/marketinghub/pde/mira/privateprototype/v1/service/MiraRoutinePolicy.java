@@ -39,7 +39,8 @@ public final class MiraRoutinePolicy {
               product.name(),
               order,
               product.labelDirections(),
-              "Ordem limitada ao texto documentado informado; não é prescrição."));
+              "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              product.sourceUrl()));
     }
     cards.sort(Comparator.comparingInt(RoutineCard::order));
     return RoutineDecision.ready(List.copyOf(cards));
@@ -61,11 +62,20 @@ public final class MiraRoutinePolicy {
   }
 
   /** Representa uma entrada de produto e sua orientação documental. */
-  public record ProductInput(String name, String labelDirections) {}
+  public record ProductInput(String name, String labelDirections, String sourceUrl) {
+    /** Mantém compatibilidade com entradas documentais sem endereço de fabricante. */
+    public ProductInput(String name, String labelDirections) {
+      this(name, labelDirections, null);
+    }
+  }
 
   /** Representa um item seguro e ordenado da rotina. */
   public record RoutineCard(
-      String productName, int order, String documentedDirection, String safetyNote) {}
+      String productName,
+      int order,
+      String documentedDirection,
+      String safetyNote,
+      String sourceUrl) {}
 
   /** Representa resultado pronto ou bloqueio sem misturar os dois estados. */
   public record RoutineDecision(List<RoutineCard> routine, String blocker) {

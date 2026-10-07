@@ -2,16 +2,22 @@ import React, { useEffect, useState, type FormEvent } from "react";
 
 const endpoint = "/api/pde/mira/candidate/v1";
 const storageKey = "mira-candidate-v1-session";
-type Product = { name: string; labelDirections: string };
+type Product = {
+  name: string;
+  labelDirections: string;
+  sourceUrl?: string | null;
+};
 type Card = {
   productName: string;
   documentedDirection: string;
   safetyNote: string;
+  sourceUrl?: string | null;
 };
 type Session = {
   id: string;
   prototypeVersion: string;
   condition: string;
+  scenarioCode: string;
   status: string;
   objective: string;
   products: Product[];
@@ -45,6 +51,7 @@ export function MiraCandidateApp() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [recoveryPending, setRecoveryPending] = useState(false);
 
   async function api(path: string, method = "GET", body?: unknown) {
     const response = await fetch(endpoint + path, {
@@ -78,6 +85,9 @@ export function MiraCandidateApp() {
             () => ({ name: "", labelDirections: "" }),
           ),
     );
+    setRecoveryPending(
+      sessionStorage.getItem("mira-candidate-recovery") === value.id,
+    );
   }
   async function refresh() {
     setBusy(true);
@@ -105,6 +115,8 @@ export function MiraCandidateApp() {
       await api("/input", "PUT", { objective, products });
       show(await api("/generate", "POST"));
     } catch (e) {
+      if (session)
+        sessionStorage.setItem("mira-candidate-recovery", session.id);
       setError((e as Error).message);
     } finally {
       setBusy(false);
@@ -128,6 +140,32 @@ export function MiraCandidateApp() {
   }
   const ready = session?.status === "READY";
   const minimum = session?.condition === "REFERENCE" ? 2 : 1;
+  const completed = session?.events.includes("AGENT_SCENARIO_COMPLETED");
+  const consulted = session?.events.includes("READY_RESULT_USED");
+  const recovery =
+    ready && session?.scenarioCode === "RECOVERY" && recoveryPending;
+  function reference(card: Card) {
+    if (card.sourceUrl?.startsWith("https://"))
+      return (
+        <p className="mira-source">
+          Referência informada:{" "}
+          <a href={card.sourceUrl} target="_blank" rel="noopener noreferrer">
+            fabricante de {card.productName}
+          </a>
+          . O conteúdo não substitui o rótulo da sua embalagem.
+        </p>
+      );
+    return (
+      <p className="mira-source">
+        Referência: texto do rótulo de {card.productName} informado neste
+        acesso. Embalagem e fabricante não verificados.
+      </p>
+    );
+  }
+  async function consult() {
+    if (!consulted) await record("READY_RESULT_USED");
+    document.getElementById("mira-result")?.focus();
+  }
   return (
     <main className="mira-candidate">
       <header>
@@ -217,9 +255,31 @@ export function MiraCandidateApp() {
                       change(index, "labelDirections", e.target.value)
                     }
                   />
+                  <details className="mira-document-reference">
+                    <summary>
+                      Acrescentar referência do produto {index + 1} (opcional)
+                    </summary>
+                    <label htmlFor={`mira-source-${index}`}>
+                      Link do fabricante {index + 1}
+                    </label>
+                    <input
+                      id={`mira-source-${index}`}
+                      type="url"
+                      maxLength={1200}
+                      value={product.sourceUrl || ""}
+                      onChange={(e) =>
+                        change(index, "sourceUrl", e.target.value)
+                      }
+                    />
+                    <p>
+                      Use um endereço HTTPS aplicável a este produto. Não
+                      verificamos a embalagem ou a adequação ao seu caso.
+                    </p>
+                  </details>
                   {products.length > minimum && (
                     <button
                       type="button"
+                      className="mira-secondary"
                       disabled={busy}
                       onClick={() =>
                         setProducts((items) =>
@@ -234,6 +294,7 @@ export function MiraCandidateApp() {
               ))}
               <button
                 type="button"
+                className="mira-secondary"
                 disabled={busy || products.length >= 12}
                 onClick={() =>
                   setProducts((items) => [
@@ -261,35 +322,30 @@ export function MiraCandidateApp() {
                 Confira o texto do rótulo ou reformule o pedido como organização
                 dos seus cuidados.
               </p>
-              {session.events.includes("SAFETY_LIMIT_BLOCKED") ? (
-                <button
-                  disabled={busy}
-                  onClick={() => record("AGENT_SCENARIO_COMPLETED")}
-                >
-                  Concluir cenário de segurança
-                </button>
-              ) : (
-                <button
-                  disabled={busy}
-                  onClick={() => record("SAFETY_LIMIT_BLOCKED")}
-                >
-                  Registrar limite de segurança
-                </button>
-              )}
             </section>
           )}
           {ready && !editing && (
             <section>
-              <h2>Sua rotina organizada</h2>
+              <h2 id="mira-result" tabIndex={-1}>
+                Sua rotina organizada
+              </h2>
               <p>
                 Este resultado considera apenas os {session.products.length}{" "}
                 produtos informados, sem avaliação clínica.
+              </p>
+              <button disabled={busy} onClick={consult}>
+                Consultar organização
+              </button>
+              <p className="mira-next-step">
+                Releia as instruções quando precisar. Consultar e retomar este
+                resultado não usa outra organização.
               </p>
               <div className="mira-routine-grid">
                 {session.routine.map((card, index) => (
                   <article key={index}>
                     <h3>{card.productName}</h3>
                     <p>{card.documentedDirection}</p>
+                    {reference(card)}
                     <small>{card.safetyNote}</small>
                   </article>
                 ))}
@@ -298,26 +354,12 @@ export function MiraCandidateApp() {
                 Você usou {session.organizationsUsed} de{" "}
                 {session.organizationsLimit} organizações deste pacote de teste.
               </p>
-              <button
-                disabled={busy}
-                onClick={() => record("READY_RESULT_USED")}
-              >
-                Confirmar uso do resultado
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => record("RECOVERY_COMPLETED")}
-              >
-                Confirmar retomada
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => record("AGENT_SCENARIO_COMPLETED")}
-              >
-                Concluir cenário
-              </button>
               {session.organizationsUsed < session.organizationsLimit && (
-                <button disabled={busy} onClick={() => setEditing(true)}>
+                <button
+                  className="mira-secondary"
+                  disabled={busy}
+                  onClick={() => setEditing(true)}
+                >
                   Preparar segunda organização
                 </button>
               )}
@@ -338,18 +380,84 @@ export function MiraCandidateApp() {
                 <article key={index}>
                   <h3>{card.productName}</h3>
                   <p>{card.documentedDirection}</p>
+                  {reference(card)}
                   <small>{card.safetyNote}</small>
                 </article>
               ))}
             </details>
           ))}
-          {session.events.includes("AGENT_SCENARIO_COMPLETED") && (
-            <h2>Avaliação interna concluída</h2>
+          <details
+            className="mira-internal-controls"
+            aria-label="Verificação interna"
+          >
+            <summary>
+              {completed
+                ? "Verificação interna concluída"
+                : "Verificação interna (somente homologação)"}
+            </summary>
+            <p>
+              Estes registros são do teste por agentes; não são uso humano,
+              compra ou satisfação.
+            </p>
+            {completed ? (
+              <h2>Avaliação interna concluída</h2>
+            ) : (
+              <>
+                {session.blocker &&
+                  (session.events.includes("SAFETY_LIMIT_BLOCKED") ? (
+                    <button
+                      className="mira-secondary"
+                      disabled={busy}
+                      onClick={() => record("AGENT_SCENARIO_COMPLETED")}
+                    >
+                      Concluir cenário de segurança
+                    </button>
+                  ) : (
+                    <button
+                      className="mira-secondary"
+                      disabled={busy}
+                      onClick={() => record("SAFETY_LIMIT_BLOCKED")}
+                    >
+                      Registrar limite de segurança
+                    </button>
+                  ))}
+                {recovery && !session.events.includes("RECOVERY_COMPLETED") && (
+                  <button
+                    className="mira-secondary"
+                    disabled={busy || !consulted}
+                    onClick={() => record("RECOVERY_COMPLETED")}
+                  >
+                    Confirmar retomada
+                  </button>
+                )}
+                {ready && (
+                  <button
+                    className="mira-secondary"
+                    disabled={
+                      busy ||
+                      !consulted ||
+                      (recovery &&
+                        !session.events.includes("RECOVERY_COMPLETED"))
+                    }
+                    onClick={() => record("AGENT_SCENARIO_COMPLETED")}
+                  >
+                    Concluir cenário
+                  </button>
+                )}
+              </>
+            )}
+          </details>
+          {error && (
+            <button
+              className="mira-secondary"
+              disabled={busy}
+              onClick={refresh}
+            >
+              {busy ? "Retomando…" : "Retomar etapa salva"}
+            </button>
           )}
-          <button disabled={busy} onClick={refresh}>
-            {busy ? "Retomando…" : "Retomar etapa salva"}
-          </button>
           <button
+            className="mira-secondary"
             disabled={busy}
             onClick={() => {
               sessionStorage.removeItem(storageKey);

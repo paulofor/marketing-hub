@@ -40,6 +40,17 @@ corrigível e `BLOCKED` para dano, privacidade, mistura de versão ou evidência
 `rootCause`, explique a causa do ajuste ou, quando aprovado, o mecanismo que sustenta o resultado.
 O backend, não Psique, decide o avanço.
 
+Quando `fixtureContract=PDE_DOCUMENTED_INPUT_COMPARISON_V2`, interprete separadamente
+`minimumRequiredProductFields` (mínimo inicial de campos de produto), `providedProductCount`,
+`filledProductFields` (campos de produto efetivamente preenchidos), referências opcionais,
+edições do objetivo e correções. O objetivo pode estar previamente preenchido; isso não elimina
+seu requisito. Dois produtos exigem quatro preenchimentos de produto em ambas as condições.
+Não descreva o mínimo reduzido como redução observada do esforço total dessa execução.
+`resultReadySeconds` mede o primeiro resultado ou bloqueio visível no relógio monotônico do
+executor; `firstInteractionAt` é somente a data registrada pelo backend. Não subtraia datas de
+servidores diferentes nem confunda `scenarioCompletedSeconds` com latência do primeiro valor.
+Essa medição corrige o relatório, sem mudar ou apagar as provas históricas.
+
 ## Contexto congelado
 
 {{TASK_CONTEXT}}

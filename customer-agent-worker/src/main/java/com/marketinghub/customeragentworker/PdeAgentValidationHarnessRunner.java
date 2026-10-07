@@ -123,7 +123,7 @@ public class PdeAgentValidationHarnessRunner {
             && "/mira-private".equals(URI.create(sourceUrl).getPath());
     boolean miraCandidate =
         "pde-planejado-36".equals(productSlug)
-            && "mira-commercial-v1".equals(prototypeVersion)
+            && miraCandidateVersion(prototypeVersion)
             && "/mira-candidate".equals(URI.create(sourceUrl).getPath())
             && sourceReference.equals("experiment:" + target.path("experimentId").asLong())
             && lineage.path("learningCycleId").asLong() > 0
@@ -269,7 +269,7 @@ public class PdeAgentValidationHarnessRunner {
     }
     boolean miraCandidate =
         "pde-planejado-36".equals(String.valueOf(expected.get("productSlug")))
-            && "mira-commercial-v1".equals(String.valueOf(expected.get("prototypeVersion")));
+            && miraCandidateVersion(String.valueOf(expected.get("prototypeVersion")));
     boolean alcyone = "pde-planejado-46".equals(String.valueOf(expected.get("productSlug")));
     if (alcyone
         && (ALCYONE_CONTINUITY_CHECKS.stream().anyMatch(check -> !checks.path(check).isBoolean())
@@ -339,7 +339,11 @@ public class PdeAgentValidationHarnessRunner {
                             + "|"
                             + scenario.path("condition").asText()));
         if (!expectedCases.equals(observedCases)
-            || !"PDE_DOCUMENTED_INPUT_COMPARISON_V1".equals(result.path("fixtureContract").asText())
+            || !("mira-commercial-v1".equals(String.valueOf(expected.get("prototypeVersion")))
+                ? Set.of("PDE_DOCUMENTED_INPUT_COMPARISON_V1", "PDE_DOCUMENTED_INPUT_COMPARISON_V2")
+                    .contains(result.path("fixtureContract").asText())
+                : "PDE_DOCUMENTED_INPUT_COMPARISON_V2"
+                    .equals(result.path("fixtureContract").asText()))
             || !"DETERMINISTIC_DOCUMENTED_LABELS".equals(result.path("generationMode").asText())
             || result.path("providerCalls").asInt(-1) != 0) {
           throw new HarnessException(
@@ -394,6 +398,12 @@ public class PdeAgentValidationHarnessRunner {
     }
     if (artifacts.isEmpty()) throw new HarnessException("O harness não produziu screenshots.");
     return List.copyOf(artifacts);
+  }
+
+  /** Reconhece candidatas privadas versionadas e mantém a leitura da versão histórica. */
+  private boolean miraCandidateVersion(String version) {
+    return "mira-commercial-v1".equals(version)
+        || version.matches("mira-private-candidate-v(?:[2-9]|[1-9][0-9]+)");
   }
 
   /** Exige que a homologação continue sem compra, publicação, campanha ou gasto. */

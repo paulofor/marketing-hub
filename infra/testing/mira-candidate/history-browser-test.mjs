@@ -60,6 +60,38 @@ try {
   await page
     .getByRole("heading", { name: "Sua rotina organizada", exact: true })
     .waitFor();
+  assert.equal(
+    await page.getByRole("button", { name: "Confirmar retomada" }).count(),
+    0,
+  );
+  await page.locator(".mira-internal-controls summary").click();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Concluir cenário", exact: true })
+      .isDisabled(),
+    true,
+  );
+  await page.locator(".mira-internal-controls summary").click();
+  await page
+    .getByRole("button", { name: "Consultar organização", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Consultar organização", exact: true })
+    .click();
+  const consultedResponse = await fetch(api + "/session", {
+    headers: { "X-Mira-Session": created.sessionToken },
+  });
+  const consulted = await consultedResponse.json();
+  assert.equal(consulted.organizationsUsed, 1);
+  assert.equal(
+    consulted.events.filter((event) => event === "READY_RESULT_USED").length,
+    1,
+  );
+  assert.ok(
+    (await page.locator(".mira-source").innerText()).includes(
+      "texto do rótulo",
+    ),
+  );
   await page
     .getByRole("button", { name: "Preparar segunda organização" })
     .click();
@@ -116,6 +148,9 @@ try {
         status: "PASS",
         trafficClass: "AGENT_VALIDATION",
         historicalResultPreserved: true,
+        consultationIdempotent: true,
+        recoveryHiddenWithoutFailure: true,
+        completionRequiresConsultation: true,
         blockedSecondInputConsumedOrganization: false,
         organizationsUsed: session.organizationsUsed,
         providerCalls: 0,

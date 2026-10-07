@@ -164,6 +164,7 @@ jobs:
       - name: Validate transactional app deploy contract
         run: |
           bash scripts/test-deploy-transactional-contract.sh
+          python3 scripts/test-download-run-artifact.py
           bash scripts/test-deployment-change-resume.sh
 
   sync-app-deploy-descriptors:
@@ -384,10 +385,13 @@ jobs:
 
       - name: Save image as artifact
         run: |
-          docker save ${BACKEND_IMAGE}:${{ github.sha }} -o backend-image.tar
-          docker build -t marketinghub-process-execution-worker:${{ github.sha }} process-execution-worker
-          docker run --rm --entrypoint node marketinghub-process-execution-worker:${{ github.sha }} --check src/main.mjs
-          docker save marketinghub-process-execution-worker:${{ github.sha }} -o process-worker-image.tar
+          set -euo pipefail
+          docker save "${BACKEND_IMAGE}:${GITHUB_SHA}" -o backend-image.tar
+          docker build -t "marketinghub-process-execution-worker:${GITHUB_SHA}" process-execution-worker
+          docker run --rm --entrypoint node "marketinghub-process-execution-worker:${GITHUB_SHA}" --check src/main.mjs
+          docker save "marketinghub-process-execution-worker:${GITHUB_SHA}" -o process-worker-image.tar
+          test -s backend-image.tar
+          test -s process-worker-image.tar
 
       - uses: actions/upload-artifact@v4
         with:
@@ -396,6 +400,7 @@ jobs:
             backend-image.tar
             process-worker-image.tar
           retention-days: 1
+          if-no-files-found: error
 
   frontend-image:
     name: Frontend – build image
@@ -573,17 +578,20 @@ jobs:
 
       - name: Download backend image artifact
         if: needs.detect-changes.outputs.backend == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-image
-          path: artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python3 scripts/download-run-artifact.py --name backend-image
+          --destination artifacts/backend
+          --required backend-image.tar --required process-worker-image.tar
 
       - name: Download frontend image artifact
         if: needs.detect-changes.outputs.frontend == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-image
-          path: artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python3 scripts/download-run-artifact.py --name frontend-image
+          --destination artifacts/frontend --required frontend-image.tar
 
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.7.0
@@ -667,13 +675,13 @@ jobs:
             done
           }
 
-          if [[ -f artifacts/backend-image.tar ]]; then
-            retry rsync -az --partial -e "ssh ${SSH_OPTS}" artifacts/backend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/backend-image-${{ github.sha }}.tar
-            retry rsync -az --partial -e "ssh ${SSH_OPTS}" artifacts/process-worker-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/process-worker-image-${{ github.sha }}.tar
+          if [[ -f artifacts/backend/backend-image.tar ]]; then
+            retry rsync -az --partial -e "ssh ${SSH_OPTS}" artifacts/backend/backend-image.tar "${VPS_USER}@${APP_VPS_IP}:/tmp/backend-image-${GITHUB_SHA}.tar"
+            retry rsync -az --partial -e "ssh ${SSH_OPTS}" artifacts/backend/process-worker-image.tar "${VPS_USER}@${APP_VPS_IP}:/tmp/process-worker-image-${GITHUB_SHA}.tar"
           fi
 
-          if [[ -f artifacts/frontend-image.tar ]]; then
-            retry rsync -az --partial -e "ssh ${SSH_OPTS}" artifacts/frontend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/frontend-image-${{ github.sha }}.tar
+          if [[ -f artifacts/frontend/frontend-image.tar ]]; then
+            retry rsync -az --partial -e "ssh ${SSH_OPTS}" artifacts/frontend/frontend-image.tar "${VPS_USER}@${APP_VPS_IP}:/tmp/frontend-image-${GITHUB_SHA}.tar"
           fi
 
       - name: Remove unchanged APP image artifacts

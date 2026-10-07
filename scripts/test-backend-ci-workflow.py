@@ -23,6 +23,8 @@ class BackendCiWorkflowTest(unittest.TestCase):
             ".github/workflows/backend-ci.yml",
             ".github/workflows/deploy-containers.yml",
             "scripts/download-approved-pr-artifact.sh",
+            "scripts/download-run-artifact.py",
+            "scripts/test-download-run-artifact.py",
             "scripts/test-backend-ci-workflow.py",
             "scripts/build-commercial-review-evidence*",
             "pde-platform/contracts/**",
@@ -98,6 +100,12 @@ class BackendCiWorkflowTest(unittest.TestCase):
         contract = script.index("run backend-ci-contract python3 scripts/test-backend-ci-workflow.py")
         backend = script.index("run backend mvn ")
         self.assertLess(contract, backend)
+        artifact = script.index("run deploy-artifact-contract python3 scripts/test-download-run-artifact.py")
+        evidence = script.index("run review-evidence node scripts/build-commercial-review-evidence.mjs")
+        self.assertLess(contract, artifact)
+        self.assertLess(artifact, evidence)
+        self.assertLess(evidence, backend)
+        self.assertEqual(script.count("run review-evidence node scripts/build-commercial-review-evidence.mjs"), 1)
 
     def test_local_runway_matrices_cover_full_backend_and_packaged_catalog(self):
         script = (REPO / "infra/testing/runway-clip-plan/run-round.sh").read_text()

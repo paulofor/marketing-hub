@@ -14,13 +14,13 @@ O sinal mais importante não é apenas o pico. Parte do público está mudando a
 
 Fonte: https://economia.uol.com.br/noticias/redacao/2026/10/02/datas-duplas-ganham-forca-e-turbinam-vendas-de-grandes-marketplaces.ghtm
 
-## 2. Nicho estreito continua podendo sustentar escala
+## 2. Um utilitário simples pode virar negócio de US$ 9 milhões de ARR
 
-A Perry Street Software anunciou em 6 de outubro a aquisição do GROWLR, um app de relacionamento voltado a uma comunidade específica, com cerca de 500 mil usuários diários. A nova controladora anunciou investimento multimilionário e plurianual para reconstruir o produto, ampliar chat e vídeo, combater bots e reforçar eventos.
+Uma listagem de aquisição publicada em 6 de outubro apresenta um app de leitura de QR/barcode com 2,9 milhões de usuários ativos mensais, mais de 70 milhões de downloads, US$ 833 mil de MRR e cerca de US$ 9 milhões de ARR. A monetização informada é 70% assinatura/IAP e 30% publicidade; o app tem nota 4,7 com 663 mil avaliações.
 
-O aprendizado transferível é que identidade de comunidade, confiança e densidade social podem funcionar como defesa melhor do que uma coleção de features genéricas. Nicho estreito em perfil não significa necessariamente mercado pequeno quando o público é global.
+Como os números vêm do vendedor, não são uma auditoria independente. Mesmo assim, o caso é um bom sinal de que utilidades simples, frequentes e fáceis de explicar ainda podem acumular distribuição, avaliações e receita por muitos anos. O diferencial não precisa ser IA; pode ser confiabilidade, hábito, presença nas lojas e uma camada premium clara.
 
-Fonte: https://www.globaldatinginsights.com/featured/perry-street-software-acquires-growlr/
+Fonte: https://websiteproperties.com/websites/13782-qr-code-app-9m-arr-7-years-of-history/
 
 ## 3. O produto digital começa a organizar o resultado no mundo físico
 
@@ -48,4 +48,4 @@ Foi selecionado o novo candidato `evento-promocional-recorrente-ancora-compra`, 
 
 Ele é distinto do card de Black Friday: aqui a hipótese é que um evento recorrente e memorável pode virar âncora temporal para uma intenção que já existia. O experimento deve separar demanda incremental de simples antecipação ou adiamento.
 
-Não foram criados cards para os outros três achados. Os sinais de nicho e experiência física não se encaixam de forma defensável nas coleções atuais; o caso de WhatsApp reforça uma tese que recebeu atualização ontem e não justifica outra versão tão cedo.
+Não foram criados cards para os outros três achados. O utilitário QR e a experiência física são fortes sinais de produto, mas não se encaixam de forma defensável nas coleções atuais; o caso de WhatsApp reforça uma tese que recebeu atualização ontem e não justifica outra versão tão cedo.

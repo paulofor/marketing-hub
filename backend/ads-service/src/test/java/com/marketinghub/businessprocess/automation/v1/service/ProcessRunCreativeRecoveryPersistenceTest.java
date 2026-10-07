@@ -53,6 +53,7 @@ class ProcessRunCreativeRecoveryPersistenceTest {
   private final List<String> requested = new ArrayList<>();
   private final String reference = "product:94110@agent-validation-v1";
   private ProcessRunService service;
+  private ProcessRunContext context;
   private MockMvc mvc;
   private long nextTask = 941410;
   private final String root = "/api/business-processes/94164/products/94110/automation/v1";
@@ -69,7 +70,7 @@ class ProcessRunCreativeRecoveryPersistenceTest {
     var products = mock(ProductRepository.class);
     when(products.findById(94110L)).thenReturn(Optional.of(product));
     when(products.findLockedById(94110L)).thenReturn(Optional.of(product));
-    var context = mock(ProcessRunContext.class);
+    context = mock(ProcessRunContext.class);
     String diagram =
         """
         {"nodes":[{"id":"route","type":"TASK"},{"id":"nonAudiovisual","type":"TASK"},
@@ -277,22 +278,33 @@ class ProcessRunCreativeRecoveryPersistenceTest {
         .anyMatch(e -> "NO_PROGRESS".equals(e.eventType()));
   }
 
-  /** Retomada explícita após reparar o contrato preserva o bloqueio e agenda uma única nova prova. */
+  /**
+   * Retomada explícita após reparar o contrato preserva o bloqueio e agenda uma única nova prova.
+   */
   @Test
   void resumesRepairedPrivateProofOnceAndWaitsForIndependentReviews() throws Exception {
     var run = start();
     tick(run.id());
-    callback("nonAudiovisual", "BLOCKED", "{\"executionStatus\":\"BLOCKED\",\"evidenceGaps\":[\"Prova interna não declarada no contrato\"]}");
+    callback(
+        "nonAudiovisual",
+        "BLOCKED",
+        "{\"executionStatus\":\"BLOCKED\",\"evidenceGaps\":[\"Prova interna não declarada no contrato\"]}");
     assertThat(tick(run.id()).status()).isEqualTo("BLOCKED");
-    groups.get("nonAudiovisual").put("stateReason", "PDE_PRIVATE_CREATIVE_PREPARATION_V1: prova interna declarada, vídeo em briefing");
-    mvc.perform(post(root + "/" + run.id() + "/resume"))
-        .andExpect(status().isOk());
+    groups
+        .get("nonAudiovisual")
+        .put(
+            "stateReason",
+            "PDE_PRIVATE_CREATIVE_PREPARATION_V1: prova interna declarada, vídeo em briefing");
+    mvc.perform(post(root + "/" + run.id() + "/resume")).andExpect(status().isOk());
     assertThat(tick(run.id()).status()).isEqualTo("WAITING_ACTIVITY");
     for (int i = 0; i < 3; i++) tick(run.id());
     assertThat(requested).containsExactly("nonAudiovisual", "nonAudiovisual");
     assertThat(groups.get("nonAudiovisual").path("tasks").get(0).path("status").asText())
         .isEqualTo("BLOCKED");
-    callback("nonAudiovisual", "COMPLETED", "{\"functionalOutput\":{\"renderedAssets\":[{\"artifactId\":941130}]}}");
+    callback(
+        "nonAudiovisual",
+        "COMPLETED",
+        "{\"functionalOutput\":{\"renderedAssets\":[{\"artifactId\":941130}]}}");
     tick(run.id());
     callback("customer", "COMPLETED", "{\"decision\":\"APPROVED\"}");
     tick(run.id());
@@ -300,6 +312,125 @@ class ProcessRunCreativeRecoveryPersistenceTest {
     var reviewed = tick(run.id());
     assertThat(reviewed.status()).isEqualTo("WAITING_HUMAN");
     assertThat(reviewed.omittedActivities()).isEqualTo(1);
+    assertThat(requested).doesNotContain("audiovisual", "human", "communicationContract");
+  }
+
+  /** Contrato privado novo permite reparar a rota sem retomar o filho nem apagar sua tentativa. */
+  @Test
+  void recognizesChangedPrivateInputsWithoutResumingChildOrRepeatingMessage() throws Exception {
+    var input =
+        new java.util.concurrent.atomic.AtomicReference<Map<String, Object>>(
+            Map.of(
+                "availability",
+                "AVAILABLE",
+                "inputReadiness",
+                "READY",
+                "mode",
+                "PRODUCT_PRIVATE",
+                "sourceReference",
+                reference,
+                "prototypeVersion",
+                "QA_PRIVATE_V3",
+                "publicationAuthorized",
+                false,
+                "paymentEnabled",
+                false,
+                "externalMediaSpendAuthorized",
+                false,
+                "product",
+                Map.of("id", 94110L)));
+    var provider =
+        spy(
+            new com.marketinghub.communication.v1.IrisCommunicationMaterializationContextProvider(
+                null, null, null, null, null, json));
+    doAnswer(i -> Optional.of(input.get())).when(provider).resolve(reference);
+    var products = mock(ProductRepository.class);
+    when(products.findById(94110L)).thenReturn(Optional.of(Product.builder().id(94110L).build()));
+    var definitions =
+        mock(
+            com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository
+                .class);
+    var definition = new com.marketinghub.businessprocess.BusinessProcessDefinition();
+    definition.setProcessCode("creative-production-approval");
+    when(definitions.findById(94164L)).thenReturn(Optional.of(definition));
+    var versionContext = new ProcessRunContext(null, definitions, null, null, products, json, null);
+    var factory = new org.springframework.beans.factory.support.DefaultListableBeanFactory();
+    factory.registerSingleton("communicationInputs", provider);
+    var injector =
+        new org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor();
+    injector.setBeanFactory(factory);
+    injector.processInjection(versionContext);
+    when(context.inputVersion(any()))
+        .thenAnswer(i -> versionContext.inputVersion(i.getArgument(0)));
+    state("route", "NOT_STARTED", false);
+    groups.get("route").withObject("/executionControl").put("executorType", "BACKEND");
+    var executor =
+        (BusinessProcessActivityExecutionService)
+            org.springframework.test.util.ReflectionTestUtils.getField(service, "activities");
+    doAnswer(
+            i -> {
+              requested.add("route");
+              state("route", "COMPLETED", true);
+              groups
+                  .get("route")
+                  .put("activityInstanceId", 941500L + requested.size())
+                  .put("occurrenceNumber", requested.size());
+              return new ProductProcessActivityExecutionRequestResponse(
+                  94164L,
+                  94110L,
+                  "route",
+                  reference,
+                  List.of(),
+                  "COMPLETED",
+                  true,
+                  "Rota persistida");
+            })
+        .when(executor)
+        .requestProductActivityExecution(
+            eq(94164L), eq(94110L), eq("route"), isNull(), isNull(), eq(reference));
+    var run = start();
+    tick(run.id());
+    tick(run.id());
+    callback("nonAudiovisual", "BLOCKED", "{\"evidenceGaps\":[\"Prova privada não declarada\"]}");
+    assertThat(tick(run.id()).status()).isEqualTo("BLOCKED");
+    var previousTasks = groups.get("nonAudiovisual").path("tasks").deepCopy();
+    for (int i = 0; i < 2; i++) tick(run.id());
+    assertThat(requested).containsExactly("route", "nonAudiovisual");
+    var declaration =
+        new com.marketinghub.communication.v1.PrivateCreativePreparationContext(
+            mock(com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository.class),
+            mock(com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository.class),
+            json);
+    input.set(declaration.enrich(reference, input.get()));
+    state("route", "NOT_STARTED", false);
+    groups.get("route").putNull("activityInstanceId").putNull("occurrenceNumber");
+    assertThat(tick(run.id()).status()).isEqualTo("WAITING_ACTIVITY");
+    tick(run.id());
+    for (int i = 0; i < 3; i++) tick(run.id());
+    assertThat(requested).containsExactly("route", "nonAudiovisual", "route", "nonAudiovisual");
+    assertThat(runs.findById(run.id()).orElseThrow().getRetryEpoch()).isZero();
+    var inputHashes =
+        service.history(94110L, 94164L, run.id(), null).stream()
+            .filter(
+                event ->
+                    "ACTIVITY_REQUESTED".equals(event.eventType())
+                        && "route".equals(event.activityId()))
+            .map(event -> event.details().path("executionInputHash").asText())
+            .toList();
+    assertThat(inputHashes)
+        .hasSize(2)
+        .doesNotHaveDuplicates()
+        .allSatisfy(value -> assertThat(value).matches("[a-f0-9]{64}"));
+    assertThat(groups.get("nonAudiovisual").path("tasks").get(0)).isEqualTo(previousTasks.get(0));
+    callback(
+        "nonAudiovisual",
+        "COMPLETED",
+        "{\"functionalOutput\":{\"renderedAssets\":[{\"artifactId\":941130}]}}");
+    tick(run.id());
+    callback("customer", "COMPLETED", "{\"decision\":\"APPROVED\"}");
+    tick(run.id());
+    callback("commercial", "COMPLETED", "{\"decision\":\"APPROVED\"}");
+    assertThat(tick(run.id()).status()).isEqualTo("WAITING_HUMAN");
     assertThat(requested).doesNotContain("audiovisual", "human", "communicationContract");
   }
 

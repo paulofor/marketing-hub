@@ -6656,6 +6656,18 @@ Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
   ProofCardRendererTest; rodadas e navegação em `mira-criativos-retorno-parecer-v1.md`.
 - **Cânone:** `docs/canonical/iris-communication-agent-canon.v1.md`. Complementa
   LOOP-CRIATIVO-BRIEFING-SEM-PECA; a produção agora precisa corrigir a peça, além de existir.
+- **Recorrência confirmada em 07/10/2026:** Mira, ciclo 9/experimento 102. A publicação
+  1911f5d estava saudável e a rota já reconhecia o contrato privado novo, mas a retomada
+  do pai 54 deixou o filho 55 em NO_PROGRESS (evento 1632), sem inferência. A versão de
+  entrada do motor cobria apenas versão do ciclo e definição do produto; a regressão
+  anterior retomava diretamente o filho e incrementava seu retryEpoch, ocultando o caso.
+- **Prevenção complementar:** revisão canônica da declaração privada fornecida pelo
+  contrato existente de comunicação, restrita ao subprocesso criativo. Mensagem 634,
+  resultado 635 e custos preservados; legado e entradas iguais mantêm a deduplicação.
+  Diário registra hash da entrada. Teste controller/H2 reproduz e recupera o filho sem
+  retomar seu controle, mais regressões para outra identidade, representação numérica,
+  resultados posteriores, briefing, pedido governado e contratos inválidos.
+- **Registro complementar:** `docs/registros/mira-retomada-contrato-privado-2026-10-07.md`.
 
 ## LOOP-VIDEO-PREFLIGHT-PLANO-CLIPES-DIVERGENTE
 

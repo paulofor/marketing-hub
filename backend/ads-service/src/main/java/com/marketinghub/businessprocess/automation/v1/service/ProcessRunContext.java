@@ -38,6 +38,10 @@ public class ProcessRunContext {
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.repository.jdbc.catalogovivo.OpalaAdoptionRepository catalogAdoptions;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.agenttask.CommunicationMaterializationContextProvider
+      communicationInputs;
+
   /** Reconhece a versão publicada ou congelada previamente por esta execução do produto. */
   public boolean executableVersion(
       Long productId, Long processId, ProcessRunCommand command, String status) {
@@ -238,7 +242,8 @@ public class ProcessRunContext {
   }
 
   /**
-   * Incorpora a versão do produto e a entrada validada à proteção contra repetição sem progresso.
+   * Incorpora versão, definição validada e revisão funcional do contrato criativo à proteção contra
+   * repetição sem progresso, preservando o contrato anterior dos demais processos.
    */
   public String inputVersion(ProcessRun run) {
     var product = products.findById(run.getProductId()).orElseThrow();
@@ -246,7 +251,14 @@ public class ProcessRunContext {
         run.getLearningCycleId() == null
             ? ""
             : cycles.findById(run.getLearningCycleId()).orElseThrow().getProductVersion();
-    return version + "|" + product.getValidationDefinitionJson();
+    String base = version + "|" + product.getValidationDefinitionJson();
+    return communicationInputs == null
+        ? base
+        : communicationInputs
+            .executionInputVersion(
+                process(run.getProcessDefinitionId()).getProcessCode(), run.getSourceReference())
+            .map(revision -> base + "|" + revision)
+            .orElse(base);
   }
 
   /** Lê o grafo para que a decisão respeite as dependências reais da versão selecionada. */

@@ -116,3 +116,31 @@ Dados segregados, zero escrita em produção e zero inferência. Artefatos, rela
 e schema preservados em `artifacts/process-automation/mira-private-inputs-local`;
 topologia exclusiva e imagens temporárias removidas. Critérios locais atendidos
 antes de atualizar o mesmo PR; orçamento cumulativo segue US$8,5320024 estimados.
+
+## Preparação de dependências da CI sem repetição do timeout
+
+O segundo HEAD b39683ef46a9febf5190ba6fe80d93149404c776 repetiu o timeout
+no run 37674796552, antes dos testes. Os logs mostram tentativas do espelho Azure
+em 19:29 UTC e cancelamento por limite do job em 19:34 UTC. A primeira reexecução
+havia passado, mas a recorrência comprova que repetir o job não previne a classe.
+
+| Alternativa | Benefício | Risco/esforço | Decisão |
+|---|---|---|---|
+| Reexecutar sempre o job | Eventualmente contorna indisponibilidade transitória | Repete espera e mantém dependência desnecessária | Rejeitada após recorrência |
+| Ampliar timeout e atualizar todo o índice a cada execução | Aceita espelho lento | Aumenta espera e continua falhando antes dos testes | Insuficiente |
+| Reutilizar ferramentas e cache, com recuperação limitada | Evita rede desnecessária e mantém gate real | Pequeno ajuste na preparação existente | Adotada |
+
+A etapa agora confere rg/python3 antes de instalar; usa o índice disponível primeiro.
+Só após falha atualiza metadados e repete uma instalação. Cada comando tem limite
+de 60 segundos, término forçado após cinco adicionais e tentativas/timeouts de rede
+limitados. Ao final ambos os executáveis são obrigatórios. Nenhuma falha é ignorada
+nem a política do modelo canônico é alterada. Não garante disponibilidade do espelho;
+falha permanente continua impedindo validação e publicação, com diagnóstico limitado.
+
+O teste executa o corpo real da etapa com doubles locais: ferramentas presentes,
+rg ou Python ausentes, cache antigo recuperável, espelho permanentemente indisponível
+e instalador que retorna sucesso sem instalar. Reprodução anterior falhou ao observar
+atualização/instalação mesmo com ferramentas presentes. Após correção os 21 testes
+passaram, assim como verificador do repositório, YAML, bash -n e ShellCheck. Não foi
+necessário repetir a matriz física já aprovada: nenhum contrato de produto, Java
+ou fluxo de runtime mudou nesta correção da preparação da CI.

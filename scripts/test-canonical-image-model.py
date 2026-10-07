@@ -6,6 +6,7 @@ import shlex
 import shutil
 import subprocess
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 
@@ -195,10 +196,11 @@ class CanonicalImageModelTest(unittest.TestCase):
 
     def test_workflow_installs_dependencies_before_tests_and_validation(self):
         workflow = (ROOT / ".github/workflows/image-model-contract.yml").read_text()
-        installation = workflow.index("sudo apt-get install --yes --no-install-recommends ripgrep python3")
+        installation = workflow.index('sudo apt-get "${apt_network[@]}" install')
         tests = workflow.index("python3 scripts/test-canonical-image-model.py -v")
         validation = workflow.index("bash scripts/validate-canonical-image-model.sh")
-        self.assertLess(workflow.index("sudo apt-get update"), installation)
+        self.assertLess(workflow.index("command -v rg"), installation)
+        self.assertLess(installation, workflow.index('sudo apt-get "${apt_network[@]}" update'))
         self.assertLess(installation, tests)
         self.assertLess(tests, validation)
         for event in ("push", "pull_request"):
@@ -207,6 +209,114 @@ class CanonicalImageModelTest(unittest.TestCase):
                 self.assertIn(f'- "{path}"', section)
         self.assertIn("contents: read", workflow)
         self.assertNotRegex(workflow, r"continue-on-error|\|\| true|secrets\.|contents: write")
+
+
+class WorkflowDependenciesTest(unittest.TestCase):
+    """Executa a preparação real da CI sem rede e preserva falhas de dependências."""
+
+    def setUp(self):
+        self.bash = shutil.which("bash")
+        temporary = tempfile.TemporaryDirectory(prefix="image-workflow-dependencies-")
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.bin = self.root / "bin"
+        self.bin.mkdir()
+        workflow = (ROOT / ".github/workflows/image-model-contract.yml").read_text()
+        match = re.search(
+            r"      - name: Instalar dependências do verificador e dos testes\n"
+            r"        run: \|\n(.*?)(?=      - name:)", workflow, re.S
+        )
+        self.assertIsNotNone(match, "A preparação precisa permanecer antes dos testes.")
+        self.preparation = textwrap.dedent(match.group(1))
+        self.log = self.root / "calls"
+        self.tool("timeout", '''printf 'timeout %s\\n' "$*" >> "$DEPENDENCY_CALLS"
+[[ "$1" == --kill-after=5s && "$2" == 60s ]] || exit 41
+shift 2
+exec "$@"
+''')
+        self.tool("sudo", '''[[ "$1" == apt-get ]] || exit 40
+shift
+operation=
+for argument in "$@"; do
+  case "$argument" in install|update) operation="$argument" ;; esac
+done
+printf '%s\\n' "$operation" >> "$DEPENDENCY_CALLS"
+case "$operation" in
+  update)
+    [[ "$DEPENDENCY_UPDATE_FAIL" != 1 ]] || exit 42
+    printf 'updated' > "$DEPENDENCY_STATE"
+    ;;
+  install)
+    if [[ "$DEPENDENCY_CACHE_FAIL" == 1 && ! -f "$DEPENDENCY_STATE" ]]; then exit 43; fi
+    if [[ "$DEPENDENCY_INSTALL_TOOLS" == 1 ]]; then
+      for tool in rg python3; do
+        printf '#!/bin/bash\\nexit 0\\n' > "$DEPENDENCY_BIN/$tool"
+        /bin/chmod +x "$DEPENDENCY_BIN/$tool"
+      done
+    fi
+    ;;
+  *) exit 44 ;;
+esac
+''')
+
+    def tool(self, name, content="exit 0\n"):
+        destination = self.bin / name
+        destination.write_text(f"#!{self.bash}\n{content}")
+        destination.chmod(0o755)
+
+    def run_preparation(self, *, cache_failure=False, update_failure=False, install_tools=True):
+        result = subprocess.run(
+            [self.bash, "-e", "-o", "pipefail", "-c", self.preparation],
+            env={
+                "PATH": str(self.bin), "DEPENDENCY_BIN": str(self.bin),
+                "DEPENDENCY_CALLS": str(self.log), "DEPENDENCY_STATE": str(self.root / "updated"),
+                "DEPENDENCY_CACHE_FAIL": str(int(cache_failure)),
+                "DEPENDENCY_UPDATE_FAIL": str(int(update_failure)),
+                "DEPENDENCY_INSTALL_TOOLS": str(int(install_tools)),
+            }, capture_output=True, text=True, timeout=10,
+        )
+        calls = self.log.read_text().splitlines() if self.log.exists() else []
+        operations = [line for line in calls if not line.startswith("timeout ")]
+        return result, calls, operations
+
+    def test_preinstalled_tools_do_not_contact_package_mirrors(self):
+        self.tool("rg")
+        self.tool("python3")
+        result, calls, _ = self.run_preparation()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(calls, [])
+
+    def test_missing_tool_is_installed_from_cache_with_bounded_network(self):
+        for present in ("rg", "python3"):
+            with self.subTest(present=present):
+                for tool in ("rg", "python3"):
+                    (self.bin / tool).unlink(missing_ok=True)
+                self.log.unlink(missing_ok=True)
+                self.tool(present)
+                result, calls, operations = self.run_preparation()
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(operations, ["install"])
+                self.assertEqual(len(calls), 2)
+                self.assertIn("Acquire::Retries=1", calls[0])
+                self.assertIn("Acquire::http::Timeout=15", calls[0])
+                self.assertIn("Acquire::https::Timeout=15", calls[0])
+
+    def test_stale_cache_is_refreshed_once_then_installed(self):
+        result, calls, operations = self.run_preparation(cache_failure=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(operations, ["install", "update", "install"])
+        self.assertEqual(len(calls), 6)
+
+    def test_permanent_mirror_failure_stops_before_validation(self):
+        result, _, operations = self.run_preparation(cache_failure=True, update_failure=True)
+        self.assertEqual(result.returncode, 42, result.stdout + result.stderr)
+        self.assertEqual(operations, ["install", "update"])
+        self.assertFalse((self.bin / "rg").exists())
+
+    def test_successful_installer_without_required_tools_is_still_failure(self):
+        result, _, operations = self.run_preparation(install_tools=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(operations, ["install"])
 
 
 if __name__ == "__main__":

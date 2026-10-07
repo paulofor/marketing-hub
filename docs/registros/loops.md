@@ -9341,3 +9341,18 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   operação foi retirada deste publicador, sem apagar a ocorrência. Não altera orçamento
   cumulativo ou histórico de Mira; não concede mídia, vídeo pago ou autorização comercial.
 - **Registro:** `docs/registros/mira-deploy-biblioteca-sem-consumidor-2026-10-07.md`.
+
+### LOOP-ACTIONS-IMAGENS-APT-UPDATE-OBRIGATORIO
+
+- Evidência: runs 37669678661 (primeira tentativa) e 37674796552 cancelados por
+  timeout no espelho Azure durante apt-get update, antes dos testes. A reexecução
+  do primeiro passou, sem mudança; a segunda ocorrência confirma recorrência.
+- Causa compartilhada: preparação atualizava índices mesmo com ferramentas
+  disponíveis e sem prazo próprio para operações de rede.
+- Correção: workflow canônico existente verifica dependências, instala pelo cache
+  primeiro e limita atualização/uma instalação de recuperação; presença final
+  obrigatória, sem afrouxar o gate.
+- Prevenção executável: WorkflowDependenciesTest em scripts/test-canonical-image-model.py
+  executa a etapa real com ferramentas presentes/ausentes, cache recuperável e
+  falhas permanentes. 21 testes totais, YAML, bash -n, ShellCheck e verificador aprovados.
+- Registro: docs/registros/mira-retomada-contrato-privado-2026-10-07.md.

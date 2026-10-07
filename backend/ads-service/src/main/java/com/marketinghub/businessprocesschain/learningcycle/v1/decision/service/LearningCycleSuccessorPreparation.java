@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.businessprocesschain.learningcycle.v1.decision.LearningCycleDecisionProposal;
+import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.prepareAdjustment.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
@@ -60,6 +61,138 @@ public class LearningCycleSuccessorPreparation {
   @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
   public LearningCycleResponse prepareOnly(Long productId, Long cycleId) {
     return prepare(productId, cycleId, false);
+  }
+
+  /** Expõe apenas ajuste privado encerrado com recibo válido, sem criar tarefa pela leitura. */
+  @Transactional(readOnly = true)
+  public AdjustmentPreparationAvailability adjustmentAvailability(Long productId, Long cycleId) {
+    try {
+      var cycle =
+          cycles.findById(cycleId).filter(c -> productId.equals(c.getProductId())).orElse(null);
+      boolean ready =
+          cycle != null
+              && cycles.findByPreviousCycleId(cycleId).isEmpty()
+              && closedPrivateAdjustment(cycle) != null
+              && products
+                  .findById(productId)
+                  .map(p -> Boolean.TRUE.equals(p.getAutomaticExecutionEnabled()))
+                  .orElse(false);
+      return new AdjustmentPreparationAvailability(
+          ready,
+          ready
+              ? "O ajuste registrado pode preparar uma versão sucessora sem janela, agentes ou gasto. A nova implementação e as revisões independentes continuam obrigatórias."
+              : "Somente ajuste pré-mercado encerrado, sem sucessor e com decisão registrada permite esta preparação.");
+    } catch (RuntimeException ex) {
+      log.error(
+          "Falha ao verificar preparação do ajuste privado productId={} cycleId={}",
+          productId,
+          cycleId,
+          ex);
+      return new AdjustmentPreparationAvailability(
+          false,
+          "Não foi possível conferir a decisão registrada; nenhuma preparação foi iniciada.");
+    }
+  }
+
+  /** Prepara uma candidata nova a partir do ajuste pré-mercado registrado, sem nova inferência. */
+  @Transactional(isolation = Isolation.READ_COMMITTED, propagation = Propagation.REQUIRES_NEW)
+  public LearningCycleResponse prepareAdjustmentOnly(
+      Long productId, Long cycleId, PrepareAdjustmentSuccessorRequest request) {
+    var product =
+        products
+            .findLockedById(productId)
+            .orElseThrow(
+                () ->
+                    new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Produto não encontrado."));
+    var cycle =
+        cycles
+            .findLocked(productId, cycleId)
+            .orElseThrow(
+                () ->
+                    new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND,
+                        "Ciclo não encontrado neste produto."));
+    var existing = cycles.findByPreviousCycleId(cycleId);
+    if (existing.isPresent()) {
+      require(
+          request.productVersion().equals(existing.get().getProductVersion()),
+          "O sucessor existente pertence a outra versão; preserve sua história.");
+      return service.get(productId, existing.get().getId());
+    }
+    require(
+        Boolean.TRUE.equals(product.getAutomaticExecutionEnabled()),
+        "Produto em STOP; preparação preservada.");
+    require(
+        request.expectedRevision() == cycle.getRevision(),
+        "O ciclo mudou; atualize a tela antes de preparar.");
+    require(
+        !cycle.getProductVersion().equals(request.productVersion()),
+        "A correção exige uma versão nova; a candidata rejeitada permanece no histórico.");
+    var decision = closedPrivateAdjustment(cycle);
+    require(
+        decision != null,
+        "A preparação exige ajuste privado encerrado com decisão persistida e sem exposição comercial.");
+    var source = experiments.findById(cycle.getExperimentId()).orElseThrow();
+    var chain =
+        chains
+            .findFirstByChainCodeAndStatusOrderByVersionNumberDesc(
+                cycle.getChainCode(), "PUBLISHED")
+            .orElseThrow();
+    decision.put("preparationPolicy", LearningCyclePreparationPolicy.CONTRACT);
+    decision.put("humanApproved", false);
+    decision.put("externalSpendAuthorized", false);
+    var result =
+        createPreparedSuccessor(
+            productId,
+            cycle,
+            source,
+            chain.getId(),
+            json.read(cycle.getBriefJson()),
+            decision,
+            request.productVersion(),
+            "internal://learning-cycles/" + cycleId + "/private-adjustment");
+    log.info(
+        "Ciclo: sucessor do ajuste privado preparado productId={} predecessor={} cycleId={} experimentId={} version={} executionStarted=false",
+        productId,
+        cycleId,
+        result.id(),
+        result.experimentId(),
+        request.productVersion());
+    return result;
+  }
+
+  /** Confere a última decisão do ajuste ainda sem mercado, preservando o próprio recibo. */
+  private ObjectNode closedPrivateAdjustment(LearningSalesCycle cycle) {
+    if (!"ADJUSTED".equals(cycle.getStatus())
+        || cycle.isBaseline()
+        || !java.util.Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage())) return null;
+    var source = experiments.findById(cycle.getExperimentId()).orElse(null);
+    if (source == null
+        || source.getProduct() == null
+        || !cycle.getProductId().equals(source.getProduct().getId())
+        || source.getStatus() != ExperimentStatus.PLANNED
+        || source.getFacebookReleaseRequestedAt() != null) return null;
+    var receipt =
+        events.findByCycleIdOrderByRevisionAsc(cycle.getId()).stream()
+            .filter(
+                event ->
+                    cycle.getId().equals(event.getCycleId())
+                        && event.getRevision() == cycle.getRevision()
+                        && "ADJUST".equals(event.getAction()))
+            .findFirst()
+            .orElse(null);
+    if (receipt == null) return null;
+    var decision = json.read(receipt.getEvidenceJson());
+    if (!decision.isObject()
+        || java.util.List.of("rootCause", "learning", "nextHypothesis").stream()
+            .anyMatch(key -> decision.path(key).asText().isBlank())) return null;
+    ObjectNode result = decision.deepCopy();
+    result.put("sourceDecisionEventId", receipt.getId());
+    result.put(
+        "evidenceLimits",
+        "Ajuste pré-mercado: preservar o parecer interno; sem evidência humana, venda ou contribuição comercial.");
+    return result;
   }
 
   /** Compartilha a preparação atômica e separa o cadastro da execução dos agentes. */
@@ -139,17 +272,60 @@ public class LearningCycleSuccessorPreparation {
               "internal://learning-cycles/" + cycleId + "/decision-proposals/" + proposal.getId(),
               decision));
     proposal.setError(null);
+    var result =
+        createPreparedSuccessor(
+            productId,
+            cycle,
+            source,
+            chain.getId(),
+            brief,
+            decision,
+            cycle.getProductVersion(),
+            "internal://learning-cycles/" + cycleId + "/decision-proposals/" + proposal.getId());
+    if (humanApproved && startExecution) {
+      var preparedCycle = cycles.findById(result.id()).orElseThrow();
+      var next = workResolver.resolve(preparedCycle);
+      require(next != null, "O sucessor aprovado precisa de um processo preparatório disponível.");
+      processRuns.start(
+          productId,
+          next.processDefinitionId(),
+          new com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunCommand(
+              result.chainDefinitionId(), result.id(), "experiment:" + result.experimentId()));
+    }
+    log.info(
+        "Ciclo: sucessor preparado policy={} productId={} predecessor={} proposalId={} cycleId={} experimentId={} executionStarted={} mediaSpendAuthorized=false",
+        LearningCyclePreparationPolicy.CONTRACT,
+        productId,
+        cycleId,
+        proposal.getId(),
+        result.id(),
+        result.experimentId(),
+        humanApproved && startExecution);
+    return result;
+  }
+
+  /** Compartilha o cadastro seguro sem copiar mídia, janela ou permissões do predecessor. */
+  private LearningCycleResponse createPreparedSuccessor(
+      Long productId,
+      LearningSalesCycle cycle,
+      Experiment source,
+      Long chainId,
+      JsonNode brief,
+      ObjectNode decision,
+      String version,
+      String evidenceReference) {
+    Long cycleId = cycle.getId();
     var successor = experiments.saveAndFlush(plannedExperiment(source, cycleId, decision));
     var prepared =
         service.createPreparation(
             productId,
             new CreateLearningCycleRequest(
                 key(cycleId, "successor"),
-                chain.getId(),
+                chainId,
                 successor.getId(),
                 cycleId,
                 false,
-                cycle.getProductVersion(),
+                version,
                 decision.path("nextHypothesis").asText(),
                 decision.path("nextHypothesis").asText(),
                 brief.path("successCriterion").asText(),
@@ -176,27 +352,8 @@ public class LearningCycleSuccessorPreparation {
                 LearningCycleCommand.Action.COMPLETE,
                 OPERATOR,
                 "Aprendizado preservado; planejamento encaminhado ao processo responsável sem executar tarefas pagas.",
-                "internal://learning-cycles/" + cycleId + "/decision-proposals/" + proposal.getId(),
+                evidenceReference,
                 learning));
-    if (humanApproved && startExecution) {
-      var preparedCycle = cycles.findById(result.id()).orElseThrow();
-      var next = workResolver.resolve(preparedCycle);
-      require(next != null, "O sucessor aprovado precisa de um processo preparatório disponível.");
-      processRuns.start(
-          productId,
-          next.processDefinitionId(),
-          new com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunCommand(
-              result.chainDefinitionId(), result.id(), "experiment:" + result.experimentId()));
-    }
-    log.info(
-        "Ciclo: sucessor preparado policy={} productId={} predecessor={} proposalId={} cycleId={} experimentId={} executionStarted={} mediaSpendAuthorized=false",
-        LearningCyclePreparationPolicy.CONTRACT,
-        productId,
-        cycleId,
-        proposal.getId(),
-        result.id(),
-        successor.getId(),
-        humanApproved && startExecution);
     return result;
   }
 

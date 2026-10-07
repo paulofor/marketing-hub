@@ -172,3 +172,43 @@ export function usePrepareCycleSuccessor(cycle: LearningCycle) {
     },
   });
 }
+
+/** Consulta a elegibilidade persistida; navegar nunca prepara registros ou tarefas. */
+export function useAdjustmentPreparation(cycle: LearningCycle) {
+  return useQuery({
+    queryKey: [
+      "cycle-adjustment-preparation",
+      cycle.productId,
+      cycle.id,
+      cycle.revision,
+    ],
+    enabled: cycle.status === "ADJUSTED" && !cycle.successorCycleId,
+    queryFn: async () =>
+      z
+        .object({ available: z.boolean(), reason: z.string() })
+        .parse((await axios.get(`${url(cycle)}/adjustment-successor`)).data),
+  });
+}
+
+/** Prepara a versão corrigida no contrato canônico, sem janela ou consumo pago. */
+export function usePrepareAdjustmentSuccessor(cycle: LearningCycle) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (productVersion: string) =>
+      (
+        await axios.post<LearningCycle>(`${url(cycle)}/adjustment-successor`, {
+          expectedRevision: cycle.revision,
+          productVersion,
+        })
+      ).data,
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["learning-cycles"] }),
+        client.invalidateQueries({ queryKey: ["learning-cycle-catalog"] }),
+        client.invalidateQueries({
+          queryKey: ["cycle-adjustment-preparation"],
+        }),
+      ]);
+    },
+  });
+}

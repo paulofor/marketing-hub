@@ -30,6 +30,7 @@ achados com menor manutenção e menos navegação, preservando os contratos fun
 | Revisão | Três relatórios adicionais passam pelo consumidor real com seus PNGs; identidade diferente em RECOVERY. |
 | Observabilidade | Entrada, saída, eventos e artefatos auditáveis; providerCalls=0; segregação AGENT_VALIDATION, sem prova humana ou comercial. |
 | Dispositivos | Chromium desktop, iPhone 15 Pro e Pixel 7 emulados; Safari nativo não comprovado. |
+| Preparação do ajuste | Recibo ADJUST da revisão final, candidata privada ainda PLANNED e sem solicitação de publicação; versão nova; um único sucessor, mídia zero e janela ausente. STOP, mercado, recibo antigo ou outra identidade bloqueiam. |
 
 ## Identidade e continuidade
 
@@ -67,3 +68,25 @@ A rodada foi concluída e a topologia temporária removida.
 Os testes preventivos rejeitam a contagem ambígua, links inseguros, mistura de relógios
 e a matriz legada para candidatas novas. A matriz histórica permanece interpretável.
 Nenhuma aprovação independente ou resultado de mercado é declarado neste registro.
+
+## Passagem do ajuste privado
+
+O cadastro manual exigia escolher outro experimento e datas mesmo quando o trabalho
+ainda era corrigir e revisar a candidata. A preparação existente passou a compartilhar
+o mesmo cadastro atômico para um ajuste privado encerrado com recibo final persistido.
+Não se cria um parecer de Atena, nem se aprova a candidata rejeitada. A tela consulta a
+elegibilidade e solicita somente a identificação da versão corrigida; o backend mantém
+os critérios e o aprendizado, registra o predecessor e encaminha o planejamento sem
+executar agentes. Os contratos comerciais e a preparação por proposta anteriormente
+válida continuam preservados.
+
+Contratos administrativos documentados em `docs/backend/preparacao-ajuste-privado-v1.md`.
+Testes reproduzem Mira e produto/execução com IDs diferentes, ausência de efeitos na
+leitura, replay, revisão antiga, STOP, exposição comercial e recibo incompatível. A
+interface é exercitada com dependências locais, sem gravação no ambiente produtivo.
+
+A preparação concluiu 45 testes Java de contrato/serviço, 92 regras de arquitetura e
+41 testes da interface, incluindo a continuidade anteriormente válida. TypeScript e
+build administrativo passaram. A navegação real com APIs simuladas abriu o sucessor
+correto em desktop, iPhone e Pixel; o único envio contém revisão e versão, sem datas,
+orçamento ou tarefas. O pacote de revisão independente inclui essas provas e contratos.

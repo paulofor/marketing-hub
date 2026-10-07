@@ -134,6 +134,41 @@
       "path": "pde-platform/frontend/scripts/write-mira-candidate-diagnostics.mjs",
       "sha256": "079ac4e4c1b19fb4b5e76e55ac5dc6bc57fa2e4c5584a51aa66d2caed3053490",
       "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/service/LearningCycleSuccessorPreparation.java",
+      "sha256": "bb42f7f24de03825d131d56236cff7db327bbcdf8f1943ccf7792b1f85c0ec1d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/controller/LearningCycleDecisionController.java",
+      "sha256": "1a8ff63ff77b9b6ef5583ccaf5fa668dd9daadcd5f184aeffb70d82fbd886599",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/service/prepareAdjustment/PrepareAdjustmentSuccessorRequest.java",
+      "sha256": "3ff3045f10ae4acae420d5e1b6872fdc26d63c57d069da46f406c5a249c13205",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/service/prepareAdjustment/AdjustmentPreparationAvailability.java",
+      "sha256": "055b966ddd098fee6e8e12ac34b33e69d3e47d45bc969274d0e95693b13a7f16",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/api/learningCycle/useDecisionProposal.ts",
+      "sha256": "ec5e302887d2fad97b6d553b32695ba42870a0aa85c0f4d04aa5b1bbd4378c34",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CycleAdjustmentPreparationForm.tsx",
+      "sha256": "9345f317f168165ab6a5fedc9387da55fe7ee178551e65da509f81c216a6b51e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/LearningCyclesPage.tsx",
+      "sha256": "84d99e182d8de89880bc66c3df69c647fd63da76ee2ac71a5bab63cde70b986d",
+      "promptMode": "FULL"
     }
   ],
   "executableEvidence": [
@@ -201,6 +236,21 @@
       "path": "customer-agent-worker/src/test/js/mira-candidate-metrics.test.mjs",
       "sha256": "d8639b804ab23934581d59a03c59a0122384450b96d06f2884b83cc1f4ded17a",
       "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/LearningCycleSuccessorPreparationTest.java",
+      "sha256": "fed75fd2dfcacca3cdd7211e11b328918b7cc26570e2c143ec12f046e6a9fa36",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/LearningCycleDecisionControllerTest.java",
+      "sha256": "c06649b4d9812d9cbd8b599a28166d315f4332a58b6b8bc6daeb9df640fad4df",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CycleAdjustmentPreparationForm.test.tsx",
+      "sha256": "247f1d02e78740c3782c1bc2011c45e493f1e9dc09d0c8cce3068a1bd7ad3765",
+      "promptMode": "FULL"
     }
   ],
   "validationReport": "docs/registros/mira-candidate-v3-homologacao.md",
@@ -216,7 +266,12 @@
   "homologationEvidence": [
     {
       "path": "docs/registros/mira-candidate-v3-homologacao.md",
-      "sha256": "089443f1e1ec5ebabfedadecb267cddeed0412be3c64e170dc860959f6de3d73",
+      "sha256": "6f2673b3e3a2d9a3e183f0c85a391f9ec24238ad801518d9a593fdfe7ed11ee0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/backend/preparacao-ajuste-privado-v1.md",
+      "sha256": "c6638c6cb498dc5ad2019210c63d505c5a95edc50898cb8385671a00106fc4bc",
       "promptMode": "FULL"
     }
   ]

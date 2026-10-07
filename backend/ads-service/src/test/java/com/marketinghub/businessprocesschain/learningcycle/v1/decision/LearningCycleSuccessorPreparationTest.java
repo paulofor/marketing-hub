@@ -11,6 +11,7 @@ import com.marketinghub.businessprocesschain.BusinessProcessChainDefinition;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycleEvent;
 import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.*;
+import com.marketinghub.businessprocesschain.learningcycle.v1.decision.service.prepareAdjustment.PrepareAdjustmentSuccessorRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.LearningCycleResponse;
@@ -169,6 +170,144 @@ class LearningCycleSuccessorPreparationTest {
          "nextHypothesis":"Tornar o valor claro","evidenceLimits":"Amostra insuficiente",
          "marketReview":{"recommendedScope":"KEEP_FOCUS","requiresNewCycle":true}}
         """);
+  }
+
+  /** Monta o ajuste privado encerrado com recibo correspondente e sem exposição ao mercado. */
+  private LearningSalesCycle privateAdjustment(long productId) throws Exception {
+    var cycle = fixture(productId);
+    cycle.setStatus("ADJUSTED");
+    cycle.setStage("ADJUSTMENT");
+    experiments.findById(cycle.getExperimentId()).orElseThrow().setStatus(ExperimentStatus.PLANNED);
+    when(cycles.findById(cycle.getId())).thenReturn(Optional.of(cycle));
+    var product = products.findLockedById(productId);
+    when(products.findById(productId)).thenReturn(product);
+    var event = new LearningSalesCycleEvent();
+    event.setId(productId + 600);
+    event.setCycleId(cycle.getId());
+    event.setRevision(cycle.getRevision());
+    event.setAction("ADJUST");
+    event.setEvidenceJson(valid().toString());
+    when(events.findByCycleIdOrderByRevisionAsc(cycle.getId())).thenReturn(List.of(event));
+    return cycle;
+  }
+
+  /** Prepara o caso original e outra identidade sem alterar o passado, inferir ou gastar. */
+  @ParameterizedTest
+  @ValueSource(longs = {10, 8017})
+  void preparesPrivateCorrectionWithoutCommercialDates(long productId) throws Exception {
+    var cycle = privateAdjustment(productId);
+    clearInvocations(proposals, agents);
+    assertThat(preparation.adjustmentAvailability(productId, cycle.getId()).available()).isTrue();
+    verifyNoInteractions(service, processRuns);
+    verify(experiments, never()).saveAndFlush(any());
+    preparation.prepareAdjustmentOnly(
+        productId, cycle.getId(), new PrepareAdjustmentSuccessorRequest(4, "candidate-v2"));
+    var request = ArgumentCaptor.forClass(CreateLearningCycleRequest.class);
+    verify(service).createPreparation(eq(productId), request.capture());
+    assertThat(request.getValue().productVersion()).isEqualTo("candidate-v2");
+    assertThat(request.getValue().previousCycleId()).isEqualTo(cycle.getId());
+    assertThat(request.getValue().budgetLimitBrl()).isZero();
+    assertThat(request.getValue().windowStart()).isNull();
+    assertThat(request.getValue().windowEnd()).isNull();
+    var saved = ArgumentCaptor.forClass(Experiment.class);
+    verify(experiments).saveAndFlush(saved.capture());
+    assertThat(saved.getValue().getDailyBudget()).isZero();
+    assertThat(saved.getValue().getMediaSpendLimit()).isZero();
+    assertThat(saved.getValue().getUnitPrice()).isEqualByComparingTo("67");
+    assertThat(saved.getValue().getFacebookReleaseRequestedAt()).isNull();
+    verifyNoInteractions(processRuns, proposals, agents);
+    verify(service, never()).recordPreparationDecision(any(), any(), any());
+    assertThat(cycle.getProductVersion()).isEqualTo("v1");
+    assertThat(cycle.getStatus()).isEqualTo("ADJUSTED");
+    var learning =
+        ArgumentCaptor.forClass(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+                .LearningCycleCommand.class);
+    verify(service).carryPreparedLearning(eq(productId), eq(productId + 400), learning.capture());
+    assertThat(learning.getValue().evidence().path("sourceDecisionEventId").asLong())
+        .isEqualTo(productId + 600);
+    assertThat(learning.getValue().evidence().path("humanApproved").asBoolean()).isFalse();
+    assertThat(learning.getValue().evidence().path("externalSpendAuthorized").asBoolean())
+        .isFalse();
+  }
+
+  /** Repetir o envio recupera a mesma versão; versão diferente não substitui o sucessor. */
+  @Test
+  void privatePreparationIsIdempotentAndVersionBound() throws Exception {
+    var cycle = privateAdjustment(10);
+    var next = new LearningSalesCycle();
+    next.setId(410L);
+    next.setProductVersion("candidate-v2");
+    when(cycles.findByPreviousCycleId(cycle.getId())).thenReturn(Optional.of(next));
+    var response = mock(LearningCycleResponse.class);
+    when(service.get(10L, 410L)).thenReturn(response);
+    assertThat(
+            preparation.prepareAdjustmentOnly(
+                10L, cycle.getId(), new PrepareAdjustmentSuccessorRequest(4, "candidate-v2")))
+        .isSameAs(response);
+    assertThatThrownBy(
+            () ->
+                preparation.prepareAdjustmentOnly(
+                    10L, cycle.getId(), new PrepareAdjustmentSuccessorRequest(4, "candidate-v3")))
+        .hasMessageContaining("outra versão");
+    verify(experiments, never()).saveAndFlush(any());
+    verifyNoInteractions(processRuns);
+  }
+
+  /** Recibos incompletos, mercado, estado errado ou STOP nunca liberam nova preparação. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "OPEN",
+        "BASELINE",
+        "DECISION",
+        "EXPOSED",
+        "RELEASE_REQUESTED",
+        "OTHER_PRODUCT",
+        "OTHER_CYCLE",
+        "STALE_RECEIPT",
+        "NO_RECEIPT",
+        "EMPTY_HYPOTHESIS",
+        "STOP",
+        "SAME_VERSION",
+        "STALE_REQUEST"
+      })
+  void rejectsUnsafePrivatePreparation(String scenario) throws Exception {
+    var cycle = privateAdjustment(10);
+    var source = experiments.findById(cycle.getExperimentId()).orElseThrow();
+    var receipt = events.findByCycleIdOrderByRevisionAsc(cycle.getId()).get(0);
+    switch (scenario) {
+      case "OPEN" -> cycle.setStatus("OPEN");
+      case "BASELINE" -> cycle.setBaseline(true);
+      case "DECISION" -> cycle.setStage("DECISION");
+      case "EXPOSED" -> source.setStatus(ExperimentStatus.RUNNING);
+      case "RELEASE_REQUESTED" -> source.setFacebookReleaseRequestedAt(java.time.Instant.now());
+      case "OTHER_PRODUCT" -> source.setProduct(Product.builder().id(83L).build());
+      case "OTHER_CYCLE" -> receipt.setCycleId(999L);
+      case "STALE_RECEIPT" -> receipt.setRevision(3);
+      case "NO_RECEIPT" ->
+          when(events.findByCycleIdOrderByRevisionAsc(cycle.getId())).thenReturn(List.of());
+      case "EMPTY_HYPOTHESIS" ->
+          receipt.setEvidenceJson(valid().put("nextHypothesis", "").toString());
+      case "STOP" -> source.getProduct().setAutomaticExecutionEnabled(false);
+      case "SAME_VERSION", "STALE_REQUEST" -> {
+        /* O estado permanece válido; somente o envio fica incompatível. */
+      }
+      default -> throw new IllegalArgumentException("Cenário desconhecido");
+    }
+    if (!Set.of("SAME_VERSION", "STALE_REQUEST").contains(scenario))
+      assertThat(preparation.adjustmentAvailability(10L, cycle.getId()).available()).isFalse();
+    assertThatThrownBy(
+            () ->
+                preparation.prepareAdjustmentOnly(
+                    10L,
+                    cycle.getId(),
+                    new PrepareAdjustmentSuccessorRequest(
+                        "STALE_REQUEST".equals(scenario) ? 3 : 4,
+                        "SAME_VERSION".equals(scenario) ? "v1" : "candidate-v2")))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    verify(experiments, never()).saveAndFlush(any());
+    verifyNoInteractions(service, processRuns);
   }
 
   /** Reproduz Capella e outro produto sem copiar mídia, ativos, custos, janela ou autorizações. */

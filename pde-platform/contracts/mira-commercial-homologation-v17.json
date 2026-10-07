@@ -128,7 +128,7 @@
   "homologationEvidence": [
     {
       "path": "pde-platform/contracts/mira-private-candidate-v3.json",
-      "sha256": "d5165bdf6865d60d1df4b4408633b642f4c5e8aac3cb2b9e166cf1603dc8dcf3",
+      "sha256": "bf527e061dbdbde3c9a761b20977e5c6320758fa777e077482b7121ffaad1660",
       "promptMode": "FULL"
     }
   ],
@@ -189,5 +189,5 @@
       "promptMode": "FULL"
     }
   ],
-  "validationReport": "docs/registros/mira-candidate-v2-homologacao.md"
+  "validationReport": "docs/registros/mira-candidate-v3-homologacao.md"
 }

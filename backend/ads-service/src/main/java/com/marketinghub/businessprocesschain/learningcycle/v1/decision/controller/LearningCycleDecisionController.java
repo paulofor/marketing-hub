@@ -31,6 +31,40 @@ public class LearningCycleDecisionController {
     return preparation.prepareOnly(productId, cycleId);
   }
 
+  /** Mostra a preparação do ajuste pré-mercado sem criar registros pela navegação. */
+  @GetMapping(ADMIN + "/adjustment-successor")
+  public com.marketinghub
+          .businessprocesschain
+          .learningcycle
+          .v1
+          .decision
+          .service
+          .prepareAdjustment
+          .AdjustmentPreparationAvailability
+      adjustmentAvailability(@PathVariable Long productId, @PathVariable Long cycleId) {
+    return preparation.adjustmentAvailability(productId, cycleId);
+  }
+
+  /** Cadastra a candidata sucessora sem janela, gasto ou execução de agentes. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Preparar sucessor do ajuste privado sem executar ou gastar")
+  @PostMapping(ADMIN + "/adjustment-successor")
+  public LearningCycleResponse prepareAdjustment(
+      @PathVariable Long productId,
+      @PathVariable Long cycleId,
+      @Valid @RequestBody
+          com.marketinghub
+                  .businessprocesschain
+                  .learningcycle
+                  .v1
+                  .decision
+                  .service
+                  .prepareAdjustment
+                  .PrepareAdjustmentSuccessorRequest
+              request) {
+    return preparation.prepareAdjustmentOnly(productId, cycleId, request);
+  }
+
   /** Mostra a proposta e seu estado sem disparar execução pela navegação. */
   @GetMapping(ADMIN)
   public DecisionProposalResponse get(@PathVariable Long productId, @PathVariable Long cycleId) {

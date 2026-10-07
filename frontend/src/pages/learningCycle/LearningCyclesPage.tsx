@@ -14,6 +14,7 @@ import LearningCycleCreateForm from "./LearningCycleCreateForm";
 import LearningCycleDecisionPanel from "./LearningCycleDecisionPanel";
 import LearningCycleCommandForm from "./LearningCycleCommandForm";
 import CyclePrototypeRegistrationForm from "./CyclePrototypeRegistrationForm";
+import CycleAdjustmentPreparationForm from "./CycleAdjustmentPreparationForm";
 import CycleWindowRevalidationForm from "./CycleWindowRevalidationForm";
 import LearningCycleAutomaticMeasurement from "./LearningCycleAutomaticMeasurement";
 import LearningCycleDiagram from "./LearningCycleDiagram";
@@ -394,6 +395,11 @@ export default function LearningCyclesPage() {
               </p>
             ) : null}
             <LearningCycleCurrentWork cycle={cycle} />
+            <CycleAdjustmentPreparationForm
+              key={`${cycle.id}-${cycle.revision}`}
+              cycle={cycle}
+              onUpdated={updated}
+            />
             <details className="mb-3">
               <summary>Hipótese e critérios deste teste</summary>
               <p>Hipótese: {String(cycle.brief.hypothesis)}</p>

@@ -1,0 +1,18 @@
+{
+  "cardKey": "monitoramento-metacognitivo-calibra-confianca-ai",
+  "collection": "neuromarketing",
+  "title": "Entendimento da tarefa calibra melhor o uso de IA do que explicações uniformes",
+  "finding": "Em estudo between-subjects com 110 participantes e 26.460 decisões, explicações compostas por score de confiança e dicionário não melhoraram de forma confiável a calibração global de dependência da IA. Maior entendimento autorrelatado esteve associado a mais rejeição/edição de sugestões erradas, enquanto confiança isolada não previu melhor calibração.",
+  "mechanism": "Hipótese interpretativa: em ambientes sem feedback imediato, explicações adicionais não substituem o modelo mental necessário para avaliar a recomendação. Entendimento da tarefa oferece um sinal metacognitivo mais útil que sensação subjetiva de confiança para detectar quando a IA pode estar errada.",
+  "commercialApplication": "No Marketing Hub, não tratar score de confiança ou explicação padrão como selo de correção. Em decisões relevantes, monitorar aceitação, edição e reversão por tipo de tarefa e testar evidência/explicação acionada seletivamente quando surgirem sinais de sobredependência ou baixo entendimento.",
+  "evidenceStrength": "Moderada: estudo experimental between-subjects com 110 participantes e logs finos de decisão. A explicação teve efeito global nulo sobre calibração e o entendimento mostrou associações credíveis com correção de sugestões erradas; o trabalho é preprint, de domínio clínico e usa entendimento autorrelatado.",
+  "publishedOn": "2026-10-06",
+  "validUntil": "2027-04-06",
+  "experimentHypothesis": "Explicações e evidências acionadas por sinais de sobredependência, combinadas a uma checagem curta de entendimento, reduzirão a aceitação de recomendações incorretas sem aumentar de forma relevante a rejeição de sugestões corretas quando comparadas a explicações permanentes.",
+  "risks": "Inferir competência pode produzir profiling indevido, alertas errados ou fricção. Nudges frequentes podem gerar fadiga; um score de confiança mal calibrado pode reforçar exatamente a deferência que se deseja reduzir.",
+  "limits": "A tarefa foi extração de entidades clínicas com novatos e sem feedback imediato. O estudo não mede vendas, produtividade comercial ou efeitos de longo prazo; a condição de explicação combina dois componentes e entendimento é autorrelatado.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-07-monitoramento-metacognitivo-calibra-confianca-ai.md",
+  "sourceTitle": "Fonte revisada — Calibração de confiança e entendimento em decisões assistidas por IA",
+  "sourceSha256": "d15a84ce6e1d5ac3997b48f314bc31cf6401dbb9bf5f619818bdf46c9b879c73"
+}

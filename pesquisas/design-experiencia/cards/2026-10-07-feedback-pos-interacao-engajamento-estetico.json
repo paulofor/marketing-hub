@@ -1,0 +1,18 @@
+{
+  "cardKey": "feedback-pos-interacao-engajamento-estetico",
+  "collection": "prazer-audio-visual",
+  "title": "Feedback pós-interação pode elevar engajamento sem aumentar intensidade",
+  "finding": "Em três estudos exploratórios de visualização interativa, feedback rico associado à ação elevou engajamento e experiência estética; a decomposição por timing indicou que o ganho mais consistente veio do feedback pós-interação, enquanto aumentar a intensidade de nenhuma até alta não produziu benefício confiável.",
+  "mechanism": "Hipótese interpretativa: uma confirmação breve logo após a ação fecha o ciclo percepção-ação-consequência, tornando o sistema mais responsivo e a conclusão da ação mais saliente. O efeito parece depender mais de timing e relevância do que de intensidade.",
+  "commercialApplication": "No Marketing Hub, testar microfeedback breve após ações em editores e visualizações — aplicar filtro, selecionar variante, confirmar edição ou mudança de estado — comparando a versão funcionalmente equivalente sem feedback rico. Priorizar confirmação perceptível, não animação excessiva.",
+  "evidenceStrength": "Moderada e exploratória: três estudos online com 119 participantes válidos e protótipos controlados. Houve efeitos significativos em engajamento e experiência estética e um resultado específico de timing pós-interação, mas o trabalho é preprint e não mede comportamento comercial.",
+  "publishedOn": "2026-10-06",
+  "validUntil": "2027-04-06",
+  "experimentHypothesis": "Microfeedback breve e contingente logo após ações relevantes aumentará engajamento e sensação de fluidez sem elevar distração, enquanto versões mais intensas não trarão ganho adicional consistente.",
+  "risks": "Feedback excessivo pode competir com a tarefa, aumentar distração, parecer infantil ou produzir fadiga. Efeitos de estética e engajamento não devem ser tratados como prova de retenção ou conversão.",
+  "limits": "A evidência vem de visualizações interativas online, com amostras modestas e desenho exploratório. Não houve teste de longo prazo, vendas, CTA, checkout ou pagamentos; generalização para vídeo, áudio e outros produtos exige experimento próprio.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-10-07-feedback-pos-interacao-engajamento-estetico.md",
+  "sourceTitle": "Fonte revisada — Feedback pós-interação e experiência estética",
+  "sourceSha256": "0f3b3ebaee18e1560f57e9683ff7f866d33c935a5e5e2ac1855aa5ad00942d8c"
+}

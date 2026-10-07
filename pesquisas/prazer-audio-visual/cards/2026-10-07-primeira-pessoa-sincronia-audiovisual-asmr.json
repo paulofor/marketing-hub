@@ -1,0 +1,18 @@
+{
+  "cardKey": "primeira-pessoa-sincronia-audiovisual-asmr",
+  "collection": "prazer-audio-visual",
+  "title": "Primeira pessoa pode amplificar o efeito da sincronização audiovisual",
+  "finding": "Em dois experimentos pré-registrados, a sincronização não alterou de forma confiável a intensidade de ASMR em terceira pessoa; em um segundo experimento com 42 participantes, a vantagem da condição síncrona apareceu para intensidade em primeira pessoa, com interação perspectiva × sincronização em análise exploratória. A agradabilidade foi maior para estímulos síncronos em ambas as perspectivas.",
+  "mechanism": "Perspectiva autorreferida, proximidade percebida e atenção dirigida ao observador podem fortalecer o vínculo entre ação visual e som, aumentando o peso da coerência temporal na experiência corporal e afetiva.",
+  "commercialApplication": "Em vídeo imersivo, avatares e cenas dirigidas diretamente ao usuário, testar sincronização áudio-imagem rigorosa e comparar primeira pessoa com enquadramento externo, medindo agradabilidade, intensidade da experiência, compreensão e desconforto.",
+  "evidenceStrength": "Média: dois experimentos pré-registrados e interação convergente no segundo experimento; transferência limitada por amostra jovem, ASMR, autorrelato, offsets assíncronos grandes e confusão entre perspectiva, proximidade e direcionamento social.",
+  "publishedOn": "2026-10-07",
+  "validUntil": "2026-11-21",
+  "experimentHypothesis": "Em uma experiência de avatar ou vídeo dirigida ao usuário, primeira pessoa combinada com sincronização áudio-imagem reduzirá desconforto e aumentará agradabilidade/intensidade percebida em relação a uma versão dessincronizada, com efeito de intensidade maior do que em terceira pessoa.",
+  "risks": "Não extrapolar para conversão nem assumir que qualquer atraso pequeno terá o mesmo efeito; primeira pessoa pode ser desconfortável ou invasiva em alguns públicos.",
+  "limits": "O fenômeno estudado foi ASMR, os atrasos assíncronos eram de vários segundos e as medidas eram subjetivas; o estudo não mediu dopamina, memória comercial, CTA ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-07-primeira-pessoa-sincronia-audiovisual-asmr.md",
+  "sourceTitle": "Fonte revisada — primeira pessoa, sincronização audiovisual e ASMR",
+  "sourceSha256": "8302f2d80c5993fd92a837b6531e5029e4b5a7ba50808a8fad622617db9c9d80"
+}

@@ -164,7 +164,7 @@ await writeFile(
   JSON.stringify(
     {
       contractVersion: "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
-      fixtureContract: "PDE_DOCUMENTED_INPUT_COMPARISON_V2",
+      fixtureContract: "PDE_DOCUMENTED_INPUT_COMPARISON_V3",
       mode: input.mode,
       decision: Object.values(checks).every(Boolean) ? "APPROVED" : "BLOCKED",
       sourceReference: input.sourceReference,
@@ -343,6 +343,18 @@ async function execute(scenarioCode, deviceProfile, condition) {
         .getByRole("button", { name: "Consultar organização", exact: true })
         .click();
       await page.locator(".mira-internal-controls summary").click();
+      await page
+        .getByRole("button", {
+          name: "Simular comparação com alternativa gratuita",
+          exact: true,
+        })
+        .click();
+      await page
+        .getByRole("button", {
+          name: "Simular início da continuidade sem cobrança",
+          exact: true,
+        })
+        .click();
       if (scenarioCode === "RECOVERY") {
         await page.getByRole("button", { name: "Confirmar retomada" }).click();
         recovered = true;
@@ -362,6 +374,25 @@ async function execute(scenarioCode, deviceProfile, condition) {
       .filter({ hasText: "Verificação interna concluída" })
       .waitFor();
     const current = await api("/session", undefined, sessionToken);
+    const requiredEvents =
+      scenarioCode === "SAFETY"
+        ? ["EXPERIENCE_STARTED", "SAFETY_LIMIT_BLOCKED"]
+        : [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED",
+          ];
+    if (!requiredEvents.every((event) => current.events.includes(event)))
+      throw new Error("Percurso não registrou os sinais sintéticos esperados.");
+    if (
+      scenarioCode === "SAFETY" &&
+      current.events.includes("CHECKOUT_STARTED")
+    )
+      throw new Error(
+        "Bloqueio de segurança não pode avançar para continuidade.",
+      );
     const dimensions = await page.evaluate(() => ({
       height: document.documentElement.scrollHeight,
       noHorizontalOverflow: document.documentElement.scrollWidth <= innerWidth,
@@ -411,6 +442,7 @@ async function execute(scenarioCode, deviceProfile, condition) {
       prototypeVersion: current.prototypeVersion,
       evidenceId: current.id,
       trafficClass: current.trafficClass,
+      events: current.events,
       mhInternalTest: true,
       providerCalls: 0,
       firstInteractionAt: current.firstInteractionAt,

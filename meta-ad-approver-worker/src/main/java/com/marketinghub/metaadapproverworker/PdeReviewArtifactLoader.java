@@ -139,7 +139,7 @@ final class PdeReviewArtifactLoader {
 
   /**
    * Seleciona por produto e versão somente o manifesto atual que deve coincidir com o código
-   * candidato.
+   * candidato, incluindo sucessão privada vinculada à imagem publicável do mesmo produto.
    */
   private Set<Path> currentManifestPaths(List<Path> artifacts) throws IOException {
     Map<String, List<CommunicationManifestCandidate>> candidatesByProductVersion = new HashMap<>();
@@ -164,10 +164,7 @@ final class PdeReviewArtifactLoader {
       if (!supersededVersions.isEmpty()) {
         if (experienceVersion == null
             || !"READY_FOR_INDEPENDENT_REVIEW".equals(contract.path("status").asText())
-            || !contract
-                .path("publicationContract")
-                .path("automaticDeployOnMerge")
-                .asBoolean(false)) {
+            || !hasBoundPublisher(contract, artifact, artifacts)) {
           throw new IOException(
               "Sucessão de experiência sem candidata publicável: "
                   + repositoryRoot.relativize(artifact));
@@ -226,6 +223,45 @@ final class PdeReviewArtifactLoader {
       current.add(latest.getFirst().path());
     }
     return Set.copyOf(current);
+  }
+
+  /**
+   * Confere imagem, produto e hash da candidata privada no manifesto responsável pela publicação.
+   */
+  private boolean hasBoundPublisher(JsonNode contract, Path artifact, List<Path> artifacts)
+      throws IOException {
+    var publication = contract.path("publicationContract");
+    if (publication.path("automaticDeployOnMerge").asBoolean(false)) return true;
+    String path = publication.path("publishedByManifest").asText("");
+    if (!path.matches("pde-platform/contracts/[^/]+\\.json")) return false;
+    Path publisherPath = repositoryRoot.resolve(path).normalize();
+    if (!artifacts.contains(publisherPath)) return false;
+    var publisher = JSON_MAPPER.readTree(Files.readString(publisherPath, StandardCharsets.UTF_8));
+    var boundPublication = publisher.path("publicationContract");
+    long productId = contract.path("product").path("id").asLong(0);
+    String sourceHash = publication.path("requiredFrontendSourceSha256").asText("");
+    if (!"READY_FOR_INDEPENDENT_REVIEW".equals(publisher.path("status").asText())
+        || !boundPublication.path("automaticDeployOnMerge").asBoolean(false)
+        || productId <= 0
+        || productId != publisher.path("product").path("id").asLong(0)
+        || contract.path("product").path("slug").asText("").isBlank()
+        || !contract
+            .path("product")
+            .path("slug")
+            .asText("")
+            .equals(publisher.path("product").path("slug").asText(""))
+        || publication.path("frontendVersion").asText("").isBlank()
+        || !publication.path("frontendVersion").equals(boundPublication.path("frontendVersion"))
+        || !sourceHash.matches("[a-f0-9]{64}")
+        || !sourceHash.equals(boundPublication.path("requiredFrontendSourceSha256").asText("")))
+      return false;
+    String expectedHash = sha256(Files.readAllBytes(artifact));
+    String artifactPath = repositoryRoot.relativize(artifact).toString();
+    for (var evidence : publisher.path("homologationEvidence")) {
+      if (artifactPath.equals(evidence.path("path").asText())
+          && expectedHash.equals(evidence.path("sha256").asText())) return true;
+    }
+    return false;
   }
 
   /** Lê a versão funcional declarada sem confundi-la com a revisão da atestação. */

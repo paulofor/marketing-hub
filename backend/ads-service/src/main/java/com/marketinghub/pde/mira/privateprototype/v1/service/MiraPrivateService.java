@@ -26,7 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Slf4j
 public class MiraPrivateService {
-  public static final String VERSION = "mira-private-candidate-v2";
+  public static final String VERSION = "mira-private-candidate-v3";
   public static final String PRODUCT_SLUG = "pde-planejado-36";
   private final MiraPrivateSessionRepository sessions;
   private final LearningSalesCycleRepository cycles;
@@ -49,7 +49,9 @@ public class MiraPrivateService {
         0);
   }
 
-  /** Emite credencial opaca somente para contexto aberto compatível e testes segregados. */
+  /**
+   * Emite credencial opaca e início sintético para contexto aberto compatível e testes segregados.
+   */
   public CreatedSession create(Create request) {
     var cycle =
         cycles
@@ -102,6 +104,7 @@ public class MiraPrivateService {
     data.putArray("products");
     data.putArray("routine");
     data.putArray("events");
+    eventOnce(data, "EXPERIENCE_STARTED");
     data.putArray("audit");
     audit(
         data,
@@ -233,6 +236,8 @@ public class MiraPrivateService {
     require(
         Set.of(
                 "READY_RESULT_USED",
+                "PREFERRED_OVER_FREE",
+                "CHECKOUT_STARTED",
                 "RECOVERY_COMPLETED",
                 "SAFETY_LIMIT_BLOCKED",
                 "AGENT_SCENARIO_COMPLETED")
@@ -257,6 +262,10 @@ public class MiraPrivateService {
           "RECOVERY".equals(data.path("scenarioCode").asText())
               && hasEvent(data, "READY_RESULT_USED"),
           "Confirme a consulta no cenário de recuperação.");
+    if (Set.of("PREFERRED_OVER_FREE", "CHECKOUT_STARTED").contains(name))
+      require(hasEvent(data, "READY_RESULT_USED"), "Consulte o resultado antes da simulação.");
+    if ("CHECKOUT_STARTED".equals(name))
+      require(hasEvent(data, "PREFERRED_OVER_FREE"), "Simule a comparação antes da continuidade.");
     eventOnce(data, name);
     audit(data, "EVENT_RECORDED", request, json.createObjectNode().put("status", status));
     save(row, data);

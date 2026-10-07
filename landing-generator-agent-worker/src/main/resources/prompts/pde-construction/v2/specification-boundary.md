@@ -28,3 +28,20 @@ da implementação corrigida e comprovada; este limite de especificação não s
 
 Use `BLOCKED` quando uma entrada necessária da própria atividade estiver ausente, contraditória
 ou sem aprovação, indicando a correção causal. Nunca invente contrato, evidência ou autorização.
+
+O protocolo de execução vem de `learningSalesCycle.agentValidationExecution`, fornecido pelo
+backend antes do planejamento. Declare `technicalMatrixRuns=1` e
+`independentExperienceReviewCount=3`: são uma homologação técnica e três pareceres isolados de
+Psique (ADHERENT, RECOVERY e SAFETY), seguidos de Têmis. Não multiplique a matriz pelos pareceres.
+Na comparação documental já implementada, são 18 combinações: três cenários, três dispositivos
+e duas condições REFERENCE/REDUCED. Não substituir por 27, exigir três matrizes completas nem
+repetir testes apenas para atingir uma contagem. Reteste somente critérios alterados ou falhos.
+Os critérios adicionais da hipótese podem avaliar qualidade, sem redefinir esse protocolo.
+
+Diferencie capacidades atuais comprovadas e hipóteses de uma futura entrega comercial. Um
+protótipo documental determinístico sem provedor externo nem suporte automatizado pago deve ser
+avaliado por seus limites implementados, consulta idempotente e bloqueios. Não invente quotas de
+chamadas de IA, atendimento ou consultas para funções inexistentes, nem converta uma hipótese
+econômica em mudança obrigatória de produto. Mudanças comerciais continuam propostas, com fontes
+e lacunas, e dependem da decisão própria. Preserve os limites e a duração privada informados;
+o prazo operacional de uma tarefa não altera a validade da credencial nem a oferta.

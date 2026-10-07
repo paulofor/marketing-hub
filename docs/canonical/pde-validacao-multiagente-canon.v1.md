@@ -232,6 +232,40 @@ Uma tentativa recente bloqueada/em execução impede usar a aprovação anterior
 A última correção exige homologação posterior. Repetir o mesmo gate é idempotente; novas provas
 ou versão produzem nova ocorrência auditável.
 
+### Sucessão da candidata privada no mesmo bundle
+
+Quando a candidata privada é publicada dentro da imagem exclusiva já existente do produto,
+seu manifesto pode declarar `publicationContract.publishedByManifest`, mantendo
+`automaticDeployOnMerge=false`. A sucessão de experiências só é válida quando o manifesto
+publicador possui status de revisão, deploy automático, mesmo produto/slug/alvo/hash de fonte
+e uma prova que vincula o caminho e SHA-256 exatos da candidata. Builder e Têmis conferem
+esses dados independentemente. Um caminho solto, imagem de outro produto, hash divergente ou
+publicador sem autorização bloqueia; nenhum manifesto antigo é reescrito. Esse vínculo
+publica código privado e não ativa experimento, cobrança, campanha ou gasto comercial.
+
+### Contagem e limites da homologação
+
+Correção de 07/10/2026, comprovada no planejamento de Mira (tarefas 613–617): três pareceres
+de experiência não significam três repetições completas da matriz técnica. O recurso
+`contracts/pde-agent-validation-plan-v1.json` declara uma execução técnica e três avaliações
+isoladas de Psique antes de Têmis; o backend o entrega também antes do planejamento. Para a
+comparação documental implementada, uma matriz contém 18 combinações: três cenários, três
+dispositivos e duas condições de entrada. Essa quantidade não se aplica a superfícies sem
+esse contrato. Após um defeito, repetir apenas os critérios necessários para comprovar a
+correção e prevenir regressões relacionadas; não executar novas matrizes para atingir uma contagem.
+
+Hipóteses econômicas para uma futura entrega comercial não redefinem automaticamente funções,
+franquias ou duração do protótipo privado. Distinguir limites implementados, lacunas reais e
+propostas comerciais; não exigir quotas de integração paga ou atendimento de uma função ausente.
+Consulta idempotente e duas organizações úteis continuam verificáveis. O prazo de execução de
+uma tarefa não é o período de validade da credencial nem uma condição de venda.
+
+Na comparação documental V3, os sinais EXPERIENCE_STARTED, VALUE_MOMENT, READY_RESULT_USED,
+PREFERRED_OVER_FREE e CHECKOUT_STARTED são persistidos com a sessão segregada. Os dois últimos
+são simulações explicitamente internas, realizadas somente depois de consultar o resultado.
+O percurso inseguro registra o bloqueio e não a continuidade. Contratos V1/V2 históricos
+permanecem válidos segundo seus critérios; não recebem eventos fabricados nem são sobrescritos.
+
 ## Evidência obrigatória
 
 Ao recriar o backend compartilhado, o deploy deve revalidar a ligação de todos os frontends PDE

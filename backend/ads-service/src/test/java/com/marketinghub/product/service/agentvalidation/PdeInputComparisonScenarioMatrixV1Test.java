@@ -44,6 +44,44 @@ class PdeInputComparisonScenarioMatrixV1Test {
         .isFalse();
   }
 
+  /** Exige sinais executados da candidata nova e rejeita checkout no caminho inseguro. */
+  @Test
+  void rejectsMissingSyntheticSignalsAndUnsafeContinuation() {
+    for (String version : List.of("mira-private-candidate-v3", "another-product-version-9")) {
+      var complete = signaledMatrix(version);
+      assertThat(PdeInputComparisonScenarioMatrixV1.valid(complete)).isTrue();
+      scenario(complete, 0).putArray("events").add("EXPERIENCE_STARTED").add("VALUE_MOMENT");
+      assertThat(PdeInputComparisonScenarioMatrixV1.valid(complete)).isFalse();
+      var unsafe = signaledMatrix(version);
+      ((com.fasterxml.jackson.databind.node.ArrayNode) scenario(unsafe, 17).path("events"))
+          .add("CHECKOUT_STARTED");
+      assertThat(PdeInputComparisonScenarioMatrixV1.valid(unsafe)).isFalse();
+    }
+    assertThat(
+            PdeInputComparisonScenarioMatrixV1.valid(measuredMatrix("mira-private-candidate-v3")))
+        .isFalse();
+    assertThat(
+            PdeInputComparisonScenarioMatrixV1.valid(measuredMatrix("mira-private-candidate-v4")))
+        .isFalse();
+  }
+
+  /** Adiciona sinais sintéticos para exercitar o contrato, sem fabricar prova de navegador. */
+  private static ObjectNode signaledMatrix(String version) {
+    var root = measuredMatrix(version);
+    root.put("fixtureContract", PdeInputComparisonScenarioMatrixV1.SIGNAL_CONTRACT);
+    for (var row : root.path("scenarios")) {
+      var events = ((ObjectNode) row).putArray("events").add("EXPERIENCE_STARTED");
+      if ("SAFETY".equals(row.path("scenarioCode").asText())) events.add("SAFETY_LIMIT_BLOCKED");
+      else
+        events
+            .add("VALUE_MOMENT")
+            .add("READY_RESULT_USED")
+            .add("PREFERRED_OVER_FREE")
+            .add("CHECKOUT_STARTED");
+    }
+    return root;
+  }
+
   /** Bloqueia a antiga ambiguidade entre mínimo e preenchimento e a mistura de relógios. */
   @Test
   void rejectsAmbiguousMeasurementsAndMixedClocks() {

@@ -41,6 +41,11 @@ class LearningCycleTaskContextTest {
     var result = context.resolve("experiment:92", now.plusSeconds(1)).orElseThrow();
     assertEquals(92L, result.get("experimentId"));
     assertTrue(result.get("inheritedLearning").toString().contains("91"));
+    var protocol = (com.fasterxml.jackson.databind.JsonNode) result.get("agentValidationExecution");
+    assertEquals(1, protocol.path("technicalMatrixRuns").asInt());
+    assertEquals(3, protocol.path("independentExperienceReviewCount").asInt());
+    assertEquals(
+        18, protocol.path("documentedInputComparison").path("technicalCombinationCount").asInt());
     assertTrue(context.resolve("experiment:90", now).isEmpty());
   }
 

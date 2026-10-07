@@ -115,6 +115,44 @@ function manifestSupersededExperienceVersions(contract) {
   return normalized;
 }
 
+// Confere a sucessão privada quando sua imagem é publicada por outro manifesto do mesmo produto.
+async function hasBoundPublisher(sourceRoot, manifest, manifests) {
+  const publication = manifest.contract.publicationContract;
+  if (publication?.automaticDeployOnMerge === true) return true;
+  const relativePath = publication?.publishedByManifest;
+  if (
+    typeof relativePath !== "string" ||
+    !/^pde-platform\/contracts\/[^/]+\.json$/.test(relativePath)
+  )
+    return false;
+  const publisher = manifests.find(
+    (item) => item.relativePath === relativePath,
+  );
+  const p = publisher?.contract;
+  if (
+    !p ||
+    p.status !== "READY_FOR_INDEPENDENT_REVIEW" ||
+    p.publicationContract?.automaticDeployOnMerge !== true ||
+    p.product?.id !== manifest.contract.product?.id ||
+    !(p.product?.id > 0) ||
+    publisher.productSlug !== manifest.productSlug ||
+    typeof publication.frontendVersion !== "string" ||
+    !publication.frontendVersion.trim() ||
+    p.publicationContract.frontendVersion !== publication.frontendVersion ||
+    !/^[a-f0-9]{64}$/.test(publication.requiredFrontendSourceSha256 ?? "") ||
+    p.publicationContract.requiredFrontendSourceSha256 !==
+      publication.requiredFrontendSourceSha256
+  )
+    return false;
+  const actualHash = sha256(
+    await fs.readFile(await regularFile(sourceRoot, manifest.relativePath)),
+  );
+  return (p.homologationEvidence ?? []).some(
+    (proof) =>
+      proof.path === manifest.relativePath && proof.sha256 === actualHash,
+  );
+}
+
 // Revalida provas vigentes por produto e versão antes de substituir um pacote.
 async function validateCurrentManifestEvidence(sourceRoot, manifests) {
   const byProductVersion = new Map();
@@ -136,7 +174,7 @@ async function validateCurrentManifestEvidence(sourceRoot, manifests) {
       if (
         !experienceVersion ||
         manifest.contract.status !== "READY_FOR_INDEPENDENT_REVIEW" ||
-        manifest.contract.publicationContract?.automaticDeployOnMerge !== true
+        !(await hasBoundPublisher(sourceRoot, manifest, manifests))
       ) {
         throw new Error(
           `Sucessão de experiência sem candidata publicável: ${manifest.relativePath}`,

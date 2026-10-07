@@ -101,6 +101,73 @@ async function manifest(
   return relativePath;
 }
 
+test("sucessão privada exige imagem do mesmo produto e vínculo íntegro com o publicador", async (t) => {
+  const { root, destination } = await fixture(t);
+  await manifest(root, 10, {
+    product: { id: 9, slug: "rigel", experienceVersion: "rigel-v1" },
+    implementationEvidence: [{ path: proofPath, sha256: "0".repeat(64) }],
+  });
+  const privatePath = await manifest(root, 11, {
+    product: {
+      id: 9,
+      slug: "rigel",
+      experienceVersion: "rigel-private-v2",
+      supersedesExperienceVersions: ["rigel-v1"],
+    },
+    status: "READY_FOR_INDEPENDENT_REVIEW",
+    publicationContract: {
+      automaticDeployOnMerge: false,
+      publishedByManifest: "pde-platform/contracts/rigel-v20.json",
+      frontendVersion: "rigel",
+      requiredFrontendSourceSha256: "1".repeat(64),
+    },
+  });
+  const publisher = {
+    product: { id: 9, slug: "rigel", experienceVersion: "rigel-commercial-v1" },
+    status: "READY_FOR_INDEPENDENT_REVIEW",
+    publicationContract: {
+      automaticDeployOnMerge: true,
+      frontendVersion: "rigel",
+      requiredFrontendSourceSha256: "1".repeat(64),
+    },
+    homologationEvidence: [
+      {
+        path: privatePath,
+        sha256: hash(await fs.readFile(path.join(root, privatePath))),
+      },
+    ],
+  };
+  await manifest(root, 20, publisher);
+  assert.equal((await buildBundle(root, destination)).manifestPaths.length, 3);
+  for (const mutate of [
+    (p) => {
+      p.product.id = 4;
+    },
+    (p) => {
+      p.product.slug = "vega";
+    },
+    (p) => {
+      p.publicationContract.automaticDeployOnMerge = false;
+    },
+    (p) => {
+      p.publicationContract.requiredFrontendSourceSha256 = "2".repeat(64);
+    },
+    (p) => {
+      p.homologationEvidence[0].sha256 = "0".repeat(64);
+    },
+  ]) {
+    const invalid = structuredClone(publisher);
+    mutate(invalid);
+    await manifest(root, 20, invalid);
+    await assert.rejects(
+      buildBundle(root, destination),
+      /Sucessão de experiência sem candidata publicável/,
+    );
+  }
+  await manifest(root, 20, publisher);
+  assert.equal((await buildBundle(root, destination)).manifestPaths.length, 3);
+});
+
 test("empacota revisão vigente íntegra e preserva a prova histórica sem reescrever hashes", async (t) => {
   const { root, destination } = await fixture(t);
   const historical = await manifest(root, 6, {

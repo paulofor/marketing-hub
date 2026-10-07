@@ -1,3 +1,4 @@
 FROM node:20-alpine
-COPY proxy-fixture.mjs /fixture.mjs
-ENTRYPOINT ["node", "/fixture.mjs"]
+WORKDIR /fixture
+COPY infra/testing/mira-candidate/proxy-fixture.mjs ./fixture.mjs
+ENTRYPOINT ["node", "/fixture/fixture.mjs"]

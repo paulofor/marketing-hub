@@ -73,7 +73,7 @@
     },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutor.java",
-      "sha256": "6ad4c2159d2eafe5ad3132f4df9775f2b2664855f369886a245044db0cd83a31",
+      "sha256": "664e17882784826f0f9f06671f7fcfb9047b308d08b98806f4732d8ea17099f1",
       "promptMode": "FULL"
     },
     {
@@ -256,6 +256,12 @@
     },
     {
       "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/main/java/com/marketinghub/communication/v1/IrisLearningCycleContext.java",
+      "sha256": "1d498f4b5cff4df2ff77127739d582b11b6a487752c56342383a4404cfdcb3a6",
+      "reviewSummary": "Responsabilidade: entregar a Íris os contratos e as provas aprovadas do próprio ciclo privado."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
       "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocess/execution/service/BusinessProcessActivityExecutionService.java",
       "sha256": "c46e82b077e08453e860bbc7135bc1e9c0c02df33e0942f635058967446c24ed",
       "reviewSummary": "Responsabilidade: consultar e solicitar tarefas BPM auditáveis por atividade, processo e produto."
@@ -311,7 +317,7 @@
     },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutorTest.java",
-      "sha256": "cd038519006ac9d50ce5c6635f022eeae3d372af4d50660e1c44e5a749404241",
+      "sha256": "982852aee133daea64e38e5310446f76a64a968903a2eea5e53bfa096c34eec1",
       "promptMode": "FULL"
     },
     {
@@ -421,6 +427,18 @@
     },
     {
       "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/test/java/com/marketinghub/communication/v1/IrisLearningCycleContextTest.java",
+      "sha256": "69bb66ae8a644d56b575087f71734f05454fac6b5a1d015165fde65f3a1dd1fa",
+      "reviewSummary": "Responsabilidade: comprovar a passagem privada a Íris sem reaproveitar plano ou prova inválida."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
+      "path": "communication-agent-worker/src/test/java/com/marketinghub/communicationagentworker/IrisCycleInputIntegrationTest.java",
+      "sha256": "56261bc54eed8e9c4fba29bc69fc962734992dfb2f7e529d5182f2ba8a846f9d",
+      "reviewSummary": "Responsabilidade: verificar no executor real a entrada privada produzida pelo backend local."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
       "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocess/execution/service/PdeRevalidationActivityExecutionTest.java",
       "sha256": "7e71bf5cabfda25c21c6452c9a532de34385259eac8bb84943668c93aade13f5",
       "reviewSummary": "Comprova leitura e comando da revalidação sem reaproveitar conclusão histórica ou duplicar\ntrabalho ativo."
@@ -466,12 +484,12 @@
   "homologationEvidence": [
     {
       "path": "docs/registros/mira-controles-provas-2026-10-07.md",
-      "sha256": "082d40fa8dc2d71e1145a4172cf291979d338826459db00ead9427b222f8ccb3",
+      "sha256": "4e5b185cda2adbc2a2d4d7af050b759bf79839a5fa4e4361b2f4e51841529255",
       "promptMode": "FULL"
     },
     {
       "path": "docs/canonical/pde-validacao-multiagente-canon.v1.md",
-      "sha256": "ddbf379a8dcc27fbc89f7c1ea27e59c1b907498f60c63e35e6c45cd808afe475",
+      "sha256": "60346064e25db94bfba20d6a9ddd50ef6c488412d5cd1caacf22845d9dd29e1c",
       "promptMode": "FULL"
     }
   ]

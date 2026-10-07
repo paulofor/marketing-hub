@@ -7,17 +7,30 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskTargetResponse;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocesschain.BusinessProcessChainDefinition;
+import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
+import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleConstructionContext;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleExecutionContext;
+import com.marketinghub.communication.v1.IrisLearningCycleContext;
+import com.marketinghub.communication.v1.IrisProductProcessActivityReadinessProvider;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.service.valuechainposition.ProductProcessPeriodService;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
+import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -286,14 +299,22 @@ class PdeAgentValidationGateActivityExecutorTest {
     assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
   }
 
-  /** Fecha o caso de prova adicional sem transformar a correção bloqueada em entrega funcional. */
+  /**
+   * Liga prova adicional, gate real e prontidão de Íris sem refazer revisões ou declarar entrega.
+   */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(longs = {10L, 110L})
   void acceptsSupplementOnlyAfterIndependentIntegrityApproval(long productId) throws Exception {
-    String reference = "product:" + productId + "@agent-validation-v1";
+    String reference = "experiment:" + (productId + 92);
+    String version = "mira-private-candidate-v3";
     product.setId(productId);
     product.setSlug("synthetic-" + productId);
-    product.setValidationDefinitionJson(validationContract().replace(SOURCE, reference));
+    product.setValidationDefinitionJson(
+        validationContract().replace(SOURCE, reference).replace("mira-private-v2", version));
+    var cycleContracts = mock(PdeAgentValidationCycleContract.class);
+    when(cycleContracts.resolve(product, process, reference))
+        .thenReturn(json.readTree(product.getValidationDefinitionJson()));
+    ReflectionTestUtils.setField(executor, "cycleContracts", cycleContracts);
     completedTasks.get(4).setCreatedAt(NOW.minusSeconds(270));
     completedTasks.get(4).setDeliveredAt(NOW.minusSeconds(250));
     var rejected =
@@ -328,8 +349,12 @@ class PdeAgentValidationGateActivityExecutorTest {
     completedTasks.add(rejected);
     completedTasks.add(correction);
     var evidence = mock(PdeOperationalControlEvidence.class);
-    var report = json.createObjectNode().put("generatedAt", NOW.minusSeconds(160).toString());
-    when(evidence.resolve(product.getSlug(), "mira-private-v2")).thenReturn(Optional.of(report));
+    var report =
+        json.createObjectNode()
+            .put("generatedAt", NOW.minusSeconds(160).toString())
+            .put("reportSha256", "a".repeat(64))
+            .put("prototypeVersion", version);
+    when(evidence.resolve(product.getSlug(), version)).thenReturn(Optional.of(report));
     ReflectionTestUtils.setField(executor, "operationalEvidence", evidence);
     when(tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(70L, reference))
         .thenReturn(completedTasks);
@@ -337,7 +362,10 @@ class PdeAgentValidationGateActivityExecutorTest {
       task.setSourceReference(reference);
       var payload =
           (com.fasterxml.jackson.databind.node.ObjectNode)
-              json.readTree(task.getResultJson().replace(SOURCE, reference));
+              json.readTree(
+                  task.getResultJson()
+                      .replace(SOURCE, reference)
+                      .replace("mira-private-v2", version));
       if (payload.has("productId")) payload.put("productId", productId);
       if (payload.has("productSlug")) payload.put("productSlug", product.getSlug());
       task.setResultJson(payload.toString());
@@ -351,7 +379,7 @@ class PdeAgentValidationGateActivityExecutorTest {
             "meta-ad-approver",
             "MODEL",
             "gpt-5.6-sol",
-            temisResult().replace(SOURCE, reference),
+            temisResult().replace(SOURCE, reference).replace("mira-private-v2", version),
             NOW.minusSeconds(100));
     var reviewPayload =
         (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(reviewed.getResultJson());
@@ -361,6 +389,19 @@ class PdeAgentValidationGateActivityExecutorTest {
     completedTasks.add(reviewed);
     var accepted = executor.readiness(process, gate, product, reference);
     assertThat(accepted.ready()).withFailMessage("%s", accepted).isTrue();
+    assertThat(executor.execute(process, gate, product, reference).objectiveAchieved()).isTrue();
+    var saved = ArgumentCaptor.forClass(BusinessProcessActivityInstance.class);
+    verify(instances).saveAndFlush(saved.capture());
+    var resolution =
+        json.readTree(saved.getValue().getObjectiveEvidenceJson())
+            .path("evidenceCorrectionResolution");
+    assertThat(resolution.path("contractVersion").asText())
+        .isEqualTo("PDE_EVIDENCE_CORRECTION_RESOLUTION_V1");
+    assertThat(resolution.path("correctionTaskId").asLong()).isEqualTo(632);
+    assertThat(resolution.path("rejectedTaskId").asLong()).isEqualTo(631);
+    assertThat(resolution.path("independentReviewTaskId").asLong()).isEqualTo(633);
+    assertThat(resolution.path("reportSha256").asText()).isEqualTo("a".repeat(64));
+    assertCommunicationReadyAfterRealGate(productId, reference, report, saved.getValue());
     assertThat(rejected.getStatus()).isEqualTo("BLOCKED");
     assertThat(correction.getStatus()).isEqualTo("BLOCKED");
 
@@ -375,6 +416,127 @@ class PdeAgentValidationGateActivityExecutorTest {
     correction.setStatus("BLOCKED");
     reviewed.setAssignedAgent(Agent.builder().agentKey("landing-generator").build());
     assertThat(executor.readiness(process, gate, product, reference).ready()).isFalse();
+  }
+
+  /** Consome o recibo real no contexto e na prontidão de Íris; somente persistência usa doubles. */
+  private void assertCommunicationReadyAfterRealGate(
+      long productId, String reference, JsonNode report, BusinessProcessActivityInstance savedGate)
+      throws Exception {
+    long experimentId = productId + 92;
+    var cycle = new LearningSalesCycle();
+    cycle.setId(productId + 1000);
+    cycle.setProductId(productId);
+    cycle.setExperimentId(experimentId);
+    cycle.setChainDefinitionId(26L);
+    cycle.setProductVersion(report.path("prototypeVersion").asText());
+    cycle.setStatus("OPEN");
+    cycle.setStage("ADJUSTMENT");
+    var experiment = new Experiment();
+    experiment.setId(experimentId);
+    experiment.setProduct(product);
+    experiment.setStatus(ExperimentStatus.PLANNED);
+    var chain = new BusinessProcessChainDefinition();
+    var item = new BusinessProcessChainItem();
+    item.setProcessDefinition(process);
+    chain.setItems(List.of(item));
+    var context =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            json.readTree(product.getValidationDefinitionJson());
+    context
+        .putObject("lineage")
+        .put("learningCycleId", cycle.getId())
+        .put("productId", productId)
+        .put("experimentId", experimentId)
+        .put("strategyTaskId", 90)
+        .put("economicsTaskId", 91)
+        .put("architectureTaskId", 92);
+    context.putObject("marketStrategy").put("contractVersion", "MARKET_STRATEGY_V4");
+    context.putObject("economics").put("commercialSpendAuthorized", false);
+    context.put("economicsContractVersion", "PDE_AGENT_ECONOMICS_V1");
+    context.putObject("harness").put("prototypeObjective", "Organização documental consultável.");
+    context.set("operationalControlEvidence", report);
+    var target =
+        new AgentTaskTargetResponse(
+            reference,
+            experimentId,
+            productId,
+            product.getSlug(),
+            "Produto sintético",
+            "Produto sintético",
+            cycle.getProductVersion(),
+            context.path("privatePrototypeAcceptance").path("privateAccessUrl").asText(),
+            null,
+            null,
+            null,
+            null,
+            context);
+    var cycles = mock(LearningSalesCycleRepository.class);
+    var experiments = mock(ExperimentRepository.class);
+    var chains = mock(BusinessProcessChainDefinitionRepository.class);
+    var construction = mock(LearningCycleConstructionContext.class);
+    when(cycles.findByExperimentId(experimentId)).thenReturn(Optional.of(cycle));
+    when(experiments.findById(experimentId)).thenReturn(Optional.of(experiment));
+    when(chains.findById(26L)).thenReturn(Optional.of(chain));
+    when(construction.resolve(reference, experiment, process.getProcessCode()))
+        .thenReturn(Optional.of(target));
+    savedGate.setId(productId + 2000);
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
+                process.getId(), reference))
+        .thenReturn(List.of(savedGate));
+    when(tasks.findPdeValidationTaskSnapshots(reference, process.getProcessCode()))
+        .thenReturn(
+            completedTasks.stream()
+                .map(
+                    task ->
+                        new PdeValidationTaskSnapshot(
+                            task.getId(),
+                            process.getId(),
+                            task.getProcessActivityId(),
+                            task.getStatus(),
+                            task.getBlockerCategory(),
+                            task.getBlockerAction(),
+                            task.getResultJson(),
+                            task.getExecutionError()))
+                .toList());
+    var input =
+        new IrisLearningCycleContext(
+                cycles, experiments, chains, construction, instances, tasks, json)
+            .resolve(reference)
+            .orElseThrow();
+    assertThat(input.get("inputReadiness")).isEqualTo("READY");
+    assertThat(input.get("publicationAuthorized")).isEqualTo(false);
+    var strategy = mock(com.marketinghub.agenttask.MarketStrategicContextProvider.class);
+    var communication =
+        mock(com.marketinghub.agenttask.CommunicationMaterializationContextProvider.class);
+    when(communication.resolve(reference)).thenReturn(Optional.of(input));
+    assertThat(
+            new IrisProductProcessActivityReadinessProvider(strategy, communication)
+                .readiness(null, null, product, reference)
+                .ready())
+        .isTrue();
+    var output = System.getenv("MIRA_EVIDENCE_IRIS_INPUT_FILE");
+    if (productId == 10 && output != null) {
+      java.nio.file.Files.writeString(
+          java.nio.file.Path.of(output),
+          json.writeValueAsString(
+              java.util.Map.of(
+                  "taskId",
+                  990633L,
+                  "sourceReference",
+                  reference,
+                  "processCode",
+                  "pde-communication-sales-journey",
+                  "activityId",
+                  "communicationContract",
+                  "processContextJson",
+                  json.writeValueAsString(
+                      java.util.Map.of(
+                          "marketStrategicContract",
+                          input.get("marketStrategicContract"),
+                          "communicationMaterializationContext",
+                          input)))));
+    }
   }
 
   /** Mantém a correção válida quando uma tentativa condicional posterior foi cancelada. */

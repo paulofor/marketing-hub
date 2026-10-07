@@ -122,7 +122,7 @@
   "homologationEvidence": [
     {
       "path": "pde-platform/contracts/mira-private-candidate-v5.json",
-      "sha256": "74cc2349c5118d250f7b5c7183d9001fa5c515e56cd0794658edcd5920b0223d",
+      "sha256": "da5c7e6861c875ec03eaa5615c9012ab1594328522c9bac3a6672e0007bb8c4e",
       "promptMode": "FULL"
     }
   ],

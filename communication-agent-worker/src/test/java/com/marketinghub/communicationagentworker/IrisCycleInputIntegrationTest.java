@@ -13,7 +13,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 /** Responsabilidade: verificar no executor real a entrada privada produzida pelo backend local. */
 @EnabledIfEnvironmentVariable(named = "VEGA_IRIS_INPUT_FILE", matches = ".+")
 class IrisCycleInputIntegrationTest {
-  /** Aceita V3 íntegro com gate e rejeita a mesma entrada quando sua prontidão é removida. */
+  /** Aceita contratos V3 e V4 íntegros com gate e rejeita a entrada quando falta prontidão. */
   @Test
   void acceptsBackendCycleInputAndRejectsMissingGate() throws Exception {
     var json = new ObjectMapper();
@@ -24,7 +24,7 @@ class IrisCycleInputIntegrationTest {
         (com.fasterxml.jackson.databind.node.ObjectNode)
             json.readTree(input.get("processContextJson").toString());
     assertThat(context.path("marketStrategicContract").path("contractVersion").asText())
-        .isEqualTo("MARKET_STRATEGY_V3");
+        .isIn("MARKET_STRATEGY_V3", "MARKET_STRATEGY_V4");
     assertThat(
             context
                 .path("communicationMaterializationContext")

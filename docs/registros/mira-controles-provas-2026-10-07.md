@@ -88,3 +88,19 @@ e a regressão de identidade exata passou a incluir v5, preservando os contratos
 O cenário local agora valida também a publicação desse prompt na API do harness. Uma terceira
 falha ocorreu antes dos testes ao baixar o parent Spring Boot: o mesmo arquivo e hash estavam
 disponíveis no Maven Central e já haviam sido usados na execução anterior bem-sucedida.
+
+Antes do merge, a leitura do consumidor seguinte revelou outra restrição em
+`IrisLearningCycleContext`: qualquer correção exigia status COMPLETED anterior à técnica,
+incompatível com a tentativa 632 BLOCKED e a resolução exclusiva de provas. A alternativa de
+aceitar bloqueios em geral dispensaria integridade; repetir a validação do gate em Íris duplicaria
+a decisão. Foi adotado um recibo persistido pelo gate real, vinculado por IDs, hashes e versão,
+que Íris confere contra seu contexto atual. O fluxo local liga o gate e a prontidão real de Íris
+para produtos 10 e 110, mantendo as provas anteriores; nove divergências de recibo e correções
+novas são recusadas. O contrato anterior de correção funcional permanece coberto.
+
+Essa rodada complementar passou 345 testes relacionados de backend, contexto e arquitetura,
+sem falhas ou skips. Os 43 testes de Íris passaram; o único skip pertence ao cenário opcional
+de reconexão de autenticação, e a integração da entrada do ciclo foi executada e aprovada.
+A entrada exportada do gate real, com a candidata v3 e estratégia V4, também passou no
+validador real do executor. As seis fontes dos sete controles não mudaram, por isso a prova
+executada em MySQL e sua identidade foram preservadas sem repetir a matriz técnica.

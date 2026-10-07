@@ -402,3 +402,10 @@ prova velha ou parecer do próprio construtor continuam bloqueados. Após todos 
 objetivos atendidos, a tentativa condicional de correção cancelada ou bloqueada, sem comando
 disponível, aparece como histórico registrado; sua tarefa e seu bloqueio original permanecem
 na auditoria. Isso não dispensa objetivo obrigatório nem autoriza publicação, cobrança ou mídia.
+
+O gate persiste `PDE_EVIDENCE_CORRECTION_RESOLUTION_V1` quando essa resolução preserva as revisões
+anteriores. O recibo vincula a rejeição, a tentativa bloqueada e o novo parecer independente por
+identidade e hashes, além da versão, referência e relatório usado. O contexto de Íris confere esse
+mesmo recibo e a prova atual antes de consumir o gate; não exige correção funcional nova para uma
+lacuna já conciliada, nem aceita a tentativa bloqueada isoladamente. Ausência ou divergência,
+correção posterior, mudança funcional ou tarefa em andamento mantém a passagem bloqueada.

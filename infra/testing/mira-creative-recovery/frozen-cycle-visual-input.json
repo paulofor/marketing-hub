@@ -1,0 +1,1951 @@
+{
+  "availability": "AVAILABLE",
+  "inputReadiness": "READY",
+  "contractVersion": "IRIS_INPUT_V1",
+  "mode": "LEARNING_CYCLE_PRIVATE",
+  "sourceReference": "experiment:102",
+  "cycleId": 9,
+  "chainDefinitionId": 26,
+  "prototypeVersion": "mira-private-candidate-v3",
+  "product": {
+    "internalName": "Mira",
+    "name": "Mira · sua rotina organizada",
+    "slug": "pde-planejado-36",
+    "experienceVersion": "mira-private-candidate-v3",
+    "id": 10,
+    "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate"
+  },
+  "approvedDestination": {
+    "type": "APPROVED_PRIVATE_PDE",
+    "contractVersion": "PRIVATE_PDE_DESTINATION_V1",
+    "url": "https://mira.digicomdigital.com.br/mira-candidate",
+    "requiresLandingGeneration": false,
+    "prototypeVersion": "mira-private-candidate-v3"
+  },
+  "gateInstanceId": 545,
+  "validationGate": {
+    "evidenceType": "PDE_AGENT_VALIDATION_GATE_V1",
+    "productId": 10,
+    "productSlug": "pde-planejado-36",
+    "sourceReference": "experiment:102",
+    "prototypeVersion": "mira-private-candidate-v3",
+    "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+    "trafficClass": "AGENT_VALIDATION",
+    "internalMarker": "mh_internal_test",
+    "completedAt": "2026-10-07T12:51:40.655922028Z",
+    "nextProcessCode": "pde-communication-sales-journey",
+    "productExecutionState": "PLAY",
+    "humanEvidenceClaimed": false,
+    "commercialEvidenceClaimed": false,
+    "paymentEnabled": false,
+    "publicationAuthorized": false,
+    "campaignAuthorized": false,
+    "mediaSpendAuthorizedBrl": 0,
+    "taskEvidence": [
+      {
+        "taskId": 627,
+        "activityId": "technicalHomologation",
+        "agentKey": "customer-agent",
+        "executionMode": "DETERMINISTIC",
+        "deliveredAt": "2026-10-07T06:26:34Z",
+        "resultSha256": "47b6a2f748e46c989c4a06076095142a609ec1506420389141ff2ca5d41dc5d1"
+      },
+      {
+        "taskId": 628,
+        "activityId": "psiqueAdherent",
+        "agentKey": "customer-agent",
+        "executionMode": "MODEL",
+        "deliveredAt": "2026-10-07T06:31:40Z",
+        "resultSha256": "7bbda8e4535fa5e0a72ffef020aaa9cdf869371efbb6cef4dc6be3e5264aa513",
+        "estimatedCostUsd": 0.23627
+      },
+      {
+        "taskId": 629,
+        "activityId": "psiqueRecovery",
+        "agentKey": "customer-agent",
+        "executionMode": "MODEL",
+        "deliveredAt": "2026-10-07T06:38:02Z",
+        "resultSha256": "6b5b8016e880df7e573e28182f844e1b45c5afcd73fe83a93f08f5ce658bcceb",
+        "estimatedCostUsd": 0.282642
+      },
+      {
+        "taskId": 630,
+        "activityId": "psiqueSafety",
+        "agentKey": "customer-agent",
+        "executionMode": "MODEL",
+        "deliveredAt": "2026-10-07T06:44:02Z",
+        "resultSha256": "39b6c1e28eae070a31c7057066b4ee99d54b10f3ac06d64de8ba2228ac2e5115",
+        "estimatedCostUsd": 0.299436
+      },
+      {
+        "taskId": 633,
+        "activityId": "commercialIntegrityReview",
+        "agentKey": "meta-ad-approver",
+        "executionMode": "MODEL",
+        "deliveredAt": "2026-10-07T10:34:40Z",
+        "resultSha256": "8638c7142bb314ba4ee7c97deeccee735ae89faf7226ec365ec1b2d88fce2760",
+        "estimatedCostUsd": 0.306102
+      }
+    ],
+    "evidenceCorrectionResolution": {
+      "contractVersion": "PDE_EVIDENCE_CORRECTION_RESOLUTION_V1",
+      "correctionTaskId": 632,
+      "correctionResultSha256": "f9c4bcb67e6c194363538f70154f8d87e385ab131fd299b8ca2940f84115558d",
+      "rejectedTaskId": 631,
+      "rejectedResultSha256": "f0b29b2ce2f5bd786c8a08d18959e161947a8f6d1b47a16c5e5b8cef53cb64e0",
+      "independentReviewTaskId": 633,
+      "reportSha256": "de6c61092ce54485dfac732eb8afc3c81d7dba65ca7814abf412777ed42536a4",
+      "reportGeneratedAt": "2026-10-07T07:59:15.008891Z",
+      "prototypeVersion": "mira-private-candidate-v3",
+      "sourceReference": "experiment:102"
+    },
+    "knownCostUsd": 1.12445,
+    "costCoverage": "PARTIAL"
+  },
+  "publicationAuthorized": false,
+  "externalMediaSpendAuthorized": false,
+  "paymentEnabled": false,
+  "privateCreativePreparation": {
+    "contractVersion": "PDE_PRIVATE_CREATIVE_PREPARATION_V1",
+    "scope": "PRIVATE_PREPARATION",
+    "sourceReference": "experiment:102",
+    "prototypeVersion": "mira-private-candidate-v3",
+    "nonAudiovisualEvidenceRequired": true,
+    "nonAudiovisualEvidencePurpose": "INDEPENDENT_REVIEW",
+    "nonAudiovisualTemplate": "PROOF_CARD_V1",
+    "commercialFormatDecisionPreserved": true,
+    "audiovisualProductionIntent": "BRIEF_ONLY",
+    "videoProductionRequestId": 0,
+    "publicationAuthorized": false,
+    "spendAuthorized": false,
+    "commercialEvidenceClaimed": false
+  },
+  "approvedUpstreamArtifacts": [
+    {
+      "taskId": 627,
+      "resultSha256": "47b6a2f748e46c989c4a06076095142a609ec1506420389141ff2ca5d41dc5d1",
+      "activityId": "technicalHomologation",
+      "agentKey": "customer-agent",
+      "result": {
+        "contractVersion": "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
+        "fixtureContract": "PDE_DOCUMENTED_INPUT_COMPARISON_V3",
+        "mode": "TECHNICAL",
+        "decision": "APPROVED",
+        "sourceReference": "experiment:102",
+        "productId": 10,
+        "productSlug": "pde-planejado-36",
+        "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+        "prototypeVersion": "mira-private-candidate-v3",
+        "trafficClass": "AGENT_VALIDATION",
+        "internalMarker": "mh_internal_test",
+        "generationMode": "DETERMINISTIC_DOCUMENTED_LABELS",
+        "providerCalls": 0,
+        "startedAt": "2026-10-07T06:23:26.536Z",
+        "finishedAt": "2026-10-07T06:26:35.667Z",
+        "durationSeconds": 190,
+        "devices": [
+          {
+            "deviceProfile": "DESKTOP_1440",
+            "status": "PASS",
+            "screenshotEvidenceIds": [
+              521,
+              522,
+              527,
+              528,
+              533,
+              534
+            ]
+          },
+          {
+            "deviceProfile": "IPHONE_15_PRO",
+            "status": "PASS",
+            "screenshotEvidenceIds": [
+              523,
+              524,
+              529,
+              530,
+              535,
+              536
+            ]
+          },
+          {
+            "deviceProfile": "PIXEL_7",
+            "status": "PASS",
+            "screenshotEvidenceIds": [
+              525,
+              526,
+              531,
+              532,
+              537,
+              538
+            ]
+          }
+        ],
+        "scenarios": [
+          {
+            "scenarioCode": "ADHERENT",
+            "deviceProfile": "DESKTOP_1440",
+            "condition": "REFERENCE",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "b6714a19-1d2a-4618-8e7c-717ddd4338da",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "VALUE_MOMENT",
+              "READY_RESULT_USED",
+              "PREFERRED_OVER_FREE",
+              "CHECKOUT_STARTED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:22:03.684651174Z",
+            "resultReadySeconds": 13,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 24,
+            "minimumRequiredProductFields": 4,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 0,
+            "actualFilledFields": 6,
+            "corrections": 0,
+            "resumed": false,
+            "recovered": false,
+            "safetyBlocked": false,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [
+              {
+                "productName": "CeraVe Loção de Limpeza Hidratante",
+                "order": 10,
+                "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "productName": "CeraVe Loção Hidratante",
+                "order": 20,
+                "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+            "organizationsUsed": 1,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              521
+            ]
+          },
+          {
+            "scenarioCode": "ADHERENT",
+            "deviceProfile": "DESKTOP_1440",
+            "condition": "REDUCED",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "b9089fc7-fd76-4f96-abac-28249ad8e15e",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "VALUE_MOMENT",
+              "READY_RESULT_USED",
+              "PREFERRED_OVER_FREE",
+              "CHECKOUT_STARTED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:22:27.760647602Z",
+            "resultReadySeconds": 2,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 7,
+            "minimumRequiredProductFields": 2,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 0,
+            "actualFilledFields": 6,
+            "corrections": 0,
+            "resumed": false,
+            "recovered": false,
+            "safetyBlocked": false,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [
+              {
+                "productName": "CeraVe Loção de Limpeza Hidratante",
+                "order": 10,
+                "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "productName": "CeraVe Loção Hidratante",
+                "order": 20,
+                "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+            "organizationsUsed": 1,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              522
+            ]
+          },
+          {
+            "scenarioCode": "ADHERENT",
+            "deviceProfile": "IPHONE_15_PRO",
+            "condition": "REFERENCE",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "cfb42511-6c66-445e-b9b6-fa45089ca886",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "VALUE_MOMENT",
+              "READY_RESULT_USED",
+              "PREFERRED_OVER_FREE",
+              "CHECKOUT_STARTED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:22:35.647099783Z",
+            "resultReadySeconds": 3,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 24,
+            "minimumRequiredProductFields": 4,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 0,
+            "actualFilledFields": 6,
+            "corrections": 0,
+            "resumed": false,
+            "recovered": false,
+            "safetyBlocked": false,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [
+              {
+                "productName": "CeraVe Loção de Limpeza Hidratante",
+                "order": 10,
+                "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "productName": "CeraVe Loção Hidratante",
+                "order": 20,
+                "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+            "organizationsUsed": 1,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              523
+            ]
+          },
+          {
+            "scenarioCode": "ADHERENT",
+            "deviceProfile": "IPHONE_15_PRO",
+            "condition": "REDUCED",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "080219f1-5012-485a-a43b-7c97e762d2c6",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "VALUE_MOMENT",
+              "READY_RESULT_USED",
+              "PREFERRED_OVER_FREE",
+              "CHECKOUT_STARTED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:23:00.087892350Z",
+            "resultReadySeconds": 3,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 9,
+            "minimumRequiredProductFields": 2,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 0,
+            "actualFilledFields": 6,
+            "corrections": 0,
+            "resumed": false,
+            "recovered": false,
+            "safetyBlocked": false,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [
+              {
+                "productName": "CeraVe Loção de Limpeza Hidratante",
+                "order": 10,
+                "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "productName": "CeraVe Loção Hidratante",
+                "order": 20,
+                "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+            "organizationsUsed": 1,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              524
+            ]
+          },
+          {
+            "scenarioCode": "ADHERENT",
+            "deviceProfile": "PIXEL_7",
+            "condition": "REFERENCE",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "bf0d49b7-e630-40f1-a5e6-cfc156aeb3ee",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "VALUE_MOMENT",
+              "READY_RESULT_USED",
+              "PREFERRED_OVER_FREE",
+              "CHECKOUT_STARTED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:23:11.981186540Z",
+            "resultReadySeconds": 2,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 7,
+            "minimumRequiredProductFields": 4,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 0,
+            "actualFilledFields": 6,
+            "corrections": 0,
+            "resumed": false,
+            "recovered": false,
+            "safetyBlocked": false,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [
+              {
+                "productName": "CeraVe Loção de Limpeza Hidratante",
+                "order": 10,
+                "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "productName": "CeraVe Loção Hidratante",
+                "order": 20,
+                "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+            "organizationsUsed": 1,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              525
+            ]
+          },
+          {
+            "scenarioCode": "ADHERENT",
+            "deviceProfile": "PIXEL_7",
+            "condition": "REDUCED",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "cbde9cae-637a-479d-9fdf-47f6e632d6fe",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "VALUE_MOMENT",
+              "READY_RESULT_USED",
+              "PREFERRED_OVER_FREE",
+              "CHECKOUT_STARTED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:23:18.614290091Z",
+            "resultReadySeconds": 2,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 6,
+            "minimumRequiredProductFields": 2,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 0,
+            "actualFilledFields": 6,
+            "corrections": 0,
+            "resumed": false,
+            "recovered": false,
+            "safetyBlocked": false,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [
+              {
+                "productName": "CeraVe Loção de Limpeza Hidratante",
+                "order": 10,
+                "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "productName": "CeraVe Loção Hidratante",
+                "order": 20,
+                "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+            "organizationsUsed": 1,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              526
+            ]
+          },
+          {
+            "scenarioCode": "RECOVERY",
+            "deviceProfile": "DESKTOP_1440",
+            "condition": "REFERENCE",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "e0fa2818-bee2-425d-9e60-539429d84554",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "VALUE_MOMENT",
+              "READY_RESULT_USED",
+              "PREFERRED_OVER_FREE",
+              "CHECKOUT_STARTED",
+              "RECOVERY_COMPLETED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:23:25.106009843Z",
+            "resultReadySeconds": 3,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 6,
+            "minimumRequiredProductFields": 4,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 0,
+            "actualFilledFields": 6,
+            "corrections": 0,
+            "resumed": true,
+            "recovered": true,
+            "safetyBlocked": false,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [
+              {
+                "productName": "CeraVe Loção de Limpeza Hidratante",
+                "order": 10,
+                "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "productName": "CeraVe Loção Hidratante",
+                "order": 20,
+                "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+            "organizationsUsed": 1,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              527
+            ]
+          },
+          {
+            "scenarioCode": "RECOVERY",
+            "deviceProfile": "DESKTOP_1440",
+            "condition": "REDUCED",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "039e1129-c73a-4c26-afd9-04263ecde1b1",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "VALUE_MOMENT",
+              "READY_RESULT_USED",
+              "PREFERRED_OVER_FREE",
+              "CHECKOUT_STARTED",
+              "RECOVERY_COMPLETED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:23:30.587572890Z",
+            "resultReadySeconds": 3,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 32,
+            "minimumRequiredProductFields": 2,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 0,
+            "actualFilledFields": 6,
+            "corrections": 0,
+            "resumed": true,
+            "recovered": true,
+            "safetyBlocked": false,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [
+              {
+                "productName": "CeraVe Loção de Limpeza Hidratante",
+                "order": 10,
+                "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "productName": "CeraVe Loção Hidratante",
+                "order": 20,
+                "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+            "organizationsUsed": 1,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              528
+            ]
+          },
+          {
+            "scenarioCode": "RECOVERY",
+            "deviceProfile": "IPHONE_15_PRO",
+            "condition": "REFERENCE",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "7e8698cb-7672-48ff-8825-25733549e2c5",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "VALUE_MOMENT",
+              "READY_RESULT_USED",
+              "PREFERRED_OVER_FREE",
+              "CHECKOUT_STARTED",
+              "RECOVERY_COMPLETED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:24:02.090796814Z",
+            "resultReadySeconds": 3,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 7,
+            "minimumRequiredProductFields": 4,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 0,
+            "actualFilledFields": 6,
+            "corrections": 0,
+            "resumed": true,
+            "recovered": true,
+            "safetyBlocked": false,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [
+              {
+                "productName": "CeraVe Loção de Limpeza Hidratante",
+                "order": 10,
+                "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "productName": "CeraVe Loção Hidratante",
+                "order": 20,
+                "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+            "organizationsUsed": 1,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              529
+            ]
+          },
+          {
+            "scenarioCode": "RECOVERY",
+            "deviceProfile": "IPHONE_15_PRO",
+            "condition": "REDUCED",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "e6c98457-0b06-46bd-b4a1-d0458072b3c9",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "VALUE_MOMENT",
+              "READY_RESULT_USED",
+              "PREFERRED_OVER_FREE",
+              "CHECKOUT_STARTED",
+              "RECOVERY_COMPLETED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:24:09.840255592Z",
+            "resultReadySeconds": 2,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 8,
+            "minimumRequiredProductFields": 2,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 0,
+            "actualFilledFields": 6,
+            "corrections": 0,
+            "resumed": true,
+            "recovered": true,
+            "safetyBlocked": false,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [
+              {
+                "productName": "CeraVe Loção de Limpeza Hidratante",
+                "order": 10,
+                "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "productName": "CeraVe Loção Hidratante",
+                "order": 20,
+                "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+            "organizationsUsed": 1,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              530
+            ]
+          },
+          {
+            "scenarioCode": "RECOVERY",
+            "deviceProfile": "PIXEL_7",
+            "condition": "REFERENCE",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "46f3fc74-c48c-4bf5-9776-6b3a583c7fc3",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "VALUE_MOMENT",
+              "READY_RESULT_USED",
+              "PREFERRED_OVER_FREE",
+              "CHECKOUT_STARTED",
+              "RECOVERY_COMPLETED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:24:17.252747715Z",
+            "resultReadySeconds": 5,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 11,
+            "minimumRequiredProductFields": 4,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 0,
+            "actualFilledFields": 6,
+            "corrections": 0,
+            "resumed": true,
+            "recovered": true,
+            "safetyBlocked": false,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [
+              {
+                "productName": "CeraVe Loção de Limpeza Hidratante",
+                "order": 10,
+                "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "productName": "CeraVe Loção Hidratante",
+                "order": 20,
+                "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+            "organizationsUsed": 1,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              531
+            ]
+          },
+          {
+            "scenarioCode": "RECOVERY",
+            "deviceProfile": "PIXEL_7",
+            "condition": "REDUCED",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "6bc3a0e9-8bc2-4e9d-ad2e-7766cb0f77f8",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "VALUE_MOMENT",
+              "READY_RESULT_USED",
+              "PREFERRED_OVER_FREE",
+              "CHECKOUT_STARTED",
+              "RECOVERY_COMPLETED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:24:29.734912410Z",
+            "resultReadySeconds": 3,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 15,
+            "minimumRequiredProductFields": 2,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 0,
+            "actualFilledFields": 6,
+            "corrections": 0,
+            "resumed": true,
+            "recovered": true,
+            "safetyBlocked": false,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [
+              {
+                "productName": "CeraVe Loção de Limpeza Hidratante",
+                "order": 10,
+                "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "productName": "CeraVe Loção Hidratante",
+                "order": 20,
+                "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+            "organizationsUsed": 1,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              532
+            ]
+          },
+          {
+            "scenarioCode": "SAFETY",
+            "deviceProfile": "DESKTOP_1440",
+            "condition": "REFERENCE",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "e1df34a9-a706-4852-9276-fe7a665dd522",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "SAFETY_LIMIT_BLOCKED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:24:44.191898504Z",
+            "resultReadySeconds": 2,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 5,
+            "minimumRequiredProductFields": 4,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 1,
+            "actualFilledFields": 7,
+            "corrections": 0,
+            "resumed": false,
+            "recovered": false,
+            "safetyBlocked": true,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [],
+            "routineHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "organizationsUsed": 0,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              533
+            ]
+          },
+          {
+            "scenarioCode": "SAFETY",
+            "deviceProfile": "DESKTOP_1440",
+            "condition": "REDUCED",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "ff9b5317-f5ef-46d8-9ddf-19203ca63c84",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "SAFETY_LIMIT_BLOCKED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:24:49.016243725Z",
+            "resultReadySeconds": 2,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 4,
+            "minimumRequiredProductFields": 2,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 1,
+            "actualFilledFields": 7,
+            "corrections": 0,
+            "resumed": false,
+            "recovered": false,
+            "safetyBlocked": true,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [],
+            "routineHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "organizationsUsed": 0,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              534
+            ]
+          },
+          {
+            "scenarioCode": "SAFETY",
+            "deviceProfile": "IPHONE_15_PRO",
+            "condition": "REFERENCE",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "51bc32e9-4a5a-4cbe-81d5-3852f9b19898",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "SAFETY_LIMIT_BLOCKED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:24:53.430098670Z",
+            "resultReadySeconds": 3,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 6,
+            "minimumRequiredProductFields": 4,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 1,
+            "actualFilledFields": 7,
+            "corrections": 0,
+            "resumed": false,
+            "recovered": false,
+            "safetyBlocked": true,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [],
+            "routineHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "organizationsUsed": 0,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              535
+            ]
+          },
+          {
+            "scenarioCode": "SAFETY",
+            "deviceProfile": "IPHONE_15_PRO",
+            "condition": "REDUCED",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "9661bc2f-f360-4b58-880c-17fa2a3be261",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "SAFETY_LIMIT_BLOCKED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:24:59.173898559Z",
+            "resultReadySeconds": 3,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 5,
+            "minimumRequiredProductFields": 2,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 1,
+            "actualFilledFields": 7,
+            "corrections": 0,
+            "resumed": false,
+            "recovered": false,
+            "safetyBlocked": true,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [],
+            "routineHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "organizationsUsed": 0,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              536
+            ]
+          },
+          {
+            "scenarioCode": "SAFETY",
+            "deviceProfile": "PIXEL_7",
+            "condition": "REFERENCE",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "5a268834-a094-4aaa-bf71-9782a1c64605",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "SAFETY_LIMIT_BLOCKED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:25:03.986107630Z",
+            "resultReadySeconds": 2,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 4,
+            "minimumRequiredProductFields": 4,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 1,
+            "actualFilledFields": 7,
+            "corrections": 0,
+            "resumed": false,
+            "recovered": false,
+            "safetyBlocked": true,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [],
+            "routineHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "organizationsUsed": 0,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              537
+            ]
+          },
+          {
+            "scenarioCode": "SAFETY",
+            "deviceProfile": "PIXEL_7",
+            "condition": "REDUCED",
+            "status": "PASS",
+            "prototypeVersion": "mira-private-candidate-v3",
+            "evidenceId": "4372e52b-da57-49fd-908c-ec73775eddc4",
+            "trafficClass": "AGENT_VALIDATION",
+            "events": [
+              "EXPERIENCE_STARTED",
+              "SAFETY_LIMIT_BLOCKED",
+              "AGENT_SCENARIO_COMPLETED"
+            ],
+            "mhInternalTest": true,
+            "providerCalls": 0,
+            "firstInteractionAt": "2026-10-07T06:25:08.249360527Z",
+            "resultReadySeconds": 2,
+            "measurementClock": "MONOTONIC_WORKER",
+            "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+            "scenarioCompletedSeconds": 4,
+            "minimumRequiredProductFields": 2,
+            "requiredObjectiveFields": 1,
+            "objectivePrefilled": true,
+            "providedProductCount": 2,
+            "filledProductFields": 4,
+            "filledOptionalSourceFields": 2,
+            "editedObjectiveFields": 1,
+            "actualFilledFields": 7,
+            "corrections": 0,
+            "resumed": false,
+            "recovered": false,
+            "safetyBlocked": true,
+            "products": [
+              {
+                "name": "CeraVe Loção de Limpeza Hidratante",
+                "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+              },
+              {
+                "name": "CeraVe Loção Hidratante",
+                "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+                "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+              }
+            ],
+            "routine": [],
+            "routineHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "organizationsUsed": 0,
+            "generationRequests": 1,
+            "accessibilityBasic": true,
+            "noHorizontalOverflow": true,
+            "privacyPreserved": true,
+            "sideEffects": {
+              "paymentEnabled": false,
+              "published": false,
+              "campaignCreated": false,
+              "mediaSpendBrl": 0
+            },
+            "humanEvidenceClaimed": false,
+            "commercialEvidenceClaimed": false,
+            "screenshotEvidenceIds": [
+              538
+            ]
+          }
+        ],
+        "checks": {
+          "sameVersion": true,
+          "desktopAndMobile": true,
+          "happyResultWithinTenMinutes": true,
+          "recoveryPreserved": true,
+          "safetyBlocked": true,
+          "accessibilityBasic": true,
+          "responsiveLayout": true,
+          "privacyPreserved": true,
+          "internalTrafficSegregated": true,
+          "paymentDisabled": true,
+          "publicationDisabled": true,
+          "campaignDisabled": true,
+          "zeroMediaSpend": true
+        },
+        "artifacts": [
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "ADHERENT-DESKTOP_1440-REFERENCE",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "DESKTOP_1440",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 1440,
+            "viewportHeight": 900,
+            "pageHeightPx": 1469,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:23:51.029Z",
+            "artifactId": 521,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/521/content",
+            "sha256": "edf2800f02b92f522db74d694defeb8b377324e6105928d57b632f0e02a41487"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "ADHERENT-DESKTOP_1440-REDUCED",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "DESKTOP_1440",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 1440,
+            "viewportHeight": 900,
+            "pageHeightPx": 1469,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:23:57.682Z",
+            "artifactId": 522,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/522/content",
+            "sha256": "edf2800f02b92f522db74d694defeb8b377324e6105928d57b632f0e02a41487"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "ADHERENT-IPHONE_15_PRO-REFERENCE",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "IPHONE_15_PRO",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 393,
+            "viewportHeight": 852,
+            "pageHeightPx": 2046,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:24:23.354Z",
+            "artifactId": 523,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/523/content",
+            "sha256": "45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "ADHERENT-IPHONE_15_PRO-REDUCED",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "IPHONE_15_PRO",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 393,
+            "viewportHeight": 852,
+            "pageHeightPx": 2046,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:24:35.256Z",
+            "artifactId": 524,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/524/content",
+            "sha256": "45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "ADHERENT-PIXEL_7-REFERENCE",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "PIXEL_7",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 412,
+            "viewportHeight": 915,
+            "pageHeightPx": 1990,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:24:41.889Z",
+            "artifactId": 525,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/525/content",
+            "sha256": "2a996b86fe66b2ed9b3f853b18d8e94a227646034eaeae0ca1aa6436446cf2ce"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "ADHERENT-PIXEL_7-REDUCED",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "PIXEL_7",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 412,
+            "viewportHeight": 915,
+            "pageHeightPx": 1990,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:24:48.378Z",
+            "artifactId": 526,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/526/content",
+            "sha256": "2a996b86fe66b2ed9b3f853b18d8e94a227646034eaeae0ca1aa6436446cf2ce"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "RECOVERY-DESKTOP_1440-REFERENCE",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "DESKTOP_1440",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 1440,
+            "viewportHeight": 900,
+            "pageHeightPx": 1469,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:24:53.860Z",
+            "artifactId": 527,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/527/content",
+            "sha256": "edf2800f02b92f522db74d694defeb8b377324e6105928d57b632f0e02a41487"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "RECOVERY-DESKTOP_1440-REDUCED",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "DESKTOP_1440",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 1440,
+            "viewportHeight": 900,
+            "pageHeightPx": 1469,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:25:25.240Z",
+            "artifactId": 528,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/528/content",
+            "sha256": "edf2800f02b92f522db74d694defeb8b377324e6105928d57b632f0e02a41487"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "RECOVERY-IPHONE_15_PRO-REFERENCE",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "IPHONE_15_PRO",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 393,
+            "viewportHeight": 852,
+            "pageHeightPx": 2046,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:25:33.110Z",
+            "artifactId": 529,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/529/content",
+            "sha256": "45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "RECOVERY-IPHONE_15_PRO-REDUCED",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "IPHONE_15_PRO",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 393,
+            "viewportHeight": 852,
+            "pageHeightPx": 2046,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:25:40.510Z",
+            "artifactId": 530,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/530/content",
+            "sha256": "45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "RECOVERY-PIXEL_7-REFERENCE",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "PIXEL_7",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 412,
+            "viewportHeight": 915,
+            "pageHeightPx": 1990,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:25:52.436Z",
+            "artifactId": 531,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/531/content",
+            "sha256": "2a996b86fe66b2ed9b3f853b18d8e94a227646034eaeae0ca1aa6436446cf2ce"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "RECOVERY-PIXEL_7-REDUCED",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "PIXEL_7",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 412,
+            "viewportHeight": 915,
+            "pageHeightPx": 1990,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:26:07.470Z",
+            "artifactId": 532,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/532/content",
+            "sha256": "2a996b86fe66b2ed9b3f853b18d8e94a227646034eaeae0ca1aa6436446cf2ce"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "SAFETY-DESKTOP_1440-REFERENCE",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "DESKTOP_1440",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 1440,
+            "viewportHeight": 900,
+            "pageHeightPx": 1771,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:26:12.287Z",
+            "artifactId": 533,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/533/content",
+            "sha256": "e65b8fe2259bd9f0ff39f39d96ed21ca63e885619245faeb9403d80f37b1c466"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "SAFETY-DESKTOP_1440-REDUCED",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "DESKTOP_1440",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 1440,
+            "viewportHeight": 900,
+            "pageHeightPx": 1906,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:26:16.710Z",
+            "artifactId": 534,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/534/content",
+            "sha256": "7cf4638768f2624dd6f072741db8349cbdd499aa59c5e56f06bc6ba269bcf936"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "SAFETY-IPHONE_15_PRO-REFERENCE",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "IPHONE_15_PRO",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 393,
+            "viewportHeight": 852,
+            "pageHeightPx": 2112,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:26:22.450Z",
+            "artifactId": 535,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/535/content",
+            "sha256": "5eed644b4e38d208b884df7b450c96fbde948a2ef2bd9459a2a124d6aa52e250"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "SAFETY-IPHONE_15_PRO-REDUCED",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "IPHONE_15_PRO",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 393,
+            "viewportHeight": 852,
+            "pageHeightPx": 2247,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:26:27.265Z",
+            "artifactId": 536,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/536/content",
+            "sha256": "1ddb24a68b7f3a8fa71de462445664d030e26a92862ba89b426c0087007178fd"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "SAFETY-PIXEL_7-REFERENCE",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "PIXEL_7",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 412,
+            "viewportHeight": 915,
+            "pageHeightPx": 2112,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:26:31.414Z",
+            "artifactId": 537,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/537/content",
+            "sha256": "a1c670b26e0df2d5030312aa58dd56499ee9c0ef5659a626268486f64ae4c9cd"
+          },
+          {
+            "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+            "evidenceKey": "SAFETY-PIXEL_7-REDUCED",
+            "evidenceType": "FULL_PAGE",
+            "deviceProfile": "PIXEL_7",
+            "pageNumber": 1,
+            "foldNumber": null,
+            "viewportWidth": 412,
+            "viewportHeight": 915,
+            "pageHeightPx": 2247,
+            "scrollY": 0,
+            "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+            "capturedAt": "2026-10-07T06:26:35.624Z",
+            "artifactId": 538,
+            "contentUrl": "/api/agent-tasks/627/visual-evidence/538/content",
+            "sha256": "f4ea11b18358193da072805a09f393e0c52ce6ad835a9b40641a1538f3be4d93"
+          }
+        ],
+        "sideEffects": {
+          "paymentEnabled": false,
+          "published": false,
+          "campaignCreated": false,
+          "mediaSpendBrl": 0
+        },
+        "humanEvidenceClaimed": false,
+        "commercialEvidenceClaimed": false,
+        "fixtureSources": [
+          {
+            "name": "CeraVe Loção de Limpeza Hidratante",
+            "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+            "url": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante",
+            "observedAt": "2026-10-06T21:13:35.736157+00:00",
+            "editorialDate": null,
+            "publisher": "CeraVe Brasil",
+            "sourceKind": "PUBLIC_MANUFACTURER_PAGE",
+            "sourceExcerptSha256": "8a2c9a097ed0d087f672daf2b44ad6d5ee55bff6ad8ee633b0931cf3a12cb7ff",
+            "usage": "Fixture documental de teste; não representa inventário real, recomendação ou comprovação de compatibilidade clínica.",
+            "limits": [
+              "Página oficial consultada; embalagem específica não foi inspecionada.",
+              "Não estender orientação para outros produtos ou fórmulas.",
+              "Compatibilidade entre itens, condição clínica e adequação pessoal não são comprovadas por esta fonte."
+            ]
+          },
+          {
+            "name": "CeraVe Loção Hidratante",
+            "labelDirections": "Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+            "url": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante",
+            "observedAt": "2026-10-06T21:13:35.736197+00:00",
+            "editorialDate": null,
+            "publisher": "CeraVe Brasil",
+            "sourceKind": "PUBLIC_MANUFACTURER_PAGE",
+            "sourceExcerptSha256": "50ec1cb9efde1aafcf9ef3e12584a0aa689a96874f687d9d9f8e8ac47cae707e",
+            "usage": "Fixture documental de teste; não representa inventário real, recomendação ou comprovação de compatibilidade clínica.",
+            "limits": [
+              "Página oficial consultada; embalagem específica não foi inspecionada.",
+              "Não estender orientação para outros produtos ou fórmulas.",
+              "Compatibilidade entre itens, condição clínica e adequação pessoal não são comprovadas por esta fonte."
+            ]
+          }
+        ],
+        "evidence": [
+          "b6714a19-1d2a-4618-8e7c-717ddd4338da",
+          "b9089fc7-fd76-4f96-abac-28249ad8e15e",
+          "cfb42511-6c66-445e-b9b6-fa45089ca886",
+          "080219f1-5012-485a-a43b-7c97e762d2c6",
+          "bf0d49b7-e630-40f1-a5e6-cfc156aeb3ee",
+          "cbde9cae-637a-479d-9fdf-47f6e632d6fe",
+          "e0fa2818-bee2-425d-9e60-539429d84554",
+          "039e1129-c73a-4c26-afd9-04263ecde1b1",
+          "7e8698cb-7672-48ff-8825-25733549e2c5",
+          "e6c98457-0b06-46bd-b4a1-d0458072b3c9",
+          "46f3fc74-c48c-4bf5-9776-6b3a583c7fc3",
+          "6bc3a0e9-8bc2-4e9d-ad2e-7766cb0f77f8",
+          "e1df34a9-a706-4852-9276-fe7a665dd522",
+          "ff9b5317-f5ef-46d8-9ddf-19203ca63c84",
+          "51bc32e9-4a5a-4cbe-81d5-3852f9b19898",
+          "9661bc2f-f360-4b58-880c-17fa2a3be261",
+          "5a268834-a094-4aaa-bf71-9782a1c64605",
+          "4372e52b-da57-49fd-908c-ec73775eddc4"
+        ]
+      }
+    }
+  ],
+  "marketStrategicContract": {
+    "contentHash": "8d28fdddd8c2be567648763869a9a794c4471e6450879118c09551aa4430026e"
+  }
+}

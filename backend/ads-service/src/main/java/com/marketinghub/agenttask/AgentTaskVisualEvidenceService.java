@@ -324,8 +324,8 @@ public class AgentTaskVisualEvidenceService {
   }
 
   /**
-   * Recupera a URL congelada na autorização visual da própria tarefa de Íris, sem consultar um
-   * cadastro comercial mutável depois que a execução começou.
+   * Recupera a URL das provas congeladas de produto ou ciclo de Íris, preservando a autorização
+   * privada sem consultar um cadastro comercial mutável depois que a execução começou.
    */
   private Optional<String> frozenCreativeTarget(AgentTask task) {
     if (task.getProcessDefinition() == null
@@ -341,54 +341,9 @@ public class AgentTaskVisualEvidenceService {
       JsonNode input =
           objectMapper.readTree(task.getEvidenceJson()).path("communicationInputReference");
       if (!input.isObject()) return Optional.empty();
-      JsonNode authorization = input.path("visualProofAuthorization");
-      JsonNode destination = input.path("approvedDestination");
-      JsonNode gate = input.path("validationGate");
-      String prototypeVersion = authorization.path("prototypeVersion").asText();
-      String authorizedUrl = authorization.path("publicUrl").asText();
-      long productId = authorization.path("productId").asLong();
-      boolean approvedArtifact =
-          java.util.stream.StreamSupport.stream(
-                  input.path("approvedVisualArtifacts").spliterator(), false)
-              .map(item -> item.path("result"))
-              .anyMatch(
-                  result ->
-                      "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1"
-                              .equals(result.path("contractVersion").asText())
-                          && "APPROVED".equals(result.path("decision").asText())
-                          && productId == result.path("productId").asLong()
-                          && prototypeVersion.equals(result.path("prototypeVersion").asText())
-                          && authorizedUrl.equals(result.path("publicUrl").asText())
-                          && authorization
-                              .path("proofSourceReference")
-                              .asText()
-                              .equals(result.path("sourceReference").asText())
-                          && java.util.stream.StreamSupport.stream(
-                                  result.path("artifacts").spliterator(), false)
-                              .anyMatch(
-                                  artifact ->
-                                      authorizedUrl.equals(artifact.path("sourceUrl").asText())
-                                          && artifact.path("artifactId").asLong() > 0
-                                          && artifact.path("sha256").asText().length() == 64));
-      boolean valid =
-          "COMMUNICATION_VISUAL_PROOF_AUTHORIZATION_V1"
-                  .equals(authorization.path("contractVersion").asText())
-              && task.getSourceReference()
-                  .equals(authorization.path("targetSourceReference").asText())
-              && productId > 0
-              && authorization.path("gateInstanceId").asLong() > 0
-              && !prototypeVersion.isBlank()
-              && !authorizedUrl.isBlank()
-              && "PRIVATE_PDE_DESTINATION_V1".equals(destination.path("contractVersion").asText())
-              && prototypeVersion.equals(destination.path("prototypeVersion").asText())
-              && authorizedUrl.equals(destination.path("url").asText())
-              && productId == gate.path("productId").asLong()
-              && prototypeVersion.equals(gate.path("prototypeVersion").asText())
-              && authorizedUrl.equals(gate.path("publicUrl").asText())
-              && !gate.path("paymentEnabled").asBoolean(true)
-              && !gate.path("publicationAuthorized").asBoolean(true)
-              && !gate.path("campaignAuthorized").asBoolean(true)
-              && approvedArtifact;
+      String authorizedUrl =
+          FrozenCreativeVisualAuthorization.resolve(input, task.getSourceReference());
+      boolean valid = authorizedUrl != null;
       if (!valid) {
         throw new ResponseStatusException(
             HttpStatus.CONFLICT,

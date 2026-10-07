@@ -396,6 +396,116 @@ class AgentTaskVisualEvidenceServiceTest {
         .resolve("experiment:9301", "creative-production-approval");
   }
 
+  /**
+   * Exercita upload real e conclusão da derivação com o PNG do worker e a prova congelada do ciclo.
+   */
+  @Test
+  void storesCycleCreativeAndExposesItsExactPixelsForReview() throws Exception {
+    var json = new com.fasterxml.jackson.databind.ObjectMapper();
+    var input = FrozenCreativeVisualAuthorizationTest.fixture(json);
+    var process = new com.marketinghub.businessprocess.BusinessProcessDefinition();
+    process.setId(910121L);
+    process.setProcessCode("creative-production-approval");
+    task.setProcessDefinition(process);
+    task.setProcessActivityId("nonAudiovisual");
+    task.getAssignedAgent().setAgentKey("communication-director");
+    task.setSourceReference(input.path("sourceReference").asText());
+    task.setEvidenceJson(
+        json.createObjectNode().set("communicationInputReference", input).toString());
+    when(taskRepository.findById(258L)).thenReturn(Optional.of(task));
+    when(evidenceRepository.saveAndFlush(any()))
+        .thenAnswer(
+            invocation -> {
+              AgentTaskVisualEvidence image = invocation.getArgument(0);
+              image.setId(910132L);
+              return image;
+            });
+    byte[] bytes;
+    String renderedFile = System.getenv("MIRA_CREATIVE_RENDER_FILE");
+    if (renderedFile != null && !renderedFile.isBlank()) {
+      bytes = java.nio.file.Files.readAllBytes(java.nio.file.Path.of(renderedFile));
+    } else {
+      var pixels =
+          new java.awt.image.BufferedImage(1080, 1350, java.awt.image.BufferedImage.TYPE_INT_RGB);
+      var encoded = new java.io.ByteArrayOutputStream();
+      ImageIO.write(pixels, "png", encoded);
+      bytes = encoded.toByteArray();
+    }
+    String url = input.path("approvedDestination").path("url").asText();
+    var request =
+        new AgentTaskVisualEvidenceRequest(
+            "frozen-cycle",
+            "private-proof-card",
+            "CREATIVE_RENDER",
+            "CREATIVE_1080X1350",
+            1,
+            null,
+            1080,
+            1350,
+            1350,
+            0,
+            url,
+            url,
+            Instant.parse("2026-10-07T22:00:00Z"));
+    var response =
+        service.store(
+            "communication-director",
+            258L,
+            request,
+            new MockMultipartFile("file", "creative.png", "image/png", bytes));
+    assertThat(response.sourceUrl()).isEqualTo(url);
+    assertThat(response.sha256()).isEqualTo(sha256(bytes));
+    var stored = ArgumentCaptor.forClass(AgentTaskVisualEvidence.class);
+    verify(evidenceRepository).saveAndFlush(stored.capture());
+    var source = new AgentTaskVisualEvidence();
+    source.setId(523L);
+    source.setEvidenceType("FULL_PAGE");
+    source.setSha256("45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7");
+    source.setTask(new AgentTask());
+    source.getTask().setId(627L);
+    source.setPageNumber(1);
+    when(evidenceRepository.findByIdAndTaskId(
+            org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong()))
+        .thenAnswer(
+            call -> {
+              long id = call.getArgument(0);
+              long owner = call.getArgument(1);
+              if (id == 910132L && owner == 258L) return Optional.of(stored.getValue());
+              if (id == 523L && owner == 627L) return Optional.of(source);
+              return Optional.empty();
+            });
+    var materialization =
+        org.mockito.Mockito.mock(CommunicationMaterializationContextProvider.class);
+    when(materialization.resolve(task.getSourceReference()))
+        .thenReturn(
+            Optional.of(
+                json.convertValue(
+                    input,
+                    new com.fasterxml.jackson.core.type.TypeReference<
+                        java.util.Map<String, Object>>() {})));
+    var functional = json.createObjectNode().put("sourceReference", task.getSourceReference());
+    var output = functional.putObject("functionalOutput");
+    output.putArray("staticAssets").addObject();
+    var render =
+        output
+            .putArray("renderedAssets")
+            .addObject()
+            .put("artifactId", 910132L)
+            .put("sha256", response.sha256())
+            .put("sourceTaskId", 627L)
+            .put("sourceArtifactId", 523L)
+            .put("sourceSha256", source.getSha256())
+            .put("prototypeVersion", input.path("prototypeVersion").asText())
+            .put("templateVersion", "PROOF_CARD_V1");
+    render.putObject("crop").put("x", 90).put("y", 1050).put("width", 999).put("height", 600);
+    var completion =
+        new CreativeVisualEvidenceService(
+            taskRepository, evidenceRepository, service, materialization, json);
+    completion.validateCompletion(task, functional.toString());
+    verify(targetContextProvider, never())
+        .resolve(task.getSourceReference(), process.getProcessCode());
+  }
+
   /** Rejeita uma URL que não corresponda à autorização congelada da tarefa criativa. */
   @Test
   void rejectsCreativeOutsideFrozenVisualAuthorization() throws Exception {

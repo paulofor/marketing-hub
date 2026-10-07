@@ -9378,3 +9378,24 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   executa a etapa real com ferramentas presentes/ausentes, cache recuperável e
   falhas permanentes. 21 testes totais, YAML, bash -n, ShellCheck e verificador aprovados.
 - Registro: docs/registros/mira-retomada-contrato-privado-2026-10-07.md.
+
+## LOOP-IRIS-UPLOAD-CICLO-PRIVADO-EXIGE-FORMATO-DE-PRODUTO — 07/10/2026
+
+- **Evidência:** tarefa 636 reaplicou especificação paga sem inferência e teve PNG
+  recusado por HTTP 409 antes do storage. O gate 545 e a homologação 627 estavam
+  congelados e aprovados no formato canônico de ciclo. Upload legado de produto
+  continua funcionando nos testes; renderer local produz a imagem da mesma fonte.
+- **Causa:** leitor de upload aceitava somente autorização de transferência de
+  produto, enquanto ciclo privado entrega `validationGate`/`approvedUpstreamArtifacts`.
+  O teste anterior simulava sucesso HTTP em vez de atravessar o validador real.
+- **Correção:** resolver ambos os contratos congelados; ciclo confere hash integral
+  da prova citada pelo gate, identidades, destino e limites. Recuperação específica
+  na fila existente reutiliza `READY_FOR_RENDER` uma vez, com gate atual íntegro e
+  tentativa persistida antes do upload; sem modelo ou custo incremental.
+- **Prevenção:** fixture real do ciclo sem contrato legado, outro produto/ciclo,
+  caminho antes válido, violações e revogação; PNG do renderer atravessa serviços
+  reais de gravação e derivação, com storage/repositórios doubles. Query real é
+  validada no MySQL 5.7, sem seleção ampla de rejeições funcionais.
+- **Limites:** não fabrica autorização humana/comercial, não renova histórico e
+  não libera mídia/vídeo pago. Pareceres precisam corresponder aos pixels persistidos.
+- **Registro:** `docs/registros/mira-autorizacao-visual-ciclo-2026-10-07.md`.

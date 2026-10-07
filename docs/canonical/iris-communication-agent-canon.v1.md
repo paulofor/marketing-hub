@@ -450,3 +450,28 @@ não constituem mudança de entrada. Ausência de declaração ou contrato invá
 o caminho anterior e seus gates. O evento de disparo registra `executionInputHash`
 sem expor o contexto bruto. A nova entrada permite uma tentativa, preservando o resultado
 e o custo anteriores; falha sem mudança não dispara outra inferência automaticamente.
+
+### Upload da prova congelada de ciclo privado — 2026-10-07
+
+`LEARNING_CYCLE_PRIVATE` entrega a autorização nos contratos já existentes
+`validationGate` e `approvedUpstreamArtifacts`; não exige fabricar
+`visualProofAuthorization`, reservado à transferência da referência de produto.
+O upload de `CREATIVE_RENDER` reconhece ambos os formatos e usa a prova congelada
+na tarefa. Para ciclo privado, confere produto, experimento, versão, URL, gate,
+preparação interna, flags comerciais desautorizadas e hash integral do resultado
+técnico citado pelo gate. Exige artefato aprovado com identidade/hash/sourceUrl.
+Ausência ou divergência bloqueia antes do storage, sem fallback ao cadastro mutável.
+
+O replay da especificação `READY_FOR_RENDER` recusada especificamente por esse
+leitor legado só pode ocorrer uma vez, com a recuperação delegada anterior auditada,
+mesma autoridade privada vigente e estratégia íntegra. Registra a tentativa antes
+do upload, preservando taskId, resposta original, custo e histórico. Não invoca modelo
+e registra custo incremental de modelo zero. Revogação, outra versão, erro funcional
+ou segunda tentativa não são recuperáveis por essa regra. Novas revisões de Psique
+e Têmis se referem aos pixels finalmente persistidos; decisão humana e autorizações
+comerciais continuam independentes.
+
+Regressões exercitam a entrada arquivada sem o formato legado, outra identidade,
+contrato de produto antes válido, provas alteradas, gravação real do serviço com
+storage/repositórios simulados, derivação até os pixels e seleção física MySQL 5.7.
+Registro: `docs/registros/mira-autorizacao-visual-ciclo-2026-10-07.md`.

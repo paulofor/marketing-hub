@@ -27,6 +27,9 @@ pathlib.Path(sys.argv[2]).write_text(json.dumps(totals) + '\n')
 PY
 }
 run backend-ci-contract python3 scripts/test-backend-ci-workflow.py
+run deploy-artifact-contract python3 scripts/test-download-run-artifact.py
+run review-evidence-contract node --test scripts/build-commercial-review-evidence.test.mjs
+run review-evidence node scripts/build-commercial-review-evidence.mjs . meta-ad-approver-worker/review-evidence
 run backend mvn -q -f backend/ads-service/pom.xml "-Dmira.lifecycle.output=$output/browser-contract.json" test
 counts backend/ads-service/target/surefire-reports backend
 run mysql57 mvn -q -f backend/ads-service/pom.xml -Dprivate.journey.mysql57=true -Dtest=PrivateCommunicationJourneyPersistenceTest test
@@ -42,7 +45,6 @@ run frontend npm --prefix frontend test -- --run src/api/businessProcess/useProd
 run browser env "MIRA_UI_CONTRACT=$output/browser-contract.json" "MIRA_UI_OUTPUT=$output/browser" node infra/testing/mira-communication/browser.cjs
 run backend-package mvn -q -f backend/ads-service/pom.xml package -DskipTests
 run backend-package-content python3 scripts/verify-backend-packaged-resources.py
-run review-evidence node scripts/build-commercial-review-evidence.mjs . meta-ad-approver-worker/review-evidence
 run backend-image docker build --label "com.docker.compose.project=$PROCESS_COMPOSE_PROJECT" -t "$PROCESS_COMPOSE_PROJECT/mira-backend:$round" -f backend/ads-service/Dockerfile .
 run iris-image docker build --label "com.docker.compose.project=$PROCESS_COMPOSE_PROJECT" -t "$PROCESS_COMPOSE_PROJECT/mira-communication-agent-worker:$round" communication-agent-worker
 run temis-image docker build --label "com.docker.compose.project=$PROCESS_COMPOSE_PROJECT" -t "$PROCESS_COMPOSE_PROJECT/mira-meta-ad-approver-worker:$round" meta-ad-approver-worker

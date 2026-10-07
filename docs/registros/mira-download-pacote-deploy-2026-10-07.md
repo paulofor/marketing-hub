@@ -54,3 +54,15 @@ do transporte neste run. A decisão acima se baseia nos logs e no pacote real.
   As dependências locais rsync e parser YAML foram disponibilizadas na sandbox.
 - Nenhuma imagem foi reconstruída manualmente para produção, transferida por SSH pelo
   modelo ou aplicada fora do pipeline. A correção será entregue por PR, revisão e merge.
+
+## Conferência de compatibilidade
+
+A CI do PR 5531 identificou uma referência direta da candidata v6 ao workflow backend-ci.yml.
+O código da experiência não mudou, mas aquela prova tinha o hash anterior. A atestação v7
+registra o novo contrato de CI e o downloader validado, conservando v6, o fingerprint da
+experiência, sua imagem e a ausência de publicação automática. As referências vigentes dos
+outros produtos permanecem intactas; não foi criada atestação adicional para Alcyone.
+
+O roteiro local de comunicação já empacotava as provas somente no fim. Essa conferência
+foi antecipada, com seus testes de contrato, antes do backend; não há um segundo empacotador.
+Isso evita repetir testes demorados ou abrir PR com referência incompatível.

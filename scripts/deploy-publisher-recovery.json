@@ -20,7 +20,7 @@
   "product-discovery-worker-ci.yml": {"requires_app": true, "publication_job": "deploy"},
   "customer-agent-worker-ci.yml": {"requires_app": true, "publication_job": "Deploy worker"},
   "meta-ad-approver-worker-ci.yml": {"requires_app": true, "publication_job": "Deploy independent agent"},
-  "landing-generator-agent-worker-ci.yml": {"requires_app": true, "publication_job": "deploy"},
+  "landing-generator-agent-worker-ci.yml": {"requires_app": true, "publication_job": "Deploy worker"},
   "experiment-strategist-worker-ci.yml": {"requires_app": true, "publication_job": "Deploy worker"},
   "financial-agent-worker-ci.yml": {"requires_app": true, "publication_job": "Deploy worker"},
   "communication-agent-worker-ci.yml": {"requires_app": true, "publication_job": "Deploy worker"},

@@ -374,6 +374,7 @@ async function execute(scenarioCode, deviceProfile, condition) {
       scenarioCode,
       deviceProfile,
       condition,
+      screenshotEvidenceKeys: [key],
       status: "PASS",
       prototypeVersion: current.prototypeVersion,
       evidenceId: current.id,

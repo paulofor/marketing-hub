@@ -42,8 +42,21 @@ cat >"$round_dir/input.json" <<'JSON'
 JSON
 PDE_INTERNAL_API_TOKEN=mira-local-internal-only node customer-agent-worker/src/main/resources/browser/mira-candidate-harness.mjs "$round_dir/input.json" "$round_dir/report.json" "$round_dir/captures"
 PDE_INTERNAL_API_TOKEN=mira-local-internal-only node infra/testing/mira-candidate/history-browser-test.mjs "$round_dir/input.json" "$round_dir/history.json"
+for scenario in ADHERENT RECOVERY SAFETY; do
+  python3 - "$round_dir/input.json" "$round_dir/scenario-$scenario-input.json" "$scenario" <<'PY'
+import json,sys
+value=json.load(open(sys.argv[1]))
+value.update(mode='SCENARIO',scenarioCode=sys.argv[3],captureSessionId='mira-local-'+sys.argv[3])
+if sys.argv[3]=='RECOVERY':
+    value.update(productId=8017,cycleId=7017,sourceReference='experiment:9017')
+with open(sys.argv[2],'w') as output:json.dump(value,output)
+PY
+  PDE_INTERNAL_API_TOKEN=mira-local-internal-only node customer-agent-worker/src/main/resources/browser/mira-candidate-harness.mjs \
+    "$round_dir/scenario-$scenario-input.json" "$round_dir/scenario-$scenario.json" "$round_dir/captures-$scenario"
+done
 MIRA_LOCAL_REPORT="$round_dir/report.json" mvn -q -f backend/ads-service/pom.xml -Dtest=PdeInputComparisonScenarioMatrixV1Test test >"$round_dir/backend-contract-tests.log" 2>&1
-MIRA_LOCAL_REPORT="$round_dir/report.json" mvn -q -f customer-agent-worker/pom.xml -Dtest=PdeAgentValidationHarnessRunnerTest test >"$round_dir/worker-contract-tests.log" 2>&1
+MIRA_LOCAL_REPORT="$round_dir/report.json" MIRA_LOCAL_SCENARIO_REPORT_DIR="$round_dir" \
+  mvn -q -f customer-agent-worker/pom.xml test >"$round_dir/worker-contract-tests.log" 2>&1
 python3 - "$round_dir/report.json" <<'PY'
 import json,sys
 report=json.load(open(sys.argv[1]))

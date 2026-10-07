@@ -26,6 +26,28 @@ APP_AGENTS = {
 }
 
 
+def workflow_job_names(workflow):
+    """Obtém os nomes públicos dos jobs; um name explícito substitui o identificador YAML."""
+    names = {}
+    current = None
+    inside_jobs = False
+    for line in (ROOT / ".github/workflows" / workflow).read_text().splitlines():
+        if line == "jobs:":
+            inside_jobs = True
+            continue
+        if not inside_jobs:
+            continue
+        match = re.fullmatch(r"  ([A-Za-z_][A-Za-z0-9_-]*):", line)
+        if match:
+            current = match.group(1)
+            names[current] = current
+            continue
+        match = re.fullmatch(r"    name:\s*(.+)", line)
+        if current and match:
+            names[current] = match.group(1).strip('"\'')
+    return names
+
+
 def workflow_dispatch_inputs(workflow):
     """Lê o subconjunto simples de inputs do workflow sem reinterpretar expressões YAML."""
     contracts = {}
@@ -480,6 +502,29 @@ class AutomaticRecoveryTest(unittest.TestCase):
         self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
         self.assertEqual(self.github.dispatches, [])
 
+    def test_dedalo_completed_dispatch_is_reused_by_its_actual_job_name(self):
+        """Reproduz o recibo de Dédalo sem derivar o nome do job da própria política testada."""
+        self.prepare(["dedalo"])
+        run = self.github.add_run("landing-generator-agent-worker-ci.yml", event="workflow_dispatch")
+        self.github.jobs[run["id"]] = [
+            {"name": "test-build", "conclusion": "success"},
+            {"name": "Resolve tested worker revision", "conclusion": "skipped"},
+            {"name": "Deploy worker", "conclusion": "success"},
+        ]
+        self.assertEqual(self.recovery.reconcile()["status"], "COMPLETE")
+        self.assertEqual(self.github.dispatches, [])
+
+    def test_dedalo_build_success_without_publication_remains_blocked(self):
+        """Preserva o gate que exige publicação executada, mesmo com o build aprovado."""
+        self.prepare(["dedalo"])
+        run = self.github.add_run("landing-generator-agent-worker-ci.yml", event="workflow_dispatch")
+        self.github.jobs[run["id"]] = [
+            {"name": "test-build", "conclusion": "success"},
+            {"name": "Deploy worker", "conclusion": "skipped"},
+        ]
+        self.assertEqual(self.recovery.reconcile()["status"], "BLOCKED")
+        self.assertEqual(self.github.dispatches, [])
+
     def test_pde_noop_push_is_not_mistaken_for_publication(self):
         self.prepare(["pde"])
         self.github.add_run("pde-platform-metodo-musa-ci.yml")
@@ -831,10 +876,14 @@ class RecoveryContractsTest(unittest.TestCase):
                 self.assertTrue(POLICY[workflow].get("requires_app"), workflow)
                 publication_job = POLICY[workflow].get("publication_job")
                 self.assertTrue(publication_job, workflow)
-                if publication_job == "deploy":
-                    self.assertRegex(source, r"(?m)^  deploy:\s*$")
-                else:
-                    self.assertIn(f"name: {publication_job}", source)
+                self.assertIn(publication_job, workflow_job_names(workflow).values(), workflow)
+
+    def test_every_publication_job_matches_the_name_returned_by_github(self):
+        """Impede que renomear qualquer publicador deixe o reconciliador preso após o deploy."""
+        for workflow, policy in POLICY.items():
+            if publication_job := policy.get("publication_job"):
+                with self.subTest(workflow=workflow):
+                    self.assertIn(publication_job, workflow_job_names(workflow).values(), workflow)
 
     def test_all_publication_checkouts_guard_recovery_before_mutations(self):
         for name in POLICY:

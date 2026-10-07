@@ -1,0 +1,18 @@
+{
+  "cardKey": "playlist-musical-adaptativa-eeg-prazer",
+  "collection": "prazer-audio-visual",
+  "title": "Personalização musical adaptativa precisa provar valor além do baseline estático",
+  "finding": "Em um experimento com playlists personalizadas, a condição desenhada para aumentar prazer e atualizada por EEG intra-auricular apresentou as maiores médias de chills e prazer e superou condições desenhadas para reduzir prazer; porém, as comparações relatadas não estabeleceram de forma robusta superioridade sobre a playlist de aumento já personalizada sem EEG.",
+  "mechanism": "Um circuito fechado pode atualizar a seleção musical com sinais momentâneos do usuário, potencialmente capturando variações individuais que características acústicas e preferências estáticas não representam; a contribuição incremental do sinal neural precisa ser isolada experimentalmente.",
+  "commercialApplication": "Em música ou vídeo com IA, comparar personalização adaptativa por preferência/histórico e sinais momentâneos contra um baseline estático igualmente forte, medindo prazer, chills, abandono e satisfação antes de justificar sensores fisiológicos.",
+  "evidenceStrength": "Média: estudo humano com quatro condições personalizadas, modelo individual e avaliação dentro dos participantes; avaliação final n=20, rótulos de EEG confundem autoescolha com familiaridade/preferência e não houve superioridade robusta demonstrada sobre o baseline de aumento sem EEG.",
+  "publishedOn": "2026-10-07",
+  "validUntil": "2026-11-21",
+  "experimentHypothesis": "Uma política de trilha adaptativa que atualiza recomendações com respostas momentâneas do usuário aumentará prazer e chills em relação a uma personalização estática; o sinal fisiológico só será mantido se acrescentar ganho mensurável sobre o mesmo sistema sem fisiologia.",
+  "risks": "EEG e outros biomarcadores podem acrescentar custo, privacidade, latência e falsa precisão sem benefício incremental; não inferir dopamina a partir do classificador.",
+  "limits": "Amostra final pequena, conflito potencial entre familiaridade e prazer nos rótulos de treinamento e autores empregados pela empresa que desenvolveu a tecnologia; nenhuma evidência de efeito em compra ou retenção comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-07-playlist-musical-adaptativa-eeg-prazer.md",
+  "sourceTitle": "Fonte revisada — playlist musical adaptativa com EEG e prazer",
+  "sourceSha256": "21d369f60d3f89a3af2ab22abbeaf73241c5600af40ebddb7b8d228d48392e37"
+}

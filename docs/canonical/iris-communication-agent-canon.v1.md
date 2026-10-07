@@ -412,3 +412,18 @@ Checkout, HTML corrente e esse contrato técnico são saídas de etapas posterio
 mensagem, o produto nem a prova visual já aprovados. Por isso ficam fora de
 `communicationInputHash`; preço, CTA, versão, estratégia, economia, gate e pixels continuam dentro
 da impressão digital e qualquer mudança neles reabre o contrato de comunicação.
+
+### Retomada criativa com declaração privada atualizada — 2026-10-07
+
+Uma mudança válida em `PDE_PRIVATE_CREATIVE_PREPARATION_V1` deve integrar a versão de
+entrada de `creative-production-approval` usada pela automação. A retomada do processo
+pai não depende de o usuário retomar manualmente cada filho. O provedor de comunicação
+existente informa a revisão canônica da declaração, incluindo briefing ou pedido
+governado; o núcleo genérico conserva as proteções de identidade, pausa e deduplicação.
+
+Essa revisão é independente do hash da mensagem: a declaração técnica nova não
+invalida a mensagem aceita. Artefatos produzidos, custo, horários e ordenação de mapas
+não constituem mudança de entrada. Ausência de declaração ou contrato inválido conserva
+o caminho anterior e seus gates. O evento de disparo registra `executionInputHash`
+sem expor o contexto bruto. A nova entrada permite uma tentativa, preservando o resultado
+e o custo anteriores; falha sem mudança não dispara outra inferência automaticamente.

@@ -29,7 +29,9 @@ public class PrivateCreativePreparationContext {
     return MODES.contains(mode);
   }
 
-  /** Acrescenta requisitos de avaliação sem mudar a estratégia, os formatos comerciais ou verbas. */
+  /**
+   * Acrescenta requisitos de avaliação sem mudar a estratégia, os formatos comerciais ou verbas.
+   */
   public Map<String, Object> enrich(String reference, Map<String, Object> input) {
     JsonNode context = json.valueToTree(input);
     if (!MODES.contains(context.path("mode").asText())
@@ -105,15 +107,21 @@ public class PrivateCreativePreparationContext {
         : null;
   }
 
-  /** Identifica a declaração restrita; ausência mantém o contrato legado sem dispensar vídeo. */
-  static boolean isBriefOnly(JsonNode contract, String reference) {
+  /** Reconhece a declaração privada da mesma referência sem conceder publicação ou gasto. */
+  static boolean isPreparation(JsonNode contract, String reference) {
     return VERSION.equals(contract.path("contractVersion").asText())
         && "PRIVATE_PREPARATION".equals(contract.path("scope").asText())
+        && reference != null
         && reference.equals(contract.path("sourceReference").asText())
-        && "BRIEF_ONLY".equals(contract.path("audiovisualProductionIntent").asText())
         && contract.path("nonAudiovisualEvidenceRequired").asBoolean(false)
         && !contract.path("publicationAuthorized").asBoolean(true)
         && !contract.path("spendAuthorized").asBoolean(true)
         && !contract.path("commercialEvidenceClaimed").asBoolean(true);
+  }
+
+  /** Identifica briefing restrito; ausência mantém o contrato legado sem dispensar vídeo. */
+  static boolean isBriefOnly(JsonNode contract, String reference) {
+    return isPreparation(contract, reference)
+        && "BRIEF_ONLY".equals(contract.path("audiovisualProductionIntent").asText());
   }
 }

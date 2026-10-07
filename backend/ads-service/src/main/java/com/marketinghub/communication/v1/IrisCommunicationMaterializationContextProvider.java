@@ -92,6 +92,34 @@ public class IrisCommunicationMaterializationContextProvider
     return Optional.of(preparation(sourceReference, context(sourceReference, scope.get())));
   }
 
+  /**
+   * Identifica a entrada privada do subprocesso criativo, preservando a mensagem aceita e ignorando
+   * artefatos, custos e horários gerados pela própria execução.
+   */
+  @Override
+  @Transactional(readOnly = true)
+  public Optional<String> executionInputVersion(String processCode, String sourceReference) {
+    if (!"creative-production-approval".equals(processCode)) return Optional.empty();
+    return resolve(sourceReference)
+        .filter(input -> "AVAILABLE".equals(input.get("availability")))
+        .filter(input -> "READY".equals(input.get("inputReadiness")))
+        .filter(
+            input ->
+                PrivateCreativePreparationContext.isPrivateMode(String.valueOf(input.get("mode"))))
+        .map(input -> objectMapper.valueToTree(input).path(PrivateCreativePreparationContext.FIELD))
+        .filter(
+            contract -> PrivateCreativePreparationContext.isPreparation(contract, sourceReference))
+        .filter(
+            contract ->
+                List.of("BRIEF_ONLY", "GOVERNED_PRODUCTION_REQUESTED")
+                    .contains(contract.path("audiovisualProductionIntent").asText()))
+        .map(
+            contract ->
+                PrivateCreativePreparationContext.VERSION
+                    + ":"
+                    + IrisCommunicationInputFingerprint.hash(objectMapper, contract));
+  }
+
   /** Explicita o requisito técnico de prova sem substituir ou reaprovar a mensagem anterior. */
   private Map<String, Object> preparation(String reference, Map<String, Object> input) {
     return privatePreparation == null ? input : privatePreparation.enrich(reference, input);

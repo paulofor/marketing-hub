@@ -315,7 +315,7 @@ public class ProcessRunService {
   /**
    * Observa provas, recupera passagens compatíveis e trata retornos condicionais na referência
    * congelada; preserva esperas legítimas e encerra contextos sem autorização após receber o
-   * trabalho das delegações.
+   * trabalho das delegações. Registra a impressão digital da entrada usada em cada disparo.
    */
   private ProcessRunResponse advance(ProcessRun run) {
     if (Set.of("PAUSED", "COMPLETED", "ERROR", "CLOSED").contains(run.getStatus()))
@@ -547,7 +547,8 @@ public class ProcessRunService {
       return response(run);
     }
     var correctionInputs = ProcessRunCorrectionInputs.resolve(run, activity, ordered, graph, json);
-    String actionKey = actionKey(run, activity, ordered, correctionInputs);
+    String inputVersion = String.valueOf(context.inputVersion(run));
+    String actionKey = actionKey(run, activity, ordered, correctionInputs, inputVersion);
     if (events.existsByRunIdAndActionKey(run.getId(), actionKey)) {
       transition(
           run,
@@ -589,6 +590,8 @@ public class ProcessRunService {
             result.tasks().stream().map(t -> t.id()).toList(),
             "retryEpoch",
             run.getRetryEpoch(),
+            "executionInputHash",
+            hash(inputVersion),
             "correctionInputHash",
             correctionInputs.isEmpty() ? "" : hash(correctionInputs.toString())));
     return response(run);
@@ -870,14 +873,15 @@ public class ProcessRunService {
   }
 
   /**
-   * Relaciona a tentativa à entrada, às provas e ao parecer novo; preserva chaves históricas quando
-   * não há correção e nunca inclui a própria falha como progresso.
+   * Relaciona a tentativa à entrada já resolvida, às provas e ao parecer novo; preserva chaves
+   * históricas sem correção e nunca inclui a própria falha como progresso.
    */
   private String actionKey(
       ProcessRun run,
       ProductProcessActivityExecutionGroupResponse activity,
       List<ProductProcessActivityExecutionGroupResponse> ordered,
-      List<String> correctionInputs) {
+      List<String> correctionInputs,
+      String inputVersion) {
     var proofs =
         ordered.stream()
             .filter(a -> !a.activityId().equals(activity.activityId()) && a.objectiveAchieved())
@@ -900,7 +904,7 @@ public class ProcessRunService {
             + "|"
             + activity.activityId()
             + "|"
-            + context.inputVersion(run)
+            + inputVersion
             + "|"
             + activity.activityObjective()
             + "|"

@@ -31,7 +31,10 @@ class RunnerContractTest(unittest.TestCase):
         }
         # O Maven encerra o teste no próximo gate; nenhum container ou banco é iniciado.
         for name, body in {
-            "python3": '[[ "$*" == "scripts/test-backend-ci-workflow.py" ]] || exit 99\ntouch backend-ci-contract-called\n',
+            "python3": 'case "$*" in\n'
+                       'scripts/test-backend-ci-workflow.py) touch backend-ci-contract-called ;;\n'
+                       'infra/testing/process-automation/test-delivery-contract.py) touch delivery-contract-called ;;\n'
+                       '*) exit 99 ;;\nesac\n',
             "mvn": "touch maven-called\necho 'falha simulada do próximo gate'\nexit 37\n",
             "docker": '[[ "$*" == *"down --volumes --remove-orphans" ]] || exit 99\ntouch cleanup-called\n',
         }.items():
@@ -56,9 +59,25 @@ class RunnerContractTest(unittest.TestCase):
         self.assertRegex(report, r"# tests [1-9][0-9]*")
         self.assertRegex(report, r"# fail 0\b")
         self.assertTrue((self.root / "backend-ci-contract-called").exists())
+        self.assertTrue((self.root / "delivery-contract-called").exists())
         self.assertTrue((self.root / "maven-called").exists())
         self.assertIn("backend-tests.log", result.stderr)
         self.assertIn("falha simulada do próximo gate", result.stderr)
+        self.assertTrue((self.root / "cleanup-called").exists())
+        self.assertFalse((self.output / "result.txt").exists())
+
+    def test_delivery_failure_stops_before_worker_and_backend_tests(self):
+        """Contrato leve inválido é diagnosticado antes da matriz longa e ainda limpa recursos."""
+        contract = self.root / "bin/python3"
+        contract.write_text('#!/usr/bin/env bash\n'
+                            '[[ "$*" == "scripts/test-backend-ci-workflow.py" ]] && exit 0\n'
+                            'echo "entrega do executor inválida"\nexit 29\n')
+        result = self.run_runner()
+        self.assertEqual(result.returncode,29,result.stdout + result.stderr)
+        self.assertIn("delivery-contract.log",result.stderr)
+        self.assertIn("entrega do executor inválida",result.stderr)
+        self.assertFalse((self.output / "worker-tests.log").exists())
+        self.assertFalse((self.root / "maven-called").exists())
         self.assertTrue((self.root / "cleanup-called").exists())
         self.assertFalse((self.output / "result.txt").exists())
 

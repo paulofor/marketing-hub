@@ -122,4 +122,111 @@ for index, command in enumerate(commands):
 print('[ARQUITETURA] Rsync real preservou revisões, credenciais locais e volumes nas três sincronizações.')
 PY
 
+# Executa também a publicação Maven com ferramentas locais, antes de qualquer deploy.
+python3 - "${WORKFLOW_FILE}" <<'PY'
+#!/usr/bin/env python3
+"""Executa a publicação do workflow com Maven local e falhas históricas do registry."""
+import json
+import os
+import sys
+from pathlib import Path
+import subprocess
+import tempfile
+import textwrap
+import unittest
+
+WORKFLOW = Path(sys.argv[1]).resolve()
+
+
+def publication_script():
+    """Extrai o bloco operacional real; o teste não mantém uma cópia da classificação."""
+    workflow = WORKFLOW.read_text()
+    block = workflow.split('      - name: Publish backend library for dependent workers\n', 1)[1]
+    body = block.split('        run: |\n', 1)[1].split('\n      - ', 1)[0]
+    return textwrap.dedent(body).strip() + '\n'
+
+
+class GitHubPackagePublicationTest(unittest.TestCase):
+    """Confere recuperação limitada, falha permanente e publicação única com ferramentas locais."""
+
+    def execute(self, failures):
+        """Simula só Maven e espera; bash, pipefail, tee, logs e decisões são os reais."""
+        with tempfile.TemporaryDirectory(prefix='packages-contract-') as temporary:
+            directory = Path(temporary)
+            tools = directory / 'bin'; tools.mkdir()
+            (directory / 'failures.json').write_text(json.dumps(failures))
+            (tools / 'mvn').write_text('''#!/usr/bin/env python3
+import json,os,pathlib,sys
+root=pathlib.Path(os.environ['PACKAGES_TEST_ROOT'])
+count=root/'calls.json';calls=json.loads(count.read_text()) if count.exists() else []
+calls.append(sys.argv[1:]);count.write_text(json.dumps(calls))
+failures=json.loads((root/'failures.json').read_text())
+if len(calls)<=len(failures):print(failures[len(calls)-1]);sys.exit(1)
+print('BUILD SUCCESS')
+''')
+            (tools / 'sleep').write_text('''#!/usr/bin/env python3
+import json,os,pathlib,sys
+root=pathlib.Path(os.environ['PACKAGES_TEST_ROOT']);path=root/'sleeps.json'
+values=json.loads(path.read_text()) if path.exists() else []
+values.append(sys.argv[1:]);path.write_text(json.dumps(values))
+''')
+            for executable in tools.iterdir():executable.chmod(0o755)
+            environment = dict(os.environ, PATH=str(tools)+os.pathsep+os.environ['PATH'],
+                               PACKAGES_TEST_ROOT=str(directory), TMPDIR=str(directory))
+            result = subprocess.run(['bash', '-c', publication_script()], cwd=directory,
+                                    env=environment, capture_output=True, text=True, timeout=15)
+            calls = json.loads((directory/'calls.json').read_text())
+            sleeps = json.loads((directory/'sleeps.json').read_text()) if (directory/'sleeps.json').exists() else []
+            leftover = [p.name for p in directory.iterdir() if p.name.startswith('tmp.')]
+            self.assertEqual(leftover, [], 'Logs temporários devem ser removidos em sucesso/falha.')
+            for call in calls:
+                self.assertIn('org.apache.maven.plugins:maven-deploy-plugin:3.1.1:deploy-file',call)
+                self.assertIn('-Dfile=target/app.jar',call)
+                self.assertIn('-Dversion=0.0.1-SNAPSHOT',call)
+            return result, calls, sleeps
+
+    def test_actual_maven_http_status_500_recovers_without_another_release(self):
+        failure='[\x1b[31;1mERROR\x1b[0m] Could not transfer artifact from/to github (https://maven.pkg.github.com/fixture/one): HTTP Status: 500 -> Help 1'
+        result,calls,sleeps=self.execute([failure])
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertEqual(len(calls),2);self.assertEqual(calls[0],calls[1])
+        self.assertEqual(sleeps,[['20']])
+
+    def test_other_artifact_and_legacy_status_format_have_the_same_rule(self):
+        for failure in ['Failed to deploy fixture/two: HTTP Status: 502',
+                        'Failed to deploy fixture/three: status code: 503',
+                        'Failed to deploy fixture/four: HTTP status: 504']:
+            with self.subTest(failure=failure):
+                result,calls,sleeps=self.execute([failure])
+                self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+                self.assertEqual(len(calls),2);self.assertEqual(sleeps,[['20']])
+
+    def test_persistent_server_failure_stops_after_three_attempts(self):
+        result,calls,sleeps=self.execute(['HTTP Status: 500']*3)
+        self.assertNotEqual(result.returncode,0)
+        self.assertEqual(len(calls),3);self.assertEqual(sleeps,[['20'],['40']])
+        self.assertIn('após 3 tentativas',result.stderr)
+
+    def test_credentials_and_functional_errors_are_not_retried(self):
+        for failure in ['HTTP Status: 401','HTTP Status: 403','status code: 403',
+                        'COMPILATION ERROR','Could not transfer artifact: invalid configuration']:
+            with self.subTest(failure=failure):
+                result,calls,sleeps=self.execute([failure])
+                self.assertNotEqual(result.returncode,0)
+                self.assertEqual(len(calls),1);self.assertEqual(sleeps,[])
+                self.assertIn('Falha permanente',result.stderr)
+
+    def test_transport_failure_recovers_and_valid_publish_runs_once(self):
+        for failures in [[],['Connection reset'],['Connection refused'],['Read timed out']]:
+            with self.subTest(failures=failures):
+                result,calls,sleeps=self.execute(failures)
+                self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+                self.assertEqual(len(calls),len(failures)+1)
+                self.assertEqual(sleeps,[['20']] if failures else [])
+
+
+if __name__ == '__main__':unittest.main(argv=[sys.argv[0]])
+
+PY
+
 printf 'Contrato de deploy transacional validado.\n'

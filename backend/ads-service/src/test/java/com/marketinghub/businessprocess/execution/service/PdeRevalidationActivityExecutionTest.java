@@ -30,6 +30,181 @@ import org.springframework.web.server.ResponseStatusException;
  * trabalho ativo.
  */
 class PdeRevalidationActivityExecutionTest {
+  /** Reabre somente Têmis e encerra o retorno condicional após um novo parecer independente. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {10L, 110L})
+  void reopensIntegrityWithCompiledEvidenceAndPreservesCompletedReviews(long productId) {
+    var json = new ObjectMapper();
+    var processes = mock(BusinessProcessDefinitionRepository.class);
+    var definitions = mock(BusinessProcessActivityDefinitionRepository.class);
+    var tasks = mock(AgentTaskRepository.class);
+    var instances = mock(BusinessProcessActivityInstanceRepository.class);
+    var products = mock(ProductRepository.class);
+    var predecessors = mock(ProductProcessActivityPredecessorService.class);
+    var agentTasks = mock(AgentTaskService.class);
+    when(predecessors.readiness(any(), any(), anyString()))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Provas preservadas."));
+    var gate = new PdeAgentValidationReworkReadinessProvider(predecessors, tasks, json);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        gate,
+        "operationalEvidence",
+        new com.marketinghub.product.service.agentvalidation.PdeOperationalControlEvidence(
+            json, new org.springframework.core.io.DefaultResourceLoader()));
+    var service =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            definitions,
+            tasks,
+            mock(AgentTaskActivityCoverageRepository.class),
+            instances,
+            mock(CommercialPlanRepository.class),
+            null,
+            products,
+            mock(ExperimentRepository.class),
+            agentTasks,
+            json,
+            List.of(),
+            List.of(gate));
+    String reference = "product:" + productId + "@agent-validation-v1";
+    String version = "mira-private-candidate-v3";
+    var process = process(70L, 11);
+    var product =
+        Product.builder()
+            .id(productId)
+            .slug("pde-planejado-36")
+            .automaticExecutionEnabled(true)
+            .validationDefinitionVersion("PDE_AGENT_VALIDATION_V1")
+            .validationDefinitionJson(
+                "{\"privatePrototypeAcceptance\":{\"prototypeVersion\":\"" + version + "\"}}")
+            .build();
+    String[] codes = {
+      "technicalHomologation",
+      "psiqueAdherent",
+      "psiqueRecovery",
+      "psiqueSafety",
+      "commercialIntegrityReview",
+      "prototypeCorrection"
+    };
+    var activityList = new java.util.ArrayList<BusinessProcessActivityDefinition>();
+    var history = new java.util.ArrayList<AgentTask>();
+    var diagram = json.createObjectNode();
+    var nodes = diagram.putArray("nodes");
+    for (int index = 0; index < codes.length; index++) {
+      String code = codes[index];
+      String agent =
+          code.equals("commercialIntegrityReview")
+              ? "meta-ad-approver"
+              : code.equals("prototypeCorrection") ? "landing-generator" : "customer-agent";
+      var activity = activity(710L + index, process, code, agent);
+      var node = nodes.addObject().put("id", code).put("type", "TASK");
+      node.putArray("responsibleAgentKeys").add(agent);
+      if (code.equals("prototypeCorrection")) {
+        node.put("activationMode", "ON_FUNCTIONAL_REJECTION");
+        node.put("responsibilityDomain", "PDE_FUNCTIONAL_REWORK");
+        var targets = node.putArray("remediatesActivities");
+        for (int review = 0; review < 5; review++) targets.add(codes[review]);
+      }
+      activity.setDefinitionJson(node.toString());
+      activityList.add(activity);
+      var task = task(627L + index, process, code, index < 4 ? "COMPLETED" : "BLOCKED");
+      task.setSourceReference(reference);
+      task.setDeliveredAt(index < 4 ? task.getCreatedAt() : null);
+      task.setBlockerCategory(index < 4 ? null : "FUNCTIONAL_ADJUSTMENT");
+      task.setResultJson(
+          "{\"decision\":\""
+              + (index < 4 ? "APPROVED" : "BLOCKED")
+              + "\",\"prototypeVersion\":\""
+              + version
+              + "\"}");
+      history.add(task);
+    }
+    var gateNode =
+        nodes
+            .addObject()
+            .put("id", "agentValidationGate")
+            .put("type", "TASK")
+            .put("executionMode", "DETERMINISTIC")
+            .put("responsibilityDomain", "PDE_AGENT_VALIDATION_GATE");
+    var gateActivity = activity(716L, process, "agentValidationGate", "backend");
+    gateActivity.setDefinitionJson(gateNode.toString());
+    activityList.add(gateActivity);
+    process.setDiagramJson(diagram.toString());
+    when(processes.findById(70L)).thenReturn(Optional.of(process));
+    when(products.findById(productId)).thenReturn(Optional.of(product));
+    when(definitions.findAllByProcessDefinitionIdOrderByIdAsc(70L)).thenReturn(activityList);
+    when(definitions.findByProcessDefinitionIdAndActivityId(70L, "commercialIntegrityReview"))
+        .thenReturn(Optional.of(activityList.get(4)));
+    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
+            "product:" + productId + "@"))
+        .thenReturn(history);
+    when(tasks
+            .findBySourceReferenceStartingWithAndProcessDefinitionProcessCodeOrderByUpdatedAtDescIdDesc(
+                "product:" + productId + "@", "pde-construction-approval"))
+        .thenReturn(history);
+    when(tasks.findById(631L)).thenReturn(Optional.of(history.get(4)));
+    when(tasks.findPdeValidationTaskSnapshots(reference, "pde-construction-approval"))
+        .thenAnswer(
+            ignored ->
+                history.stream()
+                    .map(
+                        task ->
+                            new PdeValidationTaskSnapshot(
+                                task.getId(),
+                                process.getId(),
+                                task.getProcessActivityId(),
+                                task.getStatus(),
+                                task.getBlockerCategory(),
+                                task.getBlockerAction(),
+                                task.getResultJson(),
+                                task.getExecutionError()))
+                    .toList());
+    when(agentTasks.retryBlockedByHumanOrRefreshPending(any(), eq(true)))
+        .thenReturn(mock(AgentTaskResponse.class));
+
+    var before = service.productProcessExecutions(70L, productId);
+    assertThat(before.currentActivityId()).isEqualTo("commercialIntegrityReview");
+    assertThat(
+            before.activities().stream()
+                .filter(a -> a.executionRequestAvailable())
+                .map(a -> a.activityId())
+                .toList())
+        .containsExactly("commercialIntegrityReview");
+    assertThat(
+            service
+                .requestProductActivityExecution(70L, productId, "commercialIntegrityReview")
+                .tasks())
+        .hasSize(1);
+    verify(agentTasks)
+        .retryBlockedByHumanOrRefreshPending(
+            argThat(request -> "commercialIntegrityReview".equals(request.processActivityId())),
+            eq(true));
+
+    var approved = task(633L, process, "commercialIntegrityReview", "COMPLETED");
+    approved.setSourceReference(reference);
+    approved.setResultJson("{\"decision\":\"APPROVED\",\"prototypeVersion\":\"" + version + "\"}");
+    history.add(approved);
+    var after = service.productProcessExecutions(70L, productId);
+    assertThat(after.objectiveAchieved()).isFalse();
+    assertThat(after.currentActivityId()).isEqualTo("agentValidationGate");
+    assertThat(
+            after.activities().stream()
+                .filter(
+                    a ->
+                        !"prototypeCorrection".equals(a.activityId())
+                            && !"agentValidationGate".equals(a.activityId()))
+                .allMatch(a -> a.objectiveAchieved()))
+        .isTrue();
+    assertThat(
+            after.activities().stream()
+                .filter(a -> "prototypeCorrection".equals(a.activityId()))
+                .findFirst()
+                .orElseThrow()
+                .operationalState())
+        .isEqualTo("RECORDED");
+    assertThat(history.get(4).getStatus()).isEqualTo("BLOCKED");
+    assertThat(history.get(5).getStatus()).isEqualTo("BLOCKED");
+  }
+
   /** Exercita o serviço da tela junto ao gate real de retrabalho e preserva a prova anterior. */
   @ParameterizedTest
   @CsvSource({

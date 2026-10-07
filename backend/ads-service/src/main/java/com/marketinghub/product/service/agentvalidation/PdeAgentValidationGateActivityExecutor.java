@@ -116,6 +116,9 @@ public class PdeAgentValidationGateActivityExecutor
   @Autowired(required = false)
   private PdeAgentValidationCycleContract cycleContracts;
 
+  @Autowired(required = false)
+  private PdeOperationalControlEvidence operationalEvidence;
+
   /** Configura as fontes persistidas e o relógio do gate. */
   @Autowired
   public PdeAgentValidationGateActivityExecutor(
@@ -303,7 +306,9 @@ public class PdeAgentValidationGateActivityExecutor
     AgentTask temis = completedTask(processTasks, "commercialIntegrityReview").orElse(null);
     boolean temisApproved = validateTemis(temis, contract, issues);
     boolean chronologyApproved = validateChronology(technical, psique, temis, issues);
-    chronologyApproved &= validateCorrectionOrder(processTasks, technical, contract, issues);
+    CorrectionOrder correctionOrder =
+        validateCorrectionOrder(processTasks, technical, temis, product, contract, issues);
+    chronologyApproved &= correctionOrder.valid();
     List<AgentTask> evidenceTasks = new ArrayList<>();
     if (technical != null) evidenceTasks.add(technical);
     psique.values().stream().filter(java.util.Objects::nonNull).forEach(evidenceTasks::add);
@@ -328,7 +333,8 @@ public class PdeAgentValidationGateActivityExecutor
         technical,
         java.util.Collections.unmodifiableMap(psique),
         temis,
-        List.copyOf(evidenceTasks));
+        List.copyOf(evidenceTasks),
+        correctionOrder.evidenceResolution());
   }
 
   /** Valida o contrato inicial ou a revalidação da mesma versão em um ciclo comercial aberto. */
@@ -578,10 +584,12 @@ public class PdeAgentValidationGateActivityExecutor
     return valid;
   }
 
-  /** Impede que uma correção mais recente reutilize aprovações produzidas antes de sua entrega. */
-  private boolean validateCorrectionOrder(
+  /** Exige nova técnica após mudança funcional e registra a resolução independente de provas. */
+  private CorrectionOrder validateCorrectionOrder(
       List<AgentTask> processTasks,
       AgentTask technical,
+      AgentTask temis,
+      Product product,
       AgentValidationContract contract,
       List<String> issues) {
     var latest =
@@ -596,8 +604,17 @@ public class PdeAgentValidationGateActivityExecutor
                             task.getResultJson(),
                             task.getDeliveredAt()))
                 .toList());
-    if (latest.isEmpty()) return true;
+    if (latest.isEmpty()) return new CorrectionOrder(true, null);
     var correction = latest.orElseThrow();
+    var correctionTask =
+        processTasks.stream()
+            .filter(task -> correction.id().equals(task.getId()))
+            .findFirst()
+            .orElse(null);
+    var evidenceResolution =
+        resolvedEvidenceCorrection(processTasks, correctionTask, temis, product, contract);
+    if (evidenceResolution.isPresent())
+      return new CorrectionOrder(true, evidenceResolution.orElseThrow());
     boolean valid =
         "COMPLETED".equals(correction.status())
             && correctionPolicy.validForVersion(correction, contract.prototypeVersion())
@@ -606,11 +623,81 @@ public class PdeAgentValidationGateActivityExecutor
             && !deliveredAt(technical).isBefore(correction.deliveredAt());
     if (!valid)
       issues.add("A última correção precisa ser concluída e seguida de nova homologação técnica.");
-    return valid;
+    return new CorrectionOrder(valid, null);
+  }
+
+  /** Vincula a prova nova e Têmis posterior ao histórico, sem afirmar nova entrega funcional. */
+  private Optional<ObjectNode> resolvedEvidenceCorrection(
+      List<AgentTask> history,
+      AgentTask correction,
+      AgentTask temis,
+      Product product,
+      AgentValidationContract contract) {
+    if (operationalEvidence == null
+        || correction == null
+        || temis == null
+        || !"BLOCKED".equals(correction.getStatus())
+        || correction.getUpdatedAt() == null
+        || deliveredAt(temis) == null
+        || temis.getId() <= correction.getId()) return Optional.empty();
+    var evidence = operationalEvidence.resolve(product.getSlug(), contract.prototypeVersion());
+    if (evidence.isEmpty() || !evidence.get().path("reportSha256").asText().matches("[a-f0-9]{64}"))
+      return Optional.empty();
+    try {
+      var draft = json.readTree(correction.getResultJson());
+      var plan = draft.path("correctionPlan");
+      var rejected =
+          history.stream()
+              .filter(task -> task.getId() == plan.path("sourceTaskId").asLong(-1))
+              .findFirst()
+              .orElse(null);
+      if (rejected == null
+          || rejected.getUpdatedAt() == null
+          || rejected.getId() >= correction.getId()
+          || !"BLOCKED".equals(rejected.getStatus())
+          || !"FUNCTIONAL_ADJUSTMENT".equals(rejected.getBlockerCategory())
+          || !"commercialIntegrityReview".equals(rejected.getProcessActivityId())
+          || !"commercialIntegrityReview".equals(plan.path("rejectedActivityId").asText())
+          || !"BLOCKED".equals(draft.path("decision").asText())
+          || !plan.path("verification").path("noExternalSideEffects").asBoolean(false)
+          || !contract.prototypeVersion().equals(plan.path("previousPrototypeVersion").asText()))
+        return Optional.empty();
+      var rejection = json.readTree(rejected.getResultJson());
+      var review = json.readTree(temis.getResultJson());
+      Instant proofAt = Instant.parse(evidence.get().path("generatedAt").asText());
+      boolean valid =
+          contract.prototypeVersion().equals(rejection.path("prototypeVersion").asText())
+              && contract.prototypeVersion().equals(review.path("prototypeVersion").asText())
+              && "APPROVED".equals(review.path("decision").asText())
+              && proofAt.isAfter(rejected.getUpdatedAt())
+              && deliveredAt(temis).isAfter(proofAt)
+              && deliveredAt(temis).isAfter(correction.getUpdatedAt());
+      if (!valid) return Optional.empty();
+      return Optional.of(
+          json.createObjectNode()
+              .put("contractVersion", "PDE_EVIDENCE_CORRECTION_RESOLUTION_V1")
+              .put("correctionTaskId", correction.getId())
+              .put("correctionResultSha256", sha256(correction.getResultJson()))
+              .put("rejectedTaskId", rejected.getId())
+              .put("rejectedResultSha256", sha256(rejected.getResultJson()))
+              .put("independentReviewTaskId", temis.getId())
+              .put("reportSha256", evidence.get().path("reportSha256").asText())
+              .put("reportGeneratedAt", proofAt.toString())
+              .put("prototypeVersion", contract.prototypeVersion())
+              .put("sourceReference", contract.sourceReference()));
+    } catch (Exception ex) {
+      log.warn(
+          "Suplemento não resolve correção PDE. productId={} correctionTaskId={} temisTaskId={}",
+          product.getId(),
+          correction.getId(),
+          temis.getId(),
+          ex);
+      return Optional.empty();
+    }
   }
 
   /**
-   * Reutiliza apenas aprovação com a mesma versão e as mesmas tarefas, preservando novas
+   * Reutiliza apenas aprovação com a mesma versão, tarefas e resolução de provas, preservando novas
    * ocorrências.
    */
   private boolean sameApproval(
@@ -625,6 +712,9 @@ public class PdeAgentValidationGateActivityExecutor
       var current = gateEvidence(product, evaluation, now);
       return previous.path("prototypeVersion").equals(current.path("prototypeVersion"))
           && previous.path("sourceReference").equals(current.path("sourceReference"))
+          && previous
+              .path("evidenceCorrectionResolution")
+              .equals(current.path("evidenceCorrectionResolution"))
           && previous.path("taskEvidence").size() == evaluation.evidenceTasks().size()
           && evaluation.evidenceTasks().stream()
               .allMatch(
@@ -762,7 +852,7 @@ public class PdeAgentValidationGateActivityExecutor
         satisfied ? "Requisito comprovado." : "Conclua ou corrija esta evidência antes do gate.");
   }
 
-  /** Registra ids, hashes, custo e fronteiras comerciais na decisão do backend. */
+  /** Registra tarefas, resolução das provas, hashes, custo e fronteiras na decisão do backend. */
   private ObjectNode gateEvidence(Product product, GateEvaluation evaluation, Instant completedAt) {
     ObjectNode evidence = json.createObjectNode();
     evidence.put("evidenceType", "PDE_AGENT_VALIDATION_GATE_V1");
@@ -789,6 +879,8 @@ public class PdeAgentValidationGateActivityExecutor
     evidence.put("mediaSpendAuthorizedBrl", 0);
     ArrayNode taskEvidence = evidence.putArray("taskEvidence");
     evaluation.evidenceTasks().forEach(task -> taskEvidence.add(taskEvidence(task)));
+    if (evaluation.evidenceResolution() != null)
+      evidence.set("evidenceCorrectionResolution", evaluation.evidenceResolution());
     BigDecimal knownCost = knownCost(evaluation.evidenceTasks());
     if (knownCost != null) evidence.put("knownCostUsd", knownCost);
     evidence.put("costCoverage", costCoverage(evaluation.evidenceTasks()));
@@ -928,7 +1020,10 @@ public class PdeAgentValidationGateActivityExecutor
     }
   }
 
-  /** Mantém o diagnóstico e as tarefas exatas usadas na decisão. */
+  /** Transporta a ordem validada e o recibo opcional da resolução exclusiva de provas. */
+  private record CorrectionOrder(boolean valid, JsonNode evidenceResolution) {}
+
+  /** Mantém o diagnóstico, as tarefas e a resolução exata usadas na decisão. */
   private record GateEvaluation(
       boolean ready,
       AgentValidationContract contract,
@@ -941,5 +1036,6 @@ public class PdeAgentValidationGateActivityExecutor
       AgentTask technical,
       Map<String, AgentTask> psique,
       AgentTask temis,
-      List<AgentTask> evidenceTasks) {}
+      List<AgentTask> evidenceTasks,
+      JsonNode evidenceResolution) {}
 }

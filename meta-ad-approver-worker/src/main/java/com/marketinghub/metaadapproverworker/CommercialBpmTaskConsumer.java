@@ -548,18 +548,31 @@ public class CommercialBpmTaskConsumer {
     };
   }
 
-  /** Seleciona a auditoria multiagente sem substituir o contrato privado histórico. */
+  /** Seleciona o suplemento de controles quando presente, preservando a auditoria histórica. */
   private String promptResourceFor(Map<String, Object> task) {
     return isAgentValidationTask(task)
-        ? "prompts/bpm/pde-agent-validation-review-v4.md"
+        ? (hasOperationalEvidence(task)
+            ? "prompts/bpm/pde-agent-validation-review-v5.md"
+            : "prompts/bpm/pde-agent-validation-review-v4.md")
         : promptResourceFor(processCode(task));
   }
 
-  /** Seleciona o schema que proíbe alegações humanas na validação sintética. */
+  /** Mantém o schema da revisão correspondente sem permitir alegações humanas ou comerciais. */
   private String schemaResourceFor(Map<String, Object> task) {
     return isAgentValidationTask(task)
         ? "prompts/bpm/pde-agent-validation-review-v4-schema.json"
         : schemaResourceFor(processCode(task));
+  }
+
+  /**
+   * Identifica a prova já validada pelo backend sem consultar banco ou recomputar seu resultado.
+   */
+  private boolean hasOperationalEvidence(Map<String, Object> task) {
+    return json.valueToTree(task)
+        .path("taskTarget")
+        .path("pdeContext")
+        .path("operationalControlEvidence")
+        .isObject();
   }
 
   /** Lê o processo congelado no contrato da tarefa reservada. */

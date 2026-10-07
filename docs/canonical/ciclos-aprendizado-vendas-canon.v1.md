@@ -63,6 +63,11 @@ planejamento; a proposta completa, contrapontos e condições mantidas permanece
 Uma mudança de mercado, decisão ambígua, STOP, proposta obsoleta ou evidência inválida
 permanece bloqueada com motivo explícito. A preparação não consome IA adicional.
 
+Nas telas, `budgetLimitBrl` é apresentado como **teto de mídia**, em reais, para anúncios.
+O valor zero desse campo não apaga nem representa uma autorização de IA em USD. IA e
+produção de vídeos conservam limites e autorizações próprios; a exibição não converte,
+soma nem registra autorização de outro tipo de gasto.
+
 Reutilizar o sucessor do mesmo ciclo em replays. Sucessores de canal ou candidatas anteriores
 com outra hipótese não devem ser adotados por proximidade de nome ou produto. Leituras
 administrativas continuam sem efeitos; a fila existente coordena a preparação, e a tela

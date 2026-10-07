@@ -17,9 +17,9 @@ public final class ProductProcessConditionalActivityResolver {
   private static final Set<String> RESOLVED_WITHOUT_OBJECTIVE =
       Set.of("HISTORICAL", "NOT_APPLICABLE", "RECORDED");
   private static final String RECORDED_REASON =
-      "Tentativa condicional cancelada preservada no histórico; os objetivos que acionavam a recuperação já foram comprovados.";
+      "Tentativa condicional encerrada preservada no histórico; os objetivos que acionavam a recuperação já foram comprovados.";
 
-  /** Impede que um cancelamento inerte continue contado como objetivo pendente do processo. */
+  /** Impede que recuperação cancelada ou bloqueada permaneça pendente após todos os aceites. */
   public static List<ProductProcessActivityExecutionGroupResponse> resolve(
       List<ProductProcessActivityExecutionGroupResponse> groups,
       Map<String, BusinessProcessActivityDefinition> definitions,
@@ -32,18 +32,18 @@ public final class ProductProcessConditionalActivityResolver {
                     Function.identity(),
                     (first, ignored) -> first));
     return groups.stream()
-        .map(group -> recordInactiveCancellation(group, byActivityId, definitions, json))
+        .map(group -> recordInactiveRecovery(group, byActivityId, definitions, json))
         .toList();
   }
 
-  /** Classifica somente a recuperação cancelada cujos destinos já deixaram de exigir reparo. */
-  private static ProductProcessActivityExecutionGroupResponse recordInactiveCancellation(
+  /** Registra recuperação inativa somente quando todos os destinos deixaram de exigir reparo. */
+  private static ProductProcessActivityExecutionGroupResponse recordInactiveRecovery(
       ProductProcessActivityExecutionGroupResponse group,
       Map<String, ProductProcessActivityExecutionGroupResponse> byActivityId,
       Map<String, BusinessProcessActivityDefinition> definitions,
       ObjectMapper json) {
     if (!group.selectedVersionActivity()
-        || !"CANCELLED".equals(group.operationalState())
+        || !Set.of("CANCELLED", "BLOCKED").contains(group.operationalState())
         || group.executionRequestAvailable()) return group;
     var definition = definitions.get(group.activityId());
     if (definition == null
@@ -64,7 +64,7 @@ public final class ProductProcessConditionalActivityResolver {
       return recorded(group);
     } catch (Exception ex) {
       log.error(
-          "Falha ao classificar atividade condicional cancelada. activityDefinitionId={} activityId={}",
+          "Falha ao classificar atividade condicional inativa. activityDefinitionId={} activityId={}",
           definition.getId(),
           group.activityId(),
           ex);

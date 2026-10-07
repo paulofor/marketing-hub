@@ -98,7 +98,7 @@ const byStage: Record<string, Field[]> = {
   ],
   AUTHORIZATION: [
     ["productVersion", "Versão homologada", "text"],
-    ["budgetLimitBrl", "Teto total autorizado (R$)", "number"],
+    ["budgetLimitBrl", "Teto total de mídia autorizado (R$)", "number"],
     [
       "confirmed",
       "Confirmo a autorização desta versão, orçamento e janela",

@@ -2194,7 +2194,7 @@ public class BusinessProcessActivityExecutionService {
     return "NOT_STARTED";
   }
 
-  /** Prioriza a correção acionável ou em andamento e depois os demais bloqueios e pendências. */
+  /** Prioriza correção ativa ou nova revisão acionável sem destacar uma correção inerte. */
   private ProductProcessActivityExecutionGroupResponse currentActivity(
       List<ProductProcessActivityExecutionGroupResponse> activities) {
     Optional<ProductProcessActivityExecutionGroupResponse> actionable =
@@ -2207,6 +2207,18 @@ public class BusinessProcessActivityExecutionService {
                         || Set.of("PENDING", "IN_PROGRESS").contains(activity.operationalState()))
             .findFirst();
     if (actionable.isPresent()) return actionable.get();
+    if (activities.stream()
+        .anyMatch(
+            activity ->
+                "prototypeCorrection".equals(activity.activityId())
+                    && "BLOCKED".equals(activity.operationalState())
+                    && !activity.executionRequestAvailable())) {
+      var available =
+          activities.stream()
+              .filter(ProductProcessActivityExecutionGroupResponse::executionRequestAvailable)
+              .findFirst();
+      if (available.isPresent()) return available.get();
+    }
     for (String state : List.of("BLOCKED", "IN_PROGRESS", "PENDING", "NOT_STARTED", "CANCELLED")) {
       Optional<ProductProcessActivityExecutionGroupResponse> matching =
           activities.stream()

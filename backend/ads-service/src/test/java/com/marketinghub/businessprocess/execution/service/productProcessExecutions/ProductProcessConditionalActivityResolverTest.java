@@ -14,10 +14,11 @@ import org.junit.jupiter.params.provider.CsvSource;
 class ProductProcessConditionalActivityResolverTest {
   private final ObjectMapper json = new ObjectMapper();
 
-  /** Preserva o cancelamento na auditoria sem mantê-lo como objetivo após todos os reparos. */
-  @Test
-  void recordsCancelledRecoveryWhenEveryRemediatedObjectiveIsResolved() {
-    var correction = group("prototypeCorrection", "CANCELLED", false, true, false);
+  /** Preserva cancelamento e bloqueio sem contá-los como pendência após todos os aceites. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"CANCELLED", "BLOCKED"})
+  void recordsInactiveRecoveryWhenEveryRemediatedObjectiveIsResolved(String recoveryState) {
+    var correction = group("prototypeCorrection", recoveryState, false, true, false);
     var technical = group("technicalHomologation", "COMPLETED", true, true, false);
     var safety = group("psiqueSafety", "NOT_APPLICABLE", false, true, false);
 
@@ -43,11 +44,15 @@ class ProductProcessConditionalActivityResolverTest {
             });
   }
 
-  /** Mantém o cancelamento acionável quando qualquer destino ainda precisa de correção. */
+  /** Mantém a recuperação histórica pendente quando qualquer destino ainda precisa de aceite. */
   @ParameterizedTest
-  @CsvSource({"BLOCKED,false", "PENDING,false", "CANCELLED,false"})
-  void keepsCancelledRecoveryWhenTargetIsUnresolved(String targetState, boolean targetObjective) {
-    var correction = group("prototypeCorrection", "CANCELLED", false, true, false);
+  @CsvSource({
+    "CANCELLED,BLOCKED,false", "CANCELLED,PENDING,false", "CANCELLED,CANCELLED,false",
+    "BLOCKED,BLOCKED,false", "BLOCKED,PENDING,false", "BLOCKED,CANCELLED,false"
+  })
+  void keepsInactiveRecoveryWhenTargetIsUnresolved(
+      String recoveryState, String targetState, boolean targetObjective) {
+    var correction = group("prototypeCorrection", recoveryState, false, true, false);
     var target = group("technicalHomologation", targetState, targetObjective, true, false);
 
     var result =
@@ -57,7 +62,7 @@ class ProductProcessConditionalActivityResolverTest {
             json);
 
     assertThat(result.getFirst()).isSameAs(correction);
-    assertThat(result.getFirst().operationalState()).isEqualTo("CANCELLED");
+    assertThat(result.getFirst().operationalState()).isEqualTo(recoveryState);
   }
 
   /** Não altera cancelamentos obrigatórios nem recuperações ainda disponíveis para execução. */

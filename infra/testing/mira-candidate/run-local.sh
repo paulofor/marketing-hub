@@ -18,6 +18,14 @@ mvn -q -f backend/ads-service/pom.xml test-compile dependency:build-classpath \
   -Dmdep.outputFile="$round_dir/classpath" -DincludeScope=test -DskipTests
 cp="backend/ads-service/target/test-classes:backend/ads-service/target/classes:$(cat "$round_dir/classpath")"
 docker compose -p "$MIRA_TEST_COMPOSE_PROJECT" -f infra/testing/mira-candidate/compose.yml up -d --wait
+if [[ "${MIRA_CONTROLS_ONLY:-false}" == "true" ]]; then
+  MIRA_CONTROLS_DB_HOST="${MIRA_TEST_DB_HOST:-127.0.0.1}" \
+    mvn -q -f backend/ads-service/pom.xml -Dtest=MiraPrivateControlsMysql57Test test
+  python3 infra/testing/mira-candidate/emit-controls-evidence.py \
+    backend/ads-service/target/surefire-reports/TEST-com.marketinghub.pde.mira.privateprototype.v1.MiraPrivateControlsMysql57Test.xml \
+    "$round_dir/operational-controls.json"
+  exit 0
+fi
 java -Xmx768m -cp "$cp" com.marketinghub.pde.mira.privateprototype.v1.MiraPrivateLocalApplication >"$round_dir/backend.log" 2>&1 &
 backend_pid=$!
 for attempt in {1..60}; do

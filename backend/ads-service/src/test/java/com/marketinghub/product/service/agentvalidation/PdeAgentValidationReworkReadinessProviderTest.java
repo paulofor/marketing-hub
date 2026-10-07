@@ -20,7 +20,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-/** Comprova a rota condicional de correção e revalidação nas revisões compatíveis do PDE. */
+/**
+ * Responsabilidade: comprovar correção, reavaliação com prova nova e preservação das revisões
+ * válidas.
+ */
 class PdeAgentValidationReworkReadinessProviderTest {
   private static final String SOURCE = "product:10@agent-validation-v1";
   private final ProductProcessActivityPredecessorService predecessors =
@@ -279,6 +282,104 @@ class PdeAgentValidationReworkReadinessProviderTest {
     process.setVersionNumber(7);
 
     assertThat(provider.supports(process, activity("prototypeCorrection"))).isFalse();
+  }
+
+  /** Reabre apenas Têmis com prova nova, em identidades distintas, sem repetir matriz e Psique. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {10, 110})
+  void newControlEvidenceReopensOnlyIntegrityReview(long productId) throws Exception {
+    String source = prepareIntegrityEvidence(productId, true);
+    assertThat(
+            provider
+                .readiness(process, activity("commercialIntegrityReview"), product, source)
+                .ready())
+        .isTrue();
+    assertThat(
+            provider.requiresFreshExecution(
+                process, activity("commercialIntegrityReview"), product, source))
+        .isTrue();
+    assertThat(
+            provider.readiness(process, activity("prototypeCorrection"), product, source).ready())
+        .isFalse();
+    for (String previous :
+        List.of("technicalHomologation", "psiqueAdherent", "psiqueRecovery", "psiqueSafety"))
+      assertThat(provider.requiresFreshExecution(process, activity(previous), product, source))
+          .isFalse();
+  }
+
+  /** Uma prova anterior ao bloqueio não autoriza repetir o parecer com entradas iguais. */
+  @Test
+  void unchangedEvidencePreservesBlock() throws Exception {
+    String source = prepareIntegrityEvidence(10, false);
+    assertThat(
+            provider
+                .readiness(process, activity("commercialIntegrityReview"), product, source)
+                .ready())
+        .isFalse();
+    assertThat(
+            provider.requiresFreshExecution(
+                process, activity("commercialIntegrityReview"), product, source))
+        .isFalse();
+    assertThat(
+            provider.readiness(process, activity("prototypeCorrection"), product, source).ready())
+        .isTrue();
+  }
+
+  /** O novo parecer aprovado resolve o bloqueio antigo sem fabricar correção de produto. */
+  @Test
+  void actualLaterApprovalResolvesHistoricalRejection() throws Exception {
+    String source = prepareIntegrityEvidence(10, true);
+    var approved = task(506L, process, "commercialIntegrityReview", "COMPLETED");
+    approved.setSourceReference(source);
+    approved.setResultJson("{\"decision\":\"APPROVED\",\"prototypeVersion\":\"mira-private-v2\"}");
+    history.add(approved);
+    assertThat(
+            provider.readiness(process, activity("prototypeCorrection"), product, source).ready())
+        .isFalse();
+    assertThat(
+            provider.requiresFreshExecution(
+                process, activity("commercialIntegrityReview"), product, source))
+        .isFalse();
+  }
+
+  /** Monta aprovações, rejeição e suplemento temporal sem alterar contratos ou dados publicados. */
+  private String prepareIntegrityEvidence(long productId, boolean fresh) throws Exception {
+    String source = "product:" + productId + "@agent-validation-v1";
+    product.setId(productId);
+    product.setSlug("synthetic-" + productId);
+    when(tasks.findPdeValidationTaskSnapshots(source, "pde-construction-approval"))
+        .thenAnswer(call -> history.stream().map(this::snapshot).toList());
+    long id = 500;
+    for (String activity :
+        List.of("technicalHomologation", "psiqueAdherent", "psiqueRecovery", "psiqueSafety")) {
+      var approved = task(id++, process, activity, "COMPLETED");
+      approved.setSourceReference(source);
+      approved.setResultJson(
+          "{\"decision\":\"APPROVED\",\"prototypeVersion\":\"mira-private-v2\"}");
+      history.add(approved);
+    }
+    var rejected = task(504, process, "commercialIntegrityReview", "BLOCKED");
+    rejected.setSourceReference(source);
+    rejected.setBlockerCategory("FUNCTIONAL_ADJUSTMENT");
+    rejected.setDeliveredAt(null);
+    rejected.setUpdatedAt(Instant.now().minusSeconds(fresh ? 300 : 30));
+    rejected.setResultJson(
+        "{\"decision\":\"BLOCKED\",\"prototypeVersion\":\"mira-private-v2\",\"rootCause\":\"Faltam provas dos controles.\"}");
+    history.add(rejected);
+    when(tasks.findById(504L)).thenReturn(java.util.Optional.of(rejected));
+    var evidence = mock(PdeOperationalControlEvidence.class);
+    var report = new ObjectMapper().createObjectNode();
+    report.put("generatedAt", Instant.now().minusSeconds(120).toString());
+    when(evidence.resolve(product.getSlug(), "mira-private-v2"))
+        .thenReturn(java.util.Optional.of(report));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        provider, "operationalEvidence", evidence);
+    when(predecessors.readiness(
+            org.mockito.ArgumentMatchers.eq(process),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.eq(source)))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Aprovado"));
+    return source;
   }
 
   /** Cria uma rejeição funcional histórica com orientação operacional preservada. */

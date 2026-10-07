@@ -373,9 +373,13 @@ export default function LearningCyclesPage() {
               {cycle.baseline ? " · referência histórica" : ""}
             </p>
             <p>
-              Versão: {cycle.productVersion} · Teto total:{" "}
+              Versão: {cycle.productVersion} · Teto de mídia:{" "}
               {money.format(cycle.budgetLimitBrl)} · {date(cycle.windowStart)} a{" "}
               {date(cycle.windowEnd)}
+            </p>
+            <p className="small text-muted">
+              Este teto em reais é para anúncios. IA e produção de vídeos têm
+              autorizações e limites próprios.
             </p>
             {cycle.status === "OPEN" &&
             cycle.windowStart &&

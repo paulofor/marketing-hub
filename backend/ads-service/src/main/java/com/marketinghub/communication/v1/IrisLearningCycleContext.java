@@ -1,5 +1,6 @@
 package com.marketinghub.communication.v1;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskTargetResponse;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
@@ -84,7 +85,7 @@ public class IrisLearningCycleContext {
     }
   }
 
-  /** Consolida estratégia V3, economia privada, protótipo e gate sem autorizar publicação. */
+  /** Consolida estratégia, economia e gate, preservando a resolução auditável de provas. */
   private Map<String, Object> context(String reference, LearningSalesCycle cycle) throws Exception {
     require(
         "OPEN".equals(cycle.getStatus())
@@ -135,7 +136,8 @@ public class IrisLearningCycleContext {
             && proof.path("mediaSpendAuthorizedBrl").asDouble(-1) == 0,
         "Prova do gate incompatível com a versão e os limites privados.");
     Map<String, PdeValidationTaskSnapshot> latest = new LinkedHashMap<>();
-    tasks.findPdeValidationTaskSnapshots(reference, CONSTRUCTION).stream()
+    var history = tasks.findPdeValidationTaskSnapshots(reference, CONSTRUCTION);
+    history.stream()
         .filter(value -> process.getId().equals(value.processDefinitionId()))
         .forEach(
             value ->
@@ -174,7 +176,9 @@ public class IrisLearningCycleContext {
     var correction = latest.get("prototypeCorrection");
     require(
         correction == null
-            || ("COMPLETED".equals(correction.status()) && correction.id() < technicalId),
+            || ("COMPLETED".equals(correction.status()) && correction.id() < technicalId)
+            || evidenceCorrectionResolved(
+                correction, latest.get("commercialIntegrityReview"), history, pde, proof),
         "Nova correção exige novo gate.");
     var lineage = pde.path("lineage");
     for (String key : List.of("strategyTaskId", "economicsTaskId", "architectureTaskId"))
@@ -255,6 +259,8 @@ public class IrisLearningCycleContext {
     result.put("missingRequiredPredecessors", List.of());
     result.put("gateInstanceId", gate.getId());
     result.put("validationGate", proof);
+    if (proof.has("evidenceCorrectionResolution"))
+      result.put("operationalControlEvidence", pde.path("operationalControlEvidence"));
     result.put("inheritedLearning", pde.path("inheritedLearning"));
     result.put("cycleBrief", pde.path("cycleBrief"));
     result.put(
@@ -275,6 +281,51 @@ public class IrisLearningCycleContext {
         "publicationBoundary",
         "Preparar comunicação privada com provas sintéticas; sem alegar preferência, venda ou satisfação humana e sem autorizar publicação, cobrança ou mídia.");
     return java.util.Collections.unmodifiableMap(result);
+  }
+
+  /**
+   * Confere o recibo calculado pelo gate, seus hashes e a prova atual antes de preservar revisões.
+   */
+  private boolean evidenceCorrectionResolved(
+      PdeValidationTaskSnapshot correction,
+      PdeValidationTaskSnapshot review,
+      List<PdeValidationTaskSnapshot> history,
+      JsonNode pde,
+      JsonNode proof)
+      throws Exception {
+    var resolution = proof.path("evidenceCorrectionResolution");
+    var report = pde.path("operationalControlEvidence");
+    if (!"BLOCKED".equals(correction.status())
+        || review == null
+        || !"COMPLETED".equals(review.status())
+        || !"PDE_EVIDENCE_CORRECTION_RESOLUTION_V1"
+            .equals(resolution.path("contractVersion").asText())
+        || correction.id() != resolution.path("correctionTaskId").asLong()
+        || review.id() != resolution.path("independentReviewTaskId").asLong()
+        || review.id() <= correction.id()
+        || !sha(correction.resultJson()).equals(resolution.path("correctionResultSha256").asText())
+        || !proof.path("sourceReference").equals(resolution.path("sourceReference"))
+        || !proof.path("prototypeVersion").equals(resolution.path("prototypeVersion"))
+        || !proof.path("prototypeVersion").equals(report.path("prototypeVersion"))
+        || !report.path("reportSha256").asText().matches("[a-f0-9]{64}")
+        || !report.path("reportSha256").equals(resolution.path("reportSha256"))) return false;
+    var rejected =
+        history.stream()
+            .filter(task -> task.id() == resolution.path("rejectedTaskId").asLong())
+            .findFirst()
+            .orElse(null);
+    return rejected != null
+        && rejected.id() < correction.id()
+        && "BLOCKED".equals(rejected.status())
+        && "FUNCTIONAL_ADJUSTMENT".equals(rejected.blockerCategory())
+        && "commercialIntegrityReview".equals(rejected.processActivityId())
+        && sha(rejected.resultJson()).equals(resolution.path("rejectedResultSha256").asText())
+        && "APPROVED".equals(json.readTree(review.resultJson()).path("decision").asText())
+        && proof
+            .path("prototypeVersion")
+            .equals(json.readTree(review.resultJson()).path("prototypeVersion"))
+        && java.time.Instant.parse(report.path("generatedAt").asText())
+            .equals(java.time.Instant.parse(resolution.path("reportGeneratedAt").asText()));
   }
 
   /** Entrega somente a última tentativa de cada atividade de comunicação do próprio ciclo. */

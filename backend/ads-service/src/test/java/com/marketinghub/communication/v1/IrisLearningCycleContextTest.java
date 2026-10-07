@@ -354,6 +354,126 @@ class IrisLearningCycleContextTest {
     assertThat(provider.resolve(SOURCE).orElseThrow().get("inputReadiness")).isEqualTo("BLOCKED");
   }
 
+  /** Preserva provas anteriores somente quando o recibo do gate concilia o novo aceite de Têmis. */
+  @Test
+  void acceptsEvidenceOnlyResolutionFromGate() throws Exception {
+    evidenceSupplementFixture();
+    var context = provider.resolve(SOURCE).orElseThrow();
+    assertThat(context.get("inputReadiness")).isEqualTo("READY");
+    assertThat(context.get("paymentEnabled")).isEqualTo(false);
+    assertThat(context.get("publicationAuthorized")).isEqualTo(false);
+    assertThat(
+            json.valueToTree(context.get("operationalControlEvidence"))
+                .path("reportSha256")
+                .asText())
+        .isEqualTo("a".repeat(64));
+    assertThat(
+            history.stream().filter(task -> task.id() == 402L).findFirst().orElseThrow().status())
+        .isEqualTo("BLOCKED");
+  }
+
+  /** Bloqueia recibos ausentes ou divergentes, novas correções e alterações do histórico. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "missing",
+        "report",
+        "correctionId",
+        "correctionHash",
+        "reviewId",
+        "rejectionHash",
+        "activeCorrection",
+        "functionalCorrection",
+        "timestamp"
+      })
+  void rejectsUnboundEvidenceCorrectionReceipt(String change) throws Exception {
+    evidenceSupplementFixture();
+    var resolution = (ObjectNode) proof.path("evidenceCorrectionResolution");
+    switch (change) {
+      case "missing" -> proof.remove("evidenceCorrectionResolution");
+      case "report" ->
+          ((ObjectNode) pde.path("operationalControlEvidence")).put("reportSha256", "b".repeat(64));
+      case "correctionId" -> resolution.put("correctionTaskId", 401L);
+      case "correctionHash" -> resolution.put("correctionResultSha256", "b".repeat(64));
+      case "reviewId" -> resolution.put("independentReviewTaskId", 399L);
+      case "rejectionHash" -> resolution.put("rejectedResultSha256", "b".repeat(64));
+      case "timestamp" -> resolution.put("reportGeneratedAt", "2026-09-12T09:00:00Z");
+      case "activeCorrection", "functionalCorrection" ->
+          history.add(
+              new PdeValidationTaskSnapshot(
+                  404L,
+                  70L,
+                  "prototypeCorrection",
+                  change.equals("activeCorrection") ? "IN_PROGRESS" : "COMPLETED",
+                  null,
+                  null,
+                  "{}",
+                  null));
+      default -> throw new AssertionError(change);
+    }
+    assertThat(provider.resolve(SOURCE).orElseThrow().get("inputReadiness")).isEqualTo("BLOCKED");
+  }
+
+  /**
+   * Monta somente dados sintéticos do suplemento, mantendo hashes ligados às tarefas da fixture.
+   */
+  private void evidenceSupplementFixture() throws Exception {
+    String rejected = "{\"decision\":\"BLOCKED\",\"prototypeVersion\":\"" + VERSION + "\"}";
+    String correction = "{\"decision\":\"BLOCKED\",\"correctionPlan\":{\"sourceTaskId\":401}}";
+    history.add(
+        new PdeValidationTaskSnapshot(
+            401L,
+            70L,
+            "commercialIntegrityReview",
+            "BLOCKED",
+            "FUNCTIONAL_ADJUSTMENT",
+            null,
+            rejected,
+            null));
+    history.add(
+        new PdeValidationTaskSnapshot(
+            402L,
+            70L,
+            "prototypeCorrection",
+            "BLOCKED",
+            "FUNCTIONAL_ADJUSTMENT",
+            null,
+            correction,
+            null));
+    String review = "{\"decision\":\"APPROVED\",\"prototypeVersion\":\"" + VERSION + "\"}";
+    history.add(
+        new PdeValidationTaskSnapshot(
+            403L, 70L, "commercialIntegrityReview", "COMPLETED", null, null, review, null));
+    for (var item : proof.path("taskEvidence")) {
+      if ("commercialIntegrityReview".equals(item.path("activityId").asText())) {
+        ((ObjectNode) item).put("taskId", 403L).put("resultSha256", fixtureHash(review));
+      }
+    }
+    pde.putObject("operationalControlEvidence")
+        .put("prototypeVersion", VERSION)
+        .put("reportSha256", "a".repeat(64))
+        .put("generatedAt", "2026-09-12T08:00:00Z");
+    proof
+        .putObject("evidenceCorrectionResolution")
+        .put("contractVersion", "PDE_EVIDENCE_CORRECTION_RESOLUTION_V1")
+        .put("sourceReference", SOURCE)
+        .put("prototypeVersion", VERSION)
+        .put("correctionTaskId", 402L)
+        .put("correctionResultSha256", fixtureHash(correction))
+        .put("rejectedTaskId", 401L)
+        .put("rejectedResultSha256", fixtureHash(rejected))
+        .put("independentReviewTaskId", 403L)
+        .put("reportSha256", "a".repeat(64))
+        .put("reportGeneratedAt", "2026-09-12T08:00:00Z");
+  }
+
+  /** Calcula o hash exato dos resultados sintéticos que o gate referencia. */
+  private String fixtureHash(String result) throws Exception {
+    return HexFormat.of()
+        .formatHex(
+            MessageDigest.getInstance("SHA-256").digest(result.getBytes(StandardCharsets.UTF_8)));
+  }
+
   /** Preserva o regime anterior para referências que não são sucessores privados. */
   @Test
   void leavesLegacyReferencesToTheExistingProvider() {

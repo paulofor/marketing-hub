@@ -9221,3 +9221,21 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   consumidor real com modelo simulado, concorrência e limites em MySQL 5.7 obrigatório no CI.
 - **Registro:** `docs/registros/mira-controles-provas-2026-10-07.md`. Prova local declara doubles
   de contexto e não substitui aprovação independente nem evidencia mercado.
+
+
+## LOOP-PDE-MATRIZ-NOVA-FORA-DO-GATE — 07/10/2026
+
+- **Evidência:** matriz técnica 627 V3 aprovada, Psique 628–630 e Têmis 633 aprovadas,
+  mas execução 53 de Mira ficou em `WAITING_INPUT` no gate. O validador isolado aprovou
+  o payload real; a reprodução do gate falhou para produtos 10 e 110 pelo mesmo critério técnico.
+- **Histórico:** tarefas 349/354/371 usam cinco cenários sem contrato documental; 608 usa V1
+  com dezoito. O gate enumerava somente V1/V2 enquanto o validador já reconhecia V3.
+- **Causa:** seleção de versão duplicada e regressão de passagem com fixture técnica histórica,
+  enquanto a matriz V3 era exercitada separadamente. Isso ocultou a incompatibilidade entre etapas.
+- **Correção:** reconhecimento explícito centralizado no validador existente; gate usa essa
+  política, preserva os contratos históricos e recusa versões explícitas desconhecidas.
+- **Prevenção:** payloads persistidos 627–633 sanitizados de credenciais, gate real até Íris para
+  duas identidades, três versões documentais, caminho antigo válido e provas V3 inválidas.
+- **Limite:** nenhuma avaliação nova, autorização comercial ou evidência humana é fabricada.
+  A correção não muda candidata v3, experimento 102, orçamento cumulativo ou provas aceitas.
+- **Registro:** `docs/registros/mira-gate-matriz-v3-2026-10-07.md`.

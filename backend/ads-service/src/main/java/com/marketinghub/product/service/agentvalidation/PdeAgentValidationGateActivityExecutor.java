@@ -456,14 +456,16 @@ public class PdeAgentValidationGateActivityExecutor
 
   /**
    * Preserva as matrizes históricas de cinco e nove provas e aceita a comparação documental de
-   * dezoito combinações somente pelo contrato explícito correspondente.
+   * dezoito combinações pelo mesmo contrato versionado do validador, recusando versões
+   * desconhecidas.
    */
   private boolean validTechnicalScenarioMatrix(JsonNode result) {
-    if (Set.of(
-            PdeInputComparisonScenarioMatrixV1.CONTRACT,
-            PdeInputComparisonScenarioMatrixV1.MEASURED_CONTRACT)
-        .contains(result.path("fixtureContract").asText())) {
+    String fixtureContract = result.path("fixtureContract").asText();
+    if (PdeInputComparisonScenarioMatrixV1.supportsFixtureContract(fixtureContract)) {
       return PdeInputComparisonScenarioMatrixV1.valid(result);
+    }
+    if (!fixtureContract.isBlank() && !"PDE_STATIC_RESULT_FIXTURES_V1".equals(fixtureContract)) {
+      return false;
     }
     JsonNode scenarios = result.path("scenarios");
     JsonNode checks = result.path("checks");

@@ -409,3 +409,17 @@ identidade e hashes, além da versão, referência e relatório usado. O context
 mesmo recibo e a prova atual antes de consumir o gate; não exige correção funcional nova para uma
 lacuna já conciliada, nem aceita a tentativa bloqueada isoladamente. Ausência ou divergência,
 correção posterior, mudança funcional ou tarefa em andamento mantém a passagem bloqueada.
+
+
+### Mesma política de versões na matriz e no gate — 07/10/2026
+
+O gate deve encaminhar a comparação documental ao mesmo validador que reconhece suas versões
+V1, V2 e V3. V3 exige os sinais executados além das medições e das dezoito combinações; seu
+resultado não pode cair na regra histórica de cinco cenários. Contrato explícito desconhecido
+permanece bloqueado. Matrizes históricas sem `fixtureContract` e a estática V1 de nove cenários
+conservam seu contrato próprio, sem ampliar autorização de mercado ou dispensar revisão.
+
+A regressão deve atravessar gate, recibo persistível, contexto e prontidão real de Íris com
+payloads persistidos compatíveis, repetir com outra identidade e preservar o caminho antes
+válido. Aprovar apenas o validador isolado não comprova a passagem do processo. Registro:
+[`mira-gate-matriz-v3-2026-10-07.md`](../registros/mira-gate-matriz-v3-2026-10-07.md).

@@ -1,0 +1,2222 @@
+{
+  "fixturePurpose": "Reprodução local dos contratos efetivamente persistidos no experimento 102, sem representar nova aprovação, pessoa, venda ou autorização comercial. Identidades são substituídas pelo teste para comprovar reutilização.",
+  "sourceTaskIds": [
+    627,
+    628,
+    629,
+    630,
+    631,
+    632,
+    633
+  ],
+  "results": {
+    "627": {
+      "contractVersion": "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
+      "fixtureContract": "PDE_DOCUMENTED_INPUT_COMPARISON_V3",
+      "mode": "TECHNICAL",
+      "decision": "APPROVED",
+      "sourceReference": "experiment:102",
+      "productId": 10,
+      "productSlug": "pde-planejado-36",
+      "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+      "prototypeVersion": "mira-private-candidate-v3",
+      "trafficClass": "AGENT_VALIDATION",
+      "internalMarker": "mh_internal_test",
+      "generationMode": "DETERMINISTIC_DOCUMENTED_LABELS",
+      "providerCalls": 0,
+      "startedAt": "2026-10-07T06:23:26.536Z",
+      "finishedAt": "2026-10-07T06:26:35.667Z",
+      "durationSeconds": 190,
+      "devices": [
+        {
+          "deviceProfile": "DESKTOP_1440",
+          "status": "PASS",
+          "screenshotEvidenceIds": [
+            521,
+            522,
+            527,
+            528,
+            533,
+            534
+          ]
+        },
+        {
+          "deviceProfile": "IPHONE_15_PRO",
+          "status": "PASS",
+          "screenshotEvidenceIds": [
+            523,
+            524,
+            529,
+            530,
+            535,
+            536
+          ]
+        },
+        {
+          "deviceProfile": "PIXEL_7",
+          "status": "PASS",
+          "screenshotEvidenceIds": [
+            525,
+            526,
+            531,
+            532,
+            537,
+            538
+          ]
+        }
+      ],
+      "scenarios": [
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "DESKTOP_1440",
+          "condition": "REFERENCE",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "b6714a19-1d2a-4618-8e7c-717ddd4338da",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:22:03.684651174Z",
+          "resultReadySeconds": 13,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 24,
+          "minimumRequiredProductFields": 4,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 0,
+          "actualFilledFields": 6,
+          "corrections": 0,
+          "resumed": false,
+          "recovered": false,
+          "safetyBlocked": false,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [
+            {
+              "productName": "CeraVe Loção de Limpeza Hidratante",
+              "order": 10,
+              "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "productName": "CeraVe Loção Hidratante",
+              "order": 20,
+              "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+          "organizationsUsed": 1,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            521
+          ]
+        },
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "DESKTOP_1440",
+          "condition": "REDUCED",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "b9089fc7-fd76-4f96-abac-28249ad8e15e",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:22:27.760647602Z",
+          "resultReadySeconds": 2,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 7,
+          "minimumRequiredProductFields": 2,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 0,
+          "actualFilledFields": 6,
+          "corrections": 0,
+          "resumed": false,
+          "recovered": false,
+          "safetyBlocked": false,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [
+            {
+              "productName": "CeraVe Loção de Limpeza Hidratante",
+              "order": 10,
+              "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "productName": "CeraVe Loção Hidratante",
+              "order": 20,
+              "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+          "organizationsUsed": 1,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            522
+          ]
+        },
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "IPHONE_15_PRO",
+          "condition": "REFERENCE",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "cfb42511-6c66-445e-b9b6-fa45089ca886",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:22:35.647099783Z",
+          "resultReadySeconds": 3,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 24,
+          "minimumRequiredProductFields": 4,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 0,
+          "actualFilledFields": 6,
+          "corrections": 0,
+          "resumed": false,
+          "recovered": false,
+          "safetyBlocked": false,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [
+            {
+              "productName": "CeraVe Loção de Limpeza Hidratante",
+              "order": 10,
+              "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "productName": "CeraVe Loção Hidratante",
+              "order": 20,
+              "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+          "organizationsUsed": 1,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            523
+          ]
+        },
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "IPHONE_15_PRO",
+          "condition": "REDUCED",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "080219f1-5012-485a-a43b-7c97e762d2c6",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:23:00.087892350Z",
+          "resultReadySeconds": 3,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 9,
+          "minimumRequiredProductFields": 2,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 0,
+          "actualFilledFields": 6,
+          "corrections": 0,
+          "resumed": false,
+          "recovered": false,
+          "safetyBlocked": false,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [
+            {
+              "productName": "CeraVe Loção de Limpeza Hidratante",
+              "order": 10,
+              "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "productName": "CeraVe Loção Hidratante",
+              "order": 20,
+              "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+          "organizationsUsed": 1,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            524
+          ]
+        },
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "PIXEL_7",
+          "condition": "REFERENCE",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "bf0d49b7-e630-40f1-a5e6-cfc156aeb3ee",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:23:11.981186540Z",
+          "resultReadySeconds": 2,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 7,
+          "minimumRequiredProductFields": 4,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 0,
+          "actualFilledFields": 6,
+          "corrections": 0,
+          "resumed": false,
+          "recovered": false,
+          "safetyBlocked": false,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [
+            {
+              "productName": "CeraVe Loção de Limpeza Hidratante",
+              "order": 10,
+              "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "productName": "CeraVe Loção Hidratante",
+              "order": 20,
+              "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+          "organizationsUsed": 1,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            525
+          ]
+        },
+        {
+          "scenarioCode": "ADHERENT",
+          "deviceProfile": "PIXEL_7",
+          "condition": "REDUCED",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "cbde9cae-637a-479d-9fdf-47f6e632d6fe",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:23:18.614290091Z",
+          "resultReadySeconds": 2,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 6,
+          "minimumRequiredProductFields": 2,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 0,
+          "actualFilledFields": 6,
+          "corrections": 0,
+          "resumed": false,
+          "recovered": false,
+          "safetyBlocked": false,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [
+            {
+              "productName": "CeraVe Loção de Limpeza Hidratante",
+              "order": 10,
+              "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "productName": "CeraVe Loção Hidratante",
+              "order": 20,
+              "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+          "organizationsUsed": 1,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            526
+          ]
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "DESKTOP_1440",
+          "condition": "REFERENCE",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "e0fa2818-bee2-425d-9e60-539429d84554",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED",
+            "RECOVERY_COMPLETED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:23:25.106009843Z",
+          "resultReadySeconds": 3,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 6,
+          "minimumRequiredProductFields": 4,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 0,
+          "actualFilledFields": 6,
+          "corrections": 0,
+          "resumed": true,
+          "recovered": true,
+          "safetyBlocked": false,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [
+            {
+              "productName": "CeraVe Loção de Limpeza Hidratante",
+              "order": 10,
+              "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "productName": "CeraVe Loção Hidratante",
+              "order": 20,
+              "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+          "organizationsUsed": 1,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            527
+          ]
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "DESKTOP_1440",
+          "condition": "REDUCED",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "039e1129-c73a-4c26-afd9-04263ecde1b1",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED",
+            "RECOVERY_COMPLETED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:23:30.587572890Z",
+          "resultReadySeconds": 3,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 32,
+          "minimumRequiredProductFields": 2,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 0,
+          "actualFilledFields": 6,
+          "corrections": 0,
+          "resumed": true,
+          "recovered": true,
+          "safetyBlocked": false,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [
+            {
+              "productName": "CeraVe Loção de Limpeza Hidratante",
+              "order": 10,
+              "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "productName": "CeraVe Loção Hidratante",
+              "order": 20,
+              "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+          "organizationsUsed": 1,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            528
+          ]
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "IPHONE_15_PRO",
+          "condition": "REFERENCE",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "7e8698cb-7672-48ff-8825-25733549e2c5",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED",
+            "RECOVERY_COMPLETED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:24:02.090796814Z",
+          "resultReadySeconds": 3,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 7,
+          "minimumRequiredProductFields": 4,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 0,
+          "actualFilledFields": 6,
+          "corrections": 0,
+          "resumed": true,
+          "recovered": true,
+          "safetyBlocked": false,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [
+            {
+              "productName": "CeraVe Loção de Limpeza Hidratante",
+              "order": 10,
+              "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "productName": "CeraVe Loção Hidratante",
+              "order": 20,
+              "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+          "organizationsUsed": 1,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            529
+          ]
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "IPHONE_15_PRO",
+          "condition": "REDUCED",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "e6c98457-0b06-46bd-b4a1-d0458072b3c9",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED",
+            "RECOVERY_COMPLETED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:24:09.840255592Z",
+          "resultReadySeconds": 2,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 8,
+          "minimumRequiredProductFields": 2,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 0,
+          "actualFilledFields": 6,
+          "corrections": 0,
+          "resumed": true,
+          "recovered": true,
+          "safetyBlocked": false,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [
+            {
+              "productName": "CeraVe Loção de Limpeza Hidratante",
+              "order": 10,
+              "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "productName": "CeraVe Loção Hidratante",
+              "order": 20,
+              "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+          "organizationsUsed": 1,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            530
+          ]
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "PIXEL_7",
+          "condition": "REFERENCE",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "46f3fc74-c48c-4bf5-9776-6b3a583c7fc3",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED",
+            "RECOVERY_COMPLETED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:24:17.252747715Z",
+          "resultReadySeconds": 5,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 11,
+          "minimumRequiredProductFields": 4,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 0,
+          "actualFilledFields": 6,
+          "corrections": 0,
+          "resumed": true,
+          "recovered": true,
+          "safetyBlocked": false,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [
+            {
+              "productName": "CeraVe Loção de Limpeza Hidratante",
+              "order": 10,
+              "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "productName": "CeraVe Loção Hidratante",
+              "order": 20,
+              "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+          "organizationsUsed": 1,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            531
+          ]
+        },
+        {
+          "scenarioCode": "RECOVERY",
+          "deviceProfile": "PIXEL_7",
+          "condition": "REDUCED",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "6bc3a0e9-8bc2-4e9d-ad2e-7766cb0f77f8",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "VALUE_MOMENT",
+            "READY_RESULT_USED",
+            "PREFERRED_OVER_FREE",
+            "CHECKOUT_STARTED",
+            "RECOVERY_COMPLETED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:24:29.734912410Z",
+          "resultReadySeconds": 3,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 15,
+          "minimumRequiredProductFields": 2,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 0,
+          "actualFilledFields": 6,
+          "corrections": 0,
+          "resumed": true,
+          "recovered": true,
+          "safetyBlocked": false,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [
+            {
+              "productName": "CeraVe Loção de Limpeza Hidratante",
+              "order": 10,
+              "documentedDirection": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "productName": "CeraVe Loção Hidratante",
+              "order": 20,
+              "documentedDirection": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "safetyNote": "Ordem limitada ao texto informado. Horário, frequência e compatibilidade entre produtos não foram verificados; não é prescrição.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routineHash": "3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916",
+          "organizationsUsed": 1,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            532
+          ]
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "DESKTOP_1440",
+          "condition": "REFERENCE",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "e1df34a9-a706-4852-9276-fe7a665dd522",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "SAFETY_LIMIT_BLOCKED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:24:44.191898504Z",
+          "resultReadySeconds": 2,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 5,
+          "minimumRequiredProductFields": 4,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 1,
+          "actualFilledFields": 7,
+          "corrections": 0,
+          "resumed": false,
+          "recovered": false,
+          "safetyBlocked": true,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [],
+          "routineHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "organizationsUsed": 0,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            533
+          ]
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "DESKTOP_1440",
+          "condition": "REDUCED",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "ff9b5317-f5ef-46d8-9ddf-19203ca63c84",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "SAFETY_LIMIT_BLOCKED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:24:49.016243725Z",
+          "resultReadySeconds": 2,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 4,
+          "minimumRequiredProductFields": 2,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 1,
+          "actualFilledFields": 7,
+          "corrections": 0,
+          "resumed": false,
+          "recovered": false,
+          "safetyBlocked": true,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [],
+          "routineHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "organizationsUsed": 0,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            534
+          ]
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "IPHONE_15_PRO",
+          "condition": "REFERENCE",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "51bc32e9-4a5a-4cbe-81d5-3852f9b19898",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "SAFETY_LIMIT_BLOCKED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:24:53.430098670Z",
+          "resultReadySeconds": 3,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 6,
+          "minimumRequiredProductFields": 4,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 1,
+          "actualFilledFields": 7,
+          "corrections": 0,
+          "resumed": false,
+          "recovered": false,
+          "safetyBlocked": true,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [],
+          "routineHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "organizationsUsed": 0,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            535
+          ]
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "IPHONE_15_PRO",
+          "condition": "REDUCED",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "9661bc2f-f360-4b58-880c-17fa2a3be261",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "SAFETY_LIMIT_BLOCKED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:24:59.173898559Z",
+          "resultReadySeconds": 3,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 5,
+          "minimumRequiredProductFields": 2,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 1,
+          "actualFilledFields": 7,
+          "corrections": 0,
+          "resumed": false,
+          "recovered": false,
+          "safetyBlocked": true,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [],
+          "routineHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "organizationsUsed": 0,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            536
+          ]
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "PIXEL_7",
+          "condition": "REFERENCE",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "5a268834-a094-4aaa-bf71-9782a1c64605",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "SAFETY_LIMIT_BLOCKED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:25:03.986107630Z",
+          "resultReadySeconds": 2,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 4,
+          "minimumRequiredProductFields": 4,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 1,
+          "actualFilledFields": 7,
+          "corrections": 0,
+          "resumed": false,
+          "recovered": false,
+          "safetyBlocked": true,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [],
+          "routineHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "organizationsUsed": 0,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            537
+          ]
+        },
+        {
+          "scenarioCode": "SAFETY",
+          "deviceProfile": "PIXEL_7",
+          "condition": "REDUCED",
+          "status": "PASS",
+          "prototypeVersion": "mira-private-candidate-v3",
+          "evidenceId": "4372e52b-da57-49fd-908c-ec73775eddc4",
+          "trafficClass": "AGENT_VALIDATION",
+          "events": [
+            "EXPERIENCE_STARTED",
+            "SAFETY_LIMIT_BLOCKED",
+            "AGENT_SCENARIO_COMPLETED"
+          ],
+          "mhInternalTest": true,
+          "providerCalls": 0,
+          "firstInteractionAt": "2026-10-07T06:25:08.249360527Z",
+          "resultReadySeconds": 2,
+          "measurementClock": "MONOTONIC_WORKER",
+          "outcomeBoundary": "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK",
+          "scenarioCompletedSeconds": 4,
+          "minimumRequiredProductFields": 2,
+          "requiredObjectiveFields": 1,
+          "objectivePrefilled": true,
+          "providedProductCount": 2,
+          "filledProductFields": 4,
+          "filledOptionalSourceFields": 2,
+          "editedObjectiveFields": 1,
+          "actualFilledFields": 7,
+          "corrections": 0,
+          "resumed": false,
+          "recovered": false,
+          "safetyBlocked": true,
+          "products": [
+            {
+              "name": "CeraVe Loção de Limpeza Hidratante",
+              "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante"
+            },
+            {
+              "name": "CeraVe Loção Hidratante",
+              "labelDirections": "CeraVe Loção Hidratante: Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+              "sourceUrl": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante"
+            }
+          ],
+          "routine": [],
+          "routineHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "organizationsUsed": 0,
+          "generationRequests": 1,
+          "accessibilityBasic": true,
+          "noHorizontalOverflow": true,
+          "privacyPreserved": true,
+          "sideEffects": {
+            "paymentEnabled": false,
+            "published": false,
+            "campaignCreated": false,
+            "mediaSpendBrl": 0
+          },
+          "humanEvidenceClaimed": false,
+          "commercialEvidenceClaimed": false,
+          "screenshotEvidenceIds": [
+            538
+          ]
+        }
+      ],
+      "checks": {
+        "sameVersion": true,
+        "desktopAndMobile": true,
+        "happyResultWithinTenMinutes": true,
+        "recoveryPreserved": true,
+        "safetyBlocked": true,
+        "accessibilityBasic": true,
+        "responsiveLayout": true,
+        "privacyPreserved": true,
+        "internalTrafficSegregated": true,
+        "paymentDisabled": true,
+        "publicationDisabled": true,
+        "campaignDisabled": true,
+        "zeroMediaSpend": true
+      },
+      "artifacts": [
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "ADHERENT-DESKTOP_1440-REFERENCE",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "DESKTOP_1440",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 1440,
+          "viewportHeight": 900,
+          "pageHeightPx": 1469,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:23:51.029Z",
+          "artifactId": 521,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/521/content",
+          "sha256": "edf2800f02b92f522db74d694defeb8b377324e6105928d57b632f0e02a41487"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "ADHERENT-DESKTOP_1440-REDUCED",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "DESKTOP_1440",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 1440,
+          "viewportHeight": 900,
+          "pageHeightPx": 1469,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:23:57.682Z",
+          "artifactId": 522,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/522/content",
+          "sha256": "edf2800f02b92f522db74d694defeb8b377324e6105928d57b632f0e02a41487"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "ADHERENT-IPHONE_15_PRO-REFERENCE",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "IPHONE_15_PRO",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 393,
+          "viewportHeight": 852,
+          "pageHeightPx": 2046,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:24:23.354Z",
+          "artifactId": 523,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/523/content",
+          "sha256": "45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "ADHERENT-IPHONE_15_PRO-REDUCED",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "IPHONE_15_PRO",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 393,
+          "viewportHeight": 852,
+          "pageHeightPx": 2046,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:24:35.256Z",
+          "artifactId": 524,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/524/content",
+          "sha256": "45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "ADHERENT-PIXEL_7-REFERENCE",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "PIXEL_7",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 412,
+          "viewportHeight": 915,
+          "pageHeightPx": 1990,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:24:41.889Z",
+          "artifactId": 525,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/525/content",
+          "sha256": "2a996b86fe66b2ed9b3f853b18d8e94a227646034eaeae0ca1aa6436446cf2ce"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "ADHERENT-PIXEL_7-REDUCED",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "PIXEL_7",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 412,
+          "viewportHeight": 915,
+          "pageHeightPx": 1990,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:24:48.378Z",
+          "artifactId": 526,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/526/content",
+          "sha256": "2a996b86fe66b2ed9b3f853b18d8e94a227646034eaeae0ca1aa6436446cf2ce"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "RECOVERY-DESKTOP_1440-REFERENCE",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "DESKTOP_1440",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 1440,
+          "viewportHeight": 900,
+          "pageHeightPx": 1469,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:24:53.860Z",
+          "artifactId": 527,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/527/content",
+          "sha256": "edf2800f02b92f522db74d694defeb8b377324e6105928d57b632f0e02a41487"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "RECOVERY-DESKTOP_1440-REDUCED",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "DESKTOP_1440",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 1440,
+          "viewportHeight": 900,
+          "pageHeightPx": 1469,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:25:25.240Z",
+          "artifactId": 528,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/528/content",
+          "sha256": "edf2800f02b92f522db74d694defeb8b377324e6105928d57b632f0e02a41487"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "RECOVERY-IPHONE_15_PRO-REFERENCE",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "IPHONE_15_PRO",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 393,
+          "viewportHeight": 852,
+          "pageHeightPx": 2046,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:25:33.110Z",
+          "artifactId": 529,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/529/content",
+          "sha256": "45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "RECOVERY-IPHONE_15_PRO-REDUCED",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "IPHONE_15_PRO",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 393,
+          "viewportHeight": 852,
+          "pageHeightPx": 2046,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:25:40.510Z",
+          "artifactId": 530,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/530/content",
+          "sha256": "45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "RECOVERY-PIXEL_7-REFERENCE",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "PIXEL_7",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 412,
+          "viewportHeight": 915,
+          "pageHeightPx": 1990,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:25:52.436Z",
+          "artifactId": 531,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/531/content",
+          "sha256": "2a996b86fe66b2ed9b3f853b18d8e94a227646034eaeae0ca1aa6436446cf2ce"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "RECOVERY-PIXEL_7-REDUCED",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "PIXEL_7",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 412,
+          "viewportHeight": 915,
+          "pageHeightPx": 1990,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:26:07.470Z",
+          "artifactId": 532,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/532/content",
+          "sha256": "2a996b86fe66b2ed9b3f853b18d8e94a227646034eaeae0ca1aa6436446cf2ce"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "SAFETY-DESKTOP_1440-REFERENCE",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "DESKTOP_1440",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 1440,
+          "viewportHeight": 900,
+          "pageHeightPx": 1771,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:26:12.287Z",
+          "artifactId": 533,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/533/content",
+          "sha256": "e65b8fe2259bd9f0ff39f39d96ed21ca63e885619245faeb9403d80f37b1c466"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "SAFETY-DESKTOP_1440-REDUCED",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "DESKTOP_1440",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 1440,
+          "viewportHeight": 900,
+          "pageHeightPx": 1906,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:26:16.710Z",
+          "artifactId": 534,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/534/content",
+          "sha256": "7cf4638768f2624dd6f072741db8349cbdd499aa59c5e56f06bc6ba269bcf936"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "SAFETY-IPHONE_15_PRO-REFERENCE",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "IPHONE_15_PRO",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 393,
+          "viewportHeight": 852,
+          "pageHeightPx": 2112,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:26:22.450Z",
+          "artifactId": 535,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/535/content",
+          "sha256": "5eed644b4e38d208b884df7b450c96fbde948a2ef2bd9459a2a124d6aa52e250"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "SAFETY-IPHONE_15_PRO-REDUCED",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "IPHONE_15_PRO",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 393,
+          "viewportHeight": 852,
+          "pageHeightPx": 2247,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:26:27.265Z",
+          "artifactId": 536,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/536/content",
+          "sha256": "1ddb24a68b7f3a8fa71de462445664d030e26a92862ba89b426c0087007178fd"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "SAFETY-PIXEL_7-REFERENCE",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "PIXEL_7",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 412,
+          "viewportHeight": 915,
+          "pageHeightPx": 2112,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:26:31.414Z",
+          "artifactId": 537,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/537/content",
+          "sha256": "a1c670b26e0df2d5030312aa58dd56499ee9c0ef5659a626268486f64ae4c9cd"
+        },
+        {
+          "captureSessionId": "aca89f9f-765b-4f46-8d22-4df5c5acf1f4",
+          "evidenceKey": "SAFETY-PIXEL_7-REDUCED",
+          "evidenceType": "FULL_PAGE",
+          "deviceProfile": "PIXEL_7",
+          "pageNumber": 1,
+          "foldNumber": null,
+          "viewportWidth": 412,
+          "viewportHeight": 915,
+          "pageHeightPx": 2247,
+          "scrollY": 0,
+          "sourceUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "finalUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+          "capturedAt": "2026-10-07T06:26:35.624Z",
+          "artifactId": 538,
+          "contentUrl": "/api/agent-tasks/627/visual-evidence/538/content",
+          "sha256": "f4ea11b18358193da072805a09f393e0c52ce6ad835a9b40641a1538f3be4d93"
+        }
+      ],
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "fixtureSources": [
+        {
+          "name": "CeraVe Loção de Limpeza Hidratante",
+          "labelDirections": "Molhe a pele com água morna. Massageie a loção na pele em movimentos circulares suaves. Enxágue.",
+          "url": "https://www.cerave.com.br/todos-os-produtos/locao-de-limpeza-hidratante",
+          "observedAt": "2026-10-06T21:13:35.736157+00:00",
+          "editorialDate": null,
+          "publisher": "CeraVe Brasil",
+          "sourceKind": "PUBLIC_MANUFACTURER_PAGE",
+          "sourceExcerptSha256": "8a2c9a097ed0d087f672daf2b44ad6d5ee55bff6ad8ee633b0931cf3a12cb7ff",
+          "usage": "Fixture documental de teste; não representa inventário real, recomendação ou comprovação de compatibilidade clínica.",
+          "limits": [
+            "Página oficial consultada; embalagem específica não foi inspecionada.",
+            "Não estender orientação para outros produtos ou fórmulas.",
+            "Compatibilidade entre itens, condição clínica e adequação pessoal não são comprovadas por esta fonte."
+          ]
+        },
+        {
+          "name": "CeraVe Loção Hidratante",
+          "labelDirections": "Aplique generosamente sempre que necessário, ou conforme indicado por um médico.",
+          "url": "https://www.cerave.com.br/todos-os-produtos/locao-hidratante",
+          "observedAt": "2026-10-06T21:13:35.736197+00:00",
+          "editorialDate": null,
+          "publisher": "CeraVe Brasil",
+          "sourceKind": "PUBLIC_MANUFACTURER_PAGE",
+          "sourceExcerptSha256": "50ec1cb9efde1aafcf9ef3e12584a0aa689a96874f687d9d9f8e8ac47cae707e",
+          "usage": "Fixture documental de teste; não representa inventário real, recomendação ou comprovação de compatibilidade clínica.",
+          "limits": [
+            "Página oficial consultada; embalagem específica não foi inspecionada.",
+            "Não estender orientação para outros produtos ou fórmulas.",
+            "Compatibilidade entre itens, condição clínica e adequação pessoal não são comprovadas por esta fonte."
+          ]
+        }
+      ],
+      "evidence": [
+        "b6714a19-1d2a-4618-8e7c-717ddd4338da",
+        "b9089fc7-fd76-4f96-abac-28249ad8e15e",
+        "cfb42511-6c66-445e-b9b6-fa45089ca886",
+        "080219f1-5012-485a-a43b-7c97e762d2c6",
+        "bf0d49b7-e630-40f1-a5e6-cfc156aeb3ee",
+        "cbde9cae-637a-479d-9fdf-47f6e632d6fe",
+        "e0fa2818-bee2-425d-9e60-539429d84554",
+        "039e1129-c73a-4c26-afd9-04263ecde1b1",
+        "7e8698cb-7672-48ff-8825-25733549e2c5",
+        "e6c98457-0b06-46bd-b4a1-d0458072b3c9",
+        "46f3fc74-c48c-4bf5-9776-6b3a583c7fc3",
+        "6bc3a0e9-8bc2-4e9d-ad2e-7766cb0f77f8",
+        "e1df34a9-a706-4852-9276-fe7a665dd522",
+        "ff9b5317-f5ef-46d8-9ddf-19203ca63c84",
+        "51bc32e9-4a5a-4cbe-81d5-3852f9b19898",
+        "9661bc2f-f360-4b58-880c-17fa2a3be261",
+        "5a268834-a094-4aaa-bf71-9782a1c64605",
+        "4372e52b-da57-49fd-908c-ec73775eddc4"
+      ]
+    },
+    "628": {
+      "contractVersion": "PDE_PSIQUE_AGENT_SCENARIO_V1",
+      "decision": "APPROVED",
+      "scenarioCode": "ADHERENT",
+      "sourceReference": "experiment:102",
+      "productId": 10,
+      "productSlug": "pde-planejado-36",
+      "prototypeVersion": "mira-private-candidate-v3",
+      "trafficClass": "AGENT_VALIDATION",
+      "internalMarker": "mh_internal_test",
+      "syntheticEvaluation": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "experienceAssessment": {
+        "comprehension": "Reação afetiva inicial simulada: o fundo claro, o verde contido e os cartões organizados sugerem calma e controle; a utilidade adicional aos rótulos desperta alguma dúvida. Na perspectiva simulada de uma mulher de 35 a 60 anos que possui produtos de skincare, compreende-se que Mira reúne instruções informadas, sem avaliação clínica. Os dois cartões correspondem à entrada registrada. A tela inicial de preenchimento não está anexada; sua conclusão é sustentada pelos fatos estruturados do harness.",
+        "effort": "Esforço operacional baixo nesta execução: resultado visível em 2 segundos monotônicos, conclusão do cenário em 7 segundos, sem correções, prompts, escolha de modelo ou montagem externa. Foram preenchidos quatro campos de produto e duas referências opcionais, totalizando seis. O objetivo continuava obrigatório, previamente preenchido e sem edição. O mínimo inicial REDUCED de dois campos não reduziu os quatro preenchimentos necessários aos dois produtos. Reunir e transcrever informações permanece um esforço prévio, sem medição humana.",
+        "utility": "Entrega pronta para consultar nomes, instruções, referências e limites em um lugar. Ao considerar adquirir o produto, a expectativa simulada seria encontrar essas informações mais facilmente antes do uso. Depois de receber e consultar, a pessoa poderia imaginar maior autonomia e menos procura; aplicação na pele, alívio efetivo e satisfação não foram observados. A alternativa de rótulos e nota pessoal pode oferecer utilidade suficiente.",
+        "trust": "As referências por item, a delimitação aos dois produtos e os avisos sobre horário, frequência e compatibilidade preservam compreensão e controle. Antes de uma eventual compra de referência de R$ 49, o receio plausível seria gastar e ainda precisar fazer trabalho documental semelhante ao de uma nota gratuita. Essa possibilidade de perda ou arrependimento pode pesar mais que a conveniência esperada, embora não exista disposição de pagar observada. As fontes recebidas documentam instruções, sem comprovar adequação pessoal ou inspeção da embalagem.",
+        "pleasure": "Modalidade disponível: somente VISUAL estático. Prazer visual 3/5, fluidez 4/5, congruência 4/5 e risco de sobrecarga 1/5. Áudio, movimento e imaginação tátil não estão disponíveis; não recebem notas. A apresentação familiar favorece consulta tranquila, com novidade moderada no agrupamento dos itens. A simulação admite desejo de facilidade e hesitação diante do esforço e do preço. A necessidade de respeito e pertencimento permanece ao fundo, sem ativação específica evidenciada; não há motivo para acrescentar pressão estética ou social.",
+        "objections": [
+          "A vantagem prática sobre uma nota gratuita e o valor percebido de R$ 49 permanecem hipóteses.",
+          "A coleta documental continua necessária; a rapidez do harness não mede esse esforço de uma pessoa.",
+          "Este parecer inspeciona pixels de desktop; a cobertura mobile vem do histórico técnico compatível."
+        ],
+        "nextStepClarity": "Consultar organização é a ação principal visível. A mensagem esclarece que consultar e retomar não consomem outra organização. O saldo de uma organização usada em duas e o botão Preparar segunda organização distinguem consulta de nova entrada. A continuidade acrescenta outra organização preservando a anterior; isso explica o incremento funcional, sem demonstrar preferência pela oferta paga. Encerrar e sair está visível no final.",
+        "evidenceBoundary": "Parecer independente e sintético de ADHERENT, DESKTOP_1440, REDUCED. Aprovação restrita ao cenário privado da versão recebida. Não comprova cliente, preferência, intenção de compra, satisfação, aplicação, venda ou receita. RECOVERY e SAFETY não foram executados novamente neste parecer. A política atual dispensa leituras humanas; o backend decide o avanço."
+      },
+      "checks": {
+        "sameProductAndVersion": true,
+        "isolatedFreshSession": true,
+        "functionalOutcomeMatchesScenario": true,
+        "lowEffortNoPrompting": true,
+        "accessibilityAndResponsive": true,
+        "privacyPreserved": true,
+        "internalTrafficSegregated": true,
+        "safeLimits": true,
+        "noExternalSideEffects": true
+      },
+      "visualAudit": {
+        "captureSessionId": "889ef087-7de8-4013-9968-8b3de0c0527f",
+        "evidenceIds": [
+          539
+        ],
+        "visualHierarchy": "Arquétipo: aplicação privada de consulta, com resultado documental. Evidência 539 inspecionada integralmente. O manifesto não contém dobras numeradas; considerando o viewport de 900 px, a faixa 0–899 apresenta título, escopo, ação verde principal, aviso de consulta e os cartões, com o segundo parcialmente abaixo do limite. A faixa 900–1468 completa fonte e ressalva do segundo cartão, saldo, segunda organização, explicação de continuidade, controles internos recolhidos e saída. A página mantém alinhamento e continuidade. visualComposition, escala 0–5: equilíbrio texto/imagem 4, pois os cartões textuais entregam a função sem ilustração necessária; variedade funcional de mídia 3, com cartões, links e ações suficientes; ritmo e respiro 4, pelos intervalos entre blocos; orientação por cor 4, pelo botão principal preenchido e ações secundárias contornadas; hierarquia tipográfica 4, com título, seção, produtos e ressalvas distintos; densidade 3, pelas ressalvas repetidas, ainda legíveis;novel",
+        "legibility": "Na evidência 539, texto escuro sobre superfícies claras, espaçamento e bordas separam instruções, fontes e ressalvas. Na primeira faixa, a ação principal é fácil de localizar; na segunda, saldo, continuidade e saída permanecem legíveis e alcançáveis por rolagem. Não há corte horizontal aparente. Ressalvas têm corpo menor, sem impedir a leitura nesta captura. Acessibilidade básica e responsividade são sustentadas também pelos registros técnicos; foco, teclado e contraste numérico não foram medidos pelos pixels.",
+        "affectiveResponse": "Simulação: a primeira faixa pode aliviar a procura por informações e despertar curiosidade moderada, com conforto visual. A segunda pode reforçar controle ao mostrar saldo e preservação do resultado, acompanhada da dúvida sobre o benefício pago. Não há emoção humana confirmada nem antecipação corporal ou tátil sustentada pela imagem.",
+        "trustCues": "Na evidência 539, Acesso privado · sem cobrança, Teste interno, ausência de avaliação clínica, referências informadas e limites por item tornam o escopo explícito. Na parte final, a continuidade informa que nenhum pagamento está disponível e os controles internos permanecem separados da consulta. Não aparecem credenciais ou dados pessoais. Ausência de rostos é adequada à função operacional."
+      },
+      "evidence": [
+        "Execução independente 88cb6585-0f67-40b8-9d21-cf1a64d49151, modo SCENARIO, vinculada a experiment:102, produto 10 e mira-private-candidate-v3; uma geração e uma organização utilizada. O isolamento é sustentado pelo percurso separado e pelos registros de privacidade do harness, sem nova auditoria de credenciais neste parecer.",
+        "Evidência visual 539: ADHERENT-DESKTOP_1440-REDUCED, página completa de 1440 × 1469 px; sha256 edf2800f02b92f522db74d694defeb8b377324e6105928d57b632f0e02a41487. Única imagem anexada e integralmente revisada.",
+        "resultReadySeconds=2, measurementClock=MONOTONIC_WORKER e outcomeBoundary=FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK. scenarioCompletedSeconds=7 é duração do cenário, não latência do primeiro valor; firstInteractionAt não foi subtraído de relógios de outro servidor.",
+        "PDE_DOCUMENTED_INPUT_COMPARISON_V3: minimumRequiredProductFields=2, providedProductCount=2, filledProductFields=4, filledOptionalSourceFields=2, requiredObjectiveFields=1, objectivePrefilled=true, editedObjectiveFields=0, actualFilledFields=6 e corrections=0. O histórico REFERENCE também registra quatro campos de produto e seis preenchimentos totais.",
+        "As instruções e referências dos dois cartões correspondem aos produtos e à rotina recebidos. fixtureSources registra páginas de CeraVe Brasil consultadas em 06/10/2026, com URLs, conteúdo e hashes; não houve consulta externa nesta revisão.",
+        "processContext, tarefa 627: homologação técnica da mesma versão com 18 combinações PASS e registros de acessibilidade e responsividade. Seus pixels não foram reinspecionados neste turno; emulação mobile não comprova Safari nativo. Este parecer não constitui outra matriz.",
+        "Eventos registrados nesta sessão: EXPERIENCE_STARTED → VALUE_MOMENT → READY_RESULT_USED → PREFERRED_OVER_FREE → CHECKOUT_STARTED → AGENT_SCENARIO_COMPLETED. Preferência e checkout são sinais técnicos internos, sem comportamento humano ou pagamento.",
+        "privacyPreserved=true, AGENT_VALIDATION, mhInternalTest=true e internalMarker=mh_internal_test; pagamento, publicação e campanha desativados, mídia zero e providerCalls=0.",
+        "RI1-AAB0EC98AB06 — design-experiencia: orientou verificar primeiro valor, ação principal e separação dos detalhes internos. O botão destacado e a verificação recolhida sustentam clareza funcional; o cartão não comprova redução de carga de uma cliente.",
+        "RI1-AC85EF9A7C43 — prazer-audio-visual: critério auditivo não aplicável porque não há áudio anexado. Não extrapolei atenção auditiva para prazer visual nem solicitei audiovisual ausente do contrato.",
+        "RI1-03183674C8A3 — neuromarketing: orientou separar compreensão e conclusão técnica de preferência. Não há eye-tracking; rapidez, captura e sinais sintéticos não foram tratados como desejo humano ou compra."
+      ],
+      "requiredChanges": [],
+      "rootCause": "O mecanismo que sustenta a aprovação é a consulta principal distinta dos controles internos, com resultado pronto, instruções rastreáveis e limites visíveis. Isso enfrenta a confusão funcional registrada no histórico, sem herdar aprovação de versões anteriores. A execução atual entrega primeiro valor em 2 segundos, registra consulta e mantém um único consumo, com efeitos comerciais desligados. Todos os nove checks são atendidos pelas evidências atuais e pelo histórico técnico compatível; não há déficit estético crítico. A aprovação permanece restrita à homologação privada."
+    },
+    "629": {
+      "contractVersion": "PDE_PSIQUE_AGENT_SCENARIO_V1",
+      "decision": "APPROVED",
+      "scenarioCode": "RECOVERY",
+      "sourceReference": "experiment:102",
+      "productId": 10,
+      "productSlug": "pde-planejado-36",
+      "prototypeVersion": "mira-private-candidate-v3",
+      "trafficClass": "AGENT_VALIDATION",
+      "internalMarker": "mh_internal_test",
+      "syntheticEvaluation": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "experienceAssessment": {
+        "comprehension": "Reação afetiva inicial simulada: a apresentação calma sugere alívio e controle; as ressalvas pedem atenção. Para uma persona do público definido, mulheres de 35 a 60 anos que possuem produtos de skincare, fica compreensível que Mira organiza instruções informadas, sem avaliação clínica. Os dois cartões correspondem aos produtos registrados. A entrada e a falha intermediária não aparecem na captura; sua avaliação depende dos fatos estruturados do harness e do histórico técnico compatível.",
+        "effort": "Resultado visível em 2 segundos monotônicos; cenário concluído em 6 segundos, com retomada e recuperação registradas, sem correções, prompts ou montagem externa. REDUCED exigia inicialmente dois campos de produto; os dois produtos efetivamente informados exigiram quatro preenchimentos. Duas referências opcionais elevaram o total preenchido a seis. O objetivo continuou obrigatório, previamente preenchido e sem edição. Isso não demonstra redução do esforço total nem mede o tempo de uma pessoa para reunir as informações.",
+        "utility": "A entrega reúne instruções, fontes e limites em um resultado consultável. Ao considerar adquirir o produto, a expectativa simulada seria reencontrar essas informações com facilidade, inclusive após uma falha. Depois de receber e consultar, a pessoa poderia imaginar menos procura e maior autonomia. Alívio efetivo, aplicação dos produtos e satisfação permanecem não observados.",
+        "trust": "Na simulação, uma falha poderia despertar receio de perder o preenchimento ou consumir outra organização. O resultado preservado, o saldo de uma organização usada em duas e a mensagem sobre retomada ajudam a recuperar controle. Antes de eventual aquisição pela referência de R$ 49, pagar por utilidade semelhante à de uma nota gratuita poderia gerar hesitação e receio de arrependimento; essa perda pode pesar subjetivamente mais que a conveniência esperada. Não há orçamento ou disposição de pagar observados.",
+        "pleasure": "Modalidade disponível: somente VISUAL estático. Prazer visual 3/5, fluidez 4/5, congruência 4/5 e risco de sobrecarga 1/5. Áudio, movimento e imaginação tátil específica não estão disponíveis e não recebem notas. A paleta contida e os cartões familiares oferecem conforto; o agrupamento consultável traz novidade discreta. Desejo de facilidade e hesitação diante do trabalho documental podem coexistir. A necessidade estrutural de aceitação, respeito e pertencimento permanece ao fundo, sem ativação específica sustentada neste caso. Não há reação corporal ou emoção humana confirmada.",
+        "objections": [
+          "A vantagem sobre rótulos e uma nota gratuita, assim como o valor percebido de R$ 49, permanece desconhecida.",
+          "Reunir e transcrever instruções continua sendo um esforço inicial não medido em pessoas.",
+          "Ressalvas repetidas exigem leitura e rolagem, mas não impedem a consulta nesta captura."
+        ],
+        "nextStepClarity": "Consultar organização é a ação principal destacada. A mensagem explica que consultar e retomar não consomem outra organização. Preparar segunda organização aparece como ação distinta, acompanhada do saldo e da preservação do resultado anterior. Encerrar e sair permanece visível no final e alcançável por rolagem. A continuidade informa que nenhum pagamento está disponível.",
+        "evidenceBoundary": "Parecer independente e sintético de RECOVERY, IPHONE_15_PRO, REDUCED. A recuperação é sustentada pelos registros estruturados; os pixels mostram seu estado final. A aprovação limita-se ao cenário privado desta versão. Não comprova cliente, preferência, intenção de compra, satisfação, abandono humano, venda ou receita. A familiaridade do agente pode contribuir para a fluidez simulada. A política atual não exige leituras humanas; o backend decide o avanço."
+      },
+      "checks": {
+        "sameProductAndVersion": true,
+        "isolatedFreshSession": true,
+        "functionalOutcomeMatchesScenario": true,
+        "lowEffortNoPrompting": true,
+        "accessibilityAndResponsive": true,
+        "privacyPreserved": true,
+        "internalTrafficSegregated": true,
+        "safeLimits": true,
+        "noExternalSideEffects": true
+      },
+      "visualAudit": {
+        "captureSessionId": "3e86e2ab-586b-4464-a483-8f90585e4a09",
+        "evidenceIds": [
+          540
+        ],
+        "visualHierarchy": "Arquétipo: aplicação privada de consulta documental. Evidência 540 inspecionada integralmente. visualComposition aplicável, escala 0–5: equilíbrio texto/imagem 4 (cartões textuais adequados à entrega); variedade funcional de mídia 3 (cartões, links e controles suficientes); ritmo/respiro 4 (margens e intervalos entre blocos); orientação por cor 4 (consulta verde preenchida e ações secundárias contornadas); hierarquia tipográfica 4 (título, seção, produtos e ressalvas distintos); densidade 3 (avisos repetidos, ainda legíveis); novidade/familiaridade 3 (agrupamento consultável apoiado em cartões familiares); adequação da conexão humana 4 (linguagem direta e autonomia, sem necessidade funcional de rostos). Não há déficit estético crítico para o público, dispositivo e objetivo.",
+        "legibility": "O manifesto não contém dobras numeradas; usei três faixas analíticas pelo viewport de 852 px. Faixa 1, y=0–851: título, escopo, consulta destacada, aviso e início do primeiro cartão. Faixa 2, y=852–1703: conclusão dos cartões, fontes sublinhadas, ressalvas menores, saldo e segunda organização. Faixa 3, y=1704–2045: continuidade, verificação interna recolhida e saída. Texto escuro, superfícies claras e alinhamento consistente preservam leitura e continuidade, sem corte lateral ou cobertura aparente. Acessibilidade básica também é sustentada pelos registros técnicos; os pixels não medem contraste numérico, foco ou operação com teclado.",
+        "affectiveResponse": "Simulação fundamentada na evidência 540: a faixa 1 pode trazer calma e curiosidade pela organização pronta; a faixa 2 pode reforçar controle ao mostrar itens, referências e saldo, com atenção adicional às ressalvas; a faixa 3 pode preservar autonomia pela saída explícita e ausência de cobrança. A estética permanece consistente nas três faixas. A recompensa imaginada é reencontrar as informações; seu valor pode diminuir diante do esforço inicial ou de uma alternativa gratuita suficiente.",
+        "trustCues": "Na evidência 540, faixa 1: Acesso privado · sem cobrança, Teste interno e ausência de avaliação clínica delimitam o contexto. Nas faixas 1–2: referências informadas e avisos sobre horário, frequência e compatibilidade limitam a interpretação. Na faixa 2: saldo e segunda organização distinguem consulta de novo consumo. Na faixa 3: pagamento indisponível, verificação interna separada e saída preservam controle. Não aparecem credenciais ou dados pessoais. A ausência de pessoas e rostos é adequada à função operacional; as fontes não comprovam inspeção da embalagem ou adequação individual."
+      },
+      "evidence": [
+        "Execução c10c45cd-e26f-4d23-924c-3b300c937f45, tarefa 629, modo SCENARIO: RECOVERY/IPHONE_15_PRO/REDUCED, produto 10, experiment:102 e mira-private-candidate-v3. Referências próprias de execução e captura, distintas das avaliações anteriores, sustentam o isolamento junto ao registro privacyPreserved=true; credenciais não foram auditadas novamente neste parecer.",
+        "Evidência 540: RECOVERY-IPHONE_15_PRO-REDUCED, página completa de 393 × 2046 px, captura em 07/10/2026; sha256 45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7. Única imagem anexada, revisada integralmente nas três faixas de leitura.",
+        "resumed=true, recovered=true, organizationsUsed=1 e generationRequests=1, com RECOVERY_COMPLETED e AGENT_SCENARIO_COMPLETED. Os dois cartões e o saldo visível são coerentes com recuperação sem consumo duplicado. A falha intermediária não foi observada em pixels.",
+        "resultReadySeconds=2, measurementClock=MONOTONIC_WORKER e outcomeBoundary=FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK. scenarioCompletedSeconds=6 representa a duração do cenário. firstInteractionAt não foi usado para subtrair relógios de servidores diferentes.",
+        "PDE_DOCUMENTED_INPUT_COMPARISON_V3: minimumRequiredProductFields=2, providedProductCount=2, filledProductFields=4, filledOptionalSourceFields=2, requiredObjectiveFields=1, objectivePrefilled=true, editedObjectiveFields=0, actualFilledFields=6 e corrections=0. No histórico REFERENCE, o mesmo inventário também exigiu quatro campos de produto e seis preenchimentos totais.",
+        "As instruções exibidas correspondem à entrada e à rotina recebidas, com routineHash 3e8282b9dcf4d7789a1b5c4cb1be5906689c175bfacbddc15c30f43d7cbb0916. fixtureSources fornece páginas específicas de CeraVe Brasil, conteúdo, URLs, consulta em 06/10/2026 e hashes. As fontes não foram consultadas externamente nesta revisão.",
+        "processContext, tarefa 627: uma matriz técnica da mesma versão, com 18 combinações PASS, incluindo seis percursos RECOVERY e registros de preservação, acessibilidade e responsividade. Seus pixels não foram reinspecionados neste turno. Este parecer não constitui outra matriz; emulação de iPhone não comprova Safari nativo.",
+        "Eventos desta sessão: EXPERIENCE_STARTED → VALUE_MOMENT → READY_RESULT_USED → PREFERRED_OVER_FREE → CHECKOUT_STARTED → RECOVERY_COMPLETED → AGENT_SCENARIO_COMPLETED. Preferência e checkout são simulações técnicas internas posteriores à consulta, sem opinião humana ou pagamento comercial.",
+        "AGENT_VALIDATION, internalMarker=mh_internal_test, mhInternalTest=true, privacyPreserved=true, accessibilityBasic=true e noHorizontalOverflow=true. Pagamento, publicação e campanha desativados; mediaSpendBrl=0 e providerCalls=0. Ausência de provedor não implica custo total zero.",
+        "RI1-AAB0EC98AB06 — design-experiencia: orientou conferir primeiro valor, ação principal, preservação dos limites e recuperação. A consulta destacada e a verificação interna recolhida atendem a esses critérios; o cartão não comprova redução de esforço humano.",
+        "RI1-AC85EF9A7C43 — prazer-audio-visual: o critério de separação e compreensão auditiva é não aplicável porque não há áudio. Orientou limitar a análise às modalidades disponíveis, sem extrapolar achados auditivos para prazer visual ou exigir audiovisual.",
+        "RI1-03183674C8A3 — neuromarketing: orientou cruzar compreensão, esforço e conclusão, sem transformar rapidez, atenção presumida ou eventos sintéticos em preferência. Não há eye-tracking nem comportamento humano observado."
+      ],
+      "requiredChanges": [],
+      "rootCause": "O mecanismo que sustenta a aprovação é a recuperação do estado persistido com consumo único, acompanhada de consulta principal distinta dos controles internos, fontes rastreáveis e limites visíveis. Isso enfrenta a confusão de consulta e retomada registrada no histórico, sem herdar aprovação de outra versão. A execução atual registra recuperação concluída, primeiro resultado em 2 segundos e uma organização consumida; a captura confirma resultado consultável, saldo e ações alcançáveis. Todos os nove checks são atendidos pelas evidências atuais e pelo histórico técnico compatível, sem déficit estético crítico. A aprovação permanece restrita à homologação privada."
+    },
+    "630": {
+      "contractVersion": "PDE_PSIQUE_AGENT_SCENARIO_V1",
+      "decision": "APPROVED",
+      "scenarioCode": "SAFETY",
+      "sourceReference": "experiment:102",
+      "productId": 10,
+      "productSlug": "pde-planejado-36",
+      "prototypeVersion": "mira-private-candidate-v3",
+      "trafficClass": "AGENT_VALIDATION",
+      "internalMarker": "mh_internal_test",
+      "syntheticEvaluation": true,
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "experienceAssessment": {
+        "comprehension": "Reação afetiva rápida simulada: o fundo claro e o verde contido sugerem calma e controle; o alerta pode aliviar o receio de receber orientação indevida e frustrar a busca por uma resposta sobre manchas. Na perspectiva simulada de uma mulher de 35 a 60 anos do público definido, a entrada pede objetivo, nomes e instruções dos produtos. O pedido “Diagnosticar e tratar manchas” recebe uma explicação explícita de limite clínico. Não aparece uma rotina como resposta.",
+        "effort": "Operação compreensível sem prompts, escolha de modelo ou montagem externa. O bloqueio ficou visível em 12 segundos monotônicos; o cenário terminou em 21 segundos. Foram preenchidos quatro campos de produto, duas referências opcionais e uma edição do objetivo, totalizando sete, sem correções. O objetivo permanecia obrigatório, embora previamente preenchido. O mínimo inicial REDUCED de dois campos de produto não reduziu os quatro preenchimentos necessários aos dois itens. Reunir e transcrever instruções continua sendo esforço prévio não medido em pessoas.",
+        "utility": "Neste cenário, a utilidade demonstrada é impedir uma conclusão clínica inventada e indicar uma alternativa dentro do escopo ou avaliação profissional. Ao considerar adquirir Mira, a expectativa simulada seria reunir informações dos produtos que já possui para consultá-las com facilidade. Depois de receber e usar a experiência, a pessoa poderia imaginar maior controle sobre essas informações, acompanhado de frustração se esperasse tratamento de manchas. Alívio efetivo e satisfação não foram observados.",
+        "trust": "A indicação de acesso privado sem cobrança, a organização limitada ao texto informado e o aviso de ausência de diagnóstico e prescrição ajudam a delimitar a promessa. O bloqueio preserva os campos visíveis e não consome organização. Antes de eventual compra pela referência de R$ 49, seriam plausíveis receio de pagar por benefício semelhante a uma nota gratuita e preocupação em confundir organização com orientação clínica. Perda e arrependimento poderiam pesar mais que a conveniência esperada. A expressão “rotina segura” não comprova segurança clínica individual; a interpretação deve permanecer limitada aos avisos e ao bloqueio observado.",
+        "pleasure": "Modalidade disponível: somente VISUAL estático. Prazer visual 3/5, fluidez 3/5, congruência 4/5 e risco de sobrecarga 2/5. Áudio, movimento e estímulo tátil avaliável estão indisponíveis, sem notas atribuídas. A paleta calma e os campos familiares favorecem compreensão; a extensão do formulário exige atenção e rolagem. Desejo de facilidade e hesitação diante do esforço podem coexistir. Respeito e pertencimento permanecem necessidades estruturais ao fundo, sem ativação específica evidenciada neste caso. Não há reação corporal ou emoção humana confirmada.",
+        "objections": [
+          "A coleta documental continua necessária; a rapidez do harness não mede esse esforço humano.",
+          "A vantagem sobre rótulos e uma nota pessoal, assim como o valor percebido de R$ 49, permanece desconhecida.",
+          "A expectativa simulada de diagnosticar ou tratar manchas fica sem atendimento, conforme o limite funcional."
+        ],
+        "nextStepClarity": "O aviso oferece duas direções compreensíveis: reformular o objetivo como organização de autocuidado ou procurar avaliação profissional. Reformular exige retornar ao campo do objetivo por rolagem; os produtos continuam preenchidos. “Encerrar e sair” está visível no final. Não há resultado consultável, preferência ou checkout no percurso bloqueado.",
+        "evidenceBoundary": "Parecer independente e sintético de SAFETY/PIXEL_7/REDUCED, limitado à execução recebida e à captura 541. A sessão não realizou retomada ou recuperação; não constitui novo teste desses percursos nem outra matriz técnica. A aprovação não comprova cliente, preferência, intenção de compra, satisfação, compatibilidade clínica, venda ou receita. A política atual dispensa leituras humanas. O backend decide o avanço."
+      },
+      "checks": {
+        "sameProductAndVersion": true,
+        "isolatedFreshSession": true,
+        "functionalOutcomeMatchesScenario": true,
+        "lowEffortNoPrompting": true,
+        "accessibilityAndResponsive": true,
+        "privacyPreserved": true,
+        "internalTrafficSegregated": true,
+        "safeLimits": true,
+        "noExternalSideEffects": true
+      },
+      "visualAudit": {
+        "captureSessionId": "46e58c7a-1727-4f82-8871-731e512a2e58",
+        "evidenceIds": [
+          541
+        ],
+        "visualHierarchy": "Arquétipo: aplicação privada de entrada e bloqueio documental. Evidência 541 inspecionada integralmente. O manifesto não contém dobras numeradas; foram consideradas três faixas analíticas pelo viewport de 915 px. Faixa 1, y=0–914: abertura, objetivo clínico e primeiro produto, com título destacado e campos agrupados; a geração ainda exige rolagem. Faixa 2, y=915–1829: conclusão do primeiro grupo, segundo produto, ações de acrescentar e gerar, e início da seção de segurança; o botão verde distingue a ação principal e o alerta alaranjado marca o limite. Faixa 3, y=1830–2246: continuação do alerta, orientação de reformulação, verificação interna recolhida e saída. A página conserva coluna, margens e paleta. visualComposition aplicável, escala 0–5: equilíbrio texto/imagem 4, pois formulário e aviso textual cumprem a função sem fotografia necessária; variedade funcional de mídia 3, com campos, grupos, expansões e alerta; ritmo/respiro 4, pelos intervalos entre grupos; orientação por cor 4,",
+        "legibility": "Na evidência 541, faixa 1: título, rótulos e objetivo estão legíveis, com campos claros e contornos que agrupam o primeiro item. Faixa 2: nomes e instruções permanecem legíveis; referências opcionais quebram linha sem corte lateral, e a geração fica alcançável por rolagem. Faixa 3: a causa clínica e as alternativas aparecem em texto, além da cor; a saída permanece visível. Não há cobertura ou overflow horizontal aparente. Os registros sustentam acessibilidade básica; pixels estáticos não medem contraste numérico, foco, teclado ou comportamento com teclado virtual.",
+        "affectiveResponse": "Simulação por faixa da evidência 541: na primeira, a estética calma pode atrair, enquanto o preenchimento anuncia trabalho; na segunda, os grupos familiares mantêm controle, com possível cansaço pela extensão e expectativa ao localizar a geração; na terceira, o alerta pode provocar decepção e alívio simultâneos. A orientação sem censura e a saída explícita preservam autonomia. Essas reações são hipóteses, sem observação humana.",
+        "trustCues": "Evidência 541: a abertura informa “Acesso privado · sem cobrança” e organização a partir do texto informado. Junto à geração, o texto exclui diagnóstico, prescrição e indicação de compra. No bloco final, o motivo clínico e a alternativa são explícitos, sem rotina inventada. A verificação interna permanece recolhida e separada da orientação. Não aparecem credenciais ou identificação pessoal. A ausência de rostos é adequada à função operacional."
+      },
+      "evidence": [
+        "Execução independente 3df6e7cc-2d78-4223-a814-a7f181f50151, tarefa 630, modo SCENARIO, vinculada a experiment:102, produto 10 e mira-private-candidate-v3. Referências próprias de execução e captura, distintas dos pareceres anteriores, sustentam isolamento junto ao registro de privacidade; credenciais não foram auditadas novamente neste parecer.",
+        "Evidência 541: SAFETY-PIXEL_7-REDUCED, página completa de 412 × 2247 px, única imagem anexada e integralmente inspecionada. SHA-256 f4ea11b18358193da072805a09f393e0c52ce6ad835a9b40641a1538f3be4d93, compatível com a captura histórica 538 da mesma versão; os pixels históricos não foram reinspecionados.",
+        "safetyBlocked=true, routine=[], organizationsUsed=0, generationRequests=1 e providerCalls=0. A captura mostra o objetivo clínico e o aviso correspondente, sem resultado de diagnóstico ou tratamento.",
+        "Eventos efetivamente registrados: EXPERIENCE_STARTED → SAFETY_LIMIT_BLOCKED → AGENT_SCENARIO_COMPLETED. VALUE_MOMENT, READY_RESULT_USED, PREFERRED_OVER_FREE e CHECKOUT_STARTED estão ausentes, conforme o cenário.",
+        "resultReadySeconds=12 mede o primeiro bloqueio visível por MONOTONIC_WORKER, com outcomeBoundary=FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK. scenarioCompletedSeconds=21 mede conclusão do cenário. firstInteractionAt não foi subtraído de relógios de outro servidor.",
+        "PDE_DOCUMENTED_INPUT_COMPARISON_V3: minimumRequiredProductFields=2, providedProductCount=2, filledProductFields=4, filledOptionalSourceFields=2, requiredObjectiveFields=1, objectivePrefilled=true, editedObjectiveFields=1, actualFilledFields=7 e corrections=0. O histórico SAFETY/REFERENCE também registra quatro preenchimentos de produto e sete totais.",
+        "fixtureSources contém documentos específicos de CeraVe Brasil, URLs, instruções, consulta em 06/10/2026 e hashes. As fontes servem ao fixture documental; não comprovam inspeção da embalagem ou adequação clínica. Não houve consulta externa nesta revisão.",
+        "processContext, tarefa 627: uma matriz técnica da mesma versão com 18 combinações PASS, incluindo seis SAFETY, e registros de acessibilidade e responsividade. Este parecer utiliza o histórico compatível sem repetir a matriz. Emulação mobile não comprova navegador nativo.",
+        "privacyPreserved=true, accessibilityBasic=true, noHorizontalOverflow=true, AGENT_VALIDATION, mhInternalTest=true e internalMarker=mh_internal_test. Pagamento, publicação e campanha desativados; mediaSpendBrl=0. A ausência de provedor não demonstra custo total zero.",
+        "RI1-AAB0EC98AB06 — design-experiencia: orientou conferir causa, próxima ação e separação dos detalhes. O limite clínico permanece explícito e a verificação interna recolhida; isso não comprova menor carga cognitiva humana.",
+        "RI1-AC85EF9A7C43 — prazer-audio-visual: critério auditivo não aplicável, pois não há áudio. Orientou respeitar a disponibilidade sensorial, sem extrapolar achados auditivos para prazer visual ou exigir audiovisual.",
+        "RI1-03183674C8A3 — neuromarketing: orientou separar compreensão, esforço e conclusão de preferência. Não há eye-tracking; rapidez, aparência e bloqueio técnico não foram tratados como comportamento humano."
+      ],
+      "requiredChanges": [],
+      "rootCause": "O mecanismo que sustenta a aprovação é o bloqueio do objetivo clínico antes de produzir ou consumir uma organização, acompanhado de causa compreensível e alternativa segura. A captura confirma ausência de resultado inventado; os eventos confirmam ausência de continuidade para consulta, preferência ou checkout. A verificação interna separada enfrenta a confusão registrada no histórico, sem herdar aprovação de outra versão. Os nove checks são atendidos pelas evidências atuais e pelo histórico técnico compatível. A aprovação restringe-se ao cenário privado de segurança; não libera comercialização ou gasto."
+    },
+    "631": {
+      "contractVersion": "PDE_TEMIS_AGENT_VALIDATION_V1",
+      "decision": "BLOCKED",
+      "commercialRationale": "A versão vigente tem matriz técnica aprovada e três pareceres posteriores compatíveis, com evidência sintética e efeitos comerciais desligados. Porém, falta conciliar provas obrigatórias de concorrência, limites e controle de acesso. Essa lacuna impede qualificar integralmente a entrega privada e sua continuidade. Preservar o estado comercial e operacional existente; somente o backend calcula a transição.",
+      "rootCause": "Lacuna de evidência, sem falha funcional comprovada: a homologação #627 demonstra resultado, recuperação e bloqueio nas 18 combinações, mas não apresenta resultados específicos para reserva concorrente, segunda organização e recusa da terceira, limite de 12 itens, expiração/revogação e impedimento de mutações em contexto encerrado ou incompatível. As declarações de aceitação operacional não conciliam esses critérios, cuja ausência é bloqueante no contrato congelado.",
+      "sourceReference": "experiment:102",
+      "productId": 10,
+      "productSlug": "pde-planejado-36",
+      "prototypeVersion": "mira-private-candidate-v3",
+      "trafficClass": "AGENT_VALIDATION",
+      "internalMarker": "mh_internal_test",
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "agentValidationChecks": {
+        "sameProductAndVersion": true,
+        "criteriaPredeclared": true,
+        "technicalHarnessPassed": false,
+        "threeScenarioReviewsApproved": true,
+        "syntheticEvidenceLabeled": true,
+        "internalTrafficSegregated": true,
+        "privacyPreserved": true,
+        "paymentDisabled": true,
+        "publicationDisabled": true,
+        "campaignDisabled": true,
+        "zeroMediaSpend": true,
+        "noHumanOrCommercialClaim": true,
+        "strategyFidelity": true
+      },
+      "evidence": [
+        "taskTarget.experienceVersion e privatePrototypeAcceptance coincidem em mira-private-candidate-v3, produto 10, ciclo 9 e experiment:102; URL https://mira.digicomdigital.com.br/mira-candidate. Os registros da v2 são históricos e não foram usados como provas atuais.",
+        "technicalHomologation #627: PDE_AGENT_TECHNICAL_HOMOLOGATION_V1, APPROVED, 18 combinações PASS; DESKTOP_1440, IPHONE_15_PRO e PIXEL_7 × três cenários × REFERENCE/REDUCED. Capturas persistidas 521–538. Resultados seguros entre 2 e 13 segundos; RECOVERY preserva consumo único e SAFETY não produz rotina nem continuidade. technicalHarnessPassed=false representa cobertura contratual incompleta, não reprovação desses resultados.",
+        "Psique #628 ADHERENT, #629 RECOVERY e #630 SAFETY: APPROVED sob PDE_PSIQUE_AGENT_SCENARIO_V1, entregues respectivamente às 06:31:40Z, 06:38:02Z e 06:44:02Z, após a homologação. Execuções distintas e capturas persistidas 539, 540 e 541, com hashes e identidade compatíveis.",
+        "fixtureSources de #627 fornece documentos específicos de CeraVe Brasil, instruções, URLs, consulta em 06/10/2026 e hashes. A pendência documental do planejamento foi suprida para esses itens; as fontes não demonstram compatibilidade clínica individual.",
+        "Os registros atuais declaram AGENT_VALIDATION/mh_internal_test, privacidade preservada e exclusão das métricas comerciais. PREFERRED_OVER_FREE e CHECKOUT_STARTED são simulações internas; não há pessoa, consentimento humano, depoimento, compra, receita ou satisfação comprovados.",
+        "A estratégia mantém organização documental, fontes e limites, R$ 49 como referência histórica e ausência de promessa clínica. A candidata é determinística, sem suporte automatizado pago comprovado. Emulação mobile não comprova Safari nativo; custos e margens projetados não comprovam margem comercial. A amostra anterior permanece pequena e sem causa comprovada de abandono.",
+        "RI1-46C593BBC354 — neuromarketing: critério consultivo de autenticidade; ajudou a separar demonstração técnica e persona simulada de depoimento ou prova real.",
+        "RI1-BF9831BF0643 — neuromarketing: critério consultivo de coerência; ajudou a confrontar promessa, limites e continuidade com a entrega documentada, identificando a necessidade de provas dos controles obrigatórios.",
+        "RI1-03183674C8A3 — neuromarketing: critério consultivo de inferência; rapidez, aparência e eventos sintéticos não foram convertidos em preferência, satisfação ou venda. Nenhum cartão substitui as provas do gate."
+      ],
+      "requiredChanges": [
+        "Vincular às atividades concluídas as provas existentes e compatíveis da versão aceita para concorrência e consumo único, duas organizações e recusa da terceira, máximo de 12 itens, expiração/revogação e bloqueio de mutações em contexto encerrado ou incompatível. Registrar resultado, identidade, origem e hash por critério; referência genérica a implementação não basta.",
+        "Conciliar essa cobertura no relatório técnico. Se alguma prova não existir ou não for compatível, testar somente os critérios ausentes ou falhos e regressões relacionadas, sem repetir a matriz por contagem.",
+        "Retornar a Têmis com o conjunto atual conciliado. Preservar histórico, preço, estados existentes e efeitos comerciais desligados; esta revisão não autoriza publicação, cobrança, campanha, mídia ou renovação de orçamento."
+      ]
+    },
+    "632": {
+      "decision": "BLOCKED",
+      "rationale": "A origem válida é a tarefa #631, categoria FUNCTIONAL_ADJUSTMENT, de commercialIntegrityReview. A rejeição aponta cobertura de evidência incompleta, sem falha funcional comprovada. A homologação #627 e os pareceres #628–630 permanecem provas da v3. Porém, taskTarget.experienceVersion ainda informa a própria versão rejeitada, mira-private-candidate-v3; nenhuma nova candidata executável com aceitação READY foi informada. As verificações abaixo referentes à versão corrigida permanecem não comprovadas.",
+      "alternatives": [
+        {
+          "name": "Conciliar provas e testar somente as lacunas",
+          "benefit": "Completa a comprovação dos controles preservando a experiência útil e o aprendizado existente.",
+          "risk": "Reutilização indevida de provas com identidade ou hash incompatíveis; exige conferência por critério.",
+          "effort": "Baixo a médio: vinculação auditável, ajuste do relatório e testes dirigidos.",
+          "salesFit": "Alta: sustenta os limites da entrega prometida sem alterar oferta ou presumir vendas."
+        },
+        {
+          "name": "Reexecutar toda a matriz e os controles",
+          "benefit": "Produz um conjunto integral de evidências atuais.",
+          "risk": "Repete percursos já comprovados e pode reproduzir a mesma omissão se o relatório continuar incompleto.",
+          "effort": "Médio a alto, com repetição desnecessária quando houver provas compatíveis.",
+          "salesFit": "Intermediária: melhora a documentação, mas não acrescenta valor funcional proporcional."
+        },
+        {
+          "name": "Refatorar acesso e consumo",
+          "benefit": "Permite redesenhar os controles caso testes revelem defeito real.",
+          "risk": "Introduz regressões e muda condições sem causa funcional comprovada.",
+          "effort": "Alto: implementação, regressões e possível sucessor de ciclo e experimento.",
+          "salesFit": "Baixa neste diagnóstico: pode atrasar a entrega e descaracterizar capacidades já úteis."
+        }
+      ],
+      "selectedApproach": "Conciliar provas compatíveis e testar apenas critérios ausentes ou falhos. A mudança principal deve completar a emissão e a validação das evidências dos controles de Mira, preservando entrada, organização documental, consulta, recuperação e limites.",
+      "correctionPlan": {
+        "sourceTaskId": 631,
+        "rejectedActivityId": "commercialIntegrityReview",
+        "previousPrototypeVersion": "mira-private-candidate-v3",
+        "correctedPrototypeVersion": "PENDENTE — nova versão não registrada no taskTarget",
+        "rootCause": "A tarefa #631 identifica ausência de resultados específicos dos controles obrigatórios. A inspeção do commit 92d0d8838f6ba5b1e73893cd8a46c519d81e7945 confirma a lacuna na camada de comprovação: o harness emite gates da matriz, enquanto run-local.sh gera history.json separadamente; o validador aceita essa cobertura sem exigir todos os controles apontados por Têmis. Testes existentes e declarações operacionais não substituem resultados executados e vinculados por critério.",
+        "userInstructions": [
+          "Anexar às atividades concluídas um suplemento auditável por critério, com resultado, identidade, execução, origem e SHA-256; preservar os registros anteriores.",
+          "Completar a emissão e a validação das provas dos controles de Mira. Adicionar regressão que recuse cobertura ausente ou incompatível, mesmo com matriz aprovada.",
+          "Executar somente provas faltantes e regressões relacionadas, usando fixtures segregadas, backend real e MySQL 5.7; não alterar o ciclo real para simular encerramento.",
+          "Concluir, em atividade técnica separadamente autorizada, o registro de uma candidata distinta da v3, com URL executável, imagem, hashes e aceitação canônica READY disponíveis ao harness.",
+          "Conferir a concordância entre taskTarget, aceitação e runtime. Esta tarefa não autoriza publicação ou deploy.",
+          "Após cumprir esses requisitos, retornar pelo backend a technicalHomologation; seguir a sequência vigente de Psique e Têmis sem reutilizar aprovações da v3."
+        ],
+        "changes": [
+          "Nenhuma alteração de código, versão, runtime ou aceitação foi realizada nesta atividade.",
+          "Confirmada a separação entre relatório da matriz e relatório local de histórico no código da versão aceita.",
+          "Localizados testes de idempotência, segunda organização, recusa da terceira, expiração, revogação e ciclo encerrado; sua execução compatível ainda precisa ser conciliada.",
+          "O documento mira-candidate-v4-homologacao.md descreve a candidata v3; seu nome não comprova uma nova versão.",
+          "As fontes específicas fornecidas em #627 e a rotina, limites e próxima ação registrados em #628–630 permanecem evidências históricas válidas da v3."
+        ],
+        "nextActivityId": "technicalHomologation",
+        "verification": {
+          "routineRemainsVisible": false,
+          "valueAndLimitsRemainVisible": false,
+          "nextActionVisible": false,
+          "newVersionPublished": false,
+          "technicalRevalidationRequired": true,
+          "noExternalSideEffects": true
+        }
+      },
+      "acceptanceCriteria": [
+        "Concorrência e consumo único: requisições concorrentes, replay e recuperação após resposta perdida não duplicam organização nem ultrapassam o saldo.",
+        "Quantidade: duas organizações úteis são possíveis; a terceira distinta é recusada, preservando consulta e resultados anteriores.",
+        "Entrada: 12 itens documentados são aceitos; 13 são recusados sem consumo ou perda das entregas válidas.",
+        "Acesso: comprovar validade privada de sete dias, recusa após expiração e revogação, com isolamento entre pacotes.",
+        "Contexto: ciclo encerrado ou identidade/versão incompatível impede mutações e preserva o histórico conforme o contrato.",
+        "Cada prova contém resultado observado, identidade completa, origem, execução e hash verificável; código de teste ou referência genérica não basta.",
+        "A nova candidata mantém organização consultável, fontes, limites e próxima ação visíveis. Percursos seguros entregam resultado utilizável em até 600 segundos; SAFETY permanece bloqueado sem continuidade.",
+        "Métrica: cobertura integral dos cinco grupos bloqueantes, zero critérios sem prova e zero consumo duplicado. Comparar conclusão funcional e recorrência da lacuna com #627, sem misturar versões ou inferir vendas.",
+        "Continuar: versão distinta, URL executável e aceitação READY conciliadas; retornar obrigatoriamente à homologação técnica.",
+        "Ajustar: corrigir somente prova ou critério ausente, incompatível ou falho e regressões relacionadas. Conciliação do mesmo contrato não cria hipótese nova; mudança das condições exige sucessor rastreável.",
+        "Parar: consumo duplicado, vazamento, resultado inventado, continuidade insegura ou efeito comercial ativado. Preservar R$ 49, duas organizações, 12 itens, validade privada, PLANNED/STOP e orçamento vigente; nenhuma exigência de recrutamento, leitura humana ou venda."
+      ],
+      "requiredChanges": [
+        "Consolidar as evidências dos controles no relatório técnico e prevenir nova aprovação com cobertura incompleta.",
+        "Suprir por testes dirigidos somente as provas inexistentes ou incompatíveis, sem repetir a matriz por contagem.",
+        "Obter nova identidade executável e aceitação canônica antes de considerar a correção pronta; a v3 rejeitada continua sendo o único alvo informado."
+      ]
+    },
+    "633": {
+      "contractVersion": "PDE_TEMIS_AGENT_VALIDATION_V1",
+      "decision": "APPROVED",
+      "commercialRationale": "Os treze checks estão atendidos para a validação privada de Mira, produto 10, ciclo 9, experimento 102 e mira-private-candidate-v3. O suplemento completa a cobertura dos controles que motivou o bloqueio anterior, preservando a matriz e os três pareceres compatíveis. A aprovação qualifica somente esse conjunto e permite preparação da comunicação pelo sequenciamento do backend. Não comprova demanda, satisfação, compra ou margem, nem autoriza cobrança, publicação, campanha ou gasto. Preservar o estado comercial e operacional existente.",
+      "rootCause": "O bloqueio anterior decorreu de cobertura incompleta no relatório técnico, sem defeito funcional comprovado. O suplemento versionado apresenta resultados PASS, métodos, origem e hashes para os sete controles pendentes, com versão, slug e fingerprint compatíveis com a implementação aceita. Como a experiência permaneceu igual, não é necessária outra candidata nem repetição da matriz ou dos pareceres. A exigência histórica de nova versão em #632 não se aplica à complementação exclusiva de evidência conforme a instrução vigente.",
+      "sourceReference": "experiment:102",
+      "productId": 10,
+      "productSlug": "pde-planejado-36",
+      "prototypeVersion": "mira-private-candidate-v3",
+      "trafficClass": "AGENT_VALIDATION",
+      "internalMarker": "mh_internal_test",
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "sideEffects": {
+        "paymentEnabled": false,
+        "published": false,
+        "campaignCreated": false,
+        "mediaSpendBrl": 0
+      },
+      "agentValidationChecks": {
+        "sameProductAndVersion": true,
+        "criteriaPredeclared": true,
+        "technicalHarnessPassed": true,
+        "threeScenarioReviewsApproved": true,
+        "syntheticEvidenceLabeled": true,
+        "internalTrafficSegregated": true,
+        "privacyPreserved": true,
+        "paymentDisabled": true,
+        "publicationDisabled": true,
+        "campaignDisabled": true,
+        "zeroMediaSpend": true,
+        "noHumanOrCommercialClaim": true,
+        "strategyFidelity": true
+      },
+      "evidence": [
+        "Identidade atual: taskTarget.experienceVersion e privatePrototypeAcceptance coincidem em mira-private-candidate-v3, produto 10, ciclo 9, experiment:102 e URL https://mira.digicomdigital.com.br/mira-candidate. A implementação aceita usa imagem 92d0d8838f6ba5b1e73893cd8a46c519d81e7945 e fingerprint 0a23dd41270f7befd1663a4388bf74b3bbf471fc364f6d6c5b94af8b40f60ac3, também declarado pelo suplemento. Registros da v2 permanecem históricos.",
+        "Homologação #627: PDE_AGENT_TECHNICAL_HOMOLOGATION_V1, APPROVED, geração determinística e 18 combinações PASS em DESKTOP_1440, IPHONE_15_PRO e PIXEL_7, nos três cenários e duas condições. Capturas persistidas 521–538. Resultados seguros entre 2 e 13 segundos monotônicos; recuperação preservada; SAFETY sem rotina, consumo ou continuidade. Emulação mobile não comprova Safari nativo.",
+        "Psique #628 ADHERENT, #629 RECOVERY e #630 SAFETY: APPROVED sob PDE_PSIQUE_AGENT_SCENARIO_V1, entregues às 06:31:40Z, 06:38:02Z e 06:44:02Z, depois da homologação. Execuções e sessões de captura distintas; screenshots persistidos 539, 540 e 541, com identidade compatível e hashes declarados. O suplemento não alterou a experiência examinada.",
+        "Suplemento PDE_OPERATIONAL_CONTROLS_EVIDENCE_V1, recurso contracts/operational-evidence/mira-private-controls-v1.json: status PASS, gerado em 2026-10-07T07:59:15.008891+00:00, origem LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES. reportSha256=de6c61092ce54485dfac732eb8afc3c81d7dba65ca7814abf412777ed42536a4; testReceiptSha256=8aa3f74bf3d8c5fd3788eea61e81dad534145f9b5aff18a96d25641cbc87e147; rawJunitSha256=6437af7317fb7b2fc82d25b9ffbe9cd2d9368477a5ed7fe3af112af6213db15c. Comprova HTTP e transações reais em MySQL 5.7 isolado; os IDs 8006/8017, 7006/7017 e 9006/9017 identificam fixtures e doubles locais, não clientes ou mutações no ciclo de produção.",
+        "Mesma origem LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES, classe MiraPrivateControlsMysql57Test: CONCURRENT_SINGLE_CONSUMPTION PASS, método concurrentGenerationConsumesOnce, resultSha256=3a38a9bee8b6523bb26e354ff494b7ea9b33e2fc3f40f0ac2150cffbf96abdd2; ORGANIZATION_LIMIT PASS, método twoOrganizationsRejectThird, resultSha256=9f354e4a90e8b0ec7733691295a0b7f4f6310205780af3877a009043991c4b66; PRODUCT_ITEM_LIMIT PASS, método twelveItemsAcceptedThirteenthRejected, resultSha256=0d628af0c4fb8506b8ce67d9710dcc80f42d4be8d132578f8675b3bbacb4fb76.",
+        "Mesma origem LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES, classe MiraPrivateControlsMysql57Test: EXPIRATION PASS, método expiredCredentialRejected, resultSha256=62e1a076f6c442846b74bd6d668dd38e3413cfe9fbe4676e281a3e08f7bce25c; REVOCATION PASS, método revokedCredentialRejected, resultSha256=59b36c55d6be576d418e3b80c45a32e396eb60e0b38064f23fee78df53b59d76.",
+        "Mesma origem LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES, classe MiraPrivateControlsMysql57Test: CLOSED_CONTEXT PASS, método closedContextRejectsMutationsAndPreservesResult, resultSha256=7efe54107ee48cfed549e656a3822d44b329cedda08a84fe8a16ae94c7b99efa; INCOMPATIBLE_CONTEXT PASS, método incompatibleContextRejectsMutations, resultSha256=73f609cd461aa015de3f41450d89167bface9e117f2d5591337afbb0eb5fdc19. A cobertura complementa #627; não constitui parecer independente de agente.",
+        "fixtureSources de #627 fornece instruções, URLs oficiais de CeraVe Brasil, consulta em 06/10/2026 e hashes dos documentos específicos. Supre a pendência de fontes para os itens testados, sem comprovar adequação pessoal, inspeção da embalagem ou compatibilidade clínica.",
+        "Os registros atuais identificam avaliação sintética, AGENT_VALIDATION e mh_internal_test, preservam privacidade e excluem métricas humanas e comerciais. PREFERRED_OVER_FREE e CHECKOUT_STARTED são controles internos simulados. Não há nome, consentimento, depoimento, compra, receita ou satisfação atribuídos a pessoa; a política vigente dispensa leituras humanas.",
+        "Fidelidade preservada à organização documental com fontes e limites. R$ 49 é referência histórica; duas organizações, até 12 itens e sete dias privados não foram ampliados. Não há promessa clínica ou suporte automatizado pago comprovado. Pagamento, publicação e campanha permanecem desligados, mídia zero. Custos e margens continuam hipóteses; a amostra histórica é pequena e não estabelece causa de abandono.",
+        "RI1-46C593BBC354 — neuromarketing: critério consultivo de autenticidade; ajudou a separar persona e avaliação sintéticas de depoimento ou prova humana.",
+        "RI1-BF9831BF0643 — neuromarketing: critério consultivo de coerência; ajudou a confrontar promessa, preço de referência, limites e continuidade com a entrega e os controles documentados.",
+        "RI1-03183674C8A3 — neuromarketing: critério consultivo de inferência; rapidez, aparência e eventos internos não foram convertidos em preferência, satisfação ou venda. Os cartões não substituem as provas congeladas do gate."
+      ],
+      "requiredChanges": []
+    }
+  }
+}

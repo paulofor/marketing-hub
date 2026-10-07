@@ -431,18 +431,42 @@ export function MiraCandidateApp() {
                   </button>
                 )}
                 {ready && (
-                  <button
-                    className="mira-secondary"
-                    disabled={
-                      busy ||
-                      !consulted ||
-                      (recovery &&
-                        !session.events.includes("RECOVERY_COMPLETED"))
-                    }
-                    onClick={() => record("AGENT_SCENARIO_COMPLETED")}
-                  >
-                    Concluir cenário
-                  </button>
+                  <>
+                    <button
+                      className="mira-secondary"
+                      disabled={
+                        busy ||
+                        !consulted ||
+                        session.events.includes("PREFERRED_OVER_FREE")
+                      }
+                      onClick={() => record("PREFERRED_OVER_FREE")}
+                    >
+                      Simular comparação com alternativa gratuita
+                    </button>
+                    <button
+                      className="mira-secondary"
+                      disabled={
+                        busy ||
+                        !session.events.includes("PREFERRED_OVER_FREE") ||
+                        session.events.includes("CHECKOUT_STARTED")
+                      }
+                      onClick={() => record("CHECKOUT_STARTED")}
+                    >
+                      Simular início da continuidade sem cobrança
+                    </button>
+                    <button
+                      className="mira-secondary"
+                      disabled={
+                        busy ||
+                        !consulted ||
+                        (recovery &&
+                          !session.events.includes("RECOVERY_COMPLETED"))
+                      }
+                      onClick={() => record("AGENT_SCENARIO_COMPLETED")}
+                    >
+                      Concluir cenário
+                    </button>
+                  </>
                 )}
               </>
             )}

@@ -339,11 +339,9 @@ public class PdeAgentValidationHarnessRunner {
                             + "|"
                             + scenario.path("condition").asText()));
         if (!expectedCases.equals(observedCases)
-            || !("mira-commercial-v1".equals(String.valueOf(expected.get("prototypeVersion")))
-                ? Set.of("PDE_DOCUMENTED_INPUT_COMPARISON_V1", "PDE_DOCUMENTED_INPUT_COMPARISON_V2")
-                    .contains(result.path("fixtureContract").asText())
-                : "PDE_DOCUMENTED_INPUT_COMPARISON_V2"
-                    .equals(result.path("fixtureContract").asText()))
+            || !supportedFixtureContract(
+                String.valueOf(expected.get("prototypeVersion")),
+                result.path("fixtureContract").asText())
             || !"DETERMINISTIC_DOCUMENTED_LABELS".equals(result.path("generationMode").asText())
             || result.path("providerCalls").asInt(-1) != 0) {
           throw new HarnessException(
@@ -398,6 +396,20 @@ public class PdeAgentValidationHarnessRunner {
     }
     if (artifacts.isEmpty()) throw new HarnessException("O harness não produziu screenshots.");
     return List.copyOf(artifacts);
+  }
+
+  /** Mantém relatórios históricos e exige o contrato de sinais das candidatas novas. */
+  private boolean supportedFixtureContract(String version, String contract) {
+    if ("mira-commercial-v1".equals(version))
+      return Set.of(
+              "PDE_DOCUMENTED_INPUT_COMPARISON_V1",
+              "PDE_DOCUMENTED_INPUT_COMPARISON_V2",
+              "PDE_DOCUMENTED_INPUT_COMPARISON_V3")
+          .contains(contract);
+    if ("mira-private-candidate-v2".equals(version))
+      return Set.of("PDE_DOCUMENTED_INPUT_COMPARISON_V2", "PDE_DOCUMENTED_INPUT_COMPARISON_V3")
+          .contains(contract);
+    return "PDE_DOCUMENTED_INPUT_COMPARISON_V3".equals(contract);
   }
 
   /** Reconhece candidatas privadas versionadas e mantém a leitura da versão histórica. */

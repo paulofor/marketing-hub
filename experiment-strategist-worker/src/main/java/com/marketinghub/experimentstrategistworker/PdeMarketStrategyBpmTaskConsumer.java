@@ -514,10 +514,12 @@ public class PdeMarketStrategyBpmTaskConsumer {
             || hasText(validationPlan, "sourceRefreshAction"));
   }
 
-  /** Exige o plano que automatiza prontidão sem fabricar participante ou prova comercial. */
+  /** Exige o plano canônico sem multiplicar a matriz técnica pelos pareceres de experiência. */
   private static boolean validAgentValidationPlan(JsonNode plan) {
     return plan.isObject()
         && "PDE_AGENT_VALIDATION_V1".equals(plan.path("contractVersion").asText())
+        && plan.path("technicalMatrixRuns").asInt(-1) == 1
+        && plan.path("independentExperienceReviewCount").asInt(-1) == 3
         && completePurchaseScene(plan.path("purchaseScene"))
         && canonicalCustomerValueDelivery(plan.path("customerValueDelivery"))
         && hasText(plan, "hypothesis")

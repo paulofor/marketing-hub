@@ -128,6 +128,8 @@
             "requiredScenarios",
             "requiredDevices",
             "maxReadyResultSeconds",
+            "technicalMatrixRuns",
+            "independentExperienceReviewCount",
             "humanEvidenceClaimed",
             "commercialEvidenceClaimed",
             "paymentEnabled",
@@ -244,6 +246,8 @@
               }
             },
             "maxReadyResultSeconds": { "type": "integer", "const": 600 },
+            "technicalMatrixRuns": { "type": "integer", "const": 1 },
+            "independentExperienceReviewCount": { "type": "integer", "const": 3 },
             "humanEvidenceClaimed": { "type": "boolean", "const": false },
             "commercialEvidenceClaimed": { "type": "boolean", "const": false },
             "paymentEnabled": { "type": "boolean", "const": false },

@@ -153,7 +153,47 @@ class MiraPrivateServiceTest {
     service.event(token, new Event("AGENT_SCENARIO_COMPLETED"));
     assertThat(service.session(token).organizationsUsed()).isEqualTo(1);
     assertThat(service.session(token).events())
-        .containsOnly("VALUE_MOMENT", "READY_RESULT_USED", "AGENT_SCENARIO_COMPLETED");
+        .containsOnly(
+            "EXPERIENCE_STARTED", "VALUE_MOMENT", "READY_RESULT_USED", "AGENT_SCENARIO_COMPLETED");
+  }
+
+  /** Exige consulta e comparação antes do checkout sintético, com replay sem novo consumo. */
+  @Test
+  void syntheticFunnelPreservesOrderingIsolationAndReplay() {
+    for (long cycleId : List.of(6L, 51L)) {
+      String token = create(cycleId, "REDUCED", "ADHERENT");
+      assertThat(service.session(token).events()).containsExactly("EXPERIENCE_STARTED");
+      assertThatThrownBy(() -> service.event(token, new Event("CHECKOUT_STARTED")))
+          .hasMessageContaining("pronto");
+      service.input(token, input("Produto A"));
+      service.generate(token);
+      assertThatThrownBy(() -> service.event(token, new Event("PREFERRED_OVER_FREE")))
+          .hasMessageContaining("Consulte");
+      service.event(token, new Event("READY_RESULT_USED"));
+      assertThatThrownBy(() -> service.event(token, new Event("CHECKOUT_STARTED")))
+          .hasMessageContaining("comparação");
+      service.event(token, new Event("PREFERRED_OVER_FREE"));
+      service.event(token, new Event("CHECKOUT_STARTED"));
+      service.event(token, new Event("CHECKOUT_STARTED"));
+      var state = service.session(token);
+      assertThat(state.events())
+          .containsExactly(
+              "EXPERIENCE_STARTED",
+              "VALUE_MOMENT",
+              "READY_RESULT_USED",
+              "PREFERRED_OVER_FREE",
+              "CHECKOUT_STARTED");
+      assertThat(state.organizationsUsed()).isEqualTo(1);
+      assertThat(state.trafficClass()).isEqualTo("AGENT_VALIDATION");
+      assertThat(state.paymentEnabled()).isFalse();
+      assertThat(state.published()).isFalse();
+    }
+    String unsafe = create(6, "REDUCED", "SAFETY");
+    service.input(unsafe, new Input("Diagnosticar manchas", input("Produto A").products()));
+    service.generate(unsafe);
+    assertThatThrownBy(() -> service.event(unsafe, new Event("CHECKOUT_STARTED")))
+        .hasMessageContaining("pronto");
+    assertThat(service.session(unsafe).organizationsUsed()).isZero();
   }
 
   /** Confirma uma entrada única, idempotência, retomada e limite de duas organizações úteis. */

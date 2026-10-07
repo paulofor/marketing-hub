@@ -1,0 +1,357 @@
+{
+  "contractVersion": "mira-private-candidate.v4",
+  "processCode": "pde-construction-approval",
+  "processVersion": 4,
+  "activityId": "technicalHomologation",
+  "sourceReference": "product:10@mira-private-candidate-v3-build",
+  "product": {
+    "id": 10,
+    "internalName": "Mira",
+    "commercialName": "Mira · sua rotina organizada",
+    "slug": "pde-planejado-36",
+    "experienceVersion": "mira-private-candidate-v3",
+    "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+    "supersedesExperienceVersions": [
+      "mira-private-candidate-v2"
+    ]
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "boundary": "Candidata privada determinística corrigida, sem inferência, compra, mídia, vídeo pago ou evidência humana. O teto de US$10 permanece total e cumulativo para toda a preparação e revisão de Mira.",
+  "operationalState": {
+    "verifiedAt": "2026-10-07",
+    "experimentStatus": "PLANNED",
+    "commercialPublicationAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "mira-commercial",
+    "publicUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+    "requiredFrontendSourceSha256": "0a23dd41270f7befd1663a4388bf74b3bbf471fc364f6d6c5b94af8b40f60ac3",
+    "publishedByManifest": "pde-platform/contracts/mira-commercial-homologation-v18.json"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "mira-private-candidate-v3",
+      "experienceVersion": "mira-private-candidate-v3",
+      "frontendSourceSha256": "0a23dd41270f7befd1663a4388bf74b3bbf471fc364f6d6c5b94af8b40f60ac3"
+    },
+    "diagnosticsUrl": "https://mira.digicomdigital.com.br/mira-candidate/version-diagnostics.json"
+  },
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/frontend/mira-candidate.html",
+      "sha256": "56023ac769d7b41c0f03a285d9af803293583e5ee6e4febfd5541a99333a6207",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MiraCandidateEntry.tsx",
+      "sha256": "266bb93ab40eb151fa7aa9b2cc9d2d1d19c6a70ff8c859f72bc320d9f2f41173",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/vite.mira-commercial.config.ts",
+      "sha256": "d97422427de7433508cf72456b23095d507a5139a2272671a4e048c7658ae002",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleService.java",
+      "sha256": "b7b88a338dd96ac8bfadb896adc7ab7954360b68353be24f9f18f84265c1925c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePrototypeContext.java",
+      "sha256": "9e6133028b84a2b815c885cf04b6b2f2a6cf4bb4cf97af6fed7f42223a743976",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CyclePrototypeRegistrationForm.tsx",
+      "sha256": "257e2750c1d3b8f5492ebc94fac776872c436c0d71da31539f41ff4e6caf0cad",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeInputComparisonScenarioMatrixV1.java",
+      "sha256": "fdc0b59a5bcf7c541778254be58c4024193e062c6d6c22d76b3aae53db1a77eb",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutor.java",
+      "sha256": "a4172dd67ba74602ea2333544bb1dceee2a8425514840f0036963001034ca748",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/controller/MiraPrivateController.java",
+      "sha256": "ebfd3da9a40bf721b331bf0d7d2acdad4e099ab317ca4a5564974983255e3ce9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/MiraCandidateApp.tsx",
+      "sha256": "22655e772ee0342507465956aabb42ba3d20dbb1bd81328de6194ffe35bb5440",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/mira-candidate.css",
+      "sha256": "c364e4ec9c6fd36995c26e86705c06ace4882813be7bab3ae16ad8c0673fd67d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/nginx.mira-commercial.conf",
+      "sha256": "1f8e0ae0e2cde3e3cc36a48caa54e9f827196e7add05bb52ec261bc674e2b665",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/service/MiraPrivateService.java",
+      "sha256": "fc93a15950b0f3cedc4064aebb9a8bf9d09a0b2ad0f4dcfe0cbfb148b27374a2",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/mira-candidate-harness.mjs",
+      "sha256": "bb8adecd7380270a8e193ead629d6d6f1ee8aaa1025f01646ad6ca6284e0bb73",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/service/contract/MiraPrivateContract.java",
+      "sha256": "1a7153f6bb0bccbaaa014c3df2f7581ff310792414156d980d031f12a9413559",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/mira/privateprototype/v1/service/MiraRoutinePolicy.java",
+      "sha256": "480c2550e1891f7eb46ae2e5dcafe83fe74d5e47161b824bfde9cf085b1bf864",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/mira-candidate-metrics.mjs",
+      "sha256": "4cf0316cf5e5805a502b872d4d4af2760c286082afd8a23265002795585ef1c1",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/prompts/bpm/v5/pde-agent-validation-scenario-review.md",
+      "sha256": "56086ae39f6fb43ad1e6d266c8a3355983ce43405c0844d1135bba8d4a31071b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunner.java",
+      "sha256": "c46f6726042b301ebd27e6cc6e6a7ee8d285046af503ce84b1a9738907864d05",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/write-mira-candidate-diagnostics.mjs",
+      "sha256": "05b89b004ff2bfe5e8998344cb93e631fd226b7f930efd134b868aa354ba9d6f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/service/LearningCycleSuccessorPreparation.java",
+      "sha256": "bb42f7f24de03825d131d56236cff7db327bbcdf8f1943ccf7792b1f85c0ec1d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/controller/LearningCycleDecisionController.java",
+      "sha256": "1a8ff63ff77b9b6ef5583ccaf5fa668dd9daadcd5f184aeffb70d82fbd886599",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/service/prepareAdjustment/PrepareAdjustmentSuccessorRequest.java",
+      "sha256": "3ff3045f10ae4acae420d5e1b6872fdc26d63c57d069da46f406c5a249c13205",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/service/prepareAdjustment/AdjustmentPreparationAvailability.java",
+      "sha256": "055b966ddd098fee6e8e12ac34b33e69d3e47d45bc969274d0e95693b13a7f16",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/api/learningCycle/useDecisionProposal.ts",
+      "sha256": "ec5e302887d2fad97b6d553b32695ba42870a0aa85c0f4d04aa5b1bbd4378c34",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CycleAdjustmentPreparationForm.tsx",
+      "sha256": "9345f317f168165ab6a5fedc9387da55fe7ee178551e65da509f81c216a6b51e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/LearningCyclesPage.tsx",
+      "sha256": "84d99e182d8de89880bc66c3df69c647fd63da76ee2ac71a5bab63cde70b986d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleTaskContext.java",
+      "sha256": "292bd767a15d91fd6fe858985a20095a5445694e30d15f3299971aab54476635",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/contracts/pde-agent-validation-plan-v1.json",
+      "sha256": "7e583f37416206a2f76920f8b565e93459b83a983fa8c4a29733c3aadaaaf7d2",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/PdeMarketStrategyBpmTaskConsumer.java",
+      "sha256": "3ecd1778aba81da5335f0da4bbae136152d47c8fb437de848c9b19b38148fb2a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v10/market-strategy.md",
+      "sha256": "83cb6cdbfdafa6b3e28a70ba71f114243b95afaf0fec5c4d63b55dd5d4bd5a58",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v10/market-strategy-schema.json",
+      "sha256": "a7b4ec5dcbbdd7e606672b0e2772241eea8ea12361d8eb54a0f9b6e1f7f1e592",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v6/economics.md",
+      "sha256": "c40ea7c97cac68cd3912018b33cb25b094ea6531ad392d8a896fd70988071eab",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v6/product-architecture.md",
+      "sha256": "8943c0fdf140f6697a5bb5f7f0e46c430415c8614f336ef98eccef06fd16892b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v2/specification-boundary.md",
+      "sha256": "bae1574432758c70e876d9ded4a4d7a3e24fddebdbd61ae529a1c441d477dfcb",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "scripts/build-commercial-review-evidence.mjs",
+      "sha256": "335a3d18d7b315ec1f4f1ff0d55970d311feae62d37b4072bdab3f8fd4fb0e96",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/PdeReviewArtifactLoader.java",
+      "sha256": "75b95ee47c3f2cc0947afb1120c29dea52680fcdf54487fc93b7a44860226e35",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/scripts/test-product-build-artifacts.mjs",
+      "sha256": "e550e660fb0ad8516ede597d3174b388b0f0a01ff0c837419f2386f4e76362a8",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCyclePrototypeRegistrationTest.java",
+      "sha256": "c8dc7e007ecc57a20b79f5983b672de7992144211e9564c4682ed355a069b013",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/controller/LearningCyclePrototypeControllerTest.java",
+      "sha256": "bb671f3d59711762333b6719105fcb049692b3a8fe1c01feb60ec0c0ba4f1df5",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CyclePrototypeRegistrationForm.test.tsx",
+      "sha256": "45256f168f755ce35d9a100fb4d5a0bd35a0c04e2b1c5d7637c2c7c615a681d7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeInputComparisonScenarioMatrixV1Test.java",
+      "sha256": "b57b73ec4c35cb5c73534c1bda47f630f4bd6bb8154385fc3a07698e419f37a9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutorTest.java",
+      "sha256": "1e1a41caec551c480fc72d7e44a7ac9945549e0c57308e2da5a730e32e7f08af",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/mira-candidate/history-browser-test.mjs",
+      "sha256": "5fc50ffef72418dbe3c971d3cc4d0713739051afcf766e8b591d3c08f84cafe6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/mira-candidate/run-local.sh",
+      "sha256": "d668d53f69f59e45502dadbaeec74296faddd055eed073aa6af034479c1f0735",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateServiceTest.java",
+      "sha256": "913ed5de2d3011740320d7502093bb088c59281143d25ea94598d126f8fbe21a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/mira/privateprototype/v1/MiraPrivateControllerTest.java",
+      "sha256": "b68fd81b407658ba4781ccd5fe493bdb369d074c2db72a1cfe559107e658cc4f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunnerTest.java",
+      "sha256": "8cd5236849f7e044bdd74e917c83447fc11279e3c3bcecf9bd1e7ff11440dd9f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/MiraScenarioEvidenceBindingTest.java",
+      "sha256": "670d8017fede0a5aa75768995958f939a1d182aeee5adecffb504fe2339d422d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/test/js/mira-candidate-metrics.test.mjs",
+      "sha256": "d8639b804ab23934581d59a03c59a0122384450b96d06f2884b83cc1f4ded17a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/LearningCycleSuccessorPreparationTest.java",
+      "sha256": "fed75fd2dfcacca3cdd7211e11b328918b7cc26570e2c143ec12f046e6a9fa36",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/decision/LearningCycleDecisionControllerTest.java",
+      "sha256": "c06649b4d9812d9cbd8b599a28166d315f4332a58b6b8bc6daeb9df640fad4df",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/learningCycle/CycleAdjustmentPreparationForm.test.tsx",
+      "sha256": "247f1d02e78740c3782c1bc2011c45e493f1e9dc09d0c8cce3068a1bd7ad3765",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleTaskContextTest.java",
+      "sha256": "83a5eb83cf04a3f5b5bfd84e5a82606fc37021449b508f7055f888e508d7bd09",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "experiment-strategist-worker/src/test/java/com/marketinghub/experimentstrategistworker/PdeMarketStrategyBpmTaskConsumerTest.java",
+      "sha256": "73f966accb6cd4544a56b255a1eb302188b63740c32ae71c55279ab234bc14c3",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/mira-candidate/Dockerfile.proxy-fixture",
+      "sha256": "8a27eb812b184cf06ce7c1591a9cec0a3c4714deadacd1976472ce9a8e5711f0",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "scripts/build-commercial-review-evidence.test.mjs",
+      "sha256": "3dedd3583afc8db45a5a7e796acad5f855526281b89b4bad4c108ac6a16b7d4c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/test/java/com/marketinghub/metaadapproverworker/PdeReviewArtifactLoaderTest.java",
+      "sha256": "b219d807809cb73dc11e11c40ebcfc1d7c8988f5bccfd585648227b4f4f249c9",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/registros/mira-candidate-v4-homologacao.md",
+  "limitations": [
+    "Somente organização determinística; não comprova integração ou custo de modelo de IA.",
+    "Emulação mobile usa Chromium; não comprova Safari nativo.",
+    "Candidata precisa de Psique e Têmis independentes; não autoriza oferta ou aquisição."
+  ],
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/mira-private-candidate-v3.json",
+    "reason": "Completar os cinco sinais sintéticos e esclarecer uma matriz técnica versus três pareceres de experiência, preservando provas históricas."
+  },
+  "homologationEvidence": [
+    {
+      "path": "docs/registros/mira-candidate-v4-homologacao.md",
+      "sha256": "f1ff4f0054fa957865b2c30b4ab413656290d8f524cc2896cde2f7342f3b8cac",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/canonical/pde-validacao-multiagente-canon.v1.md",
+      "sha256": "beccdc4ea2a74c9a535182eed44df944cabc218c638c0742122c67b41bb3c7e5",
+      "promptMode": "FULL"
+    }
+  ]
+}

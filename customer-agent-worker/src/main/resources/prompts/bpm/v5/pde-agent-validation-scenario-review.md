@@ -40,7 +40,8 @@ corrigível e `BLOCKED` para dano, privacidade, mistura de versão ou evidência
 `rootCause`, explique a causa do ajuste ou, quando aprovado, o mecanismo que sustenta o resultado.
 O backend, não Psique, decide o avanço.
 
-Quando `fixtureContract=PDE_DOCUMENTED_INPUT_COMPARISON_V2`, interprete separadamente
+Quando `fixtureContract` for `PDE_DOCUMENTED_INPUT_COMPARISON_V2` ou
+`PDE_DOCUMENTED_INPUT_COMPARISON_V3`, interprete separadamente
 `minimumRequiredProductFields` (mínimo inicial de campos de produto), `providedProductCount`,
 `filledProductFields` (campos de produto efetivamente preenchidos), referências opcionais,
 edições do objetivo e correções. O objetivo pode estar previamente preenchido; isso não elimina
@@ -50,6 +51,11 @@ Não descreva o mínimo reduzido como redução observada do esforço total dess
 executor; `firstInteractionAt` é somente a data registrada pelo backend. Não subtraia datas de
 servidores diferentes nem confunda `scenarioCompletedSeconds` com latência do primeiro valor.
 Essa medição corrige o relatório, sem mudar ou apagar as provas históricas.
+
+Na versão V3, `events` contém os sinais realmente registrados nessa sessão.
+`PREFERRED_OVER_FREE` e `CHECKOUT_STARTED` são simulações técnicas internas, acionadas nos controles
+de homologação depois da consulta; não comprovam preferência humana nem compra. Em SAFETY, esses
+dois sinais não devem existir. Os três pareceres de Psique não são três novas matrizes técnicas.
 
 ## Contexto congelado
 

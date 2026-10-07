@@ -251,6 +251,31 @@ class PdeMarketStrategyBpmTaskConsumerTest {
         .hasMessageContaining("homologação multiagente");
   }
 
+  /** Impede transformar três pareceres de experiência em três repetições da matriz técnica. */
+  @Test
+  void rejectsInflatedMatrixRunsAndMissingReviewContract() throws Exception {
+    for (int count : new int[] {0, 3}) {
+      ObjectNode result = agentValidationResult();
+      result
+          .withObject("/marketStrategicContract/agentValidationPlan")
+          .put("technicalMatrixRuns", count);
+      assertThatThrownBy(
+              () ->
+                  PdeMarketStrategyBpmTaskConsumer.validate(
+                      result, "product-discovery-cycle:71", true, agentDiscoveryTask()))
+          .hasMessageContaining("homologação multiagente");
+    }
+    ObjectNode missing = agentValidationResult();
+    missing
+        .withObject("/marketStrategicContract/agentValidationPlan")
+        .remove("independentExperienceReviewCount");
+    assertThatThrownBy(
+            () ->
+                PdeMarketStrategyBpmTaskConsumer.validate(
+                    missing, "product-discovery-cycle:71", true, agentDiscoveryTask()))
+        .hasMessageContaining("homologação multiagente");
+  }
+
   /** Mantém schema e prompt v10 fechados contra o retorno do piloto humano legado. */
   @Test
   void keepsAgentValidationResourcesStrictAndHumanIndependent() throws Exception {
@@ -285,6 +310,8 @@ class PdeMarketStrategyBpmTaskConsumerTest {
     contract.remove("privateValidationPlan");
     ObjectNode plan = contract.putObject("agentValidationPlan");
     plan.put("contractVersion", "PDE_AGENT_VALIDATION_V1");
+    plan.put("technicalMatrixRuns", 1);
+    plan.put("independentExperienceReviewCount", 3);
     plan.put("hypothesis", "Três combinações prontas reduzem tentativa e erro.");
     plan.put("prototypeObjective", "Entregar três combinações em até dez minutos.");
     plan.set(

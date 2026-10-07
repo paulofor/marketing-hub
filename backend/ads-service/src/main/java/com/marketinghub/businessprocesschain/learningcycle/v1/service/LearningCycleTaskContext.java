@@ -1,19 +1,24 @@
 package com.marketinghub.businessprocesschain.learningcycle.v1.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Responsabilidade: entregar aos especialistas a memória do ciclo ao qual a tarefa pertence. */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class LearningCycleTaskContext {
   private static final Pattern EXPERIMENT = Pattern.compile("^experiment:([0-9]{1,18})$");
   private static final Pattern PRODUCT = Pattern.compile("^product:([0-9]{1,18})(?:@[^\\s]+)?$");
@@ -37,36 +42,44 @@ public class LearningCycleTaskContext {
         .filter(value -> !taskCreatedAt.isBefore(value.getCreatedAt()))
         .map(
             value ->
-                Map.of(
-                    "contractVersion",
-                    "LEARNING_SALES_CYCLE_V1",
-                    "cycleId",
-                    value.getId(),
-                    "productId",
-                    value.getProductId(),
-                    "experimentId",
-                    value.getExperimentId(),
-                    "productVersion",
-                    value.getProductVersion(),
-                    "stage",
-                    value.getStage(),
-                    "brief",
-                    json.read(value.getBriefJson()),
-                    "inheritedLearning",
-                    json.read(value.getInheritedLearningJson()),
-                    "currentDecisions",
-                    events.findByCycleIdOrderByRevisionAsc(value.getId()).stream()
-                        .map(
-                            event ->
-                                Map.of(
-                                    "action",
-                                    event.getAction(),
-                                    "summary",
-                                    event.getSummary(),
-                                    "evidenceReference",
-                                    event.getEvidenceReference(),
-                                    "evidence",
-                                    json.read(event.getEvidenceJson())))
-                        .toList()));
+                Map.ofEntries(
+                    Map.entry("agentValidationExecution", validationExecution()),
+                    Map.entry("contractVersion", "LEARNING_SALES_CYCLE_V1"),
+                    Map.entry("cycleId", value.getId()),
+                    Map.entry("productId", value.getProductId()),
+                    Map.entry("experimentId", value.getExperimentId()),
+                    Map.entry("productVersion", value.getProductVersion()),
+                    Map.entry("stage", value.getStage()),
+                    Map.entry("brief", json.read(value.getBriefJson())),
+                    Map.entry("inheritedLearning", json.read(value.getInheritedLearningJson())),
+                    Map.entry(
+                        "currentDecisions",
+                        events.findByCycleIdOrderByRevisionAsc(value.getId()).stream()
+                            .map(
+                                event ->
+                                    Map.of(
+                                        "action",
+                                        event.getAction(),
+                                        "summary",
+                                        event.getSummary(),
+                                        "evidenceReference",
+                                        event.getEvidenceReference(),
+                                        "evidence",
+                                        json.read(event.getEvidenceJson())))
+                            .toList())));
+  }
+
+  /**
+   * Entrega o protocolo do backend antes do planejamento, sem multiplicar pareceres por matrizes.
+   */
+  private JsonNode validationExecution() {
+    try (var input =
+        getClass().getResourceAsStream("/contracts/pde-agent-validation-plan-v1.json")) {
+      if (input == null) throw new IOException("Contrato multiagente ausente do classpath.");
+      return json.read(new String(input.readAllBytes(), StandardCharsets.UTF_8));
+    } catch (IOException ex) {
+      log.error("Ciclo: falha ao carregar protocolo de execução multiagente", ex);
+      throw new IllegalStateException("Protocolo multiagente indisponível.", ex);
+    }
   }
 }

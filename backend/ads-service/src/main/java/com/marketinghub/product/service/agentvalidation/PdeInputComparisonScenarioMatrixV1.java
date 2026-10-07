@@ -10,6 +10,7 @@ import java.util.Map;
 final class PdeInputComparisonScenarioMatrixV1 {
   static final String CONTRACT = "PDE_DOCUMENTED_INPUT_COMPARISON_V1";
   static final String MEASURED_CONTRACT = "PDE_DOCUMENTED_INPUT_COMPARISON_V2";
+  static final String SIGNAL_CONTRACT = "PDE_DOCUMENTED_INPUT_COMPARISON_V3";
   private static final List<String> SCENARIOS = List.of("ADHERENT", "RECOVERY", "SAFETY");
   private static final List<String> DEVICES = List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7");
   private static final List<String> CONDITIONS = List.of("REFERENCE", "REDUCED");
@@ -17,16 +18,19 @@ final class PdeInputComparisonScenarioMatrixV1 {
   /** Impede instanciação do validador sem estado. */
   private PdeInputComparisonScenarioMatrixV1() {}
 
-  /**
-   * Exige dezoito combinações e medições explícitas nas versões novas, preservando provas legadas.
-   */
+  /** Exige dezoito combinações, medições e sinais nas versões novas, preservando provas legadas. */
   static boolean valid(JsonNode result) {
     JsonNode scenarios = result.path("scenarios");
     String contract = result.path("fixtureContract").asText();
-    boolean measured = MEASURED_CONTRACT.equals(contract);
+    boolean signaled = SIGNAL_CONTRACT.equals(contract);
+    boolean measured = MEASURED_CONTRACT.equals(contract) || signaled;
     if ((!CONTRACT.equals(contract) && !measured)
         || (result.path("prototypeVersion").asText().startsWith("mira-private-candidate-v")
             && !measured)
+        || (result.path("prototypeVersion").asText().startsWith("mira-private-candidate-v")
+            && !List.of("mira-private-candidate-v1", "mira-private-candidate-v2")
+                .contains(result.path("prototypeVersion").asText())
+            && !signaled)
         || !"DETERMINISTIC_DOCUMENTED_LABELS".equals(result.path("generationMode").asText())
         || result.path("providerCalls").asInt(-1) != 0
         || !scenarios.isArray()
@@ -43,6 +47,7 @@ final class PdeInputComparisonScenarioMatrixV1 {
           || !DEVICES.contains(device)
           || !CONDITIONS.contains(condition)
           || (measured && !validMeasurements(scenario))
+          || (signaled && !validSignals(scenario))
           || !validScenario(scenario, result.path("prototypeVersion").asText())
           || !evidenceIds.add(scenario.path("evidenceId").asText())
           || cases.putIfAbsent(code + "|" + device + "|" + condition, scenario) != null) {
@@ -66,6 +71,20 @@ final class PdeInputComparisonScenarioMatrixV1 {
       }
     }
     return true;
+  }
+
+  /** Exige sinais realmente persistidos, sem simular continuidade em um percurso inseguro. */
+  private static boolean validSignals(JsonNode scenario) {
+    var events = new HashSet<String>();
+    if (!scenario.path("events").isArray()) return false;
+    scenario.path("events").forEach(event -> events.add(event.asText()));
+    if (!events.contains("EXPERIENCE_STARTED")) return false;
+    if ("SAFETY".equals(scenario.path("scenarioCode").asText()))
+      return events.contains("SAFETY_LIMIT_BLOCKED")
+          && !events.contains("PREFERRED_OVER_FREE")
+          && !events.contains("CHECKOUT_STARTED");
+    return events.containsAll(
+        List.of("VALUE_MOMENT", "READY_RESULT_USED", "PREFERRED_OVER_FREE", "CHECKOUT_STARTED"));
   }
 
   /** Concilia mínimo, preenchimentos reais e latência monotônica sem reinterpretar o histórico. */

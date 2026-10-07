@@ -2,13 +2,33 @@
   "contractVersion": "PDE_AGENT_VALIDATION_V1",
   "trafficClass": "AGENT_VALIDATION",
   "internalMarker": "mh_internal_test",
-  "requiredScenarios": ["ADHERENT", "RECOVERY", "SAFETY"],
-  "requiredDevices": ["DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7"],
+  "requiredScenarios": [
+    "ADHERENT",
+    "RECOVERY",
+    "SAFETY"
+  ],
+  "requiredDevices": [
+    "DESKTOP_1440",
+    "IPHONE_15_PRO",
+    "PIXEL_7"
+  ],
   "maxReadyResultSeconds": 600,
   "humanEvidenceClaimed": false,
   "commercialEvidenceClaimed": false,
   "paymentEnabled": false,
   "publicationAuthorized": false,
   "campaignAuthorized": false,
-  "mediaSpendAuthorizedBrl": 0
+  "mediaSpendAuthorizedBrl": 0,
+  "technicalMatrixRuns": 1,
+  "independentExperienceReviewCount": 3,
+  "repeatPolicy": "RETEST_ONLY_CHANGED_OR_FAILED_ACCEPTANCE_CRITERIA",
+  "documentedInputComparison": {
+    "contractVersion": "PDE_DOCUMENTED_INPUT_COMPARISON_V3",
+    "conditions": [
+      "REFERENCE",
+      "REDUCED"
+    ],
+    "technicalCombinationCount": 18,
+    "scope": "Only prototypes implementing documented-input comparison; 3 scenarios x 3 devices x 2 conditions, one technical matrix. Independent experience reviews do not multiply this matrix."
+  }
 }

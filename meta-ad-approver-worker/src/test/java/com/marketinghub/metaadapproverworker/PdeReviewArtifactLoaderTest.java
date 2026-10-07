@@ -27,6 +27,93 @@ class PdeReviewArtifactLoaderTest {
 
   @TempDir Path tempDir;
 
+  /** Preserva a versão privada anterior somente com vínculo íntegro à imagem do mesmo produto. */
+  @Test
+  void validatesPrivateSuccessionPublishedThroughSameProductBundle() throws Exception {
+    Path contracts = tempDir.resolve("pde-platform/contracts");
+    Files.createDirectories(contracts);
+    for (String relativePath : PdeReviewArtifactLoader.communicationImplementationEvidencePaths()) {
+      Path artifact = tempDir.resolve(relativePath);
+      Files.createDirectories(artifact.getParent());
+      Files.writeString(artifact, "prova executável local");
+    }
+    String proofHash =
+        HexFormat.of()
+            .formatHex(
+                MessageDigest.getInstance("SHA-256")
+                    .digest(
+                        Files.readAllBytes(
+                            tempDir.resolve("pde-platform/frontend/src/AssistedServiceApp.tsx"))));
+    Files.writeString(
+        contracts.resolve("produto-v1.json"),
+        manifestForVersion("produto-v1", "produto-v1", "0".repeat(64)));
+    var candidate = JSON_MAPPER.readTree(manifestForVersion("produto-v2", "produto-v2", proofHash));
+    ((com.fasterxml.jackson.databind.node.ObjectNode) candidate)
+        .put("status", "READY_FOR_INDEPENDENT_REVIEW");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) candidate.path("product")).put("id", 9);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) candidate.path("product"))
+        .putArray("supersedesExperienceVersions")
+        .add("produto-v1");
+    var publication =
+        ((com.fasterxml.jackson.databind.node.ObjectNode) candidate)
+            .putObject("publicationContract");
+    publication.put("automaticDeployOnMerge", false);
+    publication.put("publishedByManifest", "pde-platform/contracts/publicador-v20.json");
+    publication.put("frontendVersion", "produto");
+    publication.put("requiredFrontendSourceSha256", "1".repeat(64));
+    Path candidatePath = contracts.resolve("produto-v2.json");
+    Files.writeString(candidatePath, candidate.toString());
+    var publisher =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            JSON_MAPPER.readTree(
+                manifestForVersion("produto-commercial-v1", "publicador-v20", proofHash));
+    publisher.put("status", "READY_FOR_INDEPENDENT_REVIEW");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) publisher.path("product")).put("id", 9);
+    var boundPublication = publisher.putObject("publicationContract");
+    boundPublication.put("automaticDeployOnMerge", true);
+    boundPublication.put("frontendVersion", "produto");
+    boundPublication.put("requiredFrontendSourceSha256", "1".repeat(64));
+    publisher
+        .putArray("homologationEvidence")
+        .addObject()
+        .put("path", "pde-platform/contracts/produto-v2.json")
+        .put(
+            "sha256",
+            HexFormat.of()
+                .formatHex(
+                    MessageDigest.getInstance("SHA-256")
+                        .digest(Files.readAllBytes(candidatePath))));
+    Path publisherPath = contracts.resolve("publicador-v20.json");
+    Files.writeString(publisherPath, publisher.toString());
+    var loader = new PdeReviewArtifactLoader(tempDir.toString());
+    assertThat(loader.loadCommunicationContracts())
+        .extracting(value -> value.get("path"))
+        .contains(
+            "pde-platform/contracts/produto-v1.json", "pde-platform/contracts/produto-v2.json");
+    for (String defect : new String[] {"identity", "source", "hash", "disabled"}) {
+      var invalid = publisher.deepCopy();
+      switch (defect) {
+        case "identity" ->
+            ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("product"))
+                .put("id", 80);
+        case "source" ->
+            ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("publicationContract"))
+                .put("requiredFrontendSourceSha256", "2".repeat(64));
+        case "hash" ->
+            ((com.fasterxml.jackson.databind.node.ObjectNode)
+                    invalid.path("homologationEvidence").get(0))
+                .put("sha256", "0".repeat(64));
+        case "disabled" ->
+            ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("publicationContract"))
+                .put("automaticDeployOnMerge", false);
+      }
+      Files.writeString(publisherPath, invalid.toString());
+      assertThatThrownBy(loader::loadCommunicationContracts)
+          .isInstanceOf(IOException.class)
+          .hasMessageContaining("Sucessão");
+    }
+  }
+
   /** Entrega ao gate todos os arquivos autorizados com conteúdo e checksum determinístico. */
   @Test
   void loadsAllVersionedArtifactsWithoutShellAccess() throws Exception {

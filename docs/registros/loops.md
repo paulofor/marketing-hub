@@ -1,3 +1,18 @@
+## LOOP-PDE-PARECERES-MULTIPLICAM-MATRIZ — 07/10/2026
+
+- Evidência: Mira, tarefas 613–617, transformou três pareceres independentes em 27 percursos
+  e transmitiu a exigência entre agentes, contrariando o contrato de comparação com 18.
+- Causa: o protocolo técnico chegava somente depois da estratégia e omitia a distinção
+  entre execução técnica e revisão de experiência. Os cinco sinais também não estavam
+  completos na candidata v2.
+- Correção: contrato compartilhado entregue antes do planejamento, contagens estruturadas
+  validadas pelo executor, instruções sobre capacidades reais versus hipóteses comerciais
+  e comparação V3 com sinais persistidos e ordenados. Histórico V1/V2 preservado.
+- Prevenção: rejeição executável de contagem inflada, sinal ausente e checkout inseguro;
+  regressões com outra identidade, caminho legado válido e runner real com MySQL 5.7.
+- Evidências e limites: `docs/registros/mira-candidate-v4-homologacao.md`. Teste por agentes
+  não prova compra nem margem.
+
 # Registros de loops operacionais — Experimentos
 
 ## LOOP-CICLO-JANELA-SEM-ORIENTACAO — 06/10/2026

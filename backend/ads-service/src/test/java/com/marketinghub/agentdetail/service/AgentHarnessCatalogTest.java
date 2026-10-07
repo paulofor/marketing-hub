@@ -146,13 +146,14 @@ class AgentHarnessCatalogTest {
             });
   }
 
-  /** Preserva a identidade e o conteúdo dos contratos atual e histórico de Têmis na auditoria. */
+  /** Preserva a identidade exata dos contratos históricos e do suplemento de controles de Têmis. */
   @ParameterizedTest
   @CsvSource({
     "bpm-v3, pde-agent-validation-review-v3.md, PROMPT, text/markdown",
     "bpm-v3, pde-agent-validation-review-v3-schema.json, OUTPUT_SCHEMA, application/json",
     "bpm-v4, pde-agent-validation-review-v4.md, PROMPT, text/markdown",
-    "bpm-v4, pde-agent-validation-review-v4-schema.json, OUTPUT_SCHEMA, application/json"
+    "bpm-v4, pde-agent-validation-review-v4-schema.json, OUTPUT_SCHEMA, application/json",
+    "bpm-v5, pde-agent-validation-review-v5.md, PROMPT, text/markdown"
   })
   void exposesTemisValidationRevisionsWithExactIdentity(
       String version, String filename, String behaviorType, String mediaType)

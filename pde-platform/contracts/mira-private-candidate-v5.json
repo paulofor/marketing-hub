@@ -232,6 +232,11 @@
       "sha256": "267d1cda2987e168e18f7eb0f4085e3b4cbd95b0af380e29458243d76937ba04"
     },
     {
+      "promptMode": "FULL",
+      "path": "backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json",
+      "sha256": "81915dd836ca9d9a4ec094fab2c8293419ada352ef8d5193546304da2f13c28b"
+    },
+    {
       "promptMode": "ATTESTED_REFERENCE",
       "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidence.java",
       "sha256": "28ce8ad28628421646c0c7d1466b14d193485a48386a2afe7f1c1b0cc9b3c8a1",
@@ -392,6 +397,12 @@
     },
     {
       "promptMode": "ATTESTED_REFERENCE",
+      "path": "backend/ads-service/src/test/java/com/marketinghub/agentdetail/service/AgentHarnessCatalogTest.java",
+      "sha256": "045a50b31c1b0bc7899047be629a78fdcba854e7b4b1fa4d763c07710127348f",
+      "reviewSummary": "Responsabilidade: proteger a cobertura e as referências versionadas do catálogo de harness."
+    },
+    {
+      "promptMode": "ATTESTED_REFERENCE",
       "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeOperationalControlEvidenceTest.java",
       "sha256": "90be462edb8094bdcda7dbd4039edcd5962d52cf164ae7dbcba83f6a3ff3fcf4",
       "reviewSummary": "Responsabilidade: impedir uso de prova adulterada, incompleta ou pertencente a outra candidata."
@@ -455,7 +466,7 @@
   "homologationEvidence": [
     {
       "path": "docs/registros/mira-controles-provas-2026-10-07.md",
-      "sha256": "f23cf578537b080156b18d6aac875bfbda0f55af1b90ba9516c1cc84394ca0b7",
+      "sha256": "082d40fa8dc2d71e1145a4172cf291979d338826459db00ead9427b222f8ccb3",
       "promptMode": "FULL"
     },
     {

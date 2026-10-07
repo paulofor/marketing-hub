@@ -81,3 +81,10 @@ imagem privada já avaliada e seu fingerprint. A referência de publicação é 
 que efetivamente publicou essa imagem. A atestação Alcyone v11 somente atualiza os resolvedores
 compartilhados, sem mudar seu produto, tarefas ou runtime. O seletor real retorna `none` para
 superfícies PDE. A entrega atual publica backend, painel e consumidores pelo fluxo normal de PR.
+
+Na CI do PR, a cobertura integral do harness detectou que o novo prompt v5 ainda não constava
+no catálogo dos agentes. As duas falhas de testes tinham a mesma causa; o catálogo foi completado
+e a regressão de identidade exata passou a incluir v5, preservando os contratos anteriores.
+O cenário local agora valida também a publicação desse prompt na API do harness. Uma terceira
+falha ocorreu antes dos testes ao baixar o parent Spring Boot: o mesmo arquivo e hash estavam
+disponíveis no Maven Central e já haviam sido usados na execução anterior bem-sucedida.

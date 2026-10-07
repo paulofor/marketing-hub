@@ -326,47 +326,6 @@ jobs:
           python3 scripts/test-backend-packaged-resources.py
           python3 scripts/verify-backend-packaged-resources.py
 
-      - name: Publish backend library for dependent workers
-        working-directory: backend/ads-service
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-        run: |
-          set -euo pipefail
-
-          for attempt in 1 2 3; do
-            deploy_log="$(mktemp)"
-
-            if mvn -B -s ../settings.xml \
-              org.apache.maven.plugins:maven-deploy-plugin:3.1.1:deploy-file \
-              -DrepositoryId=github \
-              -Durl=https://maven.pkg.github.com/paulofor/marketing-hub \
-              -Dfile=target/app.jar \
-              -DgroupId=com.marketinghub \
-              -DartifactId=ads-service \
-              -Dversion=0.0.1-SNAPSHOT \
-              -Dpackaging=jar 2>&1 | tee "${deploy_log}"; then
-              rm -f "${deploy_log}"
-              break
-            fi
-
-            if ! grep -Eqi 'status( code)?:[[:space:]]*5[0-9]{2}|timed out|Connection reset|Connection refused' "${deploy_log}"; then
-              echo "Falha permanente ao publicar o pacote; não será feita nova tentativa." >&2
-              rm -f "${deploy_log}"
-              exit 1
-            fi
-
-            rm -f "${deploy_log}"
-            if [[ "${attempt}" -eq 3 ]]; then
-              echo "GitHub Packages permaneceu indisponível após 3 tentativas." >&2
-              exit 1
-            fi
-
-            wait_seconds=$((attempt * 20))
-            echo "Falha transitória do GitHub Packages. Nova tentativa em ${wait_seconds}s."
-            sleep "${wait_seconds}"
-          done
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 

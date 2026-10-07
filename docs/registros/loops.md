@@ -9293,3 +9293,25 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   persistência limitada, transportes, erros permanentes, sucesso e limpeza dos logs.
 - **Registro e limites:** `docs/registros/mira-github-packages-http-status-2026-10-07.md`.
   O teste prova a recuperação; não garante disponibilidade externa do registry.
+
+
+## LOOP-ACTIONS-PUBLISH-MAVEN-SEM-CONSUMIDOR-NO-DEPLOY — 07/10/2026
+
+- **Evidência:** o run 37654762386 recuperou corretamente o formato HTTP 500, mas as
+  três tentativas falharam. A publicação anterior de 37637394844 havia funcionado;
+  não foi provado erro de biblioteca ou credencial. Todos os POMs versionados mostram
+  somente AI Worker como consumidor; seu CI já instala o backend local antes dos testes.
+  Os oito agentes atuais, vídeo e process worker não consomem essa biblioteca Maven.
+- **Causa compartilhada:** publicação remota obsoleta continuava obrigatória no deploy
+  do APP, acoplando entrega validada a um registry sem consumidor nessa passagem.
+- **Correção:** retirar a chamada do APP, preservando artefatos históricos e todos os
+  checks de qualidade, imagens versionadas, transporte e saúde. Não mascarar erro
+  obrigatório nem distribuir contratos por infraestrutura paralela.
+- **Prevenção:** contrato transacional encontra consumidores reais e exige instalação
+  local anterior à validação; caso original, outra identidade, legado válido e ausência
+  de instalação exercitados. Instalação/compilação/empacotamento offline do consumidor
+  real e 41 testes de arquitetura comprovam independência do registry privado.
+- **Limites e histórico:** a recuperação HTTP do loop anterior foi validada e agora sua
+  operação foi retirada deste publicador, sem apagar a ocorrência. Não altera orçamento
+  cumulativo ou histórico de Mira; não concede mídia, vídeo pago ou autorização comercial.
+- **Registro:** `docs/registros/mira-deploy-biblioteca-sem-consumidor-2026-10-07.md`.

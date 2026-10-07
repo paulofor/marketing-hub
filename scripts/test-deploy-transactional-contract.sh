@@ -122,110 +122,74 @@ for index, command in enumerate(commands):
 print('[ARQUITETURA] Rsync real preservou revisões, credenciais locais e volumes nas três sincronizações.')
 PY
 
-# Executa também a publicação Maven com ferramentas locais, antes de qualquer deploy.
+# Confere contratos locais e impede publish do APP sem consumidor.
 python3 - "${WORKFLOW_FILE}" <<'PY'
-#!/usr/bin/env python3
-"""Executa a publicação do workflow com Maven local e falhas históricas do registry."""
-import json
-import os
-import sys
-from pathlib import Path
-import subprocess
-import tempfile
-import textwrap
-import unittest
+import pathlib,re,sys,tempfile,unittest,xml.etree.ElementTree as xml
+ROOT=pathlib.Path.cwd()
+WORKFLOW=pathlib.Path(sys.argv[1]).resolve()
+NS={'m':'http://maven.apache.org/POM/4.0.0'}
 
-WORKFLOW = Path(sys.argv[1]).resolve()
+def consumers(root):
+    """Descobre dependências reais pelos POMs, sem contar o próprio produtor."""
+    found=[]
+    for path in root.rglob('pom.xml'):
+        if any(part in {'target','node_modules','artifacts','.git'} for part in path.relative_to(root).parts):continue
+        document=xml.parse(path)
+        for dependency in document.findall('.//m:dependency',NS):
+            if dependency.findtext('m:groupId',namespaces=NS)=='com.marketinghub' and dependency.findtext('m:artifactId',namespaces=NS)=='ads-service':
+                found.append(path.parent.relative_to(root).as_posix());break
+    return sorted(found)
 
+def verify_local_contracts(root):
+    """Exige instalação local anterior aos testes para cada consumidor identificado."""
+    modules=consumers(root)
+    for module in modules:
+        workflows=[p for p in (root/'.github/workflows').glob('*.yml') if re.search(r'working-directory:\s*'+re.escape(module)+r'\s*$',p.read_text(),re.M)]
+        assert workflows, '[ARQUITETURA] Consumidor sem CI local: '+module
+        valid=False
+        for path in workflows:
+            source=path.read_text()
+            install=re.search(r'working-directory:\s*backend/ads-service\s*\n\s*run:\s*mvn[^\n]*\binstall\b',source)
+            tests=re.search(r'run:\s*mvn[^\n]*\b(test|verify|package)\b',source)
+            if install and tests and install.start()<tests.start():valid=True
+        assert valid, '[ARQUITETURA] Consumidor precisa instalar contratos da mesma revisão antes de testar: '+module
+    return modules
 
-def publication_script():
-    """Extrai o bloco operacional real; o teste não mantém uma cópia da classificação."""
-    workflow = WORKFLOW.read_text()
-    block = workflow.split('      - name: Publish backend library for dependent workers\n', 1)[1]
-    body = block.split('        run: |\n', 1)[1].split('\n      - ', 1)[0]
-    return textwrap.dedent(body).strip() + '\n'
+class BackendLibraryScopeTest(unittest.TestCase):
+    """Protege independência do APP e o caminho local real/alternativo dos consumidores."""
+    def test_app_has_no_remote_maven_publication_and_keeps_quality(self):
+        source=WORKFLOW.read_text().split('  backend-image:',1)[1].split('  frontend-image:',1)[0]
+        self.assertNotIn('maven-deploy-plugin',source,'[ARQUITETURA] Publish remoto sem consumidor voltou ao deploy APP.')
+        self.assertNotIn('maven.pkg.github.com',source)
+        for required in ['Verify packaged backend resources and catalog startup','verify-backend-packaged-resources.py','Build Docker image','process-worker-image.tar','test -s backend-image.tar','test -s process-worker-image.tar']:
+            self.assertIn(required,source)
+        self.assertNotIn('continue-on-error:',source,'[ARQUITETURA] Não mascarar falha obrigatória do backend.')
+    def test_real_consumer_installs_backend_locally(self):
+        self.assertIn('ai-worker',verify_local_contracts(ROOT))
+        docker=(ROOT/'ai-worker/Dockerfile').read_text()
+        self.assertIn('COPY target/app.jar ./app.jar',docker)
+        self.assertNotIn('mvn ',docker)
+        self.assertNotIn('maven.pkg.github.com',docker)
+    def fixture(self,install):
+        temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup)
+        root=pathlib.Path(temporary.name);(root/'other-worker').mkdir();(root/'.github/workflows').mkdir(parents=True)
+        (root/'other-worker/pom.xml').write_text('<project xmlns="http://maven.apache.org/POM/4.0.0"><dependencies><dependency><groupId>com.marketinghub</groupId><artifactId>ads-service</artifactId><version>0.0.1-SNAPSHOT</version></dependency></dependencies></project>')
+        prefix='name: Another consumer\njobs:\n  test:\n    defaults:\n      run:\n        working-directory: other-worker\n    steps:\n'
+        installer='      - name: Local contracts\n        working-directory: backend/ads-service\n        run: mvn -B -Dmaven.test.skip=true install\n'
+        tests='      - name: Tests\n        run: mvn -B test\n'
+        content=prefix+(installer+tests if install=='before' else tests+installer if install=='after' else tests)
+        (root/'.github/workflows/other-worker.yml').write_text(content);return root
+    def test_another_consumer_with_local_contracts_is_valid(self):
+        self.assertEqual(verify_local_contracts(self.fixture('before')),['other-worker'])
+    def test_missing_or_late_installation_cannot_reintroduce_registry_dependency(self):
+        for position in ['absent','after']:
+            with self.subTest(position=position):
+                with self.assertRaisesRegex(AssertionError,'antes de testar'):verify_local_contracts(self.fixture(position))
+    def test_workers_without_the_dependency_do_not_need_publication(self):
+        root=self.fixture('absent');(root/'other-worker/pom.xml').write_text('<project xmlns="http://maven.apache.org/POM/4.0.0"><dependencies/></project>')
+        self.assertEqual(verify_local_contracts(root),[])
 
-
-class GitHubPackagePublicationTest(unittest.TestCase):
-    """Confere recuperação limitada, falha permanente e publicação única com ferramentas locais."""
-
-    def execute(self, failures):
-        """Simula só Maven e espera; bash, pipefail, tee, logs e decisões são os reais."""
-        with tempfile.TemporaryDirectory(prefix='packages-contract-') as temporary:
-            directory = Path(temporary)
-            tools = directory / 'bin'; tools.mkdir()
-            (directory / 'failures.json').write_text(json.dumps(failures))
-            (tools / 'mvn').write_text('''#!/usr/bin/env python3
-import json,os,pathlib,sys
-root=pathlib.Path(os.environ['PACKAGES_TEST_ROOT'])
-count=root/'calls.json';calls=json.loads(count.read_text()) if count.exists() else []
-calls.append(sys.argv[1:]);count.write_text(json.dumps(calls))
-failures=json.loads((root/'failures.json').read_text())
-if len(calls)<=len(failures):print(failures[len(calls)-1]);sys.exit(1)
-print('BUILD SUCCESS')
-''')
-            (tools / 'sleep').write_text('''#!/usr/bin/env python3
-import json,os,pathlib,sys
-root=pathlib.Path(os.environ['PACKAGES_TEST_ROOT']);path=root/'sleeps.json'
-values=json.loads(path.read_text()) if path.exists() else []
-values.append(sys.argv[1:]);path.write_text(json.dumps(values))
-''')
-            for executable in tools.iterdir():executable.chmod(0o755)
-            environment = dict(os.environ, PATH=str(tools)+os.pathsep+os.environ['PATH'],
-                               PACKAGES_TEST_ROOT=str(directory), TMPDIR=str(directory))
-            result = subprocess.run(['bash', '-c', publication_script()], cwd=directory,
-                                    env=environment, capture_output=True, text=True, timeout=15)
-            calls = json.loads((directory/'calls.json').read_text())
-            sleeps = json.loads((directory/'sleeps.json').read_text()) if (directory/'sleeps.json').exists() else []
-            leftover = [p.name for p in directory.iterdir() if p.name.startswith('tmp.')]
-            self.assertEqual(leftover, [], 'Logs temporários devem ser removidos em sucesso/falha.')
-            for call in calls:
-                self.assertIn('org.apache.maven.plugins:maven-deploy-plugin:3.1.1:deploy-file',call)
-                self.assertIn('-Dfile=target/app.jar',call)
-                self.assertIn('-Dversion=0.0.1-SNAPSHOT',call)
-            return result, calls, sleeps
-
-    def test_actual_maven_http_status_500_recovers_without_another_release(self):
-        failure='[\x1b[31;1mERROR\x1b[0m] Could not transfer artifact from/to github (https://maven.pkg.github.com/fixture/one): HTTP Status: 500 -> Help 1'
-        result,calls,sleeps=self.execute([failure])
-        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
-        self.assertEqual(len(calls),2);self.assertEqual(calls[0],calls[1])
-        self.assertEqual(sleeps,[['20']])
-
-    def test_other_artifact_and_legacy_status_format_have_the_same_rule(self):
-        for failure in ['Failed to deploy fixture/two: HTTP Status: 502',
-                        'Failed to deploy fixture/three: status code: 503',
-                        'Failed to deploy fixture/four: HTTP status: 504']:
-            with self.subTest(failure=failure):
-                result,calls,sleeps=self.execute([failure])
-                self.assertEqual(result.returncode,0,result.stdout+result.stderr)
-                self.assertEqual(len(calls),2);self.assertEqual(sleeps,[['20']])
-
-    def test_persistent_server_failure_stops_after_three_attempts(self):
-        result,calls,sleeps=self.execute(['HTTP Status: 500']*3)
-        self.assertNotEqual(result.returncode,0)
-        self.assertEqual(len(calls),3);self.assertEqual(sleeps,[['20'],['40']])
-        self.assertIn('após 3 tentativas',result.stderr)
-
-    def test_credentials_and_functional_errors_are_not_retried(self):
-        for failure in ['HTTP Status: 401','HTTP Status: 403','status code: 403',
-                        'COMPILATION ERROR','Could not transfer artifact: invalid configuration']:
-            with self.subTest(failure=failure):
-                result,calls,sleeps=self.execute([failure])
-                self.assertNotEqual(result.returncode,0)
-                self.assertEqual(len(calls),1);self.assertEqual(sleeps,[])
-                self.assertIn('Falha permanente',result.stderr)
-
-    def test_transport_failure_recovers_and_valid_publish_runs_once(self):
-        for failures in [[],['Connection reset'],['Connection refused'],['Read timed out']]:
-            with self.subTest(failures=failures):
-                result,calls,sleeps=self.execute(failures)
-                self.assertEqual(result.returncode,0,result.stdout+result.stderr)
-                self.assertEqual(len(calls),len(failures)+1)
-                self.assertEqual(sleeps,[['20']] if failures else [])
-
-
-if __name__ == '__main__':unittest.main(argv=[sys.argv[0]])
+unittest.main(argv=[sys.argv[0]])
 
 PY
 

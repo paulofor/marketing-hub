@@ -18,13 +18,20 @@ final class PdeInputComparisonScenarioMatrixV1 {
   /** Impede instanciação do validador sem estado. */
   private PdeInputComparisonScenarioMatrixV1() {}
 
+  /**
+   * Centraliza as versões documentais aceitas para que o gate use o mesmo contrato do validador.
+   */
+  static boolean supportsFixtureContract(String contract) {
+    return List.of(CONTRACT, MEASURED_CONTRACT, SIGNAL_CONTRACT).contains(contract);
+  }
+
   /** Exige dezoito combinações, medições e sinais nas versões novas, preservando provas legadas. */
   static boolean valid(JsonNode result) {
     JsonNode scenarios = result.path("scenarios");
     String contract = result.path("fixtureContract").asText();
     boolean signaled = SIGNAL_CONTRACT.equals(contract);
     boolean measured = MEASURED_CONTRACT.equals(contract) || signaled;
-    if ((!CONTRACT.equals(contract) && !measured)
+    if (!supportsFixtureContract(contract)
         || (result.path("prototypeVersion").asText().startsWith("mira-private-candidate-v")
             && !measured)
         || (result.path("prototypeVersion").asText().startsWith("mira-private-candidate-v")

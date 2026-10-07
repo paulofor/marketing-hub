@@ -299,9 +299,7 @@ class PdeAgentValidationGateActivityExecutorTest {
     assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
   }
 
-  /**
-   * Liga prova adicional, gate real e prontidão de Íris sem refazer revisões ou declarar entrega.
-   */
+  /** Reproduz os pareceres persistidos da matriz V3 até Íris para dois produtos distintos. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(longs = {10L, 110L})
   void acceptsSupplementOnlyAfterIndependentIntegrityApproval(long productId) throws Exception {
@@ -310,11 +308,20 @@ class PdeAgentValidationGateActivityExecutorTest {
     product.setId(productId);
     product.setSlug("synthetic-" + productId);
     product.setValidationDefinitionJson(
-        validationContract().replace(SOURCE, reference).replace("mira-private-v2", version));
+        validationContract()
+            .replace(SOURCE, reference)
+            .replace("mira-private-v2", version)
+            .replace(
+                "https://v7.clubemusa.com.br/mira-private",
+                "https://mira.digicomdigital.com.br/mira-candidate"));
     var cycleContracts = mock(PdeAgentValidationCycleContract.class);
     when(cycleContracts.resolve(product, process, reference))
         .thenReturn(json.readTree(product.getValidationDefinitionJson()));
     ReflectionTestUtils.setField(executor, "cycleContracts", cycleContracts);
+    for (int index = 0; index < 4; index++) {
+      completedTasks.get(index).setId(627L + index);
+      completedTasks.get(index).setResultJson(recordedValidationResult(627L + index).toString());
+    }
     completedTasks.get(4).setCreatedAt(NOW.minusSeconds(270));
     completedTasks.get(4).setDeliveredAt(NOW.minusSeconds(250));
     var rejected =
@@ -324,7 +331,7 @@ class PdeAgentValidationGateActivityExecutorTest {
             "meta-ad-approver",
             "MODEL",
             "gpt-5.6-sol",
-            "{\"decision\":\"BLOCKED\",\"prototypeVersion\":\"mira-private-v2\"}",
+            recordedValidationResult(631).toString(),
             NOW.minusSeconds(200));
     rejected.setStatus("BLOCKED");
     rejected.setDeliveredAt(null);
@@ -337,11 +344,7 @@ class PdeAgentValidationGateActivityExecutorTest {
             "landing-generator",
             "MODEL",
             "gpt-5.6-sol",
-            """
-        {"decision":"BLOCKED","correctionPlan":{"sourceTaskId":631,
-         "rejectedActivityId":"commercialIntegrityReview","previousPrototypeVersion":"mira-private-v2",
-         "verification":{"noExternalSideEffects":true}}}
-        """,
+            recordedValidationResult(632).toString(),
             NOW.minusSeconds(180));
     correction.setStatus("BLOCKED");
     correction.setDeliveredAt(null);
@@ -366,6 +369,7 @@ class PdeAgentValidationGateActivityExecutorTest {
                   task.getResultJson()
                       .replace(SOURCE, reference)
                       .replace("mira-private-v2", version));
+      if (payload.has("sourceReference")) payload.put("sourceReference", reference);
       if (payload.has("productId")) payload.put("productId", productId);
       if (payload.has("productSlug")) payload.put("productSlug", product.getSlug());
       task.setResultJson(payload.toString());
@@ -379,14 +383,22 @@ class PdeAgentValidationGateActivityExecutorTest {
             "meta-ad-approver",
             "MODEL",
             "gpt-5.6-sol",
-            temisResult().replace(SOURCE, reference).replace("mira-private-v2", version),
+            recordedValidationResult(633).toString(),
             NOW.minusSeconds(100));
     var reviewPayload =
         (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(reviewed.getResultJson());
-    reviewPayload.put("productId", productId).put("productSlug", product.getSlug());
+    reviewPayload
+        .put("productId", productId)
+        .put("productSlug", product.getSlug())
+        .put("sourceReference", reference);
     reviewed.setResultJson(reviewPayload.toString());
     reviewed.setSourceReference(reference);
     completedTasks.add(reviewed);
+    assertThat(
+            PdeInputComparisonScenarioMatrixV1.valid(
+                json.readTree(completedTasks.get(0).getResultJson())))
+        .as("A matriz persistida já é válida no validador compartilhado")
+        .isTrue();
     var accepted = executor.readiness(process, gate, product, reference);
     assertThat(accepted.ready()).withFailMessage("%s", accepted).isTrue();
     assertThat(executor.execute(process, gate, product, reference).objectiveAchieved()).isTrue();
@@ -416,6 +428,18 @@ class PdeAgentValidationGateActivityExecutorTest {
     correction.setStatus("BLOCKED");
     reviewed.setAssignedAgent(Agent.builder().agentKey("landing-generator").build());
     assertThat(executor.readiness(process, gate, product, reference).ready()).isFalse();
+  }
+
+  /** Lê o contrato persistido, sem executar modelo nem alterar a evidência original. */
+  private com.fasterxml.jackson.databind.node.ObjectNode recordedValidationResult(long taskId)
+      throws Exception {
+    try (var stream =
+        getClass()
+            .getResourceAsStream(
+                "/fixtures/agent-validation/documented-input-v3-recorded-validation.json")) {
+      return (com.fasterxml.jackson.databind.node.ObjectNode)
+          json.readTree(stream).path("results").path(Long.toString(taskId));
+    }
   }
 
   /** Consome o recibo real no contexto e na prontidão de Íris; somente persistência usa doubles. */
@@ -642,12 +666,27 @@ class PdeAgentValidationGateActivityExecutorTest {
     assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
   }
 
-  /** Aceita a comparação explícita de dezoito provas e bloqueia inventários não equivalentes. */
-  @Test
-  void approvesDocumentedInputComparisonWithoutChangingLegacyContracts() throws Exception {
+  /** Encaminha as três versões documentais ao validador e recusa inventários não equivalentes. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {
+        "PDE_DOCUMENTED_INPUT_COMPARISON_V1",
+        "PDE_DOCUMENTED_INPUT_COMPARISON_V2",
+        "PDE_DOCUMENTED_INPUT_COMPARISON_V3"
+      })
+  void approvesDocumentedInputComparisonWithoutChangingLegacyContracts(String fixtureContract)
+      throws Exception {
     AgentTask technical = completedTasks.get(0);
     var result = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(technicalResult());
-    var comparison = PdeInputComparisonScenarioMatrixV1Test.matrix("mira-private-v2");
+    var comparison =
+        PdeInputComparisonScenarioMatrixV1.CONTRACT.equals(fixtureContract)
+            ? PdeInputComparisonScenarioMatrixV1Test.matrix("mira-private-v2")
+            : recordedValidationResult(627);
+    comparison.put("fixtureContract", fixtureContract);
+    comparison.put("prototypeVersion", "mira-private-v2");
+    for (var row : comparison.path("scenarios"))
+      ((com.fasterxml.jackson.databind.node.ObjectNode) row)
+          .put("prototypeVersion", "mira-private-v2");
     result.set("scenarios", comparison.path("scenarios"));
     result.set("fixtureContract", comparison.path("fixtureContract"));
     result.set("generationMode", comparison.path("generationMode"));
@@ -660,6 +699,45 @@ class PdeAgentValidationGateActivityExecutorTest {
             result.path("scenarios").get(1).path("products").get(0))
         .put("name", "Inventário divergente");
     technical.setResultJson(result.toString());
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
+  }
+
+  /** Uma versão documental desconhecida não pode cair na regra histórica de cinco provas. */
+  @Test
+  void rejectsUnknownFixtureContractWithoutChangingLegacyFiveScenarioMatrix() throws Exception {
+    var result = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(technicalResult());
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isTrue();
+    result.put("fixtureContract", "PDE_DOCUMENTED_INPUT_COMPARISON_V99");
+    completedTasks.get(0).setResultJson(result.toString());
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
+  }
+
+  /** O roteamento V3 exige sinais seguros, relógio, isolamento e custo de provedor zero. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"signals", "clock", "provider", "evidence"})
+  void rejectsInvalidRecordedV3MatrixAtGate(String invalidField) throws Exception {
+    var result = recordedValidationResult(627);
+    result
+        .put("sourceReference", SOURCE)
+        .put("productSlug", product.getSlug())
+        .put("publicUrl", "https://v7.clubemusa.com.br/mira-private")
+        .put("prototypeVersion", "mira-private-v2");
+    for (var row : result.path("scenarios"))
+      ((com.fasterxml.jackson.databind.node.ObjectNode) row)
+          .put("prototypeVersion", "mira-private-v2");
+    completedTasks.get(0).setResultJson(result.toString());
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isTrue();
+    var scenario = (com.fasterxml.jackson.databind.node.ObjectNode) result.path("scenarios").get(0);
+    switch (invalidField) {
+      case "signals" -> scenario.putArray("events").add("EXPERIENCE_STARTED");
+      case "clock" -> scenario.put("measurementClock", "MIXED_CLOCKS");
+      case "provider" -> scenario.put("providerCalls", 1);
+      case "evidence" ->
+          scenario.put("evidenceId", result.path("scenarios").get(1).path("evidenceId").asText());
+      default -> throw new AssertionError(invalidField);
+    }
+    completedTasks.get(0).setResultJson(result.toString());
     assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
   }
 

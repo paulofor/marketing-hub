@@ -29,6 +29,7 @@
       "type": "string",
       "enum": [
         "COMPLETED",
+        "READY_FOR_RENDER",
         "BLOCKED"
       ]
     },

@@ -2,6 +2,7 @@ package com.marketinghub.agenttask;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
@@ -108,6 +109,7 @@ public class AgentTaskService {
   private static final String VIDEO_MANAGEMENT_RESOURCE_CODE = "video-management-service";
   static final String APOLLO_AUDIOVISUAL_WORKER_CONTRACT = "APOLLO_AUDIOVISUAL_V1";
   static final String TEMIS_BPM_WORKER_CONTRACT = "TEMIS_BPM_LEASE_V1";
+  static final String IRIS_RENDER_WORKER_CONTRACT = "IRIS_RENDER_PLAN_V1";
   private static final Set<String> APOLLO_AUDIOVISUAL_PROCESS_CODES =
       Set.of("pde-construction-approval", "creative-production-approval");
   private static final Set<String> TEMIS_BPM_QUEUE_CONTRACTS =
@@ -1641,14 +1643,20 @@ public class AgentTaskService {
     boolean temisBpmContract =
         temisBpmQueue
             && validateTemisBpmWorkerContract(agentKey, processCode, activityId, workerContract);
+    boolean irisRenderContract =
+        IRIS_RENDER_WORKER_CONTRACT.equals(trimToNull(workerContract))
+            && COMMUNICATION_AGENT_KEY.equals(agentKey.trim())
+            && "creative-production-approval".equals(trimToNull(processCode))
+            && "nonAudiovisual".equals(trimToNull(activityId));
     rejectWorkerContractOutsideItsQueue(
-        workerContract, apolloAudiovisualContract, temisBpmContract);
+        workerContract, apolloAudiovisualContract, temisBpmContract, irisRenderContract);
     if ((apolloAudiovisualQueue && !apolloAudiovisualContract)
         || (temisBpmQueue && !temisBpmContract)) {
       return Optional.empty();
     }
     Optional<AgentTask> replayable =
-        replayInterruptedCallback(agentKey, processCode, activityId, executionResourceCode);
+        replayInterruptedCallback(
+            agentKey, processCode, activityId, executionResourceCode, irisRenderContract);
     if (replayable.isPresent())
       return Optional.of(pendingResponse(replayable.get(), apolloAudiovisualContract));
     Optional<AgentTask> orphaned =
@@ -1671,7 +1679,8 @@ public class AgentTaskService {
       return Optional.of(
           pendingResponse(deterministicResourceOrphan.get(), apolloAudiovisualContract));
     Optional<AgentTask> recovered =
-        recoverInterruptedCallbackOnce(agentKey, processCode, activityId, executionResourceCode);
+        recoverInterruptedCallbackOnce(
+            agentKey, processCode, activityId, executionResourceCode, irisRenderContract);
     if (recovered.isPresent())
       return Optional.of(pendingResponse(recovered.get(), apolloAudiovisualContract));
     for (AgentTask task :
@@ -1752,8 +1761,14 @@ public class AgentTaskService {
 
   /** Recusa um contrato conhecido ou desconhecido quando ele foi enviado para outra fila. */
   private void rejectWorkerContractOutsideItsQueue(
-      String workerContract, boolean apolloAudiovisualContract, boolean temisBpmContract) {
-    if (trimToNull(workerContract) != null && !apolloAudiovisualContract && !temisBpmContract) {
+      String workerContract,
+      boolean apolloAudiovisualContract,
+      boolean temisBpmContract,
+      boolean irisRenderContract) {
+    if (trimToNull(workerContract) != null
+        && !apolloAudiovisualContract
+        && !temisBpmContract
+        && !irisRenderContract) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
           "Contrato versionado do worker incompatível com a fila solicitada.");
@@ -1850,11 +1865,15 @@ public class AgentTaskService {
    * captura visual ou consumo.
    */
   private Optional<AgentTask> replayInterruptedCallback(
-      String agentKey, String processCode, String activityId, String executionResourceCode) {
+      String agentKey,
+      String processCode,
+      String activityId,
+      String executionResourceCode,
+      boolean irisRenderContract) {
     if (!CALLBACK_REPLAY_CAPABLE_AGENTS.contains(agentKey.trim())) return Optional.empty();
     return repository.findReplayableClaimedCallbackCandidates(agentKey.trim()).stream()
         .filter(task -> task.getProcessDefinition() != null)
-        .filter(this::callbackCanReplayWithoutInference)
+        .filter(task -> callbackCanReplayWithoutInference(task, irisRenderContract))
         .filter(
             task -> matchesExecutionContract(task, processCode, activityId, executionResourceCode))
         .findFirst();
@@ -2423,14 +2442,21 @@ public class AgentTaskService {
    * tentativa sem reler os prompts de todos os bloqueios funcionais.
    */
   private Optional<AgentTask> recoverInterruptedCallbackOnce(
-      String agentKey, String processCode, String activityId, String executionResourceCode) {
+      String agentKey,
+      String processCode,
+      String activityId,
+      String executionResourceCode,
+      boolean irisRenderContract) {
     if (!CALLBACK_REPLAY_CAPABLE_AGENTS.contains(agentKey.trim())) return Optional.empty();
     return repository.findRetryableCallbackCandidates(agentKey.trim()).stream()
         .filter(task -> task.getProcessDefinition() != null)
-        .filter(this::callbackCanReplayWithoutInference)
+        .filter(task -> callbackCanReplayWithoutInference(task, irisRenderContract))
         .filter(
             task -> matchesExecutionContract(task, processCode, activityId, executionResourceCode))
-        .filter(task -> isRetryableCallbackFailure(task.getExecutionError()))
+        .filter(
+            task ->
+                isRetryableCallbackFailure(task.getExecutionError())
+                    || delegatedRenderPlan(task) != null)
         .findFirst()
         .map(
             task -> {
@@ -2447,9 +2473,10 @@ public class AgentTaskService {
   /**
    * Autoriza retomada automática somente quando o executor sabe reaplicar a saída preservada sem
    * chamar o modelo; Psique mantém o contrato legado restrito a aprovações e Íris somente refaz a
-   * materialização não audiovisual.
+   * materialização não audiovisual. Especificações prontas exigem o worker compatível para permitir
+   * publicação gradual sem expor o estado novo ao executor anterior.
    */
-  private boolean callbackCanReplayWithoutInference(AgentTask task) {
+  private boolean callbackCanReplayWithoutInference(AgentTask task, boolean irisRenderContract) {
     if (trimToNull(task.getResultJson()) == null || trimToNull(task.getEvidenceJson()) == null) {
       return false;
     }
@@ -2460,9 +2487,20 @@ public class AgentTaskService {
         return task.getProcessDefinition() != null
             && "creative-production-approval".equals(task.getProcessDefinition().getProcessCode())
             && "nonAudiovisual".equals(task.getProcessActivityId())
-            && "COMPLETED"
-                .equals(
-                    objectMapper.readTree(task.getResultJson()).path("executionStatus").asText());
+            && ("COMPLETED"
+                    .equals(
+                        objectMapper
+                            .readTree(task.getResultJson())
+                            .path("executionStatus")
+                            .asText())
+                || (irisRenderContract
+                    && ("READY_FOR_RENDER"
+                            .equals(
+                                objectMapper
+                                    .readTree(task.getResultJson())
+                                    .path("executionStatus")
+                                    .asText())
+                        || delegatedRenderPlan(task) != null)));
       } catch (Exception ex) {
         log.error(
             "Saída preservada de Íris ilegível; materialização automática recusada. taskId={} agentKey={}",
@@ -2587,14 +2625,68 @@ public class AgentTaskService {
     return false;
   }
 
-  /** Reentrega somente a saída já auditada após falha transitória no callback terminal. */
+  /** Reentrega a saída auditada ou o plano privado técnico, sem repetir a inferência original. */
   private String retryResultJson(AgentTask task) {
-    return retryCallbackPayloadAvailable(task) ? task.getResultJson() : null;
+    if (!retryCallbackPayloadAvailable(task)) return null;
+    JsonNode plan = delegatedRenderPlan(task);
+    return plan == null ? task.getResultJson() : plan.toString();
   }
 
-  /** Reentrega a evidência correspondente à saída, sem permitir nova inferência do agente. */
+  /**
+   * Preserva o parecer bruto e identifica a transferência técnica sem custo adicional de modelo.
+   */
   private String retryEvidenceJson(AgentTask task) {
-    return retryCallbackPayloadAvailable(task) ? task.getEvidenceJson() : null;
+    if (!retryCallbackPayloadAvailable(task)) return null;
+    if (delegatedRenderPlan(task) == null) return task.getEvidenceJson();
+    try {
+      ObjectNode evidence = (ObjectNode) objectMapper.readTree(task.getEvidenceJson());
+      evidence.put("rawModelResponse", task.getResultJson());
+      evidence
+          .putObject("delegatedRenderingRecovery")
+          .put("contractVersion", "IRIS_DELEGATED_RENDER_RECOVERY_V1")
+          .put("originalTaskId", task.getId())
+          .put("previousExecutionStatus", "BLOCKED")
+          .put("technicalErrorCode", "MODEL_NAMESPACE_DENIED")
+          .put("modelInvoked", false)
+          .put("incrementalModelCostUsd", 0);
+      return evidence.toString();
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao preservar auditoria da renderização delegada. taskId={} sourceReference={}",
+          task.getId(),
+          task.getSourceReference(),
+          ex);
+      throw new IllegalStateException("Auditoria da especificação preservada inválida.", ex);
+    }
+  }
+
+  /** Confere o contexto atual antes de recuperar a especificação privada impedida pelo shell. */
+  private JsonNode delegatedRenderPlan(AgentTask task) {
+    if (task.getAssignedAgent() == null
+        || !COMMUNICATION_AGENT_KEY.equals(task.getAssignedAgent().getAgentKey())
+        || task.getResultJson() == null
+        || !task.getResultJson().contains(IrisRenderPlanRecovery.NAMESPACE_DENIED)) return null;
+    try {
+      return communicationMaterializationContextProvider
+          .resolve(task.getSourceReference())
+          .map(
+              current -> {
+                try {
+                  return IrisRenderPlanRecovery.pendingPlan(
+                      task, objectMapper.valueToTree(current), objectMapper);
+                } catch (java.io.IOException ex) {
+                  throw new java.io.UncheckedIOException(ex);
+                }
+              })
+          .orElse(null);
+    } catch (Exception ex) {
+      log.error(
+          "Plano privado não pôde ser recuperado sem inferência. taskId={} sourceReference={}",
+          task.getId(),
+          task.getSourceReference(),
+          ex);
+      return null;
+    }
   }
 
   /** Confirma que a retomada automática preserva um parecer e sua prova completos. */

@@ -1,0 +1,210 @@
+{
+  "testDataScope": "AGENT_VALIDATION",
+  "origin": "Archived private render specification; no purchase, market evidence or spending permission.",
+  "result": {
+    "contractVersion": "IRIS_COMMUNICATION_V1",
+    "executionStatus": "BLOCKED",
+    "sourceReference": "experiment:102",
+    "activityId": "nonAudiovisual",
+    "outputType": "NON_AUDIOVISUAL_PACKAGE",
+    "strategicContractReference": {
+      "contractVersion": "MARKET_STRATEGY_V4",
+      "contentHash": "8d28fdddd8c2be567648763869a9a794c4471e6450879118c09551aa4430026e",
+      "preserved": true
+    },
+    "alternatives": [
+      {
+        "name": "Consulta principal mobile com escopo completo",
+        "benefit": "Mostra uma ação útil e reconhecível, com título e limite documental legíveis.",
+        "risk": "Não demonstra o preenchimento nem as instruções por item; a copy precisa explicar a participação da usuária.",
+        "effort": "Baixo: recorte dos pixels aprovados e composição pelo PROOF_CARD_V1.",
+        "adherence": "Alta: prova interna obrigatória, preservando a escolha audiovisual do predecessor."
+      },
+      {
+        "name": "Cartão documental desktop completo",
+        "benefit": "Apresenta produto, instruções, referência e ressalvas juntos.",
+        "risk": "Os textos menores da captura desktop podem perder legibilidade na redução a 393 pixels.",
+        "effort": "Médio: conferir enquadramento e leitura de todas as ressalvas.",
+        "adherence": "Alta quanto à fidelidade documental; menor adequação à leitura mobile."
+      },
+      {
+        "name": "Consulta e retomada no detalhe mobile",
+        "benefit": "Explica que reencontrar o resultado não consome outra organização.",
+        "risk": "Destaca continuidade antes de esclarecer suficientemente o primeiro resultado.",
+        "effort": "Baixo: usar a mensagem real de consulta e retomada.",
+        "adherence": "Alta como prova interna, sem demonstrar a recuperação em movimento."
+      }
+    ],
+    "chosenAlternative": "Consulta principal mobile com escopo completo",
+    "functionalOutput": {
+      "messageStrategy": "Preparar uma única prova interna da mensagem de Mira para revisão independente sob AGENT_VALIDATION. Hipótese preservada: reunir informações documentadas dos produtos já possuídos em uma organização consultável pode oferecer clareza e alívio de esforço. Público permanece mulheres de 35 a 60 anos com produtos identificáveis e documentação suficiente. Junto à manchete, identificar a aplicação web e explicar que a usuária fornece nomes e instruções documentadas para consultar a organização. O recorte mostra a consulta principal e o limite aos dois produtos informados, sem avaliação clínica. A satisfação possível de reencontrar informações reunidas permanece hipótese. PDE_PRIVATE_CREATIVE_PREPARATION_V1 resolve a incompatibilidade apontada por Íris #635: PROOF_CARD_V1 é evidência técnica obrigatória, não inclusão de anúncio estático ou alteração do formato comercial escolhido em #634. Preservar o audiovisualBrief em BRIEF_ONLY. Copy e renderSpec estão definidos; a atividade permanece bloqueada exclusivamente porque o PNG final ainda não foi renderizado e persistido.",
+      "copy": {
+        "primaryText": "Na aplicação web Mira, informe produtos e instruções documentadas. Consulte a organização com fontes e limites.",
+        "headline": "Seus produtos, uma consulta clara",
+        "description": "Privado · sem cobrança",
+        "ctaText": "Experimentar Mira em privado"
+      },
+      "channelBriefings": [
+        "FINALIDADE — Uma peça PROOF_CARD_V1 de 1080 × 1350 pixels para avaliação privada. Não acrescenta anúncio, campanha, variante comercial ou mudança da condição testada. O formato audiovisual escolhido em #634 permanece preservado.",
+        "CORRESPONDÊNCIA COM DESTINO — CTA exclusivamente para https://mira.digicomdigital.com.br/mira-candidate, versão mira-private-candidate-v3, em contexto interno autorizado. A página entrega entrada documental, organização e consulta; o recorte mostra sua ação principal. A URL privada não é checkout.",
+        "COPY — primaryText com 111 caracteres, headline com 33, description com 22 e ctaText com 28; todos dentro dos limites Meta recebidos, sem truncamento. Instagram Ads/FACEBOOK permanece somente referência futura. E-mails e mensagens diretas não integram os canais aprovados.",
+        "LIMITES — Pacote privado de duas organizações, até 12 itens documentados por entrada e credencial válida por sete dias. Consulta e retomada não consomem outra organização; o terceiro resultado distinto é recusado. Sete dias não definem acesso comercial. R$ 49 permanece referência histórica, sem oferta acionável nesta peça.",
+        "RENDERIZAÇÃO — O executor deve copiar o recorte indicado, imprimir APLICAÇÃO WEB PRIVADA e Demonstração sintética · sem compra ou cobrança, com a ressalva privada em fonte de 36 pixels junto ao CTA. Deve persistir o PNG, hash, URL privada e linhagem antes de encaminhar a imagem final a Psique e Têmis. Esses registros não foram produzidos neste turno.",
+        "DEPENDÊNCIAS POSTERIORES — Produção audiovisual pertence a pedido governado de Apolo. Uso comercial depende de revisão dos ativos exatos, checkout canônico, condições comerciais comprovadas, conciliação econômica e autorização própria de publicação e gasto."
+      ],
+      "staticAssets": [
+        {
+          "type": "PRIVATE_INDEPENDENT_REVIEW_PROOF_CARD",
+          "format": "PNG 1080 × 1350",
+          "content": "Mira. Seus produtos, uma consulta clara. Na aplicação web, informe nomes e instruções documentadas. Consulte a organização. Experimentar Mira em privado. Até 2 organizações · até 12 itens. Identificação obrigatória: APLICAÇÃO WEB PRIVADA; Demonstração sintética · sem compra ou cobrança. Destino privado: https://mira.digicomdigital.com.br/mira-candidate. Natureza: composição especificada para renderização, ainda sem PNG final.",
+          "proofReference": "task:627/visual-evidence:523; mira-private-candidate-v3; ADHERENT-IPHONE_15_PRO-REFERENCE; captura 2026-10-07T06:24:23Z; https://mira.digicomdigital.com.br/mira-candidate; execução sintética AGENT_VALIDATION/mh_internal_test.",
+          "renderSpec": {
+            "templateVersion": "PROOF_CARD_V1",
+            "sourceArtifactId": 523,
+            "sourceSha256": "45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7",
+            "crop": {
+              "x": 90,
+              "y": 1050,
+              "width": 999,
+              "height": 600
+            },
+            "brandLabel": "Mira",
+            "eyebrow": "Produtos que você já tem",
+            "headline": "Seus produtos, uma consulta clara",
+            "body": "Na aplicação web, informe nomes e instruções documentadas. Consulte a organização.",
+            "ctaText": "Experimentar Mira em privado",
+            "footer": "Até 2 organizações · até 12 itens.",
+            "backgroundColor": "#FAF7EF",
+            "accentColor": "#204F3F"
+          }
+        }
+      ],
+      "emailSequence": [],
+      "evidenceSelection": [
+        {
+          "reference": "task:620",
+          "version": "MARKET_STRATEGY_V4",
+          "purpose": "Preservar público, mecanismo documental, posicionamento e hipótese de alívio de esforço."
+        },
+        {
+          "reference": "task:621",
+          "version": "PDE_AGENT_ECONOMICS_V1",
+          "purpose": "Preservar preço de referência e limites, sem transformar projeções em margem comprovada ou autorização de gasto."
+        },
+        {
+          "reference": "task:634",
+          "version": "IRIS_COMMUNICATION_V1",
+          "purpose": "Preservar a escolha audiovisual e o briefing de Apolo; resultado SHA-256 4e7a1e88a5718532ca2f41cc2e7a1a779278e376a9c1986d62c1e44365cd37ff."
+        },
+        {
+          "reference": "communicationMaterializationContext.privateCreativePreparation",
+          "version": "PDE_PRIVATE_CREATIVE_PREPARATION_V1",
+          "purpose": "Aplicar a exigência explícita de prova não audiovisual para revisão independente, sem alterar o formato comercial."
+        },
+        {
+          "reference": "task:627/visual-evidence:523",
+          "version": "mira-private-candidate-v3",
+          "purpose": "Selecionar pixels mobile reais da consulta principal; preservar URL, captura, linhagem e SHA-256 45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7."
+        },
+        {
+          "reference": "task:633",
+          "version": "PDE_TEMIS_AGENT_VALIDATION_V1",
+          "purpose": "Reconhecer aprovação da preparação privada do produto, sem herdar aprovação da nova imagem."
+        },
+        {
+          "reference": "RI1-6AA6455BB792",
+          "version": "HARNESS_RESEARCH_INTELLIGENCE_V1",
+          "purpose": "Orientar uma conclusão explícita sobre a consulta documental, com uma mensagem principal e CTA claro."
+        },
+        {
+          "reference": "RI1-46C593BBC354",
+          "version": "HARNESS_RESEARCH_INTELLIGENCE_V1",
+          "purpose": "Orientar fidelidade dos pixels e identificação da demonstração sintética, sem cliente ou satisfação inventados."
+        },
+        {
+          "reference": "RI1-646DE1AF483E",
+          "version": "HARNESS_RESEARCH_INTELLIGENCE_V1",
+          "purpose": "Explicitar ausência de cobrança e reservar meios de pagamento para condições comerciais posteriormente comprovadas."
+        }
+      ],
+      "conversionArchitecture": "Prova interna identificada → aplicação web privada aprovada → entrada documental → organização → consulta. SAFETY permanece sem continuidade. Preferência e checkout atuais são sinais sintéticos segregados. Na futura operação comercial autorizada, acompanhar demonstração e oferta vistas → checkout canônico → compra líquida → entrega → primeiro uso, com reembolso e contribuição reconciliados.",
+      "visualComposition": "Usar exclusivamente o artefato mobile 523, original de 1179 × 6138 pixels. Recorte em pixels originais: x=90, y=1050, largura=999, altura=600. Preserva o título Sua rotina organizada, o texto completo sobre os dois produtos informados sem avaliação clínica e o botão Consultar organização. Proporção 1,665:1; ajuste proporcional à área de 952 × 550 exige escala aproximada de 0,917, acima do mínimo 0,7. Copiar pixels sem redesenho ou deformação. A fonte mobile favorece leitura; a legibilidade do PNG a 393 pixels ainda exige inspeção após renderização. Manter fundo claro, destaque verde escuro, manchete em até duas linhas e identificação da aplicação web junto à explicação da entrada e do resultado. Não há parecer posterior ADJUST de Psique ou Têmis sobre uma imagem desta tarefa. O bloqueio histórico #635 é corrigido pelo enquadramento técnico explícito da prova interna, preservando o vídeo. Não declarar essa composição como imagem pronta.",
+      "landingHtml": null,
+      "audiovisualBrief": "APOLO — Preservar a demonstração curta legendada escolhida em #634, em BRIEF_ONLY. Nenhum vídeo foi produzido. Produto 10, ciclo 9, experiment:102, mira-private-candidate-v3. Usar captura real 523, SHA-256 45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7, destino https://mira.digicomdigital.com.br/mira-candidate e implementação 92d0d8838f6ba5b1e73893cd8a46c519d81e7945. Abertura editorial: querer consultar informações dos produtos já possuídos. Identificar aplicação web privada; informar nomes e instruções documentadas para consultar a organização. Mostrar consulta, cartões, referências e ressalvas reais, conservando leitura integral. Os itens CeraVe são fixtures documentais, sem endosso ou inventário de cliente. Mostrar saldo e segunda organização somente nos pixels existentes; explicar que consulta e retomada não consomem outra organização. Encerrar com Experimentar Mira em acesso privado e Demonstração interna · sem cobrança. Movimento sobre captura deve ser identificado como editorial; não simular interação, falha, recuperação ou latência. Duração determinada pela leitura das legendas, sem necessidade de áudio. Preservar duas organizações, até 12 itens por entrada e sete dias de credencial privada, sem reinterpretar condições comerciais. Não substituir o vídeo histórico. A produção final exige pedido governado e gates próprios; a prova estática interna não aprova o vídeo."
+    },
+    "evidenceGaps": [
+      "Falta o PNG PROOF_CARD_V1 renderizado e persistido pelo executor, com recibo, hash, URL privada e linhagem. A sessão permite leitura de imagens, mas não oferece ferramenta compatível para essa renderização e persistência; os comandos locais falharam com 'bwrap: No permissions to create a new namespace'. Sem o artefato final, também não foi possível verificar sua prévia a 393 pixels. Não há lacuna de estratégia, formatos ou autorização da prova interna."
+    ],
+    "nextHandoff": "BACKEND",
+    "guardrails": {
+      "strategyPreserved": true,
+      "productPreserved": true,
+      "pricePreserved": true,
+      "noFabricatedProof": true,
+      "noPublication": true,
+      "noExternalSpend": true
+    },
+    "expectedMetric": "Agora: uma imagem persistida, correspondência integral com os pixels aprovados e leitura completa da mensagem, CTA e limites a 393 pixels, seguida de revisão independente por Psique e Têmis. Posteriormente, medir continuidade até compra líquida, entrega e primeiro uso; cliques e sinais sintéticos não comprovam venda.",
+    "continueCriteria": "O backend deve disponibilizar a especificação ao executor responsável. Concluir a atividade somente após renderizar e persistir o PNG, conferir hash e linhagem e inspecionar a prévia a 393 pixels. Encaminhar então a imagem final exata a Psique e Têmis, preservando BRIEF_ONLY para Apolo.",
+    "adjustCriteria": "Corrigir somente falhas de leitura, corte, identificação, correspondência com destino ou mudanças requeridas pelos pareceres posteriores da imagem final. Manter esta retentativa no mesmo contrato; qualquer alteração das condições testadas exige sucessor rastreável.",
+    "stopCriteria": "Impedir conclusão sem PNG persistido. Interromper diante de pixels reconstruídos, versão ou hash incompatíveis, ressalva cortada, promessa clínica, prova humana inventada, exposição de dados pessoais, cobrança, publicação ou gasto."
+  },
+  "communicationInput": {
+    "availability": "AVAILABLE",
+    "inputReadiness": "READY",
+    "contractVersion": "IRIS_INPUT_V1",
+    "mode": "LEARNING_CYCLE_PRIVATE",
+    "sourceReference": "experiment:102",
+    "prototypeVersion": "mira-private-candidate-v3",
+    "marketStrategicContract": {
+      "strategistTaskId": 620,
+      "cycleId": 9,
+      "sourceReference": "experiment:102",
+      "availability": "AVAILABLE",
+      "sourceAgent": "ATENA",
+      "contentHash": "8d28fdddd8c2be567648763869a9a794c4471e6450879118c09551aa4430026e",
+      "contractVersion": "MARKET_STRATEGY_V4"
+    },
+    "privatePrototypeAcceptance": {
+      "prototypeVersion": "mira-private-candidate-v3",
+      "privateAccessUrl": "https://mira.digicomdigital.com.br/mira-candidate",
+      "image": "ghcr.io/paulofor/pde-platform-frontend-mira-commercial:92d0d8838f6ba5b1e73893cd8a46c519d81e7945",
+      "evidenceReference": "PR #5526 https://github.com/paulofor/marketing-hub/pull/5526; docs/registros/mira-candidate-v4-homologacao.md. Candidata mira-private-candidate-v3: consulta principal, controles internos distintos, retomada idempotente, fontes/limites por item, medição monotônica e cinco sinais sintéticos persistidos com sequência segura. Uma matriz técnica e três pareceres isolados; SAFETY não avança para continuidade. Mesmos limites implementados: duas organizações, até 12 itens documentados por entrada, credencial privada de sete dias, zero provedores externos ou suporte automatizado pago. 18 combinações reais MySQL5.7/backend/frontend, três relatórios ligados aos PNGs e segunda organização/recuperação/segurança. Histórico preservado; sem chamada paga na candidata, cobrança, mídia ou prova humana/comercial. Versão publicada 92d0d8838f6ba5b1e73893cd8a46c519d81e7945; Psique/Têmis ainda independentes. Fingerprint 0a23dd41270f7befd1663a4388bf74b3bbf471fc364f6d6c5b94af8b40f60ac3",
+      "observedAt": "2026-10-07T06:04:00.000Z",
+      "desktopValidated": true,
+      "mobileValidated": true,
+      "firstResultValidated": true,
+      "resumeValidated": true,
+      "failuresValidated": true,
+      "testDataExcluded": true,
+      "noExternalSideEffects": true,
+      "status": "READY",
+      "acceptedAt": "2026-10-07T06:04:32.129120Z",
+      "eventSource": "FIRST_PARTY_EVENTS",
+      "paymentEnabled": false,
+      "published": false,
+      "mediaSpendBrl": 0,
+      "testMarker": "PRIVATE_PROTOTYPE",
+      "evidenceOrigin": "OPERATOR_VALIDATION"
+    },
+    "approvedLandingAssets": [],
+    "publicationAuthorized": false,
+    "externalMediaSpendAuthorized": false,
+    "paymentEnabled": false,
+    "privateCreativePreparation": {
+      "contractVersion": "PDE_PRIVATE_CREATIVE_PREPARATION_V1",
+      "scope": "PRIVATE_PREPARATION",
+      "sourceReference": "experiment:102",
+      "prototypeVersion": "mira-private-candidate-v3",
+      "nonAudiovisualEvidenceRequired": true,
+      "nonAudiovisualEvidencePurpose": "INDEPENDENT_REVIEW",
+      "nonAudiovisualTemplate": "PROOF_CARD_V1",
+      "commercialFormatDecisionPreserved": true,
+      "audiovisualProductionIntent": "BRIEF_ONLY",
+      "videoProductionRequestId": 0,
+      "publicationAuthorized": false,
+      "spendAuthorized": false,
+      "commercialEvidenceClaimed": false
+    }
+  }
+}

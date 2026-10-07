@@ -271,6 +271,52 @@ class AgentTaskRepositoryDocumentTest {
         .hasSize(10);
   }
 
+  /** Filtra no banco a falha técnica de Íris, mantendo callbacks legados e outras falhas fora. */
+  @Test
+  void selectsNamespaceRenderCandidateAndExistingCallback() {
+    var iris = persistedAgent();
+    iris.setAgentKey("communication-director");
+    agents.save(iris);
+    var process = persistedProcess();
+    var now = Instant.parse("2026-10-07T21:08:00Z");
+    var technical =
+        task(
+            iris,
+            process,
+            "nonAudiovisual",
+            "BLOCKED",
+            "{\"evidenceGaps\":[\"bwrap: No permissions to create a new namespace\"]}",
+            now);
+    technical.setTaskKind("WORK");
+    technical.setEvidenceJson("{\"modelResponded\":true}");
+    technical.setExecutionError("Peça ainda não renderizada.");
+    tasks.save(technical);
+    var functional =
+        task(
+            iris,
+            process,
+            "nonAudiovisual",
+            "BLOCKED",
+            "{\"evidenceGaps\":[\"Produto sem homologação\"]}",
+            now.plusSeconds(1));
+    functional.setTaskKind("WORK");
+    functional.setEvidenceJson("{\"modelResponded\":true}");
+    functional.setExecutionError("Homologação ausente.");
+    tasks.save(functional);
+    var callback = task(iris, process, "nonAudiovisual", "BLOCKED", "{}", now.plusSeconds(2));
+    callback.setTaskKind("WORK");
+    callback.setEvidenceJson("{}");
+    callback.setExecutionError("500 : Internal Server Error");
+    tasks.save(callback);
+    entityManager.flush();
+    entityManager.clear();
+
+    assertThat(tasks.findRetryableCallbackCandidates("communication-director"))
+        .extracting(AgentTask::getId)
+        .containsExactly(technical.getId(), callback.getId());
+    assertThat(tasks.findRetryableCallbackCandidates("customer-agent")).isEmpty();
+  }
+
   /** Persiste o agente mínimo responsável pelas execuções documentais do teste. */
   private Agent persistedAgent() {
     AgentTheme theme = themes.save(AgentTheme.builder().name("Pesquisa documental").build());

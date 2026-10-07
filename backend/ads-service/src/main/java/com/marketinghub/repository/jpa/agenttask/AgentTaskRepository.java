@@ -287,7 +287,7 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
   List<AgentTask> findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
       String agentKey, String taskKind, String status);
 
-  /** Filtra callbacks e materializações recuperáveis antes da validação final no serviço. */
+  /** Filtra falhas de callback e planos privados impedidos pelo shell para validação no serviço. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query(
       """
@@ -299,7 +299,9 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
         and (task.executionError like '500 :%'
           or task.executionError like '%Internal Server Error%'
           or task.executionError like '%HTML integral alterou o destino protegido do checkout%'
-          or task.executionError like '%A tarefa não possui uma URL visual congelada e auditável.%')
+          or task.executionError like '%A tarefa não possui uma URL visual congelada e auditável.%'
+          or (task.assignedAgent.agentKey = 'communication-director'
+            and task.resultJson like '%bwrap: No permissions to create a new namespace%'))
       order by task.createdAt asc, task.id asc
       """)
   List<AgentTask> findRetryableCallbackCandidates(@Param("agentKey") String agentKey);

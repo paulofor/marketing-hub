@@ -23,6 +23,34 @@ class CommunicationAgentCodexRunnerTest {
   private static final String STRATEGY_HASH = "a".repeat(64);
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Distingue plano técnico de atividade concluída e recusa esse estado nas outras saídas. */
+  @Test
+  void acceptsRenderReadyPlanOnlyForNonAudiovisualOutput() throws Exception {
+    var task = task("creative-production-approval", "nonAudiovisual", context("READY", true));
+    CommunicationAgentCodexRunner.validate(
+        result("NON_AUDIOVISUAL_PACKAGE", "nonAudiovisual", "READY_FOR_RENDER"),
+        task,
+        CommunicationAgentCodexRunner.contractFor(task));
+    var communication =
+        task("pde-communication-sales-journey", "communicationContract", context("READY", true));
+    assertThatThrownBy(
+            () ->
+                CommunicationAgentCodexRunner.validate(
+                    result("COMMUNICATION_PACKAGE", "communicationContract", "READY_FOR_RENDER"),
+                    communication,
+                    CommunicationAgentCodexRunner.contractFor(communication)))
+        .hasMessageContaining("somente à produção não audiovisual");
+    var blocked =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            result("NON_AUDIOVISUAL_PACKAGE", "nonAudiovisual", "READY_FOR_RENDER");
+    blocked.putArray("evidenceGaps").add("Prova do produto ausente.");
+    assertThatThrownBy(
+            () ->
+                CommunicationAgentCodexRunner.validate(
+                    blocked, task, CommunicationAgentCodexRunner.contractFor(task)))
+        .hasMessageContaining("prova ausente");
+  }
+
   /**
    * Preserva a constituição integral e a entrada privada sem exigir pré-requisitos comerciais
    * futuros.

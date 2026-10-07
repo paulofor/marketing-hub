@@ -1,5 +1,5 @@
 {
-  "contractVersion": "mira-private-candidate.v1",
+  "contractVersion": "mira-private-candidate.v2",
   "processCode": "pde-construction-approval",
   "processVersion": 4,
   "activityId": "technicalHomologation",
@@ -16,7 +16,7 @@
   "status": "READY_FOR_INDEPENDENT_REVIEW",
   "boundary": "Candidata privada determinística a partir do texto documental. Sem provedor pago, compra, publicação comercial, mídia ou evidência humana. A autorização de IA pertence à preparação e revisão do ciclo 6.",
   "operationalState": {
-    "verifiedAt": "2026-10-06",
+    "verifiedAt": "2026-10-07",
     "experimentStatus": "PLANNED",
     "commercialPublicationAuthorized": false,
     "mediaAuthorized": false
@@ -103,7 +103,7 @@
     },
     {
       "path": "customer-agent-worker/src/main/resources/browser/mira-candidate-harness.mjs",
-      "sha256": "7b4dd7418ae588b705a2c4f33dd8266da400ac457c08e6751b8e724cb66c244c",
+      "sha256": "bb09cfc31149b64c2685b56eea259fdd9c832a045d892a0b39c0c5a9a81f0900",
       "promptMode": "FULL"
     }
   ],
@@ -145,7 +145,7 @@
     },
     {
       "path": "infra/testing/mira-candidate/run-local.sh",
-      "sha256": "fbb2a1a7e85395b1f512371d6c246cc8a6e330428c188321caf61ee8ee1dc428",
+      "sha256": "8a4823b2ae577ca398e22d7c8d78a34e11c79256c11ecc03b09c988e63ecb7dd",
       "promptMode": "FULL"
     },
     {
@@ -162,6 +162,11 @@
       "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/PdeAgentValidationHarnessRunnerTest.java",
       "sha256": "8cd5236849f7e044bdd74e917c83447fc11279e3c3bcecf9bd1e7ff11440dd9f",
       "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/MiraScenarioEvidenceBindingTest.java",
+      "sha256": "670d8017fede0a5aa75768995958f939a1d182aeee5adecffb504fe2339d422d",
+      "promptMode": "FULL"
     }
   ],
   "validationReport": "docs/registros/mira-candidate-v2-homologacao.md",
@@ -169,5 +174,9 @@
     "Somente organização determinística; não comprova integração ou custo de modelo de IA.",
     "Emulação mobile usa Chromium; não comprova Safari nativo.",
     "Candidata precisa de Psique e Têmis independentes; não autoriza oferta ou aquisição."
-  ]
+  ],
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/mira-private-candidate-v1.json",
+    "reason": "Revisar a passagem explícita de capturas ao consumidor independente, preservando a mesma experiência, versão e fingerprint."
+  }
 }

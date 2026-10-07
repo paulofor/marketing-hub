@@ -492,11 +492,11 @@ class CommercialBpmTaskConsumerTest {
             "adCopy` ou `adImageBriefing`");
   }
 
-  /** Exige Flex no gate de IA para manter custo e contrato operacional auditáveis. */
+  /** Exige o tier padrão compatível e mantém a exceção ao Flex auditável. */
   @Test
-  void usesFlexServiceTier() {
+  void usesCompatibleCodexServiceTier() {
     org.assertj.core.api.Assertions.assertThat(CommercialBpmTaskConsumer.serviceTier())
-        .isEqualTo("flex");
+        .isEqualTo("default");
     org.assertj.core.api.Assertions.assertThat(CommercialBpmTaskConsumer.effectiveServiceTier())
         .isEqualTo("STANDARD");
   }
@@ -705,7 +705,8 @@ class CommercialBpmTaskConsumerTest {
         .containsEntry("activityId", "commercial")
         .containsEntry("accessMode", "READ_ONLY")
         .containsEntry("externalSideEffects", false)
-        .containsEntry("requestedServiceTier", "FLEX")
+        .containsEntry("preferredServiceTier", "FLEX")
+        .containsEntry("requestedServiceTier", "DEFAULT")
         .containsEntry("effectiveServiceTier", "STANDARD")
         .containsEntry("taskTarget", Map.of("productId", 9L, "productSlug", "produto-a"))
         .containsKey("serviceTierException");

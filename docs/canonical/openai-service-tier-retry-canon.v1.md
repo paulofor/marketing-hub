@@ -36,6 +36,27 @@ ou compra, porque a latência nesse ponto reduz diretamente a conversão do funi
 Nesse caso, a decisão deve ficar versionada no worker executor e o tier efetivo
 deve continuar persistido na auditoria da execução.
 
+### Transporte Codex OAuth dos agentes
+
+Enquanto o transporte Codex OAuth utilizado pelos agentes não aceitar Flex,
+Psique e o gate comercial de Têmis devem solicitar explicitamente `default`,
+como Atena, Plutus e Íris já fazem. Essa é uma exceção de compatibilidade do
+transporte, sem troca de modelo, sem `priority` e sem desconto Flex. A preferência
+canônica `FLEX`, a solicitação real `DEFAULT`, a classificação de custo `STANDARD`
+e a justificativa funcional devem permanecer separadas na auditoria. Uma recusa
+HTTP 400 de parâmetro não autoriza repetir a mesma chamada inválida.
+
+A tarefa de Mira #610 comprovou em 07/10/2026 a recusa literal
+`Unsupported service_tier: flex`. A exceção já constava na evidência, mas os
+comandos de Psique e do gate comercial ainda enviavam Flex. Os testes de
+transporte percorrem `pending`, subprocesso, schema, auditoria e callback com
+um provedor local restritivo, cobrindo Mira, outra identidade e contratos antes
+válidos. Referência: `docs/registros/mira-codex-transporte-2026-10-07.md`.
+
+Esta exceção não altera integrações Responses/Image API que suportam a política
+Flex. A futura remoção exige homologar suporte no transporte real, resposta,
+auditoria e custo antes de publicar a alteração.
+
 ## Custos
 
 Toda chamada OpenAI deve coletar tokens/custo quando o provedor retornar esses dados ou quando o backend conseguir calcular pelo catálogo canônico de modelos. O custo deve ser persistido no registro individual da execução e somado ao agregado de negócio correspondente, quando existir.

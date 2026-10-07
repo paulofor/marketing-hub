@@ -9256,3 +9256,23 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Limite:** nenhuma prova interna constitui publicação comercial, venda, vídeo produzido ou
   aprovação humana. A retomada preserva a tentativa bloqueada e todo o orçamento acumulado.
 - **Registro:** `docs/registros/mira-comunicacao-prova-privada-formatos-2026-10-07.md`.
+
+## LOOP-ACTIONS-DOWNLOAD-INCOMPLETO-ACEITO-COMO-SUCESSO — 07/10/2026
+
+- **Evidência:** no run 37637394844, produtor e artefato imutável continham as duas imagens;
+  o consumidor terminou sem a confirmação de download e depois encontrou apenas a imagem
+  do backend. A sandbox baixou o mesmo artefato 11490137536 e confirmou ambas e seus hashes.
+  O run anterior 37618334762 concluiu essa passagem. Ambos usaram Node 24; essa versão,
+  isoladamente, não explica o erro. Não foi atribuído defeito à construção das imagens.
+- **Causa comprovada:** a fronteira aceitava extração incompleta como sucesso e só detectava
+  arquivo ausente durante a transferência remota. Não havia conferência dos arquivos obrigatórios.
+- **Correção reutilizável:** o workflow usa gh/API no helper download-run-artifact.py para
+  baixar o ID imutável do mesmo run/revisão em área temporária, conferir digest/ZIP/CRC e
+  arquivos obrigatórios e promover somente o pacote completo. Recuperação limitada a três
+  tentativas; frontend e backend têm diretórios independentes; tudo ocorre antes de SSH.
+- **Prevenção:** 14 testes cobrem o caso original, outro run/revisão, caminho válido anterior,
+  truncamento, CRC/digest, ausência/vazio, origem divergente, caminhos, duplicação e preservação
+  do destino existente. A CI e o preflight do publicador executam o teste. Os produtores
+  também exigem as imagens antes do upload. Hash não substitui a saúde posterior do runtime.
+- **Registro:** docs/registros/mira-download-pacote-deploy-2026-10-07.md. Sem novo consumo de
+  IA, alteração de orçamento, imagem produtiva manual ou migração de execuções de produto.

@@ -23,6 +23,8 @@ class BackendCiWorkflowTest(unittest.TestCase):
             ".github/workflows/backend-ci.yml",
             ".github/workflows/deploy-containers.yml",
             "scripts/download-approved-pr-artifact.sh",
+            "scripts/download-run-artifact.py",
+            "scripts/test-download-run-artifact.py",
             "scripts/test-backend-ci-workflow.py",
             "scripts/build-commercial-review-evidence*",
             "pde-platform/contracts/**",

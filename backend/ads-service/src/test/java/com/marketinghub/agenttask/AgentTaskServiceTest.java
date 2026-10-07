@@ -2637,6 +2637,96 @@ class AgentTaskServiceTest {
         .isEmpty();
   }
 
+  /** Recupera só uma vez a recusa do leitor legado, preservando fonte, auditoria e custo pago. */
+  @Test
+  void recoversFrozenCycleUploadWithoutNewInferenceAndRefusesRepeatedFailure() throws Exception {
+    var json = new ObjectMapper();
+    var input = FrozenCreativeVisualAuthorizationTest.fixture(json);
+    var result =
+        (com.fasterxml.jackson.databind.node.ObjectNode) renderRecoveryFixture(json).path("result");
+    String raw = result.toString();
+    result.put("executionStatus", "READY_FOR_RENDER").putArray("evidenceGaps");
+    var repository = mock(AgentTaskRepository.class);
+    var agents = mock(AgentRepository.class);
+    var iris = agent(12L, "communication-director", "Íris");
+    var process = process("PUBLISHED", "Íris");
+    process.setProcessCode("creative-production-approval");
+    var task = processTask(910636L, iris, process, "nonAudiovisual", "BLOCKED");
+    task.setSourceReference("experiment:102");
+    task.setEstimatedCostUsd(new BigDecimal("0.5309912"));
+    task.setExecutionError(
+        "AUTO_RETRY_MATERIALIZATION_ONCE|409 Conflict: A autorização visual congelada da tarefa não corresponde à prova aprovada.");
+    task.setResultJson(result.toString());
+    var audit = json.createObjectNode().put("rawModelResponse", raw);
+    audit.set("communicationInputReference", input);
+    audit
+        .putObject("delegatedRenderingRecovery")
+        .put("contractVersion", "IRIS_DELEGATED_RENDER_RECOVERY_V1")
+        .put("originalTaskId", task.getId())
+        .put("modelInvoked", false)
+        .put("incrementalModelCostUsd", 0);
+    task.setEvidenceJson(audit.toString());
+    when(agents.findByAgentKey("communication-director")).thenReturn(Optional.of(iris));
+    when(repository.findRetryableCallbackCandidates("communication-director"))
+        .thenReturn(List.of(task));
+    when(repository.save(task)).thenReturn(task);
+    var service = service(repository, agents, Clock.systemUTC());
+    java.util.Map<String, Object> current = json.convertValue(input, Map.class);
+    current.put("gateInstanceId", Long.valueOf(input.path("gateInstanceId").asLong()));
+    CommunicationMaterializationContextProvider provider = ref -> Optional.of(current);
+    ReflectionTestUtils.setField(service, "communicationMaterializationContextProvider", provider);
+    assertThat(
+            service.claimEligibleProcessTask(
+                "communication-director", "creative-production-approval", "nonAudiovisual"))
+        .isEmpty();
+    current.put("inputReadiness", "BLOCKED");
+    assertThat(
+            service.claimEligibleProcessTask(
+                "communication-director",
+                "creative-production-approval",
+                "nonAudiovisual",
+                null,
+                AgentTaskService.IRIS_RENDER_WORKER_CONTRACT))
+        .isEmpty();
+    current.put("inputReadiness", "READY");
+    var pending =
+        service
+            .claimEligibleProcessTask(
+                "communication-director",
+                "creative-production-approval",
+                "nonAudiovisual",
+                null,
+                AgentTaskService.IRIS_RENDER_WORKER_CONTRACT)
+            .orElseThrow();
+    var persisted = json.readTree(pending.retryEvidenceJson());
+    assertThat(persisted.path("rawModelResponse").asText()).isEqualTo(raw);
+    assertThat(persisted.path("communicationInputReference")).isEqualTo(input);
+    assertThat(persisted.path("frozenCycleVisualAuthorityRecovery").path("attempt").asInt())
+        .isEqualTo(1);
+    assertThat(
+            persisted.path("frozenCycleVisualAuthorityRecovery").path("modelInvoked").asBoolean())
+        .isFalse();
+    assertThat(
+            persisted
+                .path("frozenCycleVisualAuthorityRecovery")
+                .path("incrementalModelCostUsd")
+                .asInt(-1))
+        .isZero();
+    assertThat(pending.retryResultJson()).isEqualTo(result.toString());
+    assertThat(task.getEstimatedCostUsd()).isEqualByComparingTo("0.5309912");
+    task.setStatus("BLOCKED");
+    task.setExecutionError(
+        "AUTO_RETRY_MATERIALIZATION_ONCE|409 Conflict: A autorização visual congelada da tarefa não corresponde à prova aprovada.");
+    assertThat(
+            service.claimEligibleProcessTask(
+                "communication-director",
+                "creative-production-approval",
+                "nonAudiovisual",
+                null,
+                AgentTaskService.IRIS_RENDER_WORKER_CONTRACT))
+        .isEmpty();
+  }
+
   /** Lê a prova arquivada comum ao backend e ao executor, sem chamadas ao ambiente publicado. */
   private com.fasterxml.jackson.databind.JsonNode renderRecoveryFixture(ObjectMapper json)
       throws Exception {

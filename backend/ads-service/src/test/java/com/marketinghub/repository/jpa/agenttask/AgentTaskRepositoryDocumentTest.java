@@ -271,7 +271,10 @@ class AgentTaskRepositoryDocumentTest {
         .hasSize(10);
   }
 
-  /** Filtra no banco a falha técnica de Íris, mantendo callbacks legados e outras falhas fora. */
+  /**
+   * Filtra no banco os dois impedimentos técnicos de Íris, preservando callbacks e recusas
+   * funcionais.
+   */
   @Test
   void selectsNamespaceRenderCandidateAndExistingCallback() {
     var iris = persistedAgent();
@@ -308,12 +311,25 @@ class AgentTaskRepositoryDocumentTest {
     callback.setEvidenceJson("{}");
     callback.setExecutionError("500 : Internal Server Error");
     tasks.save(callback);
+    var authority =
+        task(
+            iris,
+            process,
+            "nonAudiovisual",
+            "BLOCKED",
+            "{\"executionStatus\":\"READY_FOR_RENDER\"}",
+            now.plusSeconds(3));
+    authority.setTaskKind("WORK");
+    authority.setEvidenceJson("{}");
+    authority.setExecutionError(
+        "AUTO_RETRY_MATERIALIZATION_ONCE|409 Conflict: A autorização visual congelada da tarefa não corresponde à prova aprovada.");
+    tasks.save(authority);
     entityManager.flush();
     entityManager.clear();
 
     assertThat(tasks.findRetryableCallbackCandidates("communication-director"))
         .extracting(AgentTask::getId)
-        .containsExactly(technical.getId(), callback.getId());
+        .containsExactly(technical.getId(), callback.getId(), authority.getId());
     assertThat(tasks.findRetryableCallbackCandidates("customer-agent")).isEmpty();
   }
 

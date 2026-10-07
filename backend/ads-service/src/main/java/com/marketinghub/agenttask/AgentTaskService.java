@@ -2439,7 +2439,7 @@ public class AgentTaskService {
 
   /**
    * Retoma uma única vez falhas candidatas filtradas no banco, preservando contrato e limite de
-   * tentativa sem reler os prompts de todos os bloqueios funcionais.
+   * tentativa por classe técnica sem reler os prompts de todos os bloqueios funcionais.
    */
   private Optional<AgentTask> recoverInterruptedCallbackOnce(
       String agentKey,
@@ -2456,11 +2456,13 @@ public class AgentTaskService {
         .filter(
             task ->
                 isRetryableCallbackFailure(task.getExecutionError())
-                    || delegatedRenderPlan(task) != null)
+                    || delegatedRenderPlan(task) != null
+                    || canRecoverFrozenCycleVisualAuthority(task))
         .findFirst()
         .map(
             task -> {
               Instant now = Instant.now(clock);
+              markFrozenCycleVisualAuthorityRecovery(task);
               task.setStatus("IN_PROGRESS");
               task.setExecutionError("AUTO_RETRY_ONCE|" + task.getExecutionError());
               task.setUpdatedAt(now);
@@ -2468,6 +2470,96 @@ public class AgentTaskService {
               synchronizeActivityInstance(saved, now);
               return saved;
             });
+  }
+
+  /**
+   * Recupera uma vez o PNG recusado pelo leitor legado, somente com a autoridade privada atual
+   * íntegra.
+   */
+  private boolean canRecoverFrozenCycleVisualAuthority(AgentTask task) {
+    String error = task.getExecutionError();
+    if (!"BLOCKED".equals(task.getStatus())
+        || error == null
+        || !error.startsWith("AUTO_RETRY_MATERIALIZATION_ONCE|")
+        || !error.contains("409 Conflict")
+        || !error.contains(
+            "A autorização visual congelada da tarefa não corresponde à prova aprovada.")
+        || task.getResultJson() == null
+        || task.getEvidenceJson() == null) return false;
+    try {
+      var audit = objectMapper.readTree(task.getEvidenceJson());
+      var previous = audit.path("delegatedRenderingRecovery");
+      var result = objectMapper.readTree(task.getResultJson());
+      if (audit.has("frozenCycleVisualAuthorityRecovery")
+          || !"IRIS_DELEGATED_RENDER_RECOVERY_V1".equals(previous.path("contractVersion").asText())
+          || previous.path("originalTaskId").asLong() != task.getId()
+          || previous.path("modelInvoked").asBoolean(true)
+          || !previous.path("incrementalModelCostUsd").isNumber()
+          || previous.path("incrementalModelCostUsd").asDouble(-1) != 0
+          || !"READY_FOR_RENDER".equals(result.path("executionStatus").asText())
+          || !task.getSourceReference().equals(result.path("sourceReference").asText()))
+        return false;
+      var frozen = audit.path("communicationInputReference");
+      String url =
+          FrozenCreativeVisualAuthorization.privateCycleTarget(frozen, task.getSourceReference());
+      if (url == null) return false;
+      var current =
+          communicationMaterializationContextProvider
+              .resolve(task.getSourceReference())
+              .map(value -> objectMapper.<JsonNode>valueToTree(value))
+              .orElse(null);
+      return current != null
+          && url.equals(
+              FrozenCreativeVisualAuthorization.privateCycleTarget(
+                  current, task.getSourceReference()))
+          && frozen.path("prototypeVersion").equals(current.path("prototypeVersion"))
+          && frozen.path("gateInstanceId").asLong() == current.path("gateInstanceId").asLong()
+          && frozen
+              .path("marketStrategicContract")
+              .path("contentHash")
+              .asText()
+              .matches("[0-9a-f]{64}")
+          && frozen
+              .path("marketStrategicContract")
+              .path("contentHash")
+              .equals(current.path("marketStrategicContract").path("contentHash"))
+          && frozen
+              .path("marketStrategicContract")
+              .path("contentHash")
+              .equals(result.path("strategicContractReference").path("contentHash"));
+    } catch (Exception ex) {
+      log.error(
+          "Recuperação da autorização visual privada recusada. taskId={} sourceReference={}",
+          task.getId(),
+          task.getSourceReference(),
+          ex);
+      return false;
+    }
+  }
+
+  /** Persiste a tentativa específica antes do upload, preservando custo e impedindo novo loop. */
+  private void markFrozenCycleVisualAuthorityRecovery(AgentTask task) {
+    if (!canRecoverFrozenCycleVisualAuthority(task)) return;
+    try {
+      ObjectNode evidence = (ObjectNode) objectMapper.readTree(task.getEvidenceJson());
+      evidence
+          .putObject("frozenCycleVisualAuthorityRecovery")
+          .put("contractVersion", "IRIS_FROZEN_CYCLE_VISUAL_AUTHORITY_RECOVERY_V1")
+          .put("originalTaskId", task.getId())
+          .put("recoveredAt", Instant.now(clock).toString())
+          .put("previousError", task.getExecutionError())
+          .put("modelInvoked", false)
+          .put("incrementalModelCostUsd", 0)
+          .put("attempt", 1);
+      task.setEvidenceJson(evidence.toString());
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao registrar a recuperação da autorização visual. taskId={} sourceReference={}",
+          task.getId(),
+          task.getSourceReference(),
+          ex);
+      throw new IllegalStateException("Auditoria da recuperação visual inválida.", ex);
+    }
   }
 
   /**

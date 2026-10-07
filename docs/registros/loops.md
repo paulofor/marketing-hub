@@ -9174,3 +9174,21 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   subprocesso restritivo, schema, auditoria, tokens e callback para Mira, outra
   identidade e um caminho antes válido; o double reproduz a recusa de Flex.
 - **Registro:** `docs/registros/mira-codex-transporte-2026-10-07.md`.
+
+# LOOP-PDE-CONSULTA-MISTURADA-COM-HOMOLOGACAO — hierarquia e medições ambíguas
+
+- **Observado em 07/10/2026:** Psique #611 pediu ajuste de Mira; Dédalo #612
+  confirmou no código a mistura entre consulta útil e comandos administrativos.
+- **Causa:** ações de consulta, retomada e conclusão tinham o mesmo destaque e
+  permaneciam ativas depois da conclusão. O harness chamava de preenchimento o
+  mínimo contado antes de adicionar produtos e misturava relógios para medir latência.
+- **Correção:** consulta principal explícita, controles internos recolhidos e
+  condicionados ao estado; referências e lacunas por produto; contrato de medição
+  V2 com mínimo, produtos fornecidos, campos efetivos, objetivo e correções separados.
+- **Prevenção executável:** rejeição da contagem ambígua e da mistura de relógios,
+  consulta idempotente, retomada pertinente e conclusão coerente; 18 percursos reais,
+  três cenários ligados às próprias capturas e identidade diferente em RECOVERY.
+  Provas V1 antes válidas continuam históricas; candidata corrigida exige sucessor.
+- **Limite:** readiness sintética não comprova disposição de pagar, satisfação
+  humana nem explica a ausência histórica de vendas.
+- **Registro:** `docs/registros/mira-candidate-v3-homologacao.md`.

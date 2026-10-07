@@ -453,8 +453,10 @@ public class PdeAgentValidationGateActivityExecutor
    * dezoito combinações somente pelo contrato explícito correspondente.
    */
   private boolean validTechnicalScenarioMatrix(JsonNode result) {
-    if (PdeInputComparisonScenarioMatrixV1.CONTRACT.equals(
-        result.path("fixtureContract").asText())) {
+    if (Set.of(
+            PdeInputComparisonScenarioMatrixV1.CONTRACT,
+            PdeInputComparisonScenarioMatrixV1.MEASURED_CONTRACT)
+        .contains(result.path("fixtureContract").asText())) {
       return PdeInputComparisonScenarioMatrixV1.valid(result);
     }
     JsonNode scenarios = result.path("scenarios");

@@ -30,6 +30,77 @@ class PdeInputComparisonScenarioMatrixV1Test {
         .isTrue();
   }
 
+  /** Aprova medições novas com identidades distintas e conserva a matriz legada antes válida. */
+  @Test
+  void acceptsMeasuredMatrixAndHistoricalMatrix() {
+    assertThat(
+            PdeInputComparisonScenarioMatrixV1.valid(measuredMatrix("mira-private-candidate-v2")))
+        .isTrue();
+    assertThat(
+            PdeInputComparisonScenarioMatrixV1.valid(measuredMatrix("another-product-version-4")))
+        .isTrue();
+    assertThat(PdeInputComparisonScenarioMatrixV1.valid(matrix("mira-commercial-v1"))).isTrue();
+    assertThat(PdeInputComparisonScenarioMatrixV1.valid(matrix("mira-private-candidate-v2")))
+        .isFalse();
+  }
+
+  /** Bloqueia a antiga ambiguidade entre mínimo e preenchimento e a mistura de relógios. */
+  @Test
+  void rejectsAmbiguousMeasurementsAndMixedClocks() {
+    for (String field :
+        List.of(
+            "filledProductFields",
+            "providedProductCount",
+            "minimumRequiredProductFields",
+            "actualFilledFields",
+            "requiredObjectiveFields",
+            "scenarioCompletedSeconds")) {
+      var forged = measuredMatrix("mira-private-candidate-v2");
+      scenario(forged, 1).put(field, 0);
+      assertThat(PdeInputComparisonScenarioMatrixV1.valid(forged)).as(field).isFalse();
+    }
+    var mixed = measuredMatrix("mira-private-candidate-v2");
+    scenario(mixed, 0).put("measurementClock", "BACKEND_DATE_VS_WORKER_DATE");
+    assertThat(PdeInputComparisonScenarioMatrixV1.valid(mixed)).isFalse();
+    var ambiguous = measuredMatrix("mira-private-candidate-v2");
+    scenario(ambiguous, 0).put("manualFields", 2);
+    assertThat(PdeInputComparisonScenarioMatrixV1.valid(ambiguous)).isFalse();
+  }
+
+  /** Adiciona medições sintéticas explícitas sem tratá-las como evidência de navegador real. */
+  private static ObjectNode measuredMatrix(String version) {
+    var root = matrix(version);
+    root.put("fixtureContract", PdeInputComparisonScenarioMatrixV1.MEASURED_CONTRACT);
+    for (var row : root.path("scenarios")) {
+      var value = (ObjectNode) row;
+      ((com.fasterxml.jackson.databind.node.ArrayNode) value.path("products"))
+          .addObject()
+          .put("name", "Segundo produto")
+          .put("labelDirections", "Limpar e enxaguar.");
+      if (!"SAFETY".equals(value.path("scenarioCode").asText()))
+        ((com.fasterxml.jackson.databind.node.ArrayNode) value.path("routine"))
+            .addObject()
+            .put("productName", "Segundo produto")
+            .put("documentedDirection", "Limpar e enxaguar.");
+      value.remove("manualFields");
+      value.put(
+          "minimumRequiredProductFields",
+          "REFERENCE".equals(value.path("condition").asText()) ? 4 : 2);
+      value.put("requiredObjectiveFields", 1);
+      value.put("objectivePrefilled", true);
+      value.put("providedProductCount", 2);
+      value.put("filledProductFields", 4);
+      value.put("filledOptionalSourceFields", 0);
+      value.put("editedObjectiveFields", 0);
+      value.put("actualFilledFields", 4);
+      value.put("corrections", 0);
+      value.put("measurementClock", "MONOTONIC_WORKER");
+      value.put("outcomeBoundary", "FIRST_VISIBLE_RESULT_OR_SAFE_BLOCK");
+      value.put("scenarioCompletedSeconds", 2);
+    }
+    return root;
+  }
+
   /** Rejeita caso duplicado, sessão reutilizada e comparação feita com produtos diferentes. */
   @Test
   void rejectsDuplicateCasesAndUnequalInventories() {

@@ -99,6 +99,63 @@ class MiraPrivateServiceTest {
         "Organizar os produtos que já tenho", List.of(new ProductInput(name, "Limpar e enxaguar")));
   }
 
+  /** Preserva a fonte por item e explicita lacunas sem inventar compatibilidade clínica. */
+  @Test
+  void sourcesAndLimitsRemainWithTheReadyResult() {
+    for (long cycle : List.of(6L, 7017L)) {
+      String token = create(cycle, "REDUCED", "ADHERENT");
+      service.input(
+          token,
+          new Input(
+              "Organizar cuidados",
+              List.of(
+                  new ProductInput(
+                      "Produto A", "Limpar e enxaguar", "https://fabricante.example/produto-a"))));
+      var card = service.generate(token).routine().getFirst();
+      assertThat(card.sourceUrl()).isEqualTo("https://fabricante.example/produto-a");
+      assertThat(card.safetyNote()).contains("Horário", "compatibilidade", "não foram verificados");
+      assertThat(service.session(token).routine().getFirst()).isEqualTo(card);
+    }
+  }
+
+  /** Rejeita links ativos inseguros ou com credenciais antes de gravar a entrada. */
+  @Test
+  void rejectsUnsafeSourcesWithoutSavingThem() {
+    String token = create(6, "REDUCED", "ADHERENT");
+    for (String url :
+        List.of(
+            "javascript:alert(1)",
+            "http://fabricante.example",
+            "https://user:secret@fabricante.example/a",
+            "https://fabricante.example/a#credencial")) {
+      assertThatThrownBy(
+              () ->
+                  service.input(
+                      token,
+                      new Input(
+                          "Organizar",
+                          List.of(new ProductInput("Produto A", "Limpar e enxaguar", url)))))
+          .hasMessageContaining("HTTPS");
+      assertThat(service.session(token).products()).isEmpty();
+    }
+  }
+
+  /** Impede confirmação de recuperação em cenário sem retomada e conserva consulta idempotente. */
+  @Test
+  void resultConsultationDoesNotConsumeAnotherOrganization() {
+    String token = create(6, "REDUCED", "ADHERENT");
+    service.input(token, input("Produto A"));
+    service.generate(token);
+    service.event(token, new Event("READY_RESULT_USED"));
+    service.event(token, new Event("READY_RESULT_USED"));
+    assertThatThrownBy(() -> service.event(token, new Event("RECOVERY_COMPLETED")))
+        .hasMessageContaining("recuperação");
+    service.event(token, new Event("AGENT_SCENARIO_COMPLETED"));
+    assertThat(service.session(token).organizationsUsed()).isEqualTo(1);
+    assertThat(service.session(token).events())
+        .containsOnly("VALUE_MOMENT", "READY_RESULT_USED", "AGENT_SCENARIO_COMPLETED");
+  }
+
   /** Confirma uma entrada única, idempotência, retomada e limite de duas organizações úteis. */
   @Test
   void oneProductAndLostResponseReuseTheResult() {

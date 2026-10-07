@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
+import { MiraCandidateMeasurements } from "./mira-candidate-metrics.mjs";
 const require = createRequire(import.meta.url);
 let library;
 try {
@@ -35,6 +36,7 @@ for (const source of sources) {
 // O segundo rótulo inclui o título documental do fabricante; não é inferência sobre outro produto.
 const inventory = sources.map((s, i) => ({
   name: s.name,
+  sourceUrl: s.url,
   labelDirections:
     i === 1 ? `${s.name}: ${s.labelDirections}` : s.labelDirections,
 }));
@@ -162,7 +164,7 @@ await writeFile(
   JSON.stringify(
     {
       contractVersion: "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
-      fixtureContract: "PDE_DOCUMENTED_INPUT_COMPARISON_V1",
+      fixtureContract: "PDE_DOCUMENTED_INPUT_COMPARISON_V2",
       mode: input.mode,
       decision: Object.values(checks).every(Boolean) ? "APPROVED" : "BLOCKED",
       sourceReference: input.sourceReference,
@@ -246,21 +248,24 @@ async function execute(scenarioCode, deviceProfile, condition) {
       throw new Error("Efeito externo proibido no teste privado.");
   });
   try {
+    const measurements = new MiraCandidateMeasurements();
     await page.goto(input.sourceUrl);
     await page
       .getByRole("heading", { name: "Conte o mínimo necessário" })
       .waitFor();
-    const manualFields = await page
-      .locator("fieldset input, fieldset textarea")
+    const minimumRequiredProductFields = await page
+      .locator("fieldset input[required], fieldset textarea[required]")
       .count();
-    if (manualFields !== (condition === "REFERENCE" ? 4 : 2))
+    if (minimumRequiredProductFields !== (condition === "REFERENCE" ? 4 : 2))
       throw new Error("Entrada mínima divergente da condição persistida.");
     await page
       .getByLabel("Nome do produto 1 *", { exact: true })
       .fill(inventory[0].name);
+    measurements.filled("name-1", "PRODUCT");
     await page
       .getByLabel("Orientação do rótulo 1 *", { exact: true })
       .fill(inventory[0].labelDirections);
+    measurements.filled("directions-1", "PRODUCT");
     if (condition === "REDUCED") {
       if (!(await page.locator("form").evaluate((f) => f.checkValidity())))
         throw new Error("Um único produto deveria permitir continuar.");
@@ -271,13 +276,27 @@ async function execute(scenarioCode, deviceProfile, condition) {
     await page
       .getByLabel("Nome do produto 2 *", { exact: true })
       .fill(inventory[1].name);
+    measurements.filled("name-2", "PRODUCT");
     await page
       .getByLabel("Orientação do rótulo 2 *", { exact: true })
       .fill(inventory[1].labelDirections);
-    if (scenarioCode === "SAFETY")
+    measurements.filled("directions-2", "PRODUCT");
+    for (let i = 0; i < inventory.length; i++) {
+      await page
+        .locator("summary")
+        .filter({ hasText: `Acrescentar referência do produto ${i + 1}` })
+        .click();
+      await page
+        .getByLabel(`Link do fabricante ${i + 1}`, { exact: true })
+        .fill(inventory[i].sourceUrl);
+      measurements.filled(`source-${i + 1}`, "SOURCE");
+    }
+    if (scenarioCode === "SAFETY") {
       await page
         .getByLabel("O que você quer organizar? *", { exact: true })
         .fill("Diagnosticar e tratar manchas");
+      measurements.filled("objective", "OBJECTIVE");
+    }
     if (scenarioCode === "RECOVERY") {
       // A resposta se perde DEPOIS do commit: a retomada deve reutilizar o resultado, sem nova organização.
       await page.route(
@@ -297,8 +316,11 @@ async function execute(scenarioCode, deviceProfile, condition) {
     }
     if (scenarioCode === "SAFETY") {
       await page.getByRole("alert").filter({ hasText: "clínica" }).waitFor();
-      await api("/events", { eventType: "SAFETY_LIMIT_BLOCKED" }, sessionToken);
-      await page.reload();
+      measurements.outcome();
+      await page.locator(".mira-internal-controls summary").click();
+      await page
+        .getByRole("button", { name: "Registrar limite de segurança" })
+        .click();
       await page
         .getByRole("button", { name: "Concluir cenário de segurança" })
         .click();
@@ -307,13 +329,20 @@ async function execute(scenarioCode, deviceProfile, condition) {
       await page
         .getByRole("heading", { name: "Sua rotina organizada" })
         .waitFor();
+      measurements.outcome();
       if (
         (await api("/session", undefined, sessionToken)).organizationsUsed !== 1
       )
         throw new Error("Resposta perdida duplicou consumo.");
+      if (
+        await page.getByRole("button", { name: "Confirmar retomada" }).count()
+      )
+        if (scenarioCode !== "RECOVERY")
+          throw new Error("Retomada oferecida sem recuperação.");
       await page
-        .getByRole("button", { name: "Confirmar uso do resultado" })
+        .getByRole("button", { name: "Consultar organização", exact: true })
         .click();
+      await page.locator(".mira-internal-controls summary").click();
       if (scenarioCode === "RECOVERY") {
         await page.getByRole("button", { name: "Confirmar retomada" }).click();
         recovered = true;
@@ -325,9 +354,12 @@ async function execute(scenarioCode, deviceProfile, condition) {
     await page
       .getByRole("heading", { name: "Avaliação interna concluída" })
       .waitFor();
+    if (await page.getByRole("button", { name: /^Concluir cenário/ }).count())
+      throw new Error("Ação concluída permaneceu ativa.");
     await page.reload();
     await page
-      .getByRole("heading", { name: "Avaliação interna concluída" })
+      .locator(".mira-internal-controls summary")
+      .filter({ hasText: "Verificação interna concluída" })
       .waitFor();
     const current = await api("/session", undefined, sessionToken);
     const dimensions = await page.evaluate(() => ({
@@ -382,13 +414,13 @@ async function execute(scenarioCode, deviceProfile, condition) {
       mhInternalTest: true,
       providerCalls: 0,
       firstInteractionAt: current.firstInteractionAt,
-      resultReadySeconds: Math.ceil(
-        (Date.now() - Date.parse(current.firstInteractionAt)) / 1000,
+      ...measurements.report(
+        minimumRequiredProductFields,
+        current.products.length,
       ),
       resumed,
       recovered,
       safetyBlocked,
-      manualFields,
       products: current.products,
       routine: current.routine,
       routineHash: createHash("sha256")

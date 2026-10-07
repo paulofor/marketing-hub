@@ -215,13 +215,14 @@ public class CommunicationAgentCodexRunner {
     };
   }
 
-  /** Confirma identidade, fronteira, alternativas, guardrails e artefato esperado. */
+  /** Confirma identidade e fronteira, distinguindo especificação pronta de conclusão funcional. */
   static void validate(JsonNode result, Map<String, Object> task, Contract contract) {
     String expectedSource = String.valueOf(task.getOrDefault("sourceReference", ""));
     String expectedActivity = String.valueOf(task.getOrDefault("activityId", ""));
     JsonNode guardrails = result.path("guardrails");
     if (!"IRIS_COMMUNICATION_V1".equals(result.path("contractVersion").asText())
-        || !List.of("COMPLETED", "BLOCKED").contains(result.path("executionStatus").asText())
+        || !List.of("COMPLETED", "BLOCKED", "READY_FOR_RENDER")
+            .contains(result.path("executionStatus").asText())
         || !expectedSource.equals(result.path("sourceReference").asText())
         || !expectedActivity.equals(result.path("activityId").asText())
         || !contract.outputType().equals(result.path("outputType").asText())
@@ -246,7 +247,12 @@ public class CommunicationAgentCodexRunner {
       throw new IllegalArgumentException("Íris não preservou o contrato estratégico de Atena.");
     }
     JsonNode output = result.path("functionalOutput");
-    if ("COMPLETED".equals(result.path("executionStatus").asText())) {
+    boolean readyForRender = "READY_FOR_RENDER".equals(result.path("executionStatus").asText());
+    if (readyForRender && !"NON_AUDIOVISUAL_PACKAGE".equals(contract.outputType())) {
+      throw new IllegalArgumentException(
+          "Especificação pronta pertence somente à produção não audiovisual.");
+    }
+    if ("COMPLETED".equals(result.path("executionStatus").asText()) || readyForRender) {
       if (output.isMissingNode() || output.isEmpty() || result.path("evidenceGaps").size() > 0) {
         throw new IllegalArgumentException(
             "Íris não pode concluir com saída vazia ou prova ausente.");

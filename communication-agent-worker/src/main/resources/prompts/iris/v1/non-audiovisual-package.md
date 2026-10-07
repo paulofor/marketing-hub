@@ -1,6 +1,6 @@
 # Atividade: pacote não audiovisual
 
-Materialize a copy completa e peças não audiovisuais previstas pelo contrato de comunicação:
+Prepare a copy completa e as composições não audiovisuais previstas pelo contrato de comunicação:
 anúncios estáticos, carrosséis, mensagens, e-mails ou briefings de renderização. Cada peça deve ter
 formato, conteúdo publicável, prova real associada e correspondência explícita com a página de
 destino. Respeite os limites do canal presentes no contexto. Para Meta, preserve `primaryText` até
@@ -11,14 +11,14 @@ somente como `audiovisualBrief`; Apolo produzirá a mídia final. Não gere URL 
 pacote como publicado.
 
 Quando `communicationMaterializationContext.privateCreativePreparation` declarar
-`PDE_PRIVATE_CREATIVE_PREPARATION_V1`, materialize a prova interna obrigatória
+`PDE_PRIVATE_CREATIVE_PREPARATION_V1`, especifique a prova interna obrigatória
 `PROOF_CARD_V1` com os pixels aprovados. Sua finalidade é a revisão independente da mensagem
 privada, inclusive quando o predecessor escolheu somente vídeo como formato comercial.
 Preserve essa escolha e o audiovisualBrief; a prova interna não acrescenta anúncio estático,
 variante comercial, campanha ou mudança da condição testada. A ausência de seleção de anúncio
 estático no predecessor não é lacuna para esta prova técnica já exigida pelo backend.
-Explique essa finalidade em messageStrategy, channelBriefings e visualComposition. Renderize e
-persista o PNG antes da revisão. Não declare a imagem como anúncio autorizado nem como aprovação
+Explique essa finalidade em messageStrategy, channelBriefings e visualComposition. Entregue a
+especificação ao executor, que renderiza e persiste o PNG antes da revisão. Não declare a imagem como anúncio autorizado nem como aprovação
 do vídeo planejado. Quando o intento for BRIEF_ONLY, preserve o briefing de Apolo e registre
 que nenhum vídeo foi produzido; a produção pertence a um pedido governado e seus gates próprios.
 
@@ -45,7 +45,7 @@ auditoria e levar ao `approvedDestination`; não substitua esses pixels por mock
 ou tela ainda não homologada.
 
 
-## Imagem final obrigatória — PROOF_CARD_V1
+## Especificação e renderização — PROOF_CARD_V1
 
 Quando `blockedActivities` contiver parecer posterior de Psique ou Têmis com decision=ADJUST, corrija cada requiredChange na nova peça e explique a mudança. Preserve a estratégia; não repita o mesmo briefing sem aplicar o parecer. BLOCKED por evidência essencial continua sendo impedimento real.
 
@@ -66,7 +66,14 @@ ultralargo que deixe a prova pequena dentro de uma grande área vazia; use a cap
 ela mantiver o cartão próximo da proporção 952 × 550 e legível na prévia de 393 pixels. A presença
 desses controles não substitui os gates independentes.
 
-A atividade só termina depois que o executor renderiza e persiste cada peça. Briefing sozinho não é peça final.
+A sua saída termina com `executionStatus=READY_FOR_RENDER` quando copy, referências e
+renderSpec estiverem completos, com `evidenceGaps=[]`. Esse estado declara a especificação
+pronta, sem afirmar que o PNG existe. O worker Java executa o renderizador determinístico,
+confere e persiste a imagem; só então registra `COMPLETED` na atividade e a encaminha às revisões.
+Não execute shell, Python, renderização ou upload dentro da sandbox do modelo. A falta de
+PNG antes desse passo do worker é uma dependência delegada, não lacuna da especificação.
+Use `BLOCKED` para entradas, decisões ou evidências realmente insuficientes e descreva essas
+lacunas. A atividade só termina depois que o executor renderiza e persiste cada peça.
 Use `approvedVisualInputs` e a imagem anexada pelo executor; são pixels aprovados da mesma versão.
 Em cada `staticAssets[]`, preencha `renderSpec` com templateVersion `PROOF_CARD_V1`, sourceArtifactId e sourceSha256 exatos da entrada e crop inteiro em **pixels originais** (x, y, width, height). Selecione um detalhe útil e legível da interface real; não invente tela nem resultado. O recorte é registrado e seus pixels são copiados sem redesenho. Prefira um único detalhe que prove a promessa. A imagem é 1080 × 1350; a área da prova mede 952 × 550. O recorte não pode exigir escala menor que 0,7; escolha no máximo 1360 × 785 pixels e preserve o contexto necessário. Não use a página inteira se perder legibilidade.
 

@@ -46,7 +46,9 @@ public class CommunicationAgentTaskConsumer {
     this.creatives = creatives;
   }
 
-  /** Reserva e executa no máximo uma atividade elegível por ciclo. */
+  /**
+   * Reserva uma atividade e conclui a especificação criativa somente após persistir seus pixels.
+   */
   @Scheduled(cron = "25 */1 * * * *")
   public void processOne() {
     if (!automaticExecution.allowsAutomaticExecution()) return;
@@ -66,7 +68,8 @@ public class CommunicationAgentTaskConsumer {
         return;
       }
       execution = runner.run(task, visual.paths());
-      if ("COMPLETED".equals(execution.result().path("executionStatus").asText())) {
+      if (List.of("COMPLETED", "READY_FOR_RENDER")
+          .contains(execution.result().path("executionStatus").asText())) {
         JsonNode materialized = creatives.materialize(task, execution.result(), visual);
         var payload = successPayload(task, execution, startedAt);
         payload.put("resultJson", json.writeValueAsString(materialized));
@@ -135,7 +138,7 @@ public class CommunicationAgentTaskConsumer {
     return payload;
   }
 
-  /** Recupera somente a saída completa da peça não audiovisual cuja inferência já foi auditada. */
+  /** Recupera a saída ou especificação pronta cuja inferência já foi auditada pelo backend. */
   private JsonNode preservedMaterialization(Map<String, Object> task) throws Exception {
     String resultJson = retryText(task.get("retryResultJson"));
     String evidenceJson = retryText(task.get("retryEvidenceJson"));
@@ -150,12 +153,17 @@ public class CommunicationAgentTaskConsumer {
           "A saída preservada de Íris não pertence à materialização não audiovisual.");
     }
     JsonNode result = json.readTree(resultJson);
-    if (!"COMPLETED".equals(result.path("executionStatus").asText())
+    if (!List.of("COMPLETED", "READY_FOR_RENDER").contains(result.path("executionStatus").asText())
         || !String.valueOf(task.get("sourceReference"))
             .equals(result.path("sourceReference").asText())
         || result.path("functionalOutput").path("staticAssets").isEmpty()) {
       throw new IllegalArgumentException(
           "A saída preservada de Íris não comprova uma peça completa do mesmo escopo.");
+    }
+    if ("READY_FOR_RENDER".equals(result.path("executionStatus").asText())) {
+      CommunicationAgentCodexRunner.validateInput(task);
+      CommunicationAgentCodexRunner.validate(
+          result, task, CommunicationAgentCodexRunner.contractFor(task));
     }
     return result;
   }

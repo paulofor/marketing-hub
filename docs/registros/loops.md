@@ -6439,6 +6439,33 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
 
 ## LOOP-CRIATIVO-BRIEFING-SEM-PECA — produção concluída sem pixels para revisão
 
+- **Data:** 2026-09-12.
+- **Evidência:** a imagem backend `vega-processos-de46b407adf0` recebeu o `target/app-exec.jar` anterior. As classes `CreativeVisualEvidenceService` e `AgentTaskFunctionalSnapshot`, já compiladas e testadas, não existiam nesse JAR. O Dockerfile correto incorpora um pacote pronto; `mvn test` não atualiza esse pacote. A retomada criou a tarefa #405, bloqueada sem imagem disponível; nenhum parecer foi aprovado artificialmente.
+- **Causa-raiz:** a matriz local ampliada executava os testes, mas não repetia a etapa de empacotamento que o CI já executa antes de construir o backend. Conferir tags e o transporte da imagem não provava correspondência com as classes testadas.
+- **Correção sistêmica:** a matriz executa package, compara todas as classes compiladas com o JAR, confere recursos e inicialização do catálogo e verifica o hash do JAR efetivamente dentro da imagem Docker. O verificador já utilizado pelo Backend CI também passa a rejeitar classes ausentes, extras e bytecode divergente.
+- **Prevenção:** nove testes do verificador de pacote e cinco testes da imagem reproduzem ausência, revisão antiga, substituição por camada posterior e remoção do JAR. A contagem das duas rodadas finais é reiniciada após essa correção.
+
+### Recorrência: especificação depende da própria imagem final — 07/10/2026
+
+- **Evidência:** Mira, ciclo 9, experimento 102, tarefa 636. A entrada estava `AVAILABLE/READY`,
+  com estratégia preservada, fonte 523 e composição completa. A única lacuna registrada era
+  gerar o PNG; o shell aninhado respondeu `bwrap: No permissions to create a new namespace`.
+  O renderizador Java existente gerou a mesma composição localmente sem inferência.
+- **Causa:** o prompt exigia a imagem persistida antes de o modelo concluir, enquanto o consumidor
+  chamava o renderizador somente depois de receber `COMPLETED`. Criou-se uma dependência circular,
+  relacionada também a `LOOP-AGENTE-REVISOR-DEPENDE-DE-SHELL-ANINHADO`.
+- **Correção compartilhada:** estado intermediário `READY_FOR_RENDER` exclusivo da especificação
+  não audiovisual, seguido de renderização/gravação pelo worker e callback final. Replay privado
+  limitado recupera o plano já pago somente com contrato atual compatível; preserva resposta bruta,
+  fonte, custo e gates. Handshake impede que o worker antigo consuma a recuperação no rollout.
+- **Prevenção:** fixture arquivada comum ao backend e ao worker; caso original, outras origens,
+  callback antes válido, entrada/estratégia/versão divergentes, lacuna funcional, orçamento e
+  autoridade preservados, falha de storage e segunda tentativa recusada. Testes JPA exercitam a
+  seleção real no banco; o worker usa pixels, upload HTTP e callback reais contra dependências locais.
+- **Limites:** somente prova privada interna com vídeo em briefing; nenhuma nova chamada de IA,
+  campanha, compra, autorização comercial ou aprovação independente é fabricada. Registro:
+  `docs/registros/mira-especificacao-renderizacao-2026-10-07.md`.
+
 - Confirmado em 2026-09-12: Vega ciclo 2, experiment:92, tarefas 403 e 404. O produtor entregou render brief; Psique recebeu texto sem PNG e pediu a peça real. O prompt mandava SINGLE_CREATIVE sem modalidade VISUAL; o validador bloqueou e o callback técnico descartou o parecer.
 - Causa sistêmica: contratos de conclusão distintos entre produção e revisão e perda da saída funcional quando a validação falha.
 - Correção: renderização determinística dentro da atividade de Íris, tipo CREATIVE_RENDER, fonte/hash/versão/crop auditados; backend exige arquivos reais; revisores recebem PNGs e auditam hashes; neutralidade visual explícita sem pixels; callbacks preservam response bruto; ADJUST retorna à produção e exige nova revisão.
@@ -6447,11 +6474,6 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
 
 ## LOOP-BACKEND-JAR-ANTIGO-APOS-TESTES — imagem recebe pacote de uma revisão anterior
 
-- **Data:** 2026-09-12.
-- **Evidência:** a imagem backend `vega-processos-de46b407adf0` recebeu o `target/app-exec.jar` anterior. As classes `CreativeVisualEvidenceService` e `AgentTaskFunctionalSnapshot`, já compiladas e testadas, não existiam nesse JAR. O Dockerfile correto incorpora um pacote pronto; `mvn test` não atualiza esse pacote. A retomada criou a tarefa #405, bloqueada sem imagem disponível; nenhum parecer foi aprovado artificialmente.
-- **Causa-raiz:** a matriz local ampliada executava os testes, mas não repetia a etapa de empacotamento que o CI já executa antes de construir o backend. Conferir tags e o transporte da imagem não provava correspondência com as classes testadas.
-- **Correção sistêmica:** a matriz executa package, compara todas as classes compiladas com o JAR, confere recursos e inicialização do catálogo e verifica o hash do JAR efetivamente dentro da imagem Docker. O verificador já utilizado pelo Backend CI também passa a rejeitar classes ausentes, extras e bytecode divergente.
-- **Prevenção:** nove testes do verificador de pacote e cinco testes da imagem reproduzem ausência, revisão antiga, substituição por camada posterior e remoção do JAR. A contagem das duas rodadas finais é reiniciada após essa correção.
 
 ## LOOP-HISTORICO-FUNCIONAL-DATA-VAZIA — o gate perde as tentativas persistidas
 

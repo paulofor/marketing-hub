@@ -270,6 +270,29 @@ O backend entrega a origem pelo contrato `GET /api/internal/agent-tasks/{agentKe
 
 O worker anexa os pixels ao modelo, valida o renderSpec, renderiza, persiste por `visual-evidence` como `CREATIVE_RENDER` e acrescenta `functionalOutput.renderedAssets` com artifactId, hash, URL privada, dimensões, template, tarefa e artefato de origem, hash de origem, versão e crop. A resposta bruta do modelo fica separada em evidenceJson.rawModelResponse. Falhas de texto, recorte, hash ou storage bloqueiam o callback de sucesso. O backend confere a derivação contra o gate vigente e os arquivos persistidos.
 
+Contrato executável de 07/10/2026: na atividade `nonAudiovisual`, o modelo entrega
+`READY_FOR_RENDER` quando copy e `renderSpec` estiverem completos, sem lacunas essenciais.
+Este estado pertence somente ao resultado intermediário do modelo. O modelo não precisa executar
+shell, Python, gerar PNG ou fazer upload. O mesmo worker Java valida, renderiza e persiste os
+pixels antes de registrar `COMPLETED`; ausência de PNG antes desse trabalho não é falha funcional
+da especificação. As demais atividades não aceitam esse estado. Rejeições reais permanecem
+`BLOCKED`, e nenhum parecer independente é criado pela renderização.
+
+A fila existente aceita o handshake `workerContract=IRIS_RENDER_PLAN_V1` exclusivamente para
+`communication-director`, `creative-production-approval`, `nonAudiovisual`. Executores anteriores
+continuam recebendo os contratos legados, mas não podem reservar a recuperação que exige o estado
+novo. Isso preserva a entrega gradual do backend e do worker sem consumir a tentativa de replay.
+
+Uma resposta privada legada impedida somente por `bwrap: No permissions to create a new namespace`
+pode ser reaplicada pelo replay já existente, uma única vez, sem nova inferência. A política exige
+entrada atual pronta, a mesma origem, versão e hash estratégico, prova interna obrigatória,
+especificação completa, guardrails íntegros, uma única lacuna técnica e ausência de autorização
+para publicação, cobrança, mídia ou vídeo pago. O resultado bruto `BLOCKED`, a entrada congelada
+e o custo permanecem auditáveis; a entrega ao worker identifica a transferência técnica em
+`delegatedRenderingRecovery`. Fonte, hash, recorte, gravação e revisões continuam obrigatórios.
+Falha no replay conserva o bloqueio e impede outra tentativa automática. Não se concedem
+privilégios adicionais ao modelo nem se converte rejeição funcional em aprovação.
+
 Psique e Têmis recebem os PNGs finais por esse mesmo contrato, conferem o hash e os anexam ao modelo. Cada parecer registra renderedAssetAudit com id/hash/avaliação. Captura do produto e briefing não substituem a peça final. Em contexto privado, a peça identifica demonstração sintética sem compra ou cobrança; aprovação perceptiva ou de integridade não constitui prova humana nem autorização comercial.
 
 Briefings históricos sem imagem voltam à produção com nova ocorrência. Um ADJUST posterior de revisor solicita correção pela mesma atividade de Íris; a revisão anterior fica superada pela nova peça. BLOCKED por ausência essencial ou falha técnica permanece explícito. Todo parecer disponível é preservado mesmo que a validação técnica falhe. Nenhuma regra de aprovação é relaxada para concluir o processo.

@@ -130,12 +130,17 @@ public class IrisCreativeMaterializer {
   }
 
   /**
-   * Converte o briefing em PNGs antes do callback e preserva a resposta bruta fora do artefato
-   * funcional.
+   * Converte a especificação em PNGs antes de concluir a atividade; a resposta bruta permanece na
+   * auditoria e nenhuma aprovação independente é criada.
    */
   public JsonNode materialize(Map<String, Object> task, JsonNode result, Prepared prepared)
       throws IOException {
-    if (prepared.directory() == null) return result;
+    if (prepared.directory() == null) {
+      if ("READY_FOR_RENDER".equals(result.path("executionStatus").asText()))
+        throw new IllegalStateException(
+            "Especificação pronta não possui fontes para renderização.");
+      return result;
+    }
     ObjectNode output = result.deepCopy();
     ObjectNode functional = (ObjectNode) output.path("functionalOutput");
     var renders = functional.putArray("renderedAssets");
@@ -229,6 +234,9 @@ public class IrisCreativeMaterializer {
     }
     if (renders.isEmpty())
       throw new IllegalArgumentException("Íris não produziu nenhuma peça estática.");
+    if ("READY_FOR_RENDER".equals(output.path("executionStatus").asText())) {
+      output.put("executionStatus", "COMPLETED");
+    }
     return output;
   }
 

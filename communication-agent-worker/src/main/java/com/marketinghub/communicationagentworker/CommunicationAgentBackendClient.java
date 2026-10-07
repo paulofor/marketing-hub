@@ -20,10 +20,12 @@ public class CommunicationAgentBackendClient {
     client = RestClient.builder().baseUrl(properties.getBackendUrl()).build();
   }
 
-  /** Reserva no máximo uma atividade do contrato explicitamente informado. */
+  /** Reserva uma atividade e declara suporte à renderização delegada somente na fila própria. */
   public Map<String, Object> claim(String processCode, String activityId) {
     String endpoint =
         "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={processCode}&activityId={activityId}&executionResourceCode={executionResourceCode}";
+    if ("creative-production-approval".equals(processCode) && "nonAudiovisual".equals(activityId))
+      endpoint += "&workerContract=IRIS_RENDER_PLAN_V1";
     try {
       log.info(
           "Consultando fila de Íris. url={} processCode={} activityId={}",

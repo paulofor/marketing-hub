@@ -2554,6 +2554,102 @@ class AgentTaskServiceTest {
     assertThat(recovered.retryEvidenceJson()).isEqualTo(blocked.getEvidenceJson());
   }
 
+  /** Recupera a especificação real em origens diferentes, preservando custo e parecer bruto. */
+  @ParameterizedTest
+  @ValueSource(strings = {"experiment:102", "experiment:91093"})
+  void delegatesPreservedNamespaceFailureWithoutAnotherInference(String reference)
+      throws Exception {
+    var json = new ObjectMapper();
+    var fixture = renderRecoveryFixture(json);
+    var input =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            fixture.path("communicationInput").deepCopy();
+    var result = (com.fasterxml.jackson.databind.node.ObjectNode) fixture.path("result").deepCopy();
+    input.put("sourceReference", reference);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) input.path("privateCreativePreparation"))
+        .put("sourceReference", reference);
+    result.put("sourceReference", reference);
+    var repository = mock(AgentTaskRepository.class);
+    var agents = mock(AgentRepository.class);
+    var iris = agent(12L, "communication-director", "Íris");
+    var process = process("PUBLISHED", "Íris");
+    process.setProcessCode("creative-production-approval");
+    var task = processTask(910636L, iris, process, "nonAudiovisual", "BLOCKED");
+    task.setSourceReference(reference);
+    task.setExecutionError("Íris bloqueou a materialização por dependência técnica.");
+    task.setEstimatedCostUsd(new BigDecimal("0.5309912"));
+    task.setResultJson(result.toString());
+    var audit = json.createObjectNode().put("modelResponded", true);
+    audit.set("communicationInputReference", input);
+    task.setEvidenceJson(audit.toString());
+    when(agents.findByAgentKey("communication-director")).thenReturn(Optional.of(iris));
+    when(repository.findRetryableCallbackCandidates("communication-director"))
+        .thenReturn(List.of(task));
+    when(repository.save(task)).thenReturn(task);
+    var service = service(repository, agents, Clock.systemUTC());
+    CommunicationMaterializationContextProvider provider =
+        source -> Optional.of(json.convertValue(input, Map.class));
+    ReflectionTestUtils.setField(service, "communicationMaterializationContextProvider", provider);
+
+    assertThat(
+            service.claimEligibleProcessTask(
+                "communication-director", "creative-production-approval", "nonAudiovisual"))
+        .isEmpty();
+    assertThat(task.getStatus()).isEqualTo("BLOCKED");
+    verify(repository, never()).save(any());
+
+    var pending =
+        service
+            .claimEligibleProcessTask(
+                "communication-director",
+                "creative-production-approval",
+                "nonAudiovisual",
+                null,
+                AgentTaskService.IRIS_RENDER_WORKER_CONTRACT)
+            .orElseThrow();
+
+    assertThat(task.getStatus()).isEqualTo("IN_PROGRESS");
+    assertThat(task.getExecutionError()).startsWith("AUTO_RETRY_ONCE|");
+    assertThat(task.getResultJson()).isEqualTo(result.toString());
+    assertThat(task.getEvidenceJson()).isEqualTo(audit.toString());
+    assertThat(task.getEstimatedCostUsd()).isEqualByComparingTo("0.5309912");
+    assertThat(json.readTree(pending.retryResultJson()).path("executionStatus").asText())
+        .isEqualTo("READY_FOR_RENDER");
+    assertThat(json.readTree(pending.retryResultJson()).path("evidenceGaps")).isEmpty();
+    var replayAudit = json.readTree(pending.retryEvidenceJson());
+    assertThat(replayAudit.path("rawModelResponse").asText()).isEqualTo(result.toString());
+    assertThat(replayAudit.path("communicationInputReference")).isEqualTo(input);
+    assertThat(replayAudit.path("delegatedRenderingRecovery").path("modelInvoked").asBoolean())
+        .isFalse();
+    assertThat(
+            replayAudit.path("delegatedRenderingRecovery").path("incrementalModelCostUsd").asInt())
+        .isZero();
+
+    task.setStatus("BLOCKED");
+    task.setExecutionError("AUTO_RETRY_MATERIALIZATION_ONCE|503 Storage unavailable");
+    assertThat(
+            service.claimEligibleProcessTask(
+                "communication-director",
+                "creative-production-approval",
+                "nonAudiovisual",
+                null,
+                AgentTaskService.IRIS_RENDER_WORKER_CONTRACT))
+        .isEmpty();
+  }
+
+  /** Lê a prova arquivada comum ao backend e ao executor, sem chamadas ao ambiente publicado. */
+  private com.fasterxml.jackson.databind.JsonNode renderRecoveryFixture(ObjectMapper json)
+      throws Exception {
+    for (var directory = java.nio.file.Path.of("").toAbsolutePath();
+        directory != null;
+        directory = directory.getParent()) {
+      var fixture =
+          directory.resolve("infra/testing/mira-creative-recovery/namespace-render-plan.json");
+      if (java.nio.file.Files.exists(fixture)) return json.readTree(fixture.toFile());
+    }
+    throw new IllegalStateException("Fixture de renderização privada ausente.");
+  }
+
   /** Não repete inferência quando a falha antiga de callback não preservou o parecer. */
   @Test
   void doesNotRetryCallbackWithoutPreservedPayload() {

@@ -169,7 +169,8 @@ class IrisCreativeMaterializerTest {
   }
 
   /**
-   * Executa prova interna com vídeo em briefing, pixels reais, upload e callback nos dois contextos.
+   * Executa prova interna com vídeo em briefing, pixels reais, upload e callback nos dois
+   * contextos.
    */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(
@@ -190,10 +191,19 @@ class IrisCreativeMaterializerTest {
               java.util.List<java.nio.file.Path> files = invocation.getArgument(1);
               assertThat(files).hasSize(1);
               assertThat(files.getFirst()).exists();
-              var frozen = json.readTree(String.valueOf(((Map<?, ?>) invocation.getArgument(0)).get("processContextJson")));
-              PrivateCreativePreparationInput.validate(frozen.path("communicationMaterializationContext"), reference());
-              assertThat(frozen.path("communicationMaterializationContext").path("privateCreativePreparation")
-                  .path("audiovisualProductionIntent").asText()).isEqualTo("BRIEF_ONLY");
+              var frozen =
+                  json.readTree(
+                      String.valueOf(
+                          ((Map<?, ?>) invocation.getArgument(0)).get("processContextJson")));
+              PrivateCreativePreparationInput.validate(
+                  frozen.path("communicationMaterializationContext"), reference());
+              assertThat(
+                      frozen
+                          .path("communicationMaterializationContext")
+                          .path("privateCreativePreparation")
+                          .path("audiovisualProductionIntent")
+                          .asText())
+                  .isEqualTo("BRIEF_ONLY");
               return new CommunicationAgentCodexRunner.Execution(
                   result,
                   raw,
@@ -218,6 +228,39 @@ class IrisCreativeMaterializerTest {
                 .path("rawModelResponse")
                 .asText())
         .isEqualTo(raw);
+  }
+
+  /** Renderiza a especificação pronta sem exigir shell ou imagem prévia dentro do modelo. */
+  @Test
+  void materializesReadySpecificationBeforeCompletingActivity() throws Exception {
+    var backend = mock(CommunicationAgentBackendClient.class);
+    var runner = mock(CommunicationAgentCodexRunner.class);
+    var control = mock(AutomaticExecutionControl.class);
+    when(control.allowsAutomaticExecution()).thenReturn(true);
+    when(backend.claim(anyString(), anyString())).thenReturn(task());
+    var planned = result().put("executionStatus", "READY_FOR_RENDER");
+    when(runner.run(anyMap(), anyList()))
+        .thenReturn(
+            new CommunicationAgentCodexRunner.Execution(
+                planned,
+                planned.toString(),
+                "prompt",
+                "núcleo",
+                "atividade",
+                CommunicationAgentCodexRunner.TokenUsage.empty()));
+    new CommunicationAgentTaskConsumer(backend, runner, properties(), control, json, materializer)
+        .processOne();
+    var payload = ArgumentCaptor.forClass(Map.class);
+    verify(backend).complete(eq(910403L), payload.capture());
+    verify(backend, never()).fail(anyLong(), anyMap());
+    var completed = json.readTree(String.valueOf(payload.getValue().get("resultJson")));
+    assertThat(completed.path("executionStatus").asText()).isEqualTo("COMPLETED");
+    assertThat(completed.path("functionalOutput").path("renderedAssets")).hasSize(1);
+    assertThat(
+            json.readTree(String.valueOf(payload.getValue().get("evidenceJson")))
+                .path("rawModelResponse")
+                .asText())
+        .contains("READY_FOR_RENDER");
   }
 
   /** Reaplica a resposta preservada, gera o PNG e conclui sem chamar novamente o modelo. */
@@ -246,6 +289,110 @@ class IrisCreativeMaterializerTest {
     assertThat(evidence.path("materializationReplay").path("modelInvoked").asBoolean()).isFalse();
     assertThat(evidence.path("materializationReplay").path("incrementalModelCostUsd").asInt())
         .isZero();
+  }
+
+  /** Revalida a especificação arquivada e persiste pixels sem pedir novamente o modelo. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"LEARNING_CYCLE_PRIVATE", "PRODUCT_PRIVATE"})
+  void replaysReadyRenderPlanWithoutModelInDifferentContexts(String privateMode) throws Exception {
+    mode = privateMode;
+    var backend = mock(CommunicationAgentBackendClient.class);
+    var runner = mock(CommunicationAgentCodexRunner.class);
+    var control = mock(AutomaticExecutionControl.class);
+    when(control.allowsAutomaticExecution()).thenReturn(true);
+    var task = readyRenderTask();
+    when(backend.claim(anyString(), anyString())).thenReturn(task);
+
+    new CommunicationAgentTaskConsumer(backend, runner, properties(), control, json, materializer)
+        .processOne();
+
+    verifyNoInteractions(runner);
+    verify(backend, never()).fail(anyLong(), anyMap());
+    var payload = ArgumentCaptor.forClass(Map.class);
+    verify(backend).complete(eq(910403L), payload.capture());
+    var completed = json.readTree(String.valueOf(payload.getValue().get("resultJson")));
+    assertThat(completed.path("executionStatus").asText()).isEqualTo("COMPLETED");
+    assertThat(completed.path("functionalOutput").path("renderedAssets")).hasSize(1);
+    var audit = json.readTree(String.valueOf(payload.getValue().get("evidenceJson")));
+    assertThat(audit.path("rawModelResponse").asText()).contains("BLOCKED");
+    assertThat(audit.path("materializationReplay").path("modelInvoked").asBoolean()).isFalse();
+    assertThat(audit.path("materializationReplay").path("incrementalModelCostUsd").asInt())
+        .isZero();
+    assertThat(payload.getValue())
+        .doesNotContainKeys("inputTokens", "cachedInputTokens", "outputTokens", "estimatedCostUsd");
+    assertThat(saved.get()).isNotEmpty();
+  }
+
+  /** Alteração de entrada ou falha de persistência não libera a atividade nem chama IA. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"inputBlocked", "strategyChanged", "storageFailure"})
+  void refusesUnsafeReadyReplayWithoutInference(String failure) throws Exception {
+    var backend = mock(CommunicationAgentBackendClient.class);
+    var runner = mock(CommunicationAgentCodexRunner.class);
+    var control = mock(AutomaticExecutionControl.class);
+    when(control.allowsAutomaticExecution()).thenReturn(true);
+    var task = readyRenderTask();
+    var context = (ObjectNode) json.readTree(String.valueOf(task.get("processContextJson")));
+    if ("inputBlocked".equals(failure))
+      ((ObjectNode) context.path("communicationMaterializationContext"))
+          .put("inputReadiness", "BLOCKED");
+    if ("strategyChanged".equals(failure))
+      ((ObjectNode) context.path("marketStrategicContract")).put("contentHash", "b".repeat(64));
+    rejectUpload = "storageFailure".equals(failure);
+    task.put("processContextJson", context.toString());
+    when(backend.claim(anyString(), anyString())).thenReturn(task);
+
+    new CommunicationAgentTaskConsumer(backend, runner, properties(), control, json, materializer)
+        .processOne();
+
+    verifyNoInteractions(runner);
+    verify(backend, never()).complete(anyLong(), anyMap());
+    var payload = ArgumentCaptor.forClass(Map.class);
+    verify(backend).fail(eq(910403L), payload.capture());
+    assertThat(String.valueOf(payload.getValue().get("error")))
+        .startsWith("AUTO_RETRY_MATERIALIZATION_ONCE|");
+    if (!rejectUpload) assertThat(saved.get()).isNull();
+  }
+
+  /** Prepara o mesmo contrato arquivado com identificadores e servidor exclusivos da sandbox. */
+  private Map<String, Object> readyRenderTask() throws Exception {
+    JsonNode fixture = null;
+    for (var directory = java.nio.file.Path.of("").toAbsolutePath();
+        directory != null;
+        directory = directory.getParent()) {
+      var path =
+          directory.resolve("infra/testing/mira-creative-recovery/namespace-render-plan.json");
+      if (java.nio.file.Files.exists(path)) {
+        fixture = json.readTree(path.toFile());
+        break;
+      }
+    }
+    if (fixture == null)
+      throw new IllegalStateException("Fixture de renderização privada ausente.");
+    var task = task();
+    var context = (ObjectNode) json.readTree(String.valueOf(task.get("processContextJson")));
+    context.set(
+        "marketStrategicContract",
+        fixture.path("communicationInput").path("marketStrategicContract"));
+    ((ObjectNode) context.path("communicationMaterializationContext"))
+        .put("availability", "AVAILABLE")
+        .put("inputReadiness", "READY");
+    task.put("processContextJson", context.toString());
+    var original = (ObjectNode) fixture.path("result").deepCopy();
+    original.put("sourceReference", reference());
+    ((ObjectNode) original.path("functionalOutput").path("staticAssets").get(0))
+        .set("renderSpec", ProofCardRendererTest.spec().put("sourceSha256", sourceHash));
+    task.put(
+        "retryEvidenceJson",
+        json.createObjectNode()
+            .put("modelResponded", true)
+            .put("rawModelResponse", original.toString())
+            .toString());
+    original.put("executionStatus", "READY_FOR_RENDER").putArray("evidenceGaps");
+    task.put("retryResultJson", original.toString());
+    return task;
   }
 
   /** Uma segunda falha na reaplicação termina bloqueada e não volta à fila automaticamente. */
@@ -332,9 +479,11 @@ class IrisCreativeMaterializerTest {
             "processContextJson",
             "{\"communicationMaterializationContext\":{\"mode\":\""
                 + mode
-                + "\",\"sourceReference\":\"" + reference()
+                + "\",\"sourceReference\":\""
+                + reference()
                 + "\",\"prototypeVersion\":\"sandbox-v12\",\"publicationAuthorized\":false,\"paymentEnabled\":false,\"externalMediaSpendAuthorized\":false,"
-                + "\"privateCreativePreparation\":{\"contractVersion\":\"PDE_PRIVATE_CREATIVE_PREPARATION_V1\",\"scope\":\"PRIVATE_PREPARATION\",\"sourceReference\":\"" + reference()
+                + "\"privateCreativePreparation\":{\"contractVersion\":\"PDE_PRIVATE_CREATIVE_PREPARATION_V1\",\"scope\":\"PRIVATE_PREPARATION\",\"sourceReference\":\""
+                + reference()
                 + "\",\"prototypeVersion\":\"sandbox-v12\",\"nonAudiovisualEvidenceRequired\":true,\"nonAudiovisualEvidencePurpose\":\"INDEPENDENT_REVIEW\",\"nonAudiovisualTemplate\":\"PROOF_CARD_V1\",\"commercialFormatDecisionPreserved\":true,\"audiovisualProductionIntent\":\"BRIEF_ONLY\",\"videoProductionRequestId\":0,\"publicationAuthorized\":false,\"spendAuthorized\":false,\"commercialEvidenceClaimed\":false},\"privatePrototypeAcceptance\":{\"prototypeVersion\":\"sandbox-v12\"}}}"));
   }
 

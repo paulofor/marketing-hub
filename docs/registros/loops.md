@@ -6669,6 +6669,20 @@ Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
   resultados posteriores, briefing, pedido governado e contratos inválidos.
 - **Registro complementar:** `docs/registros/mira-retomada-contrato-privado-2026-10-07.md`.
 
+## LOOP-ACTIONS-CONTRATO-DO-CONCILIADOR-DEPENDE-DE-ASPAS — 07/10/2026
+
+- **Evidência:** PR 5535, run MySQL 37669678744: Java, interface e contrato transacional
+  passaram, mas o contrato estático de entrega rejeitou a tag corretamente entre aspas.
+  Sucesso 37634261634 usava sintaxe antiga sem aspas; reprodução local falhou no mesmo ponto.
+- **Causa:** comparação literal de uma representação shell, executada depois da matriz longa,
+  sem avaliar os argumentos reais ou a integridade entre construção, verificação e exportação.
+- **Correção:** teste existente normaliza argumentos do job produtor; mantém mesma imagem e
+  ordem, rejeitando revisão/contexto/arquivo divergentes e verificação ausente. Contrato leve
+  executado no começo do runner existente, sem alterar ou dispensar a publicação.
+- **Prevenção:** cinco casos de entrega com seis mutações inválidas e quatro testes do runner
+  real com doubles, diagnóstico precoce e limpeza; rodada física local de processos completa.
+- **Registro:** `docs/registros/mira-retomada-contrato-privado-2026-10-07.md`.
+
 ## LOOP-VIDEO-PREFLIGHT-PLANO-CLIPES-DIVERGENTE
 
 - **Confirmado em 13/09/2026:** os projetos 4/5 de Vega, experimento 92, selecionam

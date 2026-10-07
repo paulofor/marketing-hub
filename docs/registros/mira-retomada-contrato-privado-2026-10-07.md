@@ -70,3 +70,49 @@ publicação comercial ou gasto. Mudança de declaração permite reparar a tent
 sem presumir sucesso da peça. A entrega de código deverá ser comprovada pelo PR,
 workflows, revisão publicada e saúde antes de retomar o mesmo processo pela tela.
 Resultados comerciais permanecem desconhecidos: não há nova prova de venda ou lucro.
+
+## Falha de contrato de entrega descoberta no PR
+
+PR #5535, HEAD 67fb9c08fc39b8f4334d6c4e3cb6661d465173d1: backend completo e
+25 checks adicionais aprovados. O job de processos MySQL do run 37669678744
+interrompeu antes do banco/HTTP: `test-delivery-contract.py` procurava literalmente
+`docker build -t marketinghub-process-execution-worker:`. O workflow atual constrói,
+verifica com Node e exporta a mesma tag entre aspas. O sucesso anterior 37634261634
+usava o comando sem aspas; isso descarta ausência de imagem ou defeito Java como causa
+desta falha. Reprodução local confirmou o falso bloqueio. Nenhum runtime foi trocado.
+
+| Alternativa | Benefício | Risco/esforço | Decisão |
+|---|---|---|---|
+| Retirar as aspas do publicador | Satisfaz o teste antigo | Altera código válido para atender a uma comparação textual frágil | Rejeitada |
+| Aceitar aspas em uma expressão textual | Corrige esta representação | Não comprova mesma imagem na construção, verificação e exportação | Insuficiente |
+| Comparar os argumentos dos comandos do produtor real | Aceita representação equivalente e protege integridade | Ajuste pequeno no teste existente, sem mudar publicação | Adotada |
+
+O teste agora normaliza os argumentos com `shlex`, limitado ao job produtor,
+mantendo construção, verificação, exportação e ordem na mesma revisão. Cinco testes
+cobrem o caso original, caminho antigo válido, outra revisão e seis mutações inválidas.
+O runner executa esse contrato antes dos testes longos; quatro regressões executam
+o runner real com doubles e provam diagnóstico precoce, interrupção e limpeza.
+`bash -n`/ShellCheck dos scripts relevantes aprovados; `apply.sh` usa análise com
+`-x -P SCRIPTDIR` para seguir a fonte local real de saúde, sem suprimir achados.
+
+A validação canônica de imagens 37669678661 teve timeout de cinco minutos no
+`apt-get update`, antes dos testes, com mirror Azure indisponível. Workflow e
+verificadores eram idênticos ao sucesso 37634261620; 16 testes e verificador passaram
+na sandbox. Uma única reexecução do job no mesmo HEAD passou (attempt 2). Essa falha
+externa não motivou alteração funcional nem a retirada do gate.
+
+Antes de atualizar o mesmo PR, executar a rodada local completa de processos para
+confirmar os critérios restantes, incluindo MySQL 5.7, concorrência, worker real,
+API, reinício e desktop/mobile. Imagens de teste são construídas pelos arquivos
+versionados e removidas após a homologação; nenhuma publicação é usada como teste.
+
+Rodada `mira-private-inputs-local` concluída em 07/10/2026 às 19:27 UTC: 4.282
+testes de backend, zero falha/erro e 35 condições opcionais; 900 testes de interface,
+typecheck/build, worker Node 22 real e usuário restrito, MySQL 5.7 e persistência
+privada, 19 cenários HTTP, ciclo completo e reinício aprovados. Desktop/iPhone/Pixel
+em Chromium passaram em início, contagem, pausa/retomada, falha, histórico, conclusão,
+subprocesso, retorno contextual, acessibilidade, versões retiradas e reserva da fila.
+Dados segregados, zero escrita em produção e zero inferência. Artefatos, relatórios
+e schema preservados em `artifacts/process-automation/mira-private-inputs-local`;
+topologia exclusiva e imagens temporárias removidas. Critérios locais atendidos
+antes de atualizar o mesmo PR; orçamento cumulativo segue US$8,5320024 estimados.

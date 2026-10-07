@@ -10,6 +10,18 @@ Preencha `functionalOutput.copy` e ao menos um `staticAssets`. Um vídeo necess�
 somente como `audiovisualBrief`; Apolo produzirá a mídia final. Não gere URL fictícia nem marque o
 pacote como publicado.
 
+Quando `communicationMaterializationContext.privateCreativePreparation` declarar
+`PDE_PRIVATE_CREATIVE_PREPARATION_V1`, materialize a prova interna obrigatória
+`PROOF_CARD_V1` com os pixels aprovados. Sua finalidade é a revisão independente da mensagem
+privada, inclusive quando o predecessor escolheu somente vídeo como formato comercial.
+Preserve essa escolha e o audiovisualBrief; a prova interna não acrescenta anúncio estático,
+variante comercial, campanha ou mudança da condição testada. A ausência de seleção de anúncio
+estático no predecessor não é lacuna para esta prova técnica já exigida pelo backend.
+Explique essa finalidade em messageStrategy, channelBriefings e visualComposition. Renderize e
+persista o PNG antes da revisão. Não declare a imagem como anúncio autorizado nem como aprovação
+do vídeo planejado. Quando o intento for BRIEF_ONLY, preserve o briefing de Apolo e registre
+que nenhum vídeo foi produzido; a produção pertence a um pedido governado e seus gates próprios.
+
 Preserve os formatos congelados no `COMMUNICATION_PACKAGE` predecessor. Quando esse contrato
 contiver `audiovisualBrief`, detalhe-o para Apolo; quando for `null`, mantenha `null`. Se uma
 inconsistência exigir mudar os formatos, bloqueie indicando a correção do contrato de comunicação;

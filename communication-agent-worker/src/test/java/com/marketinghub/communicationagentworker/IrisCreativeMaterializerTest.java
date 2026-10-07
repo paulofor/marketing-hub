@@ -169,7 +169,7 @@ class IrisCreativeMaterializerTest {
   }
 
   /**
-   * Executa os dois contextos privados, modelo simulado, pixels reais, upload e callback auditável.
+   * Executa prova interna com vídeo em briefing, pixels reais, upload e callback nos dois contextos.
    */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(
@@ -190,6 +190,10 @@ class IrisCreativeMaterializerTest {
               java.util.List<java.nio.file.Path> files = invocation.getArgument(1);
               assertThat(files).hasSize(1);
               assertThat(files.getFirst()).exists();
+              var frozen = json.readTree(String.valueOf(((Map<?, ?>) invocation.getArgument(0)).get("processContextJson")));
+              PrivateCreativePreparationInput.validate(frozen.path("communicationMaterializationContext"), reference());
+              assertThat(frozen.path("communicationMaterializationContext").path("privateCreativePreparation")
+                  .path("audiovisualProductionIntent").asText()).isEqualTo("BRIEF_ONLY");
               return new CommunicationAgentCodexRunner.Execution(
                   result,
                   raw,
@@ -328,7 +332,10 @@ class IrisCreativeMaterializerTest {
             "processContextJson",
             "{\"communicationMaterializationContext\":{\"mode\":\""
                 + mode
-                + "\",\"privatePrototypeAcceptance\":{\"prototypeVersion\":\"sandbox-v12\"}}}"));
+                + "\",\"sourceReference\":\"" + reference()
+                + "\",\"prototypeVersion\":\"sandbox-v12\",\"publicationAuthorized\":false,\"paymentEnabled\":false,\"externalMediaSpendAuthorized\":false,"
+                + "\"privateCreativePreparation\":{\"contractVersion\":\"PDE_PRIVATE_CREATIVE_PREPARATION_V1\",\"scope\":\"PRIVATE_PREPARATION\",\"sourceReference\":\"" + reference()
+                + "\",\"prototypeVersion\":\"sandbox-v12\",\"nonAudiovisualEvidenceRequired\":true,\"nonAudiovisualEvidencePurpose\":\"INDEPENDENT_REVIEW\",\"nonAudiovisualTemplate\":\"PROOF_CARD_V1\",\"commercialFormatDecisionPreserved\":true,\"audiovisualProductionIntent\":\"BRIEF_ONLY\",\"videoProductionRequestId\":0,\"publicationAuthorized\":false,\"spendAuthorized\":false,\"commercialEvidenceClaimed\":false},\"privatePrototypeAcceptance\":{\"prototypeVersion\":\"sandbox-v12\"}}}"));
   }
 
   /** Preserva a origem privada e impede que a simulação do produto fabrique um experimento. */

@@ -172,7 +172,7 @@ public class IrisProductProcessActivityReadinessProvider
                         && latest.get().id().equals(artifact.get("taskId")));
   }
 
-  /** Reabre a resolução de formatos quando Íris conclui um contrato de comunicação mais novo. */
+  /** Reabre formatos quando a mensagem ou a fronteira privada de produção governada mudar. */
   private boolean creativeRouteInputChanged(
       BusinessProcessActivityDefinition activity, String reference) {
     if (tasks == null || instances == null) return false;
@@ -196,11 +196,13 @@ public class IrisProductProcessActivityReadinessProvider
     if (latestCommunication.isEmpty() || !"COMPLETED".equals(latestCommunication.get().status()))
       return true;
     try {
-      long routedTaskId =
-          JSON.readTree(latestRoute.orElseThrow().getObjectiveEvidenceJson())
-              .path("communicationTaskId")
-              .asLong();
-      return routedTaskId != latestCommunication.get().id();
+      var evidence = JSON.readTree(latestRoute.orElseThrow().getObjectiveEvidenceJson());
+      var input = communicationContext.resolve(reference).orElse(Map.of());
+      var preparation = JSON.valueToTree(input).path(PrivateCreativePreparationContext.FIELD);
+      return evidence.path("communicationTaskId").asLong() != latestCommunication.get().id()
+          || (preparation.isObject()
+              && !IrisCommunicationInputFingerprint.equivalent(
+                  JSON, preparation, evidence.path(PrivateCreativePreparationContext.FIELD)));
     } catch (Exception ex) {
       log.warn(
           "Rota criativa concluída possui prova inválida. activityDefinitionId={} sourceReference={}",

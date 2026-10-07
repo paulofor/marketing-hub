@@ -16,7 +16,11 @@ import java.util.List;
  */
 final class IrisCommunicationInputFingerprint {
   private static final List<String> VOLATILE_ROOT_FIELDS =
-      List.of("communicationInputHash", "communicationArtifacts", "landingInstrumentationContract");
+      List.of(
+          "communicationInputHash",
+          "communicationArtifacts",
+          "landingInstrumentationContract",
+          PrivateCreativePreparationContext.FIELD);
   private static final List<String> DOWNSTREAM_EXPERIMENT_FIELDS =
       List.of("checkoutUrl", "currentLandingHtml");
 

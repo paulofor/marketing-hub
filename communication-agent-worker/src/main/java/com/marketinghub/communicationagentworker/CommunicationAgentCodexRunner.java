@@ -277,7 +277,7 @@ public class CommunicationAgentCodexRunner {
         task, "communication-director", researchEvidence, true);
   }
 
-  /** Recusa contratos ausentes ou V2 sem aceite de Atena antes de preparar ou consumir modelo. */
+  /** Confere estratégia, prontidão e limites declarados antes de preparar ou consumir modelo. */
   static void validateInput(Map<String, Object> task) {
     try {
       JsonNode context =
@@ -309,6 +309,8 @@ public class CommunicationAgentCodexRunner {
                 ? "Íris exige economia, PDE e provas predecessoras concluídas antes da execução."
                 : "Íris aguarda estes predecessores: " + missing + ".");
       }
+      PrivateCreativePreparationInput.validate(
+          communication, String.valueOf(task.getOrDefault("sourceReference", "")));
       String processCode = String.valueOf(task.getOrDefault("processCode", ""));
       if ("landing-page-generation".equals(processCode)
           && communication.path("approvedLandingAssets").isEmpty()) {

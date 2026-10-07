@@ -149,6 +149,81 @@ class CommunicationFormatsActivityExecutorTest {
     verify(instances).saveAndFlush(any());
   }
 
+  /** Reproduz a mensagem real sem peça estática e mantém a prova interna em duas identidades. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {91092L, 91177L})
+  void retainsVideoOnlyMessageAndDefersUnrequestedProduction(long experimentId) throws Exception {
+    String reference = "experiment:" + experimentId;
+    var experiment = new Experiment();
+    experiment.setId(experimentId); experiment.setProduct(product);
+    when(experiments.findById(experimentId)).thenReturn(Optional.of(experiment));
+    try (var stream = getClass().getResourceAsStream("/fixtures/communication/private-video-only-message-recorded.json")) {
+      var output = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(stream);
+      output.put("sourceReference", reference);
+      task.setSourceReference(reference); task.setResultJson(output.toString());
+      assertThat(output.path("functionalOutput").path("staticAssets")).isEmpty();
+      assertThat(output.path("functionalOutput").path("audiovisualBrief").asText()).isNotBlank();
+    }
+    when(tasks.findFunctionalSnapshots(eq(reference), anyCollection(), isNull()))
+        .thenAnswer(i -> List.of(snapshot(task)));
+    var declaration = new PrivateCreativePreparationContext(
+        mock(com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository.class),
+        mock(com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository.class), json);
+    var privateInput = declaration.enrich(reference, Map.ofEntries(
+        Map.entry("mode", "LEARNING_CYCLE_PRIVATE"), Map.entry("availability", "AVAILABLE"),
+        Map.entry("inputReadiness", "READY"), Map.entry("sourceReference", reference),
+        Map.entry("prototypeVersion", "sandbox-private-v1"), Map.entry("product", Map.of("id", product.getId())),
+        Map.entry("experiment", Map.of("id", experimentId)), Map.entry("publicationAuthorized", false),
+        Map.entry("paymentEnabled", false), Map.entry("externalMediaSpendAuthorized", false)));
+    when(context.resolve(reference)).thenReturn(Optional.of(privateInput));
+    String preserved = task.getResultJson();
+    executor.execute(process, route, product, reference);
+    var saved = ArgumentCaptor.forClass(BusinessProcessActivityInstance.class);
+    verify(instances, times(2)).saveAndFlush(saved.capture());
+    var evidence = json.readTree(saved.getAllValues().getFirst().getObjectiveEvidenceJson());
+    assertThat(evidence.path("nonAudiovisualRequired").asBoolean()).isTrue();
+    assertThat(evidence.path("audiovisualPlanned").asBoolean()).isTrue();
+    assertThat(evidence.path("audiovisualRequired").asBoolean(true)).isFalse();
+    assertThat(evidence.path("audiovisualProductionDeferred").asBoolean()).isTrue();
+    assertThat(BusinessProcessOptionalActivity.isOmitted(saved.getAllValues().get(1))).isTrue();
+    assertThat(saved.getAllValues().get(1).isObjectiveAchieved()).isFalse();
+    assertThat(task.getResultJson()).isEqualTo(preserved);
+  }
+
+  /** Um pedido novo não pode herdar a dispensa de vídeo registrada na preparação anterior. */
+  @Test
+  void reopensPreviousOmissionWhenVideoBecomesRequired() throws Exception {
+    var output = json.readTree(task.getResultJson());
+    ((com.fasterxml.jackson.databind.node.ObjectNode) output.path("functionalOutput"))
+        .put("audiovisualBrief", "Demonstração real preservada");
+    task.setResultJson(output.toString());
+    var omitted = new BusinessProcessActivityInstance();
+    omitted.setActivityDefinition(audiovisual); omitted.setSourceReference("experiment:91092");
+    omitted.setOccurrenceNumber(2); omitted.setStatus("NOT_APPLICABLE");
+    omitted.setObjectiveEvidenceJson("{\"evidenceType\":\"OPTIONAL_ACTIVITY_NOT_REQUIRED_V1\",\"activityId\":\"audiovisual\",\"sourceReference\":\"experiment:91092\",\"communicationTaskId\":91001,\"audiovisualRequired\":false}");
+    when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+        audiovisual.getId(), "experiment:91092")).thenReturn(Optional.of(omitted));
+    executor.execute(process, route, product, "experiment:91092");
+    var saved = ArgumentCaptor.forClass(BusinessProcessActivityInstance.class);
+    verify(instances, times(2)).saveAndFlush(saved.capture());
+    var reopened = saved.getAllValues().get(1);
+    assertThat(reopened.getOccurrenceNumber()).isEqualTo(3);
+    assertThat(reopened.getStatus()).isEqualTo("BLOCKED");
+    assertThat(BusinessProcessOptionalActivity.isOmitted(reopened)).isFalse();
+    assertThat(omitted.getStatus()).isEqualTo("NOT_APPLICABLE");
+  }
+
+  /** Falha ao consultar a fronteira privada impede resolver formatos pelo caminho legado. */
+  @Test
+  void blocksUnavailablePrivatePreparation() {
+    when(context.resolve("experiment:91092")).thenReturn(Optional.of(Map.of(
+        "mode", "LEARNING_CYCLE_PRIVATE", "availability", "UNAVAILABLE", "inputReadiness", "BLOCKED")));
+    assertThat(executor.readiness(process, route, product, "experiment:91092").ready()).isFalse();
+    assertThatThrownBy(() -> executor.execute(process, route, product, "experiment:91092"))
+        .hasMessageContaining("preparação privada");
+    verifyNoInteractions(instances);
+  }
+
   /** Mantém a rota comercial existente e recusa dispensa enquanto Apolo ainda trabalha. */
   @Test
   void acceptsOfficialPlanAndDoesNotOmitRunningTask() {

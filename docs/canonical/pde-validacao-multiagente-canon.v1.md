@@ -25,7 +25,8 @@ históricas de leitura privada não podem ser reescritas nem concluídas artific
 Por decisão de 2026-09-07, a versão v8 torna operacional o retrabalho funcional: uma rejeição de
 harness, Psique ou Têmis não pode oferecer somente a repetição do mesmo parecer. O backend deve
 destacar uma atividade condicional de correção, preservar a rejeição como entrada, orientar o
-usuário e exigir versão nova antes de qualquer revalidação. A v7 permanece imutável como histórico.
+usuário e exigir versão nova quando a implementação ou o contrato do produto mudar. Uma lacuna
+exclusiva de prova segue a regra de suplemento abaixo. A v7 permanece imutável como histórico.
 
 Por correção de 2026-09-30, o Processo 2 `pde-commercial-plan-offer` v10 passa a produzir
 `MARKET_STRATEGY_V4` e `PDE_AGENT_VALIDATION_V1` desde a origem. Materializações novas não podem
@@ -370,10 +371,34 @@ o motor BPM representa a nova validação como pendente, mantendo tarefas e inst
 na auditoria. O mesmo critério governa a tela e o comando de criação. Uma nova tarefa gera nova
 ocorrência; execução pendente/em andamento permanece idempotente e não pode ser duplicada.
 
-Toda rejeição funcional em uma revisão da v8 bloqueia a repetição das revisões até nova correção.
+Toda rejeição funcional em uma revisão da v8 bloqueia a repetição das revisões até nova correção
+ou suplemento de prova compatível, conforme a regra abaixo.
 A homologação técnica anterior não libera nova tentativa de Psique sobre o mesmo defeito.
 
 Rejeições superadas por correção válida ficam na auditoria e não definem o bloqueio atual
 da tela. Falhas posteriores à correção continuam vigentes. Para liberar uma revisão, o backend
 considera a tentativa mais recente da predecessora; uma aprovação antiga não compensa uma
 falha mais nova nem uma execução ainda pendente.
+
+### Suplemento de prova sem mudança do produto
+
+Uma lacuna de cobertura não exige mudar a versão do produto quando implementação, entradas,
+saídas e limites permanecem iguais. O suplemento deve vir de testes executados, identificar
+produto/versão, fonte, origem e hash, e declarar cada critério com resultado rastreável.
+Testes locais com MySQL real e cadastros simulados declaram essa fronteira; não representam
+ações em ciclos publicados, parecer independente, comportamento humano ou prova comercial.
+
+O backend entrega o suplemento em `pdeContext.operationalControlEvidence` por catálogo versionado
+e integridade dos bytes. Prova nova, posterior ao horário persistido do bloqueio, libera somente
+uma nova revisão independente de Têmis. Bloqueios usam `updatedAt`; `deliveredAt` pertence às
+entregas concluídas e pode estar ausente. Prova anterior, de outra versão ou incompleta não libera
+a retentativa. Novo bloqueio posterior ao suplemento não pode gerar repetição automática sem
+outra mudança comprovada.
+
+A matriz técnica e os três pareceres válidos da mesma implementação permanecem vigentes. Têmis
+continua responsável pelo novo aceite e o gate exige esse parecer aprovado, posterior ao
+suplemento e à tentativa bloqueada que referencia a rejeição original. Correção em andamento,
+prova velha ou parecer do próprio construtor continuam bloqueados. Após todos os
+objetivos atendidos, a tentativa condicional de correção cancelada ou bloqueada, sem comando
+disponível, aparece como histórico registrado; sua tarefa e seu bloqueio original permanecem
+na auditoria. Isso não dispensa objetivo obrigatório nem autoriza publicação, cobrança ou mídia.

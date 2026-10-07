@@ -65,9 +65,21 @@ jobs:
         run: |
           node --test scripts/build-commercial-review-evidence.test.mjs
           node scripts/build-commercial-review-evidence.mjs . backend/ads-service/target/commercial-review-evidence
+      - name: Preparar banco isolado para controles privados
+        env:
+          MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
+        run: docker exec "$MYSQL_CONTAINER_ID" mysql --user=root --password=root --execute 'CREATE DATABASE IF NOT EXISTS mira_controls_local;'
       - name: Executar todos os testes do backend
+        env:
+          MIRA_CONTROLS_DB_HOST: 127.0.0.1
+          MIRA_CONTROLS_DB_PORT: "3306"
+          MIRA_CONTROLS_DB_SCHEMA: mira_controls_local
+          MIRA_CONTROLS_DB_USER: root
+          MIRA_CONTROLS_DB_PASSWORD: root
         working-directory: backend/ads-service
         run: mvn -B test
+      - name: Validar cobertura e sanitização das provas de controles
+        run: python3 infra/testing/mira-candidate/test-emit-controls-evidence.py
       - name: Validar Liquibase contra MySQL 5.7
         working-directory: backend/ads-service
         run: |

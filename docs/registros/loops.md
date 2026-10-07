@@ -9207,3 +9207,17 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Limite:** readiness sintética não comprova disposição de pagar, satisfação
   humana nem explica a ausência histórica de vendas.
 - **Registro:** `docs/registros/mira-candidate-v3-homologacao.md`.
+## LOOP-PDE-CONTROLES-SEM-PROVA-CONCILIADA — 07/10/2026
+
+- **Evidência:** Mira 627–630 aprovadas; Têmis 631 rejeitou cobertura de controles; Dédalo 632
+  confirmou lacuna de prova sem defeito funcional. Ambas as tarefas bloqueadas têm `delivered_at`
+  ausente e horário de bloqueio em `updated_at`.
+- **Causa:** resultados de controles não chegavam por critério ao revisor; a retomada exigia nova
+  versão, o gate temporal ainda exigia nova técnica e a correção inativa permanecia como pendência.
+- **Correção:** sete provas HTTP/MySQL sanitizadas, catálogo de versão e hash, contexto oficial
+  para Têmis e nova revisão independente após prova posterior ao bloqueio. Pareceres válidos
+  preservados; tentativa condicional fica registrada somente depois dos objetivos aceitos.
+- **Prevenção:** testes com outra identidade, prova antiga/incompleta, caminho anterior válido,
+  consumidor real com modelo simulado, concorrência e limites em MySQL 5.7 obrigatório no CI.
+- **Registro:** `docs/registros/mira-controles-provas-2026-10-07.md`. Prova local declara doubles
+  de contexto e não substitui aprovação independente nem evidencia mercado.

@@ -22,7 +22,7 @@ class CommercialBpmCycleIntegrationTest {
   private final ObjectMapper json = new ObjectMapper();
 
   /**
-   * Usa técnica e cenários executados localmente; simula somente o modelo e o transporte da fila.
+   * Reutiliza técnica e cenários reais; comprova o suplemento no request e simula modelo e fila.
    */
   @Test
   void reviewsActualCycleEvidenceAndReportsSyntheticContract() throws Exception {
@@ -47,12 +47,29 @@ class CommercialBpmCycleIntegrationTest {
               "result",
               result));
     }
+    String reference = technical.path("sourceReference").asText();
+    long productId = technical.path("productId").asLong();
+    long experimentId = Long.parseLong(reference.substring("experiment:".length()));
+    Map<String, Object> pdeContext = new LinkedHashMap<>();
+    pdeContext.put(
+        "lineage",
+        Map.of("learningCycleId", 91002L, "productId", productId, "experimentId", experimentId));
+    String controlsFile = System.getenv("PDE_OPERATIONAL_REPORT_FILE");
+    boolean hasControls = controlsFile != null && !controlsFile.isBlank();
+    if (hasControls) {
+      var controls = json.readTree(Files.readString(Path.of(controlsFile)));
+      assertThat(controls.path("productSlug")).isEqualTo(technical.path("productSlug"));
+      assertThat(controls.path("prototypeVersion")).isEqualTo(technical.path("prototypeVersion"));
+      assertThat(controls.path("criteria").size()).isEqualTo(7);
+      pdeContext.put("operationalControlEvidence", controls);
+    }
+    String revision = hasControls ? "v5" : "v4";
     var task =
         Map.of(
             "taskId",
             910392L,
             "sourceReference",
-            "experiment:91092",
+            reference,
             "processCode",
             "pde-construction-approval",
             "processVersion",
@@ -62,18 +79,15 @@ class CommercialBpmCycleIntegrationTest {
             "taskTarget",
             Map.of(
                 "productId",
-                91004L,
+                productId,
                 "experimentId",
-                91092L,
+                experimentId,
                 "productSlug",
-                "metodo-musa-7-dias",
+                technical.path("productSlug").asText(),
                 "experienceVersion",
                 technical.path("prototypeVersion").asText(),
                 "pdeContext",
-                Map.of(
-                    "lineage",
-                    Map.of(
-                        "learningCycleId", 91002L, "productId", 91004L, "experimentId", 91092L))),
+                pdeContext),
             "processContext",
             Map.of(
                 "completedActivities",
@@ -117,6 +131,7 @@ class CommercialBpmCycleIntegrationTest {
         .add("Segurança local");
     expected.putArray("requiredChanges");
     Files.writeString(directory.resolve("expected.json"), expected.toString());
+    Files.writeString(directory.resolve("expected-revision.txt"), revision);
     Path model = directory.resolve("model.py");
     Files.writeString(
         model,
@@ -127,9 +142,15 @@ class CommercialBpmCycleIntegrationTest {
         prompt=sys.stdin.read()
         (root/'prompt.txt').write_text(prompt)
         schema=json.loads(pathlib.Path(sys.argv[sys.argv.index('--output-schema')+1]).read_text())
-        assert re.fullmatch(schema['properties']['sourceReference']['pattern'],'experiment:91092')
+        expected=json.loads((root/'expected.json').read_text())
+        revision=(root/'expected-revision.txt').read_text()
+        assert re.fullmatch(schema['properties']['sourceReference']['pattern'],expected['sourceReference'])
         assert 'versionedArtifactEvidence' not in prompt
-        assert 'integridade da validação multiagente PDE v4' in prompt
+        assert 'integridade da validação multiagente PDE '+revision in prompt
+        if revision=='v5':
+            assert 'LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES' in prompt
+            assert 'CONCURRENT_SINGLE_CONSUMPTION' in prompt
+            assert 'testReceiptSha256' in prompt
         pathlib.Path(sys.argv[sys.argv.index('--output-last-message')+1]).write_text((root/'expected.json').read_text())
         print('{"type":"turn.completed","usage":{"input_tokens":100,"output_tokens":100}}')
         """);
@@ -182,10 +203,10 @@ class CommercialBpmCycleIntegrationTest {
       assertThat(versionedClaim).isTrue();
       assertThat(executionAudit.get()).isNotNull();
       assertThat(executionAudit.get().path("promptSent").asText())
-          .contains("integridade da validação multiagente PDE v4", "experiment:91092");
+          .contains("integridade da validação multiagente PDE " + revision, reference);
       assertThat(callback.get()).isNotNull();
       assertThat(callback.get().path("executionAudit").toString())
-          .contains("PDE v4", "experiment:91092");
+          .contains("PDE " + revision, reference);
       var result = json.readTree(callback.get().path("resultJson").asText());
       assertThat(result).isEqualTo(expected);
       Files.writeString(flow.resolve("TEMIS.json"), result.toPrettyString());

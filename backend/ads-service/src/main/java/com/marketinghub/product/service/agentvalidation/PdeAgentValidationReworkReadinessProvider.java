@@ -59,6 +59,9 @@ public class PdeAgentValidationReworkReadinessProvider
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.agenttask.AgentTaskTargetContextProvider taskTargets;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private PdeOperationalControlEvidence operationalEvidence;
+
   /** Configura a ordem do grafo, as tentativas auditadas e o leitor dos contratos. */
   public PdeAgentValidationReworkReadinessProvider(
       ProductProcessActivityPredecessorService predecessors,
@@ -80,7 +83,7 @@ public class PdeAgentValidationReworkReadinessProvider
             || CORRECTION_ACTIVITY.equals(activityDefinition.getActivityId()));
   }
 
-  /** Oferece correção dos bloqueios e exige as aprovações sequenciais da versão corrente. */
+  /** Oferece correção ou reavaliação com nova prova, mantendo as aprovações da versão corrente. */
   @Override
   public AgentProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,
@@ -93,9 +96,10 @@ public class PdeAgentValidationReworkReadinessProvider
     List<PdeValidationTaskSnapshot> history = processHistory(sourceReference);
     String expectedVersion = expectedPrototypeVersion(product, sourceReference);
     Optional<PdeValidationTaskSnapshot> rejection =
-        unresolvedFunctionalRejection(history, expectedVersion);
+        unresolvedFunctionalRejection(history, expectedVersion, product, sourceReference);
     if (CORRECTION_ACTIVITY.equals(activityDefinition.getActivityId())) {
-      return correctionReadiness(correctionSource(history, expectedVersion));
+      return correctionReadiness(
+          correctionSource(history, expectedVersion, product, sourceReference));
     }
     if (rejection.isPresent()) {
       return blocked(correctionRequiredReason(rejection.orElseThrow()));
@@ -125,7 +129,9 @@ public class PdeAgentValidationReworkReadinessProvider
             + " aprovou a mesma versão; esta atividade pode ser executada.");
   }
 
-  /** Exige nova ocorrência para histórico superado, preservando bloqueios ainda atuais. */
+  /**
+   * Reabre apenas o parecer que recebeu nova prova compatível; bloqueios sem mudança permanecem.
+   */
   @Override
   public boolean requiresFreshExecution(
       BusinessProcessDefinition process,
@@ -150,9 +156,12 @@ public class PdeAgentValidationReworkReadinessProvider
                     CORRECTION_ACTIVITY.equals(activityId)
                         || task.id() > latestCorrectionId(history, version))
             .isPresent();
-    if (currentBlock) return false;
+    if (currentBlock)
+      return latest
+          .filter(task -> freshIntegrityEvidence(task, product, version, sourceReference))
+          .isPresent();
     if (CORRECTION_ACTIVITY.equals(activityId)) {
-      return correctionSource(history, version).isPresent();
+      return correctionSource(history, version, product, sourceReference).isPresent();
     }
     return version == null
         || !hasCurrentApproval(history, process, activityDefinition.getActivityId(), version);
@@ -215,9 +224,9 @@ public class PdeAgentValidationReworkReadinessProvider
 
   /** Seleciona a origem mais recente sem confundir falha técnica com reprovação funcional. */
   private Optional<PdeValidationTaskSnapshot> correctionSource(
-      List<PdeValidationTaskSnapshot> history, String version) {
+      List<PdeValidationTaskSnapshot> history, String version, Product product, String reference) {
     Optional<PdeValidationTaskSnapshot> functional =
-        unresolvedFunctionalRejection(history, version);
+        unresolvedFunctionalRejection(history, version, product, reference);
     long correctionId = latestCorrectionId(history, version);
     Optional<PdeValidationTaskSnapshot> technical =
         history.stream()
@@ -231,9 +240,14 @@ public class PdeAgentValidationReworkReadinessProvider
         .max(Comparator.comparing(PdeValidationTaskSnapshot::id));
   }
 
-  /** Localiza a rejeição funcional mais recente ainda sem correção válida posterior. */
+  /**
+   * Preserva rejeições, mas permite novo parecer diante de prova adicional da mesma implementação.
+   */
   private Optional<PdeValidationTaskSnapshot> unresolvedFunctionalRejection(
-      List<PdeValidationTaskSnapshot> history, String expectedVersion) {
+      List<PdeValidationTaskSnapshot> history,
+      String expectedVersion,
+      Product product,
+      String reference) {
     Optional<PdeValidationTaskSnapshot> rejection =
         history.stream()
             .filter(task -> REVIEW_ACTIVITIES.contains(task.processActivityId()))
@@ -241,8 +255,51 @@ public class PdeAgentValidationReworkReadinessProvider
             .filter(task -> "FUNCTIONAL_ADJUSTMENT".equals(task.blockerCategory()))
             .max(Comparator.comparing(PdeValidationTaskSnapshot::id));
     if (rejection.isEmpty()) return Optional.empty();
+    var rejected = rejection.orElseThrow();
+    boolean reviewedAgain =
+        history.stream()
+            .filter(task -> task.id() > rejected.id())
+            .filter(
+                task ->
+                    java.util.Objects.equals(
+                        task.processDefinitionId(), rejected.processDefinitionId()))
+            .filter(task -> rejected.processActivityId().equals(task.processActivityId()))
+            .filter(task -> "COMPLETED".equals(task.status()))
+            .anyMatch(task -> approvedForVersion(task, task.processActivityId(), expectedVersion));
+    if (reviewedAgain || freshIntegrityEvidence(rejected, product, expectedVersion, reference))
+      return Optional.empty();
     long correctionId = latestCorrectionId(history, expectedVersion);
     return correctionId > rejection.orElseThrow().id() ? Optional.empty() : rejection;
+  }
+
+  /** Compara a prova ao horário do bloqueio, que não possui deliveredAt, e abre só novo parecer. */
+  private boolean freshIntegrityEvidence(
+      PdeValidationTaskSnapshot rejected, Product product, String version, String reference) {
+    if (operationalEvidence == null
+        || product == null
+        || version == null
+        || !"commercialIntegrityReview".equals(rejected.processActivityId())
+        || !"FUNCTIONAL_ADJUSTMENT".equals(rejected.blockerCategory())) return false;
+    var evidence = operationalEvidence.resolve(product.getSlug(), version);
+    if (evidence.isEmpty()) return false;
+    var task = tasks.findById(rejected.id()).orElse(null);
+    if (task == null
+        || task.getUpdatedAt() == null
+        || !java.util.Objects.equals(reference, task.getSourceReference())) return false;
+    try {
+      return !approvedForVersion(rejected, "commercialIntegrityReview", version)
+          && version.equals(json.readTree(rejected.resultJson()).path("prototypeVersion").asText())
+          && java.time.Instant.parse(evidence.get().path("generatedAt").asText())
+              .isAfter(task.getUpdatedAt());
+    } catch (Exception ex) {
+      log.warn(
+          "Reavaliação de provas indisponível taskId={} productId={} sourceReference={}",
+          rejected.id(),
+          product.getId(),
+          reference,
+          ex);
+      return false;
+    }
   }
 
   /**

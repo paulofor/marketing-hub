@@ -147,6 +147,33 @@ class LearningCycleConstructionContextTest {
     verify(cycles, never()).save(any());
   }
 
+  /** Entrega a prova compilada por versão, preservando a identidade corrente e o limite local. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {10L, 97001L})
+  void carriesOperationalEvidenceWithoutClaimingAgentApproval(long productId) {
+    product.setId(productId);
+    product.setSlug("pde-planejado-36");
+    cycle.setProductId(productId);
+    cycle.setProductVersion("mira-private-candidate-v3");
+    var evidence =
+        new com.marketinghub.product.service.agentvalidation.PdeOperationalControlEvidence(
+            mapper, new org.springframework.core.io.DefaultResourceLoader());
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        resolver, "operationalEvidence", evidence);
+
+    var result =
+        resolver.resolve("experiment:92", experiment, "pde-construction-approval").orElseThrow();
+    var proof = result.pdeContext().path("operationalControlEvidence");
+    assertThat(proof.path("criteria").size()).isEqualTo(7);
+    assertThat(proof.path("prototypeVersion").asText()).isEqualTo(cycle.getProductVersion());
+    assertThat(proof.path("origin").asText()).isEqualTo("LOCAL_MYSQL57_WITH_CONTEXT_TEST_DOUBLES");
+    assertThat(proof.path("reportSha256").asText()).matches("[a-f0-9]{64}");
+    assertThat(proof.path("agentApprovalClaimed").asBoolean()).isFalse();
+    assertThat(proof.path("commercialEvidenceClaimed").asBoolean()).isFalse();
+    assertThat(result.pdeContext().path("lineage").path("productId").asLong()).isEqualTo(productId);
+    verify(cycles, never()).save(any());
+  }
+
   /** Reproduz a perda de tipo da tarefa 595 e exporta duas identidades ao executor local real. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.CsvSource({

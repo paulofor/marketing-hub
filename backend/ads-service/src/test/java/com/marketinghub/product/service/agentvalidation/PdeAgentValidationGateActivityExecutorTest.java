@@ -286,6 +286,97 @@ class PdeAgentValidationGateActivityExecutorTest {
     assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
   }
 
+  /** Fecha o caso de prova adicional sem transformar a correção bloqueada em entrega funcional. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {10L, 110L})
+  void acceptsSupplementOnlyAfterIndependentIntegrityApproval(long productId) throws Exception {
+    String reference = "product:" + productId + "@agent-validation-v1";
+    product.setId(productId);
+    product.setSlug("synthetic-" + productId);
+    product.setValidationDefinitionJson(validationContract().replace(SOURCE, reference));
+    completedTasks.get(4).setCreatedAt(NOW.minusSeconds(270));
+    completedTasks.get(4).setDeliveredAt(NOW.minusSeconds(250));
+    var rejected =
+        task(
+            631,
+            "commercialIntegrityReview",
+            "meta-ad-approver",
+            "MODEL",
+            "gpt-5.6-sol",
+            "{\"decision\":\"BLOCKED\",\"prototypeVersion\":\"mira-private-v2\"}",
+            NOW.minusSeconds(200));
+    rejected.setStatus("BLOCKED");
+    rejected.setDeliveredAt(null);
+    rejected.setUpdatedAt(NOW.minusSeconds(200));
+    rejected.setBlockerCategory("FUNCTIONAL_ADJUSTMENT");
+    var correction =
+        task(
+            632,
+            "prototypeCorrection",
+            "landing-generator",
+            "MODEL",
+            "gpt-5.6-sol",
+            """
+        {"decision":"BLOCKED","correctionPlan":{"sourceTaskId":631,
+         "rejectedActivityId":"commercialIntegrityReview","previousPrototypeVersion":"mira-private-v2",
+         "verification":{"noExternalSideEffects":true}}}
+        """,
+            NOW.minusSeconds(180));
+    correction.setStatus("BLOCKED");
+    correction.setDeliveredAt(null);
+    correction.setUpdatedAt(NOW.minusSeconds(180));
+    completedTasks.add(rejected);
+    completedTasks.add(correction);
+    var evidence = mock(PdeOperationalControlEvidence.class);
+    var report = json.createObjectNode().put("generatedAt", NOW.minusSeconds(160).toString());
+    when(evidence.resolve(product.getSlug(), "mira-private-v2")).thenReturn(Optional.of(report));
+    ReflectionTestUtils.setField(executor, "operationalEvidence", evidence);
+    when(tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(70L, reference))
+        .thenReturn(completedTasks);
+    for (var task : completedTasks) {
+      task.setSourceReference(reference);
+      var payload =
+          (com.fasterxml.jackson.databind.node.ObjectNode)
+              json.readTree(task.getResultJson().replace(SOURCE, reference));
+      if (payload.has("productId")) payload.put("productId", productId);
+      if (payload.has("productSlug")) payload.put("productSlug", product.getSlug());
+      task.setResultJson(payload.toString());
+    }
+    assertThat(executor.readiness(process, gate, product, reference).ready()).isFalse();
+
+    var reviewed =
+        task(
+            633,
+            "commercialIntegrityReview",
+            "meta-ad-approver",
+            "MODEL",
+            "gpt-5.6-sol",
+            temisResult().replace(SOURCE, reference),
+            NOW.minusSeconds(100));
+    var reviewPayload =
+        (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(reviewed.getResultJson());
+    reviewPayload.put("productId", productId).put("productSlug", product.getSlug());
+    reviewed.setResultJson(reviewPayload.toString());
+    reviewed.setSourceReference(reference);
+    completedTasks.add(reviewed);
+    var accepted = executor.readiness(process, gate, product, reference);
+    assertThat(accepted.ready()).withFailMessage("%s", accepted).isTrue();
+    assertThat(rejected.getStatus()).isEqualTo("BLOCKED");
+    assertThat(correction.getStatus()).isEqualTo("BLOCKED");
+
+    report.put("generatedAt", NOW.minusSeconds(300).toString());
+    assertThat(executor.readiness(process, gate, product, reference).ready()).isFalse();
+    report.put("generatedAt", NOW.minusSeconds(160).toString());
+    reviewed.setDeliveredAt(NOW.minusSeconds(190));
+    assertThat(executor.readiness(process, gate, product, reference).ready()).isFalse();
+    reviewed.setDeliveredAt(NOW.minusSeconds(100));
+    correction.setStatus("IN_PROGRESS");
+    assertThat(executor.readiness(process, gate, product, reference).ready()).isFalse();
+    correction.setStatus("BLOCKED");
+    reviewed.setAssignedAgent(Agent.builder().agentKey("landing-generator").build());
+    assertThat(executor.readiness(process, gate, product, reference).ready()).isFalse();
+  }
+
   /** Mantém a correção válida quando uma tentativa condicional posterior foi cancelada. */
   @Test
   void cancelledCorrectionDoesNotSupersedeValidCheckpoint() {

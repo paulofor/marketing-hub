@@ -34,6 +34,10 @@ public class LearningCycleConstructionContext {
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private LearningCycleVideoBinding videoBinding;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.product.service.agentvalidation.PdeOperationalControlEvidence
+      operationalEvidence;
+
   /**
    * Entrega construção, comunicação e criativos do ciclo sem substituir a experiência histórica.
    */
@@ -80,7 +84,7 @@ public class LearningCycleConstructionContext {
 
   /**
    * Preserva identidade do catálogo, orientação de Atena, limites e linhagem; mantém ausência se as
-   * aprovações falharem, sem transformar contratos em prova de implementação.
+   * aprovações falharem, sem transformar contratos ou controles locais em parecer de agente.
    */
   private JsonNode context(LearningSalesCycle cycle, Product product) {
     try {
@@ -192,6 +196,10 @@ public class LearningCycleConstructionContext {
       context.put("economicsContractVersion", economicsResult.path("contractVersion").asText());
       context.set("metrics", economicsResult.path("metrics"));
       context.set("harness", architecture);
+      if (operationalEvidence != null)
+        operationalEvidence
+            .resolve(product.getSlug(), cycle.getProductVersion())
+            .ifPresent(evidence -> context.set("operationalControlEvidence", evidence));
       if (agentStrategy) {
         context.set("strategyAgentValidationPlan", strategy.path("agentValidationPlan"));
       } else {

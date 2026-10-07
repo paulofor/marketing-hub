@@ -1,0 +1,11 @@
+{
+  "contractVersion": "PDE_OPERATIONAL_CONTROLS_CATALOG_V1",
+  "reports": [
+    {
+      "productSlug": "pde-planejado-36",
+      "prototypeVersion": "mira-private-candidate-v3",
+      "resource": "contracts/operational-evidence/mira-private-controls-v1.json",
+      "sha256": "de6c61092ce54485dfac732eb8afc3c81d7dba65ca7814abf412777ed42536a4"
+    }
+  ]
+}

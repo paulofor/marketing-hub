@@ -116,6 +116,9 @@ public class PdeAgentValidationGateActivityExecutor
   @Autowired(required = false)
   private PdeAgentValidationCycleContract cycleContracts;
 
+  @Autowired(required = false)
+  private PdeOperationalControlEvidence operationalEvidence;
+
   /** Configura as fontes persistidas e o relógio do gate. */
   @Autowired
   public PdeAgentValidationGateActivityExecutor(
@@ -303,7 +306,8 @@ public class PdeAgentValidationGateActivityExecutor
     AgentTask temis = completedTask(processTasks, "commercialIntegrityReview").orElse(null);
     boolean temisApproved = validateTemis(temis, contract, issues);
     boolean chronologyApproved = validateChronology(technical, psique, temis, issues);
-    chronologyApproved &= validateCorrectionOrder(processTasks, technical, contract, issues);
+    chronologyApproved &=
+        validateCorrectionOrder(processTasks, technical, temis, product, contract, issues);
     List<AgentTask> evidenceTasks = new ArrayList<>();
     if (technical != null) evidenceTasks.add(technical);
     psique.values().stream().filter(java.util.Objects::nonNull).forEach(evidenceTasks::add);
@@ -578,10 +582,12 @@ public class PdeAgentValidationGateActivityExecutor
     return valid;
   }
 
-  /** Impede que uma correção mais recente reutilize aprovações produzidas antes de sua entrega. */
+  /** Exige nova técnica após mudança funcional e novo Têmis após suplemento sem mudança. */
   private boolean validateCorrectionOrder(
       List<AgentTask> processTasks,
       AgentTask technical,
+      AgentTask temis,
+      Product product,
       AgentValidationContract contract,
       List<String> issues) {
     var latest =
@@ -598,6 +604,13 @@ public class PdeAgentValidationGateActivityExecutor
                 .toList());
     if (latest.isEmpty()) return true;
     var correction = latest.orElseThrow();
+    var correctionTask =
+        processTasks.stream()
+            .filter(task -> correction.id().equals(task.getId()))
+            .findFirst()
+            .orElse(null);
+    if (resolvedEvidenceCorrection(processTasks, correctionTask, temis, product, contract))
+      return true;
     boolean valid =
         "COMPLETED".equals(correction.status())
             && correctionPolicy.validForVersion(correction, contract.prototypeVersion())
@@ -607,6 +620,61 @@ public class PdeAgentValidationGateActivityExecutor
     if (!valid)
       issues.add("A última correção precisa ser concluída e seguida de nova homologação técnica.");
     return valid;
+  }
+
+  /** Reconhece retorno sem entrega funcional somente com prova nova e Têmis posterior aprovado. */
+  private boolean resolvedEvidenceCorrection(
+      List<AgentTask> history,
+      AgentTask correction,
+      AgentTask temis,
+      Product product,
+      AgentValidationContract contract) {
+    if (operationalEvidence == null
+        || correction == null
+        || temis == null
+        || !"BLOCKED".equals(correction.getStatus())
+        || correction.getUpdatedAt() == null
+        || deliveredAt(temis) == null
+        || temis.getId() <= correction.getId()) return false;
+    var evidence = operationalEvidence.resolve(product.getSlug(), contract.prototypeVersion());
+    if (evidence.isEmpty()) return false;
+    try {
+      var draft = json.readTree(correction.getResultJson());
+      var plan = draft.path("correctionPlan");
+      var rejected =
+          history.stream()
+              .filter(task -> task.getId() == plan.path("sourceTaskId").asLong(-1))
+              .findFirst()
+              .orElse(null);
+      if (rejected == null
+          || rejected.getUpdatedAt() == null
+          || rejected.getId() >= correction.getId()
+          || !"BLOCKED".equals(rejected.getStatus())
+          || !"FUNCTIONAL_ADJUSTMENT".equals(rejected.getBlockerCategory())
+          || !"commercialIntegrityReview".equals(rejected.getProcessActivityId())
+          || !"commercialIntegrityReview".equals(plan.path("rejectedActivityId").asText())
+          || !"BLOCKED".equals(draft.path("decision").asText())
+          || !plan.path("verification").path("noExternalSideEffects").asBoolean(false)
+          || !contract.prototypeVersion().equals(plan.path("previousPrototypeVersion").asText()))
+        return false;
+      var rejection = json.readTree(rejected.getResultJson());
+      var review = json.readTree(temis.getResultJson());
+      Instant proofAt = Instant.parse(evidence.get().path("generatedAt").asText());
+      return contract.prototypeVersion().equals(rejection.path("prototypeVersion").asText())
+          && contract.prototypeVersion().equals(review.path("prototypeVersion").asText())
+          && "APPROVED".equals(review.path("decision").asText())
+          && proofAt.isAfter(rejected.getUpdatedAt())
+          && deliveredAt(temis).isAfter(proofAt)
+          && deliveredAt(temis).isAfter(correction.getUpdatedAt());
+    } catch (Exception ex) {
+      log.warn(
+          "Suplemento não resolve correção PDE. productId={} correctionTaskId={} temisTaskId={}",
+          product.getId(),
+          correction.getId(),
+          temis.getId(),
+          ex);
+      return false;
+    }
   }
 
   /**

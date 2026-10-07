@@ -65,8 +65,8 @@ export default function CycleWindowRevalidationForm({
       </h3>
       <p>
         {initial
-          ? "O sucessor está em preparação. Defina a janela quando o planejamento estiver pronto. O teto permanece "
-          : "O período anterior venceu antes da ativação. Esta ação preserva produto, versão e teto de "}
+          ? "O sucessor está em preparação. Defina a janela quando o planejamento estiver pronto. O teto de mídia permanece "
+          : "O período anterior venceu antes da ativação. Esta ação preserva produto, versão e teto de mídia de "}
         {cycle.budgetLimitBrl.toLocaleString("pt-BR", {
           style: "currency",
           currency: "BRL",

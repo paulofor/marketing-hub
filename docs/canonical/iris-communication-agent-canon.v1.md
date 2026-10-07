@@ -102,6 +102,31 @@ histórico.
 somente `audiovisualBrief`; o binário final pertence a Apolo. Uma saída inválida, incompleta, com
 placeholder, prova inventada ou mudança de estratégia não pode ser tratada como sucesso técnico.
 
+### Prova privada e formatos comerciais — 07/10/2026
+
+`PDE_PRIVATE_CREATIVE_PREPARATION_V1`, declarado pelo backend para a mesma origem e versão,
+explicita a imagem `PROOF_CARD_V1` necessária à revisão privada independente. Essa prova usa os
+pixels aprovados e preserva a escolha comercial, inclusive quando ela for exclusivamente vídeo.
+Ela não seleciona anúncio estático, variante, novo canal ou uma condição comercial diferente.
+O contrato de comunicação deve informar a prova técnica; sua ausência nas peças comerciais
+selecionadas não impede a materialização dessa evidência interna. PNG e hashes reais continuam
+obrigatórios, e Psique/Têmis continuam revisando a imagem final.
+
+Briefing de vídeo e pedido governado de produção são fatos distintos. Na preparação privada sem
+pedido financeiro próprio da mesma identidade e versão, a rota registra vídeo planejado,
+produção adiada e atividade não aplicável ao escopo atual. Preserva o briefing e declara que
+nenhum vídeo foi produzido ou aprovado. Pedido governado vigente preserva a produção requerida
+e todos os gates do Estúdio/Apolo; a nova declaração nunca concede gasto. Contratos legados e
+comerciais conservam a exigência audiovisual anterior. Trabalho em andamento não pode ser
+cancelado ou dispensado por essa resolução.
+
+A declaração técnica não muda o hash semântico da estratégia/produto nem exige repetir uma
+mensagem compatível. A rota compara sua própria declaração para reaplicar uma decisão técnica
+alterada, preservando ocorrências, resultados e custos. A preparação e a prova interna não
+comprovam venda nem prontidão para publicação; um vídeo apenas planejado continua pendência
+do processo comercial que o exigir. `CHANGE_PER_CYCLE_V1` conserva sua autoridade sobre mudanças
+das condições testadas; explicitar a avaliação interna dos mesmos fatos não muda essas condições.
+
 ## Execução e auditoria
 
 A identidade técnica é `communication-director`, o domínio é `COMMUNICATION_MATERIALIZATION` e o

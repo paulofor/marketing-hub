@@ -81,4 +81,16 @@ class IrisCommunicationInputFingerprintTest {
         .put("unitPriceBrl", 59);
     assertThat(IrisCommunicationInputFingerprint.equivalent(json, before, after)).isFalse();
   }
+
+  /** Provas internas posteriores não repetem a mensagem, mas preço e versão continuam relevantes. */
+  @Test
+  void ignoresPrivateReviewDeclarationWithoutIgnoringProductChanges() throws Exception {
+    var original = json.readTree("{\"prototypeVersion\":\"sandbox-v1\",\"product\":{\"id\":91010,\"price\":49}}");
+    var decorated = (com.fasterxml.jackson.databind.node.ObjectNode) original.deepCopy();
+    decorated.putObject(PrivateCreativePreparationContext.FIELD)
+        .put("audiovisualProductionIntent", "BRIEF_ONLY").put("videoProductionRequestId", 0L);
+    assertThat(IrisCommunicationInputFingerprint.equivalent(json, original, decorated)).isTrue();
+    decorated.withObject("/product").put("price", 59);
+    assertThat(IrisCommunicationInputFingerprint.equivalent(json, original, decorated)).isFalse();
+  }
 }

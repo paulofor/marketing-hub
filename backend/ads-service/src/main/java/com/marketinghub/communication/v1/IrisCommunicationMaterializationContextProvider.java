@@ -53,6 +53,9 @@ public class IrisCommunicationMaterializationContextProvider
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private IrisPrivateProductContext privateProducts;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private PrivateCreativePreparationContext privatePreparation;
+
   /** Configura as fontes canônicas de plano, produto e provas aprovadas. */
   public IrisCommunicationMaterializationContextProvider(
       CommercialPlanRepository plans,
@@ -71,22 +74,27 @@ public class IrisCommunicationMaterializationContextProvider
 
   /**
    * Resolve preparação privada por produto ou ciclo, incluindo o contrato declarativo de tracking,
-   * e conserva o contrato comercial dos demais casos.
+   * as provas internas obrigatórias, e conserva o contrato comercial dos demais casos.
    */
   @Override
   @Transactional(readOnly = true)
   public Optional<Map<String, Object>> resolve(String sourceReference) {
     if (privateProducts != null) {
       var product = privateProducts.resolve(sourceReference);
-      if (product.isPresent()) return product;
+      if (product.isPresent()) return product.map(input -> preparation(sourceReference, input));
     }
     if (learningCycles != null) {
       var cycle = learningCycles.resolve(sourceReference);
-      if (cycle.isPresent()) return cycle;
+      if (cycle.isPresent()) return cycle.map(input -> preparation(sourceReference, input));
     }
     Optional<ResolvedScope> scope = scope(sourceReference);
     if (scope.isEmpty()) return Optional.empty();
-    return Optional.of(context(sourceReference, scope.get()));
+    return Optional.of(preparation(sourceReference, context(sourceReference, scope.get())));
+  }
+
+  /** Explicita o requisito técnico de prova sem substituir ou reaprovar a mensagem anterior. */
+  private Map<String, Object> preparation(String reference, Map<String, Object> input) {
+    return privatePreparation == null ? input : privatePreparation.enrich(reference, input);
   }
 
   /** Expõe o experimento validado do ciclo privado ou do plano sem recorrer à versão histórica. */

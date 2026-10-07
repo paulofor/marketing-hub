@@ -9239,3 +9239,20 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Limite:** nenhuma avaliação nova, autorização comercial ou evidência humana é fabricada.
   A correção não muda candidata v3, experimento 102, orçamento cumulativo ou provas aceitas.
 - **Registro:** `docs/registros/mira-gate-matriz-v3-2026-10-07.md`.
+
+## LOOP-IRIS-FORMATO-COMERCIAL-CONFUNDIDO-COM-PROVA — 07/10/2026
+
+- **Evidência:** Mira 634 concluiu comunicação com vídeo escolhido e sem ativo estático;
+  635 bloqueou porque a produção exigia imagem e o contrato exigia preservar os formatos.
+  O histórico 503 produziu imagem após escolha de vídeo com controles estáticos previstos,
+  descartando a hipótese de falha geral do formato audiovisual.
+- **Causa:** prova visual técnica só era exigida na etapa seguinte, sem declarar sua finalidade
+  independente da escolha comercial. Briefing também era confundido com pedido de produção paga.
+- **Correção:** declaração backend versionada de prova interna e fronteira de produção, preflight
+  no executor e instruções nos dois prompts. Mensagem preservada; pedido governado vigente mantém
+  produção exigida, ausência conserva apenas o briefing. Dispensa antiga é reaberta por pedido novo.
+- **Prevenção:** mensagem real, outra identidade, legado, consulta indisponível, pedido incompatível,
+  atividade em curso, transporte numérico estável, imagem persistida, callback e revisões independentes.
+- **Limite:** nenhuma prova interna constitui publicação comercial, venda, vídeo produzido ou
+  aprovação humana. A retomada preserva a tentativa bloqueada e todo o orçamento acumulado.
+- **Registro:** `docs/registros/mira-comunicacao-prova-privada-formatos-2026-10-07.md`.

@@ -10,6 +10,18 @@ Preencha `functionalOutput.messageStrategy` e ao menos um item em `channelBriefi
 artefatos estáticos, e-mails e HTML podem permanecer vazios nesta atividade. Se o contexto não
 provar o produto real ou não trouxer o hash de Atena, bloqueie e descreva cada lacuna.
 
+Quando `communicationMaterializationContext.privateCreativePreparation` declarar
+`PDE_PRIVATE_CREATIVE_PREPARATION_V1`, registre no briefing a prova interna `PROOF_CARD_V1`
+obrigatória para Psique e Têmis. Essa imagem documenta a mensagem e os pixels aprovados na
+avaliação privada; ela não seleciona anúncio estático nem muda o formato comercial escolhido.
+Mesmo que a alternativa comercial seja exclusivamente vídeo, preserve a prova interna prevista
+pela próxima atividade. Não descreva essa obrigação técnica como formato não autorizado.
+Com `audiovisualProductionIntent=BRIEF_ONLY`, entregue o briefing completo, identificando vídeo
+planejado e ainda não produzido. `GOVERNED_PRODUCTION_REQUESTED` identifica um pedido próprio
+da mesma versão: sua produção continua sujeita aos gates independentes de Apolo e do Estúdio.
+Essa declaração não concede orçamento, publicação ou geração paga. Peças comerciais futuras
+continuam dependendo de suas condições e autorizações.
+
 Em `functionalOutput.messageStrategy`, registre obrigatoriamente os seis marcadores abaixo, cada
 um seguido da decisão concreta, da evidência recebida e da métrica correspondente. Os marcadores
 usam os campos existentes do contrato e não autorizam inventar fonte, termo ou resultado:

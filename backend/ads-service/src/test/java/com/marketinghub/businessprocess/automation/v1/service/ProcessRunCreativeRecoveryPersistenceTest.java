@@ -277,6 +277,32 @@ class ProcessRunCreativeRecoveryPersistenceTest {
         .anyMatch(e -> "NO_PROGRESS".equals(e.eventType()));
   }
 
+  /** Retomada explícita após reparar o contrato preserva o bloqueio e agenda uma única nova prova. */
+  @Test
+  void resumesRepairedPrivateProofOnceAndWaitsForIndependentReviews() throws Exception {
+    var run = start();
+    tick(run.id());
+    callback("nonAudiovisual", "BLOCKED", "{\"executionStatus\":\"BLOCKED\",\"evidenceGaps\":[\"Prova interna não declarada no contrato\"]}");
+    assertThat(tick(run.id()).status()).isEqualTo("BLOCKED");
+    groups.get("nonAudiovisual").put("stateReason", "PDE_PRIVATE_CREATIVE_PREPARATION_V1: prova interna declarada, vídeo em briefing");
+    mvc.perform(post(root + "/" + run.id() + "/resume"))
+        .andExpect(status().isOk());
+    assertThat(tick(run.id()).status()).isEqualTo("WAITING_ACTIVITY");
+    for (int i = 0; i < 3; i++) tick(run.id());
+    assertThat(requested).containsExactly("nonAudiovisual", "nonAudiovisual");
+    assertThat(groups.get("nonAudiovisual").path("tasks").get(0).path("status").asText())
+        .isEqualTo("BLOCKED");
+    callback("nonAudiovisual", "COMPLETED", "{\"functionalOutput\":{\"renderedAssets\":[{\"artifactId\":941130}]}}");
+    tick(run.id());
+    callback("customer", "COMPLETED", "{\"decision\":\"APPROVED\"}");
+    tick(run.id());
+    callback("commercial", "COMPLETED", "{\"decision\":\"APPROVED\"}");
+    var reviewed = tick(run.id());
+    assertThat(reviewed.status()).isEqualTo("WAITING_HUMAN");
+    assertThat(reviewed.omittedActivities()).isEqualTo(1);
+    assertThat(requested).doesNotContain("audiovisual", "human", "communicationContract");
+  }
+
   /** Inicia pelo endpoint de processo e confirma a identidade persistida. */
   private ProcessRunResponse start() throws Exception {
     return json.readValue(

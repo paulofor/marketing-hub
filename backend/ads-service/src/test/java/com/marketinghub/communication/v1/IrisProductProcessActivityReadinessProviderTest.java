@@ -554,7 +554,7 @@ class IrisProductProcessActivityReadinessProviderTest {
     assertThat(provider.requiresFreshExecution(process, activity(), null, reference)).isFalse();
   }
 
-  /** Reabre os formatos quando a rota ainda aponta para uma comunicação substituída. */
+  /** Reabre somente formatos e fronteiras alterados, preservando a comunicação paga vigente. */
   @Test
   void refreshesCreativeRouteWhenCommunicationChanges() {
     String reference = "experiment:93";
@@ -600,6 +600,20 @@ class IrisProductProcessActivityReadinessProviderTest {
                     "{}")));
 
     assertThat(provider.requiresFreshExecution(creative, route, null, reference)).isFalse();
+
+    var preparation = new LinkedHashMap<String, Object>();
+    preparation.put("contractVersion", PrivateCreativePreparationContext.VERSION);
+    preparation.put("audiovisualProductionIntent", "BRIEF_ONLY");
+    preparation.put("videoProductionRequestId", 0L);
+    when(communication.resolve(reference)).thenReturn(Optional.of(Map.of(
+        PrivateCreativePreparationContext.FIELD, preparation)));
+    assertThat(provider.requiresFreshExecution(creative, route, null, reference)).isTrue();
+    routed.setObjectiveEvidenceJson("{\"communicationTaskId\":500,\"privateCreativePreparation\":{\"videoProductionRequestId\":0,\"audiovisualProductionIntent\":\"BRIEF_ONLY\",\"contractVersion\":\"PDE_PRIVATE_CREATIVE_PREPARATION_V1\"}}");
+    assertThat(provider.requiresFreshExecution(creative, route, null, reference)).isFalse();
+    preparation.put("audiovisualProductionIntent", "GOVERNED_PRODUCTION_REQUESTED");
+    preparation.put("videoProductionRequestId", 910123L);
+    assertThat(provider.requiresFreshExecution(creative, route, null, reference)).isTrue();
+    when(communication.resolve(reference)).thenReturn(Optional.empty());
 
     when(tasks.findFunctionalSnapshots(
             org.mockito.ArgumentMatchers.eq(reference),

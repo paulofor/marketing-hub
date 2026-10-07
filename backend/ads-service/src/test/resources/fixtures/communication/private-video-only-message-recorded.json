@@ -1,0 +1,134 @@
+{
+  "contractVersion": "IRIS_COMMUNICATION_V1",
+  "executionStatus": "COMPLETED",
+  "sourceReference": "experiment:102",
+  "activityId": "communicationContract",
+  "outputType": "COMMUNICATION_PACKAGE",
+  "strategicContractReference": {
+    "contractVersion": "MARKET_STRATEGY_V4",
+    "contentHash": "8d28fdddd8c2be567648763869a9a794c4471e6450879118c09551aa4430026e",
+    "preserved": true
+  },
+  "alternatives": [
+    {
+      "name": "Peça estática com captura real e conclusão explícita",
+      "benefit": "Apresenta rapidamente o resultado consultável, as fontes e os limites; facilita compreender a entrega antes de considerar a oferta.",
+      "risk": "Uma captura isolada pode ocultar o esforço de reunir informações e não demonstra a recuperação. Precisa identificar o teste interno e preservar ressalvas legíveis.",
+      "effort": "Baixo para planejamento; materialização posterior exige conferir pixels, versão, hash e autorização de uso.",
+      "adherence": "Compatível com a preparação privada e o canal futuro Instagram Ads/FACEBOOK. Usa somente evidência da mira-private-candidate-v3, sem resultado clínico ou prova humana."
+    },
+    {
+      "name": "Demonstração curta da experiência real, com legenda e CTA privado",
+      "benefit": "Torna concreto o benefício inicial: encontrar instruções documentadas, fontes e limites em uma consulta principal. Explica visualmente a diferença entre consultar e preparar outra organização.",
+      "risk": "Montagem acelerada pode sugerir menor preenchimento total ou transformar teste sintético em experiência de cliente. Movimento sobre capturas não comprova interação, latência ou recuperação.",
+      "effort": "Médio para briefing. Apolo deverá usar capturas reais compatíveis ou gravação autorizada da versão exata; este contrato não gera vídeo nem autoriza produção paga.",
+      "adherence": "Escolhida. O brief do ciclo 9 e a decisão 43 fundamentam considerar demonstração em vídeo sem geração paga. Mantém Instagram Ads/FACEBOOK como referência futura, sem ativar campanha."
+    },
+    {
+      "name": "Narrativa audiovisual sobre organizar os produtos que já possui",
+      "benefit": "Pode contextualizar a situação cotidiana e a ocasião de retorno à organização, aproximando problema, participação do produto e resultado utilizável.",
+      "risk": "Uma personagem ou cena emocional pode parecer cliente, depoimento ou satisfação observada. Não há prova humana, áudio ou material narrativo aprovado no contexto.",
+      "effort": "Alto em comparação às outras alternativas; exigiria direção e ativos adicionais com revisão de autenticidade.",
+      "adherence": "Preserva a estratégia se apresentada como ilustração, mas tem menor aderência à preparação atual. Não escolhida: a demonstração documental exige menos inferências e apresenta melhor a prova disponível."
+    }
+  ],
+  "chosenAlternative": "Demonstração curta da experiência real, com legenda e CTA privado",
+  "functionalOutput": {
+    "messageStrategy": "ESCOPO E MENSAGEM CENTRAL — Contrato privado para Mira · sua rotina organizada, produto 10, ciclo 9, experimento 102, mira-private-candidate-v3. Mensagem central: “Mira organiza informações documentadas dos produtos que você já tem em uma rotina consultável, com fontes e limites explícitos.” Hierarquia: primeiro, consultar as informações reunidas; segundo, dispensar prompts e montagem externa do resultado, preservando a coleta documental necessária; terceiro, reconhecer fontes, lacunas e limites; quarto, retomar sem consumir outra organização; quinto, compreender a segunda organização incluída na referência de oferta. O gate 545, concluído em 07/10/2026, e Têmis #633 sustentam esta preparação sob AGENT_VALIDATION. Não há alteração de estado operacional por Íris nem autorização comercial derivada de PLAY.\n\n[DESEJO_RECONHECIDO] Decisão: priorizar a hipótese de alívio de esforço e clareza para mulheres de 35 a 60 anos que possuem produtos de skincare identificáveis e informações documentadas suficientes. Situação proposta: antes de usar os itens disponíveis, querer consultar suas informações reunidas. Qualificar o escopo antes de apresentar a oferta: organização documental, sem diagnóstico, prescrição ou verificação de compatibilidade clínica. Evidência: Atena #620/MARKET_STRATEGY_V4; PUBLIC_AAD_BUDGET e PUBLIC_AAD_ORDER, consultadas em 07/10/2026, sem data editorial identificável. Essas fontes sustentam simplicidade, sequência e limites gerais; não fornecem linguagem observada de clientes de Mira. “Produtos que você já tem”, “consultar”, “fontes” e “limites” são linguagem editorial do contrato recebido, não citações de consumidoras. Preservar a explicação concorrente: compreensão sintética pode decorrer da familiaridade dos agentes ou da organização visual, sem diminuir esforço humano ou motivar compra. Rótulos oficiais, orientação gratuita e uma nota pessoal podem ser suficientes. Métrica: compreensão independente do benefício e do limite documental na preparação; posteriormente, primeira interação humana atribuída, oferta efetivamente vista, compra líquida, entrega e primeiro uso. Emoção, preferência e satisfação humana permanecem desconhecidas.\n\n[PRIMEIRO_PASSO_FACIL] Decisão: orientar a conferir o objetivo de organização e informar nome e instruções documentadas de cada item. O objetivo delimita a finalidade; o nome identifica o produto; as instruções fornecem o conteúdo organizável; a referência HTTPS opcional permite identificar a origem informada, sem verificação automática da página. Percurso: informar/conferir → organizar → consultar. No mobile, manter uma ação principal por momento, texto legível e limites alcançáveis por rolagem; não exigir conhecimento de IA. CTA inicial de comunicação privada: “Experimentar Mira em acesso privado”, apontando exclusivamente para https://mira.digicomdigital.com.br/mira-candidate em contexto interno autorizado. Na experiência, “Consultar organização” é a ação principal comprovada. Recuperação reutiliza o estado persistido; consulta e retomada não gastam outra organização. Evidência: harness de Dédalo #622, homologação #627 e parecer RECOVERY #629. REDUCED admite um item inicial, mas o inventário de dois produtos exigiu quatro campos de produto e duas referências opcionais, como REFERENCE; não prometer redução do preenchimento total. Cobertura mobile é emulação, sem comprovação de Safari nativo. Métrica: campos realmente preenchidos, correções, erros, tempo monotônico até resultado utilizável e consulta registrada; recuperação com consumo único. Limite de aceitação recebido: até 600 segundos nos percursos seguros, sem transformar esse limite em garantia ao consumidor.\n\n[VALOR_ANTES_DO_COMPROMISSO] Decisão: demonstrar o resultado real da mira-private-candidate-v3 antes de qualquer convite de compra. Mostrar os cartões documentais, a consulta principal, as referências e as ressalvas, identificando “Demonstração interna · sem cobrança”. Evidência: #627, 18 combinações PASS; capturas 521–538; pareceres independentes #628–630; gate 545 e Têmis #633. Prova mobile proposta: captura 523, ADHERENT/IPHONE_15_PRO/REFERENCE, SHA-256 45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7, URL https://mira.digicomdigital.com.br/mira-candidate, captura em 07/10/2026. Os itens CeraVe são fixtures documentais, sem recomendação, endosso ou inventário de cliente. Suas fontes específicas constam de #627, consultadas em 06/10/2026, resolvendo para esses itens a pendência anterior do planejamento. Não existe contrato de degustação pde-tasting-proof-of-value entregue: comunicar somente a demonstração disponível, sem inventar amostra gratuita, franquia ou cadastro público. Resultado exibido, consulta efetiva, utilidade, cadastro e compra são etapas distintas. Métrica: exposição à demonstração separada de EXPERIENCE_STARTED, VALUE_MOMENT e READY_RESULT_USED; PREFERRED_OVER_FREE e CHECKOUT_STARTED atuais são sinais sintéticos, sem preferência humana ou checkout comercial.\n\n[CONTINUIDADE_PAGA] Decisão: preservar como referência futura duas organizações por preço total de R$ 49, compra única, sem assinatura. O benefício adicional à demonstração é organizar os próprios itens elegíveis e contar com uma segunda organização, preservando a anterior. Entregáveis comprovados na candidata: cartões com nomes, instruções documentadas, sequência limitada às regras, referências, ressalvas e histórico consultável; até 12 itens por entrada. Uso: fornecer informações, organizar, consultar e retomar; preparar a segunda organização quando houver saldo. A consulta não cria uma organização adicional; o terceiro resultado distinto é recusado. Evidência: Atena #620, Plutus #621, Dédalo #622, suplemento operacional PASS e revisão #633. Sete dias são validade da credencial privada, não duração comercial; 21/10/2026 é prazo operacional de planejamento. Suporte comercial, período comercial de acesso, prazo comercial de entrega, reembolso e checkout não estão comprovados e seguem como dependências posteriores. Não prometer atendimento automatizado, uso ilimitado, cobrança extra ou formas de pagamento. Métrica: agora, compreensão da diferença entre demonstração, consulta e segunda organização; no processo comercial autorizado, oferta efetivamente vista → CTA → checkout canônico → compra líquida → entrega → primeiro uso, com reembolso registrado separadamente.\n\n[REPETICAO_COM_MARGEM] Decisão: preservar o predecessor ciclo 8/experimento 101/v2, a decisão 43 e o sucessor ciclo 9/experimento 102/v3. A mudança principal recebida é a consulta principal com fontes e limites claros; completar sinais corrige auditabilidade, sem criar segunda hipótese comercial. Condições mantidas: produto, público, Instagram Ads/FACEBOOK, referência de R$ 49, duas organizações, até 12 itens e validade privada de sete dias. Amostra atual: uma matriz de 18 combinações e três pareceres isolados; janela restrita à preparação privada da versão e à validade das sessões. A amostra histórica de 100, a primeira compra e CAC até R$ 25 não são autorização atual. Evidência: cycleBrief, evento 43, #627–630, Plutus #621 e gate 545. R$ 18,27 de custo variável, R$ 30,73 de contribuição, 62,71% de margem, R$ 100 de custo inicial e 10% de reembolso esperado são hipóteses econômicas recebidas. Custo conhecido do gate: US$ 1,12445 com cobertura PARTIAL; não representa o custo integral nem saldo disponível. Métrica: custos de preparação por execução/componente agora; posteriormente, compras líquidas, receita líquida, CAC, custo integral incluindo falhas e suporte, reembolsos, contribuição e margem, por campanha, variante e janela. Desconhecido não é zero; sem compras, CAC não é zero. Excluir AGENT_VALIDATION, mh_internal_test e fixtures das métricas de mercado. Qualquer mudança de criativo, CTA, vídeo, amostra ou condição testada exige sucessor rastreável antes da materialização, mantendo uma mudança principal; retentativa do mesmo artefato permanece no contrato atual. Nenhuma autorização de gasto é herdada.\n\n[DECISAO_DE_VIDEO] Decisão: escolher a demonstração curta legendada da experiência real para briefing privado de Apolo, fundamentada no ciclo 9 e na decisão 43. Comparação: a peça estática oferece entendimento rápido, baixo esforço e boa aderência, mas não apresenta percurso; a demonstração curta oferece leitura concreta da consulta, esforço médio e maior aderência à prova atual, com risco controlável de confundir montagem e interação; a narrativa audiovisual oferece contexto cotidiano, mas exige maior esforço e aumenta o risco de atribuir emoção ou uso a uma cliente inexistente. Em Instagram Ads, avaliar vídeo curto com legenda e CTA privado, mantendo o canal exclusivamente como referência futura. audiovisualRequired=false não torna vídeo obrigatório, mas o brief recebido permite esta escolha; ela resolve a rota nesta atividade. Evidência: #627 e seus manifestos de capturas, pareceres #628–630 e aprovação privada #633. Não há gravação em movimento entregue; usar movimento editorial sobre captura real, identificado como tal, ou gravação autorizada da mesma versão. Não simular cliques, entrada, recuperação ou resultado para parecerem registrados. Métrica: compreensão do mecanismo, elegibilidade, limites e próximo passo; posteriormente, continuidade atribuída da demonstração até compra líquida, entrega e primeiro uso. Visualizações, retenção e cliques são intermediários. Sem avatar, depoimento, antes/depois de pele ou resultado sintético apresentado como prova humana.\n\nIDENTIDADE, TOM E PROMESSA — Preservar Mira · sua rotina organizada e a identidade observada nos pareceres: fundo claro, verde contido, texto escuro, cartões e respiro. Tom direto, acolhedor e concreto, sem censura estética ou pressão social. Sensorialidade visual orientada à leitura e antecipação de uma consulta organizada; calma, prazer e autonomia são possibilidades propostas, não efeitos comprovados. SATISFACTION_CONTINUITY_V1: informações dispersas → participação documental de Mira → resultado consultável → satisfação possível de encontrar informações reunidas. Ocasião de retorno proposta: consultar antes de usar os itens, dentro do acesso válido; frequência real desconhecida. Não usar “rotina segura”, “compatibilidade verificada”, “tratamento”, “menos preenchimento” ou rapidez sintética como promessa humana. Não apresentar a AAD como endosso de Mira. A candidata atual é determinística, sem chamada externa; não vender personalização clínica ou IA abstrata.",
+    "copy": {
+      "primaryText": "",
+      "headline": "",
+      "description": "",
+      "ctaText": ""
+    },
+    "channelBriefings": [
+      "Instagram Ads/FACEBOOK — Único canal de aquisição de referência, preservado para eventual processo comercial autorizado. Preparar privadamente a demonstração curta: situação de reunir informações dos produtos já possuídos → resultado documental real → fontes e limites → CTA de experimentação privada. Qualificar mulheres de 35 a 60 anos com itens identificáveis e documentação suficiente antes da oferta. Uma mensagem principal e conclusão explícita sustentada pela captura. Legendas devem permitir compreensão sem áudio; preservar ressalvas e identificar fixtures/teste interno. Não criar campanha, contato individual, lista própria, divulgação orgânica ou canal substituto.",
+      "Destino e futura landing — O destino atual aprovado é https://mira.digicomdigital.com.br/mira-candidate, versão mira-private-candidate-v3, acesso privado sem cobrança; requiresLandingGeneration=false. Este contrato não altera a experiência de Dédalo nem cria HTML. Orientação para superfície pré-compra posterior: benefício concreto → elegibilidade → demonstração fiel → mecanismo e esforço inicial → limites → continuidade. CTA de compra, preço acionável e opções de pagamento somente após checkout canônico e condições comerciais comprovadas. Sem logos de pagamento, parcelamento, descontos ou URL inventados.",
+      "Peças e e-mails — A peça estática permanece alternativa comparada, sem produção nesta atividade. Se vier a ser materializada, deve conservar URL, versão, artefato e hash dos pixels reais, mantendo identificação de teste e ressalvas. E-mails não constituem canal aprovado; emailSequence permanece vazia. Nenhuma peça final está aprovada por este contrato.",
+      "Encaminhamento via nextHandoff=APOLO — Entregar o audiovisualBrief para a rota de planejamento/materialização controlada pelo backend. Antes de produzir vídeo, conferir autorização dos pixels para o uso pretendido, identidade e hashes; manter preparação privada e sem geração paga. Não exigir nova versão, matriz ou parecer pela simples complementação de evidência compatível. Dependências do processo comercial posterior: checkout canônico, prazo e período comercial de acesso, suporte, política de reembolso, custos integrais reconciliados, revalidação de Plutus, revisão dos ativos por Psique/Têmis e autorização própria de publicação/campanha/gasto. Ausência dessas condições futuras não bloqueia este contrato privado. O teto acumulado de US$ 10 da preparação não é renovado; o backend decide avanço e eventual bloqueio.",
+      "Pesquisa consultiva — Usar RI1-6AA6455BB792 para uma conclusão explícita verificável; RI1-46C593BBC354 para representação fiel e identificação de simulação; RI1-646DE1AF483E para reservar clareza das formas reais de pagamento ao processo posterior, deixando explícita a ausência de cobrança agora. Não publicar percentuais dos artigos como resultado de Mira nem abrir variantes experimentais adicionais neste ciclo."
+    ],
+    "staticAssets": [],
+    "emailSequence": [],
+    "evidenceSelection": [
+      {
+        "reference": "task:620",
+        "version": "MARKET_STRATEGY_V4",
+        "purpose": "Preservar público, posicionamento, desejo hipotético, explicação concorrente, oferta de referência e Instagram Ads/FACEBOOK."
+      },
+      {
+        "reference": "task:621",
+        "version": "PDE_AGENT_ECONOMICS_V1",
+        "purpose": "Preservar R$ 49, projeções identificadas como hipóteses e ausência de autorização comercial de gasto."
+      },
+      {
+        "reference": "task:622",
+        "version": "PDE_HARNESS_PLAN_V1",
+        "purpose": "Definir entradas, mecanismo documental, entregáveis, recuperação e limites sem ampliar capacidades."
+      },
+      {
+        "reference": "task:627",
+        "version": "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
+        "purpose": "Sustentar a demonstração da mira-private-candidate-v3, matriz única de 18 combinações e fontes específicas dos fixtures."
+      },
+      {
+        "reference": "task:627/visual-evidence:523",
+        "version": "mira-private-candidate-v3",
+        "purpose": "Referência visual mobile para Apolo; captura real de teste interno, SHA-256 45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7, preservando fontes e ressalvas."
+      },
+      {
+        "reference": "task:628; task:629; task:630",
+        "version": "PDE_PSIQUE_AGENT_SCENARIO_V1",
+        "purpose": "Usar avaliações sintéticas independentes de compreensão, recuperação e bloqueio, sem convertê-las em emoção, preferência ou satisfação humana."
+      },
+      {
+        "reference": "contracts/operational-evidence/mira-private-controls-v1.json",
+        "version": "PDE_OPERATIONAL_CONTROLS_EVIDENCE_V1",
+        "purpose": "Sustentar duas organizações, até 12 itens, validade privada de sete dias e controles operacionais; reportSha256 de6c61092ce54485dfac732eb8afc3c81d7dba65ca7814abf412777ed42536a4."
+      },
+      {
+        "reference": "task:633",
+        "version": "PDE_TEMIS_AGENT_VALIDATION_V1",
+        "purpose": "Reconhecer a aprovação vigente de preparação privada e a resolução da insuficiência anterior de evidência, sem autorização comercial."
+      },
+      {
+        "reference": "gateInstance:545",
+        "version": "PDE_AGENT_VALIDATION_GATE_V1",
+        "purpose": "Aplicar AGENT_VALIDATION vigente, com critérios humanos históricos excluídos do gate atual e custos com cobertura parcial."
+      },
+      {
+        "reference": "RI1-6AA6455BB792",
+        "version": "HARNESS_RESEARCH_INTELLIGENCE_V1",
+        "purpose": "Orientar mensagem única e conclusão explícita sustentada pela prova documental, sem projetar efeitos do artigo sobre compras de Mira."
+      },
+      {
+        "reference": "RI1-46C593BBC354",
+        "version": "HARNESS_RESEARCH_INTELLIGENCE_V1",
+        "purpose": "Orientar autenticidade do briefing, identificação de fixtures e proibição de depoimentos ou atributos inventados."
+      },
+      {
+        "reference": "RI1-646DE1AF483E",
+        "version": "HARNESS_RESEARCH_INTELLIGENCE_V1",
+        "purpose": "Orientar clareza operacional: acesso privado sem cobrança agora; formas reais de pagamento somente após comprovação do checkout posterior."
+      }
+    ],
+    "conversionArchitecture": "Preparação atual: demonstração interna identificada → CTA privado → experiência iniciada → resultado visível → consulta registrada. SAFETY encerra a continuidade, sem resultado útil, preferência ou checkout. PREFERRED_OVER_FREE e CHECKOUT_STARTED são simulações segregadas. Processo comercial futuro: primeira interação humana → demonstração → oferta efetivamente vista → CTA → checkout canônico → compra líquida → entrega → primeiro uso, com reembolso e contribuição reconciliados. Atribuição por produto, versão, experimento, campanha, variante e janela; nenhuma etapa atual habilita cobrança ou aquisição.",
+    "visualComposition": "Preservar identidade visual de Mira descrita nos pareceres: superfícies claras, verde contido, texto escuro, cartões documentais e espaçamento. Destacar consulta principal; fontes e limites permanecem legíveis. Usar apenas pixels reais compatíveis com a v3, sem reconstrução generativa da interface. Ocultar credenciais e dados pessoais; qualquer recorte mantém contexto suficiente para não alterar a promessa. Movimento editorial lento sobre captura não representa interação registrada. Não introduzir rostos, estímulos de pressão estética ou antes/depois clínico.",
+    "landingHtml": null,
+    "audiovisualBrief": "APOLO — Briefing privado de demonstração curta legendada, referência futura Instagram Ads/FACEBOOK, vinculado a experiment:102, ciclo 9 e mira-private-candidate-v3. Papel no funil: tornar o resultado documental compreensível antes do compromisso e orientar a experimentação privada. Promessa: organizar informações documentadas dos produtos já possuídos em resultado consultável, com fontes e limites. Prova: homologação #627, gate 545, Têmis #633 e captura mobile 523, URL https://mira.digicomdigital.com.br/mira-candidate, SHA-256 45ec50db5899063f59b2d788ee24d9f7f326e18bb3c9194dd32fe63184132fa7; imagem de implementação 92d0d8838f6ba5b1e73893cd8a46c519d81e7945. Sujeito: interface real, sem pessoa ou avatar. Cena 1: situar a necessidade de consultar informações dos produtos já possuídos, em texto editorial, sem atribuir dor observada a cliente. Cena 2: enquadrar a captura real da consulta principal e dos cartões; legenda explica que nomes e instruções precisam ser informados. Cena 3: deslocar o enquadramento para referências e ressalvas, conservando leitura; legenda explicita ausência de diagnóstico, prescrição e verificação de compatibilidade clínica. Cena 4: mostrar saldo e segunda organização apenas quando presentes nos pixels conferidos; explicar que consulta/retomada não consomem outra organização. Encerramento: “Experimentar Mira em acesso privado”, destino privado aprovado, com “Demonstração interna · sem cobrança”. Movimento: rolagem editorial sobre captura identificada; gravação interativa somente se autorizada, real e da mesma versão. Não inventar entrada ausente, cliques, transições, falha ou recuperação. Enquadramento vertical compatível com mobile, sem cortar ressalvas para ampliar apelo; duração definida pela legibilidade, sem usar montagem para sugerir latência humana. Áudio não é necessário; legenda contém integralmente promessa, limites e CTA. Métrica atual: compreensão do benefício, elegibilidade e próximo passo; futura: demonstração/oferta vistas → CTA → checkout real → compra líquida → entrega/primeiro uso, com custo e reembolso. Limites: sem satisfação humana, depoimento, antes/depois, endosso das marcas dos fixtures, promessa dermatológica, uso ilimitado ou menor preenchimento total. Nenhum vídeo final, captura nova, produção paga, publicação ou gasto é autorizado por este briefing."
+  },
+  "evidenceGaps": [],
+  "nextHandoff": "APOLO",
+  "guardrails": {
+    "strategyPreserved": true,
+    "productPreserved": true,
+    "pricePreserved": true,
+    "noFabricatedProof": true,
+    "noPublication": true,
+    "noExternalSpend": true
+  },
+  "expectedMetric": "Na preparação privada, fidelidade integral entre mensagem, demonstração, versão e limites; compreensão do primeiro benefício e consulta/recuperação sem consumo duplicado, usando evidência vigente de até 600 segundos nos percursos seguros e bloqueio integral em SAFETY. No processo comercial futuro autorizado, acompanhar primeira interação, demonstração, oferta vista, CTA, checkout, compra líquida, entrega e primeiro uso, além de receita líquida, CAC, custo integral, reembolso, contribuição e margem. Não estabelecer previsão de conversão nem tratar cliques ou sinais sintéticos como venda.",
+  "continueCriteria": "Prosseguir pelo backend com o contrato e briefing privados enquanto hash estratégico, identidade, mira-private-candidate-v3, destino e provas permanecerem compatíveis com o gate 545 e AGENT_VALIDATION. Manter público, canal, preço de referência e limites recebidos; conferir linhagem e autorização dos pixels antes da materialização. A ausência de checkout, vendas, leituras humanas e peças finais não impede esta entrega privada.",
+  "adjustCriteria": "Devolver ao responsável qualquer divergência de versão, fonte, limite, legibilidade, CTA ou representação do esforço inicial. Retestar somente critérios alterados ou falhos e regressões relacionadas. Complementação de evidência compatível não exige nova candidata ou repetição da matriz. Mudança de condição testada exige sucessor com predecessor, uma mudança principal e atribuição preservada antes da materialização; contradições econômicas seguem para Plutus.",
+  "stopCriteria": "Interromper a materialização diante de prova fictícia, fonte incompatível, promessa clínica, dados pessoais expostos, continuidade de SAFETY, consumo duplicado, uso de versão não aprovada ou mistura de sinais internos com comportamento humano. Bloquear CTA de compra e comunicação comercial pública até comprovar checkout e condições essenciais posteriores. Parar diante de cobrança, publicação, campanha, contato ou gasto sem autorização própria."
+}

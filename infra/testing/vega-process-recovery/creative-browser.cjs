@@ -96,7 +96,7 @@ const fixture = require("../process-context-copy/fixture.json");
       const page = await context.newPage();
       const errors = [],
         unexpected = [];
-      let imageRequests = 0;
+      let imageRequests = 0, auditRequests = 0;
       page.on("pageerror", (e) => errors.push(e.message));
       await page.route("**/*", (route) => {
         const request = route.request(),
@@ -113,6 +113,11 @@ const fixture = require("../process-context-copy/fixture.json");
           imageRequests++;
           return route.fulfill({ contentType: "image/png", body: png });
         }
+        if (url.pathname.endsWith("/tasks/910403/audit")) {
+          assert.equal(url.searchParams.get("sourceReference"), activity.tasks[0].sourceReference);
+          auditRequests++;
+          return route.fulfill({ json: activity.tasks[0] });
+        }
         if (url.pathname.endsWith("/process-context"))
           return route.fulfill({ json: fixture.cycle });
         if (url.pathname.includes("/value-chain-positions/"))
@@ -121,6 +126,12 @@ const fixture = require("../process-context-copy/fixture.json");
           return route.fulfill({ json: history });
         if (url.pathname.endsWith("/automation/v1"))
           return route.fulfill({ json: fixture.automation });
+        if (url.pathname === "/api/creatives/video-review/summary")
+          return route.fulfill({ json: {
+            productId: 92004, experimentId: null, awaitingReviewCount: 0,
+            blockedCount: 0, historicalCount: 0, approvedCount: 0,
+            rejectedCount: 0, optionalReviewCount: 0,
+          } });
         if (
           url.pathname.endsWith("/execution-progress") ||
           [
@@ -179,13 +190,14 @@ const fixture = require("../process-context-copy/fixture.json");
         false,
       );
       assert(imageRequests > 0);
+      assert(auditRequests > 0);
       assert.deepEqual(errors, []);
       assert.deepEqual(unexpected, []);
       await image.scrollIntoViewIfNeeded();
       await page.screenshot({
         path: path.join(output, `creative-${name}.png`),
       });
-      results.push({ device: name, sha256, ...dimensions, errors, unexpected });
+      results.push({ device: name, sha256, ...dimensions, auditRequests, errors, unexpected });
       await context.close();
     }
     await writeFile(

@@ -65,7 +65,7 @@ public class CommunicationFormatsActivityExecutor implements BackendProductProce
     }
   }
 
-  /** Registra a decisão e a dispensa explícita de audiovisual quando nenhum briefing o exige. */
+  /** Separa vídeo planejado da produção autorizada e preserva a prova interna obrigatória. */
   @Override
   @Transactional
   public BackendProductProcessActivityExecutionResult execute(
@@ -76,13 +76,24 @@ public class CommunicationFormatsActivityExecutor implements BackendProductProce
     var source = source(product, reference);
     JsonNode result = result(source);
     JsonNode brief = result.path("functionalOutput").path("audiovisualBrief");
-    boolean audiovisual = brief.isTextual() && !brief.asText().isBlank();
+    boolean audiovisualPlanned = brief.isTextual() && !brief.asText().isBlank();
+    JsonNode preparation =
+        json.valueToTree(context.resolve(reference).orElse(java.util.Map.of()))
+            .path(PrivateCreativePreparationContext.FIELD);
+    boolean deferred =
+        audiovisualPlanned && PrivateCreativePreparationContext.isBriefOnly(preparation, reference);
+    boolean audiovisual = audiovisualPlanned && !deferred;
     var evidence = json.createObjectNode();
     evidence.put("evidenceType", "COMMUNICATION_FORMATS_V1");
     evidence.put("communicationTaskId", source.id());
     evidence.put("sourceReference", reference);
     evidence.put("nonAudiovisualRequired", true);
     evidence.put("audiovisualRequired", audiovisual);
+    evidence.put("audiovisualPlanned", audiovisualPlanned);
+    evidence.put("audiovisualProductionDeferred", deferred);
+    if (preparation.isObject()) {
+      evidence.set(PrivateCreativePreparationContext.FIELD, preparation);
+    }
     evidence.put("publicationAuthorized", false);
     evidence.put("spendAuthorized", false);
     record(activity, reference, "COMPLETED", true, evidence.toString(), null);
@@ -100,7 +111,29 @@ public class CommunicationFormatsActivityExecutor implements BackendProductProce
           "NOT_APPLICABLE",
           false,
           omitted.toString(),
-          "O contrato de comunicação não prevê briefing audiovisual; nenhuma mídia foi produzida ou aprovada.");
+          deferred
+              ? "Briefing de vídeo preservado. Esta preparação privada não possui pedido governado de produção; nenhum vídeo foi gerado ou aprovado."
+              : "O contrato de comunicação não prevê briefing audiovisual; nenhuma mídia foi produzida ou aprovada.");
+    } else {
+      var optional =
+          definitions.findByProcessDefinitionIdAndActivityId(process.getId(), "audiovisual");
+      optional.ifPresent(
+          definition -> {
+            var previous =
+                instances
+                    .findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+                        definition.getId(), reference);
+            if (previous.filter(com.marketinghub.agenttask.BusinessProcessOptionalActivity::isOmitted)
+                .isPresent()) {
+              record(
+                  definition,
+                  reference,
+                  "BLOCKED",
+                  false,
+                  evidence.toString(),
+                  "A produção de vídeo voltou a ser necessária; aguarda execução pelo contrato governado vigente.");
+            }
+          });
     }
     return new BackendProductProcessActivityExecutionResult(
         reference,
@@ -108,7 +141,9 @@ public class CommunicationFormatsActivityExecutor implements BackendProductProce
         true,
         audiovisual
             ? "Formatos registrados, incluindo audiovisual previsto no briefing."
-            : "Peças não audiovisuais previstas; audiovisual dispensado com motivo registrado.");
+            : deferred
+                ? "Prova privada obrigatória; vídeo permanece em briefing, sem produção nem aprovação de mídia."
+                : "Peças não audiovisuais previstas; audiovisual dispensado com motivo registrado.");
   }
 
   /**
@@ -116,9 +151,15 @@ public class CommunicationFormatsActivityExecutor implements BackendProductProce
    */
   private AgentTaskFunctionalSnapshot source(Product product, String reference) {
     JsonNode privateInput = null;
+    var resolved = context.resolve(reference).orElse(java.util.Map.of());
+    var resolvedIdentity = json.valueToTree(resolved);
+    if (PrivateCreativePreparationContext.isPrivateMode(resolvedIdentity.path("mode").asText())
+        && (!"AVAILABLE".equals(resolvedIdentity.path("availability").asText())
+            || !"READY".equals(resolvedIdentity.path("inputReadiness").asText())))
+      throw new IllegalStateException(
+          "Confirme a preparação privada e o pedido de vídeo antes de resolver formatos.");
     if (IrisPrivateProductContext.supports(reference)) {
-      var input = context.resolve(reference).orElseThrow();
-      var identity = json.valueToTree(input);
+      var identity = resolvedIdentity;
       privateInput = identity;
       if (!reference.equals("product:" + product.getId() + "@agent-validation-v1")
           || !"READY".equals(identity.path("inputReadiness").asText())

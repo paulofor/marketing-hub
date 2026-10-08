@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./style.css";
 const API = "/api/pde/vega/private/v1";
+const continuityVersion = "musa-pde-entry-v13-primeiro-ajuste-aplicavel";
 const storageKey = "vega-private-session-v1";
 type Card = {
   action: string;
@@ -510,11 +511,37 @@ export default function VegaPrivatePrototype() {
                     )}
                     <section className="panel">
                       <h2>Conhecer uma possível continuidade</h2>
-                      <p>
-                        A proposta de continuidade é uma jornada dos Dias 2 a 7,
-                        por R$ 67 em pagamento único. Nesta experiência você só
-                        pode explorar uma simulação.
-                      </p>
+                      {session.prototypeVersion === continuityVersion ? (
+                        <>
+                          <p>
+                            Seu ajuste gratuito serve para a ocasião que você
+                            escolheu hoje. Na proposta dos Dias 2 a 7, você
+                            praticaria esse passo em outras ocasiões, com
+                            orientações curtas para aplicar usando as roupas que
+                            você já tem e organizar uma referência pessoal
+                            reutilizável.
+                          </p>
+                          <p>
+                            Essa sequência guiada, além do primeiro ajuste
+                            gratuito, é o benefício proposto por R$ 67 em
+                            pagamento único. A proposta inclui o Mapa dos 7
+                            Sinais MUSA, o Checklist Antes de Sair e a Fórmula
+                            MUSA Pessoal, com acesso individual por 90 dias.
+                          </p>
+                          <p>
+                            Os dias seguintes ainda não estão disponíveis nesta
+                            experiência privada. Aqui você pode consultar e
+                            retomar o primeiro ajuste e explorar uma simulação
+                            sem cobrança.
+                          </p>
+                        </>
+                      ) : (
+                        <p>
+                          A proposta de continuidade é uma jornada dos Dias 2 a
+                          7, por R$ 67 em pagamento único. Nesta experiência
+                          você só pode explorar uma simulação.
+                        </p>
+                      )}
                       {events.CHECKOUT_STARTED ? (
                         <div className="notice" role="status">
                           <h3>Simulação concluída</h3>

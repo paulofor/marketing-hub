@@ -17,6 +17,32 @@ test("preparação privada publicada preserva identidade, API e acesso sem criar
   );
   expect(identity.commitSha).toBe(process.env.PDE_EXPECTED_COMMIT);
 
+  const privateVersion = process.env.PDE_EXPECTED_PRIVATE_PROTOTYPE_VERSION;
+  expect(
+    privateVersion,
+    "A variante privada precisa vir do manifesto validado",
+  ).toBeTruthy();
+  // Publicadores distintos: aguarda capacidade do backend, sem abrir sessão nem gerar dados.
+  if (privateVersion !== identity.experienceVersion) {
+    test.setTimeout(360_000);
+    await expect
+      .poll(
+        async () => {
+          const capability = await request.get(
+            "/api/pde/vega/private/v1/contract",
+          );
+          if (!capability.ok()) return [];
+          return (await capability.json()).supportedPrototypeVersions ?? [];
+        },
+        {
+          timeout: 300_000,
+          intervals: [1000, 5000, 10000],
+          message:
+            "O backend precisa publicar a capacidade da variante privada declarada",
+        },
+      )
+      .toContain(privateVersion);
+  }
   const response = await request.get("/api/pde/vega/private/v1/contract");
   expect(
     response.ok(),
@@ -24,6 +50,8 @@ test("preparação privada publicada preserva identidade, API e acesso sem criar
   ).toBeTruthy();
   const contract = await response.json();
   expect(contract.prototypeVersion).toBe(identity.experienceVersion);
+  if (privateVersion !== contract.prototypeVersion)
+    expect(contract.supportedPrototypeVersions).toContain(privateVersion);
   expect(contract.productSlug).toBe(identity.productSlug);
   expect(contract.agentValidationGenerationMode).toBe("DETERMINISTIC_FIXTURE");
   expect(contract.checkoutMode).toBe("SIMULATED_NO_CHARGE");

@@ -176,11 +176,18 @@ def validate_release_contract(
     )
     if not all(isinstance(value, dict) for value in (product, publication, runtime)):
         raise ValueError("Manifesto de publicação PDE não contém identidade completa")
+    prototype_version = publication.get("privatePrototypeVersion", surface["experienceVersion"])
+    if prototype_version != surface["experienceVersion"]:
+        validate_private_boundary(surface, contract)
+        if not isinstance(prototype_version, str) or not re.fullmatch(
+            r"musa-pde-entry-v(?:[1-9][0-9]*)-primeiro-ajuste-aplicavel", prototype_version
+        ):
+            raise ValueError("Versão privada declarada inválida")
     expected = {
         "status": "READY_FOR_INDEPENDENT_REVIEW",
         "product.id": surface["productId"],
         "product.slug": surface["productSlug"],
-        "product.experienceVersion": surface["experienceVersion"],
+        "product.experienceVersion": prototype_version,
         "product.publicUrl": surface["publicUrl"],
         "publication.frontendVersion": surface["deployTarget"],
         "publication.publicUrl": surface["publicUrl"],
@@ -241,14 +248,10 @@ def validate_rollback(before: dict[str, Any], after: dict[str, Any]) -> None:
             )
 
 
-def smoke_profile(surface: dict[str, Any], contract: dict[str, Any], source: str) -> str:
-    """Seleciona a prova privada declarada sem afrouxar a validação das ofertas comerciais."""
-
-    validate_release_contract(surface, contract, source)
+def validate_private_boundary(surface: dict[str, Any], contract: dict[str, Any]) -> None:
+    """Exige a fronteira privada antes de distinguir sua variante da raiz pública do container."""
     validation = contract.get("deploymentValidation", {})
     mode = validation.get("mode", "COMMERCIAL")
-    if mode == "COMMERCIAL":
-        return mode
     if mode != "PRIVATE_PREPARATION_READ_ONLY":
         raise ValueError("Perfil de homologação da publicação desconhecido")
     if (
@@ -264,6 +267,15 @@ def smoke_profile(surface: dict[str, Any], contract: dict[str, Any], source: str
     for field in ("additionalBudgetAuthorized", "mediaAuthorized", "paymentAuthorized", "paidVideoAuthorized"):
         if authorization.get(field) is not False:
             raise ValueError(f"Homologação privada exige {field}=false")
+
+
+def smoke_profile(surface: dict[str, Any], contract: dict[str, Any], source: str) -> str:
+    """Seleciona a prova privada declarada sem afrouxar a validação das ofertas comerciais."""
+
+    validate_release_contract(surface, contract, source)
+    mode = contract.get("deploymentValidation", {}).get("mode", "COMMERCIAL")
+    if mode != "COMMERCIAL":
+        validate_private_boundary(surface, contract)
     return mode
 
 
@@ -321,6 +333,11 @@ def main() -> int:
     smoke_parser.add_argument("--contract", required=True)
     smoke_parser.add_argument("--expected-source", required=True)
 
+    prototype_parser = subparsers.add_parser("private-version")
+    prototype_parser.add_argument("--target", required=True)
+    prototype_parser.add_argument("--contract", required=True)
+    prototype_parser.add_argument("--expected-source", required=True)
+
     rollback_parser = subparsers.add_parser("validate-rollback")
     rollback_parser.add_argument("--before", required=True)
     rollback_parser.add_argument("--after", required=True)
@@ -354,6 +371,13 @@ def main() -> int:
         return 0
     if args.command == "smoke-profile":
         print(smoke_profile(select_surface(inventory, args.target), load_object(Path(args.contract)), args.expected_source))
+        return 0
+    if args.command == "private-version":
+        surface = select_surface(inventory, args.target)
+        contract = load_object(Path(args.contract))
+        if smoke_profile(surface, contract, args.expected_source) != "PRIVATE_PREPARATION_READ_ONLY":
+            raise ValueError("Versão privada exige contrato de preparação sem efeitos externos")
+        print(contract["publicationContract"].get("privatePrototypeVersion", surface["experienceVersion"]))
         return 0
     if args.command == "validate-rollback":
         validate_rollback(

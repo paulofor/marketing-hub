@@ -19,6 +19,9 @@ printf 'npm\t%s\t%s\t%s\t%s\n' \
   "${PDE_PUBLIC_HEALTH_PATH:-}" \
   "${PDE_EXPECTED_EXPERIENCE_VERSION:-}" \
   "$*" >>"${PDE_SMOKE_INVOCATION_LOG}"
+if [[ -n "${PDE_EXPECTED_PRIVATE_PROTOTYPE_VERSION:-}" ]]; then
+  printf 'private-version\t%s\n' "${PDE_EXPECTED_PRIVATE_PROTOTYPE_VERSION}" >>"${PDE_SMOKE_INVOCATION_LOG}"
+fi
 FAKE_NPM
 
 cat >"${fake_consistency}" <<'FAKE_CONSISTENCY'
@@ -110,10 +113,16 @@ if grep -Fq 'v5.clubemusa.com.br' "${invocation_log}" || grep -Fq 'v6.clubemusa.
   exit 1
 fi
 
-run_target v8 v8 pde-platform/contracts/vega-cycle7-preparation-v3.json
+if run_target v8 v8 pde-platform/contracts/vega-cycle7-preparation-v3.json; then
+  echo '[ARQUITETURA] Um manifesto histórico autorizou fonte diferente da sua atestação.' >&2
+  exit 1
+fi
+
+run_target v8 v8 pde-platform/contracts/vega-cycle10-preparation-v4.json
 grep -Fq 'exec -- playwright test tests/vega-private-public.smoke.spec.ts --config=playwright.public.config.ts' "${invocation_log}"
-if grep -Fq 'test:public-health' "${invocation_log}" || grep -Fq 'test:public-diagnostic-smoke' "${invocation_log}" || grep -q '^consistency' "${invocation_log}"; then
-  echo '[ARQUITETURA] A preparação privada disparou diagnóstico ou validação comercial.' >&2
+grep -Fqx $'private-version\tmusa-pde-entry-v13-primeiro-ajuste-aplicavel' "${invocation_log}"
+if grep -Fq 'test:public-health' "${invocation_log}" || grep -q '^consistency' "${invocation_log}"; then
+  echo '[ARQUITETURA] A variante privada do sucessor disparou a oferta comercial.' >&2
   exit 1
 fi
 

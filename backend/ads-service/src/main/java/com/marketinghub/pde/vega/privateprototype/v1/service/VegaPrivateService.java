@@ -42,6 +42,10 @@ public class VegaPrivateService {
   @Value("${PDE_VEGA_PROTOTYPE_VERSION:musa-pde-entry-v12-primeiro-ajuste-aplicavel}")
   private String version;
 
+  private static final List<String> SUPPORTED_VERSIONS =
+      List.of(
+          "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+          "musa-pde-entry-v13-primeiro-ajuste-aplicavel");
   private static final Set<String> TERMINAL = Set.of("COMPLETED", "FAILED", "BLOCKED");
   private static final List<String> SYNTHETIC_ORIGINS = List.of("QA_INTERNAL", "AGENT_VALIDATION");
   private static final String FIXTURE_MODEL = "vega-deterministic-fixture-v1";
@@ -53,40 +57,33 @@ public class VegaPrivateService {
           "PREFERRED_OVER_FREE",
           "CHECKOUT_STARTED");
 
-  /** Informa apenas capacidades implementadas, sem abrir sessão nem emitir eventos. */
+  /** Informa versões privadas implementadas sem abrir sessão, herdar aceite ou emitir eventos. */
   @Transactional(readOnly = true)
   public JsonNode contract() {
     return json.valueToTree(
-        Map.of(
-            "productSlug",
-            "metodo-musa-7-dias",
-            "prototypeVersion",
-            version,
-            "requiredSignals",
-            SIGNALS,
-            "checkoutMode",
-            "SIMULATED_NO_CHARGE",
-            "paymentEnabled",
-            false,
-            "published",
-            false,
-            "mediaSpendBrl",
-            0,
-            "maxValueTimeMinutes",
-            5,
-            "agentValidationGenerationMode",
-            "DETERMINISTIC_FIXTURE",
-            "syntheticLimits",
-            Map.of(
-                "sessionsPerCycleVersion",
-                18,
-                "attemptsPerSession",
-                2,
-                "attemptsPerCycleVersion",
-                36)));
+        Map.ofEntries(
+            Map.entry("productSlug", "metodo-musa-7-dias"),
+            Map.entry("prototypeVersion", version),
+            Map.entry("supportedPrototypeVersions", SUPPORTED_VERSIONS),
+            Map.entry("requiredSignals", SIGNALS),
+            Map.entry("checkoutMode", "SIMULATED_NO_CHARGE"),
+            Map.entry("paymentEnabled", false),
+            Map.entry("published", false),
+            Map.entry("mediaSpendBrl", 0),
+            Map.entry("maxValueTimeMinutes", 5),
+            Map.entry("agentValidationGenerationMode", "DETERMINISTIC_FIXTURE"),
+            Map.entry(
+                "syntheticLimits",
+                Map.of(
+                    "sessionsPerCycleVersion",
+                    18,
+                    "attemptsPerSession",
+                    2,
+                    "attemptsPerCycleVersion",
+                    36))));
   }
 
-  /** Cria acesso isolado e limita a homologação sintética pela versão e ciclo sob lock. */
+  /** Cria acesso da versão implementada e declarada no ciclo, mantendo seus tetos sob lock. */
   public JsonNode create(InternalSession input) {
     var cycle =
         cycles
@@ -100,7 +97,8 @@ public class VegaPrivateService {
             && Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage()),
         "A leitura exige um ciclo privado aberto do Vega na fase de ajuste ou validação.");
     require(
-        version.equals(input.prototypeVersion()) && version.equals(cycle.getProductVersion()),
+        SUPPORTED_VERSIONS.contains(input.prototypeVersion())
+            && input.prototypeVersion().equals(cycle.getProductVersion()),
         "A versão do runtime não corresponde à versão declarada neste ciclo.");
     require(
         Set.of("QA_INTERNAL", "AGENT_VALIDATION", "HUMAN").contains(input.origin()),
@@ -108,7 +106,7 @@ public class VegaPrivateService {
     if (SYNTHETIC_ORIGINS.contains(input.origin()))
       require(
           sessions.countByCycleIdAndPrototypeVersionAndOriginIn(
-                  cycle.getId(), version, SYNTHETIC_ORIGINS)
+                  cycle.getId(), input.prototypeVersion(), SYNTHETIC_ORIGINS)
               < 18,
           "O limite de 18 sessões desta homologação foi atingido; preserve os resultados existentes.");
     if ("HUMAN".equals(input.origin())) {
@@ -117,7 +115,7 @@ public class VegaPrivateService {
           "Selecione uma das duas leituras privadas.");
       require(
           !sessions.existsByCycleIdAndPrototypeVersionAndOriginAndReadingNumberAndRevokedFalse(
-              cycle.getId(), version, "HUMAN", input.readingNumber()),
+              cycle.getId(), input.prototypeVersion(), "HUMAN", input.readingNumber()),
           "Esta leitura já possui um convite ativo.");
     }
     var row = new VegaPrivateSession();
@@ -125,7 +123,7 @@ public class VegaPrivateService {
     row.setCycleId(cycle.getId());
     row.setProductId(product.getId());
     row.setExperimentId(cycle.getExperimentId());
-    row.setPrototypeVersion(version);
+    row.setPrototypeVersion(input.prototypeVersion());
     row.setOrigin(input.origin());
     row.setReadingNumber(input.readingNumber());
     row.setState("NEW");
@@ -143,7 +141,7 @@ public class VegaPrivateService {
         cycle.getId(),
         row.getId(),
         row.getOrigin(),
-        version);
+        row.getPrototypeVersion());
     return response;
   }
 

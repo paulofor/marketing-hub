@@ -246,6 +246,8 @@ jobs:
         run: npm run build:alcyone
       - name: Install Chromium for isolated Mira contract
         run: npx playwright install --with-deps chromium
+      - name: Validate Vega private continuity and predecessor in desktop and mobile
+        run: npx playwright test tests/vega-continuity-clarity.spec.ts --config=playwright.public.config.ts --workers=1
       - name: Validate Mira correction in desktop and mobile
         run: npm run test:mira-private:local
       - name: Validate commercial Mira journey in desktop and mobile

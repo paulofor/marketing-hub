@@ -1,0 +1,18 @@
+{
+  "cardKey": "contexto-semantico-predicao-fala",
+  "collection": "prazer-audio-visual",
+  "title": "Contexto semântico antes de fala: novo estudo comportamental em compreensão L2",
+  "finding": "Estudo com 35 aprendizes L2 encontrou escores de compreensão maiores depois de pistas temáticas geradas por IA em texto, áudio ou áudio legendado versus preparação por lista de vocabulário; nenhuma modalidade contextual superou as outras significativamente. É evidência incremental a um card anterior de previsão semântica.",
+  "mechanism": "Preparação temática pode facilitar expectativas e acesso ao significado da fala subsequente, mas o estudo não mediu mecanismos neurais. Cada condição usou um teste de conteúdo distinto, limitando atribuição causal.",
+  "commercialApplication": "Em vídeo explicativo com IA ou treinamento, comparar pistas factuais breves antes de falas difíceis com controles lexicais, usando a mesma fala-alvo contrabalanceada e verificando compreensão real.",
+  "evidenceStrength": "Média-baixa para ganho causal isolado: quase-experimento intraindivíduo com n=35 e diferença significativa de pontuação, mas passagem-alvo/teste variou entre as condições; nenhum ganho exclusivo da modalidade audiovisual.",
+  "publishedOn": "2026-10-08",
+  "validUntil": "2026-11-22",
+  "experimentHypothesis": "Para as mesmas mensagens orais difíceis, uma pista semântica factual e não reveladora reduzirá erros de interpretação e esforço versus pista lexical ou neutra, sem aumentar respostas incorretas por expectativa enviesada.",
+  "risks": "Induzir expectativa incorreta pode distorcer interpretação; não apresentar a pista como informação já comprovada sobre produto ou resultado.",
+  "limits": "Pequena amostra de estudantes vietnamitas de inglês, testes distintos por tratamento, avaliação de compreensão de L2 e não de preferência, prazer, dopamina, retenção ou compras.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-08-priming-semantico-compreensao-fala-l2.md",
+  "sourceTitle": "Fonte revisada — priming semântico por IA e compreensão auditiva L2",
+  "sourceSha256": "33b4f1c961660c1fdeb0b44b79135d011e84881e37ae77bf4d174b54bca2b48c"
+}

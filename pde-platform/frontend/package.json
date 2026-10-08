@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "check:api-boundary": "bash scripts/validate-api-boundary.sh",
+    "check:api-boundary": "node --test scripts/validate-api-boundary.test.mjs && bash scripts/validate-api-boundary.sh",
     "dev": "NODE_ENV=development vite --host 0.0.0.0",
     "dev:mira": "NODE_ENV=development vite --config vite.mira.config.ts --host 0.0.0.0",
     "dev:mira-commercial": "npm run validate:mira-commercial-video && NODE_ENV=development vite --config vite.mira-commercial.config.ts --host 0.0.0.0",

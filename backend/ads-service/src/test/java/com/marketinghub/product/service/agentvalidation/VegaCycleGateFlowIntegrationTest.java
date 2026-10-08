@@ -37,6 +37,9 @@ class VegaCycleGateFlowIntegrationTest {
     Path flow = Path.of(System.getenv("VEGA_GATE_FLOW_ARTIFACTS"));
     var json = new ObjectMapper();
     var technical = json.readTree(Files.readString(flow.resolve("TECHNICAL.json")));
+    long cycleId = technical.path("cycleId").asLong(91002L);
+    String reference = technical.path("sourceReference").asText();
+    long experimentId = Long.parseLong(reference.substring("experiment:".length()));
     var product =
         Product.builder()
             .id(91004L)
@@ -54,40 +57,40 @@ class VegaCycleGateFlowIntegrationTest {
     activity.setActivityId("agentValidationGate");
     activity.setProcessDefinition(process);
     var cycle = new LearningSalesCycle();
-    cycle.setId(91002L);
+    cycle.setId(cycleId);
     cycle.setProductId(91004L);
-    cycle.setExperimentId(91092L);
+    cycle.setExperimentId(experimentId);
     cycle.setProductVersion(technical.path("prototypeVersion").asText());
     cycle.setStatus("OPEN");
     cycle.setStage("ADJUSTMENT");
     var cycleRepo = mock(LearningSalesCycleRepository.class);
-    when(cycleRepo.findByExperimentId(91092L)).thenReturn(Optional.of(cycle));
+    when(cycleRepo.findByExperimentId(experimentId)).thenReturn(Optional.of(cycle));
     var cycleExecutions = mock(LearningCycleExecutionContext.class);
-    when(cycleExecutions.source(91002L, product, process, true)).thenReturn("experiment:91092");
+    when(cycleExecutions.source(cycleId, product, process, true)).thenReturn(reference);
     var context = json.createObjectNode();
     var plan =
         (ObjectNode)
             json.readTree(
                 getClass().getResourceAsStream("/contracts/pde-agent-validation-plan-v1.json"));
-    plan.put("sourceReference", "experiment:91092");
+    plan.put("sourceReference", reference);
     context.set("agentValidationPlan", plan);
     context
         .putObject("lineage")
-        .put("learningCycleId", 91002)
+        .put("learningCycleId", cycleId)
         .put("productId", 91004)
-        .put("experimentId", 91092);
+        .put("experimentId", experimentId);
     context
         .putObject("privatePrototypeAcceptance")
         .put("status", "READY")
         .put("prototypeVersion", cycle.getProductVersion())
         .put("privateAccessUrl", technical.path("publicUrl").asText());
     var targets = mock(AgentTaskTargetContextProvider.class);
-    when(targets.resolve("experiment:91092", process.getProcessCode()))
+    when(targets.resolve(reference, process.getProcessCode()))
         .thenReturn(
             Optional.of(
                 new AgentTaskTargetResponse(
-                    "experiment:91092",
-                    91092L,
+                    reference,
+                    experimentId,
                     91004L,
                     product.getSlug(),
                     "Vega fixture",
@@ -104,7 +107,7 @@ class VegaCycleGateFlowIntegrationTest {
       var task = new AgentTask();
       task.setId(910388L + tasks.size());
       task.setProcessDefinition(process);
-      task.setSourceReference("experiment:91092");
+      task.setSourceReference(reference);
       task.setProcessActivityId(
           Map.of(
                   "TECHNICAL",
@@ -134,7 +137,7 @@ class VegaCycleGateFlowIntegrationTest {
     }
     var repository = mock(AgentTaskRepository.class);
     when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
-            91070L, "experiment:91092"))
+            91070L, reference))
         .thenReturn(tasks);
     var instances = mock(BusinessProcessActivityInstanceRepository.class);
     var products = mock(ProductRepository.class);
@@ -145,10 +148,9 @@ class VegaCycleGateFlowIntegrationTest {
         gate,
         "cycleContracts",
         new PdeAgentValidationCycleContract(cycleRepo, cycleExecutions, targets));
-    var readiness = gate.readiness(process, activity, product, "experiment:91092");
+    var readiness = gate.readiness(process, activity, product, reference);
     assertThat(readiness.ready()).as(readiness.reason()).isTrue();
-    assertThat(gate.execute(process, activity, product, "experiment:91092").objectiveAchieved())
-        .isTrue();
+    assertThat(gate.execute(process, activity, product, reference).objectiveAchieved()).isTrue();
     var saved = ArgumentCaptor.forClass(BusinessProcessActivityInstance.class);
     verify(instances).saveAndFlush(saved.capture());
     verify(products, never()).save(any());
@@ -157,7 +159,7 @@ class VegaCycleGateFlowIntegrationTest {
     tasks
         .getLast()
         .setResultJson(
-            tasks.getLast().getResultJson().replace("experiment:91092", "experiment:91091"));
-    assertThat(gate.readiness(process, activity, product, "experiment:91092").ready()).isFalse();
+            tasks.getLast().getResultJson().replace(reference, "experiment:" + (experimentId - 1)));
+    assertThat(gate.readiness(process, activity, product, reference).ready()).isFalse();
   }
 }

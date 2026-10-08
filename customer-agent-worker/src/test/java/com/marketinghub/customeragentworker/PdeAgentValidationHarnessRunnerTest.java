@@ -158,8 +158,17 @@ class PdeAgentValidationHarnessRunnerTest {
    * Vincula o sucessor e os vídeos atuais ao experimento e despacha os cenários próprios de Vega.
    */
   @org.junit.jupiter.params.ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(strings = {"9", "10", "11", "12", "20", "100"})
-  void acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String version) throws Exception {
+  @org.junit.jupiter.params.provider.CsvSource({
+    "9,/vega-private",
+    "10,/vega-private",
+    "11,/vega-private",
+    "12,/vega-private",
+    "20,/vega-private",
+    "100,/vega-private",
+    "12,/agent-validation"
+  })
+  void acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String version, String route)
+      throws Exception {
     Path mira = fakeHarness(false, true);
     Path vega = mira.resolveSibling("vega-agent-validation-harness.mjs");
     Files.writeString(
@@ -169,7 +178,7 @@ class PdeAgentValidationHarnessRunnerTest {
             .replace("\"productId\":10", "\"productId\":4")
             .replace("orientacao-digital-rotina-pele-madura", "metodo-musa-7-dias")
             .replace("mira-private-v1", "musa-pde-entry-v" + version + "-primeiro-ajuste-aplicavel")
-            .replace("/mira-private", "/vega-private")
+            .replace("/mira-private", route)
             .replace(
                 "\"contractVersion\":",
                 "\"videoIntegrationFingerprint\":\"" + "a".repeat(64) + "\",\"contractVersion\":")
@@ -181,7 +190,7 @@ class PdeAgentValidationHarnessRunnerTest {
     target.put("experimentId", 92L);
     target.put("productSlug", "metodo-musa-7-dias");
     target.put("experienceVersion", "musa-pde-entry-v" + version + "-primeiro-ajuste-aplicavel");
-    target.put("publicUrl", "http://127.0.0.1:5176/vega-private");
+    target.put("publicUrl", "http://127.0.0.1:5176" + route);
     target.put(
         "pdeContext",
         Map.of(

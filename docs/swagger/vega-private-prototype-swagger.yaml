@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Vega — protótipo privado por ciclo
-  version: 1.0.0
+  version: 1.1.0
 servers:
   - url: /
 paths:
@@ -98,7 +98,7 @@ paths:
                 readingNumber: {type: integer, minimum: 1, maximum: 2}
       responses:
         '200': {description: Identidade e credencial opaca, sem início automático}
-        '409': {description: Ciclo ou versão incompatível, ou convite ativo já existente}
+        '409': {description: Ciclo ou versão incompatível, convite ativo ou teto sintético de 18 sessões atingido; revogação não reinicia o teto}
   /api/pde/vega/private/v1/internal/sessions/{id}:
     delete:
       summary: Revogar convite e sessão mantendo a auditoria
@@ -108,10 +108,16 @@ paths:
         '200': {description: Acesso revogado}
   /api/pde/vega/private/v1/internal/adjustment/stage-executions/pending:
     get:
-      summary: Ponto inicial canônico do executor, incluindo reservas expiradas
+      summary: Fila vigente por modalidade, incluindo reservas expiradas; exclui ciclos encerrados e acessos revogados ou expirados
       security: [{Internal: []}]
+      parameters:
+        - name: mode
+          in: query
+          schema: {type: string, enum: [PROVIDER, FIXTURE], default: PROVIDER}
+          description: PROVIDER preserva somente a origem legada HUMAN. FIXTURE entrega QA_INTERNAL e AGENT_VALIDATION ao harness determinístico, sem chamadas pagas.
       responses:
         '200': {description: Até dez execuções com contexto segregado e aprendizado}
+        '409': {description: Modalidade inválida}
   /api/pde/vega/private/v1/internal/adjustment/stage-executions/{id}/claim:
     post:
       summary: Reservar atomicamente uma execução por dez minutos

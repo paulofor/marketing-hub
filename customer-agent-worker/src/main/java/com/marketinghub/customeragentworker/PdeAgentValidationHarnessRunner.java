@@ -112,7 +112,8 @@ public class PdeAgentValidationHarnessRunner {
         "metodo-musa-7-dias".equals(productSlug)
             && prototypeVersion.matches(
                 "musa-pde-entry-v(?:9|[1-9][0-9]+)-primeiro-ajuste-aplicavel")
-            && "/vega-private".equals(URI.create(sourceUrl).getPath())
+            && List.of("/vega-private", "/agent-validation")
+                .contains(URI.create(sourceUrl).getPath())
             && sourceReference.equals("experiment:" + target.path("experimentId").asLong())
             && lineage.path("learningCycleId").asLong() > 0
             && lineage.path("experimentId").asLong() == target.path("experimentId").asLong()

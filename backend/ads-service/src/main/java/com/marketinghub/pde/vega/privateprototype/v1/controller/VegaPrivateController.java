@@ -93,12 +93,13 @@ public class VegaPrivateController {
     service.revoke(id);
   }
 
-  /** Expõe o ponto inicial canônico da fila ao executor. */
+  /** Expõe a fila canônica separando fixtures sintéticas do consumo de provedor. */
   @GetMapping("/internal/adjustment/stage-executions/pending")
   public JsonNode pending(
-      @RequestHeader(value = "X-PDE-Internal-Token", required = false) String token) {
+      @RequestHeader(value = "X-PDE-Internal-Token", required = false) String token,
+      @RequestParam(defaultValue = "PROVIDER") String mode) {
     authorize(token);
-    return service.pending();
+    return service.pending(mode);
   }
 
   /** Reserva uma pendência antes de qualquer geração externa. */

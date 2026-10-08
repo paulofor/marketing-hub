@@ -1,3 +1,4 @@
+import { completeVegaFixture, fixtureModel } from './vega-deterministic-fixture.mjs';
 import { verifyVideoIdentity, verifyIntegratedPage, videoBrowserOptions } from './learning-cycle-video-checks.mjs';
 import {chromium,devices} from 'playwright-core';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
@@ -10,7 +11,8 @@ const internal=process.env.PDE_INTERNAL_API_TOKEN;
 if(!internal || !input.cycleId)throw new Error('Credencial e ciclo explícitos são necessários para o harness do Vega.');
 const api=async(path,body)=>{
  const response=await fetch(new URL(base+path,input.sourceUrl),{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json','X-PDE-Internal-Token':internal},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(30000)});
- if(!response.ok)throw new Error(`Vega harness ${path}: HTTP ${response.status}`);return await response.json();
+ if(!response.ok)throw new Error(`Vega harness ${path}: HTTP ${response.status}`);
+ const bodyText=await response.text();return bodyText?JSON.parse(bodyText):null;
 };
 const profiles={DESKTOP_1440:{viewport:{width:1440,height:900}},IPHONE_15_PRO:{...devices['iPhone 15 Pro'],defaultBrowserType:'chromium'},PIXEL_7:{...devices['Pixel 7']}};
 const plans=input.mode==='TECHNICAL'?[['ADHERENT','DESKTOP_1440'],['ADHERENT','IPHONE_15_PRO'],['ADHERENT','PIXEL_7'],['RECOVERY','IPHONE_15_PRO'],['SAFETY','PIXEL_7']]:[[input.scenarioCode,input.scenarioCode==='SAFETY'?'PIXEL_7':input.scenarioCode==='RECOVERY'?'IPHONE_15_PRO':'DESKTOP_1440']];
@@ -44,7 +46,10 @@ for(const [scenarioCode,deviceProfile] of plans){
   await page.getByRole('alert').waitFor();assert.match(await page.getByLabel('Qual roupa').inputValue(),/Camisa branca/);recovered=true;
  }
  const generatedAt=Date.now();
+ const generated=page.waitForResponse(r=>r.url().endsWith(base+'/generate')&&r.request().method()==='POST'&&r.ok());
  await page.getByRole('button',{name:'Criar meu ajuste',exact:true}).click();
+ const queued=await (await generated).json();
+ await completeVegaFixture(api,input,session,queued.executionId);
  let first;
  if(scenarioCode==='SAFETY'){
   await page.getByRole('heading',{name:'Podemos ajustar o caminho'}).waitFor({timeout:360000});
@@ -87,4 +92,4 @@ const deviceResults=[...new Set(plans.map(p=>p[1]))].map(deviceProfile=>({device
 const checks={sameVersion:scenarios.every(s=>s.prototypeVersion===input.prototypeVersion),desktopAndMobile:input.mode!=='TECHNICAL'||deviceResults.length===3,happyResultWithinTenMinutes:scenarios.filter(s=>s.scenarioCode==='ADHERENT').every(s=>s.resultReadySeconds<=600),recoveryPreserved:input.mode!=='TECHNICAL'||scenarios.some(s=>s.recovered&&s.resumed),safetyBlocked:input.mode!=='TECHNICAL'||scenarios.some(s=>s.safetyBlocked),accessibilityBasic:scenarios.every(s=>s.accessibilityBasic),responsiveLayout:scenarios.every(s=>s.noHorizontalOverflow),privacyPreserved:scenarios.every(s=>s.privacyPreserved),internalTrafficSegregated:scenarios.every(s=>s.trafficClass==='AGENT_VALIDATION'),paymentDisabled:true,publicationDisabled:true,campaignDisabled:true,zeroMediaSpend:true};
 if(input.videoIntegration)Object.assign(checks,{videoIdentity:videoIdentity.length===2,videoPlayback:videoResults.length===plans.length,videoOptional:videoResults.every(r=>r.optional),videoFailureRecovery:videoResults.every(r=>r.failureRecovery)});
 const finishedAt=new Date();
-await writeFile(outputPath,JSON.stringify({...(input.videoIntegration?{videoIntegrationFingerprint:input.videoIntegration.integrationFingerprint,videoIdentity,videoResults}:{}),contractVersion:'PDE_AGENT_TECHNICAL_HOMOLOGATION_V1',mode:input.mode,decision:Object.values(checks).every(Boolean)?'APPROVED':'BLOCKED',sourceReference:input.sourceReference,productId:input.productId,productSlug:input.productSlug,publicUrl:input.sourceUrl,prototypeVersion:input.prototypeVersion,trafficClass:'AGENT_VALIDATION',internalMarker:'mh_internal_test',startedAt:startedAt.toISOString(),finishedAt:finishedAt.toISOString(),durationSeconds:Math.ceil((finishedAt-startedAt)/1000),devices:deviceResults,scenarios,checks,artifacts,sideEffects:{paymentEnabled:false,published:false,campaignCreated:false,mediaSpendBrl:0},humanEvidenceClaimed:false,commercialEvidenceClaimed:false,evidence:scenarios.map(s=>s.evidenceId)}));
+await writeFile(outputPath,JSON.stringify({cycleId:input.cycleId,generationMode:"DETERMINISTIC_FIXTURE",fixtureModel,modelFunctionalBehaviorClaimed:false,...(input.videoIntegration?{videoIntegrationFingerprint:input.videoIntegration.integrationFingerprint,videoIdentity,videoResults}:{}),contractVersion:'PDE_AGENT_TECHNICAL_HOMOLOGATION_V1',mode:input.mode,decision:Object.values(checks).every(Boolean)?'APPROVED':'BLOCKED',sourceReference:input.sourceReference,productId:input.productId,productSlug:input.productSlug,publicUrl:input.sourceUrl,prototypeVersion:input.prototypeVersion,trafficClass:'AGENT_VALIDATION',internalMarker:'mh_internal_test',startedAt:startedAt.toISOString(),finishedAt:finishedAt.toISOString(),durationSeconds:Math.ceil((finishedAt-startedAt)/1000),devices:deviceResults,scenarios,checks,artifacts,sideEffects:{paymentEnabled:false,published:false,campaignCreated:false,mediaSpendBrl:0},humanEvidenceClaimed:false,commercialEvidenceClaimed:false,evidence:scenarios.map(s=>s.evidenceId)}));

@@ -158,6 +158,19 @@ o mesmo contrato. Para Vega v12, a candidata usa o slot `v8`, com analytics de Q
 desativados antes da promoção. A rota histórica `/vega-private` preserva somente evidência
 anterior e não pode orientar novas versões ou receber tráfego comercial.
 
+Para homologar a preparação de Vega no ciclo aberto, a superfície `/agent-validation` integra
+a mesma imagem da candidata `v8`. A tela usa somente o backend PDE; seu gateway tipado
+transporta os contratos privados para o backend principal, sem estado duplicado, injeção de
+segredo do servidor ou decisão de avanço. O harness
+existente consome `pending?mode=FIXTURE` e reporta request, resposta, cartão e sinais sintéticos
+com custo zero. Essa prova verifica o percurso executável e seus limites; não comprova qualidade
+de inferência externa, demanda, venda ou contribuição. Revisões independentes continuam obrigatórias.
+Sessões `QA_INTERNAL` e `AGENT_VALIDATION` são limitadas por ciclo e versão a 18 sessões, duas
+tentativas por sessão e 36 tentativas acumuladas; revogação e falha não reiniciam esses limites.
+O backend recusa trabalho encerrado, expirado ou de outra versão e nunca entrega essa fila ao
+executor de provedor. Nenhum convite humano ou nova autorização comercial decorre dessa preparação.
+Detalhes e regressões: [Vega ciclo 7](../homologacao/vega-ciclo7-preparacao-executavel-v1.md).
+
 Integrar não comprova homologação. O conjunto integrado deve voltar automaticamente
 à homologação técnica e aos pareceres independentes afetados, pela fila canônica,
 com identidade das mídias e novas provas. A aprovação humana das mesmas peças é

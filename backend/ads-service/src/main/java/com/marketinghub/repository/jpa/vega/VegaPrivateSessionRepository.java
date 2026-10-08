@@ -19,6 +19,10 @@ public interface VegaPrivateSessionRepository extends JpaRepository<VegaPrivateS
   /** Lista as leituras do ciclo no banco, sem misturar a experiência comercial. */
   List<VegaPrivateSession> findByCycleIdOrderByCreatedAtAsc(Long cycleId);
 
+  /** Conta todas as sessões sintéticas da versão, inclusive revogadas, sem reiniciar o teto. */
+  long countByCycleIdAndPrototypeVersionAndOriginIn(
+      Long cycleId, String version, List<String> origins);
+
   /** Protege a criação de convites humanos da mesma leitura dentro de um ciclo. */
   boolean existsByCycleIdAndPrototypeVersionAndOriginAndReadingNumberAndRevokedFalse(
       Long cycleId, String version, String origin, Integer readingNumber);

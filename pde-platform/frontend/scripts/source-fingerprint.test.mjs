@@ -6,7 +6,9 @@ import test from "node:test";
 import { sourceFingerprint } from "./source-fingerprint.mjs";
 
 async function fixture(t) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "pde-source-fingerprint-"));
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "pde-source-fingerprint-"),
+  );
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   for (const directory of [
     "docker-entrypoint.d",
@@ -16,6 +18,7 @@ async function fixture(t) {
     "public-mira-commercial",
     "scripts",
     "src",
+    "vega-private",
   ]) {
     await fs.mkdir(path.join(root, directory), { recursive: true });
   }
@@ -47,7 +50,10 @@ async function fixture(t) {
     await fs.writeFile(path.join(root, file), `${file}\n`);
   }
   await fs.writeFile(path.join(root, "src", "App.tsx"), "candidata");
-  await fs.writeFile(path.join(root, "src", "AlcyoneEntry.tsx"), "alcyone privada");
+  await fs.writeFile(
+    path.join(root, "src", "AlcyoneEntry.tsx"),
+    "alcyone privada",
+  );
   await fs.writeFile(path.join(root, "public", "contract.json"), "{}\n");
   await fs.mkdir(path.join(root, "public-mira-commercial", "media"), {
     recursive: true,
@@ -71,7 +77,10 @@ test("muda a identidade quando pixels ou contrato público mudam", async (t) => 
   await fs.writeFile(path.join(root, "src", "App.tsx"), "candidata corrigida");
   assert.notEqual(await sourceFingerprint(root), original);
   const afterSource = await sourceFingerprint(root);
-  await fs.writeFile(path.join(root, "public", "contract.json"), '{"version":2}\n');
+  await fs.writeFile(
+    path.join(root, "public", "contract.json"),
+    '{"version":2}\n',
+  );
   assert.notEqual(await sourceFingerprint(root), afterSource);
 });
 
@@ -97,13 +106,35 @@ test("muda a identidade quando a experiência privada de Alcyone muda", async (t
 
 test("recusa links na árvore de fontes", async (t) => {
   const root = await fixture(t);
-  await fs.symlink(path.join(root, "src", "App.tsx"), path.join(root, "src", "alias.tsx"));
+  await fs.symlink(
+    path.join(root, "src", "App.tsx"),
+    path.join(root, "src", "alias.tsx"),
+  );
   await assert.rejects(sourceFingerprint(root), /não regular/);
+});
+
+test("identifica mudanças na experiência privada de Vega integrada à imagem", async (t) => {
+  const root = await fixture(t);
+  const original = await sourceFingerprint(root);
+  await fs.writeFile(
+    path.join(root, "vega-private", "component.tsx"),
+    "experiência privada",
+  );
+  const withComponent = await sourceFingerprint(root);
+  assert.notEqual(withComponent, original);
+  await fs.writeFile(
+    path.join(root, "vega-private", "style.css"),
+    ".vega-private { color: red }",
+  );
+  assert.notEqual(await sourceFingerprint(root), withComponent);
 });
 
 test("muda a identidade quando a entrada HTML da candidata de Mira muda", async (t) => {
   const root = await fixture(t);
   const original = await sourceFingerprint(root);
-  await fs.writeFile(path.join(root, "mira-candidate.html"), "entrada privada corrigida");
+  await fs.writeFile(
+    path.join(root, "mira-candidate.html"),
+    "entrada privada corrigida",
+  );
   assert.notEqual(await sourceFingerprint(root), original);
 });

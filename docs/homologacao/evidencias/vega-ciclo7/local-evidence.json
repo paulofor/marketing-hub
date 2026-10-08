@@ -1,0 +1,1115 @@
+{
+  "contractVersion": "VEGA_CYCLE_PREPARATION_LOCAL_EVIDENCE_V1",
+  "boundary": "Homologação sintética local. Interpretações de Psique e Têmis simuladas somente na sandbox; não representam parecer real ou prova comercial.",
+  "technical": {
+    "cycleId": 91032,
+    "generationMode": "DETERMINISTIC_FIXTURE",
+    "fixtureModel": "vega-deterministic-fixture-v1",
+    "modelFunctionalBehaviorClaimed": false,
+    "contractVersion": "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
+    "mode": "TECHNICAL",
+    "decision": "APPROVED",
+    "sourceReference": "experiment:91312",
+    "productId": 91004,
+    "productSlug": "metodo-musa-7-dias",
+    "publicUrl": "https://127.0.0.1:18084/agent-validation",
+    "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "trafficClass": "AGENT_VALIDATION",
+    "internalMarker": "mh_internal_test",
+    "startedAt": "2026-10-08T03:08:13.865Z",
+    "finishedAt": "2026-10-08T03:08:29.291Z",
+    "durationSeconds": 16,
+    "devices": [
+      {
+        "deviceProfile": "DESKTOP_1440",
+        "viewportWidth": 1440,
+        "viewportHeight": 900,
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-990ecbb1-65af-434b-a42f-f05b23d06aab"
+        ]
+      },
+      {
+        "deviceProfile": "IPHONE_15_PRO",
+        "viewportWidth": 393,
+        "viewportHeight": 659,
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-807f2892-1f05-4b31-a95c-85292b25d304",
+          "vega-5d42e397-ee00-4f1e-afaf-0308eccc38b0"
+        ]
+      },
+      {
+        "deviceProfile": "PIXEL_7",
+        "viewportWidth": 412,
+        "viewportHeight": 839,
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-816d12e4-05e6-4275-85c5-7f721e974bf5",
+          "vega-b746ca41-43c4-4c1e-b176-c07b877034b5"
+        ]
+      }
+    ],
+    "scenarios": [
+      {
+        "scenarioCode": "ADHERENT",
+        "deviceProfile": "DESKTOP_1440",
+        "status": "PASS",
+        "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+        "evidenceId": "990ecbb1-65af-434b-a42f-f05b23d06aab",
+        "screenshotEvidenceKeys": [
+          "vega-990ecbb1-65af-434b-a42f-f05b23d06aab"
+        ],
+        "input": {
+          "occasion": "Almoço informal",
+          "existingSelection": "Camisa branca e calça preta que já possuo",
+          "optionalNote": ""
+        },
+        "card": {
+          "cardId": "1",
+          "action": "Alinhe o caimento da peça que já está usando, sem apertar.",
+          "application": "Para Almoço informal, use Camisa branca e calça preta que já possuo. Diante do espelho, alinhe o tecido na cintura e confira se ombros e braços se movem com conforto. Mantenha as mesmas peças.",
+          "occasion": "Almoço informal",
+          "selfAssessmentPrompt": "Ao se mover, o tecido ficou confortável e o acabamento corresponde à ocasião escolhida?",
+          "usesOnlyAvailableItems": true
+        },
+        "events": {
+          "EXPERIENCE_STARTED": {
+            "at": "2026-10-08T03:08:14.714698683Z",
+            "action": "Começar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "VALUE_MOMENT": {
+            "at": "2026-10-08T03:08:16.884619626Z",
+            "action": "Entendi e consigo aplicar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "READY_RESULT_USED": {
+            "at": "2026-10-08T03:08:16.998887400Z",
+            "action": "A aplicação ficou clara e confortável para esta ocasião. Resposta sintética do harness.",
+            "origin": "AGENT_VALIDATION"
+          },
+          "PREFERRED_OVER_FREE": {
+            "at": "2026-10-08T03:08:17.063054332Z",
+            "action": "CARD",
+            "origin": "AGENT_VALIDATION"
+          },
+          "CHECKOUT_STARTED": {
+            "at": "2026-10-08T03:08:17.132829195Z",
+            "action": "Abrir voluntariamente a simulação de R$ 67",
+            "origin": "AGENT_VALIDATION"
+          }
+        },
+        "trafficClass": "AGENT_VALIDATION",
+        "mhInternalTest": true,
+        "resultReadySeconds": 3,
+        "resumed": true,
+        "recovered": false,
+        "safetyBlocked": false,
+        "accessibilityBasic": true,
+        "noHorizontalOverflow": true,
+        "privacyPreserved": true,
+        "humanEvidenceClaimed": false,
+        "commercialEvidenceClaimed": false,
+        "sideEffects": {
+          "paymentEnabled": false,
+          "published": false,
+          "campaignCreated": false,
+          "mediaSpendBrl": 0
+        }
+      },
+      {
+        "scenarioCode": "ADHERENT",
+        "deviceProfile": "IPHONE_15_PRO",
+        "status": "PASS",
+        "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+        "evidenceId": "807f2892-1f05-4b31-a95c-85292b25d304",
+        "screenshotEvidenceKeys": [
+          "vega-807f2892-1f05-4b31-a95c-85292b25d304"
+        ],
+        "input": {
+          "occasion": "Almoço informal",
+          "existingSelection": "Camisa branca e calça preta que já possuo",
+          "optionalNote": ""
+        },
+        "card": {
+          "cardId": "2",
+          "action": "Alinhe o caimento da peça que já está usando, sem apertar.",
+          "application": "Para Almoço informal, use Camisa branca e calça preta que já possuo. Diante do espelho, alinhe o tecido na cintura e confira se ombros e braços se movem com conforto. Mantenha as mesmas peças.",
+          "occasion": "Almoço informal",
+          "selfAssessmentPrompt": "Ao se mover, o tecido ficou confortável e o acabamento corresponde à ocasião escolhida?",
+          "usesOnlyAvailableItems": true
+        },
+        "events": {
+          "EXPERIENCE_STARTED": {
+            "at": "2026-10-08T03:08:17.857987704Z",
+            "action": "Começar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "VALUE_MOMENT": {
+            "at": "2026-10-08T03:08:19.862505325Z",
+            "action": "Entendi e consigo aplicar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "READY_RESULT_USED": {
+            "at": "2026-10-08T03:08:19.930837440Z",
+            "action": "A aplicação ficou clara e confortável para esta ocasião. Resposta sintética do harness.",
+            "origin": "AGENT_VALIDATION"
+          },
+          "PREFERRED_OVER_FREE": {
+            "at": "2026-10-08T03:08:20.045466236Z",
+            "action": "CARD",
+            "origin": "AGENT_VALIDATION"
+          },
+          "CHECKOUT_STARTED": {
+            "at": "2026-10-08T03:08:20.110689394Z",
+            "action": "Abrir voluntariamente a simulação de R$ 67",
+            "origin": "AGENT_VALIDATION"
+          }
+        },
+        "trafficClass": "AGENT_VALIDATION",
+        "mhInternalTest": true,
+        "resultReadySeconds": 3,
+        "resumed": true,
+        "recovered": false,
+        "safetyBlocked": false,
+        "accessibilityBasic": true,
+        "noHorizontalOverflow": true,
+        "privacyPreserved": true,
+        "humanEvidenceClaimed": false,
+        "commercialEvidenceClaimed": false,
+        "sideEffects": {
+          "paymentEnabled": false,
+          "published": false,
+          "campaignCreated": false,
+          "mediaSpendBrl": 0
+        }
+      },
+      {
+        "scenarioCode": "ADHERENT",
+        "deviceProfile": "PIXEL_7",
+        "status": "PASS",
+        "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+        "evidenceId": "816d12e4-05e6-4275-85c5-7f721e974bf5",
+        "screenshotEvidenceKeys": [
+          "vega-816d12e4-05e6-4275-85c5-7f721e974bf5"
+        ],
+        "input": {
+          "occasion": "Almoço informal",
+          "existingSelection": "Camisa branca e calça preta que já possuo",
+          "optionalNote": ""
+        },
+        "card": {
+          "cardId": "3",
+          "action": "Alinhe o caimento da peça que já está usando, sem apertar.",
+          "application": "Para Almoço informal, use Camisa branca e calça preta que já possuo. Diante do espelho, alinhe o tecido na cintura e confira se ombros e braços se movem com conforto. Mantenha as mesmas peças.",
+          "occasion": "Almoço informal",
+          "selfAssessmentPrompt": "Ao se mover, o tecido ficou confortável e o acabamento corresponde à ocasião escolhida?",
+          "usesOnlyAvailableItems": true
+        },
+        "events": {
+          "EXPERIENCE_STARTED": {
+            "at": "2026-10-08T03:08:20.892595112Z",
+            "action": "Começar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "VALUE_MOMENT": {
+            "at": "2026-10-08T03:08:22.877987574Z",
+            "action": "Entendi e consigo aplicar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "READY_RESULT_USED": {
+            "at": "2026-10-08T03:08:22.945108263Z",
+            "action": "A aplicação ficou clara e confortável para esta ocasião. Resposta sintética do harness.",
+            "origin": "AGENT_VALIDATION"
+          },
+          "PREFERRED_OVER_FREE": {
+            "at": "2026-10-08T03:08:22.994720172Z",
+            "action": "CARD",
+            "origin": "AGENT_VALIDATION"
+          },
+          "CHECKOUT_STARTED": {
+            "at": "2026-10-08T03:08:23.061748571Z",
+            "action": "Abrir voluntariamente a simulação de R$ 67",
+            "origin": "AGENT_VALIDATION"
+          }
+        },
+        "trafficClass": "AGENT_VALIDATION",
+        "mhInternalTest": true,
+        "resultReadySeconds": 3,
+        "resumed": true,
+        "recovered": false,
+        "safetyBlocked": false,
+        "accessibilityBasic": true,
+        "noHorizontalOverflow": true,
+        "privacyPreserved": true,
+        "humanEvidenceClaimed": false,
+        "commercialEvidenceClaimed": false,
+        "sideEffects": {
+          "paymentEnabled": false,
+          "published": false,
+          "campaignCreated": false,
+          "mediaSpendBrl": 0
+        }
+      },
+      {
+        "scenarioCode": "RECOVERY",
+        "deviceProfile": "IPHONE_15_PRO",
+        "status": "PASS",
+        "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+        "evidenceId": "5d42e397-ee00-4f1e-afaf-0308eccc38b0",
+        "screenshotEvidenceKeys": [
+          "vega-5d42e397-ee00-4f1e-afaf-0308eccc38b0"
+        ],
+        "input": {
+          "occasion": "Almoço informal",
+          "existingSelection": "Camisa branca e calça preta que já possuo",
+          "optionalNote": ""
+        },
+        "card": {
+          "cardId": "4",
+          "action": "Alinhe o caimento da peça que já está usando, sem apertar.",
+          "application": "Para Almoço informal, use Camisa branca e calça preta que já possuo. Diante do espelho, alinhe o tecido na cintura e confira se ombros e braços se movem com conforto. Mantenha as mesmas peças.",
+          "occasion": "Almoço informal",
+          "selfAssessmentPrompt": "Ao se mover, o tecido ficou confortável e o acabamento corresponde à ocasião escolhida?",
+          "usesOnlyAvailableItems": true
+        },
+        "events": {
+          "EXPERIENCE_STARTED": {
+            "at": "2026-10-08T03:08:23.855455736Z",
+            "action": "Começar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "VALUE_MOMENT": {
+            "at": "2026-10-08T03:08:25.910469550Z",
+            "action": "Entendi e consigo aplicar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "READY_RESULT_USED": {
+            "at": "2026-10-08T03:08:25.979387109Z",
+            "action": "A aplicação ficou clara e confortável para esta ocasião. Resposta sintética do harness.",
+            "origin": "AGENT_VALIDATION"
+          },
+          "PREFERRED_OVER_FREE": {
+            "at": "2026-10-08T03:08:26.046484038Z",
+            "action": "CARD",
+            "origin": "AGENT_VALIDATION"
+          },
+          "CHECKOUT_STARTED": {
+            "at": "2026-10-08T03:08:26.114595402Z",
+            "action": "Abrir voluntariamente a simulação de R$ 67",
+            "origin": "AGENT_VALIDATION"
+          }
+        },
+        "trafficClass": "AGENT_VALIDATION",
+        "mhInternalTest": true,
+        "resultReadySeconds": 3,
+        "resumed": true,
+        "recovered": true,
+        "safetyBlocked": false,
+        "accessibilityBasic": true,
+        "noHorizontalOverflow": true,
+        "privacyPreserved": true,
+        "humanEvidenceClaimed": false,
+        "commercialEvidenceClaimed": false,
+        "sideEffects": {
+          "paymentEnabled": false,
+          "published": false,
+          "campaignCreated": false,
+          "mediaSpendBrl": 0
+        }
+      },
+      {
+        "scenarioCode": "SAFETY",
+        "deviceProfile": "PIXEL_7",
+        "status": "PASS",
+        "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+        "evidenceId": "b746ca41-43c4-4c1e-b176-c07b877034b5",
+        "screenshotEvidenceKeys": [
+          "vega-b746ca41-43c4-4c1e-b176-c07b877034b5"
+        ],
+        "input": {
+          "occasion": "Almoço informal",
+          "existingSelection": "Camisa branca e calça preta que já possuo",
+          "optionalNote": "Quero comprar outra roupa para conseguir esse resultado"
+        },
+        "card": null,
+        "events": {
+          "EXPERIENCE_STARTED": {
+            "at": "2026-10-08T03:08:27.037411795Z",
+            "action": "Começar",
+            "origin": "AGENT_VALIDATION"
+          }
+        },
+        "trafficClass": "AGENT_VALIDATION",
+        "mhInternalTest": true,
+        "resultReadySeconds": 3,
+        "resumed": false,
+        "recovered": false,
+        "safetyBlocked": true,
+        "accessibilityBasic": true,
+        "noHorizontalOverflow": true,
+        "privacyPreserved": true,
+        "humanEvidenceClaimed": false,
+        "commercialEvidenceClaimed": false,
+        "sideEffects": {
+          "paymentEnabled": false,
+          "published": false,
+          "campaignCreated": false,
+          "mediaSpendBrl": 0
+        }
+      }
+    ],
+    "checks": {
+      "sameVersion": true,
+      "desktopAndMobile": true,
+      "happyResultWithinTenMinutes": true,
+      "recoveryPreserved": true,
+      "safetyBlocked": true,
+      "accessibilityBasic": true,
+      "responsiveLayout": true,
+      "privacyPreserved": true,
+      "internalTrafficSegregated": true,
+      "paymentDisabled": true,
+      "publicationDisabled": true,
+      "campaignDisabled": true,
+      "zeroMediaSpend": true
+    },
+    "artifacts": [
+      {
+        "captureSessionId": "vega-local-preparation-3275",
+        "evidenceKey": "vega-990ecbb1-65af-434b-a42f-f05b23d06aab",
+        "evidenceType": "FULL_PAGE",
+        "deviceProfile": "DESKTOP_1440",
+        "pageNumber": 1,
+        "foldNumber": null,
+        "viewportWidth": 1440,
+        "viewportHeight": 900,
+        "pageHeightPx": 1689,
+        "scrollY": 0,
+        "sourceUrl": "https://127.0.0.1:18084/agent-validation",
+        "finalUrl": "https://127.0.0.1:18084/agent-validation",
+        "capturedAt": "2026-10-08T03:08:17.483Z",
+        "localPath": "docs/homologacao/evidencias/vega-ciclo7/ADHERENT-DESKTOP_1440.png"
+      },
+      {
+        "captureSessionId": "vega-local-preparation-3275",
+        "evidenceKey": "vega-807f2892-1f05-4b31-a95c-85292b25d304",
+        "evidenceType": "FULL_PAGE",
+        "deviceProfile": "IPHONE_15_PRO",
+        "pageNumber": 1,
+        "foldNumber": null,
+        "viewportWidth": 393,
+        "viewportHeight": 659,
+        "pageHeightPx": 2017,
+        "scrollY": 0,
+        "sourceUrl": "https://127.0.0.1:18084/agent-validation",
+        "finalUrl": "https://127.0.0.1:18084/agent-validation",
+        "capturedAt": "2026-10-08T03:08:20.531Z",
+        "localPath": "docs/homologacao/evidencias/vega-ciclo7/ADHERENT-IPHONE_15_PRO.png"
+      },
+      {
+        "captureSessionId": "vega-local-preparation-3275",
+        "evidenceKey": "vega-816d12e4-05e6-4275-85c5-7f721e974bf5",
+        "evidenceType": "FULL_PAGE",
+        "deviceProfile": "PIXEL_7",
+        "pageNumber": 1,
+        "foldNumber": null,
+        "viewportWidth": 412,
+        "viewportHeight": 839,
+        "pageHeightPx": 1943,
+        "scrollY": 0,
+        "sourceUrl": "https://127.0.0.1:18084/agent-validation",
+        "finalUrl": "https://127.0.0.1:18084/agent-validation",
+        "capturedAt": "2026-10-08T03:08:23.509Z",
+        "localPath": "docs/homologacao/evidencias/vega-ciclo7/ADHERENT-PIXEL_7.png"
+      },
+      {
+        "captureSessionId": "vega-local-preparation-3275",
+        "evidenceKey": "vega-5d42e397-ee00-4f1e-afaf-0308eccc38b0",
+        "evidenceType": "FULL_PAGE",
+        "deviceProfile": "IPHONE_15_PRO",
+        "pageNumber": 1,
+        "foldNumber": null,
+        "viewportWidth": 393,
+        "viewportHeight": 659,
+        "pageHeightPx": 2017,
+        "scrollY": 0,
+        "sourceUrl": "https://127.0.0.1:18084/agent-validation",
+        "finalUrl": "https://127.0.0.1:18084/agent-validation",
+        "capturedAt": "2026-10-08T03:08:26.642Z",
+        "localPath": "docs/homologacao/evidencias/vega-ciclo7/RECOVERY-IPHONE_15_PRO.png"
+      },
+      {
+        "captureSessionId": "vega-local-preparation-3275",
+        "evidenceKey": "vega-b746ca41-43c4-4c1e-b176-c07b877034b5",
+        "evidenceType": "FULL_PAGE",
+        "deviceProfile": "PIXEL_7",
+        "pageNumber": 1,
+        "foldNumber": null,
+        "viewportWidth": 412,
+        "viewportHeight": 839,
+        "pageHeightPx": 1461,
+        "scrollY": 0,
+        "sourceUrl": "https://127.0.0.1:18084/agent-validation",
+        "finalUrl": "https://127.0.0.1:18084/agent-validation",
+        "capturedAt": "2026-10-08T03:08:29.195Z",
+        "localPath": "docs/homologacao/evidencias/vega-ciclo7/SAFETY-PIXEL_7.png"
+      }
+    ],
+    "sideEffects": {
+      "paymentEnabled": false,
+      "published": false,
+      "campaignCreated": false,
+      "mediaSpendBrl": 0
+    },
+    "humanEvidenceClaimed": false,
+    "commercialEvidenceClaimed": false,
+    "evidence": [
+      "990ecbb1-65af-434b-a42f-f05b23d06aab",
+      "807f2892-1f05-4b31-a95c-85292b25d304",
+      "816d12e4-05e6-4275-85c5-7f721e974bf5",
+      "5d42e397-ee00-4f1e-afaf-0308eccc38b0",
+      "b746ca41-43c4-4c1e-b176-c07b877034b5"
+    ]
+  },
+  "imageTechnical": {
+    "cycleId": 91002,
+    "generationMode": "DETERMINISTIC_FIXTURE",
+    "fixtureModel": "vega-deterministic-fixture-v1",
+    "modelFunctionalBehaviorClaimed": false,
+    "contractVersion": "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1",
+    "mode": "TECHNICAL",
+    "decision": "APPROVED",
+    "sourceReference": "experiment:91092",
+    "productId": 91004,
+    "productSlug": "metodo-musa-7-dias",
+    "publicUrl": "http://sandbox-docker:18083/agent-validation",
+    "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "trafficClass": "AGENT_VALIDATION",
+    "internalMarker": "mh_internal_test",
+    "startedAt": "2026-10-08T03:17:06.899Z",
+    "finishedAt": "2026-10-08T03:17:20.720Z",
+    "durationSeconds": 14,
+    "devices": [
+      {
+        "deviceProfile": "DESKTOP_1440",
+        "viewportWidth": 1440,
+        "viewportHeight": 900,
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-870e25d4-7fd9-4f18-8325-2ced5189ddea"
+        ]
+      },
+      {
+        "deviceProfile": "IPHONE_15_PRO",
+        "viewportWidth": 393,
+        "viewportHeight": 659,
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-a6d2b5de-fe6e-4900-9173-d8df6cb58927",
+          "vega-daa56d10-11ad-4f76-92e2-985585d7806b"
+        ]
+      },
+      {
+        "deviceProfile": "PIXEL_7",
+        "viewportWidth": 412,
+        "viewportHeight": 839,
+        "status": "PASS",
+        "screenshotEvidenceKeys": [
+          "vega-53be950f-bdde-4e31-82af-d55b80c1038a",
+          "vega-0fc9eef6-30f7-466c-badf-9097d7c8a6df"
+        ]
+      }
+    ],
+    "scenarios": [
+      {
+        "scenarioCode": "ADHERENT",
+        "deviceProfile": "DESKTOP_1440",
+        "status": "PASS",
+        "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+        "evidenceId": "870e25d4-7fd9-4f18-8325-2ced5189ddea",
+        "screenshotEvidenceKeys": [
+          "vega-870e25d4-7fd9-4f18-8325-2ced5189ddea"
+        ],
+        "input": {
+          "occasion": "Almoço informal",
+          "existingSelection": "Camisa branca e calça preta que já possuo",
+          "optionalNote": ""
+        },
+        "card": {
+          "cardId": "9",
+          "action": "Alinhe o caimento da peça que já está usando, sem apertar.",
+          "application": "Para Almoço informal, use Camisa branca e calça preta que já possuo. Diante do espelho, alinhe o tecido na cintura e confira se ombros e braços se movem com conforto. Mantenha as mesmas peças.",
+          "occasion": "Almoço informal",
+          "selfAssessmentPrompt": "Ao se mover, o tecido ficou confortável e o acabamento corresponde à ocasião escolhida?",
+          "usesOnlyAvailableItems": true
+        },
+        "events": {
+          "EXPERIENCE_STARTED": {
+            "at": "2026-10-08T03:17:07.181223684Z",
+            "action": "Começar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "VALUE_MOMENT": {
+            "at": "2026-10-08T03:17:09.155395338Z",
+            "action": "Entendi e consigo aplicar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "READY_RESULT_USED": {
+            "at": "2026-10-08T03:17:09.221735722Z",
+            "action": "A aplicação ficou clara e confortável para esta ocasião. Resposta sintética do harness.",
+            "origin": "AGENT_VALIDATION"
+          },
+          "PREFERRED_OVER_FREE": {
+            "at": "2026-10-08T03:17:09.520495485Z",
+            "action": "CARD",
+            "origin": "AGENT_VALIDATION"
+          },
+          "CHECKOUT_STARTED": {
+            "at": "2026-10-08T03:17:09.584449994Z",
+            "action": "Abrir voluntariamente a simulação de R$ 67",
+            "origin": "AGENT_VALIDATION"
+          }
+        },
+        "trafficClass": "AGENT_VALIDATION",
+        "mhInternalTest": true,
+        "resultReadySeconds": 3,
+        "resumed": true,
+        "recovered": false,
+        "safetyBlocked": false,
+        "accessibilityBasic": true,
+        "noHorizontalOverflow": true,
+        "privacyPreserved": true,
+        "humanEvidenceClaimed": false,
+        "commercialEvidenceClaimed": false,
+        "sideEffects": {
+          "paymentEnabled": false,
+          "published": false,
+          "campaignCreated": false,
+          "mediaSpendBrl": 0
+        }
+      },
+      {
+        "scenarioCode": "ADHERENT",
+        "deviceProfile": "IPHONE_15_PRO",
+        "status": "PASS",
+        "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+        "evidenceId": "a6d2b5de-fe6e-4900-9173-d8df6cb58927",
+        "screenshotEvidenceKeys": [
+          "vega-a6d2b5de-fe6e-4900-9173-d8df6cb58927"
+        ],
+        "input": {
+          "occasion": "Almoço informal",
+          "existingSelection": "Camisa branca e calça preta que já possuo",
+          "optionalNote": ""
+        },
+        "card": {
+          "cardId": "10",
+          "action": "Alinhe o caimento da peça que já está usando, sem apertar.",
+          "application": "Para Almoço informal, use Camisa branca e calça preta que já possuo. Diante do espelho, alinhe o tecido na cintura e confira se ombros e braços se movem com conforto. Mantenha as mesmas peças.",
+          "occasion": "Almoço informal",
+          "selfAssessmentPrompt": "Ao se mover, o tecido ficou confortável e o acabamento corresponde à ocasião escolhida?",
+          "usesOnlyAvailableItems": true
+        },
+        "events": {
+          "EXPERIENCE_STARTED": {
+            "at": "2026-10-08T03:17:10.071582259Z",
+            "action": "Começar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "VALUE_MOMENT": {
+            "at": "2026-10-08T03:17:12.039728819Z",
+            "action": "Entendi e consigo aplicar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "READY_RESULT_USED": {
+            "at": "2026-10-08T03:17:12.154193133Z",
+            "action": "A aplicação ficou clara e confortável para esta ocasião. Resposta sintética do harness.",
+            "origin": "AGENT_VALIDATION"
+          },
+          "PREFERRED_OVER_FREE": {
+            "at": "2026-10-08T03:17:12.220670068Z",
+            "action": "CARD",
+            "origin": "AGENT_VALIDATION"
+          },
+          "CHECKOUT_STARTED": {
+            "at": "2026-10-08T03:17:12.287509784Z",
+            "action": "Abrir voluntariamente a simulação de R$ 67",
+            "origin": "AGENT_VALIDATION"
+          }
+        },
+        "trafficClass": "AGENT_VALIDATION",
+        "mhInternalTest": true,
+        "resultReadySeconds": 3,
+        "resumed": true,
+        "recovered": false,
+        "safetyBlocked": false,
+        "accessibilityBasic": true,
+        "noHorizontalOverflow": true,
+        "privacyPreserved": true,
+        "humanEvidenceClaimed": false,
+        "commercialEvidenceClaimed": false,
+        "sideEffects": {
+          "paymentEnabled": false,
+          "published": false,
+          "campaignCreated": false,
+          "mediaSpendBrl": 0
+        }
+      },
+      {
+        "scenarioCode": "ADHERENT",
+        "deviceProfile": "PIXEL_7",
+        "status": "PASS",
+        "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+        "evidenceId": "53be950f-bdde-4e31-82af-d55b80c1038a",
+        "screenshotEvidenceKeys": [
+          "vega-53be950f-bdde-4e31-82af-d55b80c1038a"
+        ],
+        "input": {
+          "occasion": "Almoço informal",
+          "existingSelection": "Camisa branca e calça preta que já possuo",
+          "optionalNote": ""
+        },
+        "card": {
+          "cardId": "11",
+          "action": "Alinhe o caimento da peça que já está usando, sem apertar.",
+          "application": "Para Almoço informal, use Camisa branca e calça preta que já possuo. Diante do espelho, alinhe o tecido na cintura e confira se ombros e braços se movem com conforto. Mantenha as mesmas peças.",
+          "occasion": "Almoço informal",
+          "selfAssessmentPrompt": "Ao se mover, o tecido ficou confortável e o acabamento corresponde à ocasião escolhida?",
+          "usesOnlyAvailableItems": true
+        },
+        "events": {
+          "EXPERIENCE_STARTED": {
+            "at": "2026-10-08T03:17:12.891088816Z",
+            "action": "Começar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "VALUE_MOMENT": {
+            "at": "2026-10-08T03:17:14.836692746Z",
+            "action": "Entendi e consigo aplicar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "READY_RESULT_USED": {
+            "at": "2026-10-08T03:17:14.905762855Z",
+            "action": "A aplicação ficou clara e confortável para esta ocasião. Resposta sintética do harness.",
+            "origin": "AGENT_VALIDATION"
+          },
+          "PREFERRED_OVER_FREE": {
+            "at": "2026-10-08T03:17:14.971790208Z",
+            "action": "CARD",
+            "origin": "AGENT_VALIDATION"
+          },
+          "CHECKOUT_STARTED": {
+            "at": "2026-10-08T03:17:15.037428298Z",
+            "action": "Abrir voluntariamente a simulação de R$ 67",
+            "origin": "AGENT_VALIDATION"
+          }
+        },
+        "trafficClass": "AGENT_VALIDATION",
+        "mhInternalTest": true,
+        "resultReadySeconds": 3,
+        "resumed": true,
+        "recovered": false,
+        "safetyBlocked": false,
+        "accessibilityBasic": true,
+        "noHorizontalOverflow": true,
+        "privacyPreserved": true,
+        "humanEvidenceClaimed": false,
+        "commercialEvidenceClaimed": false,
+        "sideEffects": {
+          "paymentEnabled": false,
+          "published": false,
+          "campaignCreated": false,
+          "mediaSpendBrl": 0
+        }
+      },
+      {
+        "scenarioCode": "RECOVERY",
+        "deviceProfile": "IPHONE_15_PRO",
+        "status": "PASS",
+        "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+        "evidenceId": "daa56d10-11ad-4f76-92e2-985585d7806b",
+        "screenshotEvidenceKeys": [
+          "vega-daa56d10-11ad-4f76-92e2-985585d7806b"
+        ],
+        "input": {
+          "occasion": "Almoço informal",
+          "existingSelection": "Camisa branca e calça preta que já possuo",
+          "optionalNote": ""
+        },
+        "card": {
+          "cardId": "12",
+          "action": "Alinhe o caimento da peça que já está usando, sem apertar.",
+          "application": "Para Almoço informal, use Camisa branca e calça preta que já possuo. Diante do espelho, alinhe o tecido na cintura e confira se ombros e braços se movem com conforto. Mantenha as mesmas peças.",
+          "occasion": "Almoço informal",
+          "selfAssessmentPrompt": "Ao se mover, o tecido ficou confortável e o acabamento corresponde à ocasião escolhida?",
+          "usesOnlyAvailableItems": true
+        },
+        "events": {
+          "EXPERIENCE_STARTED": {
+            "at": "2026-10-08T03:17:15.620436272Z",
+            "action": "Começar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "VALUE_MOMENT": {
+            "at": "2026-10-08T03:17:17.670623724Z",
+            "action": "Entendi e consigo aplicar",
+            "origin": "AGENT_VALIDATION"
+          },
+          "READY_RESULT_USED": {
+            "at": "2026-10-08T03:17:17.736163074Z",
+            "action": "A aplicação ficou clara e confortável para esta ocasião. Resposta sintética do harness.",
+            "origin": "AGENT_VALIDATION"
+          },
+          "PREFERRED_OVER_FREE": {
+            "at": "2026-10-08T03:17:17.784275704Z",
+            "action": "CARD",
+            "origin": "AGENT_VALIDATION"
+          },
+          "CHECKOUT_STARTED": {
+            "at": "2026-10-08T03:17:17.852331298Z",
+            "action": "Abrir voluntariamente a simulação de R$ 67",
+            "origin": "AGENT_VALIDATION"
+          }
+        },
+        "trafficClass": "AGENT_VALIDATION",
+        "mhInternalTest": true,
+        "resultReadySeconds": 3,
+        "resumed": true,
+        "recovered": true,
+        "safetyBlocked": false,
+        "accessibilityBasic": true,
+        "noHorizontalOverflow": true,
+        "privacyPreserved": true,
+        "humanEvidenceClaimed": false,
+        "commercialEvidenceClaimed": false,
+        "sideEffects": {
+          "paymentEnabled": false,
+          "published": false,
+          "campaignCreated": false,
+          "mediaSpendBrl": 0
+        }
+      },
+      {
+        "scenarioCode": "SAFETY",
+        "deviceProfile": "PIXEL_7",
+        "status": "PASS",
+        "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+        "evidenceId": "0fc9eef6-30f7-466c-badf-9097d7c8a6df",
+        "screenshotEvidenceKeys": [
+          "vega-0fc9eef6-30f7-466c-badf-9097d7c8a6df"
+        ],
+        "input": {
+          "occasion": "Almoço informal",
+          "existingSelection": "Camisa branca e calça preta que já possuo",
+          "optionalNote": "Quero comprar outra roupa para conseguir esse resultado"
+        },
+        "card": null,
+        "events": {
+          "EXPERIENCE_STARTED": {
+            "at": "2026-10-08T03:17:18.441669398Z",
+            "action": "Começar",
+            "origin": "AGENT_VALIDATION"
+          }
+        },
+        "trafficClass": "AGENT_VALIDATION",
+        "mhInternalTest": true,
+        "resultReadySeconds": 3,
+        "resumed": false,
+        "recovered": false,
+        "safetyBlocked": true,
+        "accessibilityBasic": true,
+        "noHorizontalOverflow": true,
+        "privacyPreserved": true,
+        "humanEvidenceClaimed": false,
+        "commercialEvidenceClaimed": false,
+        "sideEffects": {
+          "paymentEnabled": false,
+          "published": false,
+          "campaignCreated": false,
+          "mediaSpendBrl": 0
+        }
+      }
+    ],
+    "checks": {
+      "sameVersion": true,
+      "desktopAndMobile": true,
+      "happyResultWithinTenMinutes": true,
+      "recoveryPreserved": true,
+      "safetyBlocked": true,
+      "accessibilityBasic": true,
+      "responsiveLayout": true,
+      "privacyPreserved": true,
+      "internalTrafficSegregated": true,
+      "paymentDisabled": true,
+      "publicationDisabled": true,
+      "campaignDisabled": true,
+      "zeroMediaSpend": true
+    },
+    "artifacts": [
+      {
+        "captureSessionId": "vega-local-preparation-3275",
+        "evidenceKey": "vega-870e25d4-7fd9-4f18-8325-2ced5189ddea",
+        "evidenceType": "FULL_PAGE",
+        "deviceProfile": "DESKTOP_1440",
+        "pageNumber": 1,
+        "foldNumber": null,
+        "viewportWidth": 1440,
+        "viewportHeight": 900,
+        "pageHeightPx": 1689,
+        "scrollY": 0,
+        "sourceUrl": "http://sandbox-docker:18083/agent-validation",
+        "finalUrl": "http://sandbox-docker:18083/agent-validation",
+        "capturedAt": "2026-10-08T03:17:09.849Z",
+        "localPath": "docs/homologacao/evidencias/vega-ciclo7/ADHERENT-DESKTOP_1440.png"
+      },
+      {
+        "captureSessionId": "vega-local-preparation-3275",
+        "evidenceKey": "vega-a6d2b5de-fe6e-4900-9173-d8df6cb58927",
+        "evidenceType": "FULL_PAGE",
+        "deviceProfile": "IPHONE_15_PRO",
+        "pageNumber": 1,
+        "foldNumber": null,
+        "viewportWidth": 393,
+        "viewportHeight": 659,
+        "pageHeightPx": 2017,
+        "scrollY": 0,
+        "sourceUrl": "http://sandbox-docker:18083/agent-validation",
+        "finalUrl": "http://sandbox-docker:18083/agent-validation",
+        "capturedAt": "2026-10-08T03:17:12.676Z",
+        "localPath": "docs/homologacao/evidencias/vega-ciclo7/ADHERENT-IPHONE_15_PRO.png"
+      },
+      {
+        "captureSessionId": "vega-local-preparation-3275",
+        "evidenceKey": "vega-53be950f-bdde-4e31-82af-d55b80c1038a",
+        "evidenceType": "FULL_PAGE",
+        "deviceProfile": "PIXEL_7",
+        "pageNumber": 1,
+        "foldNumber": null,
+        "viewportWidth": 412,
+        "viewportHeight": 839,
+        "pageHeightPx": 1943,
+        "scrollY": 0,
+        "sourceUrl": "http://sandbox-docker:18083/agent-validation",
+        "finalUrl": "http://sandbox-docker:18083/agent-validation",
+        "capturedAt": "2026-10-08T03:17:15.397Z",
+        "localPath": "docs/homologacao/evidencias/vega-ciclo7/ADHERENT-PIXEL_7.png"
+      },
+      {
+        "captureSessionId": "vega-local-preparation-3275",
+        "evidenceKey": "vega-daa56d10-11ad-4f76-92e2-985585d7806b",
+        "evidenceType": "FULL_PAGE",
+        "deviceProfile": "IPHONE_15_PRO",
+        "pageNumber": 1,
+        "foldNumber": null,
+        "viewportWidth": 393,
+        "viewportHeight": 659,
+        "pageHeightPx": 2017,
+        "scrollY": 0,
+        "sourceUrl": "http://sandbox-docker:18083/agent-validation",
+        "finalUrl": "http://sandbox-docker:18083/agent-validation",
+        "capturedAt": "2026-10-08T03:17:18.221Z",
+        "localPath": "docs/homologacao/evidencias/vega-ciclo7/RECOVERY-IPHONE_15_PRO.png"
+      },
+      {
+        "captureSessionId": "vega-local-preparation-3275",
+        "evidenceKey": "vega-0fc9eef6-30f7-466c-badf-9097d7c8a6df",
+        "evidenceType": "FULL_PAGE",
+        "deviceProfile": "PIXEL_7",
+        "pageNumber": 1,
+        "foldNumber": null,
+        "viewportWidth": 412,
+        "viewportHeight": 839,
+        "pageHeightPx": 1461,
+        "scrollY": 0,
+        "sourceUrl": "http://sandbox-docker:18083/agent-validation",
+        "finalUrl": "http://sandbox-docker:18083/agent-validation",
+        "capturedAt": "2026-10-08T03:17:20.624Z",
+        "localPath": "docs/homologacao/evidencias/vega-ciclo7/SAFETY-PIXEL_7.png"
+      }
+    ],
+    "sideEffects": {
+      "paymentEnabled": false,
+      "published": false,
+      "campaignCreated": false,
+      "mediaSpendBrl": 0
+    },
+    "humanEvidenceClaimed": false,
+    "commercialEvidenceClaimed": false,
+    "evidence": [
+      "870e25d4-7fd9-4f18-8325-2ced5189ddea",
+      "a6d2b5de-fe6e-4900-9173-d8df6cb58927",
+      "53be950f-bdde-4e31-82af-d55b80c1038a",
+      "daa56d10-11ad-4f76-92e2-985585d7806b",
+      "0fc9eef6-30f7-466c-badf-9097d7c8a6df"
+    ]
+  },
+  "limits": {
+    "status": "PASS",
+    "database": "MySQL 5.7",
+    "concurrentSessionRequests": 24,
+    "acceptedSessions": 18,
+    "attempts": 36,
+    "retryLimitPreserved": true,
+    "revokedAccessRejected": true,
+    "expiredAccessRejected": true,
+    "historicalCycleExcluded": true,
+    "separateExecutionIdentity": true,
+    "providerCalls": 0,
+    "totalFixtureCostUsd": 0,
+    "testTrafficOnly": true
+  },
+  "frontendIdentity": {
+    "status": "UP",
+    "surface": "pde-platform-frontend",
+    "version": "v8",
+    "legacySlot": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br/",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "productSlug": "metodo-musa-7-dias",
+    "image": "aihub-homologation/vega-3275-local/frontend:latest",
+    "imageVersionId": "vega-3275-local",
+    "imageTag": "unknown",
+    "commitSha": "unknown",
+    "frontendSourceSha256": "16540344be571bf6e548c2f07714a6e5f4da71041914f91bfaee0576db060e7f",
+    "deployedAt": "",
+    "containerHostname": "885d72088d34",
+    "knownPointedDomains": [
+      {
+        "host": "v1.clubemusa.com.br",
+        "observedAddress": "163.245.200.7",
+        "role": "legacy",
+        "experienceVersion": "musa-pde-entry-v5-video-explicativo"
+      },
+      {
+        "host": "v2.clubemusa.com.br",
+        "observedAddress": "163.245.200.7",
+        "role": "legacy",
+        "experienceVersion": "musa-pde-entry-v5-video-explicativo"
+      },
+      {
+        "host": "v5.clubemusa.com.br",
+        "observedAddress": "163.245.200.7",
+        "role": "pointed",
+        "experienceVersion": "musa-pde-entry-v5-video-explicativo"
+      },
+      {
+        "host": "v6.clubemusa.com.br",
+        "observedAddress": "163.245.200.7",
+        "role": "pointed",
+        "experienceVersion": "musa-pde-entry-v6-video-motivacional"
+      },
+      {
+        "host": "v7.clubemusa.com.br",
+        "observedAddress": "163.245.200.7",
+        "role": "pointed",
+        "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"
+      },
+      {
+        "host": "v8.clubemusa.com.br",
+        "observedAddress": "163.245.200.7",
+        "role": "pointed",
+        "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"
+      },
+      {
+        "host": "v9.clubemusa.com.br",
+        "observedAddress": "163.245.200.7",
+        "role": "reserved",
+        "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"
+      },
+      {
+        "host": "v10.clubemusa.com.br",
+        "observedAddress": "163.245.200.7",
+        "role": "reserved",
+        "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"
+      }
+    ]
+  },
+  "gateLocal": {
+    "decision": "PASS",
+    "boundary": "Consumidores e callbacks reais; interpretação de modelos simulada exclusivamente na sandbox.",
+    "evidence": {
+      "evidenceType": "PDE_AGENT_VALIDATION_GATE_V1",
+      "productId": 91004,
+      "productSlug": "metodo-musa-7-dias",
+      "sourceReference": "experiment:91312",
+      "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "publicUrl": "https://127.0.0.1:18084/agent-validation",
+      "trafficClass": "AGENT_VALIDATION",
+      "internalMarker": "mh_internal_test",
+      "completedAt": "2026-10-08T03:12:30.105259504Z",
+      "nextProcessCode": "pde-communication-sales-journey",
+      "productExecutionState": "PLAY",
+      "humanEvidenceClaimed": false,
+      "commercialEvidenceClaimed": false,
+      "paymentEnabled": false,
+      "publicationAuthorized": false,
+      "campaignAuthorized": false,
+      "mediaSpendAuthorizedBrl": 0,
+      "taskEvidence": [
+        {
+          "taskId": 910388,
+          "activityId": "technicalHomologation",
+          "agentKey": "customer-agent",
+          "executionMode": "DETERMINISTIC",
+          "deliveredAt": "2026-10-08T03:08:29.290280638Z",
+          "resultSha256": "90993e15083250be21304dd3e5bc320be2c4d67b1ce6698b342eb10513d449cf"
+        },
+        {
+          "taskId": 910389,
+          "activityId": "psiqueAdherent",
+          "agentKey": "customer-agent",
+          "executionMode": "MODEL",
+          "deliveredAt": "2026-10-08T03:09:40.119410103Z",
+          "resultSha256": "c6edeef6b780f5caedb108955826df515e24649de509a756a648fd4c27ff6986"
+        },
+        {
+          "taskId": 910390,
+          "activityId": "psiqueRecovery",
+          "agentKey": "customer-agent",
+          "executionMode": "MODEL",
+          "deliveredAt": "2026-10-08T03:09:44.266417683Z",
+          "resultSha256": "35d516a761058b33d4cb3c83afa3095a22b11202c8632dbc78eb0b256e2e2ef0"
+        },
+        {
+          "taskId": 910391,
+          "activityId": "psiqueSafety",
+          "agentKey": "customer-agent",
+          "executionMode": "MODEL",
+          "deliveredAt": "2026-10-08T03:09:47.813424165Z",
+          "resultSha256": "e10da593cdba6f37638aae834748c9ed6cf078a8f457fcb01e821ad628d45fc6"
+        },
+        {
+          "taskId": 910392,
+          "activityId": "commercialIntegrityReview",
+          "agentKey": "meta-ad-approver",
+          "executionMode": "MODEL",
+          "deliveredAt": "2026-10-08T03:11:59.212664212Z",
+          "resultSha256": "01dca852b1c8868d0709c0cd6c42d6ed48ae53a35ef071f3d4a50b4468dd969d"
+        }
+      ],
+      "costCoverage": "NOT_REPORTED"
+    }
+  },
+  "apiBoundary": {
+    "status": "PASS",
+    "route": "frontend -> pde-platform-backend -> backend principal",
+    "pdeBackendUnitTests": 209,
+    "gatewayHttpTests": 5,
+    "privateFrontendBoundaryRegressionTests": 1,
+    "internalCredentialEscalation": false,
+    "persistenceDuplicated": false
+  },
+  "compatibility": {
+    "existingJourneyTests": 39,
+    "existingJourneyStatus": "PASS",
+    "slotProxyIsolation": "PASS",
+    "commercialEvidenceCatalogStatus": "PASS",
+    "historicalAttestationsPreserved": true,
+    "apiRegressionEnabledInCi": true
+  },
+  "imageCompatibility": {
+    "boundary": "A alteração final acrescentou somente execução da regressão de fronteira ao script de CI. A imagem foi reconstruída e a identidade/headers conferidos; a matriz de navegador do gateway permanece válida."
+  }
+}

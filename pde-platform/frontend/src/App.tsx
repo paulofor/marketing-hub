@@ -38,6 +38,10 @@ import {
 } from "./musaExperiences";
 import "./styles.css";
 
+const VegaPrivatePrototype = React.lazy(
+  () => import("../vega-private/component"),
+);
+
 type Workspace = {
   product: ProductExperience;
   email: string;
@@ -802,7 +806,8 @@ function applyExperienceOverrides(
   const experienceVersionOverride = readRuntimeConfigValue(
     "VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE",
     (import.meta.env.VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE as
-      string | undefined) ?? "",
+      | string
+      | undefined) ?? "",
   );
   const hostExperienceVersionOverride = allowHostOverride
     ? resolveHostExperienceVersionOverride() ||
@@ -827,7 +832,8 @@ function resolveFallbackProductForCurrentContext() {
   const experienceVersionOverride = readRuntimeConfigValue(
     "VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE",
     (import.meta.env.VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE as
-      string | undefined) ?? "",
+      | string
+      | undefined) ?? "",
   );
   const selectedExperienceVersion =
     resolveHostExperienceVersionOverride() ||
@@ -996,7 +1002,8 @@ function App() {
       metadata: { actionName: "page_loaded" },
     });
     const navigationEntry = performance.getEntriesByType("navigation")[0] as
-      PerformanceNavigationTiming | undefined;
+      | PerformanceNavigationTiming
+      | undefined;
     if (navigationEntry) {
       trackEvent("PAGE_LOAD", {
         source: "frontend_performance",
@@ -2468,13 +2475,13 @@ function App() {
   );
   const trialNeedsPaymentForNextDay = Boolean(
     !hasActiveSubscription &&
-    dayOneCompleted &&
-    nextMission &&
-    !nextMissionIsFirstMission,
+      dayOneCompleted &&
+      nextMission &&
+      !nextMissionIsFirstMission,
   );
   const canCompleteActiveMission = Boolean(
     activeMission &&
-    (hasActiveSubscription || activeMission.id === firstMission?.id),
+      (hasActiveSubscription || activeMission.id === firstMission?.id),
   );
   const activeMissionGuidanceConfig = activeMission
     ? resolveMissionGuidanceConfig(activeMission.id)
@@ -2535,9 +2542,9 @@ function App() {
   );
   const canRegisterActiveMission = Boolean(
     canCompleteActiveMission &&
-    (!activeMissionRequiresInteraction ||
-      (activeMissionGuidanceConfig &&
-        isMissionInteractionSaved(activeMission?.id ?? ""))),
+      (!activeMissionRequiresInteraction ||
+        (activeMissionGuidanceConfig &&
+          isMissionInteractionSaved(activeMission?.id ?? ""))),
   );
 
   useEffect(() => {
@@ -4309,7 +4316,12 @@ const configuredProductSlug = readRuntimeConfigValue(
   import.meta.env.VITE_PDE_PRODUCT_SLUG || "metodo-musa-7-dias",
 );
 root.render(
-  import.meta.env.DEV &&
+  configuredProductSlug === "metodo-musa-7-dias" &&
+    window.location.pathname === "/agent-validation" ? (
+    <React.Suspense fallback={<p>Carregando experiência privada…</p>}>
+      <VegaPrivatePrototype />
+    </React.Suspense>
+  ) : import.meta.env.DEV &&
     window.location.pathname === "/__qa/consultant-sdk-v1" ? (
     <ConsultantSdkQaPreview />
   ) : window.location.pathname.startsWith("/transition-pause") ? (

@@ -8,6 +8,9 @@ import json
 from pathlib import Path
 import re
 import sys
+import time
+import urllib.error
+import urllib.request
 from typing import Any
 
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
@@ -279,6 +282,58 @@ def smoke_profile(surface: dict[str, Any], contract: dict[str, Any], source: str
     return mode
 
 
+def read_private_capability(url: str) -> dict[str, Any]:
+    """Consulta somente o contrato público de capacidades, sem credencial, sessão ou escrita."""
+
+    request = urllib.request.Request(url, headers={"Cache-Control": "no-cache"})
+    with urllib.request.urlopen(request, timeout=20) as response:
+        return json.load(response)
+
+
+def wait_private_capability(
+    surface: dict[str, Any], contract: dict[str, Any], source: str, timeout: float,
+    *, fetch=read_private_capability, clock=time.monotonic, sleep=time.sleep,
+) -> bool:
+    """Aguarda a dependência privada antes da promoção; contratos comerciais não fazem consulta."""
+
+    if timeout < 0:
+        raise ValueError("Prazo da dependência privada inválido")
+    if smoke_profile(surface, contract, source) != "PRIVATE_PREPARATION_READ_ONLY":
+        return False
+    version = contract["publicationContract"].get("privatePrototypeVersion", surface["experienceVersion"])
+    url = surface["publicUrl"].rstrip("/") + contract["deploymentValidation"]["contractPath"]
+    deadline = clock() + timeout
+    while True:
+        try:
+            capability = fetch(url)
+        except urllib.error.HTTPError as error:
+            if error.code < 500 and error.code != 429:
+                raise ValueError(f"Dependência privada recusou a leitura: HTTP {error.code}") from error
+            capability = None
+        except (urllib.error.URLError, TimeoutError):
+            capability = None
+        if capability is not None:
+            if not isinstance(capability, dict) or any(
+                capability.get(key) != value for key, value in {
+                    "productSlug": surface["productSlug"],
+                    "prototypeVersion": surface["experienceVersion"],
+                    "agentValidationGenerationMode": "DETERMINISTIC_FIXTURE",
+                    "checkoutMode": "SIMULATED_NO_CHARGE",
+                    "paymentEnabled": False, "published": False, "mediaSpendBrl": 0,
+                }.items()
+            ):
+                raise ValueError("Dependência privada não preserva identidade ou limites seguros")
+            if capability.get("syntheticLimits") != contract.get("syntheticLimits"):
+                raise ValueError("Dependência privada não preserva as cotas sintéticas")
+            supported = capability.get("supportedPrototypeVersions", [capability["prototypeVersion"]])
+            if isinstance(supported, list) and version in supported:
+                return True
+        remaining = deadline - clock()
+        if remaining <= 0:
+            raise ValueError(f"Backend ainda não disponibilizou {version}; a imagem privada não pode ser promovida")
+        sleep(min(10, remaining))
+
+
 def emit_surface(surface: dict[str, Any]) -> None:
     """Emite os campos operacionais em TSV para consumo seguro pelo Bash."""
 
@@ -338,6 +393,12 @@ def main() -> int:
     prototype_parser.add_argument("--contract", required=True)
     prototype_parser.add_argument("--expected-source", required=True)
 
+    dependency_parser = subparsers.add_parser("wait-private-capability")
+    dependency_parser.add_argument("--target", required=True)
+    dependency_parser.add_argument("--contract", required=True)
+    dependency_parser.add_argument("--expected-source", required=True)
+    dependency_parser.add_argument("--timeout", type=float, default=1800)
+
     rollback_parser = subparsers.add_parser("validate-rollback")
     rollback_parser.add_argument("--before", required=True)
     rollback_parser.add_argument("--after", required=True)
@@ -378,6 +439,10 @@ def main() -> int:
         if smoke_profile(surface, contract, args.expected_source) != "PRIVATE_PREPARATION_READ_ONLY":
             raise ValueError("Versão privada exige contrato de preparação sem efeitos externos")
         print(contract["publicationContract"].get("privatePrototypeVersion", surface["experienceVersion"]))
+        return 0
+    if args.command == "wait-private-capability":
+        waited = wait_private_capability(select_surface(inventory, args.target), load_object(Path(args.contract)), args.expected_source, args.timeout)
+        print("Dependência privada disponível" if waited else "Contrato comercial preservado; consulta privada não se aplica")
         return 0
     if args.command == "validate-rollback":
         validate_rollback(

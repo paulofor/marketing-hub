@@ -117,6 +117,8 @@ jobs:
           node-version: 22
       - name: Validate deployment scope resolver
         run: node --test scripts/resolve-pde-frontend-deploy-target.test.mjs
+      - name: Validate private release dependency contracts
+        run: python3 pde-platform/scripts/test_pde_release_contract.py
       - name: Resolve declared frontend target
         id: resolve
         env:
@@ -661,6 +663,16 @@ jobs:
           RECOVERY_BASE_SHA: ${{ inputs.recovery_base_sha }}
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/validate-publisher-recovery.py
+
+      - name: Wait for private backend capability before promotion
+        if: env.PDE_DEPLOY_FRONTEND_VERSION == 'v8'
+        timeout-minutes: 31
+        run: |
+          python3 pde-platform/scripts/pde_release_contract.py wait-private-capability \
+            --target "$PDE_DEPLOY_FRONTEND_VERSION" \
+            --contract "$PDE_FRONTEND_CONTRACT_PATH" \
+            --expected-source "$PDE_FRONTEND_SOURCE_SHA256" \
+            --timeout 1800
 
       - name: Configure SSH
         id: pde_ssh

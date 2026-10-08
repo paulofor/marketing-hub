@@ -583,7 +583,13 @@ class FinancialPlanPreparationTest {
   /** Valida limites pelo endpoint real, inclusive números fracionários que não podem truncar. */
   @Test
   void httpRejectsInvalidDaysAndAcceptsTwoChoices() throws Exception {
-    var mvc = MockMvcBuilders.standaloneSetup(new FinancialPlanController(service)).build();
+    var mvc =
+        MockMvcBuilders.standaloneSetup(
+                new FinancialPlanController(
+                    service,
+                    new FinancialContributionTargetService(
+                        service, Validation.buildDefaultValidatorFactory().getValidator())))
+            .build();
     for (String days : List.of("0", "-1", "1.5", "3661", "null")) {
       mvc.perform(
               post("/api/financial-plans/v1/products/95101/preparation")
@@ -600,5 +606,111 @@ class FinancialPlanPreparationTest {
                 .content(json.writeValueAsString(request(0, 7, true))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.assumptions.preparation.personalizedAi").value(true));
+  }
+
+  /**
+   * A meta chega pelo controller real, conserva custos desconhecidos e não solicita parecer pago.
+   */
+  @Test
+  void contributionTargetUsesCanonicalPersistenceAndPreservesUnknowns() throws Exception {
+    var node = json.valueToTree(complete());
+    ((com.fasterxml.jackson.databind.node.ObjectNode) node).putNull("minimumMarginPercent");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) node.path("ai")).putNull("perAttempt");
+    var source = prior(json.treeToValue(node, PlanAssumptions.class));
+    when(revisions.findById(source.getId())).thenReturn(Optional.of(source));
+    String original = source.getAssumptionsJson();
+    var mvc =
+        MockMvcBuilders.standaloneSetup(
+                new FinancialPlanController(
+                    service,
+                    new FinancialContributionTargetService(
+                        service, Validation.buildDefaultValidatorFactory().getValidator())))
+            .build();
+    var response =
+        mvc.perform(
+                post("/api/financial-plans/v1/products/95101/contribution-target")
+                    .principal(() -> "Operador local")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"sourceRevisionId\":998,\"minimumMarginPercent\":31.25}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.revision").value(2))
+            .andExpect(jsonPath("$.assumptions.minimumMarginPercent").value(31.25))
+            .andExpect(jsonPath("$.assumptions.ai.perAttempt").isEmpty())
+            .andExpect(jsonPath("$.canRequestAnalysis").value(false))
+            .andExpect(jsonPath("$.createdBy").value("Operador local"))
+            .andReturn();
+    assertThat(source.getAssumptionsJson()).isEqualTo(original);
+    var saved = json.readTree(response.getResponse().getContentAsByteArray());
+    var expected = json.readTree(original);
+    expected
+        .fields()
+        .forEachRemaining(
+            field -> {
+              if (!Set.of("minimumMarginPercent", "realizedCostBaseline").contains(field.getKey()))
+                assertThat(saved.path("assumptions").path(field.getKey()))
+                    .isEqualTo(field.getValue());
+            });
+    verifyNoInteractions(plutus);
+    assertThat(saved.path("analysis").isNull()).isTrue();
+  }
+
+  /** O endpoint recusa metas inválidas e IDs fracionários antes de qualquer gravação. */
+  @Test
+  void contributionTargetRejectsInvalidHttpInputs() throws Exception {
+    var target = mock(FinancialContributionTargetService.class);
+    var mvc = MockMvcBuilders.standaloneSetup(new FinancialPlanController(service, target)).build();
+    for (String value : List.of("null", "0", "-1", "100"))
+      mvc.perform(
+              post("/api/financial-plans/v1/products/95101/contribution-target")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"sourceRevisionId\":998,\"minimumMarginPercent\":" + value + "}"))
+          .andExpect(status().isBadRequest());
+    for (String id : List.of("null", "0", "-1", "998.5", "\"998\"", "9223372036854775808"))
+      mvc.perform(
+              post("/api/financial-plans/v1/products/95101/contribution-target")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"sourceRevisionId\":" + id + ",\"minimumMarginPercent\":31.25}"))
+          .andExpect(status().isBadRequest());
+    verifyNoInteractions(target);
+    verify(revisions, never()).saveAndFlush(any());
+  }
+
+  /** Voltar a uma meta anterior cria a nova decisão vigente em vez de responder com história. */
+  @Test
+  void restoringHistoricalTargetCreatesCurrentRevision() throws Exception {
+    var seed =
+        service.create(
+            "PRODUCT",
+            product.getId(),
+            Environment.LIVE,
+            new SavePlanRequest(
+                "Plano sintético", "Harness local", 0, plan.getId(), null, complete()));
+    var historical = prior(seed.assumptions());
+    historical.setId(996L);
+    var changed = json.valueToTree(seed.assumptions());
+    ((com.fasterxml.jackson.databind.node.ObjectNode) changed)
+        .put("minimumMarginPercent", new BigDecimal("35"));
+    var latest = prior(json.treeToValue(changed, PlanAssumptions.class));
+    latest.setId(998L);
+    latest.setRevisionNumber(2);
+    when(revisions.findById(998L)).thenReturn(Optional.of(latest));
+    when(revisions.findByScopeKindAndScopeIdAndEnvironmentOrderByRevisionNumberDesc(
+            "PRODUCT", product.getId(), Environment.LIVE))
+        .thenReturn(List.of(latest, historical));
+    clearInvocations(revisions);
+    var target =
+        new FinancialContributionTargetService(
+            service, Validation.buildDefaultValidatorFactory().getValidator());
+    var saved =
+        target.save(
+            product.getId(),
+            Environment.LIVE,
+            new com.marketinghub.financialplan.v1.service.contributiontarget
+                .SaveContributionTargetRequest(998L, seed.assumptions().minimumMarginPercent()),
+            "Operador local");
+    assertThat(saved.revision()).isEqualTo(3);
+    assertThat(saved.id()).isEqualTo(999L);
+    verify(revisions).saveAndFlush(any());
+    verifyNoInteractions(plutus);
   }
 }

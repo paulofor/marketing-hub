@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import PageTitle from "../../components/PageTitle";
 import FinancialPlanPlutusDetails from "./FinancialPlanPlutusDetails";
 import FinancialPlanPreparationEditor from "./FinancialPlanPreparationEditor";
+import FinancialContributionTargetEditor from "./FinancialContributionTargetEditor";
 import {
   costLabels,
   useFinancialPlanCatalog,
@@ -12,6 +13,8 @@ import {
   useSaveFinancialPlan,
   useAnalyzeFinancialPlan,
   usePrepareFinancialPlan,
+  useSaveContributionTarget,
+  type SaveContributionTarget,
   type PrepareFinancialPlan,
   type CostKey,
   type FinancialPlan,
@@ -144,6 +147,7 @@ export default function FinancialPlansPage() {
           environment={environment}
           catalog={catalog.data}
           initialRevisionId={Number(search.get("revisionId")) || undefined}
+          initialTargetEditing={search.get("edit") === "contribution-target"}
         />
       ) : (
         <div className="alert alert-info">
@@ -161,12 +165,14 @@ function PlanWorkspace({
   environment,
   catalog,
   initialRevisionId,
+  initialTargetEditing = false,
 }: {
   scope: PlanScope;
   ownerId: number;
   environment: PlanEnvironment;
   catalog: PlanCatalog;
   initialRevisionId?: number;
+  initialTargetEditing?: boolean;
 }) {
   const history = useFinancialPlans(scope, ownerId, environment);
   const typeId =
@@ -181,6 +187,10 @@ function PlanWorkspace({
   const save = useSaveFinancialPlan(scope, ownerId, environment);
   const prepare = usePrepareFinancialPlan(ownerId, environment);
   const analyze = useAnalyzeFinancialPlan(ownerId, environment);
+  const contribution = useSaveContributionTarget(ownerId, environment);
+  const [targetEditing, setTargetEditing] = useState(
+    initialTargetEditing && scope === "products",
+  );
   const [selectedId, setSelectedId] = useState(initialRevisionId);
   const [editing, setEditing] = useState(false);
   const [advanced, setAdvanced] = useState(false);
@@ -189,11 +199,16 @@ function PlanWorkspace({
   const selected = selectedId
     ? history.data?.find((p) => p.id === selectedId)
     : history.data?.[0];
-  const busy = save.isPending || analyze.isPending || prepare.isPending;
+  const busy =
+    save.isPending ||
+    analyze.isPending ||
+    prepare.isPending ||
+    contribution.isPending;
   const startEdit = (source?: FinancialPlan, detailed = false) => {
     setCopy(source);
     setAdvanced(detailed || scope === "product-types");
     setEditing(true);
+    setTargetEditing(false);
     setNotice("");
     save.reset();
     prepare.reset();
@@ -224,6 +239,19 @@ function PlanWorkspace({
       /* A mutation apresenta o erro sem descartar o formulário. */
     }
   }
+  async function submitTarget(request: SaveContributionTarget) {
+    setNotice("");
+    try {
+      const result = await contribution.mutateAsync(request);
+      setSelectedId(result.id);
+      setTargetEditing(false);
+      setNotice(
+        "Meta registrada em uma nova revisão. Custos, entrega e pareceres mantêm suas próprias condições de aceite.",
+      );
+    } catch {
+      /* A decisão digitada permanece disponível; o backend preserva o contexto em conflitos. */
+    }
+  }
   if (history.isLoading)
     return <p role="status">Carregando plano financeiro...</p>;
   if (history.isError)
@@ -237,7 +265,7 @@ function PlanWorkspace({
       <div className="d-flex flex-wrap gap-2 align-items-center">
         <button
           className="btn btn-primary"
-          disabled={busy || editing}
+          disabled={busy || editing || targetEditing}
           onClick={() => startEdit(selected)}
         >
           {selected
@@ -248,6 +276,19 @@ function PlanWorkspace({
         </button>
         {scope === "products" && (
           <>
+            {selected && (
+              <button
+                className="btn btn-outline-primary"
+                disabled={busy || editing || targetEditing}
+                onClick={() => {
+                  contribution.reset();
+                  setTargetEditing(true);
+                  setNotice("");
+                }}
+              >
+                Editar margem mínima
+              </button>
+            )}
             <Link
               className="btn btn-outline-secondary"
               to={`/products/${ownerId}/execution-profiles`}
@@ -263,7 +304,7 @@ function PlanWorkspace({
           </>
         )}
       </div>
-      {scope === "products" && !editing && (
+      {scope === "products" && !editing && !targetEditing && (
         <details>
           <summary>Edição financeira avançada</summary>
           <button
@@ -293,7 +334,7 @@ function PlanWorkspace({
                 <button
                   key={t.id}
                   className="btn btn-outline-primary"
-                  disabled={busy || editing || t.stale}
+                  disabled={busy || editing || targetEditing || t.stale}
                   onClick={() => startEdit(t, true)}
                 >
                   Usar modelo: {t.name} · revisão {t.revision}
@@ -310,7 +351,7 @@ function PlanWorkspace({
             className="form-select"
             aria-label="Histórico de revisões"
             value={selected?.id ?? selectedId ?? ""}
-            disabled={busy || editing}
+            disabled={busy || editing || targetEditing}
             onChange={(e) => {
               setSelectedId(Number(e.target.value));
               setNotice("");
@@ -329,6 +370,17 @@ function PlanWorkspace({
       {selectedId && !selected && !editing && (
         <div className="alert alert-warning">
           A revisão solicitada não pertence a este histórico.
+          {targetEditing && (
+            <button
+              className="btn btn-outline-primary ms-2"
+              onClick={() => {
+                setTargetEditing(false);
+                setSelectedId(undefined);
+              }}
+            >
+              Consultar revisão atual
+            </button>
+          )}
         </div>
       )}
       {notice && (
@@ -336,9 +388,14 @@ function PlanWorkspace({
           {notice}
         </div>
       )}
-      {(save.isError || analyze.isError || prepare.isError) && (
+      {(save.isError ||
+        analyze.isError ||
+        prepare.isError ||
+        contribution.isError) && (
         <div className="alert alert-danger" role="alert">
-          {errorMessage(save.error ?? analyze.error ?? prepare.error)}
+          {errorMessage(
+            save.error ?? analyze.error ?? prepare.error ?? contribution.error,
+          )}
         </div>
       )}
       {editing && !advanced && (
@@ -348,6 +405,15 @@ function PlanWorkspace({
           busy={busy}
           onSubmit={submitPreparation}
           onCancel={() => setEditing(false)}
+        />
+      )}
+      {targetEditing && scope === "products" && selected && (
+        <FinancialContributionTargetEditor
+          key={selected.id}
+          source={selected}
+          busy={busy}
+          onSubmit={submitTarget}
+          onCancel={() => setTargetEditing(false)}
         />
       )}
       {editing && advanced && (

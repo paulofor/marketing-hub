@@ -194,3 +194,32 @@ seus próprios contratos e gates.
 Fontes primárias: [agente financeiro](financial-agent-canon.v1.md),
 [tipos de produto](product-types-canon.v1.md) e
 [fichas e checkpoints](product-execution-profiles-canon.v1.md).
+
+
+## Meta econômica na preparação de comunicação — 08/10/2026
+
+Quando a execução ativa aguardar o contrato de comunicação de um experimento planejado,
+o acompanhamento consulta a revisão LIVE mais recente do próprio produto e o único plano
+que governa aquela referência. A meta mínima ausente deve aparecer como decisão explícita,
+com explicação de margem de contribuição, base, custos considerados, exemplo fictício,
+link do plano e referência da revisão. Não escolher percentual automaticamente.
+
+A leitura não cria revisão, tarefa ou gasto. Plano ambíguo, outra identidade, dados TEST,
+STOP, pausa, falha ou experimento encerrado não recebem essa orientação. Uma meta já
+registrada não deve ser solicitada novamente. Salvar a meta continua pelo formulário e
+endpoint canônicos de revisão; isso não substitui custos, prova integrada de entrega,
+parecer financeiro ou autorização comercial. As outras pendências permanecem visíveis.
+
+O formulário simples recebe somente a revisão lida e o percentual escolhido em
+`POST /api/financial-plans/v1/products/{id}/contribution-target?environment=LIVE|TEST`.
+O backend exige ID inteiro, meta de 0,01% a 99,99%, propriedade, ambiente e revisão vigente.
+Reutiliza a persistência canônica, preservando as outras premissas e a autoria disponível;
+não solicita análise nem autoriza gastos. Erro mantém a escolha digitada; concorrência
+recusa sobrescrita. A tela só confirma a decisão após a resposta persistida.
+
+### Ordem das decisões econômicas — 08/10/2026
+
+Reuso de conteúdo idêntico limita-se à revisão vigente. Restaurar uma meta ou conjunto
+de premissas de uma revisão histórica exige outra revisão, com nova ordem e autoria;
+responder com a antiga não registra a decisão atual. Repetir a mesma entrada vigente
+continua idempotente. O histórico, pareceres e custos anteriores não são reclassificados.

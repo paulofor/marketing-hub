@@ -9479,3 +9479,30 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   autorização. Três revisões de Psique, Têmis e gate backend permanecem obrigatórios.
   Prontidão e simulação não comprovam venda ou lucro.
 - **Registro:** `docs/homologacao/capella-conclusao-processo3-v1.md`.
+
+## LOOP-IRIS-COBERTURA-VAZIA — 08/10/2026
+
+- **Reprodução local:** pacote concluído com os seis marcadores e nenhum conteúdo era aceito.
+  Os novos casos vazio, pontuação e duplicação falharam com o validador anterior e passaram
+  após a correção. Nenhuma tarefa de Íris do experimento 97 foi atribuída a esse defeito:
+  Alcyone permanece sem tarefa por estratégia, economia e entrega ainda pendentes.
+- **Causa:** presença de títulos era confundida com decisões utilizáveis.
+- **Correção e prevenção:** cada marcador aparece uma vez e contém texto próprio; prompt
+  versionado, teste do worker e cânone concordam. Texto válido de outro contexto permanece
+  aceito. Isso não comprova evidência, eficácia comercial ou margem realizada.
+- **Registro:** `docs/homologacao/alcyone-comunicacao-prontidao-v1.md`.
+
+## LOOP-FINANCEIRO-DECISAO-CONFIRMADA-SEM-VIGENCIA — 08/10/2026
+
+- **Reprodução no MySQL local:** produto sintético 95119, ambiente TEST; metas 31,25%, 35%
+  e 31,25%. A terceira chamada devolveu a revisão 2 com 31,25%, mas a vigente continuava
+  sendo a revisão 3 com 35%. Os dois primeiros registros e o replay vigente eram válidos.
+- **Causa:** a deduplicação procurava qualquer revisão histórica equivalente, ignorando a
+  ordem da decisão atual. Não há evidência de que Alcyone já tenha registrado uma meta.
+- **Correção compartilhada:** deduplicar somente a revisão vigente. Restaurar premissas
+  anteriores cria outra revisão imutável; a nova resposta fica coerente com a leitura atual.
+- **Prevenção:** endpoint específico de meta reutiliza a persistência canônica; testes de
+  conservação de premissas, contexto, concorrência e HTTP; matriz tela → API → MySQL em
+  desktop/iPhone/Pixel, outro produto, TEST/LIVE, falha de gravação, restauração e replay.
+  Nenhuma chamada de modelo, análise paga ou evidência comercial é criada pela decisão.
+- **Registro:** `docs/homologacao/alcyone-comunicacao-prontidao-v1.md`.

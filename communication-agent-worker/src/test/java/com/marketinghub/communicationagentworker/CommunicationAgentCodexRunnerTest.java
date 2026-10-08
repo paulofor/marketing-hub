@@ -339,6 +339,33 @@ class CommunicationAgentCodexRunnerTest {
         .hasMessageContaining("sandbox-private-v12");
   }
 
+  /** Rótulos sem decisão e rótulos repetidos não constituem comunicação utilizável. */
+  @ParameterizedTest
+  @ValueSource(strings = {"EMPTY", "PUNCTUATION", "DUPLICATE"})
+  void rejectsMarkersWithoutIndividualDecisions(String mode) throws Exception {
+    var task =
+        task("pde-communication-sales-journey", "communicationContract", context("READY", true));
+    JsonNode output = result("COMMUNICATION_PACKAGE", "communicationContract", "COMPLETED");
+    String markers =
+        "[DESEJO_RECONHECIDO] [PRIMEIRO_PASSO_FACIL] [VALOR_ANTES_DO_COMPROMISSO] [CONTINUIDADE_PAGA] [REPETICAO_COM_MARGEM] [DECISAO_DE_VIDEO]";
+    String strategy =
+        switch (mode) {
+          case "PUNCTUATION" -> markers.replace("]", "]: ** -- : ");
+          case "DUPLICATE" ->
+              output.path("functionalOutput").path("messageStrategy").asText()
+                  + " [DESEJO_RECONHECIDO] Outro conteúdo.";
+          default -> markers;
+        };
+    ((com.fasterxml.jackson.databind.node.ObjectNode) output.path("functionalOutput"))
+        .put("messageStrategy", strategy);
+    assertThatThrownBy(
+            () ->
+                CommunicationAgentCodexRunner.validate(
+                    output, task, CommunicationAgentCodexRunner.contractFor(task)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Decisão comercial");
+  }
+
   /** Rejeita tentativa de devolver outro contrato estratégico ou concluir sem artefato. */
   @Test
   void shouldRejectChangedStrategyAndEmptyOutput() throws Exception {

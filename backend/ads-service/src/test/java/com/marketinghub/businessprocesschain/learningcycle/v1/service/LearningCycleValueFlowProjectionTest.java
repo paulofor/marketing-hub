@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
+import com.marketinghub.businessprocess.automation.v1.ProcessRun;
 import com.marketinghub.businessprocesschain.learningcycle.v1.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.LearningCycleProcessContext.Work;
 import com.marketinghub.pde.kit.privateprototype.v1.service.*;
@@ -12,6 +13,7 @@ import com.marketinghub.pde.kit.privateprototype.v1.service.contract.KitPrivateC
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.kit.KitPrivateArtifactRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository;
+import com.marketinghub.repository.jpa.processautomation.ProcessRunRepository;
 import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.Test;
@@ -28,9 +30,112 @@ class LearningCycleValueFlowProjectionTest {
   private final LearningSalesCycleEventRepository events =
       mock(LearningSalesCycleEventRepository.class);
   private final LearningCyclePrototypeContext prototype = mock(LearningCyclePrototypeContext.class);
+  private final ProcessRunRepository runs = mock(ProcessRunRepository.class);
   private final LearningCycleValueFlowProjection projection =
       new LearningCycleValueFlowProjection(
-          capabilities, artifacts, tasks, events, prototype, new LearningCycleJson(mapper));
+          capabilities, artifacts, tasks, events, runs, prototype, new LearningCycleJson(mapper));
+
+  /** Capella homologada continua pausada; a tela não pode negar a necessidade de retomada. */
+  @Test
+  void acceptedImplementationKeepsPausedProcessVisible() {
+    var cycle = fixture();
+    cycle.setId(5L);
+    cycle.setProductId(7L);
+    cycle.setExperimentId(98L);
+    cycle.setChainDefinitionId(26L);
+    when(prototype.resolve(cycle)).thenReturn(Optional.of(mapper.createObjectNode()));
+    var run = pausedRun(47L);
+    when(runs
+            .findFirstByProductIdAndProcessDefinitionIdAndChainDefinitionIdAndLearningCycleIdAndSourceReferenceOrderByIdDesc(
+                7L, 117L, 26L, 5L, "experiment:98"))
+        .thenReturn(Optional.of(run));
+    var flow = projection.resolve(cycle, reviewWork());
+    assertThat(flow.situation()).contains("pausada");
+    assertThat(flow.saleBlocker()).contains("#47", "Pausado");
+    assertThat(flow.decisionNeeded()).isTrue();
+    assertThat(flow.decisionReason()).contains("limites", "não libera novos gastos");
+    assertThat(flow.awaitingResponsible()).isEqualTo("Psique");
+    assertThat(flow.prototypeRegistered()).isTrue();
+    assertThat(flow.activeExecution()).isFalse();
+  }
+
+  /** A pausa de outro produto só aparece na consulta da sua identidade completa. */
+  @Test
+  void pausedIndependentProductUsesItsOwnProcessScope() {
+    var cycle = fixture();
+    cycle.setChainDefinitionId(16L);
+    when(runs
+            .findFirstByProductIdAndProcessDefinitionIdAndChainDefinitionIdAndLearningCycleIdAndSourceReferenceOrderByIdDesc(
+                75L, 117L, 16L, 55L, "experiment:95"))
+        .thenReturn(Optional.of(pausedRun(87L)));
+    var flow = projection.resolve(cycle, work());
+    assertThat(flow.saleBlocker()).contains("#87").doesNotContain("#47");
+    assertThat(flow.decisionNeeded()).isTrue();
+    assertThat(flow.prototypeRegistered()).isFalse();
+  }
+
+  /** Uma tarefa técnica em conclusão de pausa continua em execução, sem exigir nova decisão. */
+  @Test
+  void pausingTaskPreservesActiveTechnicalExecution() {
+    var cycle = fixture();
+    var run = pausedRun(87L);
+    run.setStatus("PAUSING");
+    when(runs
+            .findFirstByProductIdAndProcessDefinitionIdAndChainDefinitionIdAndLearningCycleIdAndSourceReferenceOrderByIdDesc(
+                75L, 117L, null, 55L, "experiment:95"))
+        .thenReturn(Optional.of(run));
+    when(prototype.resolve(cycle)).thenReturn(Optional.of(mapper.createObjectNode()));
+    when(tasks.findFunctionalSnapshots(eq("experiment:95"), anySet(), eq(Instant.EPOCH)))
+        .thenReturn(
+            List.of(
+                new AgentTaskFunctionalSnapshot(
+                    1000L,
+                    117L,
+                    "pde-construction-approval",
+                    "technicalHomologation",
+                    "customer-agent",
+                    "IN_PROGRESS",
+                    Instant.EPOCH,
+                    null,
+                    null)));
+    var flow = projection.resolve(cycle, work());
+    assertThat(flow.activeExecution()).isTrue();
+    assertThat(flow.decisionNeeded()).isNull();
+    assertThat(flow.situation()).doesNotContain("está pausada");
+  }
+
+  /** Constrói somente o estado persistido de pausa, sem inventar autorização ou tarefa. */
+  private ProcessRun pausedRun(Long id) {
+    var run = new ProcessRun();
+    run.setId(id);
+    run.setStatus("PAUSED");
+    run.setReason("Pausado. Resultados preservados; retome quando desejar continuar.");
+    return run;
+  }
+
+  /** Mantém a próxima revisão tecnicamente disponível no mesmo processo. */
+  private Work reviewWork() {
+    return new Work(
+        117L,
+        3,
+        "Construção",
+        "psiqueAdherent",
+        7,
+        "Cenário aderente",
+        "Psique",
+        "NOT_STARTED",
+        "Homologação técnica aprovada; revisão disponível.",
+        "/products/7/value-chain-history");
+  }
+
+  /** O ciclo encerrado preserva a história e não consulta uma pausa para criar nova decisão. */
+  @Test
+  void closedCycleDoesNotCreatePauseDecisionFromHistory() {
+    var cycle = fixture();
+    cycle.setStatus("CLOSED");
+    projection.resolve(cycle, work());
+    verifyNoInteractions(runs);
+  }
 
   /**
    * Mostra Dédalo como dependência de Psique sem fabricar execução, decisão humana ou métrica zero.

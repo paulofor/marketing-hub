@@ -371,8 +371,10 @@ services:
       OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.5}
       POLL_INTERVAL_MS: ${POLL_INTERVAL_MS:-4000}
+      PDE_VISUAL_CALLBACK_SPOOL_DIR: /app/data/visual-callbacks
     volumes:
       - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro
+      - pde-ai-worker-callbacks:/app/data
     networks:
       - pde-platform-net
 
@@ -397,3 +399,4 @@ networks:
 
 volumes:
   pde-platform-data:
+  pde-ai-worker-callbacks:

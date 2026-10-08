@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { VisualPersonalizationWorker } from './visual-personalization-v1.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendUrl = (process.env.PDE_BACKEND_URL ?? 'http://pde-platform-backend:8096').replace(/\/+$/, '');
@@ -8,6 +9,9 @@ const pdeInternalToken = (process.env.PDE_INTERNAL_API_TOKEN ?? '').trim();
 const pollIntervalMs = Number(process.env.POLL_INTERVAL_MS ?? '4000');
 const openaiModel = process.env.OPENAI_MODEL ?? 'gpt-5.5';
 const openaiApiKey = await resolveOpenAiApiKey();
+const visualWorker = new VisualPersonalizationWorker({
+  backendUrl, internalToken: pdeInternalToken, apiKey: openaiApiKey,
+});
 const promptDefinitions = {
   MUSA_PUBLIC_PRESENCE_DIAGNOSTIC: {
     dir: path.resolve(__dirname, '../prompts/musa-public-presence-diagnostic'),
@@ -48,8 +52,14 @@ async function main() {
     throw new Error('PDE_INTERNAL_API_TOKEN não configurado no pde-ai-worker');
   }
   console.log(`PDE AI Worker iniciado; backendUrl=${backendUrl}, model=${openaiModel}`);
+  let visualInFlight = null;
   while (true) {
     try {
+      if (!visualInFlight) {
+        visualInFlight = visualWorker.processNextPending().catch((error) => {
+          console.error('Falha na fila visual PDE; preservar callbacks sem interromper orientação MUSA', error);
+        }).finally(() => { visualInFlight = null; });
+      }
       await processNextPending();
     } catch (error) {
       console.error('Falha no ciclo do worker PDE AI', error);

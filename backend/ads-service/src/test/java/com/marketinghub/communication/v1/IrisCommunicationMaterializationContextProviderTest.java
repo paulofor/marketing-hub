@@ -28,6 +28,38 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: validar o contexto segregado que o backend entrega à Íris. */
 class IrisCommunicationMaterializationContextProviderTest {
 
+  /** Uma prova técnica auditada muda o diagnóstico sem forjar o parecer independente de Dédalo. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {11L, 82011L})
+  void exposesIntegratedGenerationButKeepsIndependentAcceptance(long productId) throws Exception {
+    Fixture fixture = fixture(List.of(), false);
+    var product = fixture.plan().getExperiment().getProduct();
+    product.setId(productId);
+    product.setPdeExperienceJson(
+        "{\"privatePrototypeAcceptance\":{\"prototypeVersion\":\"private-v1\"},\"harness\":{\"staticResultFixtures\":{\"mode\":\"DETERMINISTIC_HOMOLOGATION_ONLY\"}}}");
+    var visual =
+        mock(com.marketinghub.pde.visualpersonalization.v1.service.VisualPreparationService.class);
+    var proof =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            new ObjectMapper()
+                .readTree(
+                    "{\"status\":\"PDE_COMPLETED\",\"estimatedCostUsd\":0.08,\"productVersion\":\"private-v1\",\"jobId\":\"pde-visual-v1-fixture\"}");
+    when(visual.latestSummary(
+            productId, fixture.plan().getId(), fixture.plan().getExperiment().getId()))
+        .thenReturn(Optional.of(proof));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        fixture.provider(), "visualPreparations", visual);
+    var context = fixture.provider().resolve("commercial-plan:1@v2").orElseThrow();
+    assertThat(context).containsEntry("inputReadiness", "BLOCKED");
+    assertThat(context.get("missingRequiredPredecessors").toString())
+        .contains("geração personalizada integrada preservada", "revisão independente", "Plutus");
+    assertThat(context.get("approvedUpstreamArtifacts")).isEqualTo(List.of());
+    proof.put("productVersion", "outra-versao");
+    var outdated = fixture.provider().resolve("commercial-plan:1@v2").orElseThrow();
+    assertThat(outdated.get("missingRequiredPredecessors").toString())
+        .contains("falta comprovar a geração personalizada integrada");
+  }
+
   /** Distingue rejeição econômica e prova sintética sem dispensar os aceites de Íris. */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(longs = {11L, 82011L})

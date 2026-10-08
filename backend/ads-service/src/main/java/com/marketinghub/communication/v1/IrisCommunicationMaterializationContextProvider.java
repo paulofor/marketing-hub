@@ -56,6 +56,10 @@ public class IrisCommunicationMaterializationContextProvider
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private PrivateCreativePreparationContext privatePreparation;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.pde.visualpersonalization.v1.service.VisualPreparationService
+      visualPreparations;
+
   /** Configura as fontes canônicas de plano, produto e provas aprovadas. */
   public IrisCommunicationMaterializationContextProvider(
       CommercialPlanRepository plans,
@@ -189,7 +193,8 @@ public class IrisCommunicationMaterializationContextProvider
               financialDependencyReason(scope.plan().getId(), version.versionNumber()));
         }
         if (!upstreamAgentKeys.contains("landing-generator")) {
-          missingPredecessors.add(deliveryDependencyReason(product));
+          missingPredecessors.add(
+              deliveryDependencyReason(product, scope.plan().getId(), experiment.getId()));
         }
       }
       Map<String, Object> result = new LinkedHashMap<>();
@@ -300,13 +305,32 @@ public class IrisCommunicationMaterializationContextProvider
     return label + "premissas avaliadas; falta o parecer econômico de projeção de receita";
   }
 
-  /** Mantém a homologação privada sem equiparar fixtures à entrega personalizada integrada. */
-  private String deliveryDependencyReason(Product product)
+  /** Distingue fixture, geração auditada e revisão independente sem conceder aceite comercial. */
+  private String deliveryDependencyReason(Product product, Long planId, Long experimentId)
       throws com.fasterxml.jackson.core.JsonProcessingException {
     if (product.getPdeExperienceJson() == null || product.getPdeExperienceJson().isBlank()) {
       return "PDE e prova funcional concluídos de Dédalo";
     }
     JsonNode experience = objectMapper.readTree(product.getPdeExperienceJson());
+    if (visualPreparations != null) {
+      var proof = visualPreparations.latestSummary(product.getId(), planId, experimentId);
+      if (proof.isPresent()
+          && "PDE_COMPLETED".equals(proof.get().path("status").asText())
+          && !proof.get().path("estimatedCostUsd").isMissingNode()
+          && proof
+              .get()
+              .path("productVersion")
+              .asText()
+              .equals(
+                  experience
+                      .path("privatePrototypeAcceptance")
+                      .path("prototypeVersion")
+                      .asText())) {
+        return "Dédalo: geração personalizada integrada preservada em "
+            + proof.get().path("jobId").asText()
+            + "; falta revisão independente da entrega no mesmo produto e experimento";
+      }
+    }
     if (experience != null
         && "DETERMINISTIC_HOMOLOGATION_ONLY"
             .equals(

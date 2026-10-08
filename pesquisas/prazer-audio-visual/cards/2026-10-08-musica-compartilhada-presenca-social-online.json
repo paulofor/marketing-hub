@@ -1,0 +1,18 @@
+{
+  "cardKey": "musica-compartilhada-presenca-social-online",
+  "collection": "prazer-audio-visual",
+  "title": "Escuta musical compartilhada pode elevar presença social sem melhorar cooperação",
+  "finding": "Em 38 participantes organizados em 19 duplas, uma escuta de música enquadrada como compartilhada aumentou a presença social autorrelatada versus escuta apresentada como individual; não melhorou desempenho cooperativo e alguns indicadores de fluxo foram piores.",
+  "mechanism": "A percepção de atenção musical compartilhada pode elevar a saliência social do parceiro mesmo sem vídeo ou feedback interpessoal contínuo. A mudança de faixa musical e do enquadramento social ocorreu em conjunto, impedindo isolar a causa específica.",
+  "commercialApplication": "Testar em lives, comunidades musicais e experiências sociais com IA se um modo genuinamente compartilhado de ouvir a mesma música aumenta presença social e participação sem prejudicar a tarefa, usando o mesmo áudio nas duas variantes.",
+  "evidenceStrength": "Média para presença social subjetiva no experimento intraindivíduo (n=38); baixa para melhoria de cooperação, retenção ou venda. Estudo publicado em 06/10/2026.",
+  "publishedOn": "2026-10-08",
+  "validUntil": "2026-11-22",
+  "experimentHypothesis": "Ao manter faixa, volume, duração e tarefa iguais, o contexto de escuta verdadeiramente compartilhada elevará presença social autorrelatada versus modo individual sem reduzir conclusão da tarefa, satisfação nem confiança.",
+  "risks": "Simular pessoas ou sessões compartilhadas inexistentes seria enganoso; risco de frustração social e confusão entre presença percebida e engajamento útil.",
+  "limits": "Amostra finlandesa pequena e predominantemente feminina; tratamento combina enquadramento com canções diferentes; nenhum efeito objetivo favorável em colaboração nem prova de conversão comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-08-musica-compartilhada-presenca-social-online.md",
+  "sourceTitle": "Fonte revisada — escuta musical compartilhada e presença social online",
+  "sourceSha256": "c752567ae0bab12e9355f0f9b3eeaa17d685e979daf5467d07823f2d8bd17eb0"
+}

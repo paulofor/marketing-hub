@@ -1187,3 +1187,23 @@ publica campanha e não concede orçamento. Execuções históricas permanecem n
 Na ausência de contexto comercial, o roteador pode expor um destino pré-preenchido para criá-lo,
 mantendo o objetivo pendente até existir um `experiment:<id>` compatível. A prontidão sem contexto é
 somente orientação auditável: não executa atividade, não cria registro e não reutiliza parecer pago.
+
+## Passagens executáveis e visão por produto — decisão de 08/10/2026
+
+Especificação concluída deve alimentar uma capacidade de implementação registrada, com
+entrada versionada, software utilizável, testes e artefato auditável antes da homologação.
+Uma tarefa `READY` de desenho não substitui essa entrega. Preservar a cadeia e os ciclos
+históricos; completar a passagem existente sem recriar processos ou pareceres.
+
+O resumo do produto apresenta primeiro situação atual, impedimento para vender, responsável
+pela dependência, execução realmente ativa e decisão humana necessária. O agente que aguarda
+uma entrega deve aparecer separado de quem a resolve. Histórico e detalhes ficam sob demanda.
+Decisões apresentam opções, consequências, fontes e resposta no mesmo contexto; a escolha
+registrada alimenta a continuação. Margem é a sobra por venda após despesas variáveis, incluindo
+entrega, taxas/impostos e aquisição, e não lucro líquido. Custos sem fonte não viram zero.
+
+Medir tempo parado com origem, versão funcionando, teste comercial autorizado, compras líquidas
+conciliadas, receita e contribuição. Testes e fixtures não entram nas métricas comerciais.
+A primeira aplicação desta regra é o kit privado determinístico, que reutiliza o compositor
+existente sem geração paga, e-mail externo, pagamento ou mídia. Produto, ciclo, experimento,
+versão e perfil de kit vêm dos contratos persistidos, nunca de exceção por nome ou ID.

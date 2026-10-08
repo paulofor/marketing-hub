@@ -38,6 +38,12 @@ export default function CyclePrototypeRegistrationForm({
           operatorName: form.get("operatorName"),
           privatePrototype: {
             prototypeVersion: cycle.productVersion,
+            ...(cycle.valueFlow?.implementation.available
+              ? {
+                  runtimeKind: "DETERMINISTIC_PRIVATE_KIT_V1",
+                  profileCode: cycle.valueFlow.implementation.profileCode,
+                }
+              : {}),
             privateAccessUrl: form.get("privateAccessUrl"),
             image: form.get("prototypeImage"),
             evidenceReference: form.get("prototypeEvidence"),
@@ -81,6 +87,7 @@ export default function CyclePrototypeRegistrationForm({
               className="form-control"
               type="url"
               name="privateAccessUrl"
+              defaultValue={cycle.valueFlow?.implementation.prototypeUrl || ""}
               required
             />
           </label>

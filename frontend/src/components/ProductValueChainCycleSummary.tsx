@@ -109,7 +109,22 @@ export default function ProductValueChainCycleSummary({
         </div>
       ) : (
         <>
-          {cycleNavigation && work ? (
+          {context.valueFlow && (
+            <div className="product-cycle-summary__work">
+              <p>
+                <strong>{context.valueFlow.situation}</strong>
+              </p>
+              <p>Impede a venda: {context.valueFlow.saleBlocker}</p>
+              <p>
+                Quem resolve: {context.valueFlow.resolvingResponsible}.{" "}
+                {context.valueFlow.activeExecution
+                  ? "Execução em andamento."
+                  : "Nenhuma execução em andamento."}
+              </p>
+              <p>{context.valueFlow.decisionReason}</p>
+            </div>
+          )}
+          {!context.valueFlow && cycleNavigation && work ? (
             <p className="product-cycle-summary__stage">
               Próxima atividade no ciclo:{" "}
               <Link to={work.url}>{work.activityName}</Link>

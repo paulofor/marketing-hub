@@ -15,7 +15,8 @@ public record LearningCycleProcessContext(
     String mainChange,
     String cycleUrl,
     List<Learning> previousLearning,
-    Work nextWork) {
+    Work nextWork,
+    LearningCycleValueFlow valueFlow) {
   /** Responsabilidade: identificar uma evidência histórica e sua interpretação preservada. */
   public record Learning(
       Long cycleId,

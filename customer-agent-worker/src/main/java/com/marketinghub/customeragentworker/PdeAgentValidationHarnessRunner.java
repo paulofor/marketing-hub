@@ -108,6 +108,17 @@ public class PdeAgentValidationHarnessRunner {
       throw new HarnessException("O alvo da tarefa multiagente está incompleto.");
     }
     JsonNode lineage = target.path("pdeContext").path("lineage");
+    JsonNode acceptance = target.path("pdeContext").path("privatePrototypeAcceptance");
+    boolean privateKit =
+        "DETERMINISTIC_PRIVATE_KIT_V1".equals(acceptance.path("runtimeKind").asText())
+            && List.of("nails-v1", "barber-v1").contains(acceptance.path("profileCode").asText())
+            && prototypeVersion.equals(acceptance.path("prototypeVersion").asText())
+            && List.of("/mh-api/pde/kit/private/v1/prototype", "/api/pde/kit/private/v1/prototype")
+                .contains(URI.create(sourceUrl).getPath())
+            && sourceReference.equals("experiment:" + target.path("experimentId").asLong())
+            && lineage.path("learningCycleId").asLong() > 0
+            && lineage.path("experimentId").asLong() == target.path("experimentId").asLong()
+            && lineage.path("productId").asLong() == productId;
     boolean vega =
         "metodo-musa-7-dias".equals(productSlug)
             && prototypeVersion.matches(
@@ -136,10 +147,11 @@ public class PdeAgentValidationHarnessRunner {
             && List.of("", "/").contains(URI.create(sourceUrl).getPath());
     if (!("product:" + productId + "@agent-validation-v1").equals(sourceReference)
         && !vega
-        && !miraCandidate) {
+        && !miraCandidate
+        && !privateKit) {
       throw new HarnessException("A referência da homologação não corresponde ao produto alvo.");
     }
-    if (!vega && !mira && !alcyone && !miraCandidate) {
+    if (!vega && !mira && !alcyone && !miraCandidate && !privateKit) {
       throw HarnessException.executor(
           "O harness instalado não possui cenários próprios para este produto. "
               + "Implemente-os antes da homologação; não reutilize outro PDE.");
@@ -168,13 +180,19 @@ public class PdeAgentValidationHarnessRunner {
                 productSlug,
                 "prototypeVersion",
                 prototypeVersion));
-    if (vega || miraCandidate) {
+    if (vega || miraCandidate || privateKit) {
       input.put("cycleId", lineage.path("learningCycleId").asLong());
+      if (privateKit) {
+        input.put("runtimeKind", "DETERMINISTIC_PRIVATE_KIT_V1");
+        input.put("profileCode", acceptance.path("profileCode").asText());
+      }
       var videoIntegration = target.path("pdeContext").path("videoIntegration");
       if (videoIntegration.isObject()) input.put("videoIntegration", videoIntegration);
     }
     String executionScript;
-    if (miraCandidate) {
+    if (privateKit) {
+      executionScript = Path.of(scriptPath).resolveSibling("private-kit-harness.mjs").toString();
+    } else if (miraCandidate) {
       executionScript = Path.of(scriptPath).resolveSibling("mira-candidate-harness.mjs").toString();
     } else if (vega) {
       executionScript =
@@ -268,6 +286,7 @@ public class PdeAgentValidationHarnessRunner {
         && REQUIRED_CHECKS.stream().anyMatch(check -> !checks.path(check).asBoolean(false))) {
       throw new HarnessException("O harness aprovou a execução com gate reprovado.");
     }
+    boolean privateKit = "DETERMINISTIC_PRIVATE_KIT_V1".equals(expected.get("runtimeKind"));
     boolean miraCandidate =
         "pde-planejado-36".equals(String.valueOf(expected.get("productSlug")))
             && miraCandidateVersion(String.valueOf(expected.get("prototypeVersion")));
@@ -291,7 +310,8 @@ public class PdeAgentValidationHarnessRunner {
             || outcome.path("resultGenerated").asBoolean(true)
             || outcome.path("providerCalled").asBoolean(true)) {
           throw new HarnessException(
-              "A homologação Alcyone aprovou SAFETY sem causa, ausência de resultado e ação segura.");
+              "A homologação Alcyone aprovou SAFETY sem causa, ausência de resultado e ação"
+                  + " segura.");
         }
       }
     }
@@ -306,7 +326,7 @@ public class PdeAgentValidationHarnessRunner {
     if ("TECHNICAL".equals(mode)) {
       Set<String> devices = textSet(result.path("devices"), "deviceProfile", null);
       Set<String> scenarios = textSet(result.path("scenarios"), "scenarioCode", null);
-      int expectedScenarioDeviceGates = miraCandidate ? 18 : (alcyone ? 9 : 5);
+      int expectedScenarioDeviceGates = miraCandidate ? 18 : (alcyone || privateKit ? 9 : 5);
       if (result.path("devices").size() != 3
           || result.path("scenarios").size() != expectedScenarioDeviceGates
           || result.path("artifacts").size() != expectedScenarioDeviceGates
@@ -321,6 +341,27 @@ public class PdeAgentValidationHarnessRunner {
               || result.path("scenarios").findValues("status").stream()
                   .anyMatch(status -> !"PASS".equals(status.asText())))) {
         throw new HarnessException("O harness aprovou uma cobertura com percurso reprovado.");
+      }
+      if (privateKit) {
+        var combinations = new java.util.HashSet<String>();
+        for (String scenario : List.of("ADHERENT", "RECOVERY", "SAFETY"))
+          for (String device : List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7"))
+            combinations.add(scenario + "|" + device);
+        var observed = new java.util.HashSet<String>();
+        result
+            .path("scenarios")
+            .forEach(
+                s ->
+                    observed.add(
+                        s.path("scenarioCode").asText() + "|" + s.path("deviceProfile").asText()));
+        if (!combinations.equals(observed)
+            || result.path("providerCalls").asInt(-1) != 0
+            || !"PDE_PRIVATE_KIT_FIXTURES_V1".equals(result.path("fixtureContract").asText())
+            || !String.valueOf(expected.get("profileCode"))
+                .equals(result.path("profileCode").asText()))
+          throw new HarnessException(
+              "O kit não comprovou as nove combinações, perfil registrado e ausência de integração"
+                  + " paga.");
       }
       if (miraCandidate) {
         var expectedCases = new java.util.HashSet<String>();

@@ -1,0 +1,62 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-08-private-kit-value-flow-v1
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE kit_private_artifact_v1 (
+                id CHAR(36) NOT NULL PRIMARY KEY,
+                cycle_id BIGINT NOT NULL,
+                product_id BIGINT NOT NULL,
+                experiment_id BIGINT NOT NULL,
+                prototype_version VARCHAR(160) NOT NULL,
+                profile_code VARCHAR(24) NOT NULL,
+                fixture_owner VARCHAR(24) NOT NULL,
+                input_sha256 CHAR(64) NOT NULL,
+                input_json LONGTEXT NOT NULL,
+                status VARCHAR(24) NOT NULL,
+                claim_key CHAR(36) NULL,
+                error_message TEXT NULL,
+                created_at DATETIME(6) NOT NULL,
+                started_at DATETIME(6) NULL,
+                finished_at DATETIME(6) NULL,
+                zip_sha256 CHAR(64) NULL,
+                manifest_json LONGTEXT NULL,
+                zip_bytes LONGBLOB NULL,
+                UNIQUE KEY uk_kit_private_input (cycle_id, fixture_owner, input_sha256),
+                KEY idx_kit_private_pending (status, created_at),
+                CONSTRAINT fk_kit_private_cycle FOREIGN KEY (cycle_id) REFERENCES learning_sales_cycle_v1(id)
+              );
+              CREATE TABLE kit_private_session_v1 (
+                id CHAR(36) NOT NULL PRIMARY KEY,
+                cycle_id BIGINT NOT NULL,
+                product_id BIGINT NOT NULL,
+                experiment_id BIGINT NOT NULL,
+                prototype_version VARCHAR(160) NOT NULL,
+                request_key CHAR(36) NOT NULL,
+                session_hash CHAR(64) NOT NULL,
+                scenario_code VARCHAR(24) NOT NULL,
+                device_profile VARCHAR(24) NOT NULL,
+                artifact_id CHAR(36) NULL,
+                revoked TINYINT(1) NOT NULL DEFAULT 0,
+                created_at DATETIME(6) NOT NULL,
+                expires_at DATETIME(6) NOT NULL,
+                payload_json LONGTEXT NOT NULL,
+                UNIQUE KEY uk_kit_private_request (cycle_id, request_key),
+                UNIQUE KEY uk_kit_private_access (session_hash),
+                CONSTRAINT fk_kit_private_session_cycle FOREIGN KEY (cycle_id) REFERENCES learning_sales_cycle_v1(id),
+                CONSTRAINT fk_kit_private_session_artifact FOREIGN KEY (artifact_id) REFERENCES kit_private_artifact_v1(id)
+              );
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP TABLE kit_private_session_v1;
+              DROP TABLE kit_private_artifact_v1;

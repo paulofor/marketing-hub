@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Primeira aplicação do seu kit</title><link rel="stylesheet" href="prototype.css"><script src="prototype.js" defer></script></head>
+<body><main>
+<p class="badge">Experiência privada · dados fictícios · sem compra ou envio</p>
+<h1>Seu próximo post, pronto para usar</h1><p>Confira uma aplicação completa: arte, legenda, mensagem e dia do calendário. Depois, guarde o pacote para continuar.</p>
+<p id="identity"></p><p id="status" role="status" aria-live="polite">Abra esta experiência pela tela do ciclo para receber seu acesso privado.</p><p id="error" role="alert" hidden></p><button id="reload" class="secondary" hidden>Reabrir o pacote preservado</button>
+<section id="briefing" hidden><h2>Prepare o primeiro resultado</h2><p>Esta prova usa conteúdo sintético. A escolha de pagar e a demanda serão medidas apenas no mercado autorizado.</p>
+<form id="form">
+<label>Nome profissional *<input name="professionalName" maxlength="90" required value="Studio Exemplo"></label>
+<label>E-mail fictício *<input name="email" type="email" maxlength="120" required value="teste+kit@sandbox.local"></label>
+<label>Cidade/região fictícia *<input name="cityRegion" maxlength="90" required value="Cidade Exemplo"></label>
+<label>WhatsApp sem rota externa *<input name="whatsapp" maxlength="30" required value="00000000000" readonly></label>
+<label>Serviços *<input name="services" maxlength="400" required value="Manicure e nail design"></label>
+<label>Estilo visual *<select name="visualStyle" required><option value="elegante">Elegante</option><option value="acolhedor">Acolhedor</option><option value="moderno">Moderno</option></select></label>
+<label>Intenção da semana *<input name="weeklyGoal" maxlength="300" required value="Apresentar o serviço e facilitar a consulta de horários"></label>
+<details><summary>Personalização opcional</summary><label>Cores preferidas<input name="preferredColors" maxlength="180" value="rosa e dourado"></label><label>Observações<textarea name="notes" maxlength="500"></textarea></label></details>
+<label class="check"><input type="checkbox" name="consentAccepted" required> Confirmo o uso de dados fictícios nesta prova privada e a ausência de envio externo.</label>
+<button id="prepare" type="submit">Preparar meu kit de teste</button>
+</form></section>
+<section id="result" hidden><h2>Primeira aplicação</h2><p>Hoje: confira as duas artes, copie a legenda e use a mensagem para facilitar uma conversa.</p>
+<div class="art-grid"><figure><img id="post" alt="Post da primeira aplicação"><figcaption>Post · 1080 × 1080</figcaption></figure><figure><img id="story" alt="Story da primeira aplicação"><figcaption>Story · 1080 × 1920</figcaption></figure></div>
+<label>Legenda pronta<textarea id="caption" readonly rows="5"></textarea></label><button id="copy-caption">Copiar legenda</button>
+<label>Mensagem pronta<textarea id="message" readonly rows="3"></textarea></label><button id="copy-message">Copiar mensagem</button>
+<details><summary>Calendário e conteúdo completo</summary><pre id="calendar"></pre><ul id="files"></ul></details>
+<button id="download">Baixar o pacote completo</button><p id="download-status" role="status"></p>
+<h2>Por que continuar com o pacote completo?</h2><p>Ele reúne 10 posts, 10 stories, 10 legendas, 5 mensagens e um calendário de 7 dias, personalizados para o briefing. Use a primeira aplicação e repita com o conjunto. As imagens desta prova são ilustrações sintéticas; não há garantia de clientes ou agendamentos.</p>
+<button id="prefer">O pacote facilita minha continuidade</button><button id="checkout" class="secondary">Conferir continuidade simulada</button><p id="checkout-status" role="status"></p>
+<button id="exit" class="secondary">Sair e retomar depois</button>
+</section><section id="resume" hidden><h2>Seu pacote ficou guardado</h2><p>Você pode retomar esta mesma entrada e seus arquivos sem gerar novamente.</p><button id="return">Retomar o pacote</button></section>
+<details class="audit"><summary>Dados desta prova</summary><p>Eventos e arquivos pertencem ao produto, ciclo, experimento e versão indicados. São eventos de homologação com origem AGENT_VALIDATION; não contam como interesse real, compras, receita ou margem.</p><p>Limites técnicos: até 6 composições por ciclo e 2 por fixture; até 10 transferências por acesso e validade de 30 dias. Não alteram condições comerciais.</p><pre id="audit"></pre></details>
+</main></body></html>

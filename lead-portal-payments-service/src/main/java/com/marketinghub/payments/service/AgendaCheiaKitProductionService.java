@@ -11,6 +11,7 @@ import com.marketinghub.payments.repository.AgendaCheiaDeliveryRepository;
 import com.marketinghub.payments.service.kit.CapellaKitCatalog;
 import com.marketinghub.payments.service.kit.CapellaKitProfile;
 import com.marketinghub.payments.service.kit.CapellaKitText;
+import com.marketinghub.payments.service.kit.PrivateKitIllustrations;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -125,6 +126,21 @@ public class AgendaCheiaKitProductionService {
         return new PreparedKit(profile.code(), result.zipPath(), result.qualityScore());
     }
 
+    /** Compõe a prova sintética com o mesmo motor de entrega, sem integração de imagens ou e-mail. */
+    public PreparedKit preparePrivateCandidate(
+            AgendaCheiaBriefing briefing, String profileCode, String artifactId) throws IOException {
+        if (!artifactId.matches("[a-f0-9-]{36}"))
+            throw new IllegalArgumentException("Identificador de composição inválido");
+        CapellaKitProfile profile = CapellaKitCatalog.byCode(profileCode);
+        Path saved = storageRoot.resolve("agenda-cheia-private-" + artifactId + ".zip");
+        if (Files.isRegularFile(saved)) return new PreparedKit(profile.code(), saved, 100);
+        ProductionResult result =
+                generate(briefing, "private-" + artifactId, profile, new PrivateKitIllustrations(), true);
+        if (result.qualityScore() < 90)
+            throw new IllegalStateException("A prova sintética não atingiu o contrato técnico");
+        return new PreparedKit(profile.code(), result.zipPath(), result.qualityScore());
+    }
+
     /** Resolve o arquivo privado apenas por token opaco válido. */
     public Path artifact(String token) {
         AgendaCheiaDelivery delivery = repository.findByDownloadToken(token)
@@ -148,8 +164,14 @@ public class AgendaCheiaKitProductionService {
         delivery.setErrorMessage(null);
     }
 
-    /** Gera imagens e textos em diretório temporário e publica um ZIP atômico. */
+    /** Preserva a composição comercial com a biblioteca homologada do perfil comprado. */
     private ProductionResult generate(AgendaCheiaBriefing briefing, String token, CapellaKitProfile profile) throws IOException {
+        return generate(briefing, token, profile, photoGenerator, false);
+    }
+
+    /** Gera arquivos finais por um provedor explícito e separa a primeira aplicação privada. */
+    private ProductionResult generate(AgendaCheiaBriefing briefing, String token, CapellaKitProfile profile,
+                                      AgendaCheiaPhotoGenerator provider, boolean privateProof) throws IOException {
         Files.createDirectories(storageRoot);
         Path work = Files.createTempDirectory(storageRoot, "kit-");
         List<Path> images = new ArrayList<>();
@@ -158,8 +180,8 @@ public class AgendaCheiaKitProductionService {
             List<BufferedImage> photos = new ArrayList<>();
             for (int index = 0; index < 10; index++) {
                 photos.add(CapellaKitCatalog.NAILS.equals(profile.code())
-                        ? photoGenerator.generate(token, index)
-                        : photoGenerator.generate(token, index, profile));
+                        ? provider.generate(token, index)
+                        : provider.generate(token, index, profile));
             }
             for (int index = 0; index < 10; index++) {
                 images.add(render(work.resolve("post-%02d.png".formatted(index + 1)), 1080, 1080,
@@ -169,7 +191,7 @@ public class AgendaCheiaKitProductionService {
             }
             Files.writeString(work.resolve("legendas-prontas.txt"), String.join("\n\n---\n\n", captions), StandardCharsets.UTF_8);
             Files.writeString(work.resolve("mensagens-whatsapp.txt"), text.whatsappMessages(briefing), StandardCharsets.UTF_8);
-            Files.writeString(work.resolve("calendario-7-dias.txt"), text.calendar(profile), StandardCharsets.UTF_8);
+            Files.writeString(work.resolve("calendario-7-dias.txt"), privateProof ? text.privateCalendar(profile) : text.calendar(profile), StandardCharsets.UTF_8);
             Files.writeString(work.resolve("LEIA-ME.txt"), text.instructions(briefing, profile), StandardCharsets.UTF_8);
             Path temporaryZip = work.resolve("agenda-cheia.zip");
             int qualityScore = reviewImages(images, photos, captions.size(), 5, 7);

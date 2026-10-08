@@ -554,3 +554,20 @@ backend e preservar a pausa original no diário. O agente não deve receber a at
 histórica como trabalho atual para renovar pareceres. O harness integra persistência da
 pausa, provas atuais e tela com dependências simuladas, incluindo um contexto independente
 sem mutações ou inferência paga. Evidência: `docs/homologacao/mira-continuidade-historica-v1.md`.
+
+### Contrato pronto exige capacidade executável — 08/10/2026
+
+Capella permaneceu na execução 47 após as tarefas 596/597/599 produzirem contratos READY.
+O executor de especificação não entregava software. O kit privado v1 reutiliza o compositor,
+consome exclusivamente reservas do backend e persiste arquivo, hash, entrada, erros e horários.
+Psique recebe cenários próprios da capacidade registrada, com vínculo ao mesmo ciclo e versão,
+sem exceção por nome ou ID e sem dispensar revisão independente ou autorização comercial.
+
+O harness comprova nove combinações, outro perfil de produto, recuperação do resultado e replay
+após falha de callback sem compor novamente. Eventos sintéticos não integram demanda ou receita.
+O resumo por produto apresenta a dependência e o responsável por resolvê-la antes do histórico;
+metas humanas são decisões persistidas, e projeções financeiras permanecem hipóteses.
+Evidência e limites: `docs/homologacao/fluidez-produtos-capella-v1.md`.
+
+Resumos públicos registram somente ações, achados, resultados e bloqueios em português.
+Os objetivos concretos pertencem ao checklist de execução, sem campo de objetivo no resumo.

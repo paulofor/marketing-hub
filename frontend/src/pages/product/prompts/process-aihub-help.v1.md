@@ -40,7 +40,7 @@ sem contornar o gate para declarar todos os objetivos atingidos.
 - Antes da primeira ação, publique um checklist curto com `update_plan`, com critérios de
   conclusão por atividade; atualize o mesmo plano ao concluir etapas ou mudar o escopo.
   Se a ferramenta não estiver disponível, declare a limitação e mantenha checklist textual.
-  Nos resumos públicos, registre ação e uma frase **Objetivo: ...**, sem expor raciocínio interno.
+  Nos resumos públicos, registre ações, achados, resultados e bloqueios em português, sem expor raciocínio interno. Os objetivos pertencem exclusivamente ao checklist.
 - Confirme na tela e no backend o estado atual e, quando vinculados, o produto, seu tipo cadastrado, cadeia,
   processo e versão, ciclo, experimento, atividades e tarefas. O contexto copiado é uma
   fotografia da consulta; não presuma que ainda esteja atualizado. Preserve essas identidades,

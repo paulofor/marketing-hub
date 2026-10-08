@@ -55,12 +55,12 @@
   "homologationEvidence": [
     {
       "path": "docs/homologacao/vega-ciclo10-continuidade-v1.md",
-      "sha256": "8fdcdcd3d52268b629d6e799a25dde53b9b8fd10621ec1bcf462de760861e039",
+      "sha256": "fdc45d46f2f44573a2cd80b4be0f0b3f6cd550cb645bc42a2525e066edeec90f",
       "promptMode": "FULL"
     },
     {
       "path": "docs/homologacao/evidencias/vega-ciclo10/local-continuity.json",
-      "sha256": "3630bcd6b75991a8a30ff0d895c727556ec05dd9596b59712e3857bff15f5c58",
+      "sha256": "834ea1bf51cf55e1c8dbd7a7ebbb53c8c6a415c8f88d236826ad4b97a14295a2",
       "promptMode": "FULL"
     }
   ],
@@ -115,6 +115,12 @@
       "path": "pde-platform/scripts/fixtures/private-api-backend.conf",
       "sha256": "517a3ecb964b1007d2b66477de428bfbbdb24228bc88286104852a47fb1c5c63",
       "promptMode": "FULL"
+    },
+    {
+      "path": ".github/workflows/pde-platform-metodo-musa-ci.yml",
+      "sha256": "d20def16081935287876b3bff100b55840dfab63d3244b898f892dc92893f486",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Workflow PDE executa os seis testes reais de clareza v13 e preservação v12 em desktop/iPhone/Pixel. O comando foi homologado localmente na imagem; YAML e shell validados por Actionlint/ShellCheck. Não é aprovação independente do produto."
     }
   ],
   "changeScope": {

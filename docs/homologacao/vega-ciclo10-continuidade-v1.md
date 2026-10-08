@@ -60,7 +60,7 @@ ciclo/experimento/versão; ausência de pagamento/IA/mídia; preservação v12; 
 Chromium desktop, iPhone 15 Pro e Pixel 7. Não se repetiu a matriz completa anterior
 sem risco novo. A fila MySQL, gateway e geração foram mantidos; não há changelog.
 
-- Backend: testes de serviço e segurança, incluindo outra identidade de produto,
+- Backend: 19 testes de serviço e segurança, incluindo outra identidade de produto,
   ciclo/experimento sintéticos distintos, versão desconhecida, cota v13 e percurso
   completo com repositórios doubles. Callbacks determinísticos não acessam provedor.
 - Navegação: seis testes passaram na imagem construída pelo Dockerfile versionado;
@@ -72,7 +72,11 @@ sem risco novo. A fila MySQL, gateway e geração foram mantidos; não há chang
   privados, ausência de escrita e layout. São provas locais, não pareceres reais.
 - Contratos: 15 testes Python; seleção shell privada/comercial e rejeição de manifesto
   histórico com fonte divergente; contratos de evidência/resolução; TypeScript,
-  bash -n e ShellCheck. Pacote comercial construído sem atualizar atestações alheias.
+  bash -n, ShellCheck e Actionlint. Pacote comercial construído com uma sucessão de compatibilidade de Mira: somente
+  o hash do workflow compartilhado mudou; fontes, mídia, oferta, runtime e autorização
+  anterior permanecem intactos, sem novo parecer ou deploy de Mira.
+  A CI PDE executa automaticamente os seis casos de clareza/preservação depois de instalar
+  Chromium; o teste preventivo passa a participar do check de cada PR e integração.
 
 A publicação ainda deve passar pelo PR, revisão e pipelines. Depois, conferir imagem,
 saúde e capacidade no domínio real. A nova prova privada será registrada pela tela

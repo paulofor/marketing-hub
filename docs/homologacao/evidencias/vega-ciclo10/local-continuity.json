@@ -44,7 +44,12 @@
     "dataOrigin": "QA_INTERNAL_LOCAL",
     "newIndependentApproval": false,
     "backendCases": 19,
-    "evidenceContractCases": 38
+    "evidenceContractCases": 38,
+    "ciRegression": {
+      "workflow": ".github/workflows/pde-platform-metodo-musa-ci.yml",
+      "step": "Validate Vega private continuity and predecessor in desktop and mobile",
+      "command": "npx playwright test tests/vega-continuity-clarity.spec.ts --config=playwright.public.config.ts --workers=1"
+    }
   },
   "paymentEnabled": false,
   "mediaAuthorized": false,

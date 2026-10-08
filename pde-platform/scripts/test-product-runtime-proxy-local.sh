@@ -105,6 +105,16 @@ grep -q '"experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"' \
   <<<"${vega_v12_diagnostics}"
 grep -q '"publicUrl": "https://v8.clubemusa.com.br"' <<<"${vega_v12_diagnostics}"
 
+# A API privada passa pelo backend PDE mesmo sem o frontend histórico na topologia.
+vega_private_contract="$(curl_v8 /api/pde/vega/private/v1/contract)"
+jq -e '.paymentEnabled == false and .agentValidationGenerationMode == "DETERMINISTIC_FIXTURE"' \
+  <<<"${vega_private_contract}" >/dev/null
+curl_v7 /api/pde/vega/private/v1/contract | jq -e '.mediaSpendBrl == 0' >/dev/null
+private_status="$(compose exec -T proxy curl --silent --insecure --output /dev/null --write-out '%{http_code}' \
+  --resolve 'v8.clubemusa.com.br:443:127.0.0.1' \
+  'https://v8.clubemusa.com.br/api/pde/vega/private/v1/internal/adjustment/stage-executions/pending?mode=FIXTURE')"
+test "${private_status}" = 403
+
 mira_html="$(curl_v7 /mira-private)"
 grep -q 'Sua rotina, organizada com calma' <<<"${mira_html}"
 mira_diagnostics="$(curl_v7 /mira-private/version-diagnostics.json)"

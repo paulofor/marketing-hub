@@ -241,6 +241,32 @@ def validate_rollback(before: dict[str, Any], after: dict[str, Any]) -> None:
             )
 
 
+def smoke_profile(surface: dict[str, Any], contract: dict[str, Any], source: str) -> str:
+    """Seleciona a prova privada declarada sem afrouxar a validação das ofertas comerciais."""
+
+    validate_release_contract(surface, contract, source)
+    validation = contract.get("deploymentValidation", {})
+    mode = validation.get("mode", "COMMERCIAL")
+    if mode == "COMMERCIAL":
+        return mode
+    if mode != "PRIVATE_PREPARATION_READ_ONLY":
+        raise ValueError("Perfil de homologação da publicação desconhecido")
+    if (
+        surface["deployTarget"] != "v8"
+        or validation.get("pagePath") != "/agent-validation"
+        or validation.get("contractPath") != "/api/pde/vega/private/v1/contract"
+        or validation.get("readOnly") is not True
+        or contract.get("privateAccessUrl") != surface["publicUrl"] + "/agent-validation"
+        or contract.get("generationMode") != "DETERMINISTIC_FIXTURE"
+    ):
+        raise ValueError("Contrato de homologação privada não corresponde à superfície")
+    authorization = contract.get("externalAuthorization", {})
+    for field in ("additionalBudgetAuthorized", "mediaAuthorized", "paymentAuthorized", "paidVideoAuthorized"):
+        if authorization.get(field) is not False:
+            raise ValueError(f"Homologação privada exige {field}=false")
+    return mode
+
+
 def emit_surface(surface: dict[str, Any]) -> None:
     """Emite os campos operacionais em TSV para consumo seguro pelo Bash."""
 
@@ -290,6 +316,11 @@ def main() -> int:
     release_parser.add_argument("--contract", required=True)
     release_parser.add_argument("--expected-source", required=True)
 
+    smoke_parser = subparsers.add_parser("smoke-profile")
+    smoke_parser.add_argument("--target", required=True)
+    smoke_parser.add_argument("--contract", required=True)
+    smoke_parser.add_argument("--expected-source", required=True)
+
     rollback_parser = subparsers.add_parser("validate-rollback")
     rollback_parser.add_argument("--before", required=True)
     rollback_parser.add_argument("--after", required=True)
@@ -319,6 +350,10 @@ def main() -> int:
             load_object(Path(args.contract)),
             args.expected_source,
         )
+        smoke_profile(select_surface(inventory, args.target), load_object(Path(args.contract)), args.expected_source)
+        return 0
+    if args.command == "smoke-profile":
+        print(smoke_profile(select_surface(inventory, args.target), load_object(Path(args.contract)), args.expected_source))
         return 0
     if args.command == "validate-rollback":
         validate_rollback(

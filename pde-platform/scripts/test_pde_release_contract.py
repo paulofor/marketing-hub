@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import copy
 from pathlib import Path
 import unittest
 
@@ -206,6 +207,28 @@ class PdeReleaseContractTest(unittest.TestCase):
         precheck = workflow.index("Validate resolved release precheck before building images")
         self.assertLess(precheck, workflow.index("\n  backend:"))
         self.assertIn("pde_release_contract.py validate-release", workflow[:workflow.index("\n  backend:")])
+
+    def test_private_smoke_requires_explicit_safe_contract_and_preserves_commercial_default(self):
+        surface = MODULE.select_surface(self.inventory, "v8")
+        contract = MODULE.load_object(ROOT / "pde-platform/contracts/vega-cycle7-preparation-v3.json")
+        source = contract["publicationContract"]["requiredFrontendSourceSha256"]
+        self.assertEqual(MODULE.smoke_profile(surface, contract, source), "PRIVATE_PREPARATION_READ_ONLY")
+        for field in ("additionalBudgetAuthorized", "mediaAuthorized", "paymentAuthorized", "paidVideoAuthorized"):
+            unsafe = copy.deepcopy(contract)
+            unsafe["externalAuthorization"][field] = True
+            with self.assertRaisesRegex(ValueError, field):
+                MODULE.smoke_profile(surface, unsafe, source)
+        for field, value in (("readOnly", False), ("pagePath", "/"), ("contractPath", "/api/other")):
+            unsafe = copy.deepcopy(contract)
+            unsafe["deploymentValidation"][field] = value
+            with self.assertRaisesRegex(ValueError, "não corresponde"):
+                MODULE.smoke_profile(surface, unsafe, source)
+        unsafe = copy.deepcopy(contract)
+        unsafe["deploymentValidation"]["mode"] = "IGNORE_ERRORS"
+        with self.assertRaisesRegex(ValueError, "desconhecido"):
+            MODULE.smoke_profile(surface, unsafe, source)
+        legacy = MODULE.load_object(ROOT / "pde-platform/contracts/vega-cycle7-preparation-v2.json")
+        self.assertEqual(MODULE.smoke_profile(surface, legacy, source), "COMMERCIAL")
 
     def test_musa_rejects_inventory_as_release_contract(self):
         with self.assertRaisesRegex(ValueError, "manifesto imutável"):

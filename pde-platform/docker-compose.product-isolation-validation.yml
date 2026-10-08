@@ -1,6 +1,8 @@
 services:
   pde-platform-backend:
-    image: nginx:1.27-alpine
+    build:
+      context: ./scripts/fixtures
+      dockerfile: Dockerfile.private-api-backend
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/"]
       interval: 2s

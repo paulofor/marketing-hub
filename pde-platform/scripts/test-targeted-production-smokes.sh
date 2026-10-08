@@ -51,6 +51,8 @@ run_target() {
     PDE_SMOKE_RIGEL_CONSISTENCY_SCRIPT="${fake_rigel_consistency}" \
     PDE_SMOKE_INVOCATION_LOG="${invocation_log}" \
     PDE_DEPLOY_FRONTEND_VERSION="${deployed_frontend}" \
+    PDE_FRONTEND_CONTRACT_PATH="${3:-}" \
+    IMAGE_TAG=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
     PDE_INTERNAL_API_TOKEN="test-only-token" \
     MIRA_PRIVATE_E2E_TOKEN="mira-qa-test-only" \
     bash "${runner}" "${target}"
@@ -105,6 +107,13 @@ if grep -Fq 'v7.clubemusa.com.br' "${invocation_log}" || grep -Fq 'kit-whatsapp-
 fi
 if grep -Fq 'v5.clubemusa.com.br' "${invocation_log}" || grep -Fq 'v6.clubemusa.com.br' "${invocation_log}" || grep -Fq 'kit-whatsapp-pronto' "${invocation_log}"; then
   echo '[ARQUITETURA] O deploy direcionado ao v7 validou um produto nao publicado.' >&2
+  exit 1
+fi
+
+run_target v8 v8 pde-platform/contracts/vega-cycle7-preparation-v3.json
+grep -Fq 'exec -- playwright test tests/vega-private-public.smoke.spec.ts --config=playwright.public.config.ts' "${invocation_log}"
+if grep -Fq 'test:public-health' "${invocation_log}" || grep -Fq 'test:public-diagnostic-smoke' "${invocation_log}" || grep -q '^consistency' "${invocation_log}"; then
+  echo '[ARQUITETURA] A preparação privada disparou diagnóstico ou validação comercial.' >&2
   exit 1
 fi
 

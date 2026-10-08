@@ -23,9 +23,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
-/**
- * Responsabilidade: consumir no gate real as provas produzidas pelos executores na matriz local.
- */
+/** Responsabilidade: consumir no gate real provas de diferentes produtos da matriz local. */
 @EnabledIfEnvironmentVariable(named = "VEGA_GATE_FLOW_ARTIFACTS", matches = ".+")
 class VegaCycleGateFlowIntegrationTest {
   /**
@@ -38,12 +36,13 @@ class VegaCycleGateFlowIntegrationTest {
     var json = new ObjectMapper();
     var technical = json.readTree(Files.readString(flow.resolve("TECHNICAL.json")));
     long cycleId = technical.path("cycleId").asLong(91002L);
+    long productId = technical.path("productId").asLong();
     String reference = technical.path("sourceReference").asText();
     long experimentId = Long.parseLong(reference.substring("experiment:".length()));
     var product =
         Product.builder()
-            .id(91004L)
-            .slug("metodo-musa-7-dias")
+            .id(productId)
+            .slug(technical.path("productSlug").asText())
             .commercialStatus("EXPERIMENTING")
             .automaticExecutionEnabled(true)
             .validationDefinitionVersion("v1")
@@ -58,7 +57,7 @@ class VegaCycleGateFlowIntegrationTest {
     activity.setProcessDefinition(process);
     var cycle = new LearningSalesCycle();
     cycle.setId(cycleId);
-    cycle.setProductId(91004L);
+    cycle.setProductId(productId);
     cycle.setExperimentId(experimentId);
     cycle.setProductVersion(technical.path("prototypeVersion").asText());
     cycle.setStatus("OPEN");
@@ -77,7 +76,7 @@ class VegaCycleGateFlowIntegrationTest {
     context
         .putObject("lineage")
         .put("learningCycleId", cycleId)
-        .put("productId", 91004)
+        .put("productId", productId)
         .put("experimentId", experimentId);
     context
         .putObject("privatePrototypeAcceptance")
@@ -91,7 +90,7 @@ class VegaCycleGateFlowIntegrationTest {
                 new AgentTaskTargetResponse(
                     reference,
                     experimentId,
-                    91004L,
+                    productId,
                     product.getSlug(),
                     "Vega fixture",
                     "Vega fixture",

@@ -22,13 +22,33 @@ respostas privadas são `no-store`. O banco persiste somente hash do acesso.
 Entradas de QA aceitam sete campos e consentimento simulado, e-mail `@sandbox.local`
 e telefone fictício `00000000000`. Reserva: até seis composições por ciclo, duas por
 fixture, sem renovação por dispositivo. Sessões expiram em 30 dias; ZIP aceito admite
-dez transferências. A resposta deve conter vinte PNGs, textos e calendário associados;
-o backend valida nomes, dimensões, limites e hash. `providerCalls` deve ser zero.
+dez transferências. O contrato privado `PDE_PRIVATE_KIT_PACKAGE_V2` exige exatamente
+36 arquivos funcionais: `posts/post-01.png` a `post-10.png` (1080×1080),
+`stories/story-01.png` a `story-10.png` (1080×1920), dez
+`legendas/legenda-NN.txt`, cinco `mensagens/mensagem-NN.txt` e
+`calendario/calendario-7-dias.txt`. Textos usam UTF-8; cada um dos sete dias referencia
+post, story, legenda e mensagem existentes. Auditoria, manifesto e instruções técnicas
+ficam fora do ZIP final. O backend valida nomes, dimensões, textos, referências,
+limites e hashes. `providerCalls` deve ser zero.
 
 O registro de prova do runtime `DETERMINISTIC_PRIVATE_KIT_V1` exige URL/perfil suportados
-e pacote `READY` da identidade exata. Essa conferência não substitui a homologação técnica,
+e pacote `READY` da identidade exata, com os 36 arquivos do formato atual. Essa conferência não substitui a homologação técnica,
 as três revisões independentes de Psique ou Têmis. Contratos legados preservam seus gates.
 O compositor conserva claim e arquivo para replay após falha de callback, sem nova composição.
+
+Pacotes comerciais legados de 24 arquivos e provas anteriores permanecem imutáveis e
+legíveis. Antes da exposição comercial, uma prova privada do formato antigo pode receber
+um novo evento `REGISTER_PROTOTYPE`, após conferir o pacote corrigido da mesma identidade.
+Isso cumpre os contratos de entrega já aprovados, sem mudar a hipótese, versão comercial,
+janela ou autorização. O digest de novas composições inclui a versão do formato; a reserva
+continua limitada a duas por fixture e seis por ciclo. Não ampliar cotas nem reutilizar
+uma prova do formato anterior para aprovar a correção.
+
+O harness confere o hash do ZIP realmente baixado e os nomes dos arquivos do manifesto.
+Cada cenário associa `screenshotEvidenceKeys` aos recibos de upload; antes do parecer,
+o consumidor os transforma em `screenshotEvidenceIds` persistidos. Ausência do vínculo,
+pacote incompatível ou identidade divergente bloqueia antes do modelo. A homologação
+técnica corrigida não substitui as três revisões de Psique nem a revisão de Têmis.
 
 `valueFlow`, exposto nas consultas existentes de ciclos e contexto do processo, contém
 situação, impedimento, responsáveis, execução ativa, decisão, critério de aceite, tempo,
@@ -37,3 +57,4 @@ contribuição e compras somente aparecem com medição conciliada, válida e se
 de fonte é desconhecida. Sessões e eventos de QA nunca são prova comercial.
 
 Validação e limites: [matriz e evidências locais](../homologacao/fluidez-produtos-capella-v1.md).
+Regressão da passagem completa: [conclusão do Processo 3](../homologacao/capella-conclusao-processo3-v1.md).

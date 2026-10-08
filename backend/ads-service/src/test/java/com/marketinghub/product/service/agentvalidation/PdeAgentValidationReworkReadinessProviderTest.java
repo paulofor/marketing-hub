@@ -215,6 +215,58 @@ class PdeAgentValidationReworkReadinessProviderTest {
     assertThat(readiness.reason()).contains("mira-private-v2");
   }
 
+  /**
+   * Preserva a prova antiga e exige revisão ligada ao pacote corrigido em identidades distintas.
+   */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {71L, 845L})
+  void correctedKitPackageRequiresFreshMatrixAndSubsequentIndependentReview(long productId)
+      throws Exception {
+    String source = "experiment:" + (9000 + productId);
+    product.setId(productId);
+    product.setValidationDefinitionJson(
+        "{\"privatePrototypeAcceptance\":{\"prototypeVersion\":\"kit-fixture-v1\"}}");
+    when(tasks.findPdeValidationTaskSnapshots(source, "pde-construction-approval"))
+        .thenAnswer(call -> history.stream().map(this::snapshot).toList());
+    var technical = activity("technicalHomologation");
+    var psique = activity("psiqueAdherent");
+    when(predecessors.readiness(process, psique, source))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Histórico preservado."));
+    var old = task(610L, process, "technicalHomologation", "COMPLETED");
+    var result = new ObjectMapper().createObjectNode();
+    result.put("decision", "APPROVED");
+    result.put("prototypeVersion", "kit-fixture-v1");
+    result.put("fixtureContract", "PDE_PRIVATE_KIT_FIXTURES_V1");
+    result
+        .putArray("scenarios")
+        .addObject()
+        .put("scenarioCode", "ADHERENT")
+        .put("packageFileCount", 24)
+        .put("zipSha256", "a".repeat(64));
+    old.setResultJson(result.toString());
+    history.add(old);
+    assertThat(provider.requiresFreshExecution(process, technical, product, source)).isTrue();
+    assertThat(provider.readiness(process, psique, product, source).ready()).isFalse();
+    var oldReview = task(611L, process, "psiqueAdherent", "COMPLETED");
+    oldReview.setResultJson("{\"decision\":\"APPROVED\",\"prototypeVersion\":\"kit-fixture-v1\"}");
+    history.add(oldReview);
+    result.put("packageContractVersion", "PDE_PRIVATE_KIT_PACKAGE_V2");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result.path("scenarios").get(0))
+        .put("packageFileCount", 36);
+    var corrected = task(612L, process, "technicalHomologation", "COMPLETED");
+    corrected.setResultJson(result.toString());
+    history.add(corrected);
+    assertThat(provider.requiresFreshExecution(process, technical, product, source)).isFalse();
+    assertThat(provider.readiness(process, psique, product, source).ready()).isTrue();
+    assertThat(provider.requiresFreshExecution(process, psique, product, source)).isTrue();
+    var newReview = task(613L, process, "psiqueAdherent", "COMPLETED");
+    newReview.setResultJson(oldReview.getResultJson());
+    history.add(newReview);
+    assertThat(provider.requiresFreshExecution(process, psique, product, source)).isFalse();
+    assertThat(old.getStatus()).isEqualTo("COMPLETED");
+    assertThat(old.getResultJson()).doesNotContain("PDE_PRIVATE_KIT_PACKAGE_V2");
+  }
+
   /** Uma segunda rejeição exige nova correção mesmo quando a versão já teve homologação técnica. */
   @Test
   void blocksReviewerAfterNewFunctionalRejection() {

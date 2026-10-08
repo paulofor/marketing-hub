@@ -9456,3 +9456,26 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Limites:** não fabrica autorização humana/comercial, não renova histórico e
   não libera mídia/vídeo pago. Pareceres precisam corresponder aos pixels persistidos.
 - **Registro:** `docs/registros/mira-autorizacao-visual-ciclo-2026-10-07.md`.
+
+## LOOP-KIT-PROVA-TECNICA-SEM-CONTRATO-E-PASSAGEM-DE-PSIQUE — 08/10/2026
+
+- **Evidência:** Capella, ciclo 5/experimento 98/processo 117, Dédalo 597 e 599
+  exigem 36 arquivos individuais; o compositor e aceite privados entregavam 24.
+  A homologação 648 aprovou essa matriz. O leitor comercial legado comprova que
+  24 arquivos são válidos naquele contrato histórico, não no contrato privado novo.
+  O harness também omitia a chave da captura em cada cenário; Mira e Vega já
+  oferecem esse vínculo exigido pelo consumidor antes do modelo.
+- **Causa compartilhada:** aceite de pacote e matriz técnica não atravessavam o
+  contrato de entrega e a passagem de captura → parecer independente → callback.
+- **Correção:** compositor reutilizado, 36 arquivos e calendário associados,
+  manifesto/hash validados, captura vinculada por cenário e bloqueio de prova
+  antiga antes da revisão. Prova corrigida é suplementar e auditável antes da
+  exposição; pacotes, tarefas, custos, limites e decisões antigos são preservados.
+- **Prevenção:** matriz desktop/iPhone/Pixel, três cenários e segundo produto/perfil;
+  consumidor real com modelo simulado, arquivo incompleto/UTF-8/traversal recusados,
+  prova antiga insuficiente e pacote comercial legado legível. Sem provedor de
+  imagens, compra, SMTP real, mídia ou parecer de produção nos testes.
+- **Limites:** correção do contrato aprovado não amplia oferta, orçamento, cota ou
+  autorização. Três revisões de Psique, Têmis e gate backend permanecem obrigatórios.
+  Prontidão e simulação não comprovam venda ou lucro.
+- **Registro:** `docs/homologacao/capella-conclusao-processo3-v1.md`.

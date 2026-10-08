@@ -16,7 +16,7 @@ class PrivateKitHarnessContractTest {
   @TempDir Path work;
   private final ObjectMapper json = new ObjectMapper();
 
-  /** Comprova os nove screenshots e seus gates produzidos pela matriz real local. */
+  /** Comprova a matriz real e recusa formato anterior, quantidade incorreta e captura ausente. */
   @Test
   void validatesLocalNineCaseReport() throws Exception {
     String path = System.getenv("KIT_LOCAL_REPORT");
@@ -43,6 +43,29 @@ class PrivateKitHarnessContractTest {
             null,
             expected);
     assertThat(artifacts).hasSize(9);
+    for (String failure : List.of("previous-format", "previous-count", "missing-capture")) {
+      var invalid = report.deepCopy();
+      if ("previous-format".equals(failure))
+        ((com.fasterxml.jackson.databind.node.ObjectNode) invalid).remove("packageContractVersion");
+      else if ("previous-count".equals(failure))
+        ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("scenarios").get(0))
+            .put("packageFileCount", 24);
+      else
+        ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("scenarios").get(0))
+            .remove("screenshotEvidenceKeys");
+      assertThatThrownBy(
+              () ->
+                  ReflectionTestUtils.invokeMethod(
+                      runner,
+                      "validateOutput",
+                      invalid,
+                      report.path("artifacts").get(0).path("captureSessionId").asText(),
+                      screenshot.getParent(),
+                      "TECHNICAL",
+                      null,
+                      expected))
+          .isInstanceOf(PdeAgentValidationHarnessRunner.HarnessException.class);
+    }
   }
 
   /** Não permite que o runtime de kit contorne o vínculo entre produto, ciclo e experimento. */

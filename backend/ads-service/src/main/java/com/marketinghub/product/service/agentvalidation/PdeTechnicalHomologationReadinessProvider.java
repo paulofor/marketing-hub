@@ -104,6 +104,13 @@ public class PdeTechnicalHomologationReadinessProvider
             "A aceitação privada precisa comprovar a mesma URL e versão entregue à homologação. "
                 + "Conclua a implementação e registre essa aceitação antes de iniciar os testes.");
       }
+      if ("DETERMINISTIC_PRIVATE_KIT_V1".equals(acceptance.path("runtimeKind").asText())
+          && !com.marketinghub.pde.kit.privateprototype.v1.service.KitArtifactContract
+              .PACKAGE_CONTRACT_VERSION
+              .equals(acceptance.path("packageContractVersion").asText())) {
+        return blocked(
+            "O pacote anterior não comprova os 36 arquivos aprovados. Dédalo precisa registrar a prova do formato corrigido antes da homologação; o histórico permanece preservado.");
+      }
       return new AgentProductProcessActivityReadiness(
           true,
           "O protótipo privado aceito possui identidade, URL e versão coerentes para os testes.");

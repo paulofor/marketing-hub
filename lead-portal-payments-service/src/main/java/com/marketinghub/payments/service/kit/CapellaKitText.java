@@ -39,12 +39,12 @@ public final class CapellaKitText {
         return String.join("\n", days);
     }
 
-    /** Associa cada aplicação aos arquivos existentes, sem aumentar a promessa comercial do kit. */
+    /** Associa cada aplicação aos quatro arquivos individuais do pacote privado aprovado. */
     public String privateCalendar(CapellaKitProfile profile) {
         List<String> days = new ArrayList<>();
         for (int index = 0; index < profile.calendarDays().size(); index++) {
             days.add("Dia " + (index + 1) + " — " + profile.calendarDays().get(index)
-                    + " | post-%02d.png + story-%02d.png | legenda %d | mensagem %d".formatted(index + 1, index + 1, index + 1, index % 5 + 1));
+                    + " | posts/post-%02d.png + stories/story-%02d.png | legendas/legenda-%02d.txt | mensagens/mensagem-%02d.txt".formatted(index + 1, index + 1, index + 1, index % 5 + 1));
         }
         return String.join("\n", days);
     }

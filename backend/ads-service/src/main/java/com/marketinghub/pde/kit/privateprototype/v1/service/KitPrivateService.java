@@ -108,6 +108,7 @@ public class KitPrivateService {
         json.createObjectNode()
             .put("status", "INPUT")
             .put("profileCode", capability.profileCode())
+            .put("packageContractVersion", KitArtifactContract.PACKAGE_CONTRACT_VERSION)
             .put("transfers", 0)
             .put("testMarker", "AGENT_VALIDATION")
             .put("commercialEvidenceEligible", false);
@@ -152,6 +153,22 @@ public class KitPrivateService {
                 capability.profileCode(),
                 "READY"),
         "Prepare e confira o pacote utilizável desta versão antes de registrar sua prova.");
+    require(
+        artifacts
+            .acceptedManifests(
+                cycle.getId(),
+                cycle.getProductId(),
+                cycle.getExperimentId(),
+                cycle.getProductVersion(),
+                capability.profileCode())
+            .stream()
+            .map(this::read)
+            .anyMatch(
+                manifest ->
+                    KitArtifactContract.PACKAGE_CONTRACT_VERSION.equals(
+                            manifest.path("packageContractVersion").asText())
+                        && manifest.path("files").size() == 36),
+        "A prova exige o pacote corrigido com 36 arquivos individuais. Os pacotes anteriores permanecem no histórico.");
   }
 
   /** Valida o briefing antes de enfileirar uma composição durável e reutilizável. */
@@ -169,7 +186,9 @@ public class KitPrivateService {
         "Esta experiência usa somente contatos fictícios sem rota externa.");
     var payload = read(session.getPayloadJson());
     String raw = write(input);
-    String digest = hash(raw.getBytes(StandardCharsets.UTF_8));
+    String format = payload.path("packageContractVersion").asText("");
+    String digest =
+        hash((format.isBlank() ? raw : format + "|" + raw).getBytes(StandardCharsets.UTF_8));
     if (session.getArtifactId() != null) {
       var artifact = artifacts.findById(session.getArtifactId()).orElseThrow();
       require(
@@ -349,7 +368,7 @@ public class KitPrivateService {
         name.matches("(post|story)-0[1-9]\\.png|(post|story)-10\\.png"), "Arquivo não permitido.");
     var a = readyArtifact(active(token, false));
     try {
-      var value = contract.entries(a.getZipBytes()).get(name);
+      var value = contract.image(a.getZipBytes(), name);
       require(value != null, "Arquivo ausente.");
       return value;
     } catch (Exception ex) {

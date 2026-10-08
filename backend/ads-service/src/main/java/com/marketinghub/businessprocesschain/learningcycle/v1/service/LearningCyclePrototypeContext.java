@@ -61,7 +61,7 @@ public class LearningCyclePrototypeContext {
     }
   }
 
-  /** Lê a última prova da mesma versão sem recorrer ao cadastro comercial ou a outro ciclo. */
+  /** Lê prova da mesma versão e formato compatível sem recorrer a cadastro ou ciclo alheio. */
   public Optional<JsonNode> resolve(LearningSalesCycle cycle) {
     var history = events.findByCycleIdOrderByRevisionAsc(cycle.getId());
     for (int i = history.size() - 1; i >= 0; i--) {
@@ -74,6 +74,11 @@ public class LearningCyclePrototypeContext {
             || !proof.isObject()) continue;
         if (!cycle.getProductVersion().equals(proof.path("prototypeVersion").asText()))
           return Optional.empty();
+        if ("OPEN".equals(cycle.getStatus())
+            && "DETERMINISTIC_PRIVATE_KIT_V1".equals(proof.path("runtimeKind").asText())
+            && !com.marketinghub.pde.kit.privateprototype.v1.service.KitArtifactContract
+                .PACKAGE_CONTRACT_VERSION
+                .equals(proof.path("packageContractVersion").asText())) return Optional.empty();
         ObjectNode acceptance = proof.deepCopy();
         acceptance.put("status", "READY");
         acceptance.put("acceptedAt", event.getCreatedAt().toString());
@@ -91,5 +96,33 @@ public class LearningCyclePrototypeContext {
       }
     }
     return Optional.empty();
+  }
+
+  /**
+   * Identifica somente a prova do formato antigo que precisa de suplemento técnico, sem apagá-la.
+   */
+  public boolean hasSupersededKitProof(LearningSalesCycle cycle) {
+    if (!"OPEN".equals(cycle.getStatus())) return false;
+    return events.findByCycleIdOrderByRevisionAsc(cycle.getId()).stream()
+        .anyMatch(
+            event -> {
+              try {
+                JsonNode evidence = json.readTree(event.getEvidenceJson());
+                JsonNode proof = evidence.path("privatePrototype");
+                return "REGISTER_PROTOTYPE".equals(event.getAction())
+                    && cycle.getProductVersion().equals(evidence.path("productVersion").asText())
+                    && "DETERMINISTIC_PRIVATE_KIT_V1".equals(proof.path("runtimeKind").asText())
+                    && !com.marketinghub.pde.kit.privateprototype.v1.service.KitArtifactContract
+                        .PACKAGE_CONTRACT_VERSION
+                        .equals(proof.path("packageContractVersion").asText());
+              } catch (Exception ex) {
+                log.error(
+                    "Falha ao conferir prova de pacote anterior cycleId={} eventId={}",
+                    cycle.getId(),
+                    event.getId(),
+                    ex);
+                return false;
+              }
+            });
   }
 }

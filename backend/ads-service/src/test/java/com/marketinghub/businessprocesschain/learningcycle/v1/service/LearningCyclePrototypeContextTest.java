@@ -73,4 +73,54 @@ class LearningCyclePrototypeContextTest {
     assertThat(service.resolve(cycle)).isEmpty();
     verify(events, times(2)).findByCycleIdOrderByRevisionAsc(2L);
   }
+
+  /** Preserva a prova antiga do kit e usa somente o suplemento do pacote versionado corrigido. */
+  @Test
+  void preservesPreviousKitProofAndRequiresCorrectedPackage() throws Exception {
+    var cycle = new LearningSalesCycle();
+    cycle.setId(819L);
+    cycle.setStatus("OPEN");
+    cycle.setProductVersion("kit-version-17");
+    var original = new LearningSalesCycleEvent();
+    original.setId(710L);
+    original.setAction("REGISTER_PROTOTYPE");
+    original.setCreatedAt(Instant.now());
+    String originalEvidence =
+        "{\"productVersion\":\"kit-version-17\",\"privatePrototype\":{\"prototypeVersion\":\"kit-version-17\",\"runtimeKind\":\"DETERMINISTIC_PRIVATE_KIT_V1\"}}";
+    original.setEvidenceJson(originalEvidence);
+    when(events.findByCycleIdOrderByRevisionAsc(819L)).thenReturn(List.of(original));
+    assertThat(service.resolve(cycle)).isEmpty();
+    assertThat(service.hasSupersededKitProof(cycle)).isTrue();
+    var supplement = new LearningSalesCycleEvent();
+    supplement.setId(711L);
+    supplement.setAction("REGISTER_PROTOTYPE");
+    supplement.setCreatedAt(Instant.now());
+    var corrected = (ObjectNode) json.readTree(originalEvidence);
+    ((ObjectNode) corrected.path("privatePrototype"))
+        .put("packageContractVersion", "PDE_PRIVATE_KIT_PACKAGE_V2");
+    supplement.setEvidenceJson(corrected.toString());
+    when(events.findByCycleIdOrderByRevisionAsc(819L)).thenReturn(List.of(original, supplement));
+    assertThat(service.resolve(cycle).orElseThrow().path("packageContractVersion").asText())
+        .isEqualTo("PDE_PRIVATE_KIT_PACKAGE_V2");
+    assertThat(original.getEvidenceJson()).isEqualTo(originalEvidence);
+  }
+
+  /** Mantém a leitura da prova encerrada sem renovar aceite, pacote ou orçamento. */
+  @Test
+  void closedKitCycleKeepsItsHistoricalProof() {
+    var cycle = new LearningSalesCycle();
+    cycle.setId(941L);
+    cycle.setStatus("CLOSED");
+    cycle.setProductVersion("historical-kit-v1");
+    var event = new LearningSalesCycleEvent();
+    event.setAction("REGISTER_PROTOTYPE");
+    event.setCreatedAt(Instant.EPOCH);
+    String original =
+        "{\"productVersion\":\"historical-kit-v1\",\"privatePrototype\":{\"prototypeVersion\":\"historical-kit-v1\",\"runtimeKind\":\"DETERMINISTIC_PRIVATE_KIT_V1\"}}";
+    event.setEvidenceJson(original);
+    when(events.findByCycleIdOrderByRevisionAsc(941L)).thenReturn(List.of(event));
+    assertThat(service.resolve(cycle)).isPresent();
+    assertThat(service.hasSupersededKitProof(cycle)).isFalse();
+    assertThat(event.getEvidenceJson()).isEqualTo(original);
+  }
 }

@@ -931,7 +931,8 @@ public class LearningCycleService {
   }
 
   /**
-   * Persiste a primeira prova da versão já planejada sem alterar candidata, etapa ou autorizações.
+   * Persiste prova inicial ou corrigida do pacote da versão planejada, preservando provas e
+   * autorizações.
    */
   @Transactional
   public LearningCycleResponse registerPrototype(
@@ -977,6 +978,16 @@ public class LearningCycleService {
     proof.put("experimentId", cycle.getExperimentId());
     proof.put("chainDefinitionId", cycle.getChainDefinitionId());
     proof.set("privatePrototype", request.privatePrototype());
+    if ("DETERMINISTIC_PRIVATE_KIT_V1"
+        .equals(request.privatePrototype().path("runtimeKind").asText())) {
+      var validatedProof = request.privatePrototype().deepCopy();
+      ((com.fasterxml.jackson.databind.node.ObjectNode) validatedProof)
+          .put(
+              "packageContractVersion",
+              com.marketinghub.pde.kit.privateprototype.v1.service.KitArtifactContract
+                  .PACKAGE_CONTRACT_VERSION);
+      proof.set("privatePrototype", validatedProof);
+    }
     proof.put("externalSpendAuthorized", false);
     Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
     cycle.setRevision(cycle.getRevision() + 1);
@@ -991,7 +1002,9 @@ public class LearningCycleService {
     event.setAction("REGISTER_PROTOTYPE");
     event.setOperatorName(request.operatorName().trim());
     event.setSummary(
-        "Primeira implementação privada registrada. Revisões independentes permanecem obrigatórias; nenhuma autorização comercial foi ampliada.");
+        prototypeContext.hasSupersededKitProof(cycle)
+            ? "Prova corrigida do pacote privado registrada; formatos e provas anteriores preservados. Revisões independentes permanecem obrigatórias; nenhuma autorização foi ampliada."
+            : "Primeira implementação privada registrada. Revisões independentes permanecem obrigatórias; nenhuma autorização comercial foi ampliada.");
     event.setEvidenceReference(request.privatePrototype().path("evidenceReference").asText());
     event.setEvidenceJson(json.write(proof));
     event.setCreatedAt(now);
@@ -1088,7 +1101,8 @@ public class LearningCycleService {
   }
 
   /**
-   * Oferece somente o registro inicial de implementação ainda não exposta, preservando a história.
+   * Oferece prova inicial ou suplemento do pacote corrigido antes da exposição, preservando
+   * história.
    */
   private LearningCycleResponse.PrototypeRegistration prototypeRegistration(
       LearningSalesCycle cycle) {
@@ -1107,6 +1121,10 @@ public class LearningCycleService {
       return new LearningCycleResponse.PrototypeRegistration(
           false,
           "A primeira prova desta candidata já foi registrada. Acompanhe as revisões; outra candidata exige sucessor.");
+    if (prototypeContext.hasSupersededKitProof(cycle))
+      return new LearningCycleResponse.PrototypeRegistration(
+          true,
+          "Dédalo precisa comprovar os 36 arquivos individuais do formato corrigido e registrar essa prova. O pacote e a homologação anteriores foram preservados; não preencha novas datas nem repita um parecer pago.");
     return new LearningCycleResponse.PrototypeRegistration(
         true,
         "Registre a primeira implementação testada da versão já declarada neste ciclo. Isso disponibiliza a prova para Psique e Têmis, sem aprová-la ou iniciar gasto.");

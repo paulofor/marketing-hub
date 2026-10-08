@@ -45,6 +45,29 @@ class KitPrivateRegistrationTest {
                   profile,
                   "READY"))
           .thenReturn(true);
+      assertThatThrownBy(() -> service.validateRegistration(cycle, proof))
+          .hasMessageContaining("36 arquivos");
+      when(artifacts.acceptedManifests(
+              cycle.getId(),
+              cycle.getProductId(),
+              cycle.getExperimentId(),
+              cycle.getProductVersion(),
+              profile))
+          .thenReturn(
+              List.of(
+                  "{\"packageContractVersion\":\"PDE_PRIVATE_KIT_PACKAGE_V2\",\"files\":"
+                      + new ObjectMapper()
+                          .createArrayNode()
+                          .addAll(
+                              java.util.stream.IntStream.range(0, 36)
+                                  .mapToObj(
+                                      i ->
+                                          new ObjectMapper()
+                                              .createObjectNode()
+                                              .put("name", "file-" + i))
+                                  .toList())
+                          .toString()
+                      + "}"));
       service.validateRegistration(cycle, proof);
       proof.put("profileCode", "unsupported-v1");
       assertThatThrownBy(() -> service.validateRegistration(cycle, proof))

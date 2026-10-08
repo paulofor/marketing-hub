@@ -31,6 +31,50 @@ import org.springframework.test.util.ReflectionTestUtils;
 class AgendaCheiaKitProductionServiceTest {
     @TempDir Path storage;
 
+    /** Cumpre o pacote privado aprovado em dois perfis sem alterar a entrega comercial histórica. */
+    @Test
+    void privatePackageContainsThirtySixIndividuallyUsableFiles() throws Exception {
+        var repository = org.mockito.Mockito.mock(AgendaCheiaDeliveryRepository.class);
+        var email = org.mockito.Mockito.mock(DigitalProductPostPurchaseEmailService.class);
+        AgendaCheiaPhotoGenerator forbidden = (execution, variant) -> {
+            throw new AssertionError("O teste privado não pode consumir imagens externas");
+        };
+        var service = new AgendaCheiaKitProductionService(repository, email, new ObjectMapper(),
+                forbidden, storage.toString(), "https://pagamentos.example");
+        for (String profile : java.util.List.of("nails-v1", "barber-v1")) {
+            var prepared = service.preparePrivateCandidate(briefing(), profile,
+                    java.util.UUID.randomUUID().toString());
+            try (ZipFile zip = new ZipFile(prepared.zipPath().toFile())) {
+                assertThat(zip.size()).isEqualTo(36);
+                for (int index = 1; index <= 10; index++) {
+                    assertThat(zip.getEntry("posts/post-%02d.png".formatted(index))).isNotNull();
+                    assertThat(zip.getEntry("stories/story-%02d.png".formatted(index))).isNotNull();
+                    var caption = zip.getEntry("legendas/legenda-%02d.txt".formatted(index));
+                    assertThat(caption).isNotNull();
+                    assertThat(new String(zip.getInputStream(caption).readAllBytes(), StandardCharsets.UTF_8))
+                            .contains("Campinas");
+                }
+                for (int index = 1; index <= 5; index++) {
+                    assertThat(zip.getEntry("mensagens/mensagem-%02d.txt".formatted(index))).isNotNull();
+                }
+                var calendarEntry = zip.getEntry("calendario/calendario-7-dias.txt");
+                assertThat(calendarEntry).isNotNull();
+                String calendar = new String(zip.getInputStream(calendarEntry).readAllBytes(), StandardCharsets.UTF_8);
+                var references = java.util.regex.Pattern.compile("(?:posts|stories|legendas|mensagens)/[a-z-]+[0-9]{2}\\.(?:png|txt)")
+                        .matcher(calendar);
+                int found = 0;
+                while (references.find()) {
+                    assertThat(zip.getEntry(references.group())).isNotNull();
+                    found++;
+                }
+                assertThat(found).isEqualTo(28);
+                assertThat(calendar).contains("Dia 7");
+                assertThat(zip.getEntry("LEIA-ME.txt")).isNull();
+            }
+        }
+        org.mockito.Mockito.verifyNoInteractions(repository, email);
+    }
+
     /** Deve produzir o pacote completo e somente então marcá-lo como entregue. */
     @Test
     void producesReviewsAndDeliversCompleteKit() throws Exception {

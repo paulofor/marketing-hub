@@ -184,6 +184,47 @@ class LearningCyclePrototypeRegistrationTest {
         .hasMessageContaining("já foi registrada");
   }
 
+  /**
+   * Suplementa somente o formato técnico incompatível, preservando janela, orçamento e história.
+   */
+  @Test
+  void registersCorrectedKitProofWithoutRewritingFirstAcceptance() throws Exception {
+    var oldRequest = request();
+    var oldProof = (com.fasterxml.jackson.databind.node.ObjectNode) oldRequest.privatePrototype();
+    oldProof.put("runtimeKind", "DETERMINISTIC_PRIVATE_KIT_V1");
+    var original = new LearningSalesCycleEvent();
+    original.setId(710L);
+    original.setAction("REGISTER_PROTOTYPE");
+    original.setCreatedAt(Instant.now());
+    original.setRequestKey(UUID.randomUUID().toString());
+    var originalEvidence = json.createObjectNode().put("productVersion", cycle.getProductVersion());
+    originalEvidence.set("privatePrototype", oldProof);
+    original.setEvidenceJson(originalEvidence.toString());
+    history.add(original);
+    var kits = mock(com.marketinghub.pde.kit.privateprototype.v1.service.KitPrivateService.class);
+    ReflectionTestUtils.setField(service, "privateKits", kits);
+    cycle.setWindowStart(Instant.parse("2026-10-08T03:00:00Z"));
+    cycle.setWindowEnd(Instant.parse("2026-10-17T02:59:59Z"));
+    var request = request();
+    ((com.fasterxml.jackson.databind.node.ObjectNode) request.privatePrototype())
+        .put("runtimeKind", "DETERMINISTIC_PRIVATE_KIT_V1");
+    service.registerPrototype(9010L, 8006L, request);
+    service.registerPrototype(9010L, 8006L, request);
+    assertThat(history).hasSize(2);
+    assertThat(original.getEvidenceJson()).isEqualTo(originalEvidence.toString());
+    assertThat(
+            json.readTree(history.getLast().getEvidenceJson())
+                .path("privatePrototype")
+                .path("packageContractVersion")
+                .asText())
+        .isEqualTo("PDE_PRIVATE_KIT_PACKAGE_V2");
+    assertThat(cycle.getProductVersion()).isEqualTo("declared-version-17");
+    assertThat(cycle.getBudgetLimitBrl()).isZero();
+    assertThat(cycle.getWindowStart()).isEqualTo(Instant.parse("2026-10-08T03:00:00Z"));
+    verify(kits).validateRegistration(eq(cycle), any());
+    verify(experiments, never()).save(any());
+  }
+
   /** Bloqueia troca de versão, revisão concorrente e experimento já exposto ou liberado. */
   @Test
   void rejectsChangesAndCommercialExposure() {

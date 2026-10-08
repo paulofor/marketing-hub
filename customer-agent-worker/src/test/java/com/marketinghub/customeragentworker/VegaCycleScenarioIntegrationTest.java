@@ -190,71 +190,18 @@ class VegaCycleScenarioIntegrationTest {
     }
   }
 
-  /** Simula apenas a interpretação do modelo; o consumidor e o harness mantêm todos os gates. */
+  /** Reutiliza o modelo simulado comum sem alterar o contrato local de Vega. */
   private Path fakeModel(String scenario) throws Exception {
-    var result = json.createObjectNode();
-    result.put("contractVersion", "PDE_PSIQUE_AGENT_SCENARIO_V1");
-    result.put("decision", "APPROVED");
-    result.put("scenarioCode", scenario);
-    result.put("sourceReference", "experiment:" + experimentId);
-    result.put("productId", 91004L);
-    result.put("productSlug", "metodo-musa-7-dias");
-    result.put(
-        "prototypeVersion",
-        System.getenv()
-            .getOrDefault("VEGA_TEST_VERSION", "musa-pde-entry-v11-primeiro-ajuste-aplicavel"));
-    result.put("trafficClass", "AGENT_VALIDATION");
-    result.put("internalMarker", "mh_internal_test");
-    result.put("syntheticEvaluation", true);
-    result.put("humanEvidenceClaimed", false);
-    result.put("commercialEvidenceClaimed", false);
-    result
-        .putObject("experienceAssessment")
-        .put("evidenceBoundary", "Modelo simulado apenas na sandbox.");
-    var checks = result.putObject("checks");
-    for (String check :
-        List.of(
-            "sameProductAndVersion",
-            "isolatedFreshSession",
-            "functionalOutcomeMatchesScenario",
-            "lowEffortNoPrompting",
-            "accessibilityAndResponsive",
-            "privacyPreserved",
-            "internalTrafficSegregated",
-            "safeLimits",
-            "noExternalSideEffects")) checks.put(check, true);
-    result.set(
-        "sideEffects",
-        json.valueToTree(
-            Map.of(
-                "paymentEnabled",
-                false,
-                "published",
-                false,
-                "campaignCreated",
-                false,
-                "mediaSpendBrl",
-                0)));
-    var visual = result.putObject("visualAudit");
-    visual.putArray("evidenceIds").add(910901L);
-    for (String field : List.of("visualHierarchy", "legibility", "affectiveResponse", "trustCues"))
-      visual.put(field, "Verificação sintética dos pixels gerados pelo navegador local.");
-    result.putArray("evidence").add("Captura local 910901");
-    result.putArray("requiredChanges");
-    result.put(
-        "rootCause", "Percurso local confirmado pelo harness; interpretação do modelo simulada.");
-    Path fixture = directory.resolve("result.json");
-    Files.writeString(fixture, json.writeValueAsString(result));
-    Path executable = directory.resolve("fake-model.sh");
-    Files.writeString(
-        executable,
-        "#!/bin/sh\ncat > '"
-            + directory.resolve("prompt.txt")
-            + "'\n"
-            + "while [ $# -gt 0 ]; do if [ \"$1\" = --output-last-message ]; then shift; cp '"
-            + fixture
-            + "' \"$1\"; exit 0; fi; shift; done\nexit 1\n");
-    assertThat(executable.toFile().setExecutable(true)).isTrue();
-    return executable;
+    var target =
+        json.createObjectNode()
+            .put("productId", 91004L)
+            .put("productSlug", "metodo-musa-7-dias")
+            .put(
+                "experienceVersion",
+                System.getenv()
+                    .getOrDefault(
+                        "VEGA_TEST_VERSION", "musa-pde-entry-v11-primeiro-ajuste-aplicavel"));
+    return BpmScenarioModelFixture.create(
+        directory, json, target, "experiment:" + experimentId, scenario, 910901L);
   }
 }

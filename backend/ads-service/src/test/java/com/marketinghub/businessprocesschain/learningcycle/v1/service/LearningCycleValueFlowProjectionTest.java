@@ -165,10 +165,32 @@ class LearningCycleValueFlowProjectionTest {
     when(result.getStatus()).thenReturn("READY");
     when(result.getFinishedAt()).thenReturn(delivered);
     when(artifacts.summaries(55L)).thenReturn(List.of(result));
+    var manifest =
+        mapper.createObjectNode().put("packageContractVersion", "PDE_PRIVATE_KIT_PACKAGE_V2");
+    var files = manifest.putArray("files");
+    for (int i = 0; i < 36; i++) files.addObject().put("name", "arquivo-" + i);
+    when(artifacts.acceptedManifests(55L, 75L, 95L, "other-kit-v1", "barber-v1"))
+        .thenReturn(List.of(manifest.toString()));
     var flow = projection.resolve(cycle, work());
     assertThat(flow.stalledSince()).isEqualTo(delivered);
     assertThat(flow.readyPackages()).isEqualTo(1);
     assertThat(flow.activeExecution()).isFalse();
+  }
+
+  /** Um pacote histórico preservado não pode aparecer como entrega atual utilizável. */
+  @Test
+  void previousPackageStaysInHistoryWithoutClaimingCurrentReadiness() {
+    var cycle = fixture();
+    var old = mock(KitPrivateArtifactRepository.Summary.class);
+    when(old.getStatus()).thenReturn("READY");
+    when(artifacts.summaries(55L)).thenReturn(List.of(old));
+    when(artifacts.acceptedManifests(55L, 75L, 95L, "other-kit-v1", "barber-v1"))
+        .thenReturn(List.of("{\"files\":[{}]}"));
+    var flow = projection.resolve(cycle, work());
+    assertThat(flow.readyPackages()).isZero();
+    assertThat(flow.situation()).contains("falta comprovar").doesNotContain("está utilizável");
+    assertThat(flow.prototypeRegistered()).isFalse();
+    assertThat(flow.decisionNeeded()).isFalse();
   }
 
   /**

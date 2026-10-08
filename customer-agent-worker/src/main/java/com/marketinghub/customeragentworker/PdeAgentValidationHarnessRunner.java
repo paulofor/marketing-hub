@@ -240,8 +240,8 @@ public class PdeAgentValidationHarnessRunner {
   }
 
   /**
-   * Exige contrato, mídias integradas, condições de entrada, cenários, dispositivos e capturas da
-   * execução.
+   * Exige contrato, formato do pacote, mídias integradas, condições de entrada e capturas
+   * vinculadas aos cenários antes do parecer.
    */
   private List<BpmVisualEvidenceRunner.VisualArtifact> validateOutput(
       JsonNode result,
@@ -287,6 +287,20 @@ public class PdeAgentValidationHarnessRunner {
       throw new HarnessException("O harness aprovou a execução com gate reprovado.");
     }
     boolean privateKit = "DETERMINISTIC_PRIVATE_KIT_V1".equals(expected.get("runtimeKind"));
+    if (privateKit) {
+      if (!"PDE_PRIVATE_KIT_PACKAGE_V2".equals(result.path("packageContractVersion").asText())
+          || !"PDE_PRIVATE_KIT_FIXTURES_V1".equals(result.path("fixtureContract").asText()))
+        throw new HarnessException(
+            "A prova do kit não corresponde ao pacote corrigido de 36 arquivos.");
+      for (JsonNode scenario : result.path("scenarios")) {
+        int requiredFiles = "SAFETY".equals(scenario.path("scenarioCode").asText()) ? 0 : 36;
+        if (scenario.path("packageFileCount").asInt(-1) != requiredFiles
+            || !scenario.path("screenshotEvidenceKeys").isArray()
+            || scenario.path("screenshotEvidenceKeys").isEmpty())
+          throw new HarnessException(
+              "O cenário do kit não comprovou arquivos e vínculo de captura antes do parecer.");
+      }
+    }
     boolean miraCandidate =
         "pde-planejado-36".equals(String.valueOf(expected.get("productSlug")))
             && miraCandidateVersion(String.valueOf(expected.get("prototypeVersion")));

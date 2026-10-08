@@ -116,6 +116,32 @@ alvo, e o contrato do ciclo precisa ser compatível com o executor antes de libe
 
 ## Rejeição, correção e nova validação
 
+### Prova compatível do pacote de kits — 08/10/2026
+
+O compositor deve cumprir a organização e a quantidade de arquivos dos contratos
+aprovados de Dédalo, e o aceite do backend deve conferir os mesmos requisitos. Nos kits
+privados atuais, `PDE_PRIVATE_KIT_PACKAGE_V2` exige 36 arquivos individuais nas pastas
+contratadas, textos UTF-8, calendário com referências resolvidas, dimensões nativas e
+hash do ZIP efetivamente baixado. Um relatório aprovado que comprovou 24 arquivos não
+libera a revisão da entrega corrigida. O custo de imagens permanece zero nesse runtime
+determinístico; isso não autoriza novos pareceres pagos.
+
+Antes da exposição comercial, a correção técnica de empacotamento que cumpre uma entrega
+já aprovada admite prova suplementar da mesma identidade. O backend preserva o evento
+original, artefatos e custos, registra nova prova e exige nova homologação técnica do
+formato corrigido antes das revisões independentes. Não alterar versão comercial,
+hipótese, preço, janela, autorizações nem cotas de composição para acomodar o defeito.
+O pacote comercial legado continua legível e não recebe aprovação retroativa do novo
+contrato. Essa exceção técnica não se aplica a alteração da oferta, produto ou condições
+comerciais, que continua exigindo sucessor conforme o cânone de ciclos.
+
+Todo cenário enviado a Psique precisa de vínculo explícito com suas capturas persistidas.
+O harness entrega as chaves, o consumidor confere os recibos de upload e envia os IDs
+autenticados para o parecer. A homologação local deve atravessar esse consumidor e seu
+callback, além do browser e do compositor reais, com o modelo simulado somente nos testes.
+Matriz técnica isolada não comprova a passagem independente. Segregar testes e simulações
+de pareceres de produção, comportamento humano, vendas e contribuição.
+
 Por ajuste de 2026-09-10, uma falha `TECHNICAL_FAILURE` da atividade
 `technicalHomologation`, causada pelo comportamento ou contrato executável do protótipo, também
 disponibiliza **Criar tarefa de correção** para Dédalo. O card bloqueado deve indicar essa correção

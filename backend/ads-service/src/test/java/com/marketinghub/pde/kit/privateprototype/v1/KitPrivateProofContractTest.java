@@ -51,6 +51,17 @@ class KitPrivateProofContractTest {
     assertThat(valid(result)).isFalse();
   }
 
+  /** Recusa o pacote que a matriz antiga aprovava apesar de não cumprir os arquivos individuais. */
+  @Test
+  void rejectsOldPackageFormatAndMissingFiles() throws Exception {
+    var result = report();
+    result.remove("packageContractVersion");
+    assertThat(valid(result)).isFalse();
+    result = report();
+    ((ObjectNode) result.path("scenarios").get(0)).put("packageFileCount", 24);
+    assertThat(valid(result)).isFalse();
+  }
+
   /** Mantém matriz histórica de cinco provas válida e recusa contrato desconhecido. */
   @Test
   void preservesExistingContractAndRejectsUnknown() {
@@ -80,6 +91,7 @@ class KitPrivateProofContractTest {
     var report =
         json.createObjectNode()
             .put("fixtureContract", "PDE_PRIVATE_KIT_FIXTURES_V1")
+            .put("packageContractVersion", "PDE_PRIVATE_KIT_PACKAGE_V2")
             .put("profileCode", "nails-v1")
             .put("providerCalls", 0);
     var cases = report.putArray("scenarios");
@@ -98,6 +110,7 @@ class KitPrivateProofContractTest {
                 .put("commercialEvidenceClaimed", false)
                 .put("resumed", true)
                 .put("safetyBlocked", true);
+        c.put("packageFileCount", s.equals("SAFETY") ? 0 : 36);
         if (s.equals("SAFETY")) c.putNull("zipSha256");
         else c.put("zipSha256", "a".repeat(64));
         c.putObject("sideEffects")

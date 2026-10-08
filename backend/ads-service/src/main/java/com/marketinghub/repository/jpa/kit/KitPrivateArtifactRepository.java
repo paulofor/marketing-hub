@@ -30,6 +30,18 @@ public interface KitPrivateArtifactRepository extends JpaRepository<KitPrivateAr
       String profile,
       String status);
 
+  /**
+   * Lê somente os manifestos aceitos da identidade exata, sem carregar ZIPs ou dados de entrada.
+   */
+  @Query(
+      "select a.manifestJson from KitPrivateArtifact a where a.cycleId = :cycleId and a.productId = :productId and a.experimentId = :experimentId and a.prototypeVersion = :version and a.profileCode = :profile and a.status = 'READY'")
+  List<String> acceptedManifests(
+      @Param("cycleId") Long cycleId,
+      @Param("productId") Long productId,
+      @Param("experimentId") Long experimentId,
+      @Param("version") String version,
+      @Param("profile") String profile);
+
   /** Seleciona trabalho enfileirado cujo ciclo continua aberto, sem hidratar artefatos. */
   @Query(
       "select a.id from KitPrivateArtifact a, LearningSalesCycle c where a.cycleId = c.id and c.status = 'OPEN' and a.status = 'QUEUED' order by a.createdAt")

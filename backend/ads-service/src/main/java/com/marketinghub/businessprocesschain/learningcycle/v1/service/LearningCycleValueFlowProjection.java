@@ -31,7 +31,7 @@ public class LearningCycleValueFlowProjection {
   private final LearningCycleJson json;
   private static final Set<String> ACTIVE = Set.of("PENDING", "RUNNING", "IN_PROGRESS", "QUEUED");
 
-  /** Resolve a atividade e sua pausa no escopo exato, mantendo valores sem fonte desconhecidos. */
+  /** Resolve atividade, pausa e pacotes compatíveis, mantendo valores sem fonte desconhecidos. */
   public LearningCycleValueFlow resolve(
       LearningSalesCycle cycle, LearningCycleProcessContext.Work work) {
     var capability = capabilities.resolve(cycle);
@@ -67,8 +67,28 @@ public class LearningCycleValueFlowProjection {
         compositions.stream().anyMatch(c -> Set.of("QUEUED", "RUNNING").contains(c.getStatus()))
             || latest.values().stream().anyMatch(t -> ACTIVE.contains(t.status()))
             || work != null && "IN_PROGRESS".equals(work.state());
-    int ready = (int) compositions.stream().filter(c -> "READY".equals(c.getStatus())).count();
-    boolean implementationPending = capability.available() && !registered;
+    int ready =
+        capability.available() && "OPEN".equals(cycle.getStatus())
+            ? (int)
+                artifacts
+                    .acceptedManifests(
+                        cycle.getId(),
+                        cycle.getProductId(),
+                        cycle.getExperimentId(),
+                        cycle.getProductVersion(),
+                        capability.profileCode())
+                    .stream()
+                    .map(json::read)
+                    .filter(
+                        manifest ->
+                            com.marketinghub.pde.kit.privateprototype.v1.service.KitArtifactContract
+                                    .PACKAGE_CONTRACT_VERSION
+                                    .equals(manifest.path("packageContractVersion").asText())
+                                && manifest.path("files").size() == 36)
+                    .count()
+            : (int) compositions.stream().filter(c -> "READY".equals(c.getStatus())).count();
+    boolean implementationPending =
+        "OPEN".equals(cycle.getStatus()) && capability.available() && !registered;
     String situation =
         paused
             ? "A continuidade automática deste ciclo está pausada. As entregas aceitas foram preservadas."

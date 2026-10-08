@@ -7,10 +7,13 @@ services:
       MYSQL_USER: kit
       MYSQL_PASSWORD: kit-local-only
     command: ['--max-allowed-packet=64M']
+    # O banco da homologação é descartável; evita depender de espaço no disco da engine.
+    tmpfs:
+      - /var/lib/mysql:size=512m
     ports:
       - '57283:3306'
     healthcheck:
       test: ['CMD','mysqladmin','ping','-h','127.0.0.1','-uroot','-pkit-local-root']
       interval: 3s
       retries: 30
-    mem_limit: 512m
+    mem_limit: 1024m

@@ -12,6 +12,7 @@ import com.marketinghub.payments.service.kit.CapellaKitCatalog;
 import com.marketinghub.payments.service.kit.CapellaKitProfile;
 import com.marketinghub.payments.service.kit.CapellaKitText;
 import com.marketinghub.payments.service.kit.PrivateKitIllustrations;
+import com.marketinghub.payments.service.kit.privateprototype.v1.PrivateKitPackageLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -169,7 +170,7 @@ public class AgendaCheiaKitProductionService {
         return generate(briefing, token, profile, photoGenerator, false);
     }
 
-    /** Gera arquivos finais por um provedor explícito e separa a primeira aplicação privada. */
+    /** Gera os arquivos pelo provedor explícito, preservando o comercial e o pacote privado de 36 arquivos. */
     private ProductionResult generate(AgendaCheiaBriefing briefing, String token, CapellaKitProfile profile,
                                       AgendaCheiaPhotoGenerator provider, boolean privateProof) throws IOException {
         Files.createDirectories(storageRoot);
@@ -195,6 +196,10 @@ public class AgendaCheiaKitProductionService {
             Files.writeString(work.resolve("LEIA-ME.txt"), text.instructions(briefing, profile), StandardCharsets.UTF_8);
             Path temporaryZip = work.resolve("agenda-cheia.zip");
             int qualityScore = reviewImages(images, photos, captions.size(), 5, 7);
+            if (privateProof) {
+                PrivateKitPackageLayout.materialize(work, captions, text.whatsappMessages(briefing),
+                        text.privateCalendar(profile));
+            }
             zip(work, temporaryZip);
             Path finalZip = storageRoot.resolve("agenda-cheia-" + token + ".zip");
             Files.move(temporaryZip, finalZip, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
@@ -337,12 +342,12 @@ public class AgendaCheiaKitProductionService {
                 result.messageCount(), result.calendarDays(), "PNG", "pronto para publicar", profile.code()));
     }
 
-    /** Compacta todos os artefatos, excluindo o próprio arquivo de saída. */
+    /** Compacta arquivos funcionais preservando as pastas contratadas e excluindo a própria saída. */
     private void zip(Path source, Path output) throws IOException {
         try (ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(Files.newOutputStream(output)))) {
-            try (var paths = Files.list(source)) {
-                for (Path path : paths.filter(item -> !item.equals(output)).sorted().toList()) {
-                    zip.putNextEntry(new ZipEntry(path.getFileName().toString()));
+            try (var paths = Files.walk(source)) {
+                for (Path path : paths.filter(Files::isRegularFile).filter(item -> !item.equals(output)).sorted().toList()) {
+                    zip.putNextEntry(new ZipEntry(source.relativize(path).toString().replace('\\', '/')));
                     Files.copy(path, zip);
                     zip.closeEntry();
                 }

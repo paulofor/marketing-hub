@@ -167,18 +167,39 @@ public class PdeAgentValidationReworkReadinessProvider
         || !hasCurrentApproval(history, process, activityDefinition.getActivityId(), version);
   }
 
-  /** Aceita somente prova da versão atual produzida depois da última correção aplicável. */
+  /** Exige prova atual após a correção e, nos kits, após a matriz do pacote corrigido. */
   private boolean hasCurrentApproval(
       List<PdeValidationTaskSnapshot> history,
       BusinessProcessDefinition process,
       String activityId,
       String version) {
     long correctionId = latestCorrectionId(history, version);
+    long currentKitMatrix =
+        TECHNICAL_HOMOLOGATION_ACTIVITY.equals(activityId)
+            ? 0L
+            : latestCurrentProcessTask(history, process, TECHNICAL_HOMOLOGATION_ACTIVITY)
+                .filter(task -> "COMPLETED".equals(task.status()))
+                .filter(task -> approvedForVersion(task, TECHNICAL_HOMOLOGATION_ACTIVITY, version))
+                .filter(this::kitTechnicalProof)
+                .map(PdeValidationTaskSnapshot::id)
+                .orElse(0L);
     return latestCurrentProcessTask(history, process, activityId)
         .filter(task -> "COMPLETED".equals(task.status()))
         .filter(task -> task.id() > correctionId)
+        .filter(task -> task.id() > currentKitMatrix)
         .filter(task -> approvedForVersion(task, activityId, version))
         .isPresent();
+  }
+
+  /** Identifica o contrato estruturado de kit sem inferir identidade pelo texto do parecer. */
+  private boolean kitTechnicalProof(PdeValidationTaskSnapshot task) {
+    try {
+      return "PDE_PRIVATE_KIT_FIXTURES_V1"
+          .equals(json.readTree(task.resultJson()).path("fixtureContract").asText());
+    } catch (Exception ex) {
+      log.error("Falha ao ler contrato da matriz de kit. taskId={}", task.id(), ex);
+      return false;
+    }
   }
 
   /** Identifica a última correção válida para separar pendências atuais de pareceres superados. */
@@ -343,6 +364,8 @@ public class PdeAgentValidationReworkReadinessProvider
     try {
       JsonNode result = json.readTree(task.resultJson());
       return expectedPrototypeVersion.equals(result.path("prototypeVersion").asText())
+          && com.marketinghub.pde.kit.privateprototype.v1.service.PrivateKitProofCompatibility
+              .current(result)
           && EXPECTED_DECISION.get(activityId).equals(result.path("decision").asText());
     } catch (Exception ex) {
       log.error(

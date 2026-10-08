@@ -12,13 +12,17 @@ import org.springframework.data.repository.query.Param;
 /** Responsabilidade: persistir tentativas e entregar a fila de geração do Vega ao executor. */
 public interface VegaAdjustmentExecutionRepository
     extends JpaRepository<VegaAdjustmentExecution, Long> {
-  /** Localiza somente trabalho vigente da modalidade solicitada, sem reabrir ciclos históricos. */
+  /** Compara versões por bytes no MySQL, preservando identidade mesmo com collations diferentes. */
   @Query(
-      "select e from VegaAdjustmentExecution e, VegaPrivateSession s, com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle c "
-          + "where e.sessionId = s.id and s.cycleId = c.id and s.origin in :origins "
-          + "and s.revoked = false and s.expiresAt > :now and c.status = 'OPEN' "
-          + "and c.stage in ('ADJUSTMENT', 'VALIDATION') and c.productVersion = s.prototypeVersion "
-          + "and (e.status = 'QUEUED' or (e.status = 'RUNNING' and e.leaseUntil < :now)) order by e.id")
+      value =
+          "select e.* from vega_adjustment_execution_v1 e "
+              + "join vega_private_session_v1 s on e.session_id = s.id "
+              + "join learning_sales_cycle_v1 c on s.cycle_id = c.id "
+              + "where s.origin in (:origins) and s.revoked = false and s.expires_at > :now "
+              + "and c.status = 'OPEN' and c.stage in ('ADJUSTMENT', 'VALIDATION') "
+              + "and binary c.product_version = binary s.prototype_version "
+              + "and (e.status = 'QUEUED' or (e.status = 'RUNNING' and e.lease_until < :now)) order by e.id",
+      nativeQuery = true)
   List<VegaAdjustmentExecution> pending(
       @Param("now") Instant now, @Param("origins") List<String> origins, Pageable page);
 

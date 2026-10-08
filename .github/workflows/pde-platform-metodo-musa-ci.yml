@@ -137,6 +137,18 @@ jobs:
             --manual-shared-component "${MANUAL_SHARED_COMPONENT}" \
             --output "$GITHUB_OUTPUT"
 
+      - name: Validate resolved release precheck before building images
+        if: steps.resolve.outputs.frontend-version != 'none'
+        env:
+          PDE_RELEASE_TARGET: ${{ steps.resolve.outputs.frontend-version }}
+          PDE_RELEASE_CONTRACT: ${{ steps.resolve.outputs.frontend-contract-path }}
+          PDE_RELEASE_SOURCE: ${{ steps.resolve.outputs.frontend-source-sha256 }}
+        run: |
+          python3 pde-platform/scripts/pde_release_contract.py validate-release \
+            --target "$PDE_RELEASE_TARGET" \
+            --contract "$PDE_RELEASE_CONTRACT" \
+            --expected-source "$PDE_RELEASE_SOURCE"
+
   backend:
     name: Backend
     runs-on: ubuntu-latest

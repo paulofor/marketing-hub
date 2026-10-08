@@ -1,0 +1,100 @@
+{
+  "contractVersion": "VEGA_QUEUE_RELEASE_CORRECTION_LOCAL_V1",
+  "boundary": "Prova sintética local; sem inferência paga, parecer real ou evidência comercial.",
+  "beforeHttpStatus": 500,
+  "afterFixtureHttpStatus": 200,
+  "afterProviderHttpStatus": 200,
+  "database": "MySQL 5.7",
+  "cycleVersionCollation": "utf8mb4_unicode_ci",
+  "sessionVersionCollation": "utf8mb4_general_ci",
+  "repositoryAndServiceTests": 14,
+  "architectureTests": 92,
+  "releaseContractTests": 13,
+  "technical": {
+    "cycleId": 91002,
+    "sourceReference": "experiment:91092",
+    "productId": 91004,
+    "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "generationMode": "DETERMINISTIC_FIXTURE",
+    "fixtureModel": "vega-deterministic-fixture-v1",
+    "decision": "APPROVED",
+    "checks": {
+      "sameVersion": true,
+      "desktopAndMobile": true,
+      "happyResultWithinTenMinutes": true,
+      "recoveryPreserved": true,
+      "safetyBlocked": true,
+      "accessibilityBasic": true,
+      "responsiveLayout": true,
+      "privacyPreserved": true,
+      "internalTrafficSegregated": true,
+      "paymentDisabled": true,
+      "publicationDisabled": true,
+      "campaignDisabled": true,
+      "zeroMediaSpend": true
+    },
+    "sideEffects": {
+      "paymentEnabled": false,
+      "published": false,
+      "campaignCreated": false,
+      "mediaSpendBrl": 0
+    },
+    "humanEvidenceClaimed": false,
+    "commercialEvidenceClaimed": false,
+    "startedAt": "2026-10-08T03:59:28.641Z",
+    "finishedAt": "2026-10-08T03:59:44.071Z"
+  },
+  "scenarios": [
+    {
+      "scenarioCode": "ADHERENT",
+      "deviceProfile": "DESKTOP_1440",
+      "status": "PASS",
+      "resumed": true,
+      "recovered": false,
+      "safetyBlocked": false
+    },
+    {
+      "scenarioCode": "ADHERENT",
+      "deviceProfile": "IPHONE_15_PRO",
+      "status": "PASS",
+      "resumed": true,
+      "recovered": false,
+      "safetyBlocked": false
+    },
+    {
+      "scenarioCode": "ADHERENT",
+      "deviceProfile": "PIXEL_7",
+      "status": "PASS",
+      "resumed": true,
+      "recovered": false,
+      "safetyBlocked": false
+    },
+    {
+      "scenarioCode": "RECOVERY",
+      "deviceProfile": "IPHONE_15_PRO",
+      "status": "PASS",
+      "resumed": true,
+      "recovered": true,
+      "safetyBlocked": false
+    },
+    {
+      "scenarioCode": "SAFETY",
+      "deviceProfile": "PIXEL_7",
+      "status": "PASS",
+      "resumed": false,
+      "recovered": false,
+      "safetyBlocked": true
+    }
+  ],
+  "fixtureIsolation": {
+    "beforeCombinedTests": 9,
+    "beforeContextErrors": 2,
+    "afterCombinedTests": 9,
+    "afterErrors": 0,
+    "afterSkipped": 0,
+    "sameMysqlEngine": true,
+    "miraSchema": "mira_controls_local",
+    "vegaSchema": "vega_queue_local",
+    "noProductionSchemaChanged": true
+  }
+}

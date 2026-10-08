@@ -26,17 +26,32 @@ class KitPrivateRegistrationTest {
       var artifacts = mock(KitPrivateArtifactRepository.class);
       String url = "https://private.example/mh-api/pde/kit/private/v1/prototype";
       when(capabilities.resolve(cycle)).thenReturn(new Capability(true, profile, "Teste", url));
-      var service = new KitPrivateService(null, artifacts, null, capabilities, null, new ObjectMapper(), "local-test");
-      var proof = new ObjectMapper().createObjectNode().put("profileCode", profile).put("privateAccessUrl", url);
-      assertThatThrownBy(() -> service.validateRegistration(cycle, proof)).hasMessageContaining("pacote utilizável");
-      when(artifacts.existsByCycleIdAndProductIdAndExperimentIdAndPrototypeVersionAndProfileCodeAndStatus(
-          cycle.getId(), cycle.getProductId(), cycle.getExperimentId(), cycle.getProductVersion(), profile, "READY"))
+      var service =
+          new KitPrivateService(
+              null, artifacts, null, capabilities, null, new ObjectMapper(), "local-test");
+      var proof =
+          new ObjectMapper()
+              .createObjectNode()
+              .put("profileCode", profile)
+              .put("privateAccessUrl", url);
+      assertThatThrownBy(() -> service.validateRegistration(cycle, proof))
+          .hasMessageContaining("pacote utilizável");
+      when(artifacts
+              .existsByCycleIdAndProductIdAndExperimentIdAndPrototypeVersionAndProfileCodeAndStatus(
+                  cycle.getId(),
+                  cycle.getProductId(),
+                  cycle.getExperimentId(),
+                  cycle.getProductVersion(),
+                  profile,
+                  "READY"))
           .thenReturn(true);
       service.validateRegistration(cycle, proof);
       proof.put("profileCode", "unsupported-v1");
-      assertThatThrownBy(() -> service.validateRegistration(cycle, proof)).hasMessageContaining("perfil e à URL");
+      assertThatThrownBy(() -> service.validateRegistration(cycle, proof))
+          .hasMessageContaining("perfil e à URL");
       proof.put("profileCode", profile).put("privateAccessUrl", "https://other.example/prototype");
-      assertThatThrownBy(() -> service.validateRegistration(cycle, proof)).hasMessageContaining("perfil e à URL");
+      assertThatThrownBy(() -> service.validateRegistration(cycle, proof))
+          .hasMessageContaining("perfil e à URL");
     }
   }
 }

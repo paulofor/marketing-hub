@@ -53,3 +53,13 @@ PR, merge, workflows aplicáveis, identidade publicada e conferência pela tela.
 - O pacote canônico preserva Mira com atestação sucessora de compatibilidade v10; sem renovar pareceres, ciclos, despesas ou publicação comercial.
 
 As ilustrações privadas são criadas pelo código e explicitamente sintéticas. Comprovam a estrutura, personalização e uso do kit, sem substituir a biblioteca fotográfica homologada ou uma revisão independente de qualidade comercial. Não houve compra, contato externo, inferência paga ou gasto de mídia.
+
+## Conferência do CI antes do merge
+
+O check de ciclos encontrou três arquivos com formatação pendente: o seletor local
+por caminho não os selecionava. A seleção foi corrigida, os arquivos foram formatados
+e a conferência exata do CI passou localmente. O runner de kits agora usa o mesmo
+Spotless antes de compilar. Testes focados do registro e da projeção passaram novamente.
+A validação de persistência de ciclos no MySQL 5.7 também passou: REST, continuidade,
+reset transacional, medição segregada e rollback/reaplicação/idempotência das migrações.
+A matriz de nove percursos já aprovada não foi repetida por uma mudança de formatação.

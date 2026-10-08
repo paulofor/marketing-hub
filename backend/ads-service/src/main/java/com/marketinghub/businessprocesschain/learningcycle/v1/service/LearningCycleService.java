@@ -967,8 +967,8 @@ public class LearningCycleService {
         request.privatePrototype().path("evidenceReference").asText().length() <= 1200,
         "A referência da prova deve ter até 1200 caracteres.");
     prototypeContext.validate(request.privatePrototype(), cycle.getProductVersion());
-    if ("DETERMINISTIC_PRIVATE_KIT_V1".equals(
-        request.privatePrototype().path("runtimeKind").asText())) {
+    if ("DETERMINISTIC_PRIVATE_KIT_V1"
+        .equals(request.privatePrototype().path("runtimeKind").asText())) {
       require(privateKits != null, "O executor de kits não está disponível neste backend.");
       privateKits.validateRegistration(cycle, request.privatePrototype());
     }

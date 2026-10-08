@@ -23,7 +23,12 @@ public interface KitPrivateArtifactRepository extends JpaRepository<KitPrivateAr
 
   /** Confere resultado aceito da identidade exata sem carregar o pacote no registro da prova. */
   boolean existsByCycleIdAndProductIdAndExperimentIdAndPrototypeVersionAndProfileCodeAndStatus(
-      Long cycleId, Long productId, Long experimentId, String version, String profile, String status);
+      Long cycleId,
+      Long productId,
+      Long experimentId,
+      String version,
+      String profile,
+      String status);
 
   /** Seleciona trabalho enfileirado cujo ciclo continua aberto, sem hidratar artefatos. */
   @Query(

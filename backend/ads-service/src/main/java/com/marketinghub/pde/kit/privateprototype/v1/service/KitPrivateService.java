@@ -143,9 +143,14 @@ public class KitPrivateService {
             && capability.prototypeUrl().equals(proof.path("privateAccessUrl").asText()),
         "A prova não corresponde ao perfil e à URL da implementação registrada.");
     require(
-        artifacts.existsByCycleIdAndProductIdAndExperimentIdAndPrototypeVersionAndProfileCodeAndStatus(
-            cycle.getId(), cycle.getProductId(), cycle.getExperimentId(), cycle.getProductVersion(),
-            capability.profileCode(), "READY"),
+        artifacts
+            .existsByCycleIdAndProductIdAndExperimentIdAndPrototypeVersionAndProfileCodeAndStatus(
+                cycle.getId(),
+                cycle.getProductId(),
+                cycle.getExperimentId(),
+                cycle.getProductVersion(),
+                capability.profileCode(),
+                "READY"),
         "Prepare e confira o pacote utilizável desta versão antes de registrar sua prova.");
   }
 

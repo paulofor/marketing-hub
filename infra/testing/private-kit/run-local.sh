@@ -14,6 +14,7 @@ cleanup() {
   docker compose -p "$KIT_TEST_COMPOSE_PROJECT" -f infra/testing/private-kit/compose.yml down --volumes --remove-orphans
 }
 trap cleanup EXIT
+mvn -q -f backend/ads-service/pom.xml spotless:check '-DspotlessFiles=.*KitPrivate.*[.]java,.*KitPrototypeCapabilities.*[.]java,.*KitArtifactContract.*[.]java,.*LearningCycle(ValueFlow.*|PrototypeRegistrationTest|Service)[.]java,.*PdeAgentValidationGateActivityExecutor(Test)?[.]java'
 mvn -q -f backend/ads-service/pom.xml test-compile dependency:build-classpath -Dmdep.outputFile="$round_dir/backend-classpath" -DincludeScope=test -DskipTests
 mvn -q -f lead-portal-payments-service/pom.xml test-compile dependency:build-classpath -Dmdep.outputFile="$round_dir/worker-classpath" -DincludeScope=test -DskipTests
 docker compose -p "$KIT_TEST_COMPOSE_PROJECT" -f infra/testing/private-kit/compose.yml up -d --wait

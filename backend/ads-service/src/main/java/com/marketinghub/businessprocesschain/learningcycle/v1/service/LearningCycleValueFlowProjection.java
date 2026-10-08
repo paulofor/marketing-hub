@@ -118,10 +118,15 @@ public class LearningCycleValueFlowProjection {
         ledger.stream()
             .filter(
                 e ->
-                    "MEASURE".equals(e.getAction()) || "RECONCILE_MEASUREMENT".equals(e.getAction())
+                    "MEASURE".equals(e.getAction())
+                        || "RECONCILE_MEASUREMENT".equals(e.getAction())
                         || "RECONCILE".equals(e.getAction())
                         || "MEASUREMENT".equals(e.getToStage()))
-            .filter(e -> json.read(e.getEvidenceJson()).has("netSales") && json.read(e.getEvidenceJson()).path("dataValid").asBoolean(false) && json.read(e.getEvidenceJson()).path("testDataExcluded").asBoolean(false))
+            .filter(
+                e ->
+                    json.read(e.getEvidenceJson()).has("netSales")
+                        && json.read(e.getEvidenceJson()).path("dataValid").asBoolean(false)
+                        && json.read(e.getEvidenceJson()).path("testDataExcluded").asBoolean(false))
             .reduce((a, b) -> b)
             .orElse(null);
     var scenarios = new ArrayList<Scenario>();

@@ -53,7 +53,7 @@
     },
     {
       "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleService.java",
-      "sha256": "8af3392261044ad0edeb197039578cb034a3904457f0f859c4c9dc6b93b5e6ab",
+      "sha256": "b6f3cd2390ca48e8e2ce89b2bcbeb1f7c6041400d0d09b181d13bb4ff9c848c7",
       "promptMode": "FULL"
     },
     {
@@ -545,7 +545,7 @@
     },
     {
       "path": "docs/homologacao/fluidez-produtos-capella-v1.md",
-      "sha256": "e83006a7a2a82bc680a589be998856407ea623a62d7da8e390771a13b2a89dcf",
+      "sha256": "8f43bc7525603e692c3e1d5ad2d3ea6046686f63eeba5baa98cda249d9def6ab",
       "promptMode": "FULL"
     }
   ],
@@ -557,7 +557,7 @@
       {
         "path": "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleService.java",
         "previousSha256": "b7b88a338dd96ac8bfadb896adc7ab7954360b68353be24f9f18f84265c1925c",
-        "currentSha256": "8af3392261044ad0edeb197039578cb034a3904457f0f859c4c9dc6b93b5e6ab"
+        "currentSha256": "b6f3cd2390ca48e8e2ce89b2bcbeb1f7c6041400d0d09b181d13bb4ff9c848c7"
       },
       {
         "path": "frontend/src/pages/learningCycle/CyclePrototypeRegistrationForm.tsx",

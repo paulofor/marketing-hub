@@ -1,0 +1,107 @@
+{
+  "contractVersion": "VEGA_CYCLE_PREPARATION_V2",
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "processCode": "pde-construction-approval",
+  "processVersion": 8,
+  "activityId": "technicalHomologation",
+  "sourceReference": "experiment:100",
+  "learningCycleId": 7,
+  "chainDefinitionId": 26,
+  "experimentId": 100,
+  "product": {
+    "id": 4,
+    "slug": "metodo-musa-7-dias",
+    "internalName": "Vega",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "publicUrl": "https://v8.clubemusa.com.br"
+  },
+  "boundary": "Preparação privada e revisão independente do ciclo 7; não autoriza mídia, cobrança, campanha, geração paga de vídeos ou reabertura do predecessor.",
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br",
+    "requiredFrontendSourceSha256": "16540344be571bf6e548c2f07714a6e5f4da71041914f91bfaee0576db060e7f"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_1440",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "16540344be571bf6e548c2f07714a6e5f4da71041914f91bfaee0576db060e7f"
+    }
+  },
+  "privateAccessUrl": "https://v8.clubemusa.com.br/agent-validation",
+  "generationMode": "DETERMINISTIC_FIXTURE",
+  "syntheticLimits": {
+    "sessionsPerCycleVersion": 18,
+    "attemptsPerSession": 2,
+    "attemptsPerCycleVersion": 36
+  },
+  "externalAuthorization": {
+    "aiPreparationTotalLimitUsd": 10,
+    "additionalBudgetAuthorized": false,
+    "mediaAuthorized": false,
+    "paymentAuthorized": false,
+    "paidVideoAuthorized": false
+  },
+  "homologationEvidence": [
+    {
+      "path": "docs/homologacao/evidencias/vega-ciclo7/local-evidence.json",
+      "sha256": "28363c5b159a26de297dd02dc67217c26f67dd27fec23acb6a6e21f1ebaed6d2",
+      "promptMode": "FULL",
+      "boundary": "Provas sintéticas locais; não são pareceres reais dos especialistas."
+    },
+    {
+      "path": "docs/homologacao/vega-ciclo7-fila-publicacao-v1.md",
+      "sha256": "12c2b9d0b0d136281401cf2c4165ebba99b260d283cfc8a75d94663513f4b9f4",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-ciclo7/queue-release-correction.json",
+      "sha256": "7e8655de4b3429ce65c3f6068a6edecbe911651ba05b06ee8f8b4f000bb6a1c9",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/vega-ciclo7-fila-publicacao-v1.md",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/vega/privatevalidation/v1/VegaPrivateGatewayController.java",
+      "sha256": "d4e27c4e58a6beb98403df1257ba1280e4f81b39fb1f9235b0355096bc6c2ead",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/vega/privatevalidation/v1/VegaPrivateGatewayService.java",
+      "sha256": "c1f3ed9be2c2d7935ed7b7b973dbaf65e48699ba0d75bf5c2866da552b8328f6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/vega/privatevalidation/v1/VegaPrivateGatewayTest.java",
+      "sha256": "a940779b17f64c7c2632da8535282ab784c71b78f0e3c5d184ee39dcf171180a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/vega/VegaAdjustmentExecutionRepository.java",
+      "sha256": "63654d83e1b9a29b42b5f3d64b737416814f142624e93c4ac79f2f02908b0831",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/privateprototype/v1/VegaPrivateQueueMysql57Test.java",
+      "sha256": "7107397862618432e070bec1b8c35b210f2e98224b1cdbbd0409aa5b66b79c85",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/resources/vega380/baseline.sql",
+      "sha256": "1f9168e75fecaf2d01058600d66e490d291c36d0eb561fe4ac1771cc3542a673",
+      "promptMode": "FULL"
+    }
+  ],
+  "changeScope": {
+    "previousManifest": "pde-platform/contracts/vega-cycle7-preparation-v1.json",
+    "previousManifestSha256": "fcda6d7ed1928afe95338bade1297619dda4be11df37a37092cffe9221ba78dd",
+    "reason": "Distingue o domínio público da superfície da URL privada usada somente na homologação; preserva ciclo, versão, limites e provas anteriores."
+  }
+}

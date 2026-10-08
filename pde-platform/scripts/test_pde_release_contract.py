@@ -188,6 +188,25 @@ class PdeReleaseContractTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "publication.frontendVersion"):
             MODULE.validate_release_contract(surface, contract, source)
 
+    def test_vega_preparation_keeps_private_access_out_of_public_slot_identity(self):
+        surface = MODULE.select_surface(self.inventory, "v8")
+        contract = MODULE.load_object(
+            ROOT / "pde-platform/contracts/vega-cycle7-preparation-v2.json"
+        )
+        source = contract["publicationContract"]["requiredFrontendSourceSha256"]
+        MODULE.validate_release_contract(surface, contract, source)
+        self.assertEqual(contract["privateAccessUrl"], surface["publicUrl"] + "/agent-validation")
+        self.assertFalse(contract["externalAuthorization"]["additionalBudgetAuthorized"])
+        contract["product"]["publicUrl"] = contract["privateAccessUrl"]
+        with self.assertRaisesRegex(ValueError, "product.publicUrl"):
+            MODULE.validate_release_contract(surface, contract, source)
+
+    def test_resolved_precheck_is_required_before_image_builds(self):
+        workflow = (ROOT / ".github/workflows/pde-platform-metodo-musa-ci.yml").read_text()
+        precheck = workflow.index("Validate resolved release precheck before building images")
+        self.assertLess(precheck, workflow.index("\n  backend:"))
+        self.assertIn("pde_release_contract.py validate-release", workflow[:workflow.index("\n  backend:")])
+
     def test_musa_rejects_inventory_as_release_contract(self):
         with self.assertRaisesRegex(ValueError, "manifesto imutável"):
             MODULE.validate_release_contract(

@@ -456,13 +456,32 @@ public class PdeAgentValidationGateActivityExecutor
 
   /**
    * Preserva as matrizes históricas de cinco e nove provas e aceita a comparação documental de
-   * dezoito combinações pelo mesmo contrato versionado do validador, recusando versões
-   * desconhecidas.
+   * dezoito combinações e kits privados com nove combinações, recusando versões desconhecidas.
    */
   private boolean validTechnicalScenarioMatrix(JsonNode result) {
     String fixtureContract = result.path("fixtureContract").asText();
     if (PdeInputComparisonScenarioMatrixV1.supportsFixtureContract(fixtureContract)) {
       return PdeInputComparisonScenarioMatrixV1.valid(result);
+    }
+    if ("PDE_PRIVATE_KIT_FIXTURES_V1".equals(fixtureContract)) {
+      if (!List.of("nails-v1", "barber-v1").contains(result.path("profileCode").asText())
+          || result.path("providerCalls").asInt(-1) != 0
+          || result.path("scenarios").size() != 9) return false;
+      Set<String> expected = new LinkedHashSet<>(), observed = new LinkedHashSet<>();
+      for (String scenario : List.of("ADHERENT", "RECOVERY", "SAFETY"))
+        for (String device : List.of("DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7"))
+          expected.add(scenario + "@" + device);
+      for (JsonNode scenario : result.path("scenarios")) {
+        if (!validExtendedScenario(scenario)) return false;
+        if ("SAFETY".equals(scenario.path("scenarioCode").asText())) {
+          if (!scenario.path("safetyBlocked").asBoolean(false)
+              || !scenario.path("zipSha256").isNull()) return false;
+        } else if (!scenario.path("zipSha256").asText().matches("[a-f0-9]{64}")
+            || !scenario.path("resumed").asBoolean(false)) return false;
+        observed.add(
+            scenario.path("scenarioCode").asText() + "@" + scenario.path("deviceProfile").asText());
+      }
+      return observed.equals(expected);
     }
     if (!fixtureContract.isBlank() && !"PDE_STATIC_RESULT_FIXTURES_V1".equals(fixtureContract)) {
       return false;

@@ -127,6 +127,25 @@ public class LearningCycleController {
             : principal.getName());
   }
 
+  /** Registra a escolha de margem mínima do usuário no mesmo ciclo e sem autorizar orçamento. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Registrar meta de contribuição após custos variáveis e aquisição")
+  @PostMapping("/products/{productId}/{cycleId}/contribution-target")
+  public LearningCycleResponse contributionTarget(
+      @PathVariable Long productId,
+      @PathVariable Long cycleId,
+      @Valid @RequestBody
+          com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+                  .DefineContributionTargetRequest
+              request,
+      java.security.Principal principal) {
+    return service.defineContributionTarget(
+        productId,
+        cycleId,
+        request,
+        principal == null ? "Operador administrativo · escolha pela tela" : principal.getName());
+  }
+
   /** Solicita nova leitura das fontes oficiais sem receber métricas digitadas pela tela. */
   @PostMapping("/products/{productId}/{cycleId}/measurement-reconciliation")
   public LearningCycleResponse reconcileMeasurement(

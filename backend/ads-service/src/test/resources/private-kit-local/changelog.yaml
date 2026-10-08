@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: private-kit-local-cycles
+      author: local-test
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE learning_sales_cycle_v1 (
+                id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, product_id BIGINT NOT NULL,
+                chain_definition_id BIGINT NOT NULL, chain_code VARCHAR(100) NOT NULL,
+                process_definition_id BIGINT NOT NULL, experiment_id BIGINT NOT NULL,
+                previous_cycle_id BIGINT NULL, request_key VARCHAR(36) NOT NULL,
+                creation_json LONGTEXT NOT NULL, brief_json LONGTEXT NOT NULL, inherited_learning_json LONGTEXT NOT NULL,
+                stage VARCHAR(32) NOT NULL, status VARCHAR(32) NOT NULL, product_version VARCHAR(160) NOT NULL,
+                budget_limit_brl DECIMAL(12,2) NOT NULL, window_start DATETIME(6) NULL, window_end DATETIME(6) NULL,
+                return_process_id BIGINT NULL, return_activity_id VARCHAR(100) NULL, current_instance_id BIGINT NULL,
+                open_slot INT NULL, revision BIGINT NOT NULL, baseline TINYINT(1) NOT NULL,
+                created_at DATETIME(6) NOT NULL, updated_at DATETIME(6) NOT NULL,
+                version_changed_at DATETIME(6) NOT NULL, closed_at DATETIME(6) NULL
+              );
+              INSERT INTO learning_sales_cycle_v1
+                (id,product_id,chain_definition_id,chain_code,process_definition_id,experiment_id,request_key,creation_json,brief_json,inherited_learning_json,stage,status,product_version,budget_limit_brl,open_slot,revision,baseline,created_at,updated_at,version_changed_at)
+                VALUES (7007,8007,8026,'private-kit-local',8125,9007,'00000000-0000-0000-0000-000000007007','{}','{}','{}','ADJUSTMENT','OPEN','v1',0,1,0,0,NOW(6),NOW(6),NOW(6)),
+                       (7018,8018,8026,'private-kit-local',8125,9018,'00000000-0000-0000-0000-000000007018','{}','{}','{}','ADJUSTMENT','OPEN','barber-candidate-v1',0,1,0,0,NOW(6),NOW(6),NOW(6)),
+                       (7029,8029,8026,'private-kit-local',8125,9029,'00000000-0000-0000-0000-000000007029','{}','{}','{}','ADJUSTMENT','OPEN','v1',0,1,0,0,NOW(6),NOW(6),NOW(6));
+  - include:
+      file: db/changelog/changesets/2026-10-08-private-kit-value-flow-v1.yaml

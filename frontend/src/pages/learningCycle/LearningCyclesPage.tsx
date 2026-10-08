@@ -398,7 +398,7 @@ export default function LearningCyclesPage() {
                 autorizam gasto. O próximo trabalho está indicado abaixo.
               </p>
             ) : null}
-            <LearningCycleCurrentWork cycle={cycle} />
+            <LearningCycleCurrentWork cycle={cycle} onUpdated={updated} />
             <CycleAdjustmentPreparationForm
               key={`${cycle.id}-${cycle.revision}`}
               cycle={cycle}

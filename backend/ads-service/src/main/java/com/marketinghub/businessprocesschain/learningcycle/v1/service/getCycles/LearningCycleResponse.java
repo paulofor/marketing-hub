@@ -54,7 +54,8 @@ public record LearningCycleResponse(
     LearningCycleCommercialPreparation commercialPreparation,
     WindowRevalidation windowRevalidation,
     LearningCycleProcessContext.Work delegatedWork,
-    PrototypeRegistration prototypeRegistration) {
+    PrototypeRegistration prototypeRegistration,
+    LearningCycleValueFlow valueFlow) {
   /**
    * Informa disponibilidade real do registro inicial da mesma candidata, sem aprovação comercial.
    */

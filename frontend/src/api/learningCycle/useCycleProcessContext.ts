@@ -1,8 +1,9 @@
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
-import { cycleApi } from "./useLearningCycles";
+import { cycleApi, type CycleValueFlow } from "./useLearningCycles";
 
 export type CycleProcessContext = {
+  valueFlow?: CycleValueFlow | null;
   cycleId: number;
   cycleNumber: number;
   experimentId: number;

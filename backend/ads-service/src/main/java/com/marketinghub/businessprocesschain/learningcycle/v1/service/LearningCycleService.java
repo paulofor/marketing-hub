@@ -70,6 +70,12 @@ public class LearningCycleService {
 
   @Autowired private LearningCycleExecutionContext executionContext;
 
+  @Autowired(required = false)
+  private LearningCycleValueFlowProjection valueFlow;
+
+  @Autowired(required = false)
+  private com.marketinghub.pde.kit.privateprototype.v1.service.KitPrivateService privateKits;
+
   /** Apresenta o ciclo selecionado, sua posição e a memória histórica dentro do processo. */
   @Transactional(readOnly = true)
   public LearningCycleProcessContext processContext(
@@ -144,6 +150,7 @@ public class LearningCycleService {
                 detail.path("rootCause").asText()));
       }
     var brief = json.read(cycle.getBriefJson());
+    var nextWork = workResolver.resolve(cycle);
     return new LearningCycleProcessContext(
         cycle.getId(),
         number,
@@ -161,7 +168,8 @@ public class LearningCycleService {
             + "&cycleId="
             + cycle.getId(),
         List.copyOf(learning),
-        workResolver.resolve(cycle));
+        nextWork,
+        valueFlow == null ? null : valueFlow.resolve(cycle, nextWork));
   }
 
   @Autowired
@@ -959,6 +967,11 @@ public class LearningCycleService {
         request.privatePrototype().path("evidenceReference").asText().length() <= 1200,
         "A referência da prova deve ter até 1200 caracteres.");
     prototypeContext.validate(request.privatePrototype(), cycle.getProductVersion());
+    if ("DETERMINISTIC_PRIVATE_KIT_V1".equals(
+        request.privatePrototype().path("runtimeKind").asText())) {
+      require(privateKits != null, "O executor de kits não está disponível neste backend.");
+      privateKits.validateRegistration(cycle, request.privatePrototype());
+    }
     var proof = com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
     proof.put("productVersion", cycle.getProductVersion());
     proof.put("experimentId", cycle.getExperimentId());
@@ -991,6 +1004,86 @@ public class LearningCycleService {
         cycle.getExperimentId(),
         cycle.getProductVersion(),
         cycle.getRevision());
+    return response(cycle);
+  }
+
+  /** Registra a meta de contribuição escolhida e a disponibiliza aos agentes, sem liberar gasto. */
+  @Transactional
+  public LearningCycleResponse defineContributionTarget(
+      Long productId,
+      Long cycleId,
+      com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+              .DefineContributionTargetRequest
+          request,
+      String operator) {
+    requireProduct(productId, true);
+    var cycle =
+        cycles
+            .findLocked(productId, cycleId)
+            .orElseThrow(() -> notFound("Ciclo não pertence ao produto."));
+    String input = json.write(request);
+    var replay = events.findByCycleIdAndRequestKey(cycleId, request.requestKey().toString());
+    if (replay.isPresent()) {
+      require(
+          json.read(input).equals(json.read(replay.get().getRequestJson())),
+          "A chave já registra outra decisão.");
+      return response(cycle);
+    }
+    require(
+        cycle.getRevision() == request.expectedRevision(),
+        "O ciclo mudou. Atualize antes de registrar sua escolha.");
+    require(
+        "OPEN".equals(cycle.getStatus())
+            && !cycle.isBaseline()
+            && Set.of("PLANNING", "ADJUSTMENT", "VALIDATION", "AUTHORIZATION")
+                .contains(cycle.getStage()),
+        "A meta exige preparação aberta, sem alterar experimento em operação ou encerrado.");
+    require(
+        request.minimumContributionPercent().signum() > 0
+            && request.minimumContributionPercent().compareTo(java.math.BigDecimal.valueOf(100))
+                <= 0,
+        "Informe um percentual maior que zero e até 100%.");
+    var detail = com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+    detail.put("contractVersion", "CONTRIBUTION_TARGET_V1");
+    detail.put("productId", productId);
+    detail.put("cycleId", cycleId);
+    detail.put("experimentId", cycle.getExperimentId());
+    detail.put("productVersion", cycle.getProductVersion());
+    detail.put("minimumContributionPercent", request.minimumContributionPercent());
+    detail.put(
+        "base",
+        "Valor cobrado por venda após descontos, considerando reembolsos sem dupla contagem.");
+    detail.put(
+        "includedVariableCosts", "Entrega, processamento, suporte, taxas/impostos e aquisição.");
+    detail.put("rationale", request.rationale());
+    detail.put("spendAuthorized", false);
+    Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+    cycle.setRevision(cycle.getRevision() + 1);
+    cycle.setUpdatedAt(now);
+    var event = new LearningSalesCycleEvent();
+    event.setCycleId(cycleId);
+    event.setRequestKey(request.requestKey().toString());
+    event.setRequestJson(input);
+    event.setRevision(cycle.getRevision());
+    event.setFromStage(cycle.getStage());
+    event.setToStage(cycle.getStage());
+    event.setAction("DEFINE_CONTRIBUTION_TARGET");
+    event.setOperatorName(operator);
+    event.setSummary(
+        "Meta escolhida: "
+            + request.minimumContributionPercent()
+            + "% por venda após custos variáveis, incluindo aquisição. Não é lucro líquido nem autorização de gasto.");
+    event.setEvidenceReference("Decisão registrada pela tela do ciclo #" + cycleId);
+    event.setEvidenceJson(json.write(detail));
+    event.setCreatedAt(now);
+    events.saveAndFlush(event);
+    cycles.saveAndFlush(cycle);
+    log.info(
+        "Meta de contribuição registrada productId={} cycleId={} version={} percent={}",
+        productId,
+        cycleId,
+        cycle.getProductVersion(),
+        request.minimumContributionPercent());
     return response(cycle);
   }
 
@@ -1734,7 +1827,8 @@ public class LearningCycleService {
         commercialPreparation,
         windowRevalidation(cycle),
         nextWork,
-        prototypeRegistration(cycle));
+        prototypeRegistration(cycle),
+        valueFlow == null ? null : valueFlow.resolve(cycle, nextWork));
   }
 
   /** Impede que texto livre conclua uma etapa com trabalho delegado ainda não comprovado. */

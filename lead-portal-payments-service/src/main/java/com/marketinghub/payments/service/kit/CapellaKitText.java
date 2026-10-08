@@ -39,6 +39,16 @@ public final class CapellaKitText {
         return String.join("\n", days);
     }
 
+    /** Associa cada aplicação aos arquivos existentes, sem aumentar a promessa comercial do kit. */
+    public String privateCalendar(CapellaKitProfile profile) {
+        List<String> days = new ArrayList<>();
+        for (int index = 0; index < profile.calendarDays().size(); index++) {
+            days.add("Dia " + (index + 1) + " — " + profile.calendarDays().get(index)
+                    + " | post-%02d.png + story-%02d.png | legenda %d | mensagem %d".formatted(index + 1, index + 1, index + 1, index % 5 + 1));
+        }
+        return String.join("\n", days);
+    }
+
     /** Entrega instruções, formatos e condições de atendimento junto dos arquivos comprados. */
     public String instructions(AgendaCheiaBriefing briefing, CapellaKitProfile profile) {
         return profile.productName().toUpperCase(Locale.ROOT) + " — KIT PERSONALIZADO\n\nProduzido para: "

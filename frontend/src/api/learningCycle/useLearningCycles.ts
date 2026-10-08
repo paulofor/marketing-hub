@@ -72,7 +72,55 @@ export type CycleEvent = {
   evidence: Record<string, unknown>;
   createdAt: string;
 };
+export type CycleValueFlow = {
+  situation: string;
+  saleBlocker: string;
+  resolvingResponsible: string;
+  awaitingResponsible?: string | null;
+  activeExecution: boolean;
+  decisionNeeded?: boolean | null;
+  decisionReason: string;
+  acceptance: string;
+  stalledSince?: string | null;
+  stalledSeconds?: number | null;
+  observedAt: string;
+  implementation: {
+    available: boolean;
+    profileCode?: string | null;
+    reason: string;
+    prototypeUrl?: string | null;
+  };
+  prototypeRegistered: boolean;
+  readyPackages: number;
+  deliverables: {
+    taskId: number;
+    activity: string;
+    responsible: string;
+    status: string;
+    usableOutput: string;
+    deliveredAt?: string | null;
+  }[];
+  costScenarios: {
+    name: string;
+    priceBrl: number;
+    variableCostBrl: number;
+    remainderBeforeAcquisitionBrl: number;
+    percentBeforeAcquisition?: number | null;
+    assumptions: string;
+    sourceTaskId: number;
+  }[];
+  contributionTargetPercent?: number | null;
+  marketMeasurement?: {
+    netSales?: number | null;
+    revenueBrl?: number | null;
+    contributionBrl?: number | null;
+    deliveryVerified?: boolean;
+    testDataExcluded?: boolean;
+  } | null;
+  measurementSource?: string | null;
+};
 export type LearningCycle = {
+  valueFlow?: CycleValueFlow | null;
   delegatedWork?: {
     processDefinitionId: number;
     processNumber: number;
@@ -236,13 +284,16 @@ export function useCycleMutation(productId?: number, cycleId?: number) {
     mutationFn: async (body: Record<string, unknown>) =>
       (
         await axios.post<LearningCycle>(
-          `${cycleApi}/products/${productId}${cycleId ? `/${cycleId}/${body.budgetAuthorization ? "budget-authorization" : body.prototypeRegistration ? "private-prototype" : "commands"}` : ""}`,
-          body.budgetAuthorization || body.prototypeRegistration
+          `${cycleApi}/products/${productId}${cycleId ? `/${cycleId}/${body.budgetAuthorization ? "budget-authorization" : body.prototypeRegistration ? "private-prototype" : body.contributionTarget ? "contribution-target" : "commands"}` : ""}`,
+          body.budgetAuthorization ||
+            body.prototypeRegistration ||
+            body.contributionTarget
             ? Object.fromEntries(
                 Object.entries(body).filter(
                   ([key]) =>
                     key !== "budgetAuthorization" &&
-                    key !== "prototypeRegistration",
+                    key !== "prototypeRegistration" &&
+                    key !== "contributionTarget",
                 ),
               )
             : body,

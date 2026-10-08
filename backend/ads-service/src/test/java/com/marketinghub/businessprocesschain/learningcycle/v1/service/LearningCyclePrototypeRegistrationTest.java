@@ -108,6 +108,62 @@ class LearningCyclePrototypeRegistrationTest {
     ReflectionTestUtils.setField(service, "videoBudget", mock(LearningCycleVideoBudget.class));
   }
 
+  /**
+   * Registra a meta humana sem mudar etapa, versão, orçamento ou tarefa; o replay preserva um
+   * evento.
+   */
+  @Test
+  void recordsContributionTargetAndMakesItAvailableToContinuation() {
+    var request =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+            .DefineContributionTargetRequest(
+            UUID.randomUUID(), 0, new BigDecimal("31.50"), "Escolha explícita de teste.");
+    service.defineContributionTarget(9010L, 8006L, request, "Usuário de teste");
+    service.defineContributionTarget(9010L, 8006L, request, "Usuário de teste");
+    assertThat(history).hasSize(1);
+    assertThat(history.getFirst().getAction()).isEqualTo("DEFINE_CONTRIBUTION_TARGET");
+    assertThat(cycle.getStage()).isEqualTo("ADJUSTMENT");
+    assertThat(cycle.getBudgetLimitBrl()).isZero();
+    when(cycles.findByExperimentId(7099L)).thenReturn(Optional.of(cycle));
+    cycle.setCreatedAt(Instant.EPOCH);
+    var context =
+        new LearningCycleTaskContext(cycles, events, new LearningCycleJson(json))
+            .resolve("experiment:7099", Instant.now())
+            .orElseThrow();
+    assertThat(
+            json.valueToTree(context)
+                .path("currentDecisions")
+                .get(0)
+                .path("evidence")
+                .path("minimumContributionPercent")
+                .decimalValue())
+        .isEqualByComparingTo("31.5");
+  }
+
+  /** Recusa decisão antiga, experimento encerrado e percentual fora do contrato. */
+  @Test
+  void rejectsInvalidOrStaleContributionDecision() {
+    var valid =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+            .DefineContributionTargetRequest(UUID.randomUUID(), 1, new BigDecimal("40"), "Teste");
+    assertThatThrownBy(() -> service.defineContributionTarget(9010L, 8006L, valid, "Teste"))
+        .hasMessageContaining("O ciclo mudou");
+    cycle.setStatus("ADJUSTED");
+    var closedRequest =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+            .DefineContributionTargetRequest(UUID.randomUUID(), 0, new BigDecimal("40"), "Teste");
+    assertThatThrownBy(() -> service.defineContributionTarget(9010L, 8006L, closedRequest, "Teste"))
+        .hasMessageContaining("preparação aberta");
+    cycle.setStatus("OPEN");
+    var request =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+            .DefineContributionTargetRequest(UUID.randomUUID(), 0, new BigDecimal("101"), "Teste");
+    var excessive = request;
+    assertThatThrownBy(() -> service.defineContributionTarget(9010L, 8006L, excessive, "Teste"))
+        .hasMessageContaining("até 100%");
+    assertThat(history).isEmpty();
+  }
+
   /** Aceita uma única prova, preserva a versão e permite replay sem novo evento ou gasto. */
   @Test
   void registersFirstExactVersionAndReplaysWithoutChangingCycle() {

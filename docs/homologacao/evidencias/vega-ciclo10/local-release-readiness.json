@@ -1,0 +1,57 @@
+{
+  "contractVersion": "VEGA_PRIVATE_RELEASE_READINESS_LOCAL_V1",
+  "productId": 4,
+  "learningCycleId": 10,
+  "experimentId": 103,
+  "prototypeVersion": "musa-pde-entry-v13-primeiro-ajuste-aplicavel",
+  "frontendSourceSha256": "d557a6097b433976b993b63af251364b60a0ef70ff2e762af28e4920f811d373",
+  "historicalRuns": {
+    "pde": {
+      "id": 37739520406,
+      "conclusion": "FAILURE",
+      "cause": "Frontend promovido antes do backend; espera de capacidade na checagem posterior expirou."
+    },
+    "core": {
+      "id": 37739520429,
+      "conclusion": "SUCCESS",
+      "startedDeployAt": "2026-10-08T06:59:25Z",
+      "completedDeployAt": "2026-10-08T07:04:57Z"
+    },
+    "watchdog": {
+      "id": 37741268420,
+      "conclusion": "FAILURE",
+      "cause": "Manifesto privado v13 comparado diretamente com a identidade pública v12."
+    }
+  },
+  "localValidation": {
+    "releaseContractTests": 24,
+    "productionFreshnessTests": 35,
+    "readinessCases": [
+      "backend anterior seguido da capacidade exigida",
+      "outro ciclo/experimento e variante",
+      "predecessor válido sem catálogo estendido",
+      "outra oferta comercial sem consulta privada",
+      "prazo limitado sem promoção",
+      "transporte/502/429 recuperáveis e 403 permanente",
+      "identidade, origem e cotas inseguras recusadas",
+      "CLI real somente GET sem credencial em servidor HTTP local",
+      "ordem anterior aos comandos remotos"
+    ],
+    "watchdogCases": [
+      "contrato real do sucessor",
+      "outro contexto",
+      "raiz pública e origem inalteradas",
+      "candidata privada indevida recusada",
+      "fronteira insegura recusada"
+    ],
+    "actionlint": "PASS: revisão 644076a59742c2d1540ebd4686eab3c308f0e562 com ShellCheck",
+    "source": "QA_INTERNAL_LOCAL",
+    "independentProductApproval": false
+  },
+  "successorFinancialDecision": "PENDING",
+  "newPaidAgentTasks": 0,
+  "mediaAuthorized": false,
+  "paymentAuthorized": false,
+  "paidVideoAuthorized": false,
+  "marketEvidence": false
+}

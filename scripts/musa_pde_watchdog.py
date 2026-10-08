@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import importlib.util
 import json
 from pathlib import Path
 import re
@@ -17,6 +18,13 @@ MUSA_PRODUCT_ID = 4
 MUSA_PRODUCT_SLUG = "metodo-musa-7-dias"
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_RELEASE_SPEC = importlib.util.spec_from_file_location(
+    "pde_release_contract", Path(__file__).resolve().parent.parent
+    / "pde-platform/scripts/pde_release_contract.py"
+)
+_RELEASE = importlib.util.module_from_spec(_RELEASE_SPEC)
+assert _RELEASE_SPEC.loader is not None
+_RELEASE_SPEC.loader.exec_module(_RELEASE)
 
 
 @dataclass(frozen=True)
@@ -211,8 +219,16 @@ def select_supported_surfaces(
         release_contract = None
         minimum_revision = surface.get("legacyMinimumRevision")
         if publication is not None:
+            manifest = documents[publication.path]
+            public_experience = publication.experience_version
+            if manifest.get("deploymentValidation", {}).get("mode", "COMMERCIAL") != "COMMERCIAL":
+                # Reutiliza o contrato do publicador antes de distinguir a candidata privada da raiz.
+                _RELEASE.smoke_profile(
+                    _RELEASE.select_surface(inventory, target), manifest, publication.source_sha256
+                )
+                public_experience = manifest["liveVisualContract"]["runtimeIdentity"]["experienceVersion"]
             if (
-                publication.experience_version != experience_version
+                public_experience != experience_version
                 or publication.public_url.rstrip("/") != public_url.rstrip("/")
             ):
                 raise ValueError(

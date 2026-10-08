@@ -6320,6 +6320,17 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   desconhecida e quota excedida e verificam ambas as mensagens nos três dispositivos.
   O saldo financeiro não é herdado; não se inicia IA no sucessor sem decisão explícita.
   [Correção, matriz e limites](../homologacao/vega-ciclo10-continuidade-v1.md).
+- Falha posterior confirmada no run PDE 37739520406: a imagem privada foi promovida
+  antes da capacidade v13 do backend independente; duas esperas de navegador expiraram
+  e a terceira passou após a capacidade aparecer. O APP 37739520429 publicou com sucesso.
+  O watchdog 37741268420 também confundiu variante privada com a raiz pública preservada.
+- Prevenção compartilhada: aguardar contrato/capacidade privada antes dos comandos
+  remotos e da promoção, com leitura sem sessão, prazo limitado e falha segura; ofertas
+  comerciais não consultam essa dependência. O watchdog reutiliza o validador estrito
+  antes de distinguir as identidades. Regressões cobrem atraso, outro contexto/variante,
+  predecessor válido, outra oferta, transporte, prazo, cotas e fronteira insegura.
+  Mesmo ciclo/experimento, fonte e experiência; sem inferência ou gasto adicional.
+  [Causas, testes e limites](../homologacao/vega-ciclo10-publicacao-coordenada-v1.md).
 - Correção posterior do mesmo ciclo: a fila agora compara versões por bytes, com regressão
   MySQL/JPA usando as collations distintas conferidas no MCP. O manifesto v2 separa o domínio
   público da URL privada; o precheck é antecipado na CI antes de promover componentes.

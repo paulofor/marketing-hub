@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import importlib.util
+import copy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import json
@@ -534,14 +535,64 @@ class MusaPdeWatchdogTest(unittest.TestCase):
         self.assertEqual(result[1]["status"], "ERROR")
         self.assertIn("frontendSourceSha256", result[1]["error"])
 
-    def test_repository_current_manifest_preserves_the_musa_v12_surface(self):
-        selected = musa_pde_watchdog.publication_at(ROOT, "HEAD")
-        self.assertRegex(
-            selected.path,
-            r"^pde-platform/contracts/musa-v12-commercial-homologation-v[1-9][0-9]*\.json$",
-        )
-        self.assertEqual(selected.frontend_version, "v8")
-        self.assertEqual(selected.experience_version, "musa-pde-entry-v12-primeiro-ajuste-aplicavel")
+    def test_repository_current_private_manifest_preserves_the_musa_public_surface(self):
+        selected = musa_pde_watchdog.supported_surfaces_at(ROOT, "HEAD")
+        current = next(surface for surface in selected if surface.target == "v8")
+        self.assertEqual(current.experience_version, "musa-pde-entry-v12-primeiro-ajuste-aplicavel")
+        self.assertIsNotNone(current.release_contract)
+        self.assertEqual([surface.target for surface in selected], ["v5", "v6", "v7", "v8"])
+
+    def private_documents(self):
+        return {
+            path: json.loads((ROOT / path).read_text())
+            for path in (
+                "pde-platform/contracts/product-runtime-isolation-v1.json",
+                "pde-platform/contracts/vega-cycle10-preparation-v4.json",
+            )
+        }
+
+    def test_private_candidate_uses_validated_public_root_and_source(self):
+        documents = self.private_documents()
+        selected = musa_pde_watchdog.select_supported_surfaces(documents)
+        current = next(surface for surface in selected if surface.target == "v8")
+        manifest = documents[current.release_contract]
+        self.assertNotEqual(current.experience_version, manifest["product"]["experienceVersion"])
+        self.assertEqual(current.experience_version, manifest["liveVisualContract"]["runtimeIdentity"]["experienceVersion"])
+        self.assertEqual(current.source_sha256, manifest["publicationContract"]["requiredFrontendSourceSha256"])
+        diagnostics = {
+            "status": "UP", "surface": "pde-platform-frontend", "version": "v8",
+            "imageVersionId": "v8", "publicUrl": current.public_url,
+            "experienceVersion": current.experience_version,
+            "productSlug": "metodo-musa-7-dias",
+            "frontendSourceSha256": current.source_sha256, "commitSha": HEAD,
+        }
+        self.assertEqual(musa_pde_watchdog.validate_surface_diagnostics(current, {"status": "UP"}, diagnostics), HEAD)
+        for key, value in (("experienceVersion", manifest["product"]["experienceVersion"]), ("frontendSourceSha256", "e" * 64)):
+            with self.subTest(field=key), self.assertRaises(ValueError):
+                musa_pde_watchdog.validate_surface_diagnostics(current, {"status": "UP"}, dict(diagnostics, **{key: value}))
+
+    def test_private_successor_with_different_context_preserves_the_same_boundary(self):
+        documents = self.private_documents()
+        manifest = documents["pde-platform/contracts/vega-cycle10-preparation-v4.json"]
+        manifest.update(learningCycleId=92, experimentId=906, sourceReference="experiment:906")
+        version = "musa-pde-entry-v14-primeiro-ajuste-aplicavel"
+        manifest["product"]["experienceVersion"] = version
+        manifest["publicationContract"]["privatePrototypeVersion"] = version
+        selected = musa_pde_watchdog.select_supported_surfaces(documents)
+        self.assertEqual(next(surface for surface in selected if surface.target == "v8").experience_version, manifest["liveVisualContract"]["runtimeIdentity"]["experienceVersion"])
+
+    def test_private_identity_difference_is_not_a_generic_watchdog_bypass(self):
+        for section, field, value in (
+            ("externalAuthorization", "paymentAuthorized", True),
+            ("deploymentValidation", "readOnly", False),
+            ("deploymentValidation", "mode", "IGNORE_ERRORS"),
+            ("publicationContract", "privatePrototypeVersion", "outro-produto-v14"),
+            ("liveVisualContract", "runtimeIdentity", {"experienceVersion": "outra-versão"}),
+        ):
+            documents = copy.deepcopy(self.private_documents())
+            documents["pde-platform/contracts/vega-cycle10-preparation-v4.json"][section][field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                musa_pde_watchdog.select_supported_surfaces(documents)
 
     def test_only_a_new_publication_contract_makes_musa_pde_pending(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -648,6 +699,7 @@ class WorkflowContractTest(unittest.TestCase):
             "scripts/check-production-freshness.py",
             "scripts/test-production-freshness.py",
             "scripts/musa_pde_watchdog.py",
+            "pde-platform/scripts/pde_release_contract.py",
             "scripts/detect-deployment-changes.sh",
             "scripts/read-frontend-build-revision.sh",
             "scripts/configure-vps-ssh-fallback.sh",

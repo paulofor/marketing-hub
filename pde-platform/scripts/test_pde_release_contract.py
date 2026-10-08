@@ -5,8 +5,16 @@ from __future__ import annotations
 
 import importlib.util
 import copy
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import json
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import threading
 import unittest
+from unittest import mock
+import urllib.error
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 SPEC = importlib.util.spec_from_file_location(
@@ -281,6 +289,153 @@ class PdeReleaseContractTest(unittest.TestCase):
         changed = dict(before, imageTag="f" * 40)
         with self.assertRaisesRegex(ValueError, "imageTag"):
             MODULE.validate_rollback(before, changed)
+
+
+class PrivateBackendDependencyTest(unittest.TestCase):
+    """Exercita a dependência real de leitura e a ordem anterior à promoção privada."""
+
+    def setUp(self):
+        self.inventory = MODULE.load_object(ROOT / "pde-platform/contracts/product-runtime-isolation-v1.json")
+        self.surface = MODULE.select_surface(self.inventory, "v8")
+        self.contract = MODULE.load_object(ROOT / "pde-platform/contracts/vega-cycle10-preparation-v4.json")
+        self.source = self.contract["publicationContract"]["requiredFrontendSourceSha256"]
+        self.capability = {
+            "productSlug": self.surface["productSlug"],
+            "prototypeVersion": self.surface["experienceVersion"],
+            "supportedPrototypeVersions": [self.surface["experienceVersion"], self.contract["product"]["experienceVersion"]],
+            "agentValidationGenerationMode": "DETERMINISTIC_FIXTURE",
+            "checkoutMode": "SIMULATED_NO_CHARGE", "paymentEnabled": False,
+            "published": False, "mediaSpendBrl": 0,
+            "syntheticLimits": self.contract["syntheticLimits"],
+        }
+        self.elapsed = 0
+
+    def sleep(self, duration):
+        self.elapsed += duration
+
+    def wait(self, fetch, *, contract=None, source=None, timeout=30):
+        return MODULE.wait_private_capability(
+            self.surface, contract or self.contract, source or self.source, timeout,
+            fetch=fetch, clock=lambda: self.elapsed, sleep=self.sleep,
+        )
+
+    def test_delayed_backend_is_ready_before_promotion_is_allowed(self):
+        previous = copy.deepcopy(self.capability)
+        previous.pop("supportedPrototypeVersions")
+        fetch = mock.Mock(side_effect=[previous, previous, self.capability])
+        self.assertTrue(self.wait(fetch))
+        self.assertEqual(self.elapsed, 20)
+        self.assertEqual(fetch.call_count, 3)
+        fetch.assert_called_with(self.surface["publicUrl"] + self.contract["deploymentValidation"]["contractPath"])
+
+    def test_another_successor_uses_declared_capability_without_cycle_id_exception(self):
+        contract = copy.deepcopy(self.contract)
+        contract.update(learningCycleId=91, experimentId=904, sourceReference="experiment:904")
+        version = "musa-pde-entry-v14-primeiro-ajuste-aplicavel"
+        contract["product"]["experienceVersion"] = version
+        contract["publicationContract"]["privatePrototypeVersion"] = version
+        capability = copy.deepcopy(self.capability)
+        capability["supportedPrototypeVersions"].append(version)
+        self.assertTrue(self.wait(mock.Mock(return_value=capability), contract=contract))
+
+    def test_valid_predecessor_requires_no_capabilities_extension(self):
+        contract = MODULE.load_object(ROOT / "pde-platform/contracts/vega-cycle7-preparation-v3.json")
+        capability = copy.deepcopy(self.capability)
+        capability.pop("supportedPrototypeVersions")
+        self.assertTrue(self.wait(mock.Mock(return_value=capability), contract=contract, source=contract["publicationContract"]["requiredFrontendSourceSha256"]))
+        self.assertEqual(self.elapsed, 0)
+
+    def test_commercial_mira_preserves_default_without_private_network_request(self):
+        contract = MODULE.load_object(ROOT / "pde-platform/contracts/mira-commercial-homologation-v10.json")
+        fetch = mock.Mock(side_effect=AssertionError("Consulta privada indevida"))
+        result = MODULE.wait_private_capability(
+            MODULE.select_surface(self.inventory, "mira-commercial"), contract,
+            contract["publicationContract"]["requiredFrontendSourceSha256"], 0, fetch=fetch,
+        )
+        self.assertFalse(result)
+        fetch.assert_not_called()
+
+    def test_missing_capability_expires_without_allowing_promotion(self):
+        previous = copy.deepcopy(self.capability)
+        previous.pop("supportedPrototypeVersions")
+        with self.assertRaisesRegex(ValueError, "não pode ser promovida"):
+            self.wait(mock.Mock(return_value=previous), timeout=13)
+        self.assertEqual(self.elapsed, 13)
+
+    def test_transport_or_temporary_http_failure_recovers_but_forbidden_read_does_not_retry(self):
+        for error in (urllib.error.URLError("rede"), TimeoutError(), urllib.error.HTTPError("url", 502, "gateway", None, None), urllib.error.HTTPError("url", 429, "limite", None, None)):
+            with self.subTest(error=type(error).__name__, code=getattr(error, "code", None)):
+                self.elapsed = 0
+                self.assertTrue(self.wait(mock.Mock(side_effect=[error, self.capability])))
+                self.assertEqual(self.elapsed, 10)
+        fetch = mock.Mock(side_effect=urllib.error.HTTPError("url", 403, "protegido", None, None))
+        with self.assertRaisesRegex(ValueError, "HTTP 403"):
+            self.wait(fetch)
+        self.assertEqual(fetch.call_count, 1)
+
+    def test_unsafe_capability_and_stale_source_are_never_treated_as_readiness(self):
+        for field, value in (("productSlug", "outro-produto"), ("prototypeVersion", "versão-incorreta"), ("paymentEnabled", True), ("published", True), ("mediaSpendBrl", 1), ("checkoutMode", "REAL"), ("agentValidationGenerationMode", "PROVIDER"), ("syntheticLimits", {"sessionsPerCycleVersion": 19})):
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                self.wait(mock.Mock(return_value=dict(self.capability, **{field: value})))
+        fetch = mock.Mock(side_effect=AssertionError("Não consultar antes de validar o contrato"))
+        with self.assertRaises(ValueError):
+            self.wait(fetch, source="a" * 64)
+        fetch.assert_not_called()
+
+    def test_cli_reads_only_the_real_local_http_contract(self):
+        requests = []
+        payload = json.dumps(self.capability).encode()
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                requests.append((self.command, self.path, self.headers.get("Authorization")))
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(payload)
+
+            def log_message(self, *_args):
+                pass
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                url = f"http://127.0.0.1:{server.server_port}"
+                for product in self.inventory["products"]:
+                    for surface in product["surfaces"]:
+                        if surface["deployTarget"] == "v8":
+                            surface["publicUrl"] = url
+                contract = copy.deepcopy(self.contract)
+                contract["product"]["publicUrl"] = url
+                contract["publicationContract"]["publicUrl"] = url
+                contract["privateAccessUrl"] = url + "/agent-validation"
+                (root / "inventory.json").write_text(json.dumps(self.inventory))
+                (root / "contract.json").write_text(json.dumps(contract))
+                result = subprocess.run([
+                    sys.executable, str(ROOT / "pde-platform/scripts/pde_release_contract.py"),
+                    "--inventory", str(root / "inventory.json"), "wait-private-capability",
+                    "--target", "v8", "--contract", str(root / "contract.json"),
+                    "--expected-source", self.source, "--timeout", "0",
+                ], capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("Dependência privada disponível", result.stdout)
+                self.assertEqual(requests, [("GET", "/api/pde/vega/private/v1/contract", None)])
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
+    def test_workflow_waits_before_remote_changes_and_runs_prevention_in_ci(self):
+        workflow = (ROOT / ".github/workflows/pde-platform-metodo-musa-ci.yml").read_text()
+        deploy = workflow[workflow.index("\n  deploy_production:"):]
+        gate = deploy.index("Wait for private backend capability before promotion")
+        self.assertLess(gate, deploy.index("Configure SSH"))
+        self.assertLess(gate, deploy.index("Publish PDE Platform production"))
+        self.assertIn("pde_release_contract.py wait-private-capability", deploy[:deploy.index("Configure SSH")])
+        self.assertIn("run: python3 pde-platform/scripts/test_pde_release_contract.py", workflow)
 
 
 if __name__ == "__main__":

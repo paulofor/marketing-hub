@@ -21,6 +21,15 @@ public interface ProcessRunRepository extends JpaRepository<ProcessRun, Long> {
   /** Localiza a execução idempotente do contexto congelado. */
   Optional<ProcessRun> findByScopeKey(String scopeKey);
 
+  /** Lê o estado do processo da mesma atividade sem misturar produto, cadeia ou ciclo. */
+  Optional<ProcessRun>
+      findFirstByProductIdAndProcessDefinitionIdAndChainDefinitionIdAndLearningCycleIdAndSourceReferenceOrderByIdDesc(
+          Long productId,
+          Long processDefinitionId,
+          Long chainDefinitionId,
+          Long learningCycleId,
+          String sourceReference);
+
   /** Impede trocar a ficha de uma referência que já iniciou processo, inclusive histórico. */
   boolean existsByProductIdAndSourceReference(Long productId, String sourceReference);
 

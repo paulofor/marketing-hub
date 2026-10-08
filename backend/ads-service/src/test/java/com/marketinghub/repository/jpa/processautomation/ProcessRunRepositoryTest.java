@@ -10,7 +10,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.TestPropertySource;
 
-/** Responsabilidade: comprovar quais execuções podem conciliar ou reservar a vez do produto. */
+/** Responsabilidade: comprovar a fila e a leitura isolada do estado durável dos processos. */
 @DataJpaTest(showSql = false)
 @TestPropertySource(
     properties = {
@@ -20,6 +20,41 @@ import org.springframework.test.context.TestPropertySource;
     })
 class ProcessRunRepositoryTest {
   @Autowired private ProcessRunRepository repository;
+
+  /** O resumo não pode herdar pausa de outro produto, processo, cadeia, ciclo ou experimento. */
+  @Test
+  void readsOnlyExactProductProcessCycleAndExperiment() {
+    var expected = scopedRun(75L, 77L, 14L, 55L, "experiment:95");
+    repository.save(expected);
+    repository.save(scopedRun(76L, 77L, 14L, 55L, "experiment:95"));
+    repository.save(scopedRun(75L, 78L, 14L, 55L, "experiment:95"));
+    repository.save(scopedRun(75L, 77L, 15L, 55L, "experiment:95"));
+    repository.save(scopedRun(75L, 77L, 14L, 56L, "experiment:95"));
+    repository.save(scopedRun(75L, 77L, 14L, 55L, "experiment:96"));
+    repository.flush();
+    assertThat(
+            repository
+                .findFirstByProductIdAndProcessDefinitionIdAndChainDefinitionIdAndLearningCycleIdAndSourceReferenceOrderByIdDesc(
+                    75L, 77L, 14L, 55L, "experiment:95"))
+        .get()
+        .extracting(ProcessRun::getId)
+        .isEqualTo(expected.getId());
+    assertThat(
+            repository
+                .findFirstByProductIdAndProcessDefinitionIdAndChainDefinitionIdAndLearningCycleIdAndSourceReferenceOrderByIdDesc(
+                    75L, 77L, 14L, 57L, "experiment:95"))
+        .isEmpty();
+  }
+
+  /** Prepara uma pausa sintética com identidade completa para a consulta do resumo. */
+  private ProcessRun scopedRun(Long product, Long process, Long chain, Long cycle, String source) {
+    var result = run(product, "PAUSED");
+    result.setProcessDefinitionId(process);
+    result.setChainDefinitionId(chain);
+    result.setLearningCycleId(cycle);
+    result.setSourceReference(source);
+    return result;
+  }
 
   /** Uma falha terminal preserva o histórico, mas não bloqueia nem volta à fila de conciliação. */
   @Test

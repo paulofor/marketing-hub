@@ -77,6 +77,15 @@ não será escolhida pelo sistema. Nenhum teste chama o provedor pago.
   do PathVariable explícito. Frontend administrativo: oito testes afetados, tipos e build
   passaram; build Alcyone e fronteira de API também passaram. Nenhum custo sintético
   é registrado como consumo comercial.
+- O primeiro CI do PR #5549 detectou um acoplamento antigo no teste de smoke: a fixture
+  positiva privada de Vega usava o fingerprint histórico para comparar a fonte atual de
+  Alcyone. Reproduzido na sandbox. Entre alterar a história, relaxar o validador produtivo
+  ou corrigir apenas a fixture positiva, foi escolhido o terceiro caminho: contrato
+  temporário ligado à fonte atual e rejeição histórica mantida. `bash -n`, ShellCheck,
+  teste direcionado e homologação transacional completa em Docker passaram localmente,
+  incluindo promoção isolada e rollback. Os manifestos históricos ficaram intactos.
+  A atestação sucessora Vega v6 atualiza somente o hash desse teste compartilhado,
+  com publicação automática desabilitada; não retoma nem altera a experiência de Vega.
 
 Runner: `VISUAL_COMPOSE_PROJECT=<projeto exclusivo autorizado> python3 infra/testing/visual-personalization/run-local.py`.
 Artefatos em artifacts/visual-personalization, não versionados nem comerciais. O runner

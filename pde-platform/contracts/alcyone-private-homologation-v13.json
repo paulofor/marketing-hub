@@ -53,7 +53,7 @@
   "homologationEvidence": [
     {
       "path": "docs/homologacao/alcyone-personalizacao-integrada-v1.md",
-      "sha256": "db3466492484cc745c177c88d6b1408ce6b8e247f0f01704016900b5b81c64d1",
+      "sha256": "6fbed85dc396190041717659b39221ac25209ad0e8ec2182cf79e7f99825aaa1",
       "promptMode": "FULL"
     },
     {
@@ -119,6 +119,11 @@
     {
       "path": "pde-platform/frontend/scripts/source-fingerprint.test.mjs",
       "sha256": "9b1a01c0da30c3235e90dd9283c1ab3a0dd9b4a3ee926e8cbec5a5ff6df90623",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test-targeted-production-smokes.sh",
+      "sha256": "dacd4ca3f742c232727bc1e981511a4a85f5d1b67770e9f7d0795bdd598865ed",
       "promptMode": "FULL"
     }
   ],

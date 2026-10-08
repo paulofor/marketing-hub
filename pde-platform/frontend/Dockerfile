@@ -16,6 +16,7 @@ COPY --from=build /app/frontend-source.sha256 /usr/share/nginx/html/frontend-sou
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY docker-entrypoint.d/ /docker-entrypoint.d/
 ENV PDE_BACKEND_UPSTREAM=pde-platform-backend:8096
+ENV PDE_MARKETING_HUB_UPSTREAM=191.252.181.168
 ENV PDE_FRONTEND_VERSION_ID=${PDE_FRONTEND_VERSION_ID}
 RUN printf '{"versionId":"%s"}\n' "${PDE_FRONTEND_VERSION_ID}" > /usr/share/nginx/html/pde-image-version.json
 EXPOSE 80

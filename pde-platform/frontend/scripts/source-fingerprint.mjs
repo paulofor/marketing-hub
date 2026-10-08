@@ -11,6 +11,7 @@ const SOURCE_DIRECTORIES = [
   "public-mira-commercial",
   "scripts",
   "src",
+  "vega-private",
 ];
 const SOURCE_FILES = [
   ".dockerignore",
@@ -42,7 +43,9 @@ async function collectFiles(root, relativeDirectory) {
   const directory = path.join(root, relativeDirectory);
   const entries = await fs.readdir(directory, { withFileTypes: true });
   const files = [];
-  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
+  for (const entry of entries.sort((left, right) =>
+    left.name.localeCompare(right.name),
+  )) {
     const relativePath = path.posix.join(relativeDirectory, entry.name);
     if (entry.isDirectory()) {
       files.push(...(await collectFiles(root, relativePath)));
@@ -75,5 +78,7 @@ export async function sourceFingerprint(rootArgument) {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  process.stdout.write(`${await sourceFingerprint(process.argv[2] ?? process.cwd())}\n`);
+  process.stdout.write(
+    `${await sourceFingerprint(process.argv[2] ?? process.cwd())}\n`,
+  );
 }

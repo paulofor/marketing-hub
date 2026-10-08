@@ -6283,6 +6283,21 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   harness próprio percorre geração, uso, retomada, falha e limite em desktop e celulares.
 - Evidência e limites: `docs/homologacao/vega-tarefa-380-prototipo-v1.md`.
 
+- Recorrência confirmada em 08/10/2026, solicitação #3275: o ciclo #7/experimento #100
+  concluiu estratégia e quatro contratos de construção, mas ficou sem prova de implementação.
+  A rota histórica `v7/vega-private` respondeu 502; o slot vigente `v8` respondeu saudável.
+  O executor de cenários aceitava somente a rota histórica, e o hash da imagem compartilhada
+  não incluía a árvore privada. Não houve falha nova de inferência nem tarefa ativa nessa passagem.
+- Correção reutilizável: componente privado na candidata atual, proxy oficial ao backend principal,
+  inclusão da árvore privada no fingerprint e suporte explícito da rota no harness existente.
+  A fila separa fixture determinística de provedor; locks aplicam 18 sessões/2 tentativas/36 no ciclo
+  e versão, incluindo falhas e revogações. Claim e request reconferem vigência antes da execução.
+- Prevenção: MySQL 5.7 com 24 criações concorrentes, retomada/callback idempotentes, identidade
+  de outro ciclo e experimento, caminho legado antes válido, desktop/iPhone/Pixel, imagem construída
+  pelo Dockerfile e fluxo local de callbacks até o gate, preservando sua exigência de HTTPS.
+  A interpretação de agentes é simulada somente nos testes locais; pareceres reais não são fabricados.
+  [Matriz, evidências e limites](../homologacao/vega-ciclo7-preparacao-executavel-v1.md).
+
 ## LOOP-PSIQUE-CICLO-DESVIADO-PARA-LEITURA-HUMANA — correção em 2026-09-11
 
 - #383 aprovou a homologação técnica de Vega; #384 usou prompt v4 humano e capturou a

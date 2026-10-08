@@ -38,6 +38,7 @@ class CommercialBpmCycleIntegrationTest {
       var result = json.readTree(Files.readString(flow.resolve(scenario + ".json")));
       assertThat(result.path("decision").asText()).isEqualTo("APPROVED");
       assertThat(result.path("prototypeVersion")).isEqualTo(technical.path("prototypeVersion"));
+      assertThat(result.path("sourceReference")).isEqualTo(technical.path("sourceReference"));
       evidence.add(
           Map.of(
               "taskId",
@@ -53,7 +54,13 @@ class CommercialBpmCycleIntegrationTest {
     Map<String, Object> pdeContext = new LinkedHashMap<>();
     pdeContext.put(
         "lineage",
-        Map.of("learningCycleId", 91002L, "productId", productId, "experimentId", experimentId));
+        Map.of(
+            "learningCycleId",
+            technical.path("cycleId").asLong(91002L),
+            "productId",
+            productId,
+            "experimentId",
+            experimentId));
     String controlsFile = System.getenv("PDE_OPERATIONAL_REPORT_FILE");
     boolean hasControls = controlsFile != null && !controlsFile.isBlank();
     if (hasControls) {

@@ -1,0 +1,60 @@
+{
+  "contractVersion": "VEGA_CYCLE_PREPARATION_V1",
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "processCode": "pde-construction-approval",
+  "processVersion": 8,
+  "activityId": "technicalHomologation",
+  "sourceReference": "experiment:100",
+  "learningCycleId": 7,
+  "chainDefinitionId": 26,
+  "experimentId": 100,
+  "product": {
+    "id": 4,
+    "slug": "metodo-musa-7-dias",
+    "internalName": "Vega",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "publicUrl": "https://v8.clubemusa.com.br/agent-validation"
+  },
+  "boundary": "Preparação privada e revisão independente do ciclo 7; não autoriza mídia, cobrança, campanha, geração paga de vídeos ou reabertura do predecessor.",
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br/",
+    "requiredFrontendSourceSha256": "d2dfbbf21578cdc090d692da1fc6ab8bcbd447adc4dfa73e5f84cf9b927db828"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_1440",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "d2dfbbf21578cdc090d692da1fc6ab8bcbd447adc4dfa73e5f84cf9b927db828"
+    }
+  },
+  "privateAccessUrl": "https://v8.clubemusa.com.br/agent-validation",
+  "generationMode": "DETERMINISTIC_FIXTURE",
+  "syntheticLimits": {
+    "sessionsPerCycleVersion": 18,
+    "attemptsPerSession": 2,
+    "attemptsPerCycleVersion": 36
+  },
+  "externalAuthorization": {
+    "aiPreparationTotalLimitUsd": 10,
+    "additionalBudgetAuthorized": false,
+    "mediaAuthorized": false,
+    "paymentAuthorized": false,
+    "paidVideoAuthorized": false
+  },
+  "homologationEvidence": [
+    {
+      "path": "docs/homologacao/evidencias/vega-ciclo7/local-evidence.json",
+      "sha256": "54211f019d160340e2354640d256c70ab4e64e54ef9e1156859b3f44da3b8da4",
+      "promptMode": "FULL",
+      "boundary": "Provas sintéticas locais; não são pareceres reais dos especialistas."
+    }
+  ],
+  "validationReport": "docs/homologacao/vega-ciclo7-preparacao-executavel-v1.md"
+}

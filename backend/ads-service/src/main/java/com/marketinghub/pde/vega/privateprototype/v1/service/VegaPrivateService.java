@@ -43,6 +43,8 @@ public class VegaPrivateService {
   private String version;
 
   private static final Set<String> TERMINAL = Set.of("COMPLETED", "FAILED", "BLOCKED");
+  private static final List<String> SYNTHETIC_ORIGINS = List.of("QA_INTERNAL", "AGENT_VALIDATION");
+  private static final String FIXTURE_MODEL = "vega-deterministic-fixture-v1";
   private static final List<String> SIGNALS =
       List.of(
           "EXPERIENCE_STARTED",
@@ -71,10 +73,20 @@ public class VegaPrivateService {
             "mediaSpendBrl",
             0,
             "maxValueTimeMinutes",
-            5));
+            5,
+            "agentValidationGenerationMode",
+            "DETERMINISTIC_FIXTURE",
+            "syntheticLimits",
+            Map.of(
+                "sessionsPerCycleVersion",
+                18,
+                "attemptsPerSession",
+                2,
+                "attemptsPerCycleVersion",
+                36)));
   }
 
-  /** Cria acesso sintético ou convite humano, isolado por leitura, ciclo e versão. */
+  /** Cria acesso isolado e limita a homologação sintética pela versão e ciclo sob lock. */
   public JsonNode create(InternalSession input) {
     var cycle =
         cycles
@@ -93,6 +105,12 @@ public class VegaPrivateService {
     require(
         Set.of("QA_INTERNAL", "AGENT_VALIDATION", "HUMAN").contains(input.origin()),
         "Origem inválida.");
+    if (SYNTHETIC_ORIGINS.contains(input.origin()))
+      require(
+          sessions.countByCycleIdAndPrototypeVersionAndOriginIn(
+                  cycle.getId(), version, SYNTHETIC_ORIGINS)
+              < 18,
+          "O limite de 18 sessões desta homologação foi atingido; preserve os resultados existentes.");
     if ("HUMAN".equals(input.origin())) {
       require(
           input.readingNumber() != null && input.readingNumber() >= 1 && input.readingNumber() <= 2,
@@ -159,15 +177,35 @@ public class VegaPrivateService {
     return view(row);
   }
 
-  /** Persiste a entrada e enfileira uma tentativa, sem acessar o modelo no backend. */
+  /** Enfileira uma tentativa vigente, preservando sucesso e tetos concorrentes sem acessar IA. */
   public JsonNode generate(String secret, Input input) {
     var row = sessionRow(secret);
     require(
         events(row).has("EXPERIENCE_STARTED"), "Comece a experiência antes de criar seu ajuste.");
     if (row.getExecutionId() != null) {
       var previous = executions.findById(row.getExecutionId()).orElseThrow();
-      if (!TERMINAL.contains(previous.getStatus()) || "COMPLETED".equals(previous.getStatus()))
+      if (!TERMINAL.contains(previous.getStatus()) || "COMPLETED".equals(previous.getStatus())) {
+        require(
+            read(row.getInputJson()).equals(json.valueToTree(input)),
+            "Esta sessão já possui outra entrada; consulte o resultado preservado.");
         return view(row);
+      }
+    }
+    var cycle = cycles.findLockedById(row.getCycleId()).orElseThrow();
+    require(
+        "OPEN".equals(cycle.getStatus())
+            && Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage())
+            && row.getPrototypeVersion().equals(cycle.getProductVersion()),
+        "O ciclo não permite novas tentativas desta versão.");
+    if (SYNTHETIC_ORIGINS.contains(row.getOrigin())) {
+      require(
+          executions.countBySessionId(row.getId()) < 2,
+          "O limite de duas tentativas desta sessão foi atingido.");
+      require(
+          executions.countSyntheticAttempts(
+                  cycle.getId(), row.getPrototypeVersion(), SYNTHETIC_ORIGINS)
+              < 36,
+          "O limite acumulado de 36 tentativas desta homologação foi atingido.");
     }
     log.info(
         "Vega entrada bruta sessionId={} cycleId={} payload={}",
@@ -187,7 +225,6 @@ public class VegaPrivateService {
     context.put("prototypeVersion", row.getPrototypeVersion());
     context.set("input", json.valueToTree(input));
     context.put("origin", row.getOrigin());
-    var cycle = cycles.findById(row.getCycleId()).orElseThrow();
     context.set("inheritedLearning", read(cycle.getInheritedLearningJson()));
     execution.setInputJson(write(context));
     executions.saveAndFlush(execution);
@@ -248,19 +285,34 @@ public class VegaPrivateService {
     row.setRevoked(true);
   }
 
-  /** Expõe pendências e reservas expiradas para controle operacional pelo worker. */
+  /** Mantém a leitura legada da fila exclusivamente para consumo de provedor. */
   @Transactional(readOnly = true)
   public JsonNode pending() {
+    return pending("PROVIDER");
+  }
+
+  /**
+   * Entrega trabalho vigente somente à modalidade autorizada, sem inferência paga para fixtures.
+   */
+  @Transactional(readOnly = true)
+  public JsonNode pending(String mode) {
+    require(Set.of("PROVIDER", "FIXTURE").contains(mode), "Modalidade de execução inválida.");
     return json.valueToTree(
-        executions.pending(Instant.now(), PageRequest.of(0, 10)).stream()
+        executions
+            .pending(
+                Instant.now(),
+                "FIXTURE".equals(mode) ? SYNTHETIC_ORIGINS : List.of("HUMAN"),
+                PageRequest.of(0, 10))
+            .stream()
             .map(this::executionView)
             .toList());
   }
 
-  /** Reserva uma execução de forma atômica e não substitui um resultado terminal. */
+  /** Reserva trabalho ainda vigente de forma atômica sem substituir um resultado terminal. */
   public JsonNode claim(Long id) {
     var row = executions.findLocked(id).orElseThrow(() -> fail(404, "Execução não encontrada."));
     if (TERMINAL.contains(row.getStatus())) return executionView(row);
+    requireActiveExecution(row);
     require(
         !"RUNNING".equals(row.getStatus())
             || row.getLeaseUntil() == null
@@ -272,13 +324,19 @@ public class VegaPrivateService {
     return executionView(row);
   }
 
-  /** Preserva a requisição sanitizada antes de o worker acessar o provedor. */
+  /** Audita a entrada e impede o consumo de provedor para sessões de homologação sintética. */
   public void request(Long id, RequestAudit input) {
     var row = executions.findLocked(id).orElseThrow();
     require("RUNNING".equals(row.getStatus()), "Execução não está reservada.");
+    requireActiveExecution(row);
     require(
         !input.request().has("api_key") && !input.request().has("headers"),
         "Não envie credenciais na auditoria.");
+    if (SYNTHETIC_ORIGINS.contains(read(row.getInputJson()).path("origin").asText()))
+      require(
+          FIXTURE_MODEL.equals(input.model())
+              && "DETERMINISTIC_FIXTURE".equals(input.request().path("provider").asText()),
+          "A homologação sintética exige fixture determinística sem chamada paga ao provedor.");
     row.setRequestJson(write(input.request()));
     row.setModel(input.model());
   }
@@ -298,6 +356,17 @@ public class VegaPrivateService {
     row.setCostUsd(input.costUsd());
     String status = input.status();
     String error = input.error();
+    boolean synthetic =
+        SYNTHETIC_ORIGINS.contains(read(row.getInputJson()).path("origin").asText());
+    if (synthetic
+        && (!FIXTURE_MODEL.equals(input.model())
+            || input.costUsd() == null
+            || input.costUsd().signum() != 0
+            || !Objects.equals(0L, input.inputTokens())
+            || !Objects.equals(0L, input.outputTokens()))) {
+      status = "FAILED";
+      error = "A resposta sintética não comprovou execução determinística sem consumo de provedor.";
+    }
     if ("COMPLETED".equals(status)
         && (row.getRequestJson() == null
             || !validCard(input.card())
@@ -370,6 +439,18 @@ public class VegaPrivateService {
             "(?iu)\\b(compre|comprar|adquira|adquirir|emagreça|emagrecer)\\b")
         .matcher(card.toString())
         .find();
+  }
+
+  /** Reconfere a vigência entre consulta, reserva e request sem reabrir trabalho histórico. */
+  private void requireActiveExecution(VegaAdjustmentExecution execution) {
+    var session = sessions.findById(execution.getSessionId()).orElseThrow();
+    active(session);
+    var cycle = cycles.findById(session.getCycleId()).orElseThrow();
+    require(
+        "OPEN".equals(cycle.getStatus())
+            && Set.of("ADJUSTMENT", "VALIDATION").contains(cycle.getStage())
+            && session.getPrototypeVersion().equals(cycle.getProductVersion()),
+        "O ciclo não permite executar esta tentativa; sua auditoria foi preservada.");
   }
 
   /** Monta a visão funcional e o vídeo opcional do mesmo ciclo sem expor convites ou prompts. */

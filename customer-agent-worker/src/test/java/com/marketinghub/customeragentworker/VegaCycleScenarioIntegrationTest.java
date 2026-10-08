@@ -23,6 +23,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 @EnabledIfEnvironmentVariable(named = "VEGA_SCENARIO_LOCAL", matches = "true")
 class VegaCycleScenarioIntegrationTest {
   @TempDir Path directory;
+  private final long cycleId =
+      Long.parseLong(System.getenv().getOrDefault("VEGA_LOCAL_CYCLE_ID", "91002"));
+  private final long experimentId =
+      Long.parseLong(System.getenv().getOrDefault("VEGA_LOCAL_EXPERIMENT_ID", "91092"));
   private final ObjectMapper json = new ObjectMapper().findAndRegisterModules();
 
   /** Executa cada cenário no produto real local; somente fila, upload e modelo são simulados. */
@@ -40,7 +44,7 @@ class VegaCycleScenarioIntegrationTest {
             "productId",
             91004L,
             "experimentId",
-            91092L,
+            experimentId,
             "productSlug",
             "metodo-musa-7-dias",
             "experienceVersion",
@@ -52,7 +56,13 @@ class VegaCycleScenarioIntegrationTest {
             "pdeContext",
             Map.of(
                 "lineage",
-                Map.of("productId", 91004L, "experimentId", 91092L, "learningCycleId", 91002L)));
+                Map.of(
+                    "productId",
+                    91004L,
+                    "experimentId",
+                    experimentId,
+                    "learningCycleId",
+                    cycleId)));
     var task =
         new HashMap<String, Object>(
             Map.of(
@@ -65,7 +75,7 @@ class VegaCycleScenarioIntegrationTest {
                 "activityId",
                 activity,
                 "sourceReference",
-                "experiment:91092",
+                "experiment:" + experimentId,
                 "taskTarget",
                 target));
     var callback = new AtomicReference<JsonNode>();
@@ -153,7 +163,7 @@ class VegaCycleScenarioIntegrationTest {
       verifyNoInteractions(anonymous);
       verify(upload).uploadArtifacts(eq(910384L), anyList());
       JsonNode result = json.readTree(callback.get().path("resultJson").asText());
-      assertThat(result.path("sourceReference").asText()).isEqualTo("experiment:91092");
+      assertThat(result.path("sourceReference").asText()).isEqualTo("experiment:" + experimentId);
       assertThat(result.path("scenarioCode").asText()).isEqualTo(scenario);
       String flowOutput = System.getenv("VEGA_GATE_FLOW_ARTIFACTS");
       if (flowOutput != null) {
@@ -186,7 +196,7 @@ class VegaCycleScenarioIntegrationTest {
     result.put("contractVersion", "PDE_PSIQUE_AGENT_SCENARIO_V1");
     result.put("decision", "APPROVED");
     result.put("scenarioCode", scenario);
-    result.put("sourceReference", "experiment:91092");
+    result.put("sourceReference", "experiment:" + experimentId);
     result.put("productId", 91004L);
     result.put("productSlug", "metodo-musa-7-dias");
     result.put(

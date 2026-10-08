@@ -100,6 +100,83 @@ class VegaPrivateExecutionSafetyTest {
     verify(sessions, never()).saveAndFlush(any());
   }
 
+  /** Mantém a variante anterior e aceita o sucessor somente no ciclo e versão correspondentes. */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+        "musa-pde-entry-v13-primeiro-ajuste-aplicavel"
+      })
+  void createsImplementedVariantWithItsOwnIdentityAndQuota(String requestedVersion) {
+    cycle.setProductVersion(requestedVersion);
+    var result =
+        service.create(
+            new InternalSession(cycle.getId(), requestedVersion, "AGENT_VALIDATION", null));
+    assertThat(result.path("prototypeVersion").asText()).isEqualTo(requestedVersion);
+    assertThat(result.path("cycleId").asLong()).isEqualTo(cycle.getId());
+    verify(sessions)
+        .countByCycleIdAndPrototypeVersionAndOriginIn(
+            eq(cycle.getId()), eq(requestedVersion), anyList());
+    verify(sessions)
+        .saveAndFlush(
+            argThat(
+                row ->
+                    row.getExperimentId().equals(cycle.getExperimentId())
+                        && row.getPrototypeVersion().equals(requestedVersion)));
+  }
+
+  /** Impede que o catálogo de versões substitua a correspondência exata com o ciclo. */
+  @Test
+  void rejectsImplementedVersionFromAnotherCycleAndUnknownVersion() {
+    String successor = "musa-pde-entry-v13-primeiro-ajuste-aplicavel";
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    new InternalSession(cycle.getId(), successor, "AGENT_VALIDATION", null)))
+        .hasMessageContaining("versão do runtime");
+    cycle.setProductVersion("musa-pde-entry-v99-primeiro-ajuste-aplicavel");
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    new InternalSession(
+                        cycle.getId(), cycle.getProductVersion(), "AGENT_VALIDATION", null)))
+        .hasMessageContaining("versão do runtime");
+    verify(sessions, never()).saveAndFlush(any());
+  }
+
+  /**
+   * A nova variante preserva o teto durável e não contorna o limite ao trocar o padrão do runtime.
+   */
+  @Test
+  void rejectsNineteenthSuccessorSession() {
+    String successor = "musa-pde-entry-v13-primeiro-ajuste-aplicavel";
+    cycle.setProductVersion(successor);
+    when(sessions.countByCycleIdAndPrototypeVersionAndOriginIn(
+            eq(cycle.getId()), eq(successor), anyList()))
+        .thenReturn(18L);
+    assertThatThrownBy(
+            () ->
+                service.create(new InternalSession(cycle.getId(), successor, "QA_INTERNAL", null)))
+        .hasMessageContaining("18 sessões");
+    verify(sessions, never()).saveAndFlush(any());
+  }
+
+  /** O suporte à variante não permite criar sessão ou consumir quota de outro produto. */
+  @Test
+  void rejectsSuccessorBoundToDifferentProduct() {
+    String successor = "musa-pde-entry-v13-primeiro-ajuste-aplicavel";
+    cycle.setProductVersion(successor);
+    when(products.findById(cycle.getProductId()))
+        .thenReturn(
+            Optional.of(Product.builder().id(cycle.getProductId()).slug("mira-private").build()));
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    new InternalSession(cycle.getId(), successor, "AGENT_VALIDATION", null)))
+        .hasMessageContaining("ciclo privado aberto do Vega");
+    verify(sessions, never()).saveAndFlush(any());
+  }
+
   /** Conta falhas e bloqueios no teto de duas tentativas, sem nova geração. */
   @Test
   void rejectsThirdAttemptAndPreservesExistingFailure() {
@@ -184,6 +261,51 @@ class VegaPrivateExecutionSafetyTest {
     var replay = service.complete(execution.getId(), result("other", BigDecimal.ONE, 10L));
     assertThat(replay).isEqualTo(completed);
     verify(executions, never()).saveAndFlush(any());
+  }
+
+  /** Executa geração, callback, sinais e retomada do sucessor sem inferência ou compra. */
+  @Test
+  void successorRunsFixtureThroughSavedCardAndSimulatedContinuation() throws Exception {
+    String successor = "musa-pde-entry-v13-primeiro-ajuste-aplicavel";
+    cycle.setProductVersion(successor);
+    session.setPrototypeVersion(successor);
+    var queued = service.generate("synthetic", input);
+    Long id = queued.path("executionId").asLong();
+    var created = executions.findById(id).orElseThrow();
+    when(executions.findLocked(id)).thenReturn(Optional.of(created));
+    assertThat(service.claim(id).path("status").asText()).isEqualTo("RUNNING");
+    service.request(
+        id,
+        new RequestAudit(json.createObjectNode().put("provider", "DETERMINISTIC_FIXTURE"), MODEL));
+    var template = result(MODEL, BigDecimal.ZERO, 0L);
+    var card = (com.fasterxml.jackson.databind.node.ObjectNode) template.card().deepCopy();
+    card.put("cardId", String.valueOf(id));
+    assertThat(
+            service
+                .complete(
+                    id,
+                    new Result(
+                        "COMPLETED",
+                        card,
+                        template.rawResponse(),
+                        MODEL,
+                        0L,
+                        0L,
+                        BigDecimal.ZERO,
+                        null))
+                .path("status")
+                .asText())
+        .isEqualTo("COMPLETED");
+    service.event("synthetic", new Event("VALUE_MOMENT", "Entendi o primeiro ajuste"));
+    service.event("synthetic", new Event("READY_RESULT_USED", "Usei com conforto"));
+    var simulated =
+        service.event("synthetic", new Event("CHECKOUT_STARTED", "Simulação sem cobrança"));
+    assertThat(simulated.path("prototypeVersion").asText()).isEqualTo(successor);
+    assertThat(simulated.path("card").path("cardId").asText()).isEqualTo(String.valueOf(id));
+    service.finish("synthetic");
+    assertThat(service.session("synthetic").path("card")).isEqualTo(card);
+    assertThat(service.session("synthetic").path("events").has("CHECKOUT_STARTED")).isTrue();
+    verify(executions, times(1)).saveAndFlush(any());
   }
 
   /** Preserva o callback antes válido do provedor em sessão legada distinta de homologação. */

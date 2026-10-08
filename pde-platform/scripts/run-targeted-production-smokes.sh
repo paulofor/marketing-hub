@@ -125,10 +125,16 @@ validate_v8() {
       --expected-source "${frontend_source_sha256}")"
   fi
   if [[ "${profile}" == 'PRIVATE_PREPARATION_READ_ONLY' ]]; then
+    local prototype_version
+    prototype_version="$(python3 "${script_dir}/pde_release_contract.py" private-version \
+      --target v8 \
+      --contract "${repository_root}/${PDE_FRONTEND_CONTRACT_PATH}" \
+      --expected-source "${frontend_source_sha256}")"
     (
       cd "${frontend_dir}"
       PDE_PUBLIC_HEALTH_URL=https://v8.clubemusa.com.br \
         PDE_EXPECTED_EXPERIENCE_VERSION=musa-pde-entry-v12-primeiro-ajuste-aplicavel \
+        PDE_EXPECTED_PRIVATE_PROTOTYPE_VERSION="${prototype_version}" \
         PDE_EXPECTED_FRONTEND_SOURCE_SHA256="${frontend_source_sha256}" \
         PDE_EXPECTED_COMMIT="${IMAGE_TAG:?A prova privada exige o commit publicado}" \
         "${npm_command}" exec -- playwright test tests/vega-private-public.smoke.spec.ts --config=playwright.public.config.ts

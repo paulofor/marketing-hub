@@ -1,0 +1,53 @@
+{
+  "contractVersion": "VEGA_CONTINUITY_LOCAL_EVIDENCE_V1",
+  "productId": 4,
+  "learningCycleId": 10,
+  "experimentId": 103,
+  "previousCycleId": 7,
+  "previousExperimentId": 100,
+  "prototypeVersion": "musa-pde-entry-v13-primeiro-ajuste-aplicavel",
+  "publicContainerExperienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  "sourceFrontendSha256": "d557a6097b433976b993b63af251364b60a0ef70ff2e762af28e4920f811d373",
+  "observedIndependentTasks": [
+    {
+      "id": 645,
+      "decision": "APPROVED",
+      "executionMode": "DETERMINISTIC",
+      "costEstimationStatus": "NOT_REPORTED"
+    },
+    {
+      "id": 646,
+      "decision": "ADJUST",
+      "estimatedCostUsd": 0.264686,
+      "cause": "Continuidade não explica benefício adicional ao resultado gratuito."
+    },
+    {
+      "id": 647,
+      "decision": "BLOCKED",
+      "estimatedCostUsd": 0.4102084,
+      "cause": "Plano confirma a lacuna no código; nova versão executável e aceita ainda necessária."
+    }
+  ],
+  "originalEstimatedAiCostUsd": 2.3667816,
+  "successorFinancialDecision": "PENDING",
+  "paidTasksCreatedInSuccessor": 0,
+  "localValidation": {
+    "backend": "Serviços reais com repositórios doubles: variantes, cota, ciclo, produto, callback e retomada.",
+    "builtBrowserCases": 6,
+    "builtReadonlyCases": 3,
+    "devices": [
+      "DESKTOP_CHROMIUM",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "releaseContractCases": 15,
+    "dataOrigin": "QA_INTERNAL_LOCAL",
+    "newIndependentApproval": false,
+    "backendCases": 19,
+    "evidenceContractCases": 38
+  },
+  "paymentEnabled": false,
+  "mediaAuthorized": false,
+  "paidVideoAuthorized": false,
+  "marketEvidence": false
+}

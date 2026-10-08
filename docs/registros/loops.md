@@ -6306,6 +6306,20 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   Regressões: proxy real sem o frontend antigo, produtos/versionamentos existentes,
   desktop/iPhone/Pixel e contratos negativos de autorização, rotas e modo desconhecido.
   [Causa, testes e limites](../homologacao/vega-ciclo7-rota-privada-v1.md).
+- Passagem funcional em 08/10/2026: a prova executável foi registrada pela tela, a
+  homologação técnica real #645 foi aceita e Psique #646 rejeitou apenas a explicação
+  do benefício adicional da continuidade. Dédalo #647 confirmou a ausência no código;
+  o plano não foi tratado como implementação. A reprodução de conteúdo falhou nos
+  três dispositivos. A política vigente preservou o ciclo #7 e gerou, sem gasto,
+  o sucessor #10/experimento #103, com uma variável principal e revisões próprias.
+- Prevenção da nova classe: variante privada v13 explícita, texto v12 preservado,
+  catálogo de capacidades implementadas, correspondência exata com ciclo e tetos
+  independentes. Manifesto vincula variante privada e raiz pública sem renomeá-la;
+  o smoke somente de leitura aguarda a capacidade e mantém a fronteira comercial.
+  Testes atravessam geração/callback/sinais/retomada, recusam outro produto, versão
+  desconhecida e quota excedida e verificam ambas as mensagens nos três dispositivos.
+  O saldo financeiro não é herdado; não se inicia IA no sucessor sem decisão explícita.
+  [Correção, matriz e limites](../homologacao/vega-ciclo10-continuidade-v1.md).
 - Correção posterior do mesmo ciclo: a fila agora compara versões por bytes, com regressão
   MySQL/JPA usando as collations distintas conferidas no MCP. O manifesto v2 separa o domínio
   público da URL privada; o precheck é antecipado na CI antes de promover componentes.

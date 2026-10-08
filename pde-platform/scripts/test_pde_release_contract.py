@@ -236,6 +236,28 @@ class PdeReleaseContractTest(unittest.TestCase):
                 MODULE.select_surface(self.inventory, "v8"), self.inventory, "b" * 64
             )
 
+    def test_private_successor_binds_its_version_without_relabelling_public_root(self):
+        surface = MODULE.select_surface(self.inventory, "v8")
+        contract = MODULE.load_object(ROOT / "pde-platform/contracts/vega-cycle7-preparation-v3.json")
+        successor = "musa-pde-entry-v13-primeiro-ajuste-aplicavel"
+        contract["product"]["experienceVersion"] = successor
+        contract["publicationContract"]["privatePrototypeVersion"] = successor
+        source = contract["publicationContract"]["requiredFrontendSourceSha256"]
+        self.assertEqual(MODULE.smoke_profile(surface, contract, source), "PRIVATE_PREPARATION_READ_ONLY")
+        for section, field, value in (
+            ("publicationContract", "privatePrototypeVersion", "musa-pde-entry-v14-primeiro-ajuste-aplicavel"),
+            ("liveVisualContract", "runtimeIdentity", {"version": "v8", "experienceVersion": successor, "frontendSourceSha256": source}),
+            ("deploymentValidation", "mode", "COMMERCIAL"),
+            ("externalAuthorization", "paymentAuthorized", True),
+        ):
+            unsafe = copy.deepcopy(contract)
+            unsafe[section][field] = value
+            with self.assertRaises(ValueError):
+                MODULE.smoke_profile(surface, unsafe, source)
+        del contract["publicationContract"]["privatePrototypeVersion"]
+        with self.assertRaisesRegex(ValueError, "product.experienceVersion"):
+            MODULE.smoke_profile(surface, contract, source)
+
     def test_non_musa_temporarily_accepts_supported_inventory_contract(self):
         MODULE.validate_release_contract(
             MODULE.select_surface(self.inventory, "mira"), self.inventory, "b" * 64

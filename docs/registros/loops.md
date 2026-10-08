@@ -6288,7 +6288,8 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   A rota histórica `v7/vega-private` respondeu 502; o slot vigente `v8` respondeu saudável.
   O executor de cenários aceitava somente a rota histórica, e o hash da imagem compartilhada
   não incluía a árvore privada. Não houve falha nova de inferência nem tarefa ativa nessa passagem.
-- Correção reutilizável: componente privado na candidata atual, proxy oficial ao backend principal,
+- Correção reutilizável: componente privado na candidata atual, fronteira no backend PDE e gateway
+  tipado ao backend principal,
   inclusão da árvore privada no fingerprint e suporte explícito da rota no harness existente.
   A fila separa fixture determinística de provedor; locks aplicam 18 sessões/2 tentativas/36 no ciclo
   e versão, incluindo falhas e revogações. Claim e request reconferem vigência antes da execução.

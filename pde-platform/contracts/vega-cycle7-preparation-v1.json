@@ -20,7 +20,7 @@
     "automaticDeployOnMerge": true,
     "frontendVersion": "v8",
     "publicUrl": "https://v8.clubemusa.com.br/",
-    "requiredFrontendSourceSha256": "d2dfbbf21578cdc090d692da1fc6ab8bcbd447adc4dfa73e5f84cf9b927db828"
+    "requiredFrontendSourceSha256": "16540344be571bf6e548c2f07714a6e5f4da71041914f91bfaee0576db060e7f"
   },
   "liveVisualContract": {
     "devices": [
@@ -31,7 +31,7 @@
     "runtimeIdentity": {
       "version": "v8",
       "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
-      "frontendSourceSha256": "d2dfbbf21578cdc090d692da1fc6ab8bcbd447adc4dfa73e5f84cf9b927db828"
+      "frontendSourceSha256": "16540344be571bf6e548c2f07714a6e5f4da71041914f91bfaee0576db060e7f"
     }
   },
   "privateAccessUrl": "https://v8.clubemusa.com.br/agent-validation",
@@ -51,10 +51,27 @@
   "homologationEvidence": [
     {
       "path": "docs/homologacao/evidencias/vega-ciclo7/local-evidence.json",
-      "sha256": "54211f019d160340e2354640d256c70ab4e64e54ef9e1156859b3f44da3b8da4",
+      "sha256": "28363c5b159a26de297dd02dc67217c26f67dd27fec23acb6a6e21f1ebaed6d2",
       "promptMode": "FULL",
       "boundary": "Provas sintéticas locais; não são pareceres reais dos especialistas."
     }
   ],
-  "validationReport": "docs/homologacao/vega-ciclo7-preparacao-executavel-v1.md"
+  "validationReport": "docs/homologacao/vega-ciclo7-preparacao-executavel-v1.md",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/vega/privatevalidation/v1/VegaPrivateGatewayController.java",
+      "sha256": "d4e27c4e58a6beb98403df1257ba1280e4f81b39fb1f9235b0355096bc6c2ead",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/vega/privatevalidation/v1/VegaPrivateGatewayService.java",
+      "sha256": "c1f3ed9be2c2d7935ed7b7b973dbaf65e48699ba0d75bf5c2866da552b8328f6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/vega/privatevalidation/v1/VegaPrivateGatewayTest.java",
+      "sha256": "a940779b17f64c7c2632da8535282ab784c71b78f0e3c5d184ee39dcf171180a",
+      "promptMode": "FULL"
+    }
+  ]
 }

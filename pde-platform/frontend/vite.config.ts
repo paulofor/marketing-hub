@@ -11,13 +11,8 @@ export default defineConfig({
       "v7.clubemusa.com.br",
     ],
     proxy: {
-      "/api/pde/vega/private/v1": {
-        target:
-          process.env.PDE_PRIVATE_TEST_BACKEND_URL || "http://localhost:8000",
-        changeOrigin: true,
-      },
       "/api": {
-        target: "http://localhost:8096",
+        target: process.env.PDE_TEST_BACKEND_URL || "http://localhost:8096",
         changeOrigin: true,
       },
     },

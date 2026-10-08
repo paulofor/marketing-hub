@@ -159,7 +159,9 @@ desativados antes da promoção. A rota histórica `/vega-private` preserva some
 anterior e não pode orientar novas versões ou receber tráfego comercial.
 
 Para homologar a preparação de Vega no ciclo aberto, a superfície `/agent-validation` integra
-a mesma imagem da candidata `v8` e usa os contratos privados do backend principal. O harness
+a mesma imagem da candidata `v8`. A tela usa somente o backend PDE; seu gateway tipado
+transporta os contratos privados para o backend principal, sem estado duplicado, injeção de
+segredo do servidor ou decisão de avanço. O harness
 existente consome `pending?mode=FIXTURE` e reporta request, resposta, cartão e sinais sintéticos
 com custo zero. Essa prova verifica o percurso executável e seus limites; não comprova qualidade
 de inferência externa, demanda, venda ou contribuição. Revisões independentes continuam obrigatórias.

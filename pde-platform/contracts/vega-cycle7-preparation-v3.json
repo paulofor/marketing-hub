@@ -1,0 +1,173 @@
+{
+  "contractVersion": "VEGA_CYCLE_PREPARATION_V3",
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "processCode": "pde-construction-approval",
+  "processVersion": 8,
+  "activityId": "technicalHomologation",
+  "sourceReference": "experiment:100",
+  "learningCycleId": 7,
+  "chainDefinitionId": 26,
+  "experimentId": 100,
+  "product": {
+    "id": 4,
+    "slug": "metodo-musa-7-dias",
+    "internalName": "Vega",
+    "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "publicUrl": "https://v8.clubemusa.com.br"
+  },
+  "boundary": "Preparação privada e revisão independente do ciclo 7; não autoriza mídia, cobrança, campanha, geração paga de vídeos ou reabertura do predecessor.",
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br",
+    "requiredFrontendSourceSha256": "16540344be571bf6e548c2f07714a6e5f4da71041914f91bfaee0576db060e7f"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_1440",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "16540344be571bf6e548c2f07714a6e5f4da71041914f91bfaee0576db060e7f"
+    }
+  },
+  "privateAccessUrl": "https://v8.clubemusa.com.br/agent-validation",
+  "generationMode": "DETERMINISTIC_FIXTURE",
+  "syntheticLimits": {
+    "sessionsPerCycleVersion": 18,
+    "attemptsPerSession": 2,
+    "attemptsPerCycleVersion": 36
+  },
+  "externalAuthorization": {
+    "aiPreparationTotalLimitUsd": 10,
+    "additionalBudgetAuthorized": false,
+    "mediaAuthorized": false,
+    "paymentAuthorized": false,
+    "paidVideoAuthorized": false
+  },
+  "homologationEvidence": [
+    {
+      "path": "docs/homologacao/evidencias/vega-ciclo7/local-evidence.json",
+      "sha256": "28363c5b159a26de297dd02dc67217c26f67dd27fec23acb6a6e21f1ebaed6d2",
+      "promptMode": "FULL",
+      "boundary": "Provas sintéticas locais; não são pareceres reais dos especialistas."
+    },
+    {
+      "path": "docs/homologacao/vega-ciclo7-fila-publicacao-v1.md",
+      "sha256": "1b042317801223943009223852c28b26f9c523e56df91190131968d40fa22ea9",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-ciclo7/queue-release-correction.json",
+      "sha256": "8e78f6967714a5ac21e472a2d3cf49a3543f1a4f8405053508e9a0ca968dc5c4",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/vega-ciclo7-rota-privada-v1.md",
+      "sha256": "c1de7ae96e187eb14351fd533b188ff21b1274252b7857602a57e36f7901a580",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-ciclo7/private-edge-readonly.json",
+      "sha256": "689c597eb154072bd3db643f0e5f559fc191f81e41270f29bc94e794b21eb9eb",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/vega-ciclo7-rota-privada-v1.md",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/vega/privatevalidation/v1/VegaPrivateGatewayController.java",
+      "sha256": "d4e27c4e58a6beb98403df1257ba1280e4f81b39fb1f9235b0355096bc6c2ead",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/vega/privatevalidation/v1/VegaPrivateGatewayService.java",
+      "sha256": "c1f3ed9be2c2d7935ed7b7b973dbaf65e48699ba0d75bf5c2866da552b8328f6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/vega/privatevalidation/v1/VegaPrivateGatewayTest.java",
+      "sha256": "a940779b17f64c7c2632da8535282ab784c71b78f0e3c5d184ee39dcf171180a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/vega/VegaAdjustmentExecutionRepository.java",
+      "sha256": "63654d83e1b9a29b42b5f3d64b737416814f142624e93c4ac79f2f02908b0831",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/privateprototype/v1/VegaPrivateQueueMysql57Test.java",
+      "sha256": "ec7080d62a5fe352b7965a5f6f8c2fdaaa31103b67106cfbcea9415211ae26d1",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/resources/vega380/baseline.sql",
+      "sha256": "1f9168e75fecaf2d01058600d66e490d291c36d0eb561fe4ac1771cc3542a673",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "lead-portal-payments-service/nginx.conf",
+      "sha256": "0d9ddc91656a45e99968f04b129d1d0f913bfa669037bb06e198b8cdde58ccdf",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/pde_release_contract.py",
+      "sha256": "075f31aea02fd10bb612fbb5bfeda37a7526a72d7f9012dee04245373b562b6a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/run-targeted-production-smokes.sh",
+      "sha256": "9a650bf1799fe51b5216637d83f85667dea80b80d0770df5f45764581aee9d30",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/vega-private-public.smoke.spec.ts",
+      "sha256": "69eac970688248232cfd0640cb5e148c0eabdbb9089601522842a5f2aa06a518",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test-product-runtime-proxy-local.sh",
+      "sha256": "733cdefcf32b13e1dc53950bf92f719d44c5e42758a7a454b64c76814906e808",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test-targeted-production-smokes.sh",
+      "sha256": "2a9155fcf72463d37bf90e37fa38ae59e998f62dbc775bce1b1c7b2b80efdd1e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test_pde_release_contract.py",
+      "sha256": "a3184e9190081f95a199ebb84544033c2611c4c5bbbac2d3ea2eb56b66f2a524",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/docker-compose.product-isolation-validation.yml",
+      "sha256": "606449931e105abf38634b4e0c160d255f1f6785355d4e0eeb86247756c01e51",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/fixtures/private-api-backend.conf",
+      "sha256": "74b6ab3e95a6ea835949dddcb370b1306bfbb0a2d90e9a48507a436b2e1642ad",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/fixtures/Dockerfile.private-api-backend",
+      "sha256": "32cf7125badab7624403ed5e30755fb3d909f0e2ab74edbafceec71d40785ca5",
+      "promptMode": "FULL"
+    }
+  ],
+  "changeScope": {
+    "previousManifest": "pde-platform/contracts/vega-cycle7-preparation-v2.json",
+    "previousManifestSha256": "14221c007f0c80254e4ded834e6b2c7f483fd93d9542e0183ff5c9830674111b",
+    "reason": "Roteia a API privada pelo backend PDE e valida somente prontidão privada; mantém os gates de venda e os limites sem criar sessão ou inferência no smoke."
+  },
+  "deploymentValidation": {
+    "mode": "PRIVATE_PREPARATION_READ_ONLY",
+    "pagePath": "/agent-validation",
+    "contractPath": "/api/pde/vega/private/v1/contract",
+    "readOnly": true
+  }
+}

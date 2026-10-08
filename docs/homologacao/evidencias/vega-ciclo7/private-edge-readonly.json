@@ -1,0 +1,49 @@
+{
+  "evidenceVersion": "VEGA_PRIVATE_EDGE_READ_ONLY_V1",
+  "requestId": 3275,
+  "productId": 4,
+  "cycleId": 7,
+  "experimentId": 100,
+  "synthetic": true,
+  "marketEvidence": false,
+  "additionalAuthorization": false,
+  "privateContractBefore": {
+    "publicHttpStatus": 502,
+    "directPdeHttpStatus": 200
+  },
+  "commercialGateBefore": {
+    "httpStatus": 412,
+    "message": "Experimento não está disponível para venda."
+  },
+  "localResults": {
+    "privateBrowsers": {
+      "passed": 3,
+      "failed": 0,
+      "devices": [
+        "DESKTOP_1440",
+        "IPHONE_15_PRO",
+        "PIXEL_7"
+      ]
+    },
+    "releaseContract": {
+      "passed": 14,
+      "failed": 0
+    },
+    "edgeRuntimeIsolation": "PASS",
+    "unauthenticatedInternalQueueHttpStatus": 403,
+    "transactionalDeploymentAndRollback": "PASS",
+    "publicProxyLifecycleAndRecoveryContracts": "PASS",
+    "evidenceAndDeploymentResolverTests": {
+      "passed": 38,
+      "failed": 0
+    },
+    "shellStaticAnalysis": "PASS"
+  },
+  "boundary": "Consultas e navegação sem criação de sessão, inferência, mídia ou cobrança; não substitui parecer real.",
+  "logDigests": {
+    "edge-readonly-browser.log": "9543cff2b079caab323e18faebe8208a87775d2b778e71930d2d9a53e089889f",
+    "edge-release-tests.log": "8d67fec5028e4c37ee28286349bf22b0cabef1c39408fa928c09d971d2cc87da",
+    "edge-proxy-local.log": "78e02e4dc0590915fa827c4f0f3f5c16338eaf07cfe94751b7985b3e2ac16c36",
+    "edge-proxy-local-final.log": "40c78186dada1f9529f68997ac268ea6cd820321f996255de2e7be27a3067d97"
+  }
+}

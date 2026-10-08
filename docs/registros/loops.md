@@ -6298,6 +6298,14 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   pelo Dockerfile e fluxo local de callbacks até o gate, preservando sua exigência de HTTPS.
   A interpretação de agentes é simulada somente nos testes locais; pareceres reais não são fabricados.
   [Matriz, evidências e limites](../homologacao/vega-ciclo7-preparacao-executavel-v1.md).
+- Fechamento da rota pública em 08/10/2026: a API no domínio respondia 502, enquanto o
+  gateway PDE direto respondia 200. O proxy ainda usava o frontend histórico aposentado.
+  Agora a API usa o gateway PDE canônico. O deploy da preparação também exigia oferta de
+  venda e falhava com 412 legítimo; um perfil privado estritamente validado confere a rota,
+  identidade e proteção sem criar sessão ou inferência, preservando o padrão comercial.
+  Regressões: proxy real sem o frontend antigo, produtos/versionamentos existentes,
+  desktop/iPhone/Pixel e contratos negativos de autorização, rotas e modo desconhecido.
+  [Causa, testes e limites](../homologacao/vega-ciclo7-rota-privada-v1.md).
 - Correção posterior do mesmo ciclo: a fila agora compara versões por bytes, com regressão
   MySQL/JPA usando as collations distintas conferidas no MCP. O manifesto v2 separa o domínio
   público da URL privada; o precheck é antecipado na CI antes de promover componentes.

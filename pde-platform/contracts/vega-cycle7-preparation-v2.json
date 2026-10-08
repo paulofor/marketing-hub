@@ -57,12 +57,12 @@
     },
     {
       "path": "docs/homologacao/vega-ciclo7-fila-publicacao-v1.md",
-      "sha256": "12c2b9d0b0d136281401cf2c4165ebba99b260d283cfc8a75d94663513f4b9f4",
+      "sha256": "1b042317801223943009223852c28b26f9c523e56df91190131968d40fa22ea9",
       "promptMode": "FULL"
     },
     {
       "path": "docs/homologacao/evidencias/vega-ciclo7/queue-release-correction.json",
-      "sha256": "7e8655de4b3429ce65c3f6068a6edecbe911651ba05b06ee8f8b4f000bb6a1c9",
+      "sha256": "8e78f6967714a5ac21e472a2d3cf49a3543f1a4f8405053508e9a0ca968dc5c4",
       "promptMode": "FULL"
     }
   ],
@@ -90,7 +90,7 @@
     },
     {
       "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/privateprototype/v1/VegaPrivateQueueMysql57Test.java",
-      "sha256": "7107397862618432e070bec1b8c35b210f2e98224b1cdbbd0409aa5b66b79c85",
+      "sha256": "ec7080d62a5fe352b7965a5f6f8c2fdaaa31103b67106cfbcea9415211ae26d1",
       "promptMode": "FULL"
     },
     {

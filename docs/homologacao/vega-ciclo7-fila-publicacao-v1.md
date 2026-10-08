@@ -46,3 +46,21 @@ A nova verificação de CI altera uma fonte compartilhada atestada por Mira come
 atestação registra somente compatibilidade do precheck, com deploy de Mira desativado, hash
 do predecessor e testes determinísticos. Não renova parecer, autorização, ciclo ou custo.
 As avaliações e sinais sintéticos permanecem separados de demanda, compra e contribuição.
+
+## Isolamento das fixtures no CI completo
+
+O run `37725499608` passou 4.335 testes sem falhas de asserção, mas os dois testes novos
+não iniciaram: o baseline de Vega tentou criar `learning_sales_cycle_v1` no schema já usado
+por Mira. A execução isolada anterior não reproduzia essa coexistência. A rodada local
+com as duas classes confirmou o mesmo erro, após os sete testes de Mira passarem.
+
+Comparados três caminhos: tornar o baseline tolerante às tabelas de outro produto esconderia
+divergências do schema; outra engine ou job duplicaria a infraestrutura; um schema próprio
+na engine existente conserva a separação dos modelos e os testes integrais. Foi escolhido
+o terceiro. O preparo de CI cria `mira_controls_local` e `vega_queue_local`; o teste de Vega
+fixa seu schema e continua recusando hosts e portas externos. O contrato do CI protege essa
+separação. A repetição local conjunta passou nove testes, sem erros e sem ignorados.
+
+A nova atestação privada v9 de Mira atualiza somente as fontes de CI e seu contrato preventivo.
+Mantém o predecessor imutável, a identidade publicada, deploy automático desativado e os
+pareceres independentes originais. Não altera o produto Mira nem autoriza gasto ou nova revisão.

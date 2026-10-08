@@ -48,15 +48,14 @@ class VegaPrivateQueueMysql57Test {
   @Autowired private VegaAdjustmentExecutionRepository executions;
   private static final String VERSION = "musa-pde-entry-v12-primeiro-ajuste-aplicavel";
 
-  /** Reutiliza o banco efêmero já disponibilizado no CI, recusando destinos externos. */
+  /** Reutiliza a engine efêmera com schema próprio do Vega, recusando destinos externos. */
   @DynamicPropertySource
   static void database(DynamicPropertyRegistry properties) {
     String host = System.getenv("MIRA_CONTROLS_DB_HOST");
     String port = System.getenv().getOrDefault("MIRA_CONTROLS_DB_PORT", "3306");
-    String schema = System.getenv().getOrDefault("MIRA_CONTROLS_DB_SCHEMA", "mira_controls_local");
+    String schema = "vega_queue_local";
     if (!Set.of("127.0.0.1", "sandbox-docker").contains(host)
-        || !Set.of("3306", "18316").contains(port)
-        || !Set.of("mira_controls_local", "vega_local").contains(schema))
+        || !Set.of("3306", "18316").contains(port))
       throw new IllegalArgumentException("A regressão exige o MySQL efêmero local.");
     properties.add(
         "spring.datasource.url",

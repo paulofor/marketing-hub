@@ -45,6 +45,14 @@ class BackendCiWorkflowTest(unittest.TestCase):
         self.assertIn("mvn -B -q test | tee", deployment)
         self.assertNotRegex(self.workflow, r"-Dtest=|testFailureIgnore|continue-on-error|\|\| true")
 
+    def test_private_mysql_products_use_separate_schemas_in_the_existing_engine(self):
+        """Impede colisão de tabelas canônicas entre fixtures independentes de Mira e Vega."""
+        for schema in ("mira_controls_local", "vega_queue_local"):
+            self.assertIn(f"CREATE DATABASE IF NOT EXISTS {schema};", self.workflow)
+        source = (REPO / "backend/ads-service/src/test/java/com/marketinghub/pde/vega/privateprototype/v1/VegaPrivateQueueMysql57Test.java").read_text()
+        self.assertIn('String schema = "vega_queue_local";', source)
+        self.assertNotIn('System.getenv().getOrDefault("MIRA_CONTROLS_DB_SCHEMA"', source)
+
     def test_current_attestations_are_validated_before_backend_or_packaging(self):
         """Detecta fonte compartilhada divergente antes de integrar um PR sem revalidação."""
         contract = self.workflow.index("node --test scripts/build-commercial-review-evidence.test.mjs")

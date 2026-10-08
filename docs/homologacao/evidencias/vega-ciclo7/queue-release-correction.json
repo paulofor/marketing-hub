@@ -85,5 +85,16 @@
       "recovered": false,
       "safetyBlocked": true
     }
-  ]
+  ],
+  "fixtureIsolation": {
+    "beforeCombinedTests": 9,
+    "beforeContextErrors": 2,
+    "afterCombinedTests": 9,
+    "afterErrors": 0,
+    "afterSkipped": 0,
+    "sameMysqlEngine": true,
+    "miraSchema": "mira_controls_local",
+    "vegaSchema": "vega_queue_local",
+    "noProductionSchemaChanged": true
+  }
 }

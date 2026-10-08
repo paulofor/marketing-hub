@@ -6302,6 +6302,10 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   MySQL/JPA usando as collations distintas conferidas no MCP. O manifesto v2 separa o domínio
   público da URL privada; o precheck é antecipado na CI antes de promover componentes.
   [Causas e prevenção](../homologacao/vega-ciclo7-fila-publicacao-v1.md).
+- O CI completo também revelou colisão dos baselines de Mira e Vega no mesmo schema.
+  A execução conjunta reproduziu a causa localmente. Schemas próprios na engine existente
+  e contrato preventivo de CI eliminam a interferência; os nove testes MySQL de ambos
+  passaram juntos, sem ignorados. Não afrouxa SQL nem duplica infraestrutura.
 
 ## LOOP-PSIQUE-CICLO-DESVIADO-PARA-LEITURA-HUMANA — correção em 2026-09-11
 

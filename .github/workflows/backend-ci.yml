@@ -72,7 +72,7 @@ jobs:
       - name: Preparar banco isolado para controles privados
         env:
           MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
-        run: docker exec "$MYSQL_CONTAINER_ID" mysql --user=root --password=root --execute 'CREATE DATABASE IF NOT EXISTS mira_controls_local;'
+        run: docker exec "$MYSQL_CONTAINER_ID" mysql --user=root --password=root --execute 'CREATE DATABASE IF NOT EXISTS mira_controls_local; CREATE DATABASE IF NOT EXISTS vega_queue_local;'
       - name: Executar todos os testes do backend
         env:
           MIRA_CONTROLS_DB_HOST: 127.0.0.1

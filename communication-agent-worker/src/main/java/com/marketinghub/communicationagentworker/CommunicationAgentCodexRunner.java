@@ -472,6 +472,22 @@ public class CommunicationAgentCodexRunner {
               + String.join(", ", missing)
               + ".");
     }
+    for (String marker : requiredMarkers) {
+      int start = messageStrategy.indexOf(marker) + marker.length();
+      if (messageStrategy.indexOf(marker, start) >= 0) {
+        throw new IllegalArgumentException("Decisão comercial repetida: " + marker + ".");
+      }
+      int end = messageStrategy.length();
+      for (String next : requiredMarkers) {
+        int position = messageStrategy.indexOf(next, start);
+        if (position >= 0) end = Math.min(end, position);
+      }
+      String decision = messageStrategy.substring(start, end);
+      if (decision.replaceAll("[\\p{P}\\p{Z}\\s]+", "").isBlank()) {
+        throw new IllegalArgumentException(
+            "Decisão comercial vazia: " + marker + "; informe decisão, evidência e métrica.");
+      }
+    }
   }
 
   /** Extrai o hash estratégico congelado do contexto BPM. */

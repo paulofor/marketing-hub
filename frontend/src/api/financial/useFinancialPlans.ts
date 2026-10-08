@@ -266,6 +266,32 @@ export function useSaveFinancialPlan(
       }),
   });
 }
+export interface SaveContributionTarget {
+  sourceRevisionId: number;
+  minimumMarginPercent: number;
+}
+export function useSaveContributionTarget(
+  ownerId: number,
+  environment: PlanEnvironment,
+) {
+  const cache = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: SaveContributionTarget) =>
+      (
+        await axios.post<FinancialPlan>(
+          `${base}/products/${ownerId}/contribution-target`,
+          body,
+          {
+            params: { environment },
+          },
+        )
+      ).data,
+    onSuccess: () =>
+      cache.invalidateQueries({
+        queryKey: ["financial-plans", "products", ownerId, environment],
+      }),
+  });
+}
 export function useAnalyzeFinancialPlan(
   ownerId: number,
   environment: PlanEnvironment,

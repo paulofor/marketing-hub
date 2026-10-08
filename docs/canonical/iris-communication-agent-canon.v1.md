@@ -363,6 +363,9 @@ decisões de desejo reconhecido, primeiro passo fácil, valor antes do compromis
 repetição com margem e uso ou não de vídeo. Os marcadores tornam a cobertura verificável sem
 ampliar o schema nem criar um processo paralelo; cada decisão conserva fonte, evidência e métrica.
 O worker rejeita deterministicamente um pacote concluído que omita qualquer marcador.
+A cobertura também exige conteúdo próprio em cada marcador: rótulos vazios, somente
+pontuação ou rótulos duplicados não constituem decisões utilizáveis. Essa verificação
+estrutural não substitui a revisão independente nem comprova eficácia comercial.
 
 Em Instagram Ads, Íris compara peça estática, demonstração curta do produto real e narrativa
 audiovisual. Vídeo escolhido produz somente `audiovisualBrief` para Apolo, com prova, versão, cena,

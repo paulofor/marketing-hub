@@ -221,7 +221,7 @@ public class FinancialPlanService {
     return new PreparationContext(preview, source, plan, rebaseReferences);
   }
 
-  /** Salva revisão imutável com versão comercial congelada e controle de concorrência. */
+  /** Salva revisão imutável; reutiliza somente a vigente e preserva a ordem das decisões. */
   @Transactional
   public PlanView create(
       String scope, Long scopeId, Environment environment, SavePlanRequest request) {
@@ -296,7 +296,8 @@ public class FinancialPlanService {
         && request.assumptions().fixedCostEnvelope().checkedOn().isAfter(today()))
       throw conflict("A conferência do custo fixo agregado não pode ter data futura.");
     p.setAssumptionsJson(write(persistedAssumptions, scope, scopeId));
-    for (var prior : history) {
+    if (!history.isEmpty()) {
+      var prior = history.getFirst();
       if (Objects.equals(prior.getCommercialPlanId(), p.getCommercialPlanId())
           && Objects.equals(prior.getCommercialPlanVersion(), p.getCommercialPlanVersion())
           && Objects.equals(prior.getTemplateId(), p.getTemplateId())

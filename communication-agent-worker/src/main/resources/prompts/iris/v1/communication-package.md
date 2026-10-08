@@ -24,7 +24,9 @@ continuam dependendo de suas condições e autorizações.
 
 Em `functionalOutput.messageStrategy`, registre obrigatoriamente os seis marcadores abaixo, cada
 um seguido da decisão concreta, da evidência recebida e da métrica correspondente. Os marcadores
-usam os campos existentes do contrato e não autorizam inventar fonte, termo ou resultado:
+usam os campos existentes do contrato e não autorizam inventar fonte, termo ou resultado.
+Use cada marcador exatamente uma vez, com conteúdo próprio; uma lista de rótulos vazios
+não comprova cobertura nem conclusão:
 
 - `[DESEJO_RECONHECIDO]`: desejo/resultado, público, situação e linguagem observada com fonte e
   data, preservando a explicação concorrente;

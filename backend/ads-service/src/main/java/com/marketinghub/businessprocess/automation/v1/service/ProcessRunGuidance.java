@@ -11,7 +11,9 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: distinguir ações pendentes do operador de trabalho automático do ciclo. */
+/**
+ * Responsabilidade: distinguir decisões do operador de trabalho automático no contexto do processo.
+ */
 @Component
 @RequiredArgsConstructor
 public class ProcessRunGuidance {
@@ -28,11 +30,17 @@ public class ProcessRunGuidance {
   private com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding
       videoBinding;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private ProcessRunCommunicationGuidance communicationGuidance;
+
   /** Resolve a próxima ação pela ocorrência exata, sem autorizar consumo ou alterar estado. */
   public ProcessRunUserAction resolve(ProcessRun run) {
     if (!Set.of("QUEUED", "WAITING_ACTIVITY", "WAITING_HUMAN", "WAITING_INPUT")
             .contains(run.getStatus())
         || run.getFailureCount() > 0) return null;
+    var communicationAction =
+        communicationGuidance == null ? null : communicationGuidance.resolve(run);
+    if (communicationAction != null) return communicationAction;
     var cycle = manualCycle(run);
     if (cycle == null) return null;
     if (Set.of("AUTHORIZATION", "PUBLICATION").contains(cycle.getStage())) {

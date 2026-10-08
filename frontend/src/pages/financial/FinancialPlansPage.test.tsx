@@ -40,6 +40,13 @@ const mocks = vi.hoisted(() => ({
     error: null,
     reset: vi.fn(),
   },
+  contribution: {
+    mutateAsync: vi.fn(),
+    isPending: false,
+    isError: false,
+    error: null,
+    reset: vi.fn(),
+  },
 }));
 vi.mock("../../api/financial/useFinancialPlans", async (importOriginal) => ({
   ...(await importOriginal<
@@ -58,6 +65,7 @@ vi.mock("../../api/financial/useFinancialPlans", async (importOriginal) => ({
       : { data: [], isLoading: false, isError: false },
   useSaveFinancialPlan: () => mocks.mutation,
   usePrepareFinancialPlan: () => mocks.mutation,
+  useSaveContributionTarget: () => mocks.contribution,
   useFinancialPlanPreparation: () => mocks.preparation,
   useAnalyzeFinancialPlan: () => ({
     isPending: false,
@@ -134,11 +142,114 @@ beforeEach(() => {
   mocks.history.isLoading = false;
   mocks.mutation.isPending = false;
   mocks.mutation.isError = false;
+  mocks.contribution.isPending = false;
+  mocks.contribution.isError = false;
   mocks.preparation.isError = false;
   mocks.preparation.data.personalizedAi = true;
 });
 afterEach(cleanup);
 describe("Plano financeiro", () => {
+  it("abre a decisão da revisão indicada e envia somente a meta escolhida", async () => {
+    const source = aggregatePlan();
+    source.assumptions.minimumMarginPercent = null;
+    mocks.history.data = [source];
+    mocks.contribution.mutateAsync.mockRejectedValue(
+      new Error("conflito simulado"),
+    );
+    page(
+      "/financial/plans?productId=51&revisionId=91&edit=contribution-target",
+    );
+    const input = screen.getByLabelText("Margem mínima proposta (%)", {
+      exact: true,
+    });
+    expect(input).toHaveValue(null);
+    expect(
+      screen.getByRole("region", { name: "Decisão da margem mínima" }),
+    ).toHaveTextContent("44,44%");
+    fireEvent.change(input, { target: { value: "31.25" } });
+    fireEvent.submit(
+      screen
+        .getByRole("button", { name: "Salvar margem mínima" })
+        .closest("form")!,
+    );
+    await waitFor(() =>
+      expect(mocks.contribution.mutateAsync).toHaveBeenCalledWith({
+        sourceRevisionId: 91,
+        minimumMarginPercent: 31.25,
+      }),
+    );
+    expect(input).toHaveValue(31.25);
+    expect(mocks.mutation.mutateAsync).not.toHaveBeenCalled();
+    expect(source.assumptions.minimumMarginPercent).toBeNull();
+  });
+
+  it("só confirma a decisão depois da resposta persistida do backend", async () => {
+    const source = aggregatePlan();
+    source.assumptions.minimumMarginPercent = null;
+    mocks.history.data = [source];
+    const saved = {
+      ...source,
+      id: 92,
+      revision: 3,
+      assumptions: { ...source.assumptions, minimumMarginPercent: 31.25 },
+    };
+    mocks.contribution.mutateAsync.mockImplementation(async () => {
+      mocks.history.data = [saved, source];
+      return saved;
+    });
+    page(
+      "/financial/plans?productId=51&revisionId=91&edit=contribution-target",
+    );
+    expect(
+      screen.queryByText(/Meta registrada em uma nova revisão/),
+    ).not.toBeInTheDocument();
+    fireEvent.change(
+      screen.getByLabelText("Margem mínima proposta (%)", { exact: true }),
+      { target: { value: "31.25" } },
+    );
+    fireEvent.submit(
+      screen
+        .getByRole("button", { name: "Salvar margem mínima" })
+        .closest("form")!,
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Meta registrada em uma nova revisão/),
+      ).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByRole("region", { name: "Decisão da margem mínima" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Histórico de revisões")).toHaveValue("92");
+  });
+
+  it("desabilita a decisão em andamento e mostra seu carregamento", () => {
+    mocks.history.data = [aggregatePlan()];
+    mocks.contribution.isPending = true;
+    page(
+      "/financial/plans?productId=51&revisionId=91&edit=contribution-target",
+    );
+    expect(
+      screen.getByRole("button", { name: "Salvar margem mínima" }),
+    ).toBeDisabled();
+    expect(screen.getByLabelText("Salvando margem")).toBeInTheDocument();
+  });
+
+  it("recupera uma referência ausente sem abrir a decisão em outro contexto", () => {
+    mocks.history.data = [aggregatePlan()];
+    page(
+      "/financial/plans?productId=51&revisionId=912&edit=contribution-target",
+    );
+    expect(
+      screen.queryByRole("region", { name: "Decisão da margem mínima" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Consultar revisão atual" }),
+    );
+    expect(screen.getByLabelText("Histórico de revisões")).toHaveValue("91");
+    expect(mocks.contribution.mutateAsync).not.toHaveBeenCalled();
+  });
+
   it("apresenta limites, decisões e premissas completas do parecer de Plutus", () => {
     const result = JSON.parse(projectionText);
     render(

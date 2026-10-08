@@ -50,6 +50,7 @@ import org.springframework.web.bind.annotation.*;
 @EnableTransactionManagement
 @Import({
   FinancialPlanService.class,
+  FinancialContributionTargetService.class,
   FinancialPlanController.class,
   FinancialPlanLocalApplication.FixtureController.class
 })

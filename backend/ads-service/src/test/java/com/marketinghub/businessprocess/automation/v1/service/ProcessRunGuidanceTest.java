@@ -67,6 +67,36 @@ class ProcessRunGuidanceTest {
     when(processes.findById(76L)).thenReturn(Optional.of(definition));
   }
 
+  /** Integra a decisão da comunicação sem consultar ciclos ou disparar trabalho adicional. */
+  @Test
+  void communicationDecisionUsesExistingProcessGuidance() {
+    var communication = mock(ProcessRunCommunicationGuidance.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        guidance, "communicationGuidance", communication);
+    run.setStatus("WAITING_INPUT");
+    run.setLearningCycleId(null);
+    run.setCurrentActivityId("communicationContract");
+    var action =
+        new ProcessRunUserAction(
+            "DEFINE_CONTRIBUTION_TARGET",
+            "Meta",
+            "Fonte persistida",
+            "Você",
+            "Ver plano",
+            "/financial/plans?productId=4",
+            "Sem gasto",
+            "internal://financial-plans/products/4/revisions/12");
+    when(communication.resolve(run)).thenReturn(action);
+    clearInvocations(cycles);
+    assertThat(guidance.resolve(run)).isSameAs(action);
+    verify(communication).resolve(run);
+    verifyNoInteractions(cycles);
+    run.setStatus("PAUSED");
+    clearInvocations(communication);
+    assertThat(guidance.resolve(run)).isNull();
+    verifyNoInteractions(communication);
+  }
+
   /** Expõe uma ação financeira explícita sem alterar ciclo, progresso ou criar consumo. */
   @Test
   void missingBudgetDirectsToExactFinanceContext() {

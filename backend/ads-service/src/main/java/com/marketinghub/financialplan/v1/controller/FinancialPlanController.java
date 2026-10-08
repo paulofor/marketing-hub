@@ -1,8 +1,10 @@
 package com.marketinghub.financialplan.v1.controller;
 
 import com.marketinghub.financialplan.v1.FinancialPlanRevision.Environment;
+import com.marketinghub.financialplan.v1.service.FinancialContributionTargetService;
 import com.marketinghub.financialplan.v1.service.FinancialPlanService;
 import com.marketinghub.financialplan.v1.service.catalog.PlanCatalog;
+import com.marketinghub.financialplan.v1.service.contributiontarget.SaveContributionTargetRequest;
 import com.marketinghub.financialplan.v1.service.getplan.PlanView;
 import com.marketinghub.financialplan.v1.service.prepareplan.PlanPreparation;
 import com.marketinghub.financialplan.v1.service.prepareplan.PreparePlanRequest;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/financial-plans/v1")
 public class FinancialPlanController {
   private final FinancialPlanService service;
+  private final FinancialContributionTargetService contributionTargets;
 
   /** Lista referências válidas para os seletores do plano. */
   @GetMapping("/catalog")
@@ -47,6 +50,21 @@ public class FinancialPlanController {
       @RequestParam(defaultValue = "LIVE") Environment environment,
       @Valid @RequestBody SavePlanRequest request) {
     return service.create("PRODUCT", id, environment, request);
+  }
+
+  /** Registra uma meta humana na revisão atual, preservando custos e bloqueios existentes. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Registrar margem mínima de contribuição",
+      description =
+          "Cria uma revisão imutável mudando somente a meta percentual sobre receita líquida. Não solicita agentes nem autoriza gasto ou publicação.")
+  @PostMapping("/products/{id}/contribution-target")
+  public PlanView contributionTarget(
+      @PathVariable Long id,
+      @RequestParam(defaultValue = "LIVE") Environment environment,
+      @Valid @RequestBody SaveContributionTargetRequest request,
+      Principal principal) {
+    return contributionTargets.save(
+        id, environment, request, principal == null ? null : principal.getName());
   }
 
   /** Apresenta duas escolhas e o contexto comercial canônico antes da preparação. */

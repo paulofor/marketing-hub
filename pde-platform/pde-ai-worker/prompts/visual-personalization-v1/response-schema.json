@@ -1,0 +1,23 @@
+{
+  "title": "Resposta nativa de imagem da homologação visual privada v1",
+  "type": "object",
+  "required": ["id", "status", "output"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "status": { "const": "completed" },
+    "output": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "required": ["type", "status", "result"],
+        "properties": {
+          "type": { "const": "image_generation_call" },
+          "status": { "const": "completed" },
+          "result": { "type": "string", "minLength": 16 }
+        }
+      },
+      "minContains": 1,
+      "maxContains": 1
+    }
+  }
+}

@@ -9506,3 +9506,21 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   desktop/iPhone/Pixel, outro produto, TEST/LIVE, falha de gravação, restauração e replay.
   Nenhuma chamada de modelo, análise paga ou evidência comercial é criada pela decisão.
 - **Registro:** `docs/homologacao/alcyone-comunicacao-prontidao-v1.md`.
+
+## LOOP-PDE-PROVA-ESTATICA-SEM-GERACAO-INTEGRADA — 08/10/2026
+
+- **Evidência:** Alcyone privado v3 e tarefas 583–587 validam fixtures com zero chamadas.
+  Auditorias 115/116 contêm imagens autênticas separadas da entrada e tela. Íris não tem
+  tarefa no experimento 97; aprovação estática não contradiz falta de geração integrada.
+- **Causa:** capacidade comprovada terminava em resultado constante; geração manual não
+  fechava entrada → fila → resposta → entrega recuperável dentro do produto.
+- **Correção:** reutilizar audit/ledger, etapa PDE v1 e worker existente, entrada/hash
+  vinculados à resposta, sessão privada e replay. Preservar história, aceites e autorizações.
+- **Prevenção:** APIs Java reais e MySQL 5.7, provedor simulado, dois produtos e três
+  dispositivos. Callback perdido não duplica inferência/custo; identidade divergente
+  falha fechado. Custo desconhecido preserva saída e bloqueia nova inferência. Gateway
+  exige nomes explícitos de argumentos. Prova integrada não fabrica parecer independente.
+- **Limites:** autorização existente, sem mídia, checkout, vídeo pago, participantes ou
+  validação comercial. A meta de contribuição continua uma escolha do usuário.
+- **Registro:** docs/homologacao/alcyone-personalizacao-integrada-v1.md e
+  docs/backend/visual-personalization-v1.md.

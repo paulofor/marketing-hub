@@ -2,14 +2,31 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repository_root="$(cd "${script_dir}/../.." && pwd)"
 runner="${script_dir}/run-targeted-production-smokes.sh"
-temporary_dir="$(mktemp -d)"
+temporary_dir="$(mktemp -d "${repository_root}/.pde-smoke-test.XXXXXX")"
 trap 'rm -rf "${temporary_dir}"' EXIT
 
 invocation_log="${temporary_dir}/invocations.log"
 fake_npm="${temporary_dir}/npm"
 fake_consistency="${temporary_dir}/consistency.sh"
 fake_rigel_consistency="${temporary_dir}/rigel-consistency.sh"
+
+# A fixture positiva usa a fonte atual sem alterar a atestação histórica de outro produto.
+frontend_source_sha256="$(node "${repository_root}/pde-platform/frontend/scripts/source-fingerprint.mjs" \
+  "${repository_root}/pde-platform/frontend")"
+python3 - "${repository_root}/pde-platform/contracts/vega-cycle10-preparation-v4.json" \
+  "${temporary_dir}/vega-private-fixture.json" "${frontend_source_sha256}" <<'PY'
+import json
+from pathlib import Path
+import sys
+
+contract = json.loads(Path(sys.argv[1]).read_text())
+contract["publicationContract"]["requiredFrontendSourceSha256"] = sys.argv[3]
+contract["liveVisualContract"]["runtimeIdentity"]["frontendSourceSha256"] = sys.argv[3]
+Path(sys.argv[2]).write_text(json.dumps(contract))
+PY
+private_fixture="${temporary_dir#"${repository_root}/"}/vega-private-fixture.json"
 
 cat >"${fake_npm}" <<'FAKE_NPM'
 #!/usr/bin/env bash
@@ -118,7 +135,7 @@ if run_target v8 v8 pde-platform/contracts/vega-cycle7-preparation-v3.json; then
   exit 1
 fi
 
-run_target v8 v8 pde-platform/contracts/vega-cycle10-preparation-v4.json
+run_target v8 v8 "${private_fixture}"
 grep -Fq 'exec -- playwright test tests/vega-private-public.smoke.spec.ts --config=playwright.public.config.ts' "${invocation_log}"
 grep -Fqx $'private-version\tmusa-pde-entry-v13-primeiro-ajuste-aplicavel' "${invocation_log}"
 if grep -Fq 'test:public-health' "${invocation_log}" || grep -q '^consistency' "${invocation_log}"; then

@@ -921,3 +921,13 @@ Um produto PDE só pode ser considerado pronto para tráfego quando:
 10. health check público comercial estiver publicado e passando com os textos críticos do PDE.
 
 Para experimentos do tipo `PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL`, a prontidão de campanha não deve exigir GeraSalesPage v1 como página de venda tradicional. A validação correta é: contrato comercial completo, URL versionada do Clube MUSA/PDE, criativos prontos, segmentação publicável, checkout/webhook/acesso e experiência inicial/paga validados.
+
+## Preparação visual integrada e recuperação — 08/10/2026
+
+A preparação privada PDE_VISUAL_PERSONALIZATION_V1 vincula ocasião, peças e restrições
+à própria geração e entrega recuperável. O backend principal decide reserva e aceite
+técnico; o worker PDE consome pending e reporta request/response reais. Reutiliza
+auditoria de imagem e ledger; não promove fixtures históricas a personalização integrada.
+Uma imagem íntegra com custo auditável continua pendente de revisão independente.
+Meta econômica, estratégia, comunicação, mídia e escala conservam autoridades vigentes.
+Contrato e limites: [API visual privada v1](../backend/visual-personalization-v1.md).

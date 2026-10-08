@@ -1,5 +1,6 @@
 import { FormEvent, useMemo, useState } from "react";
 import axios from "axios";
+import PersonalizationPreparationPanel from "./PersonalizationPreparationPanel";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import type {
@@ -70,6 +71,16 @@ function handleDownload(
 }
 
 export default function ImageGeneratorPage() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("mode") === "personalized-preparation") {
+    return <PersonalizationPreparationPanel key={params.get("productId") + ":" + params.get("commercialPlanId") + ":" + params.get("experimentId")} productId={Number(params.get("productId"))}
+      planId={Number(params.get("commercialPlanId"))} experimentId={Number(params.get("experimentId"))} />;
+  }
+  return <ManualImageGeneratorPage />;
+}
+
+/** Preserva o gerador manual e a recuperação já disponíveis para os demais contextos. */
+function ManualImageGeneratorPage() {
   useBreadcrumbs([{ label: "Gerador de Imagens" }]);
 
   const [prompt, setPrompt] = useState("");

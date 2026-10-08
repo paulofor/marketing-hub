@@ -1,0 +1,131 @@
+{
+  "contractVersion": "alcyone-private-homologation.v13",
+  "processCode": "pde-private-agent-homologation",
+  "processVersion": 1,
+  "activityId": "technicalHomologation",
+  "sourceReference": "product:11@experiment:97@visual-preparation-v1",
+  "product": {
+    "id": 11,
+    "internalName": "Alcyone",
+    "commercialName": "Look para a Ocasião",
+    "slug": "pde-planejado-46",
+    "experienceVersion": "alcyone-private-v3",
+    "publicUrl": "https://alcyone.digicomdigital.com.br"
+  },
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "boundary": "Publicação técnica da preparação privada v1 ligada à entrada e à auditoria; não é aceite de Psique, Dédalo, Atena, Plutus ou Íris. Preserva a experiência v3 e sua história. Não autoriza tráfego, campanha, mídia, cobrança, vídeo pago ou escala.",
+  "operationalState": {
+    "verifiedAt": "2026-10-08",
+    "productStatus": "PLANNED",
+    "deploymentAuthorized": true,
+    "commercialPublicationAuthorized": false,
+    "mediaAuthorized": false
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/alcyone-private-homologation-v12.json",
+    "reason": "Completar a capacidade executora da preparação personalizada exigida pelo plano 34, com entradas sintéticas, custo auditado e recuperação sem nova inferência.",
+    "includedChanges": [
+      "Página privada de resultado vinculada à entrada no Marketing Hub",
+      "Fila e callbacks PDE v1 no backend, transporte pelo gateway e worker existente",
+      "Persistência e isolamento por produto, plano, experimento e autorização",
+      "Homologação local com dois produtos e três dispositivos; reconciliação e reinício"
+    ],
+    "excludedChanges": [
+      "Aceite independente ou aprovação comercial fabricados",
+      "Alteração das fixtures, experimentos e pareceres históricos",
+      "Meta de margem escolhida pelo sistema",
+      "Mídia, campanha, pagamento, vídeo pago ou escala"
+    ]
+  },
+  "publicationContract": {
+    "automaticDeployOnMerge": true,
+    "frontendVersion": "alcyone",
+    "publicUrl": "https://alcyone.digicomdigital.com.br",
+    "requiredFrontendSourceSha256": "5c3a315dda281fe0a3c969c29cfe81ad594d58ebc05ba43faa8c1d98a3f118ef"
+  },
+  "liveVisualContract": {
+    "runtimeIdentity": {
+      "version": "alcyone-private-v3",
+      "experienceVersion": "alcyone-private-v3",
+      "frontendSourceSha256": "5c3a315dda281fe0a3c969c29cfe81ad594d58ebc05ba43faa8c1d98a3f118ef"
+    }
+  },
+  "homologationEvidence": [
+    {
+      "path": "docs/homologacao/alcyone-personalizacao-integrada-v1.md",
+      "sha256": "6fbed85dc396190041717659b39221ac25209ad0e8ec2182cf79e7f99825aaa1",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/alcyone-private-homologation-v12.json",
+      "sha256": "a980c4e9707a7b799dff9a5c198b236e792a2768a1ac04198281ac5174d89ece",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Referência histórica preservada; os aceites anteriores não aprovam automaticamente a nova preparação integrada."
+    }
+  ],
+  "implementationEvidence": [
+    {
+      "path": "docs/backend/visual-personalization-v1.md",
+      "sha256": "a3096b8aff21caca27da34e155b81080799b679855a7ea8ca04d7552e08bc08f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/visualpersonalization/v1/service/VisualPreparationExecution.java",
+      "sha256": "2e2a04dbdec9d4700a55cf566261bd4f40b49b2b99eeb4641de792359ef12de6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/visualpersonalization/v1/VisualPreparationGatewayService.java",
+      "sha256": "99b2157b48b046389cb2866344c4390e3f5c4d26d06eb3805f4508174078699c",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/pde-ai-worker/src/visual-personalization-v1.js",
+      "sha256": "cc9d16fc6d93da3f8a2a83108efcde943bbc36830f7253e5b5e72e01b5e85beb",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/src/VisualPersonalizationPreparation.tsx",
+      "sha256": "e2e05b101a20995a7db612bd489f0c4edd0a05a03fa4f2a9b595c22290bcccc4",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "frontend/src/pages/ai/PersonalizationPreparationPanel.tsx",
+      "sha256": "1efda1ab912b7a09c8262f9d56ced198c4df0a8090b698a3bb1dfb251681aa6d",
+      "promptMode": "FULL"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/visualpersonalization/v1/service/VisualPreparationFlowTest.java",
+      "sha256": "eecc81e8100df12b5e5054999c20ae42ca725eeae78a995b40327b400778aa55",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/pde-ai-worker/test/visual-personalization-v1.test.js",
+      "sha256": "f842556129856b9db2020951b6c36b6cdbb851b19bc49e9b7af9f2b0d40ce9e3",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/visual-personalization/run-local.py",
+      "sha256": "4385bac52a617ed852eb1ec2205cef85bdc01ad3fadb6adb9601e5cdf7db32f3",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "infra/testing/visual-personalization/browser-matrix.mjs",
+      "sha256": "8bc9e3ba60e674d157151e8ca548b4490096b07641bafa4be899ad948e5136a6",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/scripts/source-fingerprint.test.mjs",
+      "sha256": "9b1a01c0da30c3235e90dd9283c1ab3a0dd9b4a3ee926e8cbec5a5ff6df90623",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test-targeted-production-smokes.sh",
+      "sha256": "dacd4ca3f742c232727bc1e981511a4a85f5d1b67770e9f7d0795bdd598865ed",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/alcyone-personalizacao-integrada-v1.md"
+}

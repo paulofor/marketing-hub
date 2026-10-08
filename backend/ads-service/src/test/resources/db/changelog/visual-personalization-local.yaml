@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - include:
+      file: changesets/2026-07-16-image-generation-request.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-05-studio-financial-ledger-v1.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-08-image-generation-history.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-13-video-cycle-learning-ledger.yaml
+      relativeToChangelogFile: true

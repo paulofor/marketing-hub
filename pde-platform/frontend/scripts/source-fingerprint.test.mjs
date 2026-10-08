@@ -33,6 +33,7 @@ async function fixture(t) {
     "mira-commercial.html",
     "mira-candidate.html",
     "alcyone.html",
+    "personalization.html",
     "nginx.conf",
     "nginx.mira.conf",
     "nginx.mira-commercial.conf",
@@ -100,6 +101,16 @@ test("muda a identidade quando a experiência privada de Alcyone muda", async (t
   await fs.writeFile(
     path.join(root, "src", "AlcyoneEntry.tsx"),
     "alcyone privada corrigida",
+  );
+  assert.notEqual(await sourceFingerprint(root), original);
+});
+
+test("vincula a entrada da geração personalizada à identidade publicada", async (t) => {
+  const root = await fixture(t);
+  const original = await sourceFingerprint(root);
+  await fs.writeFile(
+    path.join(root, "personalization.html"),
+    "entrada personalizada corrigida",
   );
   assert.notEqual(await sourceFingerprint(root), original);
 });

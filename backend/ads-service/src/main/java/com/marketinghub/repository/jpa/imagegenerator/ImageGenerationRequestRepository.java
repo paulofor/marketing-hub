@@ -1,10 +1,12 @@
 package com.marketinghub.repository.jpa.imagegenerator;
 
 import com.marketinghub.imagegenerator.ImageGenerationRequest;
+import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -77,4 +79,36 @@ public interface ImageGenerationRequestRepository
 
   /** Recupera uma geração concluída para promoção auditável dentro do produto de origem. */
   java.util.Optional<ImageGenerationRequest> findByJobIdAndStatus(String jobId, String status);
+
+  /** Reserva somente a tentativa opaca selecionada, preservando concorrência e auditoria. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  java.util.Optional<ImageGenerationRequest> findByJobId(String jobId);
+
+  /** Consulta o estado privado sem adquirir reserva de execução. */
+  java.util.Optional<ImageGenerationRequest> findFirstByJobId(String jobId);
+
+  /** Verifica tentativas privadas ativas na mesma identidade antes de enfileirar outra. */
+  boolean existsByProductIdAndExperimentIdAndStatusIn(
+      Long productId, Long experimentId, java.util.Collection<String> statuses);
+
+  /** Lista a fila privada do PDE sem misturar gerações manuais ou descobrir trabalho na UI. */
+  List<ImageGenerationRequest> findByStatusAndJobIdStartingWithOrderByCreatedAtAsc(
+      String status, String prefix, Pageable pageable);
+
+  /** Recupera reserva interrompida somente quando nenhuma request paga foi auditada. */
+  List<ImageGenerationRequest>
+      findByStatusAndOpenAiRequestBodyIsNullAndJobIdStartingWithOrderByCreatedAtAsc(
+          String status, String prefix, Pageable pageable);
+
+  /** Reutiliza a operação privada no mesmo produto, plano e experimento, sem nova inferência. */
+  java.util.Optional<ImageGenerationRequest>
+      findByProductIdAndCommercialPlanIdAndExperimentIdAndBatchJobId(
+          Long productId, Long planId, Long experimentId, String batchJobId);
+
+  /**
+   * Localiza a última prova privada na identidade exata para diagnóstico e revisão independente.
+   */
+  java.util.Optional<ImageGenerationRequest>
+      findFirstByProductIdAndCommercialPlanIdAndExperimentIdAndJobIdStartingWithOrderByCreatedAtDescIdDesc(
+          Long productId, Long planId, Long experimentId, String prefix);
 }

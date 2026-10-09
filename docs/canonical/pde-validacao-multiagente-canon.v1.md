@@ -471,3 +471,16 @@ A regressão deve atravessar gate, recibo persistível, contexto e prontidão re
 payloads persistidos compatíveis, repetir com outra identidade e preservar o caminho antes
 válido. Aprovar apenas o validador isolado não comprova a passagem do processo. Registro:
 [`mira-gate-matriz-v3-2026-10-07.md`](../registros/mira-gate-matriz-v3-2026-10-07.md).
+
+### Orientação persistida nas entradas dos agentes — 09/10/2026
+
+O `pending` canônico e a reconsulta da lease expõem `operatorGuidance` quando
+o alvo identifica o próprio produto e sua ficha possui notas comerciais. A fonte
+`PRODUCT_OPERATOR_GUIDANCE_V1` preserva texto, produto, referência e horário;
+não concede autorização automática nem converte notas em saldo conciliado.
+O executor confere decisão explícita, alcance, custos anteriores e compromissos
+pendentes antes de novo consumo. O sucessor não renova o teto nem herda permissão
+por inferência. O request auditado deve conservar essa entrada. Ausência de notas
+não constitui autorização, e referência inconsistente nunca seleciona outro
+produto por nome. A reconsulta atualiza a fonte sem reservar outra tarefa nem
+repetir modelo. Registro e regressões: [Capella e contexto do operador](../homologacao/capella-contexto-operador-2026-10-09.md).

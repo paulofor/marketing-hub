@@ -452,7 +452,7 @@ export default function EditExperimentPage() {
   const onSubmit = async (values: FormData) => {
     try {
       if (!data) return;
-      if (!values.journeyTemplateId.trim()) {
+      if (dirtyFields.journeyTemplateId && !values.journeyTemplateId.trim()) {
         alert("Selecione um template de jornada");
         return;
       }
@@ -503,10 +503,13 @@ export default function EditExperimentPage() {
         );
         return;
       }
+      const stopPolicyChanged =
+        Boolean(dirtyFields.zeroPurchaseSpendLimit) ||
+        Boolean(dirtyFields.purchaseStopCount);
       const parsedZeroPurchaseSpendLimit = parseOptionalPositiveAmount(
         values.zeroPurchaseSpendLimit,
       );
-      if (parsedZeroPurchaseSpendLimit === null) {
+      if (stopPolicyChanged && parsedZeroPurchaseSpendLimit === null) {
         alert("Informe uma parada sem compra válida ou deixe o campo vazio");
         return;
       }
@@ -514,16 +517,14 @@ export default function EditExperimentPage() {
         values.purchaseStopCount,
       );
       if (
-        parsedPurchaseStopCount === null ||
-        (parsedPurchaseStopCount != null &&
-          !Number.isInteger(parsedPurchaseStopCount))
+        stopPolicyChanged &&
+        (parsedPurchaseStopCount === null ||
+          (parsedPurchaseStopCount != null &&
+            !Number.isInteger(parsedPurchaseStopCount)))
       ) {
         alert("Informe uma meta inteira de compras ou deixe o campo vazio");
         return;
       }
-      const stopPolicyChanged =
-        Boolean(dirtyFields.zeroPurchaseSpendLimit) ||
-        Boolean(dirtyFields.purchaseStopCount);
       const resolvedMediaSpendLimit =
         parsedMediaSpendLimit ?? data.mediaSpendLimit ?? undefined;
       if (
@@ -1342,7 +1343,7 @@ export default function EditExperimentPage() {
                   )}
                   <div>
                     <label className="form-label" htmlFor="journeyTemplate">
-                      Template de Jornada <span className="text-danger">*</span>
+                      Template de Jornada
                     </label>
                     <select
                       id="journeyTemplate"
@@ -1358,6 +1359,10 @@ export default function EditExperimentPage() {
                         </option>
                       ))}
                     </select>
+                    <p className="form-text">
+                      A preparação da oferta pode ser salva sem selecionar uma
+                      jornada. Um vínculo existente será preservado.
+                    </p>
                   </div>
                 </div>
                 <div className="experiment-edit-hypothesis">
@@ -1633,7 +1638,7 @@ export default function EditExperimentPage() {
                 <button
                   type="button"
                   className="btn btn-primary"
-                  disabled={update.isPending || !selectedJourneyTemplateId}
+                  disabled={update.isPending}
                   onClick={handleSubmit(onSubmit, (errors) => {
                     console.log("Validation errors", errors);
                   })}

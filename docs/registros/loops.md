@@ -9677,3 +9677,27 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   e resultados antes válidos; 27 casos de navegador e cinco cenários de integração passaram.
 - **Limite:** não é aceite independente, autorização financeira ou evidência comercial.
   [Matriz e causa](../homologacao/vega-seguranca-v14-2026-10-09.md).
+
+## LOOP-EXPERIMENTO-EDICAO-EXIGE-CONFIGURACAO-INTOCADA — 09/10/2026
+
+- **Histórico relacionado:** `LOOP-EXPERIMENTO-NULL-VIRA-ZERO-NO-MAPPER` já impedia
+  salvar texto por validar valores financeiros não alterados.
+- **Evidência:** os experimentos históricos #88/#94 têm jornada #19; os sucessores
+  preparatórios #98/#104/#105 preservam jornada ausente e mídia zero. Na tela do #105,
+  `Salvar` permanecia desabilitado mesmo após preencher somente a oferta. O replay
+  local revelou também que a parada financeira zero e intacta era validada como
+  se o operador estivesse propondo um novo limite.
+- **Causa confirmada:** o formulário exigia jornada em toda edição, embora o backend
+  aceite atualização parcial omitindo `journeyTemplateId`. A preparação segura não
+  executa uma jornada nem deve selecionar uma arbitrariamente para permitir texto.
+- **Alternativas:** copiar a jornada histórica altera um vínculo sem decisão; salvar
+  por API contorna a experiência do usuário; corrigir a edição parcial usa o contrato
+  existente e preserva o fluxo oficial. Escolhida a terceira alternativa.
+- **Correção compartilhada:** permitir salvar sem jornada intacta; enviar um vínculo
+  somente quando escolhido; validar a política de parada quando ela for alterada,
+  mantendo a rejeição de novo limite zero. Orçamento, status, metas e gates comerciais permanecem
+  sujeitos aos contratos existentes. Nenhuma aprovação ou publicação é inferida.
+- **Harness:** ampliar `EditExperimentPage.test.tsx` com o estado observado, outra
+  identidade, escolha explícita da jornada e preservação dos caminhos antes válidos.
+- **Limite:** o aceite local comprova edição da preparação, não prontidão comercial,
+  produção de vídeo, autorização financeira, campanha, venda ou lucro.

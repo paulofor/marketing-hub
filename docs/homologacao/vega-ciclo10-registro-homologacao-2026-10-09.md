@@ -26,6 +26,13 @@ A regressão executável compõe o evento aceito, o contexto real e a disponibil
 sem prova há bloqueio; prova histórica não libera; prova corrente entrega URL e linhagem exatas.
 O teste repete o percurso com outra identidade. Não cria fila, serviço ou autorização adicional.
 
+A regressão fica em `LearningCycleHomologationHandoffTest`, separada da prova histórica
+`LearningCycleConstructionContextTest` citada pela atestação vigente de Mira. A primeira tentativa
+de ampliá-la revelou divergência de hash no CI e foi reproduzida localmente. Atualizar atestações
+de produtos sem mudança funcional ampliaria o escopo; relaxar hashes perderia integridade.
+Preservar o arquivo selado e adicionar a regressão independente mantém ambos os contratos.
+O empacotador comercial e seus 16 testes passaram com os manifestos e hashes anteriores intactos.
+
 ## Matriz local e evidência
 
 - Mesmo backend e harness versionados, MySQL 5.7 efêmero e frontend compilado na sandbox.
@@ -37,7 +44,7 @@ O teste repete o percurso com outra identidade. Não cria fila, serviço ou auto
 - Os 13 controles técnicos passaram, sem modelo pago, cobrança, publicação, campanha ou mídia.
 - Antes da melhoria, 64 testes relevantes de backend passaram. Após acrescentar a regressão
   parametrizada, os 43 testes relacionados de registro, contexto e disponibilidade passaram;
-  os relatórios dos seis conjuntos registram 66 casos sem falhas. ArchUnit e contratos comerciais
+  os relatórios dos sete conjuntos registram 66 casos sem falhas. ArchUnit e contratos comerciais
   foram preservados.
 - Os 39 testes relevantes da tela, a verificação de tipos e o build administrativo passaram.
 - Os seis testes de clareza da continuidade v12/v13 passaram na sandbox. A imagem publicada,

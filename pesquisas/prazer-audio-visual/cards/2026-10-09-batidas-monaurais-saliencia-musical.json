@@ -1,0 +1,18 @@
+{
+  "cardKey": "batidas-monaurais-saliencia-relativa-musica",
+  "collection": "prazer-audio-visual",
+  "title": "Comparar saliência de batidas adicionadas à música",
+  "finding": "Dois estudos online aleatorizados (n=207 e n=259) associaram batidas monaurais de 4–7 Hz com melhorias autorrelatadas de humor frente à música isolada; excesso de saliência não ajudou.",
+  "mechanism": "Possível balanço entre ritmo adicional e intrusão perceptual, sem evidência direta de sincronização cerebral.",
+  "commercialApplication": "Comparar a mesma trilha com batidas discretas, fortes ou ausentes, sem alegar efeito terapêutico.",
+  "evidenceStrength": "Média provisória para autorrelato, baixa para uso comercial; artigo aceito em 09/10/2026.",
+  "publishedOn": "2026-10-09",
+  "validUntil": "2026-11-08",
+  "experimentHypothesis": "Batidas pouco salientes terão maior agradabilidade e menor desconforto que batidas fortes, controlando volume.",
+  "risks": "Evitar alegações de tratamento clínico ou dopamina.",
+  "limits": "Versão integral não publicada; testes online com autorrelatos; autores ligados à indústria musical; nenhuma prova de vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-09-batidas-monaurais-saliencia-musical.md",
+  "sourceTitle": "Fonte revisada — saliência de batidas monaurais em música",
+  "sourceSha256": "c1926f99fdbe99bc8aebb3318e30e5cb5f92fef6f3b649df5e974ca248e51779"
+}

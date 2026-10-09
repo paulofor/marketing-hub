@@ -3,8 +3,9 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Primeira aplicação do seu kit</title><link rel="stylesheet" href="prototype.css"><script src="prototype.js" defer></script></head>
 <body><main>
 <p class="badge">Experiência privada · dados fictícios · sem compra ou envio</p>
-<h1>Seu próximo post, pronto para usar</h1><p>Confira uma aplicação completa: arte, legenda, mensagem e dia do calendário. Depois, guarde o pacote para continuar.</p>
+<h1 id="title">Abra sua experiência privada</h1><p id="introduction">Receba seu acesso pela tela do ciclo para conferir a preparação deste kit.</p>
 <p id="identity"></p><p id="status" role="status" aria-live="polite">Abra esta experiência pela tela do ciclo para receber seu acesso privado.</p><p id="error" role="alert" hidden></p><button id="reload" class="secondary" hidden>Reabrir o pacote preservado</button>
+<section id="blocked" hidden aria-labelledby="blocked-heading"><h2 id="blocked-heading">Como continuar com segurança</h2><p id="next-step"></p><a id="review-cycle" target="_blank" rel="noopener noreferrer">Abrir a revisão deste ciclo</a></section>
 <section id="briefing" hidden><h2>Prepare o primeiro resultado</h2><p>Esta prova usa conteúdo sintético. A escolha de pagar e a demanda serão medidas apenas no mercado autorizado.</p>
 <form id="form">
 <label>Nome profissional *<input name="professionalName" maxlength="90" required value="Studio Exemplo"></label>

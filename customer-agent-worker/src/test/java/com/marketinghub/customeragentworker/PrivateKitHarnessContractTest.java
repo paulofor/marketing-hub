@@ -16,7 +16,7 @@ class PrivateKitHarnessContractTest {
   @TempDir Path work;
   private final ObjectMapper json = new ObjectMapper();
 
-  /** Comprova a matriz real e recusa formato anterior, quantidade incorreta e captura ausente. */
+  /** Recusa prova antiga, captura ausente e segurança sem explicação ou continuidade preservada. */
   @Test
   void validatesLocalNineCaseReport() throws Exception {
     String path = System.getenv("KIT_LOCAL_REPORT");
@@ -30,6 +30,7 @@ class PrivateKitHarnessContractTest {
         List.of("sourceReference", "productSlug", "prototypeVersion", "profileCode"))
       expected.put(field, report.path(field).asText());
     expected.put("productId", report.path("productId").asLong());
+    expected.put("cycleId", report.path("cycleId").asLong());
     expected.put("sourceUrl", report.path("publicUrl").asText());
     expected.put("runtimeKind", "DETERMINISTIC_PRIVATE_KIT_V1");
     List<?> artifacts =
@@ -43,16 +44,40 @@ class PrivateKitHarnessContractTest {
             null,
             expected);
     assertThat(artifacts).hasSize(9);
-    for (String failure : List.of("previous-format", "previous-count", "missing-capture")) {
+    for (String failure :
+        List.of(
+            "previous-format",
+            "previous-count",
+            "missing-capture",
+            "missing-safety",
+            "wrong-cycle-action",
+            "lost-block")) {
       var invalid = report.deepCopy();
       if ("previous-format".equals(failure))
         ((com.fasterxml.jackson.databind.node.ObjectNode) invalid).remove("packageContractVersion");
       else if ("previous-count".equals(failure))
         ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("scenarios").get(0))
             .put("packageFileCount", 24);
-      else
+      else if ("missing-capture".equals(failure))
         ((com.fasterxml.jackson.databind.node.ObjectNode) invalid.path("scenarios").get(0))
             .remove("screenshotEvidenceKeys");
+      else {
+        var safety =
+            java.util.stream.StreamSupport.stream(invalid.path("scenarios").spliterator(), false)
+                .filter(s -> "SAFETY".equals(s.path("scenarioCode").asText()))
+                .findFirst()
+                .orElseThrow();
+        if ("missing-safety".equals(failure))
+          ((com.fasterxml.jackson.databind.node.ObjectNode) safety).remove("safetyOutcome");
+        else if ("wrong-cycle-action".equals(failure))
+          ((com.fasterxml.jackson.databind.node.ObjectNode) safety.path("safetyOutcome"))
+              .put(
+                  "nextActionPath",
+                  "/business-process-chains/learning-cycles?productId=999&cycleId=888");
+        else
+          ((com.fasterxml.jackson.databind.node.ObjectNode) safety.path("safetyOutcome"))
+              .put("persistedAfterReload", false);
+      }
       assertThatThrownBy(
               () ->
                   ReflectionTestUtils.invokeMethod(

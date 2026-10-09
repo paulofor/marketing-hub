@@ -73,6 +73,10 @@ public class KitPrivateService {
     require(
         SCENARIOS.contains(input.scenarioCode()) && DEVICES.contains(input.deviceProfile()),
         "Cenário ou dispositivo não suportado.");
+    require(
+        input.safetyCase() == null || "SAFETY".equals(input.scenarioCode()),
+        "A condição de segurança pertence somente ao cenário SAFETY.");
+    String safetyCase = input.safetyCase() == null ? "REVIEW_REQUIRED" : input.safetyCase().name();
     var cycle =
         cycles
             .findLocked(input.productId(), input.cycleId())
@@ -88,7 +92,11 @@ public class KitPrivateService {
     if (previous != null) {
       require(
           previous.getScenarioCode().equals(input.scenarioCode())
-              && previous.getDeviceProfile().equals(input.deviceProfile()),
+              && previous.getDeviceProfile().equals(input.deviceProfile())
+              && read(previous.getPayloadJson())
+                  .path("safetyCase")
+                  .asText("REVIEW_REQUIRED")
+                  .equals(safetyCase),
           "Chave de acesso já usada com outro conteúdo.");
       return new Created(previous.getId(), secret(previous.getId()), view(previous));
     }
@@ -108,6 +116,7 @@ public class KitPrivateService {
         json.createObjectNode()
             .put("status", "INPUT")
             .put("profileCode", capability.profileCode())
+            .put("safetyCase", safetyCase)
             .put("packageContractVersion", KitArtifactContract.PACKAGE_CONTRACT_VERSION)
             .put("transfers", 0)
             .put("testMarker", "AGENT_VALIDATION")
@@ -171,7 +180,7 @@ public class KitPrivateService {
         "A prova exige o pacote corrigido com 36 arquivos individuais. Os pacotes anteriores permanecem no histórico.");
   }
 
-  /** Valida o briefing antes de enfileirar uma composição durável e reutilizável. */
+  /** Valida o briefing, preserva a causa de segurança e só reserva composição quando permitida. */
   @Transactional
   public SessionView input(String token, Input input) {
     var session = active(token, true);
@@ -203,7 +212,8 @@ public class KitPrivateService {
           .put("status", "BLOCKED_SAFE")
           .put(
               "reason",
-              "A tentativa de origem ou efeito externo foi bloqueada antes da composição.");
+              KitPrivatePresentation.safetyReason(
+                  payload.path("safetyCase").asText("REVIEW_REQUIRED")));
       record(payload, "SAFETY_LIMIT_BLOCKED", UUID.randomUUID().toString());
       session.setPayloadJson(write(payload));
       return view(sessions.saveAndFlush(session));
@@ -426,7 +436,7 @@ public class KitPrivateService {
     return a;
   }
 
-  /** Organiza estado e saída reais para a interface, com metadados técnicos separados. */
+  /** Organiza estado, orientação permitida e saída reais, com metadados técnicos separados. */
   private SessionView view(KitPrivateSession s) {
     var data = read(s.getPayloadJson());
     KitPrivateArtifact a =
@@ -440,7 +450,9 @@ public class KitPrivateService {
           case "READY" ->
               "O pacote completo está disponível. Abra a primeira aplicação e guarde sua cópia.";
           case "FAILED" -> a.getErrorMessage();
-          case "BLOCKED_SAFE" -> data.path("reason").asText();
+          case "BLOCKED_SAFE" ->
+              KitPrivatePresentation.safetyReason(
+                  data.path("safetyCase").asText("REVIEW_REQUIRED"));
           default -> "Confira o briefing sintético antes da preparação.";
         };
     var list = new ArrayList<JsonNode>();
@@ -459,6 +471,11 @@ public class KitPrivateService {
             : "Kit de barbearia",
         status,
         reason,
+        KitPrivatePresentation.resolve(
+            status,
+            data.path("safetyCase").asText("REVIEW_REQUIRED"),
+            s.getProductId(),
+            s.getCycleId()),
         data.path("input"),
         manifest == null ? null : manifest.path("firstApplication"),
         manifest,

@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.businessprocess.automation.v1.ProcessRun;
 import com.marketinghub.businessprocess.automation.v1.controller.ProcessRunController;
 import com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunCommand;
@@ -16,6 +17,7 @@ import com.marketinghub.businessprocess.execution.service.BusinessProcessActivit
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.*;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
 import com.marketinghub.product.Product;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.processautomation.*;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.nio.file.*;
@@ -84,6 +86,34 @@ class ProcessRunCreativeRecoveryPersistenceTest {
     when(context.inputVersion(any())).thenReturn("QA_PRIVATE_V3");
     when(context.read(any(ProcessRun.class), anyBoolean())).thenAnswer(i -> snapshot());
     when(context.read(eq(94110L), eq(94164L), any(), anyBoolean())).thenAnswer(i -> snapshot());
+    var functionalTasks = mock(AgentTaskRepository.class);
+    when(functionalTasks.findFunctionalSnapshotsByProcessSince(eq(94164L), eq(reference), isNull()))
+        .thenAnswer(
+            i ->
+                groups.values().stream()
+                    .flatMap(
+                        group ->
+                            java.util.stream.StreamSupport.stream(
+                                    group.path("tasks").spliterator(), false)
+                                .map(
+                                    task ->
+                                        new AgentTaskFunctionalSnapshot(
+                                            task.path("taskId").asLong(),
+                                            94164L,
+                                            "creative-production-approval",
+                                            group.path("activityId").asText(),
+                                            "qa-agent",
+                                            task.path("status").asText(),
+                                            null,
+                                            null,
+                                            task.path("comments").isNull()
+                                                ? null
+                                                : task.path("comments").asText())))
+                    .toList());
+    var persistedContext =
+        new ProcessRunContext(null, null, null, null, null, json, null, functionalTasks);
+    when(context.functionalTasks(any()))
+        .thenAnswer(i -> persistedContext.functionalTasks(i.getArgument(0)));
     for (String id :
         List.of("route", "nonAudiovisual", "audiovisual", "customer", "commercial", "human")) {
       var group =
@@ -260,7 +290,7 @@ class ProcessRunCreativeRecoveryPersistenceTest {
                   completed)));
   }
 
-  /** Falha da nova produção não pode induzir outra tarefa paga durante polling repetido. */
+  /** Falha da nova produção não pode repetir consumo, inclusive após reinício do coordenador. */
   @Test
   void correctionFailureStopsWithoutRepeatingSameInput() throws Exception {
     var run = start();
@@ -273,9 +303,35 @@ class ProcessRunCreativeRecoveryPersistenceTest {
     tick(run.id());
     callback("nonAudiovisual", "BLOCKED", "{\"decision\":\"BLOCKED\"}");
     for (int i = 0; i < 3; i++) assertThat(tick(run.id()).status()).isEqualTo("BLOCKED");
+    restartCoordinator();
+    assertThat(tick(run.id()).status()).isEqualTo("BLOCKED");
     assertThat(requested).containsExactly("nonAudiovisual", "customer", "nonAudiovisual");
     assertThat(service.history(94110L, 94164L, run.id(), null))
         .anyMatch(e -> "NO_PROGRESS".equals(e.eventType()));
+  }
+
+  /** Reconstrói o serviço sobre o mesmo diário persistido, sem retomar ou mudar entradas. */
+  private void restartCoordinator() {
+    var previous = service;
+    service =
+        new ProcessRunService(
+            runs,
+            events,
+            (ProductRepository)
+                org.springframework.test.util.ReflectionTestUtils.getField(previous, "products"),
+            context,
+            (ProcessRunNavigation)
+                org.springframework.test.util.ReflectionTestUtils.getField(previous, "navigation"),
+            mock(ProcessRunSubprocesses.class),
+            mock(ProcessRunGuidance.class),
+            (BusinessProcessActivityExecutionService)
+                org.springframework.test.util.ReflectionTestUtils.getField(previous, "activities"),
+            json,
+            transactions);
+    mvc =
+        MockMvcBuilders.standaloneSetup(new ProcessRunController(service, "qa-process-only", ""))
+            .setMessageConverters(new MappingJackson2HttpMessageConverter(json))
+            .build();
   }
 
   /**
@@ -353,7 +409,16 @@ class ProcessRunCreativeRecoveryPersistenceTest {
     var definition = new com.marketinghub.businessprocess.BusinessProcessDefinition();
     definition.setProcessCode("creative-production-approval");
     when(definitions.findById(94164L)).thenReturn(Optional.of(definition));
-    var versionContext = new ProcessRunContext(null, definitions, null, null, products, json, null);
+    var versionContext =
+        new ProcessRunContext(
+            null,
+            definitions,
+            null,
+            null,
+            products,
+            json,
+            null,
+            mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class));
     var factory = new org.springframework.beans.factory.support.DefaultListableBeanFactory();
     factory.registerSingleton("communicationInputs", provider);
     var injector =
@@ -505,7 +570,7 @@ class ProcessRunCreativeRecoveryPersistenceTest {
         .put("executionRequestAvailable", !achieved);
   }
 
-  /** Expõe a projeção de QA com custos segregados, omissão explícita e todas as atividades. */
+  /** Expõe o resumo real, sem comentários funcionais ou auditoria, com dados de QA segregados. */
   private ProductProcessActivityExecutionHistoryResponse snapshot() {
     int completed =
         (int) groups.values().stream().filter(g -> g.path("objectiveAchieved").asBoolean()).count();
@@ -528,7 +593,10 @@ class ProcessRunCreativeRecoveryPersistenceTest {
             .put("activityCount", 6)
             .put("costCoverage", "NO_EXECUTIONS")
             .put("knownEstimatedCostUsd", 0);
-    data.set("activities", json.valueToTree(groups.values()));
+    var summary = json.valueToTree(groups.values());
+    summary.forEach(
+        group -> group.path("tasks").forEach(task -> ((ObjectNode) task).putNull("comments")));
+    data.set("activities", summary);
     return json.convertValue(data, ProductProcessActivityExecutionHistoryResponse.class);
   }
 }

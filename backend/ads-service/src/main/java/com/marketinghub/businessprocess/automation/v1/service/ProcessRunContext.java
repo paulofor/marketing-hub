@@ -2,11 +2,13 @@ package com.marketinghub.businessprocess.automation.v1.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.automation.v1.ProcessRun;
 import com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunCommand;
 import com.marketinghub.businessprocess.execution.service.BusinessProcessActivityExecutionService;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
@@ -30,6 +32,7 @@ public class ProcessRunContext {
   private final ProductRepository products;
   private final ObjectMapper json;
   private final com.marketinghub.repository.jpa.experiment.ExperimentRepository experiments;
+  private final AgentTaskRepository agentTasks;
 
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.product.executionprofile.v1.service.ExecutionProfileContext
@@ -132,6 +135,12 @@ public class ProcessRunContext {
   /** Reutiliza o contexto gravado, sem selecionar silenciosamente outro ciclo ou experimento. */
   public ProductProcessActivityExecutionHistoryResponse read(ProcessRun run, boolean execution) {
     return read(run.getProductId(), run.getProcessDefinitionId(), command(run), execution);
+  }
+
+  /** Lê resultados funcionais da referência congelada sem carregar prompts ou auditoria. */
+  public List<AgentTaskFunctionalSnapshot> functionalTasks(ProcessRun run) {
+    return agentTasks.findFunctionalSnapshotsByProcessSince(
+        run.getProcessDefinitionId(), run.getSourceReference(), null);
   }
 
   /**

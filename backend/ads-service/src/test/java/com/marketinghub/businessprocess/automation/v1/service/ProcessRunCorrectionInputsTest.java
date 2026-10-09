@@ -4,11 +4,14 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.businessprocess.automation.v1.ProcessRun;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionGroupResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Responsabilidade: proteger a identidade causal de uma correção contra repetição e mistura de
@@ -100,10 +103,56 @@ class ProcessRunCorrectionInputsTest {
     assertThat(resolve(producer, reviewer)).isEmpty();
   }
 
+  /** Parecer persistido continua utilizável quando o resumo omite comentários e auditoria. */
+  @ParameterizedTest
+  @ValueSource(longs = {94110L, 95110L})
+  void readsPersistedAdjustmentWithoutSummaryCommentsAndRejectsMismatchedSnapshot(long productId)
+      throws Exception {
+    run.setProductId(productId);
+    run.setProcessDefinitionId(productId + 54);
+    run.setSourceReference("product:" + productId + "@agent-validation-v1");
+    var producer = group("producer", task(100, "COMPLETED", null));
+    var reviewer = group("reviewer", task(101, "BLOCKED", null));
+    var persisted =
+        functionalTask(101L, run.getProcessDefinitionId(), "reviewer", "BLOCKED", adjustment());
+    assertThat(resolve(producer, reviewer, List.of(persisted))).hasSize(1);
+    assertThat(resolve(producer, reviewer, List.of())).isEmpty();
+    for (var mismatch :
+        List.of(
+            functionalTask(102L, run.getProcessDefinitionId(), "reviewer", "BLOCKED", adjustment()),
+            functionalTask(101L, 99999L, "reviewer", "BLOCKED", adjustment()),
+            functionalTask(
+                101L, run.getProcessDefinitionId(), "unrelated", "BLOCKED", adjustment()),
+            functionalTask(
+                101L, run.getProcessDefinitionId(), "reviewer", "COMPLETED", adjustment()))) {
+      assertThat(resolve(producer, reviewer, List.of(mismatch))).isEmpty();
+    }
+  }
+
   /** Resolve o contrato contra um grafo mínimo com revisão dependente e atividade independente. */
   private List<String> resolve(
       ProductProcessActivityExecutionGroupResponse producer,
       ProductProcessActivityExecutionGroupResponse reviewer)
+      throws Exception {
+    var functionalTasks =
+        reviewer.tasks().stream()
+            .map(
+                task ->
+                    functionalTask(
+                        task.taskId(),
+                        task.processDefinitionId(),
+                        reviewer.activityId(),
+                        task.status(),
+                        task.comments()))
+            .toList();
+    return resolve(producer, reviewer, functionalTasks);
+  }
+
+  /** Resolve o grafo com resultados funcionais persistidos separados do histórico resumido. */
+  private List<String> resolve(
+      ProductProcessActivityExecutionGroupResponse producer,
+      ProductProcessActivityExecutionGroupResponse reviewer,
+      List<AgentTaskFunctionalSnapshot> functionalTasks)
       throws Exception {
     var graph =
         new ProcessExecutionGraph(
@@ -113,7 +162,14 @@ class ProcessRunCorrectionInputsTest {
           {"id":"unrelated","type":"TASK"}],"flows":[{"from":"producer","to":"reviewer"}]}
         """));
     return ProcessRunCorrectionInputs.resolve(
-        run, producer, List.of(producer, reviewer), graph, json);
+        run, producer, List.of(producer, reviewer), graph, json, functionalTasks);
+  }
+
+  /** Monta a projeção funcional sem prompt, evidência bruta ou integração externa. */
+  private AgentTaskFunctionalSnapshot functionalTask(
+      long id, Long definition, String activity, String status, String result) {
+    return new AgentTaskFunctionalSnapshot(
+        id, definition, "QA_PROCESS", activity, "qa-reviewer", status, null, null, result);
   }
 
   /** Cria somente contratos de acompanhamento, sem auditoria ou integrações externas. */

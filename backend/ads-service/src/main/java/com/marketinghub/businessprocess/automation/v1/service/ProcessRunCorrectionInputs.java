@@ -1,6 +1,7 @@
 package com.marketinghub.businessprocess.automation.v1.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.businessprocess.automation.v1.ProcessRun;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionGroupResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
@@ -20,14 +21,16 @@ final class ProcessRunCorrectionInputs {
 
   /**
    * Considera somente ajustes posteriores à produção e pertencentes à mesma referência e definição.
-   * A própria falha e reavaliações antigas nunca liberam repetição.
+   * A projeção funcional deve corresponder ao resumo, sem depender de comentários de auditoria. A
+   * própria falha e reavaliações antigas nunca liberam repetição.
    */
   static List<String> resolve(
       ProcessRun run,
       ProductProcessActivityExecutionGroupResponse activity,
       List<ProductProcessActivityExecutionGroupResponse> ordered,
       ProcessExecutionGraph graph,
-      ObjectMapper json) {
+      ObjectMapper json,
+      List<AgentTaskFunctionalSnapshot> functionalTasks) {
     if (activity.objectiveAchieved() || !activity.executionRequestAvailable()) return List.of();
     long produced =
         activity.tasks().stream()
@@ -47,10 +50,20 @@ final class ProcessRunCorrectionInputs {
               .max(Comparator.comparing(BusinessProcessActivityExecutionResponse::taskId));
       if (latest.isEmpty()) continue;
       var task = latest.get();
-      if (task.taskId() <= produced || !"BLOCKED".equals(task.status()) || task.comments() == null)
-        continue;
+      if (task.taskId() <= produced || !"BLOCKED".equals(task.status())) continue;
+      var persisted =
+          functionalTasks.stream()
+              .filter(
+                  value ->
+                      Objects.equals(task.taskId(), value.id())
+                          && Objects.equals(
+                              run.getProcessDefinitionId(), value.processDefinitionId())
+                          && Objects.equals(reviewer.activityId(), value.processActivityId())
+                          && Objects.equals(task.status(), value.status()))
+              .findFirst();
+      if (persisted.isEmpty() || persisted.get().resultJson() == null) continue;
       try {
-        var result = json.readTree(task.comments());
+        var result = json.readTree(persisted.get().resultJson());
         if (result == null
             || !"ADJUST".equals(result.path("decision").asText())
             || !result.path("requiredChanges").isArray()

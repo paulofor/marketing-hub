@@ -169,7 +169,8 @@ class PrivateProductCommunicationLifecycleTest {
             products,
             json,
             org.mockito.Mockito.mock(
-                com.marketinghub.repository.jpa.experiment.ExperimentRepository.class));
+                com.marketinghub.repository.jpa.experiment.ExperimentRepository.class),
+            tasks);
     var runService =
         new ProcessRunService(
             runs,
@@ -258,6 +259,21 @@ class PrivateProductCommunicationLifecycleTest {
     assertThat(completedRun.status()).isEqualTo("COMPLETED");
     assertThat(completedRun.sourceReference()).isEqualTo(scope.sourceReference());
     assertThat(completedRun.learningCycleId()).isNull();
+    var runIdentity = runs.findById(run.id()).orElseThrow();
+    var functional = runContext.functionalTasks(runIdentity);
+    assertThat(functional)
+        .anySatisfy(
+            value -> {
+              assertThat(value.id()).isEqualTo(secondId);
+              assertThat(value.resultJson()).contains("READY", "synthetic");
+            });
+    assertThat(
+            runContext.read(runIdentity, false).activities().stream()
+                .flatMap(group -> group.tasks().stream()))
+        .allSatisfy(task -> assertThat(task.comments()).isNull());
+    runIdentity.setSourceReference("product:999999@agent-validation-v1");
+    assertThat(runContext.functionalTasks(runIdentity)).isEmpty();
+    runIdentity.setSourceReference(scope.sourceReference());
     String output = System.getProperty("mira.lifecycle.output");
     if (output != null)
       java.nio.file.Files.writeString(

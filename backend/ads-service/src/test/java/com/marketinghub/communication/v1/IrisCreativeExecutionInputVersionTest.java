@@ -42,7 +42,16 @@ class IrisCreativeExecutionInputVersionTest {
     var definition = new BusinessProcessDefinition();
     definition.setProcessCode("creative-production-approval");
     when(definitions.findById(94164L)).thenReturn(Optional.of(definition));
-    var context = new ProcessRunContext(null, definitions, null, null, products, json, null);
+    var context =
+        new ProcessRunContext(
+            null,
+            definitions,
+            null,
+            null,
+            products,
+            json,
+            null,
+            mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class));
     inject(context, provider);
     String legacy = context.inputVersion(run);
     String messageHash = IrisCommunicationInputFingerprint.hash(json, current.get());

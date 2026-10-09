@@ -478,3 +478,20 @@ Regressões exercitam a entrada arquivada sem o formato legado, outra identidade
 contrato de produto antes válido, provas alteradas, gravação real do serviço com
 storage/repositórios simulados, derivação até os pixels e seleção física MySQL 5.7.
 Registro: `docs/registros/mira-autorizacao-visual-ciclo-2026-10-07.md`.
+
+### Correção automática com histórico resumido — 2026-10-09
+
+A automação deve consultar o resultado funcional persistido por definição e referência
+exatas para reconhecer um parecer novo `ADJUST`. O resumo com `includePromptAudit=false`
+não contém comentários/resultados completos e não constitui fonte dessa decisão.
+Reutilizar `AgentTaskFunctionalSnapshot`, sem carregar prompts nem evidências brutas;
+conferir taskId, definição, atividade e status contra o histórico do contexto congelado.
+
+Somente parecer posterior à última produção concluída, com mudanças exigidas válidas e
+dependência no grafo, altera a chave de correção. Prontidão do domínio, orçamento, pausa e
+revisões independentes continuam obrigatórios. Falha da própria correção não muda essa
+entrada; polling e reinício não autorizam repetição. Não repetir mensagem ou produto já
+aceitos nem inferir aprovação humana. O teste integrado deve usar o mesmo resumo sem
+comentários consumido em produção e registrar `correctionInputHash` no diário.
+
+Registro e matriz: `docs/homologacao/mira-retomada-parecer-resumido-2026-10-08.md`.

@@ -9557,3 +9557,22 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Limites:** não refaz produto, mensagem ou inferência para gerar a redução, não altera
   peças concluídas, não fabrica prova humana nem amplia orçamento ou autorização de mídia.
 - **Registro:** `docs/homologacao/mira-rotulo-prova-mobile-2026-10-09.md`.
+
+## LOOP-IRIS-SELECAO-PRIVADA-EXIGE-PLANO-COMERCIAL
+
+- Evidência em 2026-10-09: Mira, execução criativa 55, experimento 102. Produção
+  654 e pareceres 655/656 aprovados para o artefato 569; a decisão humana foi
+  impedida pela ausência de plano comercial governante.
+- Causa confirmada: o handler de seleção humana invocava sempre a importação
+  comercial, embora o contexto aprovasse somente preparação privada. Decisões
+  antigas sem dados de importação não comprovam publicação; ficam preservadas.
+- Correção reutilizável: usar o contexto privado canônico e a prova compartilhada
+  dos pareceres para registrar a seleção no BPM, mantendo a decisão humana e a
+  importação dos contratos comerciais. Contexto privado bloqueado nunca cai no
+  caminho comercial. Token vinculado à seleção impede aceite de tela antiga.
+- Harness: regressões com duas identidades, três modos privados, contexto/pixels/
+  parecer divergentes, tentativa mais nova, token antigo, fluxo de decisão até
+  destino e integração, persistência e retorno sem inferência ou importação pública.
+- Limites: não aprova peça automaticamente, não cria oferta nem plano, não publica,
+  não autoriza mídia, cobrança ou vídeo pago. Preparação não comprova mercado.
+- Registro: [Mira — seleção privada](../homologacao/mira-selecao-criativa-privada-2026-10-09.md).

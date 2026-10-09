@@ -38,58 +38,7 @@ public class PrivateCommunicationCreativeProof {
               && childId > 0,
           "A aprovação dos criativos não identifica o subprocesso deste ciclo.");
       var history = tasks.findFunctionalSnapshotsByProcessSince(childId, reference, null);
-      var producer = latest(history, "nonAudiovisual");
-      require(
-          "communication-director".equals(producer.agentKey()),
-          "A peça não foi produzida por Íris.");
-      var produced = json.readTree(producer.resultJson());
-      var renders = produced.path("functionalOutput").path("renderedAssets");
-      require(
-          "IRIS_COMMUNICATION_V1".equals(produced.path("contractVersion").asText())
-              && "NON_AUDIOVISUAL_PACKAGE".equals(produced.path("outputType").asText())
-              && "COMPLETED".equals(produced.path("executionStatus").asText())
-              && reference.equals(produced.path("sourceReference").asText())
-              && renders.isArray()
-              && !renders.isEmpty(),
-          "A imagem final do próprio ciclo está ausente.");
-      var result =
-          json.createObjectNode()
-              .put("processDefinitionId", childId)
-              .put("producerTaskId", producer.id());
-      var approvals = result.putArray("reviews");
-      for (String code : List.of("customer", "commercial")) {
-        var reviewer = latest(history, code);
-        require(
-            reviewer.id() > producer.id()
-                && ("customer".equals(code) ? "customer-agent" : "meta-ad-approver")
-                    .equals(reviewer.agentKey()),
-            "A peça atual ainda precisa de nova revisão independente.");
-        var review = json.readTree(reviewer.resultJson());
-        require(
-            "APPROVED".equals(review.path("decision").asText())
-                && review.path("requiredChanges").isArray()
-                && review.path("requiredChanges").isEmpty(),
-            "O último parecer ainda exige ajustes no criativo.");
-        for (var render : renders) {
-          boolean reviewed = false;
-          for (var audit : review.path("renderedAssetAudit"))
-            if (render.path("artifactId").asLong() > 0
-                && render.path("artifactId").asLong() == audit.path("artifactId").asLong()
-                && render.path("sha256").asText().matches("[0-9a-f]{64}")
-                && render.path("sha256").asText().equals(audit.path("sha256").asText()))
-              reviewed = true;
-          require(
-              reviewed
-                  && version.equals(render.path("prototypeVersion").asText())
-                  && render.path("privateValidation").asBoolean(),
-              "O parecer não examinou os mesmos pixels e a versão do criativo atual.");
-        }
-        approvals
-            .addObject()
-            .put("taskId", reviewer.id())
-            .put("activityId", code)
-            .put("resultSha256", hash(reviewer.resultJson()));
-      }
+      var result = reviewed(history, childId, reference, version);
       var human =
           instances
               .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
@@ -114,7 +63,6 @@ public class PrivateCommunicationCreativeProof {
           "Confirme o uso da peça atual após seus pareceres independentes.");
       result.put("humanDecisionInstanceId", human.getId());
       result.put("humanDecisionSha256", hash(human.getObjectiveEvidenceJson()));
-      result.set("renderedAssets", renders);
       return result;
     } catch (Exception ex) {
       log.warn(
@@ -126,6 +74,88 @@ public class PrivateCommunicationCreativeProof {
       throw new IllegalStateException(
           "Os criativos do ciclo precisam de aprovação vigente: " + ex.getMessage(), ex);
     }
+  }
+
+  /** Confere a peça e os dois pareceres antes da decisão humana, sem conceder seu aceite. */
+  public ObjectNode resolveReviews(long processId, String reference, String version) {
+    try {
+      require(processId > 0, "A seleção não identifica seu subprocesso criativo.");
+      return reviewed(
+          tasks.findFunctionalSnapshotsByProcessSince(processId, reference, null),
+          processId,
+          reference,
+          version);
+    } catch (Exception ex) {
+      log.warn(
+          "Pareceres criativos privados indisponíveis. processId={} sourceReference={} version={}",
+          processId,
+          reference,
+          version,
+          ex);
+      throw new IllegalStateException(
+          "A peça privada precisa de revisão vigente: " + ex.getMessage(), ex);
+    }
+  }
+
+  /**
+   * Reutiliza a mesma verificação de identidade, última tentativa, versão e pixels nos dois gates.
+   */
+  private ObjectNode reviewed(
+      List<AgentTaskFunctionalSnapshot> history, long childId, String reference, String version)
+      throws Exception {
+    var producer = latest(history, "nonAudiovisual");
+    require(
+        "communication-director".equals(producer.agentKey()), "A peça não foi produzida por Íris.");
+    var produced = json.readTree(producer.resultJson());
+    var renders = produced.path("functionalOutput").path("renderedAssets");
+    require(
+        "IRIS_COMMUNICATION_V1".equals(produced.path("contractVersion").asText())
+            && "NON_AUDIOVISUAL_PACKAGE".equals(produced.path("outputType").asText())
+            && "COMPLETED".equals(produced.path("executionStatus").asText())
+            && reference.equals(produced.path("sourceReference").asText())
+            && renders.isArray()
+            && !renders.isEmpty(),
+        "A imagem final do próprio ciclo está ausente.");
+    var result =
+        json.createObjectNode()
+            .put("processDefinitionId", childId)
+            .put("producerTaskId", producer.id());
+    var approvals = result.putArray("reviews");
+    for (String code : List.of("customer", "commercial")) {
+      var reviewer = latest(history, code);
+      require(
+          reviewer.id() > producer.id()
+              && ("customer".equals(code) ? "customer-agent" : "meta-ad-approver")
+                  .equals(reviewer.agentKey()),
+          "A peça atual ainda precisa de nova revisão independente.");
+      var review = json.readTree(reviewer.resultJson());
+      require(
+          "APPROVED".equals(review.path("decision").asText())
+              && review.path("requiredChanges").isArray()
+              && review.path("requiredChanges").isEmpty(),
+          "O último parecer ainda exige ajustes no criativo.");
+      for (var render : renders) {
+        boolean reviewed = false;
+        for (var audit : review.path("renderedAssetAudit"))
+          if (render.path("artifactId").asLong() > 0
+              && render.path("artifactId").asLong() == audit.path("artifactId").asLong()
+              && render.path("sha256").asText().matches("[0-9a-f]{64}")
+              && render.path("sha256").asText().equals(audit.path("sha256").asText()))
+            reviewed = true;
+        require(
+            reviewed
+                && version.equals(render.path("prototypeVersion").asText())
+                && render.path("privateValidation").asBoolean(),
+            "O parecer não examinou os mesmos pixels e a versão do criativo atual.");
+      }
+      approvals
+          .addObject()
+          .put("taskId", reviewer.id())
+          .put("activityId", code)
+          .put("resultSha256", hash(reviewer.resultJson()));
+    }
+    result.set("renderedAssets", renders);
+    return result;
   }
 
   /** Exige a última tentativa concluída, sem recuperar silenciosamente um sucesso anterior. */

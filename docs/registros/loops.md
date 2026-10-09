@@ -9541,3 +9541,19 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Limites:** não reabre mensagem/produto aceitos, não aprova uso humano, não transforma
   falha própria em entrada nova nem transfere orçamento entre produtos.
 - **Registro:** `docs/homologacao/mira-retomada-parecer-resumido-2026-10-08.md`.
+
+## LOOP-IRIS-ROTULO-SUBSTITUIDO-SEM-PREVIA-MOBILE — 09/10/2026
+
+- **Evidência:** Íris 650 declara `Prévia da aplicação`, mas PNG 567 mostra somente
+  a classificação privada. Psique 651 solicita preservar esse rótulo e comprovar
+  legibilidade a 393 pixels; o executor anexava apenas o PNG de 1080 pixels. Íris 652
+  acrescenta o rótulo no corpo, confirmando que a especificação não faltava.
+- **Causa:** template privado substituía o rótulo por classificação fixa, reservava
+  altura limitada para a prova e a revisão não recebia a redução real de celular.
+- **Correção compartilhada:** preservar ambos os rótulos, ampliar proporcionalmente
+  o recorte privado e fornecer original mais prévia determinística a Psique, com hashes.
+- **Prevenção:** regressões de pixels, proporção, dois identificadores independentes,
+  download → hash → redução → comando → auditoria, origem alterada e revisão não criativa.
+- **Limites:** não refaz produto, mensagem ou inferência para gerar a redução, não altera
+  peças concluídas, não fabrica prova humana nem amplia orçamento ou autorização de mídia.
+- **Registro:** `docs/homologacao/mira-rotulo-prova-mobile-2026-10-09.md`.

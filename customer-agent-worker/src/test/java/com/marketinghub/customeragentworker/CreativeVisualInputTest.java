@@ -21,8 +21,7 @@ class CreativeVisualInputTest {
   private final ObjectMapper json = new ObjectMapper().findAndRegisterModules();
 
   /**
-   * Baixa, confere hash, anexa pixels e exige auditoria de cada arquivo sem produzir nova
-   * evidência.
+   * Baixa e confere o original, anexa a redução mobile e preserva a auditoria da peça persistida.
    */
   @Test
   void downloadsAndAuditsExactCreative() throws Exception {
@@ -63,13 +62,22 @@ class CreativeVisualInputTest {
       var images = client.creativeInputs(910404L, directory);
       assertThat(images).hasSize(1);
       assertThat(Files.readAllBytes(Path.of(images.getFirst().localPath()))).isEqualTo(bytes);
+      var task =
+          CreativeMobileReviewInputs.enrich(
+              Map.of("processCode", "creative-production-approval", "taskId", 910404L), images);
+      Path preview = CreativeMobileReviewInputs.previewPath(Path.of(images.getFirst().localPath()));
+      var reduced = javax.imageio.ImageIO.read(preview.toFile());
+      assertThat(reduced.getWidth()).isEqualTo(393);
+      assertThat(reduced.getHeight()).isEqualTo(491);
+      assertThat(task.get("creativeMobilePreviews")).isNotNull();
       var consumer =
           new CustomerBpmTaskConsumer(
               "http://localhost:1", "codex", "gpt-5.6-sol", "max", "/workspace", "", json);
       assertThat(
               consumer.command(
                   directory.resolve("out.json"), directory.resolve("schema.json"), images))
-          .containsSubsequence("--image", images.getFirst().localPath());
+          .containsSubsequence(
+              "--image", images.getFirst().localPath(), "--image", preview.toString());
       var result =
           json.readTree(
               "{\"renderedAssetAudit\":[{\"artifactId\":910130,\"sha256\":\""

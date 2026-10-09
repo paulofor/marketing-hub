@@ -158,7 +158,9 @@ public class CustomerBpmTaskConsumer {
             Duration.ofMinutes(40), Duration.ofHours(2), Duration.ofSeconds(15)));
   }
 
-  /** Reserva em PLAY e avalia a atividade com evidência visual e pesquisa rastreável. */
+  /**
+   * Reserva em PLAY e avalia a atividade com prova original, prévia mobile e pesquisa rastreável.
+   */
   @Scheduled(fixedDelay = 60000)
   public synchronized void processOne() {
     Map<String, Object> task = null;
@@ -185,6 +187,7 @@ public class CustomerBpmTaskConsumer {
       if (replayApprovedCallback(task)) return;
       visualEvidence = prepareVisualEvidence(task);
       task = withCaptureFacts(task, visualEvidence.bundle(), visualEvidence.uploaded());
+      task = CreativeMobileReviewInputs.enrich(task, visualEvidence.uploaded());
       execution = execute(task, visualEvidence.uploaded());
       validateExecution(task, execution);
       enqueueDecision(task, execution);
@@ -700,7 +703,7 @@ public class CustomerBpmTaskConsumer {
         : telemetryReporter.monitor(taskId(task), process, processLog);
   }
 
-  /** Monta a chamada Codex no tier padrão compatível e anexa cada snapshot ao próprio turno. */
+  /** Anexa cada snapshot e sua redução mobile criativa ao mesmo turno no tier compatível. */
   List<String> command(
       Path output,
       Path schema,
@@ -731,7 +734,15 @@ public class CustomerBpmTaskConsumer {
     if (model != null && !model.isBlank()) command.addAll(List.of("--model", model));
     if (visualEvidence != null) {
       for (var evidence : visualEvidence) {
-        command.addAll(List.of("--image", requiredVisualAttachment(evidence).toString()));
+        Path original = requiredVisualAttachment(evidence);
+        command.addAll(List.of("--image", original.toString()));
+        if ("CREATIVE_RENDER".equals(evidence.evidenceType())) {
+          Path preview = CreativeMobileReviewInputs.previewPath(original);
+          if (!Files.isRegularFile(preview))
+            throw new BpmVisualEvidenceRunner.VisualEvidenceException(
+                "Prévia mobile criativa ausente antes da revisão paga.");
+          command.addAll(List.of("--image", preview.toString()));
+        }
       }
     }
     return List.copyOf(command);
@@ -1829,7 +1840,7 @@ public class CustomerBpmTaskConsumer {
     return json.writeValueAsString(evidence);
   }
 
-  /** Monta os campos mínimos, inclusive a exceção de tier, para reconstruir a mesma tarefa. */
+  /** Preserva escopo, tier e hashes das prévias para reconstruir a mesma tarefa. */
   static Map<String, Object> evidenceFields(
       String reviewer, String model, Map<String, Object> task) {
     Map<String, Object> evidence = new java.util.LinkedHashMap<>();
@@ -1844,6 +1855,8 @@ public class CustomerBpmTaskConsumer {
     evidence.put("effectiveServiceTier", EFFECTIVE_SERVICE_TIER);
     evidence.put("serviceTierException", SERVICE_TIER_EXCEPTION);
     if (task.get("taskTarget") != null) evidence.put("taskTarget", task.get("taskTarget"));
+    if (task.get("creativeMobilePreviews") != null)
+      evidence.put("creativeMobilePreviews", task.get("creativeMobilePreviews"));
     return java.util.Collections.unmodifiableMap(evidence);
   }
 

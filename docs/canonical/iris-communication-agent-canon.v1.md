@@ -495,3 +495,24 @@ aceitos nem inferir aprovação humana. O teste integrado deve usar o mesmo resu
 comentários consumido em produção e registrar `correctionInputHash` no diário.
 
 Registro e matriz: `docs/homologacao/mira-retomada-parecer-resumido-2026-10-08.md`.
+
+### Rótulo preservado e revisão da peça em celular — 2026-10-09
+
+No `PROOF_CARD_V1` privado, preservar o `eyebrow` solicitado junto à prova, além da
+identificação obrigatória `APLICAÇÃO WEB PRIVADA` e do aviso sintético. A composição
+privada reserva 952 × 667 pixels para a prova, sem redesenhar o recorte nem remover
+instruções, fontes ou limites. A composição comercial conserva seu contrato anterior.
+
+Psique recebe o original imutável e uma redução real de 393 × 491 pixels. Conferir
+SHA-256 e dimensões do original antes da chamada paga. Registrar origem, hashes e
+`WIDTH_393_BICUBIC_V1` na entrada e evidência da tarefa; a auditoria do parecer continua
+referindo-se ao artefato original, sem cadastrar a redução como nova peça comercial.
+Falta de prévia ou origem alterada bloqueia antes do modelo. A transformação não é
+parecer, evidência de uso humano nem autorização comercial.
+
+Preservar especificações e peças concluídas. Não alterar callback de tarefa concluída
+para substituir seus pixels. Revisão posterior usa o arquivo efetivamente persistido;
+correção funcional necessária gera nova peça pelo fluxo existente, com limite vigente.
+Regressões cobrem identidades independentes, template comercial e captura não criativa.
+
+Registro e matriz: `docs/homologacao/mira-rotulo-prova-mobile-2026-10-09.md`.

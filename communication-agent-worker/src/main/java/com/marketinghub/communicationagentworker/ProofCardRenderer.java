@@ -16,9 +16,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ProofCardRenderer {
-  /**
-   * Compõe prova fiel e ressalva privada legível junto ao CTA, sem inventar telas ou resultados.
-   */
+  /** Compõe prova fiel, preserva o rótulo solicitado e amplia o detalhe na composição privada. */
   public byte[] render(JsonNode spec, byte[] source, boolean privateValidation) throws IOException {
     if (!"PROOF_CARD_V1".equals(spec.path("templateVersion").asText()))
       throw new IllegalArgumentException("Template criativo não suportado.");
@@ -52,20 +50,59 @@ public class ProofCardRenderer {
       g.setColor(background);
       g.fillRect(0, 0, 1080, 1350);
       g.setColor(accent);
-      text(g, spec.path("brandLabel").asText(), 64, 66, 952, 42, 28, Font.BOLD);
-      text(g, eyebrow(spec, privateValidation), 64, 123, 952, 40, 25, Font.PLAIN);
+      text(
+          g,
+          spec.path("brandLabel").asText(),
+          64,
+          privateValidation ? 34 : 66,
+          952,
+          42,
+          28,
+          Font.BOLD);
+      text(
+          g,
+          eyebrow(spec, privateValidation),
+          64,
+          privateValidation ? 82 : 123,
+          952,
+          40,
+          25,
+          Font.PLAIN);
       g.setColor(new Color(35, 32, 34));
-      text(g, spec.path("headline").asText(), 64, 183, 952, 152, 64, Font.BOLD);
-      text(g, spec.path("body").asText(), 64, 351, 952, 115, 33, Font.PLAIN);
-      double scale = Math.min(952.0 / width, 550.0 / height);
+      text(
+          g,
+          spec.path("headline").asText(),
+          64,
+          privateValidation ? 132 : 183,
+          952,
+          privateValidation ? 134 : 152,
+          privateValidation ? 56 : 64,
+          Font.BOLD);
+      text(
+          g,
+          spec.path("body").asText(),
+          64,
+          privateValidation ? 276 : 351,
+          952,
+          privateValidation ? 92 : 115,
+          33,
+          Font.PLAIN);
+      if (privateValidation) {
+        g.setColor(accent);
+        text(g, spec.path("eyebrow").asText(), 64, 375, 952, 40, 25, Font.PLAIN);
+      }
+      int proofHeight = privateValidation ? 667 : 550;
+      double scale = Math.min(952.0 / width, (double) proofHeight / height);
       int drawWidth = (int) Math.round(width * scale),
           drawHeight = (int) Math.round(height * scale);
       if (scale < 0.7)
         throw new IllegalArgumentException(
             "O recorte perde legibilidade no criativo; selecione um detalhe menor da prova.");
-      int left = (1080 - drawWidth) / 2, top = 497 + (550 - drawHeight) / 2;
+      int left = (1080 - drawWidth) / 2,
+          top = (privateValidation ? 442 : 497) + (proofHeight - drawHeight) / 2;
       g.setColor(new Color(255, 255, 255));
-      g.fillRoundRect(56, 485, 968, 574, 26, 26);
+      g.fillRoundRect(
+          56, privateValidation ? 430 : 485, 968, privateValidation ? 691 : 574, 26, 26);
       g.drawImage(
           original,
           left,
@@ -78,9 +115,18 @@ public class ProofCardRenderer {
           y + height,
           null);
       g.setColor(accent);
-      g.fillRoundRect(64, 1104, 952, 104, 22, 22);
+      g.fillRoundRect(
+          64, privateValidation ? 1148 : 1104, 952, privateValidation ? 90 : 104, 22, 22);
       g.setColor(Color.WHITE);
-      text(g, spec.path("ctaText").asText(), 92, 1125, 896, 66, 36, Font.BOLD);
+      text(
+          g,
+          spec.path("ctaText").asText(),
+          92,
+          privateValidation ? 1160 : 1125,
+          896,
+          66,
+          36,
+          Font.BOLD);
       g.setColor(new Color(70, 64, 68));
       text(
           g,
@@ -88,9 +134,9 @@ public class ProofCardRenderer {
               ? "Demonstração sintética · sem compra ou cobrança"
               : spec.path("footer").asText(),
           64,
-          privateValidation ? 1228 : 1245,
+          privateValidation ? 1252 : 1245,
           952,
-          privateValidation ? 100 : 68,
+          privateValidation ? 85 : 68,
           privateValidation ? 36 : 25,
           Font.PLAIN);
     } finally {

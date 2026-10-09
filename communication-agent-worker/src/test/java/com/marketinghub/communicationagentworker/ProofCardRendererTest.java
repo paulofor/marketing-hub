@@ -47,6 +47,57 @@ class ProofCardRendererTest {
     assertThat(ProofCardRenderer.eyebrow(first, true)).isEqualTo("APLICAÇÃO WEB PRIVADA");
   }
 
+  /**
+   * Preserva a ressalva factual de produtos distintos sem substituir o aviso privado ou a prova.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "910118, Sem garantia de clientes ou agendamentos.",
+    "910219, Informação educativa; não oferece diagnóstico."
+  })
+  void preservesFactualFooterInPrivatePixels(long artifactId, String footer) throws Exception {
+    var baseline = spec().put("sourceArtifactId", artifactId);
+    var corrected = baseline.deepCopy().put("footer", footer);
+    byte[] before = renderer.render(baseline, source(), true);
+    byte[] after = renderer.render(corrected, source(), true);
+    assertThat(IrisCreativeMaterializer.sha(after))
+        .isNotEqualTo(IrisCreativeMaterializer.sha(before));
+    var first = ImageIO.read(new ByteArrayInputStream(before));
+    var second = ImageIO.read(new ByteArrayInputStream(after));
+    assertThat(second.getRGB(0, 0, 1080, 1295, null, 0, 1080))
+        .isEqualTo(first.getRGB(0, 0, 1080, 1295, null, 0, 1080));
+    assertThat(second.getRGB(0, 1295, 1080, 55, null, 0, 1080))
+        .isNotEqualTo(first.getRGB(0, 1295, 1080, 55, null, 0, 1080));
+    assertThat(second.getRGB(540, 772)).isEqualTo(Color.BLUE.getRGB());
+  }
+
+  /** Recusa a perda de ressalva factual também na preparação privada antes de persistir a peça. */
+  @Test
+  void rejectsMissingOrUnreadablePrivateFooter() throws Exception {
+    var missing = spec().put("footer", "");
+    assertThatThrownBy(() -> renderer.render(missing, source(), true))
+        .hasMessageContaining("Texto obrigatório");
+    var unreadable = spec().put("footer", "Ressalva muito longa ".repeat(30));
+    assertThatThrownBy(() -> renderer.render(unreadable, source(), true))
+        .hasMessageContaining("excede a área legível");
+  }
+
+  /** Mantém a ressalva comercial existente sem inserir rótulos da validação privada. */
+  @Test
+  void preservesCommercialFooterAndLayout() throws Exception {
+    var firstSpec = spec().put("footer", "Sem garantia de clientes ou agendamentos.");
+    var secondSpec =
+        firstSpec.deepCopy().put("footer", "Condições da oferta na página de destino.");
+    var first = ImageIO.read(new ByteArrayInputStream(renderer.render(firstSpec, source(), false)));
+    var second =
+        ImageIO.read(new ByteArrayInputStream(renderer.render(secondSpec, source(), false)));
+    assertThat(second.getRGB(0, 0, 1080, 1245, null, 0, 1080))
+        .isEqualTo(first.getRGB(0, 0, 1080, 1245, null, 0, 1080));
+    assertThat(second.getRGB(0, 1245, 1080, 105, null, 0, 1080))
+        .isNotEqualTo(first.getRGB(0, 1245, 1080, 105, null, 0, 1080));
+    assertThat(second.getRGB(540, 772)).isEqualTo(Color.BLUE.getRGB());
+  }
+
   /** Amplia a prova privada sem reduzir o conteúdo nem alterar o formato comercial anterior. */
   @Test
   void enlargesPrivateProofKeepingApprovedPixels() throws Exception {

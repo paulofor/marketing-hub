@@ -12,11 +12,11 @@ import javax.imageio.ImageIO;
 import org.springframework.stereotype.Component;
 
 /**
- * Responsabilidade: renderizar uma peça estática legível preservando os pixels da prova aprovada.
+ * Responsabilidade: renderizar uma peça estática legível preservando a prova e os limites factuais.
  */
 @Component
 public class ProofCardRenderer {
-  /** Compõe prova fiel, preserva o rótulo solicitado e amplia o detalhe na composição privada. */
+  /** Compõe prova fiel com rótulos e ressalva factual também na preparação privada. */
   public byte[] render(JsonNode spec, byte[] source, boolean privateValidation) throws IOException {
     if (!"PROOF_CARD_V1".equals(spec.path("templateVersion").asText()))
       throw new IllegalArgumentException("Template criativo não suportado.");
@@ -128,15 +128,16 @@ public class ProofCardRenderer {
           36,
           Font.BOLD);
       g.setColor(new Color(70, 64, 68));
+      String footer = spec.path("footer").asText();
+      if (privateValidation && footer.isBlank())
+        throw new IllegalArgumentException("Texto obrigatório do criativo ausente.");
       text(
           g,
-          privateValidation
-              ? "Demonstração sintética · sem compra ou cobrança"
-              : spec.path("footer").asText(),
+          privateValidation ? "Demonstração sintética · sem compra ou cobrança " + footer : footer,
           64,
           privateValidation ? 1252 : 1245,
           952,
-          privateValidation ? 85 : 68,
+          privateValidation ? 98 : 68,
           privateValidation ? 36 : 25,
           Font.PLAIN);
     } finally {

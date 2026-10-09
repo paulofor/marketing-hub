@@ -537,3 +537,20 @@ plano. Após o aceite privado, o processo pai reutiliza a experiência homologad
 para comprovar destino e integração privados, sem nova inferência.
 
 Evidência: [Mira — seleção criativa privada](../homologacao/mira-selecao-criativa-privada-2026-10-09.md).
+
+### Preservação da ressalva factual no template privado — 2026-10-09
+
+O `footer` de `PROOF_CARD_V1` permanece obrigatório e impresso na validação privada,
+além de “Demonstração sintética · sem compra ou cobrança”. O marcador privado não
+substitui limitações factuais da oferta ou do produto. Os dois textos usam fonte
+36 na área disponível após o CTA; excesso ou ausência bloqueia a peça, sem cortar
+texto, diminuir fonte ou alterar a prova. A composição comercial permanece própria.
+
+Em Capella, #691 tinha a ressalva correta, mas o PNG 595 a perdeu; Psique #692
+detectou a divergência. O mesmo template já havia sobrescrito um rótulo de Mira.
+Corrigir o renderizador fecha a causa compartilhada; repetir a inferência ou
+transportar a ressalva para outro campo não substitui essa correção.
+Fonte, especificação, saída bruta e custo continuam auditados. As revisões
+independentes examinam os pixels finais, e seu aceite não autoriza publicação.
+
+Regressões e matriz: [Capella — ressalva no rodapé](../homologacao/capella-ressalva-rodape-2026-10-09.md).

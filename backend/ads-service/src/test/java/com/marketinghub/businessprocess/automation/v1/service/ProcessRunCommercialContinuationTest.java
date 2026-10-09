@@ -28,7 +28,8 @@ class ProcessRunCommercialContinuationTest {
           null,
           new ObjectMapper(),
           org.mockito.Mockito.mock(
-              com.marketinghub.repository.jpa.experiment.ExperimentRepository.class));
+              com.marketinghub.repository.jpa.experiment.ExperimentRepository.class),
+          mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class));
   private final ProcessRun waiting = new ProcessRun();
   private final ProcessRun candidate = new ProcessRun();
   private final LearningSalesCycle cycle = new LearningSalesCycle();

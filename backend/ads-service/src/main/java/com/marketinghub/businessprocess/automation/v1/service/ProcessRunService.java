@@ -315,7 +315,8 @@ public class ProcessRunService {
   /**
    * Observa provas, recupera passagens compatíveis e trata retornos condicionais na referência
    * congelada; preserva esperas legítimas e encerra contextos sem autorização após receber o
-   * trabalho das delegações. Registra a impressão digital da entrada usada em cada disparo.
+   * trabalho das delegações. Lê pareceres pela projeção funcional, sem auditoria, e registra a
+   * impressão digital da entrada usada em cada disparo.
    */
   private ProcessRunResponse advance(ProcessRun run) {
     if (Set.of("PAUSED", "COMPLETED", "ERROR", "CLOSED").contains(run.getStatus()))
@@ -546,7 +547,9 @@ public class ProcessRunService {
       transition(run, "WAITING_INPUT", control.availabilityReason(), "WAITING");
       return response(run);
     }
-    var correctionInputs = ProcessRunCorrectionInputs.resolve(run, activity, ordered, graph, json);
+    var correctionInputs =
+        ProcessRunCorrectionInputs.resolve(
+            run, activity, ordered, graph, json, context.functionalTasks(run));
     String inputVersion = String.valueOf(context.inputVersion(run));
     String actionKey = actionKey(run, activity, ordered, correctionInputs, inputVersion);
     if (events.existsByRunIdAndActionKey(run.getId(), actionKey)) {

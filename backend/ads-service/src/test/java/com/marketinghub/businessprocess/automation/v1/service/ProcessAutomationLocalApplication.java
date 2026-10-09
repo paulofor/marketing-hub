@@ -246,6 +246,12 @@ public class ProcessAutomationLocalApplication {
     return mock(com.marketinghub.repository.jpa.experiment.ExperimentRepository.class);
   }
 
+  /** Isola a consulta funcional adicional; esta fixture não produz pareceres de agentes reais. */
+  @Bean
+  com.marketinghub.repository.jpa.agenttask.AgentTaskRepository agentTasks() {
+    return mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class);
+  }
+
   /** Retorna o produto sintético preservando o lock de linha dentro da transação JPA. */
   static Optional<Product> product(JdbcTemplate jdbc, Long id, boolean locked) {
     var values =

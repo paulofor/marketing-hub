@@ -9524,3 +9524,20 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   validação comercial. A meta de contribuição continua uma escolha do usuário.
 - **Registro:** docs/homologacao/alcyone-personalizacao-integrada-v1.md e
   docs/backend/visual-personalization-v1.md.
+
+## LOOP-IRIS-CORRECAO-PERDIDA-NO-HISTORICO-RESUMIDO — 09/10/2026
+
+- **Evidência:** Mira, ciclo 9/experimento 102, pai 54 e filho 55. Psique 637 exige
+  ADJUST após produção 636; o domínio libera correção, mas a automação registra
+  NO_PROGRESS com hash do parecer vazio. Nenhuma tarefa nova foi criada na retomada.
+- **Causa:** `includePromptAudit=false` omite comentários/resultados funcionais. O
+  resolvedor de correção dependia desses comentários; a fixture anterior os conservava.
+- **Correção compartilhada:** consultar a projeção funcional existente por definição e
+  referência, conferindo tarefa, atividade e status contra o resumo. A auditoria completa
+  continua fora da leitura de automação e a chave muda somente por parecer novo válido.
+- **Prevenção:** teste integrado com resumo sem comentários reproduz BLOCKED antes do
+  ajuste e cobre produção → ADJUST → correção → revisões → espera humana depois dele;
+  query persistida com outra referência, incompatibilidades e deduplicação preservadas.
+- **Limites:** não reabre mensagem/produto aceitos, não aprova uso humano, não transforma
+  falha própria em entrada nova nem transfere orçamento entre produtos.
+- **Registro:** `docs/homologacao/mira-retomada-parecer-resumido-2026-10-08.md`.

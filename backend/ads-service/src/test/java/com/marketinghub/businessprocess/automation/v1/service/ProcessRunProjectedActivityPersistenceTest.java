@@ -500,7 +500,16 @@ class ProcessRunProjectedActivityPersistenceTest {
     experiment.setProduct(Product.builder().id(parent.getProductId()).build());
     experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.INVALIDATED);
     when(experiments.findById(experiment.getId())).thenReturn(Optional.of(experiment));
-    var identity = new ProcessRunContext(null, definitions, null, null, null, json, experiments);
+    var identity =
+        new ProcessRunContext(
+            null,
+            definitions,
+            null,
+            null,
+            null,
+            json,
+            experiments,
+            mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class));
     doAnswer(inv -> identity.dispatchBlockReason(inv.getArgument(0)))
         .when(context)
         .dispatchBlockReason(any());

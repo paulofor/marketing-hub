@@ -33,7 +33,8 @@ class ProcessRunVersionAuthorizationTest {
           null,
           new ObjectMapper(),
           org.mockito.Mockito.mock(
-              com.marketinghub.repository.jpa.experiment.ExperimentRepository.class));
+              com.marketinghub.repository.jpa.experiment.ExperimentRepository.class),
+          mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class));
   private final ProcessRun run = new ProcessRun();
   private final BusinessProcessDefinition definition = new BusinessProcessDefinition();
 

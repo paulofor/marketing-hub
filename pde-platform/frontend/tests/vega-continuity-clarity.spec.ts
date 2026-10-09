@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import "./vega-terminal-result.cases";
 
 // Sessão sintética interceptada: a revisão da proposta não cria dados, chamadas de IA ou cobrança.
 test("cartão salvo explica o ganho da proposta antes da simulação e mantém limites claros", async ({

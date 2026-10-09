@@ -9663,3 +9663,17 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   prova histórica rejeitada e caminho válido. O contrato existente conserva a decisão do backend.
 - **Limite:** não automatiza aprovação independente, publicação comercial ou gasto. Registro:
   [Vega — vínculo da entrega](../homologacao/vega-ciclo10-registro-homologacao-2026-10-09.md).
+
+## LOOP-ENCERRAMENTO-ANUNCIA-RESULTADO-INEXISTENTE — 09/10/2026
+
+- **Caso:** Psique 699, Vega v13 / ciclo 10 / experimento 103, rejeitou o rodapé que dizia existir
+  um ajuste disponível, embora o bloqueio de segurança estivesse correto e `card=null`.
+- **Causa:** o frontend escolhia o encerramento só por `FINISHED`; o harness verificava estado
+  e cartão sem conferir a afirmação final. A execução local reproduziu a mesma divergência.
+- **Resolução:** v14 distingue cartão salvo, bloqueio, falha e ausência de geração. Preserva
+  v12/v13 e exige sucessor conforme `CHANGE_PER_CYCLE_V1`.
+- **Prevenção:** verificador genérico compara aviso e resultado persistido, conserva captura
+  e classifica divergência como `BLOCKED`. A regressão cobre a falha original, outro vocabulário
+  e resultados antes válidos; 27 casos de navegador e cinco cenários de integração passaram.
+- **Limite:** não é aceite independente, autorização financeira ou evidência comercial.
+  [Matriz e causa](../homologacao/vega-seguranca-v14-2026-10-09.md).

@@ -53,6 +53,14 @@ devem compor evento persistido, resolução do alvo e disponibilidade da homolog
 ausência original, outra identidade, prova histórica e o caminho anteriormente válido. Instrução
 no prompt, isoladamente, não comprova aprendizado ou execução.
 
+O harness técnico também deve confrontar o estado persistido com a mensagem terminal.
+Bloquear uma entrada e não gerar cartão não permite anunciar um resultado disponível.
+O verificador compartilhado `private-result-state-checks.mjs` usa os termos do contrato do
+produto; uma divergência bloqueia o resultado e conserva as capturas para diagnóstico.
+Vega 699 expôs essa lacuna. A v14 foi validada contra a mesma falha e os caminhos de resultado,
+falha e recuperação, com outra identidade/vocabulário sintéticos no verificador. Uma experiência
+alterada segue para sucessor; nenhum parecer histórico é reescrito.
+
 ## Cinco pontos em toda oferta — decisão de 22/09/2026
 
 O texto compartilhado dos botões **Prompt para AIHUB**, incluindo prévia e cópia manual,

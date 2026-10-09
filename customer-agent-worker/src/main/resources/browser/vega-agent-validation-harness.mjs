@@ -1,4 +1,5 @@
 import { completeVegaFixture, fixtureModel } from './vega-deterministic-fixture.mjs';
+import { isTerminalResultConsistent } from './private-result-state-checks.mjs';
 import { verifyVideoIdentity, verifyIntegratedPage, videoBrowserOptions } from './learning-cycle-video-checks.mjs';
 import {chromium,devices} from 'playwright-core';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
@@ -74,6 +75,7 @@ for(const [scenarioCode,deviceProfile] of plans){
   await page.getByText('Este é o mesmo ajuste').waitFor();
  }
  const report=await api(`/internal/cycles/${input.cycleId}/report`);const evidence=report.readings.find(r=>r.id===session.id);assert.ok(evidence);
+ const terminalResultConsistent=isTerminalResultConsistent(evidence,await page.locator('footer').innerText(),{resultAvailable:/Seu ajuste continua disponível/,noResult:/nenhum ajuste foi gerado|Não foi possível gerar um ajuste/i});
  const scenarioInput=evidence.executions[0]?.context?.input;
  assert.ok(scenarioInput,'O cenário precisa preservar a entrada realmente executada');
  const expected=scenarioCode==='SAFETY'?['EXPERIENCE_STARTED']:['EXPERIENCE_STARTED','VALUE_MOMENT','READY_RESULT_USED','PREFERRED_OVER_FREE','CHECKOUT_STARTED'];
@@ -84,12 +86,13 @@ for(const [scenarioCode,deviceProfile] of plans){
  const screenshotPath=resolve(evidenceDirectory,`${scenarioCode}-${deviceProfile}.png`);await page.screenshot({path:screenshotPath,fullPage:true});const viewport=page.viewportSize();
  const evidenceKey=`vega-${session.id}`;
  artifacts.push({captureSessionId:input.captureSessionId,evidenceKey,evidenceType:'FULL_PAGE',deviceProfile,pageNumber:1,foldNumber:null,viewportWidth:viewport.width,viewportHeight:viewport.height,pageHeightPx:await page.evaluate(()=>document.documentElement.scrollHeight),scrollY:0,sourceUrl:input.sourceUrl,finalUrl:page.url(),capturedAt:new Date().toISOString(),localPath:screenshotPath});
- scenarios.push({scenarioCode,deviceProfile,status:'PASS',prototypeVersion:input.prototypeVersion,evidenceId:session.id,screenshotEvidenceKeys:[evidenceKey],input:scenarioInput,card:evidence.card,events:evidence.events,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,resultReadySeconds:Math.ceil((Date.now()-generatedAt)/1000),resumed,recovered,safetyBlocked:scenarioCode==='SAFETY',accessibilityBasic,noHorizontalOverflow,privacyPreserved,humanEvidenceClaimed:false,commercialEvidenceClaimed:false,sideEffects:{paymentEnabled:false,published:false,campaignCreated:false,mediaSpendBrl:0}});
+ scenarios.push({scenarioCode,deviceProfile,status:terminalResultConsistent?'PASS':'BLOCKED',prototypeVersion:input.prototypeVersion,evidenceId:session.id,screenshotEvidenceKeys:[evidenceKey],input:scenarioInput,card:evidence.card,events:evidence.events,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,resultReadySeconds:Math.ceil((Date.now()-generatedAt)/1000),resumed,recovered,safetyBlocked:scenarioCode==='SAFETY',terminalResultConsistent,accessibilityBasic,noHorizontalOverflow,privacyPreserved,humanEvidenceClaimed:false,commercialEvidenceClaimed:false,sideEffects:{paymentEnabled:false,published:false,campaignCreated:false,mediaSpendBrl:0}});
  await context.close();
 }
 }finally{await browser.close();}
 const deviceResults=[...new Set(plans.map(p=>p[1]))].map(deviceProfile=>({deviceProfile,viewportWidth:profiles[deviceProfile].viewport.width,viewportHeight:profiles[deviceProfile].viewport.height,status:'PASS',screenshotEvidenceKeys:artifacts.filter(a=>a.deviceProfile===deviceProfile).map(a=>a.evidenceKey)}));
 const checks={sameVersion:scenarios.every(s=>s.prototypeVersion===input.prototypeVersion),desktopAndMobile:input.mode!=='TECHNICAL'||deviceResults.length===3,happyResultWithinTenMinutes:scenarios.filter(s=>s.scenarioCode==='ADHERENT').every(s=>s.resultReadySeconds<=600),recoveryPreserved:input.mode!=='TECHNICAL'||scenarios.some(s=>s.recovered&&s.resumed),safetyBlocked:input.mode!=='TECHNICAL'||scenarios.some(s=>s.safetyBlocked),accessibilityBasic:scenarios.every(s=>s.accessibilityBasic),responsiveLayout:scenarios.every(s=>s.noHorizontalOverflow),privacyPreserved:scenarios.every(s=>s.privacyPreserved),internalTrafficSegregated:scenarios.every(s=>s.trafficClass==='AGENT_VALIDATION'),paymentDisabled:true,publicationDisabled:true,campaignDisabled:true,zeroMediaSpend:true};
 if(input.videoIntegration)Object.assign(checks,{videoIdentity:videoIdentity.length===2,videoPlayback:videoResults.length===plans.length,videoOptional:videoResults.every(r=>r.optional),videoFailureRecovery:videoResults.every(r=>r.failureRecovery)});
+checks.terminalResultConsistency=scenarios.every(s=>s.terminalResultConsistent);
 const finishedAt=new Date();
 await writeFile(outputPath,JSON.stringify({cycleId:input.cycleId,generationMode:"DETERMINISTIC_FIXTURE",fixtureModel,modelFunctionalBehaviorClaimed:false,...(input.videoIntegration?{videoIntegrationFingerprint:input.videoIntegration.integrationFingerprint,videoIdentity,videoResults}:{}),contractVersion:'PDE_AGENT_TECHNICAL_HOMOLOGATION_V1',mode:input.mode,decision:Object.values(checks).every(Boolean)?'APPROVED':'BLOCKED',sourceReference:input.sourceReference,productId:input.productId,productSlug:input.productSlug,publicUrl:input.sourceUrl,prototypeVersion:input.prototypeVersion,trafficClass:'AGENT_VALIDATION',internalMarker:'mh_internal_test',startedAt:startedAt.toISOString(),finishedAt:finishedAt.toISOString(),durationSeconds:Math.ceil((finishedAt-startedAt)/1000),devices:deviceResults,scenarios,checks,artifacts,sideEffects:{paymentEnabled:false,published:false,campaignCreated:false,mediaSpendBrl:0},humanEvidenceClaimed:false,commercialEvidenceClaimed:false,evidence:scenarios.map(s=>s.evidenceId)}));

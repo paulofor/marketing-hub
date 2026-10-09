@@ -65,6 +65,11 @@ iniciou automaticamente. O estado mudou de `WAITING_INPUT / technicalHomologatio
 `WAITING_ACTIVITY / psiqueAdherent`. Custos ausentes da tarefa determinística não são declarados
 como faturamento zero; os custos das revisões por modelo permanecem no teto cumulativo vigente.
 
+As revisões 697 e 698 foram aprovadas. Psique 699 pediu ajuste na mensagem de encerramento sem
+cartão, já presente na captura histórica 601. A análise e a correção executável estão em
+[Vega — segurança v14](vega-seguranca-v14-2026-10-09.md). O ciclo 10 foi preservado como ajustado;
+a variante segue no ciclo 13 / experimento 106, sem herdar autorização ou parecer.
+
 As provas locais são sintéticas e não aprovam o produto em nome de Psique ou Têmis. O teto original
 de US$ 10 é cumulativo e já foi autorizado para o ciclo 10; mídia e vídeos pagos estão excluídos.
 Custos conhecidos continuam estimativas, sem fatura conciliada. Esta correção não comprova vendas.

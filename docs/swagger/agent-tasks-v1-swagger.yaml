@@ -130,7 +130,7 @@ paths:
           description: Obrigatório no executor próprio de atividade especializada; ausente seleciona apenas atividades comuns.
       responses:
         "200":
-          description: Lista vazia ou uma única atividade reservada com o recurso exigido
+          description: Lista vazia ou uma única atividade reservada com o recurso exigido e orientação persistida do próprio produto quando disponível
           content:
             application/json:
               schema:
@@ -144,7 +144,7 @@ paths:
         - $ref: "#/components/parameters/TaskId"
       responses:
         "200":
-          description: Atividade ativa com contexto, recurso e predecessores congelados
+          description: Atividade ativa com contexto, recurso e predecessores; operatorGuidance reconsulta as notas atuais do produto sem nova reserva
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PendingTaskResponse" }
@@ -636,6 +636,24 @@ components:
           description: Seleção compacta da Biblioteca de Inteligência aplicável à atividade audiovisual.
           allOf:
             - $ref: "#/components/schemas/ResearchIntelligenceSelection"
+        operatorGuidance:
+          description: >-
+            Fonte opcional das notas comerciais registradas pela tela do próprio produto.
+            Preserva decisões explícitas e sua autoria textual; não interpreta as notas como
+            saldo conciliado, autorização automática, orçamento novo ou permissão de mídia.
+            O executor deve conferir escopo, decisão e custos. A lease reconsulta essa fonte
+            sem repetir inferência; alvo ausente ou inconsistente não expõe notas de outro produto.
+          allOf:
+            - $ref: "#/components/schemas/OperatorGuidance"
+    OperatorGuidance:
+      type: object
+      required: [contractVersion, productId, evidenceReference, retrievedAt, commercialNotes]
+      properties:
+        contractVersion: { type: string, enum: [PRODUCT_OPERATOR_GUIDANCE_V1] }
+        productId: { type: integer, format: int64 }
+        evidenceReference: { type: string }
+        retrievedAt: { type: string, format: date-time }
+        commercialNotes: { type: string }
     TaskTarget:
       type: object
       required: [sourceReference, productId, productSlug, experienceVersion]

@@ -1,8 +1,11 @@
 package com.marketinghub.agenttask;
 
+import com.marketinghub.agenttask.service.pending.AgentTaskOperatorGuidance;
+import com.marketinghub.agenttask.service.pending.AgentTaskPendingWithOperatorGuidance;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,17 +17,28 @@ import org.springframework.web.multipart.MultipartFile;
 public class InternalAgentTaskExecutionController {
   private final AgentTaskService service;
   private final AgentTaskVisualEvidenceService visualEvidenceService;
+  private final AgentTaskOperatorGuidance operatorGuidance;
 
-  /** Inicializa o contrato operacional usando a fonte de verdade das tarefas. */
+  /** Inicializa o contrato operacional e a consulta segregada das orientações do produto. */
+  @Autowired
   public InternalAgentTaskExecutionController(
-      AgentTaskService service, AgentTaskVisualEvidenceService visualEvidenceService) {
+      AgentTaskService service,
+      AgentTaskVisualEvidenceService visualEvidenceService,
+      AgentTaskOperatorGuidance operatorGuidance) {
     this.service = service;
     this.visualEvidenceService = visualEvidenceService;
+    this.operatorGuidance = operatorGuidance;
   }
 
-  /** Reserva no máximo uma atividade e aplica o contrato versionado declarado pelo worker. */
+  /** Preserva testes e consumidores do transporte anterior à orientação opcional. */
+  public InternalAgentTaskExecutionController(
+      AgentTaskService service, AgentTaskVisualEvidenceService visualEvidenceService) {
+    this(service, visualEvidenceService, null);
+  }
+
+  /** Reserva uma atividade pelo contrato do worker e entrega as notas do próprio produto. */
   @GetMapping("/pending")
-  public List<AgentTaskPendingResponse> pending(
+  public List<AgentTaskPendingWithOperatorGuidance> pending(
       @PathVariable String agentKey,
       @RequestParam(required = false) String processCode,
       @RequestParam(required = false) String activityId,
@@ -33,15 +47,22 @@ public class InternalAgentTaskExecutionController {
     return service
         .claimEligibleProcessTask(
             agentKey, processCode, activityId, executionResourceCode, workerContract)
+        .map(this::withOperatorGuidance)
         .map(List::of)
         .orElseGet(List::of);
   }
 
-  /** Reexpõe o snapshot da lease ativa ao executor que já reservou a tarefa. */
+  /** Reexpõe a lease ativa com as notas atuais, sem reservar tarefa nem repetir inferência. */
   @GetMapping("/{taskId}")
-  public AgentTaskPendingResponse claimed(
+  public AgentTaskPendingWithOperatorGuidance claimed(
       @PathVariable String agentKey, @PathVariable Long taskId) {
-    return service.claimedProcessTask(agentKey, taskId);
+    return withOperatorGuidance(service.claimedProcessTask(agentKey, taskId));
+  }
+
+  /** Mantém todos os campos originais e acrescenta somente a evidência do operador identificada. */
+  private AgentTaskPendingWithOperatorGuidance withOperatorGuidance(AgentTaskPendingResponse task) {
+    return new AgentTaskPendingWithOperatorGuidance(
+        task, operatorGuidance == null ? null : operatorGuidance.read(task));
   }
 
   /** Preserva o prompt resolvido e a configuração antes de qualquer término da tarefa. */

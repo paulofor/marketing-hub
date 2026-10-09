@@ -255,9 +255,9 @@ class IrisLearningCycleContextTest {
     verify(instances, never()).save(any());
   }
 
-  /** Expõe apenas provas vigentes e mantém auditoria extensa fora da leitura de prontidão. */
+  /** Preserva autoria e bytes das provas vigentes sem hidratar a auditoria extensa. */
   @Test
-  void communicatesLatestFunctionalProofWithoutHydratingAudit() {
+  void communicatesLatestFunctionalProofWithoutHydratingAudit() throws Exception {
     var now = java.time.Instant.parse("2026-09-12T08:00:00Z");
     String result =
         "{\"contractVersion\":\"IRIS_COMMUNICATION_V1\",\"sourceReference\":\"" + SOURCE + "\"}";
@@ -301,6 +301,10 @@ class IrisLearningCycleContextTest {
     var artifacts = json.valueToTree(context.get("communicationArtifacts"));
     assertThat(artifacts).hasSize(1);
     assertThat(artifacts.get(0).path("taskId").asLong()).isEqualTo(402L);
+    assertThat(artifacts.get(0).path("agentKey").asText()).isEqualTo(contract.agentKey());
+    assertThat(artifacts.get(0).path("processDefinitionId").asLong())
+        .isEqualTo(contract.processDefinitionId());
+    assertThat(artifacts.get(0).path("resultSha256").asText()).isEqualTo(fixtureHash(result));
     verify(tasks, never()).findBySourceReferenceOrderByCreatedAtAscIdAsc(anyString());
   }
 

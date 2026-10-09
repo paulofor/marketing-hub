@@ -19,14 +19,14 @@
 <label class="check"><input type="checkbox" name="consentAccepted" required> Confirmo o uso de dados fictícios nesta prova privada e a ausência de envio externo.</label>
 <button id="prepare" type="submit">Preparar meu kit de teste</button>
 </form></section>
-<section id="result" hidden><h2>Primeira aplicação</h2><p>Hoje: confira as duas artes, copie a legenda e use a mensagem para facilitar uma conversa.</p>
+<section id="result" hidden><h2>Primeira aplicação</h2><p>Copie a legenda de hoje ou guarde o pacote completo. Confira abaixo as artes e os textos desta aplicação.</p>
+<div class="primary-actions"><button id="copy-caption">Copiar legenda</button><button id="download" class="secondary">Baixar o pacote completo</button></div><p id="download-status" role="status"></p>
 <div class="art-grid"><figure><img id="post" alt="Post da primeira aplicação"><figcaption>Post · 1080 × 1080</figcaption></figure><figure><img id="story" alt="Story da primeira aplicação"><figcaption>Story · 1080 × 1920</figcaption></figure></div>
-<label>Legenda pronta<textarea id="caption" readonly rows="5"></textarea></label><button id="copy-caption">Copiar legenda</button>
+<label>Legenda pronta<textarea id="caption" readonly rows="5"></textarea></label>
 <label>Mensagem pronta<textarea id="message" readonly rows="3"></textarea></label><button id="copy-message">Copiar mensagem</button>
 <details><summary>Calendário e conteúdo completo</summary><pre id="calendar"></pre><ul id="files"></ul></details>
-<button id="download">Baixar o pacote completo</button><p id="download-status" role="status"></p>
 <h2>Por que continuar com o pacote completo?</h2><p>Ele reúne 10 posts, 10 stories, 10 legendas, 5 mensagens e um calendário de 7 dias, personalizados para o briefing. Use a primeira aplicação e repita com o conjunto. As imagens desta prova são ilustrações sintéticas; não há garantia de clientes ou agendamentos.</p>
-<button id="prefer">O pacote facilita minha continuidade</button><button id="checkout" class="secondary">Conferir continuidade simulada</button><p id="checkout-status" role="status"></p>
+<details id="test-controls" class="test-controls"><summary>Testar preferência e continuidade, sem compra</summary><p>Estes controles registram apenas testes internos e não representam interesse ou compra real.</p><button id="prefer">O pacote facilita minha continuidade</button><button id="checkout" class="secondary">Conferir continuidade simulada</button><p id="checkout-status" role="status"></p></details>
 <button id="exit" class="secondary">Sair e retomar depois</button>
 </section><section id="resume" hidden><h2>Seu pacote ficou guardado</h2><p>Você pode retomar esta mesma entrada e seus arquivos sem gerar novamente.</p><button id="return">Retomar o pacote</button></section>
 <details class="audit"><summary>Dados desta prova</summary><p>Eventos e arquivos pertencem ao produto, ciclo, experimento e versão indicados. São eventos de homologação com origem AGENT_VALIDATION; não contam como interesse real, compras, receita ou margem.</p><p>Limites técnicos: até 6 composições por ciclo e 2 por fixture; até 10 transferências por acesso e validade de 30 dias. Não alteram condições comerciais.</p><pre id="audit"></pre></details>

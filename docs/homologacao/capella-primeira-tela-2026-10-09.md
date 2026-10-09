@@ -62,12 +62,23 @@ As capturas e relatórios estão em `artifacts/capella-first-actions-local-fixed
 Os dois perfis passaram em desktop, iPhone e Pixel, inclusive retorno ao pacote,
 falha recuperável e segurança; providerCalls permaneceu zero.
 
-Os 135 testes direcionados de backend/arquitetura e 36 testes do navegador
+Os 138 testes direcionados de backend/arquitetura e 36 testes do navegador
 passaram, incluindo prontidão
 de retrabalho em duas identidades e a preservação da correção técnica. O pacote
 de backend foi gerado localmente e os nove testes do verificador de recursos
-passaram; o verificador conferiu 4.308 classes testadas/empacotadas e 765 recursos
+passaram; o verificador conferiu 4.309 classes testadas/empacotadas e 765 recursos
 externos, além de inicializar o catálogo do JAR. A formatação e o diff passaram.
 O runner também passou em `bash -n` e ShellCheck. As topologias
 temporárias foram removidas com seus volumes. Essas provas confirmam execução
 e prevenção técnica; não substituem os pareceres reais da candidata sucessora.
+
+O CI identificou que o provedor de prontidão anterior e seu teste integram uma
+atestação histórica vigente de Mira. Os dois arquivos foram restaurados sem
+alteração. Entre revalidar Mira fora do escopo, remover a prevenção ou compor um
+gate adicional, foi escolhido o ponto de extensão já existente de múltiplos
+provedores de prontidão. `PdeFunctionalCorrectionCycleReadinessProvider` impede
+somente a correção funcional sem sucessor; os gates originais continuam
+responsáveis por versão, predecessores e diagnóstico. Seus seis testes incluem
+o contrato publicado, outra identidade, candidata nova e falha técnica posterior.
+Os testes de claim/correção e a arquitetura foram preservados. A construção local
+do pacote imutável aprovou 469 arquivos e 93 manifestos, sem editar provas ou hashes.

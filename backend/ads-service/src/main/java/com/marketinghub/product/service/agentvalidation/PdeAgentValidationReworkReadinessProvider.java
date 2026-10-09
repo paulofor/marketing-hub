@@ -83,7 +83,7 @@ public class PdeAgentValidationReworkReadinessProvider
             || CORRECTION_ACTIVITY.equals(activityDefinition.getActivityId()));
   }
 
-  /** Orienta correção, sucessor ou reavaliação, mantendo provas e aprovações da versão corrente. */
+  /** Oferece correção ou reavaliação com nova prova, mantendo as aprovações da versão corrente. */
   @Override
   public AgentProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,
@@ -99,7 +99,7 @@ public class PdeAgentValidationReworkReadinessProvider
         unresolvedFunctionalRejection(history, expectedVersion, product, sourceReference);
     if (CORRECTION_ACTIVITY.equals(activityDefinition.getActivityId())) {
       return correctionReadiness(
-          correctionSource(history, expectedVersion, product, sourceReference), sourceReference);
+          correctionSource(history, expectedVersion, product, sourceReference));
     }
     if (rejection.isPresent()) {
       return blocked(correctionRequiredReason(rejection.orElseThrow()));
@@ -210,23 +210,14 @@ public class PdeAgentValidationReworkReadinessProvider
         .orElse(0L);
   }
 
-  /** Exige sucessor para mudança funcional de ciclo antes de abrir uma correção por modelo. */
+  /** Expõe o diagnóstico funcional ou técnico que originará a tarefa condicional de correção. */
   private AgentProductProcessActivityReadiness correctionReadiness(
-      Optional<PdeValidationTaskSnapshot> rejection, String sourceReference) {
+      Optional<PdeValidationTaskSnapshot> rejection) {
     if (rejection.isEmpty()) {
       return blocked(
           "Nenhuma rejeição funcional ou falha de homologação pendente exige correção do protótipo.");
     }
     PdeValidationTaskSnapshot task = rejection.orElseThrow();
-    if (sourceReference != null
-        && sourceReference.matches("^experiment:[1-9][0-9]*$")
-        && "FUNCTIONAL_ADJUSTMENT".equals(task.blockerCategory())) {
-      return blocked(
-          limit(
-              "Este ciclo preserva a versão rejeitada. Prepare um ciclo e experimento sucessores vinculados para corrigir a experiência. A implementação e suas revisões devem ocorrer na nova candidata; não abra outra chamada de correção na referência atual. "
-                  + correctionRequiredReason(task),
-              1800));
-    }
     return ready(correctionRequiredReason(task));
   }
 

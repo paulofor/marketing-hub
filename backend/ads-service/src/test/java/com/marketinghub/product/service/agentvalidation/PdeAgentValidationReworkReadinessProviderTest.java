@@ -98,40 +98,6 @@ class PdeAgentValidationReworkReadinessProviderTest {
         .isTrue();
   }
 
-  /** Impede consumo de correção sem sucessor no caso original e em outro produto independente. */
-  @ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(longs = {7L, 18L})
-  void requiresSuccessorBeforeModelCorrectionInLearningCycle(long productId) {
-    String source = "experiment:" + (9000 + productId);
-    product.setId(productId);
-    history.add(rejection(676L));
-    when(tasks.findPdeValidationTaskSnapshots(source, "pde-construction-approval"))
-        .thenAnswer(call -> history.stream().map(this::snapshot).toList());
-
-    var readiness = provider.readiness(process, activity("prototypeCorrection"), product, source);
-
-    assertThat(readiness.ready()).isFalse();
-    assertThat(readiness.reason())
-        .contains("sucessores vinculados", "nova candidata", "#676", "referência atual");
-  }
-
-  /** Preserva diagnóstico técnico acionável sem declarar mudança das condições da experiência. */
-  @Test
-  void preservesTechnicalCorrectionForExperimentReference() {
-    String source = "experiment:9123";
-    AgentTask failure = task(377L, process, "technicalHomologation", "BLOCKED");
-    failure.setBlockerCategory("TECHNICAL_FAILURE");
-    failure.setExecutionError("A URL do PDE é inválida.");
-    history.add(failure);
-    when(tasks.findPdeValidationTaskSnapshots(source, "pde-construction-approval"))
-        .thenAnswer(call -> history.stream().map(this::snapshot).toList());
-
-    var readiness = provider.readiness(process, activity("prototypeCorrection"), product, source);
-
-    assertThat(readiness.ready()).isTrue();
-    assertThat(readiness.reason()).contains("#377", "não conseguiu homologar");
-  }
-
   /** Repete a mesma homologação quando o executor falha sem atribuir defeito ao protótipo. */
   @ParameterizedTest
   @CsvSource({

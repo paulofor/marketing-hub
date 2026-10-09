@@ -35,6 +35,7 @@ produtos permanecem intactas.
 | Fonte sem notas | Formato anterior preservado; autorização não é inventada |
 | Atualização e recuperação | GET da lease recebe a nova fonte sem reservar outra tarefa |
 | Compatibilidade de consumidores | Campos originais continuam no nível superior; contexto e versão preservados |
+| Inicialização do backend | Componente sobe sem exigir Clock global, preservando horário UTC e teste determinístico |
 | Auditoria real após publicação | Próxima atividade autorizada persiste o marcador em execution_prompt |
 
 Executar unidades e MVC reais do backend, arquitetura e empacotamento das evidências
@@ -48,3 +49,10 @@ vigentes preservadas. Uma verificação sem rede serializou o DTO HTTP novo e o
 entregou ao compositor real de prompt `PdeEconomicsBpmTaskConsumer` de Plutus:
 produto, fonte e decisão chegaram ao texto operacional, com zero inferências.
 O request real da próxima atividade continua sendo a conferência pós-publicação.
+
+O CI completo identificou que a primeira implementação exigia `Clock` como bean,
+mas o backend não possui esse contrato global. A consulta agora inicializa seu
+relógio UTC e preserva o construtor determinístico para testes. A rodada local da
+correção passou em dez testes: sete da orientação, um do controller e dois do
+controller de configurações com inicialização completa Spring/H2. Nenhuma imagem
+do HEAD incompleto foi publicada; a correção permanece no mesmo PR.

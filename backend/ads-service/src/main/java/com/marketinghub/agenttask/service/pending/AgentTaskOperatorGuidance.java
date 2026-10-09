@@ -6,7 +6,7 @@ import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Objects;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,10 +14,21 @@ import org.springframework.transaction.annotation.Transactional;
  * Responsabilidade: consultar a orientação do operador somente para o produto canônico da tarefa.
  */
 @Component
-@RequiredArgsConstructor
 public class AgentTaskOperatorGuidance {
   private final ProductRepository products;
   private final Clock clock;
+
+  /** Usa o horário UTC da consulta sem exigir relógio global na inicialização do backend. */
+  @Autowired
+  public AgentTaskOperatorGuidance(ProductRepository products) {
+    this(products, Clock.systemUTC());
+  }
+
+  /** Permite conferir o horário da fonte de forma determinística nas regressões. */
+  public AgentTaskOperatorGuidance(ProductRepository products, Clock clock) {
+    this.products = products;
+    this.clock = clock;
+  }
 
   /**
    * Reconsulta as notas atuais sem interpretar saldo, conceder gasto ou inferir produto pelo nome.

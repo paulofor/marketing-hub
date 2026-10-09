@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /**
@@ -24,6 +25,20 @@ class AgentTaskOperatorGuidanceTest {
   private final ProductRepository products = mock(ProductRepository.class);
   private final AgentTaskOperatorGuidance guidance =
       new AgentTaskOperatorGuidance(products, Clock.fixed(NOW, ZoneOffset.UTC));
+
+  /** Inicializa o componente no contrato real do backend, que não fornece Clock global. */
+  @Test
+  void startsWithoutGlobalClockBean() {
+    new ApplicationContextRunner()
+        .withBean(ProductRepository.class, () -> products)
+        .withUserConfiguration(AgentTaskOperatorGuidance.class)
+        .run(
+            context -> {
+              assertNull(context.getStartupFailure());
+              assertNotNull(context.getBean(AgentTaskOperatorGuidance.class));
+              assertEquals(0, context.getBeansOfType(Clock.class).size());
+            });
+  }
 
   /** Reproduz a autorização de Capella sem transformar o texto em saldo ou orçamento novo. */
   @Test

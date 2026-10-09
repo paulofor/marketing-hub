@@ -25,11 +25,13 @@ const fixture = vi.hoisted(() => ({
     singlePain: "Organizar a comunicação",
     funnelPromise: "Prazo antigo",
     primaryCta: "Comprar",
-    journeyTemplateId: 401,
+    journeyTemplateId: 401 as number | null,
     unitPrice: 59,
     imagesPerPackage: 3,
     dailyBudget: 12,
     mediaSpendLimit: 0,
+    zeroPurchaseSpendLimit: 0,
+    purchaseStopCount: null as number | null,
     baselineCvr: 0,
     targetCvr: 0,
     startDate: "2026-08-01",
@@ -81,8 +83,12 @@ describe("correção da promessa preservando o planejamento pendente", () => {
     fixture.save.mockResolvedValue(fixture.experiment);
     vi.spyOn(window, "alert").mockImplementation(() => {});
     fixture.experiment.platform = "FACEBOOK";
+    fixture.experiment.id = 301;
+    fixture.experiment.journeyTemplateId = 401;
     fixture.experiment.status = "USER_STOPPED";
     fixture.experiment.mediaSpendLimit = 0;
+    fixture.experiment.zeroPurchaseSpendLimit = 0;
+    fixture.experiment.purchaseStopCount = null;
   });
 
   it("não oferece abordagem individual para uma nova divulgação", () => {
@@ -149,6 +155,55 @@ describe("correção da promessa preservando o planejamento pendente", () => {
     expect(fixture.save).not.toHaveBeenCalled();
   });
 
+  it.each([105, 302])(
+    "salva a preparação do experimento %s sem escolher jornada ou liberar gasto",
+    async (experimentId) => {
+      fixture.experiment.id = experimentId;
+      fixture.experiment.status = "PLANNED";
+      fixture.experiment.journeyTemplateId = null;
+      const { container } = render(<EditExperimentPage />);
+      fireEvent.change(container.querySelector('[name="funnelPromise"]')!, {
+        target: { value: "Kit no prazo aprovado, sem garantia de resultado" },
+      });
+
+      const save = screen.getByRole("button", { name: "Salvar" });
+      expect(save).toBeEnabled();
+      fireEvent.click(save);
+
+      await waitFor(() => expect(fixture.save).toHaveBeenCalledOnce());
+      const payload = JSON.parse(JSON.stringify(fixture.save.mock.calls[0][0]));
+      expect(payload.funnelPromise).toBe(
+        "Kit no prazo aprovado, sem garantia de resultado",
+      );
+      for (const field of [
+        "journeyTemplateId",
+        "status",
+        "dailyBudget",
+        "mediaSpendLimit",
+        "targetCvr",
+        "zeroPurchaseSpendLimit",
+        "zeroResultSpendLimit",
+        "purchaseStopCount",
+      ]) {
+        expect(payload).not.toHaveProperty(field);
+      }
+      expect(window.alert).not.toHaveBeenCalled();
+    },
+  );
+
+  it("envia a jornada somente quando escolhida explicitamente", async () => {
+    fixture.experiment.journeyTemplateId = null;
+    render(<EditExperimentPage />);
+    fireEvent.change(screen.getByLabelText("Template de Jornada"), {
+      target: { value: "401" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    await waitFor(() => expect(fixture.save).toHaveBeenCalledOnce());
+    expect(fixture.save.mock.calls[0][0]).toMatchObject({
+      journeyTemplateId: 401,
+    });
+  });
+
   it("rejeita conversão-alvo alterada abaixo da base", async () => {
     const { container } = render(<EditExperimentPage />);
     fireEvent.change(container.querySelector('[name="baselineCvr"]')!, {
@@ -186,5 +241,23 @@ describe("correção da promessa preservando o planejamento pendente", () => {
       zeroPurchaseSpendLimit: 50,
       purchaseStopCount: 2,
     });
+  });
+
+  it("recusa substituir uma parada financeira por zero", async () => {
+    fixture.experiment.mediaSpendLimit = 100;
+    fixture.experiment.zeroPurchaseSpendLimit = 50;
+    fixture.experiment.purchaseStopCount = 2;
+    const { container } = render(<EditExperimentPage />);
+    fireEvent.change(
+      container.querySelector('[name="zeroPurchaseSpendLimit"]')!,
+      { target: { value: "0" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    await waitFor(() =>
+      expect(window.alert).toHaveBeenCalledWith(
+        "Informe uma parada sem compra válida ou deixe o campo vazio",
+      ),
+    );
+    expect(fixture.save).not.toHaveBeenCalled();
   });
 });

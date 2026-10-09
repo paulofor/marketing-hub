@@ -7590,3 +7590,34 @@ A correção de orientação não implementa o produto. O bloqueio técnico perm
 não deve ser apresentado como ação manual necessária ao usuário. Matriz, evidências e
 limites em `docs/homologacao/ciclos-orientacao-trabalho-delegado-v1.md` e
 `LOOP-CICLO-JANELA-SEM-ORIENTACAO` em `docs/registros/loops.md`.
+
+## 2026-10-09 — Capella #105: preparação para o experimento comercial
+
+Conferência por tela, APIs e MCP: produto #7, cadeia #26, ciclo #12,
+`capella-private-v3`, etapa `VIDEO_BRIEF`. Produto e comunicação privados aceitos;
+experimento `PLANNED`, mídia zero, janela ausente e nenhuma produção audiovisual.
+Os vídeos históricos pertencem ao #94 e não aprovam os ativos do #105.
+
+Pelo Estúdio, foram cadastrados somente os rascunhos #11 (anúncio, 24 s) e #12
+(demonstração, 40 s). Ambos preservam produto, experimento, oferta de R$ 67, prova
+#685/#584 e origem em Íris #690, separando a preparação operacional da aprovação
+independente. Não criam perfil, ciclo de produção, inferência ou gasto. Preveem
+legendas, demonstração fiel, CTA acessível e métricas até compra/entrega/contribuição.
+
+A preparação da oferta revelou que o editor exigia uma jornada ausente até para
+salvar texto. A correção usa a atualização parcial já suportada, sem escolher jornada, orçamento
+ou meta. O replay local também reproduziu a parada zero intacta como bloqueio;
+agora sua validação acompanha uma edição efetiva, e novos limites inválidos continuam
+recusados. Regressões cobrem duas identidades e preservam seleção explícita e validações
+financeiras. A causa e os limites estão registrados em `docs/registros/loops.md`.
+
+O lançamento continua dependente dos limites próprios dos vídeos e da mídia, janela,
+preparação de página/checkout/público e homologação comercial. A autorização anterior
+de US$ 10 para IA exclui vídeos e anúncios; não foi ampliada ou reutilizada como
+permissão de campanha. Não existe comprovação de demanda ou lucro neste experimento.
+
+Validação local: dez testes do editor aprovados; navegador em desktop e iPhone com
+o snapshot segregado do #105 e Pixel com produto #9007/experimento #9302 simulados.
+As três atualizações preservaram jornada ausente, orçamento, paradas, janela e status;
+nenhuma requisição mutável saiu do ambiente local. Typecheck, build e Prettier integram
+a verificação de entrega. A conferência produtiva depende do PR e deploy oficiais.

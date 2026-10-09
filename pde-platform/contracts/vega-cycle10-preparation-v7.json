@@ -1,0 +1,189 @@
+{
+  "contractVersion": "vega-cycle-preparation.v7",
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "processCode": "pde-construction-approval",
+  "processVersion": 8,
+  "activityId": "technicalHomologation",
+  "sourceReference": "experiment:103",
+  "learningCycleId": 10,
+  "chainDefinitionId": 26,
+  "experimentId": 103,
+  "product": {
+    "id": 4,
+    "slug": "metodo-musa-7-dias",
+    "internalName": "Vega",
+    "experienceVersion": "musa-pde-entry-v13-primeiro-ajuste-aplicavel",
+    "publicUrl": "https://v8.clubemusa.com.br"
+  },
+  "boundary": "Reatesta apenas as fontes compartilhadas: a variante v14 foi adicionada sem modificar as mensagens v12/v13. Preserva a rejeição privada #699 e os pareceres anteriores; não reaprova a v13 nem autoriza gasto.",
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br",
+    "requiredFrontendSourceSha256": "b77a2869c1944afc8edb1c0870caa6016e07f05c80113f56e1a829dcff3bc014",
+    "privatePrototypeVersion": "musa-pde-entry-v13-primeiro-ajuste-aplicavel"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_1440",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "b77a2869c1944afc8edb1c0870caa6016e07f05c80113f56e1a829dcff3bc014"
+    }
+  },
+  "privateAccessUrl": "https://v8.clubemusa.com.br/agent-validation",
+  "generationMode": "DETERMINISTIC_FIXTURE",
+  "syntheticLimits": {
+    "sessionsPerCycleVersion": 18,
+    "attemptsPerSession": 2,
+    "attemptsPerCycleVersion": 36
+  },
+  "externalAuthorization": {
+    "aiPreparationTotalLimitUsd": null,
+    "additionalBudgetAuthorized": false,
+    "mediaAuthorized": false,
+    "paymentAuthorized": false,
+    "paidVideoAuthorized": false,
+    "financialStatus": "AWAITING_SUCCESSOR_BALANCE_DECISION",
+    "originalPreparationTotalLimitUsd": 10,
+    "previousEstimatedAiCostUsd": 2.3667816
+  },
+  "homologationEvidence": [
+    {
+      "path": "docs/homologacao/vega-ciclo10-continuidade-v1.md",
+      "sha256": "fdc45d46f2f44573a2cd80b4be0f0b3f6cd550cb645bc42a2525e066edeec90f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-ciclo10/local-continuity.json",
+      "sha256": "834ea1bf51cf55e1c8dbd7a7ebbb53c8c6a415c8f88d236826ad4b97a14295a2",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/vega-cycle10-preparation-v5.json",
+      "sha256": "60448e112c67a32ac1789588fcadbd7d603e6f89fcc88eab07acd0d8d6b32ee6",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "História da experiência privada preservada; esta atestação não executa nem reaprova o produto."
+    },
+    {
+      "path": "pde-platform/contracts/vega-cycle10-preparation-v6.json",
+      "sha256": "522f102709673af0a43022bbc413e7ded8e7c94366abd4765434994768d7b7d5",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "História do ciclo 10 preservada; a v13 continua com a rejeição de segurança #699."
+    }
+  ],
+  "validationReport": "docs/homologacao/vega-ciclo10-publicacao-coordenada-v1.md",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/frontend/vega-private/component.tsx",
+      "sha256": "8b0af04c3faead2d1b55a8e8262bdebf674ba4df975166f4ef898c940b7ca0be",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/vega-continuity-clarity.spec.ts",
+      "sha256": "ae2cdde6af2091e0e9c9d7c5ce716db0f582875f177d85b702dd8ed86c2aeca5",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/privateprototype/v1/service/VegaPrivateService.java",
+      "sha256": "bd989b4a4a712e314d12aeb0eb6120b90ff2119b21dc769a148be584396c261a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/privateprototype/v1/service/VegaPrivateExecutionSafetyTest.java",
+      "sha256": "1199d7777ebc1ac8b62942210b0356fd625090b46ca1e429dfb9c9a83604232d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/pde_release_contract.py",
+      "sha256": "d5b2a78dbe1373576939033d96b0abdfdfc1004740b0b5837183626c162e6044",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/run-targeted-production-smokes.sh",
+      "sha256": "21929f74d81d6e38b8c9ee1a7e5a0484bea453ac959607460f064cb34baf987d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/vega-private-public.smoke.spec.ts",
+      "sha256": "98847ef16c376b66d28afc9bf9a93fcbee43b7da3562bbf2f6979c6b84740eea",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test_pde_release_contract.py",
+      "sha256": "b5c7afc630556cab1e4d53eb8573c8c98972a29a2fd158ec4af862ed6f414c3e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test-targeted-production-smokes.sh",
+      "sha256": "dacd4ca3f742c232727bc1e981511a4a85f5d1b67770e9f7d0795bdd598865ed",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/fixtures/private-api-backend.conf",
+      "sha256": "517a3ecb964b1007d2b66477de428bfbbdb24228bc88286104852a47fb1c5c63",
+      "promptMode": "FULL"
+    },
+    {
+      "path": ".github/workflows/pde-platform-metodo-musa-ci.yml",
+      "sha256": "f7f9777faaa6c87013ce53690b55c7ea1b20975c50b43b2f473823b0a0e4b6b7",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Workflow preserva os seis cenários de experiência e acrescenta regressão da dependência privada, esperando a capacidade antes dos comandos remotos e da promoção. Não é aprovação independente do produto."
+    },
+    {
+      "path": "scripts/musa_pde_watchdog.py",
+      "sha256": "7fe09647722c1c48182e61119b2898c75cd3ba61c84fd246f9a37d0ead59cf36",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "scripts/test-production-freshness.py",
+      "sha256": "acacba9eb2b21d73a4ed0895408bcd534870250fc7d379268796ac3eb14b550b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/vega-ciclo10-publicacao-coordenada-v1.md",
+      "sha256": "efacb3990fa39afefd1cee1c579960ada89ee7f5e81784ebee806242f1185c05",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-ciclo10/local-release-readiness.json",
+      "sha256": "0dbc7da3f306c8c765f116f80cde9b5a79ea4c4616c450f0bd4f8508d71d2b8a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/vega-cycle10-preparation-v4.json",
+      "sha256": "06a82bcdcb58a3b8fa13f48515cff7f8d79c34cc2f7e02aa8f2c73369440099d",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva a experiência v13 e o histórico validado; muda somente coordenação e evidência de publicação."
+    },
+    {
+      "path": ".github/workflows/production-freshness-contract.yml",
+      "sha256": "11a2500578d3f5e3ec7e3d57ff7b3f3c8879e3507748ebb08f0ddc49cea442d7",
+      "promptMode": "FULL"
+    }
+  ],
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/vega-cycle10-preparation-v6.json",
+    "reason": "Compatibilidade das fontes compartilhadas, sem reescrever experiências v12/v13 ou pareceres históricos. O encerramento corrigido existe exclusivamente na v14."
+  },
+  "deploymentValidation": {
+    "mode": "PRIVATE_PREPARATION_READ_ONLY",
+    "pagePath": "/agent-validation",
+    "contractPath": "/api/pde/vega/private/v1/contract",
+    "readOnly": true
+  },
+  "previousLearningCycleId": 7,
+  "previousExperimentId": 100,
+  "releaseCoordination": {
+    "phase": "BEFORE_PROMOTION",
+    "capabilityReadOnly": true,
+    "timeoutSeconds": 1800,
+    "previousManifest": "pde-platform/contracts/vega-cycle10-preparation-v4.json",
+    "previousManifestSha256": "06a82bcdcb58a3b8fa13f48515cff7f8d79c34cc2f7e02aa8f2c73369440099d",
+    "scope": "Coordenação e leitura dos mesmos fatos; sem nova condição testada ou autorização financeira."
+  }
+}

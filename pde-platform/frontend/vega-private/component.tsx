@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "./style.css";
 const API = "/api/pde/vega/private/v1";
 const continuityVersion = "musa-pde-entry-v13-primeiro-ajuste-aplicavel";
+const stateAwareClosureVersion = "musa-pde-entry-v14-primeiro-ajuste-aplicavel";
 const storageKey = "vega-private-session-v1";
 type Card = {
   action: string;
@@ -511,7 +512,9 @@ export default function VegaPrivatePrototype() {
                     )}
                     <section className="panel">
                       <h2>Conhecer uma possível continuidade</h2>
-                      {session.prototypeVersion === continuityVersion ? (
+                      {[continuityVersion, stateAwareClosureVersion].includes(
+                        session.prototypeVersion,
+                      ) ? (
                         <>
                           <p>
                             Seu ajuste gratuito serve para a ocasião que você
@@ -576,8 +579,32 @@ export default function VegaPrivatePrototype() {
               </p>
               {session.state === "FINISHED" ? (
                 <p role="status">
-                  Leitura encerrada. Seu ajuste continua disponível durante a
-                  validade do convite.
+                  {session.prototypeVersion === stateAwareClosureVersion &&
+                  !card ? (
+                    session.generationStatus === "BLOCKED" ? (
+                      <>
+                        Leitura encerrada. Este pedido foi bloqueado e nenhum
+                        ajuste foi gerado. Suas escolhas foram preservadas;
+                        reformule acima usando as roupas que você já possui.
+                      </>
+                    ) : session.generationStatus === "FAILED" ? (
+                      <>
+                        Leitura encerrada. Não foi possível gerar um ajuste.
+                        Suas escolhas foram preservadas; você pode tentar
+                        novamente acima.
+                      </>
+                    ) : (
+                      <>
+                        Leitura encerrada. Nenhum ajuste foi gerado. Suas
+                        escolhas foram preservadas.
+                      </>
+                    )
+                  ) : (
+                    <>
+                      Leitura encerrada. Seu ajuste continua disponível durante
+                      a validade do convite.
+                    </>
+                  )}
                 </p>
               ) : (
                 <button

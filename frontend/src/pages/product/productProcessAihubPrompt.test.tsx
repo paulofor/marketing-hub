@@ -93,6 +93,18 @@ describe("Contrato do template compartilhado de ajuda", () => {
       expect(instruction).toContain(part);
   });
 
+  it("recupera o registro da versão executável antes de repetir construção ou homologação", () => {
+    for (const part of [
+      "confira primeiro se a mesma versão já está implementada e publicada",
+      "Registrar implementação já testada",
+      "confirme no backend a URL, versão e linhagem recebidas por Psique",
+      "Não peça outra implementação nem repita Dédalo",
+      "Prova de outro ciclo ou versão permanece histórica",
+      "não aprova as revisões independentes nem amplia orçamento",
+    ])
+      expect(instruction).toContain(part);
+  });
+
   it("preserva melhoria comprovada, rentabilidade e limites de autonomia e publicação", () => {
     for (const part of [
       "menor melhoria reutilizável",

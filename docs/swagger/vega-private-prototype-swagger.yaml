@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Vega — protótipo privado por ciclo
-  version: 1.1.0
+  version: 1.2.0
 servers:
   - url: /
 paths:
@@ -9,7 +9,7 @@ paths:
     get:
       summary: Capacidades da versão privada sem criar sessão ou evento
       responses:
-        '200': {description: Versão, cinco sinais e ausência de pagamento}
+        '200': {description: Versão padrão histórica v12, variantes privadas suportadas v12/v13/v14, cinco sinais e ausência de pagamento. A sessão exige versão idêntica à do ciclo.}
   /api/pde/vega/private/v1/access:
     post:
       summary: Trocar convite opaco por sessão após consentimento

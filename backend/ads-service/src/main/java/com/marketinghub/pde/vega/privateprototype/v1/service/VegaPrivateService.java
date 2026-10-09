@@ -45,7 +45,8 @@ public class VegaPrivateService {
   private static final List<String> SUPPORTED_VERSIONS =
       List.of(
           "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
-          "musa-pde-entry-v13-primeiro-ajuste-aplicavel");
+          "musa-pde-entry-v13-primeiro-ajuste-aplicavel",
+          "musa-pde-entry-v14-primeiro-ajuste-aplicavel");
   private static final Set<String> TERMINAL = Set.of("COMPLETED", "FAILED", "BLOCKED");
   private static final List<String> SYNTHETIC_ORIGINS = List.of("QA_INTERNAL", "AGENT_VALIDATION");
   private static final String FIXTURE_MODEL = "vega-deterministic-fixture-v1";

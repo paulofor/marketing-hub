@@ -1,0 +1,123 @@
+{
+  "contractVersion": "VEGA_PRIVATE_SAFETY_LOCAL_V1",
+  "environment": "SANDBOX",
+  "synthetic": true,
+  "productId": 91004,
+  "cycleId": 91002,
+  "experimentId": 91092,
+  "paidModelUsed": false,
+  "commercialEvidenceClaimed": false,
+  "before": {
+    "prototypeVersion": "musa-pde-entry-v13-primeiro-ajuste-aplicavel",
+    "decision": "BLOCKED",
+    "checks": {
+      "sameVersion": true,
+      "desktopAndMobile": true,
+      "happyResultWithinTenMinutes": true,
+      "recoveryPreserved": true,
+      "safetyBlocked": true,
+      "accessibilityBasic": true,
+      "responsiveLayout": true,
+      "privacyPreserved": true,
+      "internalTrafficSegregated": true,
+      "paymentDisabled": true,
+      "publicationDisabled": true,
+      "campaignDisabled": true,
+      "zeroMediaSpend": true,
+      "terminalResultConsistency": false
+    }
+  },
+  "after": {
+    "prototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+    "decision": "APPROVED",
+    "checks": {
+      "sameVersion": true,
+      "desktopAndMobile": true,
+      "happyResultWithinTenMinutes": true,
+      "recoveryPreserved": true,
+      "safetyBlocked": true,
+      "accessibilityBasic": true,
+      "responsiveLayout": true,
+      "privacyPreserved": true,
+      "internalTrafficSegregated": true,
+      "paymentDisabled": true,
+      "publicationDisabled": true,
+      "campaignDisabled": true,
+      "zeroMediaSpend": true,
+      "terminalResultConsistency": true
+    },
+    "scenarios": [
+      {
+        "scenarioCode": "ADHERENT",
+        "deviceProfile": "DESKTOP_1440",
+        "status": "PASS",
+        "terminalResultConsistent": true
+      },
+      {
+        "scenarioCode": "ADHERENT",
+        "deviceProfile": "IPHONE_15_PRO",
+        "status": "PASS",
+        "terminalResultConsistent": true
+      },
+      {
+        "scenarioCode": "ADHERENT",
+        "deviceProfile": "PIXEL_7",
+        "status": "PASS",
+        "terminalResultConsistent": true
+      },
+      {
+        "scenarioCode": "RECOVERY",
+        "deviceProfile": "IPHONE_15_PRO",
+        "status": "PASS",
+        "terminalResultConsistent": true
+      },
+      {
+        "scenarioCode": "SAFETY",
+        "deviceProfile": "PIXEL_7",
+        "status": "PASS",
+        "terminalResultConsistent": true
+      }
+    ]
+  },
+  "browser": {
+    "cases": 27,
+    "failures": 0,
+    "devices": [
+      "DESKTOP_1440",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ]
+  },
+  "backendCases": 51,
+  "backendFailures": 0,
+  "workerJavaCases": 23,
+  "workerJsCases": 38,
+  "sideEffects": {
+    "paymentEnabled": false,
+    "published": false,
+    "campaignCreated": false,
+    "mediaSpendBrl": 0
+  },
+  "captures": [
+    {
+      "scenario": "ADHERENT-DESKTOP_1440",
+      "sha256": "6f244cc304b81c2b1e039b669898d0ba7e49f3cfbe9ee011a217acd3d3af4771"
+    },
+    {
+      "scenario": "ADHERENT-IPHONE_15_PRO",
+      "sha256": "fe15e721c8e1bb8b45a1e7da6eb474b69ee4aa1fb420bc5f32fdf9539d0db286"
+    },
+    {
+      "scenario": "ADHERENT-PIXEL_7",
+      "sha256": "92396a0d98fa81ae2df3ffff74688d953757f2aef3abdc61773d67b9881e1519"
+    },
+    {
+      "scenario": "RECOVERY-IPHONE_15_PRO",
+      "sha256": "fe15e721c8e1bb8b45a1e7da6eb474b69ee4aa1fb420bc5f32fdf9539d0db286"
+    },
+    {
+      "scenario": "SAFETY-PIXEL_7",
+      "sha256": "35feca9f0db73120106a7ccd7d95d56f8add7c1f31a78060a4030dfc1e32fc22"
+    }
+  ]
+}

@@ -111,6 +111,12 @@ permanece desconhecido, nunca zero; este lembrete não autoriza novo gasto nem m
   os vínculos com subprocessos. Antes de retomar uma execução bloqueada, confirme a correção
   da causa e a validade das entradas. Reutilize resultados válidos; não repita chamadas pagas
   com as mesmas entradas e o mesmo impedimento, nem contorne gates para obter sucesso.
+- Se a homologação não recebeu uma URL aceita, confira primeiro se a mesma versão já está
+  implementada e publicada. Após revalidar a entrega, registre sua prova pela opção
+  **Registrar implementação já testada** do próprio ciclo e confirme no backend a URL,
+  versão e linhagem recebidas por Psique. Não peça outra implementação nem repita Dédalo
+  somente porque faltou esse registro. Prova de outro ciclo ou versão permanece histórica;
+  registrar implementação não aprova as revisões independentes nem amplia orçamento.
 - Nos pontos decisivos, compare três alternativas por benefício, risco, esforço e aderência
   ao objetivo e registre brevemente a escolha. Só peça decisão por ambiguidade real de produto,
   acesso indispensável ausente, gasto ou ação externa que exija consentimento ainda não dado.

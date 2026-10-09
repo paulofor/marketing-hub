@@ -9649,3 +9649,31 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   compositor/navegador, sem declarar capacidade por identidade do produto.
 - **Registro:** `docs/homologacao/capella-perfil-contrato-2026-10-09.md`. Correção
   técnica preserva candidata, história e teto cumulativo; não é evidência comercial.
+
+## LOOP-PROVA-EXECUTAVEL-SEM-REGISTRO-CICLO — 09/10/2026
+
+- **Caso:** Vega 4 / ciclo 10 / experimento 103, execução 59, aguardava homologação sem tarefa
+  de Psique. A imagem v13 estava publicada, mas o diário continha só aprendizado e planejamento.
+- **Causa confirmada:** a entrega não foi registrada no ciclo. O evento 48 era da v12 do ciclo 7;
+  não podia liberar a v13. Especificações concluídas e build publicado não substituem o vínculo.
+- **Resolução:** revalidar a mesma implementação e usar `REGISTER_PROTOTYPE` pela tela existente,
+  depois conferir o alvo e o aceite técnico. Não repetir construção nem herdar provas ou orçamento.
+- **Prevenção proporcional:** prompt de ajuda exige essa conferência; teste composto resolve o
+  evento real pelo contexto e disponibilidade da homologação, com outro produto/ciclo/experimento,
+  prova histórica rejeitada e caminho válido. O contrato existente conserva a decisão do backend.
+- **Limite:** não automatiza aprovação independente, publicação comercial ou gasto. Registro:
+  [Vega — vínculo da entrega](../homologacao/vega-ciclo10-registro-homologacao-2026-10-09.md).
+
+## LOOP-ENCERRAMENTO-ANUNCIA-RESULTADO-INEXISTENTE — 09/10/2026
+
+- **Caso:** Psique 699, Vega v13 / ciclo 10 / experimento 103, rejeitou o rodapé que dizia existir
+  um ajuste disponível, embora o bloqueio de segurança estivesse correto e `card=null`.
+- **Causa:** o frontend escolhia o encerramento só por `FINISHED`; o harness verificava estado
+  e cartão sem conferir a afirmação final. A execução local reproduziu a mesma divergência.
+- **Resolução:** v14 distingue cartão salvo, bloqueio, falha e ausência de geração. Preserva
+  v12/v13 e exige sucessor conforme `CHANGE_PER_CYCLE_V1`.
+- **Prevenção:** verificador genérico compara aviso e resultado persistido, conserva captura
+  e classifica divergência como `BLOCKED`. A regressão cobre a falha original, outro vocabulário
+  e resultados antes válidos; 27 casos de navegador e cinco cenários de integração passaram.
+- **Limite:** não é aceite independente, autorização financeira ou evidência comercial.
+  [Matriz e causa](../homologacao/vega-seguranca-v14-2026-10-09.md).

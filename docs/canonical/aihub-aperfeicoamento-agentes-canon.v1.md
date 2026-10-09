@@ -38,6 +38,21 @@ terminal, preservando o contrato JSON integral em armazenamento adequado. Testes
 callback aceito, primeira falha com preservação, replay sem custo, segunda falha terminal, payload
 incompleto e executor sem suporte. **STOP** administrativo é contenção, não substitui essa proteção.
 
+## Registro da prova executável antes da homologação — 09/10/2026
+
+A ausência de URL aceita na fila não comprova ausência de software. Na atividade de homologação,
+o agente de ajuda deve comparar a versão do ciclo, a imagem publicada, os testes e os eventos do
+próprio ciclo. Se a implementação compatível já existe, revalidar a entrega e registrar sua prova
+pela opção **Registrar implementação já testada**, usando o contrato existente
+`REGISTER_PROTOTYPE`. Confirmar depois a URL, versão e linhagem no alvo entregue ao executor.
+Não repetir especificação, implementação, inferência ou orçamento para corrigir somente o vínculo.
+
+A prova não pode ser copiada de um predecessor nem substitui a homologação técnica e os pareceres
+independentes. O backend conserva a decisão de avanço e as pausas e limites vigentes. Regressões
+devem compor evento persistido, resolução do alvo e disponibilidade da homologação, cobrindo a
+ausência original, outra identidade, prova histórica e o caminho anteriormente válido. Instrução
+no prompt, isoladamente, não comprova aprendizado ou execução.
+
 ## Cinco pontos em toda oferta — decisão de 22/09/2026
 
 O texto compartilhado dos botões **Prompt para AIHUB**, incluindo prévia e cópia manual,

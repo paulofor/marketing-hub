@@ -2,11 +2,15 @@ package com.marketinghub.planning.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityCompletion;
+import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityReadiness;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
+import com.marketinghub.communication.v1.PrivateCreativeSelection;
 import com.marketinghub.planning.CommercialPlanVisualAssetStatus;
 import com.marketinghub.planning.dto.CommercialPlanVisualAssetDto;
 import com.marketinghub.planning.imagestudio.v1.CommercialPlanVisualAssetReviewStatus;
@@ -14,6 +18,7 @@ import com.marketinghub.product.Product;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -23,12 +28,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CreativeSelectionHumanActivityHandlerTest {
   @Mock private CommercialPlanApprovedProcessAssetService approvedAssets;
+  @Mock private PrivateCreativeSelection privateSelection;
 
   /** Exige os dois pareceres do mesmo arquivo antes de liberar a confirmação humana. */
   @Test
   void exposesApprovedPixelsAsHumanDecisionRequirement() {
     CreativeSelectionHumanActivityHandler handler =
-        new CreativeSelectionHumanActivityHandler(approvedAssets);
+        new CreativeSelectionHumanActivityHandler(approvedAssets, privateSelection);
     Product product = product();
     when(approvedAssets.readiness(product, "experiment:93"))
         .thenReturn(
@@ -53,7 +59,7 @@ class CreativeSelectionHumanActivityHandlerTest {
   @Test
   void importsAssetsAndReturnsAuditableCompletion() {
     CreativeSelectionHumanActivityHandler handler =
-        new CreativeSelectionHumanActivityHandler(approvedAssets);
+        new CreativeSelectionHumanActivityHandler(approvedAssets, privateSelection);
     Product product = product();
     CommercialPlanVisualAssetDto asset = asset();
     when(approvedAssets.importForHumanDecision(product, "experiment:93"))
@@ -79,6 +85,54 @@ class CreativeSelectionHumanActivityHandlerTest {
         .containsEntry("published", false)
         .containsEntry("externalMediaSpendAuthorized", false);
     verify(approvedAssets).importForHumanDecision(product, "experiment:93");
+  }
+
+  /** O modo privado, pronto ou bloqueado, nunca recorre à importação comercial. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(booleans = {true, false})
+  void delegatesPrivateReadinessWithoutCommercialPlan(boolean ready) {
+    var process = process();
+    var product = product();
+    var readiness =
+        new HumanProductProcessActivityReadiness(
+            ready,
+            "Prova privada.",
+            "Aprovar uso privado da peça",
+            "Somente preparação.",
+            "Confirme o uso",
+            "Uso privado sem publicação.",
+            "private-token",
+            null,
+            null,
+            List.of());
+    when(privateSelection.readiness(process, product, "experiment:98777"))
+        .thenReturn(Optional.of(readiness));
+    var result =
+        new CreativeSelectionHumanActivityHandler(approvedAssets, privateSelection)
+            .readiness(process, activity(), product, "experiment:98777");
+    assertThat(result).isEqualTo(readiness);
+    verifyNoInteractions(approvedAssets);
+  }
+
+  /**
+   * A decisão privada retorna sua auditoria existente e não promove arquivos ao storage público.
+   */
+  @Test
+  void recordsPrivateApprovalWithoutImportingPublicAssets() {
+    var process = process();
+    var product = product();
+    var completion =
+        HumanProductProcessActivityCompletion.completed(Map.of("scope", "PRIVATE_PREPARATION"));
+    when(privateSelection.completeApproval(process, product, "experiment:98777", "private-token"))
+        .thenReturn(Optional.of(completion));
+    var request =
+        new ProductProcessActivityExecutionRequest(
+            "APPROVE", null, null, null, "private-token", Map.of());
+    var handler = new CreativeSelectionHumanActivityHandler(approvedAssets, privateSelection);
+    assertThat(handler.completeApproval(process, activity(), product, "experiment:98777", request))
+        .isEqualTo(completion);
+    handler.approve(process, activity(), product, "experiment:98777", request);
+    verifyNoInteractions(approvedAssets);
   }
 
   /** Monta o processo canônico governado pelo handler. */

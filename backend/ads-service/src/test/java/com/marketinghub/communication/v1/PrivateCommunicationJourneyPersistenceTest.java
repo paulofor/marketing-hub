@@ -1,14 +1,22 @@
 package com.marketinghub.communication.v1;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
+import com.marketinghub.agenttask.CommunicationMaterializationContextProvider;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocess.execution.service.humanactivity.StandardHumanProductProcessActivityExecutor;
+import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorReadiness;
 import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorService;
+import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.planning.service.CommercialPlanApprovedProcessAssetService;
+import com.marketinghub.planning.service.CreativeSelectionHumanActivityHandler;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
@@ -179,6 +187,152 @@ class PrivateCommunicationJourneyPersistenceTest {
                             activity.getId(), "experiment:92041"))
                 .isPresent());
     assertThat(statements).anyMatch(sql -> sql.toLowerCase().contains("for update"));
+  }
+
+  /**
+   * Persiste aceites e rejeições privadas com custo zero e conserva o aceite ao reiniciar o
+   * executor.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"APPROVE", "REJECT"})
+  void persistsPrivateSelectionWithoutCommercialImport(String decision) throws Exception {
+    var json = new ObjectMapper();
+    var manager = SharedEntityManagerCreator.createSharedEntityManager(factory.getObject());
+    writing.executeWithoutResult(
+        status -> {
+          process.setProcessCode("creative-production-approval");
+          activity.setActivityId("human");
+          activity.setOwnerName("Operador humano");
+          manager.merge(process);
+          manager.merge(activity);
+        });
+    String reference = "experiment:92041";
+    String version = "private-persistence-v1";
+    var context =
+        json.createObjectNode()
+            .put("availability", "AVAILABLE")
+            .put("inputReadiness", "READY")
+            .put("mode", "LEARNING_CYCLE_PRIVATE")
+            .put("sourceReference", reference)
+            .put("prototypeVersion", version)
+            .put("publicationAuthorized", false)
+            .put("paymentEnabled", false)
+            .put("externalMediaSpendAuthorized", false);
+    context.putObject("product").put("id", product.getId());
+    context
+        .putObject(PrivateCreativePreparationContext.FIELD)
+        .put("contractVersion", PrivateCreativePreparationContext.VERSION)
+        .put("scope", "PRIVATE_PREPARATION")
+        .put("sourceReference", reference)
+        .put("prototypeVersion", version)
+        .put("nonAudiovisualEvidenceRequired", true)
+        .put("publicationAuthorized", false)
+        .put("spendAuthorized", false)
+        .put("commercialEvidenceClaimed", false);
+    var produced =
+        json.createObjectNode()
+            .put("contractVersion", "IRIS_COMMUNICATION_V1")
+            .put("executionStatus", "COMPLETED")
+            .put("outputType", "NON_AUDIOVISUAL_PACKAGE")
+            .put("sourceReference", reference);
+    produced
+        .putObject("functionalOutput")
+        .putArray("renderedAssets")
+        .addObject()
+        .put("artifactId", 920569L)
+        .put("sha256", "c".repeat(64))
+        .put("prototypeVersion", version)
+        .put("privateValidation", true);
+    var review = json.createObjectNode().put("decision", "APPROVED");
+    review.putArray("requiredChanges");
+    review
+        .putArray("renderedAssetAudit")
+        .addObject()
+        .put("artifactId", 920569L)
+        .put("sha256", "c".repeat(64));
+    var tasks = mock(AgentTaskRepository.class);
+    when(tasks.findFunctionalSnapshotsByProcessSince(process.getId(), reference, null))
+        .thenReturn(
+            List.of(
+                new AgentTaskFunctionalSnapshot(
+                    920654L,
+                    process.getId(),
+                    process.getProcessCode(),
+                    "nonAudiovisual",
+                    "communication-director",
+                    "COMPLETED",
+                    Instant.now().minusSeconds(60),
+                    Instant.now().minusSeconds(30),
+                    produced.toString()),
+                new AgentTaskFunctionalSnapshot(
+                    920655L,
+                    process.getId(),
+                    process.getProcessCode(),
+                    "customer",
+                    "customer-agent",
+                    "COMPLETED",
+                    Instant.now().minusSeconds(60),
+                    Instant.now().minusSeconds(30),
+                    review.toString()),
+                new AgentTaskFunctionalSnapshot(
+                    920656L,
+                    process.getId(),
+                    process.getProcessCode(),
+                    "commercial",
+                    "meta-ad-approver",
+                    "COMPLETED",
+                    Instant.now().minusSeconds(60),
+                    Instant.now().minusSeconds(30),
+                    review.toString())));
+    var materialization = mock(CommunicationMaterializationContextProvider.class);
+    when(materialization.resolve(reference))
+        .thenReturn(Optional.of(json.convertValue(context, Map.class)));
+    var selection =
+        new PrivateCreativeSelection(
+            materialization, new PrivateCommunicationCreativeProof(tasks, instances, json), json);
+    var assets = mock(CommercialPlanApprovedProcessAssetService.class);
+    var handler = new CreativeSelectionHumanActivityHandler(assets, selection);
+    var predecessors = mock(ProductProcessActivityPredecessorService.class);
+    when(predecessors.readiness(process, activity, reference))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Pareceres concluídos."));
+    var executor =
+        new StandardHumanProductProcessActivityExecutor(
+            instances, predecessors, json, List.of(handler));
+    var readiness =
+        reading.execute(status -> executor.readiness(process, activity, product, reference));
+    var request =
+        new ProductProcessActivityExecutionRequest(
+            decision,
+            null,
+            "Não desejo usar a peça privada.",
+            null,
+            readiness.confirmationToken(),
+            Map.of());
+    writing.executeWithoutResult(
+        status -> executor.execute(process, activity, product, reference, request));
+    var stored = reading.execute(status -> instances.findAll().getFirst());
+    assertThat(stored.getStatus()).isEqualTo("APPROVE".equals(decision) ? "COMPLETED" : "BLOCKED");
+    assertThat(stored.isObjectiveAchieved()).isEqualTo("APPROVE".equals(decision));
+    assertThat(stored.getKnownCostUsd()).isZero();
+    assertThat(json.readTree(stored.getObjectiveEvidenceJson()).path("decision").asText())
+        .isEqualTo(decision);
+    if ("APPROVE".equals(decision)) {
+      var proof = json.readTree(stored.getObjectiveEvidenceJson()).path("structuredEvidence");
+      assertThat(proof.path("scope").asText()).isEqualTo("PRIVATE_PREPARATION");
+      assertThat(proof.path("creativeProof").path("producerTaskId").asLong()).isEqualTo(920654L);
+      var restarted =
+          new StandardHumanProductProcessActivityExecutor(
+              instances, predecessors, json, List.of(handler));
+      assertThatThrownBy(
+              () ->
+                  writing.executeWithoutResult(
+                      status -> restarted.execute(process, activity, product, reference, request)))
+          .hasMessageContaining("decisão ativa ou concluída");
+      Long count = reading.execute(status -> instances.count());
+      assertThat(count).isEqualTo(1L);
+    }
+    verifyNoInteractions(assets);
+    verify(tasks, never()).save(any());
   }
 
   /** Grava uma prova sintética com identidade completa, separada de produtos e métricas reais. */

@@ -516,3 +516,24 @@ correção funcional necessária gera nova peça pelo fluxo existente, com limit
 Regressões cobrem identidades independentes, template comercial e captura não criativa.
 
 Registro e matriz: `docs/homologacao/mira-rotulo-prova-mobile-2026-10-09.md`.
+
+### Seleção de uso privado após os pareceres — 2026-10-09
+
+O subprocesso criativo conserva a decisão humana terminal também nos modos
+`LEARNING_CYCLE_PRIVATE`, `PRODUCT_PRIVATE` e `INITIAL_EXPERIMENT_PRIVATE`.
+O contexto canônico, inclusive quando bloqueado, define o escopo: uma preparação
+privada não pode recorrer à importação comercial por ausência de plano.
+
+A confirmação reutiliza a produção atual e os pareceres independentes de Psique
+e Têmis sobre os mesmos IDs, hashes e versão. O backend registra essa seleção na
+própria evidência BPM, sem copiar arquivos para storage público, criar plano
+artificial, publicar campanha, habilitar cobrança ou conceder mídia/vídeo pago.
+O token da confirmação corresponde ao produto, referência, versão, produção e
+pareceres; mudança da seleção exige nova leitura antes do aceite. A decisão não
+é executada automaticamente e não comprova vendas ou resposta humana ao produto.
+
+Contratos comerciais conservam a seleção e a importação para a biblioteca do
+plano. Após o aceite privado, o processo pai reutiliza a experiência homologada
+para comprovar destino e integração privados, sem nova inferência.
+
+Evidência: [Mira — seleção criativa privada](../homologacao/mira-selecao-criativa-privada-2026-10-09.md).

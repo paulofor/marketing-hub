@@ -7,6 +7,7 @@ import com.marketinghub.businessprocess.execution.service.humanactivity.HumanPro
 import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityReadiness;
 import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityRequirement;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
+import com.marketinghub.communication.v1.PrivateCreativeSelection;
 import com.marketinghub.product.Product;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,16 +16,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Responsabilidade: vincular ao plano as peças selecionadas na decisão humana do processo criativo.
+ * Responsabilidade: aplicar a seleção humana de criativos no contrato privado ou comercial
+ * correspondente.
  */
 @Service
 public class CreativeSelectionHumanActivityHandler implements HumanProductProcessActivityHandler {
   private final CommercialPlanApprovedProcessAssetService approvedAssets;
+  private final PrivateCreativeSelection privateSelection;
 
-  /** Configura o efeito de domínio que materializa a seleção humana na biblioteca comercial. */
+  /** Configura os efeitos segregados da seleção privada e da biblioteca comercial. */
   public CreativeSelectionHumanActivityHandler(
-      CommercialPlanApprovedProcessAssetService approvedAssets) {
+      CommercialPlanApprovedProcessAssetService approvedAssets,
+      PrivateCreativeSelection privateSelection) {
     this.approvedAssets = approvedAssets;
+    this.privateSelection = privateSelection;
   }
 
   /** Reconhece somente a decisão humana terminal da produção e aprovação de criativos. */
@@ -38,7 +43,7 @@ public class CreativeSelectionHumanActivityHandler implements HumanProductProces
             activityDefinition.getActivityId());
   }
 
-  /** Explica se produção, Psique e Têmis aprovaram exatamente os mesmos pixels. */
+  /** Explica os pareceres dos mesmos pixels e mantém a confirmação no escopo aprovado. */
   @Override
   @Transactional(readOnly = true)
   public HumanProductProcessActivityReadiness readiness(
@@ -46,6 +51,8 @@ public class CreativeSelectionHumanActivityHandler implements HumanProductProces
       BusinessProcessActivityDefinition activityDefinition,
       Product product,
       String sourceReference) {
+    var privateReadiness = privateSelection.readiness(process, product, sourceReference);
+    if (privateReadiness.isPresent()) return privateReadiness.get();
     CommercialPlanApprovedProcessAssetService.ImportReadiness importReadiness =
         approvedAssets.readiness(product, sourceReference);
     List<HumanProductProcessActivityRequirement> requirements =
@@ -74,7 +81,7 @@ public class CreativeSelectionHumanActivityHandler implements HumanProductProces
         requirements);
   }
 
-  /** Importa a seleção aprovada quando o executor usa o contrato padrão da interface. */
+  /** Confere a seleção privada ou importa a comercial quando o executor usa o contrato padrão. */
   @Override
   @Transactional
   public void approve(
@@ -83,10 +90,13 @@ public class CreativeSelectionHumanActivityHandler implements HumanProductProces
       Product product,
       String sourceReference,
       ProductProcessActivityExecutionRequest request) {
+    if (privateSelection
+        .completeApproval(process, product, sourceReference, request.confirmationToken())
+        .isPresent()) return;
     approvedAssets.importForHumanDecision(product, sourceReference);
   }
 
-  /** Acrescenta IDs, hashes e plano à própria evidência da decisão humana. */
+  /** Acrescenta a prova privada ou os ativos do plano à evidência da decisão humana. */
   @Override
   @Transactional
   public HumanProductProcessActivityCompletion completeApproval(
@@ -95,6 +105,10 @@ public class CreativeSelectionHumanActivityHandler implements HumanProductProces
       Product product,
       String sourceReference,
       ProductProcessActivityExecutionRequest request) {
+    var privateCompletion =
+        privateSelection.completeApproval(
+            process, product, sourceReference, request.confirmationToken());
+    if (privateCompletion.isPresent()) return privateCompletion.get();
     CommercialPlanApprovedProcessAssetService.ImportResult imported =
         approvedAssets.importForHumanDecision(product, sourceReference);
     Map<String, Object> evidence = new LinkedHashMap<>(request.structuredEvidence());

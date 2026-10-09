@@ -8,9 +8,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.*;
+import com.marketinghub.agenttask.CommunicationMaterializationContextProvider;
 import com.marketinghub.businessprocess.*;
+import com.marketinghub.businessprocess.execution.service.humanactivity.StandardHumanProductProcessActivityExecutor;
 import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorService;
+import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.planning.service.CommercialPlanApprovedProcessAssetService;
+import com.marketinghub.planning.service.CreativeSelectionHumanActivityHandler;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.*;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
@@ -281,6 +286,82 @@ class PrivateCommunicationJourneyTest {
     assertThat(proof.path("publicationAuthorized").asBoolean()).isFalse();
     assertThat(journey.stale(parent, integrationActivity, product, REFERENCE)).isFalse();
     verifyNoInteractions(processes);
+    verify(tasks, never()).save(any());
+  }
+
+  /**
+   * A decisão privada real persiste a peça revisada e permite o retorno ao pai sem plano ou modelo.
+   */
+  @Test
+  void privateHumanSelectionCompletesDestinationAndIntegrationWithoutCommercialImport()
+      throws Exception {
+    persisted.removeIf(i -> "human".equals(i.getActivityDefinition().getActivityId()));
+    var human = activity(child, 910646L, "human");
+    human.setOwnerName("Operador humano");
+    var materialization = mock(CommunicationMaterializationContextProvider.class);
+    input
+        .putObject(PrivateCreativePreparationContext.FIELD)
+        .put("contractVersion", PrivateCreativePreparationContext.VERSION)
+        .put("scope", "PRIVATE_PREPARATION")
+        .put("sourceReference", REFERENCE)
+        .put("prototypeVersion", VERSION)
+        .put("nonAudiovisualEvidenceRequired", true)
+        .put("publicationAuthorized", false)
+        .put("spendAuthorized", false)
+        .put("commercialEvidenceClaimed", false);
+    when(materialization.resolve(REFERENCE))
+        .thenAnswer(i -> Optional.of(json.convertValue(input, Map.class)));
+    var proof = new PrivateCommunicationCreativeProof(tasks, instances, json);
+    var selection = new PrivateCreativeSelection(materialization, proof, json);
+    var assets = mock(CommercialPlanApprovedProcessAssetService.class);
+    var handler = new CreativeSelectionHumanActivityHandler(assets, selection);
+    var predecessors = mock(ProductProcessActivityPredecessorService.class);
+    when(predecessors.readiness(child, human, REFERENCE))
+        .thenReturn(
+            new com.marketinghub.businessprocess.execution.service.predecessor
+                .ProductProcessActivityPredecessorReadiness(true, "Pareceres concluídos."));
+    var executor =
+        new StandardHumanProductProcessActivityExecutor(
+            instances, predecessors, json, List.of(handler));
+    assertThat(journey.readiness(parent, destinationActivity, product, REFERENCE).ready())
+        .isFalse();
+    var readiness = executor.readiness(child, human, product, REFERENCE);
+    assertThat(readiness.ready()).isTrue();
+    var request =
+        new ProductProcessActivityExecutionRequest(
+            "APPROVE", null, null, null, readiness.confirmationToken(), Map.of());
+    assertThat(executor.execute(child, human, product, REFERENCE, request).objectiveAchieved())
+        .isTrue();
+    var decision = persisted.getLast();
+    assertThat(
+            json.readTree(decision.getObjectiveEvidenceJson())
+                .path("structuredEvidence")
+                .path("evidenceType")
+                .asText())
+        .isEqualTo("PDE_PRIVATE_CREATIVE_SELECTION_V1");
+    assertThat(decision.getKnownCostUsd()).isZero();
+    var restarted =
+        new StandardHumanProductProcessActivityExecutor(
+            instances, predecessors, json, List.of(handler));
+    assertThatThrownBy(() -> restarted.execute(child, human, product, REFERENCE, request))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("decisão ativa ou concluída");
+    assertThat(
+            destination
+                .execute(parent, destinationActivity, product, REFERENCE)
+                .objectiveAchieved())
+        .isTrue();
+    assertThat(
+            journey.complete(parent, integrationActivity, product, REFERENCE).objectiveAchieved())
+        .isTrue();
+    assertThat(persisted).hasSize(5);
+    assertThat(
+            json.readTree(persisted.getLast().getObjectiveEvidenceJson())
+                .path("creativeApproval")
+                .path("humanDecisionInstanceId")
+                .asLong())
+        .isEqualTo(decision.getId());
+    verifyNoInteractions(assets);
     verify(tasks, never()).save(any());
   }
 

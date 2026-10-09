@@ -17,6 +17,8 @@ import com.marketinghub.repository.jpa.processautomation.ProcessRunRepository;
 import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Responsabilidade: preservar a dependência real e a diferença entre dado ausente, teste e venda
@@ -33,7 +35,107 @@ class LearningCycleValueFlowProjectionTest {
   private final ProcessRunRepository runs = mock(ProcessRunRepository.class);
   private final LearningCycleValueFlowProjection projection =
       new LearningCycleValueFlowProjection(
-          capabilities, artifacts, tasks, events, runs, prototype, new LearningCycleJson(mapper));
+          capabilities,
+          artifacts,
+          tasks,
+          events,
+          runs,
+          prototype,
+          new LearningCycleJson(mapper),
+          new LearningCycleVideoBudget(events, new LearningCycleJson(mapper)));
+
+  /** Mira e outro produto devem expor a decisão real sem inventar orçamento ou execução. */
+  @ParameterizedTest
+  @CsvSource({"10,9,102,mira-private-candidate-v3", "87,56,195,independent-v2"})
+  void videoBriefRequiresItsOwnBudget(
+      long productId, long cycleId, long experimentId, String version) {
+    var cycle = videoFixture(productId, cycleId, experimentId, version);
+    var flow = projection.resolve(cycle, null);
+    assertThat(flow.decisionNeeded()).isTrue();
+    assertThat(flow.situation()).contains("aguarda sua decisão", "produção e revisão");
+    assertThat(flow.resolvingResponsible()).contains("Você");
+    assertThat(flow.awaitingResponsible()).contains("Apolo", "Plutus");
+    assertThat(flow.decisionReason()).contains("Financeiro dos vídeos", "US$", "duas peças");
+    assertThat(flow.saleBlocker()).contains("não autoriza vídeos ou mídia");
+    assertThat(flow.activeExecution()).isFalse();
+    assertThat(flow.marketMeasurement()).isNull();
+    verify(events).findByCycleIdAndActionOrderByRevisionDesc(cycleId, "AUTHORIZE_VIDEO_BUDGET");
+    verify(events, never()).saveAndFlush(any());
+    verifyNoInteractions(runs);
+  }
+
+  /** A autorização vigente elimina a pergunta financeira sem afirmar que a produção começou. */
+  @Test
+  void currentVideoBudgetIsReusedWithoutClaimingProduction() {
+    var cycle = videoFixture(10, 9, 102, "mira-private-candidate-v3");
+    when(events.findByCycleIdAndActionOrderByRevisionDesc(9L, "AUTHORIZE_VIDEO_BUDGET"))
+        .thenReturn(List.of(videoAuthorization(cycle, cycle.getProductVersion(), 102L)));
+    var flow = projection.resolve(cycle, null);
+    assertThat(flow.decisionNeeded()).isFalse();
+    assertThat(flow.situation()).contains("teto dos vídeos está registrado", "briefing");
+    assertThat(flow.decisionReason()).contains("reutilizado", "não inicia produção");
+    assertThat(flow.saleBlocker()).contains("produção, revisão e integração");
+    assertThat(flow.activeExecution()).isFalse();
+    verify(events, never()).saveAndFlush(any());
+  }
+
+  /** Um recibo de outra versão ou experimento não autoriza a candidata corrente. */
+  @ParameterizedTest
+  @CsvSource({"old-version,102", "mira-private-candidate-v3,93"})
+  void historicalVideoBudgetDoesNotHideCurrentDecision(String version, long experimentId) {
+    var cycle = videoFixture(10, 9, 102, "mira-private-candidate-v3");
+    when(events.findByCycleIdAndActionOrderByRevisionDesc(9L, "AUTHORIZE_VIDEO_BUDGET"))
+        .thenReturn(List.of(videoAuthorization(cycle, version, experimentId)));
+    assertThat(projection.resolve(cycle, null).decisionNeeded()).isTrue();
+  }
+
+  /** Ciclo encerrado preserva o histórico sem solicitar uma autorização nova. */
+  @Test
+  void closedVideoBriefDoesNotRequestAnotherBudget() {
+    var cycle = videoFixture(10, 9, 102, "mira-private-candidate-v3");
+    cycle.setStatus("CLOSED");
+    var flow = projection.resolve(cycle, null);
+    assertThat(flow.decisionNeeded()).isFalse();
+    assertThat(flow.situation()).contains("encerrado");
+    verify(events, never()).findByCycleIdAndActionOrderByRevisionDesc(anyLong(), anyString());
+  }
+
+  /** Reproduz a etapa após a entrega privada aceita, sem tarefa ou processo ativo. */
+  private LearningSalesCycle videoFixture(
+      long productId, long cycleId, long experimentId, String version) {
+    var cycle = fixture();
+    cycle.setProductId(productId);
+    cycle.setId(cycleId);
+    cycle.setExperimentId(experimentId);
+    cycle.setProductVersion(version);
+    cycle.setStage("VIDEO_BRIEF");
+    cycle.setVersionChangedAt(Instant.EPOCH);
+    when(capabilities.resolve(cycle))
+        .thenReturn(new Capability(false, null, "Etapa audiovisual", null));
+    when(prototype.resolve(cycle)).thenReturn(Optional.of(mapper.createObjectNode()));
+    return cycle;
+  }
+
+  /** Monta recibo real para usar o mesmo validador de identidade do financeiro dos vídeos. */
+  private LearningSalesCycleEvent videoAuthorization(
+      LearningSalesCycle cycle, String version, long experimentId) {
+    var event = new LearningSalesCycleEvent();
+    event.setId(777L);
+    event.setCycleId(cycle.getId());
+    event.setCreatedAt(Instant.now());
+    event.setEvidenceReference(
+        "internal://learning-cycles/" + cycle.getId() + "/video-budget/test");
+    event.setEvidenceJson(
+        mapper
+            .createObjectNode()
+            .put("productVersion", version)
+            .put("experimentId", experimentId)
+            .put("currency", "USD")
+            .put("scope", "TWO_VIDEOS_PRODUCTION_AND_REVIEW")
+            .put("budgetLimitUsd", 5)
+            .toString());
+    return event;
+  }
 
   /** Capella homologada continua pausada; a tela não pode negar a necessidade de retomada. */
   @Test

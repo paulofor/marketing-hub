@@ -554,3 +554,24 @@ Fonte, especificação, saída bruta e custo continuam auditados. As revisões
 independentes examinam os pixels finais, e seu aceite não autoriza publicação.
 
 Regressões e matriz: [Capella — ressalva no rodapé](../homologacao/capella-ressalva-rodape-2026-10-09.md).
+
+### Autoria preservada na passagem ao destino — 09/10/2026
+
+Cada item de `communicationArtifacts` do ciclo privado preserva `agentKey` da tarefa
+persistida, além de ID da tarefa, definição, atividade, resultado e SHA-256. Filtrar
+internamente por Íris não substitui entregar sua identidade no contrato consumido.
+O destino continua conferindo autoria, ocorrência concluída, referência, definição,
+estratégia e bytes; não pode aceitar origem ausente ou divergente para contornar
+uma falha de projeção.
+
+Em Capella, ciclo 12/experimento 105, comunicação #690, criativo #693, pareceres
+#694/#695 e aceite humano #619 estavam preservados. A projeção omitia autoria,
+travando a execução #64 na atividade 4.3. Corrigir o produtor permite reaproveitar
+essas provas sem nova inferência, sem gerar landing intermediária e sem ampliar
+autorização financeira ou comercial.
+
+O harness deve testar a saída do produtor real no consumidor até destino e
+integração, cobrindo V3/V4, outro produto, ausência/divergência de autoria e
+histórico válido. Replay offline usa os IDs/definições exportados e o contexto
+congelado, sem reescrever resultados ou acessar produção. Matriz e evidências:
+[Capella — passagem ao destino](../homologacao/capella-destino-comunicacao-2026-10-09.md).

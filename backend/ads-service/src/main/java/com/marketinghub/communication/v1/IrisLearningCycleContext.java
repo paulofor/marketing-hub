@@ -328,7 +328,7 @@ public class IrisLearningCycleContext {
             .equals(java.time.Instant.parse(resolution.path("reportGeneratedAt").asText()));
   }
 
-  /** Entrega somente a última tentativa de cada atividade de comunicação do próprio ciclo. */
+  /** Preserva autoria, identidade e bytes da última tentativa de comunicação do próprio ciclo. */
   private List<Map<String, Object>> communicationArtifacts(
       String reference, LearningSalesCycle cycle) throws Exception {
     Map<String, com.marketinghub.agenttask.AgentTaskFunctionalSnapshot> latest =
@@ -368,6 +368,8 @@ public class IrisLearningCycleContext {
           Map.of(
               "taskId",
               task.id(),
+              "agentKey",
+              task.agentKey(),
               "processDefinitionId",
               task.processDefinitionId(),
               "activityId",

@@ -289,6 +289,169 @@ class PrivateCommunicationJourneyTest {
     verify(tasks, never()).save(any());
   }
 
+  /** Consome a projeção real do ciclo até a integração, sem acrescentar campos na fixture. */
+  @ParameterizedTest
+  @ValueSource(strings = {"MARKET_STRATEGY_V3", "MARKET_STRATEGY_V4"})
+  void completesJourneyUsingTheActualCycleContextProducer(String strategyVersion) throws Exception {
+    var provider = projectedCycleContext(strategyVersion);
+    when(context.resolve(REFERENCE)).thenAnswer(ignored -> provider.resolve(REFERENCE));
+    var route = destination.readiness(parent, destinationActivity, product, REFERENCE);
+    assertThat(route.ready()).as(route.reason()).isTrue();
+    assertThat(route.navigationUrl()).isEqualTo(URL);
+    assertThat(route.targetProcessDefinitionId()).isNull();
+    assertThat(
+            destination
+                .execute(parent, destinationActivity, product, REFERENCE)
+                .objectiveAchieved())
+        .isTrue();
+    assertThat(
+            journey.complete(parent, integrationActivity, product, REFERENCE).objectiveAchieved())
+        .isTrue();
+    journey.complete(parent, integrationActivity, product, REFERENCE);
+    assertThat(persisted).hasSize(5);
+    assertThat(persisted.getLast().getKnownCostUsd()).isZero();
+    assertThat(journey.stale(parent, integrationActivity, product, REFERENCE)).isFalse();
+    var proof = json.readTree(persisted.getLast().getObjectiveEvidenceJson());
+    assertThat(proof.path("communicationTaskId").asLong()).isEqualTo(communicationTask.getId());
+    assertThat(proof.path("communicationSha256").asText())
+        .isEqualTo(sha(communicationTask.getResultJson()));
+    assertThat(proof.path("checkoutMode").asText()).isEqualTo("SIMULATED");
+    assertThat(proof.path("publicationAuthorized").asBoolean()).isFalse();
+    assertThat(proof.path("commercialEvidenceClaimed").asBoolean()).isFalse();
+    verifyNoInteractions(processes);
+    verify(tasks, never()).save(any());
+  }
+
+  /** Monta as fontes do produtor com tarefas persistidas e cinco pareceres do mesmo contexto. */
+  private IrisLearningCycleContext projectedCycleContext(String strategyVersion) throws Exception {
+    var strategy =
+        json.createObjectNode()
+            .put("contractVersion", strategyVersion)
+            .put("valueMechanism", "Resultado sintético útil e recuperável.");
+    var output = (ObjectNode) json.readTree(communicationTask.getResultJson());
+    output.withObject("/strategicContractReference").put("contentHash", sha(strategy.toString()));
+    communicationTask.setResultJson(output.toString());
+    when(tasks.findFunctionalSnapshots(eq(REFERENCE), anyCollection(), isNull()))
+        .thenReturn(
+            List.of(
+                new AgentTaskFunctionalSnapshot(
+                    communicationTask.getId(),
+                    parent.getId(),
+                    parent.getProcessCode(),
+                    communicationTask.getProcessActivityId(),
+                    communicationTask.getAssignedAgent().getAgentKey(),
+                    communicationTask.getStatus(),
+                    Instant.parse("2026-09-12T08:00:00Z"),
+                    Instant.parse("2026-09-12T08:01:00Z"),
+                    communicationTask.getResultJson())));
+    var constructionProcess = new BusinessProcessDefinition();
+    constructionProcess.setId(91070L);
+    constructionProcess.setProcessCode("pde-construction-approval");
+    var chain = new com.marketinghub.businessprocesschain.BusinessProcessChainDefinition();
+    var item = new com.marketinghub.businessprocesschain.BusinessProcessChainItem();
+    item.setProcessDefinition(constructionProcess);
+    chain.setItems(List.of(item));
+    var gate = completed(activity(constructionProcess, 910650L, "agentValidationGate"), "{}");
+    var gateProof =
+        json.createObjectNode()
+            .put("evidenceType", "PDE_AGENT_VALIDATION_GATE_V1")
+            .put("sourceReference", REFERENCE)
+            .put("productId", product.getId())
+            .put("productSlug", product.getSlug())
+            .put("prototypeVersion", VERSION)
+            .put("publicUrl", URL)
+            .put("trafficClass", "AGENT_VALIDATION")
+            .put("internalMarker", "mh_internal_test")
+            .put("humanEvidenceClaimed", false)
+            .put("commercialEvidenceClaimed", false)
+            .put("paymentEnabled", false)
+            .put("publicationAuthorized", false)
+            .put("campaignAuthorized", false)
+            .put("mediaSpendAuthorizedBrl", 0);
+    var reviews =
+        new ArrayList<com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot>();
+    var evidence = gateProof.putArray("taskEvidence");
+    long taskId = 910395L;
+    for (String code :
+        List.of(
+            "technicalHomologation",
+            "psiqueAdherent",
+            "psiqueRecovery",
+            "psiqueSafety",
+            "commercialIntegrityReview")) {
+      String result =
+          "technicalHomologation".equals(code)
+              ? input.path("approvedUpstreamArtifacts").get(0).path("result").toString()
+              : "{\"decision\":\"APPROVED\"}";
+      reviews.add(
+          new com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot(
+              taskId, constructionProcess.getId(), code, "COMPLETED", null, null, result, null));
+      evidence
+          .addObject()
+          .put("taskId", taskId++)
+          .put("activityId", code)
+          .put(
+              "agentKey",
+              "commercialIntegrityReview".equals(code) ? "meta-ad-approver" : "customer-agent")
+          .put("resultSha256", sha(result));
+    }
+    gate.setObjectiveEvidenceJson(gateProof.toString());
+    var pde = json.createObjectNode();
+    pde.set("marketStrategy", strategy);
+    pde.putObject("lineage")
+        .put("learningCycleId", cycle.getId())
+        .put("strategyTaskId", 910359L)
+        .put("economicsTaskId", 910361L)
+        .put("architectureTaskId", 910362L);
+    pde.putObject("economics").put("commercialSpendAuthorized", false);
+    pde.putObject("harness").put("prototypeObjective", "Resultado privado.");
+    pde.putObject("privatePrototypeAcceptance")
+        .put("prototypeVersion", VERSION)
+        .put("privateAccessUrl", URL);
+    cycle.setChainDefinitionId(91014L);
+    cycle.setProductVersion(VERSION);
+    var experiment = new com.marketinghub.experiment.Experiment();
+    experiment.setId(cycle.getExperimentId());
+    experiment.setProduct(product);
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    var experiments = mock(com.marketinghub.repository.jpa.experiment.ExperimentRepository.class);
+    when(experiments.findById(experiment.getId())).thenReturn(Optional.of(experiment));
+    var chains =
+        mock(
+            com.marketinghub.repository.jpa.businessprocesschain
+                .BusinessProcessChainDefinitionRepository.class);
+    when(chains.findById(cycle.getChainDefinitionId())).thenReturn(Optional.of(chain));
+    var construction =
+        mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleConstructionContext.class);
+    when(construction.resolve(REFERENCE, experiment, constructionProcess.getProcessCode()))
+        .thenReturn(
+            Optional.of(
+                new AgentTaskTargetResponse(
+                    REFERENCE,
+                    experiment.getId(),
+                    product.getId(),
+                    product.getSlug(),
+                    "PDE de teste",
+                    "Outro produto QA",
+                    VERSION,
+                    URL,
+                    null,
+                    null,
+                    null,
+                    null,
+                    pde)));
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
+                constructionProcess.getId(), REFERENCE))
+        .thenReturn(List.of(gate));
+    when(tasks.findPdeValidationTaskSnapshots(REFERENCE, constructionProcess.getProcessCode()))
+        .thenReturn(reviews);
+    return new IrisLearningCycleContext(
+        cycles, experiments, chains, construction, instances, tasks, json);
+  }
+
   /**
    * A decisão privada real persiste a peça revisada e permite o retorno ao pai sem plano ou modelo.
    */
@@ -381,6 +544,8 @@ class PrivateCommunicationJourneyTest {
         "taskHash",
         "taskResult",
         "taskAgent",
+        "artifactAgent",
+        "missingArtifactAgent",
         "taskInstance",
         "taskProcess",
         "creativeReview",
@@ -407,6 +572,11 @@ class PrivateCommunicationJourneyTest {
               .put("resultSha256", "e".repeat(64));
       case "taskResult" -> communicationTask.setResultJson("{}");
       case "taskAgent" -> communicationTask.getAssignedAgent().setAgentKey("another-agent");
+      case "artifactAgent" ->
+          ((ObjectNode) input.path("communicationArtifacts").get(0))
+              .put("agentKey", "another-agent");
+      case "missingArtifactAgent" ->
+          ((ObjectNode) input.path("communicationArtifacts").get(0)).remove("agentKey");
       case "taskInstance" -> communicationTask.getActivityInstance().setStatus("BLOCKED");
       case "taskProcess" ->
           communicationTask.getProcessDefinition().setProcessCode("other-process");

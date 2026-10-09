@@ -6572,6 +6572,26 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
   `VARCHAR(32)`, conforme o changelog canônico inicial e o contrato JPA, repara somente a candidata
   v8/experimento #92 ainda não publicada e acrescenta regressão física com o `ENUM` legado.
 
+### Recorrência — autoria omitida no contexto do ciclo, 09/10/2026
+
+- **Evidência:** Capella #7/ciclo #12/#105, execução #64 do Processo 4 #113/v11 em
+  `WAITING_INPUT` na atividade `destination`. Criativos #65 concluídos, peça #693,
+  pareceres #694/#695 e aceite humano #619 preservados. Estratégia #678 e contrato
+  #690 possuem o mesmo hash; não há divergência comercial nem tarefa ativa de landing.
+- **Causa:** `IrisLearningCycleContext.communicationArtifacts` filtrava por Íris, mas
+  não entregava `agentKey`, obrigatório em `PrivateCommunicationJourney.communication`.
+  Fixtures do consumidor inseriam esse campo manualmente, escondendo o defeito.
+- **Correção:** preservar a autoria persistida no produtor, mantendo todas as
+  conferências de origem, versão, referência, definição, hashes e pareceres. Não
+  reexecutar modelos nem recriar ativos aprovados para reparar projeção.
+- **Prevenção:** teste de autoria/bytes no produtor; produtor real → destino →
+  integração em V3/V4 e outro produto; replay offline dos registros de Capella com
+  IDs/definições exportados e produtor real. Autoria ausente/divergente continua
+  bloqueando. Histórico, rota comercial e consultas JPA mantêm suas regressões.
+- **Escopo:** prepara a jornada privada do mesmo contrato; não autoriza publicação
+  comercial, cobrança, mídia ou vídeo pago. Matriz em
+  `docs/homologacao/capella-destino-comunicacao-2026-10-09.md`.
+
 ## LOOP-CICLO-GATE-FONTE-DIVERGENTE — homologação ignora o gate do experimento
 
 - **Evidência em 12/09/2026:** Vega, ciclo 2, experimento 92. Gate #258 concluído na v12

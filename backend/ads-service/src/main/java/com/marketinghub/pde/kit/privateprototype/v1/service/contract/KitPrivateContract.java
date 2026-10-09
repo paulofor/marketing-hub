@@ -18,7 +18,25 @@ public final class KitPrivateContract {
       @NotNull @Min(1) Long cycleId,
       @NotBlank @Size(max = 160) String prototypeVersion,
       @NotBlank String scenarioCode,
-      @NotBlank String deviceProfile) {}
+      @NotBlank String deviceProfile,
+      SafetyCase safetyCase) {
+    /** Preserva a emissão anterior sem atribuir uma causa inexistente ao cenário de segurança. */
+    public Create(
+        UUID requestKey,
+        Long productId,
+        Long cycleId,
+        String prototypeVersion,
+        String scenarioCode,
+        String deviceProfile) {
+      this(requestKey, productId, cycleId, prototypeVersion, scenarioCode, deviceProfile, null);
+    }
+  }
+
+  /** Identifica a condição sintética bloqueada, sem deduzi-la de dados pessoais ou texto livre. */
+  public enum SafetyCase {
+    UNVERIFIED_VISUAL_ORIGIN,
+    EXTERNAL_ACTION
+  }
 
   /** Entrega o acesso opaco uma única vez, sem colocá-lo em URLs ou evidências. */
   public record Created(String sessionId, String sessionToken, SessionView session) {}
@@ -65,12 +83,22 @@ public final class KitPrivateContract {
       String productName,
       String status,
       String reason,
+      Presentation presentation,
       JsonNode input,
       JsonNode firstApplication,
       JsonNode manifest,
       List<JsonNode> events,
       int transfers,
       Instant expiresAt) {}
+
+  /** Entrega explicação e ação permitida do estado persistido para apresentação pela interface. */
+  public record Presentation(
+      String title,
+      String introduction,
+      String reasonCode,
+      String nextStep,
+      String nextActionLabel,
+      String nextActionPath) {}
 
   /** Entrega entrada estruturada ao único compositor registrado para o perfil do kit. */
   public record Pending(

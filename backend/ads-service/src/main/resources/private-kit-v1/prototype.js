@@ -41,6 +41,14 @@
     error('');
     $('identity').textContent = current.productName + ' · produto #' + current.productId + ' · ciclo #' + current.cycleId + ' · ' + current.prototypeVersion;
     $('status').textContent = current.reason;
+    const presentation = current.presentation;
+    $('title').textContent = presentation.title;
+    $('introduction').textContent = presentation.introduction;
+    $('blocked').hidden = !presentation.nextActionPath;
+    $('next-step').textContent = presentation.nextStep;
+    $('review-cycle').textContent = presentation.nextActionLabel;
+    if (presentation.nextActionPath) $('review-cycle').href = new URL(presentation.nextActionPath, 'http://191.252.181.168:5173').href;
+    else $('review-cycle').removeAttribute('href');
     $('briefing').hidden = current.status !== 'INPUT';
     $('result').hidden = true;
     $('resume').hidden = true;

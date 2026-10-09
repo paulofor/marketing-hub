@@ -116,6 +116,28 @@ alvo, e o contrato do ciclo precisa ser compatível com o executor antes de libe
 
 ## Rejeição, correção e nova validação
 
+### Orientação do bloqueio dos kits — 09/10/2026
+
+A rejeição #664 de Capella demonstrou uma lacuna compartilhada: o teste técnico
+confirmava bloqueio de composição e ausência de efeitos externos, mas a interface
+continuava prometendo resultado pronto. O backend passa a entregar título,
+explicação e ação interna coerentes com o estado persistido. A fixture SAFETY nova
+declara e preserva a condição (`UNVERIFIED_VISUAL_ORIGIN` ou `EXTERNAL_ACTION`);
+sessões antigas sem essa condição informam explicitamente a falta de causa específica
+e orientam revisão interna, sem inventar uma classificação.
+
+O harness exige causa, ausência de resultado, ação do mesmo
+produto/ciclo e preservação ao reabrir antes do parecer pago. Abrir a revisão não
+remove o bloqueio, reserva outra composição ou dispara inferência. A regressão
+executa nails-v1 e barber-v1, nove combinações por perfil, caminhos aderente e de
+recuperação, callbacks de Psique e gate com modelos simulados. A matriz e os limites
+estão em [homologação de Capella](../homologacao/capella-seguranca-kit-2026-10-09.md).
+A mudança funcional segue para ciclo e experimento sucessores conforme
+`CHANGE_PER_CYCLE_V1`, retornando à homologação da versão corrigida. Pareceres,
+artefatos e custos anteriores ficam no predecessor; autorizações não são herdadas.
+Uma autorização explícita para a preparação do produto deve ser registrada no novo
+contexto com o mesmo teto cumulativo, sem duplicar o limite ou apagar consumo.
+
 ### Prova compatível do pacote de kits — 08/10/2026
 
 O compositor deve cumprir a organização e a quantidade de arquivos dos contratos

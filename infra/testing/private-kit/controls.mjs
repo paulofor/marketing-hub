@@ -18,6 +18,21 @@ const duplicate=await request('/internal/sessions',{method:'POST',body:primary.b
 assert.equal((await request('/internal/sessions',{method:'POST',body:{...primary.body,scenarioCode:'RECOVERY'}})).status,409);proof.push('Emissão idempotente mantém acesso e recusa conteúdo divergente.');
 const token=primary.data.sessionToken;
 const baseline={email:'teste+controle@sandbox.local',professionalName:'Studio Controle',cityRegion:'Cidade Exemplo',whatsapp:'00000000000',services:'Corte e barba',visualStyle:'elegante',weeklyGoal:'Apresentar serviço',preferredColors:'preto',notes:'',consentAccepted:true};
+assert.equal((await create(8029,7029,'ADHERENT',{safetyCase:'EXTERNAL_ACTION'})).status,409);
+assert.equal((await create(8029,7029,'SAFETY',{safetyCase:'UNSUPPORTED'})).status,400);
+for(const safetyCase of ['UNVERIFIED_VISUAL_ORIGIN','EXTERNAL_ACTION',null]){
+  const access=await create(8029,7029,'SAFETY',{safetyCase});assert.equal(access.status,200);
+  const blocked=await request('/input',{method:'PUT',session:access.data.sessionToken,body:baseline});
+  assert.equal(blocked.status,200);assert.equal(blocked.data.status,'BLOCKED_SAFE');assert.equal(blocked.data.manifest,null);
+  assert.equal(blocked.data.presentation.reasonCode,safetyCase||'REVIEW_REQUIRED');
+  assert.ok(blocked.data.presentation.title.includes('bloqueada'));assert.ok(blocked.data.presentation.introduction.includes('Nenhum pacote foi gerado'));
+  assert.equal(blocked.data.presentation.nextActionPath,'/business-process-chains/learning-cycles?productId=8029&cycleId=7029');
+  assert.deepEqual((await request('/session',{session:access.data.sessionToken})).data,blocked.data);
+  assert.equal((await request('/download',{session:access.data.sessionToken})).status,409);
+  assert.equal((await request('/events',{method:'POST',session:access.data.sessionToken,body:{eventId:crypto.randomUUID(),code:'VALUE_MOMENT'}})).status,409);
+  assert.equal((await request('/internal/sessions',{method:'POST',body:{...access.body,safetyCase:safetyCase==='EXTERNAL_ACTION'?'UNVERIFIED_VISUAL_ORIGIN':'EXTERNAL_ACTION'}})).status,409);
+}
+proof.push('Bloqueio tem causa explícita ou desconhecida, orientação do mesmo ciclo e reabertura sem pacote, evento de valor ou troca silenciosa da fixture.');
 assert.equal((await request('/input',{method:'PUT',session:token,body:{...baseline,professionalName:''}})).status,400);
 assert.equal((await request('/input',{method:'PUT',session:token,body:{...baseline,consentAccepted:false}})).status,409);
 assert.equal((await request('/input',{method:'PUT',session:token,body:{...baseline,email:'real@example.com'}})).status,409);

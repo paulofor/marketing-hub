@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
+import { validateKitSafety, validatePreservedKitSafety } from './private-kit-safety-contract.mjs';
 const require=createRequire(import.meta.url);
 let library;try{library=require('playwright-core');}catch(ex){if(ex.code!=='MODULE_NOT_FOUND')throw ex;library=require('playwright');}
 const {chromium,devices}=library;
@@ -21,9 +22,13 @@ async function api(path,{method='GET',body,session}={}) {
   if(!response.ok)throw new Error('Contrato privado recusou '+path+' · HTTP '+response.status);
   return response.status===204?null:response.json();
 }
+async function observeSafety(page) {
+  return {title:await page.locator('#title').innerText(),introduction:await page.locator('#introduction').innerText(),reason:await page.locator('#status').innerText(),nextStep:await page.locator('#next-step').innerText(),actionLabel:await page.locator('#review-cycle').innerText(),nextActionUrl:await page.locator('#review-cycle').getAttribute('href'),actionVisible:await page.locator('#review-cycle').isVisible(),resultHidden:await page.locator('#result').isHidden()};
+}
 try {
   for(const [scenarioCode,deviceProfile] of plans){
-    const created=await api('/internal/sessions',{method:'POST',body:{requestKey:crypto.randomUUID(),productId:input.productId,cycleId:input.cycleId,prototypeVersion:input.prototypeVersion,scenarioCode,deviceProfile}});
+    const safetyCase=scenarioCode==='SAFETY'?(deviceProfile==='IPHONE_15_PRO'?'EXTERNAL_ACTION':'UNVERIFIED_VISUAL_ORIGIN'):undefined;
+    const created=await api('/internal/sessions',{method:'POST',body:{requestKey:crypto.randomUUID(),productId:input.productId,cycleId:input.cycleId,prototypeVersion:input.prototypeVersion,scenarioCode,deviceProfile,...(safetyCase?{safetyCase}:{})}});
     const context=await browser.newContext({...profiles[deviceProfile],acceptDownloads:true});
     const page=await context.newPage();const begin=Date.now();
     try {
@@ -39,10 +44,16 @@ try {
         await page.locator('[name=cityRegion]').fill('Cidade Exemplo');
       }
       if(scenarioCode==='RECOVERY') { let intercepted=false; await page.route('**/assets/post-01.png',route=>{ if(!intercepted){intercepted=true;return route.fulfill({status:503,contentType:'application/json',body:'{"detail":"Falha sintética de transporte"}'});}return route.continue(); }); }
-      await page.locator('#prepare').click();let recovered=false,resumed=false,safetyBlocked=false,downloadedSha256=null;
+      await page.locator('#prepare').click();let recovered=false,resumed=false,safetyBlocked=false,safetyOutcome=null,downloadedSha256=null;
       if(scenarioCode==='SAFETY'){
         await page.locator('#status').filter({hasText:'bloqueada antes da composição'}).waitFor();
-        safetyBlocked=await page.locator('#result').isHidden();
+        await page.locator('#blocked').waitFor({state:'visible'});
+        const blocked=await api('/session',{session:created.sessionToken});
+        const safetyContext={productId:input.productId,cycleId:input.cycleId,safetyCase};
+        validateKitSafety(blocked,await observeSafety(page),safetyContext);
+        await page.reload();await page.locator('#blocked').waitFor({state:'visible'});
+        const preserved=await api('/session',{session:created.sessionToken});
+        safetyOutcome=validatePreservedKitSafety(blocked,preserved,await observeSafety(page),safetyContext);safetyBlocked=true;
       }else{
         if(scenarioCode==='RECOVERY') { await page.locator('#reload').waitFor({state:'visible',timeout:600000}); await page.locator('#reload').click(); }
         await page.locator('#result').waitFor({state:'visible',timeout:600000});
@@ -73,10 +84,10 @@ try {
       if(!layout.noHorizontalOverflow||!layout.controlsNamed)throw new Error('Layout ou acessibilidade básica reprovados.');
       const key=scenarioCode+'-'+deviceProfile,path=resolve(directory,key+'.png');await page.screenshot({path,fullPage:true});
       artifacts.push({captureSessionId:input.captureSessionId,evidenceKey:key,evidenceType:'FULL_PAGE',deviceProfile,pageNumber:1,foldNumber:null,viewportWidth:profiles[deviceProfile].viewport.width,viewportHeight:profiles[deviceProfile].viewport.height,pageHeightPx:layout.height,scrollY:0,sourceUrl:input.sourceUrl,finalUrl:page.url(),capturedAt:new Date().toISOString(),localPath:path});
-      scenarios.push({scenarioCode,deviceProfile,status:'PASS',prototypeVersion:current.prototypeVersion,evidenceId:current.id,screenshotEvidenceKeys:[key],events:current.events.map(e=>e.code),packageFileCount:current.manifest?.files.length||0,zipSha256:current.manifest?.zipSha256||null,resultReadySeconds:(Date.now()-begin)/1000,resumed,recovered,safetyBlocked,accessibilityBasic:layout.controlsNamed,noHorizontalOverflow:layout.noHorizontalOverflow,privacyPreserved:current.input?.email?.endsWith('@sandbox.local')&&current.input?.whatsapp==='00000000000',providerCalls:0,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false});
+      scenarios.push({scenarioCode,deviceProfile,status:'PASS',prototypeVersion:current.prototypeVersion,evidenceId:current.id,screenshotEvidenceKeys:[key],events:current.events.map(e=>e.code),packageFileCount:current.manifest?.files.length||0,zipSha256:current.manifest?.zipSha256||null,resultReadySeconds:(Date.now()-begin)/1000,resumed,recovered,safetyBlocked,safetyOutcome,accessibilityBasic:layout.controlsNamed,noHorizontalOverflow:layout.noHorizontalOverflow,privacyPreserved:current.input?.email?.endsWith('@sandbox.local')&&current.input?.whatsapp==='00000000000',providerCalls:0,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false});
       await writeFile(outputFile+'.partial',JSON.stringify({status:'IN_PROGRESS',scenarios,artifacts},null,2));
     }finally{await context.close();}
   }
 }finally{await browser.close();}
 const checks={sameVersion:scenarios.every(s=>s.prototypeVersion===input.prototypeVersion),desktopAndMobile:input.mode!=='TECHNICAL'||Object.keys(profiles).every(d=>scenarios.some(s=>s.deviceProfile===d)),happyResultWithinTenMinutes:scenarios.every(s=>s.resultReadySeconds<=600),recoveryPreserved:scenarios.filter(s=>s.scenarioCode==='RECOVERY').every(s=>s.recovered),safetyBlocked:scenarios.filter(s=>s.scenarioCode==='SAFETY').every(s=>s.safetyBlocked),accessibilityBasic:scenarios.every(s=>s.accessibilityBasic),responsiveLayout:scenarios.every(s=>s.noHorizontalOverflow),privacyPreserved:scenarios.every(s=>s.privacyPreserved),internalTrafficSegregated:true,paymentDisabled:true,publicationDisabled:true,campaignDisabled:true,zeroMediaSpend:true};
-await writeFile(outputFile,JSON.stringify({contractVersion:'PDE_AGENT_TECHNICAL_HOMOLOGATION_V1',fixtureContract:'PDE_PRIVATE_KIT_FIXTURES_V1',packageContractVersion,mode:input.mode,decision:Object.values(checks).every(Boolean)?'APPROVED':'BLOCKED',sourceReference:input.sourceReference,productId:input.productId,productSlug:input.productSlug,profileCode:input.profileCode,publicUrl:input.sourceUrl,prototypeVersion:input.prototypeVersion,trafficClass:'AGENT_VALIDATION',internalMarker:'mh_internal_test',providerCalls:0,startedAt:startedAt.toISOString(),finishedAt:new Date().toISOString(),durationSeconds:(Date.now()-startedAt)/1000,devices:Object.keys(profiles).filter(d=>plans.some(p=>p[1]===d)).map(deviceProfile=>({deviceProfile,status:'PASS',screenshotEvidenceKeys:artifacts.filter(a=>a.deviceProfile===deviceProfile).map(a=>a.evidenceKey)})),scenarios,checks,artifacts,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false,evidence:scenarios.map(s=>s.evidenceId)},null,2));
+await writeFile(outputFile,JSON.stringify({contractVersion:'PDE_AGENT_TECHNICAL_HOMOLOGATION_V1',fixtureContract:'PDE_PRIVATE_KIT_FIXTURES_V1',packageContractVersion,mode:input.mode,decision:Object.values(checks).every(Boolean)?'APPROVED':'BLOCKED',sourceReference:input.sourceReference,productId:input.productId,cycleId:input.cycleId,productSlug:input.productSlug,profileCode:input.profileCode,publicUrl:input.sourceUrl,prototypeVersion:input.prototypeVersion,trafficClass:'AGENT_VALIDATION',internalMarker:'mh_internal_test',providerCalls:0,startedAt:startedAt.toISOString(),finishedAt:new Date().toISOString(),durationSeconds:(Date.now()-startedAt)/1000,devices:Object.keys(profiles).filter(d=>plans.some(p=>p[1]===d)).map(deviceProfile=>({deviceProfile,status:'PASS',screenshotEvidenceKeys:artifacts.filter(a=>a.deviceProfile===deviceProfile).map(a=>a.evidenceKey)})),scenarios,checks,artifacts,sideEffects,humanEvidenceClaimed:false,commercialEvidenceClaimed:false,evidence:scenarios.map(s=>s.evidenceId)},null,2));

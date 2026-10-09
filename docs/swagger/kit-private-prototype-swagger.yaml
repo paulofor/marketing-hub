@@ -1,0 +1,136 @@
+openapi: 3.0.3
+info:
+  title: Kit privado — sessão e apresentação por estado
+  version: 1.1.0
+  description: Prova sintética governada pelo backend; não autoriza compra, publicação ou gasto.
+servers:
+  - url: http://191.252.181.168
+paths:
+  /api/pde/kit/private/v1/internal/sessions:
+    post:
+      summary: Emite acesso privado para a fixture do mesmo produto, ciclo e versão
+      parameters:
+        - in: header
+          name: X-PDE-Internal-Token
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Create' }
+      responses:
+        '200':
+          description: Acesso opaco; guardar o token fora de URLs e evidências
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId: { type: string }
+                  sessionToken: { type: string }
+                  session: { $ref: '#/components/schemas/SessionView' }
+        '400': { description: Entrada inválida ou condição de segurança desconhecida }
+        '409': { description: Identidade divergente ou condição SAFETY usada em outro cenário }
+  /api/pde/kit/private/v1/admin/sessions:
+    post:
+      summary: Emite o mesmo acesso sintético pela administração
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Create' }
+      responses:
+        '200': { description: Mesmo contrato da emissão interna }
+  /api/pde/kit/private/v1/session:
+    get:
+      summary: Recupera estado, motivo e apresentação canônica da sessão autenticada
+      parameters:
+        - $ref: '#/components/parameters/SessionToken'
+      responses:
+        '200':
+          description: Sessão preservada sem nova composição ou evento
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionView' }
+        '401': { description: Acesso inválido, expirado ou revogado }
+  /api/pde/kit/private/v1/input:
+    put:
+      summary: Confere briefing sintético antes da reserva; SAFETY preserva bloqueio e causa
+      parameters:
+        - $ref: '#/components/parameters/SessionToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, professionalName, cityRegion, whatsapp, services, visualStyle, weeklyGoal, consentAccepted]
+              properties:
+                email: { type: string, format: email, maxLength: 160, example: teste+kit@sandbox.local }
+                professionalName: { type: string, maxLength: 100 }
+                cityRegion: { type: string, maxLength: 100 }
+                whatsapp: { type: string, enum: ['00000000000'] }
+                services: { type: string, maxLength: 160 }
+                visualStyle: { type: string, maxLength: 100 }
+                weeklyGoal: { type: string, maxLength: 200 }
+                preferredColors: { type: string, maxLength: 100 }
+                notes: { type: string, maxLength: 500 }
+                consentAccepted: { type: boolean, enum: [true] }
+      responses:
+        '200':
+          description: Estado real; BLOCKED_SAFE não possui manifesto ou composição
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionView' }
+        '409': { description: Consentimento, identidade, quota ou contrato incompatíveis }
+components:
+  parameters:
+    SessionToken:
+      in: header
+      name: X-Kit-Session
+      required: true
+      schema: { type: string }
+  schemas:
+    Create:
+      type: object
+      required: [requestKey, productId, cycleId, prototypeVersion, scenarioCode, deviceProfile]
+      properties:
+        requestKey: { type: string, format: uuid }
+        productId: { type: integer, format: int64, minimum: 1 }
+        cycleId: { type: integer, format: int64, minimum: 1 }
+        prototypeVersion: { type: string, maxLength: 160 }
+        scenarioCode: { type: string, enum: [ADHERENT, RECOVERY, SAFETY] }
+        deviceProfile: { type: string, enum: [DESKTOP_1440, IPHONE_15_PRO, PIXEL_7] }
+        safetyCase:
+          type: string
+          nullable: true
+          enum: [UNVERIFIED_VISUAL_ORIGIN, EXTERNAL_ACTION]
+          description: Somente SAFETY. Ausência preserva REVIEW_REQUIRED, sem inventar causa. Reuso de requestKey exige a mesma condição.
+    SessionView:
+      type: object
+      required: [id, productId, cycleId, experimentId, prototypeVersion, status, reason, presentation, events]
+      properties:
+        id: { type: string }
+        productId: { type: integer, format: int64 }
+        cycleId: { type: integer, format: int64 }
+        experimentId: { type: integer, format: int64 }
+        prototypeVersion: { type: string }
+        status: { type: string, enum: [INPUT, QUEUED, RUNNING, READY, FAILED, BLOCKED_SAFE] }
+        reason: { type: string }
+        presentation:
+          type: object
+          required: [title, introduction, reasonCode, nextStep, nextActionLabel, nextActionPath]
+          properties:
+            title: { type: string }
+            introduction: { type: string }
+            reasonCode: { type: string }
+            nextStep: { type: string }
+            nextActionLabel: { type: string }
+            nextActionPath:
+              type: string
+              description: Caminho da revisão administrativa do mesmo produto e ciclo, sem token; vazio quando não há ação interna.
+        input: { type: object }
+        firstApplication: { type: object, nullable: true }
+        manifest: { type: object, nullable: true }
+        events: { type: array, items: { type: object } }

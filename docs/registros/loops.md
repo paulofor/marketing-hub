@@ -8227,6 +8227,16 @@ Ver `docs/homologacao/opala-preparacao-comercial-v1.md`.
   da proporção 1,2:1 a 2,2:1. Testes protegem o rótulo nos modos privado e não privado e a área útil
   da prova. A peça corrigida deve ser regenerada pelo fluxo oficial, conferida em 393 px e novamente
   submetida a Psique e Têmis, sem substituição manual de artefato.
+- **Recorrência do rodapé confirmada em 09/10/2026:** Capella, ciclo 12,
+  experimento 105. Íris #691 declarou `footer=Sem garantia de clientes ou
+  agendamentos.`, mas o PNG 595 omitiu o texto; Psique #692 solicitou sua
+  restauração. O mesmo ramo privado substituía o rodapé por seu aviso fixo.
+  Repetir apenas o briefing não removia a causa.
+- **Prevenção do rodapé:** imprimir marcador privado e ressalva factual com
+  fonte 36 sem alterar os pixels da prova; recusar ausência ou transbordamento.
+  Regressões verificam pixels de dois domínios, ramo comercial antes válido,
+  HTTP de materialização, callback e replay sem inferência. Registro e matriz:
+  `docs/homologacao/capella-ressalva-rodape-2026-10-09.md`.
 - **Recorrência de transporte confirmada:** a peça #407 foi aprovada por Psique #527, Têmis #528 e
   pela decisão humana do processo #64, mas o subprocesso de landing continuou bloqueado porque o
   plano #8 só consultava sua biblioteca visual e nenhum contrato transportava a seleção aprovada.

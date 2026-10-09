@@ -81,3 +81,9 @@ Em cada `staticAssets[]`, preencha `renderSpec` com templateVersion `PROOF_CARD_
 Campos de texto: brandLabel (marca pública curta), eyebrow (rótulo curto), headline (até duas linhas, ~35 caracteres), body (até duas linhas, ~90 caracteres), ctaText (uma linha curta, ~35 caracteres), footer (limite factual curto). Cores backgroundColor e accentColor em #RRGGBB, com alto contraste: fundo claro, destaque escuro. Use texto comercial claro e fiel ao briefing aprovado; sem prometer compra, oferta ou resultado que o protótipo não entrega.
 
 Em validação privada o executor imprime os marcadores “APLICAÇÃO WEB PRIVADA” e “Demonstração sintética · sem compra ou cobrança”. Não confunda esse trabalho com publicação de anúncio. O PNG, hash, URL privada e linhagem são acrescentados pelo executor em `functionalOutput.renderedAssets`; não invente esses campos na resposta do modelo. Inclua em `nextHandoff` a revisão da **imagem final** por Psique e Têmis. Campos não aplicáveis nos demais tipos de saída continuam vazios; não produza staticAssets fora da atividade de produção.
+
+O `footer` é um limite factual obrigatório e permanece impresso também na peça privada,
+além do aviso de demonstração sintética. Use uma ressalva curta: os dois textos ocupam até
+duas linhas em fonte de 36 pixels, sem reduzir fonte nem cortar a prova ou o CTA. Não repita
+o aviso privado no `footer` nem esconda o limite factual em outro campo para contornar o
+template. Ausência ou excesso de texto bloqueia a renderização antes de persistir a peça.

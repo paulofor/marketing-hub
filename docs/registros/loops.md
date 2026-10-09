@@ -9576,3 +9576,26 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - Limites: não aprova peça automaticamente, não cria oferta nem plano, não publica,
   não autoriza mídia, cobrança ou vídeo pago. Preparação não comprova mercado.
 - Registro: [Mira — seleção privada](../homologacao/mira-selecao-criativa-privada-2026-10-09.md).
+
+## LOOP-KIT-ACOES-UTEIS-DEPOIS-DAS-PREVIAS — 09/10/2026
+
+- **Evidência:** Psique #676 rejeitou capella-private-v2: copiar na segunda dobra
+  e baixar na terceira, apesar dos nove cenários funcionais aprovados em #675.
+  O parecer #660 já observava ações após rolagem; a limitação não surgiu na
+  correção de segurança. A variação de nota 3→2 expôs um critério não determinístico.
+- **Causa:** artes com altura natural precediam as ações; o harness verificava
+  nomes e overflow horizontal, mas não o alcance inteiro dos botões no viewport.
+- **Correção compartilhada:** copiar/baixar antes das artes, entrada no resultado
+  voltando ao início e controles internos de teste recolhidos. Arquivos e proporções
+  preservados. O navegador mede posições reais antes de agir e após retomada.
+- **Prevenção:** caso original, outro produto/perfil, desktop/iPhone/Pixel,
+  posições fora da primeira tela, controles parciais/ocultos/desabilitados e
+  recuperação/segurança; nenhuma reação humana ou venda é inferida.
+- **Desperdício associado:** Dédalo #677 consumiu US$ 0,5170628 estimados apenas
+  para declarar que a candidata ainda era a versão rejeitada. A prontidão agora
+  exige sucessor antes de correção funcional em `experiment:...`, preservando
+  diagnóstico de falha técnica e correção legada de produto. História e custo
+  permanecem auditáveis; não se reaplica a mesma inferência.
+- **Registro e limites:** `docs/homologacao/capella-primeira-tela-2026-10-09.md`.
+  Novo ciclo/experimento exigidos pela mudança; autorização financeira não é
+  renovada nem transferida. Aprovação técnica não substitui Psique/Têmis ou mercado.

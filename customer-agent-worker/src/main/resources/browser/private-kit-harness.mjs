@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { validateKitSafety, validatePreservedKitSafety } from './private-kit-safety-contract.mjs';
+import { validateFirstKitActions } from './private-kit-first-actions-contract.mjs';
 const require=createRequire(import.meta.url);
 let library;try{library=require('playwright-core');}catch(ex){if(ex.code!=='MODULE_NOT_FOUND')throw ex;library=require('playwright');}
 const {chromium,devices}=library;
@@ -24,6 +25,20 @@ async function api(path,{method='GET',body,session}={}) {
 }
 async function observeSafety(page) {
   return {title:await page.locator('#title').innerText(),introduction:await page.locator('#introduction').innerText(),reason:await page.locator('#status').innerText(),nextStep:await page.locator('#next-step').innerText(),actionLabel:await page.locator('#review-cycle').innerText(),nextActionUrl:await page.locator('#review-cycle').getAttribute('href'),actionVisible:await page.locator('#review-cycle').isVisible(),resultHidden:await page.locator('#result').isHidden()};
+}
+// Mede a tela realmente exibida, sem rolar o navegador para fazer o critério passar.
+async function checkFirstActions(page) {
+  validateFirstKitActions(await page.evaluate(() => ({
+    viewport: { width: innerWidth, height: innerHeight },
+    testControlsClosed: document.querySelector('#test-controls')?.open === false,
+    actions: ['copy-caption', 'download'].map(id => {
+      const element = document.getElementById(id);
+      if (!element) return { id, hidden: true };
+      const rect = element.getBoundingClientRect();
+      return { id, label: element.textContent, x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+        hidden: element.getClientRects().length === 0, disabled: element.disabled };
+    }),
+  })));
 }
 try {
   for(const [scenarioCode,deviceProfile] of plans){
@@ -58,6 +73,7 @@ try {
         if(scenarioCode==='RECOVERY') { await page.locator('#reload').waitFor({state:'visible',timeout:600000}); await page.locator('#reload').click(); }
         await page.locator('#result').waitFor({state:'visible',timeout:600000});
         await page.locator('#post').evaluate(e=>e.decode());await page.locator('#story').evaluate(e=>e.decode());
+        await checkFirstActions(page);
         if(!(await page.locator('#caption').inputValue()).includes('Cidade Exemplo'))throw new Error('A primeira aplicação perdeu a personalização.');
         // Clipboard é observado no navegador; o stub local só resolve a permissão de mobile Chromium.
         await page.evaluate(()=>{window.__copiedText='';Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__copiedText=text;}}});});
@@ -66,11 +82,14 @@ try {
         const download=page.waitForEvent('download');await page.locator('#download').click();const artifact=await download;if(await artifact.failure())throw new Error('Download falhou.');
         await page.locator('#download-status').filter({hasText:'Pacote íntegro recebido'}).waitFor();
         downloadedSha256=createHash('sha256').update(await readFile(await artifact.path())).digest('hex');
+        await page.locator('#test-controls summary').click();
         await page.locator('#prefer').click();await page.locator('#checkout-status').filter({hasText:'Preferência simulada'}).waitFor();
         await page.locator('#checkout').click();await page.locator('#checkout-status').filter({hasText:'Continuidade simulada'}).waitFor();
+        await page.locator('#test-controls summary').click();
         const before=await api('/session',{session:created.sessionToken});
         await page.locator('#exit').click();await page.locator('#resume').waitFor({state:'visible'});await page.locator('#return').click();await page.locator('#result').waitFor({state:'visible'});
         await page.reload();await page.locator('#result').waitFor({state:'visible'});
+        await checkFirstActions(page);
         const after=await api('/session',{session:created.sessionToken});
         resumed=before.manifest.zipSha256===after.manifest.zipSha256&&after.events.some(e=>e.code==='SESSION_RETURNED');recovered=scenarioCode==='RECOVERY'&&resumed;
         if(!resumed)throw new Error('Retomada perdeu o pacote ou criou uma nova composição.');

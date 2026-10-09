@@ -484,3 +484,19 @@ por inferência. O request auditado deve conservar essa entrada. Ausência de no
 não constitui autorização, e referência inconsistente nunca seleciona outro
 produto por nome. A reconsulta atualiza a fonte sem reservar outra tarefa nem
 repetir modelo. Registro e regressões: [Capella e contexto do operador](../homologacao/capella-contexto-operador-2026-10-09.md).
+
+### Primeira aplicação do kit e correção no contexto certo
+
+O harness de kits privados deve medir copiar e baixar inteiros no viewport
+realmente exibido, antes de rolar ou acionar controles. A abertura do resultado
+preserva a orientação da prova e apresenta as ações úteis antes de prévias altas;
+preferência e checkout simulados ficam sob demanda. A retomada deve satisfazer o
+mesmo critério. Essa verificação determinística previne a classe de fricção
+observada em Psique #676; não atribui emoção, preferência ou venda a pessoas.
+
+Para rejeição funcional cuja origem é `experiment:...`, a prontidão deve exigir
+o ciclo/experimento sucessor de CHANGE_PER_CYCLE_V1 antes de encaminhar correção
+por modelo. Enviar Dédalo ao mesmo contexto imutável apenas para diagnosticar a
+falta da candidata não é entrega utilizável. Falhas técnicas sem mudança das
+condições e o contrato legado de produto mantêm seus caminhos próprios. Preserve
+resultados, custos e pareceres, sem herdar autorização ou fabricar aprovação.

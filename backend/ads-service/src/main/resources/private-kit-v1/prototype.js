@@ -44,6 +44,7 @@
     const presentation = current.presentation;
     $('title').textContent = presentation.title;
     $('introduction').textContent = presentation.introduction;
+    $('introduction').hidden = current.status === 'READY';
     $('blocked').hidden = !presentation.nextActionPath;
     $('next-step').textContent = presentation.nextStep;
     $('review-cycle').textContent = presentation.nextActionLabel;
@@ -55,7 +56,7 @@
     $('prepare').disabled = current.status !== 'INPUT';
     audit();
     if (current.status === 'READY') {
-      try { await showResult(); $('result').hidden = false; } catch (ex) { displaying = ''; throw ex; }
+      try { await showResult(); $('result').hidden = false; window.scrollTo(0, 0); } catch (ex) { displaying = ''; throw ex; }
     }
     if (['QUEUED', 'RUNNING'].includes(current.status)) timer = setTimeout(load, 1000);
   }

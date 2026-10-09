@@ -28,7 +28,7 @@ public class KitPrototypeCapabilities {
       "${pde.kit.private-prototype-url:https://pagamentopalf.site/mh-api/pde/kit/private/v1/prototype}")
   private String prototypeUrl;
 
-  /** Confere predecessoras da mesma cadeia e seleciona somente perfil explícito e inequívoco. */
+  /** Confere contratos do mesmo ciclo e reconhece perfil explícito nos campos canônicos aceitos. */
   public Capability resolve(LearningSalesCycle cycle) {
     if (cycle.isBaseline()
         || !"OPEN".equals(cycle.getStatus())
@@ -72,14 +72,17 @@ public class KitPrototypeCapabilities {
         return unavailable("A arquitetura não aprovou esta implementação.");
       var definition = result.path("productArchitecture");
       String explicit = definition.path("kitProfileCode").asText("");
-      // Alias histórico documentado: a referência estratégica identifica explicitamente o perfil.
+      // Aliases do schema v6: formato ou referência identificam explicitamente o mesmo perfil.
       String reference = definition.path("strategyReference").asText("");
+      String format = definition.path("format").asText("");
       var matches =
           List.of("nails-v1", "barber-v1").stream()
               .filter(
                   code ->
                       code.equals(explicit)
-                          || explicit.isBlank() && reference.matches("(?s).*\\b" + code + "\\b.*"))
+                          || explicit.isBlank()
+                              && (containsProfile(reference, code)
+                                  || containsProfile(format, code)))
               .toList();
       if (matches.size() != 1)
         return unavailable(
@@ -99,6 +102,11 @@ public class KitPrototypeCapabilities {
       return unavailable(
           "O contrato de implementação não pôde ser conferido. Preserve a versão e corrija a entrada.");
     }
+  }
+
+  /** Reconhece somente o código completo em campos canônicos, sem inferir pelo produto. */
+  private boolean containsProfile(String value, String code) {
+    return value.matches("(?s).*\\b" + code + "\\b.*");
   }
 
   /** Usa a última tentativa da atividade, sem recuperar aprovação anterior a um bloqueio novo. */

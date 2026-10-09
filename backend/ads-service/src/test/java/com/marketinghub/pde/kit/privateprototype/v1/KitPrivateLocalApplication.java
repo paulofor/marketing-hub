@@ -2,13 +2,20 @@ package com.marketinghub.pde.kit.privateprototype.v1;
 
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
+import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocesschain.BusinessProcessChainDefinition;
+import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.pde.kit.privateprototype.v1.controller.KitPrivateController;
 import com.marketinghub.pde.kit.privateprototype.v1.service.*;
-import com.marketinghub.pde.kit.privateprototype.v1.service.contract.KitPrivateContract.Capability;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
 import com.marketinghub.repository.jpa.kit.*;
 import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
 import jakarta.persistence.*;
+import java.time.Instant;
 import java.util.*;
 import javax.sql.DataSource;
 import org.springframework.boot.*;
@@ -21,6 +28,7 @@ import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.orm.jpa.*;
 import org.springframework.orm.jpa.persistenceunit.PersistenceManagedTypes;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
@@ -131,23 +139,93 @@ public class KitPrivateLocalApplication {
   }
 
   /**
-   * Substitui a consulta aos agentes por aprovações sintéticas de dois perfis explicitamente
-   * distintos.
+   * Usa o resolvedor real sobre contratos sintéticos: formato novo e referência histórica de perfis
+   * distintos, sem substituir a decisão de capacidade.
    */
   @Bean
   KitPrototypeCapabilities capabilities() {
-    var c = mock(KitPrototypeCapabilities.class);
-    when(c.resolve(any()))
+    var tasks = mock(AgentTaskRepository.class);
+    var chains = mock(BusinessProcessChainDefinitionRepository.class);
+    var plan = new BusinessProcessDefinition();
+    plan.setId(8116L);
+    plan.setProcessCode("pde-commercial-plan-offer");
+    var construction = new BusinessProcessDefinition();
+    construction.setId(8117L);
+    construction.setProcessCode("pde-construction-approval");
+    var first = new BusinessProcessChainItem();
+    first.setProcessDefinition(plan);
+    var second = new BusinessProcessChainItem();
+    second.setProcessDefinition(construction);
+    var chain = new BusinessProcessChainDefinition();
+    chain.setItems(List.of(first, second));
+    when(chains.findById(8026L)).thenReturn(Optional.of(chain));
+    var architectures =
+        Map.of(
+            "experiment:9007",
+                "{\"format\":\"Kit privado determinístico para nails-v1\",\"strategyReference\":\"Atena: fixture sintética\"}",
+            "experiment:9018",
+                "{\"format\":\"PRIVATE_HARNESS\",\"strategyReference\":\"Perfil barber-v1\"}",
+            "experiment:9029",
+                "{\"format\":\"PRIVATE_HARNESS\",\"strategyReference\":\"Perfil barber-v1\"}");
+    when(tasks.findFunctionalSnapshotsByProcessSince(eq(8116L), anyString(), any(Instant.class)))
         .thenAnswer(
             a -> {
-              LearningSalesCycle cycle = a.getArgument(0);
-              return new Capability(
-                  true,
-                  cycle.getProductId() == 8007L ? "nails-v1" : "barber-v1",
-                  "Contratos de QA simulados",
-                  "http://127.0.0.1:57282/api/pde/kit/private/v1/prototype");
+              String architecture = architectures.get(a.<String>getArgument(1));
+              return architecture == null
+                  ? List.of()
+                  : List.of(
+                      snapshot(
+                          100L,
+                          8116L,
+                          "pde-commercial-plan-offer",
+                          "productArchitecture",
+                          "{\"decision\":\"APPROVE\",\"productArchitecture\":"
+                              + architecture
+                              + "}"));
             });
+    when(tasks.findFunctionalSnapshotsByProcessSince(eq(8117L), anyString(), any(Instant.class)))
+        .thenAnswer(
+            a ->
+                architectures.containsKey(a.<String>getArgument(1))
+                    ? List.of(
+                        snapshot(
+                            101L,
+                            8117L,
+                            "pde-construction-approval",
+                            "journey",
+                            "{\"decision\":\"READY\"}"),
+                        snapshot(
+                            102L,
+                            8117L,
+                            "pde-construction-approval",
+                            "deliverables",
+                            "{\"decision\":\"READY\"}"),
+                        snapshot(
+                            103L,
+                            8117L,
+                            "pde-construction-approval",
+                            "access",
+                            "{\"decision\":\"READY\"}"))
+                    : List.of());
+    var c = new KitPrototypeCapabilities(tasks, chains, new ObjectMapper());
+    ReflectionTestUtils.setField(
+        c, "prototypeUrl", "http://127.0.0.1:57282/api/pde/kit/private/v1/prototype");
     return c;
+  }
+
+  /** Representa uma aprovação sintética auditável sem chamada paga ou alteração em dados reais. */
+  private AgentTaskFunctionalSnapshot snapshot(
+      long id, long processId, String processCode, String activity, String result) {
+    return new AgentTaskFunctionalSnapshot(
+        id,
+        processId,
+        processCode,
+        activity,
+        "landing-generator",
+        "COMPLETED",
+        Instant.EPOCH,
+        Instant.EPOCH,
+        result);
   }
 
   /** Cria os repositories sobre o mesmo contexto transacional compartilhado. */

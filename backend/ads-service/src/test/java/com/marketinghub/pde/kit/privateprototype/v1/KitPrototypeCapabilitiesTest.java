@@ -40,12 +40,66 @@ class KitPrototypeCapabilitiesTest {
   }
 
   /**
+   * Recupera o formato aprovado de Capella e outro perfil sem nova inferência ou exceção por ID.
+   */
+  @Test
+  void acceptsExplicitProfileInV6Format() {
+    assertThat(
+            resolve(
+                    7,
+                    12,
+                    "Atena #678; experimento 105",
+                    "Kit visual personalizado, privado e determinístico para nails-v1, apresentado em uma experiência responsiva de três passos: briefing, resultado e aplicação por copiar ou baixar.",
+                    "",
+                    false)
+                .profileCode())
+        .isEqualTo("nails-v1");
+    assertThat(
+            resolve(775, 512, "Atena #878", "Kit privado para barber-v1.", "", false).profileCode())
+        .isEqualTo("barber-v1");
+  }
+
+  /** Recusa ausência, código parcial e divergência entre os dois aliases do contrato. */
+  @Test
+  void refusesMissingPartialOrConflictingFormat() {
+    assertThat(resolve(7, 12, "Atena #678", "Kit de unhas", "", false).available()).isFalse();
+    assertThat(resolve(777, 512, "Atena #878", "Kit nails-v10", "", false).available()).isFalse();
+    assertThat(resolve(7, 12, "nails-v1", "Kit barber-v1", "", false).available()).isFalse();
+    assertThat(resolve(777, 512, "Atena #878", "nails-v1 ou barber-v1", "", false).available())
+        .isFalse();
+  }
+
+  /** Mantém código estruturado válido e bloqueio posterior como autoridades do contrato. */
+  @Test
+  void preservesStructuredProfileAndLatestBlock() {
+    assertThat(resolve(77, 52, "Atena", "Kit", "barber-v1", false).profileCode())
+        .isEqualTo("barber-v1");
+    assertThat(resolve(7, 12, "Atena", "Kit nails-v1", "unsupported", false).available()).isFalse();
+    assertThat(resolve(7, 12, "Atena", "Kit nails-v1", "", true).available()).isFalse();
+    assertThat(resolve(7, 12, "nails-v1", "Kit nails-v1", "", false).profileCode())
+        .isEqualTo("nails-v1");
+  }
+
+  /** Preserva as fixtures anteriores que identificavam o perfil somente pela referência. */
+  private com.marketinghub.pde.kit.privateprototype.v1.service.contract.KitPrivateContract
+          .Capability
+      resolve(long productId, long cycleId, String profile, boolean blocked) {
+    return resolve(productId, cycleId, profile, "", "", blocked);
+  }
+
+  /**
    * Monta contratos segregados e confirma que a consulta usa o experimento e início do ciclo
    * exatos.
    */
   private com.marketinghub.pde.kit.privateprototype.v1.service.contract.KitPrivateContract
           .Capability
-      resolve(long productId, long cycleId, String profile, boolean blocked) {
+      resolve(
+          long productId,
+          long cycleId,
+          String profile,
+          String format,
+          String explicit,
+          boolean blocked) {
     var tasks = mock(AgentTaskRepository.class);
     var chains = mock(BusinessProcessChainDefinitionRepository.class);
     var cycle = new LearningSalesCycle();
@@ -109,9 +163,17 @@ class KitPrototypeCapabilitiesTest {
                     "COMPLETED",
                     Instant.EPOCH,
                     Instant.EPOCH,
-                    "{\"decision\":\"APPROVE\",\"productArchitecture\":{\"strategyReference\":\""
-                        + profile
-                        + "\"}}")));
+                    new ObjectMapper()
+                        .createObjectNode()
+                        .put("decision", "APPROVE")
+                        .set(
+                            "productArchitecture",
+                            new ObjectMapper()
+                                .createObjectNode()
+                                .put("strategyReference", profile)
+                                .put("format", format)
+                                .put("kitProfileCode", explicit))
+                        .toString())));
     var result = new KitPrototypeCapabilities(tasks, chains, new ObjectMapper()).resolve(cycle);
     verify(tasks).findFunctionalSnapshotsByProcessSince(117L, ref, Instant.EPOCH);
     return result;

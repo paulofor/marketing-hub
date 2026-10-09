@@ -9599,3 +9599,23 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Registro e limites:** `docs/homologacao/capella-primeira-tela-2026-10-09.md`.
   Novo ciclo/experimento exigidos pela mudança; autorização financeira não é
   renovada nem transferida. Aprovação técnica não substitui Psique/Têmis ou mercado.
+
+## LOOP-KIT-PERFIL-EXPLICITO-EM-FORMATO
+
+- **Evidência:** arquitetura 680 aprovada, contratos 681/682/684 READY e ciclo 12
+  aberto em ADJUSTMENT. `nails-v1` estava explícito em `productArchitecture.format`,
+  mas a capacidade procurava somente `strategyReference`; a tela não oferecia
+  abertura e nenhuma sessão foi criada. Arquitetura 670 e ciclo 11 tinham passado
+  por informar o mesmo código na referência.
+- **Causa:** leitura mais restrita que o schema v6, que permite formato/referência
+  e não permite `kitProfileCode`. A matriz local simulava capacidade sempre pronta,
+  deixando a passagem de contrato para executor fora da validação.
+- **Correção compartilhada:** aceitar o código completo no formato ou referência,
+  rejeitar aliases conflitantes/ausentes e preservar bloqueio posterior. Nenhum
+  reconhecimento por nome/ID, exclusões ou JSON inteiro; nenhuma nova inferência.
+- **Prevenção:** `KitPrototypeCapabilitiesTest` cobre caso real, outro perfil/IDs,
+  código parcial, ambiguidade e caminhos antes válidos. A aplicação local passa
+  snapshots sintéticos pelo resolvedor real antes de persistir sessão e executar
+  compositor/navegador, sem declarar capacidade por identidade do produto.
+- **Registro:** `docs/homologacao/capella-perfil-contrato-2026-10-09.md`. Correção
+  técnica preserva candidata, história e teto cumulativo; não é evidência comercial.

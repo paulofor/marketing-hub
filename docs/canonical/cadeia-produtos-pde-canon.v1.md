@@ -1207,3 +1207,14 @@ conciliadas, receita e contribuição. Testes e fixtures não entram nas métric
 A primeira aplicação desta regra é o kit privado determinístico, que reutiliza o compositor
 existente sem geração paga, e-mail externo, pagamento ou mídia. Produto, ciclo, experimento,
 versão e perfil de kit vêm dos contratos persistidos, nunca de exceção por nome ou ID.
+
+No contrato de arquitetura v6, `productArchitecture.format` e `strategyReference`
+são aliases documentados para um código explícito `nails-v1` ou `barber-v1`. O
+schema v6 não permite adicionar `kitProfileCode`; a capacidade deve reconhecer o
+código completo em qualquer um desses dois campos, e recusar ausência ou perfis
+divergentes entre eles. Não procurar o perfil no JSON inteiro, em exclusões,
+nome/ID do produto ou resultado de outro experimento. Um `kitProfileCode`
+estruturado, quando presente em contrato compatível, mantém precedência e deve
+ser suportado. Contrato posterior bloqueado não herda aprovação anterior.
+Homologações locais devem usar o resolvedor real sobre snapshots sintéticos dos
+agentes; simular a capacidade como sempre disponível esconde falhas dessa passagem.

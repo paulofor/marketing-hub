@@ -63,7 +63,8 @@ anteriores à última peça são contexto; o parecer posterior à peça atual or
 O executor imprime a ressalva privada em fonte de 36 pixels junto ao CTA, recusa a repetição
 exata de uma imagem já reprovada e exige recorte entre 1,2:1 e 2,2:1. Não escolha um recorte
 ultralargo que deixe a prova pequena dentro de uma grande área vazia; use a captura mobile quando
-ela mantiver o cartão próximo da proporção 952 × 550 e legível na prévia de 393 pixels. A presença
+ela mantiver o cartão próximo da área contratada (952 × 667 privada; 952 × 550 comercial)
+e legível na prévia de 393 pixels. A presença
 desses controles não substitui os gates independentes.
 
 A sua saída termina com `executionStatus=READY_FOR_RENDER` quando copy, referências e
@@ -75,7 +76,7 @@ PNG antes desse passo do worker é uma dependência delegada, não lacuna da esp
 Use `BLOCKED` para entradas, decisões ou evidências realmente insuficientes e descreva essas
 lacunas. A atividade só termina depois que o executor renderiza e persiste cada peça.
 Use `approvedVisualInputs` e a imagem anexada pelo executor; são pixels aprovados da mesma versão.
-Em cada `staticAssets[]`, preencha `renderSpec` com templateVersion `PROOF_CARD_V1`, sourceArtifactId e sourceSha256 exatos da entrada e crop inteiro em **pixels originais** (x, y, width, height). Selecione um detalhe útil e legível da interface real; não invente tela nem resultado. O recorte é registrado e seus pixels são copiados sem redesenho. Prefira um único detalhe que prove a promessa. A imagem é 1080 × 1350; a área da prova mede 952 × 550. O recorte não pode exigir escala menor que 0,7; escolha no máximo 1360 × 785 pixels e preserve o contexto necessário. Não use a página inteira se perder legibilidade.
+Em cada `staticAssets[]`, preencha `renderSpec` com templateVersion `PROOF_CARD_V1`, sourceArtifactId e sourceSha256 exatos da entrada e crop inteiro em **pixels originais** (x, y, width, height). Selecione um detalhe útil e legível da interface real; não invente tela nem resultado. O recorte é registrado e seus pixels são copiados sem redesenho. Prefira um único detalhe que prove a promessa. A imagem é 1080 × 1350; na composição privada, a área da prova mede 952 × 667, com a identificação obrigatória da aplicação privada e o `eyebrow` solicitado junto ao recorte. A composição comercial conserva a área de 952 × 550. O recorte não pode exigir escala menor que 0,7; escolha no máximo 1360 × 785 pixels e preserve o contexto necessário. Não use a página inteira se perder legibilidade. Considere a leitura real da peça reduzida a 393 pixels de largura.
 
 Campos de texto: brandLabel (marca pública curta), eyebrow (rótulo curto), headline (até duas linhas, ~35 caracteres), body (até duas linhas, ~90 caracteres), ctaText (uma linha curta, ~35 caracteres), footer (limite factual curto). Cores backgroundColor e accentColor em #RRGGBB, com alto contraste: fundo claro, destaque escuro. Use texto comercial claro e fiel ao briefing aprovado; sem prometer compra, oferta ou resultado que o protótipo não entrega.
 

@@ -37,6 +37,36 @@ class ProofCardRendererTest {
     assertThat(ProofCardRenderer.eyebrow(spec, false)).isEqualTo("Demonstração");
   }
 
+  /** Preserva o rótulo solicitado também na imagem privada, além da identificação obrigatória. */
+  @Test
+  void preservesRequestedCaptionInPrivatePixels() throws Exception {
+    var first = spec().put("eyebrow", "Prévia da aplicação");
+    var second = spec().put("eyebrow", "Detalhe da aplicação");
+    assertThat(renderer.render(first, source(), true))
+        .isNotEqualTo(renderer.render(second, source(), true));
+    assertThat(ProofCardRenderer.eyebrow(first, true)).isEqualTo("APLICAÇÃO WEB PRIVADA");
+  }
+
+  /** Amplia a prova privada sem reduzir o conteúdo nem alterar o formato comercial anterior. */
+  @Test
+  void enlargesPrivateProofKeepingApprovedPixels() throws Exception {
+    var privateImage =
+        ImageIO.read(new ByteArrayInputStream(renderer.render(spec(), source(), true)));
+    var publicImage =
+        ImageIO.read(new ByteArrayInputStream(renderer.render(spec(), source(), false)));
+    assertThat(bluePixels(privateImage)).isGreaterThan((long) (bluePixels(publicImage) * 1.15));
+    assertThat(privateImage.getRGB(540, 772)).isEqualTo(Color.BLUE.getRGB());
+    assertThat(publicImage.getRGB(540, 772)).isEqualTo(Color.BLUE.getRGB());
+  }
+
+  /** Conta os pixels da prova sintética sem depender do texto ou do identificador de produto. */
+  private static long bluePixels(BufferedImage image) {
+    return java.util.Arrays.stream(
+            image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth()))
+        .filter(pixel -> pixel == Color.BLUE.getRGB())
+        .count();
+  }
+
   /** Recusa coordenadas, escala ilegível e textos que seriam truncados. */
   @Test
   void rejectsOutOfBoundsAndUnreadableContent() throws Exception {

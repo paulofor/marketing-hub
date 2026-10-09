@@ -40,6 +40,12 @@ não comprova satisfação e não pode preencher modalidade ausente. Não cite c
 Contexto da tarefa:
 {{TASK_CONTEXT}}
 
+Quando `creativeMobilePreviews` estiver presente, o executor anexou também reduções reais de
+393 pixels dos mesmos PNGs. Confira a leitura na redução, além da composição original. Seus
+hashes e a transformação ficam na entrada auditada; são derivadas locais, não peças novas nem
+capturas de uso humano. Em `renderedAssetAudit`, mantenha somente os IDs e hashes dos originais
+persistidos em `visualEvidence`, descrevendo a leitura da prévia na avaliação correspondente.
+
 
 ## Peça exata e ausência de evidência
 

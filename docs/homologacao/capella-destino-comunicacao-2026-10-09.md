@@ -70,6 +70,22 @@ metadados provenientes do banco.
   seu catálogo inicializou 527 cartões. Formatação Spotless e revisão de whitespace
   estão conformes.
 
+### Compatibilidade detectada pelo CI
+
+O CI #37938013391 recusou a atestação privada vigente de Mira, que fixava os bytes
+anteriores de `IrisLearningCycleContext` e seu teste. Foram comparadas manutenção
+do bloqueio, relaxamento/reescrita do hash e nova atestação após revalidação; foi
+escolhida a terceira. A `mira-private-candidate.v12` preserva a v11 e atualiza apenas
+a compatibilidade dessas fontes. Não renova pareceres nem altera experiência,
+autorização, oferta ou publicação de Mira.
+
+O gerador real conferiu 94 manifestos/471 arquivos. Passaram 173 testes de Psique e
+113 de Têmis, sem falhas/erros (dez e um condicionais não habilitados, respectivamente),
+além dos 22 testes da seleção de deploy. A seleção direta da nova atestação devolve
+`target=none`. A matriz deve executar o gerador real junto aos testes de contrato,
+antes do commit, pois somente o teste do gerador não confere os manifestos vigentes.
+Evidência: [compatibilidade de Mira](mira-compatibilidade-autoria-destino-2026-10-09.md).
+
 Os dados exportados permanecem fora do Git. A continuação real pela tela e os
 workflows/deploys serão conferidos após o merge e registrados nas evidências do PR.
 A entrega é preparação privada; não autoriza mídia, cobrança, publicação comercial

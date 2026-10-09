@@ -126,7 +126,7 @@ declara e preserva a condição (`UNVERIFIED_VISUAL_ORIGIN` ou `EXTERNAL_ACTION`
 sessões antigas sem essa condição informam explicitamente a falta de causa específica
 e orientam revisão interna, sem inventar uma classificação.
 
-O harness e seu consumidor exigem causa, ausência de resultado, ação do mesmo
+O harness exige causa, ausência de resultado, ação do mesmo
 produto/ciclo e preservação ao reabrir antes do parecer pago. Abrir a revisão não
 remove o bloqueio, reserva outra composição ou dispara inferência. A regressão
 executa nails-v1 e barber-v1, nove combinações por perfil, caminhos aderente e de

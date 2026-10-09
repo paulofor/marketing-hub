@@ -38,7 +38,7 @@ gasto. O pacote, os controles e os caminhos aprovados permanecem sob validação
 | Segurança de integração | Pedido de efeito externo | Motivo específico e orientação distinta, sem reserva ou efeito externo | iPhone e controles API |
 | Outro produto e versão | Perfil barber-v1, IDs 8018/7018/9018 | Mesmos aceites sem exceção por nome/ID e sem cruzar dados | Nove combinações adicionais |
 | Registro anterior sem causa | SAFETY sem condição declarada | Ausência explícita, revisão interna; nunca atribuir causa específica | API e unidade |
-| Contrato corrompido | Relatório sem motivo, ação de outro ciclo ou perda do bloqueio | Consumidor recusa antes do modelo; nenhuma aprovação falsa | Unidade com relatório real |
+| Contrato corrompido | Tela com promessa falsa, sem motivo, ação de outro ciclo ou perda do bloqueio | Harness recusa antes do modelo; nenhuma aprovação falsa | Unidade do contrato usado pelo navegador |
 | Autoridade e limites | Consentimento, isolamento, callbacks, concorrência, quotas, revogação | Preservar limites, idempotência, auditoria e falta de efeitos externos | Controles existentes ampliados |
 | Passagem local | Psique → Têmis → gate | Consumidores reais com modelos simulados, resultados aceitos pelo contrato | Dois contextos segregados |
 
@@ -65,3 +65,11 @@ controles aprovados. Backend: 15 testes direcionados e arquitetura aprovados;
 worker: suíte de unidades aprovada, além da integração real do runner. Capturas e
 relatórios locais em `artifacts/capella-safety-local/`. MySQL temporário removido
 com volumes e recursos da topologia isolada. Zero chamadas pagas na validação local.
+
+O primeiro CI identificou que `PdeAgentValidationHarnessRunner.java` está fixado
+por hash em atestações vigentes de Mira. Foram consideradas: revalidar também Mira
+(esforço amplo), relaxar hashes (invalida a integridade, rejeitado) ou isolar o novo
+contrato no harness dos kits (escolhido). A fonte comum foi preservada. O módulo
+`private-kit-safety-contract.mjs` é chamado pelo navegador antes dos pareceres e tem
+regressões da contradição original, outro contexto e reabertura. O empacotamento das
+93 provas versionadas existentes passou localmente sem reescrever atestações.

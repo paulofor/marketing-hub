@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
+import { validateKitSafety, validatePreservedKitSafety } from './private-kit-safety-contract.mjs';
 const require=createRequire(import.meta.url);
 let library;try{library=require('playwright-core');}catch(ex){if(ex.code!=='MODULE_NOT_FOUND')throw ex;library=require('playwright');}
 const {chromium,devices}=library;
@@ -20,6 +21,9 @@ async function api(path,{method='GET',body,session}={}) {
   const response=await fetch(base+path,{method,headers:session?{'X-Kit-Session':session,'Content-Type':'application/json'}:{'X-PDE-Internal-Token':token,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
   if(!response.ok)throw new Error('Contrato privado recusou '+path+' · HTTP '+response.status);
   return response.status===204?null:response.json();
+}
+async function observeSafety(page) {
+  return {title:await page.locator('#title').innerText(),introduction:await page.locator('#introduction').innerText(),reason:await page.locator('#status').innerText(),nextStep:await page.locator('#next-step').innerText(),actionLabel:await page.locator('#review-cycle').innerText(),nextActionUrl:await page.locator('#review-cycle').getAttribute('href'),actionVisible:await page.locator('#review-cycle').isVisible(),resultHidden:await page.locator('#result').isHidden()};
 }
 try {
   for(const [scenarioCode,deviceProfile] of plans){
@@ -45,15 +49,11 @@ try {
         await page.locator('#status').filter({hasText:'bloqueada antes da composição'}).waitFor();
         await page.locator('#blocked').waitFor({state:'visible'});
         const blocked=await api('/session',{session:created.sessionToken});
-        const title=await page.locator('#title').innerText(),explanation=await page.locator('#introduction').innerText();
-        const safeAction=page.locator('#review-cycle');
-        const nextUrl=new URL(await safeAction.getAttribute('href'));
-        safetyBlocked=blocked.status==='BLOCKED_SAFE'&&await page.locator('#result').isHidden();
-        if(!safetyBlocked||!title.includes('bloqueada')||!explanation.includes('Nenhum pacote foi gerado')||blocked.presentation.reasonCode!==safetyCase||await page.locator('#status').innerText()!==blocked.reason||await page.locator('#next-step').innerText()!==blocked.presentation.nextStep||!await safeAction.isVisible()||nextUrl.origin!=='http://191.252.181.168:5173'||nextUrl.pathname!=='/business-process-chains/learning-cycles'||nextUrl.searchParams.get('productId')!==String(input.productId)||nextUrl.searchParams.get('cycleId')!==String(input.cycleId)||nextUrl.searchParams.size!==2)throw new Error('SAFETY ocultou o pacote sem explicar o bloqueio, sua causa e a revisão permitida do mesmo ciclo.');
+        const safetyContext={productId:input.productId,cycleId:input.cycleId,safetyCase};
+        validateKitSafety(blocked,await observeSafety(page),safetyContext);
         await page.reload();await page.locator('#blocked').waitFor({state:'visible'});
         const preserved=await api('/session',{session:created.sessionToken});
-        if(preserved.status!=='BLOCKED_SAFE'||preserved.presentation.reasonCode!==safetyCase||preserved.manifest||JSON.stringify(preserved.events)!==JSON.stringify(blocked.events)||await page.locator('#title').innerText()!==title)throw new Error('Reabrir SAFETY alterou o estado, gerou pacote ou perdeu a explicação.');
-        safetyOutcome={code:safetyCase,title,reason:blocked.reason,noResultMessage:explanation,safeAction:blocked.presentation.nextActionLabel,nextActionPath:blocked.presentation.nextActionPath,persistedAfterReload:true,resultGenerated:false,providerCalled:false};
+        safetyOutcome=validatePreservedKitSafety(blocked,preserved,await observeSafety(page),safetyContext);safetyBlocked=true;
       }else{
         if(scenarioCode==='RECOVERY') { await page.locator('#reload').waitFor({state:'visible',timeout:600000}); await page.locator('#reload').click(); }
         await page.locator('#result').waitFor({state:'visible',timeout:600000});

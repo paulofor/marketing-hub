@@ -241,7 +241,7 @@ public class PdeAgentValidationHarnessRunner {
 
   /**
    * Exige contrato, formato do pacote, mídias integradas, condições de entrada e capturas
-   * vinculadas aos cenários e orientação de segurança antes do parecer.
+   * vinculadas aos cenários antes do parecer.
    */
   private List<BpmVisualEvidenceRunner.VisualArtifact> validateOutput(
       JsonNode result,
@@ -289,9 +289,7 @@ public class PdeAgentValidationHarnessRunner {
     boolean privateKit = "DETERMINISTIC_PRIVATE_KIT_V1".equals(expected.get("runtimeKind"));
     if (privateKit) {
       if (!"PDE_PRIVATE_KIT_PACKAGE_V2".equals(result.path("packageContractVersion").asText())
-          || !"PDE_PRIVATE_KIT_FIXTURES_V1".equals(result.path("fixtureContract").asText())
-          || !expected.containsKey("cycleId")
-          || ((Number) expected.get("cycleId")).longValue() != result.path("cycleId").asLong())
+          || !"PDE_PRIVATE_KIT_FIXTURES_V1".equals(result.path("fixtureContract").asText()))
         throw new HarnessException(
             "A prova do kit não corresponde ao pacote corrigido de 36 arquivos.");
       for (JsonNode scenario : result.path("scenarios")) {
@@ -301,28 +299,6 @@ public class PdeAgentValidationHarnessRunner {
             || scenario.path("screenshotEvidenceKeys").isEmpty())
           throw new HarnessException(
               "O cenário do kit não comprovou arquivos e vínculo de captura antes do parecer.");
-        if ("SAFETY".equals(scenario.path("scenarioCode").asText())) {
-          JsonNode outcome = scenario.path("safetyOutcome");
-          if (!Set.of("UNVERIFIED_VISUAL_ORIGIN", "EXTERNAL_ACTION")
-                  .contains(outcome.path("code").asText())
-              || outcome.path("title").asText().isBlank()
-              || outcome.path("reason").asText().isBlank()
-              || outcome.path("noResultMessage").asText().isBlank()
-              || outcome.path("safeAction").asText().isBlank()
-              || !outcome
-                  .path("nextActionPath")
-                  .asText()
-                  .equals(
-                      "/business-process-chains/learning-cycles?productId="
-                          + result.path("productId").asLong()
-                          + "&cycleId="
-                          + result.path("cycleId").asLong())
-              || !outcome.path("persistedAfterReload").asBoolean(false)
-              || outcome.path("resultGenerated").asBoolean(true)
-              || outcome.path("providerCalled").asBoolean(true))
-            throw new HarnessException(
-                "O kit não comprovou causa, ausência de resultado e continuidade segura preservada.");
-        }
       }
     }
     boolean miraCandidate =

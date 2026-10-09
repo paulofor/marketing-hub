@@ -1,0 +1,18 @@
+{
+  "cardKey": "expectativa-temporal-agencia-interface",
+  "collection": "prazer-audio-visual",
+  "title": "Consistência do tempo de resposta pode sustentar sensação de controle",
+  "finding": "Em experimento com 133 pessoas, a sensação subjetiva de agência aumentou quando o efeito ocorreu no atraso esperado, inclusive após aprendizagem de 600 ms; diferenças específicas por idade exigem cautela.",
+  "mechanism": "O cérebro aprende a latência entre ação e consequência e usa a correspondência entre tempo previsto e real para inferir controle; não se trata de prazer ou recompensa medida.",
+  "commercialApplication": "Em interfaces e experiências de IA, comparar feedback previsível de processamento com latências inesperadas, mantendo latência média semelhante; não atrasar respostas artificialmente.",
+  "evidenceStrength": "Média-alta para agência subjetiva na tarefa experimental; baixa para UX comercial. Bart & Rieger, publicado em 08/10/2026.",
+  "publishedOn": "2026-10-09",
+  "validUntil": "2026-11-23",
+  "experimentHypothesis": "Feedback com previsão de tempo consistente aumentará controle percebido e reduzirá abandono e erros em relação a latência variável equivalente.",
+  "risks": "Atrasos propositais podem prejudicar UX; evitar segmentação por idade não validada.",
+  "limits": "Flash após tecla em laboratório; 70 jovens e 63 idosos, análise etária sem interação tripla significativa; sem dados de prazer, dopamina, conversão ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-10-09-expectativa-temporal-agencia-interface.md",
+  "sourceTitle": "Fonte revisada — expectativa temporal e sensação de controle",
+  "sourceSha256": "0281ccfd93c71959c24fc2d2e5348d69579cba83345425532851e61ee52fec17"
+}

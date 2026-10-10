@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-agente-edicao-regras-explicitas-mcp",
+  "collection": "video",
+  "title": "Harness criativo com ferramentas e projetos editaveis",
+  "finding": "Voyager integra skills e MCP para operar ferramentas de video, audio e design, enquanto Claude Motion gera animacoes editaveis por codigo.",
+  "mechanism": "O projeto nativo preserva estado e permite corrigir componentes sem regenerar o video inteiro.",
+  "commercialApplication": "No Marketing Hub, separar geracao de takes da edicao e registrar cada variacao antes da revisao editorial.",
+  "evidenceStrength": "Documentacao oficial dos fornecedores, sem benchmark independente de performance comercial.",
+  "publishedOn": "2026-10-10",
+  "validUntil": "2026-11-24",
+  "experimentHypothesis": "Edicao orientada por agente e projeto editavel reduzira retrabalho em comparacao a videos sem fonte.",
+  "risks": "Revisar permissoes, custos, integridade do produto e direitos dos arquivos.",
+  "limits": "Voyager e proprietario, com suporte principal macOS; Claude Motion e beta Team/Enterprise, sem videos realistas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-10-10-harness-criativo-voyager-claude.md",
+  "sourceTitle": "Harness criativo e Claude Motion",
+  "sourceSha256": "cf3de0b5b5c54c71fc628b4ca32a79df6a9835f23127c99df98f037d908c331e"
+}

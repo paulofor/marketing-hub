@@ -286,7 +286,7 @@ class IrisCommunicationMaterializationContextProviderTest {
     org.springframework.test.util.ReflectionTestUtils.setField(
         fixture.provider(), "privateProducts", privateProducts);
     when(privateProducts.resolve("experiment:88")).thenReturn(Optional.empty());
-    when(privateProducts.resolve("product:7@agent-validation-v1"))
+    when(privateProducts.approvedProductProof("product:7@agent-validation-v1"))
         .thenReturn(Optional.of(privateProductProof()));
     when(fixture.plans().findByExperimentReference(88L)).thenReturn(List.of(fixture.plan()));
     when(fixture.tasks().findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:88"))
@@ -356,7 +356,7 @@ class IrisCommunicationMaterializationContextProviderTest {
     org.springframework.test.util.ReflectionTestUtils.setField(
         fixture.provider(), "privateProducts", privateProducts);
     when(privateProducts.resolve("experiment:88")).thenReturn(Optional.empty());
-    when(privateProducts.resolve("product:7@agent-validation-v1"))
+    when(privateProducts.approvedProductProof("product:7@agent-validation-v1"))
         .thenReturn(Optional.of(privateProductProof()));
     when(fixture.plans().findByExperimentReference(88L)).thenReturn(List.of(fixture.plan()));
     when(fixture
@@ -405,7 +405,7 @@ class IrisCommunicationMaterializationContextProviderTest {
   }
 
   /** Monta as dependências e entidades mínimas de um plano Rigel segregado. */
-  private Fixture fixture(List<AgentTask> upstream, boolean financialReady) {
+  Fixture fixture(List<AgentTask> upstream, boolean financialReady) {
     CommercialPlanRepository plans = mock(CommercialPlanRepository.class);
     CommercialPlanVersionService versions = mock(CommercialPlanVersionService.class);
     CommercialPlanLandingAssetService assets = mock(CommercialPlanLandingAssetService.class);
@@ -476,7 +476,7 @@ class IrisCommunicationMaterializationContextProviderTest {
   }
 
   /** Projeta a saída funcional mínima usada pelo provedor sem carregar auditoria técnica. */
-  private com.marketinghub.agenttask.AgentTaskFunctionalSnapshot snapshot(
+  com.marketinghub.agenttask.AgentTaskFunctionalSnapshot snapshot(
       Long id, String activityId, String agentKey, String resultJson) {
     return new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
         id,
@@ -505,21 +505,21 @@ class IrisCommunicationMaterializationContextProviderTest {
   }
 
   /** Monta o Contrato Estratégico de Mercado V3 aprovado por Atena. */
-  private String strategy() {
+  String strategy() {
     return """
         {"decision":"APPROVE","marketStrategicContract":{"contractVersion":"MARKET_STRATEGY_V3","status":"READY_FOR_PRIVATE_VALIDATION","privateValidationPlan":{"minimumIndependentReadings":2}}}
         """;
   }
 
   /** Monta a economia privada sem autorização de gasto comercial. */
-  private String economics() {
+  String economics() {
     return """
         {"decision":"APPROVE","contractVersion":"PDE_PRIVATE_ECONOMICS_V1","economics":{"commercialSpendAuthorized":false,"maxBudgetBrl":0}}
         """;
   }
 
   /** Monta a arquitetura privada aprovada por Dédalo. */
-  private String architecture() {
+  String architecture() {
     return """
         {"decision":"APPROVE","productArchitecture":{"format":"Wizard progressivo","privatePrototype":{"version":"mira-private-v2"}}}
         """;
@@ -530,7 +530,8 @@ class IrisCommunicationMaterializationContextProviderTest {
     Map<String, Object> result = new java.util.LinkedHashMap<>();
     result.put("availability", "AVAILABLE");
     result.put("inputReadiness", "READY");
-    result.put("mode", IrisPrivateProductContext.MODE);
+    result.put("mode", IrisPrivateProductContext.PROOF_MODE);
+    result.put("proofScope", IrisPrivateProductContext.PROOF_SCOPE);
     result.put("product", Map.of("id", 7L));
     result.put("prototypeVersion", "rigel-private-v3");
     result.put("privatePrototypeAcceptance", Map.of("prototypeVersion", "rigel-private-v3"));
@@ -594,7 +595,7 @@ class IrisCommunicationMaterializationContextProviderTest {
   }
 
   /** Agrupa o provedor e os mocks necessários para variar a origem do contexto. */
-  private record Fixture(
+  record Fixture(
       IrisCommunicationMaterializationContextProvider provider,
       CommercialPlanRepository plans,
       CommercialPlan plan,

@@ -133,3 +133,66 @@ Essa correção não comprova demanda, venda ou margem realizada.
 A entrega só permite recuperar a mesma tarefa #706 pelo executor. O aceite real
 de Atena, dos demais predecessores e de Íris ainda precisa ser observado após
 publicação, mantendo limites financeiros, revisões e decisões humanas.
+
+## Prova técnica e planejamento atual — 10/10/2026
+
+Após a correção do claim, Atena #706, Plutus #707 e Dédalo #708 terminaram com
+APPROVE no planejamento #67. A comunicação #44 continuou aguardando versão e
+capturas. O log mostrou a divergência de `marketStrategy` na consulta privada:
+a descoberta #491 conserva MARKET_STRATEGY_V3; a projeção atual contém V4.
+O gate técnico e os hashes tinham passado antes dessa comparação. Preservar a
+origem e os pareceres próprios; não atribuir aprovação nova à descoberta antiga.
+
+| Alternativa                                             | Benefício                           | Risco/esforço                                                    | Escolha   |
+| ------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------- | --------- |
+| Reescrever ou repetir a descoberta antiga               | Alinha os textos                    | Altera história e exige nova inferência sem corrigir a fronteira | Rejeitada |
+| Remover a comparação de origem de todo contexto privado | Destrava a consulta                 | Enfraquece o contrato completo antes válido                      | Rejeitada |
+| Separar prova do software aceito e planejamento atual   | Reutiliza gate e revisões imutáveis | Exige escopo explícito e pareceres próprios no consumidor        | Adotada   |
+
+O leitor parcial declara PRIVATE_SOFTWARE_VERSION_ONLY e não entrega estratégia,
+economia ou arquitetura de origem como aprovação atual. O consumidor do primeiro
+experimento exige Atena, Plutus e Dédalo do planejamento corrente. O contexto
+privado completo mantém suas verificações anteriores. Integração nova, preços,
+checkout, mídia e prontidão comercial conservam seus próprios gates.
+
+### Matriz antes da rodada
+
+| Área                            | Aceite                                                                                                         |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Antes/depois e outra identidade | Duas identidades sintéticas permitem a passagem sem reescrever V3 antiga                                       |
+| Histórico antes válido          | Contexto completo V3 continua íntegro; divergência de origem permanece bloqueada                               |
+| Integridade técnica             | Gate, status, identidade, hashes e revisões posteriores continuam obrigatórios nos dois leitores               |
+| Planejamento atual              | Prova técnica não substitui parecer ausente/reprovado de Plutus ou Dédalo                                      |
+| Fronteira real                  | Controller e serviço de tarefa recebem os dois provedores produtivos; executor valida entrada exportada        |
+| Observabilidade e custos        | Contexto explicita escopo, ausência não vira custo zero, consultas não escrevem nem repetem inferência         |
+| Interface                       | Reutilizar navegação completa já aprovada; conferir passagem publicada em desktop e celular sem alterar layout |
+
+Capacidade aprimorada: encaminhar prova da versão utilizável sem confundi-la com
+estratégia ou demanda. Hipótese verificável: remover essa confusão reduz espera
+antes de Íris. Adotar se a matriz preservar os negativos; reverter se parecer ou
+versão divergente receber aprovação implícita. Impacto em vendas depende do
+experimento real, ainda não iniciado. O novo fluxo de personalização continua
+pendente de revisão independente; a prova histórica não o aprova retroativamente.
+
+
+### Resultado da separação de prova
+
+- Antes: os dois casos sintéticos falharam com o consumidor anterior; zero erros
+  de preparação do teste. Depois: backend completo com 4.551 testes, zero falhas
+  e erros, 37 condicionais de outras topologias ignorados.
+- Controller HTTP e serviço de tarefa reais transportaram a estratégia V4 atual,
+  prova técnica com escopo explícito e a mesma versão. Os repositories do cenário
+  são doubles; não houve escrita, cobrança ou inferência nesse ensaio.
+- Executor: 79 testes, zero falhas/erros, dois condicionais de outras provas
+  ignorados; a integração exportada do primeiro planejamento foi executada.
+- Atestações: 16 testes e pacote de 104 manifestos/497 arquivos íntegros. O teste
+  de ciclo já vinculado aos manifestos foi preservado; a regressão do primeiro
+  planejamento é própria, sem substituir homologações de outros produtos.
+- O planejamento real #67 terminou 3/3. Consumo conhecido da preparação:
+  USD 2,130497 de estimativas, incluindo as etapas anteriores; teto USD 10.
+  Não há autorização audiovisual ou de mídia. A comunicação ainda depende da
+  publicação desta correção e de seus próprios pareceres e seleção humana.
+
+O pacote final passou: 4.312 classes idênticas às compiladas, 765 recursos íntegros
+e catálogo executável com 527 cartões. Diff e comentários de responsabilidade
+foram revisados. Nenhum changelog, autorização ou execução histórica foi alterado.

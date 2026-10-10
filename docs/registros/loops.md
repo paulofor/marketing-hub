@@ -9783,3 +9783,19 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Limites:** recuperar a mesma tarefa, sem criar nova inferência para compensar
   erro de consulta. Fontes não equivalem a aprovação comercial ou demanda real.
   [Matriz e aprendizado](../homologacao/alcyone-fluxo-primeiro-experimento-v1.md).
+
+## LOOP-IRIS-PROVA-TECNICA-ESTRATEGIA-ORIGEM — 10/10/2026
+
+- **Evidência:** planejamento #67 completo, tarefas #706–#708 aprovadas; comunicação
+  #44 ainda sem versão/capturas. Log aponta `marketStrategy` divergente: descoberta
+  #491 V3, projeção atual V4. Gate técnico e hashes passaram antes da comparação.
+- **Causa:** a consulta da prova reutilizava o contexto completo, que exige também
+  identidade da estratégia de origem; prova de software e planejamento atual
+  estavam acoplados, mesmo com pareceres correntes próprios.
+- **Correção:** leitor técnico com escopo explícito, sem aprovação estratégica;
+  consumidor exige os três pareceres atuais. Contexto completo conserva contrato.
+- **Harness:** dois produtos, produtor/consumidor/serviço de tarefa reais e entrada
+  validada pelo executor; alteração de hashes, versões e pareceres continua bloqueada.
+- **Limites:** prova histórica não aprova nova integração nem libera experimento,
+  publicação, cobrança ou mídia. Preservar os resultados e custos originais.
+  [Matriz](../homologacao/alcyone-fluxo-primeiro-experimento-v1.md).

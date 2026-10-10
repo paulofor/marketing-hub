@@ -183,6 +183,212 @@ class IrisPrivateProductContextTest {
     gate.setObjectiveEvidenceJson(proof.toString());
   }
 
+  /** Confere duas identidades com estratégia antiga preservada e planejamento novo aprovado. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(longs = {91010, 92020})
+  void initialPlanningUsesAcceptedSoftwareProofWithoutRewritingOrigin(long id) throws Exception {
+    String reference = prepareScopedProof(id);
+    ((ObjectNode) pde.path("marketStrategy"))
+        .put("contractVersion", "MARKET_STRATEGY_V4")
+        .put("offerThesis", "Hipótese atual aprovada em outro planejamento");
+    assertThat(provider.resolve(reference).orElseThrow())
+        .containsEntry("inputReadiness", "BLOCKED");
+    var software = provider.approvedProductProof(reference).orElseThrow();
+    assertThat(software)
+        .containsEntry("inputReadiness", "READY")
+        .containsEntry("proofScope", IrisPrivateProductContext.PROOF_SCOPE)
+        .doesNotContainKeys("marketStrategicContract", "economics", "productArchitecture");
+    var initial = initialPlanningWithRealProof(true);
+    assertThat(initial).containsEntry("productProofScope", IrisPrivateProductContext.PROOF_SCOPE);
+    assertThat(initial)
+        .containsEntry("inputReadiness", "READY")
+        .containsEntry(
+            "mode", IrisCommunicationMaterializationContextProvider.INITIAL_EXPERIMENT_PRIVATE_MODE)
+        .containsEntry("publicationAuthorized", false)
+        .containsEntry("paymentEnabled", false);
+    assertThat(initial.get("prototypeVersion")).isEqualTo("local-mira-v3");
+    assertThat(
+            json.readTree(origin.getFirst().resultJson())
+                .path("marketStrategicContract")
+                .path("contractVersion")
+                .asText())
+        .isEqualTo("MARKET_STRATEGY_V3");
+    verify(instances, never()).save(any());
+    verify(tasks, never()).save(any());
+    verify(products, never()).save(any());
+  }
+
+  /** A prova técnica não substitui Plutus nem os demais pareceres do planejamento atual. */
+  @Test
+  void acceptedSoftwareProofDoesNotApproveMissingCurrentEconomics() throws Exception {
+    prepareScopedProof(91010);
+    var initial = initialPlanningWithRealProof(false);
+    assertThat(initial).containsEntry("inputReadiness", "BLOCKED");
+    assertThat(initial.get("missingRequiredPredecessors").toString()).contains("Plutus");
+  }
+
+  /** Vincula fonte, versão, URL e bytes sintéticos da homologação à identidade escolhida. */
+  private String prepareScopedProof(long id) throws Exception {
+    String reference = "product:" + id + "@agent-validation-v1";
+    product.setId(id);
+    product.setSlug("local-product-" + id);
+    var target =
+        new AgentTaskTargetResponse(
+            reference,
+            null,
+            id,
+            product.getSlug(),
+            product.getName(),
+            product.getInternalName(),
+            "local-mira-v3",
+            "https://mira.example/private",
+            null,
+            null,
+            null,
+            null,
+            pde);
+    when(products.findById(id)).thenReturn(Optional.of(product));
+    when(targets.resolve(reference, "pde-construction-approval")).thenReturn(Optional.of(target));
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
+                "pde-construction-approval", reference))
+        .thenReturn(List.of(gate));
+    when(validator.historicalEvidenceReadiness(any(), any(), same(product), eq(reference)))
+        .thenReturn(
+            new BackendProductProcessActivityReadiness(true, "Prova técnica sintética aprovada"));
+    when(tasks.findPdeValidationTaskSnapshots(reference, "pde-construction-approval"))
+        .thenReturn(reviews);
+    proof
+        .put("productId", id)
+        .put("productSlug", product.getSlug())
+        .put("sourceReference", reference);
+    var technical =
+        json.createObjectNode()
+            .put("contractVersion", "PDE_AGENT_TECHNICAL_HOMOLOGATION_V1")
+            .put("decision", "APPROVED")
+            .put("sourceReference", reference)
+            .put("productId", id)
+            .put("prototypeVersion", target.experienceVersion())
+            .put("publicUrl", target.publicUrl());
+    technical
+        .putArray("artifacts")
+        .addObject()
+        .put("artifactId", id + 1)
+        .put("sha256", "a".repeat(64));
+    String raw = technical.toString();
+    var previous = reviews.getFirst();
+    reviews.set(
+        0,
+        new PdeValidationTaskSnapshot(
+            previous.id(),
+            previous.processDefinitionId(),
+            previous.processActivityId(),
+            "COMPLETED",
+            null,
+            null,
+            raw,
+            null));
+    ((ObjectNode) proof.path("taskEvidence").get(0)).put("resultSha256", sha(raw));
+    updateProof();
+    return reference;
+  }
+
+  /** Usa os dois provedores produtivos e simula somente registros de planejamento e catálogo. */
+  private Map<String, Object> initialPlanningWithRealProof(boolean economicsReady)
+      throws Exception {
+    var seed = new IrisCommunicationMaterializationContextProviderTest();
+    var fixture = seed.fixture(List.of(), false);
+    fixture.plan().getExperiment().setProduct(product);
+    when(fixture.plans().findByExperimentReference(88L)).thenReturn(List.of(fixture.plan()));
+    var strategy =
+        seed.strategy()
+            .replace("MARKET_STRATEGY_V3", "MARKET_STRATEGY_V4")
+            .replace("READY_FOR_PRIVATE_VALIDATION", "READY_FOR_AGENT_VALIDATION")
+            .replace("privateValidationPlan", "agentValidationPlan");
+    var economics = seed.economics().replace("PDE_PRIVATE_ECONOMICS_V1", "PDE_AGENT_ECONOMICS_V1");
+    if (!economicsReady) economics = economics.replace("APPROVE", "BLOCK");
+    when(fixture
+            .tasks()
+            .findFunctionalSnapshots("experiment:88", Set.of("pde-commercial-plan-offer"), null))
+        .thenReturn(
+            List.of(
+                seed.snapshot(91401L, "marketStrategy", "experiment-strategist", strategy),
+                seed.snapshot(91402L, "economics", "financial-agent", economics),
+                seed.snapshot(
+                    91403L, "productArchitecture", "landing-generator", seed.architecture())));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        fixture.provider(), "privateProducts", provider);
+    var context = fixture.provider().resolve("experiment:88").orElseThrow();
+    if (economicsReady) exportClaimedIrisInput(fixture.provider());
+    return context;
+  }
+
+  /** Valida o transporte HTTP real da tarefa sem reservar, escrever ou chamar modelos. */
+  private void exportClaimedIrisInput(IrisCommunicationMaterializationContextProvider communication)
+      throws Exception {
+    var repository = mock(AgentTaskRepository.class);
+    var agents = mock(com.marketinghub.repository.jpa.agent.AgentRepository.class);
+    var agent = new com.marketinghub.agent.Agent();
+    agent.setId(91409L);
+    agent.setAgentKey("communication-director");
+    var process = new BusinessProcessDefinition();
+    process.setId(91410L);
+    process.setProcessCode("pde-communication-sales-journey");
+    process.setVersionNumber(11);
+    process.setDiagramJson("{\"nodes\":[]}");
+    var task = new AgentTask();
+    task.setId(91411L);
+    task.setAssignedAgent(agent);
+    task.setProcessDefinition(process);
+    task.setProcessActivityId("communicationContract");
+    task.setSourceReference("experiment:88");
+    task.setStatus("IN_PROGRESS");
+    task.setTaskKind("WORK");
+    task.setCreatedAt(Instant.EPOCH);
+    when(repository.findById(task.getId())).thenReturn(Optional.of(task));
+    var service =
+        new AgentTaskService(
+            repository,
+            null,
+            agents,
+            mock(
+                com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository
+                    .class),
+            null,
+            null,
+            json,
+            null,
+            MarketStrategicContextProvider.empty(),
+            AgentTaskTargetContextProvider.empty());
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "communicationMaterializationContextProvider", communication);
+    var http =
+        org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
+                new InternalAgentTaskExecutionController(
+                    service, mock(AgentTaskVisualEvidenceService.class)))
+            .build();
+    String body =
+        http.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                    "/api/internal/agent-tasks/communication-director/stage-executions/91411"))
+            .andExpect(
+                org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString(StandardCharsets.UTF_8);
+    var input = json.readTree(body);
+    var frozen = json.readTree(input.path("processContextJson").asText());
+    assertThat(
+            frozen.path("communicationMaterializationContext").path("productProofScope").asText())
+        .isEqualTo(IrisPrivateProductContext.PROOF_SCOPE);
+    assertThat(frozen.path("marketStrategicContract").path("contractVersion").asText())
+        .isEqualTo("MARKET_STRATEGY_V4");
+    assertThat(input.path("sourceReference").asText()).isEqualTo("experiment:88");
+    verify(repository, never()).save(any());
+    String file = System.getenv("IRIS_INITIAL_INPUT_FILE");
+    if (file != null) Files.writeString(Path.of(file), body);
+  }
+
   /** Calcula o hash dos bytes usados pelo contrato de evidência. */
   private String sha(String text) throws Exception {
     return HexFormat.of()
@@ -253,6 +459,8 @@ class IrisPrivateProductContextTest {
     else proof.put(key, "divergente");
     updateProof();
     assertThat(provider.resolve(SOURCE).orElseThrow()).containsEntry("inputReadiness", "BLOCKED");
+    assertThat(provider.approvedProductProof(SOURCE).orElseThrow())
+        .containsEntry("inputReadiness", "BLOCKED");
   }
 
   /** Um novo parecer bloqueado impede consumir a prova aprovada anteriormente. */
@@ -262,10 +470,14 @@ class IrisPrivateProductContextTest {
         new PdeValidationTaskSnapshot(
             91999L, 91070L, "psiqueSafety", "BLOCKED", null, null, "{}", null));
     assertThat(provider.resolve(SOURCE).orElseThrow()).containsEntry("inputReadiness", "BLOCKED");
+    assertThat(provider.approvedProductProof(SOURCE).orElseThrow())
+        .containsEntry("inputReadiness", "BLOCKED");
     reviews.removeLast();
     ((ObjectNode) proof.path("taskEvidence").get(0)).put("resultSha256", "0".repeat(64));
     updateProof();
     assertThat(provider.resolve(SOURCE).orElseThrow()).containsEntry("inputReadiness", "BLOCKED");
+    assertThat(provider.approvedProductProof(SOURCE).orElseThrow())
+        .containsEntry("inputReadiness", "BLOCKED");
   }
 
   /** Não aceita contrato alterado no produto nem parecer de origem posterior reprovado. */

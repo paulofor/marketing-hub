@@ -218,6 +218,7 @@ public class IrisCommunicationMaterializationContextProvider
       initialProductProof.ifPresent(
           proof -> {
             result.put("prototypeVersion", proof.prototypeVersion());
+            result.put("productProofScope", IrisPrivateProductContext.PROOF_SCOPE);
             result.put("privatePrototypeAcceptance", proof.privatePrototypeAcceptance());
             result.put("approvedDestination", proof.approvedDestination());
             result.put("approvedVisualArtifacts", proof.visualArtifacts());
@@ -381,7 +382,8 @@ public class IrisCommunicationMaterializationContextProvider
     String proofSourceReference = "product:" + product.getId() + "@agent-validation-v1";
     try {
       JsonNode input =
-          objectMapper.valueToTree(privateProducts.resolve(proofSourceReference).orElse(Map.of()));
+          objectMapper.valueToTree(
+              privateProducts.approvedProductProof(proofSourceReference).orElse(Map.of()));
       String version = input.path("prototypeVersion").asText();
       JsonNode acceptance = input.path("privatePrototypeAcceptance");
       JsonNode destination = input.path("approvedDestination");
@@ -389,7 +391,8 @@ public class IrisCommunicationMaterializationContextProvider
       long gateInstanceId = input.path("gateInstanceId").asLong();
       if (!"AVAILABLE".equals(input.path("availability").asText())
           || !"READY".equals(input.path("inputReadiness").asText())
-          || !IrisPrivateProductContext.MODE.equals(input.path("mode").asText())
+          || !IrisPrivateProductContext.PROOF_MODE.equals(input.path("mode").asText())
+          || !IrisPrivateProductContext.PROOF_SCOPE.equals(input.path("proofScope").asText())
           || product.getId() != input.path("product").path("id").asLong()
           || version.isBlank()
           || !version.equals(acceptance.path("prototypeVersion").asText())

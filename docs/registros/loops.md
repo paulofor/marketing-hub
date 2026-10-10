@@ -9726,3 +9726,24 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
   identidade, escolha explícita da jornada e preservação dos caminhos antes válidos.
 - **Limite:** o aceite local comprova edição da preparação, não prontidão comercial,
   produção de vídeo, autorização financeira, campanha, venda ou lucro.
+
+## LOOP-CICLO-ACEITE-AUDIOVISUAL-OCULTO — 10/10/2026
+
+- **Evidência:** Mira 10/ciclo 9/experimento 102, vídeos 53/54 prontos e aceites
+  `PENDING`. O destaque dizia que não existia decisão; o botão abria a biblioteca
+  geral. A produção recente não atualizava o tempo de espera mostrado.
+- **Causa:** `LearningCycleValueFlowProjection` não distinguia `VIDEO_APPROVAL`
+  da espera genérica. O resumo não consumia a conferência canônica das peças
+  selecionadas; a navegação do ciclo/processo também perdia produto e experimento.
+- **Mudança reutilizável:** consultar o gate existente, manter aceite pendente,
+  aprovações reutilizáveis e divergência técnica como situações distintas;
+  abrir a revisão filtrada e usar a entrega audiovisual atual no relógio.
+- **Harness:** regressões da própria projeção e APIs, outra identidade, um ou
+  dois aceites, alteração de mídia, ciclo encerrado, briefing e pausa; renderização
+  local em desktop/iPhone/Pixel. Sem gravar aceite ou iniciar tarefa pela leitura.
+- **Limites:** a seleção continua humana; integração, revisão financeira vigente,
+  homologação e ativação mantêm seus contratos. Nada amplia os US$ 10 dos vídeos
+  ou os R$ 100 por cinco dias depois da homologação. Sem nova prova comercial.
+- **Adoção/reversão:** adotar se pendência, vínculo e evidências forem coerentes;
+  reverter a projeção se ocultar falha ou fabricar aprovação. Não remover o gate.
+  [Matriz e contexto](../homologacao/mira-narration-recovery-v1.md).

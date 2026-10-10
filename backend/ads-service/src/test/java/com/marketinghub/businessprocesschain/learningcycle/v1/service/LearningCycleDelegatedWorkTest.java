@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
@@ -57,6 +58,33 @@ class LearningCycleDelegatedWorkTest {
           null,
           null,
           null);
+
+  /** O acesso à revisão abre somente as peças do produto e experimento correntes. */
+  @ParameterizedTest
+  @CsvSource({"10,9,102", "87,56,195"})
+  void automaticVideoReviewKeepsExactContext(long productId, long cycleId, long experimentId)
+      throws Exception {
+    var cycle = fixture(productId);
+    cycle.setId(cycleId);
+    cycle.setExperimentId(experimentId);
+    cycle.setStage("VIDEO_APPROVAL");
+    var binding = mock(LearningCycleVideoBinding.class);
+    ReflectionTestUtils.setField(service, "videoBinding", binding);
+    when(binding.supports(cycle)).thenReturn(true);
+    var response = service.list(productId).getFirst();
+    assertThat(response.workUrl())
+        .isEqualTo(
+            "/creative-video-review?productId=" + productId + "&experimentId=" + experimentId);
+    assertThat(response.stage()).isEqualTo("VIDEO_APPROVAL");
+    verify(events, never()).saveAndFlush(any());
+    verify(cycles, never()).saveAndFlush(any());
+    verifyNoInteractions(ledger);
+    String evidenceDirectory = System.getProperty("learningCycle.valueFlow.evidence");
+    if (evidenceDirectory != null)
+      java.nio.file.Files.writeString(
+          java.nio.file.Path.of(evidenceDirectory, "review-navigation-" + productId + ".json"),
+          mapper.createObjectNode().put("workUrl", response.workUrl()).toString());
+  }
 
   /** Modela Capella e outro produto sem exceção por nome, mantendo a identidade da passagem. */
   private LearningSalesCycle fixture(long productId) {

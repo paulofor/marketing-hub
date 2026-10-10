@@ -1,0 +1,231 @@
+{
+  "contractVersion": "vega-private-safety-preparation.v10",
+  "status": "EVIDENCE_COMPATIBILITY_ONLY",
+  "processCode": "pde-construction-approval",
+  "processVersion": 8,
+  "activityId": "technicalHomologation",
+  "sourceReference": "experiment:106",
+  "learningCycleId": 13,
+  "chainDefinitionId": 26,
+  "experimentId": 106,
+  "product": {
+    "id": 4,
+    "slug": "metodo-musa-7-dias",
+    "internalName": "Vega",
+    "experienceVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel",
+    "publicUrl": "https://v8.clubemusa.com.br"
+  },
+  "boundary": "Compatibilidade do player extraído, validada em desktop/iPhone/Pixel. Não renova execução, aprovação, orçamento ou publicação de Vega.",
+  "publicationContract": {
+    "automaticDeployOnMerge": false,
+    "frontendVersion": "v8",
+    "publicUrl": "https://v8.clubemusa.com.br",
+    "requiredFrontendSourceSha256": "b77a2869c1944afc8edb1c0870caa6016e07f05c80113f56e1a829dcff3bc014",
+    "privatePrototypeVersion": "musa-pde-entry-v14-primeiro-ajuste-aplicavel"
+  },
+  "liveVisualContract": {
+    "devices": [
+      "DESKTOP_1440",
+      "IPHONE_15_PRO",
+      "PIXEL_7"
+    ],
+    "runtimeIdentity": {
+      "version": "v8",
+      "experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "frontendSourceSha256": "b77a2869c1944afc8edb1c0870caa6016e07f05c80113f56e1a829dcff3bc014"
+    }
+  },
+  "privateAccessUrl": "https://v8.clubemusa.com.br/agent-validation",
+  "generationMode": "DETERMINISTIC_FIXTURE",
+  "syntheticLimits": {
+    "sessionsPerCycleVersion": 18,
+    "attemptsPerSession": 2,
+    "attemptsPerCycleVersion": 36
+  },
+  "externalAuthorization": {
+    "aiPreparationTotalLimitUsd": null,
+    "additionalBudgetAuthorized": false,
+    "mediaAuthorized": false,
+    "paymentAuthorized": false,
+    "paidVideoAuthorized": false,
+    "financialStatus": "AWAITING_SUCCESSOR_BALANCE_DECISION",
+    "originalPreparationTotalLimitUsd": 10,
+    "previousEstimatedAiCostUsd": 4.6282796
+  },
+  "homologationEvidence": [
+    {
+      "path": "docs/homologacao/vega-seguranca-v14-2026-10-09.md",
+      "sha256": "96ca6ad1cce08dd59db97ca8572a6f4723f18e19e081cb9f7733c25d6d55d076",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-v14/local-safety.json",
+      "sha256": "2d813b48c7afc9928b010f2b48c7f9f1b7744061e71386709f6c70b339344782",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/vega-cycle10-preparation-v7.json",
+      "sha256": "74008f468ff105a9c2507d4659e321b52547a6c17a93b29907c2d0a9d753f226",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva v12/v13 e a rejeição do predecessor; não herda aprovação ou autorização."
+    },
+    {
+      "path": "pde-platform/contracts/vega-private-safety-preparation-v8.json",
+      "sha256": "99e7caaef6fb6b60b6a5193df8350b4fd2bd3d24a12f052aabceaaf8349e28ea",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Histórico preservado; esta revisão valida apenas o escopo descrito, sem renovar parecer comercial ou autorização financeira."
+    },
+    {
+      "path": "docs/homologacao/mira-narration-recovery-v1.md",
+      "sha256": "39dc42039021446796153ff2daed56ccaffe9f9d26fa81cb8986d72294ba857d",
+      "promptMode": "FULL"
+    }
+  ],
+  "validationReport": "docs/homologacao/mira-narration-recovery-v1.md",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/frontend/vega-private/component.tsx",
+      "sha256": "d4d7352c66c2ab0d93a66db973803578f8c1527867e749392bd427a5df611200",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/vega-continuity-clarity.spec.ts",
+      "sha256": "ae2cdde6af2091e0e9c9d7c5ce716db0f582875f177d85b702dd8ed86c2aeca5",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/vega/privateprototype/v1/service/VegaPrivateService.java",
+      "sha256": "bd989b4a4a712e314d12aeb0eb6120b90ff2119b21dc769a148be584396c261a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/privateprototype/v1/service/VegaPrivateExecutionSafetyTest.java",
+      "sha256": "1199d7777ebc1ac8b62942210b0356fd625090b46ca1e429dfb9c9a83604232d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/pde_release_contract.py",
+      "sha256": "d5b2a78dbe1373576939033d96b0abdfdfc1004740b0b5837183626c162e6044",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/run-targeted-production-smokes.sh",
+      "sha256": "21929f74d81d6e38b8c9ee1a7e5a0484bea453ac959607460f064cb34baf987d",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/vega-private-public.smoke.spec.ts",
+      "sha256": "98847ef16c376b66d28afc9bf9a93fcbee43b7da3562bbf2f6979c6b84740eea",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test_pde_release_contract.py",
+      "sha256": "b5c7afc630556cab1e4d53eb8573c8c98972a29a2fd158ec4af862ed6f414c3e",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/test-targeted-production-smokes.sh",
+      "sha256": "dacd4ca3f742c232727bc1e981511a4a85f5d1b67770e9f7d0795bdd598865ed",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/scripts/fixtures/private-api-backend.conf",
+      "sha256": "517a3ecb964b1007d2b66477de428bfbbdb24228bc88286104852a47fb1c5c63",
+      "promptMode": "FULL"
+    },
+    {
+      "path": ".github/workflows/pde-platform-metodo-musa-ci.yml",
+      "sha256": "f7f9777faaa6c87013ce53690b55c7ea1b20975c50b43b2f473823b0a0e4b6b7",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Workflow preserva os seis cenários de experiência e acrescenta regressão da dependência privada, esperando a capacidade antes dos comandos remotos e da promoção. Não é aprovação independente do produto."
+    },
+    {
+      "path": "scripts/musa_pde_watchdog.py",
+      "sha256": "7fe09647722c1c48182e61119b2898c75cd3ba61c84fd246f9a37d0ead59cf36",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "scripts/test-production-freshness.py",
+      "sha256": "acacba9eb2b21d73a4ed0895408bcd534870250fc7d379268796ac3eb14b550b",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/vega-ciclo10-publicacao-coordenada-v1.md",
+      "sha256": "efacb3990fa39afefd1cee1c579960ada89ee7f5e81784ebee806242f1185c05",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "docs/homologacao/evidencias/vega-ciclo10/local-release-readiness.json",
+      "sha256": "0dbc7da3f306c8c765f116f80cde9b5a79ea4c4616c450f0bd4f8508d71d2b8a",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/contracts/vega-cycle10-preparation-v4.json",
+      "sha256": "06a82bcdcb58a3b8fa13f48515cff7f8d79c34cc2f7e02aa8f2c73369440099d",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Preserva a experiência v13 e o histórico validado; muda somente coordenação e evidência de publicação."
+    },
+    {
+      "path": ".github/workflows/production-freshness-contract.yml",
+      "sha256": "11a2500578d3f5e3ec7e3d57ff7b3f3c8879e3507748ebb08f0ddc49cea442d7",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "pde-platform/frontend/tests/vega-terminal-result.cases.ts",
+      "sha256": "b860f9707afa90c617ae7a572d12adbf881bac8248e8eb4a233985914f89bd41",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/vega/privateprototype/v1/service/VegaPrivateVersionSupportTest.java",
+      "sha256": "5dc38833f06069f682873554b810a7edffceb43b3da943d1169e32b3cd5f2a3f",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/private-result-state-checks.mjs",
+      "sha256": "03a38058d8295ca2a482a1b88bfd65ce3ac06aec9719d92851cbc9708d493f50",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/vega-agent-validation-harness.mjs",
+      "sha256": "caab359f7052f2b04223f5f13dda140ee4e6cb4213af7a8efd7f917fe4eed338",
+      "promptMode": "FULL"
+    },
+    {
+      "path": "customer-agent-worker/src/test/js/private-result-state-checks.test.mjs",
+      "sha256": "713acf50a9d7513f41aa005620d56ee004f03c5e046ceaa1d4f8bedb0d9511ef",
+      "promptMode": "FULL"
+    }
+  ],
+  "changeScope": "Revalidação da orientação e navegação audiovisuais compartilhadas, com testes locais de contexto, aceites, evidência divergente, pausa e histórico. A experiência e os bytes do frontend PDE permanecem iguais; não renova aprovação, consumo, execução ou autorização comercial.",
+  "deploymentValidation": {
+    "mode": "PRIVATE_PREPARATION_READ_ONLY",
+    "pagePath": "/agent-validation",
+    "contractPath": "/api/pde/vega/private/v1/contract",
+    "readOnly": true
+  },
+  "previousLearningCycleId": 10,
+  "previousExperimentId": 103,
+  "releaseCoordination": {
+    "phase": "BEFORE_PROMOTION",
+    "capabilityReadOnly": true,
+    "timeoutSeconds": 1800,
+    "previousManifest": "pde-platform/contracts/vega-cycle10-preparation-v7.json",
+    "previousManifestSha256": "74008f468ff105a9c2507d4659e321b52547a6c17a93b29907c2d0a9d753f226",
+    "scope": "Publicação privada da v14; o publicador espera suporte ao contrato antes de promover a imagem. Não publica campanha nem altera autorizações."
+  },
+  "operationalState": {
+    "verifiedAt": "2026-10-10"
+  },
+  "compatibilityAttestation": {
+    "previousManifest": "pde-platform/contracts/vega-private-safety-preparation-v9.json",
+    "previousManifestSha256": "7471d13c0809cea29d5bf370179c2431cdc73eda8b18d1d30b0cab4d4fe5274c",
+    "scope": "Revalidação da orientação e navegação audiovisuais compartilhadas, com testes locais de contexto, aceites, evidência divergente, pausa e histórico. A experiência e os bytes do frontend PDE permanecem iguais; não renova aprovação, consumo, execução ou autorização comercial.",
+    "changedEvidence": [
+      {
+        "path": "docs/homologacao/mira-narration-recovery-v1.md",
+        "previousSha256": "df8f13ac0cac57bd8eb1f5547827caf2d544e2bed03f9ec8227b2262448b18aa",
+        "currentSha256": "39dc42039021446796153ff2daed56ccaffe9f9d26fa81cb8986d72294ba857d"
+      }
+    ]
+  }
+}

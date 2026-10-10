@@ -1656,7 +1656,7 @@ public class LearningCycleService {
         : "A homologação utilizada deixou de ser vigente. Retorne para correção e homologue novamente antes de publicar ou expandir.";
   }
 
-  /** Expõe trabalho delegado e comandos coerentes com as provas e autorizações atuais. */
+  /** Expõe trabalho, comandos e revisão das peças no contexto das provas e autorizações atuais. */
   private LearningCycleResponse response(LearningSalesCycle cycle) {
     var commercialPreparation =
         commercialReadiness != null
@@ -1799,7 +1799,12 @@ public class LearningCycleService {
       }
     }
     if (automaticVideoContinuation(cycle)) {
-      if ("VIDEO_APPROVAL".equals(cycle.getStage())) workUrl = "/videos";
+      if ("VIDEO_APPROVAL".equals(cycle.getStage()))
+        workUrl =
+            "/creative-video-review?productId="
+                + cycle.getProductId()
+                + "&experimentId="
+                + cycle.getExperimentId();
       nextAction =
           "VIDEO_APPROVAL".equals(cycle.getStage())
               ? "A aprovação dos dois vídeos na biblioteca é reutilizada pelo processo. O backend integra as peças à experiência privada e encaminha a homologação, sem novo formulário de aprovação."

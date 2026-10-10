@@ -57,6 +57,31 @@ interrompidas por publicação, custo sem medição e tempo até aceite da arqui
 Limite: isso comprova proteção operacional, não demanda, compra ou aumento de
 vendas. A preparação mantém o teto cumulativo US$ 10, sem mídia ou vídeos pagos.
 
+## Conferência dos cabeçalhos reais na recuperação
+
+A auditoria persistida de #709 confirma o cabeçalho operacional `Atividade` do
+prompt v10; a tarefa #714 aceita confirma o cabeçalho `Prompt v11` do recurso
+versionado atual. O recuperador reconhecia apenas o formato `Processo 2 vN`:
+isso deixaria v8/v11 desconhecidas e permitiria atribuir uma versão por título
+copiado dentro do contexto, sem cabeçalho operacional.
+
+A regressão agora lê os próprios arquivos versionados v8, v9, v10 e v11,
+reproduz interrupção e callback HTTP local, preserva a auditoria e exige zero
+novas inferências. O leitor reconhece os cabeçalhos publicados na primeira linha;
+ausência de cabeçalho permanece `UNKNOWN_PROMPT_VERSION`, inclusive com título
+copiado em linha posterior. As três falhas foram reproduzidas antes da correção.
+Nenhum prompt, schema, parecer histórico ou autorização financeira foi alterado.
+
+Critério de adoção: os quatro formatos publicados devem recuperar sua versão,
+o contexto sem cabeçalho deve permanecer desconhecido e callback/replay não deve
+iniciar modelo. Essa proteção melhora rastreabilidade e recuperação; não prova
+vendas nem recupera uma resposta inexistente.
+
+Validação após a correção: 61 testes do worker passaram, sem falhas ou cenários
+ignorados. Spotless e revisão do diff passaram. Não houve alteração de backend,
+frontend, schema, SQL ou fluxo funcional; as validações completas anteriores
+continuam sendo as evidências desses componentes.
+
 ## Reserva da tentativa interrompida
 
 O catálogo canônico consultado pelo MCP em 10/10 registra para `gpt-6.1-sol`

@@ -270,6 +270,49 @@ try {
     ).toBeVisible({ timeout: 20000 });
     checks++;
     assert.deepEqual(errors, []);
+    // A mesma tela reflete o preflight: hipótese privada enfileirada e contradição bloqueada.
+    for (const privateId of [95121, 95122, 95123]) {
+      await p.unroute("**/api/financial-plans/v1/products/*");
+      await p.goto(
+        `http://127.0.0.1:15175/financial/plans?productId=${privateId}`,
+        {
+          waitUntil: "networkidle",
+        },
+      );
+      await expect(
+        p.getByRole("heading", {
+          name: `Plano sintético ${privateId}`,
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        p.getByRole("button", { name: "Solicitar parecer de Plutus" }),
+      ).toBeDisabled();
+      if (privateId === 95123) {
+        await p
+          .getByText("Pendências financeiras e responsáveis", { exact: true })
+          .click();
+        await expect(
+          p.getByText(
+            /personalização financeira diverge do contrato de entrega/,
+          ),
+        ).toBeVisible();
+      } else {
+        await expect(p.getByText(/Parecer #\d+ · PENDING/)).toBeVisible();
+      }
+      assert.equal(
+        await p.evaluate(
+          () => document.documentElement.scrollWidth > window.innerWidth + 2,
+        ),
+        false,
+      );
+      await p.screenshot({
+        path: `${out}/${label}-private-${privateId}.png`,
+        fullPage: true,
+      });
+      checks += 4;
+    }
+    assert.deepEqual(errors, []);
     await c.close();
   }
   console.log(

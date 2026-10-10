@@ -26,6 +26,28 @@ public record PlanView(
     List<String> pendingActions,
     boolean canRequestAnalysis,
     Analysis analysis) {
+  /** Apresenta as pendências do mesmo preflight usado no comando, sem alterar a revisão. */
+  public PlanView withPreflightBlockers(List<String> blockers) {
+    return new PlanView(
+        id,
+        scope,
+        scopeId,
+        environment,
+        name,
+        revision,
+        templateId,
+        commercialPlanId,
+        commercialPlanVersion,
+        createdBy,
+        createdAt,
+        assumptions,
+        evaluation,
+        stale,
+        blockers,
+        canRequestAnalysis && blockers.isEmpty(),
+        analysis);
+  }
+
   /** Parecer de Plutus e cobertura do custo; não constitui autorização comercial. */
   public record Analysis(
       Long executionId,

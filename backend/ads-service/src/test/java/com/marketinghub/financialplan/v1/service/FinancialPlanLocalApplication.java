@@ -96,14 +96,14 @@ public class FinancialPlanLocalApplication {
             "product", "product_type_definition", "commercial_plan", "financial_agent_execution"))
       jdbc.execute(
           "CREATE TABLE IF NOT EXISTS " + table + " (id BIGINT PRIMARY KEY) ENGINE=InnoDB");
-    for (long id = 95101; id <= 95120; id++) {
+    for (long id = 95101; id <= 95123; id++) {
       jdbc.update("INSERT IGNORE INTO product VALUES (?)", id);
       jdbc.update("INSERT IGNORE INTO commercial_plan VALUES (?)", id);
     }
     jdbc.update("INSERT IGNORE INTO product_type_definition VALUES (951),(952)");
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS fixture_plan_version (id BIGINT PRIMARY KEY, version_number INT NOT NULL) ENGINE=InnoDB");
-    for (long id = 95101; id <= 95120; id++)
+    for (long id = 95101; id <= 95123; id++)
       jdbc.update("INSERT IGNORE INTO fixture_plan_version VALUES (?,1)", id);
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS fixture_review (id BIGINT AUTO_INCREMENT PRIMARY KEY, plan_id BIGINT, version_number INT, status VARCHAR(30), context_json LONGTEXT, cost DECIMAL(12,6)) ENGINE=InnoDB");
@@ -145,7 +145,7 @@ public class FinancialPlanLocalApplication {
         .getRepository(FinancialPlanRevisionRepository.class);
   }
 
-  /** Monta produto, versão e preço sintéticos, mantendo outro tipo para testar isolamento. */
+  /** Monta contratos comerciais e privados sintéticos, preservando isolamento e contradições. */
   private Product product(long id) {
     var p = new Product();
     p.setId(id);
@@ -156,6 +156,19 @@ public class FinancialPlanLocalApplication {
         "{\"format\":{\"type\":\"CUSTOM_VISUAL_ASSET_PACK\",\"valueUnit\":\"kit utilizável\"},"
             + "\"delivery\":{\"mode\":\"PERSONALIZED_ASSISTED\",\"personalization\":true},"
             + "\"successEvidence\":{\"firstMilestoneSales\":5}}");
+    if (id >= 95121) {
+      p.setValidationDefinitionVersion("PDE_AGENT_VALIDATED_V1");
+      p.setValidationDefinitionJson(
+          "{\"format\":\"Experiência web privada\",\"delivery\":{"
+              + (id == 95123 ? "\"personalization\":false," : "")
+              + "\"privatePrototype\":{\"checkoutMode\":\"SIMULATED_NO_CHARGE\"}},"
+              + "\"agentValidationPlan\":{\"contractVersion\":\"PDE_AGENT_VALIDATION_V1\","
+              + "\"sourceReference\":\"product:"
+              + id
+              + "@agent-validation-v1\",\"trafficClass\":\"AGENT_VALIDATION\","
+              + "\"internalMarker\":\"mh_internal_test\",\"paymentEnabled\":false,"
+              + "\"campaignAuthorized\":false}}");
+    }
     p.setCurrentPriceBrl(new BigDecimal("67"));
     var type = type(id == 95103 ? 952 : 951);
     p.setProductTypeDefinition(type);
@@ -180,14 +193,14 @@ public class FinancialPlanLocalApplication {
     when(repo.findAll())
         .thenAnswer(
             i ->
-                java.util.stream.LongStream.rangeClosed(95101, 95120)
+                java.util.stream.LongStream.rangeClosed(95101, 95123)
                     .mapToObj(this::product)
                     .toList());
     when(repo.findById(anyLong()))
         .thenAnswer(
             i -> {
               long id = i.getArgument(0);
-              return id >= 95101 && id <= 95120 ? Optional.of(product(id)) : Optional.empty();
+              return id >= 95101 && id <= 95123 ? Optional.of(product(id)) : Optional.empty();
             });
     when(repo.findLockedById(anyLong()))
         .thenAnswer(

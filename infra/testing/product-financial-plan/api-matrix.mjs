@@ -220,11 +220,53 @@ assert.equal(
 assert.notEqual(refreshed.assumptions.evidence, held.assumptions.evidence);
 assert.equal((await list(95103)).length, 2);
 assert.equal((await request("/fixture/reviews")).length, 2);
+// Contratos privados preservam a hipótese financeira sem declarar uma oferta comercial aprovada.
+for (const id of [95121, 95122]) {
+  const privateAssumptions = assumptions();
+  privateAssumptions.productVersion = "PDE_AGENT_VALIDATED_V1";
+  privateAssumptions.preparation = { supportDays: 7, personalizedAi: true };
+  const privatePlan = await request(
+    api + `/products/${id}`,
+    body(id, privateAssumptions),
+  );
+  assert.equal(privatePlan.canRequestAnalysis, true);
+  const first = await analyze(id, privatePlan.id);
+  const replay = await analyze(id, privatePlan.id);
+  assert.equal(replay.analysis.executionId, first.analysis.executionId);
+  const privateQueue = await request("/fixture/reviews");
+  const queued = privateQueue.find((r) => r.id === first.analysis.executionId);
+  const basis = JSON.parse(queued.context_json).projectionBasis
+    .deliveryContract;
+  assert.equal(basis.personalization, null);
+  assert.equal(basis.proposedPersonalizedAi, true);
+  assert.equal(basis.contractScope, "PRIVATE_AGENT_VALIDATION");
+  assert.equal(basis.commercialDeliveryConfirmationRequired, true);
+  assert.equal(
+    basis.sourceReference,
+    `product:${id}@PDE_AGENT_VALIDATED_V1:validation-contract`,
+  );
+}
+const conflictingAssumptions = assumptions();
+conflictingAssumptions.productVersion = "PDE_AGENT_VALIDATED_V1";
+conflictingAssumptions.preparation = { supportDays: 7, personalizedAi: true };
+const conflicting = await request(
+  api + "/products/95123",
+  body(95123, conflictingAssumptions),
+);
+assert.equal(conflicting.canRequestAnalysis, false);
+assert.ok(
+  conflicting.pendingActions.some((p) =>
+    p.includes("personalização financeira diverge"),
+  ),
+);
+await analyze(95123, conflicting.id, 409);
+assert.equal((await request("/fixture/reviews")).length, 4);
 console.log(
   JSON.stringify({
     checks,
     concurrencyRequests: 8,
-    queueExecutions: 2,
+    queueExecutions: 4,
+    privateProducts: 2,
     realModelCalls: 0,
     result: "API_MATRIX_PASS",
   }),

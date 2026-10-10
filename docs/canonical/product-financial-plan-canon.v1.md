@@ -82,6 +82,26 @@ a versão já construída, o investimento incremental é zero somente no escopo 
 produção ou gasto; qualquer necessidade nova invalida o parecer. Custos históricos permanecem na
 visão de recuperação acumulada e nunca são cobrados novamente por venda.
 
+### Hipóteses de contratos privados legados — 10/10/2026
+
+A ausência de `delivery.personalization` em um contrato `PDE_AGENT_VALIDATION_V1` ou
+`PDE_AGENT_VALIDATED_V1` não equivale a uma declaração de ausência de personalização.
+Quando o contrato identifica o próprio produto, tráfego `AGENT_VALIDATION`, marcador
+`mh_internal_test`, pagamento e campanha desabilitados e checkout `SIMULATED_NO_CHARGE`,
+Plutus pode avaliar as premissas detalhadas de uma preparação privada. O contexto conserva
+`personalization: null`, separa `proposedPersonalizedAi` e declara o escopo
+`PRIVATE_AGENT_VALIDATION` e a necessidade de confirmar o contrato comercial.
+
+Uma declaração explícita incompatível, origem de outro produto, marcador ausente ou
+autorização comercial não recebem essa compatibilidade. O contrato comercial continua
+exigindo a declaração canônica. A projeção não altera a versão privada histórica nem
+libera Íris, cobrança, mídia ou publicação sem seus demais pareceres e gates.
+
+Leitura e comando devem executar o mesmo preflight: a tela apresenta a pendência e
+desabilita a solicitação antes da fila paga. O comando revalida a condição na transação.
+Resultados e custos anteriores continuam preservados; nova tentativa com entrada
+idêntica reutiliza a análise da mesma revisão.
+
 Sem previsão de demanda vigente, os três cenários podem usar limites determinísticos: o conservador
 testa uma venda abaixo do equilíbrio operacional, o base usa a meta comercial explícita e o
 otimista mede quantas vendas recuperam os custos históricos conhecidos. Essas sensibilidades medem

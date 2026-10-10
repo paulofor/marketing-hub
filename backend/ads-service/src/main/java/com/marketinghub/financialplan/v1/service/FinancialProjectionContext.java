@@ -97,13 +97,15 @@ final class FinancialProjectionContext {
     String valueUnit = text(validation.at("/format/valueUnit"));
     String deliveryMode = text(validation.at("/delivery/mode"));
     Boolean personalization = booleanValue(validation.at("/delivery/personalization"));
+    boolean privatePreparation = privatePreparation(product, validation);
     boolean fixedPackage = fixedPackage(formatType, valueUnit);
     if (aggregate && !fixedPackage)
       blockers.add(
           "Responsável pelo produto: defina uma unidade fixa de entrega para validar o uso intenso do pacote.");
     if (assumptions.preparation() != null
         && assumptions.preparation().personalizedAi()
-        && !Boolean.TRUE.equals(personalization))
+        && !Boolean.TRUE.equals(personalization)
+        && !(privatePreparation && validation.at("/delivery/personalization").isMissingNode()))
       blockers.add(
           "Responsável pelo produto: a personalização financeira diverge do contrato de entrega.");
 
@@ -224,6 +226,12 @@ final class FinancialProjectionContext {
             deliveryMode,
             "personalization",
             personalization,
+            "contractScope",
+            privatePreparation ? "PRIVATE_AGENT_VALIDATION" : "COMMERCIAL_DELIVERY",
+            "proposedPersonalizedAi",
+            assumptions.preparation() == null ? null : assumptions.preparation().personalizedAi(),
+            "commercialDeliveryConfirmationRequired",
+            privatePreparation,
             "costUnit",
             aggregate
                 ? fixedPackage ? "FULL_CONTRACTED_PACKAGE_PER_CUSTOMER" : null
@@ -319,6 +327,27 @@ final class FinancialProjectionContext {
       blockers.add("Responsável pelo produto: corrija o contrato de validação inválido.");
       return json.createObjectNode();
     }
+  }
+
+  /**
+   * Reconhece o contrato privado legado para avaliar hipóteses, sem inferir personalização
+   * comercial nem transformar homologação em autorização de venda.
+   */
+  private static boolean privatePreparation(Product product, JsonNode validation) {
+    var plan = validation.path("agentValidationPlan");
+    return ("PDE_AGENT_VALIDATION_V1".equals(product.getValidationDefinitionVersion())
+            || "PDE_AGENT_VALIDATED_V1".equals(product.getValidationDefinitionVersion()))
+        && "PDE_AGENT_VALIDATION_V1".equals(plan.path("contractVersion").asText())
+        && ("product:" + product.getId() + "@agent-validation-v1")
+            .equals(plan.path("sourceReference").asText())
+        && "AGENT_VALIDATION".equals(plan.path("trafficClass").asText())
+        && "mh_internal_test".equals(plan.path("internalMarker").asText())
+        && plan.path("paymentEnabled").isBoolean()
+        && !plan.path("paymentEnabled").asBoolean()
+        && plan.path("campaignAuthorized").isBoolean()
+        && !plan.path("campaignAuthorized").asBoolean()
+        && "SIMULATED_NO_CHARGE"
+            .equals(validation.at("/delivery/privatePrototype/checkoutMode").asText());
   }
 
   /** Deriva clientes somente quando receita e preço formam uma quantidade inteira exata. */

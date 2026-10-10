@@ -9767,3 +9767,19 @@ MySQL/polling, replay e continuidade anteriormente válida. Matriz e resultados 
 - **Limites:** só resolve coordenação e fontes. Revisão privada, seleção humana,
   homologação comercial, mídia e cobrança continuam com seus próprios contratos.
   [Matriz e aprendizado](../homologacao/alcyone-fluxo-primeiro-experimento-v1.md).
+
+## LOOP-PLANEJAMENTO-CLAIM-REVISAO-FINANCEIRA — 10/10/2026
+
+- **Evidência:** após a fila ser resolvida, Atena #706 permaneceu PENDING. O endpoint
+  nativo retornava HTTP 500 antes da inferência: `FinancialPlanService.required`
+  chamava `findById` sem ID. Preservar tarefa, processo #67 e custos anteriores.
+- **Causa:** a integração acrescentada no PR #5568 usava `get(..., null)` para
+  pedir a revisão atual; `get` exige revisão exata. O mock isolado ocultou a falha.
+- **Correção:** consulta atual explícita, restrita no SQL ao mesmo proprietário,
+  ambiente e plano. Consulta histórica por ID mantém o contrato antes válido.
+- **Harness:** endpoint de claim, serviço financeiro e repository reais no MySQL
+  5.7 existente; duas identidades, LIVE/TEST, versão obsoleta e recuperação da lease.
+  Modelos e fila são simulados; custo desconhecido continua desconhecido.
+- **Limites:** recuperar a mesma tarefa, sem criar nova inferência para compensar
+  erro de consulta. Fontes não equivalem a aprovação comercial ou demanda real.
+  [Matriz e aprendizado](../homologacao/alcyone-fluxo-primeiro-experimento-v1.md).
